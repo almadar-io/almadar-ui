@@ -316,7 +316,7 @@ export const WithViolationTriggers: Story = {
     const eventBus = useEventBus();
 
     useEffect(() => {
-      const unsub = eventBus.on('UI:VIOLATION_DETECTED', (payload) => {
+      const unsub = eventBus.on('UI:VIOLATION_DETECTED', (payload: unknown) => {
         const violation = payload as {
           law: string;
           article: string;

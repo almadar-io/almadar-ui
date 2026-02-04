@@ -18,12 +18,9 @@
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
-    "paths": {
-      "@orbital/shared": ["../dist"],
-      "@orbital/shared/*": ["../dist/*"]
-    },
     "typeRoots": ["./types", "./node_modules/@types"]
   },
-  "include": ["components", "clients", ".storybook", "types"],
+  "include": ["**/*.ts", "**/*.tsx", "vitest.setup.ts"],
+  "exclude": ["node_modules", "dist", "vite.config.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

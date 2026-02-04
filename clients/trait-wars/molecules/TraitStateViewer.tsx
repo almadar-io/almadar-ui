@@ -18,13 +18,16 @@ export interface TraitTransition {
     guardHint?: string;
 }
 
-export interface TraitDefinition {
+export interface TraitStateMachineDefinition {
     name: string;
     states: string[];
     currentState: string;
     transitions: TraitTransition[];
     description?: string;
 }
+
+/** @deprecated Use TraitStateMachineDefinition instead */
+export type TraitDefinition = TraitStateMachineDefinition;
 
 export interface TraitStateViewerProps {
     /** The trait to visualize */

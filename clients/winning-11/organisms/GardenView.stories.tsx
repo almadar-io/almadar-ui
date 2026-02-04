@@ -197,7 +197,7 @@ export const Loading: Story = {
   },
 };
 
-export const Error: Story = {
+export const ErrorState: Story = {
   args: {
     items: [],
     error: new Error("Failed to load relationships"),

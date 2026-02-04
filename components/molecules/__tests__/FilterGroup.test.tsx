@@ -4,7 +4,7 @@
  * Tests for filter group functionality including date filter support.
  */
 import React, { type ReactNode } from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { FilterGroup, FilterDefinition } from '../FilterGroup';
 import { EventBusProvider } from '../../../providers/EventBusProvider';

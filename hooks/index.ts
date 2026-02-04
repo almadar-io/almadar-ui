@@ -138,3 +138,10 @@ export {
   getSingleton,
   type Entity,
 } from './useEntities';
+
+// Auth context stub (applications should provide their own AuthProvider)
+export {
+  useAuthContext,
+  type AuthUser,
+  type AuthContextValue,
+} from './useAuthContext';

@@ -23,6 +23,7 @@
     "react-dom": "catalog:"
   },
   "dependencies": {
+    "@almadar/patterns": "workspace:*",
     "clsx": "catalog:",
     "tailwind-merge": "catalog:",
     "lucide-react": "^0.344.0",
@@ -57,12 +58,17 @@
     "tailwindcss": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
-    "tsx": "^4.7.0"
+    "tsx": "^4.7.0",
+    "vitest": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@vitest/ui": "catalog:",
+    "jsdom": "catalog:"
   },
   "scripts": {
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build -o storybook-static",
-    "build": "tsc",
+    "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit"
   }
 }

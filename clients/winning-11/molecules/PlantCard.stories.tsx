@@ -9,12 +9,12 @@ const meta: Meta<typeof PlantCard> = {
   },
   tags: ['autodocs'],
   argTypes: {
-    growthStage: {
+    growthPoints: {
       control: { type: 'range', min: 0, max: 100 },
     },
-    trustLevel: {
+    healthStatus: {
       control: 'select',
-      options: ['seedling', 'growing', 'mature', 'flourishing'],
+      options: ['thriving', 'healthy', 'declining', 'withering'],
     },
   },
 };
@@ -25,66 +25,58 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     name: 'Green Valley Farm',
-    type: 'Organic Producer',
-    growthStage: 45,
-    trustLevel: 'growing',
+    category: 'Organic Producer',
+    growthPoints: 45,
+    healthStatus: 'healthy',
   },
 };
 
 export const NewRelationship: Story = {
   args: {
     name: 'Sunrise Orchards',
-    type: 'Fruit Supplier',
-    growthStage: 15,
-    trustLevel: 'seedling',
-    lastInteraction: '2 days ago',
+    category: 'Fruit Supplier',
+    growthPoints: 15,
+    healthStatus: 'healthy',
+    visualMetaphor: 'seedling',
   },
 };
 
 export const EstablishedPartner: Story = {
   args: {
     name: 'Heritage Grains Co.',
-    type: 'Grain Supplier',
-    growthStage: 85,
-    trustLevel: 'flourishing',
-    lastInteraction: 'Yesterday',
+    category: 'Grain Supplier',
+    growthPoints: 85,
+    healthStatus: 'thriving',
+    visualMetaphor: 'flowering',
   },
 };
 
 export const NeedsAttention: Story = {
   args: {
     name: 'Mountain Dairy',
-    type: 'Dairy Producer',
-    growthStage: 60,
-    trustLevel: 'mature',
-    needsAttention: true,
-    careNeeds: [
-      { type: 'communication', urgency: 'high' },
-      { type: 'payment', urgency: 'medium' },
-    ],
-    lastInteraction: '2 weeks ago',
+    category: 'Dairy Producer',
+    growthPoints: 60,
+    healthStatus: 'declining',
+    missedOutreachCount: 2,
   },
 };
 
 export const WithCareNeeds: Story = {
   args: {
     name: 'River Valley Produce',
-    type: 'Vegetable Supplier',
-    growthStage: 50,
-    trustLevel: 'growing',
-    careNeeds: [
-      { type: 'feedback', urgency: 'low' },
-      { type: 'delivery', urgency: 'medium' },
-    ],
+    category: 'Vegetable Supplier',
+    growthPoints: 50,
+    healthStatus: 'healthy',
+    missedOutreachCount: 1,
   },
 };
 
 export const Clickable: Story = {
   args: {
     name: 'Coastal Fisheries',
-    type: 'Seafood Supplier',
-    growthStage: 70,
-    trustLevel: 'mature',
+    category: 'Seafood Supplier',
+    growthPoints: 70,
+    healthStatus: 'healthy',
     onClick: () => alert('Card clicked!'),
   },
 };
@@ -94,34 +86,31 @@ export const CardGrid: Story = {
     <div className="grid w-[600px] grid-cols-2 gap-4">
       <PlantCard
         name="Green Valley Farm"
-        type="Organic Producer"
-        growthStage={85}
-        trustLevel="flourishing"
+        category="Organic Producer"
+        growthPoints={85}
+        healthStatus="thriving"
+        visualMetaphor="flowering"
       />
       <PlantCard
         name="Sunrise Orchards"
-        type="Fruit Supplier"
-        growthStage={45}
-        trustLevel="growing"
-        needsAttention
-        careNeeds={[{ type: 'communication', urgency: 'medium' }]}
+        category="Fruit Supplier"
+        growthPoints={45}
+        healthStatus="declining"
+        missedOutreachCount={1}
       />
       <PlantCard
         name="Heritage Grains"
-        type="Grain Supplier"
-        growthStage={20}
-        trustLevel="seedling"
-        lastInteraction="Today"
+        category="Grain Supplier"
+        growthPoints={20}
+        healthStatus="healthy"
+        visualMetaphor="seedling"
       />
       <PlantCard
         name="Mountain Dairy"
-        type="Dairy Producer"
-        growthStage={65}
-        trustLevel="mature"
-        careNeeds={[
-          { type: 'payment', urgency: 'high' },
-          { type: 'feedback', urgency: 'low' },
-        ]}
+        category="Dairy Producer"
+        growthPoints={65}
+        healthStatus="healthy"
+        missedOutreachCount={2}
       />
     </div>
   ),

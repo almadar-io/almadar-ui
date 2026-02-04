@@ -210,7 +210,7 @@ export const ReadOnly: Story = {
       { id: 'v1', description: 'ZVPOT-1 Art. 14/1 - Missing price tags' },
       { id: 'v2', description: 'ZVPOT-1 Art. 23/2 - Incorrect labeling' },
     ],
-    renderItem: (item) => (
+    renderItem: (item: RepeatableItem) => (
       <Typography variant="body">{item.description as string}</Typography>
     ),
     readOnly: true,

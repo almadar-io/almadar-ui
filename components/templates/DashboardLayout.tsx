@@ -15,7 +15,7 @@ import {
   LucideIcon,
 } from "lucide-react";
 import { Button, Input, Badge, Spinner, ThemeToggle, Avatar } from "../atoms";
-import { useAuthContext } from "@/features/auth";
+import { useAuthContext } from "../../hooks/useAuthContext";
 
 export interface NavItem {
   label: string;
