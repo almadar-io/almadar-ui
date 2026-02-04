@@ -1,0 +1,68 @@
+{
+  "name": "@almadar/ui",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts",
+    "./components": "./components/index.ts",
+    "./components/*": "./components/*/index.ts",
+    "./hooks": "./hooks/index.ts",
+    "./providers": "./providers/index.ts",
+    "./context": "./context/index.ts",
+    "./renderer": "./renderer/index.ts",
+    "./stores": "./stores/index.ts",
+    "./themes/*": "./themes/*",
+    "./lib": "./lib/index.ts",
+    "./clients/*": "./clients/*/index.ts",
+    "./types": "./types/index.ts"
+  },
+  "peerDependencies": {
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "dependencies": {
+    "clsx": "catalog:",
+    "tailwind-merge": "catalog:",
+    "lucide-react": "^0.344.0",
+    "katex": "^0.16.9",
+    "react-markdown": "^9.0.3",
+    "react-router-dom": "^7.13.0",
+    "react-syntax-highlighter": "^15.5.0",
+    "rehype-katex": "^7.0.0",
+    "rehype-raw": "^7.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "react-force-graph-2d": "^1.28.0"
+  },
+  "devDependencies": {
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@types/react-syntax-highlighter": "^15.5.11",
+    "@storybook/addon-essentials": "catalog:",
+    "@storybook/addon-interactions": "^8.0.0",
+    "@storybook/addon-links": "^8.0.0",
+    "@storybook/addon-themes": "^8.0.0",
+    "@storybook/blocks": "^8.0.0",
+    "@storybook/react": "catalog:",
+    "@storybook/react-vite": "catalog:",
+    "@storybook/test": "^8.0.0",
+    "storybook": "catalog:",
+    "@vitejs/plugin-react": "^4.2.0",
+    "autoprefixer": "catalog:",
+    "postcss": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "tsx": "^4.7.0"
+  },
+  "scripts": {
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build -o storybook-static",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  }
+}

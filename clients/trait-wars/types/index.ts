@@ -1,0 +1,8 @@
+/**
+ * Trait Wars Types
+ * 
+ * Type definitions and utilities for the game.
+ */
+
+export * from './game';
+export * from './traits';

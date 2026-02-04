@@ -1,0 +1,220 @@
+/**
+ * Design System Styles
+ *
+ * Theme system uses a single data-theme attribute:
+ *   data-theme="wireframe-light" | "wireframe-dark" | "ocean-light" | etc.
+ *
+ * Themes are imported first, then Tailwind, then utility classes.
+ */
+
+/* Import theme definitions */
+@import "./themes/wireframe.css";
+@import "./themes/minimalist.css";
+@import "./themes/almadar.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * Default fallback theme (wireframe-light)
+ * Applied when no data-theme attribute is set
+ */
+:root:not([data-theme]) {
+    /* Shadows */
+    --shadow-main: 4px 4px 0px 0px rgba(0, 0, 0, 1);
+    --shadow-sm: 2px 2px 0px 0px rgba(0, 0, 0, 1);
+    --shadow-lg: 6px 6px 0px 0px rgba(0, 0, 0, 1);
+    --shadow-inner: inset 2px 2px 0px 0px rgba(0, 0, 0, 0.1);
+    --shadow-none: none;
+    --shadow-hover: 6px 6px 0px 0px rgba(0, 0, 0, 1);
+    --shadow-active: 1px 1px 0px 0px rgba(0, 0, 0, 1);
+
+    /* Border radius */
+    --radius-none: 0px;
+    --radius-sm: 0px;
+    --radius-md: 0px;
+    --radius-lg: 0px;
+    --radius-xl: 0px;
+    --radius-full: 9999px;
+
+    /* Border width */
+    --border-width: 2px;
+    --border-width-thin: 1px;
+    --border-width-thick: 3px;
+
+    /* Colors */
+    --color-primary: #000000;
+    --color-primary-hover: #333333;
+    --color-primary-foreground: #ffffff;
+    --color-secondary: #ffffff;
+    --color-secondary-hover: #f0f0f0;
+    --color-secondary-foreground: #000000;
+    --color-accent: #000000;
+    --color-accent-foreground: #ffffff;
+    --color-muted: #f5f5f5;
+    --color-muted-foreground: #737373;
+    --color-background: #ffffff;
+    --color-foreground: #000000;
+    --color-card: #ffffff;
+    --color-card-foreground: #000000;
+    --color-surface: #f5f5f5;
+    --color-border: #000000;
+    --color-input: #000000;
+    --color-ring: #000000;
+
+    /* Semantic colors */
+    --color-error: #dc2626;
+    --color-error-foreground: #ffffff;
+    --color-success: #16a34a;
+    --color-success-foreground: #ffffff;
+    --color-warning: #ca8a04;
+    --color-warning-foreground: #000000;
+    --color-info: #2563eb;
+    --color-info-foreground: #ffffff;
+
+    /* Typography */
+    --font-family: "Inter", "SF Mono", "Monaco", system-ui, sans-serif;
+    --font-weight-normal: 500;
+    --font-weight-medium: 600;
+    --font-weight-bold: 800;
+    --letter-spacing: 0;
+    --line-height: 1.5;
+
+    /* Icon */
+    --icon-stroke-width: 2.5;
+    --icon-color: currentColor;
+
+    /* Transitions */
+    --transition-fast: 50ms;
+    --transition-normal: 100ms;
+    --transition-slow: 200ms;
+    --transition-timing: linear;
+
+    /* Transforms */
+    --hover-scale: 1;
+    --hover-translate-y: -2px;
+    --hover-translate-x: 2px;
+    --active-scale: 0.98;
+    --active-translate-y: 2px;
+
+    /* Focus */
+    --focus-ring-width: 2px;
+    --focus-ring-offset: 2px;
+    --focus-ring-color: #000000;
+}
+
+/* Base styles */
+html {
+    font-family: var(--font-family);
+    line-height: var(--line-height);
+    letter-spacing: var(--letter-spacing);
+    font-weight: var(--font-weight-normal);
+    color-scheme: light dark;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+}
+
+#root {
+    min-height: 100vh;
+}
+
+/* Custom scrollbar using theme variables */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--color-muted);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--color-muted-foreground);
+    border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--color-foreground);
+}
+
+/* Utility classes that use theme variables */
+@layer utilities {
+    .shadow-theme {
+        box-shadow: var(--shadow-main);
+    }
+
+    .shadow-theme-sm {
+        box-shadow: var(--shadow-sm);
+    }
+
+    .shadow-theme-lg {
+        box-shadow: var(--shadow-lg);
+    }
+
+    .rounded-theme {
+        border-radius: var(--radius-md);
+    }
+
+    .rounded-theme-sm {
+        border-radius: var(--radius-sm);
+    }
+
+    .rounded-theme-lg {
+        border-radius: var(--radius-lg);
+    }
+
+    .border-theme {
+        border-width: var(--border-width);
+        border-color: var(--color-border);
+    }
+
+    .bg-theme-primary {
+        background-color: var(--color-primary);
+    }
+
+    .bg-theme-secondary {
+        background-color: var(--color-secondary);
+    }
+
+    .bg-theme-background {
+        background-color: var(--color-background);
+    }
+
+    .bg-theme-card {
+        background-color: var(--color-card);
+    }
+
+    .text-theme-foreground {
+        color: var(--color-foreground);
+    }
+
+    .text-theme-muted {
+        color: var(--color-muted-foreground);
+    }
+
+    .text-theme-primary {
+        color: var(--color-primary);
+    }
+
+    .font-theme-normal {
+        font-weight: var(--font-weight-normal);
+    }
+
+    .font-theme-medium {
+        font-weight: var(--font-weight-medium);
+    }
+
+    .font-theme-bold {
+        font-weight: var(--font-weight-bold);
+    }
+}

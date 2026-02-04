@@ -1,0 +1,25 @@
+/**
+ * Trait Wars Atoms
+ *
+ * Atomic components for the Trait Wars game.
+ */
+
+// Game-specific atoms
+export { HexCell, type HexCellProps, type TerrainType } from './HexCell';
+export { TraitIcon, type TraitIconProps, type TraitState, type TraitName } from './TraitIcon';
+export { CharacterSprite, type CharacterSpriteProps, type CharacterType, CHARACTER_SPRITES } from './CharacterSprite';
+export { TileSprite, type TileSpriteProps, type TileType, TILE_SPRITES } from './TileSprite';
+export { StateIndicator, type StateIndicatorProps, type TraitState as IndicatorState } from './StateIndicator';
+export { DamagePopup, type DamagePopupProps } from './DamagePopup';
+export { GuardDisplay, type GuardDisplayProps } from './GuardDisplay';
+
+// High-fidelity Pixel Platformer sprites
+export { PixelCharacterSprite, type PixelCharacterSpriteProps, type PixelCharacterType, PIXEL_CHARACTER_SPRITES, CHARACTER_TYPE_MAP } from './PixelCharacterSprite';
+export { PixelTileSprite, type PixelTileSpriteProps, PIXEL_TILE_SPRITES, TILE_TYPE_MAP } from './PixelTileSprite';
+
+// High-fidelity Hexagon Pack tiles
+export { HexTileSprite, type HexTileSpriteProps, type HexTileType, HEX_TILE_IMAGES, TERRAIN_TYPE_MAP } from './HexTileSprite';
+
+// Re-export core game atoms for convenience
+export { HealthBar, type HealthBarProps } from '../../../components/atoms/game/HealthBar';
+export { Sprite, type SpriteProps } from '../../../components/atoms/game/Sprite';
