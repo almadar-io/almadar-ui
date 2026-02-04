@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import type { OrbitalSchema } from '@kflow-builder/shared/orbitals';
+import type { OrbitalSchema } from '@almadar/core';
 
 // =============================================================================
 // Types
