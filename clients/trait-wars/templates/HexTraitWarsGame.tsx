@@ -195,9 +195,9 @@ export function HexTraitWarsGame({
         [units, selectedUnitId]
     );
 
-    // Hovered unit (for tooltip)
+    // Hovered unit (for tooltip) - show for ALL units
     const hoveredUnit = useMemo(
-        () => units.find(u => u.id === hoveredUnitId && u.team === 'enemy' && u.health > 0) || null,
+        () => units.find(u => u.id === hoveredUnitId && u.health > 0) || null,
         [units, hoveredUnitId]
     );
 
@@ -405,6 +405,36 @@ export function HexTraitWarsGame({
                 </HStack>
             </HStack>
 
+            {/* ==================== COMBAT LOG (under header) ==================== */}
+            <CombatLog
+                events={combatLog}
+                maxVisible={5}
+                autoScroll={true}
+                title="📜 Combat Log"
+                className="w-full max-h-32 text-white"
+            />
+
+            {/* ==================== FLOATING END TURN BUTTON ==================== */}
+            {currentPhase !== 'game_over' && (
+                <Box className="fixed bottom-6 right-6 z-50">
+                    <HStack gap="sm">
+                        {(currentPhase === 'movement' || currentPhase === 'action') && (
+                            <Button variant="secondary" onClick={handleCancel} size="lg" className="shadow-xl text-white">
+                                Cancel
+                            </Button>
+                        )}
+                        <Button
+                            variant="primary"
+                            onClick={handleEndTurn}
+                            size="lg"
+                            className="shadow-xl text-white"
+                        >
+                            End Turn ⏭️
+                        </Button>
+                    </HStack>
+                </Box>
+            )}
+
             {/* ==================== MAIN CONTENT ==================== */}
             <HStack gap="lg" align="start" flex className="w-full">
                 {/* LEFT: Game Board */}
@@ -462,7 +492,7 @@ export function HexTraitWarsGame({
                         />
                     ))}
 
-                    {/* Enemy Hover Tooltip - TraitStateViewer */}
+                    {/* Unit Hover Tooltip - TraitStateViewer */}
                     {hoveredUnit && hoveredUnit.traits[0] && (
                         <Box
                             className="absolute z-50 pointer-events-none animate-in fade-in duration-150"
@@ -471,12 +501,18 @@ export function HexTraitWarsGame({
                                 top: `${hoveredUnit.position.y * 78 * hexScale + 10}px`,
                             }}
                         >
-                            <Card variant="default" className="p-3 shadow-xl border border-red-500/50 bg-gray-900/95 backdrop-blur-sm">
+                            <Card variant="default" className={cn(
+                                "p-3 shadow-xl bg-gray-900/95 backdrop-blur-sm",
+                                hoveredUnit.team === 'enemy' ? 'border border-red-500/50' : 'border border-blue-500/50'
+                            )}>
                                 <HStack gap="sm" className="mb-2">
-                                    <Typography variant="caption" className="text-red-400 font-bold">
-                                        👹 {hoveredUnit.name}
+                                    <Typography variant="caption" className={cn(
+                                        "font-bold",
+                                        hoveredUnit.team === 'enemy' ? 'text-red-400' : 'text-blue-400'
+                                    )}>
+                                        {hoveredUnit.team === 'enemy' ? '👹' : '⚔️'} {hoveredUnit.name}
                                     </Typography>
-                                    <Badge variant="danger" size="sm">
+                                    <Badge variant={hoveredUnit.team === 'enemy' ? 'danger' : 'primary'} size="sm">
                                         {hoveredUnit.health}/{hoveredUnit.maxHealth} HP
                                     </Badge>
                                 </HStack>
@@ -486,7 +522,7 @@ export function HexTraitWarsGame({
                                         states: hoveredUnit.traits[0].states,
                                         currentState: hoveredUnit.traits[0].currentState,
                                         transitions: TRAIT_TRANSITIONS[hoveredUnit.traits[0].name] || [],
-                                        description: `Enemy behavior pattern`,
+                                        description: `${hoveredUnit.team === 'enemy' ? 'Enemy' : 'Player'} behavior`,
                                     }}
                                     size="sm"
                                     showTransitions={true}
@@ -554,29 +590,6 @@ export function HexTraitWarsGame({
                             showTransitions={true}
                         />
                     )}
-
-                    {/* Action Buttons */}
-                    {(currentPhase === 'movement' || currentPhase === 'action') && (
-                        <HStack gap="sm">
-                            {currentPhase === 'action' && (
-                                <Button variant="primary" onClick={handleEndTurn} className="flex-1">
-                                    End Turn
-                                </Button>
-                            )}
-                            <Button variant="secondary" onClick={handleCancel} className="flex-1">
-                                Cancel
-                            </Button>
-                        </HStack>
-                    )}
-
-                    {/* Combat Log */}
-                    <CombatLog
-                        events={combatLog}
-                        maxVisible={15}
-                        autoScroll={true}
-                        title="📜 Combat Log"
-                        className="flex-1 min-h-[200px]"
-                    />
                 </VStack>
             </HStack>
 
