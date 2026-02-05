@@ -30,8 +30,37 @@ const config: StorybookConfig = {
   },
 
   viteFinal: async (config) => {
+    const projectRoot = path.resolve(__dirname, "..");
+
     return {
       ...config,
+      // === HMR OPTIMIZATIONS ===
+      optimizeDeps: {
+        // Pre-bundle these heavy dependencies (only done once)
+        include: [
+          "react",
+          "react-dom",
+          "react/jsx-runtime",
+          "react/jsx-dev-runtime",
+          "@storybook/react",
+          "@storybook/addon-docs",
+          "@storybook/addon-themes",
+          "@storybook/addon-links",
+          // Pre-bundle common libraries used in components
+          "clsx",
+          "class-variance-authority",
+        ],
+        // Force pre-bundling on first run
+        force: false,
+      },
+      // === BUILD OPTIMIZATIONS ===
+      esbuild: {
+        // Use esbuild for faster transpilation
+        target: "esnext",
+        // Reduce JSX transform overhead
+        jsx: "automatic",
+      },
+      // === SERVER OPTIMIZATIONS ===
       server: {
         ...config.server,
         fs: {
@@ -42,6 +71,24 @@ const config: StorybookConfig = {
             path.resolve(__dirname, '../../..'),
           ],
         },
+        // Reduce file watcher overhead
+        watch: {
+          // Ignore node_modules (they're pre-bundled)
+          ignored: ["**/node_modules/**", "**/dist/**", "**/.git/**"],
+          // Use polling only if needed (slower but more compatible)
+          usePolling: false,
+        },
+        // Enable faster HMR
+        hmr: {
+          overlay: true,
+        },
+        // Warm up frequently accessed files
+        warmup: {
+          clientFiles: [
+            "../components/**/*.tsx",
+            "../clients/**/*.tsx",
+          ],
+        },
       },
       css: {
         preprocessorOptions: {
@@ -50,6 +97,8 @@ const config: StorybookConfig = {
           },
         },
       },
+      // === CACHING ===
+      cacheDir: path.resolve(projectRoot, "node_modules/.vite-storybook"),
     };
   }
 };
