@@ -86,3 +86,6 @@ export {
   type LawReferenceTooltipProps,
   type LawReference,
 } from "./LawReferenceTooltip";
+
+// Game atom components
+export * from "./game";
