@@ -53,24 +53,13 @@ export function HexTileSprite({
     const height = DEFAULT_HEIGHT * scale;
     const floorHeight = FLOOR_HEIGHT * scale;
 
-    // Highlight overlay styles
-    const highlightStyles: Record<string, React.CSSProperties> = {
+    // Highlight filter styles (applied to the whole tile for brightness effects)
+    const highlightFilters: Record<string, React.CSSProperties> = {
         none: {},
-        valid: {
-            filter: 'brightness(1.1)',
-            boxShadow: 'inset 0 0 20px rgba(34, 197, 94, 0.6)',
-        },
-        attack: {
-            filter: 'brightness(1.05) hue-rotate(-10deg)',
-            boxShadow: 'inset 0 0 20px rgba(239, 68, 68, 0.6)',
-        },
-        selected: {
-            filter: 'brightness(1.2)',
-            boxShadow: 'inset 0 0 25px rgba(234, 179, 8, 0.7)',
-        },
-        hover: {
-            filter: 'brightness(1.1)',
-        },
+        valid: { filter: 'brightness(1.1)' },
+        attack: { filter: 'brightness(1.05) hue-rotate(-10deg)' },
+        selected: { filter: 'brightness(1.2)' },
+        hover: { filter: 'brightness(1.1)' },
     };
 
     if (!tileSrc) {
@@ -99,7 +88,7 @@ export function HexTileSprite({
             style={{
                 width,
                 height,
-                ...highlightStyles[highlight],
+                ...highlightFilters[highlight],
             }}
         >
             <img

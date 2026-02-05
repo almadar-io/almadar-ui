@@ -59,6 +59,8 @@ export interface HexGameTileProps {
     showCoordinates?: boolean;
     /** Additional CSS classes */
     className?: string;
+    /** Render mode: 'visual' for sprites only, 'hitArea' for interaction only, 'both' for full tile */
+    renderMode?: 'visual' | 'hitArea' | 'both';
 }
 
 export function HexGameTile({
@@ -78,6 +80,7 @@ export function HexGameTile({
     showStateIndicator = true,
     showCoordinates = false,
     className,
+    renderMode = 'both',
 }: HexGameTileProps): JSX.Element {
     // Isometric tile dimensions (256x512 base size from Kenney Isometric Miniature Dungeon)
     // The floor diamond is at the bottom: 256 wide x 128 tall (standard 2:1 isometric ratio)
@@ -95,11 +98,40 @@ export function HexGameTile({
     // Calculate character sprite scale based on tile size
     const characterScale = scale * 2;
 
+    // Render only hit area (for the interaction layer)
+    if (renderMode === 'hitArea') {
+        return (
+            <Box
+                className={cn('absolute pointer-events-none select-none', className)}
+                style={{ width: TILE_WIDTH, height: TILE_HEIGHT }}
+            >
+                {/* Hit area - isometric diamond shape for precise mouse interaction */}
+                <Box
+                    className="absolute cursor-pointer pointer-events-auto"
+                    style={{
+                        bottom: 0,
+                        left: 0,
+                        width: TILE_WIDTH,
+                        height: FLOOR_HEIGHT,
+                        clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+                    }}
+                    onClick={onClick}
+                    onMouseEnter={onMouseEnter}
+                    onMouseLeave={onMouseLeave}
+                />
+            </Box>
+        );
+    }
+
+    // Render visuals only (no pointer events at all)
+    const showHitArea = renderMode === 'both';
+
     return (
         <Box
             display="flex"
             className={cn(
-                'relative items-end justify-center pointer-events-none',
+                'relative items-end justify-center',
+                renderMode === 'visual' && 'pointer-events-none',
                 isSelected && 'z-20',
                 isAttackTarget && 'z-10',
                 className
@@ -115,20 +147,22 @@ export function HexGameTile({
                 />
             </Box>
 
-            {/* Hit area - isometric diamond shape for precise mouse interaction */}
-            <Box
-                className="absolute cursor-pointer pointer-events-auto"
-                style={{
-                    bottom: 0,
-                    left: 0,
-                    width: TILE_WIDTH,
-                    height: FLOOR_HEIGHT,
-                    clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
-                }}
-                onClick={onClick}
-                onMouseEnter={onMouseEnter}
-                onMouseLeave={onMouseLeave}
-            />
+            {/* Hit area - only rendered when renderMode is 'both' */}
+            {showHitArea && (
+                <Box
+                    className="absolute cursor-pointer"
+                    style={{
+                        bottom: 0,
+                        left: 0,
+                        width: TILE_WIDTH,
+                        height: FLOOR_HEIGHT,
+                        clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+                    }}
+                    onClick={onClick}
+                    onMouseEnter={onMouseEnter}
+                    onMouseLeave={onMouseLeave}
+                />
+            )}
 
             {/* Unit on tile */}
             {unit && (

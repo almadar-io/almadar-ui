@@ -129,6 +129,15 @@ export function HexGameBoard({
         onTileLeave?.();
     }, [onTileLeave]);
 
+    // Helper to calculate tile position
+    const getTilePosition = (tileX: number, tileY: number) => {
+        const baseOffsetX = (maxY + 1) * HORIZONTAL_OFFSET;
+        return {
+            x: (tileX - tileY) * HORIZONTAL_OFFSET + baseOffsetX,
+            y: (tileX + tileY) * VERTICAL_OFFSET,
+        };
+    };
+
     return (
         <Box
             className={cn(
@@ -144,22 +153,18 @@ export function HexGameBoard({
                 className="relative"
                 style={{ width: gridWidth, height: gridHeight }}
             >
+                {/* Layer 1: Visual tiles (no pointer events) */}
                 {tiles.map((tile) => {
                     const unit = getUnitAt(tile.x, tile.y);
                     const isSelectedTile = selectedUnitId && unit?.id === selectedUnitId;
                     const isHovered = hoveredPos?.x === tile.x && hoveredPos?.y === tile.y;
-
-                    // Isometric grid positioning - diamond pattern
-                    // Each tile overlaps with neighbors for seamless appearance
-                    const baseOffsetX = (maxY + 1) * HORIZONTAL_OFFSET; // Center the grid
-                    const xPos = (tile.x - tile.y) * HORIZONTAL_OFFSET + baseOffsetX;
-                    const yPos = (tile.x + tile.y) * VERTICAL_OFFSET;
+                    const pos = getTilePosition(tile.x, tile.y);
 
                     return (
                         <Box
-                            key={`${tile.x}-${tile.y}`}
-                            className="absolute"
-                            style={{ left: xPos, top: yPos }}
+                            key={`visual-${tile.x}-${tile.y}`}
+                            className="absolute pointer-events-none"
+                            style={{ left: pos.x, top: pos.y }}
                         >
                             <HexGameTile
                                 x={tile.x}
@@ -170,11 +175,33 @@ export function HexGameBoard({
                                 isValidMove={isValidMove(tile.x, tile.y)}
                                 isAttackTarget={isAttackTarget(tile.x, tile.y)}
                                 isHovered={isHovered}
+                                scale={scale}
+                                showCoordinates={showCoordinates}
+                                renderMode="visual"
+                            />
+                        </Box>
+                    );
+                })}
+
+                {/* Layer 2: Hit areas (on top of all visuals for proper interaction) */}
+                {tiles.map((tile) => {
+                    const pos = getTilePosition(tile.x, tile.y);
+
+                    return (
+                        <Box
+                            key={`hit-${tile.x}-${tile.y}`}
+                            className="absolute"
+                            style={{ left: pos.x, top: pos.y }}
+                        >
+                            <HexGameTile
+                                x={tile.x}
+                                y={tile.y}
+                                terrain={tile.terrain}
                                 onClick={() => handleTileClick(tile.x, tile.y)}
                                 onMouseEnter={() => handleMouseEnter(tile.x, tile.y)}
                                 onMouseLeave={handleMouseLeave}
                                 scale={scale}
-                                showCoordinates={showCoordinates}
+                                renderMode="hitArea"
                             />
                         </Box>
                     );

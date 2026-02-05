@@ -21,6 +21,8 @@ import { HexUnit } from '../organisms/HexGameTile';
 import { HexTileType } from '../atoms/HexTileSprite';
 import { DamagePopup } from '../atoms/DamagePopup';
 import { StateIndicator, TraitState } from '../atoms/StateIndicator';
+import { CombatLog, CombatEvent, CombatEventType } from '../organisms/CombatLog';
+import { TraitStateViewer, TraitStateMachineDefinition } from '../molecules/TraitStateViewer';
 import { cn } from '@almadar/ui';
 
 // ============================================================================
@@ -50,12 +52,14 @@ export interface DamagePopupData {
     type: 'physical' | 'magic' | 'heal' | 'critical';
 }
 
-export interface LogEntry {
-    id: string;
-    turn: number;
-    type: 'attack' | 'move' | 'phase' | 'defeat' | 'heal';
-    message: string;
-}
+// Map our internal log types to CombatEventType
+const logTypeToCombatType: Record<string, CombatEventType> = {
+    attack: 'attack',
+    move: 'move',
+    phase: 'special',
+    defeat: 'death',
+    heal: 'heal',
+};
 
 export interface HexTraitWarsGameProps {
     /** Initial units for the game */
@@ -170,7 +174,7 @@ export function HexTraitWarsGame({
     const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
     const [currentPhase, setCurrentPhase] = useState<GamePhase>('observation');
     const [currentTurn, setCurrentTurn] = useState(1);
-    const [combatLog, setCombatLog] = useState<LogEntry[]>([]);
+    const [combatLog, setCombatLog] = useState<CombatEvent[]>([]);
     const [damagePopups, setDamagePopups] = useState<DamagePopupData[]>([]);
     const [gameResult, setGameResult] = useState<'victory' | 'defeat' | null>(null);
 
@@ -229,13 +233,16 @@ export function HexTraitWarsGame({
     }, [selectedUnit, currentPhase, units]);
 
     // Add combat log entry
-    const addLog = useCallback((type: LogEntry['type'], message: string) => {
-        setCombatLog(prev => [{
+    const addLog = useCallback((type: 'attack' | 'move' | 'phase' | 'defeat' | 'heal', message: string, value?: number) => {
+        const combatType = logTypeToCombatType[type] || 'special';
+        setCombatLog(prev => [...prev, {
             id: `log-${Date.now()}`,
             turn: currentTurn,
-            type,
+            type: combatType,
             message,
-        }, ...prev].slice(0, 50));
+            timestamp: Date.now(),
+            value,
+        }].slice(-50));
     }, [currentTurn]);
 
     // Show damage popup
@@ -350,15 +357,6 @@ export function HexTraitWarsGame({
         game_over: gameResult === 'victory' ? '🏆 Victory!' : '💀 Defeat',
     };
 
-    // Log type icons
-    const logIcons: Record<LogEntry['type'], string> = {
-        attack: '⚔️',
-        move: '🚶',
-        phase: '📍',
-        defeat: '💀',
-        heal: '💚',
-    };
-
     return (
         <Box className={cn('flex flex-col gap-4 p-4 bg-gray-900 rounded-xl', className)}>
             {/* Header */}
@@ -400,14 +398,21 @@ export function HexTraitWarsGame({
                         </Box>
                     )}
 
-                    {/* No targets warning */}
+                    {/* No targets warning with End Turn button */}
                     {currentPhase === 'action' && attackTargets.length === 0 && (
-                        <Box className="absolute -top-2 left-0 right-0 z-30 flex justify-center pointer-events-none">
-                            <Box className="bg-gray-600/90 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-2">
+                        <Box className="absolute -top-2 left-0 right-0 z-30 flex justify-center">
+                            <Box className="bg-gray-600/90 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-3">
                                 <span className="text-lg">ℹ️</span>
                                 <Typography variant="body2" className="text-white">
-                                    No enemies in range. Click "End Turn" to skip.
+                                    No enemies in range.
                                 </Typography>
+                                <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={handleEndTurn}
+                                >
+                                    End Turn
+                                </Button>
                             </Box>
                         </Box>
                     )}
@@ -437,7 +442,7 @@ export function HexTraitWarsGame({
                 </Box>
 
                 {/* Side panel */}
-                <Box className="w-72 flex flex-col gap-4">
+                <Box className="w-80 flex flex-col gap-4">
                     {/* Selected unit info */}
                     {selectedUnit && (
                         <Card variant="default" className="p-3">
@@ -465,25 +470,22 @@ export function HexTraitWarsGame({
                                     <Typography variant="body2">{selectedUnit.defense}</Typography>
                                 </Box>
                             </Box>
-
-                            {/* Trait */}
-                            {selectedUnit.traits[0] && (
-                                <Box className="bg-gray-700/50 rounded p-2">
-                                    <Typography variant="caption" className="text-gray-400 block mb-1">
-                                        Trait: {selectedUnit.traits[0].name}
-                                    </Typography>
-                                    <Box display="flex" className="items-center gap-2">
-                                        <StateIndicator
-                                            state={selectedUnit.traits[0].currentState as TraitState}
-                                            size="sm"
-                                        />
-                                        <Typography variant="caption" className="text-gray-300">
-                                            {selectedUnit.traits[0].currentState}
-                                        </Typography>
-                                    </Box>
-                                </Box>
-                            )}
                         </Card>
+                    )}
+
+                    {/* Trait State Viewer */}
+                    {selectedUnit && selectedUnit.traits[0] && (
+                        <TraitStateViewer
+                            trait={{
+                                name: selectedUnit.traits[0].name,
+                                states: selectedUnit.traits[0].states,
+                                currentState: selectedUnit.traits[0].currentState,
+                                transitions: TRAIT_TRANSITIONS[selectedUnit.traits[0].name] || [],
+                                description: `Current state machine for ${selectedUnit.name}`,
+                            }}
+                            size="sm"
+                            showTransitions={true}
+                        />
                     )}
 
                     {/* Action buttons */}
@@ -508,31 +510,14 @@ export function HexTraitWarsGame({
                         </Box>
                     )}
 
-                    {/* Combat log */}
-                    <Card variant="default" className="flex-1 flex flex-col">
-                        <Box padding="sm" className="border-b border-gray-700">
-                            <Typography variant="body2" className="font-bold">
-                                📜 Combat Log
-                            </Typography>
-                        </Box>
-                        <Box className="flex-1 overflow-auto max-h-64 p-2">
-                            {combatLog.length === 0 ? (
-                                <Typography variant="caption" className="text-gray-500 italic">
-                                    No events yet...
-                                </Typography>
-                            ) : (
-                                <Box className="space-y-1">
-                                    {combatLog.map(entry => (
-                                        <Box key={entry.id} className="text-sm">
-                                            <Typography variant="caption" className="text-gray-400">
-                                                {logIcons[entry.type]} {entry.message}
-                                            </Typography>
-                                        </Box>
-                                    ))}
-                                </Box>
-                            )}
-                        </Box>
-                    </Card>
+                    {/* Combat log - using CombatLog component */}
+                    <CombatLog
+                        events={combatLog}
+                        maxVisible={20}
+                        autoScroll={true}
+                        title="📜 Combat Log"
+                        className="flex-1"
+                    />
                 </Box>
             </Box>
 
