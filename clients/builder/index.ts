@@ -17,58 +17,6 @@ export * from "./organisms";
 // Builder-specific templates
 export * from "./templates";
 
-// Re-export base components for convenience
-export {
-  // Atoms
-  Avatar,
-  Badge,
-  Box,
-  Button,
-  Card,
-  Checkbox,
-  Divider,
-  Icon,
-  Input,
-  Label,
-  ProgressBar,
-  Radio,
-  Select,
-  Spinner,
-  Stack,
-  VStack,
-  HStack,
-  Switch,
-  Textarea,
-  ThemeToggle,
-  Typography,
-} from '@almadar/ui';
-
-export {
-  // Molecules
-  Accordion,
-  Alert,
-  Breadcrumb,
-  ButtonGroup,
-  Container,
-  Drawer,
-  EmptyState,
-  ErrorState,
-  FilterGroup,
-  Flex,
-  FormField,
-  Grid,
-  InputGroup,
-  LoadingState,
-  Menu,
-  Modal,
-  Pagination,
-  Popover,
-  SearchInput,
-  SidePanel,
-  SimpleGrid,
-  Tabs,
-  Toast,
-  Tooltip,
-  WizardNavigation,
-  WizardProgress,
-} from '@almadar/ui';
+// Note: Base components (Avatar, Badge, Box, etc.) are available via:
+//   import { Box, Button } from '@almadar/ui';
+// No need to re-export them here as they're already exported from the main package.

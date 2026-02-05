@@ -13,7 +13,7 @@ export {
   CardFooter,
   type CardProps,
 } from "./Card";
-export { Badge, type BadgeProps } from "./Badge";
+export { Badge, type BadgeProps, type BadgeVariant } from "./Badge";
 export { Spinner, type SpinnerProps } from "./Spinner";
 
 // Migrated atoms

@@ -10,7 +10,7 @@
  * - entityAware: true
  */
 
-import React, {
+import React, { useMemo, useCallback, useRef, useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -20,12 +20,6 @@ import {
   Spinner,
   useEventBus,
 } from '@almadar/ui';
-  useMemo,
-  useCallback,
-  useRef,
-  useEffect,
-  useState,
-} from "react";
 import ForceGraph2D from "react-force-graph-2d";
 
 // Graph data types
