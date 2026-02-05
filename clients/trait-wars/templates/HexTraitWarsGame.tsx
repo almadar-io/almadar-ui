@@ -12,14 +12,14 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
 import {
-  Box,
-  VStack,
-  HStack,
-  Typography,
-  Button,
-  Badge,
-  Card,
-  cn,
+    Box,
+    VStack,
+    HStack,
+    Typography,
+    Button,
+    Badge,
+    Card,
+    cn,
 } from '@almadar/ui';
 import { HexGameBoard, HexBoardTile } from '../organisms/HexGameBoard';
 import { HexUnit } from '../organisms/HexGameTile';
@@ -176,6 +176,7 @@ export function HexTraitWarsGame({
     // Game state
     const [units, setUnits] = useState<HexGameUnit[]>(initialUnits);
     const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
+    const [hoveredUnitId, setHoveredUnitId] = useState<string | null>(null);
     const [currentPhase, setCurrentPhase] = useState<GamePhase>('observation');
     const [currentTurn, setCurrentTurn] = useState(1);
     const [combatLog, setCombatLog] = useState<CombatEvent[]>([]);
@@ -192,6 +193,12 @@ export function HexTraitWarsGame({
     const selectedUnit = useMemo(
         () => units.find(u => u.id === selectedUnitId) || null,
         [units, selectedUnitId]
+    );
+
+    // Hovered unit (for tooltip)
+    const hoveredUnit = useMemo(
+        () => units.find(u => u.id === hoveredUnitId && u.team === 'enemy' && u.health > 0) || null,
+        [units, hoveredUnitId]
     );
 
     const playerUnits = useMemo(() => units.filter(u => u.team === 'player' && u.health > 0), [units]);
@@ -351,6 +358,16 @@ export function HexTraitWarsGame({
         setCurrentPhase('observation');
     }, []);
 
+    // Handle tile hover - detect hovering over units
+    const handleTileHover = useCallback((x: number, y: number) => {
+        const unit = units.find(u => u.position.x === x && u.position.y === y && u.health > 0);
+        setHoveredUnitId(unit?.id || null);
+    }, [units]);
+
+    const handleTileLeave = useCallback(() => {
+        setHoveredUnitId(null);
+    }, []);
+
     // Phase display text
     const phaseText = {
         observation: '👁️ Observation Phase - Select a unit',
@@ -428,6 +445,8 @@ export function HexTraitWarsGame({
                         attackTargets={attackTargets}
                         onUnitClick={handleUnitClick}
                         onTileClick={handleTileClick}
+                        onTileHover={handleTileHover}
+                        onTileLeave={handleTileLeave}
                         scale={hexScale}
                         showCoordinates={false}
                     />
@@ -442,6 +461,39 @@ export function HexTraitWarsGame({
                             y={popup.y * 78 + 35}
                         />
                     ))}
+
+                    {/* Enemy Hover Tooltip - TraitStateViewer */}
+                    {hoveredUnit && hoveredUnit.traits[0] && (
+                        <Box
+                            className="absolute z-50 pointer-events-none animate-in fade-in duration-150"
+                            style={{
+                                left: `${hoveredUnit.position.x * 90 * hexScale + 100}px`,
+                                top: `${hoveredUnit.position.y * 78 * hexScale + 10}px`,
+                            }}
+                        >
+                            <Card variant="default" className="p-3 shadow-xl border border-red-500/50 bg-gray-900/95 backdrop-blur-sm">
+                                <HStack gap="sm" className="mb-2">
+                                    <Typography variant="caption" className="text-red-400 font-bold">
+                                        👹 {hoveredUnit.name}
+                                    </Typography>
+                                    <Badge variant="danger" size="sm">
+                                        {hoveredUnit.health}/{hoveredUnit.maxHealth} HP
+                                    </Badge>
+                                </HStack>
+                                <TraitStateViewer
+                                    trait={{
+                                        name: hoveredUnit.traits[0].name,
+                                        states: hoveredUnit.traits[0].states,
+                                        currentState: hoveredUnit.traits[0].currentState,
+                                        transitions: TRAIT_TRANSITIONS[hoveredUnit.traits[0].name] || [],
+                                        description: `Enemy behavior pattern`,
+                                    }}
+                                    size="sm"
+                                    showTransitions={true}
+                                />
+                            </Card>
+                        </Box>
+                    )}
                 </VStack>
 
                 {/* RIGHT: Side Panel */}
