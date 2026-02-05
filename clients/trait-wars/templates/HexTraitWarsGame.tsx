@@ -11,7 +11,7 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { Box } from '@almadar/ui';
+import { Box, VStack, HStack } from '@almadar/ui';
 import { Typography } from '@almadar/ui';
 import { Button } from '@almadar/ui';
 import { Badge } from '@almadar/ui';
@@ -358,65 +358,64 @@ export function HexTraitWarsGame({
     };
 
     return (
-        <Box className={cn('flex flex-col gap-4 p-4 bg-gray-900 rounded-xl', className)}>
-            {/* Header */}
-            <Box display="flex" className="justify-between items-center">
-                <Box>
+        <VStack gap="md" className={cn('p-4 bg-gray-900 rounded-xl min-h-[600px]', className)}>
+            {/* ==================== HEADER ==================== */}
+            <HStack justify="between" align="center" className="w-full px-2">
+                {/* Title & Phase */}
+                <VStack gap="xs">
                     <Typography variant="h5" className="text-white font-bold">
                         ⚔️ Trait Wars: Hex Battle
                     </Typography>
                     <Typography variant="body2" className="text-gray-400">
                         Turn {currentTurn} • {phaseText[currentPhase]}
                     </Typography>
-                </Box>
-                <Box display="flex" className="gap-4">
-                    <Box className="text-center">
+                </VStack>
+
+                {/* Unit Counters */}
+                <HStack gap="lg">
+                    <VStack gap="none" align="center">
                         <Typography variant="caption" className="text-blue-400">Player</Typography>
                         <Typography variant="h6" className="text-white">{playerUnits.length}</Typography>
-                    </Box>
-                    <Box className="text-center">
+                    </VStack>
+                    <VStack gap="none" align="center">
                         <Typography variant="caption" className="text-red-400">Enemy</Typography>
                         <Typography variant="h6" className="text-white">{enemyUnits.length}</Typography>
-                    </Box>
-                </Box>
-            </Box>
+                    </VStack>
+                </HStack>
+            </HStack>
 
-            {/* Main game area */}
-            <Box display="flex" className="gap-4">
-                {/* Game board */}
-                <Box className="flex-1 relative">
-                    {/* Attack hint banner */}
+            {/* ==================== MAIN CONTENT ==================== */}
+            <HStack gap="lg" align="start" flex className="w-full">
+                {/* LEFT: Game Board */}
+                <VStack gap="sm" flex className="relative">
+                    {/* Action Hint Banners */}
                     {currentPhase === 'action' && attackTargets.length > 0 && (
-                        <Box className="absolute -top-2 left-0 right-0 z-30 flex justify-center pointer-events-none">
-                            <Box className="bg-red-600/90 text-white px-4 py-2 rounded-lg shadow-lg animate-pulse flex items-center gap-2">
+                        <HStack justify="center" className="absolute -top-1 left-0 right-0 z-30 pointer-events-none">
+                            <HStack gap="sm" align="center" className="bg-red-600/90 text-white px-4 py-2 rounded-lg shadow-lg animate-pulse">
                                 <span className="text-lg">⚔️</span>
                                 <Typography variant="body2" className="font-bold text-white">
-                                    Click an enemy with ⚔️ to attack!
+                                    Click an enemy to attack!
                                 </Typography>
                                 <span className="text-lg">⚔️</span>
-                            </Box>
-                        </Box>
+                            </HStack>
+                        </HStack>
                     )}
 
-                    {/* No targets warning with End Turn button */}
                     {currentPhase === 'action' && attackTargets.length === 0 && (
-                        <Box className="absolute -top-2 left-0 right-0 z-30 flex justify-center">
-                            <Box className="bg-gray-600/90 text-white px-4 py-2 rounded-lg shadow-lg flex items-center gap-3">
-                                <span className="text-lg">ℹ️</span>
+                        <HStack justify="center" className="absolute -top-1 left-0 right-0 z-30">
+                            <HStack gap="sm" align="center" className="bg-gray-700/95 text-white px-4 py-2 rounded-lg shadow-lg">
+                                <span>ℹ️</span>
                                 <Typography variant="body2" className="text-white">
                                     No enemies in range.
                                 </Typography>
-                                <Button
-                                    variant="primary"
-                                    size="sm"
-                                    onClick={handleEndTurn}
-                                >
+                                <Button variant="primary" size="sm" onClick={handleEndTurn}>
                                     End Turn
                                 </Button>
-                            </Box>
-                        </Box>
+                            </HStack>
+                        </HStack>
                     )}
 
+                    {/* Game Board */}
                     <HexGameBoard
                         tiles={tiles}
                         units={units}
@@ -429,7 +428,7 @@ export function HexTraitWarsGame({
                         showCoordinates={false}
                     />
 
-                    {/* Damage popups */}
+                    {/* Damage Popups */}
                     {damagePopups.map(popup => (
                         <DamagePopup
                             key={popup.id}
@@ -439,37 +438,49 @@ export function HexTraitWarsGame({
                             y={popup.y * 78 + 35}
                         />
                     ))}
-                </Box>
+                </VStack>
 
-                {/* Side panel */}
-                <Box className="w-80 flex flex-col gap-4">
-                    {/* Selected unit info */}
-                    {selectedUnit && (
-                        <Card variant="default" className="p-3">
-                            <Box display="flex" className="items-center justify-between mb-2">
-                                <Typography variant="body2" className="font-bold">
+                {/* RIGHT: Side Panel */}
+                <VStack gap="md" className="w-80 shrink-0">
+                    {/* Selected Unit Card */}
+                    {selectedUnit ? (
+                        <Card variant="default" className="p-4">
+                            <HStack justify="between" align="center" className="mb-3">
+                                <Typography variant="body1" className="font-bold text-white">
                                     {selectedUnit.name}
                                 </Typography>
                                 <Badge variant={selectedUnit.team === 'player' ? 'primary' : 'danger'} size="sm">
                                     {selectedUnit.team}
                                 </Badge>
-                            </Box>
+                            </HStack>
 
-                            {/* Stats */}
-                            <Box display="flex" className="gap-3 mb-3 text-sm">
-                                <Box>
+                            {/* Stats Row */}
+                            <HStack gap="md" className="text-sm">
+                                <VStack gap="none">
                                     <Typography variant="caption" className="text-gray-400">❤️ HP</Typography>
-                                    <Typography variant="body2">{selectedUnit.health}/{selectedUnit.maxHealth}</Typography>
-                                </Box>
-                                <Box>
+                                    <Typography variant="body2" className="text-white font-medium">
+                                        {selectedUnit.health}/{selectedUnit.maxHealth}
+                                    </Typography>
+                                </VStack>
+                                <VStack gap="none">
                                     <Typography variant="caption" className="text-gray-400">⚔️ ATK</Typography>
-                                    <Typography variant="body2">{selectedUnit.attack}</Typography>
-                                </Box>
-                                <Box>
+                                    <Typography variant="body2" className="text-white font-medium">
+                                        {selectedUnit.attack}
+                                    </Typography>
+                                </VStack>
+                                <VStack gap="none">
                                     <Typography variant="caption" className="text-gray-400">🛡️ DEF</Typography>
-                                    <Typography variant="body2">{selectedUnit.defense}</Typography>
-                                </Box>
-                            </Box>
+                                    <Typography variant="body2" className="text-white font-medium">
+                                        {selectedUnit.defense}
+                                    </Typography>
+                                </VStack>
+                            </HStack>
+                        </Card>
+                    ) : (
+                        <Card variant="default" className="p-4">
+                            <Typography variant="body2" className="text-gray-500 text-center">
+                                Select a unit to view details
+                            </Typography>
                         </Card>
                     )}
 
@@ -481,70 +492,62 @@ export function HexTraitWarsGame({
                                 states: selectedUnit.traits[0].states,
                                 currentState: selectedUnit.traits[0].currentState,
                                 transitions: TRAIT_TRANSITIONS[selectedUnit.traits[0].name] || [],
-                                description: `Current state machine for ${selectedUnit.name}`,
+                                description: `State machine for ${selectedUnit.name}`,
                             }}
                             size="sm"
                             showTransitions={true}
                         />
                     )}
 
-                    {/* Action buttons */}
+                    {/* Action Buttons */}
                     {(currentPhase === 'movement' || currentPhase === 'action') && (
-                        <Box display="flex" className="gap-2">
+                        <HStack gap="sm">
                             {currentPhase === 'action' && (
-                                <Button
-                                    variant="primary"
-                                    onClick={handleEndTurn}
-                                    className="flex-1"
-                                >
+                                <Button variant="primary" onClick={handleEndTurn} className="flex-1">
                                     End Turn
                                 </Button>
                             )}
-                            <Button
-                                variant="secondary"
-                                onClick={handleCancel}
-                                className="flex-1"
-                            >
+                            <Button variant="secondary" onClick={handleCancel} className="flex-1">
                                 Cancel
                             </Button>
-                        </Box>
+                        </HStack>
                     )}
 
-                    {/* Combat log - using CombatLog component */}
+                    {/* Combat Log */}
                     <CombatLog
                         events={combatLog}
-                        maxVisible={20}
+                        maxVisible={15}
                         autoScroll={true}
                         title="📜 Combat Log"
-                        className="flex-1"
+                        className="flex-1 min-h-[200px]"
                     />
-                </Box>
-            </Box>
+                </VStack>
+            </HStack>
 
-            {/* Legend */}
-            <Box display="flex" className="gap-6 justify-center">
-                <Box display="flex" className="items-center gap-2">
+            {/* ==================== LEGEND ==================== */}
+            <HStack gap="lg" justify="center" className="w-full py-2 border-t border-gray-700">
+                <HStack gap="xs" align="center">
                     <Box className="w-3 h-3 rounded-full bg-blue-500 border border-blue-300" />
-                    <Typography variant="caption" className="text-gray-400">Player Unit</Typography>
-                </Box>
-                <Box display="flex" className="items-center gap-2">
+                    <Typography variant="caption" className="text-gray-400">Player</Typography>
+                </HStack>
+                <HStack gap="xs" align="center">
                     <Box className="w-3 h-3 rounded-full bg-red-500 border border-red-300" />
-                    <Typography variant="caption" className="text-gray-400">Enemy Unit</Typography>
-                </Box>
-                <Box display="flex" className="items-center gap-2">
+                    <Typography variant="caption" className="text-gray-400">Enemy</Typography>
+                </HStack>
+                <HStack gap="xs" align="center">
                     <Box className="w-3 h-3 rounded-full bg-yellow-400 border border-yellow-200" />
                     <Typography variant="caption" className="text-gray-400">Selected</Typography>
-                </Box>
-                <Box display="flex" className="items-center gap-2">
+                </HStack>
+                <HStack gap="xs" align="center">
                     <Box className="w-3 h-3 rounded-full bg-green-400 border border-green-200" />
-                    <Typography variant="caption" className="text-gray-400">Valid Move</Typography>
-                </Box>
-                <Box display="flex" className="items-center gap-2">
+                    <Typography variant="caption" className="text-gray-400">Move</Typography>
+                </HStack>
+                <HStack gap="xs" align="center">
                     <Box className="w-3 h-3 rounded-full bg-red-400 border border-red-200" />
-                    <Typography variant="caption" className="text-gray-400">Attack Target</Typography>
-                </Box>
-            </Box>
-        </Box>
+                    <Typography variant="caption" className="text-gray-400">Attack</Typography>
+                </HStack>
+            </HStack>
+        </VStack>
     );
 }
 
