@@ -512,10 +512,30 @@ export function HexTraitWarsGame({
                                     )}>
                                         {hoveredUnit.team === 'enemy' ? '👹' : '⚔️'} {hoveredUnit.name}
                                     </Typography>
-                                    <Badge variant={hoveredUnit.team === 'enemy' ? 'danger' : 'primary'} size="sm">
-                                        {hoveredUnit.health}/{hoveredUnit.maxHealth} HP
-                                    </Badge>
                                 </HStack>
+
+                                {/* Stats Row */}
+                                <HStack gap="md" className="text-xs mb-3 py-2 px-2 bg-gray-800 rounded">
+                                    <VStack gap="none" align="center">
+                                        <Typography variant="caption" className="text-gray-400">❤️ HP</Typography>
+                                        <Typography variant="caption" className="text-white font-medium">
+                                            {hoveredUnit.health}/{hoveredUnit.maxHealth}
+                                        </Typography>
+                                    </VStack>
+                                    <VStack gap="none" align="center">
+                                        <Typography variant="caption" className="text-gray-400">⚔️ ATK</Typography>
+                                        <Typography variant="caption" className="text-white font-medium">
+                                            {hoveredUnit.attack}
+                                        </Typography>
+                                    </VStack>
+                                    <VStack gap="none" align="center">
+                                        <Typography variant="caption" className="text-gray-400">🛡️ DEF</Typography>
+                                        <Typography variant="caption" className="text-white font-medium">
+                                            {hoveredUnit.defense}
+                                        </Typography>
+                                    </VStack>
+                                </HStack>
+
                                 <TraitStateViewer
                                     trait={{
                                         name: hoveredUnit.traits[0].name,
@@ -529,66 +549,6 @@ export function HexTraitWarsGame({
                                 />
                             </Card>
                         </Box>
-                    )}
-                </VStack>
-
-                {/* RIGHT: Side Panel */}
-                <VStack gap="md" className="w-80 shrink-0">
-                    {/* Selected Unit Card */}
-                    {selectedUnit ? (
-                        <Card variant="default" className="p-4">
-                            <HStack justify="between" align="center" className="mb-3">
-                                <Typography variant="body1" className="font-bold text-white">
-                                    {selectedUnit.name}
-                                </Typography>
-                                <Badge variant={selectedUnit.team === 'player' ? 'primary' : 'danger'} size="sm">
-                                    {selectedUnit.team}
-                                </Badge>
-                            </HStack>
-
-                            {/* Stats Row */}
-                            <HStack gap="md" className="text-sm">
-                                <VStack gap="none">
-                                    <Typography variant="caption" className="text-gray-400">❤️ HP</Typography>
-                                    <Typography variant="body2" className="text-white font-medium">
-                                        {selectedUnit.health}/{selectedUnit.maxHealth}
-                                    </Typography>
-                                </VStack>
-                                <VStack gap="none">
-                                    <Typography variant="caption" className="text-gray-400">⚔️ ATK</Typography>
-                                    <Typography variant="body2" className="text-white font-medium">
-                                        {selectedUnit.attack}
-                                    </Typography>
-                                </VStack>
-                                <VStack gap="none">
-                                    <Typography variant="caption" className="text-gray-400">🛡️ DEF</Typography>
-                                    <Typography variant="body2" className="text-white font-medium">
-                                        {selectedUnit.defense}
-                                    </Typography>
-                                </VStack>
-                            </HStack>
-                        </Card>
-                    ) : (
-                        <Card variant="default" className="p-4">
-                            <Typography variant="body2" className="text-gray-500 text-center">
-                                Select a unit to view details
-                            </Typography>
-                        </Card>
-                    )}
-
-                    {/* Trait State Viewer */}
-                    {selectedUnit && selectedUnit.traits[0] && (
-                        <TraitStateViewer
-                            trait={{
-                                name: selectedUnit.traits[0].name,
-                                states: selectedUnit.traits[0].states,
-                                currentState: selectedUnit.traits[0].currentState,
-                                transitions: TRAIT_TRANSITIONS[selectedUnit.traits[0].name] || [],
-                                description: `State machine for ${selectedUnit.name}`,
-                            }}
-                            size="sm"
-                            showTransitions={true}
-                        />
                     )}
                 </VStack>
             </HStack>
