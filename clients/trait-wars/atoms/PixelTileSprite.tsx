@@ -7,8 +7,7 @@
  */
 
 import React from 'react';
-import { Box } from '@almadar/ui';
-import { cn } from '@almadar/ui';
+import { Box, cn } from '@almadar/ui';
 import { useAssetsOptional, DEFAULT_ASSET_MANIFEST, getSpriteSheetUrl } from '../assets';
 
 // Spritesheet configuration

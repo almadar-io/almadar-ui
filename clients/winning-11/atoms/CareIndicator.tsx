@@ -6,9 +6,8 @@
  */
 
 import React from "react";
-import { cn } from "../../../lib/cn";
 import { MessageCircle, CreditCard, Truck, Star } from "lucide-react";
-import { Box } from "../../../components/atoms/Box";
+import { cn, Box } from '@almadar/ui';
 
 export type CareType = "communication" | "payment" | "delivery" | "feedback";
 export type UrgencyLevel = "low" | "medium" | "high";

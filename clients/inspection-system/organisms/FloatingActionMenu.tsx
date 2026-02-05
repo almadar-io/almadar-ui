@@ -9,11 +9,6 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { useEventBus } from "../../../hooks/useEventBus";
 import {
   Plus,
   X,
@@ -24,6 +19,14 @@ import {
   Phone,
   LucideIcon,
 } from "lucide-react";
+import {
+  cn,
+  Box,
+  VStack,
+  HStack,
+  Typography,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface FloatingAction {
   id: string;

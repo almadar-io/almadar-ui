@@ -9,13 +9,16 @@
  */
 
 import React, { useMemo } from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { HStack, VStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Card } from "../../../components/atoms/Card";
-import { Badge } from "../../../components/atoms/Badge";
 import { Flame, Target, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import {
+  cn,
+  Box,
+  HStack,
+  VStack,
+  Typography,
+  Card,
+  Badge,
+} from '@almadar/ui';
 
 export interface NutritionData {
   calories: number;

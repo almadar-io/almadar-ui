@@ -11,10 +11,9 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { Box } from '@almadar/ui';
+import { Box, cn } from '@almadar/ui';
 import { HexGameTile, HexUnit } from './HexGameTile';
 import { HexTileType } from '../atoms/HexTileSprite';
-import { cn } from '@almadar/ui';
 
 export interface HexBoardTile {
     x: number;

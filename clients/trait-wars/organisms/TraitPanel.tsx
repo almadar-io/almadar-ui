@@ -6,12 +6,16 @@
  */
 
 import React from 'react';
-import { cn } from '@almadar/ui';
-import { Box } from '@almadar/ui';
-import { Card, CardHeader, CardContent } from '@almadar/ui';
-import { Typography } from '@almadar/ui';
-import { Button } from '@almadar/ui';
-import { Badge } from '@almadar/ui';
+import {
+  cn,
+  Box,
+  Card,
+  CardHeader,
+  CardContent,
+  Typography,
+  Button,
+  Badge,
+} from '@almadar/ui';
 import { TraitIcon, TraitName, TraitState } from '../atoms/TraitIcon';
 import { UnitEntity, UnitTrait } from '../molecules/UnitCard';
 

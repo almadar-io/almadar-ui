@@ -8,12 +8,14 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Send } from "lucide-react";
-import { Box } from "../../../../components/atoms/Box";
-import { HStack } from "../../../../components/atoms/Stack";
-import { Textarea } from "../../../../components/atoms/Textarea";
-import { Button } from "../../../../components/atoms/Button";
-import { Spinner } from "../../../../components/atoms/Spinner";
-import { Icon } from "../../../../components/atoms/Icon";
+import {
+  Box,
+  HStack,
+  Textarea,
+  Button,
+  Spinner,
+  Icon,
+} from '@almadar/ui';
 
 export interface AgentChatInputProps {
   /** Placeholder text */

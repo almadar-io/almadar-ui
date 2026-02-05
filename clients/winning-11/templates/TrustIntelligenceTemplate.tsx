@@ -10,15 +10,7 @@
  */
 
 import React from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Card } from "../../../components/atoms/Card";
-import { Badge } from "../../../components/atoms/Badge";
-import { Spinner } from "../../../components/atoms/Spinner";
 import { TrustMeter, type HealthStatus } from "../atoms/TrustMeter";
-import { useEventBus } from "../../../hooks/useEventBus";
 import {
   Shield,
   TrendingUp,
@@ -27,6 +19,17 @@ import {
   Activity,
   Award,
 } from "lucide-react";
+import {
+  cn,
+  Box,
+  VStack,
+  HStack,
+  Typography,
+  Card,
+  Badge,
+  Spinner,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface TrustScoreData {
   id: string;

@@ -12,15 +12,17 @@
 
 import React, { useState } from "react";
 import { Lightbulb } from "lucide-react";
-import { Box } from "../../../../components/atoms/Box";
-import { Button } from "../../../../components/atoms/Button";
-import { Textarea } from "../../../../components/atoms/Textarea";
-import { Typography } from "../../../../components/atoms/Typography";
-import { Icon } from "../../../../components/atoms/Icon";
-import { VStack } from "../../../../components/atoms/Stack";
-import { HStack } from "../../../../components/atoms/Stack";
-import { Card } from "../../../../components/atoms/Card";
-import { useEventBus } from "../../../../hooks/useEventBus";
+import {
+  Box,
+  Button,
+  Textarea,
+  Typography,
+  Icon,
+  VStack,
+  HStack,
+  Card,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface ActivationBlockProps {
   /** The activation question to display */

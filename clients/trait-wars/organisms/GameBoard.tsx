@@ -5,8 +5,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { Box } from '@almadar/ui';
-import { Typography } from '@almadar/ui';
+import { Box, Typography, cn } from '@almadar/ui';
 import { GameTile, TileUnit } from './GameTile';
 import { StateIndicator } from '../atoms/StateIndicator';
 import {
@@ -16,7 +15,6 @@ import {
     calculateAttackTargets
 } from '../types/game';
 import { TileType } from '../atoms/TileSprite';
-import { cn } from '@almadar/ui';
 
 export interface GameBoardProps {
     /** Game state */

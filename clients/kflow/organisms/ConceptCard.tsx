@@ -19,12 +19,14 @@ import {
   Check,
   Circle,
 } from "lucide-react";
+import {
+  Box,
+  VStack,
+  HStack,
+  Card,
+  useEventBus,
+} from '@almadar/ui';
 import type { LucideIcon } from "lucide-react";
-import { Box } from "../../../components/atoms/Box";
-import { VStack } from "../../../components/atoms/Stack";
-import { HStack } from "../../../components/atoms/Stack";
-import { Card } from "../../../components/molecules/Card";
-import { useEventBus } from "../../../hooks/useEventBus";
 
 export interface ConceptEntity {
   id: string;

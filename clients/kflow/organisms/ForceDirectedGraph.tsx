@@ -11,6 +11,15 @@
  */
 
 import React, {
+import {
+  Box,
+  Typography,
+  VStack,
+  HStack,
+  Card,
+  Spinner,
+  useEventBus,
+} from '@almadar/ui';
   useMemo,
   useCallback,
   useRef,
@@ -18,12 +27,6 @@ import React, {
   useState,
 } from "react";
 import ForceGraph2D from "react-force-graph-2d";
-import { Box } from "../../../components/atoms/Box";
-import { Typography } from "../../../components/atoms/Typography";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Card } from "../../../components/atoms/Card";
-import { Spinner } from "../../../components/atoms/Spinner";
-import { useEventBus } from "../../../hooks/useEventBus";
 
 // Graph data types
 export interface GraphNode {

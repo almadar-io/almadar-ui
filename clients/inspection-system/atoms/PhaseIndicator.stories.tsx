@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { PhaseIndicator } from "./PhaseIndicator";
-import { HStack, VStack } from "../../../components/atoms/Stack";
+import { HStack, VStack } from '@almadar/ui';
 
 const meta: Meta<typeof PhaseIndicator> = {
   title: "Clients/Inspection-System/Atoms/PhaseIndicator",

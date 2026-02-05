@@ -8,10 +8,13 @@
  */
 
 import React from "react";
-import { Box } from "../../../../components/atoms/Box";
-import { HStack, VStack } from "../../../../components/atoms/Stack";
-import { Typography } from "../../../../components/atoms/Typography";
-import { ProgressBar } from "../../../../components/atoms/ProgressBar";
+import {
+  Box,
+  HStack,
+  VStack,
+  Typography,
+  ProgressBar,
+} from '@almadar/ui';
 import { TodoItem, type Todo } from "../../molecules/agent";
 
 export interface TodoListProps {

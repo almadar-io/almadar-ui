@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { FloatingActionMenu } from "./FloatingActionMenu";
 import { Camera, FileText, UserPlus, AlertCircle } from "lucide-react";
-import { Box } from "../../../components/atoms/Box";
+import { Box } from '@almadar/ui';
 
 const meta: Meta<typeof FloatingActionMenu> = {
   title: "Clients/Inspection-System/Organisms/FloatingActionMenu",

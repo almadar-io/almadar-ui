@@ -5,8 +5,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Box } from '@almadar/ui';
-import { cn } from '@almadar/ui';
+import { Box, cn } from '@almadar/ui';
 
 export interface DamagePopupProps {
     /** Damage amount to display */

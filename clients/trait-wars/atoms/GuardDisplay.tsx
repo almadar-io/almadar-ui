@@ -5,9 +5,7 @@
  */
 
 import React from 'react';
-import { Box } from '@almadar/ui';
-import { Typography } from '@almadar/ui';
-import { cn } from '@almadar/ui';
+import { Box, Typography, cn } from '@almadar/ui';
 
 export interface GuardDisplayProps {
     /** Current defense value */

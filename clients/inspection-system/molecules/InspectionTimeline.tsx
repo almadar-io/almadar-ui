@@ -9,12 +9,6 @@
  */
 
 import React, { useCallback } from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Badge } from "../../../components/atoms/Badge";
-import { useEventBus } from "../../../hooks/useEventBus";
 import {
   Clock,
   CheckCircle,
@@ -27,6 +21,15 @@ import {
   Play,
   Pause,
 } from "lucide-react";
+import {
+  cn,
+  Box,
+  VStack,
+  HStack,
+  Typography,
+  Badge,
+  useEventBus,
+} from '@almadar/ui';
 
 export type TimelineEventType =
   | "start"

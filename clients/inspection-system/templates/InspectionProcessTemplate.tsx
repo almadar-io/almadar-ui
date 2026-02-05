@@ -15,14 +15,6 @@
  */
 
 import React, { useState } from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Button } from "../../../components/atoms/Button";
-import { Card } from "../../../components/atoms/Card";
-import { Badge } from "../../../components/atoms/Badge";
-import { useEventBus } from "../../../hooks/useEventBus";
 
 // Atoms
 import { PhaseIndicator, InspectionPhase } from "../atoms/PhaseIndicator";
@@ -78,6 +70,17 @@ import {
   Pause,
   Play,
 } from "lucide-react";
+import {
+  cn,
+  Box,
+  VStack,
+  HStack,
+  Typography,
+  Button,
+  Card,
+  Badge,
+  useEventBus,
+} from '@almadar/ui';
 
 // =============================================================================
 // Types

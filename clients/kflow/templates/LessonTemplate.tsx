@@ -14,12 +14,14 @@
 
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Menu, X, CheckCircle } from 'lucide-react';
-import { Box } from '../../../components/atoms/Box';
-import { VStack } from '../../../components/atoms/Stack';
-import { HStack } from '../../../components/atoms/Stack';
-import { Card } from '../../../components/molecules/Card';
+import {
+  Box,
+  VStack,
+  HStack,
+  Card,
+  useEventBus,
+} from '@almadar/ui';
 import { SegmentRenderer } from '../organisms/SegmentRenderer';
-import { useEventBus } from '../../../hooks/useEventBus';
 import type { Segment } from '../utils/parseLessonSegments';
 
 export interface LessonEntity {

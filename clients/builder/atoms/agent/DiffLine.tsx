@@ -8,9 +8,7 @@
  */
 
 import React from "react";
-import { HStack } from "../../../../components/atoms/Stack";
-import { Box } from "../../../../components/atoms/Box";
-import { Typography } from "../../../../components/atoms/Typography";
+import { HStack, Box, Typography } from '@almadar/ui';
 
 export type DiffLineType = "add" | "remove" | "context";
 

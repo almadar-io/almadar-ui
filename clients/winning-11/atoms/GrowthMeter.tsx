@@ -13,12 +13,15 @@
  */
 
 import React, { useCallback } from "react";
-import { cn } from "../../../lib/cn";
 import { Sprout, Leaf, TreeDeciduous, Flower2 } from "lucide-react";
-import { useEventBus } from "../../../hooks/useEventBus";
-import { Box } from "../../../components/atoms/Box";
-import { HStack, VStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
+import {
+  cn,
+  useEventBus,
+  Box,
+  HStack,
+  VStack,
+  Typography,
+} from '@almadar/ui';
 
 /** Visual metaphor values from RelationshipHealth entity */
 export type VisualMetaphor =

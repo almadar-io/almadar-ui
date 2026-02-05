@@ -13,12 +13,15 @@
  */
 
 import React, { useCallback } from "react";
-import { cn } from "../../../lib/cn";
 import { Shield, ShieldCheck, ShieldAlert, Award } from "lucide-react";
-import { useEventBus } from "../../../hooks/useEventBus";
-import { Box } from "../../../components/atoms/Box";
-import { HStack, VStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
+import {
+  cn,
+  useEventBus,
+  Box,
+  HStack,
+  VStack,
+  Typography,
+} from '@almadar/ui';
 
 /** Health status values from RelationshipHealth entity */
 export type HealthStatus = "thriving" | "healthy" | "declining" | "withering";

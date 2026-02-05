@@ -6,9 +6,12 @@
  */
 
 import React from "react";
-import { Badge, type BadgeVariant } from "../../../../components/atoms/Badge";
-import { HStack } from "../../../../components/atoms/Stack";
-import { Typography } from "../../../../components/atoms/Typography";
+import {
+  Badge,
+  type BadgeVariant,
+  HStack,
+  Typography,
+} from '@almadar/ui';
 
 export interface ToolBadgeProps {
   tool: string;

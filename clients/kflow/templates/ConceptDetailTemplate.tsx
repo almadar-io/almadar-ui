@@ -22,15 +22,17 @@ import {
   Layers,
   PlayCircle,
 } from 'lucide-react';
-import { Box } from '../../../components/atoms/Box';
-import { VStack } from '../../../components/atoms/Stack';
-import { HStack } from '../../../components/atoms/Stack';
-import { Card } from '../../../components/molecules/Card';
+import {
+  Box,
+  VStack,
+  HStack,
+  Card,
+  useEventBus,
+} from '@almadar/ui';
 import { SegmentRenderer } from '../organisms/SegmentRenderer';
 import { FlashCardStack } from '../organisms/FlashCardStack';
 import { ConceptMetaTags } from '../molecules/ConceptMetaTags';
 import { LearningGoalDisplay } from '../molecules/LearningGoalDisplay';
-import { useEventBus } from '../../../hooks/useEventBus';
 import type { Segment } from '../utils/parseLessonSegments';
 import type { FlashCardEntity } from '../organisms/FlashCard';
 

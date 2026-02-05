@@ -6,12 +6,14 @@
  */
 
 import React from 'react';
-import { Box } from '@almadar/ui';
-import { Typography } from '@almadar/ui';
-import { HealthBar } from '@almadar/ui';
+import {
+  Box,
+  Typography,
+  HealthBar,
+  cn,
+} from '@almadar/ui';
 import { CharacterSprite, CharacterType } from '../atoms/CharacterSprite';
 import { StateIndicator, TraitState } from '../atoms/StateIndicator';
-import { cn } from '@almadar/ui';
 
 export interface GameUnitProps {
     /** Unit display name */

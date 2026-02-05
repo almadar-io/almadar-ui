@@ -11,16 +11,19 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Input } from "../../../components/atoms/Input";
-import { Button } from "../../../components/atoms/Button";
-import { Card } from "../../../components/atoms/Card";
-import { Spinner } from "../../../components/atoms/Spinner";
-import { useEventBus } from "../../../hooks/useEventBus";
 import { Search, Plus, Building2, User, FileText, X } from "lucide-react";
+import {
+  cn,
+  Box,
+  VStack,
+  HStack,
+  Typography,
+  Input,
+  Button,
+  Card,
+  Spinner,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface EntitySearchItem {
   id: string;

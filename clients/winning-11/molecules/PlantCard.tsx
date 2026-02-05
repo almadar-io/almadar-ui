@@ -20,17 +20,9 @@
  */
 
 import React, { useCallback } from "react";
-import { cn } from "../../../lib/cn";
-import { Card } from "../../../components/atoms/Card";
-import { Badge } from "../../../components/atoms/Badge";
-import { Button } from "../../../components/atoms/Button";
-import { Box } from "../../../components/atoms/Box";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
 import { GrowthMeter, type VisualMetaphor } from "../atoms/GrowthMeter";
 import { TrustMeter, type HealthStatus } from "../atoms/TrustMeter";
 import { CareIndicator } from "../atoms/CareIndicator";
-import { useEventBus } from "../../../hooks/useEventBus";
 import {
   Sprout,
   Leaf,
@@ -39,6 +31,17 @@ import {
   AlertCircle,
   Droplets,
 } from "lucide-react";
+import {
+  cn,
+  Card,
+  Badge,
+  Button,
+  Box,
+  VStack,
+  HStack,
+  Typography,
+  useEventBus,
+} from '@almadar/ui';
 
 /** Leaf color values from RelationshipHealth entity */
 export type LeafColor = "vibrant-green" | "green" | "yellow" | "brown";

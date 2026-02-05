@@ -10,12 +10,15 @@
 
 import React, { useState, useCallback, useEffect } from "react";
 import { Copy, Check, Save, X, Edit2 } from "lucide-react";
-import { Box } from "../../../components/atoms/Box";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Button } from "../../../components/atoms/Button";
-import { Textarea } from "../../../components/atoms/Textarea";
-import { Alert } from "../../../components/molecules/Alert";
+import {
+  Box,
+  VStack,
+  HStack,
+  Typography,
+  Button,
+  Textarea,
+  Alert,
+} from '@almadar/ui';
 
 export interface EditableJsonViewerProps {
   data: any;

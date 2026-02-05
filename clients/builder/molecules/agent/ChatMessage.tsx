@@ -10,9 +10,12 @@
  */
 
 import React from "react";
-import { Box } from "../../../../components/atoms/Box";
-import { HStack, VStack } from "../../../../components/atoms/Stack";
-import { Typography } from "../../../../components/atoms/Typography";
+import {
+  Box,
+  HStack,
+  VStack,
+  Typography,
+} from '@almadar/ui';
 import { AgentAvatar, type AvatarRole } from "../../atoms/agent";
 
 export interface ChatMessageProps {

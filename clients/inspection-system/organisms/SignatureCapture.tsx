@@ -9,14 +9,17 @@
  */
 
 import React, { useRef, useState, useCallback, useEffect } from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Button } from "../../../components/atoms/Button";
-import { Card } from "../../../components/atoms/Card";
-import { useEventBus } from "../../../hooks/useEventBus";
 import { Eraser, Check, RotateCcw, Pen } from "lucide-react";
+import {
+  cn,
+  Box,
+  VStack,
+  HStack,
+  Typography,
+  Button,
+  Card,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface SignatureCaptureProps {
   /** Participant ID */

@@ -18,9 +18,6 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { cn } from "../../../lib/cn";
-import { useEventBus } from "../../../hooks/useEventBus";
-import { useQuerySingleton } from "../../../hooks/useQuerySingleton";
 import {
   PlantCard,
   type PlantCardData,
@@ -28,12 +25,18 @@ import {
 } from "../molecules/PlantCard";
 import { WeatherWidget } from "../molecules/WeatherWidget";
 import { SeasonIndicator } from "../atoms/SeasonIndicator";
-import { Button } from "../../../components/atoms/Button";
-import { Spinner } from "../../../components/atoms/Spinner";
-import { Box } from "../../../components/atoms/Box";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
 import { Plus, Sprout } from "lucide-react";
+import {
+  cn,
+  useEventBus,
+  useQuerySingleton,
+  Button,
+  Spinner,
+  Box,
+  VStack,
+  HStack,
+  Typography,
+} from '@almadar/ui';
 
 /**
  * GardenItem extends PlantCardData with required id

@@ -3,10 +3,9 @@
  */
 
 import React from 'react';
+import { Box, Typography } from '@almadar/ui';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { GameUnit } from './GameUnit';
-import { Box } from '@almadar/ui';
-import { Typography } from '@almadar/ui';
 
 const meta: Meta<typeof GameUnit> = {
     title: 'Trait Wars/Molecules/GameUnit',

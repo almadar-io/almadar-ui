@@ -10,12 +10,14 @@
  */
 
 import React, { useCallback } from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { useEventBus } from "../../../hooks/useEventBus";
 import { Play, ExternalLink, Youtube } from "lucide-react";
+import {
+  cn,
+  Box,
+  HStack,
+  Typography,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface ExerciseVideoLinkProps {
   /** Exercise name */

@@ -13,17 +13,20 @@
  */
 
 import React from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Button } from "../../../components/atoms/Button";
-import { Input } from "../../../components/atoms/Input";
-import { Spinner } from "../../../components/atoms/Spinner";
 import { GardenView, type GardenItem } from "../organisms/GardenView";
 import { SeasonIndicator, type SeasonPhase } from "../atoms/SeasonIndicator";
-import { useEventBus } from "../../../hooks/useEventBus";
 import { Plus, Search, Filter, LayoutGrid, List } from "lucide-react";
+import {
+  cn,
+  Box,
+  VStack,
+  HStack,
+  Typography,
+  Button,
+  Input,
+  Spinner,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface RelationshipGardenTemplateProps {
   /** Relationship health items to display */

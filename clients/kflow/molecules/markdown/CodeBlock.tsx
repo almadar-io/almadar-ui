@@ -12,11 +12,13 @@ import React, { useState, useRef, useLayoutEffect, useEffect } from "react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus as dark } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import { Copy, Check } from "lucide-react";
-import { Box } from "../../../../components/atoms/Box";
-import { Button } from "../../../../components/atoms/Button";
-import { Badge } from "../../../../components/atoms/Badge";
-import { HStack } from "../../../../components/atoms/Stack";
-import { useEventBus } from "../../../../hooks/useEventBus";
+import {
+  Box,
+  Button,
+  Badge,
+  HStack,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface CodeBlockProps {
   /** The code content to display */

@@ -11,12 +11,14 @@
  */
 
 import React, { useState, useMemo } from "react";
-import { Box } from "../../../../components/atoms/Box";
-import { Button } from "../../../../components/atoms/Button";
-import { Card } from "../../../../components/atoms/Card";
-import { VStack } from "../../../../components/atoms/Stack";
-import { Typography } from "../../../../components/atoms/Typography";
-import { useEventBus } from "../../../../hooks/useEventBus";
+import {
+  Box,
+  Button,
+  Card,
+  VStack,
+  Typography,
+  useEventBus,
+} from '@almadar/ui';
 import { CodeBlock } from "../markdown/CodeBlock";
 import { MarkdownContent } from "../markdown/MarkdownContent";
 import { parseMarkdownWithCodeBlocks } from "../../utils/parseLessonSegments";

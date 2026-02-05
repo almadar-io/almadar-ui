@@ -12,8 +12,7 @@
  */
 
 import React, { useRef, useState, useCallback, useEffect } from "react";
-import { Box } from "../../../components/atoms/Box";
-import { useEventBus } from "../../../hooks/useEventBus";
+import { Box, useEventBus } from '@almadar/ui';
 
 export interface MindMapCanvasProps {
   /** Width of the canvas */

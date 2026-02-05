@@ -13,10 +13,12 @@
 
 import React, { useState } from 'react';
 import { Target, Info, Edit2, Save, X } from 'lucide-react';
-import { Box } from '../../../components/atoms/Box';
-import { HStack } from '../../../components/atoms/Stack';
-import { VStack } from '../../../components/atoms/Stack';
-import { useEventBus } from '../../../hooks/useEventBus';
+import {
+  Box,
+  HStack,
+  VStack,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface LearningGoalDisplayProps {
   /** The learning goal text */

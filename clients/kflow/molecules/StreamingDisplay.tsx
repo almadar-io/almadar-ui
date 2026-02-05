@@ -9,10 +9,12 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { Box } from "../../../components/atoms/Box";
-import { VStack } from "../../../components/atoms/Stack";
-import { HStack } from "../../../components/atoms/Stack";
-import { Card } from "../../../components/molecules/Card";
+import {
+  Box,
+  VStack,
+  HStack,
+  Card,
+} from '@almadar/ui';
 
 interface Milestone {
   id?: string;

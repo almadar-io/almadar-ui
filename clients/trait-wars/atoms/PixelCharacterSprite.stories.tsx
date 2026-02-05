@@ -1,8 +1,7 @@
 import React from 'react';
+import { Box, Typography } from '@almadar/ui';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { PixelCharacterSprite, PIXEL_CHARACTER_SPRITES, CHARACTER_TYPE_MAP } from './PixelCharacterSprite';
-import { Box } from '@almadar/ui';
-import { Typography } from '@almadar/ui';
 
 const meta: Meta<typeof PixelCharacterSprite> = {
     title: 'Trait Wars/Atoms/PixelCharacterSprite',

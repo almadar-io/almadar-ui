@@ -9,14 +9,17 @@
  */
 
 import React from "react";
-import { cn } from "../../../lib/cn";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Card } from "../../../components/atoms/Card";
-import { Badge } from "../../../components/atoms/Badge";
-import { useEventBus } from "../../../hooks/useEventBus";
 import { RuleCheckItem, RuleCheckItemProps } from "./RuleCheckItem";
 import { ClipboardList, CheckCircle, XCircle, MinusCircle } from "lucide-react";
+import {
+  cn,
+  VStack,
+  HStack,
+  Typography,
+  Card,
+  Badge,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface ChecklistRule {
   id: string;

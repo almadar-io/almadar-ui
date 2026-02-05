@@ -11,8 +11,7 @@
  */
 
 import React from "react";
-import { Box } from "../../../components/atoms/Box";
-import { VStack } from "../../../components/atoms/Stack";
+import { Box, VStack } from '@almadar/ui';
 import { CodeBlock } from "../molecules/markdown/CodeBlock";
 import { MarkdownContent } from "../molecules/markdown/MarkdownContent";
 import { ActivationBlock } from "../molecules/learning/ActivationBlock";

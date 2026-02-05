@@ -10,13 +10,6 @@
  */
 
 import React from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Card } from "../../../components/atoms/Card";
-import { Badge } from "../../../components/atoms/Badge";
-import { ProgressBar } from "../../../components/atoms/ProgressBar";
 import {
   CheckCircle,
   XCircle,
@@ -25,6 +18,16 @@ import {
   TrendingUp,
   TrendingDown,
 } from "lucide-react";
+import {
+  cn,
+  Box,
+  VStack,
+  HStack,
+  Typography,
+  Card,
+  Badge,
+  ProgressBar,
+} from '@almadar/ui';
 
 export interface ComplianceStats {
   total: number;

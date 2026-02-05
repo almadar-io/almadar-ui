@@ -6,9 +6,7 @@
  */
 
 import React from 'react';
-import { cn } from '@almadar/ui';
-import { Box } from '@almadar/ui';
-import { Typography } from '@almadar/ui';
+import { cn, Box, Typography } from '@almadar/ui';
 
 export type TerrainType = 'plains' | 'forest' | 'mountain' | 'water' | 'fortress';
 

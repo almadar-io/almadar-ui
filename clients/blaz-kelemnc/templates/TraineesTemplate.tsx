@@ -19,16 +19,6 @@
  */
 
 import React, { useState, useCallback } from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Button } from "../../../components/atoms/Button";
-import { Input } from "../../../components/atoms/Input";
-import { Card } from "../../../components/atoms/Card";
-import { Badge } from "../../../components/atoms/Badge";
-import { Spinner } from "../../../components/atoms/Spinner";
-import { useEventBus } from "../../../hooks/useEventBus";
 import {
   Plus,
   Search,
@@ -44,6 +34,19 @@ import {
   Dumbbell,
   GraduationCap,
 } from "lucide-react";
+import {
+  cn,
+  Box,
+  VStack,
+  HStack,
+  Typography,
+  Button,
+  Input,
+  Card,
+  Badge,
+  Spinner,
+  useEventBus,
+} from '@almadar/ui';
 
 /**
  * User entity data from blaz-klemenc.orb

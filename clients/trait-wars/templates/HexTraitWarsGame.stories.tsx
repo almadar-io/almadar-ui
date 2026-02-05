@@ -1,10 +1,9 @@
 import React from 'react';
+import { Box, Typography } from '@almadar/ui';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { HexTraitWarsGame, HexGameUnit } from './HexTraitWarsGame';
 import { HexBoardTile } from '../organisms/HexGameBoard';
 import { HexTileType } from '../atoms/HexTileSprite';
-import { Box } from '@almadar/ui';
-import { Typography } from '@almadar/ui';
 
 const meta: Meta<typeof HexTraitWarsGame> = {
     title: 'Trait Wars/Templates/HexTraitWarsGame',

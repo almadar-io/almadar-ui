@@ -5,10 +5,9 @@
  */
 
 import React from 'react';
-import { Box } from '@almadar/ui';
+import { Box, cn } from '@almadar/ui';
 import { TileSprite, TileType } from '../atoms/TileSprite';
 import { CharacterSprite, CharacterType } from '../atoms/CharacterSprite';
-import { cn } from '@almadar/ui';
 
 export interface TileUnit {
     id: string;

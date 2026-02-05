@@ -11,10 +11,13 @@
 
 import React from "react";
 import { FileCode } from "lucide-react";
-import { Box } from "../../../../components/atoms/Box";
-import { HStack, VStack } from "../../../../components/atoms/Stack";
-import { Typography } from "../../../../components/atoms/Typography";
-import { Icon } from "../../../../components/atoms/Icon";
+import {
+  Box,
+  HStack,
+  VStack,
+  Typography,
+  Icon,
+} from '@almadar/ui';
 import { DiffLine, type DiffLineType } from "../../atoms/agent";
 
 export interface DiffHunk {

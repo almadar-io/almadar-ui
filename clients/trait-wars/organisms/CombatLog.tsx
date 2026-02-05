@@ -6,12 +6,14 @@
  */
 
 import React, { useRef, useEffect } from 'react';
-import { cn } from '@almadar/ui';
-import { Box } from '@almadar/ui';
-import { Typography } from '@almadar/ui';
-import { Badge } from '@almadar/ui';
-import { Card } from '@almadar/ui';
 import { Sword, Shield, Heart, Move, Zap, LucideIcon } from 'lucide-react';
+import {
+  cn,
+  Box,
+  Typography,
+  Badge,
+  Card,
+} from '@almadar/ui';
 
 export type CombatEventType = 'attack' | 'defend' | 'heal' | 'move' | 'special' | 'death' | 'spawn';
 

@@ -11,11 +11,16 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { Box, VStack, HStack } from '@almadar/ui';
-import { Typography } from '@almadar/ui';
-import { Button } from '@almadar/ui';
-import { Badge } from '@almadar/ui';
-import { Card } from '@almadar/ui';
+import {
+  Box,
+  VStack,
+  HStack,
+  Typography,
+  Button,
+  Badge,
+  Card,
+  cn,
+} from '@almadar/ui';
 import { HexGameBoard, HexBoardTile } from '../organisms/HexGameBoard';
 import { HexUnit } from '../organisms/HexGameTile';
 import { HexTileType } from '../atoms/HexTileSprite';
@@ -23,7 +28,6 @@ import { DamagePopup } from '../atoms/DamagePopup';
 import { StateIndicator, TraitState } from '../atoms/StateIndicator';
 import { CombatLog, CombatEvent, CombatEventType } from '../organisms/CombatLog';
 import { TraitStateViewer, TraitStateMachineDefinition } from '../molecules/TraitStateViewer';
-import { cn } from '@almadar/ui';
 
 // ============================================================================
 // TYPES

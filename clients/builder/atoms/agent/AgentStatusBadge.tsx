@@ -8,10 +8,12 @@
  */
 
 import React from "react";
-import { Badge } from "../../../../components/atoms/Badge";
-import { HStack } from "../../../../components/atoms/Stack";
-import { Box } from "../../../../components/atoms/Box";
-import { Typography } from "../../../../components/atoms/Typography";
+import {
+  Badge,
+  HStack,
+  Box,
+  Typography,
+} from '@almadar/ui';
 
 export type AgentStatus =
   | "idle"

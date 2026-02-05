@@ -10,12 +10,6 @@
  */
 
 import React, { useCallback } from "react";
-import { cn } from "../../../lib/cn";
-import { Card } from "../../../components/atoms/Card";
-import { Box } from "../../../components/atoms/Box";
-import { HStack, VStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { useEventBus } from "../../../hooks/useEventBus";
 import {
   Sun,
   Cloud,
@@ -25,6 +19,15 @@ import {
   TrendingDown,
   Minus,
 } from "lucide-react";
+import {
+  cn,
+  Card,
+  Box,
+  HStack,
+  VStack,
+  Typography,
+  useEventBus,
+} from '@almadar/ui';
 
 export type MarketCondition = "sunny" | "cloudy" | "rainy" | "stormy";
 

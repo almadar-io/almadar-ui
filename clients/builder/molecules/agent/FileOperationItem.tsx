@@ -7,11 +7,14 @@
 
 import React from "react";
 import { Folder, BookOpen, FileEdit, Edit } from "lucide-react";
-import { Box } from "../../../../components/atoms/Box";
-import { HStack, VStack } from "../../../../components/atoms/Stack";
-import { Typography } from "../../../../components/atoms/Typography";
-import { Badge } from "../../../../components/atoms/Badge";
-import { Icon } from "../../../../components/atoms/Icon";
+import {
+  Box,
+  HStack,
+  VStack,
+  Typography,
+  Badge,
+  Icon,
+} from '@almadar/ui';
 
 export type FileOperation = "ls" | "read_file" | "write_file" | "edit_file";
 

@@ -14,13 +14,16 @@
 
 import React from "react";
 import { Plus, FolderOpen, FileCode, X, Trash2, Orbit } from "lucide-react";
-import { Box } from "../../../components/atoms/Box";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Button } from "../../../components/atoms/Button";
-import { Icon } from "../../../components/atoms/Icon";
-import { Card } from "../../../components/atoms/Card";
-import { useEventBus } from "../../../hooks/useEventBus";
+import {
+  Box,
+  VStack,
+  HStack,
+  Typography,
+  Button,
+  Icon,
+  Card,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface RecentFile {
   path: string;

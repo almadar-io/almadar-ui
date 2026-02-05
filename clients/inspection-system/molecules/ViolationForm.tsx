@@ -10,16 +10,19 @@
  */
 
 import React, { useState } from "react";
-import { cn } from "../../../lib/cn";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Card } from "../../../components/atoms/Card";
-import { Button } from "../../../components/atoms/Button";
-import { Input } from "../../../components/atoms/Input";
-import { Textarea } from "../../../components/atoms/Textarea";
-import { Select } from "../../../components/atoms/Select";
-import { useEventBus } from "../../../hooks/useEventBus";
 import { AlertTriangle, Camera, Save, X } from "lucide-react";
+import {
+  cn,
+  VStack,
+  HStack,
+  Typography,
+  Card,
+  Button,
+  Input,
+  Textarea,
+  Select,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface ViolationFormData {
   id?: string;

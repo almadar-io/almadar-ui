@@ -11,14 +11,17 @@
 
 import React, { useState } from "react";
 import { PauseCircle } from "lucide-react";
-import { Box } from "../../../../components/atoms/Box";
-import { Button } from "../../../../components/atoms/Button";
-import { Textarea } from "../../../../components/atoms/Textarea";
-import { Typography } from "../../../../components/atoms/Typography";
-import { Icon } from "../../../../components/atoms/Icon";
-import { Card } from "../../../../components/atoms/Card";
-import { HStack, VStack } from "../../../../components/atoms/Stack";
-import { useEventBus } from "../../../../hooks/useEventBus";
+import {
+  Box,
+  Button,
+  Textarea,
+  Typography,
+  Icon,
+  Card,
+  HStack,
+  VStack,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface ReflectionBlockProps {
   /** The reflection prompt */

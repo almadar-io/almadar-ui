@@ -14,14 +14,6 @@
  */
 
 import React, { useState, useCallback } from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { HStack, VStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Button } from "../../../components/atoms/Button";
-import { Card } from "../../../components/atoms/Card";
-import { Input } from "../../../components/atoms/Input";
-import { useEventBus } from "../../../hooks/useEventBus";
 import {
   Ruler,
   Scale,
@@ -32,6 +24,17 @@ import {
   TrendingDown,
   Minus,
 } from "lucide-react";
+import {
+  cn,
+  Box,
+  HStack,
+  VStack,
+  Typography,
+  Button,
+  Card,
+  Input,
+  useEventBus,
+} from '@almadar/ui';
 
 /**
  * Body measurement data

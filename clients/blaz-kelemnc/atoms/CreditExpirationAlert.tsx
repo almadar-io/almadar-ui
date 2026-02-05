@@ -10,13 +10,15 @@
  */
 
 import React, { useCallback, useMemo } from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Button } from "../../../components/atoms/Button";
-import { useEventBus } from "../../../hooks/useEventBus";
 import { AlertTriangle, Clock, X } from "lucide-react";
+import {
+  cn,
+  Box,
+  HStack,
+  Typography,
+  Button,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface CreditExpirationAlertProps {
   /** Expiration date */

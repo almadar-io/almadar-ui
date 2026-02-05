@@ -6,8 +6,7 @@
  */
 
 import React from 'react';
-import { cn } from '@almadar/ui';
-import { Box } from '@almadar/ui';
+import { cn, Box } from '@almadar/ui';
 import { HexCell, TerrainType } from '../atoms/HexCell';
 import { UnitType, useAssets, getUnitSpriteUrl } from '../assets';
 

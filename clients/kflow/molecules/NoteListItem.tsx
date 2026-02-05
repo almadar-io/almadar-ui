@@ -22,14 +22,17 @@ import {
   Plus,
   Tag,
 } from "lucide-react";
-import { Box } from "../../../components/atoms/Box";
-import { Button } from "../../../components/atoms/Button";
-import { Badge } from "../../../components/atoms/Badge";
-import { Typography } from "../../../components/atoms/Typography";
-import { Icon } from "../../../components/atoms/Icon";
-import { Card } from "../../../components/atoms/Card";
-import { HStack, VStack } from "../../../components/atoms/Stack";
-import { useEventBus } from "../../../hooks/useEventBus";
+import {
+  Box,
+  Button,
+  Badge,
+  Typography,
+  Icon,
+  Card,
+  HStack,
+  VStack,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface NoteData {
   id: string;

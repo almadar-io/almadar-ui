@@ -9,17 +9,20 @@
  */
 
 import React, { useState, useCallback } from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Button } from "../../../components/atoms/Button";
-import { Card } from "../../../components/atoms/Card";
-import { Textarea } from "../../../components/atoms/Textarea";
-import { Select } from "../../../components/atoms/Select";
-import { Badge } from "../../../components/atoms/Badge";
-import { useEventBus } from "../../../hooks/useEventBus";
 import { AlertCircle, Plus, User, Clock } from "lucide-react";
+import {
+  cn,
+  Box,
+  VStack,
+  HStack,
+  Typography,
+  Button,
+  Card,
+  Textarea,
+  Select,
+  Badge,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface Objection {
   id: string;

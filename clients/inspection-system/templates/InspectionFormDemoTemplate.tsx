@@ -14,14 +14,6 @@
  */
 
 import React, { useState, useCallback, useMemo } from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Button } from "../../../components/atoms/Button";
-import { Card } from "../../../components/atoms/Card";
-import { Badge } from "../../../components/atoms/Badge";
-import { useEventBus } from "../../../hooks/useEventBus";
 
 // Atoms
 import { PhaseIndicator, InspectionPhase } from "../atoms/PhaseIndicator";
@@ -34,7 +26,6 @@ import { CardSelector, CardSelectorOption } from "../molecules/CardSelector";
 import { SignatureCapture } from "../organisms/SignatureCapture";
 
 // Components
-import { StatCard } from "../../../components/organisms/StatCard";
 
 // Evaluator - stub implementation for design system (actual implementation in @almadar/evaluator)
 class SExpressionEvaluator {
@@ -62,6 +53,18 @@ import {
   FileCheck,
   PenTool,
 } from "lucide-react";
+import {
+  cn,
+  Box,
+  VStack,
+  HStack,
+  Typography,
+  Button,
+  Card,
+  Badge,
+  useEventBus,
+  StatCard,
+} from '@almadar/ui';
 
 // =============================================================================
 // Types

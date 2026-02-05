@@ -6,14 +6,16 @@
 
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import React, { useState, useCallback } from 'react';
-import { Box } from '@almadar/ui';
-import { Typography } from '@almadar/ui';
-import { Button } from '@almadar/ui';
+import {
+  Box,
+  Typography,
+  Button,
+  cn,
+} from '@almadar/ui';
 import { GameBoardWithTraits, CombatLogEntry } from '../organisms/GameBoardWithTraits';
 import { ScenarioSelector } from '../templates/ScenarioSelector';
 import { GAME_SCENARIOS, GameScenario } from '../templates/scenarios';
 import { GameState } from '../types/game';
-import { cn } from '@almadar/ui';
 
 const meta: Meta = {
     title: 'Trait Wars/Full Game Demo',

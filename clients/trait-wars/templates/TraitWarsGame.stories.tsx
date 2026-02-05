@@ -8,7 +8,6 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import React from 'react';
 import { TraitWarsGame } from './TraitWarsGame';
 import { GameUnit } from '../types/game';
-import { Box } from '@almadar/ui';
 
 const meta: Meta<typeof TraitWarsGame> = {
     title: 'Trait Wars/Templates/TraitWarsGame',
@@ -168,8 +167,7 @@ export const Tutorial: Story = {
 // ============================================================================
 
 import { useState } from 'react';
-import { Typography } from '@almadar/ui';
-import { Button } from '@almadar/ui';
+import { Box, Typography, Button } from '@almadar/ui';
 
 interface TutorialStep {
     title: string;

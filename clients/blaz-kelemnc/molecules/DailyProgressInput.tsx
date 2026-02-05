@@ -19,14 +19,17 @@
  */
 
 import React, { useCallback, useState } from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { HStack, VStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Button } from "../../../components/atoms/Button";
-import { Card } from "../../../components/atoms/Card";
-import { useEventBus } from "../../../hooks/useEventBus";
 import { Moon, Utensils, Battery, Check, Calendar } from "lucide-react";
+import {
+  cn,
+  Box,
+  HStack,
+  VStack,
+  Typography,
+  Button,
+  Card,
+  useEventBus,
+} from '@almadar/ui';
 
 /**
  * WellnessEntry entity data matching schema definition

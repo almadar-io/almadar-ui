@@ -12,11 +12,14 @@
 
 import React, { useState } from "react";
 import { ChevronRight } from "lucide-react";
-import { Box } from "../../../../components/atoms/Box";
-import { HStack, VStack } from "../../../../components/atoms/Stack";
-import { Typography } from "../../../../components/atoms/Typography";
-import { Button } from "../../../../components/atoms/Button";
-import { Icon } from "../../../../components/atoms/Icon";
+import {
+  Box,
+  HStack,
+  VStack,
+  Typography,
+  Button,
+  Icon,
+} from '@almadar/ui';
 import { DiffBlock, type DiffHunk } from "../../molecules/agent";
 
 export interface SchemaDiff {

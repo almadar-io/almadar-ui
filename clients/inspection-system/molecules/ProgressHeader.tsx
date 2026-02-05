@@ -10,13 +10,16 @@
  */
 
 import React from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { ProgressBar } from "../../../components/atoms/ProgressBar";
 import { PhaseIndicator, InspectionPhase } from "../atoms/PhaseIndicator";
 import { CheckCircle, Circle } from "lucide-react";
+import {
+  cn,
+  Box,
+  VStack,
+  HStack,
+  Typography,
+  ProgressBar,
+} from '@almadar/ui';
 
 export interface ProgressStep {
   id: string;

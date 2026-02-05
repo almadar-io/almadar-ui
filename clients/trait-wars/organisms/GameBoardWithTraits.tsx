@@ -8,9 +8,12 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { Box } from '@almadar/ui';
-import { Typography } from '@almadar/ui';
-import { Button } from '@almadar/ui';
+import {
+  Box,
+  Typography,
+  Button,
+  cn,
+} from '@almadar/ui';
 import { GameTile, TileUnit } from './GameTile';
 import { StateIndicator, TraitState } from '../atoms/StateIndicator';
 import { TraitStateViewer, TraitDefinition } from '../molecules/TraitStateViewer';
@@ -22,7 +25,6 @@ import {
     calculateValidMoves,
     calculateAttackTargets
 } from '../types/game';
-import { cn } from '@almadar/ui';
 
 export interface CombatLogEntry {
     turn: number;

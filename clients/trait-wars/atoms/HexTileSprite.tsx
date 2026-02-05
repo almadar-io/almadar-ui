@@ -6,8 +6,7 @@
  */
 
 import React from 'react';
-import { Box } from '@almadar/ui';
-import { cn } from '@almadar/ui';
+import { Box, cn } from '@almadar/ui';
 import { TerrainType, useAssetsOptional, DEFAULT_ASSET_MANIFEST, getTerrainSpriteUrl } from '../assets';
 
 // Default tile size (Kenney Isometric Miniature Dungeon tiles are 256x512)

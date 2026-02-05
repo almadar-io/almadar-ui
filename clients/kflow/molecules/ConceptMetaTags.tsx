@@ -11,9 +11,7 @@
 
 import React from 'react';
 import { Layers } from 'lucide-react';
-import { HStack } from '../../../components/atoms/Stack';
-import { VStack } from '../../../components/atoms/Stack';
-import { useEventBus } from '../../../hooks/useEventBus';
+import { HStack, VStack, useEventBus } from '@almadar/ui';
 
 export interface ConceptMetaTagsProps {
   /** Layer number */

@@ -8,13 +8,15 @@
  */
 
 import React from 'react';
-import { Box } from '@almadar/ui';
-import { Typography } from '@almadar/ui';
-import { HealthBar } from '@almadar/ui';
+import {
+  Box,
+  Typography,
+  HealthBar,
+  cn,
+} from '@almadar/ui';
 import { HexTileSprite, HexTileType } from '../atoms/HexTileSprite';
 import { PixelCharacterSprite, PixelCharacterType, CHARACTER_TYPE_MAP } from '../atoms/PixelCharacterSprite';
 import { StateIndicator, TraitState } from '../atoms/StateIndicator';
-import { cn } from '@almadar/ui';
 
 export interface HexUnit {
     id: string;

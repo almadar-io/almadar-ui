@@ -6,11 +6,13 @@
  */
 
 import React from 'react';
-import { cn } from '@almadar/ui';
-import { Box } from '@almadar/ui';
-import { Button } from '@almadar/ui';
-import { Typography } from '@almadar/ui';
-import { GameTemplate } from '@almadar/ui';
+import {
+  cn,
+  Box,
+  Button,
+  Typography,
+  GameTemplate,
+} from '@almadar/ui';
 import { HexGrid, HexTileEntity, GridUnit } from '../organisms/HexGrid';
 import { CombatLog, CombatEvent } from '../organisms/CombatLog';
 import { TraitPanel, TraitDefinition } from '../organisms/TraitPanel';

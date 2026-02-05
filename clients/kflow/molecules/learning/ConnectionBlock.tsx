@@ -11,11 +11,14 @@
 
 import React from "react";
 import { Link2 } from "lucide-react";
-import { Box } from "../../../../components/atoms/Box";
-import { Typography } from "../../../../components/atoms/Typography";
-import { Icon } from "../../../../components/atoms/Icon";
-import { Card } from "../../../../components/atoms/Card";
-import { HStack, VStack } from "../../../../components/atoms/Stack";
+import {
+  Box,
+  Typography,
+  Icon,
+  Card,
+  HStack,
+  VStack,
+} from '@almadar/ui';
 import { MarkdownContent } from "../markdown/MarkdownContent";
 
 export interface ConnectionBlockProps {

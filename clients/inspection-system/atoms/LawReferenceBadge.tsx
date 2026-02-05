@@ -10,12 +10,14 @@
  */
 
 import React from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Badge } from "../../../components/atoms/Badge";
 import { Scale, BookOpen } from "lucide-react";
+import {
+  cn,
+  Box,
+  HStack,
+  Typography,
+  Badge,
+} from '@almadar/ui';
 
 export interface LawReferenceBadgeProps {
   /** Official Gazette number */

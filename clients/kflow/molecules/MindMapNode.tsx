@@ -13,7 +13,7 @@
 
 import React, { useState } from "react";
 import { Edit2, ChevronDown, ChevronRight, Sparkles } from "lucide-react";
-import { useEventBus } from "../../../hooks/useEventBus";
+import { useEventBus } from '@almadar/ui';
 
 export interface MindMapNodeData {
   id: string;

@@ -1,11 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { InspectionWizardTemplate } from "./InspectionWizardTemplate";
-import { VStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
 import { RuleCheckItem } from "../molecules/RuleCheckItem";
 import { ParticipantList } from "../molecules/ParticipantList";
 import { SignatureCapture } from "../organisms/SignatureCapture";
 
+import { VStack, Typography } from '@almadar/ui';
 const meta: Meta<typeof InspectionWizardTemplate> = {
   title: "Clients/Inspection-System/Templates/InspectionWizardTemplate",
   component: InspectionWizardTemplate,

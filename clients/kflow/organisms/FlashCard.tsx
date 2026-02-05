@@ -15,10 +15,12 @@
 
 import React, { useState } from 'react';
 import { RotateCcw, Check } from 'lucide-react';
-import { Box } from '../../../components/atoms/Box';
-import { VStack } from '../../../components/atoms/Stack';
-import { HStack } from '../../../components/atoms/Stack';
-import { useEventBus } from '../../../hooks/useEventBus';
+import {
+  Box,
+  VStack,
+  HStack,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface FlashCardEntity {
   id: string;

@@ -8,11 +8,14 @@
  */
 
 import React from "react";
-import { Box } from "../../../../components/atoms/Box";
-import { HStack, VStack } from "../../../../components/atoms/Stack";
-import { Typography } from "../../../../components/atoms/Typography";
-import { Button } from "../../../../components/atoms/Button";
-import { Alert } from "../../../../components/molecules/Alert";
+import {
+  Box,
+  HStack,
+  VStack,
+  Typography,
+  Button,
+  Alert,
+} from '@almadar/ui';
 
 export interface ErrorAlertProps {
   /** Error message */

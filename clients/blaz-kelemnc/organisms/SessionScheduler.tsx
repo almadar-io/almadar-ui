@@ -30,14 +30,6 @@
  */
 
 import React, { useCallback, useMemo, useState } from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { HStack, VStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Button } from "../../../components/atoms/Button";
-import { Card } from "../../../components/atoms/Card";
-import { Badge } from "../../../components/atoms/Badge";
-import { useEventBus } from "../../../hooks/useEventBus";
 import {
   Plus,
   ChevronLeft,
@@ -52,6 +44,17 @@ import {
   Edit2,
   Youtube,
 } from "lucide-react";
+import {
+  cn,
+  Box,
+  HStack,
+  VStack,
+  Typography,
+  Button,
+  Card,
+  Badge,
+  useEventBus,
+} from '@almadar/ui';
 
 /**
  * TrainingSession entity data matching schema definition

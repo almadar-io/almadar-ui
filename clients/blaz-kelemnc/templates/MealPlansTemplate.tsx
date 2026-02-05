@@ -19,15 +19,6 @@
  */
 
 import React, { useState, useCallback } from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Button } from "../../../components/atoms/Button";
-import { Input } from "../../../components/atoms/Input";
-import { Card } from "../../../components/atoms/Card";
-import { Spinner } from "../../../components/atoms/Spinner";
-import { useEventBus } from "../../../hooks/useEventBus";
 import { MealPlanCard, MealPlanData } from "../molecules/MealPlanCard";
 import {
   Plus,
@@ -39,6 +30,18 @@ import {
   LayoutGrid,
   List,
 } from "lucide-react";
+import {
+  cn,
+  Box,
+  VStack,
+  HStack,
+  Typography,
+  Button,
+  Input,
+  Card,
+  Spinner,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface MealPlansTemplateProps {
   /** Meal plan items to display */

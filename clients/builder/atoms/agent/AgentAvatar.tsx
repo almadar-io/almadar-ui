@@ -11,7 +11,7 @@
 import React from "react";
 import { Bot, User, Wrench, Settings } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { Avatar } from "../../../../components/atoms/Avatar";
+import { Avatar } from '@almadar/ui';
 
 export type AvatarRole = "assistant" | "user" | "system" | "tool";
 

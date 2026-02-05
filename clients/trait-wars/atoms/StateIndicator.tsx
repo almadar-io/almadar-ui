@@ -5,9 +5,7 @@
  */
 
 import React from 'react';
-import { Box } from '@almadar/ui';
-import { Badge } from '@almadar/ui';
-import { cn } from '@almadar/ui';
+import { Box, Badge, cn } from '@almadar/ui';
 
 export type TraitState =
     | 'idle' | 'active' | 'attacking' | 'defending' | 'casting' | 'recovering' | 'cooldown'

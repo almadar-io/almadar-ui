@@ -41,7 +41,7 @@ export {
   Textarea,
   ThemeToggle,
   Typography,
-} from "../../components/atoms";
+} from '@almadar/ui';
 
 export {
   // Molecules
@@ -71,4 +71,4 @@ export {
   Tooltip,
   WizardNavigation,
   WizardProgress,
-} from "../../components/molecules";
+} from '@almadar/ui';

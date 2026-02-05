@@ -10,11 +10,13 @@
  */
 
 import React from "react";
-import { cn } from "../../../lib/cn";
-import { HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { useEventBus } from "../../../hooks/useEventBus";
 import { Image, ZoomIn, Trash2, Camera } from "lucide-react";
+import {
+  cn,
+  HStack,
+  Typography,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface EvidenceThumbnailProps {
   /** Photo ID */

@@ -11,12 +11,15 @@
 
 import React, { useState, useMemo } from "react";
 import { ChevronDown, Loader2, Check, X } from "lucide-react";
-import { Box } from "../../../../components/atoms/Box";
-import { HStack, VStack } from "../../../../components/atoms/Stack";
-import { Typography } from "../../../../components/atoms/Typography";
-import { Badge } from "../../../../components/atoms/Badge";
-import { Button } from "../../../../components/atoms/Button";
-import { Icon } from "../../../../components/atoms/Icon";
+import {
+  Box,
+  HStack,
+  VStack,
+  Typography,
+  Badge,
+  Button,
+  Icon,
+} from '@almadar/ui';
 import { ToolBadge, DiffLine } from "../../atoms/agent";
 
 export interface ToolCallCardProps {

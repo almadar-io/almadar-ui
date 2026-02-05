@@ -9,13 +9,16 @@
  */
 
 import React, { useCallback } from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Card } from "../../../components/atoms/Card";
-import { useEventBus } from "../../../hooks/useEventBus";
 import { Check, LucideIcon } from "lucide-react";
+import {
+  cn,
+  Box,
+  VStack,
+  HStack,
+  Typography,
+  Card,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface CardSelectorOption {
   id: string;

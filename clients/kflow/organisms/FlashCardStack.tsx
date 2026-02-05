@@ -14,12 +14,14 @@
 
 import React, { useState, useCallback } from "react";
 import { Shuffle, RotateCcw, CheckCircle } from "lucide-react";
-import { Box } from "../../../components/atoms/Box";
-import { VStack } from "../../../components/atoms/Stack";
-import { HStack } from "../../../components/atoms/Stack";
-import { Card } from "../../../components/molecules/Card";
+import {
+  Box,
+  VStack,
+  HStack,
+  Card,
+  useEventBus,
+} from '@almadar/ui';
 import { FlashCard, FlashCardEntity } from "./FlashCard";
-import { useEventBus } from "../../../hooks/useEventBus";
 
 export interface FlashCardStackProps {
   /** Array of flashcard entities */

@@ -7,11 +7,13 @@
  */
 
 import React from "react";
-import { Box } from "../../../../components/atoms/Box";
-import { HStack } from "../../../../components/atoms/Stack";
-import { Typography } from "../../../../components/atoms/Typography";
-import { Button } from "../../../../components/atoms/Button";
-import { Badge } from "../../../../components/atoms/Badge";
+import {
+  Box,
+  HStack,
+  Typography,
+  Button,
+  Badge,
+} from '@almadar/ui';
 import { AgentStatusBadge, type AgentStatus } from "../../atoms/agent";
 
 export interface AgentStatusHeaderProps {

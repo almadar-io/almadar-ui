@@ -6,11 +6,13 @@
  */
 
 import React from "react";
-import { cn } from "../../../lib/cn";
 import { Sprout, Sun, Wheat, Snowflake } from "lucide-react";
-import { Box } from "../../../components/atoms/Box";
-import { HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
+import {
+  cn,
+  Box,
+  HStack,
+  Typography,
+} from '@almadar/ui';
 
 export type SeasonPhase = "planting" | "growing" | "harvest" | "rest";
 

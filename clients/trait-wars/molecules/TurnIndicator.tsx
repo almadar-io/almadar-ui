@@ -6,10 +6,12 @@
  */
 
 import React from 'react';
-import { cn } from '@almadar/ui';
-import { Box } from '@almadar/ui';
-import { Typography } from '@almadar/ui';
-import { Badge } from '@almadar/ui';
+import {
+  cn,
+  Box,
+  Typography,
+  Badge,
+} from '@almadar/ui';
 
 export type GamePhase = 'deploy' | 'move' | 'action' | 'end';
 

@@ -10,10 +10,12 @@
  */
 
 import React, { useState, useRef, useEffect } from "react";
-import { Box } from "../../../components/atoms/Box";
-import { Textarea } from "../../../components/atoms/Textarea";
-import { Typography } from "../../../components/atoms/Typography";
-import { useEventBus } from "../../../hooks/useEventBus";
+import {
+  Box,
+  Textarea,
+  Typography,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface NoteContentProps {
   /** Note ID */

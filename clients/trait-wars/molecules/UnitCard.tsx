@@ -6,12 +6,17 @@
  */
 
 import React from 'react';
-import { cn } from '@almadar/ui';
-import { Box } from '@almadar/ui';
-import { Card, CardHeader, CardContent, CardFooter } from '@almadar/ui';
-import { Typography } from '@almadar/ui';
-import { Badge } from '@almadar/ui';
-import { HealthBar } from '@almadar/ui';
+import {
+  cn,
+  Box,
+  Card,
+  CardHeader,
+  CardContent,
+  CardFooter,
+  Typography,
+  Badge,
+  HealthBar,
+} from '@almadar/ui';
 import { TraitIcon, TraitName, TraitState } from '../atoms/TraitIcon';
 
 export interface UnitTrait {

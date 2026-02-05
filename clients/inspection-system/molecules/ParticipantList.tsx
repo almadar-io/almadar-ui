@@ -11,16 +11,19 @@
  */
 
 import React, { useCallback } from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Button } from "../../../components/atoms/Button";
-import { Card } from "../../../components/atoms/Card";
-import { Avatar } from "../../../components/atoms/Avatar";
-import { Badge } from "../../../components/atoms/Badge";
-import { useEventBus } from "../../../hooks/useEventBus";
 import { Plus, Trash2, Edit, User, Briefcase, Phone } from "lucide-react";
+import {
+  cn,
+  Box,
+  VStack,
+  HStack,
+  Typography,
+  Button,
+  Card,
+  Avatar,
+  Badge,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface Participant {
   id: string;

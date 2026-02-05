@@ -6,8 +6,7 @@
  */
 
 import React from 'react';
-import { Box } from '@almadar/ui';
-import { cn } from '@almadar/ui';
+import { Box, cn } from '@almadar/ui';
 import { UnitType, useAssetsOptional, DEFAULT_ASSET_MANIFEST, getUnitSpriteUrl } from '../assets';
 
 // Default display configuration

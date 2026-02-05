@@ -13,10 +13,13 @@
 
 import React, { useState } from "react";
 import { Grid, Network, List as ListIcon } from "lucide-react";
-import { Box } from "../../../components/atoms/Box";
-import { VStack } from "../../../components/atoms/Stack";
-import { HStack } from "../../../components/atoms/Stack";
-import { Card } from "../../../components/molecules/Card";
+import {
+  Box,
+  VStack,
+  HStack,
+  Card,
+  useEventBus,
+} from '@almadar/ui';
 import {
   ForceDirectedGraph,
   GraphNode,
@@ -30,7 +33,6 @@ import {
   NODE_TYPE_COLORS,
 } from "../molecules/GraphLegend";
 import { LearningGoalDisplay } from "../molecules/LearningGoalDisplay";
-import { useEventBus } from "../../../hooks/useEventBus";
 
 export interface KnowledgeGraphEntity {
   id: string;

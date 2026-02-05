@@ -6,13 +6,15 @@
  */
 
 import React from 'react';
-import { cn } from '@almadar/ui';
-import { Box } from '@almadar/ui';
-import { Button } from '@almadar/ui';
-import { Icon } from '@almadar/ui';
-import { Card } from '@almadar/ui';
-import { Typography } from '@almadar/ui';
 import { Sword, Shield, Heart, Move, X, Target, LucideIcon } from 'lucide-react';
+import {
+  cn,
+  Box,
+  Button,
+  Icon,
+  Card,
+  Typography,
+} from '@almadar/ui';
 
 export interface GameAction {
     id: string;

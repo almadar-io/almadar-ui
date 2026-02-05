@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { RuleCheckItem } from "./RuleCheckItem";
-import { VStack } from "../../../components/atoms/Stack";
+import { VStack } from '@almadar/ui';
 
 const meta: Meta<typeof RuleCheckItem> = {
   title: "Clients/Inspection-System/Molecules/RuleCheckItem",

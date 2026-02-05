@@ -9,12 +9,14 @@
  */
 
 import React from "react";
-import { Box } from "../../../components/atoms/Box";
-import { VStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Spinner } from "../../../components/atoms/Spinner";
+import {
+  Box,
+  VStack,
+  Typography,
+  Spinner,
+  useEventBus,
+} from '@almadar/ui';
 import { NoteListItem, NoteData } from "../molecules/NoteListItem";
-import { useEventBus } from "../../../hooks/useEventBus";
 
 export interface NoteListProps {
   /** Array of notes to display */

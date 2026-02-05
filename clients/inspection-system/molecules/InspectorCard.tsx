@@ -9,14 +9,6 @@
  */
 
 import React from "react";
-import { cn } from "../../../lib/cn";
-import { VStack, HStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Button } from "../../../components/atoms/Button";
-import { Card } from "../../../components/atoms/Card";
-import { Badge } from "../../../components/atoms/Badge";
-import { Avatar } from "../../../components/atoms/Avatar";
-import { useEventBus } from "../../../hooks/useEventBus";
 import {
   Mail,
   Phone,
@@ -26,6 +18,17 @@ import {
   Trash2,
   ClipboardList,
 } from "lucide-react";
+import {
+  cn,
+  VStack,
+  HStack,
+  Typography,
+  Button,
+  Card,
+  Badge,
+  Avatar,
+  useEventBus,
+} from '@almadar/ui';
 
 export interface InspectorCardData {
   id: string;

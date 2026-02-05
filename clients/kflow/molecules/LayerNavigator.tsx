@@ -13,9 +13,7 @@
 
 import React from 'react';
 import { ChevronLeft, ChevronRight, Layers } from 'lucide-react';
-import { Box } from '../../../components/atoms/Box';
-import { HStack } from '../../../components/atoms/Stack';
-import { useEventBus } from '../../../hooks/useEventBus';
+import { Box, HStack, useEventBus } from '@almadar/ui';
 
 export interface LayerInfo {
   number: number;

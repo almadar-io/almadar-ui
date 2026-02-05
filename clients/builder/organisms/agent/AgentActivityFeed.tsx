@@ -10,9 +10,7 @@
  */
 
 import React, { useRef, useEffect } from "react";
-import { Box } from "../../../../components/atoms/Box";
-import { VStack } from "../../../../components/atoms/Stack";
-import { Typography } from "../../../../components/atoms/Typography";
+import { Box, VStack, Typography } from '@almadar/ui';
 import {
   ChatMessage,
   ToolCallCard,

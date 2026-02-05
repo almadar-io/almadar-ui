@@ -9,16 +9,18 @@
  */
 
 import React, { useState, useCallback, useMemo } from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { VStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Input } from "../../../components/atoms/Input";
-import { Select } from "../../../components/atoms/Select";
-import { Textarea } from "../../../components/atoms/Textarea";
-import { Checkbox } from "../../../components/atoms/Checkbox";
-import { useEventBus } from "../../../hooks/useEventBus";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import {
+  cn,
+  Box,
+  VStack,
+  Typography,
+  Input,
+  Select,
+  Textarea,
+  Checkbox,
+  useEventBus,
+} from '@almadar/ui';
 
 export type FieldType =
   | "text"

@@ -21,14 +21,17 @@
  */
 
 import React, { useCallback, useMemo } from "react";
-import { cn } from "../../../lib/cn";
-import { Box } from "../../../components/atoms/Box";
-import { HStack, VStack } from "../../../components/atoms/Stack";
-import { Typography } from "../../../components/atoms/Typography";
-import { Badge } from "../../../components/atoms/Badge";
-import { Button } from "../../../components/atoms/Button";
-import { useEventBus } from "../../../hooks/useEventBus";
 import { Coins, AlertTriangle, Clock } from "lucide-react";
+import {
+  cn,
+  Box,
+  HStack,
+  VStack,
+  Typography,
+  Badge,
+  Button,
+  useEventBus,
+} from '@almadar/ui';
 
 /**
  * Credit entity data matching schema definition
