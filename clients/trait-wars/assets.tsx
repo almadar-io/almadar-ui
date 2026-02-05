@@ -316,7 +316,7 @@ export function getUnitPortraitUrl(manifest: TraitWarsAssetManifest, type: Robot
  * Tiles are 256x512 isometric sprites.
  */
 export const DEFAULT_ASSET_MANIFEST: TraitWarsAssetManifest = {
-    baseUrl: '',
+    baseUrl: '/assets',
     units: {
         hero: 'isometric-dungeon/Characters/Male/Male_3_Idle0.png',
         caregiver: 'isometric-dungeon/Characters/Male/Male_1_Idle0.png',
@@ -332,6 +332,12 @@ export const DEFAULT_ASSET_MANIFEST: TraitWarsAssetManifest = {
         water: 'isometric-dungeon/Isometric/dirt_E.png',
         fortress: 'isometric-dungeon/Isometric/stoneWallColumn_E.png',
         castle: 'isometric-dungeon/Isometric/stoneWallColumn_E.png',
+        // World map terrain types
+        grass: 'isometric-dungeon/Isometric/stoneTile_E.png',
+        dirt: 'isometric-dungeon/Isometric/planks_E.png',
+        stone: 'isometric-dungeon/Isometric/stoneColumn_E.png',
+        lava: 'isometric-dungeon/Isometric/dirt_E.png',
+        ice: 'isometric-dungeon/Isometric/stoneTile_E.png',
     },
     ui: {
         healthBar: 'game-sprites/ui/health_bar.png',

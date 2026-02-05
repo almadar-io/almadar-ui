@@ -28,6 +28,7 @@ import {
     useAssetsOptional,
     DEFAULT_ASSET_MANIFEST,
     getHeroPortraitUrl,
+    getHeroSpriteUrl,
     getWorldMapFeatureUrl,
     WorldMapFeatureType,
 } from '../assets';
@@ -301,6 +302,72 @@ export function HoMM3WorldMapTemplate({
                                         </Box>
                                     );
                                 })}
+                        </Box>
+
+                        {/* Hero sprites overlay */}
+                        <Box className="absolute inset-0 pointer-events-none">
+                            {worldMap.heroes.map((hero) => {
+                                const scale = 0.4;
+                                const TILE_WIDTH = 256 * scale;
+                                const FLOOR_HEIGHT = 128 * scale;
+                                const HORIZONTAL_OFFSET = TILE_WIDTH / 2;
+                                const VERTICAL_OFFSET = FLOOR_HEIGHT / 2;
+                                const maxY = Math.max(...worldMap.hexes.map((h) => h.y), 0);
+                                const baseOffsetX = (maxY + 1) * HORIZONTAL_OFFSET;
+
+                                const posX = (hero.position.x - hero.position.y) * HORIZONTAL_OFFSET + baseOffsetX + TILE_WIDTH / 2;
+                                const posY = (hero.position.x + hero.position.y) * VERTICAL_OFFSET + 20;
+
+                                const heroSpriteUrl = getHeroSpriteUrl(assets, hero.spriteId || hero.id);
+                                const isSelected = hero.id === selectedHeroId;
+
+                                return (
+                                    <Box
+                                        key={`hero-${hero.id}`}
+                                        className={cn(
+                                            'absolute transform -translate-x-1/2 cursor-pointer pointer-events-auto',
+                                            'transition-all duration-200 hover:scale-110',
+                                            isSelected && 'scale-110 z-20'
+                                        )}
+                                        style={{ left: posX + 16, top: posY - 30 }}
+                                        onClick={() => onHeroSelect?.(hero.id)}
+                                    >
+                                        {heroSpriteUrl ? (
+                                            <img
+                                                src={heroSpriteUrl}
+                                                alt={hero.name}
+                                                className={cn(
+                                                    'w-20 h-20 object-contain drop-shadow-lg',
+                                                    isSelected && 'ring-4 ring-cyan-400 rounded-full'
+                                                )}
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                }}
+                                            />
+                                        ) : (
+                                            <Box
+                                                className={cn(
+                                                    'w-12 h-12 rounded-full flex items-center justify-center text-2xl',
+                                                    hero.owner === 'player' ? 'bg-blue-500 border-2 border-blue-300' : 'bg-red-500 border-2 border-red-300',
+                                                    isSelected && 'ring-4 ring-cyan-400'
+                                                )}
+                                            >
+                                                {hero.owner === 'player' ? '🦸' : '👹'}
+                                            </Box>
+                                        )}
+                                        {/* Hero name tooltip */}
+                                        <Typography
+                                            variant="caption"
+                                            className={cn(
+                                                'absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded text-xs',
+                                                hero.owner === 'player' ? 'bg-blue-600 text-white' : 'bg-red-600 text-white'
+                                            )}
+                                        >
+                                            {hero.name}
+                                        </Typography>
+                                    </Box>
+                                );
+                            })}
                         </Box>
                     </Box>
                 </Box>
