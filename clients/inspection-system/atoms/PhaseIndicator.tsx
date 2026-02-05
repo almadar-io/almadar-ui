@@ -111,9 +111,15 @@ export const PhaseIndicator: React.FC<PhaseIndicatorProps> = ({
   size = "md",
   className,
 }) => {
-  const config = phaseConfig[phase];
+  // Guard against undefined or unknown phase values
+  const config = phaseConfig[phase] || phaseConfig.preparation;
   const sizes = sizeConfig[size];
   const Icon = config.icon;
+
+  // If phase is completely missing, don't render
+  if (!phase && phase !== "preparation") {
+    return null;
+  }
 
   return (
     <Box

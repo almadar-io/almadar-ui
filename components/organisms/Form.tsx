@@ -638,19 +638,32 @@ export const Form: React.FC<FormProps> = ({
     [formData, isFieldVisible, relationsData, relationsLoading, isLoading],
   );
 
+  // Normalize fields - handle both string[] and SchemaField[]
+  const normalizedFields = React.useMemo(() => {
+    if (!fields || fields.length === 0) return [];
+
+    return fields.map((field): SchemaField => {
+      // If field is a string, convert to SchemaField object
+      if (typeof field === 'string') {
+        return { name: field, type: 'string' };
+      }
+      return field as SchemaField;
+    });
+  }, [fields]);
+
   // Generate form fields from schema
   const schemaFields = React.useMemo(() => {
-    if (!fields || fields.length === 0) return null;
+    if (normalizedFields.length === 0) return null;
 
     if (isDebugEnabled()) {
       debugGroup(`Form: ${entity || "unknown"}`);
-      debug(`Fields count: ${fields.length}`);
+      debug(`Fields count: ${normalizedFields.length}`);
       debug("Conditional fields:", Object.keys(conditionalFields));
       debugGroupEnd();
     }
 
-    return fields.map(renderField).filter(Boolean);
-  }, [fields, renderField, entity, conditionalFields]);
+    return normalizedFields.map(renderField).filter(Boolean);
+  }, [normalizedFields, renderField, entity, conditionalFields]);
 
   // Generate form sections with nested fields
   const sectionElements = React.useMemo(() => {
