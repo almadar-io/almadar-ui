@@ -16,17 +16,26 @@ import type { KFlowEvent, EventListener, Unsubscribe, EventBusContextType } from
 export type { KFlowEvent, EventListener, Unsubscribe, EventBusContextType };
 
 // ============================================================================
-// Global Event Bus Bridge
+// Global Event Bus Bridge (Window-Level for Cross-Package Communication)
 // ============================================================================
+
+// Extend Window interface for TypeScript
+declare global {
+  interface Window {
+    __kflowEventBus?: EventBusContextType | null;
+  }
+}
 
 /**
  * Global event bus reference for bridging between packages.
  *
- * When the EventBusProvider mounts, it can register itself as the global
- * event bus. This allows components in other packages (like ui-shell) to
- * emit events to the same bus that the main app's trait state machine listens to.
+ * Uses window-level global to enable cross-package communication.
+ * This allows @almadar/ui components to emit events to the same bus
+ * that the consuming app's trait state machine listens to.
+ *
+ * When the EventBusProvider mounts, it sets window.__kflowEventBus.
+ * Components in any package can then use this shared event bus.
  */
-let globalEventBus: EventBusContextType | null = null;
 
 /**
  * Set the global event bus reference.
@@ -35,7 +44,9 @@ let globalEventBus: EventBusContextType | null = null;
  * @param bus - The event bus context to set as global, or null to clear
  */
 export function setGlobalEventBus(bus: EventBusContextType | null): void {
-  globalEventBus = bus;
+  if (typeof window !== 'undefined') {
+    window.__kflowEventBus = bus;
+  }
 }
 
 /**
@@ -44,7 +55,10 @@ export function setGlobalEventBus(bus: EventBusContextType | null): void {
  * @returns The global event bus if set, null otherwise
  */
 export function getGlobalEventBus(): EventBusContextType | null {
-  return globalEventBus;
+  if (typeof window !== 'undefined') {
+    return window.__kflowEventBus ?? null;
+  }
+  return null;
 }
 
 // ============================================================================
@@ -128,8 +142,8 @@ const fallbackEventBus: EventBusContextType = {
  */
 export function useEventBus(): EventBusContextType {
   const context = useContext(EventBusContext);
-  // Priority: 1) React context, 2) Global bridge, 3) Fallback
-  return context ?? globalEventBus ?? fallbackEventBus;
+  // Priority: 1) React context, 2) Window global bridge, 3) Fallback
+  return context ?? getGlobalEventBus() ?? fallbackEventBus;
 }
 
 // ============================================================================
