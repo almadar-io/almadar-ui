@@ -99,23 +99,25 @@ export function HexGameTile({
         <Box
             display="flex"
             className={cn(
-                'relative items-end justify-center',
+                'relative items-end justify-center pointer-events-none',
                 isSelected && 'z-20',
                 isAttackTarget && 'z-10',
                 className
             )}
             style={{ width: TILE_WIDTH, height: TILE_HEIGHT }}
         >
-            {/* Isometric terrain tile */}
-            <HexTileSprite
-                type={terrain}
-                scale={scale}
-                highlight={highlight}
-            />
+            {/* Isometric terrain tile - no pointer events */}
+            <Box className="pointer-events-none">
+                <HexTileSprite
+                    type={terrain}
+                    scale={scale}
+                    highlight={highlight}
+                />
+            </Box>
 
             {/* Hit area - isometric diamond shape for precise mouse interaction */}
             <Box
-                className="absolute cursor-pointer"
+                className="absolute cursor-pointer pointer-events-auto"
                 style={{
                     bottom: 0,
                     left: 0,

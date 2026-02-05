@@ -92,7 +92,8 @@ export function HexTileSprite({
             onMouseEnter={onMouseEnter}
             onMouseLeave={onMouseLeave}
             className={cn(
-                'relative transition-all duration-150 cursor-pointer',
+                'relative transition-all duration-150',
+                onClick && 'cursor-pointer',
                 className
             )}
             style={{
