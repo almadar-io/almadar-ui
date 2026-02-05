@@ -389,9 +389,55 @@ export const DEFAULT_ASSET_MANIFEST: TraitWarsAssetManifest = {
         battleMarker: 'world-map/battle_marker.png',
         fogOfWar: 'world-map/fog_of_war.png',
     },
-    // Castle backdrops
+    // Castle backdrops (frontal view)
     castles: {
-        resonator: 'castle/resonator_citadel.png',
-        dominion: 'castle/dominion_fortress.png',
+        resonator: 'castle-views/resonator_view.png',
+        dominion: 'castle-views/dominion_view.png',
+    },
+    // Building sprites for castle view
+    buildings: {
+        townHall: 'buildings/town_hall.png',
+        barracks: 'buildings/barracks.png',
+        arcaneTower: 'buildings/arcane_tower.png',
+        traitForge: 'buildings/trait_forge.png',
+        resonanceWell: 'buildings/resonance_well.png',
+        treasury: 'buildings/treasury.png',
+        marketplace: 'buildings/marketplace.png',
+        library: 'buildings/library.png',
+        portal: 'buildings/portal.png',
+    },
+    // Robot unit sprites (isometric)
+    robotUnits: {
+        // Tier 1
+        worker: 'units/worker.png',
+        scrapper: 'units/scrapper.png',
+        mender: 'units/mender.png',
+        // Tier 2
+        guardian: 'units/guardian.png',
+        strider: 'units/strider.png',
+        breaker: 'units/breaker.png',
+        // Tier 3
+        resonator: 'units/resonator.png',
+        forger: 'units/forger.png',
+        glitch: 'units/glitch.png',
+        // Tier 4
+        archivist: 'units/archivist.png',
+        conductor: 'units/conductor.png',
+        prime: 'units/prime.png',
+    },
+    // Unit portraits for recruitment panel
+    unitPortraits: {
+        worker: 'unit-portraits/worker.png',
+        scrapper: 'unit-portraits/scrapper.png',
+        mender: 'unit-portraits/mender.png',
+        guardian: 'unit-portraits/guardian.png',
+        strider: 'unit-portraits/strider.png',
+        breaker: 'unit-portraits/breaker.png',
+        resonator: 'unit-portraits/resonator.png',
+        forger: 'unit-portraits/forger.png',
+        glitch: 'unit-portraits/glitch.png',
+        archivist: 'unit-portraits/archivist.png',
+        conductor: 'unit-portraits/conductor.png',
+        prime: 'unit-portraits/prime.png',
     },
 };

@@ -12,7 +12,13 @@ import React, { useState, useMemo } from 'react';
 import { Box, Typography, HStack, VStack, Button, Badge, cn } from '@almadar/ui';
 import { ResourceBar } from '../molecules/ResourceBar';
 import { BuildingSlot } from '../molecules/BuildingSlot';
-import { BuildingType } from '../assets';
+import {
+    BuildingType,
+    useAssetsOptional,
+    getCastleUrl,
+    CastleFactionType,
+    DEFAULT_ASSET_MANIFEST,
+} from '../assets';
 import {
     Resources,
     ResourceCost,
@@ -145,6 +151,10 @@ export function HoMM3CastleTemplate({
         setRecruitCounts({});
     };
 
+    // Asset manifest for rendering castle backdrop
+    const assets = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
+    const castleBackdropUrl = getCastleUrl(assets, castle.faction as CastleFactionType);
+
     return (
         <Box className={cn('min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900', className)}>
             {/* Top Bar */}
@@ -188,6 +198,21 @@ export function HoMM3CastleTemplate({
                         }}
                     >
                         {/* Castle backdrop gradient */}
+                        <Box className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-slate-900/40" />
+
+                        {/* Castle backdrop image */}
+                        {castleBackdropUrl && (
+                            <img
+                                src={castleBackdropUrl}
+                                alt={`${faction.name} Castle`}
+                                className="absolute inset-0 w-full h-full object-cover"
+                                onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                            />
+                        )}
+
+                        {/* Castle backdrop gradient overlay */}
                         <Box className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-slate-900/40" />
 
                         {/* Faction banner */}
