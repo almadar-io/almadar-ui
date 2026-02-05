@@ -41,9 +41,9 @@ export interface TraitStateViewerProps {
 }
 
 const sizeConfig = {
-    sm: { nodeSize: 'w-12 h-8', fontSize: 'text-xs', gap: 'gap-2' },
-    md: { nodeSize: 'w-16 h-10', fontSize: 'text-sm', gap: 'gap-4' },
-    lg: { nodeSize: 'w-20 h-12', fontSize: 'text-base', gap: 'gap-6' },
+    sm: { nodeSize: 'min-w-12 h-8', fontSize: 'text-xs', gap: 'gap-2' },
+    md: { nodeSize: 'min-w-16 h-10', fontSize: 'text-sm', gap: 'gap-4' },
+    lg: { nodeSize: 'min-w-20 h-12', fontSize: 'text-base', gap: 'gap-6' },
 };
 
 export function TraitStateViewer({
@@ -90,7 +90,7 @@ export function TraitStateViewer({
 
             {/* Description */}
             {trait.description && (
-                <Typography variant="caption" className="text-gray-400 mb-3">
+                <Typography variant="caption" className="text-gray-400 mb-3" overflow="wrap">
                     {trait.description}
                 </Typography>
             )}
@@ -106,7 +106,7 @@ export function TraitStateViewer({
                             key={state}
                             display="flex"
                             className={cn(
-                                'items-center justify-center rounded-md border-2 transition-all',
+                                'items-center justify-center rounded-md border-2 transition-all px-2',
                                 config.nodeSize,
                                 isCurrent && 'bg-yellow-500/20 border-yellow-400 shadow-md shadow-yellow-400/20',
                                 !isCurrent && hasOutgoing && 'bg-gray-700 border-gray-500 hover:border-gray-400',
@@ -119,6 +119,7 @@ export function TraitStateViewer({
                                 variant="caption"
                                 className={cn(
                                     config.fontSize,
+                                    'whitespace-nowrap',
                                     isCurrent ? 'text-yellow-300 font-bold' : 'text-gray-300'
                                 )}
                             >

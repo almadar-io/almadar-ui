@@ -32,21 +32,23 @@ export interface TypographyProps {
   level?: 1 | 2 | 3 | 4 | 5 | 6;
   /** Text color */
   color?:
-    | "primary"
-    | "secondary"
-    | "muted"
-    | "error"
-    | "success"
-    | "warning"
-    | "inherit";
+  | "primary"
+  | "secondary"
+  | "muted"
+  | "error"
+  | "success"
+  | "warning"
+  | "inherit";
   /** Text alignment */
   align?: "left" | "center" | "right";
   /** Font weight override */
   weight?: "light" | "normal" | "medium" | "semibold" | "bold";
   /** Font size override */
   size?: TypographySize;
-  /** Truncate with ellipsis */
+  /** Truncate with ellipsis (single line) */
   truncate?: boolean;
+  /** Overflow handling mode */
+  overflow?: "visible" | "hidden" | "wrap" | "clamp-2" | "clamp-3";
   /** Custom HTML element */
   as?: keyof JSX.IntrinsicElements;
   /** HTML id attribute */
@@ -99,22 +101,22 @@ const weightStyles = {
 };
 
 const defaultElements: Record<TypographyVariant, keyof JSX.IntrinsicElements> =
-  {
-    h1: "h1",
-    h2: "h2",
-    h3: "h3",
-    h4: "h4",
-    h5: "h5",
-    h6: "h6",
-    body1: "p",
-    body2: "p",
-    body: "p",
-    caption: "span",
-    overline: "span",
-    small: "span",
-    large: "p",
-    label: "span",
-  };
+{
+  h1: "h1",
+  h2: "h2",
+  h3: "h3",
+  h4: "h4",
+  h5: "h5",
+  h6: "h6",
+  body1: "p",
+  body2: "p",
+  body: "p",
+  caption: "span",
+  overline: "span",
+  small: "span",
+  large: "p",
+  label: "span",
+};
 
 const typographySizeStyles: Record<TypographySize, string> = {
   xs: "text-xs",
@@ -126,6 +128,14 @@ const typographySizeStyles: Record<TypographySize, string> = {
   "3xl": "text-3xl",
 };
 
+const overflowStyles: Record<string, string> = {
+  visible: "overflow-visible",
+  hidden: "overflow-hidden",
+  wrap: "break-words overflow-hidden",
+  "clamp-2": "overflow-hidden line-clamp-2",
+  "clamp-3": "overflow-hidden line-clamp-3",
+};
+
 export const Typography: React.FC<TypographyProps> = ({
   variant: variantProp,
   level,
@@ -134,6 +144,7 @@ export const Typography: React.FC<TypographyProps> = ({
   weight,
   size,
   truncate = false,
+  overflow,
   as,
   id,
   className,
@@ -155,7 +166,8 @@ export const Typography: React.FC<TypographyProps> = ({
         weight && weightStyles[weight],
         size && typographySizeStyles[size],
         align && `text-${align}`,
-        truncate && "truncate",
+        truncate && "truncate overflow-hidden text-ellipsis",
+        overflow && overflowStyles[overflow],
         className,
       )}
       style={style}
