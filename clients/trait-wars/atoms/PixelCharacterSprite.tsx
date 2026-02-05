@@ -3,14 +3,13 @@
  *
  * High-fidelity character sprites from the Pixel Platformer Pack.
  * 24x24 sprites with 1px margin - larger and more visible than Roguelike 16x16.
+ * Assets are loaded dynamically via the TraitWarsAssetProvider.
  */
 
 import React from 'react';
 import { Box } from '@almadar/ui';
 import { cn } from '@almadar/ui';
-
-// Import the Pixel Platformer character spritesheet
-import characterSheet from '../assets/pixel-platformer/tilemap-characters.png';
+import { useAssetsOptional, DEFAULT_ASSET_MANIFEST, getSpriteSheetUrl } from '../assets';
 
 // Spritesheet configuration
 const SPRITE_SIZE = 24; // Each sprite is 24x24 pixels
@@ -106,6 +105,10 @@ export function PixelCharacterSprite({
     team = 'neutral',
     state = 'idle',
 }: PixelCharacterSpriteProps): JSX.Element {
+    // Get asset manifest from context or use default
+    const assets = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
+    const spriteSheetUrl = getSpriteSheetUrl(assets, 'pixelCharacters');
+
     // Map legacy character types to pixel sprites
     const mappedType = (type in PIXEL_CHARACTER_SPRITES
         ? type
@@ -134,6 +137,16 @@ export function PixelCharacterSprite({
         wounded: 'grayscale-[40%] brightness-75 opacity-80',
     };
 
+    if (!spriteSheetUrl) {
+        return (
+            <Box
+                display="inline-block"
+                className={cn('bg-blue-300 rounded-full', className)}
+                style={{ width: displaySize, height: displaySize }}
+            />
+        );
+    }
+
     return (
         <Box
             display="inline-block"
@@ -145,7 +158,7 @@ export function PixelCharacterSprite({
             style={{
                 width: displaySize,
                 height: displaySize,
-                backgroundImage: `url(${characterSheet})`,
+                backgroundImage: `url(${spriteSheetUrl})`,
                 backgroundPosition: `-${bgX * scale}px -${bgY * scale}px`,
                 backgroundSize: `${SHEET_COLS * TILE_STEP * scale}px auto`,
                 imageRendering: 'pixelated',
