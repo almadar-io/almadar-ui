@@ -46,6 +46,14 @@ export type UIElementType = 'healthBar' | 'traitFrame' | 'button' | 'panelBg';
  */
 export type EffectType = 'attack' | 'heal' | 'defend' | 'death';
 
+/**
+ * Sprite sheet types for tile/character rendering
+ */
+export type SpriteSheetType =
+    | 'pixelTilemap'      // Pixel Platformer tilemap
+    | 'pixelCharacters'   // Pixel Platformer characters
+    | 'dungeonTilemap';   // Roguelike Dungeon tilemap
+
 // ============================================================================
 // ASSET MANIFEST INTERFACE
 // ============================================================================
@@ -66,6 +74,9 @@ export interface TraitWarsAssetManifest {
 
     /** UI element paths keyed by element type */
     ui: Partial<Record<UIElementType, string>>;
+
+    /** Sprite sheet paths for tile/character rendering */
+    spriteSheets: Partial<Record<SpriteSheetType, string>>;
 
     /** Effect animation paths (optional) */
     effects?: {
@@ -110,6 +121,14 @@ export function useAssets(): TraitWarsAssetManifest {
     return context;
 }
 
+/**
+ * Hook to access asset manifest with optional fallback.
+ * Returns null if no provider is found (useful for Storybook).
+ */
+export function useAssetsOptional(): TraitWarsAssetManifest | null {
+    return useContext(AssetContext);
+}
+
 // ============================================================================
 // ASSET URL HELPERS
 // ============================================================================
@@ -139,6 +158,14 @@ export function getUIElementUrl(manifest: TraitWarsAssetManifest, type: UIElemen
 }
 
 /**
+ * Get full URL for a sprite sheet.
+ */
+export function getSpriteSheetUrl(manifest: TraitWarsAssetManifest, type: SpriteSheetType): string | undefined {
+    const path = manifest.spriteSheets[type];
+    return path ? `${manifest.baseUrl}/${path}` : undefined;
+}
+
+/**
  * Get full URL for an effect animation.
  */
 export function getEffectUrl(manifest: TraitWarsAssetManifest, type: EffectType): string | undefined {
@@ -155,34 +182,38 @@ export function getEffectUrl(manifest: TraitWarsAssetManifest, type: EffectType)
  * Projects should override this with their own asset paths.
  */
 export const DEFAULT_ASSET_MANIFEST: TraitWarsAssetManifest = {
-    baseUrl: '/assets/game-sprites',
+    baseUrl: '/assets',
     units: {
-        hero: 'robots/04_hero_isometric.png',
-        caregiver: 'robots/03_caregiver_isometric.png',
-        explorer: 'robots/05_explorer_isometric.png',
-        sage: 'robots/10_sage_isometric.png',
-        shadowLegion: 'robots/iram_shadow_isometric.png',
-        emperor: 'robots/12_emperor_isometric.png',
+        hero: 'game-sprites/robots/04_hero_isometric.png',
+        caregiver: 'game-sprites/robots/03_caregiver_isometric.png',
+        explorer: 'game-sprites/robots/05_explorer_isometric.png',
+        sage: 'game-sprites/robots/10_sage_isometric.png',
+        shadowLegion: 'game-sprites/robots/iram_shadow_isometric.png',
+        emperor: 'game-sprites/robots/12_emperor_isometric.png',
     },
     terrain: {
-        plains: 'terrain/manuscript_plains.png',
-        forest: 'terrain/illuminated_forest.png',
-        mountain: 'terrain/scripture_mountains.png',
-        water: 'terrain/ink_water.png',
-        fortress: 'terrain/bone_castle.png',
-        castle: 'terrain/bone_castle.png',
+        plains: 'game-sprites/terrain/manuscript_plains.png',
+        forest: 'game-sprites/terrain/illuminated_forest.png',
+        mountain: 'game-sprites/terrain/scripture_mountains.png',
+        water: 'game-sprites/terrain/ink_water.png',
+        fortress: 'game-sprites/terrain/bone_castle.png',
+        castle: 'game-sprites/terrain/bone_castle.png',
     },
     ui: {
-        healthBar: 'ui/health_bar.png',
-        traitFrame: 'ui/trait_frame.png',
-        button: 'ui/button.png',
-        panelBg: 'ui/panel_bg.png',
+        healthBar: 'game-sprites/ui/health_bar.png',
+        traitFrame: 'game-sprites/ui/trait_frame.png',
+        button: 'game-sprites/ui/button.png',
+        panelBg: 'game-sprites/ui/panel_bg.png',
+    },
+    spriteSheets: {
+        pixelTilemap: 'pixel-platformer/tilemap.png',
+        pixelCharacters: 'pixel-platformer/tilemap-characters.png',
+        dungeonTilemap: 'tiles/dungeon/roguelikeDungeon_transparent.png',
     },
     effects: {
-        attack: 'effects/attack.png',
-        heal: 'effects/heal.png',
-        defend: 'effects/defend.png',
-        death: 'effects/death.png',
+        attack: 'game-sprites/effects/attack.png',
+        heal: 'game-sprites/effects/heal.png',
+        defend: 'game-sprites/effects/defend.png',
+        death: 'game-sprites/effects/death.png',
     },
 };
-
