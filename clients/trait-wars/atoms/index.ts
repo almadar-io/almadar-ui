@@ -12,6 +12,8 @@ export { TileSprite, type TileSpriteProps, type TileType, TILE_SPRITES } from '.
 export { StateIndicator, type StateIndicatorProps, type TraitState as IndicatorState } from './StateIndicator';
 export { DamagePopup, type DamagePopupProps } from './DamagePopup';
 export { GuardDisplay, type GuardDisplayProps } from './GuardDisplay';
+export { HeroAvatar, type HeroAvatarProps } from './HeroAvatar';
+export { MapNode, type MapNodeProps, type LocationType } from './MapNode';
 
 // High-fidelity Pixel Platformer sprites
 export { PixelCharacterSprite, type PixelCharacterSpriteProps, type PixelCharacterType, PIXEL_CHARACTER_SPRITES, CHARACTER_TYPE_MAP } from './PixelCharacterSprite';

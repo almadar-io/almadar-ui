@@ -16,3 +16,9 @@ export { TraitWarsGame, type TraitWarsGameProps, type CombatLogEntry as GameComb
 
 // High-fidelity hex grid template
 export { HexTraitWarsGame, type HexTraitWarsGameProps, type HexGameUnit, type GamePhase as HexGamePhase, type LogEntry } from './HexTraitWarsGame';
+
+// Hero and Strategic templates
+export { HeroProfileTemplate, type HeroProfileTemplateProps, type HeroData } from './HeroProfileTemplate';
+export { WorldMapTemplate, type WorldMapTemplateProps } from './WorldMapTemplate';
+export { CastleTemplate, type CastleTemplateProps } from './CastleTemplate';
+

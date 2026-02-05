@@ -12,5 +12,7 @@ export { TraitStateViewer, type TraitStateViewerProps, type TraitStateMachineDef
 export { TraitSlot, type TraitSlotProps, type TraitData } from './TraitSlot';
 export { TraitIcon, type TraitIconProps } from './TraitIcon';
 export { LevelUpModal, type LevelUpModalProps, type LevelUpData, type SkillChoice } from './LevelUpModal';
+export { ResourceBar, type ResourceBarProps } from './ResourceBar';
 // Deprecated: use TraitStateMachineDefinition from molecules or TraitDefinition from organisms
 export type { TraitDefinition as TraitViewerDefinition } from './TraitStateViewer';
+
