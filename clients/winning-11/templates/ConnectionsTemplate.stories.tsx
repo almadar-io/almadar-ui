@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ConnectionsTemplate, type ConnectionData } from "./ConnectionsTemplate";
 
 const mockConnections: ConnectionData[] = [

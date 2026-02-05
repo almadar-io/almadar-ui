@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { HarvestCard } from "./HarvestCard";
 
 const meta: Meta<typeof HarvestCard> = {

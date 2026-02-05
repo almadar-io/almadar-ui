@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { WorkoutPlanCard, WorkoutPlanData, WorkoutExercise } from "./WorkoutPlanCard";
 
 const meta: Meta<typeof WorkoutPlanCard> = {

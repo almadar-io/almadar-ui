@@ -2,7 +2,7 @@
  * GameUnit Stories
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { GameUnit } from './GameUnit';
 import { Box } from '@almadar/ui';
 import { Typography } from '@almadar/ui';

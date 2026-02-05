@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { SchemaDiffViewer, type SchemaDiff } from "./SchemaDiffViewer";
 
 const meta: Meta<typeof SchemaDiffViewer> = {

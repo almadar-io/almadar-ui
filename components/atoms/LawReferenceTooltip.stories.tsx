@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { LawReferenceTooltip } from './LawReferenceTooltip';
 import { Typography } from './Typography';
 import { HStack, VStack } from './Stack';

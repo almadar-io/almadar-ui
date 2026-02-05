@@ -4,7 +4,7 @@
  * Storybook stories for the TraitIcon atom.
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { TraitIcon, TraitName } from './TraitIcon';
 import { Box } from '@almadar/ui';
 

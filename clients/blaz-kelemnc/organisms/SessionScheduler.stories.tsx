@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { SessionScheduler, TrainingSessionData } from "./SessionScheduler";
 
 const meta: Meta<typeof SessionScheduler> = {

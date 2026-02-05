@@ -4,7 +4,7 @@
  * Storybook stories for the GameBoard organism.
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import React, { useState } from 'react';
 import { GameBoard } from './GameBoard';
 import { GameState, createInitialGameState, GameUnit } from '../types/game';

@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { TodoItem, type Todo } from "./TodoItem";
 
 const meta: Meta<typeof TodoItem> = {

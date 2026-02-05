@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { InspectionWizardTemplate } from "./InspectionWizardTemplate";
 import { VStack } from "../../../components/atoms/Stack";
 import { Typography } from "../../../components/atoms/Typography";

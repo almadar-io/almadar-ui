@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { FloatingActionMenu } from "./FloatingActionMenu";
 import { Camera, FileText, UserPlus, AlertCircle } from "lucide-react";
 import { Box } from "../../../components/atoms/Box";

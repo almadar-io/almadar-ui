@@ -4,7 +4,7 @@
  * Showcases the isometric terrain tiles in "Illuminated Manuscript Futurism" style.
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { HexTileSprite } from './HexTileSprite';
 
 const meta: Meta<typeof HexTileSprite> = {

@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { DiffBlock } from "./DiffBlock";
 
 const meta: Meta<typeof DiffBlock> = {

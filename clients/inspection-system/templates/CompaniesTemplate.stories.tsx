@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { CompaniesTemplate, CompanyData } from "./CompaniesTemplate";
 
 const meta: Meta<typeof CompaniesTemplate> = {

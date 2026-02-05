@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MasterDetail } from './MasterDetail';
 import { Box } from '../../atoms/Box';
 import { Typography } from '../../atoms/Typography';

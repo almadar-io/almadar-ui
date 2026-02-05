@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { BookOpen, Star, Zap } from 'lucide-react';
 import { ConceptCard } from './ConceptCard';
 

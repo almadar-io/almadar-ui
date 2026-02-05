@@ -4,14 +4,14 @@
  * Storybook stories for the BattlefieldTemplate.
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { BattlefieldTemplate, MatchEntity } from './BattlefieldTemplate';
 import { HexTileEntity, GridUnit } from '../organisms/HexGrid';
 import { UnitEntity } from '../molecules/UnitCard';
 import { CombatEvent } from '../organisms/CombatLog';
 import { GameAction } from '../molecules/ActionMenu';
 import { TraitDefinition } from '../organisms/TraitPanel';
-import { action } from '@storybook/addon-actions';
+import { action } from 'storybook/actions';
 
 const meta: Meta<typeof BattlefieldTemplate> = {
     title: 'Trait Wars/Templates/BattlefieldTemplate',

@@ -4,7 +4,7 @@
  * Storybook stories for the TileSprite component.
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { TileSprite, TILE_SPRITES, TileType } from './TileSprite';
 import { Box } from '@almadar/ui';
 import { Typography } from '@almadar/ui';

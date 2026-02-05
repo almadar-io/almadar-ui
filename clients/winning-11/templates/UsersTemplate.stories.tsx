@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { UsersTemplate, type UserData } from "./UsersTemplate";
 
 const mockUsers: UserData[] = [

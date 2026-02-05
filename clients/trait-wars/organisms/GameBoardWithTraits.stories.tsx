@@ -4,7 +4,7 @@
  * Storybook stories demonstrating trait visibility features.
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import React, { useState } from 'react';
 import { GameBoardWithTraits, CombatLogEntry } from './GameBoardWithTraits';
 import { GameState, createInitialGameState, GameUnit } from '../types/game';

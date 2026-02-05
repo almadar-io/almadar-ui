@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { TraineeDetailTemplate } from "./TraineeDetailTemplate";
 
 // Define types inline to avoid bundling issues

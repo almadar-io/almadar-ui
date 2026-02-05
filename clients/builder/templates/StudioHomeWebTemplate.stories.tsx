@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { StudioHomeWebTemplate } from "./StudioHomeWebTemplate";
 
 const meta: Meta<typeof StudioHomeWebTemplate> = {

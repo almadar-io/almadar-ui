@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { AgentChatPanel } from "./AgentChatPanel";
 import type { ActivityItem } from "./AgentActivityFeed";
 import type { Todo } from "../../molecules/agent";

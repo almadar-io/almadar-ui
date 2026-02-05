@@ -4,7 +4,7 @@
  * Complete game template demonstration.
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import React from 'react';
 import { TraitWarsGame } from './TraitWarsGame';
 import { GameUnit } from '../types/game';

@@ -4,7 +4,7 @@
  * Complete game experience with scenario selection and trait visibility.
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import React, { useState, useCallback } from 'react';
 import { Box } from '@almadar/ui';
 import { Typography } from '@almadar/ui';

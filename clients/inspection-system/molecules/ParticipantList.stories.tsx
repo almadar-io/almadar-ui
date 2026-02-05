@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ParticipantList } from "./ParticipantList";
 
 const meta: Meta<typeof ParticipantList> = {

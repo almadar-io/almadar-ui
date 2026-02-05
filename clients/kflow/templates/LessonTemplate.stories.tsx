@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { LessonTemplate } from "./LessonTemplate";
 
 const meta: Meta<typeof LessonTemplate> = {

@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { LawReferenceBadge } from "./LawReferenceBadge";
 
 const meta: Meta<typeof LawReferenceBadge> = {

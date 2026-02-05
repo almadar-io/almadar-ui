@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { CreditMeter, CreditData } from "./CreditMeter";
 
 const meta: Meta<typeof CreditMeter> = {

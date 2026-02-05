@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { TraineeCard, TraineeData } from "./TraineeCard";
 import { CreditData } from "../atoms/CreditMeter";
 

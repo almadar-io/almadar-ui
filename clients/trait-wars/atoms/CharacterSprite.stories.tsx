@@ -4,7 +4,7 @@
  * Showcases the isometric character sprites in "Illuminated Manuscript Futurism" style.
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { CharacterSprite } from './CharacterSprite';
 
 const meta: Meta<typeof CharacterSprite> = {

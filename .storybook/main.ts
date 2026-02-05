@@ -1,28 +1,34 @@
+// This file has been automatically migrated to valid ESM format by Storybook.
+import { fileURLToPath } from "node:url";
 import type { StorybookConfig } from "@storybook/react-vite";
-import path from "path";
+import path, { dirname } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const config: StorybookConfig = {
   stories: [
     "../components/**/*.stories.@(js|jsx|ts|tsx)",
     "../clients/**/*.stories.@(js|jsx|ts|tsx)",
   ],
+
   addons: [
-    "@storybook/addon-links",
-    "@storybook/addon-essentials",
-    "@storybook/addon-interactions",
-    "@storybook/addon-themes",
+    getAbsolutePath("@storybook/addon-links"),
+    getAbsolutePath("@storybook/addon-themes"),
+    getAbsolutePath("@storybook/addon-docs")
   ],
+
   framework: {
-    name: "@storybook/react-vite",
+    name: getAbsolutePath("@storybook/react-vite"),
     options: {},
   },
-  docs: {
-    autodocs: "tag",
-  },
+
   staticDirs: ["../themes", "../clients/trait-wars/assets"],
+
   typescript: {
     reactDocgen: false,
   },
+
   viteFinal: async (config) => {
     return {
       ...config,
@@ -45,7 +51,11 @@ const config: StorybookConfig = {
         },
       },
     };
-  },
+  }
 };
 
 export default config;
+
+function getAbsolutePath(value: string): any {
+  return dirname(fileURLToPath(import.meta.resolve(`${value}/package.json`)));
+}

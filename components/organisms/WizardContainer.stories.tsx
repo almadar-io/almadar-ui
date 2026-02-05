@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { WizardContainer, type WizardStep } from './WizardContainer';
 import { Box } from '../atoms/Box';
 import { Typography } from '../atoms/Typography';

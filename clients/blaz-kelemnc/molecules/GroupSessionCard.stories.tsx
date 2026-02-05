@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { GroupSessionCard } from "./GroupSessionCard";
 
 const meta: Meta<typeof GroupSessionCard> = {

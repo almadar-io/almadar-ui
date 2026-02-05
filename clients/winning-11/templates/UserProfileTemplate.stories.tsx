@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { UserProfileTemplate, type UserProfileData } from "./UserProfileTemplate";
 
 const mockUser: UserProfileData = {

@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ShareableLinkGenerator } from "./ShareableLinkGenerator";
 
 const meta: Meta<typeof ShareableLinkGenerator> = {

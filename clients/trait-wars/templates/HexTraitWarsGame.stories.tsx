@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { HexTraitWarsGame, HexGameUnit } from './HexTraitWarsGame';
 import { HexBoardTile } from '../organisms/HexGameBoard';
 import { HexTileType } from '../atoms/HexTileSprite';

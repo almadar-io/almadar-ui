@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { GraphLegend, NODE_TYPE_COLORS, EDGE_TYPE_COLORS } from './GraphLegend';
 
 const meta: Meta<typeof GraphLegend> = {

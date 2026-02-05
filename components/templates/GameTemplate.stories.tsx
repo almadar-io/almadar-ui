@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { GameTemplate } from './GameTemplate';
 import { Typography } from '../atoms/Typography';
 import { Badge } from '../atoms/Badge';

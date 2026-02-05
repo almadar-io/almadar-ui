@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { GenericAppTemplate } from './GenericAppTemplate';
 import { Button } from '../atoms/Button';
 import { Card } from '../atoms/Card';

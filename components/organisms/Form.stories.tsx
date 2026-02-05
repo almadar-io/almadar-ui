@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import React, { useState, useEffect } from 'react';
 import { Form, type SchemaField, type FormSection, type HiddenCalculation, type ViolationTrigger } from './Form';
 import { VStack } from '../atoms/Stack';

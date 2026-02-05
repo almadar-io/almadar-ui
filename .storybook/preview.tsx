@@ -1,4 +1,4 @@
-import type { Preview } from '@storybook/react';
+import type { Preview } from '@storybook/react-vite';
 import { withThemeByDataAttribute } from '@storybook/addon-themes';
 import React from 'react';
 
@@ -15,15 +15,15 @@ const preview: Preview = {
             },
         },
         backgrounds: {
-            default: 'light',
-            values: [
-                { name: 'light', value: '#ffffff' },
-                { name: 'dark', value: '#09090b' },
-                { name: 'garden-light', value: '#f0fdf4' },
-                { name: 'garden-dark', value: '#14532d' },
-            ],
+            options: {
+                light: { name: 'light', value: '#ffffff' },
+                dark: { name: 'dark', value: '#09090b' },
+                "garden-light": { name: 'garden-light', value: '#f0fdf4' },
+                "garden-dark": { name: 'garden-dark', value: '#14532d' }
+            }
         },
     },
+
     decorators: [
         withThemeByDataAttribute({
             themes: {
@@ -41,6 +41,12 @@ const preview: Preview = {
             </div>
         ),
     ],
+
+    initialGlobals: {
+        backgrounds: {
+            value: 'light'
+        }
+    }
 };
 
 export default preview;

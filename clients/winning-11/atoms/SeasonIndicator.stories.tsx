@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { SeasonIndicator } from './SeasonIndicator';
 
 const meta: Meta<typeof SeasonIndicator> = {

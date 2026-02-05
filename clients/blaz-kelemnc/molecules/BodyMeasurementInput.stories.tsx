@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { BodyMeasurementInput, BodyMeasurementData } from "./BodyMeasurementInput";
 
 const meta: Meta<typeof BodyMeasurementInput> = {

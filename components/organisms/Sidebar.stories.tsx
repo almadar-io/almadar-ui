@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Sidebar } from './Sidebar';
 import { Home, Users, Settings, FileText, BarChart, Mail, Calendar } from 'lucide-react';
 

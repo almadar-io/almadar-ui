@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { GardenView, type GardenItem } from "./GardenView";
 
 // Mock data matching RelationshipHealth entity structure

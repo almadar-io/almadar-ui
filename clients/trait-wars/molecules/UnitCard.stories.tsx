@@ -4,10 +4,10 @@
  * Storybook stories for the UnitCard molecule.
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-vite';
 import { UnitCard, UnitEntity } from './UnitCard';
 import { Box } from '@almadar/ui';
-import { action } from '@storybook/addon-actions';
+import { action } from 'storybook/actions';
 
 const meta: Meta<typeof UnitCard> = {
     title: 'Trait Wars/Molecules/UnitCard',

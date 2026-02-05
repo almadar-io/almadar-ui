@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { SignatureCapture } from "./SignatureCapture";
 import { VStack } from "../../../components/atoms/Stack";
 
