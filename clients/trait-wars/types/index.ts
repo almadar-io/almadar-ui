@@ -7,4 +7,5 @@
 export * from './game';
 export * from './traits';
 export * from './resources';
+export * from './castle';
 
