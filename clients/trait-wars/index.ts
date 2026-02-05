@@ -7,8 +7,19 @@
  * - User interactions emit events via useEventBus()
  */
 
-// Asset constants and utilities
-export * from './assets';
+// Asset types, provider, and utilities (avoiding TerrainType conflict with atoms)
+export {
+    TraitWarsAssetProvider,
+    useAssets,
+    getUnitSpriteUrl,
+    getTerrainSpriteUrl,
+    getUIElementUrl,
+    DEFAULT_ASSET_MANIFEST,
+    type TraitWarsAssetManifest,
+    type UnitType,
+    type TerrainType as AssetTerrainType,
+    type UIElementType,
+} from './assets';
 
 // Atoms - Basic building blocks
 export * from './atoms';

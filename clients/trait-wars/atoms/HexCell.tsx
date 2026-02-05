@@ -9,7 +9,6 @@ import React from 'react';
 import { cn } from '../../../lib/cn';
 import { Box } from '../../../components/atoms/Box';
 import { Typography } from '../../../components/atoms/Typography';
-import { TERRAIN_SPRITES } from '../assets';
 
 export type TerrainType = 'plains' | 'forest' | 'mountain' | 'water' | 'fortress';
 
