@@ -1,0 +1,132 @@
+{
+  "name": "iram_system",
+  "description": "The Iram Planetary System. The Golden Cage.",
+  "orbitals": [
+    {
+      "name": "Planet Iram",
+      "entity": {
+        "name": "Iram",
+        "description": "The Capital World. A planet constructed of gold and silence.",
+        "fields": [
+          {
+            "name": "Vev Level",
+            "type": "number"
+          }
+        ],
+        "visual_prompt": "Sci-Fi Environment Concept. Style: 'Illuminated Manuscript Futurism'.\nSubject: Planet Iram (Orbital View).\n\nVisual Overview:\nA GOLDEN SPHERE floating in deep space. It does not look like a rock; it looks like a GEOMETRIC CONSTRUCT.\nThe surface is covered in circuit-board patterns of glowing white light (The City).\nSurrounding the planet is a perfect, artificial RING of text (The Constitution/Code) glowing in the void.\n\nAtmosphere:\nArtificial, Perfect, Silent. 'A world without nature.'"
+      },
+      "traits": [],
+      "pages": []
+    },
+    {
+      "name": "District 1 The High Spire",
+      "entity": {
+        "name": "The Silent City",
+        "description": "The seat of the Emperor. Zero VEV Zone.",
+        "fields": [
+          {
+            "name": "Population Density",
+            "type": "number"
+          }
+        ],
+        "visual_prompt": "Sci-Fi Environment Spec. Style: 'Illuminated Manuscript Futurism'.\nSubject: District 1 (The Silent City).\n\nVisual Overview:\nA city of floating towers made of WHITE CERAMIC and GOLD FILIGREE.\nThere are no roads, only beams of light connecting the spires.\nThe sky is a deep, starry violet (No atmosphere, just VEV).\nBecause VEV is zero, huge statues float effortlessly, disconnected from gravity.\n\nAtmosphere:\nHoly, Sterile, Weightless."
+      },
+      "traits": [],
+      "pages": []
+    },
+    {
+      "name": "District 9 The Rust Belt",
+      "entity": {
+        "name": "The Dross Pits",
+        "description": "The industrial refuse layer. High Gravity.",
+        "fields": [
+          {
+            "name": "Population Density",
+            "type": "number"
+          }
+        ],
+        "visual_prompt": "Sci-Fi Environment Spec. Style: 'Illuminated Manuscript Futurism'.\nSubject: District 9 (The Rust Belt).\n\nVisual Overview:\nA subterranean labyrinth of RUSTED IRON and STEAM.\nLocated deep beneath the Golden Spires, where gravity is heavy.\nThe walls are covered in grime and soot, but even the soot forms fractal patterns (The Emperor's geometry is everywhere).\n\nAtmosphere:\nOppressive, Hot, Crowded."
+      },
+      "traits": [],
+      "pages": []
+    },
+    {
+      "name": "District 7 The Sump",
+      "entity": {
+        "name": "The Sump",
+        "description": "Where the workforce sleeps. Zero resources.",
+        "fields": [
+          {
+            "name": "Population Density",
+            "type": "number"
+          }
+        ],
+        "visual_prompt": "Sci-Fi Environment Spec. Style: 'Illuminated Manuscript Futurism'.\nSubject: District 7 (The Sump).\n\nVisual Overview:\nA sprawling SHANTY TOWN built into the crevices of the planet's golden crust.\nHuts made of SCAVENGED SPACESHIP PARTS and stretched fabric.\nIt is dark, lit only by bioluminescent fungi and the faint glow of leaking coolant pipes.\n\nAtmosphere:\nDesperate, Organic, Hidden."
+      },
+      "traits": [],
+      "pages": []
+    },
+    {
+      "name": "The Physics Foundation",
+      "ref": "./Physics.orb#The Higgs Field",
+      "description": "The rules binding the planet."
+    },
+    {
+      "name": "The Local VEV",
+      "ref": "./Physics.orb#The VEV",
+      "instances": [
+        { "id": "vev_global_field", "value": 0.5 }
+      ]
+    },
+    {
+      "name": "District 1 Population (Elite)",
+      "ref": "./Citizens.orb#Citizen (Elite)",
+      "description": "LOCATED IN: District 1 (The High Spire). The Elite Frames here float effortlessly among the white ceramic towers, detached from gravity.",
+      "instances": [
+        { "id": "admin_01", "position": { "x": 0, "y": 100 } },
+        { "id": "admin_02", "position": { "x": 50, "y": 100 } },
+        { "id": "high_priest_vane", "link": "./iram-empire.orb#Commander Vane" }
+      ]
+    },
+    {
+      "name": "The Emperor's Presence",
+      "ref": "./iram-empire.orb#The Emperor",
+      "instances": [
+        { "id": "emperor_prime", "location": "The Highest Spire" }
+      ]
+    },
+    {
+      "name": "District 9 Population (Workforce)",
+      "ref": "./Vessels.orb#Dross Frame",
+      "description": "LOCATED IN: District 9 (The Rust Belt). These frames are covered in industrial soot and grime, trudging through the heavy gravity of the iron labyrinth.",
+      "instances": [
+        { "id": "worker_unit_734", "name": "734", "status": "Awakening" },
+        { "id": "worker_unit_888", "name": "888", "status": "Compliant" },
+        { "id": "worker_unit_900", "name": "900", "status": "Compliant" }
+      ]
+    },
+    {
+      "name": "District 7 Population (Dross)",
+      "ref": "./Citizens.orb#Citizen (Dross)",
+      "description": "LOCATED IN: District 7 (The Sump). These frames are scavengers, patched with spaceship debris and living in the dark crevices of the planet's crust.",
+      "instances": [
+        { "id": "resident_orphan", "name": "Kael", "role": "Scavenger" },
+        { "id": "resident_rebel", "name": "Zain", "role": "Saboteur" }
+      ]
+    },
+    {
+      "name": "District 9 Security",
+      "ref": "./Weapons.orb#Compliance Rod",
+      "instances": [
+        { "id": "baton_rack_01" }
+      ]
+    },
+    {
+      "name": "The Fleet (Orbit)",
+      "ref": "./Weapons.orb#Erasure Beam",
+      "instances": [
+        { "id": "orbital_cannon_alpha" }
+      ]
+    }
+  ]
+}

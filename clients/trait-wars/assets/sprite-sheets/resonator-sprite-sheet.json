@@ -1,0 +1,58 @@
+{
+    "url": "./resonator-sprite-sheet.jpeg",
+    "frameWidth": 64,
+    "frameHeight": 64,
+    "columns": 16,
+    "animations": {
+        "idle": {
+            "frames": [
+                0,
+                1,
+                2,
+                3
+            ],
+            "frameRate": 8,
+            "loop": true
+        },
+        "walk": {
+            "frames": [
+                16,
+                17,
+                18,
+                19,
+                20,
+                21
+            ],
+            "frameRate": 12,
+            "loop": true
+        },
+        "attack": {
+            "frames": [
+                32,
+                33,
+                34,
+                35
+            ],
+            "frameRate": 12,
+            "loop": false
+        },
+        "hit": {
+            "frames": [
+                48,
+                49
+            ],
+            "frameRate": 10,
+            "loop": false
+        },
+        "death": {
+            "frames": [
+                64,
+                65,
+                66,
+                67
+            ],
+            "frameRate": 8,
+            "loop": false
+        }
+    }
+}

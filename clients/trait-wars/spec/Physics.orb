@@ -1,0 +1,70 @@
+{
+  "name": "world_physics",
+  "description": "The fundamental laws of the Orbital Universe.",
+  "orbitals": [
+    {
+      "name": "The Higgs Field",
+      "entity": {
+        "name": "The Snow",
+        "description": "The universe is permeated by the Higgs Field, a 'cosmic molasses' that gives particles mass via resistance. This field is the 'Ink' of creation.",
+        "fields": [
+          {
+            "name": "designation",
+            "type": "string"
+          }
+        ],
+        "visual_prompt": "Sci-Fi Concept Art. Style: 'Illuminated Manuscript Futurism'.\nSubject: The 'Higgs Field' (The Cosmic Snowfield).\n\nVisual Overview:\nAn infinite, abstract landscape of GLOWING WHITE STATIC (The Snow). It looks like 'Grain' on a film reel, but physically tangible.\n\nDetails:\n- Particles (Quarks) are depicted as Struggling Figures trudging waist-deep through the snow (Mass/Drag).\n- Photons are depicted as Golden Birds flying effortlessly ABOVE the snow (Massless).\n\nAtmosphere:\nCold, Universal, The Silent Background. 'The Resistance of being.'\n\nFrame:\nGold leaf borders with Kufic equations describing Mass Generation."
+      },
+      "traits": [],
+      "pages": []
+    },
+    {
+      "name": "The VEV",
+      "entity": {
+        "name": "The Water Level",
+        "description": "Vacuum Expectation Value (VEV). The 'Water Level' of the universe. The baseline energy of existence.",
+        "fields": [
+          {
+            "name": "designation",
+            "type": "string"
+          }
+        ],
+        "visual_prompt": "Sci-Fi Concept Art. Style: 'Illuminated Manuscript Futurism'.\nSubject: The 'VEV' (Vacuum Expectation Value).\n\nVisual Overview:\nA cross-section of the Universe depicted as a DARK OCEAN.\n\nDetails:\n- The 'Surface' of the ocean is perfectly flat and still (The Baseline).\n- An 'Orbital' (Golden Sphere) is floating half-submerged (Interaction).\n- Under the surface, deep currents of violet energy (Quantum Fluctuations) swirl.\n\nAtmosphere:\nPotential, Deep, The Source. 'The Water Level of Reality.'\n"
+      },
+      "traits": [],
+      "pages": []
+    },
+    {
+      "name": "The Hum",
+      "entity": {
+        "name": "Resonance",
+        "description": "The vacuum itself has a resonant frequency—a constant, low-level vibration (The Higgs Resonance). Mass is simply the 'friction' caused by this vibration against matter.",
+        "fields": [
+          {
+            "name": "designation",
+            "type": "string"
+          }
+        ],
+        "visual_prompt": "Sci-Fi Concept Art. Style: 'Illuminated Manuscript Futurism'.\nSubject: 'The Hum' (The Higgs Resonance).\n\nVisual Overview:\nA visualization of SOUND as LIGHT. \n\nDetails:\n- Concentric RINGS of Gold and Violet expanding from a central point.\n- Where the rings touch the 'Snow' (Higgs Field), the snow MELTS into clear water (Mass Reduction).\n- Mathematical harmonics written in floating light around the rings.\n\nAtmosphere:\nVibration, Harmony, The Song. 'The frequency that unlocks the door.'"
+      },
+      "traits": [],
+      "pages": []
+    },
+    {
+      "name": "The Zero Point",
+      "entity": {
+        "name": "Baseline",
+        "description": "A localized bubble of 'True Silence' where the VEV drops to zero. Inside this bubble, drag (Mass) vanishes. Matter becomes Light.",
+        "fields": [
+          {
+            "name": "designation",
+            "type": "string"
+          }
+        ],
+        "visual_prompt": "Sci-Fi Concept Art. Style: 'Illuminated Manuscript Futurism'.\nSubject: 'The Zero Point' (Absolute Stillness).\n\nVisual Overview:\nA PERFECT BLACK SPHERE suspended in a void.\n\nDetails:\n- It reflects nothing. It emits nothing.\n- Around it, the 'Snow' of the Higgs Field is frozen solid.\n- A single thread of GOLD connects it to 'The Emperor' (Implying he controls the zero point).\n\nAtmosphere:\nAbsolute authority, Cold, The Anchor."
+      },
+      "traits": [],
+      "pages": []
+    }
+  ]
+}

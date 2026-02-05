@@ -1,0 +1,187 @@
+{
+  "name": "human_keepers",
+  "description": "The 12 Human Archetypes who assist the Resonators.",
+  "orbitals": [
+    {
+      "name": "Rumi",
+      "entity": {
+        "name": "Rumi",
+        "description": "The Innocent. A symbol of hope.",
+        "visual_prompt": "Sci-Fi Character Portrait. Style: 'Illuminated Manuscript Futurism'. 2D Flat Composition. Subject: The 'Rumi' (Human Citizen). Skin/Texture: Stylized parchment texture, heavy outlines. Body Art (The Script): Inked verses woven into the skin (The Innocent). Clothing: Tattered robes rendered in gold leaf and copper. Gear (The Trait): Holding a glowing orb (Sacred Geometry). Atmosphere: Byzantine Icon. 2D Art. Halo of Script.",
+        "fields": [
+          { "name": "hope", "type": "number" }
+        ]
+      },
+      "traits": [
+        { "ref": "KeeperEngine.orb#HumanTrust" }
+      ],
+      "pages": []
+    },
+    {
+      "name": "Kael",
+      "entity": {
+        "name": "Kael",
+        "description": "The Survivor. A resilient scavenger.",
+        "visual_prompt": "Sci-Fi Character Portrait. Style: 'Illuminated Manuscript Futurism'. 2D Flat Composition. Subject: The 'Kael' (Human Citizen). Skin/Texture: Weathered woodcut texture, hatched shading. Body Art (The Script): Bold black glyphs (The Survivor). Clothing: Scavenged armor with brass filigree outlines. Gear (The Trait): Holding a stylized iron staff. Atmosphere: Medieval Woodcut. 2D Art. Halo of Rust.",
+        "fields": [
+          { "name": "resilience", "type": "number" }
+        ]
+      },
+      "traits": [
+        { "ref": "KeeperEngine.orb#HumanEndure" }
+      ],
+      "pages": []
+    },
+    {
+      "name": "Layla",
+      "entity": {
+        "name": "Layla",
+        "description": "The Healer. A compassionate medic.",
+        "visual_prompt": "Sci-Fi Character Portrait. Style: 'Illuminated Manuscript Futurism'. 2D Flat Composition. Subject: The 'Layla' (Human Citizen). Skin/Texture: Pale vellum skin, delicate ink lines. Body Art (The Script): Flowing white script (The Healer). Clothing: Sterling white robes with gold geometric borders. Gear (The Trait): Holding a medical relic. Atmosphere: Sacred Healer. 2D Art. Halo of Light.",
+        "fields": [
+          { "name": "compassion", "type": "number" }
+        ]
+      },
+      "traits": [
+        { "ref": "KeeperEngine.orb#HumanMend" }
+      ],
+      "pages": []
+    },
+    {
+      "name": "Captain Hareth",
+      "entity": {
+        "name": "Hareth",
+        "description": "The Defector. A former soldier seeking redemption.",
+        "visual_prompt": "Sci-Fi Character Portrait. Style: 'Illuminated Manuscript Futurism'. 2D Flat Composition. Subject: The 'Hareth' (Human Citizen). Skin/Texture: Tough leather texture, deep etched lines. Body Art (The Script): Faded military insignia (The Defector). Clothing: Cracked armor rendered like stained glass. Gear (The Trait): Holding a tool of office. Atmosphere: Fallen Knight. 2D Art. Halo of Iron.",
+        "fields": [
+          { "name": "honor", "type": "number" }
+        ]
+      },
+      "traits": [
+        { "ref": "KeeperEngine.orb#HumanDefend" }
+      ],
+      "pages": []
+    },
+    {
+      "name": "Jara",
+      "entity": {
+        "name": "Jara",
+        "description": "The Scout. A curious explorer.",
+        "visual_prompt": "Sci-Fi Character Portrait. Style: 'Illuminated Manuscript Futurism'. 2D Flat Composition. Subject: The 'Jara' (Human Citizen). Skin/Texture: Sun-bleached map texture. Body Art (The Script): Cartography lines and coordinates. Clothing: Surveyor robes with brass astrolabe details. Gear (The Trait): Holding a navigational staff. Atmosphere: The Pilgrim. 2D Art. Halo of Stars.",
+        "fields": [
+          { "name": "curiosity", "type": "number" }
+        ]
+      },
+      "traits": [
+        { "ref": "KeeperEngine.orb#HumanPathfind" }
+      ],
+      "pages": []
+    },
+    {
+      "name": "Zain",
+      "entity": {
+        "name": "Zain",
+        "description": "The Saboteur. A shadow in the system.",
+        "visual_prompt": "Sci-Fi Character Portrait. Style: 'Illuminated Manuscript Futurism'. 2D Flat Composition. Subject: The 'Zain' (Human Citizen). Skin/Texture: Charcoal sketch texture, rough and dark. Body Art (The Script): Redacted black bars over text. Clothing: Hooded cloak with sharp geometric folds. Gear (The Trait): Holding a disruption device. Atmosphere: The Shadow. 2D Art. Halo of Static.",
+        "fields": [
+          { "name": "rage", "type": "number" }
+        ]
+      },
+      "traits": [
+        { "ref": "KeeperEngine.orb#HumanDisrupt" }
+      ],
+      "pages": []
+    },
+    {
+      "name": "Samira",
+      "entity": {
+        "name": "Samira",
+        "description": "The Poet. A voice of passion.",
+        "visual_prompt": "Sci-Fi Character Portrait. Style: 'Illuminated Manuscript Futurism'. 2D Flat Composition. Subject: The 'Samira' (Human Citizen). Skin/Texture: Gold-dusted paper texture. Body Art (The Script): Elegant calligraphy in gold leaf. Clothing: Flowing silk robes with decorative borders. Gear (The Trait): Holding a tablet. Atmosphere: The Poet. 2D Art. Halo of Verse.",
+        "fields": [
+          { "name": "passion", "type": "number" }
+        ]
+      },
+      "traits": [
+        { "ref": "KeeperEngine.orb#HumanConnect" }
+      ],
+      "pages": []
+    },
+    {
+      "name": "Omar",
+      "entity": {
+        "name": "Omar",
+        "description": "The Architect. A master builder.",
+        "visual_prompt": "Sci-Fi Character Portrait. Style: 'Illuminated Manuscript Futurism'. 2D Flat Composition. Subject: The 'Omar' (Human Citizen). Skin/Texture: Stained parchment texture. Body Art (The Script): Blueprint diagrams and measurements. Clothing: Heavy apron defined by strong outlines. Gear (The Trait): Holding a builder's tool. Atmosphere: The Architect. 2D Art. Halo of Geometry.",
+        "fields": [
+          { "name": "ingenuity", "type": "number" }
+        ]
+      },
+      "traits": [
+        { "ref": "KeeperEngine.orb#HumanFabricate" }
+      ],
+      "pages": []
+    },
+    {
+      "name": "Tariq",
+      "entity": {
+        "name": "Tariq",
+        "description": "The Jester. A chaotic glitch.",
+        "visual_prompt": "Sci-Fi Character Portrait. Style: 'Illuminated Manuscript Futurism'. 2D Flat Composition. Subject: The 'Tariq' (Human Citizen). Skin/Texture: Glitched digital artifacting on parchment. Body Art (The Script): Pixelated block text. Clothing: Patchwork robes of conflicting patterns. Gear (The Trait): Holding a scrambler. Atmosphere: The Glitch. 2D Art. Halo of Noise.",
+        "fields": [
+          { "name": "chaos", "type": "number" }
+        ]
+      },
+      "traits": [
+        { "ref": "KeeperEngine.orb#HumanTrick" }
+      ],
+      "pages": []
+    },
+    {
+      "name": "Fatima",
+      "entity": {
+        "name": "Fatima",
+        "description": "The Chronicler. A keeper of history.",
+        "visual_prompt": "Sci-Fi Character Portrait. Style: 'Illuminated Manuscript Futurism'. 2D Flat Composition. Subject: The 'Fatima' (Human Citizen). Skin/Texture: Ancient crinkled paper texture. Body Art (The Script): Dense walls of text. Clothing: Shawls made of pages. Gear (The Trait): Holding a scroll. Atmosphere: The Chronicler. 2D Art. Halo of History.",
+        "fields": [
+          { "name": "wisdom", "type": "number" }
+        ]
+      },
+      "traits": [
+        { "ref": "KeeperEngine.orb#HumanArchive" }
+      ],
+      "pages": []
+    },
+    {
+      "name": "Dr Aris",
+      "entity": {
+        "name": "Aris",
+        "description": "The Alchemist. A visionary scientist.",
+        "visual_prompt": "Sci-Fi Character Portrait. Style: 'Illuminated Manuscript Futurism'. 2D Flat Composition. Subject: The 'Aris' (Human Citizen). Skin/Texture: Smooth vellum, precise lines. Body Art (The Script): Alchemy symbols and charts. Clothing: High-collared robes with gold trim. Gear (The Trait): Holding a flask. Atmosphere: The Alchemist. 2D Art. Halo of Form.",
+        "fields": [
+          { "name": "vision", "type": "number" }
+        ]
+      },
+      "traits": [
+        { "ref": "KeeperEngine.orb#HumanTransmute" }
+      ],
+      "pages": []
+    },
+    {
+      "name": "Amir",
+      "entity": {
+        "name": "Amir",
+        "description": "The King. A fallen leader.",
+        "visual_prompt": "Sci-Fi Character Portrait. Style: 'Illuminated Manuscript Futurism'. 2D Flat Composition. Subject: The 'Amir' (Human Citizen). Skin/Texture: Stone texture with gold cracks (Kintsugi). Body Art (The Script): Carved laws. Clothing: Rigid armor with gold filigree. Gear (The Trait): Holding a scepter. Atmosphere: The King. 2D Art. Halo of Authority.",
+        "fields": [
+          { "name": "authority", "type": "number" }
+        ]
+      },
+      "traits": [
+        { "ref": "KeeperEngine.orb#HumanCommand" }
+      ],
+      "pages": []
+    }
+  ],
+  "traits": []
+}

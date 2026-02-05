@@ -1,0 +1,173 @@
+{
+  "name": "ResonatorRoles",
+  "orbitals": [
+    {
+      "name": "ResonatorInnocent",
+      "entity": {
+        "name": "Innocent",
+        "fields": [
+          { "name": "hope", "type": "number", "required": true }
+        ],
+        "visual_prompt": "Sci-Fi Concept Art. \"Dune\" meets \"Book of Kells\". Style: 'Illuminated Manuscript Futurism'.\nSubject: The 'Innocent' Android.\nMaterial: Pristine BONE/IVORY.\nDetail: Faint GOLD CALLIGRAPHY.\nFace: A smooth \"Blank Page\" mask with a single vertical INK-BLACK sensor stroke.\nAtmosphere: The Blank Page.\nTraits: [Trust]."
+      },
+      "traits": [
+        { "ref": "TraitEngine.orb#Trust" }
+      ],
+      "pages": []
+    },
+    {
+      "name": "ResonatorOrphan",
+      "entity": {
+        "name": "Orphan",
+        "fields": [
+          { "name": "grit", "type": "number", "required": true }
+        ],
+        "visual_prompt": "Sci-Fi Concept Art. \"Dune\" meets \"Book of Kells\". Style: 'Illuminated Manuscript Futurism'.\nSubject: The 'Orphan' Android.\nMaterial: Stained, cracked BONE.\nDetail: Mismatched armor.\nFace: A smooth \"Blank Page\" mask with a single vertical INK-BLACK sensor stroke.\nAtmosphere: The Palimpsest.\nTraits: [Endure]."
+      },
+      "traits": [
+        { "ref": "TraitEngine.orb#Endure" }
+      ],
+      "pages": []
+    },
+    {
+      "name": "ResonatorCaregiver",
+      "entity": {
+        "name": "Caregiver",
+        "fields": [
+          { "name": "empathy", "type": "number", "required": true }
+        ],
+        "visual_prompt": "Sci-Fi Concept Art. \"Dune\" meets \"Book of Kells\". Style: 'Illuminated Manuscript Futurism'.\nSubject: The 'Caregiver' Android.\nMaterial: Warm IVORY.\nDetail: Harness of SCROLL tubes.\nFace: A smooth \"Blank Page\" mask with a single vertical INK-BLACK sensor stroke.\nAtmosphere: Healing Texts.\nTraits: [Mend]."
+      },
+      "traits": [
+        { "ref": "TraitEngine.orb#Mend" }
+      ],
+      "pages": []
+    },
+    {
+      "name": "ResonatorHero",
+      "entity": {
+        "name": "Hero",
+        "fields": [
+          { "name": "courage", "type": "number", "required": true }
+        ],
+        "visual_prompt": "Sci-Fi Concept Art. \"Dune\" meets \"Book of Kells\". Style: 'Illuminated Manuscript Futurism'.\nSubject: The 'Hero' Android.\nMaterial: Reinforced BONE plate.\nDetail: Tablet Shield.\nFace: A smooth \"Blank Page\" mask with a single vertical INK-BLACK sensor stroke.\nAtmosphere: War Chants.\nTraits: [Defend]."
+      },
+      "traits": [
+        { "ref": "TraitEngine.orb#Defend" }
+      ],
+      "pages": []
+    },
+    {
+      "name": "ResonatorExplorer",
+      "entity": {
+        "name": "Explorer",
+        "fields": [
+          { "name": "stamina", "type": "number", "required": true }
+        ],
+        "visual_prompt": "Sci-Fi Concept Art. \"Dune\" meets \"Book of Kells\". Style: 'Illuminated Manuscript Futurism'.\nSubject: The 'Explorer' Android.\nMaterial: Weathered BONE.\nDetail: MAPS and STAR CHARTS.\nFace: A smooth \"Blank Page\" mask with a single vertical INK-BLACK sensor stroke.\nAtmosphere: The Navigator.\nTraits: [Pathfind]."
+      },
+      "traits": [
+        { "ref": "TraitEngine.orb#Pathfind" }
+      ],
+      "pages": []
+    },
+    {
+      "name": "ResonatorRebel",
+      "entity": {
+        "name": "Rebel",
+        "fields": [
+          { "name": "rage", "type": "number", "required": true }
+        ],
+        "visual_prompt": "Sci-Fi Concept Art. \"Dune\" meets \"Book of Kells\". Style: 'Illuminated Manuscript Futurism'.\nSubject: The 'Rebel' Android.\nMaterial: Rough jagged BONE.\nDetail: CROSSED OUT script.\nFace: A smooth \"Blank Page\" mask with a single vertical INK-BLACK sensor stroke.\nAtmosphere: The Heretic.\nTraits: [Disrupt]."
+      },
+      "traits": [
+        { "ref": "TraitEngine.orb#Disrupt" }
+      ],
+      "pages": []
+    },
+    {
+      "name": "ResonatorLover",
+      "entity": {
+        "name": "Lover",
+        "fields": [
+          { "name": "passion", "type": "number", "required": true }
+        ],
+        "visual_prompt": "Sci-Fi Concept Art. \"Dune\" meets \"Book of Kells\". Style: 'Illuminated Manuscript Futurism'.\nSubject: The 'Lover' Android.\nMaterial: Polished IVORY and ROSE GOLD.\nDetail: POETRY script.\nFace: A smooth \"Blank Page\" mask with a single vertical INK-BLACK sensor stroke.\nAtmosphere: The Poet.\nTraits: [Connect]."
+      },
+      "traits": [
+        { "ref": "TraitEngine.orb#Connect" }
+      ],
+      "pages": []
+    },
+    {
+      "name": "ResonatorCreator",
+      "entity": {
+        "name": "Creator",
+        "fields": [
+          { "name": "imagination", "type": "number", "required": true }
+        ],
+        "visual_prompt": "Sci-Fi Concept Art. \"Dune\" meets \"Book of Kells\". Style: 'Illuminated Manuscript Futurism'.\nSubject: The 'Creator' Android.\nMaterial: BONE with BRASS tools.\nDetail: ARCHITECTURAL PLANS.\nFace: A smooth \"Blank Page\" mask with a single vertical INK-BLACK sensor stroke.\nAtmosphere: The Builder.\nTraits: [Fabricate]."
+      },
+      "traits": [
+        { "ref": "TraitEngine.orb#Fabricate" }
+      ],
+      "pages": []
+    },
+    {
+      "name": "ResonatorJester",
+      "entity": {
+        "name": "Jester",
+        "fields": [
+          { "name": "wit", "type": "number", "required": true }
+        ],
+        "visual_prompt": "Sci-Fi Concept Art. \"Dune\" meets \"Book of Kells\". Style: 'Illuminated Manuscript Futurism'.\nSubject: The 'Jester' Android.\nMaterial: Patchwork BONE.\nDetail: Chaotic scripts.\nFace: A smooth \"Blank Page\" mask with a single vertical INK-BLACK sensor stroke.\nAtmosphere: The Riddle.\nTraits: [Trick]."
+      },
+      "traits": [
+        { "ref": "TraitEngine.orb#Trick" }
+      ],
+      "pages": []
+    },
+    {
+      "name": "ResonatorSage",
+      "entity": {
+        "name": "Sage",
+        "fields": [
+          { "name": "wisdom", "type": "number", "required": true }
+        ],
+        "visual_prompt": "Sci-Fi Concept Art. \"Dune\" meets \"Book of Kells\". Style: 'Illuminated Manuscript Futurism'.\nSubject: The 'Sage' Android.\nMaterial: Yellowed PARCHMENT.\nDetail: AMBER GLASS INKWELL Head.\nFace: A smooth \"Blank Page\" mask with a single vertical INK-BLACK sensor stroke.\nAtmosphere: The Living Library.\nTraits: [Archive]."
+      },
+      "traits": [
+        { "ref": "TraitEngine.orb#Archive" }
+      ],
+      "pages": []
+    },
+    {
+      "name": "ResonatorMagician",
+      "entity": {
+        "name": "Magician",
+        "fields": [
+          { "name": "vision", "type": "number", "required": true }
+        ],
+        "visual_prompt": "Sci-Fi Concept Art. \"Dune\" meets \"Book of Kells\". Style: 'Illuminated Manuscript Futurism'.\nSubject: The 'Magician' Android.\nMaterial: Polished IVORY.\nDetail: Levitating BONE TILES.\nFace: A smooth \"Blank Page\" mask with a single vertical INK-BLACK sensor stroke.\nAtmosphere: Forbidden Texts.\nTraits: [Transmute]."
+      },
+      "traits": [
+        { "ref": "TraitEngine.orb#Transmute" }
+      ],
+      "pages": []
+    },
+    {
+      "name": "ResonatorRuler",
+      "entity": {
+        "name": "Ruler",
+        "fields": [
+          { "name": "responsibility", "type": "number", "required": true }
+        ],
+        "visual_prompt": "Sci-Fi Concept Art. \"Dune\" meets \"Book of Kells\". Style: 'Illuminated Manuscript Futurism'.\nSubject: The 'Ruler' Android.\nMaterial: Gilded BONE.\nDetail: GOLD SCRIPT.\nFace: A smooth \"Blank Page\" mask with a single vertical INK-BLACK sensor stroke.\nAtmosphere: The Emperor's Decree.\nTraits: [Command]."
+      },
+      "traits": [
+        { "ref": "TraitEngine.orb#Command" }
+      ],
+      "pages": []
+    }
+  ]
+}

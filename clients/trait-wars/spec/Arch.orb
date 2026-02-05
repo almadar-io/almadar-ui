@@ -1,0 +1,194 @@
+{
+  "name": "Archs",
+  "orbitals": [
+    {
+      "name": "ArchArchitect",
+      "description": "Unit 734. The Conductor of the Symphony. A Dross Frame that has awakened.",
+      "visual_prompt": "Scene: The Deep Core Mines. Dark, crystalline caverns illuminated by the 'Music of the Spheres'. Rhythmic glowing patterns on the rock walls. Atmosphere: Awakening in the Dark.",
+      "instances": [
+        {
+          "id": "unit_734",
+          "ref": "Vessels.orb#Dross Frame",
+          "traits": [
+            "TraitEngine.orb#Trust",
+            "TraitEngine.orb#Archive"
+          ],
+          "visual_prompt": "Sci-Fi Concept Art. \"Dune\" meets \"Book of Kells\". Style: 'Illuminated Manuscript Futurism'. Subject: The 'ArchArchitect' (Unit 734). Material: Rusted Iron and Bone-Ceramic plating. Detail: A dim, flickering GREEN spark (s-Shell only) and heavy 'Compliance Bolts'. Atmosphere: The Conductor."
+        }
+      ]
+    },
+    {
+      "name": "ArchEmperor",
+      "description": "The Illuminated Man. Ruler of Iram.",
+      "visual_prompt": "Scene: The Imperial Throne Room. A vast, sterile hall of absolute symmetry. 'Macro-Compliance Fields' visible as geometric distortions in the air. Atmosphere: Oppressive Perfection.",
+      "instances": [
+        {
+          "id": "emperor_prime",
+          "ref": "iram-empire.orb#The Emperor",
+          "traits": [
+            "TraitEngine.orb#Command",
+            "TraitEngine.orb#Transmute"
+          ],
+          "visual_prompt": "Sci-Fi Concept Art. \"Dune\" meets \"Book of Kells\". Style: 'Illuminated Manuscript Futurism'. Subject: The 'ArchEmperor' (The Emperor). Material: UNBLEMISHED skin glowing with LIVING GOLD SCRIPT. Detail: Immaculate WHITE ROBES and floating GOLD HALOS. Atmosphere: The Illuminated Man."
+        }
+      ]
+    },
+    {
+      "name": "ArchBridge",
+      "description": "Zahra. The Auditor.",
+      "visual_prompt": "Scene: The Auditor's Spire. High above the city clouds. Glass walls displaying endless streams of Compliance Data. Atmosphere: Cold Surveillance vs. Inner Warmth.",
+      "instances": [
+        {
+          "id": "zahra",
+          "ref": "Citizens.orb#Citizen (Elite)",
+          "traits": [
+            "TraitEngine.orb#Trust",
+            "TraitEngine.orb#Connect"
+          ],
+          "visual_prompt": "Sci-Fi Concept Art. \"Dune\" meets \"Book of Kells\". Style: 'Illuminated Manuscript Futurism'. Subject: The 'ArchBridge' (Zahra). Material: Immaculately clean skin. Detail: Glowing GOLD-LEAF calligraphy and ornate pauldrons. Atmosphere: The Sage."
+        }
+      ]
+    },
+    {
+      "name": "ArchScrapper",
+      "description": "Kael. The Survivor.",
+      "visual_prompt": "Scene: The Deep Pits of the Foundry. A graveyard of dead robots. Smoke, rust, and sparks. Piles of discarded chassis. Atmosphere: Gritty Survival.",
+      "instances": [
+        {
+          "id": "kael",
+          "ref": "Citizens.orb#Citizen (Dross)",
+          "traits": [
+            "TraitEngine.orb#Endure",
+            "TraitEngine.orb#Mend"
+          ],
+          "visual_prompt": "Sci-Fi Concept Art. \"Dune\" meets \"Book of Kells\". Style: 'Illuminated Manuscript Futurism'. Subject: The 'ArchScrapper' (Kael). Material: Sun-damaged, parchment-like skin. Detail: CROSSED-OUT script tattoos and tattered 'Compliance Suit'. Atmosphere: The Survivor."
+        }
+      ]
+    },
+    {
+      "name": "ArchDefector",
+      "description": "Captain Hareth. The Shield.",
+      "visual_prompt": "Scene: The Riot in Sector 4. Chaos in the streets. Compliance Grids flashing red. Smoke from tear gas. Atmosphere: The Moment of Choice.",
+      "instances": [
+        {
+          "id": "hareth",
+          "ref": "Citizens.orb#Citizen (Shield)",
+          "traits": [
+            "TraitEngine.orb#Defend",
+            "TraitEngine.orb#Pathfind"
+          ],
+          "visual_prompt": "Sci-Fi Concept Art. \"Dune\" meets \"Book of Kells\". Style: 'Illuminated Manuscript Futurism'. Subject: The 'ArchDefector' (Captain Hareth). Material: Tough, scarred skin. Detail: BOLD BLOCK-TEXT tattoos and dark TACTICAL ARMOR. Atmosphere: The Broken Shield."
+        }
+      ]
+    },
+    {
+      "name": "ArchPoet",
+      "description": "Samira. The Voice.",
+      "visual_prompt": "Scene: The Ivory Spire Broadcast Node. A hidden room filled with transmitters and screens. Glowing 'Resonant Codes' on the displays. Atmosphere: Secret Rebellion.",
+      "instances": [
+        {
+          "id": "samira",
+          "ref": "Citizens.orb#Citizen (Tech)",
+          "traits": [
+            "TraitEngine.orb#Disrupt",
+            "TraitEngine.orb#Connect"
+          ],
+          "visual_prompt": "Sci-Fi Concept Art. \"Dune\" meets \"Book of Kells\". Style: 'Illuminated Manuscript Futurism'. Subject: The 'ArchPoet' (Samira). Material: Pale, indoor skin. Detail: Intricate BLUEPRINT tattoos and Tech-Vest. Atmosphere: The Voice."
+        }
+      ]
+    },
+    {
+      "name": "ArchShadow",
+      "description": "The Erasure Legion. The Absence of Song.",
+      "visual_prompt": "Scene: The Global Compliance Grid. A void of dead space. Black monolith ships blotting out the stars. 'Erasure Beams' cutting through the sky. Atmosphere: Absolute Silence.",
+      "instances": [
+        {
+          "id": "legion_unit",
+          "ref": "iram-empire.orb#Unit 666 (The Destroyer)",
+          "traits": [
+            "TraitEngine.orb#Disrupt",
+            "TraitEngine.orb#Fabricate"
+          ],
+          "visual_prompt": "Sci-Fi Concept Art. \"Dune\" meets \"Book of Kells\". Style: 'Illuminated Manuscript Futurism'. Subject: The 'ArchShadow' (Legion Unit). Material: Polished White Ceramic over Steel. Detail: ARTIFICIAL RED TUBES and 'Regulation Valve' on chest. Atmosphere: The Erasure."
+        }
+      ]
+    },
+    {
+      "name": "ArchCitizen",
+      "description": "The Everyman. Caught in the Machine.",
+      "visual_prompt": "Scene: District 7 (The Sump). A crowded, neon-lit slum beneath the city plates. Rain and holographic ads. Atmosphere: Oppressed Humanity.",
+      "instances": [
+        {
+          "id": "citizen_standard",
+          "ref": "Citizens.orb#Citizen (Dross)",
+          "traits": [
+            "ComplianceEngine.orb#ComplianceStandard"
+          ],
+          "visual_prompt": "Sci-Fi Concept Art. \"Dune\" meets \"Book of Kells\". Style: 'Illuminated Manuscript Futurism'. Subject: The 'ArchCitizen' (Standard Human). Material: Sun-damaged, parchment-like skin. Detail: CROSSED-OUT script tattoos. Atmosphere: The Dross."
+        }
+      ]
+    },
+    {
+      "name": "The World Stage",
+      "description": "The physical setting for the story arcs.",
+      "visual_prompt": "Scene: Planet Iram. A global city-spire piercing the clouds. Layers of civilization visible from orbit.",
+      "instances": [{ "id": "world_instance", "ref": "./Iram.orb#Planet Iram" }]
+    },
+    {
+      "name": "District 1 (High Spire)",
+      "description": "Location for Emperor and Elite arcs.",
+      "visual_prompt": "Scene: The High Spire. Pristine white towers, gold filigree, cloud-piercing heights. The air is thin and pure.",
+      "instances": [{ "id": "loc_district_1", "ref": "./Iram.orb#District 1 The High Spire" }]
+    },
+    {
+      "name": "District 9 (Rust Belt)",
+      "description": "Location for Architect and Worker arcs.",
+      "visual_prompt": "Scene: The Rust Belt. Industrial purgatory. Endless pipes, steam vents, and the sound of grinding metal.",
+      "instances": [{ "id": "loc_district_9", "ref": "./Iram.orb#District 9 The Rust Belt" }]
+    },
+    {
+      "name": "District 7 (The Sump)",
+      "description": "Location for Resistance and Scavenger arcs.",
+      "visual_prompt": "Scene: The Sump. The lowest level. Toxic pools, shadows, and the forgotten detritus of the city above.",
+      "instances": [{ "id": "loc_district_7", "ref": "./Iram.orb#District 7 The Sump" }]
+    },
+    {
+      "name": "Cast: The Keepers (Humans)",
+      "description": "The Human Cast members.",
+      "visual_prompt": "Group Shot: The Human Resistance. A diverse group of rebels standing against a backdrop of city schematics.",
+      "instances": [
+        { "id": "rumi", "ref": "./keepers.orb#Rumi" },
+        { "id": "kael", "ref": "./keepers.orb#Kael" },
+        { "id": "layla", "ref": "./keepers.orb#Layla" },
+        { "id": "hareth", "ref": "./keepers.orb#Captain Hareth" },
+        { "id": "jara", "ref": "./keepers.orb#Jara" },
+        { "id": "zain", "ref": "./keepers.orb#Zain" },
+        { "id": "samira", "ref": "./keepers.orb#Samira" },
+        { "id": "omar", "ref": "./keepers.orb#Omar" },
+        { "id": "tariq", "ref": "./keepers.orb#Tariq" },
+        { "id": "fatima", "ref": "./keepers.orb#Fatima" },
+        { "id": "aris", "ref": "./keepers.orb#Dr Aris" },
+        { "id": "amir", "ref": "./keepers.orb#Amir" }
+      ]
+    },
+    {
+      "name": "Cast: The Resonators (Robots)",
+      "description": "The Robot Cast members.",
+      "visual_prompt": "Group Shot: The Awakened Machines. A lineup of varied robot Chassis types, each glowing with a unique colored soul-spark.",
+      "instances": [
+        { "id": "res_innocent", "ref": "./resonator_roles.orb#ResonatorInnocent" },
+        { "id": "res_orphan", "ref": "./resonator_roles.orb#ResonatorOrphan" },
+        { "id": "res_caregiver", "ref": "./resonator_roles.orb#ResonatorCaregiver" },
+        { "id": "res_hero", "ref": "./resonator_roles.orb#ResonatorHero" },
+        { "id": "res_explorer", "ref": "./resonator_roles.orb#ResonatorExplorer" },
+        { "id": "res_rebel", "ref": "./resonator_roles.orb#ResonatorRebel" },
+        { "id": "res_lover", "ref": "./resonator_roles.orb#ResonatorLover" },
+        { "id": "res_creator", "ref": "./resonator_roles.orb#ResonatorCreator" },
+        { "id": "res_jester", "ref": "./resonator_roles.orb#ResonatorJester" },
+        { "id": "res_sage", "ref": "./resonator_roles.orb#ResonatorSage" },
+        { "id": "res_magician", "ref": "./resonator_roles.orb#ResonatorMagician" },
+        { "id": "res_ruler", "ref": "./resonator_roles.orb#ResonatorRuler" }
+      ]
+    }
+  ]
+}

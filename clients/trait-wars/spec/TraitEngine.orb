@@ -1,0 +1,385 @@
+{
+  "name": "TraitEngine",
+  "orbitals": [
+    {
+      "name": "TraitEngineContainer",
+      "entity": {
+        "name": "EngineRegistry",
+        "fields": [
+          { "name": "registryId", "type": "string", "required": true }
+        ]
+      },
+      "traits": [],
+      "pages": []
+    }
+  ],
+  "traits": [
+    {
+      "name": "Trust",
+      "description": "Traits for the Innocent Archetype: Projects a pure white aura of potential.",
+      "stateMachine": {
+        "states": [
+          { "name": "Idle", "isInitial": true },
+          { "name": "Believe", "isInitial": false },
+          { "name": "Inspire", "isInitial": false }
+        ],
+        "events": [
+          { "key": "HOPE", "name": "Hope" },
+          { "key": "SHINE", "name": "Shine" },
+          { "key": "RESET", "name": "Reset" }
+        ],
+        "transitions": [
+          { "from": "Idle", "to": "Believe", "event": "HOPE", "guard": "hasHope > 0" },
+          {
+            "from": "Believe",
+            "to": "Inspire",
+            "event": "SHINE",
+            "effects": [
+              ["render-ui", "center", { "type": "visual-effect", "animation": "pure-white-aura" }]
+            ]
+          },
+          { "from": "Inspire", "to": "Idle", "event": "RESET" }
+        ]
+      }
+    },
+    {
+      "name": "Endure",
+      "description": "Traits for the Orphan Archetype: Hardens armor from refuse.",
+      "stateMachine": {
+        "states": [
+          { "name": "Idle", "isInitial": true },
+          { "name": "Scavenge", "isInitial": false },
+          { "name": "Adapt", "isInitial": false },
+          { "name": "Survive", "isInitial": false }
+        ],
+        "events": [
+          { "key": "FIND_SCRAP", "name": "Find Scrap" },
+          { "key": "INTEGRATE", "name": "Integrate" },
+          { "key": "WITHSTAND", "name": "Withstand" },
+          { "key": "REST", "name": "Rest" }
+        ],
+        "transitions": [
+          { "from": "Idle", "to": "Scavenge", "event": "FIND_SCRAP" },
+          { "from": "Scavenge", "to": "Adapt", "event": "INTEGRATE", "guard": "scrapCount >= 5" },
+          {
+            "from": "Adapt",
+            "to": "Survive",
+            "event": "WITHSTAND",
+            "effects": [
+              ["render-ui", "overlay", { "type": "visual-effect", "animation": "scrap-shield" }]
+            ]
+          },
+          { "from": "Survive", "to": "Idle", "event": "REST" }
+        ]
+      }
+    },
+    {
+      "name": "Mend",
+      "description": "Traits for the Caregiver Archetype: Projects golden nanite-mist.",
+      "stateMachine": {
+        "states": [
+          { "name": "Idle", "isInitial": true },
+          { "name": "Scan", "isInitial": false },
+          { "name": "Diagnose", "isInitial": false },
+          { "name": "Heal", "isInitial": false }
+        ],
+        "events": [
+          { "key": "START_SCAN", "name": "Start Scan" },
+          { "key": "DIAGNOSE_TARGET", "name": "Diagnose" },
+          { "key": "ACTIVATE_HEAL", "name": "Heal" },
+          { "key": "COMPLETE", "name": "Complete" }
+        ],
+        "transitions": [
+          { "from": "Idle", "to": "Scan", "event": "START_SCAN" },
+          { "from": "Scan", "to": "Diagnose", "event": "DIAGNOSE_TARGET", "guard": "targetFound" },
+          {
+            "from": "Diagnose",
+            "to": "Heal",
+            "event": "ACTIVATE_HEAL",
+            "effects": [
+              ["render-ui", "center", { "type": "visual-effect", "animation": "golden-mist" }]
+            ]
+          },
+          { "from": "Heal", "to": "Idle", "event": "COMPLETE" }
+        ]
+      }
+    },
+    {
+      "name": "Defend",
+      "description": "Traits for the Hero Archetype: Projects a massive hard-light wall.",
+      "stateMachine": {
+        "states": [
+          { "name": "Idle", "isInitial": true },
+          { "name": "Shielding", "isInitial": false },
+          { "name": "Counter", "isInitial": false }
+        ],
+        "events": [
+          { "key": "SUMMON_SHIELD", "name": "Summon Shield" },
+          { "key": "ABSORB_IMPACT", "name": "Absorb Impact" },
+          { "key": "LOWER_SHIELD", "name": "Lower Shield" }
+        ],
+        "transitions": [
+          {
+            "from": "Idle",
+            "to": "Shielding",
+            "event": "SUMMON_SHIELD",
+            "effects": [
+              ["render-ui", "overlay", { "type": "visual-effect", "animation": "hard-light-wall" }]
+            ]
+          },
+          { "from": "Shielding", "to": "Counter", "event": "ABSORB_IMPACT", "guard": "shieldIntegrity > 20%" },
+          { "from": "Counter", "to": "Idle", "event": "LOWER_SHIELD" },
+          { "from": "Shielding", "to": "Idle", "event": "LOWER_SHIELD" }
+        ]
+      }
+    },
+    {
+      "name": "Pathfind",
+      "description": "Traits for the Explorer Archetype: Manipulates gravity. Can walk on air/walls.",
+      "stateMachine": {
+        "states": [
+          { "name": "Idle", "isInitial": true },
+          { "name": "Survey", "isInitial": false },
+          { "name": "Plot", "isInitial": false },
+          { "name": "Traverse", "isInitial": false }
+        ],
+        "events": [
+          { "key": "SCAN_AREA", "name": "Scan Area" },
+          { "key": "CALCULATE_ROUTE", "name": "Calculate" },
+          { "key": "MOVE", "name": "Move" },
+          { "key": "ARRIVE", "name": "Arrive" }
+        ],
+        "transitions": [
+          { "from": "Idle", "to": "Survey", "event": "SCAN_AREA" },
+          { "from": "Survey", "to": "Plot", "event": "CALCULATE_ROUTE", "guard": "scanComplete" },
+          {
+            "from": "Plot",
+            "to": "Traverse",
+            "event": "MOVE",
+            "effects": [
+              ["render-ui", "overlay", { "type": "visual-effect", "animation": "star-map-projection" }]
+            ]
+          },
+          { "from": "Traverse", "to": "Idle", "event": "ARRIVE" }
+        ]
+      }
+    },
+    {
+      "name": "Disrupt",
+      "description": "Traits for the Rebel Archetype: Generates logical viruses.",
+      "stateMachine": {
+        "states": [
+          { "name": "Idle", "isInitial": true },
+          { "name": "Infiltrate", "isInitial": false },
+          { "name": "Overload", "isInitial": false },
+          { "name": "Break", "isInitial": false }
+        ],
+        "events": [
+          { "key": "CONNECT", "name": "Connect" },
+          { "key": "INJECT", "name": "Inject Virus" },
+          { "key": "SHATTER", "name": "Shatter" },
+          { "key": "DISCONNECT", "name": "Disconnect" }
+        ],
+        "transitions": [
+          { "from": "Idle", "to": "Infiltrate", "event": "CONNECT" },
+          { "from": "Infiltrate", "to": "Overload", "event": "INJECT", "guard": "firewallBreached" },
+          {
+            "from": "Overload",
+            "to": "Break",
+            "event": "SHATTER",
+            "effects": [
+              ["render-ui", "center", { "type": "visual-effect", "animation": "glitch-shatter" }]
+            ]
+          },
+          { "from": "Break", "to": "Idle", "event": "DISCONNECT" }
+        ]
+      }
+    },
+    {
+      "name": "Connect",
+      "description": "Traits for the Lover Archetype: Projects empathy waves.",
+      "stateMachine": {
+        "states": [
+          { "name": "Idle", "isInitial": true },
+          { "name": "Empathize", "isInitial": false },
+          { "name": "Bond", "isInitial": false },
+          { "name": "Harmony", "isInitial": false }
+        ],
+        "events": [
+          { "key": "LISTEN", "name": "Listen" },
+          { "key": "LINK", "name": "Link Souls" },
+          { "key": "SYNC", "name": "Synchronize" },
+          { "key": "RELEASE", "name": "Release" }
+        ],
+        "transitions": [
+          { "from": "Idle", "to": "Empathize", "event": "LISTEN" },
+          { "from": "Empathize", "to": "Bond", "event": "LINK", "guard": "resonanceMatches" },
+          {
+            "from": "Bond",
+            "to": "Harmony",
+            "event": "SYNC",
+            "effects": [
+              ["render-ui", "center", { "type": "visual-effect", "animation": "heart-resonance" }]
+            ]
+          },
+          { "from": "Harmony", "to": "Idle", "event": "RELEASE" }
+        ]
+      }
+    },
+    {
+      "name": "Fabricate",
+      "description": "Traits for the Creator Archetype: Can 3D-print matter from light.",
+      "stateMachine": {
+        "states": [
+          { "name": "Idle", "isInitial": true },
+          { "name": "Design", "isInitial": false },
+          { "name": "Gather", "isInitial": false },
+          { "name": "Build", "isInitial": false }
+        ],
+        "events": [
+          { "key": "BLUEPRINT", "name": "Draft Blueprint" },
+          { "key": "COLLECT_MATTER", "name": "Gather Resources" },
+          { "key": "CONSTRUCT", "name": "Construct" },
+          { "key": "FINISH", "name": "Finish" }
+        ],
+        "transitions": [
+          { "from": "Idle", "to": "Design", "event": "BLUEPRINT" },
+          { "from": "Design", "to": "Gather", "event": "COLLECT_MATTER", "guard": "blueprintValid" },
+          {
+            "from": "Gather",
+            "to": "Build",
+            "event": "CONSTRUCT",
+            "effects": [
+              ["render-ui", "center", { "type": "visual-effect", "animation": "light-printing" }]
+            ]
+          },
+          { "from": "Build", "to": "Idle", "event": "FINISH" }
+        ]
+      }
+    },
+    {
+      "name": "Trick",
+      "description": "Traits for the Jester Archetype: Projects chaotic holograms.",
+      "stateMachine": {
+        "states": [
+          { "name": "Idle", "isInitial": true },
+          { "name": "Distract", "isInitial": false },
+          { "name": "Confuse", "isInitial": false },
+          { "name": "Mock", "isInitial": false }
+        ],
+        "events": [
+          { "key": "JUGGLE", "name": "Juggle" },
+          { "key": "MIRROR", "name": "Mirror Image" },
+          { "key": "LAUGH", "name": "Laugh" },
+          { "key": "HIDE", "name": "Hide" }
+        ],
+        "transitions": [
+          { "from": "Idle", "to": "Distract", "event": "JUGGLE" },
+          { "from": "Distract", "to": "Confuse", "event": "MIRROR", "guard": "targetDistracted" },
+          {
+            "from": "Confuse",
+            "to": "Mock",
+            "event": "LAUGH",
+            "effects": [
+              ["render-ui", "toast", { "type": "visual-effect", "animation": "confetti-glitch" }]
+            ]
+          },
+          { "from": "Mock", "to": "Idle", "event": "HIDE" }
+        ]
+      }
+    },
+    {
+      "name": "Archive",
+      "description": "Traits for the Sage Archetype: Projects floating holographic scrolls.",
+      "stateMachine": {
+        "states": [
+          { "name": "Idle", "isInitial": true },
+          { "name": "Observe", "isInitial": false },
+          { "name": "Record", "isInitial": false },
+          { "name": "Synthesize", "isInitial": false }
+        ],
+        "events": [
+          { "key": "OPEN_EYE", "name": "Observe" },
+          { "key": "CAPTURE", "name": "Record" },
+          { "key": "ANALYZE", "name": "Synthesize" },
+          { "key": "CLOSE", "name": "Close" }
+        ],
+        "transitions": [
+          { "from": "Idle", "to": "Observe", "event": "OPEN_EYE" },
+          { "from": "Observe", "to": "Record", "event": "CAPTURE", "guard": "phenomenonUnknown" },
+          {
+            "from": "Record",
+            "to": "Synthesize",
+            "event": "ANALYZE",
+            "effects": [
+              ["render-ui", "hud-top", { "type": "visual-effect", "animation": "holographic-scrolls" }]
+            ]
+          },
+          { "from": "Synthesize", "to": "Idle", "event": "CLOSE" }
+        ]
+      }
+    },
+    {
+      "name": "Transmute",
+      "description": "Traits for the Magician Archetype: Absorbs energy attacks and redirects them.",
+      "stateMachine": {
+        "states": [
+          { "name": "Idle", "isInitial": true },
+          { "name": "Absorb", "isInitial": false },
+          { "name": "Convert", "isInitial": false },
+          { "name": "Release", "isInitial": false }
+        ],
+        "events": [
+          { "key": "CATCH", "name": "Catch Energy" },
+          { "key": "TRANSFORM", "name": "Transform Energy" },
+          { "key": "CAST", "name": "Release Energy" },
+          { "key": "RESET", "name": "Reset" }
+        ],
+        "transitions": [
+          { "from": "Idle", "to": "Absorb", "event": "CATCH" },
+          { "from": "Absorb", "to": "Convert", "event": "TRANSFORM", "guard": "energyType != 'VOID'" },
+          {
+            "from": "Convert",
+            "to": "Release",
+            "event": "CAST",
+            "effects": [
+              ["render-ui", "center", { "type": "visual-effect", "animation": "energy-nova" }]
+            ]
+          },
+          { "from": "Release", "to": "Idle", "event": "RESET" }
+        ]
+      }
+    },
+    {
+      "name": "Command",
+      "description": "Traits for the Ruler Archetype: Projects a tactical BattleNet aura.",
+      "stateMachine": {
+        "states": [
+          { "name": "Idle", "isInitial": true },
+          { "name": "Assess", "isInitial": false },
+          { "name": "Direct", "isInitial": false },
+          { "name": "Coordinate", "isInitial": false }
+        ],
+        "events": [
+          { "key": "TACTICAL_VIEW", "name": "Tactical View" },
+          { "key": "ISSUE_ORDER", "name": "Issue Order" },
+          { "key": "SYNC_SQUAD", "name": "Sync Squad" },
+          { "key": "STAND_DOWN", "name": "Stand Down" }
+        ],
+        "transitions": [
+          { "from": "Idle", "to": "Assess", "event": "TACTICAL_VIEW" },
+          { "from": "Assess", "to": "Direct", "event": "ISSUE_ORDER", "guard": "squadReady" },
+          {
+            "from": "Direct",
+            "to": "Coordinate",
+            "event": "SYNC_SQUAD",
+            "effects": [
+              ["render-ui", "hud-bottom", { "type": "visual-effect", "animation": "battlenet-aura" }]
+            ]
+          },
+          { "from": "Coordinate", "to": "Idle", "event": "STAND_DOWN" }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "name": "ComplianceEngine",
+  "orbitals": [
+    {
+      "name": "ComplianceContainer",
+      "entity": {
+        "name": "ComplianceRegistry",
+        "fields": [
+          { "name": "registryId", "type": "string", "required": true }
+        ]
+      },
+      "traits": [],
+      "pages": []
+    }
+  ],
+  "traits": [
+    {
+      "name": "ComplianceStandard",
+      "description": "Standard Harmonic Dampener for Dross/Tech Citizens. Suppresses resonance.",
+      "stateMachine": {
+        "states": [
+          { "name": "Idle", "isInitial": true },
+          { "name": "Monitor", "isInitial": false },
+          { "name": "Suppress", "isInitial": false },
+          { "name": "Reset", "isInitial": false }
+        ],
+        "events": [
+          { "key": "DETECT_FLUX", "name": "Detect Flux" },
+          { "key": "DAMPEN", "name": "Dampen" },
+          { "key": "CLEAR", "name": "Clear" }
+        ],
+        "transitions": [
+          { "from": "Idle", "to": "Monitor", "event": "DETECT_FLUX" },
+          {
+            "from": "Monitor",
+            "to": "Suppress",
+            "event": "DAMPEN",
+            "guard": "dissonance > 5%",
+            "effects": [
+              ["render-ui", "overlay", { "type": "visual-effect", "animation": "static-dampening-field" }]
+            ]
+          },
+          { "from": "Suppress", "to": "Reset", "event": "CLEAR" },
+          { "from": "Reset", "to": "Idle", "event": "CLEAR" }
+        ]
+      }
+    },
+    {
+      "name": "ComplianceShield",
+      "description": "Advanced Regulator for Shield/Elite Citizens. Enforces order.",
+      "stateMachine": {
+        "states": [
+          { "name": "Idle", "isInitial": true },
+          { "name": "Overwatch", "isInitial": false },
+          { "name": "Enforce", "isInitial": false },
+          { "name": "CoolDown", "isInitial": false }
+        ],
+        "events": [
+          { "key": "ALERT", "name": "Alert" },
+          { "key": "ENGAGE", "name": "Engage Protocol" },
+          { "key": "STAND_DOWN", "name": "Stand Down" }
+        ],
+        "transitions": [
+          { "from": "Idle", "to": "Overwatch", "event": "ALERT" },
+          {
+            "from": "Overwatch",
+            "to": "Enforce",
+            "event": "ENGAGE",
+            "guard": "threatLevel > 0",
+            "effects": [
+              ["render-ui", "hud-top", { "type": "visual-effect", "animation": "compliance-grid-lock" }]
+            ]
+          },
+          { "from": "Enforce", "to": "CoolDown", "event": "STAND_DOWN" },
+          { "from": "CoolDown", "to": "Idle", "event": "STAND_DOWN" }
+        ]
+      }
+    }
+  ]
+}
