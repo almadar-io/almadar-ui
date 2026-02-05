@@ -76,6 +76,41 @@ export type SpriteSheetType =
     | 'pixelCharacters'   // Pixel Platformer characters
     | 'dungeonTilemap';   // Roguelike Dungeon tilemap
 
+/**
+ * Building types for castle view
+ */
+export type BuildingType =
+    | 'townHall'
+    | 'barracks'
+    | 'arcaneTower'
+    | 'traitForge'
+    | 'resonanceWell'
+    | 'treasury'
+    | 'marketplace'
+    | 'library'
+    | 'portal';
+
+/**
+ * Robot unit types (12 archetypes for Dune/Book of Kells aesthetic)
+ */
+export type RobotUnitType =
+    // Tier 1 - Basic units
+    | 'worker'
+    | 'scrapper'
+    | 'mender'
+    // Tier 2 - Advanced units
+    | 'guardian'
+    | 'strider'
+    | 'breaker'
+    // Tier 3 - Elite units
+    | 'resonator'
+    | 'forger'
+    | 'glitch'
+    // Tier 4 - Champion units
+    | 'archivist'
+    | 'conductor'
+    | 'prime';
+
 // ============================================================================
 // ASSET MANIFEST INTERFACE
 // ============================================================================
@@ -119,6 +154,15 @@ export interface TraitWarsAssetManifest {
 
     /** Castle backdrop paths */
     castles?: Partial<Record<CastleFactionType, string>>;
+
+    /** Building sprite paths for castle view */
+    buildings?: Partial<Record<BuildingType, string>>;
+
+    /** Robot unit sprite paths (isometric) */
+    robotUnits?: Partial<Record<RobotUnitType, string>>;
+
+    /** Robot unit portrait paths (for recruitment panel) */
+    unitPortraits?: Partial<Record<RobotUnitType, string>>;
 }
 
 // ============================================================================
@@ -236,6 +280,30 @@ export function getWorldMapFeatureUrl(manifest: TraitWarsAssetManifest, type: Wo
  */
 export function getCastleUrl(manifest: TraitWarsAssetManifest, faction: CastleFactionType): string | undefined {
     const path = manifest.castles?.[faction];
+    return path ? `${manifest.baseUrl}/${path}` : undefined;
+}
+
+/**
+ * Get full URL for a building sprite.
+ */
+export function getBuildingSpriteUrl(manifest: TraitWarsAssetManifest, type: BuildingType): string | undefined {
+    const path = manifest.buildings?.[type];
+    return path ? `${manifest.baseUrl}/${path}` : undefined;
+}
+
+/**
+ * Get full URL for a robot unit sprite (isometric).
+ */
+export function getRobotUnitSpriteUrl(manifest: TraitWarsAssetManifest, type: RobotUnitType): string | undefined {
+    const path = manifest.robotUnits?.[type];
+    return path ? `${manifest.baseUrl}/${path}` : undefined;
+}
+
+/**
+ * Get full URL for a unit portrait.
+ */
+export function getUnitPortraitUrl(manifest: TraitWarsAssetManifest, type: RobotUnitType): string | undefined {
+    const path = manifest.unitPortraits?.[type];
     return path ? `${manifest.baseUrl}/${path}` : undefined;
 }
 

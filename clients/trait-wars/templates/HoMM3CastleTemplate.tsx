@@ -11,6 +11,8 @@
 import React, { useState, useMemo } from 'react';
 import { Box, Typography, HStack, VStack, Button, Badge, cn } from '@almadar/ui';
 import { ResourceBar } from '../molecules/ResourceBar';
+import { BuildingSlot } from '../molecules/BuildingSlot';
+import { BuildingType } from '../assets';
 import {
     Resources,
     ResourceCost,
@@ -204,7 +206,6 @@ export function HoMM3CastleTemplate({
                             const position = BUILDING_POSITIONS[buildingType];
                             const icon = BUILDING_ICONS[buildingType];
                             const name = factionNames[buildingType] || buildingType;
-                            const isBuilt = building && building.level > 0;
                             const isSelected = selectedBuilding?.type === buildingType;
 
                             if (!position) return null;
@@ -212,34 +213,24 @@ export function HoMM3CastleTemplate({
                             return (
                                 <Box
                                     key={buildingType}
-                                    className={cn(
-                                        'absolute rounded-lg cursor-pointer transition-all duration-200',
-                                        'flex flex-col items-center justify-center',
-                                        'hover:scale-110 hover:z-10',
-                                        isBuilt
-                                            ? 'bg-gradient-to-b from-amber-600/80 to-amber-800/80 border-2 border-amber-400'
-                                            : 'bg-slate-700/50 border-2 border-dashed border-slate-500',
-                                        isSelected && 'ring-4 ring-cyan-400 scale-110 z-10'
-                                    )}
+                                    className="absolute"
                                     style={{
                                         left: `${position.x}%`,
                                         top: `${position.y}%`,
                                         width: `${position.width}%`,
                                         height: `${position.height}%`,
                                     }}
-                                    onClick={() => setSelectedBuilding(building || { type: buildingType, id: buildingType, name: name, level: 0, maxLevel: 3, description: '', cost: {} } as any)}
                                 >
-                                    <Typography variant="h4" className="text-2xl">
-                                        {icon}
-                                    </Typography>
-                                    {isBuilt && (
-                                        <Badge
-                                            variant="default"
-                                            className="absolute -bottom-2 bg-green-600 text-white text-xs"
-                                        >
-                                            Lv.{building.level}
-                                        </Badge>
-                                    )}
+                                    <BuildingSlot
+                                        buildingType={buildingType as BuildingType}
+                                        name={name}
+                                        level={building?.level ?? 0}
+                                        maxLevel={building?.maxLevel ?? 3}
+                                        isSelected={isSelected}
+                                        fallbackIcon={icon}
+                                        onClick={() => setSelectedBuilding(building || { type: buildingType, id: buildingType, name: name, level: 0, maxLevel: 3, description: '', cost: {} } as any)}
+                                        className="w-full h-full"
+                                    />
                                 </Box>
                             );
                         })}
