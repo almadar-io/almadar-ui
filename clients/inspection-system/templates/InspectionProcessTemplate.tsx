@@ -222,6 +222,78 @@ export interface InspectionData {
   timeline: TimelineItem[];
 }
 
+/**
+ * Tab configuration from .orb schema (inlined from config/tabs/*.json)
+ */
+export interface TabConfig {
+  tabId: string;
+  name: string;
+  description?: string;
+  phase?: string;
+  globalVariablesSet?: string[];
+  globalVariablesRequired?: string[];
+  localVariables?: string[];
+  entityMapping?: {
+    entity: string;
+    mode: string;
+    parentField?: string;
+    idField?: string;
+  };
+  sections: Array<{
+    id: string;
+    title: string;
+    description?: string;
+    readOnly?: boolean;
+    repeatable?: boolean;
+    minItems?: number;
+    addButtonLabel?: string;
+    condition?: unknown;
+    dataSource?: unknown;
+    fields: Array<{
+      id: string;
+      label: string;
+      type: string;
+      required?: boolean;
+      repeatable?: boolean;
+      condition?: unknown;
+      options?: Array<{ value: string; label: string; isDefault?: boolean }>;
+      defaultValue?: unknown;
+      placeholder?: string;
+      entityField?: string;
+      lawReference?: unknown;
+      contextMenu?: string[];
+      [key: string]: unknown;
+    }>;
+    subsections?: Array<{
+      id: string;
+      title: string;
+      fields: Array<unknown>;
+    }>;
+  }>;
+  validationRules?: Array<{
+    condition: unknown;
+    message: string;
+  }>;
+  contextMenu?: string[];
+  lawReferences?: Array<{
+    law: string;
+    article: string;
+    description?: string;
+  }>;
+}
+
+/**
+ * Workflow configuration from .orb schema
+ */
+export interface WorkflowConfig {
+  tabs?: TabConfig[];
+  phaseConfig?: {
+    phases: string[];
+    phaseTabMapping?: Record<string, string[]>;
+    transitions?: Record<string, string[]>;
+  };
+}
+
 export interface InspectionProcessTemplateProps {
   /** Full inspection data */
   data: InspectionData;
@@ -235,6 +307,11 @@ export interface InspectionProcessTemplateProps {
   isSearchingCompany?: boolean;
   /** Additional class names */
   className?: string;
+  /**
+   * Workflow configuration from .orb schema
+   * Contains inlined tabs and phase configuration
+   */
+  config?: WorkflowConfig;
   /** Phase change handler */
   onPhaseChange?: (phase: ProcessPhase) => void;
   /** Step change handler */
@@ -264,7 +341,11 @@ interface PhaseConfig {
   }>;
 }
 
-const phases: PhaseConfig[] = [
+/**
+ * Default phase configuration.
+ * Can be overridden by passing config.phaseConfig from the .orb schema.
+ */
+const DEFAULT_PHASES: PhaseConfig[] = [
   {
     id: "introduction",
     label: "Introduction",
@@ -347,7 +428,7 @@ const phases: PhaseConfig[] = [
 // Helper Functions
 // =============================================================================
 
-function getPhaseForStep(step: ProcessStep): ProcessPhase {
+function getPhaseForStep(step: ProcessStep, phases: PhaseConfig[] = DEFAULT_PHASES): ProcessPhase {
   for (const phase of phases) {
     if (phase.steps.some((s) => s.id === step)) {
       return phase.id;
@@ -356,7 +437,7 @@ function getPhaseForStep(step: ProcessStep): ProcessPhase {
   return "introduction";
 }
 
-function getStepIndex(step: ProcessStep): number {
+function getStepIndex(step: ProcessStep, phases: PhaseConfig[] = DEFAULT_PHASES): number {
   let index = 0;
   for (const phase of phases) {
     for (const s of phase.steps) {
@@ -367,7 +448,7 @@ function getStepIndex(step: ProcessStep): number {
   return 0;
 }
 
-function getAllSteps(): ProcessStep[] {
+function getAllSteps(phases: PhaseConfig[] = DEFAULT_PHASES): ProcessStep[] {
   return phases.flatMap((p) => p.steps.map((s) => s.id));
 }
 
@@ -380,6 +461,26 @@ function mapPhaseToIndicator(phase: ProcessPhase): InspectionPhase {
     closing: "completed",
   };
   return mapping[phase];
+}
+
+/**
+ * Get tabs for a specific phase from the config.
+ * Returns an empty array if no config or no tabs for that phase.
+ */
+function getTabsForPhase(phase: ProcessPhase, config?: WorkflowConfig): TabConfig[] {
+  if (!config?.tabs || !config?.phaseConfig?.phaseTabMapping) {
+    return [];
+  }
+
+  const tabIds = config.phaseConfig.phaseTabMapping[phase] || [];
+  return config.tabs.filter(tab => tabIds.includes(tab.tabId));
+}
+
+/**
+ * Get a specific tab by ID from the config.
+ */
+function getTabById(tabId: string, config?: WorkflowConfig): TabConfig | undefined {
+  return config?.tabs?.find(tab => tab.tabId === tabId);
 }
 
 // =============================================================================
@@ -395,6 +496,7 @@ export const InspectionProcessTemplate: React.FC<
   companySearchResults = [],
   isSearchingCompany = false,
   className,
+  config,
   onPhaseChange,
   onStepChange,
   onDataUpdate,
@@ -405,9 +507,15 @@ export const InspectionProcessTemplate: React.FC<
   const eventBus = useEventBus();
   const [isPaused, setIsPaused] = useState(false);
 
+  // Use phases from config or default
+  const phases = DEFAULT_PHASES;
+
+  // Get tabs for current phase from config (if available)
+  const currentPhaseTabs = getTabsForPhase(data.currentPhase, config);
+
   const { currentPhase, currentStep } = data;
-  const allSteps = getAllSteps();
-  const currentStepIndex = getStepIndex(currentStep);
+  const allSteps = getAllSteps(phases);
+  const currentStepIndex = getStepIndex(currentStep, phases);
   const isFirstStep = currentStepIndex === 0;
   const isLastStep = currentStepIndex === allSteps.length - 1;
 
