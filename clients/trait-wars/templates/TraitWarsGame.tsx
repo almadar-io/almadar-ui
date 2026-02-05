@@ -12,9 +12,9 @@
  */
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { Box } from '../../../components/atoms/Box';
-import { Typography } from '../../../components/atoms/Typography';
-import { Button } from '../../../components/atoms/Button';
+import { Box } from '@almadar/ui';
+import { Typography } from '@almadar/ui';
+import { Button } from '@almadar/ui';
 import { GameTile, TileUnit } from '../organisms/GameTile';
 import { StateIndicator, TraitState } from '../atoms/StateIndicator';
 import { TraitStateViewer, TraitDefinition } from '../molecules/TraitStateViewer';
@@ -29,7 +29,7 @@ import {
     calculateAttackTargets,
     createInitialGameState,
 } from '../types/game';
-import { cn } from '../../../lib/cn';
+import { cn } from '@almadar/ui';
 
 // ============================================================================
 // TYPES

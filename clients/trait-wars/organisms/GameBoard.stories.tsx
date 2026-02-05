@@ -8,7 +8,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import React, { useState } from 'react';
 import { GameBoard } from './GameBoard';
 import { GameState, createInitialGameState, GameUnit } from '../types/game';
-import { Box } from '../../../components/atoms/Box';
+import { Box } from '@almadar/ui';
 
 const meta: Meta<typeof GameBoard> = {
     title: 'Trait Wars/Organisms/GameBoard',

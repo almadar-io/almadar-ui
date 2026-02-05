@@ -6,10 +6,10 @@
  */
 
 import React from 'react';
-import { Box } from '../../../components/atoms/Box';
-import { Typography } from '../../../components/atoms/Typography';
+import { Box } from '@almadar/ui';
+import { Typography } from '@almadar/ui';
 import { StateIndicator, TraitState } from '../atoms/StateIndicator';
-import { cn } from '../../../lib/cn';
+import { cn } from '@almadar/ui';
 
 export interface TraitTransition {
     from: string;

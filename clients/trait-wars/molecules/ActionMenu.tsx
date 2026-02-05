@@ -6,12 +6,12 @@
  */
 
 import React from 'react';
-import { cn } from '../../../lib/cn';
-import { Box } from '../../../components/atoms/Box';
-import { Button } from '../../../components/atoms/Button';
-import { Icon } from '../../../components/atoms/Icon';
-import { Card } from '../../../components/atoms/Card';
-import { Typography } from '../../../components/atoms/Typography';
+import { cn } from '@almadar/ui';
+import { Box } from '@almadar/ui';
+import { Button } from '@almadar/ui';
+import { Icon } from '@almadar/ui';
+import { Card } from '@almadar/ui';
+import { Typography } from '@almadar/ui';
 import { Sword, Shield, Heart, Move, X, Target, LucideIcon } from 'lucide-react';
 
 export interface GameAction {

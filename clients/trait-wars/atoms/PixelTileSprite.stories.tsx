@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { PixelTileSprite, PIXEL_TILE_SPRITES } from './PixelTileSprite';
-import { Box } from '../../../components/atoms/Box';
-import { Typography } from '../../../components/atoms/Typography';
+import { Box } from '@almadar/ui';
+import { Typography } from '@almadar/ui';
 
 const meta: Meta<typeof PixelTileSprite> = {
     title: 'Trait Wars/Atoms/PixelTileSprite',

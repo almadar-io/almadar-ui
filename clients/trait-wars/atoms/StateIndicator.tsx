@@ -5,9 +5,9 @@
  */
 
 import React from 'react';
-import { Box } from '../../../components/atoms/Box';
-import { Badge } from '../../../components/atoms/Badge';
-import { cn } from '../../../lib/cn';
+import { Box } from '@almadar/ui';
+import { Badge } from '@almadar/ui';
+import { cn } from '@almadar/ui';
 
 export type TraitState =
     | 'idle' | 'active' | 'attacking' | 'defending' | 'casting' | 'recovering' | 'cooldown'

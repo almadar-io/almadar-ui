@@ -6,11 +6,11 @@
  */
 
 import React, { useRef, useEffect } from 'react';
-import { cn } from '../../../lib/cn';
-import { Box } from '../../../components/atoms/Box';
-import { Typography } from '../../../components/atoms/Typography';
-import { Badge } from '../../../components/atoms/Badge';
-import { Card } from '../../../components/atoms/Card';
+import { cn } from '@almadar/ui';
+import { Box } from '@almadar/ui';
+import { Typography } from '@almadar/ui';
+import { Badge } from '@almadar/ui';
+import { Card } from '@almadar/ui';
 import { Sword, Shield, Heart, Move, Zap, LucideIcon } from 'lucide-react';
 
 export type CombatEventType = 'attack' | 'defend' | 'heal' | 'move' | 'special' | 'death' | 'spawn';

@@ -4,8 +4,8 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import { GameUnit } from './GameUnit';
-import { Box } from '../../../components/atoms/Box';
-import { Typography } from '../../../components/atoms/Typography';
+import { Box } from '@almadar/ui';
+import { Typography } from '@almadar/ui';
 
 const meta: Meta<typeof GameUnit> = {
     title: 'Trait Wars/Molecules/GameUnit',

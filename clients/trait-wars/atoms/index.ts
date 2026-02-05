@@ -21,6 +21,6 @@ export { PixelTileSprite, type PixelTileSpriteProps, PIXEL_TILE_SPRITES, TILE_TY
 export { HexTileSprite, type HexTileSpriteProps, type HexTileType } from './HexTileSprite';
 
 // Re-export core game atoms for convenience
-export { HealthBar, type HealthBarProps } from '../../../components/atoms/game/HealthBar';
-export { Sprite, type SpriteProps } from '../../../components/atoms/game/Sprite';
+export { HealthBar, type HealthBarProps } from '@almadar/ui';
+export { Sprite, type SpriteProps } from '@almadar/ui';
 

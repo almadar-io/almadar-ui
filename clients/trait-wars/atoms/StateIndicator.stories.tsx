@@ -6,7 +6,7 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import { StateIndicator, TraitState } from './StateIndicator';
-import { Box } from '../../../components/atoms/Box';
+import { Box } from '@almadar/ui';
 
 const meta: Meta<typeof StateIndicator> = {
     title: 'Trait Wars/Atoms/StateIndicator',

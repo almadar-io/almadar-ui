@@ -6,10 +6,10 @@
  */
 
 import React from 'react';
-import { cn } from '../../../lib/cn';
-import { Box } from '../../../components/atoms/Box';
-import { Typography } from '../../../components/atoms/Typography';
-import { Badge } from '../../../components/atoms/Badge';
+import { cn } from '@almadar/ui';
+import { Box } from '@almadar/ui';
+import { Typography } from '@almadar/ui';
+import { Badge } from '@almadar/ui';
 
 export type GamePhase = 'deploy' | 'move' | 'action' | 'end';
 

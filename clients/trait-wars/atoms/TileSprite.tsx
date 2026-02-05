@@ -5,8 +5,8 @@
  */
 
 import React from 'react';
-import { Box } from '../../../components/atoms/Box';
-import { cn } from '../../../lib/cn';
+import { Box } from '@almadar/ui';
+import { cn } from '@almadar/ui';
 
 // Import the dungeon tileset
 import dungeonSheet from '../assets/tiles/dungeon/roguelikeDungeon_transparent.png';

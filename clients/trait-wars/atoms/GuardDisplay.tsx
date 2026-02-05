@@ -5,9 +5,9 @@
  */
 
 import React from 'react';
-import { Box } from '../../../components/atoms/Box';
-import { Typography } from '../../../components/atoms/Typography';
-import { cn } from '../../../lib/cn';
+import { Box } from '@almadar/ui';
+import { Typography } from '@almadar/ui';
+import { cn } from '@almadar/ui';
 
 export interface GuardDisplayProps {
     /** Current defense value */

@@ -6,7 +6,7 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import { TraitIcon, TraitName } from './TraitIcon';
-import { Box } from '../../../components/atoms/Box';
+import { Box } from '@almadar/ui';
 
 const meta: Meta<typeof TraitIcon> = {
     title: 'Trait Wars/Atoms/TraitIcon',

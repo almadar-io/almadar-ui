@@ -6,8 +6,8 @@
  */
 
 import React from 'react';
-import { Box } from '../../../components/atoms/Box';
-import { cn } from '../../../lib/cn';
+import { Box } from '@almadar/ui';
+import { cn } from '@almadar/ui';
 
 // Import the Pixel Platformer tileset
 import tileSheet from '../assets/pixel-platformer/tilemap.png';

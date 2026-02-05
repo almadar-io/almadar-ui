@@ -5,11 +5,11 @@
  */
 
 import React from 'react';
-import { Box } from '../../../components/atoms/Box';
-import { Typography } from '../../../components/atoms/Typography';
-import { Button } from '../../../components/atoms/Button';
+import { Box } from '@almadar/ui';
+import { Typography } from '@almadar/ui';
+import { Button } from '@almadar/ui';
 import { GAME_SCENARIOS, GameScenario } from './scenarios';
-import { cn } from '../../../lib/cn';
+import { cn } from '@almadar/ui';
 
 export interface ScenarioSelectorProps {
     /** Called when a scenario is selected */

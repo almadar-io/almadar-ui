@@ -4,7 +4,7 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import { TraitStateViewer, TraitDefinition } from './TraitStateViewer';
-import { Box } from '../../../components/atoms/Box';
+import { Box } from '@almadar/ui';
 
 const meta: Meta<typeof TraitStateViewer> = {
     title: 'Trait Wars/Molecules/TraitStateViewer',

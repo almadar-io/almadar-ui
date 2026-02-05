@@ -6,8 +6,8 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import { TileSprite, TILE_SPRITES, TileType } from './TileSprite';
-import { Box } from '../../../components/atoms/Box';
-import { Typography } from '../../../components/atoms/Typography';
+import { Box } from '@almadar/ui';
+import { Typography } from '@almadar/ui';
 
 const meta: Meta<typeof TileSprite> = {
     title: 'Trait Wars/Atoms/TileSprite',

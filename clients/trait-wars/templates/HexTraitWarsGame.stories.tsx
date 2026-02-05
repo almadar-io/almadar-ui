@@ -2,8 +2,8 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { HexTraitWarsGame, HexGameUnit } from './HexTraitWarsGame';
 import { HexBoardTile } from '../organisms/HexGameBoard';
 import { HexTileType } from '../atoms/HexTileSprite';
-import { Box } from '../../../components/atoms/Box';
-import { Typography } from '../../../components/atoms/Typography';
+import { Box } from '@almadar/ui';
+import { Typography } from '@almadar/ui';
 
 const meta: Meta<typeof HexTraitWarsGame> = {
     title: 'Trait Wars/Templates/HexTraitWarsGame',

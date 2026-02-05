@@ -6,7 +6,7 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import { UnitCard, UnitEntity } from './UnitCard';
-import { Box } from '../../../components/atoms/Box';
+import { Box } from '@almadar/ui';
 import { action } from '@storybook/addon-actions';
 
 const meta: Meta<typeof UnitCard> = {

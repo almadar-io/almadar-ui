@@ -6,11 +6,11 @@
  */
 
 import React from 'react';
-import { cn } from '../../../lib/cn';
-import { Box } from '../../../components/atoms/Box';
-import { Badge } from '../../../components/atoms/Badge';
-import { Icon, IconSize } from '../../../components/atoms/Icon';
-import { Tooltip } from '../../../components/molecules/Tooltip';
+import { cn } from '@almadar/ui';
+import { Box } from '@almadar/ui';
+import { Badge } from '@almadar/ui';
+import { Icon, IconSize } from '@almadar/ui';
+import { Tooltip } from '@almadar/ui';
 import { Sword, Shield, Heart, Move, Sparkles, Zap, LucideIcon } from 'lucide-react';
 
 export type TraitState = 'ready' | 'active' | 'cooldown' | 'disabled';

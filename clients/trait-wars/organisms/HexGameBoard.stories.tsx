@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { HexGameBoard, HexBoardTile } from './HexGameBoard';
 import { HexUnit } from './HexGameTile';
 import { HexTileType } from '../atoms/HexTileSprite';
-import { Box } from '../../../components/atoms/Box';
-import { Typography } from '../../../components/atoms/Typography';
+import { Box } from '@almadar/ui';
+import { Typography } from '@almadar/ui';
 
 const meta: Meta<typeof HexGameBoard> = {
     title: 'Trait Wars/Organisms/HexGameBoard',

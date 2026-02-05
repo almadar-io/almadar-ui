@@ -5,8 +5,8 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Box } from '../../../components/atoms/Box';
-import { cn } from '../../../lib/cn';
+import { Box } from '@almadar/ui';
+import { cn } from '@almadar/ui';
 
 export interface DamagePopupProps {
     /** Damage amount to display */

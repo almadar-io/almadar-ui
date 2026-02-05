@@ -6,7 +6,7 @@
 
 import type { Meta, StoryObj } from '@storybook/react';
 import { HexCell, TerrainType } from './HexCell';
-import { Box } from '../../../components/atoms/Box';
+import { Box } from '@almadar/ui';
 
 const meta: Meta<typeof HexCell> = {
     title: 'Trait Wars/Atoms/HexCell',
