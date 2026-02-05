@@ -28,3 +28,6 @@ export * from './debugRegistry';
 export * from './guardRegistry';
 export * from './tickRegistry';
 export * from './traitRegistry';
+
+// Data utilities
+export * from './getNestedValue';

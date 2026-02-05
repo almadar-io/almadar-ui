@@ -10,6 +10,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '../../lib/cn';
+import { getNestedValue } from '../../lib/getNestedValue';
 import {
   useEntityList,
   usePaginatedEntityList,
@@ -372,8 +373,8 @@ export const CardGrid: React.FC<CardGridProps> = ({
 
         // Handle navigation with template interpolation
         if (action.navigatesTo) {
-          const url = action.navigatesTo.replace(/\{\{row\.(\w+)\}\}/g, (_, field) => {
-            const value = itemData[field];
+          const url = action.navigatesTo.replace(/\{\{row\.(\w+(?:\.\w+)*)\}\}/g, (_, field) => {
+            const value = getNestedValue(itemData, field);
             return value !== undefined && value !== null ? String(value) : '';
           });
           navigate(url);
@@ -398,7 +399,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
           onClick={() => onCardClick?.(itemData)}
         >
           {fields.map((field) => {
-            const value = itemData[field];
+            const value = getNestedValue(itemData, field);
             if (value === undefined || value === null) return null;
             return (
               <div key={field} className="mb-2 last:mb-0">

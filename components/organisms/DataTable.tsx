@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "../../lib/cn";
+import { getNestedValue } from "../../lib/getNestedValue";
 import { Button, Input, Badge, Checkbox, Spinner } from "../atoms";
 import { EmptyState, Pagination } from "../molecules";
 import {
@@ -683,16 +684,19 @@ export function DataTable<T extends { id: string | number }>({
                       />
                     </td>
                   )}
-                  {normalizedColumns.map((col) => (
-                    <td
-                      key={String(col.key)}
-                      className="px-4 py-3 text-sm text-[var(--color-foreground)] whitespace-nowrap sm:whitespace-normal"
-                    >
-                      {col.render
-                        ? col.render(row[col.key as keyof T], row, rowIndex)
-                        : String(row[col.key as keyof T] ?? "")}
-                    </td>
-                  ))}
+                  {normalizedColumns.map((col) => {
+                    const cellValue = getNestedValue(row as Record<string, unknown>, String(col.key));
+                    return (
+                      <td
+                        key={String(col.key)}
+                        className="px-4 py-3 text-sm text-[var(--color-foreground)] whitespace-nowrap sm:whitespace-normal"
+                      >
+                        {col.render
+                          ? col.render(cellValue, row, rowIndex)
+                          : String(cellValue ?? "")}
+                      </td>
+                    );
+                  })}
                   {rowActions && (
                     <td className="px-4 py-3 relative">
                       <button

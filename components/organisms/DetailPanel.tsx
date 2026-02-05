@@ -39,6 +39,7 @@ import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
 import { cn } from "../../lib/cn";
+import { getNestedValue } from "../../lib/getNestedValue";
 import { useEntityDetail } from "../../hooks/useEntityData";
 import { useSelectedEntity } from "../../hooks/useUIEvents";
 import { useEventBus } from "../../hooks/useEventBus";
@@ -344,7 +345,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
       const overviewFields: DetailField[] = [];
 
       [...statusFields, ...otherFields.slice(0, 3)].forEach((field) => {
-        const value = normalizedData[field];
+        const value = getNestedValue(normalizedData, field);
         if (value !== undefined && value !== null) {
           overviewFields.push({
             label: formatFieldLabel(field),
@@ -364,7 +365,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
       const metricsFields: DetailField[] = [];
 
       [...progressFields, ...metricFields].forEach((field) => {
-        const value = normalizedData[field];
+        const value = getNestedValue(normalizedData, field);
         if (value !== undefined && value !== null) {
           metricsFields.push({
             label: formatFieldLabel(field),
@@ -384,7 +385,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
       const timelineFields: DetailField[] = [];
 
       dateFields.forEach((field) => {
-        const value = normalizedData[field];
+        const value = getNestedValue(normalizedData, field);
         if (value !== undefined && value !== null) {
           timelineFields.push({
             label: formatFieldLabel(field),
@@ -404,7 +405,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
       const descFields: DetailField[] = [];
 
       descriptionFields.forEach((field) => {
-        const value = normalizedData[field];
+        const value = getNestedValue(normalizedData, field);
         if (value !== undefined && value !== null) {
           descFields.push({
             label: formatFieldLabel(field),
@@ -484,7 +485,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                         f.toLowerCase().includes("priority"),
                     )
                     .map((field) => {
-                      const value = normalizedData[field];
+                      const value = getNestedValue(normalizedData, field);
                       if (!value) return null;
                       return (
                         <Badge
@@ -520,7 +521,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                   f.toLowerCase().includes("percent"),
               )
               .map((field) => {
-                const value = normalizedData[field];
+                const value = getNestedValue(normalizedData, field);
                 if (
                   value === undefined ||
                   value === null ||

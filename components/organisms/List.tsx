@@ -35,6 +35,7 @@ import { EmptyState } from "../molecules/EmptyState";
 import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
 import { cn } from "../../lib/cn";
+import { getNestedValue } from "../../lib/getNestedValue";
 import { useEntityList } from "../../hooks/useEntityData";
 import { useEventBus, type KFlowEvent } from "../../hooks/useEventBus";
 import { useQuerySingleton } from "../../hooks/useQuerySingleton";
@@ -502,19 +503,20 @@ export const List: React.FC<ListProps> = ({
 
           if (effectiveFieldNames && effectiveFieldNames.length > 0) {
             const firstField = effectiveFieldNames[0];
+            const itemRecord = item as Record<string, unknown>;
 
             if (
               !normalizedItem.title &&
-              item[firstField as keyof typeof item]
+              getNestedValue(itemRecord, firstField)
             ) {
               normalizedItem.title = String(
-                item[firstField as keyof typeof item],
+                getNestedValue(itemRecord, firstField),
               );
             }
 
             normalizedItem._fields = effectiveFieldNames.reduce(
               (acc, field) => {
-                const value = item[field as keyof typeof item];
+                const value = getNestedValue(itemRecord, field);
                 if (value !== undefined && value !== null) {
                   acc[field] = value;
                 }
