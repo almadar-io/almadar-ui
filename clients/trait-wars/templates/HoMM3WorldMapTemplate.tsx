@@ -24,6 +24,7 @@ import {
     getAdjacentHexes,
     isInMovementRange,
 } from '../types';
+import { FEATURE_ASSETS, FEATURE_ICONS_FALLBACK, getHeroAsset, getHeroPortrait } from '../config';
 
 // ============================================================================
 // TYPES
@@ -52,7 +53,7 @@ export interface HoMM3WorldMapProps {
     className?: string;
 }
 
-// Feature icons for map overlay
+// Feature icons for map overlay (fallback emojis)
 const FEATURE_ICONS: Record<HexFeatureType, string> = {
     none: '',
     goldMine: '🪙',
@@ -64,6 +65,11 @@ const FEATURE_ICONS: Record<HexFeatureType, string> = {
     castle: '🏰',
     battleMarker: '⚔️',
     hero: '👤',
+};
+
+// Check if feature has an image asset
+const hasFeatureImage = (featureType: HexFeatureType): boolean => {
+    return featureType !== 'none' && featureType !== 'hero' && featureType !== 'castle' && FEATURE_ASSETS[featureType] !== undefined;
 };
 
 // Convert world map hex terrain to HexTileType
@@ -261,13 +267,26 @@ export function HoMM3WorldMapTemplate({
                                     const posX = (hex.x - hex.y) * HORIZONTAL_OFFSET + baseOffsetX + TILE_WIDTH / 2;
                                     const posY = (hex.x + hex.y) * VERTICAL_OFFSET + 40;
 
+                                    const featureAsset = FEATURE_ASSETS[hex.feature!];
                                     return (
                                         <Box
                                             key={`feature-${hex.x}-${hex.y}`}
-                                            className="absolute transform -translate-x-1/2 text-2xl"
-                                            style={{ left: posX + 16, top: posY }}
+                                            className="absolute transform -translate-x-1/2"
+                                            style={{ left: posX + 16, top: posY - 20 }}
                                         >
-                                            {FEATURE_ICONS[hex.feature!]}
+                                            {featureAsset ? (
+                                                <img
+                                                    src={featureAsset}
+                                                    alt={hex.feature}
+                                                    className="w-16 h-16 object-contain drop-shadow-lg"
+                                                    onError={(e) => {
+                                                        // Hide image on error to show fallback
+                                                        (e.target as HTMLImageElement).style.display = 'none';
+                                                    }}
+                                                />
+                                            ) : (
+                                                <span className="text-2xl">{FEATURE_ICONS[hex.feature!]}</span>
+                                            )}
                                         </Box>
                                     );
                                 })}
@@ -281,8 +300,15 @@ export function HoMM3WorldMapTemplate({
                     {selectedHero && (
                         <Box className="p-4 bg-gradient-to-br from-purple-900/50 to-slate-900 rounded-lg border border-purple-500/50 mb-4">
                             <HStack className="gap-3 items-center mb-3">
-                                <Box className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center text-2xl">
-                                    👤
+                                <Box className="w-14 h-14 rounded-lg overflow-hidden border-2 border-purple-500 bg-slate-900">
+                                    <img
+                                        src={getHeroPortrait(selectedHero.id)}
+                                        alt={selectedHero.name}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).style.display = 'none';
+                                        }}
+                                    />
                                 </Box>
                                 <VStack className="gap-0">
                                     <Typography variant="h5" className="text-white">
@@ -364,7 +390,13 @@ export function HoMM3WorldMapTemplate({
                                         onClick={() => onHeroSelect?.(hero.id)}
                                     >
                                         <HStack className="gap-2 items-center">
-                                            <Typography variant="body1">👤</Typography>
+                                            <Box className="w-8 h-8 rounded overflow-hidden border border-purple-400">
+                                                <img
+                                                    src={getHeroPortrait(hero.id)}
+                                                    alt={hero.name}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </Box>
                                             <Typography variant="body2" className="text-white flex-1">
                                                 {hero.name}
                                             </Typography>
@@ -387,7 +419,13 @@ export function HoMM3WorldMapTemplate({
                                     .map((hero) => (
                                         <Box key={hero.id} className="p-3 bg-red-900/30 rounded-lg border border-red-600/50">
                                             <HStack className="gap-2 items-center">
-                                                <Typography variant="body1">💀</Typography>
+                                                <Box className="w-8 h-8 rounded overflow-hidden border border-red-500">
+                                                    <img
+                                                        src={getHeroPortrait(hero.id)}
+                                                        alt={hero.name}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </Box>
                                                 <Typography variant="body2" className="text-red-300 flex-1">
                                                     {hero.name}
                                                 </Typography>
