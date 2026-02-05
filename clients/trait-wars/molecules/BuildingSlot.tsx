@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { Box, Badge, Typography, cn } from '@almadar/ui';
-import { BuildingType, useAssetsOptional, getBuildingSpriteUrl } from '../assets';
+import { BuildingType, useAssetsOptional, getBuildingSpriteUrl, DEFAULT_ASSET_MANIFEST } from '../assets';
 
 export interface BuildingSlotProps {
     /** Building type */
@@ -41,8 +41,8 @@ export function BuildingSlot({
     className,
     fallbackIcon = '🏛️',
 }: BuildingSlotProps): JSX.Element {
-    const manifest = useAssetsOptional();
-    const spriteUrl = manifest ? getBuildingSpriteUrl(manifest, buildingType) : undefined;
+    const manifest = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
+    const spriteUrl = getBuildingSpriteUrl(manifest, buildingType);
     const isBuilt = level > 0;
 
     return (

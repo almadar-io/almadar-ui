@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { Box, Badge, Typography, Button, HStack, VStack, cn } from '@almadar/ui';
-import { RobotUnitType, useAssetsOptional, getUnitPortraitUrl } from '../assets';
+import { RobotUnitType, useAssetsOptional, getUnitPortraitUrl, DEFAULT_ASSET_MANIFEST } from '../assets';
 
 export interface UnitRecruitCardProps {
     /** Unit ID */
@@ -78,8 +78,8 @@ export function UnitRecruitCard({
     className,
     fallbackIcon = '🤖',
 }: UnitRecruitCardProps): JSX.Element {
-    const manifest = useAssetsOptional();
-    const portraitUrl = manifest ? getUnitPortraitUrl(manifest, unitType) : undefined;
+    const manifest = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
+    const portraitUrl = getUnitPortraitUrl(manifest, unitType);
 
     return (
         <Box
