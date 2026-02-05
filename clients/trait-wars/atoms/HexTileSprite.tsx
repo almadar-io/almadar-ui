@@ -10,9 +10,9 @@ import { Box } from '@almadar/ui';
 import { cn } from '@almadar/ui';
 import { TerrainType, useAssetsOptional, DEFAULT_ASSET_MANIFEST, getTerrainSpriteUrl } from '../assets';
 
-// Default tile size
+// Default tile size (Kenney Isometric Miniature Dungeon tiles are 256x512)
 const DEFAULT_WIDTH = 256;
-const DEFAULT_HEIGHT = 256;
+const DEFAULT_HEIGHT = 512;
 
 export interface HexTileSpriteProps {
     /** Type of terrain tile to display */

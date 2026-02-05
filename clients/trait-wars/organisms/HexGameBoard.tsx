@@ -65,19 +65,22 @@ export function HexGameBoard({
 }: HexGameBoardProps): JSX.Element {
     const [hoveredPos, setHoveredPos] = useState<{ x: number; y: number } | null>(null);
 
-    // Hex dimensions
-    const HEX_WIDTH = 120 * scale;
-    const HEX_HEIGHT = 140 * scale;
-    const HORIZONTAL_OFFSET = HEX_WIDTH * 0.75;
-    const VERTICAL_OFFSET = HEX_HEIGHT * 0.75;
+    // Isometric tile dimensions (256x512 base size from Kenney Isometric Miniature Dungeon)
+    // The floor diamond is 256 wide x 128 tall (standard 2:1 isometric ratio)
+    const TILE_WIDTH = 256 * scale;
+    const TILE_HEIGHT = 512 * scale;
+    const FLOOR_HEIGHT = 128 * scale; // The isometric floor diamond height
+    // Isometric grid positioning - floor diamonds connect seamlessly
+    const HORIZONTAL_OFFSET = TILE_WIDTH / 2;  // 128 * scale
+    const VERTICAL_OFFSET = FLOOR_HEIGHT / 2;   // 64 * scale
 
     // Find grid bounds
     const maxX = Math.max(...tiles.map(t => t.x), 0);
     const maxY = Math.max(...tiles.map(t => t.y), 0);
 
-    // Calculate container size
-    const gridWidth = (maxX + 1) * HORIZONTAL_OFFSET + HEX_WIDTH * 0.25;
-    const gridHeight = (maxY + 1) * VERTICAL_OFFSET + HEX_HEIGHT * 0.5;
+    // Calculate container size for isometric diamond grid
+    const gridWidth = (maxX + maxY + 2) * HORIZONTAL_OFFSET + TILE_WIDTH;
+    const gridHeight = (maxX + maxY + 1) * VERTICAL_OFFSET + TILE_HEIGHT;
 
     // Helper functions
     const isValidMove = useCallback(
@@ -146,9 +149,11 @@ export function HexGameBoard({
                     const isSelectedTile = selectedUnitId && unit?.id === selectedUnitId;
                     const isHovered = hoveredPos?.x === tile.x && hoveredPos?.y === tile.y;
 
-                    // Offset grid layout for hex positioning
-                    const xPos = tile.x * HORIZONTAL_OFFSET;
-                    const yPos = tile.y * VERTICAL_OFFSET + (tile.x % 2 === 1 ? VERTICAL_OFFSET / 2 : 0);
+                    // Isometric grid positioning - diamond pattern
+                    // Each tile overlaps with neighbors for seamless appearance
+                    const baseOffsetX = (maxY + 1) * HORIZONTAL_OFFSET; // Center the grid
+                    const xPos = (tile.x - tile.y) * HORIZONTAL_OFFSET + baseOffsetX;
+                    const yPos = (tile.x + tile.y) * VERTICAL_OFFSET;
 
                     return (
                         <Box

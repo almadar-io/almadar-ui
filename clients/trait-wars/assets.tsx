@@ -178,26 +178,26 @@ export function getEffectUrl(manifest: TraitWarsAssetManifest, type: EffectType)
 // ============================================================================
 
 /**
- * Default manifest with placeholder paths.
- * Projects should override this with their own asset paths.
+ * Default manifest using Kenney Isometric Miniature Dungeon assets.
+ * Tiles are 256x512 isometric sprites.
  */
 export const DEFAULT_ASSET_MANIFEST: TraitWarsAssetManifest = {
-    baseUrl: '/assets',
+    baseUrl: '',
     units: {
-        hero: 'game-sprites/robots/04_hero_isometric.png',
-        caregiver: 'game-sprites/robots/03_caregiver_isometric.png',
-        explorer: 'game-sprites/robots/05_explorer_isometric.png',
-        sage: 'game-sprites/robots/10_sage_isometric.png',
-        shadowLegion: 'game-sprites/robots/iram_shadow_isometric.png',
-        emperor: 'game-sprites/robots/12_emperor_isometric.png',
+        hero: 'isometric-dungeon/Characters/Male/Male_3_Idle0.png',
+        caregiver: 'isometric-dungeon/Characters/Male/Male_1_Idle0.png',
+        explorer: 'isometric-dungeon/Characters/Male/Male_0_Idle0.png',
+        sage: 'isometric-dungeon/Characters/Male/Male_2_Idle0.png',
+        shadowLegion: 'isometric-dungeon/Characters/Male/Male_4_Idle0.png',
+        emperor: 'isometric-dungeon/Characters/Male/Male_3_Idle0.png',
     },
     terrain: {
-        plains: 'game-sprites/terrain/manuscript_plains.png',
-        forest: 'game-sprites/terrain/illuminated_forest.png',
-        mountain: 'game-sprites/terrain/scripture_mountains.png',
-        water: 'game-sprites/terrain/ink_water.png',
-        fortress: 'game-sprites/terrain/bone_castle.png',
-        castle: 'game-sprites/terrain/bone_castle.png',
+        plains: 'isometric-dungeon/Isometric/stoneTile_E.png',
+        forest: 'isometric-dungeon/Isometric/planks_E.png',
+        mountain: 'isometric-dungeon/Isometric/stoneColumn_E.png',
+        water: 'isometric-dungeon/Isometric/dirt_E.png',
+        fortress: 'isometric-dungeon/Isometric/stoneWallColumn_E.png',
+        castle: 'isometric-dungeon/Isometric/stoneWallColumn_E.png',
     },
     ui: {
         healthBar: 'game-sprites/ui/health_bar.png',

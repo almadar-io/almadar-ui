@@ -79,8 +79,9 @@ export function HexGameTile({
     showCoordinates = false,
     className,
 }: HexGameTileProps): JSX.Element {
-    const HEX_WIDTH = 120 * scale;
-    const HEX_HEIGHT = 140 * scale;
+    // Isometric tile dimensions (256x512 base size from Kenney Isometric Miniature Dungeon)
+    const HEX_WIDTH = 256 * scale;
+    const HEX_HEIGHT = 512 * scale;
 
     // Determine highlight state
     const highlight = isSelected ? 'selected' :
