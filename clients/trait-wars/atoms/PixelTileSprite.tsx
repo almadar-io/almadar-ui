@@ -3,14 +3,13 @@
  *
  * High-fidelity terrain tiles from the Pixel Platformer Pack.
  * 18x18 tiles with 1px margin - larger and more visible than Roguelike 16x16.
+ * Assets are loaded dynamically via the TraitWarsAssetProvider.
  */
 
 import React from 'react';
 import { Box } from '@almadar/ui';
 import { cn } from '@almadar/ui';
-
-// Import the Pixel Platformer tileset
-import tileSheet from '../assets/pixel-platformer/tilemap.png';
+import { useAssetsOptional, DEFAULT_ASSET_MANIFEST, getSpriteSheetUrl } from '../assets';
 
 // Spritesheet configuration
 const SPRITE_SIZE = 18; // Each tile is 18x18 pixels
@@ -114,6 +113,10 @@ export function PixelTileSprite({
     className,
     highlight = 'none',
 }: PixelTileSpriteProps): JSX.Element {
+    // Get asset manifest from context or use default
+    const assets = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
+    const spriteSheetUrl = getSpriteSheetUrl(assets, 'pixelTilemap');
+
     // Map legacy tile types to pixel tiles
     const mappedType = (type in PIXEL_TILE_SPRITES
         ? type
@@ -134,6 +137,16 @@ export function PixelTileSprite({
         hover: 'ring-2 ring-white/50 ring-offset-1 ring-offset-transparent brightness-110',
     };
 
+    if (!spriteSheetUrl) {
+        return (
+            <Box
+                display="inline-block"
+                className={cn('bg-green-300', className)}
+                style={{ width: displaySize, height: displaySize }}
+            />
+        );
+    }
+
     return (
         <Box
             display="inline-block"
@@ -145,7 +158,7 @@ export function PixelTileSprite({
             style={{
                 width: displaySize,
                 height: displaySize,
-                backgroundImage: `url(${tileSheet})`,
+                backgroundImage: `url(${spriteSheetUrl})`,
                 backgroundPosition: `-${bgX * scale}px -${bgY * scale}px`,
                 backgroundSize: `${SHEET_COLS * TILE_STEP * scale}px auto`,
                 imageRendering: 'pixelated',

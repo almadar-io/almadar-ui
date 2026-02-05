@@ -2,14 +2,13 @@
  * TileSprite Component
  *
  * Renders a tile from the Roguelike Dungeon Pack spritesheet.
+ * Assets are loaded dynamically via the TraitWarsAssetProvider.
  */
 
 import React from 'react';
 import { Box } from '@almadar/ui';
 import { cn } from '@almadar/ui';
-
-// Import the dungeon tileset
-import dungeonSheet from '../assets/tiles/dungeon/roguelikeDungeon_transparent.png';
+import { useAssetsOptional, DEFAULT_ASSET_MANIFEST, getSpriteSheetUrl } from '../assets';
 
 // Spritesheet configuration
 const SPRITE_SIZE = 16;
@@ -62,6 +61,10 @@ export function TileSprite({
     className,
     highlight = 'none',
 }: TileSpriteProps): JSX.Element {
+    // Get asset manifest from context or use default
+    const assets = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
+    const spriteSheetUrl = getSpriteSheetUrl(assets, 'dungeonTilemap');
+
     const sprite = TILE_SPRITES[type];
     const displaySize = SPRITE_SIZE * scale;
 
@@ -77,6 +80,16 @@ export function TileSprite({
         selected: 'ring-2 ring-yellow-400 ring-offset-2',
     };
 
+    if (!spriteSheetUrl) {
+        return (
+            <Box
+                display="inline-block"
+                className={cn('bg-gray-300', className)}
+                style={{ width: displaySize, height: displaySize }}
+            />
+        );
+    }
+
     return (
         <Box
             display="inline-block"
@@ -88,7 +101,7 @@ export function TileSprite({
             style={{
                 width: displaySize,
                 height: displaySize,
-                backgroundImage: `url(${dungeonSheet})`,
+                backgroundImage: `url(${spriteSheetUrl})`,
                 backgroundPosition: `-${bgX * scale}px -${bgY * scale}px`,
                 backgroundSize: `${SHEET_COLS * TILE_STEP * scale}px auto`,
                 imageRendering: 'pixelated',
