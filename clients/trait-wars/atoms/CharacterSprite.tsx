@@ -8,7 +8,7 @@
 import React from 'react';
 import { Box } from '@almadar/ui';
 import { cn } from '@almadar/ui';
-import { UnitType, useAssets, getUnitSpriteUrl } from '../assets';
+import { UnitType, useAssetsOptional, DEFAULT_ASSET_MANIFEST, getUnitSpriteUrl } from '../assets';
 
 // Default display configuration
 const DEFAULT_SCALE = 0.15; // Scale down for game grid (200px * 0.15 = 30px)
@@ -43,14 +43,9 @@ export function CharacterSprite({
     state = 'idle',
     selected = false,
 }: CharacterSpriteProps): JSX.Element {
-    // Try to get URL from asset provider, fall back to src prop
-    let spriteSrc = src;
-    try {
-        const manifest = useAssets();
-        spriteSrc = getUnitSpriteUrl(manifest, type) || src;
-    } catch {
-        // Not in AssetProvider context, use src prop
-    }
+    // Get asset manifest from context or use default
+    const assets = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
+    const spriteSrc = src || getUnitSpriteUrl(assets, type);
 
     // Team color filters
     const teamFilters = {

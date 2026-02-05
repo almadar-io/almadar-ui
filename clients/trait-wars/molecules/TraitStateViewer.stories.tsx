@@ -2,6 +2,7 @@
  * TraitStateViewer Stories
  */
 
+import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { TraitStateViewer, TraitDefinition } from './TraitStateViewer';
 import { Box } from '@almadar/ui';

@@ -4,6 +4,7 @@
  * Storybook stories for the UnitCard molecule.
  */
 
+import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { UnitCard, UnitEntity } from './UnitCard';
 import { Box } from '@almadar/ui';

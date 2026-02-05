@@ -4,6 +4,7 @@
  * Storybook stories for the HexCell atom.
  */
 
+import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { HexCell, TerrainType } from './HexCell';
 import { Box } from '@almadar/ui';

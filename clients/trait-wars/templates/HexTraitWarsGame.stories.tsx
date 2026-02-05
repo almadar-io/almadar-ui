@@ -1,3 +1,4 @@
+import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { HexTraitWarsGame, HexGameUnit } from './HexTraitWarsGame';
 import { HexBoardTile } from '../organisms/HexGameBoard';
@@ -159,19 +160,19 @@ const createBattlefieldMap = (): HexBoardTile[] => {
 
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
-            let terrain: HexTileType = 'grassPlain';
+            let terrain: HexTileType = 'plains';
 
             // Create interesting terrain
             if (x === 0 || x === width - 1) {
-                terrain = Math.random() > 0.5 ? 'stonePlain' : 'grassTrees';
+                terrain = Math.random() > 0.5 ? 'fortress' : 'forest';
             } else if (y === 0 || y === height - 1) {
-                terrain = Math.random() > 0.7 ? 'grassRocks' : 'grassPlain';
+                terrain = Math.random() > 0.7 ? 'mountain' : 'plains';
             } else if (x === 3 && y === 2) {
-                terrain = 'stoneBoulders';
+                terrain = 'mountain';
             } else if (x === 4 && y === 2) {
-                terrain = 'stoneBoulders';
+                terrain = 'mountain';
             } else if (Math.random() > 0.85) {
-                terrain = 'grassTrees';
+                terrain = 'forest';
             }
 
             tiles.push({ x, y, terrain });
@@ -187,23 +188,23 @@ const createVolcanicMap = (): HexBoardTile[] => {
 
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
-            let terrain: HexTileType = 'dirtPlain';
+            let terrain: HexTileType = 'plains';
 
-            // Lava edges
+            // Water edges (representing lava/hazard)
             if (y === 0 || y === height - 1) {
-                terrain = 'lavaPlain';
+                terrain = 'water';
             }
             // Rocky center
             else if (x === 3 || x === 4) {
-                terrain = Math.random() > 0.5 ? 'stonePlain' : 'dirtRocks';
+                terrain = Math.random() > 0.5 ? 'fortress' : 'mountain';
             }
-            // Random lava pools
+            // Random water pools
             else if (Math.random() > 0.9) {
-                terrain = 'lavaPlain';
+                terrain = 'water';
             }
             // Stone outcrops
             else if (Math.random() > 0.8) {
-                terrain = 'stoneRocks';
+                terrain = 'mountain';
             }
 
             tiles.push({ x, y, terrain });

@@ -1,3 +1,4 @@
+import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { PixelCharacterSprite, PIXEL_CHARACTER_SPRITES, CHARACTER_TYPE_MAP } from './PixelCharacterSprite';
 import { Box } from '@almadar/ui';

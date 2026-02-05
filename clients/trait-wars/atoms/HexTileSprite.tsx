@@ -8,7 +8,7 @@
 import React from 'react';
 import { Box } from '@almadar/ui';
 import { cn } from '@almadar/ui';
-import { TerrainType, useAssets, getTerrainSpriteUrl } from '../assets';
+import { TerrainType, useAssetsOptional, DEFAULT_ASSET_MANIFEST, getTerrainSpriteUrl } from '../assets';
 
 // Default tile size
 const DEFAULT_WIDTH = 256;
@@ -43,14 +43,9 @@ export function HexTileSprite({
     onMouseEnter,
     onMouseLeave,
 }: HexTileSpriteProps): JSX.Element {
-    // Try to get URL from asset provider, fall back to src prop
-    let tileSrc = src;
-    try {
-        const manifest = useAssets();
-        tileSrc = getTerrainSpriteUrl(manifest, type) || src;
-    } catch {
-        // Not in AssetProvider context, use src prop
-    }
+    // Get asset manifest from context or use default
+    const assets = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
+    const tileSrc = src || getTerrainSpriteUrl(assets, type);
 
     const width = DEFAULT_WIDTH * scale;
     const height = DEFAULT_HEIGHT * scale;

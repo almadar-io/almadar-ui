@@ -1,3 +1,4 @@
+import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { PixelTileSprite, PIXEL_TILE_SPRITES } from './PixelTileSprite';
 import { Box } from '@almadar/ui';

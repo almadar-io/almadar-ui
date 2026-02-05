@@ -2,6 +2,7 @@
 export default {
   content: [
     './components/**/*.{js,ts,jsx,tsx}',
+    './clients/**/*.{js,ts,jsx,tsx}',
     './.storybook/**/*.{js,ts,jsx,tsx}',
   ],
   darkMode: 'class',

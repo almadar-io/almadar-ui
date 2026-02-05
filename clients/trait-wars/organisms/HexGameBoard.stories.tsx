@@ -1,5 +1,5 @@
+import React, { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState } from 'react';
 import { HexGameBoard, HexBoardTile } from './HexGameBoard';
 import { HexUnit } from './HexGameTile';
 import { HexTileType } from '../atoms/HexTileSprite';
@@ -22,16 +22,16 @@ type Story = StoryObj<typeof meta>;
 // Sample tile map
 const generateTileMap = (width: number, height: number): HexBoardTile[] => {
     const tiles: HexBoardTile[] = [];
-    const terrainTypes: HexTileType[] = ['grassPlain', 'grassTrees', 'grassRocks', 'dirtPlain', 'stonePlain'];
+    const terrainTypes: HexTileType[] = ['plains', 'forest', 'mountain', 'water', 'fortress'];
 
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
             // Add some variety
             let terrain: HexTileType = terrainTypes[0];
-            if ((x + y) % 7 === 0) terrain = terrainTypes[4]; // stonePlain
-            else if ((x + y) % 5 === 0) terrain = terrainTypes[1]; // grassTrees
-            else if ((x * y) % 4 === 0) terrain = terrainTypes[3]; // dirtPlain
-            else if (x % 3 === 0) terrain = terrainTypes[2]; // grassRocks
+            if ((x + y) % 7 === 0) terrain = terrainTypes[4]; // fortress
+            else if ((x + y) % 5 === 0) terrain = terrainTypes[1]; // forest
+            else if ((x * y) % 4 === 0) terrain = terrainTypes[3]; // water
+            else if (x % 3 === 0) terrain = terrainTypes[2]; // mountain
 
             tiles.push({ x, y, terrain });
         }
@@ -238,33 +238,33 @@ export const BattleScenario: Story = {
         // Custom battle map
         const battleTiles: HexBoardTile[] = [
             // Row 0 - Player spawn
-            { x: 0, y: 0, terrain: 'grassPlain' },
-            { x: 1, y: 0, terrain: 'grassPlain' },
-            { x: 2, y: 0, terrain: 'grassTrees' },
-            { x: 3, y: 0, terrain: 'stoneBoulders' },
-            { x: 4, y: 0, terrain: 'grassPlain' },
-            { x: 5, y: 0, terrain: 'grassPlain' },
+            { x: 0, y: 0, terrain: 'plains' },
+            { x: 1, y: 0, terrain: 'plains' },
+            { x: 2, y: 0, terrain: 'forest' },
+            { x: 3, y: 0, terrain: 'mountain' },
+            { x: 4, y: 0, terrain: 'plains' },
+            { x: 5, y: 0, terrain: 'plains' },
             // Row 1
-            { x: 0, y: 1, terrain: 'grassPlain' },
-            { x: 1, y: 1, terrain: 'grassRocks' },
-            { x: 2, y: 1, terrain: 'dirtPlain' },
-            { x: 3, y: 1, terrain: 'dirtPlain' },
-            { x: 4, y: 1, terrain: 'grassRocks' },
-            { x: 5, y: 1, terrain: 'grassPlain' },
+            { x: 0, y: 1, terrain: 'plains' },
+            { x: 1, y: 1, terrain: 'mountain' },
+            { x: 2, y: 1, terrain: 'plains' },
+            { x: 3, y: 1, terrain: 'plains' },
+            { x: 4, y: 1, terrain: 'mountain' },
+            { x: 5, y: 1, terrain: 'plains' },
             // Row 2 - Middle battleground
-            { x: 0, y: 2, terrain: 'grassTrees' },
-            { x: 1, y: 2, terrain: 'grassPlain' },
-            { x: 2, y: 2, terrain: 'stonePlain' },
-            { x: 3, y: 2, terrain: 'stonePlain' },
-            { x: 4, y: 2, terrain: 'grassPlain' },
-            { x: 5, y: 2, terrain: 'grassTrees' },
+            { x: 0, y: 2, terrain: 'forest' },
+            { x: 1, y: 2, terrain: 'plains' },
+            { x: 2, y: 2, terrain: 'fortress' },
+            { x: 3, y: 2, terrain: 'fortress' },
+            { x: 4, y: 2, terrain: 'plains' },
+            { x: 5, y: 2, terrain: 'forest' },
             // Row 3 - Enemy spawn
-            { x: 0, y: 3, terrain: 'lavaPlain' },
-            { x: 1, y: 3, terrain: 'dirtRocks' },
-            { x: 2, y: 3, terrain: 'dirtPlain' },
-            { x: 3, y: 3, terrain: 'dirtPlain' },
-            { x: 4, y: 3, terrain: 'dirtRocks' },
-            { x: 5, y: 3, terrain: 'lavaPlain' },
+            { x: 0, y: 3, terrain: 'water' },
+            { x: 1, y: 3, terrain: 'mountain' },
+            { x: 2, y: 3, terrain: 'plains' },
+            { x: 3, y: 3, terrain: 'plains' },
+            { x: 4, y: 3, terrain: 'mountain' },
+            { x: 5, y: 3, terrain: 'water' },
         ];
 
         const battleUnits: (HexUnit & { position: { x: number; y: number } })[] = [
