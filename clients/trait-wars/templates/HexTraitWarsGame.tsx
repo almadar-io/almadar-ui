@@ -127,23 +127,23 @@ function generateHexMap(width: number, height: number): HexBoardTile[] {
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
             // Create varied terrain with some patterns
-            let terrain: HexTileType = 'grassPlain';
+            let terrain: HexTileType = 'plains';
 
             // Mountains along edges
             if ((x === 0 || x === width - 1) && Math.random() > 0.5) {
-                terrain = 'stonePlain';
+                terrain = 'mountain';
             }
             // Forests in random spots
             else if (Math.random() > 0.8) {
-                terrain = 'grassTrees';
+                terrain = 'forest';
             }
-            // Rocks occasionally
+            // Fortresses occasionally
             else if (Math.random() > 0.9) {
-                terrain = 'grassRocks';
+                terrain = 'fortress';
             }
-            // Dirt paths
+            // Water features
             else if (y === Math.floor(height / 2) && x > 1 && x < width - 2) {
-                terrain = 'dirtPlain';
+                terrain = 'water';
             }
 
             tiles.push({ x, y, terrain });

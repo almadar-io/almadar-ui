@@ -72,7 +72,6 @@ export function HexCell({
     children,
 }: HexCellProps): JSX.Element {
     const dimensions = sizeStyles[size];
-    const spriteUrl = TERRAIN_SPRITES[terrain];
 
     return (
         <Box
@@ -87,19 +86,14 @@ export function HexCell({
                 isAttackTarget && 'ring-2 ring-[#ef4444] ring-opacity-70',
                 // Hover effect
                 'hover:brightness-110 hover:scale-105',
-                // Fallback colors if not using sprites
-                !useSprites && terrainColors[terrain],
+                // Use fallback colors for terrain
+                terrainColors[terrain],
                 className
             )}
             style={{
                 width: dimensions.width,
                 height: dimensions.height,
                 clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
-                ...(useSprites && {
-                    backgroundImage: `url(${spriteUrl})`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                }),
             }}
             onClick={onClick}
         >
