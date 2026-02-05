@@ -138,6 +138,36 @@ export type {
 } from './offline-executor';
 
 // ============================================================================
+// Schema-Driven Navigation
+// ============================================================================
+
+export {
+    // Context and Provider
+    NavigationProvider,
+    useNavigation,
+    useNavigateTo,
+    useNavigationState,
+    useInitPayload,
+    useActivePage,
+    useNavigationId,
+    // Path utilities
+    matchPath,
+    extractRouteParams,
+    pathMatches,
+    // Page finding utilities
+    findPageByPath,
+    findPageByName,
+    getDefaultPage,
+    getAllPages,
+} from './navigation';
+
+export type {
+    NavigationState,
+    NavigationContextValue,
+    NavigationProviderProps,
+} from './navigation';
+
+// ============================================================================
 // Initialization
 // ============================================================================
 
