@@ -23,7 +23,7 @@ const config: StorybookConfig = {
     options: {},
   },
 
-  staticDirs: ["../themes", "../clients/trait-wars/assets"],
+  staticDirs: ["../themes"],
 
   typescript: {
     reactDocgen: false,
