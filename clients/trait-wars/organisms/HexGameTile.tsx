@@ -80,8 +80,11 @@ export function HexGameTile({
     className,
 }: HexGameTileProps): JSX.Element {
     // Isometric tile dimensions (256x512 base size from Kenney Isometric Miniature Dungeon)
-    const HEX_WIDTH = 256 * scale;
-    const HEX_HEIGHT = 512 * scale;
+    // The floor diamond is at the bottom: 256 wide x 128 tall (standard 2:1 isometric ratio)
+    const TILE_WIDTH = 256 * scale;
+    const TILE_HEIGHT = 512 * scale;
+    const FLOOR_HEIGHT = 128 * scale; // The isometric floor diamond height
+    const FLOOR_TOP = TILE_HEIGHT - FLOOR_HEIGHT; // Where the floor starts (top of floor diamond)
 
     // Determine highlight state
     const highlight = isSelected ? 'selected' :
@@ -89,40 +92,52 @@ export function HexGameTile({
             isValidMove ? 'valid' :
                 isHovered ? 'hover' : 'none';
 
-    // Calculate character sprite scale based on hex size
-    const characterScale = scale * 3.5;
+    // Calculate character sprite scale based on tile size
+    const characterScale = scale * 2;
 
     return (
         <Box
             display="flex"
             className={cn(
-                'relative items-center justify-center cursor-pointer',
+                'relative items-end justify-center',
                 isSelected && 'z-20',
                 isAttackTarget && 'z-10',
                 className
             )}
-            style={{ width: HEX_WIDTH, height: HEX_HEIGHT }}
-            onClick={onClick}
-            onMouseEnter={onMouseEnter}
-            onMouseLeave={onMouseLeave}
+            style={{ width: TILE_WIDTH, height: TILE_HEIGHT }}
         >
-            {/* Hex terrain tile */}
+            {/* Isometric terrain tile */}
             <HexTileSprite
                 type={terrain}
                 scale={scale}
                 highlight={highlight}
             />
 
+            {/* Hit area - isometric diamond shape for precise mouse interaction */}
+            <Box
+                className="absolute cursor-pointer"
+                style={{
+                    bottom: 0,
+                    left: 0,
+                    width: TILE_WIDTH,
+                    height: FLOOR_HEIGHT,
+                    clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+                }}
+                onClick={onClick}
+                onMouseEnter={onMouseEnter}
+                onMouseLeave={onMouseLeave}
+            />
+
             {/* Unit on tile */}
             {unit && (
                 <>
-                    {/* Character sprite - always on top */}
+                    {/* Character sprite - positioned above the floor diamond */}
                     <Box
                         className="absolute flex items-center justify-center pointer-events-none z-50"
                         style={{
-                            top: '35%',
+                            bottom: FLOOR_HEIGHT * 0.6,
                             left: '50%',
-                            transform: 'translate(-50%, -50%)',
+                            transform: 'translateX(-50%)',
                         }}
                     >
                         <PixelCharacterSprite
@@ -133,15 +148,15 @@ export function HexGameTile({
                         />
                     </Box>
 
-                    {/* Health bar */}
+                    {/* Health bar - at the bottom of floor diamond */}
                     {showHealthBar && (
                         <Box
                             className="absolute pointer-events-none"
                             style={{
-                                bottom: '15%',
+                                bottom: FLOOR_HEIGHT * 0.1,
                                 left: '50%',
                                 transform: 'translateX(-50%)',
-                                width: HEX_WIDTH * 0.7,
+                                width: TILE_WIDTH * 0.5,
                             }}
                         >
                             <HealthBar
@@ -153,13 +168,13 @@ export function HexGameTile({
                         </Box>
                     )}
 
-                    {/* State indicator */}
+                    {/* State indicator - above the unit */}
                     {showStateIndicator && unit.traitState && (
                         <Box
                             className="absolute pointer-events-none"
                             style={{
-                                top: '5%',
-                                right: '10%',
+                                bottom: FLOOR_HEIGHT + characterScale * 20,
+                                right: TILE_WIDTH * 0.2,
                             }}
                         >
                             <StateIndicator state={unit.traitState} size="sm" />
@@ -175,50 +190,77 @@ export function HexGameTile({
                             unit.team === 'neutral' && 'bg-gray-500'
                         )}
                         style={{
-                            top: '5%',
-                            left: '10%',
+                            bottom: FLOOR_HEIGHT + characterScale * 20,
+                            left: TILE_WIDTH * 0.2,
                         }}
                     />
                 </>
             )}
 
-            {/* Valid move indicator (when no unit) */}
+            {/* Valid move indicator (when no unit) - isometric diamond on floor */}
             {isValidMove && !unit && (
-                <Box className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <Box className="w-4 h-4 rounded-full bg-green-400 opacity-70 animate-pulse shadow-lg shadow-green-400/50" />
-                </Box>
-            )}
-
-            {/* Attack target indicator - prominent sword crosshair */}
-            {isAttackTarget && (
-                <Box className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    {/* Red crosshair */}
-                    <Box className="absolute" style={{ top: '50%', left: '5%', right: '5%', height: 3, backgroundColor: 'rgba(239, 68, 68, 0.8)', transform: 'translateY(-50%)' }} />
-                    <Box className="absolute" style={{ left: '50%', top: '10%', bottom: '10%', width: 3, backgroundColor: 'rgba(239, 68, 68, 0.8)', transform: 'translateX(-50%)' }} />
-                    {/* Sword icon in center */}
+                <Box
+                    className="absolute flex items-center justify-center pointer-events-none"
+                    style={{
+                        bottom: 0,
+                        left: 0,
+                        width: TILE_WIDTH,
+                        height: FLOOR_HEIGHT,
+                    }}
+                >
+                    {/* Pulsing dot in center */}
+                    <Box className="w-3 h-3 rounded-full bg-green-400 opacity-80 animate-pulse shadow-lg shadow-green-400/50 z-10" />
+                    {/* Isometric diamond outline */}
                     <Box
-                        className="bg-red-600/90 rounded-full animate-pulse flex items-center justify-center shadow-lg shadow-red-500/50"
-                        style={{ width: 28, height: 28 }}
-                    >
-                        <span className="text-white text-sm">⚔️</span>
-                    </Box>
-                    {/* Outer ring */}
-                    <Box
-                        className="absolute border-2 border-red-500 animate-pulse"
+                        className="absolute border-2 border-green-400 bg-green-500/20 animate-pulse"
                         style={{
-                            width: HEX_WIDTH * 0.75,
-                            height: HEX_HEIGHT * 0.75,
-                            clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)',
+                            width: TILE_WIDTH * 0.7,
+                            height: FLOOR_HEIGHT * 0.7,
+                            clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
                         }}
                     />
                 </Box>
             )}
 
-            {/* Coordinate label */}
+            {/* Attack target indicator - isometric diamond on floor */}
+            {isAttackTarget && (
+                <Box
+                    className="absolute flex items-center justify-center pointer-events-none"
+                    style={{
+                        bottom: 0,
+                        left: 0,
+                        width: TILE_WIDTH,
+                        height: FLOOR_HEIGHT,
+                    }}
+                >
+                    {/* Sword icon in center */}
+                    <Box
+                        className="bg-red-600/90 rounded-full animate-pulse flex items-center justify-center shadow-lg shadow-red-500/50 z-10"
+                        style={{ width: 24, height: 24 }}
+                    >
+                        <span className="text-white text-xs">⚔️</span>
+                    </Box>
+                    {/* Isometric diamond outline */}
+                    <Box
+                        className="absolute border-2 border-red-500 animate-pulse"
+                        style={{
+                            width: TILE_WIDTH * 0.8,
+                            height: FLOOR_HEIGHT * 0.8,
+                            clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+                        }}
+                    />
+                </Box>
+            )}
+
+            {/* Coordinate label - at bottom center of floor diamond */}
             {showCoordinates && (
                 <Box
                     className="absolute bg-black/60 px-1 rounded pointer-events-none"
-                    style={{ bottom: '2%', left: '50%', transform: 'translateX(-50%)' }}
+                    style={{
+                        bottom: FLOOR_HEIGHT * 0.3,
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                    }}
                 >
                     <Typography variant="caption" className="text-[8px] text-white">
                         {x},{y}

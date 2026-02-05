@@ -11,8 +11,10 @@ import { cn } from '@almadar/ui';
 import { TerrainType, useAssetsOptional, DEFAULT_ASSET_MANIFEST, getTerrainSpriteUrl } from '../assets';
 
 // Default tile size (Kenney Isometric Miniature Dungeon tiles are 256x512)
+// The floor diamond is 256 wide x 128 tall at the bottom of the image
 const DEFAULT_WIDTH = 256;
 const DEFAULT_HEIGHT = 512;
+const FLOOR_HEIGHT = 128; // The isometric floor diamond height
 
 export interface HexTileSpriteProps {
     /** Type of terrain tile to display */
@@ -49,6 +51,7 @@ export function HexTileSprite({
 
     const width = DEFAULT_WIDTH * scale;
     const height = DEFAULT_HEIGHT * scale;
+    const floorHeight = FLOOR_HEIGHT * scale;
 
     // Highlight overlay styles
     const highlightStyles: Record<string, React.CSSProperties> = {
@@ -108,16 +111,23 @@ export function HexTileSprite({
                 }}
                 draggable={false}
             />
-            {/* Highlight overlay */}
+            {/* Highlight overlay - isometric diamond on the floor area */}
             {highlight !== 'none' && (
                 <Box
                     className={cn(
-                        'absolute inset-0 pointer-events-none',
-                        highlight === 'valid' && 'bg-green-500/20 border-2 border-green-400',
-                        highlight === 'attack' && 'bg-red-500/20 border-2 border-red-400',
-                        highlight === 'selected' && 'bg-yellow-500/20 border-2 border-yellow-400',
-                        highlight === 'hover' && 'bg-white/10 border border-white/30'
+                        'absolute pointer-events-none',
+                        highlight === 'valid' && 'bg-green-500/30 border-2 border-green-400',
+                        highlight === 'attack' && 'bg-red-500/30 border-2 border-red-400',
+                        highlight === 'selected' && 'bg-yellow-500/30 border-2 border-yellow-400',
+                        highlight === 'hover' && 'bg-white/20 border border-white/50'
                     )}
+                    style={{
+                        bottom: 0,
+                        left: 0,
+                        width: width,
+                        height: floorHeight,
+                        clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+                    }}
                 />
             )}
         </Box>
