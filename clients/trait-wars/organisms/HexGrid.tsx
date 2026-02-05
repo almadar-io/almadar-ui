@@ -9,7 +9,7 @@ import React from 'react';
 import { cn } from '../../../lib/cn';
 import { Box } from '../../../components/atoms/Box';
 import { HexCell, TerrainType } from '../atoms/HexCell';
-import { UNIT_SPRITES, UnitSpriteKey, OwnerType } from '../assets';
+import { UnitType, useAssets, getUnitSpriteUrl } from '../assets';
 
 export interface HexTileEntity {
     x: number;
@@ -22,8 +22,8 @@ export interface HexTileEntity {
 export interface GridUnit {
     id: string;
     position: { x: number; y: number };
-    owner: OwnerType;
-    unitType?: UnitSpriteKey;
+    owner: 'player' | 'enemy';
+    unitType?: UnitType;
     sprite?: React.ReactNode;
 }
 
@@ -144,12 +144,14 @@ export function HexGrid({
                                 >
                                     {unit.sprite || (
                                         unit.unitType ? (
-                                            <img
-                                                src={UNIT_SPRITES[unit.unitType][unit.owner]}
-                                                alt={`${unit.unitType} ${unit.owner}`}
-                                                className="w-8 h-8 object-contain drop-shadow-lg"
-                                                style={{ imageRendering: 'pixelated' }}
-                                            />
+                                            <div
+                                                className={cn(
+                                                    'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold',
+                                                    unit.owner === 'player' ? 'bg-[#3b82f6] text-white' : 'bg-[#ef4444] text-white'
+                                                )}
+                                            >
+                                                {unit.unitType.slice(0, 2).toUpperCase()}
+                                            </div>
                                         ) : (
                                             <Box className={cn(
                                                 'w-6 h-6 rounded-full',

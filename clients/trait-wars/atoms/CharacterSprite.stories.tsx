@@ -1,122 +1,114 @@
 /**
  * CharacterSprite Stories
  *
- * Storybook stories for the CharacterSprite component.
+ * Showcases the isometric character sprites in "Illuminated Manuscript Futurism" style.
  */
 
 import type { Meta, StoryObj } from '@storybook/react';
-import { CharacterSprite, CHARACTER_SPRITES, CharacterType } from './CharacterSprite';
-import { Box } from '../../../components/atoms/Box';
-import { Typography } from '../../../components/atoms/Typography';
+import { CharacterSprite } from './CharacterSprite';
 
 const meta: Meta<typeof CharacterSprite> = {
     title: 'Trait Wars/Atoms/CharacterSprite',
     component: CharacterSprite,
     parameters: {
         layout: 'centered',
-        backgrounds: { default: 'dark' },
+        backgrounds: {
+            default: 'dark',
+            values: [
+                { name: 'dark', value: '#1a1a2e' },
+                { name: 'parchment', value: '#f4e4c1' },
+            ],
+        },
     },
-    tags: ['autodocs'],
     argTypes: {
         type: {
             control: 'select',
-            options: Object.keys(CHARACTER_SPRITES),
+            options: ['hero', 'caregiver', 'explorer', 'sage', 'shadowLegion', 'emperor'],
+            description: 'Character archetype to display',
+        },
+        scale: {
+            control: { type: 'range', min: 0.1, max: 0.5, step: 0.05 },
+            description: 'Size multiplier',
         },
         team: {
             control: 'select',
             options: ['player', 'enemy', 'neutral'],
+            description: 'Team color tint',
         },
         state: {
             control: 'select',
             options: ['idle', 'attacking', 'defending', 'casting', 'wounded'],
-        },
-        scale: {
-            control: { type: 'range', min: 1, max: 6, step: 1 },
+            description: 'Visual state',
         },
     },
 };
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+type Story = StoryObj<typeof CharacterSprite>;
 
-export const Default: Story = {
+export const Hero: Story = {
     args: {
-        type: 'knight',
-        scale: 3,
-        team: 'neutral',
+        type: 'hero',
+        scale: 0.25,
+        team: 'player',
         state: 'idle',
     },
 };
 
-export const PlayerTeam: Story = {
+export const Caregiver: Story = {
     args: {
-        type: 'mage',
+        type: 'caregiver',
+        scale: 0.25,
         team: 'player',
-        scale: 4,
+        state: 'idle',
     },
 };
 
-export const EnemyTeam: Story = {
+export const Explorer: Story = {
     args: {
-        type: 'skeleton',
+        type: 'explorer',
+        scale: 0.25,
+        team: 'player',
+        state: 'idle',
+    },
+};
+
+export const Sage: Story = {
+    args: {
+        type: 'sage',
+        scale: 0.25,
+        team: 'player',
+        state: 'casting',
+    },
+};
+
+export const ShadowLegion: Story = {
+    args: {
+        type: 'shadowLegion',
+        scale: 0.25,
         team: 'enemy',
-        scale: 4,
+        state: 'idle',
     },
 };
 
-export const AttackingState: Story = {
+export const Emperor: Story = {
     args: {
-        type: 'warrior',
-        state: 'attacking',
-        scale: 4,
+        type: 'emperor',
+        scale: 0.25,
+        team: 'enemy',
+        state: 'idle',
     },
 };
 
-export const AllCharacterTypes: Story = {
+export const AllCharacters: Story = {
     render: () => (
-        <Box display="flex" className="flex-wrap gap-4 p-4 bg-gray-800 rounded-lg">
-            {(Object.keys(CHARACTER_SPRITES) as CharacterType[]).map((type) => (
-                <Box key={type} display="flex" className="flex-col items-center gap-2">
-                    <CharacterSprite type={type} scale={3} />
-                    <Typography variant="caption" className="text-white text-xs">
-                        {type}
-                    </Typography>
-                </Box>
-            ))}
-        </Box>
-    ),
-};
-
-export const TeamComparison: Story = {
-    render: () => (
-        <Box display="flex" className="gap-8 p-4 bg-gray-800 rounded-lg">
-            <Box display="flex" className="flex-col items-center gap-2">
-                <CharacterSprite type="knight" team="player" scale={4} />
-                <Typography variant="caption" className="text-blue-400">Player</Typography>
-            </Box>
-            <Box display="flex" className="flex-col items-center gap-2">
-                <CharacterSprite type="knight" team="neutral" scale={4} />
-                <Typography variant="caption" className="text-gray-400">Neutral</Typography>
-            </Box>
-            <Box display="flex" className="flex-col items-center gap-2">
-                <CharacterSprite type="knight" team="enemy" scale={4} />
-                <Typography variant="caption" className="text-red-400">Enemy</Typography>
-            </Box>
-        </Box>
-    ),
-};
-
-export const StateComparison: Story = {
-    render: () => (
-        <Box display="flex" className="gap-4 p-4 bg-gray-800 rounded-lg">
-            {(['idle', 'attacking', 'defending', 'casting', 'wounded'] as const).map((state) => (
-                <Box key={state} display="flex" className="flex-col items-center gap-2">
-                    <CharacterSprite type="mage" state={state} scale={4} />
-                    <Typography variant="caption" className="text-white text-xs">
-                        {state}
-                    </Typography>
-                </Box>
-            ))}
-        </Box>
+        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', padding: '20px' }}>
+            <CharacterSprite type="hero" scale={0.2} team="player" />
+            <CharacterSprite type="caregiver" scale={0.2} team="player" />
+            <CharacterSprite type="explorer" scale={0.2} team="player" />
+            <CharacterSprite type="sage" scale={0.2} team="player" />
+            <CharacterSprite type="shadowLegion" scale={0.2} team="enemy" />
+            <CharacterSprite type="emperor" scale={0.2} team="enemy" />
+        </div>
     ),
 };
