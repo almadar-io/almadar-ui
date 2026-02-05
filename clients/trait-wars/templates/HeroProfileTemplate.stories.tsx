@@ -1,5 +1,8 @@
+import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { HeroProfileTemplate, HeroData } from './HeroProfileTemplate';
+import { LevelUpModal, LevelUpData, SkillChoice } from '../molecules/LevelUpModal';
+import { Box, Typography } from '@almadar/ui';
 
 const meta: Meta<typeof HeroProfileTemplate> = {
     title: 'Trait Wars/Templates/HeroProfileTemplate',
@@ -83,5 +86,94 @@ export const ReadyToLevelUp: Story = {
             experienceToNextLevel: 3000,
         },
         onLevelUp: () => console.log('Level up!'),
+    },
+};
+
+// Interactive story with LevelUpModal
+const attackSkill: SkillChoice = {
+    id: 'offensive-mastery',
+    name: 'Offensive Mastery',
+    category: 'attack',
+    description: 'Increases all damage dealt by your units by 10%',
+    icon: '⚔️',
+    bonus: '+10% Damage',
+};
+
+const defenseSkill: SkillChoice = {
+    id: 'iron-will',
+    name: 'Iron Will',
+    category: 'defense',
+    description: 'Reduces all incoming damage to your hero by 15%',
+    icon: '🛡️',
+    bonus: '+15% Defense',
+};
+
+export const LevelUpInteractive: Story = {
+    render: () => {
+        const [hero, setHero] = React.useState<HeroData>({
+            ...sampleHero,
+            experience: 3000,
+            experienceToNextLevel: 3000,
+        });
+        const [showLevelUp, setShowLevelUp] = React.useState(false);
+        const [chosenSkill, setChosenSkill] = React.useState<string | null>(null);
+
+        const levelUpData: LevelUpData = {
+            heroId: hero.id,
+            heroName: hero.name,
+            archetype: hero.archetype,
+            newLevel: hero.level + 1,
+            statBonuses: {
+                attack: 5,
+                defense: 5,
+                health: 10,
+            },
+            skillChoices: [attackSkill, defenseSkill],
+        };
+
+        const handleLevelUp = () => {
+            setShowLevelUp(true);
+        };
+
+        const handleChooseSkill = (skillId: string) => {
+            setChosenSkill(skillId);
+            setShowLevelUp(false);
+            // Update hero to new level
+            setHero({
+                ...hero,
+                level: hero.level + 1,
+                experience: 0,
+                experienceToNextLevel: 3500,
+                stats: {
+                    ...hero.stats,
+                    attack: hero.stats.attack + 2,
+                    defense: hero.stats.defense + 2,
+                    health: hero.stats.health + 10,
+                    maxHealth: hero.stats.maxHealth + 10,
+                },
+            });
+        };
+
+        return (
+            <Box>
+                <HeroProfileTemplate
+                    hero={hero}
+                    onLevelUp={handleLevelUp}
+                />
+                <LevelUpModal
+                    levelUpData={levelUpData}
+                    isOpen={showLevelUp}
+                    onChooseSkill={handleChooseSkill}
+                    onClose={() => setShowLevelUp(false)}
+                />
+                {chosenSkill && (
+                    <Box className="fixed bottom-4 left-1/2 -translate-x-1/2 p-4 bg-green-800 rounded-lg">
+                        <Typography variant="body1" className="text-white">
+                            ✅ Learned: {chosenSkill === 'offensive-mastery' ? 'Offensive Mastery' : 'Iron Will'}
+                        </Typography>
+                    </Box>
+                )}
+            </Box>
+        );
     },
 };
