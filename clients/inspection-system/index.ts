@@ -135,3 +135,13 @@ export {
   type InspectionWizardTemplateProps,
   type WizardStep,
 } from "./templates/InspectionWizardTemplate";
+
+export {
+  InspectionProcessTemplate,
+  type InspectionProcessTemplateProps,
+} from "./templates/InspectionProcessTemplate";
+
+export {
+  InspectionFormDemoTemplate,
+  type InspectionFormDemoTemplateProps,
+} from "./templates/InspectionFormDemoTemplate";
