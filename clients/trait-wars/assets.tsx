@@ -34,7 +34,9 @@ export type UnitType =
 /**
  * Terrain types
  */
-export type TerrainType = 'plains' | 'forest' | 'mountain' | 'water' | 'fortress' | 'castle';
+export type TerrainType =
+    | 'plains' | 'forest' | 'mountain' | 'water' | 'fortress' | 'castle'
+    | 'grass' | 'dirt' | 'stone' | 'lava' | 'ice';  // Extended strategic map terrains
 
 /**
  * UI element types

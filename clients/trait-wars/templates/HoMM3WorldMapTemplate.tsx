@@ -161,8 +161,10 @@ export function HoMM3WorldMapTemplate({
         return worldMap.heroes.map((hero) => ({
             id: hero.id,
             position: hero.position,
-            spriteId: hero.owner === 'player' ? 'knight' : 'skeleton',
-            isEnemy: hero.owner === 'enemy',
+            name: hero.name,
+            characterType: hero.spriteId || (hero.owner === 'player' ? 'knight' : 'skeleton'),
+            team: hero.owner === 'enemy' ? 'enemy' as const : 'player' as const,
+            state: 'idle' as const,
             health: 100,
             maxHealth: 100,
         }));
