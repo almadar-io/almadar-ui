@@ -41,6 +41,11 @@ export type TerrainType = 'plains' | 'forest' | 'mountain' | 'water' | 'fortress
  */
 export type UIElementType = 'healthBar' | 'traitFrame' | 'button' | 'panelBg';
 
+/**
+ * Effect types for combat animations
+ */
+export type EffectType = 'attack' | 'heal' | 'defend' | 'death';
+
 // ============================================================================
 // ASSET MANIFEST INTERFACE
 // ============================================================================
@@ -88,8 +93,8 @@ export function TraitWarsAssetProvider({
     children: ReactNode;
 }) {
     return (
-        <AssetContext.Provider value= { manifest } >
-        { children }
+        <AssetContext.Provider value={manifest} >
+            {children}
         </AssetContext.Provider>
     );
 }
@@ -133,6 +138,14 @@ export function getUIElementUrl(manifest: TraitWarsAssetManifest, type: UIElemen
     return path ? `${manifest.baseUrl}/${path}` : undefined;
 }
 
+/**
+ * Get full URL for an effect animation.
+ */
+export function getEffectUrl(manifest: TraitWarsAssetManifest, type: EffectType): string | undefined {
+    const path = manifest.effects?.[type];
+    return path ? `${manifest.baseUrl}/${path}` : undefined;
+}
+
 // ============================================================================
 // DEFAULT/PLACEHOLDER MANIFEST
 // ============================================================================
@@ -165,4 +178,11 @@ export const DEFAULT_ASSET_MANIFEST: TraitWarsAssetManifest = {
         button: 'ui/button.png',
         panelBg: 'ui/panel_bg.png',
     },
+    effects: {
+        attack: 'effects/attack.png',
+        heal: 'effects/heal.png',
+        defend: 'effects/defend.png',
+        death: 'effects/death.png',
+    },
 };
+
