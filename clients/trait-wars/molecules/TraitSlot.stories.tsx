@@ -1,3 +1,4 @@
+import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { TraitSlot, TraitData } from './TraitSlot';
 import { Box, HStack, VStack, Typography } from '@almadar/ui';
@@ -19,6 +20,18 @@ const combatTrait: TraitData = {
     name: 'Berserker Rage',
     category: 'combat',
     description: 'Increases damage when health is low',
+    stateMachine: {
+        name: 'Berserker Rage',
+        states: ['idle', 'attacking', 'enraged', 'exhausted'],
+        currentState: 'idle',
+        transitions: [
+            { from: 'idle', to: 'attacking', event: 'ATTACK' },
+            { from: 'attacking', to: 'enraged', event: 'KILL' },
+            { from: 'enraged', to: 'exhausted', event: 'END_TURN' },
+            { from: 'exhausted', to: 'idle', event: 'RECOVER' },
+        ],
+        description: '+50% damage when enraged',
+    },
 };
 
 const supportTrait: TraitData = {
@@ -26,6 +39,17 @@ const supportTrait: TraitData = {
     name: 'Healing Aura',
     category: 'support',
     description: 'Heals nearby allies each turn',
+    stateMachine: {
+        name: 'Healing Aura',
+        states: ['idle', 'charging', 'healing'],
+        currentState: 'idle',
+        transitions: [
+            { from: 'idle', to: 'charging', event: 'START_TURN' },
+            { from: 'charging', to: 'healing', event: 'HEAL' },
+            { from: 'healing', to: 'idle', event: 'END_TURN' },
+        ],
+        description: 'Heals 10 HP to adjacent allies',
+    },
 };
 
 const utilityTrait: TraitData = {
@@ -33,6 +57,17 @@ const utilityTrait: TraitData = {
     name: 'Swift Movement',
     category: 'utility',
     description: 'Increases movement range by 2',
+    stateMachine: {
+        name: 'Swift Movement',
+        states: ['ready', 'sprinting', 'recovering'],
+        currentState: 'ready',
+        transitions: [
+            { from: 'ready', to: 'sprinting', event: 'MOVE' },
+            { from: 'sprinting', to: 'recovering', event: 'END_MOVE' },
+            { from: 'recovering', to: 'ready', event: 'START_TURN' },
+        ],
+        description: '+2 movement range when sprinting',
+    },
 };
 
 export const EmptySlot: Story = {

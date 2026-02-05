@@ -2,12 +2,13 @@
  * TraitSlot Component
  *
  * Equippable trait slot with visual feedback for equipped/empty states.
- * Supports drag-drop interaction for trait assignment.
+ * Shows TraitStateViewer tooltip on hover for equipped traits.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Box, Typography, cn } from '@almadar/ui';
 import { TraitIcon } from './TraitIcon';
+import { TraitStateViewer, TraitStateMachineDefinition } from './TraitStateViewer';
 
 export interface TraitData {
     id: string;
@@ -15,6 +16,8 @@ export interface TraitData {
     category: 'combat' | 'support' | 'utility' | 'passive';
     description?: string;
     iconType?: string;
+    /** Optional state machine for tooltip display */
+    stateMachine?: TraitStateMachineDefinition;
 }
 
 export interface TraitSlotProps {
@@ -30,6 +33,8 @@ export interface TraitSlotProps {
     selected?: boolean;
     /** Size variant */
     size?: 'sm' | 'md' | 'lg';
+    /** Show tooltip on hover */
+    showTooltip?: boolean;
     /** Additional CSS classes */
     className?: string;
     /** Click handler */
@@ -55,6 +60,7 @@ const CATEGORY_COLORS = {
 
 /**
  * TraitSlot renders an equippable slot for hero traits.
+ * Shows trait state machine tooltip on hover.
  */
 export function TraitSlot({
     slotNumber,
@@ -63,22 +69,35 @@ export function TraitSlot({
     unlockLevel,
     selected = false,
     size = 'md',
+    showTooltip = true,
     className,
     onClick,
     onRemove,
 }: TraitSlotProps): JSX.Element {
+    const [isHovered, setIsHovered] = useState(false);
     const config = SIZE_CONFIG[size];
     const isEmpty = !equippedTrait;
     const categoryColors = equippedTrait ? CATEGORY_COLORS[equippedTrait.category] : null;
 
+    // Generate a default state machine for tooltip if none provided
+    const traitMachine: TraitStateMachineDefinition | null = equippedTrait?.stateMachine || (equippedTrait ? {
+        name: equippedTrait.name,
+        states: ['idle', 'active', 'cooldown'],
+        currentState: 'idle',
+        transitions: [
+            { from: 'idle', to: 'active', event: 'ACTIVATE' },
+            { from: 'active', to: 'cooldown', event: 'USE' },
+            { from: 'cooldown', to: 'idle', event: 'RECOVER' },
+        ],
+        description: equippedTrait.description,
+    } : null);
+
     return (
         <Box
             display="flex"
-            alignItems="center"
-            justifyContent="center"
             position="relative"
             className={cn(
-                'rounded-lg cursor-pointer transition-all duration-200',
+                'items-center justify-center rounded-lg cursor-pointer transition-all duration-200',
                 isEmpty && !locked && 'border-2 border-dashed border-gray-600 hover:border-gray-400',
                 isEmpty && locked && 'border-2 border-dashed border-gray-700 opacity-50 cursor-not-allowed',
                 !isEmpty && 'border-2',
@@ -93,6 +112,8 @@ export function TraitSlot({
                 borderColor: categoryColors?.border || undefined,
             }}
             onClick={locked ? undefined : onClick}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
         >
             {locked ? (
                 <Box className="text-center">
@@ -144,8 +165,33 @@ export function TraitSlot({
                     {slotNumber}
                 </Typography>
             </Box>
+
+            {/* Trait State Tooltip */}
+            {showTooltip && isHovered && traitMachine && !isEmpty && (
+                <Box
+                    position="absolute"
+                    className="z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 p-3 bg-slate-900 border border-slate-700 rounded-lg shadow-xl"
+                    style={{ minWidth: 200 }}
+                >
+                    <Typography variant="h6" className="text-white mb-2 text-center">
+                        {equippedTrait.name}
+                    </Typography>
+                    {equippedTrait.description && (
+                        <Typography variant="caption" className="text-gray-400 block mb-2 text-center">
+                            {equippedTrait.description}
+                        </Typography>
+                    )}
+                    <TraitStateViewer trait={traitMachine} size="sm" />
+                    {/* Tooltip arrow */}
+                    <Box
+                        position="absolute"
+                        className="-bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-slate-700"
+                    />
+                </Box>
+            )}
         </Box>
     );
 }
 
 export default TraitSlot;
+

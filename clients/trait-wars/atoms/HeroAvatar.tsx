@@ -8,18 +8,19 @@
 import React from 'react';
 import { Box, Badge, cn } from '@almadar/ui';
 
-// Hero avatar images - referenced from projects/trait-wars/assets/heroes/
-// These are copied to the project during build via the export tool
+// Hero avatar images - loaded from project assets via Storybook public folder
+// In Storybook, assets are served from projects/trait-wars/assets/
+// The publicDir in .storybook/main.ts maps to /assets/
 const HERO_AVATARS: Record<string, string> = {
-    emperor: '/projects/trait-wars/assets/heroes/emperor.png',
-    vane: '/projects/trait-wars/assets/heroes/vane.png',
-    tyrant: '/projects/trait-wars/assets/heroes/tyrant.png',
-    destroyer: '/projects/trait-wars/assets/heroes/destroyer.png',
-    deceiver: '/projects/trait-wars/assets/heroes/deceiver.png',
-    zahra: '/projects/trait-wars/assets/heroes/zahra.png',
-    kael: '/projects/trait-wars/assets/heroes/kael.png',
-    hareth: '/projects/trait-wars/assets/heroes/hareth.png',
-    samira: '/projects/trait-wars/assets/heroes/samira.png',
+    emperor: '/assets/heroes/emperor.png',
+    vane: '/assets/heroes/vane.png',
+    tyrant: '/assets/heroes/tyrant.png',
+    destroyer: '/assets/heroes/destroyer.png',
+    deceiver: '/assets/heroes/deceiver.png',
+    zahra: '/assets/heroes/zahra.png',
+    kael: '/assets/heroes/kael.png',
+    hareth: '/assets/heroes/hareth.png',
+    samira: '/assets/heroes/samira.png',
 };
 
 // Archetype colors for frame accents

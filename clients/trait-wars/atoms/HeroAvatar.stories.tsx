@@ -1,3 +1,4 @@
+import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { HeroAvatar } from './HeroAvatar';
 import { Box, HStack, VStack, Typography } from '@almadar/ui';

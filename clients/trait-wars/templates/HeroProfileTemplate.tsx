@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { Box, Typography, HStack, VStack, Badge, Progress, cn } from '@almadar/ui';
+import { Box, Typography, HStack, VStack, Badge, ProgressBar, cn } from '@almadar/ui';
 import { HeroAvatar } from '../atoms/HeroAvatar';
 import { TraitSlot, TraitData } from '../molecules/TraitSlot';
 
@@ -108,7 +108,7 @@ export function HeroProfileTemplate({
                                 {hero.experience} / {hero.experienceToNextLevel} XP
                             </Typography>
                         </HStack>
-                        <Progress value={expProgress} colorScheme="yellow" size="sm" className="w-full" />
+                        <ProgressBar value={expProgress} variant="warning" size="sm" className="w-full" />
                         {canLevelUp && onLevelUp && (
                             <Box
                                 className="mt-1 px-3 py-1 bg-yellow-500/20 border border-yellow-500 rounded text-yellow-400 text-sm cursor-pointer hover:bg-yellow-500/30 transition-colors text-center"
