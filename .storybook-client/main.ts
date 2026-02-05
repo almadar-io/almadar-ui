@@ -26,13 +26,6 @@ const config: StorybookConfig = {
   viteFinal: async (config) => {
     return {
       ...config,
-      resolve: {
-        ...config.resolve,
-        alias: {
-          ...config.resolve?.alias,
-          "@orbital/shared": path.resolve(__dirname, "../../dist"),
-        },
-      },
       css: {
         preprocessorOptions: {
           css: {

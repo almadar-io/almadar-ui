@@ -36,7 +36,7 @@ import { SignatureCapture } from "../organisms/SignatureCapture";
 // Components
 import { StatCard } from "../../../components/organisms/StatCard";
 
-// Evaluator - stub implementation for design system (actual implementation in @orbital/shared)
+// Evaluator - stub implementation for design system (actual implementation in @almadar/evaluator)
 class SExpressionEvaluator {
   evaluate(expr: unknown, _context: Record<string, unknown>): unknown {
     // Stub implementation - always returns true for design system demos

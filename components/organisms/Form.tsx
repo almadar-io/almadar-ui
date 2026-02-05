@@ -40,10 +40,10 @@ import {
   createMinimalContext,
   type SExpr,
   type EvaluationContext as SharedEvaluationContext,
-} from "@orbital/shared";
+} from "@almadar/evaluator";
 
 /**
- * S-Expression type for conditional logic (re-export from @orbital/shared)
+ * S-Expression type for conditional logic (re-export from @almadar/evaluator)
  */
 export type SExpression = SExpr;
 

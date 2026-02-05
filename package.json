@@ -58,6 +58,7 @@
   },
   "dependencies": {
     "@almadar/core": "workspace:*",
+    "@almadar/evaluator": "workspace:*",
     "@almadar/patterns": "workspace:*",
     "clsx": "^2.1.0",
     "tailwind-merge": "^2.2.0",
