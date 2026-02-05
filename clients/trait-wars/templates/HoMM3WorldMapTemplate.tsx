@@ -24,7 +24,13 @@ import {
     getAdjacentHexes,
     isInMovementRange,
 } from '../types';
-import { FEATURE_ASSETS, FEATURE_ICONS_FALLBACK, getHeroAsset, getHeroPortrait } from '../config';
+import {
+    useAssetsOptional,
+    DEFAULT_ASSET_MANIFEST,
+    getHeroPortraitUrl,
+    getWorldMapFeatureUrl,
+    WorldMapFeatureType,
+} from '../assets';
 
 // ============================================================================
 // TYPES
@@ -69,7 +75,7 @@ const FEATURE_ICONS: Record<HexFeatureType, string> = {
 
 // Check if feature has an image asset
 const hasFeatureImage = (featureType: HexFeatureType): boolean => {
-    return featureType !== 'none' && featureType !== 'hero' && featureType !== 'castle' && FEATURE_ASSETS[featureType] !== undefined;
+    return featureType !== 'none' && featureType !== 'hero' && featureType !== 'castle';
 };
 
 // Convert world map hex terrain to HexTileType
@@ -97,6 +103,9 @@ export function HoMM3WorldMapTemplate({
     onEndTurn,
     className,
 }: HoMM3WorldMapProps): JSX.Element {
+    // Get asset manifest
+    const assets = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
+
     const [selectedHex, setSelectedHex] = useState<{ x: number; y: number } | null>(null);
     const [hoveredHex, setHoveredHex] = useState<{ x: number; y: number } | null>(null);
 
@@ -267,7 +276,7 @@ export function HoMM3WorldMapTemplate({
                                     const posX = (hex.x - hex.y) * HORIZONTAL_OFFSET + baseOffsetX + TILE_WIDTH / 2;
                                     const posY = (hex.x + hex.y) * VERTICAL_OFFSET + 40;
 
-                                    const featureAsset = FEATURE_ASSETS[hex.feature!];
+                                    const featureAsset = getWorldMapFeatureUrl(assets, hex.feature as WorldMapFeatureType);
                                     return (
                                         <Box
                                             key={`feature-${hex.x}-${hex.y}`}
@@ -302,7 +311,7 @@ export function HoMM3WorldMapTemplate({
                             <HStack className="gap-3 items-center mb-3">
                                 <Box className="w-14 h-14 rounded-lg overflow-hidden border-2 border-purple-500 bg-slate-900">
                                     <img
-                                        src={getHeroPortrait(selectedHero.id)}
+                                        src={getHeroPortraitUrl(assets, selectedHero.id)}
                                         alt={selectedHero.name}
                                         className="w-full h-full object-cover"
                                         onError={(e) => {
@@ -392,7 +401,7 @@ export function HoMM3WorldMapTemplate({
                                         <HStack className="gap-2 items-center">
                                             <Box className="w-8 h-8 rounded overflow-hidden border border-purple-400">
                                                 <img
-                                                    src={getHeroPortrait(hero.id)}
+                                                    src={getHeroPortraitUrl(assets, hero.id)}
                                                     alt={hero.name}
                                                     className="w-full h-full object-cover"
                                                 />
@@ -421,7 +430,7 @@ export function HoMM3WorldMapTemplate({
                                             <HStack className="gap-2 items-center">
                                                 <Box className="w-8 h-8 rounded overflow-hidden border border-red-500">
                                                     <img
-                                                        src={getHeroPortrait(hero.id)}
+                                                        src={getHeroPortraitUrl(assets, hero.id)}
                                                         alt={hero.name}
                                                         className="w-full h-full object-cover"
                                                     />

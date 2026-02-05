@@ -77,7 +77,7 @@ const sampleHeroes: WorldMapHero[] = [
             { id: 'unit-2', unitType: 'guardian', name: 'Guardians', tier: 2, count: 5, spriteId: 'guardian' },
         ],
         level: 5,
-        spriteId: 'knight',
+        spriteId: 'valence',
     },
     {
         id: 'zahra',
@@ -91,10 +91,10 @@ const sampleHeroes: WorldMapHero[] = [
             { id: 'unit-3', unitType: 'mender', name: 'Menders', tier: 1, count: 15, spriteId: 'mender' },
         ],
         level: 3,
-        spriteId: 'mage',
+        spriteId: 'zahra',
     },
     {
-        id: 'static-general',
+        id: 'tyrant',
         name: 'The Static General',
         archetype: 'Tyrant',
         owner: 'enemy',
@@ -106,7 +106,7 @@ const sampleHeroes: WorldMapHero[] = [
             { id: 'unit-5', unitType: 'breaker', name: 'Breakers', tier: 2, count: 10, spriteId: 'breaker' },
         ],
         level: 8,
-        spriteId: 'skeleton',
+        spriteId: 'tyrant',
     },
 ];
 

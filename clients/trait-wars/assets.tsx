@@ -47,6 +47,26 @@ export type UIElementType = 'healthBar' | 'traitFrame' | 'button' | 'panelBg';
 export type EffectType = 'attack' | 'heal' | 'defend' | 'death';
 
 /**
+ * Hero types (player + villain heroes on Iram vessels)
+ */
+export type HeroType =
+    | 'valence' | 'zahra' | 'hareth' | 'kael' | 'samira'  // Player heroes
+    | 'emperor' | 'tyrant' | 'destroyer' | 'deceiver';    // Villain heroes
+
+/**
+ * World map feature types
+ */
+export type WorldMapFeatureType =
+    | 'goldMine' | 'resonanceCrystal' | 'traitCache' | 'salvageYard'
+    | 'powerNode' | 'dataVault' | 'portal' | 'portalClosed'
+    | 'treasure' | 'treasureOpen' | 'battleMarker' | 'fogOfWar';
+
+/**
+ * Castle faction types
+ */
+export type CastleFactionType = 'resonator' | 'dominion';
+
+/**
  * Sprite sheet types for tile/character rendering
  */
 export type SpriteSheetType =
@@ -85,6 +105,18 @@ export interface TraitWarsAssetManifest {
         defend?: string;
         death?: string;
     };
+
+    /** Hero sprite paths keyed by hero ID */
+    heroes?: Partial<Record<HeroType, string>>;
+
+    /** Hero portrait paths keyed by hero ID */
+    heroPortraits?: Partial<Record<HeroType, string>>;
+
+    /** World map feature sprite paths */
+    worldMapFeatures?: Partial<Record<WorldMapFeatureType, string>>;
+
+    /** Castle backdrop paths */
+    castles?: Partial<Record<CastleFactionType, string>>;
 }
 
 // ============================================================================
@@ -173,6 +205,38 @@ export function getEffectUrl(manifest: TraitWarsAssetManifest, type: EffectType)
     return path ? `${manifest.baseUrl}/${path}` : undefined;
 }
 
+/**
+ * Get full URL for a hero sprite.
+ */
+export function getHeroSpriteUrl(manifest: TraitWarsAssetManifest, heroId: string): string | undefined {
+    const path = manifest.heroes?.[heroId as HeroType];
+    return path ? `${manifest.baseUrl}/${path}` : undefined;
+}
+
+/**
+ * Get full URL for a hero portrait.
+ */
+export function getHeroPortraitUrl(manifest: TraitWarsAssetManifest, heroId: string): string | undefined {
+    const path = manifest.heroPortraits?.[heroId as HeroType];
+    return path ? `${manifest.baseUrl}/${path}` : undefined;
+}
+
+/**
+ * Get full URL for a world map feature.
+ */
+export function getWorldMapFeatureUrl(manifest: TraitWarsAssetManifest, type: WorldMapFeatureType): string | undefined {
+    const path = manifest.worldMapFeatures?.[type];
+    return path ? `${manifest.baseUrl}/${path}` : undefined;
+}
+
+/**
+ * Get full URL for a castle backdrop.
+ */
+export function getCastleUrl(manifest: TraitWarsAssetManifest, faction: CastleFactionType): string | undefined {
+    const path = manifest.castles?.[faction];
+    return path ? `${manifest.baseUrl}/${path}` : undefined;
+}
+
 // ============================================================================
 // DEFAULT/PLACEHOLDER MANIFEST
 // ============================================================================
@@ -215,5 +279,49 @@ export const DEFAULT_ASSET_MANIFEST: TraitWarsAssetManifest = {
         heal: 'game-sprites/effects/heal.png',
         defend: 'game-sprites/effects/defend.png',
         death: 'game-sprites/effects/death.png',
+    },
+    // Hero game sprites (isometric on Iram vessels)
+    heroes: {
+        valence: 'heroes-game/valence.png',
+        zahra: 'heroes-game/zahra.png',
+        hareth: 'heroes-game/hareth.png',
+        kael: 'heroes-game/kael.png',
+        samira: 'heroes-game/samira.png',
+        emperor: 'heroes-game/emperor.png',
+        tyrant: 'heroes-game/tyrant.png',
+        destroyer: 'heroes-game/destroyer.png',
+        deceiver: 'heroes-game/deceiver.png',
+    },
+    // Hero portraits (for UI panels)
+    heroPortraits: {
+        valence: 'heroes/vane.png',
+        zahra: 'heroes/zahra.png',
+        hareth: 'heroes/hareth.png',
+        kael: 'heroes/kael.png',
+        samira: 'heroes/samira.png',
+        emperor: 'heroes/emperor.png',
+        tyrant: 'heroes/tyrant.png',
+        destroyer: 'heroes/destroyer.png',
+        deceiver: 'heroes/deceiver.png',
+    },
+    // World map features (Kenney isometric style)
+    worldMapFeatures: {
+        goldMine: 'world-map/gold_mine.png',
+        resonanceCrystal: 'world-map/resonance_crystal.png',
+        traitCache: 'world-map/trait_shard_cache.png',
+        salvageYard: 'world-map/salvage_yard.png',
+        powerNode: 'world-map/power_node.png',
+        dataVault: 'world-map/data_vault.png',
+        portal: 'world-map/portal_open.png',
+        portalClosed: 'world-map/portal_closed.png',
+        treasure: 'world-map/treasure_chest_closed.png',
+        treasureOpen: 'world-map/treasure_chest_open.png',
+        battleMarker: 'world-map/battle_marker.png',
+        fogOfWar: 'world-map/fog_of_war.png',
+    },
+    // Castle backdrops
+    castles: {
+        resonator: 'castle/resonator_citadel.png',
+        dominion: 'castle/dominion_fortress.png',
     },
 };
