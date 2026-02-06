@@ -305,19 +305,14 @@ export function CanvasBattleTemplate({
     const [damagePopups, setDamagePopups] = useState<DamagePopupData[]>([]);
     const [gameResult, setGameResult] = useState<'victory' | 'defeat' | null>(null);
 
-    // Feature 1: Tooltip follows cursor
+    // Tooltip follows cursor with hover delay
     const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-
-    // Feature 3: Animated phase transitions
-    const [phaseAnnouncement, setPhaseAnnouncement] = useState<string | null>(null);
-    const prevPhaseRef = useRef<BattlePhase>(currentPhase);
+    const [tooltipVisible, setTooltipVisible] = useState(false);
+    const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Feature 4: Combat damage animation - screen shake + red flash
     const [isShaking, setIsShaking] = useState(false);
     const [showDamageFlash, setShowDamageFlash] = useState(false);
-
-    // Feature 6: Turn transition banner
-    const [turnBanner, setTurnBanner] = useState<string | null>(null);
 
     // Generate map if not provided (with theme support)
     const generatedMap = useMemo(
@@ -388,6 +383,17 @@ export function CanvasBattleTemplate({
             u => u.position.x === hoveredTile.x && u.position.y === hoveredTile.y && u.health > 0
         ) || null;
     }, [hoveredTile, units]);
+
+    // Show tooltip after a short delay to avoid flickering between units
+    useEffect(() => {
+        if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current);
+        if (hoveredUnit) {
+            tooltipTimerRef.current = setTimeout(() => setTooltipVisible(true), 400);
+        } else {
+            setTooltipVisible(false);
+        }
+        return () => { if (tooltipTimerRef.current) clearTimeout(tooltipTimerRef.current); };
+    }, [hoveredUnit?.id]);
 
     const playerUnits = useMemo(() => units.filter(u => u.team === 'player' && u.health > 0), [units]);
     const enemyUnits = useMemo(() => units.filter(u => u.team === 'enemy' && u.health > 0), [units]);
@@ -573,27 +579,6 @@ export function CanvasBattleTemplate({
         game_over: gameResult === 'victory' ? 'Victory!' : 'Defeat',
     };
 
-    // Feature 3: Detect phase changes and trigger announcement banner
-    useEffect(() => {
-        if (currentPhase !== prevPhaseRef.current) {
-            const text = phaseText[currentPhase];
-            setPhaseAnnouncement(text);
-            prevPhaseRef.current = currentPhase;
-
-            // Auto-hide after 2 seconds
-            const timer = setTimeout(() => setPhaseAnnouncement(null), 2000);
-            return () => clearTimeout(timer);
-        }
-    }, [currentPhase]);
-
-    // Feature 6: Turn transition banner
-    useEffect(() => {
-        if (currentTurn > 1) {
-            setTurnBanner(`Turn ${currentTurn}`);
-            const timer = setTimeout(() => setTurnBanner(null), 1500);
-            return () => clearTimeout(timer);
-        }
-    }, [currentTurn]);
 
     // Feature 4: Shake animation style
     const shakeStyle: React.CSSProperties = isShaking ? {
@@ -641,15 +626,6 @@ export function CanvasBattleTemplate({
                 </HStack>
             </HStack>
 
-            {/* Combat Log */}
-            <CombatLog
-                events={combatLog}
-                maxVisible={5}
-                autoScroll={true}
-                title="Combat Log"
-                className="w-full max-h-32 text-white"
-            />
-
             {/* Action Buttons (floating) */}
             {currentPhase !== 'game_over' && (
                 <Box className="fixed bottom-6 right-6 z-50">
@@ -680,31 +656,9 @@ export function CanvasBattleTemplate({
                     style={shakeStyle}
                     onMouseMove={handleMouseMoveForTooltip}
                 >
-                    {/* Feature 3: Phase Announcement Banner */}
-                    {phaseAnnouncement && (
-                        <Box className="absolute inset-x-0 top-8 z-40 flex justify-center pointer-events-none animate-in slide-in-from-top fade-in duration-300">
-                            <Box className="bg-gradient-to-r from-cyan-600/90 via-blue-600/90 to-cyan-600/90 text-white px-8 py-3 rounded-lg shadow-2xl border border-cyan-400/30 backdrop-blur-sm">
-                                <Typography variant="h6" className="text-center font-bold text-white tracking-wider uppercase">
-                                    {phaseAnnouncement}
-                                </Typography>
-                            </Box>
-                        </Box>
-                    )}
-
                     {/* Feature 4: Red damage flash overlay */}
                     {showDamageFlash && (
                         <Box className="absolute inset-0 bg-red-500/20 z-20 pointer-events-none rounded-lg animate-out fade-out duration-200" />
-                    )}
-
-                    {/* Feature 6: Turn Transition Banner */}
-                    {turnBanner && (
-                        <Box className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none animate-in fade-in zoom-in-95 duration-300">
-                            <Box className="bg-black/60 backdrop-blur-sm px-12 py-6 rounded-2xl border border-gray-500/30">
-                                <Typography variant="h3" className="text-white font-black tracking-widest text-center">
-                                    {turnBanner}
-                                </Typography>
-                            </Box>
-                        </Box>
                     )}
 
                     {/* Action Hint Banners */}
@@ -760,7 +714,7 @@ export function CanvasBattleTemplate({
                     ))}
 
                     {/* Unit Hover Tooltip with TraitStateViewer - follows cursor */}
-                    {hoveredUnit && hoveredUnit.traits[0] && hoveredTile && (
+                    {tooltipVisible && hoveredUnit && hoveredUnit.traits[0] && hoveredTile && (
                         <Box
                             className="absolute z-50 pointer-events-none animate-in fade-in duration-150"
                             style={{

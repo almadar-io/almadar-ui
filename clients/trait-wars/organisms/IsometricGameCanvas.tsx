@@ -183,8 +183,8 @@ export function screenToIso(
     const tileY = (tileXPlusTileY - tileXMinusTileY) / 2;
 
     return {
-        x: Math.floor(tileX),
-        y: Math.floor(tileY)
+        x: Math.round(tileX),
+        y: Math.round(tileY)
     };
 }
 
