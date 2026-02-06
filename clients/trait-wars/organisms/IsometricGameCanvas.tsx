@@ -478,17 +478,20 @@ export function IsometricGameCanvas({
             const spriteUrl = feature.sprite || resolveFeatureSprite(feature.type);
             const img = spriteUrl ? getImage(spriteUrl) : null;
 
-            const featureSize = 48 * scale * 2.5;
+            const maxFeatureDim = 48 * scale * 2.5;
             const centerX = pos.x + scaledTileWidth / 2;
             const floorCenterY = pos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight / 2;
 
             if (img) {
+                const ar = img.naturalWidth / img.naturalHeight;
+                const drawW = ar >= 1 ? maxFeatureDim : maxFeatureDim * ar;
+                const drawH = ar >= 1 ? maxFeatureDim / ar : maxFeatureDim;
                 ctx.drawImage(
                     img,
-                    centerX - featureSize / 2,
-                    floorCenterY - featureSize / 2 - 8 * scale,
-                    featureSize,
-                    featureSize
+                    centerX - drawW / 2,
+                    floorCenterY - drawH + 8 * scale,
+                    drawW,
+                    drawH
                 );
             } else {
                 // Fallback circle
@@ -513,17 +516,24 @@ export function IsometricGameCanvas({
         for (const unit of sortedUnits) {
             const pos = isoToScreen(unit.position.x, unit.position.y, scale, baseOffsetX);
             const isSelected = unit.id === selectedUnitId;
-            const unitSize = 64 * scale * 2.5;
+            const maxUnitDim = 64 * scale * 2.5;
             const centerX = pos.x + scaledTileWidth / 2;
             const floorCenterY = pos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight / 2;
 
-            // Draw selection ring
+            // Resolve sprite and compute aspect-ratio-correct dimensions
+            const unitSpriteUrl = resolveUnitSprite(unit);
+            const img = unitSpriteUrl ? getImage(unitSpriteUrl) : null;
+            const ar = img ? img.naturalWidth / img.naturalHeight : 1;
+            const drawW = img ? (ar >= 1 ? maxUnitDim : maxUnitDim * ar) : maxUnitDim;
+            const drawH = img ? (ar >= 1 ? maxUnitDim / ar : maxUnitDim) : maxUnitDim;
+
+            // Draw selection ring (sized to sprite footprint)
             if (isSelected) {
                 ctx.beginPath();
                 ctx.ellipse(
                     centerX,
                     floorCenterY + 10 * scale,
-                    24 * scale,
+                    drawW / 2 + 4 * scale,
                     12 * scale,
                     0, 0, Math.PI * 2
                 );
@@ -533,15 +543,13 @@ export function IsometricGameCanvas({
             }
 
             // Draw unit sprite or fallback
-            const unitSpriteUrl = resolveUnitSprite(unit);
-            const img = unitSpriteUrl ? getImage(unitSpriteUrl) : null;
             if (img) {
                 ctx.drawImage(
                     img,
-                    centerX - unitSize / 2,
-                    floorCenterY - unitSize + 8 * scale,
-                    unitSize,
-                    unitSize
+                    centerX - drawW / 2,
+                    floorCenterY - drawH + 8 * scale,
+                    drawW,
+                    drawH
                 );
             } else {
                 // Fallback circle
@@ -586,7 +594,7 @@ export function IsometricGameCanvas({
             if (unit.health !== undefined && unit.maxHealth !== undefined) {
                 const barWidth = 40 * scale;
                 const barHeight = 6 * scale;
-                const barY = floorCenterY - unitSize + 4 * scale;
+                const barY = floorCenterY - drawH + 4 * scale;
                 const healthRatio = unit.health / unit.maxHealth;
 
                 // Background
@@ -689,7 +697,6 @@ export function IsometricGameCanvas({
                 style={{
                     width: gridWidth,
                     height: gridHeight,
-                    imageRendering: 'pixelated'
                 }}
             />
         </Box>
