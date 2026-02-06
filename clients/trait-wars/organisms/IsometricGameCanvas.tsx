@@ -130,6 +130,12 @@ export interface IsometricGameCanvasProps {
     backgroundImage?: string;
     /** Additional CSS classes */
     className?: string;
+    /** Callback to draw canvas effects after units (called inside draw, before ctx.restore) */
+    onDrawEffects?: (ctx: CanvasRenderingContext2D, animTime: number, getImage: (url: string) => HTMLImageElement | undefined) => void;
+    /** Whether there are active effects — keeps RAF animation loop alive */
+    hasActiveEffects?: boolean;
+    /** Additional sprite URLs to preload (e.g., effect sprites) */
+    effectSpriteUrls?: string[];
 }
 
 // =============================================================================
@@ -282,7 +288,10 @@ export function IsometricGameCanvas({
     getFeatureSprite,
     assetManifest,
     backgroundImage,
-    className
+    className,
+    onDrawEffects,
+    hasActiveEffects = false,
+    effectSpriteUrls = [],
 }: IsometricGameCanvasProps): JSX.Element {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const minimapRef = useRef<HTMLCanvasElement>(null);
@@ -389,8 +398,13 @@ export function IsometricGameCanvas({
 
         if (backgroundImage) urls.push(backgroundImage);
 
+        // Effect sprites (preloaded for instant first-use)
+        if (effectSpriteUrls.length > 0) {
+            urls.push(...effectSpriteUrls);
+        }
+
         return urls;
-    }, [tiles, units, features, backgroundImage, resolveTerrainSprite, resolveFeatureSprite, resolveUnitSprite]);
+    }, [tiles, units, features, backgroundImage, resolveTerrainSprite, resolveFeatureSprite, resolveUnitSprite, effectSpriteUrls]);
 
     const { getImage } = useImageCache(spriteUrls);
 
@@ -894,6 +908,9 @@ export function IsometricGameCanvas({
                 ctx.stroke();
             }
         }
+
+        // Draw canvas effects (particles, sequences, overlays)
+        onDrawEffects?.(ctx, animTime, getImage);
 
         // Restore camera transform (10.5.18)
         ctx.restore();

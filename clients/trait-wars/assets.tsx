@@ -151,11 +151,24 @@ export interface TraitWarsAssetManifest {
             scorch?: string[];
             circle?: string[];
             flare?: string;
+            spark?: string[];
+            muzzle?: string[];
+            star?: string[];
+            trace?: string[];
+            twirl?: string[];
+            light?: string[];
+            dirt?: string[];
+            scratch?: string[];
+            symbol?: string[];
         };
         /** Frame-sequence animations (array of frame image paths) */
         animations?: {
             explosion?: string[];
             smokePuff?: string[];
+            flash?: string[];
+            blackSmoke?: string[];
+            gasSmoke?: string[];
+            smokeExplosion?: string[];
         };
     };
 
@@ -369,6 +382,45 @@ export function getUnitPortraitUrl(manifest: TraitWarsAssetManifest, type: Robot
     return path ? `${manifest.baseUrl}/${path}` : undefined;
 }
 
+/**
+ * Get all effect sprite URLs from a manifest for bulk preloading.
+ * Returns every particle, sequence frame, and overlay URL.
+ */
+export function getAllEffectSpriteUrls(manifest: TraitWarsAssetManifest): string[] {
+    const urls: string[] = [];
+    const base = manifest.baseUrl;
+    const fx = manifest.effects;
+    if (!fx) return urls;
+
+    // Static overlays
+    if (fx.attack) urls.push(`${base}/${fx.attack}`);
+    if (fx.heal) urls.push(`${base}/${fx.heal}`);
+    if (fx.defend) urls.push(`${base}/${fx.defend}`);
+    if (fx.death) urls.push(`${base}/${fx.death}`);
+
+    // Particles
+    if (fx.particles) {
+        for (const [key, value] of Object.entries(fx.particles)) {
+            if (Array.isArray(value)) {
+                value.forEach(v => urls.push(`${base}/${v}`));
+            } else if (typeof value === 'string') {
+                urls.push(`${base}/${value}`);
+            }
+        }
+    }
+
+    // Animations (frame sequences)
+    if (fx.animations) {
+        for (const frames of Object.values(fx.animations)) {
+            if (Array.isArray(frames)) {
+                frames.forEach(f => urls.push(`${base}/${f}`));
+            }
+        }
+    }
+
+    return urls;
+}
+
 // ============================================================================
 // DEFAULT/PLACEHOLDER MANIFEST
 // ============================================================================
@@ -418,18 +470,31 @@ export const DEFAULT_ASSET_MANIFEST: TraitWarsAssetManifest = {
         defend: 'game-sprites/effects/defend.png',
         death: 'game-sprites/effects/death.png',
         particles: {
-            slash: ['effects/particles/slash_01.png', 'effects/particles/slash_02.png', 'effects/particles/slash_03.png', 'effects/particles/slash_04.png'],
-            magic: ['effects/particles/magic_01.png', 'effects/particles/magic_02.png', 'effects/particles/magic_03.png', 'effects/particles/magic_04.png', 'effects/particles/magic_05.png'],
-            fire: ['effects/particles/fire_01.png', 'effects/particles/fire_02.png'],
-            flame: ['effects/particles/flame_01.png', 'effects/particles/flame_02.png', 'effects/particles/flame_03.png', 'effects/particles/flame_04.png', 'effects/particles/flame_05.png', 'effects/particles/flame_06.png'],
-            smoke: ['effects/particles/smoke_01.png', 'effects/particles/smoke_02.png'],
-            scorch: ['effects/particles/scorch_01.png', 'effects/particles/scorch_02.png', 'effects/particles/scorch_03.png'],
-            circle: ['effects/particles/circle_01.png', 'effects/particles/circle_02.png', 'effects/particles/circle_03.png', 'effects/particles/circle_04.png', 'effects/particles/circle_05.png'],
+            slash: Array.from({ length: 4 }, (_, i) => `effects/particles/slash_0${i + 1}.png`),
+            magic: Array.from({ length: 5 }, (_, i) => `effects/particles/magic_0${i + 1}.png`),
+            fire: Array.from({ length: 2 }, (_, i) => `effects/particles/fire_0${i + 1}.png`),
+            flame: Array.from({ length: 6 }, (_, i) => `effects/particles/flame_0${i + 1}.png`),
+            smoke: Array.from({ length: 10 }, (_, i) => `effects/particles/smoke_${String(i + 1).padStart(2, '0')}.png`),
+            scorch: Array.from({ length: 3 }, (_, i) => `effects/particles/scorch_0${i + 1}.png`),
+            circle: Array.from({ length: 5 }, (_, i) => `effects/particles/circle_0${i + 1}.png`),
             flare: 'effects/particles/flare_01.png',
+            spark: Array.from({ length: 7 }, (_, i) => `effects/particles/spark_0${i + 1}.png`),
+            muzzle: Array.from({ length: 5 }, (_, i) => `effects/particles/muzzle_0${i + 1}.png`),
+            star: Array.from({ length: 9 }, (_, i) => `effects/particles/star_0${i + 1}.png`),
+            trace: Array.from({ length: 7 }, (_, i) => `effects/particles/trace_0${i + 1}.png`),
+            twirl: Array.from({ length: 3 }, (_, i) => `effects/particles/twirl_0${i + 1}.png`),
+            light: Array.from({ length: 3 }, (_, i) => `effects/particles/light_0${i + 1}.png`),
+            dirt: Array.from({ length: 3 }, (_, i) => `effects/particles/dirt_0${i + 1}.png`),
+            scratch: ['effects/particles/scratch_01.png'],
+            symbol: Array.from({ length: 2 }, (_, i) => `effects/particles/symbol_0${i + 1}.png`),
         },
         animations: {
             explosion: Array.from({ length: 9 }, (_, i) => `effects/explosions/regular/regularExplosion0${i}.png`),
-            smokePuff: Array.from({ length: 20 }, (_, i) => `effects/smoke/white-puff/whitePuff${String(i).padStart(2, '0')}.png`),
+            smokePuff: Array.from({ length: 25 }, (_, i) => `effects/smoke/white-puff/whitePuff${String(i).padStart(2, '0')}.png`),
+            flash: Array.from({ length: 9 }, (_, i) => `effects/flash/flash0${i}.png`),
+            blackSmoke: Array.from({ length: 25 }, (_, i) => `effects/black-smoke/blackSmoke${String(i).padStart(2, '0')}.png`),
+            gasSmoke: Array.from({ length: 9 }, (_, i) => `effects/gas/gas0${i}.png`),
+            smokeExplosion: Array.from({ length: 9 }, (_, i) => `effects/explosions/smoke-explosion/explosion0${i}.png`),
         },
     },
     // Hero game sprites (isometric on Iram vessels)
