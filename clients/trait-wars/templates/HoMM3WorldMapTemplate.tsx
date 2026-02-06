@@ -268,31 +268,43 @@ export function HoMM3WorldMapTemplate({
                             {worldMap.hexes
                                 .filter((hex) => hex.feature && hex.feature !== 'none' && hex.feature !== 'hero')
                                 .map((hex) => {
+                                    // Match HexGameBoard positioning exactly
                                     const scale = 0.4;
-                                    const TILE_WIDTH = 256 * scale;
-                                    const FLOOR_HEIGHT = 128 * scale;
-                                    const HORIZONTAL_OFFSET = TILE_WIDTH / 2;
-                                    const VERTICAL_OFFSET = FLOOR_HEIGHT / 2;
+                                    const TILE_WIDTH = 256 * scale;  // 102.4px
+                                    const FLOOR_HEIGHT = 128 * scale; // 51.2px
+                                    const HORIZONTAL_OFFSET = TILE_WIDTH / 2;  // 51.2px
+                                    const VERTICAL_OFFSET = FLOOR_HEIGHT / 2;   // 25.6px
+                                    const BOARD_PADDING = 16; // HexGameBoard has p-4 = 16px padding
                                     const maxY = Math.max(...worldMap.hexes.map((h) => h.y), 0);
                                     const baseOffsetX = (maxY + 1) * HORIZONTAL_OFFSET;
 
-                                    const posX = (hex.x - hex.y) * HORIZONTAL_OFFSET + baseOffsetX + TILE_WIDTH / 2;
-                                    const posY = (hex.x + hex.y) * VERTICAL_OFFSET + 40;
+                                    // Exact tile position (matches HexGameBoard.getTilePosition)
+                                    const tileX = (hex.x - hex.y) * HORIZONTAL_OFFSET + baseOffsetX;
+                                    const tileY = (hex.x + hex.y) * VERTICAL_OFFSET;
+
+                                    // Center feature on tile + board padding offset
+                                    const centerX = tileX + TILE_WIDTH / 2 + BOARD_PADDING;
+                                    const centerY = tileY + FLOOR_HEIGHT / 2 + BOARD_PADDING;
 
                                     const featureAsset = getWorldMapFeatureUrl(assets, hex.feature as WorldMapFeatureType);
+                                    const featureSize = 48; // Feature image size in pixels
+
                                     return (
                                         <Box
                                             key={`feature-${hex.x}-${hex.y}`}
-                                            className="absolute transform -translate-x-1/2"
-                                            style={{ left: posX + 16, top: posY - 20 }}
+                                            className="absolute"
+                                            style={{
+                                                left: centerX - featureSize / 2,
+                                                top: centerY - featureSize / 2 - 8 // Slight upward offset for visual centering
+                                            }}
                                         >
                                             {featureAsset ? (
                                                 <img
                                                     src={featureAsset}
                                                     alt={hex.feature}
-                                                    className="w-16 h-16 object-contain drop-shadow-lg"
+                                                    className="drop-shadow-lg object-contain"
+                                                    style={{ width: featureSize, height: featureSize }}
                                                     onError={(e) => {
-                                                        // Hide image on error to show fallback
                                                         (e.target as HTMLImageElement).style.display = 'none';
                                                     }}
                                                 />
@@ -307,29 +319,40 @@ export function HoMM3WorldMapTemplate({
                         {/* Hero sprites overlay */}
                         <Box className="absolute inset-0 pointer-events-none">
                             {worldMap.heroes.map((hero) => {
+                                // Match HexGameBoard positioning exactly
                                 const scale = 0.4;
-                                const TILE_WIDTH = 256 * scale;
-                                const FLOOR_HEIGHT = 128 * scale;
-                                const HORIZONTAL_OFFSET = TILE_WIDTH / 2;
-                                const VERTICAL_OFFSET = FLOOR_HEIGHT / 2;
+                                const TILE_WIDTH = 256 * scale;  // 102.4px
+                                const FLOOR_HEIGHT = 128 * scale; // 51.2px
+                                const HORIZONTAL_OFFSET = TILE_WIDTH / 2;  // 51.2px
+                                const VERTICAL_OFFSET = FLOOR_HEIGHT / 2;   // 25.6px
+                                const BOARD_PADDING = 16; // HexGameBoard has p-4 = 16px padding
                                 const maxY = Math.max(...worldMap.hexes.map((h) => h.y), 0);
                                 const baseOffsetX = (maxY + 1) * HORIZONTAL_OFFSET;
 
-                                const posX = (hero.position.x - hero.position.y) * HORIZONTAL_OFFSET + baseOffsetX + TILE_WIDTH / 2;
-                                const posY = (hero.position.x + hero.position.y) * VERTICAL_OFFSET + 20;
+                                // Exact tile position (matches HexGameBoard.getTilePosition)
+                                const tileX = (hero.position.x - hero.position.y) * HORIZONTAL_OFFSET + baseOffsetX;
+                                const tileY = (hero.position.x + hero.position.y) * VERTICAL_OFFSET;
+
+                                // Center hero on tile + board padding offset
+                                const centerX = tileX + TILE_WIDTH / 2 + BOARD_PADDING;
+                                const centerY = tileY + FLOOR_HEIGHT / 2 + BOARD_PADDING;
 
                                 const heroSpriteUrl = getHeroSpriteUrl(assets, hero.spriteId || hero.id);
                                 const isSelected = hero.id === selectedHeroId;
+                                const heroSize = 64; // Hero sprite display size
 
                                 return (
                                     <Box
                                         key={`hero-${hero.id}`}
                                         className={cn(
-                                            'absolute transform -translate-x-1/2 cursor-pointer pointer-events-auto',
+                                            'absolute cursor-pointer pointer-events-auto',
                                             'transition-all duration-200 hover:scale-110',
                                             isSelected && 'scale-110 z-20'
                                         )}
-                                        style={{ left: posX + 16, top: posY - 30 }}
+                                        style={{
+                                            left: centerX - heroSize / 2,
+                                            top: centerY - heroSize / 2 - 16 // Offset upward so hero stands on tile
+                                        }}
                                         onClick={() => onHeroSelect?.(hero.id)}
                                     >
                                         {heroSpriteUrl ? (
@@ -337,9 +360,10 @@ export function HoMM3WorldMapTemplate({
                                                 src={heroSpriteUrl}
                                                 alt={hero.name}
                                                 className={cn(
-                                                    'w-20 h-20 object-contain drop-shadow-lg',
-                                                    isSelected && 'ring-4 ring-cyan-400 rounded-full'
+                                                    'object-contain drop-shadow-lg',
+                                                    isSelected && 'ring-4 ring-cyan-400 rounded-lg'
                                                 )}
+                                                style={{ width: heroSize, height: heroSize }}
                                                 onError={(e) => {
                                                     (e.target as HTMLImageElement).style.display = 'none';
                                                 }}
@@ -359,7 +383,7 @@ export function HoMM3WorldMapTemplate({
                                         <Typography
                                             variant="caption"
                                             className={cn(
-                                                'absolute -bottom-4 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded text-xs',
+                                                'absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded text-xs',
                                                 hero.owner === 'player' ? 'bg-blue-600 text-white' : 'bg-red-600 text-white'
                                             )}
                                         >
