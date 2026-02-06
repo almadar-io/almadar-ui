@@ -646,8 +646,8 @@ export function IsometricGameCanvas({
             const img = spriteUrl ? getImage(spriteUrl) : null;
 
             const centerX = pos.x + scaledTileWidth / 2;
-            // Ground surface: the visible tile surface is at ~35% into the floor diamond
-            const featureGroundY = pos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight * 0.35;
+            // Ground surface: diamond center is where objects visually "sit" on the tile
+            const featureGroundY = pos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight * 0.50;
             // Castles are large landmark structures — render bigger than regular features
             const isCastle = feature.type === 'castle';
             const featureDrawH = isCastle ? scaledFloorHeight * 3.5 : scaledFloorHeight * 1.6;
@@ -661,6 +661,7 @@ export function IsometricGameCanvas({
                     drawW = maxFeatureW;
                     drawH = maxFeatureW / ar;
                 }
+                // No contact shadow for features (only units/heroes get shadows)
                 // Anchor base of sprite to tile ground surface
                 const drawX = centerX - drawW / 2;
                 const drawY = featureGroundY - drawH;
@@ -696,14 +697,12 @@ export function IsometricGameCanvas({
 
             const isSelected = unit.id === selectedUnitId;
             const centerX = pos.x + scaledTileWidth / 2;
-            const floorCenterY = pos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight / 2;
-            // Ground surface Y: the visible tile surface is at the upper portion of the floor diamond,
-            // not the geometric center. Kenney tiles show the flat surface at ~35% into the diamond.
-            const groundY = pos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight * 0.35;
+            // Ground surface Y: diamond center is where objects visually "sit" on the tile
+            const groundY = pos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight * 0.50;
 
-            // Idle breathing animation (10.5.16)
+            // Idle breathing animation (10.5.16) — only bobs downward so units never lift above ground
             // Unique phase offset per tile position so units don't bob in sync
-            const breatheOffset = 2 * scale * Math.sin(animTime * 0.002 + (unit.position.x * 3.7 + unit.position.y * 5.3));
+            const breatheOffset = 0.8 * scale * (1 + Math.sin(animTime * 0.002 + (unit.position.x * 3.7 + unit.position.y * 5.3)));
 
             // Resolve sprite and compute dimensions using FIXED draw height
             // so all units appear the same height on the tile regardless of aspect ratio
@@ -724,12 +723,11 @@ export function IsometricGameCanvas({
             if (unit.previousPosition && (unit.previousPosition.x !== unit.position.x || unit.previousPosition.y !== unit.position.y)) {
                 const ghostPos = isoToScreen(unit.previousPosition.x, unit.previousPosition.y, scale, baseOffsetX);
                 const ghostCenterX = ghostPos.x + scaledTileWidth / 2;
-                const ghostFloorCenterY = ghostPos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight / 2;
+                const ghostGroundY = ghostPos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight * 0.50;
 
                 ctx.save();
                 ctx.globalAlpha = 0.25;
                 if (img) {
-                    const ghostGroundY = ghostPos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight * 0.35;
                     ctx.drawImage(
                         img,
                         ghostCenterX - drawW / 2,
@@ -742,7 +740,7 @@ export function IsometricGameCanvas({
                     const color = unit.team === 'player' ? '#3b82f6' :
                         unit.team === 'enemy' ? '#ef4444' : '#6b7280';
                     ctx.beginPath();
-                    ctx.arc(ghostCenterX, ghostFloorCenterY - 16 * scale, 20 * scale, 0, Math.PI * 2);
+                    ctx.arc(ghostCenterX, ghostGroundY - 16 * scale, 20 * scale, 0, Math.PI * 2);
                     ctx.fillStyle = color;
                     ctx.fill();
                 }
