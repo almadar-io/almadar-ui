@@ -39,6 +39,8 @@ import {
     type TerrainType,
     type RobotUnitType,
 } from '../assets';
+import { useCanvasEffects } from '../organisms/useCanvasEffects';
+import type { CombatActionType } from '../types/effects';
 
 // ============================================================================
 // TYPES
@@ -453,6 +455,16 @@ export function CanvasBattleTemplate({
     const maxY = Math.max(...battleTiles.map(t => t.y), 0);
     const baseOffsetX = (maxY + 1) * (TILE_WIDTH * scale / 2);
 
+    // Canvas effects (particles, sequences, overlays)
+    const {
+        effectSpriteUrls,
+        spawnCombatEffect,
+        drawEffects,
+        hasActiveEffects: effectsActive,
+        screenShake: canvasScreenShake,
+        screenFlash: canvasScreenFlash,
+    } = useCanvasEffects({ manifest: assets, scale, baseOffsetX });
+
     const showDamage = useCallback((tileX: number, tileY: number, amount: number, type: DamagePopupData['type']) => {
         const pos = isoToScreen(tileX, tileY, scale, baseOffsetX);
         const screenX = pos.x + TILE_WIDTH * scale / 2;
@@ -465,13 +477,14 @@ export function CanvasBattleTemplate({
         }, 1500);
     }, [scale, baseOffsetX]);
 
-    // Trigger combat screen shake + red flash (must be before handleUnitClick)
-    const triggerCombatEffect = useCallback(() => {
+    // Trigger combat screen shake + red flash + canvas effects (must be before handleUnitClick)
+    const triggerCombatEffect = useCallback((tileX: number, tileY: number, effectType: CombatActionType = 'hit') => {
         setIsShaking(true);
         setShowDamageFlash(true);
         setTimeout(() => setIsShaking(false), 300);
         setTimeout(() => setShowDamageFlash(false), 200);
-    }, []);
+        spawnCombatEffect(effectType, tileX, tileY);
+    }, [spawnCombatEffect]);
 
     // Check game end
     const checkGameEnd = useCallback(() => {
@@ -512,11 +525,12 @@ export function CanvasBattleTemplate({
                 ));
 
                 showDamage(unit.position.x, unit.position.y, damage, 'physical');
-                triggerCombatEffect();
+                triggerCombatEffect(unit.position.x, unit.position.y, 'melee');
                 addLog('attack', `${selectedUnit.name} attacks ${unit.name} for ${damage} damage!`, damage);
 
                 if (newHealth === 0) {
                     addLog('defeat', `${unit.name} has been defeated!`);
+                    spawnCombatEffect('death', unit.position.x, unit.position.y);
                     const updatedAttacker = triggerTraitEvent(selectedUnit, 'KILL');
                     setUnits(prev => prev.map(u => u.id === updatedAttacker.id ? updatedAttacker : u));
                 }
@@ -530,7 +544,7 @@ export function CanvasBattleTemplate({
                 setTimeout(checkGameEnd, 100);
             }
         }
-    }, [currentPhase, selectedUnit, attackTargets, units, addLog, showDamage, checkGameEnd, triggerCombatEffect]);
+    }, [currentPhase, selectedUnit, attackTargets, units, addLog, showDamage, checkGameEnd, triggerCombatEffect, spawnCombatEffect]);
 
     // Handle tile click
     const handleTileClick = useCallback((x: number, y: number) => {
@@ -580,9 +594,11 @@ export function CanvasBattleTemplate({
     };
 
 
-    // Feature 4: Shake animation style
+    // Feature 4: Shake animation style (CSS shake + canvas particle shake)
     const shakeStyle: React.CSSProperties = isShaking ? {
         animation: 'battle-shake 0.3s ease-in-out',
+    } : (canvasScreenShake.x !== 0 || canvasScreenShake.y !== 0) ? {
+        transform: `translate(${canvasScreenShake.x}px, ${canvasScreenShake.y}px)`,
     } : {};
 
     return (
@@ -660,6 +676,13 @@ export function CanvasBattleTemplate({
                     {showDamageFlash && (
                         <Box className="absolute inset-0 bg-red-500/20 z-20 pointer-events-none rounded-lg animate-out fade-out duration-200" />
                     )}
+                    {/* Canvas effect screen flash overlay */}
+                    {canvasScreenFlash && (
+                        <Box
+                            className="absolute inset-0 z-20 pointer-events-none rounded-lg"
+                            style={{ backgroundColor: canvasScreenFlash.color, opacity: canvasScreenFlash.alpha }}
+                        />
+                    )}
 
                     {/* Action Hint Banners */}
                     {currentPhase === 'action' && attackTargets.length > 0 && (
@@ -701,6 +724,9 @@ export function CanvasBattleTemplate({
                         scale={scale}
                         assetManifest={assets}
                         backgroundImage={assets.backgrounds?.battle ? `${assets.baseUrl}/${assets.backgrounds.battle}` : undefined}
+                        onDrawEffects={drawEffects}
+                        hasActiveEffects={effectsActive}
+                        effectSpriteUrls={effectSpriteUrls}
                     />
 
                     {/* Damage Popups (positioned over canvas) */}

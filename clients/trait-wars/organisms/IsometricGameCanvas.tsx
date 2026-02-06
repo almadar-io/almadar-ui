@@ -921,7 +921,7 @@ export function IsometricGameCanvas({
         sortedTiles, units, features, selectedUnitId,
         scale, debug, resolveTerrainSprite, resolveFeatureSprite, resolveUnitSprite, getImage,
         gridWidth, gridHeight, baseOffsetX, scaledTileWidth, scaledTileHeight, scaledFloorHeight,
-        validMoveSet, attackTargetSet, hoveredTile, viewportSize, drawMinimap
+        validMoveSet, attackTargetSet, hoveredTile, viewportSize, drawMinimap, onDrawEffects
     ]);
 
     // =========================================================================
@@ -945,7 +945,7 @@ export function IsometricGameCanvas({
     // Always animate when units are present (idle breathing) or camera is lerping
     // =========================================================================
     useEffect(() => {
-        const hasAnimations = units.length > 0 || validMoves.length > 0 || attackTargets.length > 0 || selectedUnitId != null || targetCameraRef.current != null;
+        const hasAnimations = units.length > 0 || validMoves.length > 0 || attackTargets.length > 0 || selectedUnitId != null || targetCameraRef.current != null || hasActiveEffects;
 
         // Always draw at least once
         draw(animTimeRef.current);
@@ -979,7 +979,7 @@ export function IsometricGameCanvas({
             running = false;
             cancelAnimationFrame(rafIdRef.current);
         };
-    }, [draw, units.length, validMoves.length, attackTargets.length, selectedUnitId]);
+    }, [draw, units.length, validMoves.length, attackTargets.length, selectedUnitId, hasActiveEffects]);
 
     // =========================================================================
     // Helper: convert screen event coords to world coords (accounts for camera)

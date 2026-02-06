@@ -3,3 +3,5 @@
  */
 
 export * from './combatEffects';
+export * from './canvasEffects';
+export * from './combatPresets';
