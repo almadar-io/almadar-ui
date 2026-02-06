@@ -318,3 +318,104 @@ export function isInMovementRange(
 ): boolean {
     return hexDistance(from, to) <= movement;
 }
+
+// ============================================================================
+// COURTYARD LAYOUT (Isometric Castle View)
+// ============================================================================
+
+/** Isometric tile position for a building in the courtyard grid */
+export interface CourtyardBuildingPosition {
+    buildingType: BuildingType;
+    /** Top-left tile coordinate */
+    tileX: number;
+    tileY: number;
+    /** Building footprint in tiles (default 1x1) */
+    width?: number;
+    height?: number;
+}
+
+/** Courtyard layout configuration per faction */
+export interface CourtyardLayout {
+    gridWidth: number;
+    gridHeight: number;
+    /** Kenney floor tile names for deterministic variety */
+    floorTerrain: string[];
+    /** Kenney wall tile name for edges */
+    wallTerrain: string;
+    /** Kenney gate tile name for entrance */
+    gateTerrain: string;
+    /** Fixed building tile positions */
+    buildingPositions: CourtyardBuildingPosition[];
+    /** Gate tile positions (excluded from walls) */
+    gateTiles: Array<{ x: number; y: number }>;
+}
+
+/** Generate wall tile positions for courtyard edges, excluding gate positions */
+export function generateCourtyardWalls(
+    width: number,
+    height: number,
+    gates: Array<{ x: number; y: number }>
+): Array<{ x: number; y: number }> {
+    const walls: Array<{ x: number; y: number }> = [];
+    const isGate = (x: number, y: number) => gates.some(g => g.x === x && g.y === y);
+
+    for (let x = 0; x < width; x++) {
+        if (!isGate(x, 0)) walls.push({ x, y: 0 });
+        if (!isGate(x, height - 1)) walls.push({ x, y: height - 1 });
+    }
+    for (let y = 1; y < height - 1; y++) {
+        if (!isGate(0, y)) walls.push({ x: 0, y });
+        if (!isGate(width - 1, y)) walls.push({ x: width - 1, y });
+    }
+    return walls;
+}
+
+/** Courtyard layouts per faction */
+export const COURTYARD_LAYOUTS: Record<CastleFaction, CourtyardLayout> = {
+    resonator: {
+        gridWidth: 8,
+        gridHeight: 6,
+        floorTerrain: ['stoneInset_E', 'stoneTile_E', 'stone_E'],
+        wallTerrain: 'stoneWall_E',
+        gateTerrain: 'stoneWallGateOpen_E',
+        gateTiles: [{ x: 3, y: 0 }, { x: 4, y: 0 }],
+        buildingPositions: [
+            { buildingType: 'townHall', tileX: 3, tileY: 2, width: 2, height: 2 },
+            { buildingType: 'traitForge', tileX: 2, tileY: 3 },
+            { buildingType: 'arcaneTower', tileX: 7, tileY: 2 },
+            { buildingType: 'resonanceWell', tileX: 1, tileY: 2 },
+            { buildingType: 'library', tileX: 5, tileY: 1 },
+            { buildingType: 'portal', tileX: 5, tileY: 4 },
+        ],
+    },
+    dominion: {
+        gridWidth: 8,
+        gridHeight: 6,
+        floorTerrain: ['stoneTile_E', 'stoneInset_E'],
+        wallTerrain: 'stoneWallColumn_E',
+        gateTerrain: 'stoneWallGateOpen_E',
+        gateTiles: [{ x: 3, y: 0 }, { x: 4, y: 0 }],
+        buildingPositions: [
+            { buildingType: 'townHall', tileX: 3, tileY: 2, width: 2, height: 2 },
+            { buildingType: 'barracks', tileX: 1, tileY: 3 },
+            { buildingType: 'stables', tileX: 6, tileY: 3 },
+            { buildingType: 'fortress', tileX: 4, tileY: 1 },
+            { buildingType: 'marketplace', tileX: 5, tileY: 4 },
+            { buildingType: 'treasury', tileX: 2, tileY: 4 },
+        ],
+    },
+    neutral: {
+        gridWidth: 8,
+        gridHeight: 6,
+        floorTerrain: ['planks_E', 'planksBroken_E'],
+        wallTerrain: 'stoneWall_E',
+        gateTerrain: 'stoneWallGateOpen_E',
+        gateTiles: [{ x: 3, y: 0 }, { x: 4, y: 0 }],
+        buildingPositions: [
+            { buildingType: 'townHall', tileX: 3, tileY: 2, width: 2, height: 2 },
+            { buildingType: 'marketplace', tileX: 5, tileY: 4 },
+            { buildingType: 'barracks', tileX: 1, tileY: 3 },
+            { buildingType: 'treasury', tileX: 2, tileY: 4 },
+        ],
+    },
+};

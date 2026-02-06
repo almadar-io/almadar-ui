@@ -187,6 +187,7 @@ export interface TraitWarsAssetManifest {
     backgrounds?: {
         worldMap?: string;
         battle?: string;
+        castle?: string;
     };
 
     /** Terrain variant arrays for visual variety (multiple sprites per terrain type) */
@@ -253,6 +254,13 @@ export function getUnitSpriteUrl(manifest: TraitWarsAssetManifest, type: UnitTyp
 export function getTerrainSpriteUrl(manifest: TraitWarsAssetManifest, type: TerrainType): string | undefined {
     const path = manifest.terrain[type];
     return path ? `${manifest.baseUrl}/${path}` : undefined;
+}
+
+/**
+ * Get full URL for a Kenney dungeon tile by name (e.g., 'stoneInset_E').
+ */
+export function getKenneyTileUrl(manifest: TraitWarsAssetManifest, tileName: string): string {
+    return `${manifest.baseUrl}/isometric-dungeon/Isometric/${tileName}.png`;
 }
 
 /**
@@ -523,6 +531,7 @@ export const DEFAULT_ASSET_MANIFEST: TraitWarsAssetManifest = {
     backgrounds: {
         worldMap: 'world/dark_clouds_from_above.png',
         battle: 'world/starfield.png',
+        castle: 'world/dark_stone.png',
     },
     // Terrain variants for visual variety (deterministic per-tile selection)
     terrainVariants: {
