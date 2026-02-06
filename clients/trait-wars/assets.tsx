@@ -500,7 +500,7 @@ export const DEFAULT_ASSET_MANIFEST: TraitWarsAssetManifest = {
     },
     // Background images for canvas templates
     backgrounds: {
-        worldMap: 'world/capital.png',
-        battle: 'world/streets.png',
+        worldMap: 'world/dark_clouds_from_above.png',
+        battle: 'world/starfield.png',
     },
 };
