@@ -647,8 +647,10 @@ export function IsometricGameCanvas({
 
             const centerX = pos.x + scaledTileWidth / 2;
             const floorCenterY = pos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight / 2;
-            const featureDrawH = scaledFloorHeight * 1.6; // Features stand ~1.6x floor height
-            const maxFeatureW = scaledTileWidth * 0.7;
+            // Castles are large landmark structures — render bigger than regular features
+            const isCastle = feature.type === 'castle';
+            const featureDrawH = isCastle ? scaledFloorHeight * 3.5 : scaledFloorHeight * 1.6;
+            const maxFeatureW = isCastle ? scaledTileWidth * 1.8 : scaledTileWidth * 0.7;
 
             if (img) {
                 const ar = img.naturalWidth / img.naturalHeight;
@@ -658,13 +660,13 @@ export function IsometricGameCanvas({
                     drawW = maxFeatureW;
                     drawH = maxFeatureW / ar;
                 }
-                ctx.drawImage(
-                    img,
-                    centerX - drawW / 2,
-                    floorCenterY - drawH + 8 * scale,
-                    drawW,
-                    drawH
-                );
+                // Anchor base of sprite to floor diamond bottom of the tile
+                const drawX = centerX - drawW / 2;
+                const floorBottomY = pos.y + scaledTileHeight;
+                const drawY = isCastle
+                    ? floorBottomY - drawH  // Castle base sits on floor diamond bottom
+                    : floorCenterY - drawH + 8 * scale; // Other features anchor to floor center
+                ctx.drawImage(img, drawX, drawY, drawW, drawH);
             } else {
                 // Fallback circle
                 const color = FEATURE_COLORS[feature.type] || FEATURE_COLORS.default;
@@ -706,8 +708,8 @@ export function IsometricGameCanvas({
             // so all units appear the same height on the tile regardless of aspect ratio
             const unitSpriteUrl = resolveUnitSprite(unit);
             const img = unitSpriteUrl ? getImage(unitSpriteUrl) : null;
-            const unitDrawH = scaledFloorHeight * 2.2; // Units stand ~2.2x floor diamond height
-            const maxUnitW = scaledTileWidth * 0.85; // Don't exceed 85% of tile width
+            const unitDrawH = scaledFloorHeight * 1.5; // Units stand ~1.5x floor diamond height
+            const maxUnitW = scaledTileWidth * 0.6; // Don't exceed 60% of tile width
             const ar = img ? img.naturalWidth / img.naturalHeight : 0.5;
             let drawH = unitDrawH;
             let drawW = unitDrawH * ar;
