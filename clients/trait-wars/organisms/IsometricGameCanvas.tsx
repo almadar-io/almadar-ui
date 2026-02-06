@@ -646,7 +646,8 @@ export function IsometricGameCanvas({
             const img = spriteUrl ? getImage(spriteUrl) : null;
 
             const centerX = pos.x + scaledTileWidth / 2;
-            const floorCenterY = pos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight / 2;
+            // Ground surface: the visible tile surface is at ~35% into the floor diamond
+            const featureGroundY = pos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight * 0.35;
             // Castles are large landmark structures — render bigger than regular features
             const isCastle = feature.type === 'castle';
             const featureDrawH = isCastle ? scaledFloorHeight * 3.5 : scaledFloorHeight * 1.6;
@@ -660,18 +661,15 @@ export function IsometricGameCanvas({
                     drawW = maxFeatureW;
                     drawH = maxFeatureW / ar;
                 }
-                // Anchor base of sprite to floor diamond bottom of the tile
+                // Anchor base of sprite to tile ground surface
                 const drawX = centerX - drawW / 2;
-                const floorBottomY = pos.y + scaledTileHeight;
-                const drawY = isCastle
-                    ? floorBottomY - drawH  // Castle base sits on floor diamond bottom
-                    : floorCenterY - drawH + 8 * scale; // Other features anchor to floor center
+                const drawY = featureGroundY - drawH;
                 ctx.drawImage(img, drawX, drawY, drawW, drawH);
             } else {
                 // Fallback circle
                 const color = FEATURE_COLORS[feature.type] || FEATURE_COLORS.default;
                 ctx.beginPath();
-                ctx.arc(centerX, floorCenterY - 8 * scale, 16 * scale, 0, Math.PI * 2);
+                ctx.arc(centerX, featureGroundY - 8 * scale, 16 * scale, 0, Math.PI * 2);
                 ctx.fillStyle = color;
                 ctx.fill();
                 ctx.strokeStyle = 'rgba(0,0,0,0.5)';
@@ -699,6 +697,9 @@ export function IsometricGameCanvas({
             const isSelected = unit.id === selectedUnitId;
             const centerX = pos.x + scaledTileWidth / 2;
             const floorCenterY = pos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight / 2;
+            // Ground surface Y: the visible tile surface is at the upper portion of the floor diamond,
+            // not the geometric center. Kenney tiles show the flat surface at ~35% into the diamond.
+            const groundY = pos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight * 0.35;
 
             // Idle breathing animation (10.5.16)
             // Unique phase offset per tile position so units don't bob in sync
@@ -728,10 +729,11 @@ export function IsometricGameCanvas({
                 ctx.save();
                 ctx.globalAlpha = 0.25;
                 if (img) {
+                    const ghostGroundY = ghostPos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight * 0.35;
                     ctx.drawImage(
                         img,
                         ghostCenterX - drawW / 2,
-                        ghostFloorCenterY - drawH + 8 * scale,
+                        ghostGroundY - drawH,
                         drawW,
                         drawH
                     );
@@ -754,7 +756,7 @@ export function IsometricGameCanvas({
                 ctx.beginPath();
                 ctx.ellipse(
                     centerX,
-                    floorCenterY + 10 * scale - breatheOffset,
+                    groundY - breatheOffset,
                     drawW / 2 + 4 * scale,
                     12 * scale,
                     0, 0, Math.PI * 2
@@ -764,45 +766,34 @@ export function IsometricGameCanvas({
                 ctx.stroke();
             }
 
-            // Shadow under unit (apply breatheOffset)
+            // Shadow under unit on tile surface
             ctx.save();
             ctx.globalAlpha = 0.3;
             ctx.fillStyle = '#000000';
             ctx.beginPath();
-            ctx.ellipse(centerX, floorCenterY + 4 * scale - breatheOffset, drawW * 0.4, 8 * scale, 0, 0, Math.PI * 2);
+            ctx.ellipse(centerX, groundY - breatheOffset, drawW * 0.4, 8 * scale, 0, 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
 
             // Draw unit sprite or fallback (with team color glow)
             // Apply breatheOffset to all sprite positions
             if (img) {
+                const spriteY = groundY - drawH - breatheOffset;
                 if (unit.team) {
                     ctx.save();
                     ctx.shadowColor = unit.team === 'player' ? 'rgba(0, 150, 255, 0.6)' : 'rgba(255, 50, 50, 0.6)';
                     ctx.shadowBlur = 12 * scale;
-                    ctx.drawImage(
-                        img,
-                        centerX - drawW / 2,
-                        floorCenterY - drawH + 8 * scale - breatheOffset,
-                        drawW,
-                        drawH
-                    );
+                    ctx.drawImage(img, centerX - drawW / 2, spriteY, drawW, drawH);
                     ctx.restore();
                 } else {
-                    ctx.drawImage(
-                        img,
-                        centerX - drawW / 2,
-                        floorCenterY - drawH + 8 * scale - breatheOffset,
-                        drawW,
-                        drawH
-                    );
+                    ctx.drawImage(img, centerX - drawW / 2, spriteY, drawW, drawH);
                 }
             } else {
                 // Fallback circle (apply breatheOffset)
                 const color = unit.team === 'player' ? '#3b82f6' :
                     unit.team === 'enemy' ? '#ef4444' : '#6b7280';
                 ctx.beginPath();
-                ctx.arc(centerX, floorCenterY - 16 * scale - breatheOffset, 20 * scale, 0, Math.PI * 2);
+                ctx.arc(centerX, groundY - 20 * scale - breatheOffset, 20 * scale, 0, Math.PI * 2);
                 ctx.fillStyle = color;
                 ctx.fill();
                 ctx.strokeStyle = 'rgba(255,255,255,0.8)';
@@ -819,7 +810,7 @@ export function IsometricGameCanvas({
                 ctx.textAlign = 'center';
 
                 const textWidth = ctx.measureText(unit.name).width;
-                const labelY = floorCenterY + 20 * scale - breatheOffset;
+                const labelY = groundY + 14 * scale - breatheOffset;
 
                 ctx.fillStyle = labelBg;
                 ctx.beginPath();
@@ -841,7 +832,7 @@ export function IsometricGameCanvas({
                 const barWidth = 40 * scale;
                 const barHeight = 6 * scale;
                 const barX = centerX - barWidth / 2;
-                const barY = floorCenterY - drawH + 4 * scale - breatheOffset;
+                const barY = groundY - drawH - 2 * scale - breatheOffset;
                 const healthRatio = unit.health / unit.maxHealth;
                 const barRadius = barHeight / 2;
 
