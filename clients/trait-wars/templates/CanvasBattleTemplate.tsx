@@ -459,6 +459,14 @@ export function CanvasBattleTemplate({
         }, 1500);
     }, [scale, baseOffsetX]);
 
+    // Trigger combat screen shake + red flash (must be before handleUnitClick)
+    const triggerCombatEffect = useCallback(() => {
+        setIsShaking(true);
+        setShowDamageFlash(true);
+        setTimeout(() => setIsShaking(false), 300);
+        setTimeout(() => setShowDamageFlash(false), 200);
+    }, []);
+
     // Check game end
     const checkGameEnd = useCallback(() => {
         const playerAlive = units.filter(u => u.team === 'player' && u.health > 0);
@@ -542,14 +550,6 @@ export function CanvasBattleTemplate({
         setCurrentTurn(t => t + 1);
         addLog('phase', 'Turn ended');
     }, [selectedUnit, addLog]);
-
-    // Feature 4: Trigger combat screen shake + red flash (must be before handleUnitClick)
-    const triggerCombatEffect = useCallback(() => {
-        setIsShaking(true);
-        setShowDamageFlash(true);
-        setTimeout(() => setIsShaking(false), 300);
-        setTimeout(() => setShowDamageFlash(false), 200);
-    }, []);
 
     // Cancel selection
     const handleCancel = useCallback(() => {

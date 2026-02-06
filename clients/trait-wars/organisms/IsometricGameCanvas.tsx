@@ -995,10 +995,11 @@ export function IsometricGameCanvas({
 
         const world = screenToWorld(e.clientX, e.clientY);
 
-        // Adjust for floor position (tiles are positioned from top-left of full tile)
-        const adjustedY = world.y - (scaledTileHeight - scaledFloorHeight);
+        // Adjust for floor diamond center: subtract half-tile offset so diamond centers map to integer coords
+        const adjustedX = world.x - scaledTileWidth / 2;
+        const adjustedY = world.y - (scaledTileHeight - scaledFloorHeight) - scaledFloorHeight / 2;
 
-        const isoPos = screenToIso(world.x, adjustedY, scale, baseOffsetX);
+        const isoPos = screenToIso(adjustedX, adjustedY, scale, baseOffsetX);
 
         // Check if tile exists
         const tileExists = tiles.some(t => t.x === isoPos.x && t.y === isoPos.y);
@@ -1027,10 +1028,11 @@ export function IsometricGameCanvas({
 
         const world = screenToWorld(e.clientX, e.clientY);
 
-        // Adjust for floor position
-        const adjustedY = world.y - (scaledTileHeight - scaledFloorHeight);
+        // Adjust for floor diamond center: subtract half-tile offset so diamond centers map to integer coords
+        const adjustedX = world.x - scaledTileWidth / 2;
+        const adjustedY = world.y - (scaledTileHeight - scaledFloorHeight) - scaledFloorHeight / 2;
 
-        const isoPos = screenToIso(world.x, adjustedY, scale, baseOffsetX);
+        const isoPos = screenToIso(adjustedX, adjustedY, scale, baseOffsetX);
 
         // Check if we clicked a unit
         const clickedUnit = units.find(
