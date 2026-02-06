@@ -645,14 +645,19 @@ export function IsometricGameCanvas({
             const spriteUrl = feature.sprite || resolveFeatureSprite(feature.type);
             const img = spriteUrl ? getImage(spriteUrl) : null;
 
-            const maxFeatureDim = 72 * scale * 2.5;
             const centerX = pos.x + scaledTileWidth / 2;
             const floorCenterY = pos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight / 2;
+            const featureDrawH = scaledFloorHeight * 1.6; // Features stand ~1.6x floor height
+            const maxFeatureW = scaledTileWidth * 0.7;
 
             if (img) {
                 const ar = img.naturalWidth / img.naturalHeight;
-                const drawW = ar >= 1 ? maxFeatureDim : maxFeatureDim * ar;
-                const drawH = ar >= 1 ? maxFeatureDim / ar : maxFeatureDim;
+                let drawH = featureDrawH;
+                let drawW = featureDrawH * ar;
+                if (drawW > maxFeatureW) {
+                    drawW = maxFeatureW;
+                    drawH = maxFeatureW / ar;
+                }
                 ctx.drawImage(
                     img,
                     centerX - drawW / 2,
@@ -690,7 +695,6 @@ export function IsometricGameCanvas({
             }
 
             const isSelected = unit.id === selectedUnitId;
-            const maxUnitDim = 96 * scale * 2.5;
             const centerX = pos.x + scaledTileWidth / 2;
             const floorCenterY = pos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight / 2;
 
@@ -698,12 +702,20 @@ export function IsometricGameCanvas({
             // Unique phase offset per tile position so units don't bob in sync
             const breatheOffset = 2 * scale * Math.sin(animTime * 0.002 + (unit.position.x * 3.7 + unit.position.y * 5.3));
 
-            // Resolve sprite and compute aspect-ratio-correct dimensions
+            // Resolve sprite and compute dimensions using FIXED draw height
+            // so all units appear the same height on the tile regardless of aspect ratio
             const unitSpriteUrl = resolveUnitSprite(unit);
             const img = unitSpriteUrl ? getImage(unitSpriteUrl) : null;
-            const ar = img ? img.naturalWidth / img.naturalHeight : 1;
-            const drawW = img ? (ar >= 1 ? maxUnitDim : maxUnitDim * ar) : maxUnitDim;
-            const drawH = img ? (ar >= 1 ? maxUnitDim / ar : maxUnitDim) : maxUnitDim;
+            const unitDrawH = scaledFloorHeight * 2.2; // Units stand ~2.2x floor diamond height
+            const maxUnitW = scaledTileWidth * 0.85; // Don't exceed 85% of tile width
+            const ar = img ? img.naturalWidth / img.naturalHeight : 0.5;
+            let drawH = unitDrawH;
+            let drawW = unitDrawH * ar;
+            // Cap width so wide sprites don't overflow the tile
+            if (drawW > maxUnitW) {
+                drawW = maxUnitW;
+                drawH = maxUnitW / ar;
+            }
 
             // Movement trail / ghost (10.5.17)
             if (unit.previousPosition && (unit.previousPosition.x !== unit.position.x || unit.previousPosition.y !== unit.position.y)) {
