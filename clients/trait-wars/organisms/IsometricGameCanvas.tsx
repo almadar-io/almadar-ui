@@ -3,6 +3,15 @@
  *
  * Canvas-based isometric game board for Trait Wars.
  * Replaces DOM-based HexGameBoard with pixel-perfect canvas rendering.
+ *
+ * Features:
+ * - Idle breathing animation (10.5.16)
+ * - Movement trail / ghost (10.5.17)
+ * - Pan & zoom camera (10.5.18)
+ * - Camera centering on selected unit (10.5.19)
+ * - Mini-map (10.5.20)
+ * - Smart redraw (10.5.21)
+ * - Off-screen tile culling (10.5.22)
  */
 
 import * as React from 'react';
@@ -57,6 +66,8 @@ export interface IsometricTile {
 export interface IsometricUnit {
     id: string;
     position: { x: number; y: number };
+    /** Previous position for movement trail / ghost effect (10.5.17) */
+    previousPosition?: { x: number; y: number };
     /** Direct sprite URL override */
     sprite?: string;
     /** Robot unit type for manifest lookup (e.g., 'worker', 'guardian') */
@@ -271,9 +282,22 @@ export function IsometricGameCanvas({
     className
 }: IsometricGameCanvasProps): JSX.Element {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const minimapRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const animTimeRef = useRef(0);
     const rafIdRef = useRef<number>(0);
+
+    // =========================================================================
+    // Camera state refs (10.5.18) - refs to avoid re-renders on every pan frame
+    // =========================================================================
+    const cameraRef = useRef({ x: 0, y: 0, zoom: 1 });
+    const isDraggingRef = useRef(false);
+    const dragDistanceRef = useRef(0);
+    const lastMouseRef = useRef({ x: 0, y: 0 });
+    const targetCameraRef = useRef<{ x: number; y: number } | null>(null);
+
+    // Viewport size state for ResizeObserver (10.5.18)
+    const [viewportSize, setViewportSize] = useState({ width: 800, height: 600 });
 
     // Calculate grid bounds
     const maxX = Math.max(...tiles.map(t => t.x), 0);
@@ -282,13 +306,39 @@ export function IsometricGameCanvas({
     // Base offset to center the grid
     const baseOffsetX = (maxY + 1) * (TILE_WIDTH * scale / 2);
 
-    // Canvas dimensions
+    // Canvas dimensions (world space)
     const scaledTileWidth = TILE_WIDTH * scale;
     const scaledTileHeight = TILE_HEIGHT * scale;
     const scaledFloorHeight = FLOOR_HEIGHT * scale;
 
     const gridWidth = (maxX + maxY + 2) * (scaledTileWidth / 2) + scaledTileWidth;
     const gridHeight = (maxX + maxY + 1) * (scaledFloorHeight / 2) + scaledTileHeight;
+
+    // =========================================================================
+    // ResizeObserver for viewport sizing (10.5.18)
+    // =========================================================================
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const observer = new ResizeObserver((entries) => {
+            for (const entry of entries) {
+                const { width, height } = entry.contentRect;
+                if (width > 0 && height > 0) {
+                    setViewportSize({ width, height });
+                }
+            }
+        });
+
+        observer.observe(container);
+        // Initialize with current size
+        const rect = container.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+            setViewportSize({ width: rect.width, height: rect.height });
+        }
+
+        return () => observer.disconnect();
+    }, []);
 
     // Manifest-based sprite resolvers (used when explicit callbacks are not provided)
     const resolveTerrainSprite = React.useCallback((terrain: string): string | undefined => {
@@ -355,7 +405,86 @@ export function IsometricGameCanvas({
         });
     }, [tiles]);
 
+    // =========================================================================
+    // Mini-map drawing function (10.5.20)
+    // =========================================================================
+    const drawMinimap = useCallback(() => {
+        const minimap = minimapRef.current;
+        if (!minimap) return;
+
+        const mCtx = minimap.getContext('2d');
+        if (!mCtx) return;
+
+        const mW = 150;
+        const mH = 100;
+        const dpr = window.devicePixelRatio || 1;
+        minimap.width = mW * dpr;
+        minimap.height = mH * dpr;
+        mCtx.scale(dpr, dpr);
+
+        // Clear
+        mCtx.clearRect(0, 0, mW, mH);
+        mCtx.fillStyle = 'rgba(15, 15, 25, 0.85)';
+        mCtx.fillRect(0, 0, mW, mH);
+
+        // Scale factor: map the full grid into the minimap
+        const scaleToMiniX = mW / gridWidth;
+        const scaleToMiniY = mH / gridHeight;
+        const miniScale = Math.min(scaleToMiniX, scaleToMiniY) * 0.9;
+        const miniOffX = (mW - gridWidth * miniScale) / 2;
+        const miniOffY = (mH - gridHeight * miniScale) / 2;
+
+        // Draw tiles as small colored diamonds
+        for (const tile of sortedTiles) {
+            const pos = isoToScreen(tile.x, tile.y, scale, baseOffsetX);
+            const mx = pos.x * miniScale + miniOffX;
+            const my = pos.y * miniScale + miniOffY;
+            const tw = scaledTileWidth * miniScale;
+            const fh = scaledFloorHeight * miniScale;
+            const th = scaledTileHeight * miniScale;
+
+            const cx = mx + tw / 2;
+            const cy = my + (th - fh) + fh / 2;
+
+            const color = TERRAIN_COLORS[tile.terrain] || TERRAIN_COLORS.default;
+            mCtx.fillStyle = color;
+            mCtx.beginPath();
+            mCtx.moveTo(cx, cy - fh / 2);
+            mCtx.lineTo(cx + tw / 2, cy);
+            mCtx.lineTo(cx, cy + fh / 2);
+            mCtx.lineTo(cx - tw / 2, cy);
+            mCtx.closePath();
+            mCtx.fill();
+        }
+
+        // Draw unit dots
+        for (const unit of units) {
+            const pos = isoToScreen(unit.position.x, unit.position.y, scale, baseOffsetX);
+            const mx = pos.x * miniScale + miniOffX + (scaledTileWidth * miniScale) / 2;
+            const my = pos.y * miniScale + miniOffY + ((scaledTileHeight - scaledFloorHeight) * miniScale) + (scaledFloorHeight * miniScale) / 2;
+
+            mCtx.beginPath();
+            mCtx.arc(mx, my, 2.5, 0, Math.PI * 2);
+            mCtx.fillStyle = unit.team === 'player' ? '#3b82f6' :
+                unit.team === 'enemy' ? '#ef4444' : '#9ca3af';
+            mCtx.fill();
+        }
+
+        // Draw viewport rectangle
+        const cam = cameraRef.current;
+        const vpX = cam.x * miniScale + miniOffX;
+        const vpY = cam.y * miniScale + miniOffY;
+        const vpW = (viewportSize.width / cam.zoom) * miniScale;
+        const vpH = (viewportSize.height / cam.zoom) * miniScale;
+
+        mCtx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+        mCtx.lineWidth = 1;
+        mCtx.strokeRect(vpX, vpY, vpW, vpH);
+    }, [sortedTiles, units, scale, baseOffsetX, scaledTileWidth, scaledTileHeight, scaledFloorHeight, gridWidth, gridHeight, viewportSize]);
+
+    // =========================================================================
     // Draw function extracted for RAF loop
+    // =========================================================================
     const draw = useCallback((animTime: number) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -363,19 +492,40 @@ export function IsometricGameCanvas({
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        // Set canvas resolution (handle retina displays)
+        // Set canvas resolution to viewport (10.5.18)
         const dpr = window.devicePixelRatio || 1;
-        canvas.width = gridWidth * dpr;
-        canvas.height = gridHeight * dpr;
+        canvas.width = viewportSize.width * dpr;
+        canvas.height = viewportSize.height * dpr;
         ctx.scale(dpr, dpr);
 
         // Clear canvas
-        ctx.clearRect(0, 0, gridWidth, gridHeight);
+        ctx.clearRect(0, 0, viewportSize.width, viewportSize.height);
+
+        // Apply camera transform (10.5.18)
+        const cam = cameraRef.current;
+        ctx.save();
+        ctx.translate(viewportSize.width / 2, viewportSize.height / 2);
+        ctx.scale(cam.zoom, cam.zoom);
+        ctx.translate(-viewportSize.width / 2, -viewportSize.height / 2);
+        ctx.translate(-cam.x, -cam.y);
+
+        // Compute visible region in world space for culling (10.5.22)
+        const cullMargin = scaledTileWidth;
+        const visLeft = cam.x - cullMargin;
+        const visRight = cam.x + viewportSize.width / cam.zoom + cullMargin;
+        const visTop = cam.y - cullMargin;
+        const visBottom = cam.y + viewportSize.height / cam.zoom + cullMargin;
 
         // Render tiles (painter's algorithm order)
         for (const tile of sortedTiles) {
             const pos = isoToScreen(tile.x, tile.y, scale, baseOffsetX);
             const key = `${tile.x},${tile.y}`;
+
+            // Off-screen tile culling (10.5.22)
+            if (pos.x + scaledTileWidth < visLeft || pos.x > visRight ||
+                pos.y + scaledTileHeight < visTop || pos.y > visBottom) {
+                continue;
+            }
 
             // Get sprite image or use fallback color
             const spriteUrl = tile.terrainSprite || resolveTerrainSprite(tile.terrain);
@@ -485,6 +635,13 @@ export function IsometricGameCanvas({
 
         for (const feature of sortedFeatures) {
             const pos = isoToScreen(feature.x, feature.y, scale, baseOffsetX);
+
+            // Off-screen feature culling (10.5.22)
+            if (pos.x + scaledTileWidth < visLeft || pos.x > visRight ||
+                pos.y + scaledTileHeight < visTop || pos.y > visBottom) {
+                continue;
+            }
+
             const spriteUrl = feature.sprite || resolveFeatureSprite(feature.type);
             const img = spriteUrl ? getImage(spriteUrl) : null;
 
@@ -525,10 +682,21 @@ export function IsometricGameCanvas({
 
         for (const unit of sortedUnits) {
             const pos = isoToScreen(unit.position.x, unit.position.y, scale, baseOffsetX);
+
+            // Off-screen unit culling (10.5.22)
+            if (pos.x + scaledTileWidth < visLeft || pos.x > visRight ||
+                pos.y + scaledTileHeight < visTop || pos.y > visBottom) {
+                continue;
+            }
+
             const isSelected = unit.id === selectedUnitId;
             const maxUnitDim = 64 * scale * 2.5;
             const centerX = pos.x + scaledTileWidth / 2;
             const floorCenterY = pos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight / 2;
+
+            // Idle breathing animation (10.5.16)
+            // Unique phase offset per tile position so units don't bob in sync
+            const breatheOffset = 2 * scale * Math.sin(animTime * 0.002 + (unit.position.x * 3.7 + unit.position.y * 5.3));
 
             // Resolve sprite and compute aspect-ratio-correct dimensions
             const unitSpriteUrl = resolveUnitSprite(unit);
@@ -537,13 +705,42 @@ export function IsometricGameCanvas({
             const drawW = img ? (ar >= 1 ? maxUnitDim : maxUnitDim * ar) : maxUnitDim;
             const drawH = img ? (ar >= 1 ? maxUnitDim / ar : maxUnitDim) : maxUnitDim;
 
+            // Movement trail / ghost (10.5.17)
+            if (unit.previousPosition && (unit.previousPosition.x !== unit.position.x || unit.previousPosition.y !== unit.position.y)) {
+                const ghostPos = isoToScreen(unit.previousPosition.x, unit.previousPosition.y, scale, baseOffsetX);
+                const ghostCenterX = ghostPos.x + scaledTileWidth / 2;
+                const ghostFloorCenterY = ghostPos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight / 2;
+
+                ctx.save();
+                ctx.globalAlpha = 0.25;
+                if (img) {
+                    ctx.drawImage(
+                        img,
+                        ghostCenterX - drawW / 2,
+                        ghostFloorCenterY - drawH + 8 * scale,
+                        drawW,
+                        drawH
+                    );
+                } else {
+                    // Ghost fallback circle
+                    const color = unit.team === 'player' ? '#3b82f6' :
+                        unit.team === 'enemy' ? '#ef4444' : '#6b7280';
+                    ctx.beginPath();
+                    ctx.arc(ghostCenterX, ghostFloorCenterY - 16 * scale, 20 * scale, 0, Math.PI * 2);
+                    ctx.fillStyle = color;
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+
             // Draw selection ring (pulsing, sized to sprite footprint)
+            // Apply breatheOffset so selection ring bobs with the unit
             if (isSelected) {
                 const ringAlpha = 0.6 + 0.3 * Math.sin(animTime * 0.004);
                 ctx.beginPath();
                 ctx.ellipse(
                     centerX,
-                    floorCenterY + 10 * scale,
+                    floorCenterY + 10 * scale - breatheOffset,
                     drawW / 2 + 4 * scale,
                     12 * scale,
                     0, 0, Math.PI * 2
@@ -553,16 +750,17 @@ export function IsometricGameCanvas({
                 ctx.stroke();
             }
 
-            // Shadow under unit
+            // Shadow under unit (apply breatheOffset)
             ctx.save();
             ctx.globalAlpha = 0.3;
             ctx.fillStyle = '#000000';
             ctx.beginPath();
-            ctx.ellipse(centerX, floorCenterY + 4 * scale, drawW * 0.4, 8 * scale, 0, 0, Math.PI * 2);
+            ctx.ellipse(centerX, floorCenterY + 4 * scale - breatheOffset, drawW * 0.4, 8 * scale, 0, 0, Math.PI * 2);
             ctx.fill();
             ctx.restore();
 
             // Draw unit sprite or fallback (with team color glow)
+            // Apply breatheOffset to all sprite positions
             if (img) {
                 if (unit.team) {
                     ctx.save();
@@ -571,7 +769,7 @@ export function IsometricGameCanvas({
                     ctx.drawImage(
                         img,
                         centerX - drawW / 2,
-                        floorCenterY - drawH + 8 * scale,
+                        floorCenterY - drawH + 8 * scale - breatheOffset,
                         drawW,
                         drawH
                     );
@@ -580,17 +778,17 @@ export function IsometricGameCanvas({
                     ctx.drawImage(
                         img,
                         centerX - drawW / 2,
-                        floorCenterY - drawH + 8 * scale,
+                        floorCenterY - drawH + 8 * scale - breatheOffset,
                         drawW,
                         drawH
                     );
                 }
             } else {
-                // Fallback circle
+                // Fallback circle (apply breatheOffset)
                 const color = unit.team === 'player' ? '#3b82f6' :
                     unit.team === 'enemy' ? '#ef4444' : '#6b7280';
                 ctx.beginPath();
-                ctx.arc(centerX, floorCenterY - 16 * scale, 20 * scale, 0, Math.PI * 2);
+                ctx.arc(centerX, floorCenterY - 16 * scale - breatheOffset, 20 * scale, 0, Math.PI * 2);
                 ctx.fillStyle = color;
                 ctx.fill();
                 ctx.strokeStyle = 'rgba(255,255,255,0.8)';
@@ -598,7 +796,7 @@ export function IsometricGameCanvas({
                 ctx.stroke();
             }
 
-            // Draw unit name label
+            // Draw unit name label (apply breatheOffset)
             if (unit.name) {
                 const labelBg = unit.team === 'player' ? 'rgba(59, 130, 246, 0.9)' :
                     unit.team === 'enemy' ? 'rgba(239, 68, 68, 0.9)' : 'rgba(107, 114, 128, 0.9)';
@@ -607,7 +805,7 @@ export function IsometricGameCanvas({
                 ctx.textAlign = 'center';
 
                 const textWidth = ctx.measureText(unit.name).width;
-                const labelY = floorCenterY + 20 * scale;
+                const labelY = floorCenterY + 20 * scale - breatheOffset;
 
                 ctx.fillStyle = labelBg;
                 ctx.beginPath();
@@ -624,12 +822,12 @@ export function IsometricGameCanvas({
                 ctx.fillText(unit.name, centerX, labelY + 4 * scale);
             }
 
-            // Draw health bar (improved visuals)
+            // Draw health bar (apply breatheOffset)
             if (unit.health !== undefined && unit.maxHealth !== undefined) {
                 const barWidth = 40 * scale;
                 const barHeight = 6 * scale;
                 const barX = centerX - barWidth / 2;
-                const barY = floorCenterY - drawH + 4 * scale;
+                const barY = floorCenterY - drawH + 4 * scale - breatheOffset;
                 const healthRatio = unit.health / unit.maxHealth;
                 const barRadius = barHeight / 2;
 
@@ -670,16 +868,41 @@ export function IsometricGameCanvas({
                 ctx.stroke();
             }
         }
+
+        // Restore camera transform (10.5.18)
+        ctx.restore();
+
+        // Draw minimap (10.5.20)
+        drawMinimap();
     }, [
         sortedTiles, units, features, selectedUnitId,
         scale, debug, resolveTerrainSprite, resolveFeatureSprite, resolveUnitSprite, getImage,
         gridWidth, gridHeight, baseOffsetX, scaledTileWidth, scaledTileHeight, scaledFloorHeight,
-        validMoveSet, attackTargetSet, hoveredTile
+        validMoveSet, attackTargetSet, hoveredTile, viewportSize, drawMinimap
     ]);
 
-    // Animation loop - runs RAF when there are pulsing highlights or selected units
+    // =========================================================================
+    // Camera centering on selected unit (10.5.19)
+    // =========================================================================
     useEffect(() => {
-        const hasAnimations = validMoves.length > 0 || attackTargets.length > 0 || selectedUnitId != null;
+        if (!selectedUnitId) return;
+        const unit = units.find(u => u.id === selectedUnitId);
+        if (!unit) return;
+        const pos = isoToScreen(unit.position.x, unit.position.y, scale, baseOffsetX);
+        const centerX = pos.x + scaledTileWidth / 2;
+        const centerY = pos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight / 2;
+        targetCameraRef.current = {
+            x: centerX - viewportSize.width / 2,
+            y: centerY - viewportSize.height / 2,
+        };
+    }, [selectedUnitId, units, scale, baseOffsetX, scaledTileWidth, scaledTileHeight, scaledFloorHeight, viewportSize]);
+
+    // =========================================================================
+    // Animation loop (10.5.21 - smart redraw)
+    // Always animate when units are present (idle breathing) or camera is lerping
+    // =========================================================================
+    useEffect(() => {
+        const hasAnimations = units.length > 0 || validMoves.length > 0 || attackTargets.length > 0 || selectedUnitId != null || targetCameraRef.current != null;
 
         // Always draw at least once
         draw(animTimeRef.current);
@@ -690,6 +913,20 @@ export function IsometricGameCanvas({
         const animate = (timestamp: number) => {
             if (!running) return;
             animTimeRef.current = timestamp;
+
+            // Camera lerp toward target (10.5.19)
+            if (targetCameraRef.current) {
+                const cam = cameraRef.current;
+                const t = 0.08;
+                cam.x += (targetCameraRef.current.x - cam.x) * t;
+                cam.y += (targetCameraRef.current.y - cam.y) * t;
+                if (Math.abs(cam.x - targetCameraRef.current.x) < 0.5 && Math.abs(cam.y - targetCameraRef.current.y) < 0.5) {
+                    cam.x = targetCameraRef.current.x;
+                    cam.y = targetCameraRef.current.y;
+                    targetCameraRef.current = null;
+                }
+            }
+
             draw(timestamp);
             rafIdRef.current = requestAnimationFrame(animate);
         };
@@ -699,55 +936,101 @@ export function IsometricGameCanvas({
             running = false;
             cancelAnimationFrame(rafIdRef.current);
         };
-    }, [draw, validMoves.length, attackTargets.length, selectedUnitId]);
+    }, [draw, units.length, validMoves.length, attackTargets.length, selectedUnitId]);
 
-    // Handle mouse events
-    const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-        if (!onTileHover) return;
-
+    // =========================================================================
+    // Helper: convert screen event coords to world coords (accounts for camera)
+    // =========================================================================
+    const screenToWorld = useCallback((clientX: number, clientY: number): { x: number; y: number } => {
         const canvas = canvasRef.current;
-        if (!canvas) return;
+        if (!canvas) return { x: 0, y: 0 };
 
         const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        const dpr = window.devicePixelRatio || 1;
+        const screenX = clientX - rect.left;
+        const screenY = clientY - rect.top;
 
-        const screenX = (e.clientX - rect.left) * scaleX / dpr;
-        const screenY = (e.clientY - rect.top) * scaleY / dpr;
+        // Invert camera transform (10.5.18)
+        const cam = cameraRef.current;
+        const worldX = (screenX - viewportSize.width / 2) / cam.zoom + viewportSize.width / 2 + cam.x;
+        const worldY = (screenY - viewportSize.height / 2) / cam.zoom + viewportSize.height / 2 + cam.y;
+
+        return { x: worldX, y: worldY };
+    }, [viewportSize]);
+
+    // =========================================================================
+    // Mouse handlers for camera panning (10.5.18)
+    // =========================================================================
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        // Any mouse button starts panning (left, middle, or right — like HoMM3)
+        isDraggingRef.current = true;
+        dragDistanceRef.current = 0;
+        lastMouseRef.current = { x: e.clientX, y: e.clientY };
+        if (e.button === 1 || e.button === 2) {
+            e.preventDefault();
+        }
+    }, []);
+
+    const handleMouseUp = useCallback(() => {
+        isDraggingRef.current = false;
+    }, []);
+
+    // Combined mouse move: camera panning + tile hover (10.5.18)
+    const handleMouseMoveWithCamera = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+        // Camera panning (10.5.18)
+        if (isDraggingRef.current) {
+            const dx = e.clientX - lastMouseRef.current.x;
+            const dy = e.clientY - lastMouseRef.current.y;
+            dragDistanceRef.current += Math.abs(dx) + Math.abs(dy);
+            cameraRef.current.x -= dx;
+            cameraRef.current.y -= dy;
+            lastMouseRef.current = { x: e.clientX, y: e.clientY };
+            // Cancel any camera auto-centering while user drags
+            targetCameraRef.current = null;
+            draw(animTimeRef.current);
+            if (dragDistanceRef.current > 5) return; // Don't fire hover events while dragging significantly
+        }
+
+        // Tile hover logic (existing)
+        if (!onTileHover) return;
+
+        const world = screenToWorld(e.clientX, e.clientY);
 
         // Adjust for floor position (tiles are positioned from top-left of full tile)
-        const adjustedY = screenY - (scaledTileHeight - scaledFloorHeight);
+        const adjustedY = world.y - (scaledTileHeight - scaledFloorHeight);
 
-        const isoPos = screenToIso(screenX, adjustedY, scale, baseOffsetX);
+        const isoPos = screenToIso(world.x, adjustedY, scale, baseOffsetX);
 
         // Check if tile exists
         const tileExists = tiles.some(t => t.x === isoPos.x && t.y === isoPos.y);
         if (tileExists) {
             onTileHover(isoPos.x, isoPos.y);
         }
-    }, [tiles, scale, baseOffsetX, scaledTileHeight, scaledFloorHeight, onTileHover]);
+    }, [tiles, scale, baseOffsetX, scaledTileHeight, scaledFloorHeight, onTileHover, draw, screenToWorld]);
 
-    const handleMouseLeave = useCallback(() => {
+    const handleMouseLeaveWithCamera = useCallback(() => {
+        isDraggingRef.current = false;
         onTileLeave?.();
     }, [onTileLeave]);
 
+    // Wheel handler for zoom (10.5.18)
+    const handleWheel = useCallback((e: React.WheelEvent) => {
+        e.preventDefault();
+        const zoomDelta = e.deltaY > 0 ? 0.9 : 1.1;
+        cameraRef.current.zoom = Math.max(0.5, Math.min(3, cameraRef.current.zoom * zoomDelta));
+        draw(animTimeRef.current);
+    }, [draw]);
+
+    // Click handler (updated for camera transform) (10.5.18)
     const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
+        // Don't fire click if we were just panning (dragged more than 5px)
+        if (dragDistanceRef.current > 5) return;
 
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        const dpr = window.devicePixelRatio || 1;
-
-        const screenX = (e.clientX - rect.left) * scaleX / dpr;
-        const screenY = (e.clientY - rect.top) * scaleY / dpr;
+        const world = screenToWorld(e.clientX, e.clientY);
 
         // Adjust for floor position
-        const adjustedY = screenY - (scaledTileHeight - scaledFloorHeight);
+        const adjustedY = world.y - (scaledTileHeight - scaledFloorHeight);
 
-        const isoPos = screenToIso(screenX, adjustedY, scale, baseOffsetX);
+        const isoPos = screenToIso(world.x, adjustedY, scale, baseOffsetX);
 
         // Check if we clicked a unit
         const clickedUnit = units.find(
@@ -763,23 +1046,33 @@ export function IsometricGameCanvas({
                 onTileClick(isoPos.x, isoPos.y);
             }
         }
-    }, [tiles, units, scale, baseOffsetX, scaledTileHeight, scaledFloorHeight, onTileClick, onUnitClick]);
+    }, [tiles, units, scale, baseOffsetX, scaledTileHeight, scaledFloorHeight, onTileClick, onUnitClick, screenToWorld]);
 
     return (
         <Box
             ref={containerRef}
-            className={cn('relative overflow-auto', className)}
+            className={cn('relative overflow-hidden', className)}
         >
             <canvas
                 ref={canvasRef}
                 onClick={handleClick}
-                onMouseMove={handleMouseMove}
-                onMouseLeave={handleMouseLeave}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMoveWithCamera}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseLeaveWithCamera}
+                onWheel={handleWheel}
+                onContextMenu={(e) => e.preventDefault()}
                 className="cursor-pointer"
                 style={{
-                    width: gridWidth,
-                    height: gridHeight,
+                    width: viewportSize.width,
+                    height: viewportSize.height,
                 }}
+            />
+            {/* Mini-map overlay (10.5.20) */}
+            <canvas
+                ref={minimapRef}
+                className="absolute bottom-2 right-2 border border-gray-600 rounded bg-gray-900/80 pointer-events-none"
+                style={{ width: 150, height: 100, zIndex: 10 }}
             />
         </Box>
     );

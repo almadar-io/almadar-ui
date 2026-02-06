@@ -8,7 +8,7 @@
  * - CombatLog, DamagePopup, action buttons as DOM overlays
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import {
     Box,
     VStack,
@@ -305,6 +305,20 @@ export function CanvasBattleTemplate({
     const [damagePopups, setDamagePopups] = useState<DamagePopupData[]>([]);
     const [gameResult, setGameResult] = useState<'victory' | 'defeat' | null>(null);
 
+    // Feature 1: Tooltip follows cursor
+    const [mousePosition, setMousePosition] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+    // Feature 3: Animated phase transitions
+    const [phaseAnnouncement, setPhaseAnnouncement] = useState<string | null>(null);
+    const prevPhaseRef = useRef<BattlePhase>(currentPhase);
+
+    // Feature 4: Combat damage animation - screen shake + red flash
+    const [isShaking, setIsShaking] = useState(false);
+    const [showDamageFlash, setShowDamageFlash] = useState(false);
+
+    // Feature 6: Turn transition banner
+    const [turnBanner, setTurnBanner] = useState<string | null>(null);
+
     // Generate map if not provided (with theme support)
     const generatedMap = useMemo(
         () => mapTerrain
@@ -484,6 +498,7 @@ export function CanvasBattleTemplate({
                 ));
 
                 showDamage(unit.position.x, unit.position.y, damage, 'physical');
+                triggerCombatEffect();
                 addLog('attack', `${selectedUnit.name} attacks ${unit.name} for ${damage} damage!`, damage);
 
                 if (newHealth === 0) {
@@ -501,7 +516,7 @@ export function CanvasBattleTemplate({
                 setTimeout(checkGameEnd, 100);
             }
         }
-    }, [currentPhase, selectedUnit, attackTargets, units, addLog, showDamage, checkGameEnd]);
+    }, [currentPhase, selectedUnit, attackTargets, units, addLog, showDamage, checkGameEnd, triggerCombatEffect]);
 
     // Handle tile click
     const handleTileClick = useCallback((x: number, y: number) => {
@@ -528,10 +543,24 @@ export function CanvasBattleTemplate({
         addLog('phase', 'Turn ended');
     }, [selectedUnit, addLog]);
 
+    // Feature 4: Trigger combat screen shake + red flash (must be before handleUnitClick)
+    const triggerCombatEffect = useCallback(() => {
+        setIsShaking(true);
+        setShowDamageFlash(true);
+        setTimeout(() => setIsShaking(false), 300);
+        setTimeout(() => setShowDamageFlash(false), 200);
+    }, []);
+
     // Cancel selection
     const handleCancel = useCallback(() => {
         setSelectedUnitId(null);
         setCurrentPhase('observation');
+    }, []);
+
+    // Feature 1: Mouse move handler for cursor-following tooltip
+    const handleMouseMoveForTooltip = useCallback((e: React.MouseEvent) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        setMousePosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
     }, []);
 
     // Phase display text
@@ -544,8 +573,51 @@ export function CanvasBattleTemplate({
         game_over: gameResult === 'victory' ? 'Victory!' : 'Defeat',
     };
 
+    // Feature 3: Detect phase changes and trigger announcement banner
+    useEffect(() => {
+        if (currentPhase !== prevPhaseRef.current) {
+            const text = phaseText[currentPhase];
+            setPhaseAnnouncement(text);
+            prevPhaseRef.current = currentPhase;
+
+            // Auto-hide after 2 seconds
+            const timer = setTimeout(() => setPhaseAnnouncement(null), 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [currentPhase]);
+
+    // Feature 6: Turn transition banner
+    useEffect(() => {
+        if (currentTurn > 1) {
+            setTurnBanner(`Turn ${currentTurn}`);
+            const timer = setTimeout(() => setTurnBanner(null), 1500);
+            return () => clearTimeout(timer);
+        }
+    }, [currentTurn]);
+
+    // Feature 4: Shake animation style
+    const shakeStyle: React.CSSProperties = isShaking ? {
+        animation: 'battle-shake 0.3s ease-in-out',
+    } : {};
+
     return (
-        <VStack gap="md" className={cn('p-4 bg-gray-900 rounded-xl min-h-[600px]', className)}>
+        <VStack gap="md" className={cn('p-4 bg-gray-900 rounded-xl min-h-[600px] relative', className)}>
+            {/* Shake animation keyframes */}
+            <style>{`
+                @keyframes battle-shake {
+                    0%, 100% { transform: translate(0, 0); }
+                    10% { transform: translate(-3px, -2px); }
+                    20% { transform: translate(3px, 1px); }
+                    30% { transform: translate(-2px, 3px); }
+                    40% { transform: translate(2px, -1px); }
+                    50% { transform: translate(-3px, 2px); }
+                    60% { transform: translate(3px, -2px); }
+                    70% { transform: translate(-1px, 3px); }
+                    80% { transform: translate(2px, -3px); }
+                    90% { transform: translate(-2px, 1px); }
+                }
+            `}</style>
+
             {/* Header */}
             <HStack justify="between" align="center" className="w-full px-2">
                 <VStack gap="xs">
@@ -601,7 +673,40 @@ export function CanvasBattleTemplate({
 
             {/* Main Content: Canvas + Tooltip */}
             <HStack gap="lg" align="start" flex className="w-full">
-                <VStack gap="sm" flex className="relative">
+                <VStack
+                    gap="sm"
+                    flex
+                    className="relative"
+                    style={shakeStyle}
+                    onMouseMove={handleMouseMoveForTooltip}
+                >
+                    {/* Feature 3: Phase Announcement Banner */}
+                    {phaseAnnouncement && (
+                        <Box className="absolute inset-x-0 top-8 z-40 flex justify-center pointer-events-none animate-in slide-in-from-top fade-in duration-300">
+                            <Box className="bg-gradient-to-r from-cyan-600/90 via-blue-600/90 to-cyan-600/90 text-white px-8 py-3 rounded-lg shadow-2xl border border-cyan-400/30 backdrop-blur-sm">
+                                <Typography variant="h6" className="text-center font-bold text-white tracking-wider uppercase">
+                                    {phaseAnnouncement}
+                                </Typography>
+                            </Box>
+                        </Box>
+                    )}
+
+                    {/* Feature 4: Red damage flash overlay */}
+                    {showDamageFlash && (
+                        <Box className="absolute inset-0 bg-red-500/20 z-20 pointer-events-none rounded-lg animate-out fade-out duration-200" />
+                    )}
+
+                    {/* Feature 6: Turn Transition Banner */}
+                    {turnBanner && (
+                        <Box className="absolute inset-0 z-40 flex items-center justify-center pointer-events-none animate-in fade-in zoom-in-95 duration-300">
+                            <Box className="bg-black/60 backdrop-blur-sm px-12 py-6 rounded-2xl border border-gray-500/30">
+                                <Typography variant="h3" className="text-white font-black tracking-widest text-center">
+                                    {turnBanner}
+                                </Typography>
+                            </Box>
+                        </Box>
+                    )}
+
                     {/* Action Hint Banners */}
                     {currentPhase === 'action' && attackTargets.length > 0 && (
                         <HStack justify="center" className="absolute -top-1 left-0 right-0 z-30 pointer-events-none">
@@ -654,19 +759,14 @@ export function CanvasBattleTemplate({
                         />
                     ))}
 
-                    {/* Unit Hover Tooltip with TraitStateViewer */}
+                    {/* Unit Hover Tooltip with TraitStateViewer - follows cursor */}
                     {hoveredUnit && hoveredUnit.traits[0] && hoveredTile && (
                         <Box
                             className="absolute z-50 pointer-events-none animate-in fade-in duration-150"
                             style={{
-                                left: (() => {
-                                    const pos = isoToScreen(hoveredTile.x, hoveredTile.y, scale, baseOffsetX);
-                                    return pos.x + TILE_WIDTH * scale / 2 + 20;
-                                })(),
-                                top: (() => {
-                                    const pos = isoToScreen(hoveredTile.x, hoveredTile.y, scale, baseOffsetX);
-                                    return pos.y + FLOOR_HEIGHT * scale / 2 - 40;
-                                })(),
+                                left: Math.min(mousePosition.x + 20, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 300),
+                                top: Math.max(mousePosition.y - 20, 0),
+                                maxWidth: 280,
                             }}
                         >
                             <Card variant="default" className={cn(
@@ -684,6 +784,17 @@ export function CanvasBattleTemplate({
                                         <Badge variant="neutral" size="sm">{hoveredUnit.unitType}</Badge>
                                     )}
                                 </HStack>
+
+                                {/* Feature 2: Unit Portrait */}
+                                {(hoveredUnit.sprite || hoveredUnit.unitType) && (
+                                    <Box className="flex justify-center mb-2">
+                                        <img
+                                            src={hoveredUnit.sprite || getRobotUnitSpriteUrl(assets, hoveredUnit.unitType as RobotUnitType)}
+                                            alt={hoveredUnit.name}
+                                            className="w-16 h-16 object-contain"
+                                        />
+                                    </Box>
+                                )}
 
                                 {/* Stats Row */}
                                 <HStack gap="md" className="text-xs mb-3 py-2 px-2 bg-gray-800 rounded">
@@ -748,6 +859,75 @@ export function CanvasBattleTemplate({
                     <Typography variant="caption" className="text-gray-400">Attack</Typography>
                 </HStack>
             </HStack>
+
+            {/* Feature 5: Victory/Defeat Screen Overlay */}
+            {gameResult && (
+                <Box className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-500 rounded-xl">
+                    <VStack gap="lg" align="center" className="p-8">
+                        {/* Result Title */}
+                        <Typography
+                            variant="h2"
+                            className={cn(
+                                "font-black tracking-widest uppercase",
+                                gameResult === 'victory' ? 'text-yellow-400' : 'text-red-500'
+                            )}
+                        >
+                            {gameResult === 'victory' ? 'Victory!' : 'Defeat'}
+                        </Typography>
+
+                        {/* Decorative line */}
+                        <Box className={cn(
+                            "w-48 h-1 rounded-full",
+                            gameResult === 'victory' ? 'bg-gradient-to-r from-transparent via-yellow-400 to-transparent' : 'bg-gradient-to-r from-transparent via-red-500 to-transparent'
+                        )} />
+
+                        {/* Battle Stats */}
+                        <Card variant="default" className="bg-gray-800/90 border border-gray-600 p-6 min-w-[300px]">
+                            <VStack gap="md">
+                                <Typography variant="h6" className="text-gray-300 text-center font-semibold">Battle Summary</Typography>
+                                <HStack justify="between" className="w-full">
+                                    <Typography variant="body2" className="text-gray-400">Turns Played</Typography>
+                                    <Typography variant="body2" className="text-white font-bold">{currentTurn}</Typography>
+                                </HStack>
+                                <HStack justify="between" className="w-full">
+                                    <Typography variant="body2" className="text-gray-400">Units Remaining</Typography>
+                                    <Typography variant="body2" className="text-blue-400 font-bold">{playerUnits.length}</Typography>
+                                </HStack>
+                                <HStack justify="between" className="w-full">
+                                    <Typography variant="body2" className="text-gray-400">Enemies Defeated</Typography>
+                                    <Typography variant="body2" className="text-red-400 font-bold">
+                                        {initialUnits.filter(u => u.team === 'enemy').length - enemyUnits.length}
+                                    </Typography>
+                                </HStack>
+                                <HStack justify="between" className="w-full">
+                                    <Typography variant="body2" className="text-gray-400">Combat Events</Typography>
+                                    <Typography variant="body2" className="text-white font-bold">{combatLog.length}</Typography>
+                                </HStack>
+                            </VStack>
+                        </Card>
+
+                        {/* Action Buttons */}
+                        <HStack gap="md">
+                            <Button
+                                variant="primary"
+                                size="lg"
+                                onClick={() => {
+                                    // Reset game
+                                    setUnits(initialUnits);
+                                    setSelectedUnitId(null);
+                                    setCurrentPhase('observation');
+                                    setCurrentTurn(1);
+                                    setCombatLog([]);
+                                    setGameResult(null);
+                                }}
+                                className="text-white px-8"
+                            >
+                                Play Again
+                            </Button>
+                        </HStack>
+                    </VStack>
+                </Box>
+            )}
         </VStack>
     );
 }
