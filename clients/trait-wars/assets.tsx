@@ -188,6 +188,9 @@ export interface TraitWarsAssetManifest {
         worldMap?: string;
         battle?: string;
     };
+
+    /** Terrain variant arrays for visual variety (multiple sprites per terrain type) */
+    terrainVariants?: Partial<Record<TerrainType, string[]>>;
 }
 
 // ============================================================================
@@ -250,6 +253,24 @@ export function getUnitSpriteUrl(manifest: TraitWarsAssetManifest, type: UnitTyp
 export function getTerrainSpriteUrl(manifest: TraitWarsAssetManifest, type: TerrainType): string | undefined {
     const path = manifest.terrain[type];
     return path ? `${manifest.baseUrl}/${path}` : undefined;
+}
+
+/**
+ * Get full URL for a terrain sprite with position-based variety.
+ * Falls back to the single terrain sprite if no variants are defined.
+ */
+export function getTerrainVariantUrl(
+    manifest: TraitWarsAssetManifest,
+    type: TerrainType,
+    x: number,
+    y: number,
+): string | undefined {
+    const variants = manifest.terrainVariants?.[type];
+    if (variants && variants.length > 0) {
+        const index = Math.abs(x * 7 + y * 13) % variants.length;
+        return `${manifest.baseUrl}/${variants[index]}`;
+    }
+    return getTerrainSpriteUrl(manifest, type);
 }
 
 /**
@@ -502,5 +523,39 @@ export const DEFAULT_ASSET_MANIFEST: TraitWarsAssetManifest = {
     backgrounds: {
         worldMap: 'world/dark_clouds_from_above.png',
         battle: 'world/starfield.png',
+    },
+    // Terrain variants for visual variety (deterministic per-tile selection)
+    terrainVariants: {
+        plains: [
+            'isometric-dungeon/Isometric/dirt_E.png',
+            'isometric-dungeon/Isometric/dirtTiles_E.png',
+        ],
+        grass: [
+            'isometric-dungeon/Isometric/dirt_E.png',
+            'isometric-dungeon/Isometric/dirtTiles_E.png',
+        ],
+        dirt: [
+            'isometric-dungeon/Isometric/dirtTiles_E.png',
+            'isometric-dungeon/Isometric/dirt_E.png',
+        ],
+        stone: [
+            'isometric-dungeon/Isometric/stoneInset_E.png',
+            'isometric-dungeon/Isometric/stone_E.png',
+            'isometric-dungeon/Isometric/stoneTile_E.png',
+            'isometric-dungeon/Isometric/stoneMissingTiles_E.png',
+        ],
+        forest: [
+            'isometric-dungeon/Isometric/planks_E.png',
+            'isometric-dungeon/Isometric/planksBroken_E.png',
+        ],
+        castle: [
+            'isometric-dungeon/Isometric/stoneTile_E.png',
+            'isometric-dungeon/Isometric/stoneInset_E.png',
+            'isometric-dungeon/Isometric/stone_E.png',
+        ],
+        ice: [
+            'isometric-dungeon/Isometric/stoneUneven_E.png',
+            'isometric-dungeon/Isometric/stoneMissingTiles_E.png',
+        ],
     },
 };

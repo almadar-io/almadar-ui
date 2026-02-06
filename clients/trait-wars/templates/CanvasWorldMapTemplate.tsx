@@ -32,7 +32,7 @@ import {
     useAssetsOptional,
     DEFAULT_ASSET_MANIFEST,
     getHeroPortraitUrl,
-    getTerrainSpriteUrl,
+    getTerrainVariantUrl,
     getHeroSpriteUrl,
     getWorldMapFeatureUrl,
     getIsometricCastleUrl,
@@ -115,7 +115,7 @@ export function CanvasWorldMapTemplate({
             x: hex.x,
             y: hex.y,
             terrain: hex.terrain,
-            terrainSprite: getTerrainSpriteUrl(assets, hex.terrain as TerrainType),
+            terrainSprite: getTerrainVariantUrl(assets, hex.terrain as TerrainType, hex.x, hex.y),
         }));
     }, [worldMap.hexes, assets]);
 
