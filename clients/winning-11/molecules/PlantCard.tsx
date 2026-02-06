@@ -368,7 +368,7 @@ export const PlantCard: React.FC<PlantCardProps> = ({
             </Typography>
             {missedOutreachCount > 0 && (
               <CareIndicator
-                type="communication"
+                careType="communication"
                 urgency={missedOutreachCount > 2 ? "high" : "medium"}
                 tooltip={`${missedOutreachCount} missed outreach${missedOutreachCount > 1 ? "es" : ""}`}
                 size="sm"
@@ -376,7 +376,7 @@ export const PlantCard: React.FC<PlantCardProps> = ({
             )}
             {isOutreachOverdue(nextOutreachDue) && (
               <CareIndicator
-                type="feedback"
+                careType="feedback"
                 urgency="medium"
                 tooltip="Outreach overdue"
                 size="sm"

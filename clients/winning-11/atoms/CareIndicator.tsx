@@ -14,7 +14,7 @@ export type UrgencyLevel = "low" | "medium" | "high";
 
 export interface CareIndicatorProps {
   /** Care type */
-  type: CareType;
+  careType: CareType;
   /** Urgency level */
   urgency: UrgencyLevel;
   /** Custom tooltip text */
@@ -76,13 +76,13 @@ const sizeConfig = {
 };
 
 export const CareIndicator: React.FC<CareIndicatorProps> = ({
-  type,
+  careType,
   urgency,
   tooltip,
   size = "md",
   className,
 }) => {
-  const typeConf = typeConfig[type];
+  const typeConf = typeConfig[careType];
   const urgencyConf = urgencyConfig[urgency];
   const sizes = sizeConfig[size];
   const Icon = typeConf.icon;

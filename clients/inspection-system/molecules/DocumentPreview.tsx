@@ -41,7 +41,7 @@ export interface DocumentPreviewProps {
   /** Document subtitle */
   subtitle?: string;
   /** Document type */
-  type?: string;
+  documentType?: string;
   /** Read-only mode */
   isReadOnly?: boolean;
   /** Preview URL */
@@ -80,7 +80,7 @@ const statusConfig: Record<DocumentStatus, { color: string; label: string }> = {
 export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
   id,
   title,
-  type = "PDF",
+  documentType = "PDF",
   previewUrl,
   downloadUrl,
   status = "draft",
@@ -99,18 +99,18 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
 
   const handleDownload = useCallback(() => {
     onDownload?.();
-    eventBus.emit("UI:DOWNLOAD", { documentId: id, format: type });
+    eventBus.emit("UI:DOWNLOAD", { documentId: id, format: documentType });
 
     // If download URL provided, trigger download
     if (downloadUrl) {
       const link = document.createElement("a");
       link.href = downloadUrl;
-      link.download = `${title}.${type.toLowerCase()}`;
+      link.download = `${title}.${documentType.toLowerCase()}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     }
-  }, [id, title, type, downloadUrl, onDownload, eventBus]);
+  }, [id, title, documentType, downloadUrl, onDownload, eventBus]);
 
   const handlePrint = useCallback(() => {
     onPrint?.();
@@ -152,7 +152,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
                   {title}
                 </Typography>
                 <HStack gap="sm" wrap>
-                  <Badge variant="default">{type}</Badge>
+                  <Badge variant="default">{documentType}</Badge>
                   <Badge variant={statusStyle.color as any}>
                     {statusStyle.label}
                   </Badge>

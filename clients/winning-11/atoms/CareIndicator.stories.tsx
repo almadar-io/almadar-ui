@@ -9,7 +9,7 @@ const meta: Meta<typeof CareIndicator> = {
   },
   tags: ['autodocs'],
   argTypes: {
-    type: {
+    careType: {
       control: 'select',
       options: ['communication', 'payment', 'delivery', 'feedback'],
     },
@@ -29,42 +29,42 @@ type Story = StoryObj<typeof meta>;
 
 export const Communication: Story = {
   args: {
-    type: 'communication',
+    careType: 'communication',
     urgency: 'medium',
   },
 };
 
 export const Payment: Story = {
   args: {
-    type: 'payment',
+    careType: 'payment',
     urgency: 'high',
   },
 };
 
 export const Delivery: Story = {
   args: {
-    type: 'delivery',
+    careType: 'delivery',
     urgency: 'low',
   },
 };
 
 export const Feedback: Story = {
   args: {
-    type: 'feedback',
+    careType: 'feedback',
     urgency: 'low',
   },
 };
 
 export const HighUrgency: Story = {
   args: {
-    type: 'payment',
+    careType: 'payment',
     urgency: 'high',
   },
 };
 
 export const CustomTooltip: Story = {
   args: {
-    type: 'communication',
+    careType: 'communication',
     urgency: 'medium',
     tooltip: 'Last contacted 2 weeks ago',
   },
@@ -72,7 +72,7 @@ export const CustomTooltip: Story = {
 
 export const Small: Story = {
   args: {
-    type: 'communication',
+    careType: 'communication',
     urgency: 'medium',
     size: 'sm',
   },
@@ -80,7 +80,7 @@ export const Small: Story = {
 
 export const Large: Story = {
   args: {
-    type: 'payment',
+    careType: 'payment',
     urgency: 'high',
     size: 'lg',
   },
@@ -89,10 +89,10 @@ export const Large: Story = {
 export const AllTypes: Story = {
   render: () => (
     <div className="flex gap-4">
-      <CareIndicator type="communication" urgency="low" />
-      <CareIndicator type="payment" urgency="medium" />
-      <CareIndicator type="delivery" urgency="high" />
-      <CareIndicator type="feedback" urgency="low" />
+      <CareIndicator careType="communication" urgency="low" />
+      <CareIndicator careType="payment" urgency="medium" />
+      <CareIndicator careType="delivery" urgency="high" />
+      <CareIndicator careType="feedback" urgency="low" />
     </div>
   ),
 };
@@ -102,24 +102,24 @@ export const AllUrgencies: Story = {
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-4">
         <span className="w-20 text-sm">Low:</span>
-        <CareIndicator type="communication" urgency="low" />
-        <CareIndicator type="payment" urgency="low" />
-        <CareIndicator type="delivery" urgency="low" />
-        <CareIndicator type="feedback" urgency="low" />
+        <CareIndicator careType="communication" urgency="low" />
+        <CareIndicator careType="payment" urgency="low" />
+        <CareIndicator careType="delivery" urgency="low" />
+        <CareIndicator careType="feedback" urgency="low" />
       </div>
       <div className="flex items-center gap-4">
         <span className="w-20 text-sm">Medium:</span>
-        <CareIndicator type="communication" urgency="medium" />
-        <CareIndicator type="payment" urgency="medium" />
-        <CareIndicator type="delivery" urgency="medium" />
-        <CareIndicator type="feedback" urgency="medium" />
+        <CareIndicator careType="communication" urgency="medium" />
+        <CareIndicator careType="payment" urgency="medium" />
+        <CareIndicator careType="delivery" urgency="medium" />
+        <CareIndicator careType="feedback" urgency="medium" />
       </div>
       <div className="flex items-center gap-4">
         <span className="w-20 text-sm">High:</span>
-        <CareIndicator type="communication" urgency="high" />
-        <CareIndicator type="payment" urgency="high" />
-        <CareIndicator type="delivery" urgency="high" />
-        <CareIndicator type="feedback" urgency="high" />
+        <CareIndicator careType="communication" urgency="high" />
+        <CareIndicator careType="payment" urgency="high" />
+        <CareIndicator careType="delivery" urgency="high" />
+        <CareIndicator careType="feedback" urgency="high" />
       </div>
     </div>
   ),
