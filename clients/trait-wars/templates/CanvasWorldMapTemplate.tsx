@@ -293,6 +293,7 @@ export function CanvasWorldMapTemplate({
                             onTileLeave={() => setHoveredTile(null)}
                             scale={scale}
                             assetManifest={assets}
+                            backgroundImage={assets.backgrounds?.worldMap ? `${assets.baseUrl}/${assets.backgrounds.worldMap}` : undefined}
                         />
 
                         {/* Hover Tooltip (positioned over canvas) */}

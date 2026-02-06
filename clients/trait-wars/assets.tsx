@@ -182,6 +182,12 @@ export interface TraitWarsAssetManifest {
 
     /** Robot unit portrait paths (for recruitment panel) */
     unitPortraits?: Partial<Record<RobotUnitType, string>>;
+
+    /** Background images for canvas templates */
+    backgrounds?: {
+        worldMap?: string;
+        battle?: string;
+    };
 }
 
 // ============================================================================
@@ -491,5 +497,10 @@ export const DEFAULT_ASSET_MANIFEST: TraitWarsAssetManifest = {
         archivist: 'unit-portraits/archivist.png',
         conductor: 'unit-portraits/conductor.png',
         prime: 'unit-portraits/prime.png',
+    },
+    // Background images for canvas templates
+    backgrounds: {
+        worldMap: 'world/capital.png',
+        battle: 'world/streets.png',
     },
 };

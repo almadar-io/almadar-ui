@@ -700,6 +700,7 @@ export function CanvasBattleTemplate({
                         onTileLeave={() => setHoveredTile(null)}
                         scale={scale}
                         assetManifest={assets}
+                        backgroundImage={assets.backgrounds?.battle ? `${assets.baseUrl}/${assets.backgrounds.battle}` : undefined}
                     />
 
                     {/* Damage Popups (positioned over canvas) */}

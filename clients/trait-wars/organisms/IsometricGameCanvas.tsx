@@ -126,6 +126,8 @@ export interface IsometricGameCanvasProps {
     getFeatureSprite?: (featureType: string) => string | undefined;
     /** Asset manifest for automatic sprite resolution (used when getTerrainSprite/getFeatureSprite not provided) */
     assetManifest?: TraitWarsAssetManifest;
+    /** Background image URL tiled behind the isometric grid (moves with camera) */
+    backgroundImage?: string;
     /** Additional CSS classes */
     className?: string;
 }
@@ -279,6 +281,7 @@ export function IsometricGameCanvas({
     getTerrainSprite,
     getFeatureSprite,
     assetManifest,
+    backgroundImage,
     className
 }: IsometricGameCanvasProps): JSX.Element {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -384,8 +387,10 @@ export function IsometricGameCanvas({
             if (url) urls.push(url);
         });
 
+        if (backgroundImage) urls.push(backgroundImage);
+
         return urls;
-    }, [tiles, units, features, resolveTerrainSprite, resolveFeatureSprite, resolveUnitSprite]);
+    }, [tiles, units, features, backgroundImage, resolveTerrainSprite, resolveFeatureSprite, resolveUnitSprite]);
 
     const { getImage } = useImageCache(spriteUrls);
 
@@ -515,6 +520,24 @@ export function IsometricGameCanvas({
         const visRight = cam.x + viewportSize.width / cam.zoom + cullMargin;
         const visTop = cam.y - cullMargin;
         const visBottom = cam.y + viewportSize.height / cam.zoom + cullMargin;
+
+        // Background image tiled across visible area (moves with camera)
+        if (backgroundImage) {
+            const bgImg = getImage(backgroundImage);
+            if (bgImg) {
+                const bgSize = 512 * scale;
+                const startX = Math.floor(visLeft / bgSize) * bgSize;
+                const startY = Math.floor(visTop / bgSize) * bgSize;
+                ctx.save();
+                ctx.globalAlpha = 0.4;
+                for (let bx = startX; bx < visRight; bx += bgSize) {
+                    for (let by = startY; by < visBottom; by += bgSize) {
+                        ctx.drawImage(bgImg, bx, by, bgSize, bgSize);
+                    }
+                }
+                ctx.restore();
+            }
+        }
 
         // Render tiles (painter's algorithm order)
         for (const tile of sortedTiles) {
