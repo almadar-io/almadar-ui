@@ -25,3 +25,7 @@ export { CastleTemplate, type CastleTemplateProps } from './CastleTemplate';
 // HoMM3-Style Strategic templates (Phase 9.5)
 export { HoMM3WorldMapTemplate, type HoMM3WorldMapProps } from './HoMM3WorldMapTemplate';
 export { HoMM3CastleTemplate, type HoMM3CastleTemplateProps } from './HoMM3CastleTemplate';
+
+// Canvas-based Isometric templates (Phase 10)
+export { CanvasWorldMapTemplate, type CanvasWorldMapTemplateProps } from './CanvasWorldMapTemplate';
+export { CanvasBattleTemplate, type CanvasBattleTemplateProps, type BattleUnit, type BattlePhase, type BattleTile } from './CanvasBattleTemplate';

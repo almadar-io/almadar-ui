@@ -8,6 +8,14 @@
 import * as React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Box, cn } from '@almadar/ui';
+import type { TraitWarsAssetManifest } from '../assets';
+import {
+    getTerrainSpriteUrl,
+    getHeroSpriteUrl,
+    getRobotUnitSpriteUrl,
+    getWorldMapFeatureUrl,
+} from '../assets';
+import type { RobotUnitType, HeroType, WorldMapFeatureType, TerrainType } from '../assets';
 
 // =============================================================================
 // Constants - Isometric Tile Dimensions (Kenney Isometric Miniature Dungeon)
@@ -43,11 +51,22 @@ export interface IsometricTile {
 export interface IsometricUnit {
     id: string;
     position: { x: number; y: number };
+    /** Direct sprite URL override */
     sprite?: string;
+    /** Robot unit type for manifest lookup (e.g., 'worker', 'guardian') */
+    unitType?: string;
+    /** Hero ID for manifest lookup (e.g., 'valence', 'zahra') */
+    heroId?: string;
     name?: string;
     team?: 'player' | 'enemy' | 'neutral';
     health?: number;
     maxHealth?: number;
+    /** Trait data for hover tooltips */
+    traits?: {
+        name: string;
+        currentState: string;
+        states: string[];
+    }[];
 }
 
 export interface IsometricFeature {
@@ -88,6 +107,8 @@ export interface IsometricGameCanvasProps {
     getTerrainSprite?: (terrain: string) => string | undefined;
     /** Asset loading function for features */
     getFeatureSprite?: (featureType: string) => string | undefined;
+    /** Asset manifest for automatic sprite resolution (used when getTerrainSprite/getFeatureSprite not provided) */
+    assetManifest?: TraitWarsAssetManifest;
     /** Additional CSS classes */
     className?: string;
 }
@@ -240,6 +261,7 @@ export function IsometricGameCanvas({
     debug = false,
     getTerrainSprite,
     getFeatureSprite,
+    assetManifest,
     className
 }: IsometricGameCanvasProps): JSX.Element {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -260,29 +282,52 @@ export function IsometricGameCanvas({
     const gridWidth = (maxX + maxY + 2) * (scaledTileWidth / 2) + scaledTileWidth;
     const gridHeight = (maxX + maxY + 1) * (scaledFloorHeight / 2) + scaledTileHeight;
 
+    // Manifest-based sprite resolvers (used when explicit callbacks are not provided)
+    const resolveTerrainSprite = React.useCallback((terrain: string): string | undefined => {
+        if (getTerrainSprite) return getTerrainSprite(terrain);
+        if (assetManifest) return getTerrainSpriteUrl(assetManifest, terrain as TerrainType);
+        return undefined;
+    }, [getTerrainSprite, assetManifest]);
+
+    const resolveFeatureSprite = React.useCallback((featureType: string): string | undefined => {
+        if (getFeatureSprite) return getFeatureSprite(featureType);
+        if (assetManifest) return getWorldMapFeatureUrl(assetManifest, featureType as WorldMapFeatureType);
+        return undefined;
+    }, [getFeatureSprite, assetManifest]);
+
+    const resolveUnitSprite = React.useCallback((unit: IsometricUnit): string | undefined => {
+        if (unit.sprite) return unit.sprite;
+        if (assetManifest) {
+            if (unit.heroId) return getHeroSpriteUrl(assetManifest, unit.heroId as string);
+            if (unit.unitType) return getRobotUnitSpriteUrl(assetManifest, unit.unitType as RobotUnitType);
+        }
+        return undefined;
+    }, [assetManifest]);
+
     // Collect all sprite URLs for preloading
     const spriteUrls = React.useMemo(() => {
         const urls: string[] = [];
 
         // Terrain sprites
         tiles.forEach(tile => {
-            const url = tile.terrainSprite || getTerrainSprite?.(tile.terrain);
+            const url = tile.terrainSprite || resolveTerrainSprite(tile.terrain);
             if (url) urls.push(url);
         });
 
         // Unit sprites
         units.forEach(unit => {
-            if (unit.sprite) urls.push(unit.sprite);
+            const url = resolveUnitSprite(unit);
+            if (url) urls.push(url);
         });
 
         // Feature sprites
         features.forEach(feature => {
-            const url = feature.sprite || getFeatureSprite?.(feature.type);
+            const url = feature.sprite || resolveFeatureSprite(feature.type);
             if (url) urls.push(url);
         });
 
         return urls;
-    }, [tiles, units, features, getTerrainSprite, getFeatureSprite]);
+    }, [tiles, units, features, resolveTerrainSprite, resolveFeatureSprite, resolveUnitSprite]);
 
     const { getImage } = useImageCache(spriteUrls);
 
@@ -325,7 +370,7 @@ export function IsometricGameCanvas({
             const key = `${tile.x},${tile.y}`;
 
             // Get sprite image or use fallback color
-            const spriteUrl = tile.terrainSprite || getTerrainSprite?.(tile.terrain);
+            const spriteUrl = tile.terrainSprite || resolveTerrainSprite(tile.terrain);
             const img = spriteUrl ? getImage(spriteUrl) : null;
 
             if (img) {
@@ -430,7 +475,7 @@ export function IsometricGameCanvas({
 
         for (const feature of sortedFeatures) {
             const pos = isoToScreen(feature.x, feature.y, scale, baseOffsetX);
-            const spriteUrl = feature.sprite || getFeatureSprite?.(feature.type);
+            const spriteUrl = feature.sprite || resolveFeatureSprite(feature.type);
             const img = spriteUrl ? getImage(spriteUrl) : null;
 
             const featureSize = 48 * scale * 2.5;
@@ -488,7 +533,8 @@ export function IsometricGameCanvas({
             }
 
             // Draw unit sprite or fallback
-            const img = unit.sprite ? getImage(unit.sprite) : null;
+            const unitSpriteUrl = resolveUnitSprite(unit);
+            const img = unitSpriteUrl ? getImage(unitSpriteUrl) : null;
             if (img) {
                 ctx.drawImage(
                     img,
@@ -560,7 +606,7 @@ export function IsometricGameCanvas({
         }
     }, [
         tiles, units, features, selectedUnitId, validMoves, attackTargets, hoveredTile,
-        scale, debug, getTerrainSprite, getFeatureSprite, getImage, sortedTiles,
+        scale, debug, resolveTerrainSprite, resolveFeatureSprite, resolveUnitSprite, getImage, sortedTiles,
         gridWidth, gridHeight, baseOffsetX, scaledTileWidth, scaledTileHeight, scaledFloorHeight,
         validMoveSet, attackTargetSet
     ]);
