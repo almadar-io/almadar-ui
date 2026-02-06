@@ -46,6 +46,12 @@ export interface HexGameBoardProps {
     showCoordinates?: boolean;
     /** Additional CSS classes */
     className?: string;
+    /** Render custom overlays with access to tile positioning */
+    renderOverlay?: (helpers: {
+        getTilePosition: (x: number, y: number) => { x: number; y: number };
+        tileWidth: number;
+        floorHeight: number;
+    }) => React.ReactNode;
 }
 
 export function HexGameBoard({
@@ -61,6 +67,7 @@ export function HexGameBoard({
     scale = 0.5,
     showCoordinates = false,
     className,
+    renderOverlay,
 }: HexGameBoardProps): JSX.Element {
     const [hoveredPos, setHoveredPos] = useState<{ x: number; y: number } | null>(null);
 
@@ -204,6 +211,13 @@ export function HexGameBoard({
                             />
                         </Box>
                     );
+                })}
+
+                {/* Layer 3: Custom overlays (rendered last, on top of everything) */}
+                {renderOverlay?.({
+                    getTilePosition,
+                    tileWidth: TILE_WIDTH,
+                    floorHeight: FLOOR_HEIGHT,
                 })}
             </Box>
         </Box>

@@ -261,138 +261,107 @@ export function HoMM3WorldMapTemplate({
                             onTileHover={(x, y) => setHoveredHex({ x, y })}
                             onTileLeave={() => setHoveredHex(null)}
                             scale={0.4}
-                        />
+                            renderOverlay={({ getTilePosition, tileWidth, floorHeight }) => (
+                                <>
+                                    {/* Feature icons overlay */}
+                                    {worldMap.hexes
+                                        .filter((hex) => hex.feature && hex.feature !== 'none' && hex.feature !== 'hero')
+                                        .map((hex) => {
+                                            const pos = getTilePosition(hex.x, hex.y);
+                                            const centerX = pos.x + tileWidth / 2;
+                                            const centerY = pos.y + floorHeight / 2;
+                                            const featureAsset = getWorldMapFeatureUrl(assets, hex.feature as WorldMapFeatureType);
+                                            const featureSize = 48;
 
-                        {/* Feature icons overlay */}
-                        <Box className="absolute inset-0 pointer-events-none">
-                            {worldMap.hexes
-                                .filter((hex) => hex.feature && hex.feature !== 'none' && hex.feature !== 'hero')
-                                .map((hex) => {
-                                    // Match HexGameBoard positioning exactly
-                                    const scale = 0.4;
-                                    const TILE_WIDTH = 256 * scale;  // 102.4px
-                                    const FLOOR_HEIGHT = 128 * scale; // 51.2px
-                                    const HORIZONTAL_OFFSET = TILE_WIDTH / 2;  // 51.2px
-                                    const VERTICAL_OFFSET = FLOOR_HEIGHT / 2;   // 25.6px
-                                    const BOARD_PADDING = 16; // HexGameBoard has p-4 = 16px padding
-                                    const maxY = Math.max(...worldMap.hexes.map((h) => h.y), 0);
-                                    const baseOffsetX = (maxY + 1) * HORIZONTAL_OFFSET;
-
-                                    // Exact tile position (matches HexGameBoard.getTilePosition)
-                                    const tileX = (hex.x - hex.y) * HORIZONTAL_OFFSET + baseOffsetX;
-                                    const tileY = (hex.x + hex.y) * VERTICAL_OFFSET;
-
-                                    // Center feature on tile + board padding offset
-                                    const centerX = tileX + TILE_WIDTH / 2 + BOARD_PADDING;
-                                    const centerY = tileY + FLOOR_HEIGHT / 2 + BOARD_PADDING;
-
-                                    const featureAsset = getWorldMapFeatureUrl(assets, hex.feature as WorldMapFeatureType);
-                                    const featureSize = 48; // Feature image size in pixels
-
-                                    return (
-                                        <Box
-                                            key={`feature-${hex.x}-${hex.y}`}
-                                            className="absolute"
-                                            style={{
-                                                left: centerX - featureSize / 2,
-                                                top: centerY - featureSize / 2 - 8 // Slight upward offset for visual centering
-                                            }}
-                                        >
-                                            {featureAsset ? (
-                                                <img
-                                                    src={featureAsset}
-                                                    alt={hex.feature}
-                                                    className="drop-shadow-lg object-contain"
-                                                    style={{ width: featureSize, height: featureSize }}
-                                                    onError={(e) => {
-                                                        (e.target as HTMLImageElement).style.display = 'none';
+                                            return (
+                                                <Box
+                                                    key={`feature-${hex.x}-${hex.y}`}
+                                                    className="absolute pointer-events-none"
+                                                    style={{
+                                                        left: centerX - featureSize / 2,
+                                                        top: centerY - featureSize / 2 - 8
                                                     }}
-                                                />
-                                            ) : (
-                                                <span className="text-2xl">{FEATURE_ICONS[hex.feature!]}</span>
-                                            )}
-                                        </Box>
-                                    );
-                                })}
-                        </Box>
+                                                >
+                                                    {featureAsset ? (
+                                                        <img
+                                                            src={featureAsset}
+                                                            alt={hex.feature}
+                                                            className="drop-shadow-lg object-contain"
+                                                            style={{ width: featureSize, height: featureSize }}
+                                                            onError={(e) => {
+                                                                (e.target as HTMLImageElement).style.display = 'none';
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <span className="text-2xl">{FEATURE_ICONS[hex.feature!]}</span>
+                                                    )}
+                                                </Box>
+                                            );
+                                        })}
 
-                        {/* Hero sprites overlay */}
-                        <Box className="absolute inset-0 pointer-events-none">
-                            {worldMap.heroes.map((hero) => {
-                                // Match HexGameBoard positioning exactly
-                                const scale = 0.4;
-                                const TILE_WIDTH = 256 * scale;  // 102.4px
-                                const FLOOR_HEIGHT = 128 * scale; // 51.2px
-                                const HORIZONTAL_OFFSET = TILE_WIDTH / 2;  // 51.2px
-                                const VERTICAL_OFFSET = FLOOR_HEIGHT / 2;   // 25.6px
-                                const BOARD_PADDING = 16; // HexGameBoard has p-4 = 16px padding
-                                const maxY = Math.max(...worldMap.hexes.map((h) => h.y), 0);
-                                const baseOffsetX = (maxY + 1) * HORIZONTAL_OFFSET;
+                                    {/* Hero sprites overlay */}
+                                    {worldMap.heroes.map((hero) => {
+                                        const pos = getTilePosition(hero.position.x, hero.position.y);
+                                        const centerX = pos.x + tileWidth / 2;
+                                        const centerY = pos.y + floorHeight / 2;
+                                        const heroSpriteUrl = getHeroSpriteUrl(assets, hero.spriteId || hero.id);
+                                        const isSelected = hero.id === selectedHeroId;
+                                        const heroSize = 64;
 
-                                // Exact tile position (matches HexGameBoard.getTilePosition)
-                                const tileX = (hero.position.x - hero.position.y) * HORIZONTAL_OFFSET + baseOffsetX;
-                                const tileY = (hero.position.x + hero.position.y) * VERTICAL_OFFSET;
-
-                                // Center hero on tile + board padding offset
-                                const centerX = tileX + TILE_WIDTH / 2 + BOARD_PADDING;
-                                const centerY = tileY + FLOOR_HEIGHT / 2 + BOARD_PADDING;
-
-                                const heroSpriteUrl = getHeroSpriteUrl(assets, hero.spriteId || hero.id);
-                                const isSelected = hero.id === selectedHeroId;
-                                const heroSize = 64; // Hero sprite display size
-
-                                return (
-                                    <Box
-                                        key={`hero-${hero.id}`}
-                                        className={cn(
-                                            'absolute cursor-pointer pointer-events-auto',
-                                            'transition-all duration-200 hover:scale-110',
-                                            isSelected && 'scale-110 z-20'
-                                        )}
-                                        style={{
-                                            left: centerX - heroSize / 2,
-                                            top: centerY - heroSize / 2 - 16 // Offset upward so hero stands on tile
-                                        }}
-                                        onClick={() => onHeroSelect?.(hero.id)}
-                                    >
-                                        {heroSpriteUrl ? (
-                                            <img
-                                                src={heroSpriteUrl}
-                                                alt={hero.name}
-                                                className={cn(
-                                                    'object-contain drop-shadow-lg',
-                                                    isSelected && 'ring-4 ring-cyan-400 rounded-lg'
-                                                )}
-                                                style={{ width: heroSize, height: heroSize }}
-                                                onError={(e) => {
-                                                    (e.target as HTMLImageElement).style.display = 'none';
-                                                }}
-                                            />
-                                        ) : (
+                                        return (
                                             <Box
+                                                key={`hero-${hero.id}`}
                                                 className={cn(
-                                                    'w-12 h-12 rounded-full flex items-center justify-center text-2xl',
-                                                    hero.owner === 'player' ? 'bg-blue-500 border-2 border-blue-300' : 'bg-red-500 border-2 border-red-300',
-                                                    isSelected && 'ring-4 ring-cyan-400'
+                                                    'absolute cursor-pointer pointer-events-auto',
+                                                    'transition-all duration-200 hover:scale-110',
+                                                    isSelected && 'scale-110 z-20'
                                                 )}
+                                                style={{
+                                                    left: centerX - heroSize / 2,
+                                                    top: centerY - heroSize / 2 - 16
+                                                }}
+                                                onClick={() => onHeroSelect?.(hero.id)}
                                             >
-                                                {hero.owner === 'player' ? '🦸' : '👹'}
+                                                {heroSpriteUrl ? (
+                                                    <img
+                                                        src={heroSpriteUrl}
+                                                        alt={hero.name}
+                                                        className={cn(
+                                                            'object-contain drop-shadow-lg',
+                                                            isSelected && 'ring-4 ring-cyan-400 rounded-lg'
+                                                        )}
+                                                        style={{ width: heroSize, height: heroSize }}
+                                                        onError={(e) => {
+                                                            (e.target as HTMLImageElement).style.display = 'none';
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <Box
+                                                        className={cn(
+                                                            'w-12 h-12 rounded-full flex items-center justify-center text-2xl',
+                                                            hero.owner === 'player' ? 'bg-blue-500 border-2 border-blue-300' : 'bg-red-500 border-2 border-red-300',
+                                                            isSelected && 'ring-4 ring-cyan-400'
+                                                        )}
+                                                    >
+                                                        {hero.owner === 'player' ? '🦸' : '👹'}
+                                                    </Box>
+                                                )}
+                                                {/* Hero name tooltip */}
+                                                <Typography
+                                                    variant="caption"
+                                                    className={cn(
+                                                        'absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded text-xs',
+                                                        hero.owner === 'player' ? 'bg-blue-600 text-white' : 'bg-red-600 text-white'
+                                                    )}
+                                                >
+                                                    {hero.name}
+                                                </Typography>
                                             </Box>
-                                        )}
-                                        {/* Hero name tooltip */}
-                                        <Typography
-                                            variant="caption"
-                                            className={cn(
-                                                'absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap px-2 py-0.5 rounded text-xs',
-                                                hero.owner === 'player' ? 'bg-blue-600 text-white' : 'bg-red-600 text-white'
-                                            )}
-                                        >
-                                            {hero.name}
-                                        </Typography>
-                                    </Box>
-                                );
-                            })}
-                        </Box>
+                                        );
+                                    })}
+                                </>
+                            )}
+                        />
                     </Box>
                 </Box>
 

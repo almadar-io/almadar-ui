@@ -16,3 +16,18 @@ export { BuildingGrid, type BuildingGridProps } from './BuildingGrid';
 export { HexGameTile, type HexGameTileProps, type HexUnit } from './HexGameTile';
 export { HexGameBoard, type HexGameBoardProps, type HexBoardTile } from './HexGameBoard';
 
+// Canvas-based isometric game
+export {
+    IsometricGameCanvas,
+    type IsometricGameCanvasProps,
+    type IsometricTile,
+    type IsometricUnit,
+    type IsometricFeature,
+    isoToScreen,
+    screenToIso,
+    TILE_WIDTH,
+    TILE_HEIGHT,
+    FLOOR_HEIGHT,
+    HORIZONTAL_OFFSET,
+    VERTICAL_OFFSET
+} from './IsometricGameCanvas';
