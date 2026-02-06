@@ -510,7 +510,7 @@ export function IsometricGameCanvas({
         ctx.translate(-cam.x, -cam.y);
 
         // Compute visible region in world space for culling (10.5.22)
-        const cullMargin = scaledTileWidth;
+        const cullMargin = scaledTileWidth * 4;
         const visLeft = cam.x - cullMargin;
         const visRight = cam.x + viewportSize.width / cam.zoom + cullMargin;
         const visTop = cam.y - cullMargin;
