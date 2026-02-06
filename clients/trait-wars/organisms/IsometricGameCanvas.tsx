@@ -645,7 +645,7 @@ export function IsometricGameCanvas({
             const spriteUrl = feature.sprite || resolveFeatureSprite(feature.type);
             const img = spriteUrl ? getImage(spriteUrl) : null;
 
-            const maxFeatureDim = 48 * scale * 2.5;
+            const maxFeatureDim = 72 * scale * 2.5;
             const centerX = pos.x + scaledTileWidth / 2;
             const floorCenterY = pos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight / 2;
 
@@ -690,7 +690,7 @@ export function IsometricGameCanvas({
             }
 
             const isSelected = unit.id === selectedUnitId;
-            const maxUnitDim = 64 * scale * 2.5;
+            const maxUnitDim = 96 * scale * 2.5;
             const centerX = pos.x + scaledTileWidth / 2;
             const floorCenterY = pos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight / 2;
 
