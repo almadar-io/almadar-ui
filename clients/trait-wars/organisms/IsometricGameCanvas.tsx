@@ -46,6 +46,12 @@ export interface IsometricTile {
     terrain: string;
     /** Optional terrain sprite URL override */
     terrainSprite?: string;
+    /** false for obstacles/walls */
+    passable?: boolean;
+    /** default 1, higher for rough terrain */
+    movementCost?: number;
+    /** Tile classification for rendering and pathfinding */
+    tileType?: 'floor' | 'obstacle' | 'wall' | 'passage' | 'elevation';
 }
 
 export interface IsometricUnit {
@@ -266,6 +272,8 @@ export function IsometricGameCanvas({
 }: IsometricGameCanvasProps): JSX.Element {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
+    const animTimeRef = useRef(0);
+    const rafIdRef = useRef<number>(0);
 
     // Calculate grid bounds
     const maxX = Math.max(...tiles.map(t => t.x), 0);
@@ -347,8 +355,8 @@ export function IsometricGameCanvas({
         });
     }, [tiles]);
 
-    // Render the canvas
-    useEffect(() => {
+    // Draw function extracted for RAF loop
+    const draw = useCallback((animTime: number) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
 
@@ -397,10 +405,11 @@ export function IsometricGameCanvas({
                 ctx.stroke();
             }
 
-            // Draw valid move highlight
+            // Draw valid move highlight (pulsing)
             if (validMoveSet.has(key)) {
                 const centerX = pos.x + scaledTileWidth / 2;
                 const centerY = pos.y + scaledFloorHeight / 2 + (scaledTileHeight - scaledFloorHeight);
+                const pulseAlpha = 0.15 + 0.15 * Math.sin(animTime * 0.003);
 
                 ctx.beginPath();
                 ctx.moveTo(centerX, centerY - scaledFloorHeight / 2);
@@ -409,18 +418,19 @@ export function IsometricGameCanvas({
                 ctx.lineTo(centerX - scaledTileWidth / 2, centerY);
                 ctx.closePath();
 
-                ctx.fillStyle = 'rgba(0, 255, 100, 0.3)';
+                ctx.fillStyle = `rgba(0, 255, 100, ${pulseAlpha})`;
                 ctx.fill();
 
-                ctx.strokeStyle = 'rgba(0, 255, 100, 0.8)';
+                ctx.strokeStyle = `rgba(0, 255, 100, ${0.5 + 0.3 * Math.sin(animTime * 0.003)})`;
                 ctx.lineWidth = 2;
                 ctx.stroke();
             }
 
-            // Draw attack target highlight
+            // Draw attack target highlight (pulsing)
             if (attackTargetSet.has(key)) {
                 const centerX = pos.x + scaledTileWidth / 2;
                 const centerY = pos.y + scaledFloorHeight / 2 + (scaledTileHeight - scaledFloorHeight);
+                const pulseAlpha = 0.15 + 0.15 * Math.sin(animTime * 0.003);
 
                 ctx.beginPath();
                 ctx.moveTo(centerX, centerY - scaledFloorHeight / 2);
@@ -429,10 +439,10 @@ export function IsometricGameCanvas({
                 ctx.lineTo(centerX - scaledTileWidth / 2, centerY);
                 ctx.closePath();
 
-                ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+                ctx.fillStyle = `rgba(255, 0, 0, ${pulseAlpha})`;
                 ctx.fill();
 
-                ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+                ctx.strokeStyle = `rgba(255, 0, 0, ${0.5 + 0.3 * Math.sin(animTime * 0.003)})`;
                 ctx.lineWidth = 2;
                 ctx.stroke();
             }
@@ -527,8 +537,9 @@ export function IsometricGameCanvas({
             const drawW = img ? (ar >= 1 ? maxUnitDim : maxUnitDim * ar) : maxUnitDim;
             const drawH = img ? (ar >= 1 ? maxUnitDim / ar : maxUnitDim) : maxUnitDim;
 
-            // Draw selection ring (sized to sprite footprint)
+            // Draw selection ring (pulsing, sized to sprite footprint)
             if (isSelected) {
+                const ringAlpha = 0.6 + 0.3 * Math.sin(animTime * 0.004);
                 ctx.beginPath();
                 ctx.ellipse(
                     centerX,
@@ -537,20 +548,43 @@ export function IsometricGameCanvas({
                     12 * scale,
                     0, 0, Math.PI * 2
                 );
-                ctx.strokeStyle = 'rgba(0, 200, 255, 0.9)';
+                ctx.strokeStyle = `rgba(0, 200, 255, ${ringAlpha})`;
                 ctx.lineWidth = 3;
                 ctx.stroke();
             }
 
-            // Draw unit sprite or fallback
+            // Shadow under unit
+            ctx.save();
+            ctx.globalAlpha = 0.3;
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.ellipse(centerX, floorCenterY + 4 * scale, drawW * 0.4, 8 * scale, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+
+            // Draw unit sprite or fallback (with team color glow)
             if (img) {
-                ctx.drawImage(
-                    img,
-                    centerX - drawW / 2,
-                    floorCenterY - drawH + 8 * scale,
-                    drawW,
-                    drawH
-                );
+                if (unit.team) {
+                    ctx.save();
+                    ctx.shadowColor = unit.team === 'player' ? 'rgba(0, 150, 255, 0.6)' : 'rgba(255, 50, 50, 0.6)';
+                    ctx.shadowBlur = 12 * scale;
+                    ctx.drawImage(
+                        img,
+                        centerX - drawW / 2,
+                        floorCenterY - drawH + 8 * scale,
+                        drawW,
+                        drawH
+                    );
+                    ctx.restore();
+                } else {
+                    ctx.drawImage(
+                        img,
+                        centerX - drawW / 2,
+                        floorCenterY - drawH + 8 * scale,
+                        drawW,
+                        drawH
+                    );
+                }
             } else {
                 // Fallback circle
                 const color = unit.team === 'player' ? '#3b82f6' :
@@ -590,34 +624,82 @@ export function IsometricGameCanvas({
                 ctx.fillText(unit.name, centerX, labelY + 4 * scale);
             }
 
-            // Draw health bar
+            // Draw health bar (improved visuals)
             if (unit.health !== undefined && unit.maxHealth !== undefined) {
                 const barWidth = 40 * scale;
                 const barHeight = 6 * scale;
+                const barX = centerX - barWidth / 2;
                 const barY = floorCenterY - drawH + 4 * scale;
                 const healthRatio = unit.health / unit.maxHealth;
+                const barRadius = barHeight / 2;
 
-                // Background
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-                ctx.fillRect(centerX - barWidth / 2, barY, barWidth, barHeight);
+                // Dark rounded background
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.beginPath();
+                ctx.roundRect(barX, barY, barWidth, barHeight, barRadius);
+                ctx.fill();
 
-                // Health fill
-                ctx.fillStyle = healthRatio > 0.5 ? '#22c55e' :
-                    healthRatio > 0.25 ? '#eab308' : '#ef4444';
-                ctx.fillRect(centerX - barWidth / 2, barY, barWidth * healthRatio, barHeight);
+                // Gradient health fill
+                if (healthRatio > 0) {
+                    const fillWidth = barWidth * healthRatio;
+                    const gradient = ctx.createLinearGradient(barX, barY, barX, barY + barHeight);
+                    if (healthRatio > 0.6) {
+                        gradient.addColorStop(0, '#4ade80');
+                        gradient.addColorStop(1, '#22c55e');
+                    } else if (healthRatio > 0.3) {
+                        gradient.addColorStop(0, '#fde047');
+                        gradient.addColorStop(1, '#eab308');
+                    } else {
+                        gradient.addColorStop(0, '#f87171');
+                        gradient.addColorStop(1, '#ef4444');
+                    }
+                    ctx.fillStyle = gradient;
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.roundRect(barX, barY, fillWidth, barHeight, barRadius);
+                    ctx.clip();
+                    ctx.fillRect(barX, barY, fillWidth, barHeight);
+                    ctx.restore();
+                }
 
-                // Border
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                // 1px white border at 0.3 alpha
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
                 ctx.lineWidth = 1;
-                ctx.strokeRect(centerX - barWidth / 2, barY, barWidth, barHeight);
+                ctx.beginPath();
+                ctx.roundRect(barX, barY, barWidth, barHeight, barRadius);
+                ctx.stroke();
             }
         }
     }, [
-        tiles, units, features, selectedUnitId, validMoves, attackTargets, hoveredTile,
-        scale, debug, resolveTerrainSprite, resolveFeatureSprite, resolveUnitSprite, getImage, sortedTiles,
+        sortedTiles, units, features, selectedUnitId,
+        scale, debug, resolveTerrainSprite, resolveFeatureSprite, resolveUnitSprite, getImage,
         gridWidth, gridHeight, baseOffsetX, scaledTileWidth, scaledTileHeight, scaledFloorHeight,
-        validMoveSet, attackTargetSet
+        validMoveSet, attackTargetSet, hoveredTile
     ]);
+
+    // Animation loop - runs RAF when there are pulsing highlights or selected units
+    useEffect(() => {
+        const hasAnimations = validMoves.length > 0 || attackTargets.length > 0 || selectedUnitId != null;
+
+        // Always draw at least once
+        draw(animTimeRef.current);
+
+        if (!hasAnimations) return;
+
+        let running = true;
+        const animate = (timestamp: number) => {
+            if (!running) return;
+            animTimeRef.current = timestamp;
+            draw(timestamp);
+            rafIdRef.current = requestAnimationFrame(animate);
+        };
+        rafIdRef.current = requestAnimationFrame(animate);
+
+        return () => {
+            running = false;
+            cancelAnimationFrame(rafIdRef.current);
+        };
+    }, [draw, validMoves.length, attackTargets.length, selectedUnitId]);
 
     // Handle mouse events
     const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {

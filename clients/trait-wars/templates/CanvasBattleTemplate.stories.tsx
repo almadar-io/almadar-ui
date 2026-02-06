@@ -268,6 +268,45 @@ export const Skirmish: Story = {
 };
 
 /**
+ * Dungeon theme: stone floors, barrels, crates, pillars
+ */
+export const DungeonBattle: Story = {
+    args: {
+        initialUnits: basicUnits,
+        boardWidth: 8,
+        boardHeight: 6,
+        mapTheme: 'dungeon',
+        scale: 0.4,
+    },
+};
+
+/**
+ * Outdoor theme: dirt and grass terrain with mountain obstacles
+ */
+export const OutdoorBattle: Story = {
+    args: {
+        initialUnits: basicUnits,
+        boardWidth: 8,
+        boardHeight: 6,
+        mapTheme: 'outdoor',
+        scale: 0.4,
+    },
+};
+
+/**
+ * Castle theme: stone tile floors with columns and barrels
+ */
+export const CastleBattle: Story = {
+    args: {
+        initialUnits: basicUnits,
+        boardWidth: 8,
+        boardHeight: 6,
+        mapTheme: 'castle',
+        scale: 0.4,
+    },
+};
+
+/**
  * All tier units showcase
  */
 export const AllTiers: Story = {

@@ -35,6 +35,7 @@ import {
     getTerrainSpriteUrl,
     getHeroSpriteUrl,
     getWorldMapFeatureUrl,
+    getIsometricCastleUrl,
     type TraitWarsAssetManifest,
     type WorldMapFeatureType,
     type TerrainType,
@@ -144,15 +145,30 @@ export function CanvasWorldMapTemplate({
                     traitCache: 'traitCache',
                     salvageYard: 'salvageYard',
                     portal: 'portal',
+                    portalClosed: 'portalClosed',
                     treasure: 'treasure',
+                    treasureOpen: 'treasureOpen',
                     battleMarker: 'battleMarker',
+                    fogOfWar: 'fogOfWar',
+                    powerNode: 'powerNode',
+                    dataVault: 'dataVault',
                 };
-                const assetType = featureTypeMap[hex.feature!];
+
+                // Resolve sprite: castles use isometric castle assets, others use feature map
+                let sprite: string | undefined;
+                if (hex.feature === 'castle') {
+                    const faction = hex.featureData?.owner === 'enemy' ? 'dominion' : 'resonator';
+                    sprite = assets ? getIsometricCastleUrl(assets, faction as any) : undefined;
+                } else {
+                    const assetType = featureTypeMap[hex.feature!];
+                    sprite = assetType ? getWorldMapFeatureUrl(assets, assetType) : undefined;
+                }
+
                 return {
                     x: hex.x,
                     y: hex.y,
                     type: hex.feature!,
-                    sprite: assetType ? getWorldMapFeatureUrl(assets, assetType) : undefined,
+                    sprite,
                 };
             });
     }, [worldMap.hexes, assets]);

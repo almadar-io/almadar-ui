@@ -100,6 +100,8 @@ export interface CanvasBattleTemplateProps {
     boardWidth?: number;
     /** Board height in tiles */
     boardHeight?: number;
+    /** Map visual theme affecting floor and obstacle tiles */
+    mapTheme?: 'dungeon' | 'outdoor' | 'castle';
     /** Canvas render scale */
     scale?: number;
     /** Game end callback */
@@ -190,27 +192,91 @@ function triggerTraitEvent(unit: BattleUnit, event: string): BattleUnit {
 // MAP GENERATION
 // ============================================================================
 
-function generateBattleMap(width: number, height: number): BattleTile[] {
+/** Obstacle feature placed on the battle map */
+interface BattleObstacle {
+    x: number;
+    y: number;
+    type: string;
+    spriteUrl: string;
+}
+
+/** Theme-specific floor and obstacle tile configurations */
+const BATTLE_THEME_CONFIG = {
+    dungeon: {
+        floorTiles: ['stoneInset_E', 'stone_E', 'planks_E', 'dirtTiles_E'],
+        obstacleTypes: ['barrel_E', 'woodenCrate_E', 'stoneColumn_E'],
+        edgeTerrain: 'mountain',
+    },
+    outdoor: {
+        floorTiles: ['dirt_E', 'dirtTiles_E', 'planks_E'],
+        obstacleTypes: ['mountain'],
+        edgeTerrain: 'mountain',
+    },
+    castle: {
+        floorTiles: ['stoneTile_E', 'stoneInset_E'],
+        obstacleTypes: ['stoneColumn_E', 'barrel_E'],
+        edgeTerrain: 'mountain',
+    },
+} as const;
+
+function generateBattleMap(
+    width: number,
+    height: number,
+    theme: 'dungeon' | 'outdoor' | 'castle' = 'dungeon'
+): { tiles: BattleTile[]; obstacles: BattleObstacle[] } {
     const tiles: BattleTile[] = [];
-    const terrains = ['grass', 'dirt', 'stone', 'grass', 'grass'];
+    const obstacles: BattleObstacle[] = [];
+    const config = BATTLE_THEME_CONFIG[theme];
+    const { floorTiles, obstacleTypes, edgeTerrain } = config;
+
+    // Collect interior positions for potential obstacle placement
+    const interiorPositions: Array<{ x: number; y: number }> = [];
 
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
-            let terrain = terrains[Math.floor(Math.random() * terrains.length)];
-
-            // Mountains along edges
+            // Edge tiles use edge terrain (impassable mountain walls)
             if ((x === 0 || x === width - 1) && Math.random() > 0.5) {
-                terrain = 'mountain';
-            }
-            // Forest patches
-            else if (Math.random() > 0.85) {
-                terrain = 'forest';
-            }
+                tiles.push({ x, y, terrain: edgeTerrain });
+            } else {
+                // Pick a random floor tile from the theme
+                const floorTile = floorTiles[Math.floor(Math.random() * floorTiles.length)];
+                tiles.push({ x, y, terrain: floorTile });
 
-            tiles.push({ x, y, terrain });
+                // Track interior (non-edge) positions for obstacle placement
+                if (x > 0 && x < width - 1 && y > 0 && y < height - 1) {
+                    interiorPositions.push({ x, y });
+                }
+            }
         }
     }
-    return tiles;
+
+    // Place 3-5 obstacle features on random interior tiles
+    const obstacleCount = 3 + Math.floor(Math.random() * 3); // 3 to 5
+    const shuffled = interiorPositions.sort(() => Math.random() - 0.5);
+    const obstaclePositions = shuffled.slice(0, Math.min(obstacleCount, shuffled.length));
+
+    for (const pos of obstaclePositions) {
+        const obstacleType = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+
+        // For outdoor theme, obstacles are terrain-based (mountain), mark tile impassable
+        if (theme === 'outdoor') {
+            const tileIdx = tiles.findIndex(t => t.x === pos.x && t.y === pos.y);
+            if (tileIdx >= 0) {
+                tiles[tileIdx] = { x: pos.x, y: pos.y, terrain: 'mountain' };
+            }
+        } else {
+            // For dungeon/castle themes, create feature obstacles with Kenney sprite URLs
+            const spriteUrl = `isometric-dungeon/Isometric/${obstacleType}.png`;
+            obstacles.push({
+                x: pos.x,
+                y: pos.y,
+                type: obstacleType.replace('_E', ''),
+                spriteUrl,
+            });
+        }
+    }
+
+    return { tiles, obstacles };
 }
 
 // ============================================================================
@@ -222,6 +288,7 @@ export function CanvasBattleTemplate({
     mapTerrain,
     boardWidth = 8,
     boardHeight = 6,
+    mapTheme = 'dungeon',
     scale = 0.45,
     onGameEnd,
     className,
@@ -238,21 +305,43 @@ export function CanvasBattleTemplate({
     const [damagePopups, setDamagePopups] = useState<DamagePopupData[]>([]);
     const [gameResult, setGameResult] = useState<'victory' | 'defeat' | null>(null);
 
-    // Generate map if not provided
-    const battleTiles = useMemo(
-        () => mapTerrain || generateBattleMap(boardWidth, boardHeight),
-        [mapTerrain, boardWidth, boardHeight]
+    // Generate map if not provided (with theme support)
+    const generatedMap = useMemo(
+        () => mapTerrain
+            ? { tiles: mapTerrain, obstacles: [] as BattleObstacle[] }
+            : generateBattleMap(boardWidth, boardHeight, mapTheme),
+        [mapTerrain, boardWidth, boardHeight, mapTheme]
     );
+    const battleTiles = generatedMap.tiles;
+    const battleObstacles = generatedMap.obstacles;
 
     // Convert to IsometricTile[] with terrain sprites
+    // Theme tiles use Kenney tile names directly, so try direct path first, then fallback to terrain type
     const isoTiles: IsometricTile[] = useMemo(() => {
-        return battleTiles.map((tile) => ({
-            x: tile.x,
-            y: tile.y,
-            terrain: tile.terrain,
-            terrainSprite: getTerrainSpriteUrl(assets, tile.terrain as TerrainType),
-        }));
+        return battleTiles.map((tile) => {
+            // If terrain name looks like a Kenney tile name (contains '_E'), resolve directly
+            const isKenneyTile = tile.terrain.endsWith('_E');
+            const terrainSprite = isKenneyTile
+                ? `${assets.baseUrl}/isometric-dungeon/Isometric/${tile.terrain}.png`
+                : getTerrainSpriteUrl(assets, tile.terrain as TerrainType);
+            return {
+                x: tile.x,
+                y: tile.y,
+                terrain: tile.terrain,
+                terrainSprite,
+            };
+        });
     }, [battleTiles, assets]);
+
+    // Convert obstacle features to IsometricFeature[] for canvas rendering
+    const obstacleFeatures: IsometricFeature[] = useMemo(() => {
+        return battleObstacles.map((obs) => ({
+            x: obs.x,
+            y: obs.y,
+            type: obs.type,
+            sprite: `${assets.baseUrl}/${obs.spriteUrl}`,
+        }));
+    }, [battleObstacles, assets]);
 
     // Convert BattleUnit[] to IsometricUnit[]
     const isoUnits: IsometricUnit[] = useMemo(() => {
@@ -541,6 +630,7 @@ export function CanvasBattleTemplate({
                     <IsometricGameCanvas
                         tiles={isoTiles}
                         units={isoUnits}
+                        features={obstacleFeatures}
                         selectedUnitId={selectedUnitId}
                         validMoves={validMoves}
                         attackTargets={attackTargets}

@@ -289,6 +289,13 @@ function LargeMapDemo() {
         hexes.find(h => h.x === 0 && h.y === 0)!.featureData = { castleId: 'player-base', owner: 'player' };
         hexes.find(h => h.x === 9 && h.y === 7)!.feature = 'castle';
         hexes.find(h => h.x === 9 && h.y === 7)!.featureData = { castleId: 'enemy-base', owner: 'enemy' };
+        // Additional feature types
+        hexes.find(h => h.x === 6 && h.y === 1)!.feature = 'powerNode';
+        hexes.find(h => h.x === 3 && h.y === 6)!.feature = 'dataVault';
+        hexes.find(h => h.x === 8 && h.y === 0)!.feature = 'portalClosed';
+        hexes.find(h => h.x === 6 && h.y === 6)!.feature = 'battleMarker';
+        hexes.find(h => h.x === 1 && h.y === 7)!.feature = 'traitCache';
+        hexes.find(h => h.x === 1 && h.y === 7)!.featureData = { resourceType: 'traitShards', resourceAmount: 15 };
 
         return hexes;
     })();

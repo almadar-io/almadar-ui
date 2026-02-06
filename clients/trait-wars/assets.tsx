@@ -141,7 +141,26 @@ export interface TraitWarsAssetManifest {
         heal?: string;
         defend?: string;
         death?: string;
+        /** Kenney particle sprites for canvas animations (white-on-transparent, tint with blend modes) */
+        particles?: {
+            slash?: string[];
+            magic?: string[];
+            fire?: string[];
+            flame?: string[];
+            smoke?: string[];
+            scorch?: string[];
+            circle?: string[];
+            flare?: string;
+        };
+        /** Frame-sequence animations (array of frame image paths) */
+        animations?: {
+            explosion?: string[];
+            smokePuff?: string[];
+        };
     };
+
+    /** Isometric castle sprites for world map rendering */
+    isometricCastles?: Partial<Record<CastleFactionType, string>>;
 
     /** Hero sprite paths keyed by hero ID */
     heroes?: Partial<Record<HeroType, string>>;
@@ -284,6 +303,14 @@ export function getCastleUrl(manifest: TraitWarsAssetManifest, faction: CastleFa
 }
 
 /**
+ * Get full URL for an isometric castle sprite (world map).
+ */
+export function getIsometricCastleUrl(manifest: TraitWarsAssetManifest, faction: CastleFactionType): string | undefined {
+    const path = manifest.isometricCastles?.[faction];
+    return path ? `${manifest.baseUrl}/${path}` : undefined;
+}
+
+/**
  * Get full URL for a building sprite.
  */
 export function getBuildingSpriteUrl(manifest: TraitWarsAssetManifest, type: BuildingType): string | undefined {
@@ -326,18 +353,18 @@ export const DEFAULT_ASSET_MANIFEST: TraitWarsAssetManifest = {
         emperor: 'isometric-dungeon/Characters/Male/Male_3_Idle0.png',
     },
     terrain: {
-        plains: 'isometric-dungeon/Isometric/stoneTile_E.png',
+        // Walkable floor tiles
+        plains: 'isometric-dungeon/Isometric/dirt_E.png',
+        grass: 'isometric-dungeon/Isometric/dirt_E.png',
+        dirt: 'isometric-dungeon/Isometric/dirtTiles_E.png',
+        stone: 'isometric-dungeon/Isometric/stoneInset_E.png',
         forest: 'isometric-dungeon/Isometric/planks_E.png',
+        castle: 'isometric-dungeon/Isometric/stoneTile_E.png',
+        ice: 'isometric-dungeon/Isometric/stoneUneven_E.png',
+        // Obstacle tiles (impassable)
         mountain: 'isometric-dungeon/Isometric/stoneColumn_E.png',
-        water: 'isometric-dungeon/Isometric/dirt_E.png',
         fortress: 'isometric-dungeon/Isometric/stoneWallColumn_E.png',
-        castle: 'isometric-dungeon/Isometric/stoneWallColumn_E.png',
-        // World map terrain types
-        grass: 'isometric-dungeon/Isometric/stoneTile_E.png',
-        dirt: 'isometric-dungeon/Isometric/planks_E.png',
-        stone: 'isometric-dungeon/Isometric/stoneColumn_E.png',
-        lava: 'isometric-dungeon/Isometric/dirt_E.png',
-        ice: 'isometric-dungeon/Isometric/stoneTile_E.png',
+        // No tile for water/lava — canvas fallback renders colored diamond
     },
     ui: {
         healthBar: 'game-sprites/ui/health_bar.png',
@@ -355,6 +382,20 @@ export const DEFAULT_ASSET_MANIFEST: TraitWarsAssetManifest = {
         heal: 'game-sprites/effects/heal.png',
         defend: 'game-sprites/effects/defend.png',
         death: 'game-sprites/effects/death.png',
+        particles: {
+            slash: ['effects/particles/slash_01.png', 'effects/particles/slash_02.png', 'effects/particles/slash_03.png', 'effects/particles/slash_04.png'],
+            magic: ['effects/particles/magic_01.png', 'effects/particles/magic_02.png', 'effects/particles/magic_03.png', 'effects/particles/magic_04.png', 'effects/particles/magic_05.png'],
+            fire: ['effects/particles/fire_01.png', 'effects/particles/fire_02.png'],
+            flame: ['effects/particles/flame_01.png', 'effects/particles/flame_02.png', 'effects/particles/flame_03.png', 'effects/particles/flame_04.png', 'effects/particles/flame_05.png', 'effects/particles/flame_06.png'],
+            smoke: ['effects/particles/smoke_01.png', 'effects/particles/smoke_02.png'],
+            scorch: ['effects/particles/scorch_01.png', 'effects/particles/scorch_02.png', 'effects/particles/scorch_03.png'],
+            circle: ['effects/particles/circle_01.png', 'effects/particles/circle_02.png', 'effects/particles/circle_03.png', 'effects/particles/circle_04.png', 'effects/particles/circle_05.png'],
+            flare: 'effects/particles/flare_01.png',
+        },
+        animations: {
+            explosion: Array.from({ length: 9 }, (_, i) => `effects/explosions/regular/regularExplosion0${i}.png`),
+            smokePuff: Array.from({ length: 20 }, (_, i) => `effects/smoke/white-puff/whitePuff${String(i).padStart(2, '0')}.png`),
+        },
     },
     // Hero game sprites (isometric on Iram vessels)
     heroes: {
@@ -395,10 +436,15 @@ export const DEFAULT_ASSET_MANIFEST: TraitWarsAssetManifest = {
         battleMarker: 'world-map/battle_marker.png',
         fogOfWar: 'world-map/fog_of_war.png',
     },
-    // Castle backdrops (frontal view)
+    // Castle backdrops (frontal view for CastleTemplate)
     castles: {
         resonator: 'castle-views/resonator_view.png',
         dominion: 'castle-views/dominion_view.png',
+    },
+    // Isometric castle sprites (for world map rendering)
+    isometricCastles: {
+        resonator: 'castle/resonator_citadel.png',
+        dominion: 'castle/dominion_fortress.png',
     },
     // Building sprites for castle view
     buildings: {
