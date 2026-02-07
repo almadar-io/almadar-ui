@@ -27,6 +27,10 @@ const meta: Meta<typeof CanvasWorldMapTemplate> = {
             control: { type: 'range', min: 0.25, max: 5, step: 0.25 },
             description: 'Animation speed multiplier (1 = baseline, 2 = double)',
         },
+        unitScale: {
+            control: { type: 'range', min: 0.5, max: 3, step: 0.1 },
+            description: 'Unit/hero draw size multiplier (1 = default)',
+        },
     },
     decorators: [
         (Story) => (
@@ -191,10 +195,11 @@ export const Default: Story = {
         selectedHeroId: 'valence',
         scale: 0.4,
         animationSpeed: 2,
+        unitScale: 2.5,
     },
 };
 
-function InteractiveWorldMap({ animationSpeed = 2 }: { animationSpeed?: number }) {
+function InteractiveWorldMap({ animationSpeed = 2, unitScale = 1 }: { animationSpeed?: number; unitScale?: number }) {
     const [worldMap, setWorldMap] = useState(sampleWorldMap);
     const [selectedHeroId, setSelectedHeroId] = useState<string | null>('valence');
     const [resources, setResources] = useState(sampleResources);
@@ -250,19 +255,20 @@ function InteractiveWorldMap({ animationSpeed = 2 }: { animationSpeed?: number }
             onEndTurn={handleEndTurn}
             scale={0.4}
             animationSpeed={animationSpeed}
+            unitScale={unitScale}
         />
     );
 }
 
 export const Interactive: Story = {
-    args: { animationSpeed: 2 },
-    render: (args) => <InteractiveWorldMap animationSpeed={args.animationSpeed} />,
+    args: { animationSpeed: 2, unitScale: 2.5 },
+    render: (args) => <InteractiveWorldMap animationSpeed={args.animationSpeed} unitScale={args.unitScale} />,
 };
 
 /**
  * Larger map with more features
  */
-function LargeMapDemo({ animationSpeed = 2 }: { animationSpeed?: number }) {
+function LargeMapDemo({ animationSpeed = 2, unitScale = 1 }: { animationSpeed?: number; unitScale?: number }) {
     const largeHexes = (() => {
         const hexes: WorldMapHex[] = [];
         const terrains = ['grass', 'grass', 'dirt', 'stone', 'grass', 'grass', 'dirt'];
@@ -563,11 +569,12 @@ function LargeMapDemo({ animationSpeed = 2 }: { animationSpeed?: number }) {
             onEndTurn={handleEndTurn}
             scale={0.25}
             animationSpeed={animationSpeed}
+            unitScale={unitScale}
         />
     );
 }
 
 export const LargeMap: Story = {
-    args: { animationSpeed: 2 },
-    render: (args) => <LargeMapDemo animationSpeed={args.animationSpeed} />,
+    args: { animationSpeed: 2, unitScale: 2.5 },
+    render: (args) => <LargeMapDemo animationSpeed={args.animationSpeed} unitScale={args.unitScale} />,
 };

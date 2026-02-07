@@ -113,6 +113,8 @@ export interface CanvasBattleTemplateProps {
     scale?: number;
     /** Animation speed multiplier. 1 = baseline, 2 = double speed. Default: 2 */
     animationSpeed?: number;
+    /** Unit/hero draw size multiplier. Default: 1 */
+    unitScale?: number;
     /** Game end callback */
     onGameEnd?: (result: 'victory' | 'defeat') => void;
     /** Additional CSS classes */
@@ -300,6 +302,7 @@ export function CanvasBattleTemplate({
     mapTheme = 'dungeon',
     scale = 0.45,
     animationSpeed = 2,
+    unitScale = 1,
     onGameEnd,
     className,
 }: CanvasBattleTemplateProps): JSX.Element {
@@ -484,13 +487,80 @@ export function CanvasBattleTemplate({
     // Preload sprite sheet images
     const spriteSheetUrls = useMemo(() => getAllCharacterSheetUrls(assets), [assets]);
 
-    // Tick sprite animations alongside canvas effects (16ms = ~60fps)
+    // ========================================================================
+    // MOVEMENT ANIMATION — smooth tile-by-tile walk instead of teleporting
+    // ========================================================================
+
+    interface MovementAnim {
+        unitId: string;
+        from: { x: number; y: number };
+        to: { x: number; y: number };
+        elapsed: number;
+        duration: number;
+        onComplete: () => void;
+    }
+
+    const MOVE_SPEED_MS_PER_TILE = 300;
+    const movementAnimRef = useRef<MovementAnim | null>(null);
+    const [movingPositions, setMovingPositions] = useState<Map<string, { x: number; y: number }>>(new Map());
+
+    const startMoveAnimation = useCallback((
+        unitId: string,
+        from: { x: number; y: number },
+        to: { x: number; y: number },
+        onComplete: () => void,
+    ) => {
+        const dx = to.x - from.x;
+        const dy = to.y - from.y;
+        const dist = Math.max(Math.abs(dx), Math.abs(dy));
+        const duration = dist * MOVE_SPEED_MS_PER_TILE;
+        movementAnimRef.current = { unitId, from, to, elapsed: 0, duration, onComplete };
+    }, []);
+
+    // Visual isoUnits with interpolated positions for moving units
+    const visualIsoUnits: IsometricUnit[] = useMemo(() => {
+        if (movingPositions.size === 0) return isoUnits;
+        return isoUnits.map((unit) => {
+            const pos = movingPositions.get(unit.id);
+            return pos ? { ...unit, position: pos } : unit;
+        });
+    }, [isoUnits, movingPositions]);
+
+    const visualUnitsRef = useRef(visualIsoUnits);
+    visualUnitsRef.current = visualIsoUnits;
+
+    // Tick movement + sprite animations (~60fps)
     useEffect(() => {
         const interval = setInterval(() => {
-            syncSpriteAnimations(isoUnits, 16);
+            const anim = movementAnimRef.current;
+            if (anim) {
+                anim.elapsed += 16;
+                const t = Math.min(anim.elapsed / anim.duration, 1);
+                const eased = 1 - (1 - t) * (1 - t);
+                const cx = anim.from.x + (anim.to.x - anim.from.x) * eased;
+                const cy = anim.from.y + (anim.to.y - anim.from.y) * eased;
+
+                if (t >= 1) {
+                    movementAnimRef.current = null;
+                    setMovingPositions((prev) => {
+                        const next = new Map(prev);
+                        next.delete(anim.unitId);
+                        return next;
+                    });
+                    anim.onComplete();
+                } else {
+                    setMovingPositions((prev) => {
+                        const next = new Map(prev);
+                        next.set(anim.unitId, { x: cx, y: cy });
+                        return next;
+                    });
+                }
+            }
+
+            syncSpriteAnimations(visualUnitsRef.current, 16);
         }, 16);
         return () => clearInterval(interval);
-    }, [syncSpriteAnimations, isoUnits]);
+    }, [syncSpriteAnimations]);
 
     const showDamage = useCallback((tileX: number, tileY: number, amount: number, type: DamagePopupData['type']) => {
         const pos = isoToScreen(tileX, tileY, scale, baseOffsetX);
@@ -576,18 +646,26 @@ export function CanvasBattleTemplate({
         }
     }, [currentPhase, selectedUnit, attackTargets, units, addLog, showDamage, checkGameEnd, triggerCombatEffect, spawnCombatEffect]);
 
-    // Handle tile click
+    // Handle tile click — starts animated walk, then transitions to action phase
     const handleTileClick = useCallback((x: number, y: number) => {
         if (currentPhase === 'movement' && selectedUnit) {
+            // Block clicks while a movement animation is playing
+            if (movementAnimRef.current) return;
+
             if (validMoves.some(m => m.x === x && m.y === y)) {
-                setUnits(prev => prev.map(u =>
-                    u.id === selectedUnitId ? { ...u, position: { x, y } } : u
-                ));
-                addLog('move', `${selectedUnit.name} moves to (${x}, ${y})`);
-                setCurrentPhase('action');
+                const from = { ...selectedUnit.position };
+                const to = { x, y };
+
+                startMoveAnimation(selectedUnit.id, from, to, () => {
+                    setUnits(prev => prev.map(u =>
+                        u.id === selectedUnitId ? { ...u, position: { x, y } } : u
+                    ));
+                    addLog('move', `${selectedUnit.name} moves to (${x}, ${y})`);
+                    setCurrentPhase('action');
+                });
             }
         }
-    }, [currentPhase, selectedUnit, selectedUnitId, validMoves, addLog]);
+    }, [currentPhase, selectedUnit, selectedUnitId, validMoves, addLog, startMoveAnimation]);
 
     // End turn
     const handleEndTurn = useCallback(() => {
@@ -741,7 +819,7 @@ export function CanvasBattleTemplate({
                     {/* Canvas Game Board */}
                     <IsometricGameCanvas
                         tiles={isoTiles}
-                        units={isoUnits}
+                        units={visualIsoUnits}
                         features={obstacleFeatures}
                         selectedUnitId={selectedUnitId}
                         validMoves={validMoves}
@@ -758,6 +836,7 @@ export function CanvasBattleTemplate({
                         hasActiveEffects={effectsActive}
                         effectSpriteUrls={[...effectSpriteUrls, ...spriteSheetUrls]}
                         resolveUnitFrame={resolveUnitFrame}
+                        unitScale={unitScale}
                     />
 
                     {/* Damage Popups (positioned over canvas) */}

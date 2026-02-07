@@ -27,6 +27,10 @@ const meta: Meta<typeof CanvasBattleTemplate> = {
             control: { type: 'range', min: 0.25, max: 5, step: 0.25 },
             description: 'Animation speed multiplier (1 = baseline, 2 = double)',
         },
+        unitScale: {
+            control: { type: 'range', min: 0.5, max: 3, step: 0.1 },
+            description: 'Unit/hero draw size multiplier (1 = default)',
+        },
     },
     decorators: [
         (Story) => (
@@ -171,6 +175,7 @@ export const Default: Story = {
         boardHeight: 5,
         scale: 0.45,
         animationSpeed: 2,
+        unitScale: 1,
     },
 };
 
@@ -239,6 +244,7 @@ export const LargeBattle: Story = {
         boardHeight: 5,
         scale: 0.4,
         animationSpeed: 2,
+        unitScale: 1,
     },
 };
 
@@ -273,6 +279,7 @@ export const Skirmish: Story = {
         boardHeight: 4,
         scale: 0.55,
         animationSpeed: 2,
+        unitScale: 1,
     },
 };
 
@@ -287,6 +294,7 @@ export const DungeonBattle: Story = {
         mapTheme: 'dungeon',
         scale: 0.4,
         animationSpeed: 2,
+        unitScale: 1,
     },
 };
 
@@ -301,6 +309,7 @@ export const OutdoorBattle: Story = {
         mapTheme: 'outdoor',
         scale: 0.4,
         animationSpeed: 2,
+        unitScale: 1,
     },
 };
 
@@ -315,6 +324,7 @@ export const CastleBattle: Story = {
         mapTheme: 'castle',
         scale: 0.4,
         animationSpeed: 2,
+        unitScale: 1,
     },
 };
 
@@ -344,6 +354,7 @@ export const AllTiers: Story = {
         boardHeight: 6,
         scale: 0.4,
         animationSpeed: 2,
+        unitScale: 1,
     },
 };
 
@@ -398,5 +409,6 @@ export const AllUnits: Story = {
         boardHeight: 7,
         scale: 0.3,
         animationSpeed: 2,
+        unitScale: 1,
     },
 };

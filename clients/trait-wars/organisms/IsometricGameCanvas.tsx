@@ -143,6 +143,8 @@ export interface IsometricGameCanvasProps {
      * instead of static sprites. Returns null for units without sheets.
      */
     resolveUnitFrame?: (unitId: string) => ResolvedFrame | null;
+    /** Extra scale multiplier for unit/hero draw size. 1 = default, 1.5 = 50% bigger. */
+    unitScale?: number;
 }
 
 // =============================================================================
@@ -300,6 +302,7 @@ export function IsometricGameCanvas({
     hasActiveEffects = false,
     effectSpriteUrls = [],
     resolveUnitFrame,
+    unitScale = 1,
 }: IsometricGameCanvasProps): JSX.Element {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const minimapRef = useRef<HTMLCanvasElement>(null);
@@ -769,8 +772,8 @@ export function IsometricGameCanvas({
             // so all units appear the same height on the tile regardless of aspect ratio
             const unitSpriteUrl = resolveUnitSprite(unit);
             const img = unitSpriteUrl ? getImage(unitSpriteUrl) : null;
-            const unitDrawH = scaledFloorHeight * 1.5; // Units stand ~1.5x floor diamond height
-            const maxUnitW = scaledTileWidth * 0.6; // Don't exceed 60% of tile width
+            const unitDrawH = scaledFloorHeight * 1.5 * unitScale;
+            const maxUnitW = scaledTileWidth * 0.6 * unitScale;
             const ar = img ? img.naturalWidth / img.naturalHeight : 0.5;
             let drawH = unitDrawH;
             let drawW = unitDrawH * ar;

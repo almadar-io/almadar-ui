@@ -70,6 +70,8 @@ export interface CanvasWorldMapTemplateProps {
     scale?: number;
     /** Animation speed multiplier. 1 = baseline, 2 = double speed. Default: 2 */
     animationSpeed?: number;
+    /** Unit/hero draw size multiplier. 1 = base, 2.5 = default. Default: 2.5 */
+    unitScale?: number;
     /** Additional CSS classes */
     className?: string;
 }
@@ -104,6 +106,7 @@ export function CanvasWorldMapTemplate({
     onEndTurn,
     scale = 0.4,
     animationSpeed = 2,
+    unitScale = 2.5,
     className,
 }: CanvasWorldMapTemplateProps): JSX.Element {
     const assets = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
@@ -396,6 +399,7 @@ export function CanvasWorldMapTemplate({
                             backgroundImage={assets.backgrounds?.worldMap ? `${assets.baseUrl}/${assets.backgrounds.worldMap}` : undefined}
                             effectSpriteUrls={spriteSheetUrls}
                             resolveUnitFrame={resolveUnitFrame}
+                            unitScale={unitScale}
                         />
 
                         {/* Hover Tooltip (positioned over canvas) */}
