@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { Box, Badge, Typography, Button, HStack, cn } from '@almadar/ui';
-import { RobotUnitType, useAssetsOptional, getUnitPortraitUrl, DEFAULT_ASSET_MANIFEST } from '../assets';
+import { RobotUnitType, useAssetsOptional, getUnitPortraitUrl, getGameUIBadgeUrl, GameUIBadgeType, DEFAULT_ASSET_MANIFEST } from '../assets';
 import type { GarrisonUnit } from '../types';
 
 export interface GarrisonUnitCardProps {

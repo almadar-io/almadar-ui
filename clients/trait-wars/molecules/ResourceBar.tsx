@@ -7,6 +7,7 @@
 import React from 'react';
 import { Box, Typography, HStack, cn } from '@almadar/ui';
 import { Resources, ResourceType, RESOURCE_INFO } from '../types/resources';
+import { useAssetsOptional, DEFAULT_ASSET_MANIFEST, getGameUIResourceIconUrl, GameUIResourceIconType } from '../assets';
 
 export interface ResourceBarProps {
     /** Current resources */
@@ -27,6 +28,8 @@ interface ResourceItemProps {
 
 function ResourceItem({ type, amount, compact }: ResourceItemProps): JSX.Element {
     const info = RESOURCE_INFO[type];
+    const manifest = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
+    const iconUrl = getGameUIResourceIconUrl(manifest, type as GameUIResourceIconType);
 
     return (
         <HStack
@@ -36,9 +39,12 @@ function ResourceItem({ type, amount, compact }: ResourceItemProps): JSX.Element
                 'bg-card/80 border-border'
             )}
         >
-            <Typography variant="body1" className={compact ? 'text-lg' : 'text-xl'}>
-                {info.icon}
-            </Typography>
+            {iconUrl
+                ? <img src={iconUrl} alt={info.name} className={compact ? 'w-5 h-5' : 'w-6 h-6'} />
+                : <Typography variant="body1" className={compact ? 'text-lg' : 'text-xl'}>
+                    {info.icon}
+                </Typography>
+            }
             <Typography
                 variant={compact ? 'body2' : 'h5'}
                 className="font-bold"

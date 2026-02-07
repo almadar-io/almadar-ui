@@ -7,6 +7,7 @@
 import React from 'react';
 import { Box, Typography, HStack, VStack, Badge, cn } from '@almadar/ui';
 import { Building, BuildingType, ResourceCost, RESOURCE_INFO, canAfford, Resources } from '../types/resources';
+import { useAssetsOptional, DEFAULT_ASSET_MANIFEST, getGameUIResourceIconUrl, GameUIResourceIconType } from '../assets';
 
 export interface BuildingGridProps {
     /** Available buildings */
@@ -38,14 +39,20 @@ const BUILDING_ICONS: Record<BuildingType, string> = {
 };
 
 function CostDisplay({ cost }: { cost: ResourceCost }): JSX.Element {
+    const manifest = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
+
     return (
         <HStack className="gap-2 flex-wrap">
             {Object.entries(cost).map(([type, amount]) => {
                 if (!amount) return null;
                 const info = RESOURCE_INFO[type as keyof typeof RESOURCE_INFO];
+                const iconUrl = getGameUIResourceIconUrl(manifest, type as GameUIResourceIconType);
                 return (
-                    <Typography key={type} variant="caption" className="text-foreground/80">
-                        {info.icon} {amount}
+                    <Typography key={type} variant="caption" className="text-foreground/80 inline-flex items-center gap-1">
+                        {iconUrl
+                            ? <img src={iconUrl} alt={type} className="w-4 h-4 inline-block" />
+                            : info.icon
+                        } {amount}
                     </Typography>
                 );
             })}
