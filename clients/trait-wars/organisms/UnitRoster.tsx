@@ -72,7 +72,7 @@ export function UnitRoster({
     return (
         <Box
             className={cn(
-                'grid gap-3 p-4 bg-slate-900/80 rounded-lg border border-slate-700',
+                'grid gap-3 p-4 bg-background/80 rounded-lg border border-border',
                 className
             )}
             style={{
@@ -89,10 +89,10 @@ export function UnitRoster({
                         className={cn(
                             'p-3 rounded-lg border-2 cursor-pointer transition-all duration-200',
                             isSelected
-                                ? 'border-yellow-400 bg-yellow-400/10 ring-2 ring-yellow-400/30'
-                                : 'border-slate-600 bg-slate-800/50',
+                                ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
+                                : 'border-border bg-card/50',
                             isDisabled && 'opacity-50 cursor-not-allowed',
-                            !isDisabled && !isSelected && 'hover:border-slate-500 hover:bg-slate-800'
+                            !isDisabled && !isSelected && 'hover:border-muted-foreground hover:bg-card'
                         )}
                         onClick={() => !isDisabled && handleUnitClick(unit)}
                     >
@@ -103,7 +103,7 @@ export function UnitRoster({
                                 team={unit.team}
                                 scale={2}
                             />
-                            <Typography variant="body2" weight="semibold" className="text-white text-center">
+                            <Typography variant="body2" weight="semibold" className="text-foreground text-center">
                                 {unit.name}
                             </Typography>
                         </VStack>
@@ -111,16 +111,16 @@ export function UnitRoster({
                         {/* Stats */}
                         <HStack justify="center" gap={3} className="mt-2">
                             <VStack align="center" gap={0}>
-                                <Typography variant="caption" className="text-red-400">⚔️</Typography>
-                                <Typography variant="caption" className="text-gray-300">{unit.attack}</Typography>
+                                <Typography variant="caption" className="text-error">⚔️</Typography>
+                                <Typography variant="caption" className="text-foreground/80">{unit.attack}</Typography>
                             </VStack>
                             <VStack align="center" gap={0}>
-                                <Typography variant="caption" className="text-blue-400">🛡️</Typography>
-                                <Typography variant="caption" className="text-gray-300">{unit.defense}</Typography>
+                                <Typography variant="caption" className="text-info">🛡️</Typography>
+                                <Typography variant="caption" className="text-foreground/80">{unit.defense}</Typography>
                             </VStack>
                             <VStack align="center" gap={0}>
-                                <Typography variant="caption" className="text-green-400">❤️</Typography>
-                                <Typography variant="caption" className="text-gray-300">{unit.health}</Typography>
+                                <Typography variant="caption" className="text-success">❤️</Typography>
+                                <Typography variant="caption" className="text-foreground/80">{unit.health}</Typography>
                             </VStack>
                         </HStack>
 

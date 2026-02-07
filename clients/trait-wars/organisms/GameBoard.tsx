@@ -133,8 +133,8 @@ export function GameBoard({
     return (
         <Box className={cn('flex flex-col gap-4', className)}>
             {/* Turn indicator */}
-            <Box display="flex" className="items-center justify-between bg-gray-800 p-3 rounded-lg">
-                <Typography variant="body1" className="text-white">
+            <Box display="flex" className="items-center justify-between bg-card p-3 rounded-lg">
+                <Typography variant="body1" className="text-foreground">
                     Turn {gameState.currentTurn}
                 </Typography>
                 <StateIndicator
@@ -144,9 +144,9 @@ export function GameBoard({
                 <Box display="flex" className="items-center gap-2">
                     <Box className={cn(
                         'w-4 h-4 rounded-full',
-                        gameState.activeTeam === 'player' ? 'bg-blue-500' : 'bg-red-500'
+                        gameState.activeTeam === 'player' ? 'bg-[var(--tw-faction-resonator)]' : 'bg-[var(--tw-faction-dominion)]'
                     )} />
-                    <Typography variant="body2" className="text-white">
+                    <Typography variant="body2" className="text-foreground">
                         {gameState.activeTeam === 'player' ? 'Player' : 'Enemy'} Turn
                     </Typography>
                 </Box>
@@ -155,7 +155,7 @@ export function GameBoard({
             {/* Game grid */}
             <Box
                 display="grid"
-                className="gap-0.5 bg-gray-900 p-2 rounded-lg"
+                className="gap-0.5 bg-background p-2 rounded-lg"
                 style={{
                     gridTemplateColumns: `repeat(${gameState.board[0]?.length || 0}, ${tileSize}px)`,
                 }}
@@ -199,11 +199,11 @@ export function GameBoard({
 
             {/* Selected unit info */}
             {gameState.selectedUnitId && gameState.units[gameState.selectedUnitId] && (
-                <Box className="bg-gray-800 p-3 rounded-lg">
-                    <Typography variant="body2" className="text-white font-bold">
+                <Box className="bg-card p-3 rounded-lg">
+                    <Typography variant="body2" className="text-foreground font-bold">
                         {gameState.units[gameState.selectedUnitId].name}
                     </Typography>
-                    <Typography variant="caption" className="text-gray-400">
+                    <Typography variant="caption" className="text-muted-foreground">
                         HP: {gameState.units[gameState.selectedUnitId].health}/{gameState.units[gameState.selectedUnitId].maxHealth} |
                         ATK: {gameState.units[gameState.selectedUnitId].attack} |
                         DEF: {gameState.units[gameState.selectedUnitId].defense}

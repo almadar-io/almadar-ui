@@ -140,7 +140,7 @@ export function PixelCharacterSprite({
         return (
             <Box
                 display="inline-block"
-                className={cn('bg-blue-300 rounded-full', className)}
+                className={cn('bg-muted rounded-full', className)}
                 style={{ width: displaySize, height: displaySize }}
             />
         );

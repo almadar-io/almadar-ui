@@ -102,9 +102,9 @@ export function HexCell({
             {showCoordinates && (
                 <Box
                     position="absolute"
-                    className="bottom-1 left-1/2 -translate-x-1/2 bg-black/50 px-1 rounded"
+                    className="bottom-1 left-1/2 -translate-x-1/2 bg-background/50 px-1 rounded"
                 >
-                    <Typography variant="caption" className="text-[10px] text-white">
+                    <Typography variant="caption" className="text-[10px] text-foreground">
                         {x},{y}
                     </Typography>
                 </Box>

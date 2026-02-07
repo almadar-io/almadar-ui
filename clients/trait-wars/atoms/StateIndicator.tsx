@@ -25,24 +25,24 @@ export interface StateIndicatorProps {
 }
 
 const stateConfig: Record<string, { color: string; icon: string; bgClass: string }> = {
-    idle: { color: 'gray', icon: '⏸', bgClass: 'bg-gray-500' },
-    active: { color: 'green', icon: '▶', bgClass: 'bg-green-500' },
-    attacking: { color: 'red', icon: '⚔', bgClass: 'bg-red-500' },
-    defending: { color: 'blue', icon: '🛡', bgClass: 'bg-blue-500' },
-    casting: { color: 'purple', icon: '✨', bgClass: 'bg-purple-500' },
-    recovering: { color: 'yellow', icon: '⏳', bgClass: 'bg-yellow-500' },
-    cooldown: { color: 'orange', icon: '🔄', bgClass: 'bg-orange-500' },
+    idle: { color: 'gray', icon: '⏸', bgClass: 'bg-muted' },
+    active: { color: 'green', icon: '▶', bgClass: 'bg-success' },
+    attacking: { color: 'red', icon: '⚔', bgClass: 'bg-error' },
+    defending: { color: 'blue', icon: '🛡', bgClass: 'bg-info' },
+    casting: { color: 'purple', icon: '✨', bgClass: 'bg-[var(--tw-faction-resonator)]' },
+    recovering: { color: 'yellow', icon: '⏳', bgClass: 'bg-primary' },
+    cooldown: { color: 'orange', icon: '🔄', bgClass: 'bg-warning' },
     // Additional game states
-    enraged: { color: 'red', icon: '🔥', bgClass: 'bg-red-600' },
-    preparing: { color: 'cyan', icon: '📖', bgClass: 'bg-cyan-500' },
-    exhausted: { color: 'gray', icon: '💤', bgClass: 'bg-gray-400' },
-    hidden: { color: 'purple', icon: '👻', bgClass: 'bg-purple-400' },
-    ready: { color: 'green', icon: '✓', bgClass: 'bg-green-400' },
-    channeling: { color: 'indigo', icon: '🌟', bgClass: 'bg-indigo-500' },
+    enraged: { color: 'red', icon: '🔥', bgClass: 'bg-error' },
+    preparing: { color: 'cyan', icon: '📖', bgClass: 'bg-accent' },
+    exhausted: { color: 'gray', icon: '💤', bgClass: 'bg-muted' },
+    hidden: { color: 'purple', icon: '👻', bgClass: 'bg-[var(--tw-faction-resonator)]' },
+    ready: { color: 'green', icon: '✓', bgClass: 'bg-success' },
+    channeling: { color: 'indigo', icon: '🌟', bgClass: 'bg-info' },
 };
 
 // Default config for unknown states
-const defaultConfig = { color: 'gray', icon: '?', bgClass: 'bg-gray-500' };
+const defaultConfig = { color: 'gray', icon: '?', bgClass: 'bg-muted' };
 
 const sizeClasses = {
     sm: 'text-xs px-1.5 py-0.5',
@@ -64,7 +64,7 @@ export function StateIndicator({
         <Box
             display="inline-flex"
             className={cn(
-                'items-center gap-1 rounded-full text-white font-medium',
+                'items-center gap-1 rounded-full text-foreground font-medium',
                 config.bgClass,
                 sizeClasses[size],
                 animated && state !== 'idle' && 'animate-pulse',

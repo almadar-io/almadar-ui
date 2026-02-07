@@ -1181,7 +1181,7 @@ export function IsometricGameCanvas({
             {/* Mini-map overlay (10.5.20) */}
             <canvas
                 ref={minimapRef}
-                className="absolute bottom-2 right-2 border border-gray-600 rounded bg-gray-900/80 pointer-events-none"
+                className="absolute bottom-2 right-2 border border-border rounded bg-background/80 pointer-events-none"
                 style={{ width: 150, height: 100, zIndex: 10 }}
             />
         </Box>

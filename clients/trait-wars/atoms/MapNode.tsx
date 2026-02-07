@@ -55,9 +55,9 @@ const LOCATION_COLORS: Record<LocationType, { bg: string; border: string }> = {
 };
 
 const OWNER_COLORS: Record<string, string> = {
-    player: 'ring-green-500',
-    enemy: 'ring-red-500',
-    neutral: 'ring-gray-500',
+    player: 'ring-success',
+    enemy: 'ring-error',
+    neutral: 'ring-muted',
 };
 
 /**
@@ -97,7 +97,7 @@ export function MapNode({
                     'w-12 h-12 rounded-full flex items-center justify-center',
                     'border-2 shadow-lg',
                     owner && `ring-2 ${OWNER_COLORS[owner]}`,
-                    selected && 'ring-4 ring-amber-400'
+                    selected && 'ring-4 ring-primary'
                 )}
                 style={{
                     backgroundColor: colors.bg,
@@ -111,8 +111,8 @@ export function MapNode({
 
             {/* Visited indicator */}
             {visited && (
-                <Box className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                    <Typography variant="caption" className="text-white text-xs">✓</Typography>
+                <Box className="absolute -top-1 -right-1 w-4 h-4 bg-success rounded-full flex items-center justify-center">
+                    <Typography variant="caption" className="text-foreground text-xs">✓</Typography>
                 </Box>
             )}
 
@@ -121,8 +121,8 @@ export function MapNode({
                 <Typography
                     variant="caption"
                     className={cn(
-                        'text-white text-xs px-1 py-0.5 rounded',
-                        selected ? 'bg-amber-600' : 'bg-slate-800/80'
+                        'text-foreground text-xs px-1 py-0.5 rounded',
+                        selected ? 'bg-primary' : 'bg-card/80'
                     )}
                 >
                     {name}

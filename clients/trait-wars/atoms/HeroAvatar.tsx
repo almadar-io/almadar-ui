@@ -95,7 +95,7 @@ export function HeroAvatar({
             position="relative"
             className={cn(
                 'cursor-pointer transition-all duration-200',
-                selected && 'ring-2 ring-offset-2 ring-yellow-400 scale-105',
+                selected && 'ring-2 ring-offset-2 ring-primary scale-105',
                 disabled && 'opacity-50 cursor-not-allowed grayscale',
                 onClick && !disabled && 'hover:scale-105',
                 className

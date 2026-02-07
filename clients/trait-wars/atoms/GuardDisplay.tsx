@@ -43,8 +43,8 @@ export function GuardDisplay({
                 'items-center gap-1 rounded-lg',
                 config.padding,
                 isGuarding
-                    ? 'bg-blue-500/30 border-2 border-blue-400 animate-pulse'
-                    : 'bg-gray-700/50 border border-gray-600',
+                    ? 'bg-info/30 border-2 border-info animate-pulse'
+                    : 'bg-muted/50 border border-border',
                 className
             )}
         >
@@ -57,13 +57,13 @@ export function GuardDisplay({
                     className={cn(
                         config.text,
                         'font-bold',
-                        isGuarding ? 'text-blue-300' : 'text-gray-300'
+                        isGuarding ? 'text-info' : 'text-foreground/80'
                     )}
                 >
                     {totalDefense}
                 </Typography>
                 {bonus > 0 && (
-                    <Typography variant="caption" className="text-green-400 text-xs">
+                    <Typography variant="caption" className="text-success text-xs">
                         +{bonus}
                     </Typography>
                 )}

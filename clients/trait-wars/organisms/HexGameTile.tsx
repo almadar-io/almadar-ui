@@ -222,10 +222,10 @@ export function HexGameTile({
                     {/* Team indicator */}
                     <Box
                         className={cn(
-                            'absolute w-3 h-3 rounded-full border border-gray-800 pointer-events-none',
-                            unit.team === 'player' && 'bg-blue-500',
-                            unit.team === 'enemy' && 'bg-red-500',
-                            unit.team === 'neutral' && 'bg-gray-500'
+                            'absolute w-3 h-3 rounded-full border border-border pointer-events-none',
+                            unit.team === 'player' && 'bg-[var(--tw-faction-resonator)]',
+                            unit.team === 'enemy' && 'bg-[var(--tw-faction-dominion)]',
+                            unit.team === 'neutral' && 'bg-[var(--tw-faction-neutral)]'
                         )}
                         style={{
                             bottom: FLOOR_HEIGHT + characterScale * 20,
@@ -247,10 +247,10 @@ export function HexGameTile({
                     }}
                 >
                     {/* Pulsing dot in center */}
-                    <Box className="w-3 h-3 rounded-full bg-green-400 opacity-80 animate-pulse shadow-lg shadow-green-400/50 z-10" />
+                    <Box className="w-3 h-3 rounded-full bg-success opacity-80 animate-pulse shadow-lg shadow-success/50 z-10" />
                     {/* Isometric diamond outline */}
                     <Box
-                        className="absolute border-2 border-green-400 bg-green-500/20 animate-pulse"
+                        className="absolute border-2 border-success bg-success/20 animate-pulse"
                         style={{
                             width: TILE_WIDTH * 0.7,
                             height: FLOOR_HEIGHT * 0.7,
@@ -273,14 +273,14 @@ export function HexGameTile({
                 >
                     {/* Sword icon in center */}
                     <Box
-                        className="bg-red-600/90 rounded-full animate-pulse flex items-center justify-center shadow-lg shadow-red-500/50 z-10"
+                        className="bg-error/90 rounded-full animate-pulse flex items-center justify-center shadow-lg shadow-error/50 z-10"
                         style={{ width: 24, height: 24 }}
                     >
-                        <span className="text-white text-xs">⚔️</span>
+                        <span className="text-foreground text-xs">⚔️</span>
                     </Box>
                     {/* Isometric diamond outline */}
                     <Box
-                        className="absolute border-2 border-red-500 animate-pulse"
+                        className="absolute border-2 border-error animate-pulse"
                         style={{
                             width: TILE_WIDTH * 0.8,
                             height: FLOOR_HEIGHT * 0.8,
@@ -300,7 +300,7 @@ export function HexGameTile({
                         transform: 'translateX(-50%)',
                     }}
                 >
-                    <Typography variant="caption" className="text-[8px] text-white">
+                    <Typography variant="caption" className="text-[8px] text-foreground">
                         {x},{y}
                     </Typography>
                 </Box>

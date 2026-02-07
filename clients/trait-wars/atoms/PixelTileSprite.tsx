@@ -130,9 +130,9 @@ export function PixelTileSprite({
 
     const highlightClasses = {
         none: '',
-        valid: 'ring-2 ring-green-400 ring-offset-1 ring-offset-transparent',
-        attack: 'ring-2 ring-red-500 ring-offset-1 ring-offset-transparent',
-        selected: 'ring-3 ring-yellow-400 ring-offset-2 ring-offset-transparent',
+        valid: 'ring-2 ring-success ring-offset-1 ring-offset-transparent',
+        attack: 'ring-2 ring-error ring-offset-1 ring-offset-transparent',
+        selected: 'ring-3 ring-primary ring-offset-2 ring-offset-transparent',
         hover: 'ring-2 ring-white/50 ring-offset-1 ring-offset-transparent brightness-110',
     };
 
@@ -140,7 +140,7 @@ export function PixelTileSprite({
         return (
             <Box
                 display="inline-block"
-                className={cn('bg-green-300', className)}
+                className={cn('bg-muted', className)}
                 style={{ width: displaySize, height: displaySize }}
             />
         );

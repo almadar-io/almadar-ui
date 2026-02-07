@@ -146,7 +146,7 @@ export function HexGrid({
                                             <div
                                                 className={cn(
                                                     'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold',
-                                                    unit.owner === 'player' ? 'bg-[#3b82f6] text-white' : 'bg-[#ef4444] text-white'
+                                                    unit.owner === 'player' ? 'bg-[var(--tw-faction-resonator)] text-foreground' : 'bg-[var(--tw-faction-dominion)] text-foreground'
                                                 )}
                                             >
                                                 {unit.unitType.slice(0, 2).toUpperCase()}
@@ -154,7 +154,7 @@ export function HexGrid({
                                         ) : (
                                             <Box className={cn(
                                                 'w-6 h-6 rounded-full',
-                                                unit.owner === 'player' ? 'bg-[#3b82f6]' : 'bg-[#ef4444]'
+                                                unit.owner === 'player' ? 'bg-[var(--tw-faction-resonator)]' : 'bg-[var(--tw-faction-dominion)]'
                                             )} />
                                         )
                                     )}

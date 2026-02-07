@@ -22,10 +22,10 @@ export interface DamagePopupProps {
 }
 
 const typeStyles = {
-    physical: 'text-red-400',
-    magic: 'text-purple-400',
-    heal: 'text-green-400',
-    critical: 'text-yellow-400 text-2xl font-black',
+    physical: 'text-error',
+    magic: 'text-[var(--tw-faction-resonator)]',
+    heal: 'text-success',
+    critical: 'text-primary text-2xl font-black',
 };
 
 export function DamagePopup({

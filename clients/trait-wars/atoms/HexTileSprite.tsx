@@ -65,7 +65,7 @@ export function HexTileSprite({
         // Placeholder when no sprite available
         return (
             <div
-                className={cn('flex items-center justify-center bg-gray-600 text-gray-400 text-xs', className)}
+                className={cn('flex items-center justify-center bg-muted text-muted-foreground text-xs', className)}
                 style={{ width, height }}
             >
                 {type}
@@ -105,9 +105,9 @@ export function HexTileSprite({
                 <Box
                     className={cn(
                         'absolute pointer-events-none',
-                        highlight === 'valid' && 'bg-green-500/30 border-2 border-green-400',
-                        highlight === 'attack' && 'bg-red-500/30 border-2 border-red-400',
-                        highlight === 'selected' && 'bg-yellow-500/30 border-2 border-yellow-400',
+                        highlight === 'valid' && 'bg-success/30 border-2 border-success',
+                        highlight === 'attack' && 'bg-error/30 border-2 border-error',
+                        highlight === 'selected' && 'bg-primary/30 border-2 border-primary',
                         highlight === 'hover' && 'bg-white/20 border border-white/50'
                     )}
                     style={{

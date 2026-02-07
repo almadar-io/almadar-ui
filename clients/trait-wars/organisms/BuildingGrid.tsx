@@ -44,7 +44,7 @@ function CostDisplay({ cost }: { cost: ResourceCost }): JSX.Element {
                 if (!amount) return null;
                 const info = RESOURCE_INFO[type as keyof typeof RESOURCE_INFO];
                 return (
-                    <Typography key={type} variant="caption" className="text-gray-300">
+                    <Typography key={type} variant="caption" className="text-foreground/80">
                         {info.icon} {amount}
                     </Typography>
                 );
@@ -75,10 +75,10 @@ function BuildingCard({
         <Box
             className={cn(
                 'p-4 rounded-lg border-2 cursor-pointer transition-all duration-200',
-                'bg-slate-800 hover:bg-slate-700',
-                selected && 'ring-2 ring-amber-400 border-amber-500',
-                !selected && 'border-slate-600',
-                isBuilt && 'border-green-600'
+                'bg-card hover:bg-muted',
+                selected && 'ring-2 ring-primary border-primary',
+                !selected && 'border-border',
+                isBuilt && 'border-success'
             )}
             onClick={onClick}
         >
@@ -88,11 +88,11 @@ function BuildingCard({
                         {icon}
                     </Typography>
                     <VStack className="gap-0">
-                        <Typography variant="h6" className="text-white">
+                        <Typography variant="h6" className="text-foreground">
                             {building.name}
                         </Typography>
                         {isBuilt && (
-                            <Typography variant="caption" className="text-green-400">
+                            <Typography variant="caption" className="text-success">
                                 Level {building.level}/{building.maxLevel}
                             </Typography>
                         )}
@@ -103,13 +103,13 @@ function BuildingCard({
                 )}
             </HStack>
 
-            <Typography variant="body2" className="text-gray-400 mb-3">
+            <Typography variant="body2" className="text-muted-foreground mb-3">
                 {building.description}
             </Typography>
 
             {!isMaxLevel && (
                 <>
-                    <Typography variant="caption" className="text-gray-500 block mb-1">
+                    <Typography variant="caption" className="text-muted-foreground block mb-1">
                         {isBuilt ? 'Upgrade Cost:' : 'Build Cost:'}
                     </Typography>
                     <CostDisplay cost={building.cost} />
@@ -119,8 +119,8 @@ function BuildingCard({
                             className={cn(
                                 'mt-3 py-2 rounded text-center font-medium transition-colors',
                                 affordable
-                                    ? 'bg-amber-500 text-black hover:bg-amber-400 cursor-pointer'
-                                    : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                                    ? 'bg-primary text-primary-foreground hover:bg-[var(--color-primary-hover)] cursor-pointer'
+                                    : 'bg-muted text-muted-foreground cursor-not-allowed'
                             )}
                             onClick={(e) => {
                                 e.stopPropagation();

@@ -101,14 +101,14 @@ export function GameTile({
             {/* Valid move indicator */}
             {isValidMove && !unit && (
                 <Box className="absolute inset-0 flex items-center justify-center">
-                    <Box className="w-3 h-3 rounded-full bg-green-400 opacity-60 animate-pulse" />
+                    <Box className="w-3 h-3 rounded-full bg-success opacity-60 animate-pulse" />
                 </Box>
             )}
 
             {/* Attack target indicator */}
             {isAttackTarget && (
                 <Box className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <Box className="w-full h-full border-2 border-red-500 opacity-70 animate-pulse" />
+                    <Box className="w-full h-full border-2 border-error opacity-70 animate-pulse" />
                 </Box>
             )}
         </Box>

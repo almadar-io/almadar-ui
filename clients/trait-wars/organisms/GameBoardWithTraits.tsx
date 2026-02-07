@@ -280,8 +280,8 @@ export function GameBoardWithTraits({
             {/* Main game area */}
             <Box className="flex flex-col gap-4 flex-1">
                 {/* Turn indicator */}
-                <Box display="flex" className="items-center justify-between bg-gray-800 p-3 rounded-lg">
-                    <Typography variant="body1" className="text-white">
+                <Box display="flex" className="items-center justify-between bg-card p-3 rounded-lg">
+                    <Typography variant="body1" className="text-foreground">
                         Turn {gameState.currentTurn}
                     </Typography>
                     <StateIndicator
@@ -291,9 +291,9 @@ export function GameBoardWithTraits({
                     <Box display="flex" className="items-center gap-2">
                         <Box className={cn(
                             'w-4 h-4 rounded-full',
-                            gameState.activeTeam === 'player' ? 'bg-blue-500' : 'bg-red-500'
+                            gameState.activeTeam === 'player' ? 'bg-[var(--tw-faction-resonator)]' : 'bg-[var(--tw-faction-dominion)]'
                         )} />
-                        <Typography variant="body2" className="text-white">
+                        <Typography variant="body2" className="text-foreground">
                             {gameState.activeTeam === 'player' ? 'Player' : 'Enemy'} Turn
                         </Typography>
                     </Box>
@@ -302,7 +302,7 @@ export function GameBoardWithTraits({
                 {/* Game grid */}
                 <Box
                     display="grid"
-                    className="gap-0.5 bg-gray-900 p-2 rounded-lg"
+                    className="gap-0.5 bg-background p-2 rounded-lg"
                     style={{
                         gridTemplateColumns: `repeat(${gameState.board[0]?.length || 0}, ${tileSize}px)`,
                     }}
@@ -348,18 +348,18 @@ export function GameBoardWithTraits({
 
                 {/* Combat log */}
                 {combatLog.length > 0 && (
-                    <Box className="bg-gray-800 p-3 rounded-lg max-h-32 overflow-y-auto">
-                        <Typography variant="caption" className="text-gray-400 mb-2 block">Combat Log</Typography>
+                    <Box className="bg-card p-3 rounded-lg max-h-32 overflow-y-auto">
+                        <Typography variant="caption" className="text-muted-foreground mb-2 block">Combat Log</Typography>
                         {combatLog.slice(-5).map((entry, i) => (
                             <Typography
                                 key={i}
                                 variant="caption"
                                 className={cn(
                                     'block',
-                                    entry.type === 'attack' && 'text-red-400',
-                                    entry.type === 'move' && 'text-blue-400',
-                                    entry.type === 'state_change' && 'text-yellow-400',
-                                    entry.type === 'defeat' && 'text-purple-400',
+                                    entry.type === 'attack' && 'text-error',
+                                    entry.type === 'move' && 'text-info',
+                                    entry.type === 'state_change' && 'text-primary',
+                                    entry.type === 'defeat' && 'text-[var(--tw-faction-resonator)]',
                                 )}
                             >
                                 [{entry.turn}] {entry.message}
@@ -374,8 +374,8 @@ export function GameBoardWithTraits({
                 <Box className="w-64 flex flex-col gap-4">
                     {/* Selected unit info */}
                     {selectedUnit && (
-                        <Box className="bg-gray-800 p-3 rounded-lg">
-                            <Typography variant="body2" className="text-white font-bold mb-2">
+                        <Box className="bg-card p-3 rounded-lg">
+                            <Typography variant="body2" className="text-foreground font-bold mb-2">
                                 Selected Unit
                             </Typography>
                             <GameUnitComponent
@@ -401,8 +401,8 @@ export function GameBoardWithTraits({
 
                     {/* Hovered unit preview */}
                     {hoveredUnit && hoveredUnit.id !== selectedUnit?.id && (
-                        <Box className="bg-gray-800/80 p-3 rounded-lg border border-gray-600">
-                            <Typography variant="caption" className="text-gray-400 mb-2 block">
+                        <Box className="bg-card/80 p-3 rounded-lg border border-border">
+                            <Typography variant="caption" className="text-muted-foreground mb-2 block">
                                 Hover Preview
                             </Typography>
                             <GameUnitComponent
@@ -428,8 +428,8 @@ export function GameBoardWithTraits({
 
                     {/* Help text when nothing selected */}
                     {!selectedUnit && !hoveredUnit && (
-                        <Box className="bg-gray-800 p-3 rounded-lg text-center">
-                            <Typography variant="caption" className="text-gray-400">
+                        <Box className="bg-card p-3 rounded-lg text-center">
+                            <Typography variant="caption" className="text-muted-foreground">
                                 Click a unit to see its traits
                             </Typography>
                         </Box>

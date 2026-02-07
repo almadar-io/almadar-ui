@@ -48,12 +48,12 @@ export interface LevelUpModalProps {
 }
 
 const CATEGORY_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-    attack: { bg: 'rgba(239,68,68,0.2)', border: '#ef4444', text: 'text-red-400' },
-    defense: { bg: 'rgba(59,130,246,0.2)', border: '#3b82f6', text: 'text-blue-400' },
-    leadership: { bg: 'rgba(168,85,247,0.2)', border: '#a855f7', text: 'text-purple-400' },
-    resonance: { bg: 'rgba(234,179,8,0.2)', border: '#eab308', text: 'text-yellow-400' },
-    speed: { bg: 'rgba(34,197,94,0.2)', border: '#22c55e', text: 'text-green-400' },
-    trait: { bg: 'rgba(236,72,153,0.2)', border: '#ec4899', text: 'text-pink-400' },
+    attack: { bg: 'rgba(192,64,64,0.2)', border: '#c04040', text: 'text-error' },
+    defense: { bg: 'rgba(59,130,246,0.2)', border: '#3b82f6', text: 'text-info' },
+    leadership: { bg: 'rgba(124,58,237,0.2)', border: '#7c3aed', text: 'text-[var(--tw-faction-resonator)]' },
+    resonance: { bg: 'rgba(234,179,8,0.2)', border: '#eab308', text: 'text-primary' },
+    speed: { bg: 'rgba(74,158,74,0.2)', border: '#4a9e4a', text: 'text-success' },
+    trait: { bg: 'rgba(236,72,153,0.2)', border: '#ec4899', text: 'text-accent' },
 };
 
 /**
@@ -80,7 +80,7 @@ export function LevelUpModal({
             onClick={onClose}
         >
             <Box
-                className="relative max-w-2xl w-full mx-4 p-6 bg-gradient-to-b from-slate-800 to-slate-900 rounded-xl border-2 border-amber-500/50 shadow-2xl"
+                className="relative max-w-2xl w-full mx-4 p-6 bg-gradient-to-b from-card to-background rounded-xl border-2 border-primary/50 shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Golden glow effect */}
@@ -94,7 +94,7 @@ export function LevelUpModal({
 
                 {/* Header with Level Badge */}
                 <VStack className="items-center mb-6 relative">
-                    <Typography variant="h4" className="text-amber-400 font-bold tracking-wide">
+                    <Typography variant="h4" className="text-primary font-bold tracking-wide">
                         ✨ LEVEL UP! ✨
                     </Typography>
                     <HStack className="items-center mt-4 gap-4">
@@ -106,13 +106,13 @@ export function LevelUpModal({
                             size="lg"
                         />
                         <VStack className="gap-1">
-                            <Typography variant="h3" className="text-white">
+                            <Typography variant="h3" className="text-foreground">
                                 {heroName}
                             </Typography>
-                            <Typography variant="body2" className="text-gray-400">
+                            <Typography variant="body2" className="text-muted-foreground">
                                 has reached level
                             </Typography>
-                            <Badge variant="default" size="lg" className="bg-amber-500 text-black font-bold text-lg px-4 py-1">
+                            <Badge variant="default" size="lg" className="bg-primary text-primary-foreground font-bold text-lg px-4 py-1">
                                 {newLevel}
                             </Badge>
                         </VStack>
@@ -120,38 +120,38 @@ export function LevelUpModal({
                 </VStack>
 
                 {/* Stat Bonuses */}
-                <Box className="mb-6 p-3 bg-slate-700/50 rounded-lg border border-slate-600">
-                    <Typography variant="caption" className="text-gray-400 block mb-2 text-center">
+                <Box className="mb-6 p-3 bg-muted/50 rounded-lg border border-border">
+                    <Typography variant="caption" className="text-muted-foreground block mb-2 text-center">
                         Stat Bonuses
                     </Typography>
                     <HStack className="justify-center gap-4 flex-wrap">
                         {statBonuses.attack && (
-                            <Badge className="bg-transparent border border-red-500 text-red-400">
+                            <Badge className="bg-transparent border border-error text-error">
                                 ⚔️ +{statBonuses.attack}% Attack
                             </Badge>
                         )}
                         {statBonuses.defense && (
-                            <Badge className="bg-transparent border border-blue-500 text-blue-400">
+                            <Badge className="bg-transparent border border-info text-info">
                                 🛡️ +{statBonuses.defense}% Defense
                             </Badge>
                         )}
                         {statBonuses.health && (
-                            <Badge className="bg-transparent border border-green-500 text-green-400">
+                            <Badge className="bg-transparent border border-success text-success">
                                 ❤️ +{statBonuses.health} Health
                             </Badge>
                         )}
                         {statBonuses.speed && (
-                            <Badge className="bg-transparent border border-cyan-500 text-cyan-400">
+                            <Badge className="bg-transparent border border-accent text-accent">
                                 ⚡ +{statBonuses.speed}% Speed
                             </Badge>
                         )}
                         {statBonuses.leadership && (
-                            <Badge className="bg-transparent border border-purple-500 text-purple-400">
+                            <Badge className="bg-transparent border border-[var(--tw-faction-resonator)] text-[var(--tw-faction-resonator)]">
                                 👑 +{statBonuses.leadership}% Leadership
                             </Badge>
                         )}
                         {statBonuses.resonance && (
-                            <Badge className="bg-transparent border border-yellow-500 text-yellow-400">
+                            <Badge className="bg-transparent border border-primary text-primary">
                                 🔮 +{statBonuses.resonance} Resonance
                             </Badge>
                         )}
@@ -160,7 +160,7 @@ export function LevelUpModal({
 
                 {/* Skill Choice Section */}
                 <Box className="mb-4">
-                    <Typography variant="h5" className="text-white text-center mb-4">
+                    <Typography variant="h5" className="text-foreground text-center mb-4">
                         Choose a Skill to Learn
                     </Typography>
                     <HStack className="gap-4 justify-center">
@@ -186,7 +186,7 @@ export function LevelUpModal({
                                         <Typography variant="h5" className={cn('font-bold', colors.text)}>
                                             {skill.name}
                                         </Typography>
-                                        <Typography variant="body2" className="text-gray-300 text-center">
+                                        <Typography variant="body2" className="text-foreground/80 text-center">
                                             {skill.description}
                                         </Typography>
                                         {skill.bonus && (
@@ -195,7 +195,7 @@ export function LevelUpModal({
                                             </Badge>
                                         )}
                                         <Box className="mt-2 px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
-                                            <Typography variant="caption" className="text-white font-medium">
+                                            <Typography variant="caption" className="text-foreground font-medium">
                                                 Select
                                             </Typography>
                                         </Box>
@@ -207,7 +207,7 @@ export function LevelUpModal({
                 </Box>
 
                 {/* Close hint */}
-                <Typography variant="caption" className="text-gray-500 text-center block mt-4">
+                <Typography variant="caption" className="text-muted-foreground text-center block mt-4">
                     Click on a skill to choose it
                 </Typography>
             </Box>

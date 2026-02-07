@@ -147,7 +147,7 @@ export function HexGameBoard({
     return (
         <Box
             className={cn(
-                'relative overflow-auto bg-gray-900/50 rounded-lg p-4',
+                'relative overflow-auto bg-background/50 rounded-lg p-4',
                 className
             )}
             style={{

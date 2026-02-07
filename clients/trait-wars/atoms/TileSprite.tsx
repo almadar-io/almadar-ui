@@ -74,16 +74,16 @@ export function TileSprite({
 
     const highlightClasses = {
         none: '',
-        valid: 'ring-2 ring-green-400 ring-offset-1',
-        attack: 'ring-2 ring-red-400 ring-offset-1',
-        selected: 'ring-2 ring-yellow-400 ring-offset-2',
+        valid: 'ring-2 ring-success ring-offset-1',
+        attack: 'ring-2 ring-error ring-offset-1',
+        selected: 'ring-2 ring-primary ring-offset-2',
     };
 
     if (!spriteSheetUrl) {
         return (
             <Box
                 display="inline-block"
-                className={cn('bg-gray-300', className)}
+                className={cn('bg-muted', className)}
                 style={{ width: displaySize, height: displaySize }}
             />
         );

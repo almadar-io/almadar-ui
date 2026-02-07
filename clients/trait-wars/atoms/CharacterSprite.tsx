@@ -66,7 +66,7 @@ export function CharacterSprite({
         // Placeholder when no sprite available
         return (
             <div
-                className={cn('flex items-center justify-center bg-gray-700 text-gray-400 text-xs', className)}
+                className={cn('flex items-center justify-center bg-muted text-muted-foreground text-xs', className)}
                 style={{ width: 200 * scale, height: 400 * scale }}
             >
                 {type}
@@ -79,7 +79,7 @@ export function CharacterSprite({
             display="inline-block"
             className={cn(
                 'relative transition-all duration-200',
-                selected && 'ring-2 ring-yellow-400 ring-offset-2',
+                selected && 'ring-2 ring-primary ring-offset-2',
                 className
             )}
             style={{

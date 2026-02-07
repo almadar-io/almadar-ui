@@ -26,7 +26,7 @@ export function CostDisplay({ cost, className }: CostDisplayProps): JSX.Element 
                 if (!amount) return null;
                 const info = RESOURCE_INFO[type as keyof typeof RESOURCE_INFO];
                 return (
-                    <Typography key={type} variant="caption" className="text-gray-300">
+                    <Typography key={type} variant="caption" className="text-foreground/80">
                         {info?.icon || '•'} {amount}
                     </Typography>
                 );
