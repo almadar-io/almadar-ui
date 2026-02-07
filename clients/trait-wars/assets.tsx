@@ -49,6 +49,17 @@ export type UIElementType = 'healthBar' | 'traitFrame' | 'button' | 'panelBg';
 export type EffectType = 'attack' | 'heal' | 'defend' | 'death';
 
 /**
+ * Themed game UI asset types (Illuminated Manuscript Futurism)
+ */
+export type GameUIPanelType = 'panelFrame' | 'tooltipFrame' | 'combatLogBg' | 'divider';
+export type GameUIButtonType = 'primary' | 'secondary' | 'danger';
+export type GameUIBarType = 'health' | 'resonance' | 'gold' | 'xp';
+export type GameUIBadgeType = 'tier1' | 'tier2' | 'tier3' | 'tier4';
+export type GameUIEmblemType = 'resonator' | 'dominion' | 'neutral';
+export type GameUIResourceIconType = 'gold' | 'resonance' | 'traitShards' | 'crystal' | 'wood' | 'stone';
+export type GameUIOverlayType = 'victory' | 'defeat';
+
+/**
  * Hero types (player + villain heroes on Iram vessels)
  */
 export type HeroType =
@@ -205,6 +216,20 @@ export interface TraitWarsAssetManifest {
 
     /** Terrain variant arrays for visual variety (multiple sprites per terrain type) */
     terrainVariants?: Partial<Record<TerrainType, string[]>>;
+
+    /**
+     * Themed game UI assets (Illuminated Manuscript Futurism).
+     * Panels, buttons, bars, badges, emblems, resource icons, overlays.
+     */
+    gameUI?: {
+        panels?: Partial<Record<GameUIPanelType, string>>;
+        buttons?: Partial<Record<GameUIButtonType, string>>;
+        bars?: Partial<Record<GameUIBarType, string>>;
+        badges?: Partial<Record<GameUIBadgeType, string>>;
+        emblems?: Partial<Record<GameUIEmblemType, string>>;
+        resourceIcons?: Partial<Record<GameUIResourceIconType, string>>;
+        overlays?: Partial<Record<GameUIOverlayType, string>>;
+    };
 
     /**
      * Animated sprite sheets for frame-based character animation.
@@ -477,6 +502,70 @@ export function getAllEffectSpriteUrls(manifest: TraitWarsAssetManifest): string
 }
 
 // ============================================================================
+// GAME UI ASSET HELPERS
+// ============================================================================
+
+/** Get full URL for a themed UI panel asset. */
+export function getGameUIPanelUrl(manifest: TraitWarsAssetManifest, type: GameUIPanelType): string | undefined {
+    const path = manifest.gameUI?.panels?.[type];
+    return path ? `${manifest.baseUrl}/${path}` : undefined;
+}
+
+/** Get full URL for a themed UI button asset. */
+export function getGameUIButtonUrl(manifest: TraitWarsAssetManifest, type: GameUIButtonType): string | undefined {
+    const path = manifest.gameUI?.buttons?.[type];
+    return path ? `${manifest.baseUrl}/${path}` : undefined;
+}
+
+/** Get full URL for a themed UI bar asset. */
+export function getGameUIBarUrl(manifest: TraitWarsAssetManifest, type: GameUIBarType): string | undefined {
+    const path = manifest.gameUI?.bars?.[type];
+    return path ? `${manifest.baseUrl}/${path}` : undefined;
+}
+
+/** Get full URL for a tier badge asset. */
+export function getGameUIBadgeUrl(manifest: TraitWarsAssetManifest, type: GameUIBadgeType): string | undefined {
+    const path = manifest.gameUI?.badges?.[type];
+    return path ? `${manifest.baseUrl}/${path}` : undefined;
+}
+
+/** Get full URL for a faction emblem asset. */
+export function getGameUIEmblemUrl(manifest: TraitWarsAssetManifest, type: GameUIEmblemType): string | undefined {
+    const path = manifest.gameUI?.emblems?.[type];
+    return path ? `${manifest.baseUrl}/${path}` : undefined;
+}
+
+/** Get full URL for a resource icon asset. */
+export function getGameUIResourceIconUrl(manifest: TraitWarsAssetManifest, type: GameUIResourceIconType): string | undefined {
+    const path = manifest.gameUI?.resourceIcons?.[type];
+    return path ? `${manifest.baseUrl}/${path}` : undefined;
+}
+
+/** Get full URL for a game overlay (victory/defeat). */
+export function getGameUIOverlayUrl(manifest: TraitWarsAssetManifest, type: GameUIOverlayType): string | undefined {
+    const path = manifest.gameUI?.overlays?.[type];
+    return path ? `${manifest.baseUrl}/${path}` : undefined;
+}
+
+/** Get all game UI asset URLs for bulk preloading. */
+export function getAllGameUIUrls(manifest: TraitWarsAssetManifest): string[] {
+    const urls: string[] = [];
+    const base = manifest.baseUrl;
+    const gui = manifest.gameUI;
+    if (!gui) return urls;
+
+    const sections = [gui.panels, gui.buttons, gui.bars, gui.badges, gui.emblems, gui.resourceIcons, gui.overlays];
+    for (const section of sections) {
+        if (section) {
+            for (const path of Object.values(section)) {
+                if (path) urls.push(`${base}/${path}`);
+            }
+        }
+    }
+    return urls;
+}
+
+// ============================================================================
 // DEFAULT/PLACEHOLDER MANIFEST
 // ============================================================================
 
@@ -550,6 +639,49 @@ export const DEFAULT_ASSET_MANIFEST: TraitWarsAssetManifest = {
             blackSmoke: Array.from({ length: 25 }, (_, i) => `effects/black-smoke/blackSmoke${String(i).padStart(2, '0')}.png`),
             gasSmoke: Array.from({ length: 9 }, (_, i) => `effects/gas/gas0${i}.png`),
             smokeExplosion: Array.from({ length: 9 }, (_, i) => `effects/explosions/smoke-explosion/explosion0${i}.png`),
+        },
+    },
+    // Themed game UI assets (Illuminated Manuscript Futurism)
+    gameUI: {
+        panels: {
+            panelFrame: 'ui/trait-wars-panel-border-frame.png',
+            tooltipFrame: 'ui/trait-wars-tooltip-border.png',
+            combatLogBg: 'ui/trait-wars-combat-log.png',
+            divider: 'ui/trait-wars-divider.png',
+        },
+        buttons: {
+            primary: 'ui/button-primary.png',
+            secondary: 'ui/button-secondary.png',
+            danger: 'ui/button-danger.png',
+        },
+        bars: {
+            health: 'ui/bar-health.png',
+            resonance: 'ui/bar-resonance.png',
+            gold: 'ui/bar-gold.png',
+            xp: 'ui/bar-xp.png',
+        },
+        badges: {
+            tier1: 'ui/badge-tier-1.png',
+            tier2: 'ui/badge-tier-2.png',
+            tier3: 'ui/badge-tier-3.png',
+            tier4: 'ui/badge-tier-4.png',
+        },
+        emblems: {
+            resonator: 'ui/emblem-resonator.png',
+            dominion: 'ui/emblem-dominion.png',
+            neutral: 'ui/emblem-neutral.png',
+        },
+        resourceIcons: {
+            gold: 'ui/icon-gold.png',
+            resonance: 'ui/icon-resonance.png',
+            traitShards: 'ui/icon-trait-shards.png',
+            crystal: 'ui/icon-crystal.png',
+            wood: 'ui/icon-wood.png',
+            stone: 'ui/icon-stone.png',
+        },
+        overlays: {
+            victory: 'ui/trait-wars-victory.png',
+            defeat: 'ui/trait-wars-defeat-sign.png',
         },
     },
     // Hero game sprites (isometric on Iram vessels)

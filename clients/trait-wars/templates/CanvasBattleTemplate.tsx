@@ -710,7 +710,7 @@ export function CanvasBattleTemplate({
     } : {};
 
     return (
-        <VStack gap="md" className={cn('p-4 bg-gray-900 rounded-xl min-h-[600px] relative', className)}>
+        <VStack gap="md" className={cn('p-4 bg-background rounded-xl min-h-[600px] relative', className)}>
             {/* Shake animation keyframes */}
             <style>{`
                 @keyframes battle-shake {
@@ -730,22 +730,22 @@ export function CanvasBattleTemplate({
             {/* Header */}
             <HStack justify="between" align="center" className="w-full px-2">
                 <VStack gap="xs">
-                    <Typography variant="h5" className="text-white font-bold">
+                    <Typography variant="h5" className="text-primary font-bold">
                         Trait Wars: Isometric Battle
                     </Typography>
-                    <Typography variant="body2" className="text-gray-400">
+                    <Typography variant="body2" className="text-muted-foreground">
                         Turn {currentTurn} - {phaseText[currentPhase]}
                     </Typography>
                 </VStack>
 
                 <HStack gap="lg">
                     <VStack gap="none" align="center">
-                        <Typography variant="caption" className="text-blue-400">Player</Typography>
-                        <Typography variant="h6" className="text-white">{playerUnits.length}</Typography>
+                        <Typography variant="caption" className="text-[var(--tw-faction-resonator)]">Player</Typography>
+                        <Typography variant="h6" className="text-foreground">{playerUnits.length}</Typography>
                     </VStack>
                     <VStack gap="none" align="center">
-                        <Typography variant="caption" className="text-red-400">Enemy</Typography>
-                        <Typography variant="h6" className="text-white">{enemyUnits.length}</Typography>
+                        <Typography variant="caption" className="text-[var(--tw-faction-dominion)]">Enemy</Typography>
+                        <Typography variant="h6" className="text-foreground">{enemyUnits.length}</Typography>
                     </VStack>
                 </HStack>
             </HStack>
@@ -755,7 +755,7 @@ export function CanvasBattleTemplate({
                 <Box className="fixed bottom-6 right-6 z-50">
                     <HStack gap="sm">
                         {(currentPhase === 'movement' || currentPhase === 'action') && (
-                            <Button variant="secondary" onClick={handleCancel} size="lg" className="shadow-xl text-white">
+                            <Button variant="secondary" onClick={handleCancel} size="lg" className="shadow-xl text-foreground">
                                 Cancel
                             </Button>
                         )}
@@ -763,7 +763,7 @@ export function CanvasBattleTemplate({
                             variant="primary"
                             onClick={handleEndTurn}
                             size="lg"
-                            className="shadow-xl text-white"
+                            className="shadow-xl text-primary-foreground"
                         >
                             End Turn
                         </Button>
@@ -782,7 +782,7 @@ export function CanvasBattleTemplate({
                 >
                     {/* Feature 4: Red damage flash overlay */}
                     {showDamageFlash && (
-                        <Box className="absolute inset-0 bg-red-500/20 z-20 pointer-events-none rounded-lg animate-out fade-out duration-200" />
+                        <Box className="absolute inset-0 bg-error/20 z-20 pointer-events-none rounded-lg animate-out fade-out duration-200" />
                     )}
                     {/* Canvas effect screen flash overlay */}
                     {canvasScreenFlash && (
@@ -795,8 +795,8 @@ export function CanvasBattleTemplate({
                     {/* Action Hint Banners */}
                     {currentPhase === 'action' && attackTargets.length > 0 && (
                         <HStack justify="center" className="absolute -top-1 left-0 right-0 z-30 pointer-events-none">
-                            <HStack gap="sm" align="center" className="bg-red-600/90 text-white px-4 py-2 rounded-lg shadow-lg animate-pulse">
-                                <Typography variant="body2" className="font-bold text-white">
+                            <HStack gap="sm" align="center" className="bg-error/90 text-foreground px-4 py-2 rounded-lg shadow-lg animate-pulse">
+                                <Typography variant="body2" className="font-bold text-foreground">
                                     Click an enemy to attack!
                                 </Typography>
                             </HStack>
@@ -805,8 +805,8 @@ export function CanvasBattleTemplate({
 
                     {currentPhase === 'action' && attackTargets.length === 0 && (
                         <HStack justify="center" className="absolute -top-1 left-0 right-0 z-30">
-                            <HStack gap="sm" align="center" className="bg-gray-700/95 text-white px-4 py-2 rounded-lg shadow-lg">
-                                <Typography variant="body2" className="text-white">
+                            <HStack gap="sm" align="center" className="bg-muted/95 text-foreground px-4 py-2 rounded-lg shadow-lg">
+                                <Typography variant="body2" className="text-foreground">
                                     No enemies in range.
                                 </Typography>
                                 <Button variant="primary" size="sm" onClick={handleEndTurn}>
@@ -861,13 +861,13 @@ export function CanvasBattleTemplate({
                             }}
                         >
                             <Card variant="default" className={cn(
-                                "p-3 shadow-xl bg-gray-900/95 backdrop-blur-sm min-w-[200px]",
-                                hoveredUnit.team === 'enemy' ? 'border border-red-500/50' : 'border border-blue-500/50'
+                                "p-3 shadow-xl bg-background/95 backdrop-blur-sm min-w-[200px]",
+                                hoveredUnit.team === 'enemy' ? 'border border-[var(--tw-faction-dominion)]/50' : 'border border-[var(--tw-faction-resonator)]/50'
                             )}>
                                 <HStack gap="sm" className="mb-2">
                                     <Typography variant="caption" className={cn(
                                         "font-bold",
-                                        hoveredUnit.team === 'enemy' ? 'text-red-400' : 'text-blue-400'
+                                        hoveredUnit.team === 'enemy' ? 'text-[var(--tw-faction-dominion)]' : 'text-[var(--tw-faction-resonator)]'
                                     )}>
                                         {hoveredUnit.name}
                                     </Typography>
@@ -888,22 +888,22 @@ export function CanvasBattleTemplate({
                                 )}
 
                                 {/* Stats Row */}
-                                <HStack gap="md" className="text-xs mb-3 py-2 px-2 bg-gray-800 rounded">
+                                <HStack gap="md" className="text-xs mb-3 py-2 px-2 bg-card rounded">
                                     <VStack gap="none" align="center">
-                                        <Typography variant="caption" className="text-gray-400">HP</Typography>
-                                        <Typography variant="caption" className="text-white font-medium">
+                                        <Typography variant="caption" className="text-muted-foreground">HP</Typography>
+                                        <Typography variant="caption" className="text-foreground font-medium">
                                             {hoveredUnit.health}/{hoveredUnit.maxHealth}
                                         </Typography>
                                     </VStack>
                                     <VStack gap="none" align="center">
-                                        <Typography variant="caption" className="text-gray-400">ATK</Typography>
-                                        <Typography variant="caption" className="text-white font-medium">
+                                        <Typography variant="caption" className="text-muted-foreground">ATK</Typography>
+                                        <Typography variant="caption" className="text-foreground font-medium">
                                             {hoveredUnit.attack}
                                         </Typography>
                                     </VStack>
                                     <VStack gap="none" align="center">
-                                        <Typography variant="caption" className="text-gray-400">DEF</Typography>
-                                        <Typography variant="caption" className="text-white font-medium">
+                                        <Typography variant="caption" className="text-muted-foreground">DEF</Typography>
+                                        <Typography variant="caption" className="text-foreground font-medium">
                                             {hoveredUnit.defense}
                                         </Typography>
                                     </VStack>
@@ -928,39 +928,39 @@ export function CanvasBattleTemplate({
             </HStack>
 
             {/* Legend */}
-            <HStack gap="lg" justify="center" className="w-full py-2 border-t border-gray-700">
+            <HStack gap="lg" justify="center" className="w-full py-2 border-t border-border">
                 <HStack gap="xs" align="center">
-                    <Box className="w-3 h-3 rounded-full bg-blue-500 border border-blue-300" />
-                    <Typography variant="caption" className="text-gray-400">Player</Typography>
+                    <Box className="w-3 h-3 rounded-full bg-[var(--tw-faction-resonator)] border border-[var(--tw-faction-resonator)]/50" />
+                    <Typography variant="caption" className="text-muted-foreground">Player</Typography>
                 </HStack>
                 <HStack gap="xs" align="center">
-                    <Box className="w-3 h-3 rounded-full bg-red-500 border border-red-300" />
-                    <Typography variant="caption" className="text-gray-400">Enemy</Typography>
+                    <Box className="w-3 h-3 rounded-full bg-[var(--tw-faction-dominion)] border border-[var(--tw-faction-dominion)]/50" />
+                    <Typography variant="caption" className="text-muted-foreground">Enemy</Typography>
                 </HStack>
                 <HStack gap="xs" align="center">
-                    <Box className="w-3 h-3 rounded-full bg-cyan-400 border border-cyan-200" />
-                    <Typography variant="caption" className="text-gray-400">Selected</Typography>
+                    <Box className="w-3 h-3 rounded-full bg-primary border border-primary/50" />
+                    <Typography variant="caption" className="text-muted-foreground">Selected</Typography>
                 </HStack>
                 <HStack gap="xs" align="center">
-                    <Box className="w-3 h-3 rounded-full bg-green-400 border border-green-200" />
-                    <Typography variant="caption" className="text-gray-400">Move</Typography>
+                    <Box className="w-3 h-3 rounded-full bg-success border border-success/50" />
+                    <Typography variant="caption" className="text-muted-foreground">Move</Typography>
                 </HStack>
                 <HStack gap="xs" align="center">
-                    <Box className="w-3 h-3 rounded-full bg-red-400 border border-red-200" />
-                    <Typography variant="caption" className="text-gray-400">Attack</Typography>
+                    <Box className="w-3 h-3 rounded-full bg-error border border-error/50" />
+                    <Typography variant="caption" className="text-muted-foreground">Attack</Typography>
                 </HStack>
             </HStack>
 
             {/* Feature 5: Victory/Defeat Screen Overlay */}
             {gameResult && (
-                <Box className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-in fade-in duration-500 rounded-xl">
+                <Box className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in duration-500 rounded-xl">
                     <VStack gap="lg" align="center" className="p-8">
                         {/* Result Title */}
                         <Typography
                             variant="h2"
                             className={cn(
                                 "font-black tracking-widest uppercase",
-                                gameResult === 'victory' ? 'text-yellow-400' : 'text-red-500'
+                                gameResult === 'victory' ? 'text-[var(--tw-gold)]' : 'text-error'
                             )}
                         >
                             {gameResult === 'victory' ? 'Victory!' : 'Defeat'}
@@ -969,30 +969,30 @@ export function CanvasBattleTemplate({
                         {/* Decorative line */}
                         <Box className={cn(
                             "w-48 h-1 rounded-full",
-                            gameResult === 'victory' ? 'bg-gradient-to-r from-transparent via-yellow-400 to-transparent' : 'bg-gradient-to-r from-transparent via-red-500 to-transparent'
+                            gameResult === 'victory' ? 'bg-gradient-to-r from-transparent via-[var(--tw-gold)] to-transparent' : 'bg-gradient-to-r from-transparent via-error to-transparent'
                         )} />
 
                         {/* Battle Stats */}
-                        <Card variant="default" className="bg-gray-800/90 border border-gray-600 p-6 min-w-[300px]">
+                        <Card variant="default" className="bg-card/90 border border-border p-6 min-w-[300px]">
                             <VStack gap="md">
-                                <Typography variant="h6" className="text-gray-300 text-center font-semibold">Battle Summary</Typography>
+                                <Typography variant="h6" className="text-secondary-foreground text-center font-semibold">Battle Summary</Typography>
                                 <HStack justify="between" className="w-full">
-                                    <Typography variant="body2" className="text-gray-400">Turns Played</Typography>
-                                    <Typography variant="body2" className="text-white font-bold">{currentTurn}</Typography>
+                                    <Typography variant="body2" className="text-muted-foreground">Turns Played</Typography>
+                                    <Typography variant="body2" className="text-foreground font-bold">{currentTurn}</Typography>
                                 </HStack>
                                 <HStack justify="between" className="w-full">
-                                    <Typography variant="body2" className="text-gray-400">Units Remaining</Typography>
-                                    <Typography variant="body2" className="text-blue-400 font-bold">{playerUnits.length}</Typography>
+                                    <Typography variant="body2" className="text-muted-foreground">Units Remaining</Typography>
+                                    <Typography variant="body2" className="text-[var(--tw-faction-resonator)] font-bold">{playerUnits.length}</Typography>
                                 </HStack>
                                 <HStack justify="between" className="w-full">
-                                    <Typography variant="body2" className="text-gray-400">Enemies Defeated</Typography>
-                                    <Typography variant="body2" className="text-red-400 font-bold">
+                                    <Typography variant="body2" className="text-muted-foreground">Enemies Defeated</Typography>
+                                    <Typography variant="body2" className="text-[var(--tw-faction-dominion)] font-bold">
                                         {initialUnits.filter(u => u.team === 'enemy').length - enemyUnits.length}
                                     </Typography>
                                 </HStack>
                                 <HStack justify="between" className="w-full">
-                                    <Typography variant="body2" className="text-gray-400">Combat Events</Typography>
-                                    <Typography variant="body2" className="text-white font-bold">{combatLog.length}</Typography>
+                                    <Typography variant="body2" className="text-muted-foreground">Combat Events</Typography>
+                                    <Typography variant="body2" className="text-foreground font-bold">{combatLog.length}</Typography>
                                 </HStack>
                             </VStack>
                         </Card>
@@ -1011,7 +1011,7 @@ export function CanvasBattleTemplate({
                                     setCombatLog([]);
                                     setGameResult(null);
                                 }}
-                                className="text-white px-8"
+                                className="text-primary-foreground px-8"
                             >
                                 Play Again
                             </Button>

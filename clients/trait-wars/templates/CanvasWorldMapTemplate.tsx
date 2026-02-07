@@ -356,21 +356,21 @@ export function CanvasWorldMapTemplate({
     const baseOffsetX = (maxY + 1) * (TILE_WIDTH * scale / 2);
 
     return (
-        <Box className={cn('min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900', className)}>
+        <Box className={cn('min-h-screen bg-gradient-to-b from-background via-card to-background', className)}>
             {/* Top Bar */}
-            <Box className="p-4 bg-slate-900/90 border-b border-slate-700">
+            <Box className="p-4 bg-background/90 border-b border-border">
                 <HStack justify="between" className="max-w-7xl mx-auto">
                     <HStack className="gap-4 items-center">
-                        <Typography variant="h4" className="text-white">
+                        <Typography variant="h4" className="text-primary">
                             {worldMap.name}
                         </Typography>
-                        <Badge variant="default" className="bg-amber-500 text-black">
+                        <Badge variant="default" className="bg-primary text-primary-foreground">
                             Turn {worldMap.turnNumber}
                         </Badge>
                     </HStack>
                     <HStack className="gap-4 items-center">
                         <ResourceBar resources={resources} compact />
-                        <Button onClick={onEndTurn} className="bg-amber-500 hover:bg-amber-400 text-black font-bold">
+                        <Button onClick={onEndTurn} className="bg-primary hover:bg-[var(--color-primary-hover)] text-primary-foreground font-bold">
                             End Turn
                         </Button>
                     </HStack>
@@ -417,36 +417,36 @@ export function CanvasWorldMapTemplate({
                                     })(),
                                 }}
                             >
-                                <Card variant="default" className="p-3 shadow-xl bg-slate-900/95 backdrop-blur-sm border border-slate-600 min-w-[180px]">
-                                    <Typography variant="body2" className="text-white font-bold mb-1">
+                                <Card variant="default" className="p-3 shadow-xl bg-background/95 backdrop-blur-sm border border-border min-w-[180px]">
+                                    <Typography variant="body2" className="text-foreground font-bold mb-1">
                                         {hoveredHexInfo.hex.feature && hoveredHexInfo.hex.feature !== 'none'
                                             ? FEATURE_LABELS[hoveredHexInfo.hex.feature]
                                             : `${hoveredHexInfo.hex.terrain.charAt(0).toUpperCase() + hoveredHexInfo.hex.terrain.slice(1)}`}
                                     </Typography>
-                                    <Typography variant="caption" className="text-gray-400 block">
+                                    <Typography variant="caption" className="text-muted-foreground block">
                                         ({hoveredTile.x}, {hoveredTile.y})
                                     </Typography>
                                     {hoveredHexInfo.hex.featureData?.resourceAmount && (
-                                        <Typography variant="body2" className="text-green-400 mt-1">
+                                        <Typography variant="body2" className="text-success mt-1">
                                             +{hoveredHexInfo.hex.featureData.resourceAmount} {hoveredHexInfo.hex.featureData.resourceType}
                                         </Typography>
                                     )}
                                     {hoveredHexInfo.hero && (
-                                        <Box className="mt-2 p-2 bg-slate-800 rounded">
-                                            <Typography variant="body2" className={hoveredHexInfo.hero.owner === 'player' ? 'text-blue-400' : 'text-red-400'}>
+                                        <Box className="mt-2 p-2 bg-card rounded">
+                                            <Typography variant="body2" className={hoveredHexInfo.hero.owner === 'player' ? 'text-[var(--tw-faction-resonator)]' : 'text-[var(--tw-faction-dominion)]'}>
                                                 {hoveredHexInfo.hero.name} (Lv {hoveredHexInfo.hero.level})
                                             </Typography>
-                                            <Typography variant="caption" className="text-gray-400">
+                                            <Typography variant="caption" className="text-muted-foreground">
                                                 Army: {hoveredHexInfo.hero.army.reduce((sum, u) => sum + u.count, 0)} units
                                             </Typography>
                                         </Box>
                                     )}
                                     {hoveredHexInfo.castle && (
-                                        <Box className="mt-2 p-2 bg-slate-800 rounded">
-                                            <Typography variant="body2" className="text-amber-400">
+                                        <Box className="mt-2 p-2 bg-card rounded">
+                                            <Typography variant="body2" className="text-primary">
                                                 {hoveredHexInfo.castle.name}
                                             </Typography>
-                                            <Typography variant="caption" className="text-gray-400">
+                                            <Typography variant="caption" className="text-muted-foreground">
                                                 {CASTLE_FACTIONS[hoveredHexInfo.castle.faction].name}
                                             </Typography>
                                         </Box>
@@ -458,12 +458,12 @@ export function CanvasWorldMapTemplate({
                 </Box>
 
                 {/* Info Panel */}
-                <Box className="w-80 bg-slate-800/90 border-l border-slate-700 p-4 overflow-y-auto">
+                <Box className="w-80 bg-card/90 border-l border-border p-4 overflow-y-auto">
                     {/* Selected Hero */}
                     {selectedHero && (
-                        <Box className="p-4 bg-gradient-to-br from-purple-900/50 to-slate-900 rounded-lg border border-purple-500/50 mb-4">
+                        <Box className="p-4 bg-gradient-to-br from-[var(--tw-faction-resonator)]/20 to-background rounded-lg border border-[var(--tw-faction-resonator)]/50 mb-4">
                             <HStack className="gap-3 items-center mb-3">
-                                <Box className="w-14 h-14 rounded-lg overflow-hidden border-2 border-purple-500 bg-slate-900">
+                                <Box className="w-14 h-14 rounded-lg overflow-hidden border-2 border-[var(--tw-faction-resonator)] bg-background">
                                     {getHeroPortraitUrl(assets, selectedHero.id) ? (
                                         <img
                                             src={getHeroPortraitUrl(assets, selectedHero.id)}
@@ -480,24 +480,24 @@ export function CanvasWorldMapTemplate({
                                     )}
                                 </Box>
                                 <VStack className="gap-0">
-                                    <Typography variant="h5" className="text-white">
+                                    <Typography variant="h5" className="text-foreground">
                                         {selectedHero.name}
                                     </Typography>
-                                    <Typography variant="caption" className="text-purple-300">
+                                    <Typography variant="caption" className="text-[var(--tw-faction-resonator)]">
                                         Level {selectedHero.level} {selectedHero.archetype}
                                     </Typography>
                                 </VStack>
                             </HStack>
                             <HStack className="gap-4">
-                                <Box className="flex-1 text-center p-2 bg-slate-800 rounded">
-                                    <Typography variant="caption" className="text-gray-400 block">Movement</Typography>
-                                    <Typography variant="h5" className="text-green-400">
+                                <Box className="flex-1 text-center p-2 bg-card rounded">
+                                    <Typography variant="caption" className="text-muted-foreground block">Movement</Typography>
+                                    <Typography variant="h5" className="text-success">
                                         {selectedHero.movement}/{selectedHero.maxMovement}
                                     </Typography>
                                 </Box>
-                                <Box className="flex-1 text-center p-2 bg-slate-800 rounded">
-                                    <Typography variant="caption" className="text-gray-400 block">Army</Typography>
-                                    <Typography variant="h5" className="text-amber-400">
+                                <Box className="flex-1 text-center p-2 bg-card rounded">
+                                    <Typography variant="caption" className="text-muted-foreground block">Army</Typography>
+                                    <Typography variant="h5" className="text-primary">
                                         {selectedHero.army.reduce((sum, u) => sum + u.count, 0)}
                                     </Typography>
                                 </Box>
@@ -507,7 +507,7 @@ export function CanvasWorldMapTemplate({
 
                     {/* Player Heroes List */}
                     <Box className="mb-4">
-                        <Typography variant="h6" className="text-white mb-2">Your Heroes</Typography>
+                        <Typography variant="h6" className="text-primary mb-2">Your Heroes</Typography>
                         <VStack className="gap-2">
                             {worldMap.heroes
                                 .filter((h) => h.owner === 'player')
@@ -517,13 +517,13 @@ export function CanvasWorldMapTemplate({
                                         className={cn(
                                             'p-3 rounded-lg cursor-pointer transition-colors border',
                                             hero.id === selectedHeroId
-                                                ? 'bg-purple-900/50 border-purple-500'
-                                                : 'bg-slate-800 border-slate-600 hover:bg-slate-700'
+                                                ? 'bg-[var(--tw-faction-resonator)]/20 border-[var(--tw-faction-resonator)]'
+                                                : 'bg-card border-border hover:bg-muted'
                                         )}
                                         onClick={() => onHeroSelect?.(hero.id)}
                                     >
                                         <HStack className="gap-2 items-center">
-                                            <Box className="w-8 h-8 rounded overflow-hidden border border-purple-400 bg-slate-900">
+                                            <Box className="w-8 h-8 rounded overflow-hidden border border-[var(--tw-faction-resonator)] bg-background">
                                                 {getHeroPortraitUrl(assets, hero.id) ? (
                                                     <img
                                                         src={getHeroPortraitUrl(assets, hero.id)}
@@ -534,10 +534,10 @@ export function CanvasWorldMapTemplate({
                                                     <Box className="w-full h-full flex items-center justify-center text-sm">🦸</Box>
                                                 )}
                                             </Box>
-                                            <Typography variant="body2" className="text-white flex-1">
+                                            <Typography variant="body2" className="text-foreground flex-1">
                                                 {hero.name}
                                             </Typography>
-                                            <Badge variant="default" className={hero.movement > 0 ? 'bg-green-600' : 'bg-gray-600'}>
+                                            <Badge variant="default" className={hero.movement > 0 ? 'bg-success' : 'bg-muted'}>
                                                 {hero.movement}
                                             </Badge>
                                         </HStack>
@@ -549,14 +549,14 @@ export function CanvasWorldMapTemplate({
                     {/* Enemy Heroes */}
                     {worldMap.heroes.some((h) => h.owner === 'enemy') && (
                         <Box className="mb-4">
-                            <Typography variant="h6" className="text-red-400 mb-2">Enemy Heroes</Typography>
+                            <Typography variant="h6" className="text-[var(--tw-faction-dominion)] mb-2">Enemy Heroes</Typography>
                             <VStack className="gap-2">
                                 {worldMap.heroes
                                     .filter((h) => h.owner === 'enemy')
                                     .map((hero) => (
-                                        <Box key={hero.id} className="p-3 bg-red-900/30 rounded-lg border border-red-600/50">
+                                        <Box key={hero.id} className="p-3 bg-[var(--tw-faction-dominion)]/10 rounded-lg border border-[var(--tw-faction-dominion)]/50">
                                             <HStack className="gap-2 items-center">
-                                                <Box className="w-8 h-8 rounded overflow-hidden border border-red-500 bg-slate-900">
+                                                <Box className="w-8 h-8 rounded overflow-hidden border border-[var(--tw-faction-dominion)] bg-background">
                                                     {getHeroPortraitUrl(assets, hero.id) ? (
                                                         <img
                                                             src={getHeroPortraitUrl(assets, hero.id)}
@@ -567,7 +567,7 @@ export function CanvasWorldMapTemplate({
                                                         <Box className="w-full h-full flex items-center justify-center text-sm">👹</Box>
                                                     )}
                                                 </Box>
-                                                <Typography variant="body2" className="text-red-300 flex-1">
+                                                <Typography variant="body2" className="text-[var(--tw-faction-dominion)] flex-1">
                                                     {hero.name}
                                                 </Typography>
                                             </HStack>
