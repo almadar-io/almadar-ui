@@ -37,7 +37,11 @@ import {
     getWorldMapFeatureUrl,
     getIsometricCastleUrl,
     getAllCharacterSheetUrls,
+    getGameUIEmblemUrl,
+    getGameUIPanelUrl,
+    getGameUIButtonUrl,
     type TraitWarsAssetManifest,
+    type GameUIEmblemType,
     type WorldMapFeatureType,
     type TerrainType,
 } from '../assets';
@@ -370,7 +374,16 @@ export function CanvasWorldMapTemplate({
                     </HStack>
                     <HStack className="gap-4 items-center">
                         <ResourceBar resources={resources} compact />
-                        <Button onClick={onEndTurn} className="bg-primary hover:bg-[var(--color-primary-hover)] text-primary-foreground font-bold">
+                        <Button
+                            onClick={onEndTurn}
+                            className="bg-primary hover:bg-[var(--color-primary-hover)] text-primary-foreground font-bold"
+                            style={getGameUIButtonUrl(assets, 'primary') ? {
+                                backgroundImage: `url(${getGameUIButtonUrl(assets, 'primary')})`,
+                                backgroundSize: '100% 100%',
+                                backgroundColor: 'transparent',
+                                border: 'none',
+                            } : undefined}
+                        >
                             End Turn
                         </Button>
                     </HStack>
@@ -417,7 +430,14 @@ export function CanvasWorldMapTemplate({
                                     })(),
                                 }}
                             >
-                                <Card variant="default" className="p-3 shadow-xl bg-background/95 backdrop-blur-sm border border-border min-w-[180px]">
+                                <Card
+                                    variant="default"
+                                    className="p-3 shadow-xl bg-background/95 backdrop-blur-sm border border-border min-w-[180px]"
+                                    style={getGameUIPanelUrl(assets, 'tooltipFrame') ? {
+                                        borderImage: `url(${getGameUIPanelUrl(assets, 'tooltipFrame')}) 60 fill / 15px / 0 stretch`,
+                                        border: 'none',
+                                    } : undefined}
+                                >
                                     <Typography variant="body2" className="text-foreground font-bold mb-1">
                                         {hoveredHexInfo.hex.feature && hoveredHexInfo.hex.feature !== 'none'
                                             ? FEATURE_LABELS[hoveredHexInfo.hex.feature]
@@ -458,7 +478,14 @@ export function CanvasWorldMapTemplate({
                 </Box>
 
                 {/* Info Panel */}
-                <Box className="w-80 bg-card/90 border-l border-border p-4 overflow-y-auto">
+                <Box
+                    className="w-80 bg-card/90 border-l border-border p-4 overflow-y-auto"
+                    style={getGameUIPanelUrl(assets, 'panelFrame') ? {
+                        borderImage: `url(${getGameUIPanelUrl(assets, 'panelFrame')}) 80 fill / 20px / 0 stretch`,
+                        border: 'none',
+                        padding: '24px',
+                    } : undefined}
+                >
                     {/* Selected Hero */}
                     {selectedHero && (
                         <Box className="p-4 bg-gradient-to-br from-[var(--tw-faction-resonator)]/20 to-background rounded-lg border border-[var(--tw-faction-resonator)]/50 mb-4">
@@ -507,7 +534,10 @@ export function CanvasWorldMapTemplate({
 
                     {/* Player Heroes List */}
                     <Box className="mb-4">
-                        <Typography variant="h6" className="text-primary mb-2">Your Heroes</Typography>
+                        <HStack className="gap-2 items-center mb-2">
+                            {getGameUIEmblemUrl(assets, 'resonator') && <img src={getGameUIEmblemUrl(assets, 'resonator')} alt="Resonator" className="w-5 h-5 object-contain" />}
+                            <Typography variant="h6" className="text-primary">Your Heroes</Typography>
+                        </HStack>
                         <VStack className="gap-2">
                             {worldMap.heroes
                                 .filter((h) => h.owner === 'player')
@@ -546,10 +576,18 @@ export function CanvasWorldMapTemplate({
                         </VStack>
                     </Box>
 
+                    {/* Divider between hero lists */}
+                    {worldMap.heroes.some((h) => h.owner === 'enemy') && getGameUIPanelUrl(assets, 'divider')
+                        ? <img src={getGameUIPanelUrl(assets, 'divider')} alt="" className="w-full h-4 object-contain opacity-60 my-2" />
+                        : worldMap.heroes.some((h) => h.owner === 'enemy') && <Box className="w-full h-px bg-border my-2" />}
+
                     {/* Enemy Heroes */}
                     {worldMap.heroes.some((h) => h.owner === 'enemy') && (
                         <Box className="mb-4">
-                            <Typography variant="h6" className="text-[var(--tw-faction-dominion)] mb-2">Enemy Heroes</Typography>
+                            <HStack className="gap-2 items-center mb-2">
+                                {getGameUIEmblemUrl(assets, 'dominion') && <img src={getGameUIEmblemUrl(assets, 'dominion')} alt="Dominion" className="w-5 h-5 object-contain" />}
+                                <Typography variant="h6" className="text-[var(--tw-faction-dominion)]">Enemy Heroes</Typography>
+                            </HStack>
                             <VStack className="gap-2">
                                 {worldMap.heroes
                                     .filter((h) => h.owner === 'enemy')

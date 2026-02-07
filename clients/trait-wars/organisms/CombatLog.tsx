@@ -14,6 +14,7 @@ import {
   Badge,
   Card,
 } from '@almadar/ui';
+import { useAssetsOptional, DEFAULT_ASSET_MANIFEST, getGameUIPanelUrl } from '../assets';
 
 export type CombatEventType = 'attack' | 'defend' | 'heal' | 'move' | 'special' | 'death' | 'spawn';
 
@@ -54,13 +55,13 @@ const eventIcons: Record<CombatEventType, LucideIcon> = {
 };
 
 const eventColors: Record<CombatEventType, string> = {
-    attack: 'text-[#ef4444]',
-    defend: 'text-[#3b82f6]',
-    heal: 'text-[#22c55e]',
-    move: 'text-[#f59e0b]',
-    special: 'text-[#8b5cf6]',
-    death: 'text-[#6b7280]',
-    spawn: 'text-[#14b8a6]',
+    attack: 'text-error',
+    defend: 'text-info',
+    heal: 'text-success',
+    move: 'text-primary',
+    special: 'text-[var(--tw-faction-resonator)]',
+    death: 'text-muted-foreground',
+    spawn: 'text-accent',
 };
 
 const eventBadgeVariants: Record<CombatEventType, 'danger' | 'primary' | 'success' | 'warning' | 'secondary'> = {
@@ -91,9 +92,19 @@ export function CombatLog({
     }, [events, autoScroll]);
 
     const visibleEvents = events.slice(-maxVisible);
+    const manifest = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
+    const combatLogBgUrl = getGameUIPanelUrl(manifest, 'combatLogBg');
 
     return (
-        <Card variant="default" className={cn('flex flex-col', className)}>
+        <Card
+            variant="default"
+            className={cn('flex flex-col', className)}
+            style={combatLogBgUrl ? {
+                backgroundImage: `url(${combatLogBgUrl})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+            } : undefined}
+        >
             {/* Header */}
             <Box
                 padding="sm"

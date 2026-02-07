@@ -7,7 +7,7 @@
 import React from 'react';
 import { Box, Typography, HStack, VStack, Badge, cn } from '@almadar/ui';
 import { Building, BuildingType, ResourceCost, RESOURCE_INFO, canAfford, Resources } from '../types/resources';
-import { useAssetsOptional, DEFAULT_ASSET_MANIFEST, getGameUIResourceIconUrl, GameUIResourceIconType } from '../assets';
+import { useAssetsOptional, DEFAULT_ASSET_MANIFEST, getGameUIResourceIconUrl, getGameUIButtonUrl, GameUIResourceIconType } from '../assets';
 
 export interface BuildingGridProps {
     /** Available buildings */
@@ -73,10 +73,12 @@ function BuildingCard({
     onClick?: () => void;
     onBuild?: () => void;
 }): JSX.Element {
+    const buildManifest = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
     const icon = BUILDING_ICONS[building.type];
     const affordable = canAfford(playerResources, building.cost);
     const isMaxLevel = building.level >= building.maxLevel;
     const isBuilt = building.level > 0;
+    const btnUrl = affordable ? getGameUIButtonUrl(buildManifest, 'primary') : undefined;
 
     return (
         <Box
@@ -126,9 +128,15 @@ function BuildingCard({
                             className={cn(
                                 'mt-3 py-2 rounded text-center font-medium transition-colors',
                                 affordable
-                                    ? 'bg-primary text-primary-foreground hover:bg-[var(--color-primary-hover)] cursor-pointer'
+                                    ? (btnUrl ? 'text-primary-foreground cursor-pointer' : 'bg-primary text-primary-foreground hover:bg-[var(--color-primary-hover)] cursor-pointer')
                                     : 'bg-muted text-muted-foreground cursor-not-allowed'
                             )}
+                            style={btnUrl ? {
+                                backgroundImage: `url(${btnUrl})`,
+                                backgroundSize: '100% 100%',
+                                backgroundColor: 'transparent',
+                                border: 'none',
+                            } : undefined}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 if (affordable) onBuild();

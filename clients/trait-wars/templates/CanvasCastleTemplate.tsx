@@ -29,7 +29,11 @@ import {
     getBuildingSpriteUrl,
     getRobotUnitSpriteUrl,
     getKenneyTileUrl,
+    getGameUIEmblemUrl,
+    getGameUIPanelUrl,
+    getGameUIButtonUrl,
     type TraitWarsAssetManifest,
+    type GameUIEmblemType,
     type BuildingType,
     type RobotUnitType,
 } from '../assets';
@@ -357,7 +361,9 @@ export function CanvasCastleTemplate({
             >
                 <HStack justify="between" className="max-w-7xl mx-auto">
                     <HStack className="gap-4 items-center">
-                        <Typography variant="h4" className="text-3xl">🏰</Typography>
+                        {getGameUIEmblemUrl(assets, castle.faction === 'dominion' ? 'dominion' : 'resonator')
+                            ? <img src={getGameUIEmblemUrl(assets, castle.faction === 'dominion' ? 'dominion' : 'resonator')} alt={faction.name} className="w-8 h-8 object-contain" />
+                            : <Typography variant="h4" className="text-3xl">🏰</Typography>}
                         <VStack className="gap-0">
                             <Typography variant="h4" className="text-foreground">
                                 {castle.name}
@@ -372,7 +378,17 @@ export function CanvasCastleTemplate({
                     </HStack>
                     <HStack className="gap-4 items-center">
                         <ResourceBar resources={resources} compact />
-                        <Button onClick={onExit} variant="ghost" className="border-border text-foreground hover:bg-muted">
+                        <Button
+                            onClick={onExit}
+                            variant="ghost"
+                            className="border-border text-foreground hover:bg-muted"
+                            style={getGameUIButtonUrl(assets, 'secondary') ? {
+                                backgroundImage: `url(${getGameUIButtonUrl(assets, 'secondary')})`,
+                                backgroundSize: '100% 100%',
+                                backgroundColor: 'transparent',
+                                border: 'none',
+                            } : undefined}
+                        >
                             Exit Castle
                         </Button>
                     </HStack>
@@ -464,7 +480,13 @@ export function CanvasCastleTemplate({
                 </Box>
 
                 {/* Side Panel */}
-                <Box className="w-96 bg-card/90 border-l border-border flex flex-col">
+                <Box
+                    className="w-96 bg-card/90 border-l border-border flex flex-col"
+                    style={getGameUIPanelUrl(assets, 'panelFrame') ? {
+                        borderImage: `url(${getGameUIPanelUrl(assets, 'panelFrame')}) 80 fill / 20px / 0 stretch`,
+                        border: 'none',
+                    } : undefined}
+                >
                     {/* Tabs */}
                     <HStack className="border-b border-border">
                         {(['buildings', 'recruit', 'garrison'] as const).map(tab => (
@@ -484,6 +506,11 @@ export function CanvasCastleTemplate({
                             </Box>
                         ))}
                     </HStack>
+
+                    {/* Divider */}
+                    {getGameUIPanelUrl(assets, 'divider')
+                        ? <img src={getGameUIPanelUrl(assets, 'divider')} alt="" className="w-full h-4 object-contain opacity-60" />
+                        : null}
 
                     {/* Panel Content */}
                     <Box className="flex-1 overflow-y-auto p-4">

@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { Box, Badge, Typography, Button, HStack, VStack, cn } from '@almadar/ui';
-import { RobotUnitType, useAssetsOptional, getUnitPortraitUrl, DEFAULT_ASSET_MANIFEST } from '../assets';
+import { RobotUnitType, useAssetsOptional, getUnitPortraitUrl, getGameUIBadgeUrl, getGameUIButtonUrl, GameUIBadgeType, DEFAULT_ASSET_MANIFEST } from '../assets';
 
 export interface UnitRecruitCardProps {
     /** Unit ID */
@@ -80,6 +80,7 @@ export function UnitRecruitCard({
 }: UnitRecruitCardProps): JSX.Element {
     const manifest = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
     const portraitUrl = getUnitPortraitUrl(manifest, unitType);
+    const badgeUrl = getGameUIBadgeUrl(manifest, `tier${tier}` as GameUIBadgeType);
 
     return (
         <Box
@@ -93,12 +94,15 @@ export function UnitRecruitCard({
             {/* Header: Tier badge + Name + Available count */}
             <HStack className="justify-between items-center mb-2">
                 <HStack className="gap-2 items-center">
-                    <Badge
-                        variant="default"
-                        className={cn('text-foreground', TIER_COLORS[tier] || TIER_COLORS[1])}
-                    >
-                        T{tier}
-                    </Badge>
+                    {badgeUrl
+                        ? <img src={badgeUrl} alt={`Tier ${tier}`} className="w-6 h-6 object-contain" />
+                        : <Badge
+                            variant="default"
+                            className={cn('text-foreground', TIER_COLORS[tier] || TIER_COLORS[1])}
+                        >
+                            T{tier}
+                        </Badge>
+                    }
                     <Typography variant="body1" className="text-foreground font-semibold">
                         {name}
                     </Typography>
@@ -196,6 +200,12 @@ export function UnitRecruitCard({
                         onClick={onRecruit}
                         disabled={disabled}
                         className="ml-auto bg-primary hover:bg-[var(--color-primary-hover)] text-primary-foreground"
+                        style={getGameUIButtonUrl(manifest, 'primary') ? {
+                            backgroundImage: `url(${getGameUIButtonUrl(manifest, 'primary')})`,
+                            backgroundSize: '100% 100%',
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                        } : undefined}
                     >
                         Recruit
                     </Button>

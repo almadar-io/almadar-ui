@@ -9,6 +9,7 @@ import React, { useState } from 'react';
 import { Box, Typography, cn } from '@almadar/ui';
 import { TraitIcon } from './TraitIcon';
 import { TraitStateViewer, TraitStateMachineDefinition } from './TraitStateViewer';
+import { useAssetsOptional, DEFAULT_ASSET_MANIFEST, getGameUIPanelUrl } from '../assets';
 
 export interface TraitData {
     id: string;
@@ -75,6 +76,8 @@ export function TraitSlot({
     onRemove,
 }: TraitSlotProps): JSX.Element {
     const [isHovered, setIsHovered] = useState(false);
+    const manifest = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
+    const tooltipFrameUrl = getGameUIPanelUrl(manifest, 'tooltipFrame');
     const config = SIZE_CONFIG[size];
     const isEmpty = !equippedTrait;
     const categoryColors = equippedTrait ? CATEGORY_COLORS[equippedTrait.category] : null;
@@ -171,7 +174,13 @@ export function TraitSlot({
                 <Box
                     position="absolute"
                     className="z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 p-3 bg-background border border-border rounded-lg shadow-xl"
-                    style={{ minWidth: 200 }}
+                    style={{
+                        minWidth: 200,
+                        ...(tooltipFrameUrl ? {
+                            borderImage: `url(${tooltipFrameUrl}) 60 fill / 15px / 0 stretch`,
+                            border: 'none',
+                        } : {}),
+                    }}
                 >
                     <Typography variant="h6" className="text-foreground mb-2 text-center">
                         {equippedTrait.name}

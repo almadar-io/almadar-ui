@@ -36,7 +36,13 @@ import {
     getTerrainSpriteUrl,
     getRobotUnitSpriteUrl,
     getHeroSpriteUrl,
+    getGameUIEmblemUrl,
+    getGameUIOverlayUrl,
+    getGameUIPanelUrl,
+    getGameUIButtonUrl,
     type TraitWarsAssetManifest,
+    type GameUIEmblemType,
+    type GameUIOverlayType,
     type TerrainType,
     type RobotUnitType,
 } from '../assets';
@@ -740,11 +746,21 @@ export function CanvasBattleTemplate({
 
                 <HStack gap="lg">
                     <VStack gap="none" align="center">
-                        <Typography variant="caption" className="text-[var(--tw-faction-resonator)]">Player</Typography>
+                        <HStack gap="xs" align="center">
+                            {getGameUIEmblemUrl(assets, 'resonator')
+                                ? <img src={getGameUIEmblemUrl(assets, 'resonator')} alt="Resonator" className="w-5 h-5 object-contain" />
+                                : null}
+                            <Typography variant="caption" className="text-[var(--tw-faction-resonator)]">Player</Typography>
+                        </HStack>
                         <Typography variant="h6" className="text-foreground">{playerUnits.length}</Typography>
                     </VStack>
                     <VStack gap="none" align="center">
-                        <Typography variant="caption" className="text-[var(--tw-faction-dominion)]">Enemy</Typography>
+                        <HStack gap="xs" align="center">
+                            {getGameUIEmblemUrl(assets, 'dominion')
+                                ? <img src={getGameUIEmblemUrl(assets, 'dominion')} alt="Dominion" className="w-5 h-5 object-contain" />
+                                : null}
+                            <Typography variant="caption" className="text-[var(--tw-faction-dominion)]">Enemy</Typography>
+                        </HStack>
                         <Typography variant="h6" className="text-foreground">{enemyUnits.length}</Typography>
                     </VStack>
                 </HStack>
@@ -755,7 +771,18 @@ export function CanvasBattleTemplate({
                 <Box className="fixed bottom-6 right-6 z-50">
                     <HStack gap="sm">
                         {(currentPhase === 'movement' || currentPhase === 'action') && (
-                            <Button variant="secondary" onClick={handleCancel} size="lg" className="shadow-xl text-foreground">
+                            <Button
+                                variant="secondary"
+                                onClick={handleCancel}
+                                size="lg"
+                                className="shadow-xl text-foreground"
+                                style={getGameUIButtonUrl(assets, 'secondary') ? {
+                                    backgroundImage: `url(${getGameUIButtonUrl(assets, 'secondary')})`,
+                                    backgroundSize: '100% 100%',
+                                    backgroundColor: 'transparent',
+                                    border: 'none',
+                                } : undefined}
+                            >
                                 Cancel
                             </Button>
                         )}
@@ -764,6 +791,12 @@ export function CanvasBattleTemplate({
                             onClick={handleEndTurn}
                             size="lg"
                             className="shadow-xl text-primary-foreground"
+                            style={getGameUIButtonUrl(assets, 'primary') ? {
+                                backgroundImage: `url(${getGameUIButtonUrl(assets, 'primary')})`,
+                                backgroundSize: '100% 100%',
+                                backgroundColor: 'transparent',
+                                border: 'none',
+                            } : undefined}
                         >
                             End Turn
                         </Button>
@@ -860,10 +893,17 @@ export function CanvasBattleTemplate({
                                 maxWidth: 280,
                             }}
                         >
-                            <Card variant="default" className={cn(
-                                "p-3 shadow-xl bg-background/95 backdrop-blur-sm min-w-[200px]",
-                                hoveredUnit.team === 'enemy' ? 'border border-[var(--tw-faction-dominion)]/50' : 'border border-[var(--tw-faction-resonator)]/50'
-                            )}>
+                            <Card
+                                variant="default"
+                                className={cn(
+                                    "p-3 shadow-xl bg-background/95 backdrop-blur-sm min-w-[200px]",
+                                    hoveredUnit.team === 'enemy' ? 'border border-[var(--tw-faction-dominion)]/50' : 'border border-[var(--tw-faction-resonator)]/50'
+                                )}
+                                style={getGameUIPanelUrl(assets, 'tooltipFrame') ? {
+                                    borderImage: `url(${getGameUIPanelUrl(assets, 'tooltipFrame')}) 60 fill / 15px / 0 stretch`,
+                                    border: 'none',
+                                } : undefined}
+                            >
                                 <HStack gap="sm" className="mb-2">
                                     <Typography variant="caption" className={cn(
                                         "font-bold",
@@ -928,13 +968,20 @@ export function CanvasBattleTemplate({
             </HStack>
 
             {/* Legend */}
-            <HStack gap="lg" justify="center" className="w-full py-2 border-t border-border">
+            {getGameUIPanelUrl(assets, 'divider')
+                ? <img src={getGameUIPanelUrl(assets, 'divider')} alt="" className="w-full h-4 object-contain opacity-60 my-1" />
+                : null}
+            <HStack gap="lg" justify="center" className={cn("w-full py-2", !getGameUIPanelUrl(assets, 'divider') && "border-t border-border")}>
                 <HStack gap="xs" align="center">
-                    <Box className="w-3 h-3 rounded-full bg-[var(--tw-faction-resonator)] border border-[var(--tw-faction-resonator)]/50" />
+                    {getGameUIEmblemUrl(assets, 'resonator')
+                        ? <img src={getGameUIEmblemUrl(assets, 'resonator')} alt="Resonator" className="w-4 h-4 object-contain" />
+                        : <Box className="w-3 h-3 rounded-full bg-[var(--tw-faction-resonator)] border border-[var(--tw-faction-resonator)]/50" />}
                     <Typography variant="caption" className="text-muted-foreground">Player</Typography>
                 </HStack>
                 <HStack gap="xs" align="center">
-                    <Box className="w-3 h-3 rounded-full bg-[var(--tw-faction-dominion)] border border-[var(--tw-faction-dominion)]/50" />
+                    {getGameUIEmblemUrl(assets, 'dominion')
+                        ? <img src={getGameUIEmblemUrl(assets, 'dominion')} alt="Dominion" className="w-4 h-4 object-contain" />
+                        : <Box className="w-3 h-3 rounded-full bg-[var(--tw-faction-dominion)] border border-[var(--tw-faction-dominion)]/50" />}
                     <Typography variant="caption" className="text-muted-foreground">Enemy</Typography>
                 </HStack>
                 <HStack gap="xs" align="center">
@@ -956,24 +1003,35 @@ export function CanvasBattleTemplate({
                 <Box className="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm animate-in fade-in duration-500 rounded-xl">
                     <VStack gap="lg" align="center" className="p-8">
                         {/* Result Title */}
-                        <Typography
-                            variant="h2"
-                            className={cn(
-                                "font-black tracking-widest uppercase",
-                                gameResult === 'victory' ? 'text-[var(--tw-gold)]' : 'text-error'
-                            )}
-                        >
-                            {gameResult === 'victory' ? 'Victory!' : 'Defeat'}
-                        </Typography>
-
-                        {/* Decorative line */}
-                        <Box className={cn(
-                            "w-48 h-1 rounded-full",
-                            gameResult === 'victory' ? 'bg-gradient-to-r from-transparent via-[var(--tw-gold)] to-transparent' : 'bg-gradient-to-r from-transparent via-error to-transparent'
-                        )} />
+                        {getGameUIOverlayUrl(assets, gameResult as GameUIOverlayType)
+                            ? <img src={getGameUIOverlayUrl(assets, gameResult as GameUIOverlayType)} alt={gameResult} className="w-72 h-auto object-contain" />
+                            : <>
+                                <Typography
+                                    variant="h2"
+                                    className={cn(
+                                        "font-black tracking-widest uppercase",
+                                        gameResult === 'victory' ? 'text-[var(--tw-gold)]' : 'text-error'
+                                    )}
+                                >
+                                    {gameResult === 'victory' ? 'Victory!' : 'Defeat'}
+                                </Typography>
+                                <Box className={cn(
+                                    "w-48 h-1 rounded-full",
+                                    gameResult === 'victory' ? 'bg-gradient-to-r from-transparent via-[var(--tw-gold)] to-transparent' : 'bg-gradient-to-r from-transparent via-error to-transparent'
+                                )} />
+                            </>
+                        }
 
                         {/* Battle Stats */}
-                        <Card variant="default" className="bg-card/90 border border-border p-6 min-w-[300px]">
+                        <Card
+                            variant="default"
+                            className="bg-card/90 border border-border p-6 min-w-[300px]"
+                            style={getGameUIPanelUrl(assets, 'panelFrame') ? {
+                                borderImage: `url(${getGameUIPanelUrl(assets, 'panelFrame')}) 80 fill / 20px / 0 stretch`,
+                                border: 'none',
+                                padding: '24px',
+                            } : undefined}
+                        >
                             <VStack gap="md">
                                 <Typography variant="h6" className="text-secondary-foreground text-center font-semibold">Battle Summary</Typography>
                                 <HStack justify="between" className="w-full">
@@ -1012,6 +1070,12 @@ export function CanvasBattleTemplate({
                                     setGameResult(null);
                                 }}
                                 className="text-primary-foreground px-8"
+                                style={getGameUIButtonUrl(assets, 'primary') ? {
+                                    backgroundImage: `url(${getGameUIButtonUrl(assets, 'primary')})`,
+                                    backgroundSize: '100% 100%',
+                                    backgroundColor: 'transparent',
+                                    border: 'none',
+                                } : undefined}
                             >
                                 Play Again
                             </Button>

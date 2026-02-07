@@ -18,6 +18,7 @@ import { GameTile, TileUnit } from './GameTile';
 import { StateIndicator, TraitState } from '../atoms/StateIndicator';
 import { TraitStateViewer, TraitDefinition } from '../molecules/TraitStateViewer';
 import { GameUnit as GameUnitComponent } from '../molecules/GameUnit';
+import { useAssetsOptional, DEFAULT_ASSET_MANIFEST, getGameUIPanelUrl } from '../assets';
 import {
     GameState,
     Position,
@@ -130,6 +131,8 @@ export function GameBoardWithTraits({
 }: GameBoardWithTraitsProps): JSX.Element {
     const [hoveredPos, setHoveredPos] = useState<Position | null>(null);
     const [hoveredTransition, setHoveredTransition] = useState<string | null>(null);
+    const manifest = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
+    const combatLogBgUrl = getGameUIPanelUrl(manifest, 'combatLogBg');
 
     // Get selected unit and its trait
     const selectedUnit = gameState.selectedUnitId ? gameState.units[gameState.selectedUnitId] : null;
@@ -348,7 +351,14 @@ export function GameBoardWithTraits({
 
                 {/* Combat log */}
                 {combatLog.length > 0 && (
-                    <Box className="bg-card p-3 rounded-lg max-h-32 overflow-y-auto">
+                    <Box
+                        className="bg-card p-3 rounded-lg max-h-32 overflow-y-auto"
+                        style={combatLogBgUrl ? {
+                            backgroundImage: `url(${combatLogBgUrl})`,
+                            backgroundSize: 'cover',
+                            backgroundPosition: 'center',
+                        } : undefined}
+                    >
                         <Typography variant="caption" className="text-muted-foreground mb-2 block">Combat Log</Typography>
                         {combatLog.slice(-5).map((entry, i) => (
                             <Typography

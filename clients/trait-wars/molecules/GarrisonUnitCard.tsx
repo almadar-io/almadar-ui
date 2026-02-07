@@ -42,6 +42,7 @@ export function GarrisonUnitCard({
 }: GarrisonUnitCardProps): JSX.Element {
     const manifest = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
     const portraitUrl = getUnitPortraitUrl(manifest, unit.spriteId as RobotUnitType);
+    const badgeUrl = getGameUIBadgeUrl(manifest, `tier${unit.tier}` as GameUIBadgeType);
 
     return (
         <Box
@@ -72,12 +73,15 @@ export function GarrisonUnitCard({
 
                 {/* Name + Tier */}
                 <HStack className="gap-2 items-center flex-1">
-                    <Badge
-                        variant="default"
-                        className={cn('text-foreground', TIER_COLORS[unit.tier] || TIER_COLORS[1])}
-                    >
-                        T{unit.tier}
-                    </Badge>
+                    {badgeUrl
+                        ? <img src={badgeUrl} alt={`Tier ${unit.tier}`} className="w-6 h-6 object-contain" />
+                        : <Badge
+                            variant="default"
+                            className={cn('text-foreground', TIER_COLORS[unit.tier] || TIER_COLORS[1])}
+                        >
+                            T{unit.tier}
+                        </Badge>
+                    }
                     <Typography variant="body2" className="text-foreground flex-1">
                         {unit.name}
                     </Typography>
