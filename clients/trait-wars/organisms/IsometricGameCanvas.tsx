@@ -25,6 +25,7 @@ import {
     getWorldMapFeatureUrl,
 } from '../assets';
 import type { RobotUnitType, HeroType, WorldMapFeatureType, TerrainType } from '../assets';
+import type { ResolvedFrame } from '../types/spriteAnimation';
 
 // =============================================================================
 // Constants - Isometric Tile Dimensions (Kenney Isometric Miniature Dungeon)
@@ -136,6 +137,12 @@ export interface IsometricGameCanvasProps {
     hasActiveEffects?: boolean;
     /** Additional sprite URLs to preload (e.g., effect sprites) */
     effectSpriteUrls?: string[];
+    /**
+     * Optional callback to resolve animated sprite sheet frames for units.
+     * When provided, units with sprite sheets use frame-based animation
+     * instead of static sprites. Returns null for units without sheets.
+     */
+    resolveUnitFrame?: (unitId: string) => ResolvedFrame | null;
 }
 
 // =============================================================================
@@ -292,6 +299,7 @@ export function IsometricGameCanvas({
     onDrawEffects,
     hasActiveEffects = false,
     effectSpriteUrls = [],
+    resolveUnitFrame,
 }: IsometricGameCanvasProps): JSX.Element {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const minimapRef = useRef<HTMLCanvasElement>(null);
@@ -384,11 +392,27 @@ export function IsometricGameCanvas({
             if (url) urls.push(url);
         });
 
-        // Unit sprites
+        // Unit sprites (static fallbacks)
         units.forEach(unit => {
             const url = resolveUnitSprite(unit);
             if (url) urls.push(url);
         });
+
+        // Animated sprite sheet images (if resolveUnitFrame is provided)
+        if (resolveUnitFrame && assetManifest?.characterSheets) {
+            const sheets = assetManifest.characterSheets;
+            const base = assetManifest.baseUrl;
+            // Preload sheets for characters present in units list
+            const seenChars = new Set<string>();
+            units.forEach(unit => {
+                const charId = unit.heroId || unit.unitType;
+                if (charId && sheets[charId] && !seenChars.has(charId)) {
+                    seenChars.add(charId);
+                    urls.push(`${base}/${sheets[charId].se}`);
+                    urls.push(`${base}/${sheets[charId].sw}`);
+                }
+            });
+        }
 
         // Feature sprites
         features.forEach(feature => {
@@ -404,7 +428,7 @@ export function IsometricGameCanvas({
         }
 
         return urls;
-    }, [tiles, units, features, backgroundImage, resolveTerrainSprite, resolveFeatureSprite, resolveUnitSprite, effectSpriteUrls]);
+    }, [tiles, units, features, backgroundImage, resolveTerrainSprite, resolveFeatureSprite, resolveUnitSprite, resolveUnitFrame, assetManifest, effectSpriteUrls]);
 
     const { getImage } = useImageCache(spriteUrls);
 
@@ -812,7 +836,45 @@ export function IsometricGameCanvas({
 
             // Draw unit sprite or fallback (with team color glow)
             // Apply breatheOffset to all sprite positions
-            if (img) {
+            // Try animated sprite sheet frame first
+            const frame = resolveUnitFrame?.(unit.id) ?? null;
+            const frameImg = frame ? getImage(frame.sheetUrl) : null;
+
+            if (frame && frameImg) {
+                // Sprite sheet frame — use frame dimensions for aspect ratio
+                const frameAr = frame.sw / frame.sh;
+                let fDrawH = unitDrawH;
+                let fDrawW = unitDrawH * frameAr;
+                if (fDrawW > maxUnitW) {
+                    fDrawW = maxUnitW;
+                    fDrawH = maxUnitW / frameAr;
+                }
+                // No breatheOffset for animated sprites (animation handles idle motion)
+                const spriteY = groundY - fDrawH;
+
+                ctx.save();
+                if (unit.team) {
+                    ctx.shadowColor = unit.team === 'player' ? 'rgba(0, 150, 255, 0.6)' : 'rgba(255, 50, 50, 0.6)';
+                    ctx.shadowBlur = 12 * scale;
+                }
+                if (frame.flipX) {
+                    // Flip horizontally around the center of the sprite
+                    ctx.translate(centerX, 0);
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(
+                        frameImg,
+                        frame.sx, frame.sy, frame.sw, frame.sh,
+                        -fDrawW / 2, spriteY, fDrawW, fDrawH,
+                    );
+                } else {
+                    ctx.drawImage(
+                        frameImg,
+                        frame.sx, frame.sy, frame.sw, frame.sh,
+                        centerX - fDrawW / 2, spriteY, fDrawW, fDrawH,
+                    );
+                }
+                ctx.restore();
+            } else if (img) {
                 const spriteY = groundY - drawH - breatheOffset;
                 if (unit.team) {
                     ctx.save();
@@ -919,7 +981,7 @@ export function IsometricGameCanvas({
         drawMinimap();
     }, [
         sortedTiles, units, features, selectedUnitId,
-        scale, debug, resolveTerrainSprite, resolveFeatureSprite, resolveUnitSprite, getImage,
+        scale, debug, resolveTerrainSprite, resolveFeatureSprite, resolveUnitSprite, resolveUnitFrame, getImage,
         gridWidth, gridHeight, baseOffsetX, scaledTileWidth, scaledTileHeight, scaledFloorHeight,
         validMoveSet, attackTargetSet, hoveredTile, viewportSize, drawMinimap, onDrawEffects
     ]);

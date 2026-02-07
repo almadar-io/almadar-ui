@@ -8,7 +8,7 @@
  * - DOM overlays: ResourceBar, hero info panel, hex tooltip
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Box, Typography, HStack, VStack, Button, Badge, Card, cn } from '@almadar/ui';
 import {
     IsometricGameCanvas,
@@ -36,10 +36,12 @@ import {
     getHeroSpriteUrl,
     getWorldMapFeatureUrl,
     getIsometricCastleUrl,
+    getAllCharacterSheetUrls,
     type TraitWarsAssetManifest,
     type WorldMapFeatureType,
     type TerrainType,
 } from '../assets';
+import { useSpriteAnimations } from '../organisms/useSpriteAnimations';
 
 // ============================================================================
 // TYPES
@@ -104,6 +106,10 @@ export function CanvasWorldMapTemplate({
     const assets = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
     const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
 
+    // Sprite sheet animations
+    const { syncUnits: syncSpriteAnimations, resolveUnitFrame } = useSpriteAnimations(assets);
+    const spriteSheetUrls = useMemo(() => getAllCharacterSheetUrls(assets), [assets]);
+
     // Selected hero
     const selectedHero = useMemo(() => {
         return worldMap.heroes.find((h) => h.id === selectedHeroId);
@@ -132,6 +138,14 @@ export function CanvasWorldMapTemplate({
             sprite: getHeroSpriteUrl(assets, hero.spriteId || hero.id),
         }));
     }, [worldMap.heroes, assets]);
+
+    // Tick sprite animations (~60fps)
+    useEffect(() => {
+        const interval = setInterval(() => {
+            syncSpriteAnimations(units, 16);
+        }, 16);
+        return () => clearInterval(interval);
+    }, [syncSpriteAnimations, units]);
 
     // Convert hex features to isometric features
     const features: IsometricFeature[] = useMemo(() => {
@@ -294,6 +308,8 @@ export function CanvasWorldMapTemplate({
                             scale={scale}
                             assetManifest={assets}
                             backgroundImage={assets.backgrounds?.worldMap ? `${assets.baseUrl}/${assets.backgrounds.worldMap}` : undefined}
+                            effectSpriteUrls={spriteSheetUrls}
+                            resolveUnitFrame={resolveUnitFrame}
                         />
 
                         {/* Hover Tooltip (positioned over canvas) */}

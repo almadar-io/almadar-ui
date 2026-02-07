@@ -9,4 +9,5 @@ export * from './traits';
 export * from './resources';
 export * from './castle';
 export * from './effects';
+export * from './spriteAnimation';
 

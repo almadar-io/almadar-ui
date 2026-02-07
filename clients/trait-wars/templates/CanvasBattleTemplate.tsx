@@ -40,6 +40,8 @@ import {
     type RobotUnitType,
 } from '../assets';
 import { useCanvasEffects } from '../organisms/useCanvasEffects';
+import { useSpriteAnimations } from '../organisms/useSpriteAnimations';
+import { getAllCharacterSheetUrls } from '../assets';
 import type { CombatActionType } from '../types/effects';
 
 // ============================================================================
@@ -465,6 +467,24 @@ export function CanvasBattleTemplate({
         screenFlash: canvasScreenFlash,
     } = useCanvasEffects({ manifest: assets, scale, baseOffsetX });
 
+    // Sprite sheet animations
+    const {
+        syncUnits: syncSpriteAnimations,
+        setUnitAnimation,
+        resolveUnitFrame,
+    } = useSpriteAnimations(assets);
+
+    // Preload sprite sheet images
+    const spriteSheetUrls = useMemo(() => getAllCharacterSheetUrls(assets), [assets]);
+
+    // Tick sprite animations alongside canvas effects (16ms = ~60fps)
+    useEffect(() => {
+        const interval = setInterval(() => {
+            syncSpriteAnimations(isoUnits, 16);
+        }, 16);
+        return () => clearInterval(interval);
+    }, [syncSpriteAnimations, isoUnits]);
+
     const showDamage = useCallback((tileX: number, tileY: number, amount: number, type: DamagePopupData['type']) => {
         const pos = isoToScreen(tileX, tileY, scale, baseOffsetX);
         const screenX = pos.x + TILE_WIDTH * scale / 2;
@@ -526,10 +546,13 @@ export function CanvasBattleTemplate({
 
                 showDamage(unit.position.x, unit.position.y, damage, 'physical');
                 triggerCombatEffect(unit.position.x, unit.position.y, 'melee');
+                setUnitAnimation(selectedUnit.id, 'attack');
+                setUnitAnimation(unit.id, 'hit');
                 addLog('attack', `${selectedUnit.name} attacks ${unit.name} for ${damage} damage!`, damage);
 
                 if (newHealth === 0) {
                     addLog('defeat', `${unit.name} has been defeated!`);
+                    setUnitAnimation(unit.id, 'death');
                     spawnCombatEffect('death', unit.position.x, unit.position.y);
                     const updatedAttacker = triggerTraitEvent(selectedUnit, 'KILL');
                     setUnits(prev => prev.map(u => u.id === updatedAttacker.id ? updatedAttacker : u));
@@ -726,7 +749,8 @@ export function CanvasBattleTemplate({
                         backgroundImage={assets.backgrounds?.battle ? `${assets.baseUrl}/${assets.backgrounds.battle}` : undefined}
                         onDrawEffects={drawEffects}
                         hasActiveEffects={effectsActive}
-                        effectSpriteUrls={effectSpriteUrls}
+                        effectSpriteUrls={[...effectSpriteUrls, ...spriteSheetUrls]}
+                        resolveUnitFrame={resolveUnitFrame}
                     />
 
                     {/* Damage Popups (positioned over canvas) */}

@@ -205,6 +205,18 @@ export interface TraitWarsAssetManifest {
 
     /** Terrain variant arrays for visual variety (multiple sprites per terrain type) */
     terrainVariants?: Partial<Record<TerrainType, string[]>>;
+
+    /**
+     * Animated sprite sheets for frame-based character animation.
+     * Keys are character IDs (matching unitType or heroId on IsometricUnit).
+     * Each entry has SE and SW sheet URLs + frame dimensions.
+     */
+    characterSheets?: Record<string, {
+        se: string;
+        sw: string;
+        frameWidth: number;
+        frameHeight: number;
+    }>;
 }
 
 // ============================================================================
@@ -380,6 +392,49 @@ export function getRobotUnitSpriteUrl(manifest: TraitWarsAssetManifest, type: Ro
 export function getUnitPortraitUrl(manifest: TraitWarsAssetManifest, type: RobotUnitType): string | undefined {
     const path = manifest.unitPortraits?.[type];
     return path ? `${manifest.baseUrl}/${path}` : undefined;
+}
+
+/**
+ * Get sprite sheet URLs for a character by ID (unitType or heroId).
+ * Returns { se, sw } full URLs or null if no sheets configured.
+ */
+export function getCharacterSheetUrls(
+    manifest: TraitWarsAssetManifest,
+    characterId: string,
+): { se: string; sw: string } | null {
+    const entry = manifest.characterSheets?.[characterId];
+    if (!entry) return null;
+    return {
+        se: `${manifest.baseUrl}/${entry.se}`,
+        sw: `${manifest.baseUrl}/${entry.sw}`,
+    };
+}
+
+/**
+ * Get frame dimensions for a character's sprite sheet.
+ */
+export function getCharacterFrameDims(
+    manifest: TraitWarsAssetManifest,
+    characterId: string,
+): { width: number; height: number } | null {
+    const entry = manifest.characterSheets?.[characterId];
+    if (!entry) return null;
+    return { width: entry.frameWidth, height: entry.frameHeight };
+}
+
+/**
+ * Get all character sprite sheet URLs for bulk preloading.
+ */
+export function getAllCharacterSheetUrls(manifest: TraitWarsAssetManifest): string[] {
+    const urls: string[] = [];
+    const sheets = manifest.characterSheets;
+    if (!sheets) return urls;
+
+    for (const entry of Object.values(sheets)) {
+        urls.push(`${manifest.baseUrl}/${entry.se}`);
+        urls.push(`${manifest.baseUrl}/${entry.sw}`);
+    }
+    return urls;
 }
 
 /**
@@ -597,6 +652,43 @@ export const DEFAULT_ASSET_MANIFEST: TraitWarsAssetManifest = {
         worldMap: 'world/dark_clouds_from_above.png',
         battle: 'world/starfield.png',
         castle: 'world/dark_stone.png',
+    },
+    // Animated sprite sheets for frame-based character animation
+    characterSheets: {
+        // Robots (128x128 frames)
+        worker:       { se: 'sprite-sheets/worker-sprite-sheet-se.png',       sw: 'sprite-sheets/worker-sprite-sheet-sw.png',       frameWidth: 128, frameHeight: 128 },
+        scrapper:     { se: 'sprite-sheets/scrapper-sprite-sheet-se.png',     sw: 'sprite-sheets/scrapper-sprite-sheet-sw.png',     frameWidth: 128, frameHeight: 128 },
+        mender:       { se: 'sprite-sheets/mender-sprite-sheet-se.png',       sw: 'sprite-sheets/mender-sprite-sheet-sw.png',       frameWidth: 128, frameHeight: 128 },
+        guardian:     { se: 'sprite-sheets/guardian-sprite-sheet-se.png',     sw: 'sprite-sheets/guardian-sprite-sheet-sw.png',     frameWidth: 128, frameHeight: 128 },
+        strider:      { se: 'sprite-sheets/strider-sprite-sheet-se.png',      sw: 'sprite-sheets/strider-sprite-sheet-sw.png',      frameWidth: 128, frameHeight: 128 },
+        breaker:      { se: 'sprite-sheets/breaker-sprite-sheet-se.png',      sw: 'sprite-sheets/breaker-sprite-sheet-sw.png',      frameWidth: 128, frameHeight: 128 },
+        resonator:    { se: 'sprite-sheets/resonator-sprite-sheet-se.png',    sw: 'sprite-sheets/resonator-sprite-sheet-sw.png',    frameWidth: 128, frameHeight: 128 },
+        forger:       { se: 'sprite-sheets/forger-sprite-sheet-se.png',       sw: 'sprite-sheets/forger-sprite-sheet-sw.png',       frameWidth: 128, frameHeight: 128 },
+        glitch:       { se: 'sprite-sheets/glitch-sprite-sheet-se.png',       sw: 'sprite-sheets/glitch-sprite-sheet-sw.png',       frameWidth: 128, frameHeight: 128 },
+        archivist:    { se: 'sprite-sheets/archivist-sprite-sheet-se.png',    sw: 'sprite-sheets/archivist-sprite-sheet-sw.png',    frameWidth: 128, frameHeight: 128 },
+        conductor:    { se: 'sprite-sheets/conductor-sprite-sheet-se.png',    sw: 'sprite-sheets/conductor-sprite-sheet-sw.png',    frameWidth: 128, frameHeight: 128 },
+        coordinator:  { se: 'sprite-sheets/coordinator-sprite-sheet-se.png',  sw: 'sprite-sheets/coordinator-sprite-sheet-sw.png',  frameWidth: 128, frameHeight: 128 },
+        'shadow-legion': { se: 'sprite-sheets/shadow-legion-sprite-sheet-se.png', sw: 'sprite-sheets/shadow-legion-sprite-sheet-sw.png', frameWidth: 128, frameHeight: 128 },
+        // Heroes (256x256 frames)
+        valence:   { se: 'sprite-sheets/valence-sprite-sheet-se.png',   sw: 'sprite-sheets/valence-sprite-sheet-sw.png',   frameWidth: 256, frameHeight: 256 },
+        zahra:     { se: 'sprite-sheets/zahra-sprite-sheet-se.png',     sw: 'sprite-sheets/zahra-sprite-sheet-sw.png',     frameWidth: 256, frameHeight: 256 },
+        hareth:    { se: 'sprite-sheets/hareth-sprite-sheet-se.png',    sw: 'sprite-sheets/hareth-sprite-sheet-sw.png',    frameWidth: 256, frameHeight: 256 },
+        kael:      { se: 'sprite-sheets/kael-sprite-sheet-se.png',      sw: 'sprite-sheets/kael-sprite-sheet-sw.png',      frameWidth: 256, frameHeight: 256 },
+        samira:    { se: 'sprite-sheets/samira-sprite-sheet-se.png',    sw: 'sprite-sheets/samira-sprite-sheet-sw.png',    frameWidth: 256, frameHeight: 256 },
+        omar:      { se: 'sprite-sheets/omar-sprite-sheet-se.png',      sw: 'sprite-sheets/omar-sprite-sheet-sw.png',      frameWidth: 256, frameHeight: 256 },
+        layla:     { se: 'sprite-sheets/layla-sprite-sheet-se.png',     sw: 'sprite-sheets/layla-sprite-sheet-sw.png',     frameWidth: 256, frameHeight: 256 },
+        jara:      { se: 'sprite-sheets/jara-sprite-sheet-se.png',      sw: 'sprite-sheets/jara-sprite-sheet-sw.png',      frameWidth: 256, frameHeight: 256 },
+        rumi:      { se: 'sprite-sheets/rumi-sprite-sheet-se.png',      sw: 'sprite-sheets/rumi-sprite-sheet-sw.png',      frameWidth: 256, frameHeight: 256 },
+        zain:      { se: 'sprite-sheets/zain-sprite-sheet-se.png',      sw: 'sprite-sheets/zain-sprite-sheet-sw.png',      frameWidth: 256, frameHeight: 256 },
+        tariq:     { se: 'sprite-sheets/tariq-sprite-sheet-se.png',     sw: 'sprite-sheets/tariq-sprite-sheet-sw.png',     frameWidth: 256, frameHeight: 256 },
+        fatima:    { se: 'sprite-sheets/fatima-sprite-sheet-se.png',    sw: 'sprite-sheets/fatima-sprite-sheet-sw.png',    frameWidth: 256, frameHeight: 256 },
+        'dr-aris': { se: 'sprite-sheets/dr-aris-sprite-sheet-se.png',  sw: 'sprite-sheets/dr-aris-sprite-sheet-sw.png',  frameWidth: 256, frameHeight: 256 },
+        amir:      { se: 'sprite-sheets/amir-sprite-sheet-se.png',      sw: 'sprite-sheets/amir-sprite-sheet-sw.png',      frameWidth: 256, frameHeight: 256 },
+        // Villains (256x256 frames)
+        emperor:   { se: 'sprite-sheets/emperor-sprite-sheet-se.png',   sw: 'sprite-sheets/emperor-sprite-sheet-sw.png',   frameWidth: 256, frameHeight: 256 },
+        tyrant:    { se: 'sprite-sheets/tyrant-sprite-sheet-se.png',    sw: 'sprite-sheets/tyrant-sprite-sheet-sw.png',    frameWidth: 256, frameHeight: 256 },
+        destroyer: { se: 'sprite-sheets/destroyer-sprite-sheet-se.png', sw: 'sprite-sheets/destroyer-sprite-sheet-sw.png', frameWidth: 256, frameHeight: 256 },
+        deceiver:  { se: 'sprite-sheets/deceiver-sprite-sheet-se.png',  sw: 'sprite-sheets/deceiver-sprite-sheet-sw.png',  frameWidth: 256, frameHeight: 256 },
     },
     // Terrain variants for visual variety (deterministic per-tile selection)
     terrainVariants: {
