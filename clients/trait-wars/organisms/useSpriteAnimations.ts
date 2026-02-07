@@ -164,6 +164,13 @@ export function useSpriteAnimations(
         const frameDims = getCharacterFrameDims(manifest, characterId);
         if (!sheetUrls || !frameDims) return null;
 
+        // Idle: return frozen frame 0 with breathing flag (no frame cycling)
+        if (state.animation === 'idle') {
+            const idleState = { ...state, elapsed: 0, frame: 0 };
+            const frame = resolveFrame(sheetUrls, frameDims, idleState);
+            return frame ? { ...frame, applyBreathing: true } : null;
+        }
+
         return resolveFrame(sheetUrls, frameDims, state);
     }, [manifest]);
 

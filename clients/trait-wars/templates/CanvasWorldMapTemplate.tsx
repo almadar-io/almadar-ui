@@ -8,7 +8,7 @@
  * - DOM overlays: ResourceBar, hero info panel, hex tooltip
  */
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Box, Typography, HStack, VStack, Button, Badge, Card, cn } from '@almadar/ui';
 import {
     IsometricGameCanvas,
@@ -128,8 +128,8 @@ export function CanvasWorldMapTemplate({
         }));
     }, [worldMap.hexes, assets]);
 
-    // Convert heroes to isometric units
-    const units: IsometricUnit[] = useMemo(() => {
+    // Convert heroes to isometric units (base positions from worldMap)
+    const baseUnits: IsometricUnit[] = useMemo(() => {
         return worldMap.heroes.map((hero) => ({
             id: hero.id,
             position: hero.position,
@@ -142,13 +142,86 @@ export function CanvasWorldMapTemplate({
         }));
     }, [worldMap.heroes, assets]);
 
-    // Tick sprite animations (~60fps)
+    // ========================================================================
+    // MOVEMENT ANIMATION — smooth tile-by-tile walk instead of teleporting
+    // ========================================================================
+
+    interface MovementAnim {
+        heroId: string;
+        from: { x: number; y: number };
+        to: { x: number; y: number };
+        elapsed: number;
+        duration: number;
+        /** Callbacks to fire once the walk reaches its destination */
+        onComplete: () => void;
+    }
+
+    const MOVE_SPEED_MS_PER_TILE = 300; // ms to traverse one tile
+    const movementAnimRef = useRef<MovementAnim | null>(null);
+    const [movingPositions, setMovingPositions] = useState<Map<string, { x: number; y: number }>>(new Map());
+
+    /** Start an animated walk from `from` to `to`. */
+    const startMoveAnimation = useCallback((
+        heroId: string,
+        from: { x: number; y: number },
+        to: { x: number; y: number },
+        onComplete: () => void,
+    ) => {
+        const dx = to.x - from.x;
+        const dy = to.y - from.y;
+        const dist = Math.max(Math.abs(dx), Math.abs(dy));
+        const duration = dist * MOVE_SPEED_MS_PER_TILE;
+        movementAnimRef.current = { heroId, from, to, elapsed: 0, duration, onComplete };
+    }, []);
+
+    // Tick movement animation alongside sprite animations (~60fps)
     useEffect(() => {
         const interval = setInterval(() => {
-            syncSpriteAnimations(units, 16);
+            const anim = movementAnimRef.current;
+            if (anim) {
+                anim.elapsed += 16;
+                const t = Math.min(anim.elapsed / anim.duration, 1);
+                // Ease-out for natural deceleration
+                const eased = 1 - (1 - t) * (1 - t);
+                const cx = anim.from.x + (anim.to.x - anim.from.x) * eased;
+                const cy = anim.from.y + (anim.to.y - anim.from.y) * eased;
+
+                if (t >= 1) {
+                    // Animation complete — snap to destination and fire callback
+                    movementAnimRef.current = null;
+                    setMovingPositions((prev) => {
+                        const next = new Map(prev);
+                        next.delete(anim.heroId);
+                        return next;
+                    });
+                    anim.onComplete();
+                } else {
+                    setMovingPositions((prev) => {
+                        const next = new Map(prev);
+                        next.set(anim.heroId, { x: cx, y: cy });
+                        return next;
+                    });
+                }
+            }
+
+            // Sync sprite animations with the visual units (uses interpolated positions)
+            syncSpriteAnimations(unitsRef.current, 16);
         }, 16);
         return () => clearInterval(interval);
-    }, [syncSpriteAnimations, units]);
+    }, [syncSpriteAnimations]);
+
+    // Units with interpolated positions for moving heroes
+    const units: IsometricUnit[] = useMemo(() => {
+        if (movingPositions.size === 0) return baseUnits;
+        return baseUnits.map((unit) => {
+            const pos = movingPositions.get(unit.id);
+            return pos ? { ...unit, position: pos } : unit;
+        });
+    }, [baseUnits, movingPositions]);
+
+    // Keep a mutable ref to units so the setInterval can read current values
+    const unitsRef = useRef(units);
+    unitsRef.current = units;
 
     // Convert hex features to isometric features
     const features: IsometricFeature[] = useMemo(() => {
@@ -221,19 +294,29 @@ export function CanvasWorldMapTemplate({
             .map((h) => h.position);
     }, [selectedHero, worldMap.heroes]);
 
-    // Handle tile click
+    // Handle tile click — starts animated walk, fires callbacks on arrival
     const handleTileClick = useCallback((x: number, y: number) => {
         const hex = worldMap.hexes.find((h) => h.x === x && h.y === y);
         if (!hex) return;
 
-        if (selectedHero && validMoves.some((m) => m.x === x && m.y === y)) {
-            onHeroMove?.(selectedHero.id, x, y);
+        // Don't allow clicks while a movement animation is playing
+        if (movementAnimRef.current) return;
 
-            if (hex.feature === 'castle' && hex.featureData?.castleId) {
-                onEnterCastle?.(hex.featureData.castleId);
-            } else if (hex.feature && ['goldMine', 'resonanceCrystal', 'traitCache', 'salvageYard', 'treasure'].includes(hex.feature)) {
-                onCollectResource?.(x, y, hex.featureData?.resourceType || 'gold', hex.featureData?.resourceAmount || 100);
-            }
+        if (selectedHero && validMoves.some((m) => m.x === x && m.y === y)) {
+            const from = { ...selectedHero.position };
+            const to = { x, y };
+
+            startMoveAnimation(selectedHero.id, from, to, () => {
+                // Fire the logical move after the walk animation completes
+                onHeroMove?.(selectedHero.id, x, y);
+
+                if (hex.feature === 'castle' && hex.featureData?.castleId) {
+                    onEnterCastle?.(hex.featureData.castleId);
+                } else if (hex.feature && ['goldMine', 'resonanceCrystal', 'traitCache', 'salvageYard', 'treasure'].includes(hex.feature)) {
+                    onCollectResource?.(x, y, hex.featureData?.resourceType || 'gold', hex.featureData?.resourceAmount || 100);
+                }
+            });
+            return;
         }
 
         // Check for enemy hero battle
@@ -243,7 +326,7 @@ export function CanvasWorldMapTemplate({
         if (selectedHero && enemyHero && attackTargets.some((t) => t.x === x && t.y === y)) {
             onBattleEncounter?.(selectedHero.id, enemyHero.id);
         }
-    }, [worldMap.hexes, worldMap.heroes, selectedHero, validMoves, attackTargets, onHeroMove, onEnterCastle, onCollectResource, onBattleEncounter]);
+    }, [worldMap.hexes, worldMap.heroes, selectedHero, validMoves, attackTargets, startMoveAnimation, onHeroMove, onEnterCastle, onCollectResource, onBattleEncounter]);
 
     // Handle unit click
     const handleUnitClick = useCallback((unitId: string) => {

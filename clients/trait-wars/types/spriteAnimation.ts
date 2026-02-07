@@ -40,6 +40,8 @@ export interface ResolvedFrame {
     sh: number;
     /** Whether to flip horizontally when drawing (for NE/NW directions) */
     flipX: boolean;
+    /** When true, canvas should apply sine-bob breathing offset (used for frozen idle frame) */
+    applyBreathing?: boolean;
 }
 
 /** Per-unit animation state tracked in the animation system */

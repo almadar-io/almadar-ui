@@ -849,8 +849,8 @@ export function IsometricGameCanvas({
                     fDrawW = maxUnitW;
                     fDrawH = maxUnitW / frameAr;
                 }
-                // No breatheOffset for animated sprites (animation handles idle motion)
-                const spriteY = groundY - fDrawH;
+                // Apply breatheOffset for frozen idle frames, skip for active animations
+                const spriteY = groundY - fDrawH - (frame.applyBreathing ? breatheOffset : 0);
 
                 ctx.save();
                 if (unit.team) {
