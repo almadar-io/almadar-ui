@@ -67,7 +67,7 @@ export function HeroProfileTemplate({
     return (
         <Box
             className={cn(
-                'p-6 bg-gradient-to-br from-slate-900 to-slate-800 rounded-xl border border-slate-700',
+                'p-6 bg-gradient-to-br from-card to-background rounded-xl border border-border',
                 className
             )}
         >
@@ -84,11 +84,11 @@ export function HeroProfileTemplate({
                 <VStack gap={2} className="flex-1">
                     <HStack justify="between" className="w-full">
                         <VStack gap={0}>
-                            <Typography variant="h2" className="text-white">
+                            <Typography variant="h2" className="text-foreground">
                                 {hero.name}
                             </Typography>
                             {hero.title && (
-                                <Typography variant="body2" className="text-gray-400 italic">
+                                <Typography variant="body2" className="text-muted-foreground italic">
                                     "{hero.title}"
                                 </Typography>
                             )}
@@ -101,17 +101,17 @@ export function HeroProfileTemplate({
                     {/* Experience Bar */}
                     <VStack gap={1} className="w-full">
                         <HStack justify="between" className="w-full">
-                            <Typography variant="caption" className="text-gray-400">
+                            <Typography variant="caption" className="text-muted-foreground">
                                 Level {hero.level}
                             </Typography>
-                            <Typography variant="caption" className="text-gray-400">
+                            <Typography variant="caption" className="text-muted-foreground">
                                 {hero.experience} / {hero.experienceToNextLevel} XP
                             </Typography>
                         </HStack>
                         <ProgressBar value={expProgress} variant="warning" size="sm" className="w-full" />
                         {canLevelUp && onLevelUp && (
                             <Box
-                                className="mt-1 px-3 py-1 bg-yellow-500/20 border border-yellow-500 rounded text-yellow-400 text-sm cursor-pointer hover:bg-yellow-500/30 transition-colors text-center"
+                                className="mt-1 px-3 py-1 bg-warning/20 border border-warning rounded text-warning text-sm cursor-pointer hover:bg-warning/30 transition-colors text-center"
                                 onClick={onLevelUp}
                             >
                                 ✨ Level Up Available!
@@ -122,8 +122,8 @@ export function HeroProfileTemplate({
             </HStack>
 
             {/* Stats Section */}
-            <Box className="mt-6 p-4 bg-slate-800/50 rounded-lg">
-                <Typography variant="h5" className="text-white mb-3">Stats</Typography>
+            <Box className="mt-6 p-4 bg-card/50 rounded-lg">
+                <Typography variant="h5" className="text-foreground mb-3">Stats</Typography>
                 <div className="grid grid-cols-3 gap-4">
                     <StatItem label="Health" value={hero.stats.health} max={hero.stats.maxHealth} color="green" />
                     <StatItem label="Attack" value={hero.stats.attack} color="red" />
@@ -136,9 +136,9 @@ export function HeroProfileTemplate({
             {/* Trait Slots Section */}
             <Box className="mt-6">
                 <HStack justify="between" className="mb-3">
-                    <Typography variant="h5" className="text-white">Equipped Traits</Typography>
+                    <Typography variant="h5" className="text-foreground">Equipped Traits</Typography>
                     {editMode && (
-                        <Typography variant="caption" className="text-gray-400">
+                        <Typography variant="caption" className="text-muted-foreground">
                             Click slots to equip/change traits
                         </Typography>
                     )}
@@ -167,8 +167,8 @@ export function HeroProfileTemplate({
 
             {/* Biography */}
             {hero.biography && (
-                <Box className="mt-6 p-4 bg-slate-800/30 rounded-lg border-l-4 border-amber-500/50">
-                    <Typography variant="body2" className="text-gray-300 italic">
+                <Box className="mt-6 p-4 bg-card/30 rounded-lg border-l-4 border-warning/50">
+                    <Typography variant="body2" className="text-foreground/80 italic">
                         {hero.biography}
                     </Typography>
                 </Box>
@@ -179,16 +179,16 @@ export function HeroProfileTemplate({
 
 function StatItem({ label, value, max, color }: { label: string; value: number; max?: number; color: string }) {
     const colorClasses: Record<string, string> = {
-        green: 'text-green-400',
-        red: 'text-red-400',
-        blue: 'text-blue-400',
-        cyan: 'text-cyan-400',
-        purple: 'text-purple-400',
+        green: 'text-success',
+        red: 'text-error',
+        blue: 'text-info',
+        cyan: 'text-accent',
+        purple: 'text-[var(--tw-faction-resonator)]',
     };
 
     return (
         <VStack align="center" gap={1}>
-            <Typography variant="caption" className="text-gray-500">{label}</Typography>
+            <Typography variant="caption" className="text-muted-foreground/70">{label}</Typography>
             <Typography variant="h4" className={colorClasses[color]}>
                 {max ? `${value}/${max}` : value}
             </Typography>

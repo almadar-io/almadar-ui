@@ -45,6 +45,7 @@ import {
     type WorldMapFeatureType,
     type TerrainType,
 } from '../assets';
+import { HeroDetailPanel } from '../molecules/HeroDetailPanel';
 import { useSpriteAnimations } from '../organisms/useSpriteAnimations';
 
 // ============================================================================
@@ -488,48 +489,7 @@ export function CanvasWorldMapTemplate({
                 >
                     {/* Selected Hero */}
                     {selectedHero && (
-                        <Box className="p-4 bg-gradient-to-br from-[var(--tw-faction-resonator)]/20 to-background rounded-lg border border-[var(--tw-faction-resonator)]/50 mb-4">
-                            <HStack className="gap-3 items-center mb-3">
-                                <Box className="w-14 h-14 rounded-lg overflow-hidden border-2 border-[var(--tw-faction-resonator)] bg-background">
-                                    {getHeroPortraitUrl(assets, selectedHero.id) ? (
-                                        <img
-                                            src={getHeroPortraitUrl(assets, selectedHero.id)}
-                                            alt={selectedHero.name}
-                                            className="w-full h-full object-cover"
-                                            onError={(e) => {
-                                                (e.target as HTMLImageElement).style.display = 'none';
-                                            }}
-                                        />
-                                    ) : (
-                                        <Box className="w-full h-full flex items-center justify-center text-2xl">
-                                            {selectedHero.owner === 'player' ? '🦸' : '👹'}
-                                        </Box>
-                                    )}
-                                </Box>
-                                <VStack className="gap-0">
-                                    <Typography variant="h5" className="text-foreground">
-                                        {selectedHero.name}
-                                    </Typography>
-                                    <Typography variant="caption" className="text-[var(--tw-faction-resonator)]">
-                                        Level {selectedHero.level} {selectedHero.archetype}
-                                    </Typography>
-                                </VStack>
-                            </HStack>
-                            <HStack className="gap-4">
-                                <Box className="flex-1 text-center p-2 bg-card rounded">
-                                    <Typography variant="caption" className="text-muted-foreground block">Movement</Typography>
-                                    <Typography variant="h5" className="text-success">
-                                        {selectedHero.movement}/{selectedHero.maxMovement}
-                                    </Typography>
-                                </Box>
-                                <Box className="flex-1 text-center p-2 bg-card rounded">
-                                    <Typography variant="caption" className="text-muted-foreground block">Army</Typography>
-                                    <Typography variant="h5" className="text-primary">
-                                        {selectedHero.army.reduce((sum, u) => sum + u.count, 0)}
-                                    </Typography>
-                                </Box>
-                            </HStack>
-                        </Box>
+                        <HeroDetailPanel hero={selectedHero} showMovement className="mb-4" />
                     )}
 
                     {/* Player Heroes List */}

@@ -321,6 +321,7 @@ export function CanvasBattleTemplate({
     const [currentPhase, setCurrentPhase] = useState<BattlePhase>('observation');
     const [currentTurn, setCurrentTurn] = useState(1);
     const [combatLog, setCombatLog] = useState<CombatEvent[]>([]);
+    const [combatLogExpanded, setCombatLogExpanded] = useState(false);
     const [damagePopups, setDamagePopups] = useState<DamagePopupData[]>([]);
     const [gameResult, setGameResult] = useState<'victory' | 'defeat' | null>(null);
 
@@ -801,6 +802,41 @@ export function CanvasBattleTemplate({
                             End Turn
                         </Button>
                     </HStack>
+                </Box>
+            )}
+
+            {/* Combat Log (floating bottom-left) */}
+            {currentPhase !== 'game_over' && (
+                <Box className="fixed bottom-6 left-6 z-40">
+                    {combatLogExpanded ? (
+                        <Box className="relative">
+                            <Box
+                                className="absolute -top-2 -right-2 z-10 w-6 h-6 rounded-full bg-card border border-border flex items-center justify-center cursor-pointer hover:bg-muted text-muted-foreground text-xs"
+                                onClick={() => setCombatLogExpanded(false)}
+                            >
+                                x
+                            </Box>
+                            <CombatLog
+                                events={combatLog}
+                                maxVisible={30}
+                                autoScroll
+                                className="w-[340px] max-h-[300px]"
+                            />
+                        </Box>
+                    ) : (
+                        <Box
+                            className="px-4 py-2 rounded-full bg-card/90 border border-border cursor-pointer hover:bg-muted/90 shadow-lg backdrop-blur-sm transition-colors"
+                            style={getGameUIPanelUrl(assets, 'tooltipFrame') ? {
+                                borderImage: `url(${getGameUIPanelUrl(assets, 'tooltipFrame')}) 60 fill / 12px / 0 stretch`,
+                                border: 'none',
+                            } : undefined}
+                            onClick={() => setCombatLogExpanded(true)}
+                        >
+                            <Typography variant="caption" className="text-foreground font-medium">
+                                Combat Log ({combatLog.length})
+                            </Typography>
+                        </Box>
+                    )}
                 </Box>
             )}
 

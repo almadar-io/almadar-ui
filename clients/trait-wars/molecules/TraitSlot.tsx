@@ -5,7 +5,7 @@
  * Shows TraitStateViewer tooltip on hover for equipped traits.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Box, Typography, cn } from '@almadar/ui';
 import { TraitIcon } from './TraitIcon';
 import { TraitStateViewer, TraitStateMachineDefinition } from './TraitStateViewer';
@@ -76,6 +76,7 @@ export function TraitSlot({
     onRemove,
 }: TraitSlotProps): JSX.Element {
     const [isHovered, setIsHovered] = useState(false);
+    const slotRef = useRef<HTMLDivElement>(null);
     const manifest = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
     const tooltipFrameUrl = getGameUIPanelUrl(manifest, 'tooltipFrame');
     const config = SIZE_CONFIG[size];
@@ -95,8 +96,22 @@ export function TraitSlot({
         description: equippedTrait.description,
     } : null);
 
+    // Calculate fixed tooltip position from slot's bounding rect
+    const getTooltipStyle = (): React.CSSProperties => {
+        if (!slotRef.current) return {};
+        const rect = slotRef.current.getBoundingClientRect();
+        return {
+            position: 'fixed' as const,
+            left: rect.left + rect.width / 2,
+            top: rect.top - 8,
+            transform: 'translate(-50%, -100%)',
+            zIndex: 9999,
+        };
+    };
+
     return (
         <Box
+            ref={slotRef}
             display="flex"
             position="relative"
             className={cn(
@@ -169,12 +184,12 @@ export function TraitSlot({
                 </Typography>
             </Box>
 
-            {/* Trait State Tooltip */}
+            {/* Trait State Tooltip (fixed positioning to escape overflow containers) */}
             {showTooltip && isHovered && traitMachine && !isEmpty && (
                 <Box
-                    position="absolute"
-                    className="z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 p-3 bg-background border border-border rounded-lg shadow-xl"
+                    className="p-3 bg-background border border-border rounded-lg shadow-xl"
                     style={{
+                        ...getTooltipStyle(),
                         minWidth: 200,
                         ...(tooltipFrameUrl ? {
                             borderImage: `url(${tooltipFrameUrl}) 60 fill / 15px / 0 stretch`,

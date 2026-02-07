@@ -107,6 +107,16 @@ const sampleHeroes: WorldMapHero[] = [
         ],
         level: 5,
         spriteId: 'valence',
+        title: 'The Resonant Architect',
+        stats: { health: 85, maxHealth: 100, attack: 14, defense: 12, speed: 8, leadership: 16 },
+        experience: 450,
+        experienceToNextLevel: 1000,
+        equippedTraits: [
+            { id: 't1', name: 'Fortify', category: 'combat', description: 'Boosts defense by 20%' },
+            { id: 't2', name: 'Inspire', category: 'support', description: 'Nearby allies gain +2 attack' },
+            null,
+        ],
+        maxTraitSlots: 4,
     },
     {
         id: 'zahra',
@@ -121,6 +131,9 @@ const sampleHeroes: WorldMapHero[] = [
         ],
         level: 3,
         spriteId: 'zahra',
+        stats: { health: 60, maxHealth: 70, attack: 6, defense: 8, speed: 10, leadership: 12 },
+        experience: 200,
+        experienceToNextLevel: 500,
     },
     {
         id: 'tyrant',
@@ -136,6 +149,7 @@ const sampleHeroes: WorldMapHero[] = [
         ],
         level: 8,
         spriteId: 'tyrant',
+        stats: { health: 120, maxHealth: 120, attack: 22, defense: 18, speed: 6, leadership: 20 },
     },
 ];
 

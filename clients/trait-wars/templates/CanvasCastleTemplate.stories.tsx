@@ -9,7 +9,7 @@ import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { CanvasCastleTemplate } from './CanvasCastleTemplate';
 import { TraitWarsAssetProvider, DEFAULT_ASSET_MANIFEST } from '../assets';
-import type { StrategicCastle, CastleBuilding, RecruitableUnit, Resources } from '../types';
+import type { StrategicCastle, CastleBuilding, RecruitableUnit, Resources, WorldMapHero } from '../types';
 
 const meta: Meta<typeof CanvasCastleTemplate> = {
     title: 'Trait Wars/Templates/CanvasCastleTemplate',
@@ -266,6 +266,45 @@ export const DominionFortress: Story = {
         onBuild: (id) => console.log('Build:', id),
         onRecruit: (id, count) => console.log('Recruit:', id, 'x', count),
         onTransferUnit: (id, toGarrison) => console.log('Transfer:', id, toGarrison ? 'to garrison' : 'to army'),
+        onExit: () => console.log('Exit castle'),
+    },
+};
+
+const castleHero: WorldMapHero = {
+    id: 'valence',
+    name: 'Unit 734 (Valence)',
+    archetype: 'Architect',
+    owner: 'player',
+    position: { x: 1, y: 2 },
+    movement: 5,
+    maxMovement: 5,
+    army: [
+        { id: 'u1', unitType: 'worker', name: 'Workers', tier: 1, count: 20, spriteId: 'worker' },
+        { id: 'u2', unitType: 'guardian', name: 'Guardians', tier: 2, count: 5, spriteId: 'guardian' },
+    ],
+    level: 5,
+    spriteId: 'valence',
+    title: 'The Resonant Architect',
+    stats: { health: 85, maxHealth: 100, attack: 14, defense: 12, speed: 8, leadership: 16 },
+    experience: 450,
+    experienceToNextLevel: 1000,
+    equippedTraits: [
+        { id: 't1', name: 'Fortify', category: 'combat', description: 'Boosts defense by 20%' },
+        { id: 't2', name: 'Inspire', category: 'support', description: 'Nearby allies gain +2 attack' },
+        null,
+    ],
+    maxTraitSlots: 4,
+};
+
+export const WithHero: Story = {
+    args: {
+        castle: resonatorCastle,
+        resources: sampleResources,
+        availableUnits,
+        castleHero,
+        onBuild: (id) => console.log('Build:', id),
+        onRecruit: (id, count) => console.log('Recruit:', id, 'x', count),
+        onViewHeroProfile: () => console.log('View hero profile'),
         onExit: () => console.log('Exit castle'),
     },
 };

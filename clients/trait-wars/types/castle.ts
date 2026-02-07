@@ -204,6 +204,15 @@ export interface WorldMapHex {
     passable: boolean;
 }
 
+/** Equipped trait data for hero profiles (avoids circular import with TraitSlot) */
+export interface HeroEquippedTrait {
+    id: string;
+    name: string;
+    category: 'combat' | 'support' | 'utility' | 'passive';
+    description?: string;
+    iconType?: string;
+}
+
 /** Hero on world map */
 export interface WorldMapHero {
     id: string;
@@ -217,6 +226,20 @@ export interface WorldMapHero {
     level: number;
     /** Sprite for map display */
     spriteId: string;
+    /** Hero title (e.g. "The Ironclad") */
+    title?: string;
+    /** Combat stats */
+    stats?: { health: number; maxHealth: number; attack: number; defense: number; speed: number; leadership: number };
+    /** Current experience points */
+    experience?: number;
+    /** Experience needed for next level */
+    experienceToNextLevel?: number;
+    /** Equipped trait slots */
+    equippedTraits?: (HeroEquippedTrait | null)[];
+    /** Max number of trait slots */
+    maxTraitSlots?: number;
+    /** Hero biography text */
+    biography?: string;
 }
 
 /** Complete world map state */

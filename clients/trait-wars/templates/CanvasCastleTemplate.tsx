@@ -37,11 +37,13 @@ import {
     type BuildingType,
     type RobotUnitType,
 } from '../assets';
+import { HeroDetailPanel } from '../molecules/HeroDetailPanel';
 import {
     Resources,
     StrategicCastle,
     CastleBuilding,
     RecruitableUnit,
+    WorldMapHero,
     CASTLE_FACTIONS,
     FACTION_BUILDINGS,
     FACTION_BUILDING_NAMES,
@@ -70,6 +72,10 @@ export interface CanvasCastleTemplateProps {
     onTransferUnit?: (unitId: string, toGarrison: boolean) => void;
     /** Handler to exit castle */
     onExit?: () => void;
+    /** Hero stationed at this castle */
+    castleHero?: WorldMapHero;
+    /** Handler to view full hero profile */
+    onViewHeroProfile?: () => void;
     /** Canvas render scale */
     scale?: number;
     /** Additional CSS classes */
@@ -235,6 +241,8 @@ export function CanvasCastleTemplate({
     onBuild,
     onRecruit,
     onTransferUnit,
+    castleHero,
+    onViewHeroProfile,
     onExit,
     scale = 0.45,
     className,
@@ -247,7 +255,7 @@ export function CanvasCastleTemplate({
 
     // State
     const [selectedBuilding, setSelectedBuilding] = useState<CastleBuilding | null>(null);
-    const [selectedTab, setSelectedTab] = useState<'buildings' | 'recruit' | 'garrison'>('buildings');
+    const [selectedTab, setSelectedTab] = useState<'buildings' | 'recruit' | 'garrison' | 'hero'>('buildings');
     const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
     const [recruitCounts, setRecruitCounts] = useState<Record<string, number>>({});
 
@@ -489,7 +497,7 @@ export function CanvasCastleTemplate({
                 >
                     {/* Tabs */}
                     <HStack className="border-b border-border">
-                        {(['buildings', 'recruit', 'garrison'] as const).map(tab => (
+                        {([...(['buildings', 'recruit', 'garrison'] as const), ...(castleHero ? ['hero' as const] : [])]).map(tab => (
                             <Box
                                 key={tab}
                                 className={cn(
@@ -650,6 +658,14 @@ export function CanvasCastleTemplate({
                                     ))
                                 )}
                             </VStack>
+                        )}
+
+                        {/* Hero Tab */}
+                        {selectedTab === 'hero' && castleHero && (
+                            <HeroDetailPanel
+                                hero={castleHero}
+                                onViewProfile={onViewHeroProfile}
+                            />
                         )}
                     </Box>
                 </Box>
