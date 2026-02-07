@@ -811,14 +811,23 @@ export function IsometricGameCanvas({
                 ctx.restore();
             }
 
+            // Shadow under unit on tile surface (stays on ground, no breatheOffset)
+            // TODO: re-enable when shadow visuals are finalized
+            // ctx.save();
+            // ctx.globalAlpha = 0.3;
+            // ctx.fillStyle = '#000000';
+            // ctx.beginPath();
+            // ctx.ellipse(centerX, groundY, drawW * 0.4, 8 * scale, 0, 0, Math.PI * 2);
+            // ctx.fill();
+            // ctx.restore();
+
             // Draw selection ring (pulsing, sized to sprite footprint)
-            // Apply breatheOffset so selection ring bobs with the unit
             if (isSelected) {
                 const ringAlpha = 0.6 + 0.3 * Math.sin(animTime * 0.004);
                 ctx.beginPath();
                 ctx.ellipse(
                     centerX,
-                    groundY - breatheOffset,
+                    groundY,
                     drawW / 2 + 4 * scale,
                     12 * scale,
                     0, 0, Math.PI * 2
@@ -827,15 +836,6 @@ export function IsometricGameCanvas({
                 ctx.lineWidth = 3;
                 ctx.stroke();
             }
-
-            // Shadow under unit on tile surface
-            ctx.save();
-            ctx.globalAlpha = 0.3;
-            ctx.fillStyle = '#000000';
-            ctx.beginPath();
-            ctx.ellipse(centerX, groundY - breatheOffset, drawW * 0.4, 8 * scale, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
 
             // Draw unit sprite or fallback (with team color glow)
             // Apply breatheOffset to all sprite positions
