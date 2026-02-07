@@ -35,6 +35,7 @@ import {
     DEFAULT_ASSET_MANIFEST,
     getTerrainSpriteUrl,
     getRobotUnitSpriteUrl,
+    getHeroSpriteUrl,
     type TraitWarsAssetManifest,
     type TerrainType,
     type RobotUnitType,
@@ -55,6 +56,8 @@ export interface BattleUnit {
     name: string;
     /** Robot unit type for sprite lookup (e.g., 'worker', 'guardian', 'prime') */
     unitType?: RobotUnitType;
+    /** Hero/villain character ID for sprite sheet lookup (e.g., 'valence', 'tyrant') */
+    heroId?: string;
     /** Direct sprite URL override */
     sprite?: string;
     team: 'player' | 'enemy';
@@ -366,7 +369,8 @@ export function CanvasBattleTemplate({
             health: unit.health,
             maxHealth: unit.maxHealth,
             unitType: unit.unitType,
-            sprite: unit.sprite || (unit.unitType ? getRobotUnitSpriteUrl(assets, unit.unitType) : undefined),
+            heroId: unit.heroId,
+            sprite: unit.sprite || (unit.heroId ? getHeroSpriteUrl(assets, unit.heroId) : undefined) || (unit.unitType ? getRobotUnitSpriteUrl(assets, unit.unitType) : undefined),
             traits: unit.traits.map(t => ({
                 name: t.name,
                 currentState: t.currentState,

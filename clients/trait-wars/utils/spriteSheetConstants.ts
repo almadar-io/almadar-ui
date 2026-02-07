@@ -7,13 +7,16 @@
 
 import type { AnimationName, AnimationDef } from '../types/spriteAnimation';
 
-/** Animation definitions for each row in the sprite sheet */
+/** Animation definitions for each row in the sprite sheet.
+ *  Frame rates are intentionally low — we have very few frames per
+ *  animation, so slower playback looks more natural.
+ */
 export const SPRITE_SHEET_LAYOUT: Record<AnimationName, AnimationDef> = {
-    idle:   { row: 0, frames: 4, frameRate: 8,  loop: true },
-    walk:   { row: 1, frames: 6, frameRate: 12, loop: true },
-    attack: { row: 2, frames: 4, frameRate: 12, loop: false },
-    hit:    { row: 3, frames: 2, frameRate: 10, loop: false },
-    death:  { row: 4, frames: 4, frameRate: 8,  loop: false },
+    idle:   { row: 0, frames: 4, frameRate: 3,  loop: true },
+    walk:   { row: 1, frames: 6, frameRate: 5,  loop: true },
+    attack: { row: 2, frames: 4, frameRate: 6,  loop: false },
+    hit:    { row: 3, frames: 2, frameRate: 4,  loop: false },
+    death:  { row: 4, frames: 4, frameRate: 3,  loop: false },
 };
 
 /** Frame dimensions for robot units (128x128 frames, 1024x640 sheet) */

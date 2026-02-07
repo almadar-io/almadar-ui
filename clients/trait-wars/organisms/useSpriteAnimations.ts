@@ -53,11 +53,19 @@ export function useSpriteAnimations(
     const animStatesRef = useRef<Map<string, UnitAnimationState>>(new Map());
     const prevPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
     const characterInfoRef = useRef<Map<string, string>>(new Map()); // unitId → characterId
+    /** Tracks when walk was last triggered per unit — holds walk animation for a minimum duration */
+    const walkHoldRef = useRef<Map<string, number>>(new Map()); // unitId → remaining hold ms
+
+    /** Minimum time (ms) to hold the walk animation after a position change.
+     *  World map movement is instant (teleport), so without this the walk
+     *  animation would play for only one 16ms tick before returning to idle. */
+    const WALK_HOLD_MS = 600;
 
     const syncUnits = useCallback((units: IsometricUnit[], deltaMs: number) => {
         const states = animStatesRef.current;
         const prevPos = prevPositionsRef.current;
         const charInfo = characterInfoRef.current;
+        const walkHold = walkHoldRef.current;
         const currentIds = new Set<string>();
 
         for (const unit of units) {
@@ -92,10 +100,17 @@ export function useSpriteAnimations(
                     // Don't interrupt combat animations
                     if (state.animation !== 'attack' && state.animation !== 'hit' && state.animation !== 'death') {
                         state = transitionAnimation(state, 'walk', dir);
+                        walkHold.set(unit.id, WALK_HOLD_MS);
                     }
                 } else if (state.animation === 'walk') {
-                    // Unit stopped moving — return to idle
-                    state = transitionAnimation(state, 'idle');
+                    // Decrement walk hold timer before allowing idle transition
+                    const remaining = (walkHold.get(unit.id) ?? 0) - deltaMs;
+                    if (remaining <= 0) {
+                        walkHold.delete(unit.id);
+                        state = transitionAnimation(state, 'idle');
+                    } else {
+                        walkHold.set(unit.id, remaining);
+                    }
                 }
             }
             prevPos.set(unit.id, { ...unit.position });
@@ -111,6 +126,7 @@ export function useSpriteAnimations(
                 states.delete(id);
                 prevPos.delete(id);
                 charInfo.delete(id);
+                walkHold.delete(id);
             }
         }
     }, [manifest]);

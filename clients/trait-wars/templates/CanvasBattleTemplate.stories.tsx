@@ -307,7 +307,7 @@ export const CastleBattle: Story = {
 };
 
 /**
- * All tier units showcase
+ * All tier units showcase (robots only)
  */
 export const AllTiers: Story = {
     args: {
@@ -331,5 +331,58 @@ export const AllTiers: Story = {
         boardWidth: 9,
         boardHeight: 6,
         scale: 0.4,
+    },
+};
+
+/**
+ * All units showcase: all 13 robots + 14 heroes + 4 villains + shadow-legion
+ * Large 16×10 battlefield with every character type in the game.
+ */
+const defaultTrait = { name: 'Combat', currentState: 'idle', states: ['idle', 'active'], cooldown: 0 };
+
+export const AllUnits: Story = {
+    args: {
+        initialUnits: [
+            // === LEFT SIDE: Player heroes (14) + some robots ===
+            // Heroes (row 0-6, col 0-1)
+            { id: 'h-valence', name: 'Valence', heroId: 'valence', team: 'player', position: { x: 0, y: 0 }, health: 180, maxHealth: 180, movement: 5, attack: 20, defense: 12, traits: [defaultTrait] },
+            { id: 'h-zahra', name: 'Zahra', heroId: 'zahra', team: 'player', position: { x: 0, y: 1 }, health: 140, maxHealth: 140, movement: 4, attack: 12, defense: 8, traits: [defaultTrait] },
+            { id: 'h-hareth', name: 'Hareth', heroId: 'hareth', team: 'player', position: { x: 0, y: 2 }, health: 200, maxHealth: 200, movement: 6, attack: 22, defense: 14, traits: [defaultTrait] },
+            { id: 'h-kael', name: 'Kael', heroId: 'kael', team: 'player', position: { x: 0, y: 3 }, health: 120, maxHealth: 120, movement: 7, attack: 16, defense: 6, traits: [defaultTrait] },
+            { id: 'h-samira', name: 'Samira', heroId: 'samira', team: 'player', position: { x: 0, y: 4 }, health: 160, maxHealth: 160, movement: 5, attack: 18, defense: 10, traits: [defaultTrait] },
+            { id: 'h-omar', name: 'Omar', heroId: 'omar', team: 'player', position: { x: 0, y: 5 }, health: 150, maxHealth: 150, movement: 4, attack: 14, defense: 12, traits: [defaultTrait] },
+            { id: 'h-layla', name: 'Layla', heroId: 'layla', team: 'player', position: { x: 0, y: 6 }, health: 130, maxHealth: 130, movement: 5, attack: 15, defense: 9, traits: [defaultTrait] },
+            { id: 'h-jara', name: 'Jara', heroId: 'jara', team: 'player', position: { x: 1, y: 0 }, health: 170, maxHealth: 170, movement: 5, attack: 19, defense: 11, traits: [defaultTrait] },
+            { id: 'h-rumi', name: 'Rumi', heroId: 'rumi', team: 'player', position: { x: 1, y: 1 }, health: 140, maxHealth: 140, movement: 4, attack: 20, defense: 7, traits: [defaultTrait] },
+            { id: 'h-zain', name: 'Zain', heroId: 'zain', team: 'player', position: { x: 1, y: 2 }, health: 155, maxHealth: 155, movement: 6, attack: 21, defense: 8, traits: [defaultTrait] },
+            { id: 'h-tariq', name: 'Tariq', heroId: 'tariq', team: 'player', position: { x: 1, y: 3 }, health: 165, maxHealth: 165, movement: 5, attack: 17, defense: 10, traits: [defaultTrait] },
+            { id: 'h-fatima', name: 'Fatima', heroId: 'fatima', team: 'player', position: { x: 1, y: 4 }, health: 135, maxHealth: 135, movement: 4, attack: 22, defense: 9, traits: [defaultTrait] },
+            { id: 'h-dr-aris', name: 'Dr. Aris', heroId: 'dr-aris', team: 'player', position: { x: 1, y: 5 }, health: 145, maxHealth: 145, movement: 3, attack: 25, defense: 6, traits: [defaultTrait] },
+            { id: 'h-amir', name: 'Amir', heroId: 'amir', team: 'player', position: { x: 1, y: 6 }, health: 190, maxHealth: 190, movement: 5, attack: 23, defense: 13, traits: [defaultTrait] },
+            // Player robots (col 2-3)
+            { id: 'r-worker', name: 'Worker', unitType: 'worker', team: 'player', position: { x: 2, y: 0 }, health: 60, maxHealth: 60, movement: 3, attack: 8, defense: 4, traits: [defaultTrait] },
+            { id: 'r-scrapper', name: 'Scrapper', unitType: 'scrapper', team: 'player', position: { x: 2, y: 1 }, health: 70, maxHealth: 70, movement: 3, attack: 10, defense: 5, traits: [defaultTrait] },
+            { id: 'r-mender', name: 'Mender', unitType: 'mender', team: 'player', position: { x: 2, y: 2 }, health: 45, maxHealth: 45, movement: 3, attack: 5, defense: 3, traits: [defaultTrait] },
+            { id: 'r-guardian', name: 'Guardian', unitType: 'guardian', team: 'player', position: { x: 2, y: 3 }, health: 120, maxHealth: 120, movement: 2, attack: 12, defense: 10, traits: [defaultTrait] },
+            { id: 'r-strider', name: 'Strider', unitType: 'strider', team: 'player', position: { x: 2, y: 4 }, health: 50, maxHealth: 50, movement: 5, attack: 10, defense: 3, traits: [defaultTrait] },
+            { id: 'r-breaker', name: 'Breaker', unitType: 'breaker', team: 'player', position: { x: 2, y: 5 }, health: 100, maxHealth: 100, movement: 2, attack: 15, defense: 8, traits: [defaultTrait] },
+            { id: 'r-resonator', name: 'Resonator', unitType: 'resonator', team: 'player', position: { x: 2, y: 6 }, health: 90, maxHealth: 90, movement: 2, attack: 16, defense: 6, traits: [defaultTrait] },
+            // === RIGHT SIDE: Enemy villains (4) + remaining robots + shadow-legion ===
+            // Villains (col 15)
+            { id: 'v-emperor', name: 'Emperor', heroId: 'emperor', team: 'enemy', position: { x: 15, y: 0 }, health: 300, maxHealth: 300, movement: 4, attack: 30, defense: 20, traits: [defaultTrait] },
+            { id: 'v-tyrant', name: 'Tyrant', heroId: 'tyrant', team: 'enemy', position: { x: 15, y: 1 }, health: 250, maxHealth: 250, movement: 6, attack: 28, defense: 16, traits: [defaultTrait] },
+            { id: 'v-destroyer', name: 'Destroyer', heroId: 'destroyer', team: 'enemy', position: { x: 15, y: 2 }, health: 220, maxHealth: 220, movement: 7, attack: 32, defense: 10, traits: [defaultTrait] },
+            { id: 'v-deceiver', name: 'Deceiver', heroId: 'deceiver', team: 'enemy', position: { x: 15, y: 3 }, health: 180, maxHealth: 180, movement: 5, attack: 24, defense: 12, traits: [defaultTrait] },
+            // Enemy robots (col 13-14)
+            { id: 'er-forger', name: 'Forger', unitType: 'forger', team: 'enemy', position: { x: 13, y: 0 }, health: 85, maxHealth: 85, movement: 2, attack: 14, defense: 7, traits: [defaultTrait] },
+            { id: 'er-glitch', name: 'Glitch', unitType: 'glitch', team: 'enemy', position: { x: 13, y: 1 }, health: 80, maxHealth: 80, movement: 3, attack: 14, defense: 4, traits: [defaultTrait] },
+            { id: 'er-archivist', name: 'Archivist', unitType: 'archivist', team: 'enemy', position: { x: 13, y: 2 }, health: 130, maxHealth: 130, movement: 2, attack: 12, defense: 10, traits: [defaultTrait] },
+            { id: 'er-conductor', name: 'Conductor', unitType: 'conductor', team: 'enemy', position: { x: 13, y: 3 }, health: 150, maxHealth: 150, movement: 2, attack: 18, defense: 12, traits: [defaultTrait] },
+            { id: 'er-coordinator', name: 'Coordinator', unitType: 'coordinator', team: 'enemy', position: { x: 13, y: 4 }, health: 140, maxHealth: 140, movement: 2, attack: 16, defense: 11, traits: [defaultTrait] },
+            { id: 'er-shadow', name: 'Shadow Legion', unitType: 'shadow-legion' as any, team: 'enemy', position: { x: 13, y: 5 }, health: 200, maxHealth: 200, movement: 3, attack: 22, defense: 14, traits: [defaultTrait] },
+        ],
+        boardWidth: 16,
+        boardHeight: 7,
+        scale: 0.3,
     },
 };
