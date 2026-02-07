@@ -346,7 +346,7 @@ export function CanvasCastleTemplate({
     }, [selectedBuilding, layout]);
 
     return (
-        <Box className={cn('min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900', className)}>
+        <Box className={cn('min-h-screen bg-gradient-to-b from-background via-card to-background', className)}>
             {/* Top Bar */}
             <Box
                 className="p-4 border-b"
@@ -359,20 +359,20 @@ export function CanvasCastleTemplate({
                     <HStack className="gap-4 items-center">
                         <Typography variant="h4" className="text-3xl">🏰</Typography>
                         <VStack className="gap-0">
-                            <Typography variant="h4" className="text-white">
+                            <Typography variant="h4" className="text-foreground">
                                 {castle.name}
                             </Typography>
                             <Typography variant="caption" style={{ color: faction.colors.secondary }}>
                                 {faction.name}
                             </Typography>
                         </VStack>
-                        <Badge variant="default" className="bg-amber-600 text-white">
+                        <Badge variant="default" className="bg-primary text-primary-foreground">
                             🛡️ {castle.defense}
                         </Badge>
                     </HStack>
                     <HStack className="gap-4 items-center">
                         <ResourceBar resources={resources} compact />
-                        <Button onClick={onExit} variant="ghost" className="border-slate-500 text-white hover:bg-slate-700">
+                        <Button onClick={onExit} variant="ghost" className="border-border text-foreground hover:bg-muted">
                             Exit Castle
                         </Button>
                     </HStack>
@@ -413,21 +413,21 @@ export function CanvasCastleTemplate({
                                     })(),
                                 }}
                             >
-                                <Card variant="default" className="p-3 shadow-xl bg-slate-900/95 backdrop-blur-sm border border-slate-600 min-w-[180px]">
+                                <Card variant="default" className="p-3 shadow-xl bg-background/95 backdrop-blur-sm border border-border min-w-[180px]">
                                     <HStack className="gap-2 items-center mb-1">
                                         <Typography variant="body2" className="text-lg">
                                             {BUILDING_ICONS[hoveredBuildingInfo.buildingType] || '🏗️'}
                                         </Typography>
-                                        <Typography variant="body2" className="text-white font-bold">
+                                        <Typography variant="body2" className="text-foreground font-bold">
                                             {hoveredBuildingInfo.name}
                                         </Typography>
                                     </HStack>
                                     {hoveredBuildingInfo.building ? (
-                                        <Typography variant="caption" className="text-gray-400">
+                                        <Typography variant="caption" className="text-muted-foreground">
                                             Level {hoveredBuildingInfo.building.level}/{hoveredBuildingInfo.building.maxLevel}
                                         </Typography>
                                     ) : (
-                                        <Typography variant="caption" className="text-gray-500">
+                                        <Typography variant="caption" className="text-muted-foreground">
                                             Not built — click to view
                                         </Typography>
                                     )}
@@ -450,11 +450,11 @@ export function CanvasCastleTemplate({
                                     })(),
                                 }}
                             >
-                                <Card variant="default" className="p-3 shadow-xl bg-slate-900/95 backdrop-blur-sm border border-blue-500/50 min-w-[140px]">
-                                    <Typography variant="body2" className="text-blue-400 font-bold">
+                                <Card variant="default" className="p-3 shadow-xl bg-background/95 backdrop-blur-sm border border-[var(--tw-faction-resonator)]/50 min-w-[140px]">
+                                    <Typography variant="body2" className="text-[var(--tw-faction-resonator)] font-bold">
                                         {hoveredUnitInfo.name}
                                     </Typography>
-                                    <Typography variant="caption" className="text-gray-400">
+                                    <Typography variant="caption" className="text-muted-foreground">
                                         Garrison Unit
                                     </Typography>
                                 </Card>
@@ -464,17 +464,17 @@ export function CanvasCastleTemplate({
                 </Box>
 
                 {/* Side Panel */}
-                <Box className="w-96 bg-slate-800/90 border-l border-slate-700 flex flex-col">
+                <Box className="w-96 bg-card/90 border-l border-border flex flex-col">
                     {/* Tabs */}
-                    <HStack className="border-b border-slate-700">
+                    <HStack className="border-b border-border">
                         {(['buildings', 'recruit', 'garrison'] as const).map(tab => (
                             <Box
                                 key={tab}
                                 className={cn(
                                     'flex-1 py-3 text-center cursor-pointer transition-colors',
                                     selectedTab === tab
-                                        ? 'bg-slate-700 text-white border-b-2 border-amber-500'
-                                        : 'text-gray-400 hover:bg-slate-700/50'
+                                        ? 'bg-muted text-foreground border-b-2 border-primary'
+                                        : 'text-muted-foreground hover:bg-muted/50'
                                 )}
                                 onClick={() => setSelectedTab(tab)}
                             >
@@ -498,14 +498,14 @@ export function CanvasCastleTemplate({
                                         onBuild={onBuild}
                                     />
                                 ) : (
-                                    <Typography variant="body2" className="text-gray-500 text-center py-8">
+                                    <Typography variant="body2" className="text-muted-foreground text-center py-8">
                                         Click a building on the courtyard to view details
                                     </Typography>
                                 )}
 
                                 {/* All faction buildings list */}
                                 <Box>
-                                    <Typography variant="caption" className="text-gray-500 block mb-2">
+                                    <Typography variant="caption" className="text-muted-foreground block mb-2">
                                         All Buildings
                                     </Typography>
                                     <Box className="grid grid-cols-3 gap-2">
@@ -547,7 +547,7 @@ export function CanvasCastleTemplate({
                         {selectedTab === 'recruit' && (
                             <VStack className="gap-3">
                                 {availableUnits.length === 0 ? (
-                                    <Typography variant="body2" className="text-gray-500 text-center py-8">
+                                    <Typography variant="body2" className="text-muted-foreground text-center py-8">
                                         No units available for recruitment
                                     </Typography>
                                 ) : (
@@ -587,14 +587,14 @@ export function CanvasCastleTemplate({
 
                                 {/* Total cost + recruit all */}
                                 {Object.values(recruitCounts).some(c => c > 0) && (
-                                    <Box className="p-3 bg-amber-900/30 rounded-lg border border-amber-600">
-                                        <Typography variant="caption" className="text-amber-400 block mb-2">
+                                    <Box className="p-3 bg-primary/10 rounded-lg border border-primary">
+                                        <Typography variant="caption" className="text-primary block mb-2">
                                             Total Cost:
                                         </Typography>
                                         <CostDisplay cost={getRecruitmentCost()} />
                                         <Button
                                             onClick={handleRecruit}
-                                            className="w-full mt-2 bg-amber-500 hover:bg-amber-400 text-black font-bold"
+                                            className="w-full mt-2 bg-primary hover:bg-[var(--color-primary-hover)] text-primary-foreground font-bold"
                                         >
                                             Recruit All Units
                                         </Button>
@@ -606,11 +606,11 @@ export function CanvasCastleTemplate({
                         {/* Garrison Tab */}
                         {selectedTab === 'garrison' && (
                             <VStack className="gap-3">
-                                <Typography variant="h6" className="text-white">
+                                <Typography variant="h6" className="text-foreground">
                                     Garrison ({castle.garrison.reduce((s, u) => s + u.count, 0)} units)
                                 </Typography>
                                 {castle.garrison.length === 0 ? (
-                                    <Typography variant="body2" className="text-gray-500 text-center py-4">
+                                    <Typography variant="body2" className="text-muted-foreground text-center py-4">
                                         No units stationed
                                     </Typography>
                                 ) : (
@@ -629,16 +629,16 @@ export function CanvasCastleTemplate({
             </HStack>
 
             {/* Bottom Bar: Income Summary */}
-            <Box className="fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 border-t border-slate-700 px-6 py-2">
+            <Box className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 border-t border-border px-6 py-2">
                 <HStack justify="center" className="gap-6">
-                    <Typography variant="caption" className="text-gray-500">Daily Income:</Typography>
-                    <Typography variant="caption" className="text-yellow-400">
+                    <Typography variant="caption" className="text-muted-foreground">Daily Income:</Typography>
+                    <Typography variant="caption" className="text-primary">
                         +{castle.income.gold} 🪙
                     </Typography>
-                    <Typography variant="caption" className="text-purple-400">
+                    <Typography variant="caption" className="text-[var(--tw-faction-resonator)]">
                         +{castle.income.resonance} 🔮
                     </Typography>
-                    <Typography variant="caption" className="text-cyan-400">
+                    <Typography variant="caption" className="text-accent">
                         +{castle.income.traitShards} 💎
                     </Typography>
                 </HStack>

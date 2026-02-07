@@ -578,9 +578,9 @@ export function CanvasWorldMapTemplate({
                     )}
 
                     {/* Instructions */}
-                    <Box className="mt-6 p-3 bg-slate-900/50 rounded border border-slate-700">
-                        <Typography variant="caption" className="text-gray-400 block mb-1">Instructions</Typography>
-                        <Typography variant="caption" className="text-gray-500">
+                    <Box className="mt-6 p-3 bg-background/50 rounded border border-border">
+                        <Typography variant="caption" className="text-muted-foreground block mb-1">Instructions</Typography>
+                        <Typography variant="caption" className="text-muted-foreground">
                             Click a hero to select, then click a highlighted tile to move. Green = valid moves, Red = enemies.
                         </Typography>
                     </Box>
