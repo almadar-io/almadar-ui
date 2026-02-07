@@ -94,13 +94,89 @@ export interface IsometricFeature {
     sprite?: string;
 }
 
+// =============================================================================
+// Orbital Entity Mapping Helpers
+// =============================================================================
+
+/** Get a numeric value from an entity record, checking multiple field name aliases */
+function getNum(rec: Record<string, unknown>, ...keys: string[]): number {
+    for (const k of keys) {
+        if (typeof rec[k] === 'number') return rec[k] as number;
+    }
+    return 0;
+}
+
+/** Get a string value from an entity record, checking multiple field name aliases */
+function getStr(rec: Record<string, unknown>, ...keys: string[]): string {
+    for (const k of keys) {
+        if (typeof rec[k] === 'string') return rec[k] as string;
+    }
+    return '';
+}
+
+/** Map raw Orbital entity data to IsometricTile[] */
+function mapEntityToTiles(entities: Record<string, unknown>[]): IsometricTile[] {
+    return entities.map(e => ({
+        x: getNum(e, 'x', 'positionX'),
+        y: getNum(e, 'y', 'positionY'),
+        terrain: getStr(e, 'terrainType', 'terrain', 'buildingType') || 'grass',
+        passable: e.passable !== false && e.movementCost !== 99,
+        movementCost: getNum(e, 'movementCost') || 1,
+    }));
+}
+
+/** Map raw Orbital entity data to IsometricUnit[] */
+function mapEntityToUnits(entities: Record<string, unknown>[]): IsometricUnit[] {
+    return entities
+        .filter(e => getStr(e, 'id'))
+        .map(e => ({
+            id: getStr(e, 'id'),
+            position: {
+                x: getNum(e, 'positionX', 'x'),
+                y: getNum(e, 'positionY', 'y'),
+            },
+            unitType: getStr(e, 'characterType', 'unitType', 'buildingType') || undefined,
+            heroId: getStr(e, 'heroId') || undefined,
+            name: getStr(e, 'name') || undefined,
+            team: (getStr(e, 'team') as IsometricUnit['team']) || undefined,
+            health: typeof e.health === 'number' ? (e.health as number) : undefined,
+            maxHealth: typeof e.maxHealth === 'number' ? (e.maxHealth as number) : undefined,
+        }));
+}
+
+/** Map raw Orbital entity data to IsometricFeature[] (only for entities with a feature) */
+function mapEntityToFeatures(entities: Record<string, unknown>[]): IsometricFeature[] {
+    return entities
+        .filter(e => {
+            const ft = getStr(e, 'featureType');
+            return ft && ft !== 'none';
+        })
+        .map(e => ({
+            x: getNum(e, 'x', 'positionX'),
+            y: getNum(e, 'y', 'positionY'),
+            type: getStr(e, 'featureType'),
+        }));
+}
+
 export interface IsometricGameCanvasProps {
-    /** Array of tiles to render */
-    tiles: IsometricTile[];
+    /** Array of tiles to render (optional when entity is provided) */
+    tiles?: IsometricTile[];
     /** Array of units on the board */
     units?: IsometricUnit[];
     /** Array of features (resources, portals, etc.) */
     features?: IsometricFeature[];
+    /**
+     * Raw Orbital entity data array. When provided, the component maps
+     * entity fields to tiles/units/features internally based on entityRole.
+     */
+    entity?: Record<string, unknown>[];
+    /**
+     * How to interpret entity data:
+     * - 'tiles': generate tiles from entity data
+     * - 'units': generate units from entity data
+     * - 'both': generate both tiles and features from entity data
+     */
+    entityRole?: 'tiles' | 'units' | 'both';
     /** Currently selected unit ID */
     selectedUnitId?: string | null;
     /** Valid move positions */
@@ -280,9 +356,11 @@ const FEATURE_COLORS: Record<string, string> = {
 // =============================================================================
 
 export function IsometricGameCanvas({
-    tiles,
-    units = [],
-    features = [],
+    tiles: tilesProp,
+    units: unitsProp = [],
+    features: featuresProp = [],
+    entity,
+    entityRole,
     selectedUnitId = null,
     validMoves = [],
     attackTargets = [],
@@ -304,6 +382,30 @@ export function IsometricGameCanvas({
     resolveUnitFrame,
     unitScale = 1,
 }: IsometricGameCanvasProps): JSX.Element {
+    // =========================================================================
+    // Entity-to-data mapping (Orbital compatibility)
+    // =========================================================================
+    const tiles: IsometricTile[] = React.useMemo(() => {
+        if (entity && (entityRole === 'tiles' || entityRole === 'both')) {
+            return mapEntityToTiles(entity);
+        }
+        return tilesProp ?? [];
+    }, [entity, entityRole, tilesProp]);
+
+    const units: IsometricUnit[] = React.useMemo(() => {
+        if (entity && (entityRole === 'units' || entityRole === 'both')) {
+            return mapEntityToUnits(entity);
+        }
+        return unitsProp;
+    }, [entity, entityRole, unitsProp]);
+
+    const features: IsometricFeature[] = React.useMemo(() => {
+        if (entity && entityRole === 'both') {
+            return mapEntityToFeatures(entity);
+        }
+        return featuresProp;
+    }, [entity, entityRole, featuresProp]);
+
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const minimapRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
