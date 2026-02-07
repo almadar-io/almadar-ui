@@ -47,9 +47,16 @@ export interface UseSpriteAnimationsResult {
     resolveUnitFrame: (unitId: string) => ResolvedFrame | null;
 }
 
+export interface UseSpriteAnimationsOptions {
+    /** Playback speed multiplier. 1.0 = baseline, 2.0 = double speed. Default: 1. */
+    speed?: number;
+}
+
 export function useSpriteAnimations(
     manifest: TraitWarsAssetManifest,
+    options: UseSpriteAnimationsOptions = {},
 ): UseSpriteAnimationsResult {
+    const speed = options.speed ?? 1;
     const animStatesRef = useRef<Map<string, UnitAnimationState>>(new Map());
     const prevPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
     const characterInfoRef = useRef<Map<string, string>>(new Map()); // unitId → characterId
@@ -62,6 +69,7 @@ export function useSpriteAnimations(
     const WALK_HOLD_MS = 600;
 
     const syncUnits = useCallback((units: IsometricUnit[], deltaMs: number) => {
+        const scaledDelta = deltaMs * speed;
         const states = animStatesRef.current;
         const prevPos = prevPositionsRef.current;
         const charInfo = characterInfoRef.current;
@@ -104,7 +112,7 @@ export function useSpriteAnimations(
                     }
                 } else if (state.animation === 'walk') {
                     // Decrement walk hold timer before allowing idle transition
-                    const remaining = (walkHold.get(unit.id) ?? 0) - deltaMs;
+                    const remaining = (walkHold.get(unit.id) ?? 0) - scaledDelta;
                     if (remaining <= 0) {
                         walkHold.delete(unit.id);
                         state = transitionAnimation(state, 'idle');
@@ -116,7 +124,7 @@ export function useSpriteAnimations(
             prevPos.set(unit.id, { ...unit.position });
 
             // Tick animation forward
-            state = tickAnimationState(state, deltaMs);
+            state = tickAnimationState(state, scaledDelta);
             states.set(unit.id, state);
         }
 
@@ -129,7 +137,7 @@ export function useSpriteAnimations(
                 walkHold.delete(id);
             }
         }
-    }, [manifest]);
+    }, [manifest, speed]);
 
     const setUnitAnimation = useCallback((
         unitId: string,

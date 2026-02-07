@@ -22,6 +22,12 @@ const meta: Meta<typeof CanvasBattleTemplate> = {
             },
         },
     },
+    argTypes: {
+        animationSpeed: {
+            control: { type: 'range', min: 0.25, max: 5, step: 0.25 },
+            description: 'Animation speed multiplier (1 = baseline, 2 = double)',
+        },
+    },
     decorators: [
         (Story) => (
             <TraitWarsAssetProvider manifest={DEFAULT_ASSET_MANIFEST}>
@@ -164,6 +170,7 @@ export const Default: Story = {
         boardWidth: 7,
         boardHeight: 5,
         scale: 0.45,
+        animationSpeed: 2,
     },
 };
 
@@ -231,6 +238,7 @@ export const LargeBattle: Story = {
         boardWidth: 9,
         boardHeight: 5,
         scale: 0.4,
+        animationSpeed: 2,
     },
 };
 
@@ -264,6 +272,7 @@ export const Skirmish: Story = {
         boardWidth: 5,
         boardHeight: 4,
         scale: 0.55,
+        animationSpeed: 2,
     },
 };
 
@@ -277,6 +286,7 @@ export const DungeonBattle: Story = {
         boardHeight: 6,
         mapTheme: 'dungeon',
         scale: 0.4,
+        animationSpeed: 2,
     },
 };
 
@@ -290,6 +300,7 @@ export const OutdoorBattle: Story = {
         boardHeight: 6,
         mapTheme: 'outdoor',
         scale: 0.4,
+        animationSpeed: 2,
     },
 };
 
@@ -303,6 +314,7 @@ export const CastleBattle: Story = {
         boardHeight: 6,
         mapTheme: 'castle',
         scale: 0.4,
+        animationSpeed: 2,
     },
 };
 
@@ -331,6 +343,7 @@ export const AllTiers: Story = {
         boardWidth: 9,
         boardHeight: 6,
         scale: 0.4,
+        animationSpeed: 2,
     },
 };
 
@@ -384,5 +397,6 @@ export const AllUnits: Story = {
         boardWidth: 16,
         boardHeight: 7,
         scale: 0.3,
+        animationSpeed: 2,
     },
 };

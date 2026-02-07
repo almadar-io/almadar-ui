@@ -111,6 +111,8 @@ export interface CanvasBattleTemplateProps {
     mapTheme?: 'dungeon' | 'outdoor' | 'castle';
     /** Canvas render scale */
     scale?: number;
+    /** Animation speed multiplier. 1 = baseline, 2 = double speed. Default: 2 */
+    animationSpeed?: number;
     /** Game end callback */
     onGameEnd?: (result: 'victory' | 'defeat') => void;
     /** Additional CSS classes */
@@ -297,6 +299,7 @@ export function CanvasBattleTemplate({
     boardHeight = 6,
     mapTheme = 'dungeon',
     scale = 0.45,
+    animationSpeed = 2,
     onGameEnd,
     className,
 }: CanvasBattleTemplateProps): JSX.Element {
@@ -476,7 +479,7 @@ export function CanvasBattleTemplate({
         syncUnits: syncSpriteAnimations,
         setUnitAnimation,
         resolveUnitFrame,
-    } = useSpriteAnimations(assets);
+    } = useSpriteAnimations(assets, { speed: animationSpeed });
 
     // Preload sprite sheet images
     const spriteSheetUrls = useMemo(() => getAllCharacterSheetUrls(assets), [assets]);

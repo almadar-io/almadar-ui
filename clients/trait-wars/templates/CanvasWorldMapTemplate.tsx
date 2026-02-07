@@ -68,6 +68,8 @@ export interface CanvasWorldMapTemplateProps {
     onEndTurn?: () => void;
     /** Canvas render scale */
     scale?: number;
+    /** Animation speed multiplier. 1 = baseline, 2 = double speed. Default: 2 */
+    animationSpeed?: number;
     /** Additional CSS classes */
     className?: string;
 }
@@ -101,13 +103,14 @@ export function CanvasWorldMapTemplate({
     onBattleEncounter,
     onEndTurn,
     scale = 0.4,
+    animationSpeed = 2,
     className,
 }: CanvasWorldMapTemplateProps): JSX.Element {
     const assets = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
     const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
 
     // Sprite sheet animations
-    const { syncUnits: syncSpriteAnimations, resolveUnitFrame } = useSpriteAnimations(assets);
+    const { syncUnits: syncSpriteAnimations, resolveUnitFrame } = useSpriteAnimations(assets, { speed: animationSpeed });
     const spriteSheetUrls = useMemo(() => getAllCharacterSheetUrls(assets), [assets]);
 
     // Selected hero

@@ -22,6 +22,12 @@ const meta: Meta<typeof CanvasWorldMapTemplate> = {
             },
         },
     },
+    argTypes: {
+        animationSpeed: {
+            control: { type: 'range', min: 0.25, max: 5, step: 0.25 },
+            description: 'Animation speed multiplier (1 = baseline, 2 = double)',
+        },
+    },
     decorators: [
         (Story) => (
             <TraitWarsAssetProvider manifest={DEFAULT_ASSET_MANIFEST}>
@@ -184,10 +190,11 @@ export const Default: Story = {
         resources: sampleResources,
         selectedHeroId: 'valence',
         scale: 0.4,
+        animationSpeed: 2,
     },
 };
 
-function InteractiveWorldMap() {
+function InteractiveWorldMap({ animationSpeed = 2 }: { animationSpeed?: number }) {
     const [worldMap, setWorldMap] = useState(sampleWorldMap);
     const [selectedHeroId, setSelectedHeroId] = useState<string | null>('valence');
     const [resources, setResources] = useState(sampleResources);
@@ -242,18 +249,20 @@ function InteractiveWorldMap() {
             onBattleEncounter={(a, d) => console.log('Battle:', a, 'vs', d)}
             onEndTurn={handleEndTurn}
             scale={0.4}
+            animationSpeed={animationSpeed}
         />
     );
 }
 
 export const Interactive: Story = {
-    render: () => <InteractiveWorldMap />,
+    args: { animationSpeed: 2 },
+    render: (args) => <InteractiveWorldMap animationSpeed={args.animationSpeed} />,
 };
 
 /**
  * Larger map with more features
  */
-function LargeMapDemo() {
+function LargeMapDemo({ animationSpeed = 2 }: { animationSpeed?: number }) {
     const largeHexes = (() => {
         const hexes: WorldMapHex[] = [];
         const terrains = ['grass', 'grass', 'dirt', 'stone', 'grass', 'grass', 'dirt'];
@@ -553,10 +562,12 @@ function LargeMapDemo() {
             onHeroMove={handleHeroMove}
             onEndTurn={handleEndTurn}
             scale={0.25}
+            animationSpeed={animationSpeed}
         />
     );
 }
 
 export const LargeMap: Story = {
-    render: () => <LargeMapDemo />,
+    args: { animationSpeed: 2 },
+    render: (args) => <LargeMapDemo animationSpeed={args.animationSpeed} />,
 };
