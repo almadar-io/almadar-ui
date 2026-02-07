@@ -61,34 +61,34 @@ export function BuildingDetailPanel({
     const affordable = canAfford(resources, building.cost);
 
     return (
-        <Box className={cn('p-4 bg-slate-900 rounded-lg border border-slate-600', className)}>
+        <Box className={cn('p-4 bg-background rounded-lg border border-border', className)}>
             <HStack className="gap-3 mb-3">
                 <Typography variant="h4" className="text-2xl">
                     {icon}
                 </Typography>
                 <VStack className="gap-0">
-                    <Typography variant="h5" className="text-white">
+                    <Typography variant="h5" className="text-foreground">
                         {displayName}
                     </Typography>
-                    <Typography variant="caption" className="text-gray-400">
+                    <Typography variant="caption" className="text-muted-foreground">
                         Level {building.level}/{building.maxLevel}
                     </Typography>
                 </VStack>
             </HStack>
 
-            <Typography variant="body2" className="text-gray-300 mb-4">
+            <Typography variant="body2" className="text-foreground/80 mb-4">
                 {building.description || 'Upgrade to unlock new capabilities.'}
             </Typography>
 
             {canUpgrade && (
                 <>
-                    <Typography variant="caption" className="text-gray-500 block mb-1">
+                    <Typography variant="caption" className="text-muted-foreground block mb-1">
                         {building.level === 0 ? 'Build Cost:' : 'Upgrade Cost:'}
                     </Typography>
                     <CostDisplay cost={building.cost} />
                     <Button
                         onClick={() => onBuild?.(building.id)}
-                        className="w-full mt-4 bg-amber-500 hover:bg-amber-400 text-black font-bold"
+                        className="w-full mt-4 bg-primary hover:bg-[var(--color-primary-hover)] text-primary-foreground font-bold"
                         disabled={!affordable}
                     >
                         {building.level === 0 ? 'Build' : 'Upgrade'}
@@ -97,7 +97,7 @@ export function BuildingDetailPanel({
             )}
 
             {!canUpgrade && (
-                <Typography variant="caption" className="text-green-400">
+                <Typography variant="caption" className="text-success">
                     Max level reached
                 </Typography>
             )}

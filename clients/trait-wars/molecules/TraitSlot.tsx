@@ -98,10 +98,10 @@ export function TraitSlot({
             position="relative"
             className={cn(
                 'items-center justify-center rounded-lg cursor-pointer transition-all duration-200',
-                isEmpty && !locked && 'border-2 border-dashed border-gray-600 hover:border-gray-400',
-                isEmpty && locked && 'border-2 border-dashed border-gray-700 opacity-50 cursor-not-allowed',
+                isEmpty && !locked && 'border-2 border-dashed border-border hover:border-muted-foreground',
+                isEmpty && locked && 'border-2 border-dashed border-border opacity-50 cursor-not-allowed',
                 !isEmpty && 'border-2',
-                selected && 'ring-2 ring-yellow-400 ring-offset-2 ring-offset-gray-900',
+                selected && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
                 onClick && !locked && 'hover:scale-105',
                 className
             )}
@@ -117,17 +117,17 @@ export function TraitSlot({
         >
             {locked ? (
                 <Box className="text-center">
-                    <Typography variant="caption" className="text-gray-500">
+                    <Typography variant="caption" className="text-muted-foreground">
                         🔒
                     </Typography>
                     {unlockLevel && (
-                        <Typography variant="caption" className="text-gray-600 block text-xs">
+                        <Typography variant="caption" className="text-muted-foreground block text-xs">
                             Lv.{unlockLevel}
                         </Typography>
                     )}
                 </Box>
             ) : isEmpty ? (
-                <Typography variant="caption" className="text-gray-500">
+                <Typography variant="caption" className="text-muted-foreground">
                     +
                 </Typography>
             ) : (
@@ -142,13 +142,13 @@ export function TraitSlot({
                     {onRemove && (
                         <Box
                             position="absolute"
-                            className="-top-1.5 -right-1.5 w-4 h-4 bg-red-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-red-500 transition-colors"
+                            className="-top-1.5 -right-1.5 w-4 h-4 bg-error rounded-full flex items-center justify-center cursor-pointer hover:bg-error/80 transition-colors"
                             onClick={(e) => {
                                 e.stopPropagation();
                                 onRemove();
                             }}
                         >
-                            <Typography variant="caption" className="text-white text-xs leading-none">
+                            <Typography variant="caption" className="text-foreground text-xs leading-none">
                                 ×
                             </Typography>
                         </Box>
@@ -159,9 +159,9 @@ export function TraitSlot({
             {/* Slot number indicator */}
             <Box
                 position="absolute"
-                className="-bottom-1 -left-1 w-4 h-4 bg-gray-800 rounded-full flex items-center justify-center border border-gray-600"
+                className="-bottom-1 -left-1 w-4 h-4 bg-card rounded-full flex items-center justify-center border border-border"
             >
-                <Typography variant="caption" className="text-gray-400 text-xs">
+                <Typography variant="caption" className="text-muted-foreground text-xs">
                     {slotNumber}
                 </Typography>
             </Box>
@@ -170,14 +170,14 @@ export function TraitSlot({
             {showTooltip && isHovered && traitMachine && !isEmpty && (
                 <Box
                     position="absolute"
-                    className="z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 p-3 bg-slate-900 border border-slate-700 rounded-lg shadow-xl"
+                    className="z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 p-3 bg-background border border-border rounded-lg shadow-xl"
                     style={{ minWidth: 200 }}
                 >
-                    <Typography variant="h6" className="text-white mb-2 text-center">
+                    <Typography variant="h6" className="text-foreground mb-2 text-center">
                         {equippedTrait.name}
                     </Typography>
                     {equippedTrait.description && (
-                        <Typography variant="caption" className="text-gray-400 block mb-2 text-center">
+                        <Typography variant="caption" className="text-muted-foreground block mb-2 text-center">
                             {equippedTrait.description}
                         </Typography>
                     )}
@@ -185,7 +185,7 @@ export function TraitSlot({
                     {/* Tooltip arrow */}
                     <Box
                         position="absolute"
-                        className="-bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-slate-700"
+                        className="-bottom-2 left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-border"
                     />
                 </Box>
             )}

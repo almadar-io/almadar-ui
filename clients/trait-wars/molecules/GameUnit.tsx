@@ -63,15 +63,15 @@ export function GameUnit({
             <Box
                 display="inline-flex"
                 className={cn(
-                    'items-center gap-2 p-1 rounded bg-gray-800/80',
-                    isSelected && 'ring-2 ring-yellow-400',
-                    onClick && 'cursor-pointer hover:bg-gray-700',
+                    'items-center gap-2 p-1 rounded bg-card/80',
+                    isSelected && 'ring-2 ring-primary',
+                    onClick && 'cursor-pointer hover:bg-muted',
                     className
                 )}
                 onClick={onClick}
             >
                 <CharacterSprite type={characterType} team={team} state={spriteState} scale={2} />
-                <Typography variant="caption" className="text-white">{name}</Typography>
+                <Typography variant="caption" className="text-foreground">{name}</Typography>
                 <StateIndicator state={state} size="sm" />
             </Box>
         );
@@ -82,9 +82,9 @@ export function GameUnit({
             <Box
                 display="flex"
                 className={cn(
-                    'flex-col items-center p-2 rounded-lg bg-gray-800 border',
-                    isSelected ? 'border-yellow-400' : 'border-gray-600',
-                    onClick && 'cursor-pointer hover:border-gray-500',
+                    'flex-col items-center p-2 rounded-lg bg-card border',
+                    isSelected ? 'border-primary' : 'border-border',
+                    onClick && 'cursor-pointer hover:border-muted-foreground',
                     className
                 )}
                 onClick={onClick}
@@ -102,10 +102,10 @@ export function GameUnit({
         <Box
             display="flex"
             className={cn(
-                'flex-col items-center p-3 rounded-lg bg-gray-800 border-2 transition-all duration-200',
-                isSelected && 'border-yellow-400 shadow-lg shadow-yellow-400/30',
-                isTargetable && !isSelected && 'border-red-400 hover:border-red-300',
-                !isSelected && !isTargetable && 'border-gray-600 hover:border-gray-500',
+                'flex-col items-center p-3 rounded-lg bg-card border-2 transition-all duration-200',
+                isSelected && 'border-primary shadow-lg shadow-primary/30',
+                isTargetable && !isSelected && 'border-error hover:border-error/80',
+                !isSelected && !isTargetable && 'border-border hover:border-muted-foreground',
                 onClick && 'cursor-pointer hover:scale-105',
                 className
             )}
@@ -117,21 +117,21 @@ export function GameUnit({
                 <CharacterSprite type={characterType} team={team} state={spriteState} scale={4} />
                 <Box
                     className={cn(
-                        'absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-gray-800',
-                        team === 'player' && 'bg-blue-500',
-                        team === 'enemy' && 'bg-red-500',
-                        team === 'neutral' && 'bg-gray-500'
+                        'absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-card',
+                        team === 'player' && 'bg-[var(--tw-faction-resonator)]',
+                        team === 'enemy' && 'bg-[var(--tw-faction-dominion)]',
+                        team === 'neutral' && 'bg-[var(--tw-faction-neutral)]'
                     )}
                 />
             </Box>
 
-            <Typography variant="body2" className="text-white font-medium mb-1 text-center">
+            <Typography variant="body2" className="text-foreground font-medium mb-1 text-center">
                 {name}
             </Typography>
 
             <Box className="w-full">
                 <HealthBar current={health} max={maxHealth} size="sm" format="bar" />
-                <Typography variant="caption" className="text-gray-400 text-xs text-center block mt-0.5">
+                <Typography variant="caption" className="text-muted-foreground text-xs text-center block mt-0.5">
                     {health}/{maxHealth}
                 </Typography>
             </Box>

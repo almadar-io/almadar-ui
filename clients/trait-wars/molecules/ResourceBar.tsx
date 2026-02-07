@@ -33,7 +33,7 @@ function ResourceItem({ type, amount, compact }: ResourceItemProps): JSX.Element
             className={cn(
                 'items-center rounded-lg border',
                 compact ? 'gap-1 px-2 py-1' : 'gap-2 px-3 py-2',
-                'bg-slate-800/80 border-slate-600'
+                'bg-card/80 border-border'
             )}
         >
             <Typography variant="body1" className={compact ? 'text-lg' : 'text-xl'}>
@@ -47,7 +47,7 @@ function ResourceItem({ type, amount, compact }: ResourceItemProps): JSX.Element
                 {amount.toLocaleString()}
             </Typography>
             {!compact && (
-                <Typography variant="caption" className="text-gray-400 hidden sm:block">
+                <Typography variant="caption" className="text-muted-foreground hidden sm:block">
                     {info.name}
                 </Typography>
             )}

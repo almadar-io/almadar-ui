@@ -24,10 +24,10 @@ export interface GarrisonUnitCardProps {
 }
 
 const TIER_COLORS: Record<number, string> = {
-    1: 'bg-gray-600',
-    2: 'bg-green-600',
-    3: 'bg-blue-600',
-    4: 'bg-purple-600',
+    1: 'bg-[var(--tw-tier-1)]',
+    2: 'bg-[var(--tw-tier-2)]',
+    3: 'bg-[var(--tw-tier-3)]',
+    4: 'bg-[var(--tw-tier-4)]',
 };
 
 /**
@@ -46,17 +46,17 @@ export function GarrisonUnitCard({
     return (
         <Box
             className={cn(
-                'p-3 bg-slate-900 rounded-lg border transition-all duration-200 cursor-pointer',
+                'p-3 bg-background rounded-lg border transition-all duration-200 cursor-pointer',
                 isSelected
-                    ? 'border-cyan-400 ring-2 ring-cyan-400/30'
-                    : 'border-slate-600 hover:border-slate-500',
+                    ? 'border-accent ring-2 ring-accent/30'
+                    : 'border-border hover:border-border',
                 className
             )}
             onClick={onClick}
         >
             <HStack className="gap-3 items-center">
                 {/* Portrait */}
-                <Box className="w-10 h-10 rounded-lg overflow-hidden bg-slate-800 border border-slate-700 flex-shrink-0">
+                <Box className="w-10 h-10 rounded-lg overflow-hidden bg-card border border-border flex-shrink-0">
                     {portraitUrl ? (
                         <img
                             src={portraitUrl}
@@ -74,17 +74,17 @@ export function GarrisonUnitCard({
                 <HStack className="gap-2 items-center flex-1">
                     <Badge
                         variant="default"
-                        className={cn('text-white', TIER_COLORS[unit.tier] || TIER_COLORS[1])}
+                        className={cn('text-foreground', TIER_COLORS[unit.tier] || TIER_COLORS[1])}
                     >
                         T{unit.tier}
                     </Badge>
-                    <Typography variant="body2" className="text-white flex-1">
+                    <Typography variant="body2" className="text-foreground flex-1">
                         {unit.name}
                     </Typography>
                 </HStack>
 
                 {/* Count */}
-                <Typography variant="h5" className="text-amber-400 font-bold">
+                <Typography variant="h5" className="text-primary font-bold">
                     x{unit.count}
                 </Typography>
 
@@ -97,7 +97,7 @@ export function GarrisonUnitCard({
                             e.stopPropagation();
                             onTransfer();
                         }}
-                        className="text-gray-400 hover:text-white px-2"
+                        className="text-muted-foreground hover:text-foreground px-2"
                     >
                         ↔
                     </Button>

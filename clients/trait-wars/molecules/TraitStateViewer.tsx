@@ -76,13 +76,13 @@ export function TraitStateViewer({
         <Box
             display="flex"
             className={cn(
-                'flex-col p-3 rounded-lg bg-gray-800 border border-gray-600',
+                'flex-col p-3 rounded-lg bg-card border border-border',
                 className
             )}
         >
             {/* Trait Header */}
             <Box display="flex" className="items-center justify-between mb-3">
-                <Typography variant="body2" className="text-white font-bold">
+                <Typography variant="body2" className="text-foreground font-bold">
                     {trait.name}
                 </Typography>
                 <StateIndicator state={mapToTraitState(trait.currentState)} size="sm" />
@@ -90,7 +90,7 @@ export function TraitStateViewer({
 
             {/* Description */}
             {trait.description && (
-                <Typography variant="caption" className="text-gray-400 mb-3" overflow="wrap">
+                <Typography variant="caption" className="text-muted-foreground mb-3" overflow="wrap">
                     {trait.description}
                 </Typography>
             )}
@@ -108,9 +108,9 @@ export function TraitStateViewer({
                             className={cn(
                                 'items-center justify-center rounded-md border-2 transition-all px-2',
                                 config.nodeSize,
-                                isCurrent && 'bg-yellow-500/20 border-yellow-400 shadow-md shadow-yellow-400/20',
-                                !isCurrent && hasOutgoing && 'bg-gray-700 border-gray-500 hover:border-gray-400',
-                                !isCurrent && !hasOutgoing && 'bg-gray-900 border-gray-700 opacity-60',
+                                isCurrent && 'bg-primary/20 border-primary shadow-md shadow-primary/20',
+                                !isCurrent && hasOutgoing && 'bg-muted border-border hover:border-muted-foreground',
+                                !isCurrent && !hasOutgoing && 'bg-background border-border opacity-60',
                                 onStateClick && 'cursor-pointer'
                             )}
                             onClick={() => onStateClick?.(state)}
@@ -120,7 +120,7 @@ export function TraitStateViewer({
                                 className={cn(
                                     config.fontSize,
                                     'whitespace-nowrap',
-                                    isCurrent ? 'text-yellow-300 font-bold' : 'text-gray-300'
+                                    isCurrent ? 'text-primary font-bold' : 'text-foreground/80'
                                 )}
                             >
                                 {state}
@@ -132,8 +132,8 @@ export function TraitStateViewer({
 
             {/* Available Transitions from Current State */}
             {showTransitions && currentTransitions.length > 0 && (
-                <Box className="mt-3 pt-3 border-t border-gray-700">
-                    <Typography variant="caption" className="text-gray-500 mb-2 block">
+                <Box className="mt-3 pt-3 border-t border-border">
+                    <Typography variant="caption" className="text-muted-foreground mb-2 block">
                         Available Actions:
                     </Typography>
                     <Box display="flex" className="flex-wrap gap-2">
@@ -141,13 +141,13 @@ export function TraitStateViewer({
                             <Box
                                 key={i}
                                 display="inline-flex"
-                                className="items-center gap-1 px-2 py-1 rounded bg-gray-700 text-xs"
+                                className="items-center gap-1 px-2 py-1 rounded bg-muted text-xs"
                             >
-                                <span className="text-cyan-400">{transition.event}</span>
-                                <span className="text-gray-500">→</span>
-                                <span className="text-green-400">{transition.to}</span>
+                                <span className="text-accent">{transition.event}</span>
+                                <span className="text-muted-foreground">→</span>
+                                <span className="text-success">{transition.to}</span>
                                 {transition.guardHint && (
-                                    <span className="text-orange-400 ml-1" title={transition.guardHint}>⚠</span>
+                                    <span className="text-warning ml-1" title={transition.guardHint}>⚠</span>
                                 )}
                             </Box>
                         ))}

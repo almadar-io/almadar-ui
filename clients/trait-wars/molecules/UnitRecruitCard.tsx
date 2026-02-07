@@ -49,10 +49,10 @@ export interface UnitRecruitCardProps {
 }
 
 const TIER_COLORS: Record<number, string> = {
-    1: 'bg-gray-600',
-    2: 'bg-green-600',
-    3: 'bg-blue-600',
-    4: 'bg-purple-600',
+    1: 'bg-[var(--tw-tier-1)]',
+    2: 'bg-[var(--tw-tier-2)]',
+    3: 'bg-[var(--tw-tier-3)]',
+    4: 'bg-[var(--tw-tier-4)]',
 };
 
 /**
@@ -84,8 +84,8 @@ export function UnitRecruitCard({
     return (
         <Box
             className={cn(
-                'p-3 bg-slate-900 rounded-lg border border-slate-600',
-                'transition-all duration-200 hover:border-slate-500',
+                'p-3 bg-background rounded-lg border border-border',
+                'transition-all duration-200 hover:border-muted-foreground',
                 disabled && 'opacity-50',
                 className
             )}
@@ -95,15 +95,15 @@ export function UnitRecruitCard({
                 <HStack className="gap-2 items-center">
                     <Badge
                         variant="default"
-                        className={cn('text-white', TIER_COLORS[tier] || TIER_COLORS[1])}
+                        className={cn('text-foreground', TIER_COLORS[tier] || TIER_COLORS[1])}
                     >
                         T{tier}
                     </Badge>
-                    <Typography variant="body1" className="text-white font-semibold">
+                    <Typography variant="body1" className="text-foreground font-semibold">
                         {name}
                     </Typography>
                 </HStack>
-                <Typography variant="caption" className="text-gray-400">
+                <Typography variant="caption" className="text-muted-foreground">
                     {available} available
                 </Typography>
             </HStack>
@@ -111,7 +111,7 @@ export function UnitRecruitCard({
             {/* Portrait + Stats */}
             <HStack className="gap-3 mb-3">
                 {/* Portrait */}
-                <Box className="w-16 h-16 rounded-lg overflow-hidden bg-slate-800 border border-slate-700 flex-shrink-0">
+                <Box className="w-16 h-16 rounded-lg overflow-hidden bg-card border border-border flex-shrink-0">
                     {portraitUrl ? (
                         <img
                             src={portraitUrl}
@@ -131,23 +131,23 @@ export function UnitRecruitCard({
                 <VStack className="flex-1 gap-1">
                     <HStack className="gap-4">
                         <HStack className="gap-1 items-center">
-                            <Typography variant="caption" className="text-red-400">⚔️</Typography>
-                            <Typography variant="caption" className="text-gray-300">{attack}</Typography>
+                            <Typography variant="caption" className="text-error">⚔️</Typography>
+                            <Typography variant="caption" className="text-foreground/80">{attack}</Typography>
                         </HStack>
                         <HStack className="gap-1 items-center">
-                            <Typography variant="caption" className="text-blue-400">🛡️</Typography>
-                            <Typography variant="caption" className="text-gray-300">{defense}</Typography>
+                            <Typography variant="caption" className="text-info">🛡️</Typography>
+                            <Typography variant="caption" className="text-foreground/80">{defense}</Typography>
                         </HStack>
                     </HStack>
                     <HStack className="gap-4">
                         <HStack className="gap-1 items-center">
-                            <Typography variant="caption" className="text-green-400">❤️</Typography>
-                            <Typography variant="caption" className="text-gray-300">{health}</Typography>
+                            <Typography variant="caption" className="text-success">❤️</Typography>
+                            <Typography variant="caption" className="text-foreground/80">{health}</Typography>
                         </HStack>
                         {movement !== undefined && (
                             <HStack className="gap-1 items-center">
-                                <Typography variant="caption" className="text-amber-400">👟</Typography>
-                                <Typography variant="caption" className="text-gray-300">{movement}</Typography>
+                                <Typography variant="caption" className="text-primary">👟</Typography>
+                                <Typography variant="caption" className="text-foreground/80">{movement}</Typography>
                             </HStack>
                         )}
                     </HStack>
@@ -156,11 +156,11 @@ export function UnitRecruitCard({
 
             {/* Cost display */}
             <HStack className="gap-2 mb-3">
-                <Badge variant="secondary" className="text-yellow-400 border-yellow-600">
+                <Badge variant="secondary" className="text-primary border-primary">
                     💰 {goldCost}
                 </Badge>
                 {resonanceCost !== undefined && resonanceCost > 0 && (
-                    <Badge variant="secondary" className="text-purple-400 border-purple-600">
+                    <Badge variant="secondary" className="text-[var(--tw-faction-resonator)] border-[var(--tw-faction-resonator)]">
                         🔮 {resonanceCost}
                     </Badge>
                 )}
@@ -177,7 +177,7 @@ export function UnitRecruitCard({
                 >
                     -
                 </Button>
-                <Typography variant="body1" className="text-white w-8 text-center">
+                <Typography variant="body1" className="text-foreground w-8 text-center">
                     {recruitCount}
                 </Typography>
                 <Button
@@ -195,7 +195,7 @@ export function UnitRecruitCard({
                         size="sm"
                         onClick={onRecruit}
                         disabled={disabled}
-                        className="ml-auto bg-amber-500 hover:bg-amber-400 text-black"
+                        className="ml-auto bg-primary hover:bg-[var(--color-primary-hover)] text-primary-foreground"
                     >
                         Recruit
                     </Button>

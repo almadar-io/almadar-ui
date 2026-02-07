@@ -52,9 +52,9 @@ export function BuildingSlot({
                 'flex flex-col items-center justify-center p-2',
                 'hover:scale-105 hover:z-10',
                 isBuilt
-                    ? 'bg-gradient-to-b from-amber-600/80 to-amber-800/80 border-2 border-amber-400'
-                    : 'bg-slate-700/50 border-2 border-dashed border-slate-500',
-                isSelected && 'ring-4 ring-cyan-400 scale-105 z-10',
+                    ? 'bg-gradient-to-b from-primary/60 to-primary/30 border-2 border-primary'
+                    : 'bg-muted/50 border-2 border-dashed border-border',
+                isSelected && 'ring-4 ring-accent scale-105 z-10',
                 className
             )}
             onClick={onClick}
@@ -75,7 +75,7 @@ export function BuildingSlot({
 
             {/* Building Name (on hover or always for unbuilt) */}
             {!isBuilt && (
-                <Typography variant="caption" className="text-gray-400 text-center mt-1">
+                <Typography variant="caption" className="text-muted-foreground text-center mt-1">
                     {name}
                 </Typography>
             )}
@@ -84,7 +84,7 @@ export function BuildingSlot({
             {isBuilt && (
                 <Badge
                     variant="default"
-                    className="absolute -bottom-2 bg-green-600 text-white text-xs"
+                    className="absolute -bottom-2 bg-success text-foreground text-xs"
                 >
                     Lv.{level}/{maxLevel}
                 </Badge>
