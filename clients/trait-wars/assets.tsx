@@ -63,8 +63,10 @@ export type GameUIOverlayType = 'victory' | 'defeat';
  * Hero types (player + villain heroes on Iram vessels)
  */
 export type HeroType =
-    | 'valence' | 'zahra' | 'hareth' | 'kael' | 'samira'  // Player heroes
-    | 'emperor' | 'tyrant' | 'destroyer' | 'deceiver';    // Villain heroes
+    | 'valence' | 'zahra' | 'hareth' | 'kael' | 'samira'           // Player heroes
+    | 'omar' | 'layla' | 'jara' | 'rumi' | 'zain'                  // Additional heroes
+    | 'tariq' | 'fatima' | 'dr-aris' | 'amir'                      // Additional heroes
+    | 'emperor' | 'tyrant' | 'destroyer' | 'deceiver';             // Villain heroes
 
 /**
  * World map feature types
@@ -206,6 +208,9 @@ export interface TraitWarsAssetManifest {
 
     /** Robot unit portrait paths (for recruitment panel) */
     unitPortraits?: Partial<Record<RobotUnitType, string>>;
+
+    /** Unified character portrait paths (derived from sprite sheet idle frames) */
+    portraits?: Partial<Record<string, string>>;
 
     /** Background images for canvas templates */
     backgrounds?: {
@@ -364,11 +369,21 @@ export function getHeroSpriteUrl(manifest: TraitWarsAssetManifest, heroId: strin
 }
 
 /**
+ * Get full URL for any character portrait (hero, robot, or villain).
+ * Uses the unified portraits map derived from sprite sheet idle frames.
+ */
+export function getPortraitUrl(manifest: TraitWarsAssetManifest, characterId: string): string | undefined {
+    const path = manifest.portraits?.[characterId];
+    return path ? `${manifest.baseUrl}/${path}` : undefined;
+}
+
+/**
  * Get full URL for a hero portrait.
  */
 export function getHeroPortraitUrl(manifest: TraitWarsAssetManifest, heroId: string): string | undefined {
     const path = manifest.heroPortraits?.[heroId as HeroType];
-    return path ? `${manifest.baseUrl}/${path}` : undefined;
+    if (path) return `${manifest.baseUrl}/${path}`;
+    return getPortraitUrl(manifest, heroId);
 }
 
 /**
@@ -416,7 +431,8 @@ export function getRobotUnitSpriteUrl(manifest: TraitWarsAssetManifest, type: Ro
  */
 export function getUnitPortraitUrl(manifest: TraitWarsAssetManifest, type: RobotUnitType): string | undefined {
     const path = manifest.unitPortraits?.[type];
-    return path ? `${manifest.baseUrl}/${path}` : undefined;
+    if (path) return `${manifest.baseUrl}/${path}`;
+    return getPortraitUrl(manifest, type);
 }
 
 /**
@@ -696,17 +712,26 @@ export const DEFAULT_ASSET_MANIFEST: TraitWarsAssetManifest = {
         destroyer: 'heroes-game/destroyer.png',
         deceiver: 'heroes-game/deceiver.png',
     },
-    // Hero portraits (for UI panels)
+    // Hero portraits (derived from sprite sheet idle frames)
     heroPortraits: {
-        valence: 'heroes/vane.png',
-        zahra: 'heroes/zahra.png',
-        hareth: 'heroes/hareth.png',
-        kael: 'heroes/kael.png',
-        samira: 'heroes/samira.png',
-        emperor: 'heroes/emperor.png',
-        tyrant: 'heroes/tyrant.png',
-        destroyer: 'heroes/destroyer.png',
-        deceiver: 'heroes/deceiver.png',
+        valence: 'portraits/valence.png',
+        zahra: 'portraits/zahra.png',
+        hareth: 'portraits/hareth.png',
+        kael: 'portraits/kael.png',
+        samira: 'portraits/samira.png',
+        omar: 'portraits/omar.png',
+        layla: 'portraits/layla.png',
+        jara: 'portraits/jara.png',
+        rumi: 'portraits/rumi.png',
+        zain: 'portraits/zain.png',
+        tariq: 'portraits/tariq.png',
+        fatima: 'portraits/fatima.png',
+        'dr-aris': 'portraits/dr-aris.png',
+        amir: 'portraits/amir.png',
+        emperor: 'portraits/emperor.png',
+        tyrant: 'portraits/tyrant.png',
+        destroyer: 'portraits/destroyer.png',
+        deceiver: 'portraits/deceiver.png',
     },
     // World map features (Kenney isometric style)
     worldMapFeatures: {
@@ -764,20 +789,58 @@ export const DEFAULT_ASSET_MANIFEST: TraitWarsAssetManifest = {
         conductor: 'units/conductor.png',
         prime: 'units/prime.png',
     },
-    // Unit portraits for recruitment panel
+    // Unit portraits (derived from sprite sheet idle frames)
     unitPortraits: {
-        worker: 'unit-portraits/worker.png',
-        scrapper: 'unit-portraits/scrapper.png',
-        mender: 'unit-portraits/mender.png',
-        guardian: 'unit-portraits/guardian.png',
-        strider: 'unit-portraits/strider.png',
-        breaker: 'unit-portraits/breaker.png',
-        resonator: 'unit-portraits/resonator.png',
-        forger: 'unit-portraits/forger.png',
-        glitch: 'unit-portraits/glitch.png',
-        archivist: 'unit-portraits/archivist.png',
-        conductor: 'unit-portraits/conductor.png',
-        prime: 'unit-portraits/prime.png',
+        worker: 'portraits/worker.png',
+        scrapper: 'portraits/scrapper.png',
+        mender: 'portraits/mender.png',
+        guardian: 'portraits/guardian.png',
+        strider: 'portraits/strider.png',
+        breaker: 'portraits/breaker.png',
+        resonator: 'portraits/resonator.png',
+        forger: 'portraits/forger.png',
+        glitch: 'portraits/glitch.png',
+        archivist: 'portraits/archivist.png',
+        conductor: 'portraits/conductor.png',
+        prime: 'portraits/prime.png',
+    },
+    // Unified portraits for all characters (source of truth: sprite sheet idle frames)
+    portraits: {
+        // Robots
+        worker: 'portraits/worker.png',
+        scrapper: 'portraits/scrapper.png',
+        mender: 'portraits/mender.png',
+        guardian: 'portraits/guardian.png',
+        strider: 'portraits/strider.png',
+        breaker: 'portraits/breaker.png',
+        resonator: 'portraits/resonator.png',
+        forger: 'portraits/forger.png',
+        glitch: 'portraits/glitch.png',
+        archivist: 'portraits/archivist.png',
+        conductor: 'portraits/conductor.png',
+        coordinator: 'portraits/coordinator.png',
+        // Heroes
+        valence: 'portraits/valence.png',
+        zahra: 'portraits/zahra.png',
+        hareth: 'portraits/hareth.png',
+        kael: 'portraits/kael.png',
+        samira: 'portraits/samira.png',
+        omar: 'portraits/omar.png',
+        layla: 'portraits/layla.png',
+        jara: 'portraits/jara.png',
+        rumi: 'portraits/rumi.png',
+        zain: 'portraits/zain.png',
+        tariq: 'portraits/tariq.png',
+        fatima: 'portraits/fatima.png',
+        'dr-aris': 'portraits/dr-aris.png',
+        amir: 'portraits/amir.png',
+        // Villains
+        emperor: 'portraits/emperor.png',
+        tyrant: 'portraits/tyrant.png',
+        destroyer: 'portraits/destroyer.png',
+        deceiver: 'portraits/deceiver.png',
+        // Shadow Legion
+        'shadow-legion': 'portraits/shadow-legion.png',
     },
     // Background images for canvas templates
     backgrounds: {

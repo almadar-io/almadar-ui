@@ -7,21 +7,7 @@
 
 import React from 'react';
 import { Box, Badge, cn } from '@almadar/ui';
-
-// Hero avatar images - loaded from project assets via Storybook public folder
-// In Storybook, assets are served from projects/trait-wars/assets/
-// The publicDir in .storybook/main.ts maps to /assets/
-const HERO_AVATARS: Record<string, string> = {
-    emperor: '/assets/heroes/emperor.png',
-    vane: '/assets/heroes/vane.png',
-    tyrant: '/assets/heroes/tyrant.png',
-    destroyer: '/assets/heroes/destroyer.png',
-    deceiver: '/assets/heroes/deceiver.png',
-    zahra: '/assets/heroes/zahra.png',
-    kael: '/assets/heroes/kael.png',
-    hareth: '/assets/heroes/hareth.png',
-    samira: '/assets/heroes/samira.png',
-};
+import { useAssetsOptional, DEFAULT_ASSET_MANIFEST, getHeroPortraitUrl } from '../assets';
 
 // Archetype colors for frame accents
 const ARCHETYPE_COLORS: Record<string, { border: string; glow: string }> = {
@@ -87,7 +73,8 @@ export function HeroAvatar({
 }: HeroAvatarProps): JSX.Element {
     const config = SIZE_CONFIG[size];
     const colors = ARCHETYPE_COLORS[archetype] || ARCHETYPE_COLORS.hero;
-    const avatarSrc = portraitUrl || HERO_AVATARS[heroId.toLowerCase()] || HERO_AVATARS.emperor;
+    const manifest = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
+    const avatarSrc = portraitUrl || getHeroPortraitUrl(manifest, heroId.toLowerCase());
 
     return (
         <Box
