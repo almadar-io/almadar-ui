@@ -13,10 +13,10 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
-  Box,
-  Typography,
-  Button,
-  cn,
+    Box,
+    Typography,
+    Button,
+    cn,
 } from '@almadar/ui';
 import { GameTile, TileUnit } from '../organisms/GameTile';
 import { StateIndicator, TraitState } from '../atoms/StateIndicator';
@@ -591,7 +591,7 @@ export function TraitWarsGame({
                             amount={popup.amount}
                             x={popup.x + 100} // Offset for sidebar
                             y={popup.y + 100}
-                            type={popup.type}
+                            damageType={popup.type}
                         />
                     ))}
                 </Box>

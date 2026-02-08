@@ -166,10 +166,14 @@ export interface IsometricGameCanvasProps {
     /** Array of features (resources, portals, etc.) */
     features?: IsometricFeature[];
     /**
-     * Raw Orbital entity data array. When provided, the component maps
-     * entity fields to tiles/units/features internally based on entityRole.
+     * Entity name (string) or raw Orbital entity data array. When a string is
+     * provided, actual data comes from the `data` prop. When an array is
+     * provided, the component maps entity fields to tiles/units/features
+     * internally based on entityRole.
      */
-    entity?: Record<string, unknown>[];
+    entity?: string | Record<string, unknown>[];
+    /** Raw data array passed from the runtime (used when entity is a string name) */
+    data?: Record<string, unknown>[] | unknown[] | unknown;
     /**
      * How to interpret entity data:
      * - 'tiles': generate tiles from entity data
@@ -360,6 +364,7 @@ export function IsometricGameCanvas({
     units: unitsProp = [],
     features: featuresProp = [],
     entity,
+    data,
     entityRole,
     selectedUnitId = null,
     validMoves = [],
@@ -385,26 +390,37 @@ export function IsometricGameCanvas({
     // =========================================================================
     // Entity-to-data mapping (Orbital compatibility)
     // =========================================================================
+    // Resolve entity data: if entity is an array use it directly,
+    // if it's a string (entity name), use the data prop as the source
+    const entityData: Record<string, unknown>[] | undefined = React.useMemo(() => {
+        if (Array.isArray(entity)) {
+            return entity as Record<string, unknown>[];
+        }
+        if (typeof entity === 'string' && data) {
+            return (Array.isArray(data) ? data : []) as Record<string, unknown>[];
+        }
+        return undefined;
+    }, [entity, data]);
     const tiles: IsometricTile[] = React.useMemo(() => {
-        if (entity && (entityRole === 'tiles' || entityRole === 'both')) {
-            return mapEntityToTiles(entity);
+        if (entityData && (entityRole === 'tiles' || entityRole === 'both')) {
+            return mapEntityToTiles(entityData);
         }
         return tilesProp ?? [];
-    }, [entity, entityRole, tilesProp]);
+    }, [entityData, entityRole, tilesProp]);
 
     const units: IsometricUnit[] = React.useMemo(() => {
-        if (entity && (entityRole === 'units' || entityRole === 'both')) {
-            return mapEntityToUnits(entity);
+        if (entityData && (entityRole === 'units' || entityRole === 'both')) {
+            return mapEntityToUnits(entityData);
         }
         return unitsProp;
-    }, [entity, entityRole, unitsProp]);
+    }, [entityData, entityRole, unitsProp]);
 
     const features: IsometricFeature[] = React.useMemo(() => {
-        if (entity && entityRole === 'both') {
-            return mapEntityToFeatures(entity);
+        if (entityData && entityRole === 'both') {
+            return mapEntityToFeatures(entityData);
         }
         return featuresProp;
-    }, [entity, entityRole, featuresProp]);
+    }, [entityData, entityRole, featuresProp]);
 
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const minimapRef = useRef<HTMLCanvasElement>(null);

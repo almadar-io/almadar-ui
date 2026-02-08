@@ -486,7 +486,7 @@ export function HexTraitWarsGame({
                         <DamagePopup
                             key={popup.id}
                             amount={popup.amount}
-                            type={popup.type}
+                            damageType={popup.type}
                             x={popup.x * 90 + 45}
                             y={popup.y * 78 + 35}
                         />
