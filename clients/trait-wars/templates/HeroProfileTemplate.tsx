@@ -72,7 +72,7 @@ export function HeroProfileTemplate({
             )}
         >
             {/* Header: Avatar + Name + Level */}
-            <HStack gap={6} align="start">
+            <HStack gap="lg" align="start">
                 <HeroAvatar
                     heroId={hero.id}
                     name={hero.name}
@@ -81,9 +81,9 @@ export function HeroProfileTemplate({
                     size="xl"
                 />
 
-                <VStack gap={2} className="flex-1">
+                <VStack gap="sm" className="flex-1">
                     <HStack justify="between" className="w-full">
-                        <VStack gap={0}>
+                        <VStack gap="none">
                             <Typography variant="h2" className="text-foreground">
                                 {hero.name}
                             </Typography>
@@ -93,13 +93,13 @@ export function HeroProfileTemplate({
                                 </Typography>
                             )}
                         </VStack>
-                        <Badge variant="solid" colorScheme="purple" size="lg">
+                        <Badge variant="secondary" size="lg">
                             {hero.archetype}
                         </Badge>
                     </HStack>
 
                     {/* Experience Bar */}
-                    <VStack gap={1} className="w-full">
+                    <VStack gap="xs" className="w-full">
                         <HStack justify="between" className="w-full">
                             <Typography variant="caption" className="text-muted-foreground">
                                 Level {hero.level}
@@ -143,7 +143,7 @@ export function HeroProfileTemplate({
                         </Typography>
                     )}
                 </HStack>
-                <HStack gap={3} wrap="wrap">
+                <HStack gap="sm" wrap>
                     {Array.from({ length: hero.maxTraitSlots }).map((_, index) => {
                         const trait = hero.equippedTraits[index];
                         const isLocked = index >= 2 + Math.floor(hero.level / 5); // Unlock every 5 levels
@@ -187,7 +187,7 @@ function StatItem({ label, value, max, color }: { label: string; value: number; 
     };
 
     return (
-        <VStack align="center" gap={1}>
+        <VStack align="center" gap="xs">
             <Typography variant="caption" className="text-muted-foreground/70">{label}</Typography>
             <Typography variant="h4" className={colorClasses[color]}>
                 {max ? `${value}/${max}` : value}

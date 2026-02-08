@@ -12,7 +12,7 @@ export function createTutorialScenario(): { state: GameState; description: strin
         {
             id: 'tutorial-knight',
             name: 'Your Knight',
-            characterType: 'knight',
+            characterType: 'hero',
             team: 'player',
             position: { x: 1, y: 2 },
             health: 100,
@@ -30,7 +30,7 @@ export function createTutorialScenario(): { state: GameState; description: strin
         {
             id: 'tutorial-skeleton',
             name: 'Training Dummy',
-            characterType: 'skeleton',
+            characterType: 'orphan',
             team: 'enemy',
             position: { x: 4, y: 2 },
             health: 30,
@@ -66,7 +66,7 @@ export function createSkirmishScenario(): { state: GameState; description: strin
         {
             id: 'player-knight',
             name: 'Sir Galahad',
-            characterType: 'knight',
+            characterType: 'hero',
             team: 'player',
             position: { x: 1, y: 3 },
             health: 100,
@@ -79,7 +79,7 @@ export function createSkirmishScenario(): { state: GameState; description: strin
         {
             id: 'player-mage',
             name: 'Merlin',
-            characterType: 'mage',
+            characterType: 'magician',
             team: 'player',
             position: { x: 0, y: 4 },
             health: 60,
@@ -92,7 +92,7 @@ export function createSkirmishScenario(): { state: GameState; description: strin
         {
             id: 'player-healer',
             name: 'Sister Mary',
-            characterType: 'healer',
+            characterType: 'caregiver',
             team: 'player',
             position: { x: 2, y: 4 },
             health: 50,
@@ -106,7 +106,7 @@ export function createSkirmishScenario(): { state: GameState; description: strin
         {
             id: 'enemy-warrior',
             name: 'Dark Knight',
-            characterType: 'warrior',
+            characterType: 'ruler',
             team: 'enemy',
             position: { x: 6, y: 1 },
             health: 90,
@@ -119,7 +119,7 @@ export function createSkirmishScenario(): { state: GameState; description: strin
         {
             id: 'enemy-skeleton',
             name: 'Bone Mage',
-            characterType: 'skeleton',
+            characterType: 'orphan',
             team: 'enemy',
             position: { x: 7, y: 2 },
             health: 45,
@@ -132,7 +132,7 @@ export function createSkirmishScenario(): { state: GameState; description: strin
         {
             id: 'enemy-ghost',
             name: 'Phantom',
-            characterType: 'ghost',
+            characterType: 'innocent',
             team: 'enemy',
             position: { x: 6, y: 3 },
             health: 35,
@@ -162,7 +162,7 @@ export function createBossBattleScenario(): { state: GameState; description: str
         {
             id: 'player-knight',
             name: 'Vanguard',
-            characterType: 'knight',
+            characterType: 'hero',
             team: 'player',
             position: { x: 2, y: 4 },
             health: 120,
@@ -175,7 +175,7 @@ export function createBossBattleScenario(): { state: GameState; description: str
         {
             id: 'player-mage',
             name: 'Archmage',
-            characterType: 'mage',
+            characterType: 'magician',
             team: 'player',
             position: { x: 1, y: 5 },
             health: 70,
@@ -188,7 +188,7 @@ export function createBossBattleScenario(): { state: GameState; description: str
         {
             id: 'player-healer',
             name: 'High Priest',
-            characterType: 'healer',
+            characterType: 'caregiver',
             team: 'player',
             position: { x: 3, y: 5 },
             health: 60,
@@ -201,7 +201,7 @@ export function createBossBattleScenario(): { state: GameState; description: str
         {
             id: 'player-archer',
             name: 'Sharpshooter',
-            characterType: 'archer',
+            characterType: 'explorer',
             team: 'player',
             position: { x: 0, y: 4 },
             health: 55,
@@ -215,7 +215,7 @@ export function createBossBattleScenario(): { state: GameState; description: str
         {
             id: 'boss-demon',
             name: '🔥 DEMON LORD 🔥',
-            characterType: 'demon',
+            characterType: 'emperor',
             team: 'enemy',
             position: { x: 4, y: 1 },
             health: 300,
@@ -250,7 +250,7 @@ export function createSurvivalScenario(): { state: GameState; description: strin
         {
             id: 'player-knight',
             name: 'Last Stand',
-            characterType: 'knight',
+            characterType: 'hero',
             team: 'player',
             position: { x: 4, y: 4 },
             health: 150,
@@ -274,10 +274,11 @@ export function createSurvivalScenario(): { state: GameState; description: strin
         waveConfig: {
             currentWave: 1,
             enemiesPerWave: [2, 3, 3, 4, 5],
-            enemyTypes: ['skeleton', 'zombie', 'ghost'],
+            enemyTypes: ['orphan', 'shadowLegion', 'innocent'],
         },
     };
 }
+
 
 export interface WaveConfig {
     currentWave: number;
