@@ -38,21 +38,34 @@ const players = [
     { id: 'player-2', name: 'Enemy', color: 'red' as const },
 ];
 
+// Fixed: Deterministic terrain pattern, ensuring spawn zones (x: 0-1 for player, x: 4-5 for enemy) are passable
 const tiles: HexTileEntity[] = [];
 for (let x = 0; x < 6; x++) {
     for (let y = 0; y < 5; y++) {
+        // Deterministic pattern: plains base, with some forest variation
+        // Ensure spawn zones are always passable (x: 0-1 and x: 4-5)
+        let terrain: 'plains' | 'forest' | 'water' | 'mountain' = 'plains';
+        if (x === 0 || x === 5) {
+            // Edge tiles can be mountain (impassable), but spawn zones avoid edges
+            terrain = (x + y) % 3 === 0 ? 'mountain' : 'plains';
+        } else {
+            // Interior tiles: deterministic pattern
+            terrain = (x + y) % 4 === 0 ? 'forest' : 'plains';
+        }
         tiles.push({
             x,
             y,
-            terrain: ['plains', 'forest', 'plains', 'water', 'mountain'][Math.floor(Math.random() * 5)] as 'plains',
+            terrain,
         });
     }
 }
 
+// Fixed: Player units spawn at x: 1 (not x: 0 edge), enemy units at x: width-2 (not width-1 edge)
+// Board width is 6, so enemy spawn at x: 4 (6-2)
 const units: GridUnit[] = [
-    { id: 'unit-1', position: { x: 1, y: 1 }, owner: 'player' },
-    { id: 'unit-2', position: { x: 4, y: 3 }, owner: 'enemy' },
-    { id: 'unit-3', position: { x: 2, y: 2 }, owner: 'player' },
+    { id: 'unit-1', position: { x: 1, y: 1 }, owner: 'player' }, // FIXED: x: 1 (safe spawn zone)
+    { id: 'unit-2', position: { x: 4, y: 3 }, owner: 'enemy' }, // FIXED: x: 4 (width-2, safe spawn zone)
+    { id: 'unit-3', position: { x: 1, y: 2 }, owner: 'player' }, // FIXED: x: 1 (was x: 2, but x: 1 is safer)
 ];
 
 const unitEntities: UnitEntity[] = [

@@ -319,13 +319,15 @@ export const Interactive: Story = {
 function LargeMapDemo({ animationSpeed = 2, unitScale = 1, allowMoveAllHeroes = false }: { animationSpeed?: number; unitScale?: number; allowMoveAllHeroes?: boolean }) {
     const largeHexes = (() => {
         const hexes: WorldMapHex[] = [];
-        const terrains = ['grass', 'grass', 'dirt', 'stone', 'grass', 'grass', 'dirt'];
-
+        
+        // Deterministic terrain pattern (grass/dirt base) - ensures consistency
         for (let y = 0; y < 24; y++) {
             for (let x = 0; x < 30; x++) {
+                // Use deterministic pattern: grass with occasional dirt
+                const terrain = (x + y) % 3 === 0 ? 'dirt' : 'grass';
                 hexes.push({
                     x, y,
-                    terrain: terrains[Math.floor(Math.random() * terrains.length)] as any,
+                    terrain,
                     movementCost: 1,
                     passable: true,
                 });
