@@ -8,6 +8,9 @@
 // Main unified provider
 export { OrbitalProvider, type OrbitalProviderProps } from './OrbitalProvider';
 
+// Re-export ThemeDefinition for generated theme configs
+export type { ThemeDefinition } from '../context/ThemeContext';
+
 // Individual providers (for advanced use cases)
 export { EventBusProvider, EventBusContext } from './EventBusProvider';
 export { SelectionProvider, SelectionContext, useSelection, useSelectionOptional } from './SelectionProvider';

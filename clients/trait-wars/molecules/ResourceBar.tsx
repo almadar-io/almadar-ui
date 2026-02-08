@@ -10,8 +10,8 @@ import { Resources, ResourceType, RESOURCE_INFO } from '../types/resources';
 import { useAssetsOptional, DEFAULT_ASSET_MANIFEST, getGameUIResourceIconUrl, GameUIResourceIconType } from '../assets';
 
 export interface ResourceBarProps {
-    /** Current resources */
-    resources: Resources;
+    /** Current resources - either a Resources object with values, or a string[] of resource names to display (values default to 0) */
+    resources: Resources | string[];
     /** Whether to show extended resources (wood, stone, crystal) */
     showExtended?: boolean;
     /** Whether bar is compact */
@@ -70,17 +70,24 @@ export function ResourceBar({
     compact = false,
     className,
 }: ResourceBarProps): JSX.Element {
-    const coreResources: ResourceType[] = ['gold', 'resonance', 'traitShards'];
-    const extendedResources: ResourceType[] = ['wood', 'stone', 'crystal'];
+    // Normalize resources: if string[], convert to display-only Resources with 0 values
+    const normalizedResources: Resources = Array.isArray(resources)
+        ? { gold: 0, resonance: 0, traitShards: 0, ...Object.fromEntries(resources.map(r => [r, 0])) } as Resources
+        : resources;
+
+    const coreResources: ResourceType[] = Array.isArray(resources)
+        ? resources.filter((r): r is ResourceType => ['gold', 'resonance', 'traitShards', 'wood', 'stone', 'crystal'].includes(r))
+        : ['gold', 'resonance', 'traitShards'];
+    const extendedResources: ResourceType[] = Array.isArray(resources) ? [] : ['wood', 'stone', 'crystal'];
 
     const getAmount = (type: ResourceType): number => {
         switch (type) {
-            case 'gold': return resources.gold;
-            case 'resonance': return resources.resonance;
-            case 'traitShards': return resources.traitShards;
-            case 'wood': return resources.wood ?? 0;
-            case 'stone': return resources.stone ?? 0;
-            case 'crystal': return resources.crystal ?? 0;
+            case 'gold': return normalizedResources.gold;
+            case 'resonance': return normalizedResources.resonance;
+            case 'traitShards': return normalizedResources.traitShards;
+            case 'wood': return normalizedResources.wood ?? 0;
+            case 'stone': return normalizedResources.stone ?? 0;
+            case 'crystal': return normalizedResources.crystal ?? 0;
         }
     };
 
