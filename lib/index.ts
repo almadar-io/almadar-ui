@@ -31,3 +31,6 @@ export * from './traitRegistry';
 
 // Data utilities
 export * from './getNestedValue';
+
+// Visualizer
+export * from './visualizer';
