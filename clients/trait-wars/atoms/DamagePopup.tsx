@@ -14,7 +14,7 @@ export interface DamagePopupProps {
     x: number;
     y: number;
     /** Damage type for styling */
-    type?: 'physical' | 'magic' | 'heal' | 'critical';
+    damageType?: 'physical' | 'magic' | 'heal' | 'critical';
     /** Callback when animation completes */
     onComplete?: () => void;
     /** Additional CSS classes */
@@ -32,7 +32,7 @@ export function DamagePopup({
     amount,
     x,
     y,
-    type = 'physical',
+    damageType = 'physical',
     onComplete,
     className,
 }: DamagePopupProps): JSX.Element | null {
@@ -61,15 +61,15 @@ export function DamagePopup({
 
     if (!visible) return null;
 
-    const displayText = type === 'heal' ? `+${amount}` : `-${amount}`;
-    const isCritical = type === 'critical';
+    const displayText = damageType === 'heal' ? `+${amount}` : `-${amount}`;
+    const isCritical = damageType === 'critical';
 
     return (
         <Box
             className={cn(
                 'fixed pointer-events-none font-bold text-lg z-50',
                 'drop-shadow-lg',
-                typeStyles[type],
+                typeStyles[damageType],
                 isCritical && 'animate-bounce',
                 className
             )}
