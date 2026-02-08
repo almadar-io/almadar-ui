@@ -916,7 +916,7 @@ export function CanvasBattleTemplate({
                             <DamagePopup
                                 key={popup.id}
                                 amount={popup.amount}
-                                type={popup.type}
+                                damageType={popup.type}
                                 x={popup.screenX}
                                 y={popup.screenY}
                             />
