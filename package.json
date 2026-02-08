@@ -41,8 +41,8 @@
     },
     "./themes/*.css": "./themes/*.css",
     "./clients/*": {
-      "import": "./dist/clients/*.js",
-      "types": "./dist/clients/*.d.ts"
+      "import": "./dist/clients/*/index.js",
+      "types": "./dist/clients/*/index.d.ts"
     }
   },
   "files": [
