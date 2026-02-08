@@ -32,3 +32,7 @@ export * from './organisms';
 
 // Templates - Page-level layouts
 export * from './templates';
+
+// Re-export aliases used by the compiler's component-mapping registry
+export { UnitRecruitCard as RecruitCard } from './molecules';
+export { HeroProfileTemplate as HeroProfile } from './templates';
