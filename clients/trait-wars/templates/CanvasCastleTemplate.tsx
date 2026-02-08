@@ -28,6 +28,7 @@ import {
     DEFAULT_ASSET_MANIFEST,
     getBuildingSpriteUrl,
     getRobotUnitSpriteUrl,
+    getHeroSpriteUrl,
     getKenneyTileUrl,
     getGameUIEmblemUrl,
     getGameUIPanelUrl,
@@ -274,10 +275,31 @@ export function CanvasCastleTemplate({
         [castle, layout, assets]
     );
 
-    const garrisonUnits = useMemo(
-        () => garrisonToUnits(castle.garrison, layout, assets),
-        [castle.garrison, layout, assets]
-    );
+    const garrisonUnits = useMemo(() => {
+        const units = garrisonToUnits(castle.garrison, layout, assets);
+        // Place castleHero on the courtyard canvas too
+        if (castleHero) {
+            // Find an open tile near the gate for the hero
+            const occupied = new Set(units.map(u => `${u.position.x},${u.position.y}`));
+            const gateTile = layout.gateTiles[0];
+            const heroTile = gateTile
+                ? { x: gateTile.x, y: gateTile.y - 1 }
+                : { x: Math.floor(layout.gridWidth / 2), y: Math.floor(layout.gridHeight / 2) };
+            // Nudge if occupied
+            if (occupied.has(`${heroTile.x},${heroTile.y}`)) {
+                heroTile.x = Math.max(1, heroTile.x - 1);
+            }
+            units.push({
+                id: `hero-${castleHero.id}`,
+                position: heroTile,
+                name: castleHero.name,
+                team: 'player' as const,
+                heroId: castleHero.spriteId || castleHero.id,
+                sprite: getHeroSpriteUrl(assets, castleHero.spriteId || castleHero.id),
+            });
+        }
+        return units;
+    }, [castle.garrison, layout, assets, castleHero]);
 
     // Hovered building info
     const hoveredBuildingInfo = useMemo(() => {

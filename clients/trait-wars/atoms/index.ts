@@ -11,6 +11,7 @@ export { CharacterSprite, type CharacterSpriteProps, type CharacterType } from '
 export { TileSprite, type TileSpriteProps, type TileType, TILE_SPRITES } from './TileSprite';
 export { StateIndicator, type StateIndicatorProps, type TraitState as IndicatorState } from './StateIndicator';
 export { DamagePopup, type DamagePopupProps } from './DamagePopup';
+export { CanvasEffect, type CanvasEffectProps, type CombatActionType } from './CanvasEffect';
 export { GuardDisplay, type GuardDisplayProps } from './GuardDisplay';
 export { HeroAvatar, type HeroAvatarProps } from './HeroAvatar';
 export { MapNode, type MapNodeProps, type LocationType } from './MapNode';

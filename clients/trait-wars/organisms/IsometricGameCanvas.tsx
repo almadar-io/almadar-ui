@@ -289,7 +289,7 @@ interface ImageCache {
     [url: string]: HTMLImageElement | null;
 }
 
-function useImageCache(urls: string[]): { loaded: boolean; getImage: (url: string) => HTMLImageElement | null } {
+function useImageCache(urls: string[]): { loaded: boolean; getImage: (url: string) => HTMLImageElement | undefined } {
     const cacheRef = useRef<ImageCache>({});
     const [loadedCount, setLoadedCount] = useState(0);
 
@@ -320,7 +320,7 @@ function useImageCache(urls: string[]): { loaded: boolean; getImage: (url: strin
         };
     }, [urls.join(',')]);
 
-    const getImage = useCallback((url: string) => cacheRef.current[url] ?? null, []);
+    const getImage = useCallback((url: string) => cacheRef.current[url] ?? undefined, []);
     const loaded = loadedCount >= urls.filter(Boolean).length || urls.length === 0;
 
     return { loaded, getImage };

@@ -31,6 +31,10 @@ const meta: Meta<typeof CanvasWorldMapTemplate> = {
             control: { type: 'range', min: 0.5, max: 3, step: 0.1 },
             description: 'Unit/hero draw size multiplier (1 = default)',
         },
+        allowMoveAllHeroes: {
+            control: 'boolean',
+            description: 'Allow selecting and moving ALL heroes (including enemies)',
+        },
     },
     decorators: [
         (Story) => (
@@ -213,7 +217,7 @@ export const Default: Story = {
     },
 };
 
-function InteractiveWorldMap({ animationSpeed = 2, unitScale = 1 }: { animationSpeed?: number; unitScale?: number }) {
+function InteractiveWorldMap({ animationSpeed = 2, unitScale = 1, allowMoveAllHeroes = false }: { animationSpeed?: number; unitScale?: number; allowMoveAllHeroes?: boolean }) {
     const [worldMap, setWorldMap] = useState(sampleWorldMap);
     const [selectedHeroId, setSelectedHeroId] = useState<string | null>('valence');
     const [resources, setResources] = useState(sampleResources);
@@ -270,19 +274,20 @@ function InteractiveWorldMap({ animationSpeed = 2, unitScale = 1 }: { animationS
             scale={0.4}
             animationSpeed={animationSpeed}
             unitScale={unitScale}
+            allowMoveAllHeroes={allowMoveAllHeroes}
         />
     );
 }
 
 export const Interactive: Story = {
-    args: { animationSpeed: 2, unitScale: 2.5 },
-    render: (args) => <InteractiveWorldMap animationSpeed={args.animationSpeed} unitScale={args.unitScale} />,
+    args: { animationSpeed: 2, unitScale: 2.5, allowMoveAllHeroes: false },
+    render: (args) => <InteractiveWorldMap animationSpeed={args.animationSpeed} unitScale={args.unitScale} allowMoveAllHeroes={args.allowMoveAllHeroes} />,
 };
 
 /**
  * Larger map with more features
  */
-function LargeMapDemo({ animationSpeed = 2, unitScale = 1 }: { animationSpeed?: number; unitScale?: number }) {
+function LargeMapDemo({ animationSpeed = 2, unitScale = 1, allowMoveAllHeroes = false }: { animationSpeed?: number; unitScale?: number; allowMoveAllHeroes?: boolean }) {
     const largeHexes = (() => {
         const hexes: WorldMapHex[] = [];
         const terrains = ['grass', 'grass', 'dirt', 'stone', 'grass', 'grass', 'dirt'];
@@ -659,11 +664,12 @@ function LargeMapDemo({ animationSpeed = 2, unitScale = 1 }: { animationSpeed?: 
             scale={0.25}
             animationSpeed={animationSpeed}
             unitScale={unitScale}
+            allowMoveAllHeroes={allowMoveAllHeroes}
         />
     );
 }
 
 export const LargeMap: Story = {
-    args: { animationSpeed: 2, unitScale: 2.5 },
-    render: (args) => <LargeMapDemo animationSpeed={args.animationSpeed} unitScale={args.unitScale} />,
+    args: { animationSpeed: 2, unitScale: 2.5, allowMoveAllHeroes: true },
+    render: (args) => <LargeMapDemo animationSpeed={args.animationSpeed} unitScale={args.unitScale} allowMoveAllHeroes={args.allowMoveAllHeroes} />,
 };

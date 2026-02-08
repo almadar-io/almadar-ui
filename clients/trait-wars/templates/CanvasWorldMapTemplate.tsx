@@ -77,6 +77,8 @@ export interface CanvasWorldMapTemplateProps {
     animationSpeed?: number;
     /** Unit/hero draw size multiplier. 1 = base, 2.5 = default. Default: 2.5 */
     unitScale?: number;
+    /** Allow selecting and moving ALL heroes (including enemies). For testing/Storybook. Default: false */
+    allowMoveAllHeroes?: boolean;
     /** Additional CSS classes */
     className?: string;
 }
@@ -112,6 +114,7 @@ export function CanvasWorldMapTemplate({
     scale = 0.4,
     animationSpeed = 2,
     unitScale = 2.5,
+    allowMoveAllHeroes = false,
     className,
 }: CanvasWorldMapTemplateProps): JSX.Element {
     const assets = useAssetsOptional() || DEFAULT_ASSET_MANIFEST;
@@ -282,7 +285,7 @@ export function CanvasWorldMapTemplate({
 
             if (isInMovementRange(selectedHero.position, { x: hex.x, y: hex.y }, selectedHero.movement)) {
                 const occupyingHero = worldMap.heroes.find(
-                    (h) => h.position.x === hex.x && h.position.y === hex.y && h.owner === 'player'
+                    (h) => h.position.x === hex.x && h.position.y === hex.y && h.owner === selectedHero.owner
                 );
                 if (!occupyingHero) {
                     moves.push({ x: hex.x, y: hex.y });
@@ -297,7 +300,7 @@ export function CanvasWorldMapTemplate({
         if (!selectedHero || selectedHero.movement <= 0) return [];
 
         return worldMap.heroes
-            .filter((h) => h.owner === 'enemy')
+            .filter((h) => h.owner !== selectedHero.owner)
             .filter((h) => isInMovementRange(selectedHero.position, h.position, selectedHero.movement))
             .map((h) => h.position);
     }, [selectedHero, worldMap.heroes]);
@@ -339,10 +342,10 @@ export function CanvasWorldMapTemplate({
     // Handle unit click
     const handleUnitClick = useCallback((unitId: string) => {
         const hero = worldMap.heroes.find((h) => h.id === unitId);
-        if (hero && hero.owner === 'player') {
+        if (hero && (hero.owner === 'player' || allowMoveAllHeroes)) {
             onHeroSelect?.(unitId);
         }
-    }, [worldMap.heroes, onHeroSelect]);
+    }, [worldMap.heroes, onHeroSelect, allowMoveAllHeroes]);
 
     // Hovered hex info
     const hoveredHexInfo = useMemo(() => {
@@ -552,7 +555,18 @@ export function CanvasWorldMapTemplate({
                                 {worldMap.heroes
                                     .filter((h) => h.owner === 'enemy')
                                     .map((hero) => (
-                                        <Box key={hero.id} className="p-3 bg-[var(--tw-faction-dominion)]/10 rounded-lg border border-[var(--tw-faction-dominion)]/50">
+                                        <Box
+                                            key={hero.id}
+                                            className={cn(
+                                                'p-3 rounded-lg border',
+                                                allowMoveAllHeroes ? 'cursor-pointer' : '',
+                                                hero.id === selectedHeroId && allowMoveAllHeroes
+                                                    ? 'bg-[var(--tw-faction-dominion)]/20 border-[var(--tw-faction-dominion)]'
+                                                    : 'bg-[var(--tw-faction-dominion)]/10 border-[var(--tw-faction-dominion)]/50',
+                                                allowMoveAllHeroes ? 'hover:bg-[var(--tw-faction-dominion)]/20' : '',
+                                            )}
+                                            onClick={allowMoveAllHeroes ? () => onHeroSelect?.(hero.id) : undefined}
+                                        >
                                             <HStack className="gap-2 items-center">
                                                 <Box className="w-8 h-8 rounded overflow-hidden border border-[var(--tw-faction-dominion)] bg-background">
                                                     {getHeroPortraitUrl(assets, hero.id) ? (
@@ -568,6 +582,11 @@ export function CanvasWorldMapTemplate({
                                                 <Typography variant="body2" className="text-[var(--tw-faction-dominion)] flex-1">
                                                     {hero.name}
                                                 </Typography>
+                                                {allowMoveAllHeroes && (
+                                                    <Badge variant="default" className={hero.movement > 0 ? 'bg-success' : 'bg-muted'}>
+                                                        {hero.movement}
+                                                    </Badge>
+                                                )}
                                             </HStack>
                                         </Box>
                                     ))}
