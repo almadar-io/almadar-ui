@@ -591,7 +591,7 @@ export function CanvasCastleTemplate({
                                                             } as CastleBuilding
                                                         );
                                                     }}
-                                                    className="h-20"
+                                                    className="min-h-20"
                                                 />
                                             );
                                         })}

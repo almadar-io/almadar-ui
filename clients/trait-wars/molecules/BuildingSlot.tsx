@@ -51,6 +51,8 @@ export function BuildingSlot({
                 'relative rounded-lg cursor-pointer transition-all duration-200',
                 'flex flex-col items-center justify-center p-2',
                 'hover:scale-105 hover:z-10',
+                // Extra bottom padding to ensure badge and text fit within border
+                isBuilt ? 'pb-6' : 'pb-3',
                 isBuilt
                     ? 'bg-gradient-to-b from-primary/60 to-primary/30 border-2 border-primary'
                     : 'bg-muted/50 border-2 border-dashed border-border',
@@ -60,22 +62,24 @@ export function BuildingSlot({
             onClick={onClick}
         >
             {/* Building Sprite or Fallback */}
-            {spriteUrl ? (
-                <img
-                    src={spriteUrl}
-                    alt={name}
-                    className="w-full h-full object-contain"
-                    style={{ imageRendering: 'pixelated' }}
-                />
-            ) : (
-                <Typography variant="h4" className="text-2xl">
-                    {fallbackIcon}
-                </Typography>
-            )}
+            <Box className="flex-1 flex items-center justify-center w-full min-h-0 overflow-hidden">
+                {spriteUrl ? (
+                    <img
+                        src={spriteUrl}
+                        alt={name}
+                        className="w-full h-auto object-contain"
+                        style={{ imageRendering: 'pixelated' }}
+                    />
+                ) : (
+                    <Typography variant="h4" className="text-2xl">
+                        {fallbackIcon}
+                    </Typography>
+                )}
+            </Box>
 
             {/* Building Name (on hover or always for unbuilt) */}
             {!isBuilt && (
-                <Typography variant="caption" className="text-muted-foreground text-center mt-1">
+                <Typography variant="caption" className="text-muted-foreground text-center flex-shrink-0 line-clamp-2 text-xs leading-tight mt-1">
                     {name}
                 </Typography>
             )}
@@ -84,7 +88,7 @@ export function BuildingSlot({
             {isBuilt && (
                 <Badge
                     variant="default"
-                    className="absolute -bottom-2 bg-success text-foreground text-xs"
+                    className="absolute bottom-2 bg-success text-foreground text-xs"
                 >
                     Lv.{level}/{maxLevel}
                 </Badge>
