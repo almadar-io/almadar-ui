@@ -49,7 +49,7 @@ export interface HeroAvatarProps {
 }
 
 const SIZE_CONFIG = {
-    sm: { frame: 48, portrait: 40, badge: 'xs' as const },
+    sm: { frame: 48, portrait: 40, badge: 'sm' as const },
     md: { frame: 80, portrait: 68, badge: 'sm' as const },
     lg: { frame: 120, portrait: 104, badge: 'md' as const },
     xl: { frame: 160, portrait: 140, badge: 'lg' as const },
@@ -136,14 +136,14 @@ export function HeroAvatar({
                     className="-bottom-1 -right-1"
                 >
                     <Badge
-                        variant="solid"
-                        colorScheme="yellow"
+                        variant="warning"
                         size={config.badge}
                     >
                         {level}
                     </Badge>
                 </Box>
             )}
+
 
             {/* Corner Decorations (for larger sizes) */}
             {size !== 'sm' && (
