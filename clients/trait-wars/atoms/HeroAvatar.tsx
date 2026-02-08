@@ -115,14 +115,18 @@ export function HeroAvatar({
                     height: config.portrait,
                 }}
             >
-                <img
-                    src={avatarSrc}
-                    alt={name || heroId}
-                    className="w-full h-full object-cover"
-                    style={{
-                        imageRendering: 'auto',
-                    }}
-                />
+                {avatarSrc ? (
+                    <img
+                        src={avatarSrc}
+                        alt={name || heroId}
+                        className="w-full h-full object-cover"
+                        style={{ imageRendering: 'auto' }}
+                    />
+                ) : (
+                    <Box className="w-full h-full flex items-center justify-center text-lg">
+                        {name?.[0]?.toUpperCase() || '?'}
+                    </Box>
+                )}
             </Box>
 
             {/* Level Badge */}
