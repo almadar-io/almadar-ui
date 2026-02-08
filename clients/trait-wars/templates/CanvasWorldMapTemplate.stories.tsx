@@ -54,44 +54,73 @@ type Story = StoryObj<typeof CanvasWorldMapTemplate>;
 
 function generateHexGrid(width: number, height: number): WorldMapHex[] {
     const hexes: WorldMapHex[] = [];
-    const terrains = ['grass', 'grass', 'grass', 'dirt', 'stone', 'grass'];
-
+    
+    // Deterministic terrain pattern (grass/dirt base) - ensures consistency
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
+            // Use deterministic pattern: grass with occasional dirt
+            const terrain = (x + y) % 3 === 0 ? 'dirt' : 'grass';
             hexes.push({
                 x,
                 y,
-                terrain: terrains[Math.floor(Math.random() * terrains.length)] as any,
+                terrain,
                 movementCost: 1,
                 passable: true,
             });
         }
     }
 
-    // Water tiles (impassable)
+    // Water tiles (impassable) - placed away from hero spawns
     const waterHex1 = hexes.find(h => h.x === 3 && h.y === 2);
     if (waterHex1) { waterHex1.terrain = 'water'; waterHex1.passable = false; }
     const waterHex2 = hexes.find(h => h.x === 3 && h.y === 3);
     if (waterHex2) { waterHex2.terrain = 'water'; waterHex2.passable = false; }
 
-    // Features
+    // Stone patch (expensive but passable) - away from spawns
+    const stoneHex1 = hexes.find(h => h.x === 4 && h.y === 4);
+    if (stoneHex1) { stoneHex1.terrain = 'stone'; stoneHex1.movementCost = 3; }
+
+    // Features - placed on valid tiles, away from heroes
+    // Gold mine at (1, 1) - safe distance from hero at (1, 2)
     const goldMine = hexes.find(h => h.x === 1 && h.y === 1);
-    if (goldMine) { goldMine.feature = 'goldMine'; goldMine.featureData = { resourceType: 'gold', resourceAmount: 500 }; }
+    if (goldMine && goldMine.passable) {
+        goldMine.feature = 'goldMine';
+        goldMine.featureData = { resourceType: 'gold', resourceAmount: 500 };
+    }
 
+    // Resonance crystal at (4, 1) - away from heroes
     const crystal = hexes.find(h => h.x === 4 && h.y === 1);
-    if (crystal) { crystal.feature = 'resonanceCrystal'; crystal.featureData = { resourceType: 'resonance', resourceAmount: 50 }; }
+    if (crystal && crystal.passable) {
+        crystal.feature = 'resonanceCrystal';
+        crystal.featureData = { resourceType: 'resonance', resourceAmount: 50 };
+    }
 
+    // Treasure at (2, 4) - safe position
     const treasure = hexes.find(h => h.x === 2 && h.y === 4);
-    if (treasure) { treasure.feature = 'treasure'; treasure.featureData = { resourceType: 'gold', resourceAmount: 1000 }; }
+    if (treasure && treasure.passable) {
+        treasure.feature = 'treasure';
+        treasure.featureData = { resourceType: 'gold', resourceAmount: 1000 };
+    }
 
+    // Player castle at (0, 2) - hero spawns at (1, 2) nearby but not overlapping
     const playerCastle = hexes.find(h => h.x === 0 && h.y === 2);
-    if (playerCastle) { playerCastle.feature = 'castle'; playerCastle.featureData = { castleId: 'resonator-citadel', owner: 'player' }; }
+    if (playerCastle && playerCastle.passable) {
+        playerCastle.feature = 'castle';
+        playerCastle.featureData = { castleId: 'resonator-citadel', owner: 'player' };
+    }
 
+    // Enemy castle at (5, 3) - away from player heroes
     const enemyCastle = hexes.find(h => h.x === 5 && h.y === 3);
-    if (enemyCastle) { enemyCastle.feature = 'castle'; enemyCastle.featureData = { castleId: 'dominion-fortress', owner: 'enemy' }; }
+    if (enemyCastle && enemyCastle.passable) {
+        enemyCastle.feature = 'castle';
+        enemyCastle.featureData = { castleId: 'dominion-fortress', owner: 'enemy' };
+    }
 
+    // Portal at (3, 0) - top area, away from spawns
     const portal = hexes.find(h => h.x === 3 && h.y === 0);
-    if (portal) { portal.feature = 'portal'; }
+    if (portal && portal.passable) {
+        portal.feature = 'portal';
+    }
 
     return hexes;
 }
