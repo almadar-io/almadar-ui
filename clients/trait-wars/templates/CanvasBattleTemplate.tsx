@@ -842,165 +842,169 @@ export function CanvasBattleTemplate({
 
             {/* Main Content: Canvas + Tooltip */}
             <HStack gap="lg" align="start" flex className="w-full">
-                <VStack
-                    gap="sm"
-                    flex
-                    className="relative"
+                <Box
+                    className="relative flex-1"
                     style={shakeStyle}
                     onMouseMove={handleMouseMoveForTooltip}
                 >
-                    {/* Feature 4: Red damage flash overlay */}
-                    {showDamageFlash && (
-                        <Box className="absolute inset-0 bg-error/20 z-20 pointer-events-none rounded-lg animate-out fade-out duration-200" />
-                    )}
-                    {/* Canvas effect screen flash overlay */}
-                    {canvasScreenFlash && (
-                        <Box
-                            className="absolute inset-0 z-20 pointer-events-none rounded-lg"
-                            style={{ backgroundColor: canvasScreenFlash.color, opacity: canvasScreenFlash.alpha }}
-                        />
-                    )}
+                    <VStack
+                        gap="sm"
+                        flex
+                        className="relative"
+                    >
+                        {/* Feature 4: Red damage flash overlay */}
+                        {showDamageFlash && (
+                            <Box className="absolute inset-0 bg-error/20 z-20 pointer-events-none rounded-lg animate-out fade-out duration-200" />
+                        )}
+                        {/* Canvas effect screen flash overlay */}
+                        {canvasScreenFlash && (
+                            <Box
+                                className="absolute inset-0 z-20 pointer-events-none rounded-lg"
+                                style={{ backgroundColor: canvasScreenFlash.color, opacity: canvasScreenFlash.alpha }}
+                            />
+                        )}
 
-                    {/* Action Hint Banners */}
-                    {currentPhase === 'action' && attackTargets.length > 0 && (
-                        <HStack justify="center" className="absolute -top-1 left-0 right-0 z-30 pointer-events-none">
-                            <HStack gap="sm" align="center" className="bg-error/90 text-foreground px-4 py-2 rounded-lg shadow-lg animate-pulse">
-                                <Typography variant="body2" className="font-bold text-foreground">
-                                    Click an enemy to attack!
-                                </Typography>
-                            </HStack>
-                        </HStack>
-                    )}
-
-                    {currentPhase === 'action' && attackTargets.length === 0 && (
-                        <HStack justify="center" className="absolute -top-1 left-0 right-0 z-30">
-                            <HStack gap="sm" align="center" className="bg-muted/95 text-foreground px-4 py-2 rounded-lg shadow-lg">
-                                <Typography variant="body2" className="text-foreground">
-                                    No enemies in range.
-                                </Typography>
-                                <Button variant="primary" size="sm" onClick={handleEndTurn}>
-                                    End Turn
-                                </Button>
-                            </HStack>
-                        </HStack>
-                    )}
-
-                    {/* Canvas Game Board */}
-                    <IsometricGameCanvas
-                        tiles={isoTiles}
-                        units={visualIsoUnits}
-                        features={obstacleFeatures}
-                        selectedUnitId={selectedUnitId}
-                        validMoves={validMoves}
-                        attackTargets={attackTargets}
-                        hoveredTile={hoveredTile}
-                        onTileClick={handleTileClick}
-                        onUnitClick={handleUnitClick}
-                        onTileHover={(x, y) => setHoveredTile({ x, y })}
-                        onTileLeave={() => setHoveredTile(null)}
-                        scale={scale}
-                        assetManifest={assets}
-                        backgroundImage={assets.backgrounds?.battle ? `${assets.baseUrl}/${assets.backgrounds.battle}` : undefined}
-                        onDrawEffects={drawEffects}
-                        hasActiveEffects={effectsActive}
-                        effectSpriteUrls={[...effectSpriteUrls, ...spriteSheetUrls]}
-                        resolveUnitFrame={resolveUnitFrame}
-                        unitScale={unitScale}
-                    />
-
-                    {/* Damage Popups (positioned over canvas) */}
-                    {damagePopups.map(popup => (
-                        <DamagePopup
-                            key={popup.id}
-                            amount={popup.amount}
-                            type={popup.type}
-                            x={popup.screenX}
-                            y={popup.screenY}
-                        />
-                    ))}
-
-                    {/* Unit Hover Tooltip with TraitStateViewer - follows cursor */}
-                    {tooltipVisible && hoveredUnit && hoveredUnit.traits[0] && hoveredTile && (
-                        <Box
-                            className="absolute z-50 pointer-events-none animate-in fade-in duration-150"
-                            style={{
-                                left: Math.min(mousePosition.x + 20, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 300),
-                                top: Math.max(mousePosition.y - 20, 0),
-                                maxWidth: 280,
-                            }}
-                        >
-                            <Card
-                                variant="default"
-                                className={cn(
-                                    "p-3 shadow-xl bg-background/95 backdrop-blur-sm min-w-[200px]",
-                                    hoveredUnit.team === 'enemy' ? 'border border-[var(--tw-faction-dominion)]/50' : 'border border-[var(--tw-faction-resonator)]/50'
-                                )}
-                                style={getGameUIPanelUrl(assets, 'tooltipFrame') ? {
-                                    borderImage: `url(${getGameUIPanelUrl(assets, 'tooltipFrame')}) 60 fill / 15px / 0 stretch`,
-                                    border: 'none',
-                                } : undefined}
-                            >
-                                <HStack gap="sm" className="mb-2">
-                                    <Typography variant="caption" className={cn(
-                                        "font-bold",
-                                        hoveredUnit.team === 'enemy' ? 'text-[var(--tw-faction-dominion)]' : 'text-[var(--tw-faction-resonator)]'
-                                    )}>
-                                        {hoveredUnit.name}
+                        {/* Action Hint Banners */}
+                        {currentPhase === 'action' && attackTargets.length > 0 && (
+                            <HStack justify="center" className="absolute -top-1 left-0 right-0 z-30 pointer-events-none">
+                                <HStack gap="sm" align="center" className="bg-error/90 text-foreground px-4 py-2 rounded-lg shadow-lg animate-pulse">
+                                    <Typography variant="body2" className="font-bold text-foreground">
+                                        Click an enemy to attack!
                                     </Typography>
-                                    {hoveredUnit.unitType && (
-                                        <Badge variant="neutral" size="sm">{hoveredUnit.unitType}</Badge>
+                                </HStack>
+                            </HStack>
+                        )}
+
+                        {currentPhase === 'action' && attackTargets.length === 0 && (
+                            <HStack justify="center" className="absolute -top-1 left-0 right-0 z-30">
+                                <HStack gap="sm" align="center" className="bg-muted/95 text-foreground px-4 py-2 rounded-lg shadow-lg">
+                                    <Typography variant="body2" className="text-foreground">
+                                        No enemies in range.
+                                    </Typography>
+                                    <Button variant="primary" size="sm" onClick={handleEndTurn}>
+                                        End Turn
+                                    </Button>
+                                </HStack>
+                            </HStack>
+                        )}
+
+                        {/* Canvas Game Board */}
+                        <IsometricGameCanvas
+                            tiles={isoTiles}
+                            units={visualIsoUnits}
+                            features={obstacleFeatures}
+                            selectedUnitId={selectedUnitId}
+                            validMoves={validMoves}
+                            attackTargets={attackTargets}
+                            hoveredTile={hoveredTile}
+                            onTileClick={handleTileClick}
+                            onUnitClick={handleUnitClick}
+                            onTileHover={(x, y) => setHoveredTile({ x, y })}
+                            onTileLeave={() => setHoveredTile(null)}
+                            scale={scale}
+                            assetManifest={assets}
+                            backgroundImage={assets.backgrounds?.battle ? `${assets.baseUrl}/${assets.backgrounds.battle}` : undefined}
+                            onDrawEffects={drawEffects}
+                            hasActiveEffects={effectsActive}
+                            effectSpriteUrls={[...effectSpriteUrls, ...spriteSheetUrls]}
+                            resolveUnitFrame={resolveUnitFrame}
+                            unitScale={unitScale}
+                        />
+
+                        {/* Damage Popups (positioned over canvas) */}
+                        {damagePopups.map(popup => (
+                            <DamagePopup
+                                key={popup.id}
+                                amount={popup.amount}
+                                type={popup.type}
+                                x={popup.screenX}
+                                y={popup.screenY}
+                            />
+                        ))}
+
+                        {/* Unit Hover Tooltip with TraitStateViewer - follows cursor */}
+                        {tooltipVisible && hoveredUnit && hoveredUnit.traits[0] && hoveredTile && (
+                            <Box
+                                className="absolute z-50 pointer-events-none animate-in fade-in duration-150"
+                                style={{
+                                    left: Math.min(mousePosition.x + 20, (typeof window !== 'undefined' ? window.innerWidth : 1200) - 300),
+                                    top: Math.max(mousePosition.y - 20, 0),
+                                    maxWidth: 280,
+                                }}
+                            >
+                                <Card
+                                    variant="default"
+                                    className={cn(
+                                        "p-3 shadow-xl bg-background/95 backdrop-blur-sm min-w-[200px]",
+                                        hoveredUnit.team === 'enemy' ? 'border border-[var(--tw-faction-dominion)]/50' : 'border border-[var(--tw-faction-resonator)]/50'
                                     )}
-                                </HStack>
-
-                                {/* Feature 2: Unit Portrait */}
-                                {(hoveredUnit.sprite || hoveredUnit.unitType) && (
-                                    <Box className="flex justify-center mb-2">
-                                        <img
-                                            src={hoveredUnit.sprite || getRobotUnitSpriteUrl(assets, hoveredUnit.unitType as RobotUnitType)}
-                                            alt={hoveredUnit.name}
-                                            className="w-16 h-16 object-contain"
-                                        />
-                                    </Box>
-                                )}
-
-                                {/* Stats Row */}
-                                <HStack gap="md" className="text-xs mb-3 py-2 px-2 bg-card rounded">
-                                    <VStack gap="none" align="center">
-                                        <Typography variant="caption" className="text-muted-foreground">HP</Typography>
-                                        <Typography variant="caption" className="text-foreground font-medium">
-                                            {hoveredUnit.health}/{hoveredUnit.maxHealth}
+                                    style={getGameUIPanelUrl(assets, 'tooltipFrame') ? {
+                                        borderImage: `url(${getGameUIPanelUrl(assets, 'tooltipFrame')}) 60 fill / 15px / 0 stretch`,
+                                        border: 'none',
+                                    } : undefined}
+                                >
+                                    <HStack gap="sm" className="mb-2">
+                                        <Typography variant="caption" className={cn(
+                                            "font-bold",
+                                            hoveredUnit.team === 'enemy' ? 'text-[var(--tw-faction-dominion)]' : 'text-[var(--tw-faction-resonator)]'
+                                        )}>
+                                            {hoveredUnit.name}
                                         </Typography>
-                                    </VStack>
-                                    <VStack gap="none" align="center">
-                                        <Typography variant="caption" className="text-muted-foreground">ATK</Typography>
-                                        <Typography variant="caption" className="text-foreground font-medium">
-                                            {hoveredUnit.attack}
-                                        </Typography>
-                                    </VStack>
-                                    <VStack gap="none" align="center">
-                                        <Typography variant="caption" className="text-muted-foreground">DEF</Typography>
-                                        <Typography variant="caption" className="text-foreground font-medium">
-                                            {hoveredUnit.defense}
-                                        </Typography>
-                                    </VStack>
-                                </HStack>
+                                        {hoveredUnit.unitType && (
+                                            <Badge variant="neutral" size="sm">{hoveredUnit.unitType}</Badge>
+                                        )}
+                                    </HStack>
 
-                                {/* Trait State Machine Viewer */}
-                                <TraitStateViewer
-                                    trait={{
-                                        name: hoveredUnit.traits[0].name,
-                                        states: hoveredUnit.traits[0].states,
-                                        currentState: hoveredUnit.traits[0].currentState,
-                                        transitions: TRAIT_TRANSITIONS[hoveredUnit.traits[0].name] || [],
-                                        description: `${hoveredUnit.team === 'enemy' ? 'Enemy' : 'Player'} behavior`,
-                                    }}
-                                    size="sm"
-                                    showTransitions={true}
-                                />
-                            </Card>
-                        </Box>
-                    )}
-                </VStack>
+                                    {/* Feature 2: Unit Portrait */}
+                                    {(hoveredUnit.sprite || hoveredUnit.unitType) && (
+                                        <Box className="flex justify-center mb-2">
+                                            <img
+                                                src={hoveredUnit.sprite || getRobotUnitSpriteUrl(assets, hoveredUnit.unitType as RobotUnitType)}
+                                                alt={hoveredUnit.name}
+                                                className="w-16 h-16 object-contain"
+                                            />
+                                        </Box>
+                                    )}
+
+                                    {/* Stats Row */}
+                                    <HStack gap="md" className="text-xs mb-3 py-2 px-2 bg-card rounded">
+                                        <VStack gap="none" align="center">
+                                            <Typography variant="caption" className="text-muted-foreground">HP</Typography>
+                                            <Typography variant="caption" className="text-foreground font-medium">
+                                                {hoveredUnit.health}/{hoveredUnit.maxHealth}
+                                            </Typography>
+                                        </VStack>
+                                        <VStack gap="none" align="center">
+                                            <Typography variant="caption" className="text-muted-foreground">ATK</Typography>
+                                            <Typography variant="caption" className="text-foreground font-medium">
+                                                {hoveredUnit.attack}
+                                            </Typography>
+                                        </VStack>
+                                        <VStack gap="none" align="center">
+                                            <Typography variant="caption" className="text-muted-foreground">DEF</Typography>
+                                            <Typography variant="caption" className="text-foreground font-medium">
+                                                {hoveredUnit.defense}
+                                            </Typography>
+                                        </VStack>
+                                    </HStack>
+
+                                    {/* Trait State Machine Viewer */}
+                                    <TraitStateViewer
+                                        trait={{
+                                            name: hoveredUnit.traits[0].name,
+                                            states: hoveredUnit.traits[0].states,
+                                            currentState: hoveredUnit.traits[0].currentState,
+                                            transitions: TRAIT_TRANSITIONS[hoveredUnit.traits[0].name] || [],
+                                            description: `${hoveredUnit.team === 'enemy' ? 'Enemy' : 'Player'} behavior`,
+                                        }}
+                                        size="sm"
+                                        showTransitions={true}
+                                    />
+                                </Card>
+                            </Box>
+                        )}
+                    </VStack>
+                </Box>
             </HStack>
 
             {/* Legend */}
