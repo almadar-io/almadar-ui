@@ -52,3 +52,8 @@ export {
   GenericAppTemplate,
   type GenericAppTemplateProps
 } from './GenericAppTemplate';
+
+export {
+  GameShell,
+  type GameShellProps
+} from './GameShell';
