@@ -66,7 +66,7 @@ export const WithAction: Story = {
 export const Loading: Story = {
     args: {
         label: 'Loading...',
-        loading: true,
+        isLoading: true,
     },
 };
 

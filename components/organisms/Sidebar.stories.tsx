@@ -27,9 +27,8 @@ const sidebarItems = [
 
 export const Default: Story = {
     args: {
-        items: sidebarItems,
-        activeItemId: 'dashboard',
-        logo: 'MyApp',
+        items: sidebarItems.map(item => ({ ...item, active: item.id === 'dashboard' })),
+        brandName: 'MyApp',
     },
     decorators: [
         (Story) => (
@@ -42,9 +41,8 @@ export const Default: Story = {
 
 export const Collapsed: Story = {
     args: {
-        items: sidebarItems,
-        activeItemId: 'dashboard',
-        logo: 'MA',
+        items: sidebarItems.map(item => ({ ...item, active: item.id === 'dashboard' })),
+        brandName: 'MA',
         defaultCollapsed: true,
     },
     decorators: [
@@ -56,31 +54,16 @@ export const Collapsed: Story = {
     ],
 };
 
-export const WithGroups: Story = {
+export const WithManyItems: Story = {
     args: {
         items: [
             { id: 'dashboard', label: 'Dashboard', icon: Home, href: '#' },
+            { id: 'users', label: 'Users', icon: Users, href: '#', active: true },
+            { id: 'reports', label: 'Reports', icon: BarChart, href: '#' },
+            { id: 'documents', label: 'Documents', icon: FileText, href: '#' },
+            { id: 'messages', label: 'Messages', icon: Mail, href: '#', badge: 3 },
         ],
-        groups: [
-            {
-                id: 'main',
-                label: 'Main',
-                items: [
-                    { id: 'users', label: 'Users', icon: Users, href: '#' },
-                    { id: 'reports', label: 'Reports', icon: BarChart, href: '#' },
-                ],
-            },
-            {
-                id: 'content',
-                label: 'Content',
-                items: [
-                    { id: 'documents', label: 'Documents', icon: FileText, href: '#' },
-                    { id: 'messages', label: 'Messages', icon: Mail, href: '#', badge: 3 },
-                ],
-            },
-        ],
-        activeItemId: 'users',
-        logo: 'MyApp',
+        brandName: 'MyApp',
     },
     decorators: [
         (Story) => (
@@ -93,10 +76,9 @@ export const WithGroups: Story = {
 
 export const WithFooter: Story = {
     args: {
-        items: sidebarItems,
-        activeItemId: 'dashboard',
-        logo: 'MyApp',
-        footer: (
+        items: sidebarItems.map(item => ({ ...item, active: item.id === 'dashboard' })),
+        brandName: 'MyApp',
+        footerContent: (
             <div className="p-4 border-t-2 border-black">
                 <p className="text-sm text-neutral-600">v1.0.0</p>
             </div>

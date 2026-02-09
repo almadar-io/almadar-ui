@@ -67,7 +67,7 @@ export const Loading: Story = {
     args: {
         entity: [],
         columns: columns,
-        loading: true,
+        isLoading: true,
     },
 };
 
@@ -86,9 +86,9 @@ export const WithRowActions: Story = {
         entity: sampleData,
         columns: columns,
         rowActions: [
-            { label: 'View', onClick: (row: User) => console.log('View', row) },
-            { label: 'Edit', onClick: (row: User) => console.log('Edit', row) },
-            { label: 'Delete', onClick: (row: User) => console.log('Delete', row), variant: 'danger' as const },
+            { label: 'View', onClick: (row: { id: string | number }) => console.log('View', row) },
+            { label: 'Edit', onClick: (row: { id: string | number }) => console.log('Edit', row) },
+            { label: 'Delete', onClick: (row: { id: string | number }) => console.log('Delete', row), variant: 'danger' as const },
         ],
     },
 };
@@ -117,8 +117,8 @@ export const FullFeatured: Story = {
         searchable: true,
         selectable: true,
         rowActions: [
-            { label: 'View', onClick: (row: User) => console.log('View', row) },
-            { label: 'Edit', onClick: (row: User) => console.log('Edit', row) },
+            { label: 'View', onClick: (row: { id: string | number }) => console.log('View', row) },
+            { label: 'Edit', onClick: (row: { id: string | number }) => console.log('Edit', row) },
         ],
     },
 };
