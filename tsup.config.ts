@@ -9,13 +9,6 @@ export default defineConfig({
     'renderer/index.ts',
     'stores/index.ts',
     'lib/index.ts',
-    // Client-specific component libraries
-    'clients/trait-wars/index.ts',
-    'clients/winning-11/index.ts',
-    'clients/inspection-system/index.ts',
-    'clients/blaz-kelemnc/index.ts',
-    'clients/builder/index.ts',
-    'clients/kflow/index.ts',
   ],
   format: ['esm'],
   dts: true,

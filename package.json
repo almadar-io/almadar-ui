@@ -39,11 +39,7 @@
       "import": "./dist/lib/index.js",
       "types": "./dist/lib/index.d.ts"
     },
-    "./themes/*.css": "./themes/*.css",
-    "./clients/*": {
-      "import": "./dist/clients/*/index.js",
-      "types": "./dist/clients/*/index.d.ts"
-    }
+    "./themes/*.css": "./themes/*.css"
   },
   "files": [
     "dist",
