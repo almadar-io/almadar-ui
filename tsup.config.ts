@@ -13,8 +13,8 @@ export default defineConfig({
   format: ['esm'],
   dts: true,
   clean: true,
-  sourcemap: true,
-  splitting: false,
+  sourcemap: false,
+  splitting: true,
   treeshake: true,
   external: ['react', 'react-dom', 'react-router-dom', '@almadar/ui'],
 });
