@@ -145,3 +145,15 @@ export {
   type AuthUser,
   type AuthContextValue,
 } from './useAuthContext';
+
+// GitHub integration hooks
+export {
+  useGitHubStatus,
+  useConnectGitHub,
+  useDisconnectGitHub,
+  useGitHubRepos,
+  useGitHubRepo,
+  useGitHubBranches,
+  type GitHubStatus,
+  type GitHubRepo,
+} from './useGitHub';

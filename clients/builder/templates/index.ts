@@ -24,3 +24,8 @@ export {
   type BuildTab,
   type ProjectInfo,
 } from "./StudioProjectTemplate";
+
+export {
+  SettingsTemplate,
+  type SettingsTemplateProps,
+} from "./SettingsTemplate";
