@@ -11,8 +11,15 @@
 // Blaz Klemenc - Fitness Training
 export * from "./blaz-kelemnc";
 
-// Builder - IDE components
-export * from "./builder";
+// Builder - IDE components (exclude SettingsTemplate to avoid collision with core)
+export * from "./builder/atoms";
+export * from "./builder/molecules";
+export * from "./builder/organisms";
+// Rename builder SettingsTemplate to avoid collision with core SettingsTemplate
+export {
+  SettingsTemplate as BuilderSettingsTemplate,
+  type SettingsTemplateProps as BuilderSettingsTemplateProps
+} from "./builder/templates/SettingsTemplate";
 
 // Inspection System - explicit exports to avoid collisions
 // (RepeatableFormSection and WizardStep conflict with core components)

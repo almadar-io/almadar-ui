@@ -117,7 +117,7 @@ export const GitHubIntegration: React.FC<GitHubIntegrationProps> = ({ className 
             {/* Actions */}
             <Box className="flex gap-2 pt-2">
               <Button
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 onClick={handleDisconnect}
                 disabled={disconnectMutation.isPending}
