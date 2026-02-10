@@ -9,7 +9,6 @@ const __dirname = dirname(__filename);
 const config: StorybookConfig = {
   stories: [
     "../components/**/*.stories.@(js|jsx|ts|tsx)",
-    "../clients/**/*.stories.@(js|jsx|ts|tsx)",
   ],
   addons: [
     "@storybook/addon-links",
@@ -27,7 +26,6 @@ const config: StorybookConfig = {
   },
   staticDirs: [
     "../themes",
-    "../../../projects/trait-wars/assets",
   ],
   async viteFinal(config) {
     const { mergeConfig, searchForWorkspaceRoot } = await import("vite");
@@ -65,7 +63,6 @@ const config: StorybookConfig = {
         warmup: {
           clientFiles: [
             "../components/**/*.tsx",
-            "../clients/**/*.tsx",
           ],
         },
       },
