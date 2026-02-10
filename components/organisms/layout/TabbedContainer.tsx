@@ -51,8 +51,9 @@ export const TabbedContainer: React.FC<TabbedContainerProps> = ({
   position = "top",
   className,
 }) => {
+  const safeTabs = tabs || [];
   const [internalActiveTab, setInternalActiveTab] = useState(
-    defaultTab || tabs[0]?.id || "",
+    defaultTab || safeTabs[0]?.id || "",
   );
 
   const activeTab =
@@ -68,7 +69,7 @@ export const TabbedContainer: React.FC<TabbedContainerProps> = ({
     [controlledActiveTab, onTabChange],
   );
 
-  const activeTabDef = tabs.find((tab) => tab.id === activeTab);
+  const activeTabDef = safeTabs.find((tab) => tab.id === activeTab);
   const activeContent =
     activeTabDef?.content ||
     (activeTabDef?.sectionId ? (
@@ -97,7 +98,7 @@ export const TabbedContainer: React.FC<TabbedContainerProps> = ({
             : "flex-row border-b-2 border-[var(--color-border)]",
         )}
       >
-        {tabs.map((tab) => {
+        {safeTabs.map((tab) => {
           const isActive = tab.id === activeTab;
           const isDisabled = tab.disabled;
 
