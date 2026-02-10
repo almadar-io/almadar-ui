@@ -449,7 +449,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                                     className="w-3 h-3 rounded-[var(--radius-full)] flex-shrink-0"
                                     style={{ backgroundColor: GROUP_COLORS[idx % GROUP_COLORS.length] }}
                                 />
-                                <Typography variant="tiny" color="secondary">
+                                <Typography variant="caption" color="secondary">
                                     {group}
                                 </Typography>
                             </HStack>

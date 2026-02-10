@@ -289,7 +289,7 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({
                                     <HStack key={idx} gap="none" align="start" className={cn(style.bg, "px-4 py-0.5")}>
                                         {showLineNumbers && (
                                             <Typography
-                                                variant="tiny"
+                                                variant="caption"
                                                 color="secondary"
                                                 className="w-8 text-right mr-3 select-none tabular-nums flex-shrink-0"
                                             >
@@ -297,7 +297,7 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({
                                             </Typography>
                                         )}
                                         <Typography
-                                            variant="tiny"
+                                            variant="caption"
                                             className={cn(
                                                 "font-mono flex-1 min-w-0",
                                                 style.text,
@@ -320,7 +320,7 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({
                                 <HStack key={idx} gap="none" align="start" className="px-4 py-0.5 hover:bg-[var(--color-muted)]/50">
                                     {showLineNumbers && (
                                         <Typography
-                                            variant="tiny"
+                                            variant="caption"
                                             color="secondary"
                                             className="w-8 text-right mr-4 select-none tabular-nums flex-shrink-0"
                                         >
@@ -328,7 +328,7 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({
                                         </Typography>
                                     )}
                                     <Typography
-                                        variant="tiny"
+                                        variant="caption"
                                         className={cn(
                                             "font-mono flex-1 min-w-0",
                                             wrap ? "whitespace-pre-wrap break-all" : "whitespace-pre",

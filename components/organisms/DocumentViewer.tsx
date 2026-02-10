@@ -251,7 +251,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                         <HStack gap="xs" align="center">
                             {/* Zoom controls */}
                             <Button variant="ghost" size="sm" icon={ZoomOut} onClick={handleZoomOut} />
-                            <Typography variant="tiny" color="secondary" className="tabular-nums w-10 text-center">
+                            <Typography variant="caption" color="secondary" className="tabular-nums w-10 text-center">
                                 {zoom}%
                             </Typography>
                             <Button variant="ghost" size="sm" icon={ZoomIn} onClick={handleZoomIn} />
@@ -261,7 +261,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                                 <>
                                     <Box className="w-px h-4 bg-[var(--color-border)] mx-1" />
                                     <Button variant="ghost" size="sm" icon={ChevronLeft} onClick={handlePagePrev} disabled={currentPage <= 1} />
-                                    <Typography variant="tiny" color="secondary" className="tabular-nums">
+                                    <Typography variant="caption" color="secondary" className="tabular-nums">
                                         {currentPage} / {totalPages}
                                     </Typography>
                                     <Button variant="ghost" size="sm" icon={ChevronRight} onClick={handlePageNext} disabled={currentPage >= totalPages} />

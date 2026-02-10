@@ -265,7 +265,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                                     {/* Caption */}
                                     {item.caption && (
                                         <Box className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent">
-                                            <Typography variant="tiny" className="text-white truncate">
+                                            <Typography variant="caption" className="text-white truncate">
                                                 {item.caption}
                                             </Typography>
                                         </Box>
@@ -273,7 +273,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                                     {/* Selection indicator */}
                                     {selectable && isSelected && (
                                         <Box className="absolute top-2 right-2 w-5 h-5 rounded-[var(--radius-full)] bg-[var(--color-primary)] flex items-center justify-center">
-                                            <Typography variant="tiny" className="text-white text-[10px]">
+                                            <Typography variant="caption" className="text-white text-[10px]">
                                                 ✓
                                             </Typography>
                                         </Box>

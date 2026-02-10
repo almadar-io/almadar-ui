@@ -220,7 +220,7 @@ export const SignaturePad: React.FC<SignaturePadProps> = ({
                 </Box>
 
                 {helperText && (
-                    <Typography variant="tiny" color="secondary">
+                    <Typography variant="caption" color="secondary">
                         {helperText}
                     </Typography>
                 )}
