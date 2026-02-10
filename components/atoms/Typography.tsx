@@ -217,3 +217,25 @@ export const Heading: React.FC<HeadingProps> = ({
 };
 
 Heading.displayName = "Heading";
+
+/**
+ * Text component - convenience wrapper for Typography body/caption variants
+ */
+export interface TextProps extends Omit<TypographyProps, "level"> {
+  /** Text variant */
+  variant?: "body" | "body1" | "body2" | "caption" | "small" | "large" | "label" | "overline";
+}
+
+export const Text: React.FC<TextProps> = ({
+  variant = "body",
+  ...props
+}) => {
+  return (
+    <Typography
+      variant={variant}
+      {...props}
+    />
+  );
+};
+
+Text.displayName = "Text";
