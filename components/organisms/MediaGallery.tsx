@@ -13,7 +13,7 @@
 
 import React, { useState, useCallback } from "react";
 import { cn } from "../../lib/cn";
-import { Card, Typography, Badge, Button, Icon, Box, Overlay } from "../atoms";
+import { Card, Typography, Badge, Button, Icon, Box } from "../atoms";
 import { VStack, HStack } from "../atoms/Stack";
 import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
@@ -287,7 +287,10 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
 
             {/* Lightbox */}
             {lightboxItem && (
-                <Overlay onClick={() => setLightboxItem(null)}>
+                <Box
+                    className="fixed inset-0 z-50 bg-[var(--color-background)]/80 backdrop-blur-sm flex items-center justify-center"
+                    onClick={() => setLightboxItem(null)}
+                >
                     <VStack
                         align="center"
                         justify="center"
@@ -314,7 +317,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                             </Typography>
                         )}
                     </VStack>
-                </Overlay>
+                </Box>
             )}
         </>
     );
