@@ -9,7 +9,7 @@ export interface SelectOption {
 
 export interface InputProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
-  "type" | "onChange"
+  "onChange"
 > {
   /** Input type - supports 'select' and 'textarea' in addition to standard types */
   inputType?:
@@ -52,7 +52,8 @@ export const Input = React.forwardRef<
   (
     {
       className,
-      inputType = "text",
+      inputType,
+      type: htmlType,
       error,
       leftIcon,
       rightIcon,
@@ -67,8 +68,8 @@ export const Input = React.forwardRef<
     },
     ref,
   ) => {
-    // Map inputType to HTML type internally
-    const type = inputType;
+    // inputType takes precedence over type, default to "text"
+    const type = inputType || htmlType || "text";
     // Resolve left icon: prefer leftIcon ReactNode, fallback to icon Lucide component
     const resolvedLeftIcon =
       leftIcon || (IconComponent && <IconComponent className="h-4 w-4" />);
