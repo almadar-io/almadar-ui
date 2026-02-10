@@ -107,17 +107,17 @@ export const MultipleTabs: Story = {
         title: 'Project Files',
         files: [
             {
-                name: 'index.ts',
+                label: 'index.ts',
                 language: 'TypeScript',
                 code: `export { Dashboard } from './Dashboard';\nexport { Sidebar } from './Sidebar';\nexport { Header } from './Header';`,
             },
             {
-                name: 'Dashboard.tsx',
+                label: 'Dashboard.tsx',
                 language: 'TypeScript',
                 code: sampleCode,
             },
             {
-                name: 'styles.css',
+                label: 'styles.css',
                 language: 'CSS',
                 code: `.dashboard {\n  display: grid;\n  grid-template-columns: 250px 1fr;\n  min-height: 100vh;\n}`,
             },

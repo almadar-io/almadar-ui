@@ -89,7 +89,7 @@ export const WithActions: Story = {
         selectable: true,
         showUpload: true,
         actions: [
-            { label: 'Delete Selected', event: 'DELETE_MEDIA', variant: 'destructive' },
+            { label: 'Delete Selected', event: 'DELETE_MEDIA' },
             { label: 'Download All', event: 'DOWNLOAD_MEDIA' },
         ],
     },
