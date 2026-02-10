@@ -25,7 +25,7 @@ const config: StorybookConfig = {
     reactDocgen: false,
   },
   staticDirs: [
-    "../themes",
+    { from: "../themes", to: "/themes" },
   ],
   async viteFinal(config) {
     const { mergeConfig, searchForWorkspaceRoot } = await import("vite");

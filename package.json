@@ -39,7 +39,8 @@
       "import": "./dist/lib/index.js",
       "types": "./dist/lib/index.d.ts"
     },
-    "./themes/*.css": "./themes/*.css"
+    "./themes/*.css": "./themes/*.css",
+    "./index.css": "./index.css"
   },
   "files": [
     "dist",
