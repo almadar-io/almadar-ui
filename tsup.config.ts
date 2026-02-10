@@ -16,5 +16,5 @@ export default defineConfig({
   sourcemap: false,
   splitting: true,
   treeshake: true,
-  external: ['react', 'react-dom', 'react-router-dom', '@almadar/ui'],
+  external: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query', '@almadar/ui'],
 });
