@@ -33,12 +33,22 @@ const config: StorybookConfig = {
     const projectRoot = path.resolve(__dirname, "..");
     const workspaceRoot = searchForWorkspaceRoot(projectRoot);
 
+    // Fix property-information resolution for hastscript (needs v5, not v6)
+    const propertyInfoPath = path.resolve(workspaceRoot, "node_modules/.pnpm/hastscript@6.0.0/node_modules/property-information");
+
     return mergeConfig(config, {
       resolve: {
+        // Fix property-information resolution (hastscript needs v5)
+        alias: {
+          "property-information": propertyInfoPath,
+        },
         // Important for pnpm monorepos with symlinks
         preserveSymlinks: true,
         // Dedupe these packages to fix version conflicts
         dedupe: [
+          "property-information",
+          "refractor",
+          "hastscript",
           "react",
           "react-dom",
         ],
@@ -66,7 +76,7 @@ const config: StorybookConfig = {
           ],
         },
       },
-      // Pre-bundle dependencies for faster startup
+      // Pre-bundle dependencies for faster startup and CommonJS interop
       optimizeDeps: {
         include: [
           "react",
@@ -74,7 +84,13 @@ const config: StorybookConfig = {
           "react/jsx-runtime",
           "react/jsx-dev-runtime",
           "clsx",
-          "class-variance-authority",
+          // Storybook addons — pre-bundle to avoid runtime re-optimization
+          "@storybook/addon-themes",
+          "@storybook/addon-links",
+          // Include refractor for proper CommonJS -> ESM conversion
+          "refractor",
+          "hastscript",
+          "property-information",
         ],
         force: false,
       },
