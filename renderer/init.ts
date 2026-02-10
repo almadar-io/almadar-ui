@@ -9,9 +9,8 @@
 
 import { initializePatternResolver } from './pattern-resolver';
 
-// Import patterns data from @almadar/patterns
-import componentMappingJson from '@almadar/patterns/component-mapping.json';
-import registryJson from '@almadar/patterns/registry.json';
+// Import patterns data from @almadar/patterns (JSON is inlined in the package bundle)
+import { componentMapping as componentMappingJson, patternsRegistry as registryJson } from '@almadar/patterns';
 
 // Type definitions for the JSON structures
 interface ComponentMappingJson {
