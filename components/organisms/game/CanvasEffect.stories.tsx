@@ -111,3 +111,60 @@ export const AllEffects: Story = {
 export const HighIntensity: Story = {
     args: { actionType: 'critical', x: 400, y: 200, intensity: 3, duration: 2000 },
 };
+
+/** Demonstrates remote sprite-based effect rendering.
+ *  When effectSpriteUrl is provided, a sprite image replaces the emoji. */
+export const RemoteSprite: Story = {
+    args: {
+        actionType: 'melee',
+        x: 400,
+        y: 200,
+        duration: 60000,
+        intensity: 2,
+        effectSpriteUrl: '/effects/particles/slash_01.png',
+        assetBaseUrl: 'https://trait-wars-assets.web.app',
+    },
+};
+
+/** All 9 effects with remote sprites from Firebase CDN */
+export const AllRemoteSprites: Story = {
+    render: () => {
+        const BASE = 'https://trait-wars-assets.web.app';
+        const spriteMap: Record<CombatActionType, string> = {
+            melee: '/effects/particles/slash_01.png',
+            ranged: '/effects/particles/muzzle_01.png',
+            magic: '/effects/particles/magic_01.png',
+            heal: '/effects/particles/light_01.png',
+            buff: '/effects/particles/twirl_01.png',
+            debuff: '/effects/particles/scorch_01.png',
+            shield: '/effects/particles/star_01.png',
+            aoe: '/effects/flash/flash00.png',
+            critical: '/effects/particles/flame_01.png',
+        };
+        const types = Object.keys(spriteMap) as CombatActionType[];
+        return (
+            <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+                {types.map((type, i) => {
+                    const col = i % 3;
+                    const row = Math.floor(i / 3);
+                    return (
+                        <div key={type} style={{ position: 'absolute', left: 100 + col * 250, top: 60 + row * 120 }}>
+                            <span style={{ color: '#94a3b8', fontSize: '0.75rem', position: 'absolute', top: -20, left: '50%', transform: 'translateX(-50%)' }}>
+                                {type}
+                            </span>
+                            <CanvasEffect
+                                actionType={type}
+                                x={0}
+                                y={0}
+                                duration={60000}
+                                intensity={1.2}
+                                effectSpriteUrl={spriteMap[type]}
+                                assetBaseUrl={BASE}
+                            />
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    },
+};

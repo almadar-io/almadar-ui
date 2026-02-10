@@ -36,7 +36,7 @@ export interface CanvasEffectProps {
     y: number;
     /** Duration in ms before auto-dismiss (default 800) */
     duration?: number;
-    /** Optional intensity multiplier (1 = normal) */
+    /** Optional intensity multiplier (1 = normal, 2 = double size/brightness) */
     intensity?: number;
     /** Callback when the effect animation completes */
     onComplete?: () => void;
@@ -46,6 +46,13 @@ export interface CanvasEffectProps {
     isLoading?: boolean;
     /** Error state */
     error?: Error | null;
+
+    // --- Remote asset loading ---
+    /** Sprite URL for the effect. When set, renders this image instead of emoji.
+     *  Can be a full URL or a relative path (combined with assetBaseUrl). */
+    effectSpriteUrl?: string;
+    /** Base URL for remote assets. Prepended to relative effectSpriteUrl paths. */
+    assetBaseUrl?: string;
 }
 
 const ACTION_CONFIG: Record<CombatActionType, { emoji: string; color: string; label: string }> = {
@@ -68,6 +75,8 @@ export function CanvasEffect({
     intensity = 1,
     onComplete,
     className,
+    effectSpriteUrl,
+    assetBaseUrl,
 }: CanvasEffectProps): JSX.Element | null {
     const [visible, setVisible] = useState(true);
     const [phase, setPhase] = useState<'enter' | 'active' | 'exit'>('enter');
@@ -95,6 +104,15 @@ export function CanvasEffect({
     const scaleVal = phase === 'enter' ? 0.3 : phase === 'active' ? intensity : 0.5;
     const opacity = phase === 'exit' ? 0 : 1;
 
+    // Resolve sprite URL with optional base
+    const resolvedSpriteUrl = effectSpriteUrl
+        ? (effectSpriteUrl.startsWith('http') || effectSpriteUrl.startsWith('/'))
+            ? effectSpriteUrl
+            : assetBaseUrl
+                ? `${assetBaseUrl.replace(/\/$/, '')}/${effectSpriteUrl}`
+                : effectSpriteUrl
+        : undefined;
+
     return (
         <Box
             className={cn(
@@ -120,15 +138,29 @@ export function CanvasEffect({
                     opacity: 0.25,
                 }}
             />
-            {/* Icon */}
-            <span
-                className="relative text-3xl drop-shadow-lg"
-                style={{ fontSize: `${2 * intensity}rem` }}
-                role="img"
-                aria-label={config.label}
-            >
-                {config.emoji}
-            </span>
+            {/* Sprite or emoji */}
+            {resolvedSpriteUrl ? (
+                <img
+                    src={resolvedSpriteUrl}
+                    alt={config.label}
+                    className="relative drop-shadow-lg"
+                    style={{
+                        width: `${3 * intensity}rem`,
+                        height: `${3 * intensity}rem`,
+                        objectFit: 'contain',
+                        imageRendering: 'pixelated',
+                    }}
+                />
+            ) : (
+                <span
+                    className="relative text-3xl drop-shadow-lg"
+                    style={{ fontSize: `${2 * intensity}rem` }}
+                    role="img"
+                    aria-label={config.label}
+                >
+                    {config.emoji}
+                </span>
+            )}
         </Box>
     );
 }
