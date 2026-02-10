@@ -81,3 +81,50 @@ export {
 export { ModalSlot, type ModalSlotProps } from "./ModalSlot";
 export { DrawerSlot, type DrawerSlotProps } from "./DrawerSlot";
 export { ToastSlot, type ToastSlotProps } from "./ToastSlot";
+
+// Phase 7b - New core pattern organisms
+export {
+  Chart,
+  type ChartProps,
+  type ChartType,
+  type ChartDataPoint,
+  type ChartSeries,
+} from "./Chart";
+export {
+  Meter,
+  type MeterProps,
+  type MeterVariant,
+  type MeterThreshold,
+} from "./Meter";
+export {
+  Timeline,
+  type TimelineProps,
+  type TimelineItem,
+  type TimelineItemStatus,
+} from "./Timeline";
+export {
+  MediaGallery,
+  type MediaGalleryProps,
+  type MediaItem,
+} from "./MediaGallery";
+export {
+  SignaturePad,
+  type SignaturePadProps,
+} from "./SignaturePad";
+export {
+  DocumentViewer,
+  type DocumentViewerProps,
+  type DocumentType,
+} from "./DocumentViewer";
+export {
+  GraphCanvas,
+  type GraphCanvasProps,
+  type GraphNode,
+  type GraphEdge,
+} from "./GraphCanvas";
+export {
+  CodeViewer,
+  type CodeViewerProps,
+  type CodeViewerMode,
+  type DiffLine,
+} from "./CodeViewer";
