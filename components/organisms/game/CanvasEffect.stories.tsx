@@ -27,7 +27,7 @@ type Story = StoryObj<typeof CanvasEffect>;
 // =============================================================================
 
 const STORY_MANIFEST: EffectAssetManifest = {
-    baseUrl: 'https://trait-wars-assets.web.app/assets',
+    baseUrl: 'https://trait-wars-assets.web.app',
     particles: {
         slash: Array.from({ length: 4 }, (_, i) => `effects/particles/slash_0${i + 1}.png`),
         magic: Array.from({ length: 5 }, (_, i) => `effects/particles/magic_0${i + 1}.png`),

@@ -60,6 +60,8 @@ export function drawTintedImage(
     alpha: number,
     blendMode: GlobalCompositeOperation = 'source-over',
 ): void {
+    // Guard against zero-size images (not yet loaded)
+    if (w <= 0 || h <= 0) return;
     const oc = getOffscreenCtx(w, h);
     oc.clearRect(0, 0, w, h);
 

@@ -57,3 +57,27 @@ export {
   GameShell,
   type GameShellProps
 } from './GameShell';
+
+// Game View Templates
+export {
+  BattleTemplate,
+  type BattleTemplateProps,
+  type BattlePhase,
+  type BattleUnit,
+  type BattleTile,
+  type BattleSlotContext,
+} from './BattleTemplate';
+
+export {
+  CastleTemplate,
+  type CastleTemplateProps,
+  type CastleSlotContext,
+} from './CastleTemplate';
+
+export {
+  WorldMapTemplate,
+  type WorldMapTemplateProps,
+  type MapHero,
+  type MapHex,
+  type WorldMapSlotContext,
+} from './WorldMapTemplate';
