@@ -14,8 +14,8 @@
  */
 
 import { useRef, useMemo, useCallback, useState } from 'react';
-import type { CanvasEffectState, CombatActionType, EffectAssetManifest } from '../types/effects';
-import { EMPTY_EFFECT_STATE } from '../types/effects';
+import type { CanvasEffectState, CombatActionType, EffectAssetManifest } from './types/effects';
+import { EMPTY_EFFECT_STATE } from './types/effects';
 import {
     spawnParticles,
     spawnSequence,
@@ -24,8 +24,8 @@ import {
     drawEffectState,
     hasActiveEffects as checkActive,
     getAllEffectSpriteUrls,
-} from '../utils/canvasEffects';
-import { createCombatPresets } from '../utils/combatPresets';
+} from './utils/canvasEffects';
+import { createCombatPresets } from './utils/combatPresets';
 
 export interface UseCanvasEffectsOptions {
     /** Effect asset manifest (baseUrl + particles + animations) */
