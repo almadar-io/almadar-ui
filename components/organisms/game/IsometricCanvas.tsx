@@ -112,6 +112,20 @@ export interface IsometricCanvasProps {
     ) => void;
     /** Whether there are active effects — keeps RAF loop alive */
     hasActiveEffects?: boolean;
+
+    // --- Remote asset loading ---
+    /** Base URL for remote asset resolution. When set, manifest paths
+     *  are prefixed with this URL. Example: "https://trait-wars-assets.web.app" */
+    assetBaseUrl?: string;
+    /** Manifest mapping entity keys to relative sprite paths.
+     *  Combined with assetBaseUrl to produce full URLs.
+     *  Used as a fallback when inline URLs and callbacks don't resolve. */
+    assetManifest?: {
+        terrains?: Record<string, string>;
+        units?: Record<string, string>;
+        features?: Record<string, string>;
+        effects?: Record<string, string>;
+    };
 }
 
 // =============================================================================
@@ -153,6 +167,9 @@ export function IsometricCanvas({
     effectSpriteUrls = [],
     onDrawEffects,
     hasActiveEffects = false,
+    // Remote asset loading
+    assetBaseUrl,
+    assetManifest,
 }: IsometricCanvasProps): JSX.Element {
     // -- Refs --
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -221,6 +238,13 @@ export function IsometricCanvas({
         return new Set(attackTargets.map(p => `${p.x},${p.y}`));
     }, [attackTargets]);
 
+    // -- Helper: resolve a manifest path with optional base URL --
+    const resolveManifestUrl = useCallback((relativePath: string | undefined): string | undefined => {
+        if (!relativePath) return undefined;
+        if (assetBaseUrl) return `${assetBaseUrl.replace(/\/$/, '')}${relativePath.startsWith('/') ? '' : '/'}${relativePath}`;
+        return relativePath;
+    }, [assetBaseUrl]);
+
     // -- Collect all sprite URLs for preloading --
     const spriteUrls = useMemo(() => {
         const urls: string[] = [];
@@ -231,6 +255,9 @@ export function IsometricCanvas({
             else if (getTerrainSprite) {
                 const url = getTerrainSprite(tile.terrain);
                 if (url) urls.push(url);
+            } else {
+                const url = resolveManifestUrl(assetManifest?.terrains?.[tile.terrain]);
+                if (url) urls.push(url);
             }
         }
 
@@ -239,6 +266,9 @@ export function IsometricCanvas({
             if (feature.sprite) urls.push(feature.sprite);
             else if (getFeatureSprite) {
                 const url = getFeatureSprite(feature.type);
+                if (url) urls.push(url);
+            } else {
+                const url = resolveManifestUrl(assetManifest?.features?.[feature.type]);
                 if (url) urls.push(url);
             }
         }
@@ -249,10 +279,21 @@ export function IsometricCanvas({
             else if (getUnitSprite) {
                 const url = getUnitSprite(unit);
                 if (url) urls.push(url);
+            } else if (unit.unitType) {
+                const url = resolveManifestUrl(assetManifest?.units?.[unit.unitType]);
+                if (url) urls.push(url);
             }
         }
 
-        // Effect sprites
+        // Effect sprites from manifest
+        if (assetManifest?.effects) {
+            for (const path of Object.values(assetManifest.effects)) {
+                const url = resolveManifestUrl(path);
+                if (url) urls.push(url);
+            }
+        }
+
+        // Effect sprites from explicit list
         urls.push(...effectSpriteUrls);
 
         // Background
@@ -260,7 +301,7 @@ export function IsometricCanvas({
 
         // Deduplicate
         return [...new Set(urls.filter(Boolean))];
-    }, [sortedTiles, features, units, getTerrainSprite, getFeatureSprite, getUnitSprite, effectSpriteUrls, backgroundImage]);
+    }, [sortedTiles, features, units, getTerrainSprite, getFeatureSprite, getUnitSprite, effectSpriteUrls, backgroundImage, assetManifest, resolveManifestUrl]);
 
     const { getImage } = useImageCache(spriteUrls);
 
@@ -281,16 +322,16 @@ export function IsometricCanvas({
 
     // -- Sprite resolvers --
     const resolveTerrainSpriteUrl = useCallback((tile: IsometricTile): string | undefined => {
-        return tile.terrainSprite || getTerrainSprite?.(tile.terrain);
-    }, [getTerrainSprite]);
+        return tile.terrainSprite || getTerrainSprite?.(tile.terrain) || resolveManifestUrl(assetManifest?.terrains?.[tile.terrain]);
+    }, [getTerrainSprite, assetManifest, resolveManifestUrl]);
 
     const resolveFeatureSpriteUrl = useCallback((featureType: string): string | undefined => {
-        return getFeatureSprite?.(featureType);
-    }, [getFeatureSprite]);
+        return getFeatureSprite?.(featureType) || resolveManifestUrl(assetManifest?.features?.[featureType]);
+    }, [getFeatureSprite, assetManifest, resolveManifestUrl]);
 
     const resolveUnitSpriteUrl = useCallback((unit: IsometricUnit): string | undefined => {
-        return unit.sprite || getUnitSprite?.(unit);
-    }, [getUnitSprite]);
+        return unit.sprite || getUnitSprite?.(unit) || (unit.unitType ? resolveManifestUrl(assetManifest?.units?.[unit.unitType]) : undefined);
+    }, [getUnitSprite, assetManifest, resolveManifestUrl]);
 
     // =========================================================================
     // Minimap

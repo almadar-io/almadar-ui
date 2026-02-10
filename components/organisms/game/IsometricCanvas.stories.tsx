@@ -228,3 +228,44 @@ export const MovementTrail: Story = {
         showMinimap: false,
     },
 };
+
+/** Demonstrates remote asset loading via assetBaseUrl + assetManifest.
+ *  When deployed, sprites load from Firebase CDN instead of local static files. */
+export const RemoteAssets: Story = {
+    args: {
+        tiles: generateGrid(6, 6, (x, y) => {
+            if (x === 0 || y === 0 || x === 5 || y === 5) return 'water';
+            if ((x + y) % 3 === 0) return 'stone';
+            return 'grass';
+        }),
+        units: [
+            { id: 'u1', position: { x: 2, y: 2 }, name: 'Archivist', unitType: 'archivist', team: 'player', health: 80, maxHealth: 100 },
+            { id: 'u2', position: { x: 4, y: 3 }, name: 'Guardian', unitType: 'guardian', team: 'player', health: 100, maxHealth: 100 },
+            { id: 'u3', position: { x: 3, y: 4 }, name: 'Glitch', unitType: 'glitch', team: 'enemy', health: 60, maxHealth: 80 },
+        ],
+        features: [
+            { x: 1, y: 1, type: 'town_hall' },
+            { x: 4, y: 1, type: 'barracks' },
+        ],
+        assetBaseUrl: 'https://trait-wars-assets.web.app',
+        assetManifest: {
+            terrains: {
+                grass: '/isometric-dungeon/Isometric/stone_N.png',
+                water: '/isometric-dungeon/Isometric/bridgeBroken_N.png',
+                stone: '/isometric-dungeon/Isometric/barrel_N.png',
+            },
+            units: {
+                archivist: '/units/archivist.png',
+                guardian: '/units/guardian.png',
+                glitch: '/units/glitch.png',
+            },
+            features: {
+                town_hall: '/buildings/town_hall.png',
+                barracks: '/buildings/barracks.png',
+            },
+        },
+        scale: 0.5,
+        showMinimap: false,
+        enableCamera: true,
+    },
+};
