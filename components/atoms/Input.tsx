@@ -12,20 +12,20 @@ export interface InputProps extends Omit<
   "type" | "onChange"
 > {
   /** Input type - supports 'select' and 'textarea' in addition to standard types */
-  type?:
-    | "text"
-    | "email"
-    | "password"
-    | "number"
-    | "tel"
-    | "url"
-    | "search"
-    | "date"
-    | "datetime-local"
-    | "time"
-    | "checkbox"
-    | "select"
-    | "textarea";
+  inputType?:
+  | "text"
+  | "email"
+  | "password"
+  | "number"
+  | "tel"
+  | "url"
+  | "search"
+  | "date"
+  | "datetime-local"
+  | "time"
+  | "checkbox"
+  | "select"
+  | "textarea";
   error?: string;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
@@ -52,7 +52,7 @@ export const Input = React.forwardRef<
   (
     {
       className,
-      type = "text",
+      inputType = "text",
       error,
       leftIcon,
       rightIcon,
@@ -67,6 +67,8 @@ export const Input = React.forwardRef<
     },
     ref,
   ) => {
+    // Map inputType to HTML type internally
+    const type = inputType;
     // Resolve left icon: prefer leftIcon ReactNode, fallback to icon Lucide component
     const resolvedLeftIcon =
       leftIcon || (IconComponent && <IconComponent className="h-4 w-4" />);

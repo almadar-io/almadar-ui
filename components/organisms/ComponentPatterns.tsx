@@ -443,7 +443,7 @@ SpinnerPattern.displayName = 'SpinnerPattern';
 export interface InputPatternProps {
   value?: string;
   placeholder?: string;
-  type?: 'text' | 'email' | 'password' | 'number' | 'tel' | 'url';
+  inputType?: 'text' | 'email' | 'password' | 'number' | 'tel' | 'url';
   disabled?: boolean;
   error?: string;
   onChange?: string;
@@ -457,7 +457,7 @@ export interface InputPatternProps {
 export function InputPattern({
   value = '',
   placeholder,
-  type = 'text',
+  inputType = 'text',
   disabled = false,
   error,
   onChange,
@@ -484,7 +484,7 @@ export function InputPattern({
     <Input
       value={localValue}
       placeholder={placeholder}
-      type={type}
+      inputType={inputType}
       disabled={disabled}
       error={error}
       onChange={handleChange}

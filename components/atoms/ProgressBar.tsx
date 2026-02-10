@@ -32,7 +32,7 @@ export interface ProgressBarProps {
    * Type of the progress bar (linear, circular, stepped)
    * @default 'linear'
    */
-  type?: ProgressBarType;
+  progressType?: ProgressBarType;
 
   /**
    * Variant/color of the progress bar
@@ -97,7 +97,7 @@ const circularSizeClasses = {
 export const ProgressBar: React.FC<ProgressBarProps> = ({
   value,
   max = 100,
-  type = "linear",
+  progressType = "linear",
   variant = "primary",
   color,
   showPercentage = false,
@@ -113,7 +113,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   // Use showLabel as alias for showPercentage
   const effectiveShowPercentage = showPercentage || showLabel;
 
-  if (type === "linear") {
+  if (progressType === "linear") {
     return (
       <div className={cn("w-full", className)}>
         {label && (
@@ -146,7 +146,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
     );
   }
 
-  if (type === "circular") {
+  if (progressType === "circular") {
     const radius = size === "sm" ? 28 : size === "md" ? 40 : 56;
     const circumference = 2 * Math.PI * radius;
     const offset = circumference - (percentage / 100) * circumference;
@@ -200,7 +200,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
     );
   }
 
-  if (type === "stepped") {
+  if (progressType === "stepped") {
     const stepValue = max / steps;
     const activeSteps = Math.floor(value / stepValue);
     const partialStep = (value % stepValue) / stepValue;

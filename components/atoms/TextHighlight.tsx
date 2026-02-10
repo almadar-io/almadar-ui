@@ -16,7 +16,7 @@ export interface TextHighlightProps {
   /**
    * Type of highlight (determines color)
    */
-  type: HighlightType;
+  highlightType: HighlightType;
 
   /**
    * Whether the highlight is currently active/focused
@@ -59,7 +59,7 @@ export interface TextHighlightProps {
  * TextHighlight component for rendering highlighted text annotations
  */
 export const TextHighlight: React.FC<TextHighlightProps> = ({
-  type,
+  highlightType,
   isActive = false,
   onClick,
   onMouseEnter,
@@ -88,9 +88,9 @@ export const TextHighlight: React.FC<TextHighlightProps> = ({
   return (
     <span
       data-highlight="true"
-      data-highlight-type={type}
+      data-highlight-type={highlightType}
       data-annotation-id={annotationId}
-      className={cn(baseStyles, typeStyles[type], className)}
+      className={cn(baseStyles, typeStyles[highlightType], className)}
       onClick={onClick}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}

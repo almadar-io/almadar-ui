@@ -91,7 +91,7 @@ export interface ListProps {
   /** Data array - primary prop for data */
   data?: ListItem[] | readonly { id: string }[] | readonly unknown[] | unknown;
   /** Entity type name for display */
-  type?: string;
+  entityType?: string;
   /** Loading state */
   isLoading?: boolean;
   /** Error state */
@@ -308,7 +308,7 @@ export const List: React.FC<ListProps> = ({
   onRowClick,
   fields,
   fieldNames,
-  type,
+  entityType,
   query,
 }) => {
   const navigate = useNavigate();
@@ -475,7 +475,7 @@ export const List: React.FC<ListProps> = ({
   if (isLoading) {
     return (
       <LoadingState
-        message={`Loading ${type || "items"}...`}
+        message={`Loading ${entityType || "items"}...`}
         className={className}
       />
     );
@@ -486,7 +486,7 @@ export const List: React.FC<ListProps> = ({
     return (
       <EmptyState
         icon={Package}
-        title={`Error loading ${type || "items"}`}
+        title={`Error loading ${entityType || "items"}`}
         description={error.message}
         className={className}
       />
@@ -495,41 +495,41 @@ export const List: React.FC<ListProps> = ({
 
   const safeItems: ListItem[] = Array.isArray(filteredItems)
     ? filteredItems.map((item, index) => {
-        if (typeof item === "object" && item !== null) {
-          const normalizedItem = {
-            ...item,
-            id: (item as ListItem).id || `item-${index}`,
-          } as ListItem;
+      if (typeof item === "object" && item !== null) {
+        const normalizedItem = {
+          ...item,
+          id: (item as ListItem).id || `item-${index}`,
+        } as ListItem;
 
-          if (effectiveFieldNames && effectiveFieldNames.length > 0) {
-            const firstField = effectiveFieldNames[0];
-            const itemRecord = item as Record<string, unknown>;
+        if (effectiveFieldNames && effectiveFieldNames.length > 0) {
+          const firstField = effectiveFieldNames[0];
+          const itemRecord = item as Record<string, unknown>;
 
-            if (
-              !normalizedItem.title &&
-              getNestedValue(itemRecord, firstField)
-            ) {
-              normalizedItem.title = String(
-                getNestedValue(itemRecord, firstField),
-              );
-            }
-
-            normalizedItem._fields = effectiveFieldNames.reduce(
-              (acc, field) => {
-                const value = getNestedValue(itemRecord, field);
-                if (value !== undefined && value !== null) {
-                  acc[field] = value;
-                }
-                return acc;
-              },
-              {} as Record<string, unknown>,
+          if (
+            !normalizedItem.title &&
+            getNestedValue(itemRecord, firstField)
+          ) {
+            normalizedItem.title = String(
+              getNestedValue(itemRecord, firstField),
             );
           }
 
-          return normalizedItem;
+          normalizedItem._fields = effectiveFieldNames.reduce(
+            (acc, field) => {
+              const value = getNestedValue(itemRecord, field);
+              if (value !== undefined && value !== null) {
+                acc[field] = value;
+              }
+              return acc;
+            },
+            {} as Record<string, unknown>,
+          );
         }
-        return { id: `item-${index}`, title: String(item) } as ListItem;
-      })
+
+        return normalizedItem;
+      }
+      return { id: `item-${index}`, title: String(item) } as ListItem;
+    })
     : [];
 
   const handleSelect = (itemId: string, checked: boolean) => {
@@ -648,7 +648,7 @@ export const List: React.FC<ListProps> = ({
                   "text-[15px] font-semibold text-[var(--color-foreground)] truncate flex-1",
                   "tracking-tight leading-snug",
                   item.completed &&
-                    "line-through text-[var(--color-muted-foreground)]",
+                  "line-through text-[var(--color-muted-foreground)]",
                 )}
               >
                 {item.title || "Untitled"}
@@ -809,7 +809,7 @@ export const List: React.FC<ListProps> = ({
     return (
       <EmptyState
         icon={Package}
-        title={`No ${type || "items"} found`}
+        title={`No ${entityType || "items"} found`}
         description={emptyMessage}
         className={className}
       />

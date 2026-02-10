@@ -10,7 +10,7 @@ const meta: Meta<typeof ProgressBar> = {
     },
     tags: ['autodocs'],
     argTypes: {
-        type: {
+        progressType: {
             control: 'select',
             options: ['linear', 'circular', 'stepped'],
         },
@@ -74,7 +74,7 @@ export const Colors: Story = {
 export const Circular: Story = {
     args: {
         value: 72,
-        type: 'circular',
+        progressType: 'circular',
         showPercentage: true,
         size: 'lg',
     },
@@ -84,15 +84,15 @@ export const CircularSizes: Story = {
     render: () => (
         <div className="flex items-end gap-6">
             <div className="text-center">
-                <ProgressBar value={65} type="circular" size="sm" showPercentage />
+                <ProgressBar value={65} progressType="circular" size="sm" showPercentage />
                 <p className="mt-2 text-sm text-black">Small</p>
             </div>
             <div className="text-center">
-                <ProgressBar value={75} type="circular" size="md" showPercentage />
+                <ProgressBar value={75} progressType="circular" size="md" showPercentage />
                 <p className="mt-2 text-sm text-black">Medium</p>
             </div>
             <div className="text-center">
-                <ProgressBar value={85} type="circular" size="lg" showPercentage />
+                <ProgressBar value={85} progressType="circular" size="lg" showPercentage />
                 <p className="mt-2 text-sm text-black">Large</p>
             </div>
         </div>
@@ -102,7 +102,7 @@ export const CircularSizes: Story = {
 export const Stepped: Story = {
     args: {
         value: 60,
-        type: 'stepped',
+        progressType: 'stepped',
         steps: 5,
         label: 'Onboarding Progress',
         showPercentage: true,
@@ -119,11 +119,11 @@ export const Stepped: Story = {
 export const StepsExample: Story = {
     render: () => (
         <div className="w-80 space-y-4">
-            <ProgressBar value={20} type="stepped" steps={5} label="Step 1 of 5" />
-            <ProgressBar value={40} type="stepped" steps={5} label="Step 2 of 5" />
-            <ProgressBar value={60} type="stepped" steps={5} label="Step 3 of 5" />
-            <ProgressBar value={80} type="stepped" steps={5} label="Step 4 of 5" />
-            <ProgressBar value={100} type="stepped" steps={5} label="Complete!" color="success" />
+            <ProgressBar value={20} progressType="stepped" steps={5} label="Step 1 of 5" />
+            <ProgressBar value={40} progressType="stepped" steps={5} label="Step 2 of 5" />
+            <ProgressBar value={60} progressType="stepped" steps={5} label="Step 3 of 5" />
+            <ProgressBar value={80} progressType="stepped" steps={5} label="Step 4 of 5" />
+            <ProgressBar value={100} progressType="stepped" steps={5} label="Complete!" color="success" />
         </div>
     ),
 };
