@@ -28,7 +28,17 @@ import type { IsometricTile, IsometricUnit, IsometricFeature } from './types/iso
 import './GameCanvas3D.css';
 
 // Re-export types for convenience
-export type { IsometricTile, IsometricUnit, IsometricFeature, GameEvent };
+export type { IsometricTile, IsometricUnit, IsometricFeature };
+
+/** Game event for canvas display */
+export interface GameEvent {
+    id: string;
+    type: string;
+    x: number;
+    z?: number;
+    y?: number;
+    message?: string;
+}
 
 /** Camera mode for 3D view */
 export type CameraMode = 'isometric' | 'perspective' | 'top-down';
@@ -60,7 +70,7 @@ export interface GameCanvas3DProps {
     /** Array of features to render */
     features?: IsometricFeature[];
     /** Array of events to display */
-    events?: GameEvent[];
+    events?: Array<GameEvent>;
     /** Fog of war data */
     fogOfWar?: boolean[][];
     /** Map orientation */
@@ -429,7 +439,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
         // Default tile renderer
         const DefaultTileRenderer = useCallback(
             ({ tile, position }: { tile: IsometricTile; position: [number, number, number] }) => {
-                const isSelected = selectedTileIds.includes(tile.id);
+                const isSelected = tile.id ? selectedTileIds.includes(tile.id) : false;
                 const isHovered = hoveredTile?.id === tile.id;
                 const isValidMove = validMoves.some(
                     (m) => m.x === tile.x && m.z === (tile.z ?? tile.y ?? 0)

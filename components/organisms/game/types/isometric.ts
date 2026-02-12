@@ -17,11 +17,11 @@ export interface IsometricTile {
     id?: string;
     /** Grid x coordinate */
     x: number;
-    /** Grid y coordinate (2D) or z coordinate (3D) */
-    y?: number;
+    /** Grid y coordinate (2D) */
+    y: number;
     /** Grid z coordinate (3D alternative to y) */
     z?: number;
-    /** Terrain type key (e.g., 'grass', 'stone', 'water') */
+    /** Terrain type key (e.g., 'grass', 'stone', 'water') - 2D */
     terrain?: string;
     /** Tile type for visual rendering (3D) */
     type?: string;
