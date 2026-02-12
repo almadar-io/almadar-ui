@@ -22,6 +22,7 @@ import { Box } from "../atoms/Box";
 import { Typography } from "../atoms/Typography";
 import { Overlay } from "../atoms/Overlay";
 import { cn } from "../../lib/cn";
+import { useEventBus } from "../../hooks/useEventBus";
 
 // ============================================================================
 // Types
@@ -53,6 +54,8 @@ export interface DrawerProps {
   closeOnEscape?: boolean;
   /** Additional class name */
   className?: string;
+  /** Declarative close event — emits UI:{closeEvent} via eventBus when drawer should close */
+  closeEvent?: string;
 }
 
 // ============================================================================
@@ -83,7 +86,9 @@ export const Drawer: React.FC<DrawerProps> = ({
   closeOnOverlayClick = true,
   closeOnEscape = true,
   className,
+  closeEvent,
 }) => {
+  const eventBus = useEventBus();
   const drawerRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
 
@@ -107,13 +112,14 @@ export const Drawer: React.FC<DrawerProps> = ({
 
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        if (closeEvent) eventBus.emit(`UI:${closeEvent}`, {});
         onClose();
       }
     };
 
     document.addEventListener("keydown", handleEscape);
     return () => document.removeEventListener("keydown", handleEscape);
-  }, [isOpen, closeOnEscape, onClose]);
+  }, [isOpen, closeOnEscape, onClose, closeEvent, eventBus]);
 
   // Prevent body scroll when open
   useEffect(() => {
@@ -129,10 +135,15 @@ export const Drawer: React.FC<DrawerProps> = ({
 
   if (!isOpen) return null;
 
+  const handleClose = () => {
+    if (closeEvent) eventBus.emit(`UI:${closeEvent}`, {});
+    onClose();
+  };
+
   // Handle overlay click
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (closeOnOverlayClick && e.target === e.currentTarget) {
-      onClose();
+      handleClose();
     }
   };
 
@@ -192,7 +203,7 @@ export const Drawer: React.FC<DrawerProps> = ({
             {showCloseButton && (
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 className={cn(
                   "p-1 transition-colors rounded-[var(--radius-sm)]",
                   "hover:bg-[var(--color-muted)]",

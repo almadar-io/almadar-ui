@@ -12,6 +12,7 @@ import type { LucideIcon } from "lucide-react";
 import { Icon } from "../atoms/Icon";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../lib/cn";
+import { useEventBus } from "../../hooks/useEventBus";
 
 export interface BreadcrumbItem {
   /**
@@ -43,6 +44,9 @@ export interface BreadcrumbItem {
    * Is current page
    */
   isCurrent?: boolean;
+
+  /** Event name to emit when clicked (for trait state machine integration) */
+  event?: string;
 }
 
 export interface BreadcrumbProps {
@@ -73,6 +77,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
   maxItems,
   className,
 }) => {
+  const eventBus = useEventBus();
   const displayItems =
     maxItems && items.length > maxItems
       ? [
@@ -120,7 +125,10 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
               ) : (
                 <button
                   type="button"
-                  onClick={item.onClick}
+                  onClick={() => {
+                    if (item.event) eventBus.emit(`UI:${item.event}`, { label: item.label });
+                    item.onClick?.();
+                  }}
                   className={cn(
                     "flex items-center gap-1.5 transition-colors",
                     "focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)] focus:ring-offset-2",

@@ -6,6 +6,7 @@
  */
 import React from "react";
 import { cn } from "../../lib/cn";
+import { useEventBus } from "../../hooks/useEventBus";
 
 export type StackDirection = "horizontal" | "vertical";
 export type StackGap = "none" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
@@ -49,6 +50,10 @@ export interface StackProps {
   role?: string;
   /** Tab index for focus management */
   tabIndex?: number;
+  /** Declarative event name — emits UI:{action} via eventBus on click */
+  action?: string;
+  /** Payload to include with the action event */
+  actionPayload?: Record<string, unknown>;
 }
 
 const gapStyles: Record<StackGap, string> = {
@@ -97,7 +102,18 @@ export const Stack: React.FC<StackProps> = ({
   onKeyDown,
   role,
   tabIndex,
+  action,
+  actionPayload,
 }) => {
+  const eventBus = useEventBus();
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (action) {
+      eventBus.emit(`UI:${action}`, actionPayload ?? {});
+    }
+    onClick?.(e);
+  };
+
   const directionClass =
     direction === "horizontal"
       ? reverse
@@ -120,7 +136,7 @@ export const Stack: React.FC<StackProps> = ({
         className,
       )}
       style={style}
-      onClick={onClick}
+      onClick={(action || onClick) ? handleClick : undefined}
       onKeyDown={onKeyDown}
       role={role}
       tabIndex={tabIndex}

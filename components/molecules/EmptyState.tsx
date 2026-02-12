@@ -1,6 +1,7 @@
 import React from "react";
 import { cn } from "../../lib/cn";
 import { Button } from "../atoms";
+import { useEventBus } from "../../hooks/useEventBus";
 import {
   LucideIcon,
   CheckCircle,
@@ -48,6 +49,8 @@ export interface EmptyStateProps {
   destructive?: boolean;
   /** Variant for color styling */
   variant?: "default" | "success" | "error" | "warning" | "info";
+  /** Declarative action event — emits UI:{actionEvent} via eventBus when action button is clicked */
+  actionEvent?: string;
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
@@ -60,7 +63,14 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   className,
   destructive,
   variant,
+  actionEvent,
 }) => {
+  const eventBus = useEventBus();
+
+  const handleAction = () => {
+    if (actionEvent) eventBus.emit(`UI:${actionEvent}`, {});
+    onAction?.();
+  };
   // Resolve icon - supports both LucideIcon component and string name
   const Icon: LucideIcon | undefined =
     typeof icon === "string" ? ICON_MAP[icon] : icon;
@@ -118,11 +128,11 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           {description}
         </p>
       )}
-      {actionLabel && onAction && (
+      {actionLabel && (onAction || actionEvent) && (
         <Button
           className="mt-4"
           variant={isDestructive ? "danger" : "primary"}
-          onClick={onAction}
+          onClick={handleAction}
         >
           {actionLabel}
         </Button>

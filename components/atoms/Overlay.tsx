@@ -5,12 +5,15 @@
  */
 import React from "react";
 import { cn } from "../../lib/cn";
+import { useEventBus } from "../../hooks/useEventBus";
 
 export interface OverlayProps {
   isVisible?: boolean;
   onClick?: (e: React.MouseEvent) => void;
   className?: string;
   blur?: boolean;
+  /** Declarative event name — emits UI:{action} via eventBus on click */
+  action?: string;
 }
 
 export const Overlay: React.FC<OverlayProps> = ({
@@ -18,8 +21,18 @@ export const Overlay: React.FC<OverlayProps> = ({
   onClick,
   className,
   blur = true,
+  action,
 }) => {
+  const eventBus = useEventBus();
+
   if (!isVisible) return null;
+
+  const handleClick = (e: React.MouseEvent) => {
+    if (action) {
+      eventBus.emit(`UI:${action}`, {});
+    }
+    onClick?.(e);
+  };
 
   return (
     <div
@@ -28,7 +41,7 @@ export const Overlay: React.FC<OverlayProps> = ({
         blur && "backdrop-blur-sm",
         className,
       )}
-      onClick={onClick}
+      onClick={(action || onClick) ? handleClick : undefined}
       aria-hidden="true"
     />
   );

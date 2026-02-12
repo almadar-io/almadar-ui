@@ -11,6 +11,7 @@ import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
 import { Input } from "../atoms/Input";
 import { cn } from "../../lib/cn";
+import { useEventBus } from "../../hooks/useEventBus";
 
 export interface PaginationProps {
   /**
@@ -76,6 +77,12 @@ export interface PaginationProps {
    * Additional CSS classes
    */
   className?: string;
+
+  /** Declarative page change event — emits UI:{pageChangeEvent} with { page } */
+  pageChangeEvent?: string;
+
+  /** Declarative page size change event — emits UI:{pageSizeChangeEvent} with { pageSize } */
+  pageSizeChangeEvent?: string;
 }
 
 export const Pagination: React.FC<PaginationProps> = ({
@@ -91,13 +98,26 @@ export const Pagination: React.FC<PaginationProps> = ({
   totalItems,
   maxVisiblePages = 7,
   className,
+  pageChangeEvent,
+  pageSizeChangeEvent,
 }) => {
+  const eventBus = useEventBus();
   const [jumpToPage, setJumpToPage] = useState("");
+
+  const handlePageChange = (page: number) => {
+    if (pageChangeEvent) eventBus.emit(`UI:${pageChangeEvent}`, { page });
+    onPageChange(page);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    if (pageSizeChangeEvent) eventBus.emit(`UI:${pageSizeChangeEvent}`, { pageSize: size });
+    onPageSizeChange?.(size);
+  };
 
   const handleJumpToPage = () => {
     const page = parseInt(jumpToPage, 10);
     if (page >= 1 && page <= totalPages) {
-      onPageChange(page);
+      handlePageChange(page);
       setJumpToPage("");
     }
   };
@@ -159,7 +179,7 @@ export const Pagination: React.FC<PaginationProps> = ({
             </Typography>
             <select
               value={pageSize}
-              onChange={(e) => onPageSizeChange(Number(e.target.value))}
+              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
               className="px-2 py-1 text-sm border-[length:var(--border-width)] border-[var(--color-border)] bg-[var(--color-card)] text-[var(--color-foreground)] font-medium focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]"
             >
               {pageSizeOptions.map((size) => (
@@ -176,7 +196,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         <Button
           variant="secondary"
           size="sm"
-          onClick={() => onPageChange(currentPage - 1)}
+          onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 1}
           icon={ChevronLeft}
         >
@@ -205,7 +225,7 @@ export const Pagination: React.FC<PaginationProps> = ({
                 key={page}
                 variant={isActive ? "primary" : "ghost"}
                 size="sm"
-                onClick={() => onPageChange(page)}
+                onClick={() => handlePageChange(page)}
                 className="min-w-[2.5rem]"
               >
                 {page}
@@ -217,7 +237,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         <Button
           variant="secondary"
           size="sm"
-          onClick={() => onPageChange(currentPage + 1)}
+          onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
           iconRight={ChevronRight}
         >

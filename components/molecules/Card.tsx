@@ -8,10 +8,13 @@
  */
 
 import React from "react";
+import { useEventBus } from "../../hooks/useEventBus";
 
 export interface CardAction {
   label: string;
-  onClick: () => void;
+  onClick?: () => void;
+  /** Event name to emit when clicked (for trait state machine integration) */
+  event?: string;
   variant?: "default" | "primary" | "danger";
   icon?: string;
   disabled?: boolean;
@@ -32,6 +35,8 @@ export interface CardProps {
   onClick?: () => void;
   /** Additional CSS classes */
   className?: string;
+  /** Declarative event name — emits UI:{action} via eventBus on card click */
+  action?: string;
 }
 
 /**
@@ -45,8 +50,15 @@ export function Card({
   children,
   onClick,
   className = "",
+  action,
 }: CardProps) {
-  const isClickable = !!onClick;
+  const eventBus = useEventBus();
+  const isClickable = !!onClick || !!action;
+
+  const handleClick = () => {
+    if (action) eventBus.emit(`UI:${action}`, {});
+    onClick?.();
+  };
 
   return (
     <div
@@ -57,11 +69,11 @@ export function Card({
         ${isClickable ? "cursor-pointer hover:shadow-[var(--shadow-hover)] transition-shadow" : ""}
         ${className}
       `}
-      onClick={onClick}
+      onClick={isClickable ? handleClick : undefined}
       role={isClickable ? "button" : undefined}
       tabIndex={isClickable ? 0 : undefined}
       onKeyDown={
-        isClickable ? (e) => e.key === "Enter" && onClick?.() : undefined
+        isClickable ? (e) => e.key === "Enter" && handleClick() : undefined
       }
     >
       {/* Image */}
@@ -106,7 +118,8 @@ export function Card({
                 key={index}
                 onClick={(e) => {
                   e.stopPropagation();
-                  action.onClick();
+                  if (action.event) eventBus.emit(`UI:${action.event}`, { label: action.label });
+                  action.onClick?.();
                 }}
                 disabled={action.disabled}
                 className={`

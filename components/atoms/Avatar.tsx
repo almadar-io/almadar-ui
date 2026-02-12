@@ -8,6 +8,7 @@ import React from "react";
 import { User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "../../lib/cn";
+import { useEventBus } from "../../hooks/useEventBus";
 
 export type AvatarSize = "xs" | "sm" | "md" | "lg" | "xl";
 export type AvatarStatus = "online" | "offline" | "away" | "busy";
@@ -64,6 +65,12 @@ export interface AvatarProps {
    * Click handler
    */
   onClick?: () => void;
+
+  /** Declarative event name — emits UI:{action} via eventBus on click */
+  action?: string;
+
+  /** Payload to include with the action event */
+  actionPayload?: Record<string, unknown>;
 }
 
 const sizeClasses: Record<AvatarSize, string> = {
@@ -127,7 +134,10 @@ export const Avatar: React.FC<AvatarProps> = ({
   badge,
   className,
   onClick,
+  action,
+  actionPayload,
 }) => {
+  const eventBus = useEventBus();
   // Auto-generate initials from name if not provided
   const initials =
     providedInitials ?? (name ? generateInitials(name) : undefined);
@@ -140,6 +150,15 @@ export const Avatar: React.FC<AvatarProps> = ({
   const getInitialsBackground = () =>
     "bg-[var(--color-primary)] text-[var(--color-primary-foreground)]";
 
+  const isClickable = action || onClick;
+
+  const handleClick = () => {
+    if (action) {
+      eventBus.emit(`UI:${action}`, actionPayload ?? {});
+    }
+    onClick?.();
+  };
+
   return (
     <div className="relative inline-block">
       <div
@@ -148,13 +167,13 @@ export const Avatar: React.FC<AvatarProps> = ({
           "bg-[var(--color-muted)] border-[length:var(--border-width)] border-[var(--color-border)]",
           "overflow-hidden",
           sizeClasses[size],
-          onClick &&
+          isClickable &&
             "cursor-pointer hover:bg-[var(--color-surface-hover)] transition-colors",
           className,
         )}
-        onClick={onClick}
-        role={onClick ? "button" : undefined}
-        tabIndex={onClick ? 0 : undefined}
+        onClick={isClickable ? handleClick : undefined}
+        role={isClickable ? "button" : undefined}
+        tabIndex={isClickable ? 0 : undefined}
       >
         {hasImage ? (
           <img

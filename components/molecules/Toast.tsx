@@ -12,6 +12,7 @@ import { Typography } from "../atoms/Typography";
 import { Button } from "../atoms/Button";
 import { Badge } from "../atoms/Badge";
 import { cn } from "../../lib/cn";
+import { useEventBus } from "../../hooks/useEventBus";
 
 export type ToastVariant = "success" | "error" | "info" | "warning";
 
@@ -36,6 +37,10 @@ export interface ToastProps {
   badge?: string | number;
   /** Additional CSS classes */
   className?: string;
+  /** Declarative dismiss event — emits UI:{dismissEvent} via eventBus when toast is dismissed */
+  dismissEvent?: string;
+  /** Declarative action event — emits UI:{actionEvent} via eventBus when action button is clicked */
+  actionEvent?: string;
 }
 
 // Theme-aware variant styles
@@ -74,18 +79,32 @@ export const Toast: React.FC<ToastProps> = ({
   onAction,
   badge,
   className,
+  dismissEvent,
+  actionEvent,
 }) => {
+  const eventBus = useEventBus();
+
+  const handleDismiss = () => {
+    if (dismissEvent) eventBus.emit(`UI:${dismissEvent}`, {});
+    onDismiss?.();
+  };
+
+  const handleAction = () => {
+    if (actionEvent) eventBus.emit(`UI:${actionEvent}`, {});
+    onAction?.();
+  };
   useEffect(() => {
-    if (duration <= 0 || !onDismiss) {
+    if (duration <= 0 || (!onDismiss && !dismissEvent)) {
       return;
     }
 
     const timer = setTimeout(() => {
-      onDismiss();
+      handleDismiss();
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [duration, onDismiss]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [duration, onDismiss, dismissEvent]);
 
   return (
     <div
@@ -116,9 +135,9 @@ export const Toast: React.FC<ToastProps> = ({
             {message}
           </Typography>
 
-          {actionLabel && onAction && (
+          {actionLabel && (onAction || actionEvent) && (
             <div className="mt-3">
-              <Button variant="ghost" size="sm" onClick={onAction}>
+              <Button variant="ghost" size="sm" onClick={handleAction}>
                 {actionLabel}
               </Button>
             </div>
@@ -134,7 +153,7 @@ export const Toast: React.FC<ToastProps> = ({
           {dismissible && (
             <button
               type="button"
-              onClick={onDismiss}
+              onClick={handleDismiss}
               className={cn(
                 "flex-shrink-0 p-1 transition-colors rounded-[var(--radius-sm)]",
                 "hover:bg-[var(--color-muted)]",

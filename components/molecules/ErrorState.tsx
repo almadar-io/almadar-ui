@@ -2,6 +2,7 @@ import React from "react";
 import { cn } from "../../lib/cn";
 import { Button } from "../atoms";
 import { AlertCircle } from "lucide-react";
+import { useEventBus } from "../../hooks/useEventBus";
 
 export interface ErrorStateProps {
   title?: string;
@@ -11,6 +12,8 @@ export interface ErrorStateProps {
   description?: string;
   onRetry?: () => void;
   className?: string;
+  /** Declarative retry event — emits UI:{retryEvent} via eventBus when retry button is clicked */
+  retryEvent?: string;
 }
 
 export const ErrorState: React.FC<ErrorStateProps> = ({
@@ -19,7 +22,14 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
   description,
   onRetry,
   className,
+  retryEvent,
 }) => {
+  const eventBus = useEventBus();
+
+  const handleRetry = () => {
+    if (retryEvent) eventBus.emit(`UI:${retryEvent}`, {});
+    onRetry?.();
+  };
   // Resolve alias: description → message
   const resolvedMessage = message ?? description ?? "An error occurred";
   return (
@@ -38,8 +48,8 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
       <p className="mt-1 text-sm text-[var(--color-muted-foreground)] max-w-sm">
         {resolvedMessage}
       </p>
-      {onRetry && (
-        <Button variant="secondary" className="mt-4" onClick={onRetry}>
+      {(onRetry || retryEvent) && (
+        <Button variant="secondary" className="mt-4" onClick={handleRetry}>
           Try again
         </Button>
       )}

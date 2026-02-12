@@ -9,6 +9,7 @@
 
 import React from "react";
 import { cn } from "../../lib/cn";
+import { useEventBus } from "../../hooks/useEventBus";
 
 export type HighlightType = "question" | "note";
 
@@ -53,6 +54,12 @@ export interface TextHighlightProps {
    * Highlighted text content
    */
   children: React.ReactNode;
+
+  /** Declarative event name — emits UI:{action} via eventBus on click */
+  action?: string;
+
+  /** Declarative hover event — emits UI:{hoverEvent} with { hovered: true/false } */
+  hoverEvent?: string;
 }
 
 /**
@@ -67,7 +74,10 @@ export const TextHighlight: React.FC<TextHighlightProps> = ({
   annotationId,
   className,
   children,
+  action,
+  hoverEvent,
 }) => {
+  const eventBus = useEventBus();
   const baseStyles = "cursor-pointer transition-all duration-150";
 
   const typeStyles = {
@@ -91,14 +101,24 @@ export const TextHighlight: React.FC<TextHighlightProps> = ({
       data-highlight-type={highlightType}
       data-annotation-id={annotationId}
       className={cn(baseStyles, typeStyles[highlightType], className)}
-      onClick={onClick}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
+      onClick={() => {
+        if (action) eventBus.emit(`UI:${action}`, { annotationId });
+        onClick?.();
+      }}
+      onMouseEnter={() => {
+        if (hoverEvent) eventBus.emit(`UI:${hoverEvent}`, { hovered: true, annotationId });
+        onMouseEnter?.();
+      }}
+      onMouseLeave={() => {
+        if (hoverEvent) eventBus.emit(`UI:${hoverEvent}`, { hovered: false, annotationId });
+        onMouseLeave?.();
+      }}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
+          if (action) eventBus.emit(`UI:${action}`, { annotationId });
           onClick?.();
         }
       }}

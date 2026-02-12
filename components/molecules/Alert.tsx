@@ -11,6 +11,7 @@ import { cn } from "../../lib/cn";
 import { Box } from "../atoms/Box";
 import { Icon } from "../atoms/Icon";
 import { Typography } from "../atoms/Typography";
+import { useEventBus } from "../../hooks/useEventBus";
 
 export type AlertVariant = "info" | "success" | "warning" | "error";
 
@@ -26,6 +27,8 @@ export interface AlertProps {
   onClose?: () => void;
   actions?: React.ReactNode;
   className?: string;
+  /** Declarative dismiss event — emits UI:{dismissEvent} via eventBus when alert is dismissed */
+  dismissEvent?: string;
 }
 
 const variantBorderClasses: Record<AlertVariant, string> = {
@@ -59,8 +62,15 @@ export const Alert: React.FC<AlertProps> = ({
   onClose,
   actions,
   className,
+  dismissEvent,
 }) => {
-  const handleDismiss = onDismiss || onClose;
+  const eventBus = useEventBus();
+  const handleDismissCallback = onDismiss || onClose;
+
+  const handleDismiss = () => {
+    if (dismissEvent) eventBus.emit(`UI:${dismissEvent}`, {});
+    handleDismissCallback?.();
+  };
   // Use message if provided, else children
   const content = children ?? message;
 
@@ -96,7 +106,7 @@ export const Alert: React.FC<AlertProps> = ({
         </div>
 
         {/* Dismiss Button */}
-        {(dismissible || handleDismiss) && (
+        {(dismissible || dismissEvent || handleDismissCallback) && (
           <button
             type="button"
             onClick={handleDismiss}

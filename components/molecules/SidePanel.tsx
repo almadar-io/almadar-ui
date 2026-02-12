@@ -10,6 +10,7 @@ import { X } from "lucide-react";
 import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../lib/cn";
+import { useEventBus } from "../../hooks/useEventBus";
 
 export interface SidePanelProps {
   /**
@@ -54,6 +55,9 @@ export interface SidePanelProps {
    * Additional CSS classes
    */
   className?: string;
+
+  /** Declarative close event — emits UI:{closeEvent} via eventBus when panel should close */
+  closeEvent?: string;
 }
 
 export const SidePanel: React.FC<SidePanelProps> = ({
@@ -65,7 +69,15 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   position = "right",
   showOverlay = true,
   className,
+  closeEvent,
 }) => {
+  const eventBus = useEventBus();
+
+  const handleClose = () => {
+    if (closeEvent) eventBus.emit(`UI:${closeEvent}`, {});
+    onClose();
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -74,7 +86,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
       {showOverlay && (
         <div
           className="fixed inset-0 bg-white/80 backdrop-blur-sm z-40 lg:hidden"
-          onClick={onClose}
+          onClick={handleClose}
         />
       )}
 
@@ -99,7 +111,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             variant="ghost"
             size="sm"
             icon={X}
-            onClick={onClose}
+            onClick={handleClose}
             aria-label="Close panel"
           >
             <span className="sr-only">Close</span>

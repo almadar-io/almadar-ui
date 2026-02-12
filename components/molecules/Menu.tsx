@@ -13,6 +13,7 @@ import { Divider } from "../atoms/Divider";
 import { Typography } from "../atoms/Typography";
 import { Badge } from "../atoms/Badge";
 import { cn } from "../../lib/cn";
+import { useEventBus } from "../../hooks/useEventBus";
 
 export interface MenuItem {
   /** Item ID (auto-generated from label if not provided) */
@@ -62,6 +63,7 @@ export const Menu: React.FC<MenuProps> = ({
   position = "bottom-left",
   className,
 }) => {
+  const eventBus = useEventBus();
   const [isOpen, setIsOpen] = useState(false);
   const [activeSubMenu, setActiveSubMenu] = useState<string | null>(null);
   const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null);
@@ -88,6 +90,7 @@ export const Menu: React.FC<MenuProps> = ({
     if (item.subMenu && item.subMenu.length > 0) {
       setActiveSubMenu(item.id ?? null);
     } else {
+      if (item.event) eventBus.emit(`UI:${item.event}`, { itemId: item.id, label: item.label });
       item.onClick?.();
       setIsOpen(false);
     }

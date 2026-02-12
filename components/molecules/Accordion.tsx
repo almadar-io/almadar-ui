@@ -12,6 +12,7 @@ import { Icon } from "../atoms/Icon";
 import { Typography } from "../atoms/Typography";
 
 import { cn } from "../../lib/cn";
+import { useEventBus } from "../../hooks/useEventBus";
 
 export interface AccordionItem {
   /**
@@ -81,6 +82,9 @@ export interface AccordionProps {
    * Additional CSS classes
    */
   className?: string;
+
+  /** Declarative toggle event — emits UI:{toggleEvent} with { itemId, isOpen } */
+  toggleEvent?: string;
 }
 
 // Helper to generate ID from header/title content
@@ -113,7 +117,9 @@ export const Accordion: React.FC<AccordionProps> = ({
   openItems: controlledOpenItems,
   onItemToggle,
   className,
+  toggleEvent,
 }) => {
+  const eventBus = useEventBus();
   // Normalize items to ensure id and header are always present
   const normalizedItems = items.map((item, index) =>
     normalizeItem(item, index),
@@ -158,6 +164,7 @@ export const Accordion: React.FC<AccordionProps> = ({
     }
 
     onItemToggle?.(itemId, !isOpen);
+    if (toggleEvent) eventBus.emit(`UI:${toggleEvent}`, { itemId, isOpen: !isOpen });
   };
 
   return (

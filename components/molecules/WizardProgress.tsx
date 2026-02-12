@@ -12,6 +12,7 @@ import { Typography } from "../atoms/Typography";
 import { Box } from "../atoms/Box";
 import { Icon } from "../atoms/Icon";
 import { cn } from "../../lib/cn";
+import { useEventBus } from "../../hooks/useEventBus";
 
 /**
  * Step info needed by WizardProgress.
@@ -39,6 +40,8 @@ export interface WizardProgressProps {
   compact?: boolean;
   /** Additional CSS classes */
   className?: string;
+  /** Declarative step click event — emits UI:{stepClickEvent} with { stepIndex } */
+  stepClickEvent?: string;
 }
 
 /**
@@ -51,13 +54,16 @@ export const WizardProgress: React.FC<WizardProgressProps> = ({
   allowNavigation = true,
   compact = false,
   className,
+  stepClickEvent,
 }) => {
+  const eventBus = useEventBus();
   const totalSteps = steps.length;
 
   const handleStepClick = (index: number) => {
     const isCompleted = index < currentStep;
-    if (isCompleted && allowNavigation && onStepClick) {
-      onStepClick(index);
+    if (isCompleted && allowNavigation) {
+      if (stepClickEvent) eventBus.emit(`UI:${stepClickEvent}`, { stepIndex: index });
+      onStepClick?.(index);
     }
   };
 

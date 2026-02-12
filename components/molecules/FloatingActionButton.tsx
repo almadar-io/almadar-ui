@@ -11,6 +11,7 @@ import * as LucideIcons from "lucide-react";
 import { Plus, X } from "lucide-react";
 import { Button } from "../atoms/Button";
 import { cn } from "../../lib/cn";
+import { useEventBus } from "../../hooks/useEventBus";
 
 export interface FloatingAction {
   /**
@@ -31,7 +32,10 @@ export interface FloatingAction {
   /**
    * Action click handler
    */
-  onClick: () => void;
+  onClick?: () => void;
+
+  /** Event name to emit when clicked (for trait state machine integration) */
+  event?: string;
 
   /**
    * Action variant
@@ -120,6 +124,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   position = "bottom-right",
   className,
 }) => {
+  const eventBus = useEventBus();
   // If simplified props are provided, construct action from them
   const resolvedAction =
     action ??
@@ -180,7 +185,8 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   if (actions && actions.length > 0) {
     const handleMainClick = () => {
       if (actions.length === 1) {
-        actions[0].onClick();
+        if (actions[0].event) eventBus.emit(`UI:${actions[0].event}`, { actionId: actions[0].id });
+        actions[0].onClick?.();
       } else {
         setIsExpanded(!isExpanded);
       }
@@ -225,7 +231,8 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                   icon={actionItem.icon}
                   onClick={() => {
                     setIsExpanded(false);
-                    actionItem.onClick();
+                    if (actionItem.event) eventBus.emit(`UI:${actionItem.event}`, { actionId: actionItem.id });
+                    actionItem.onClick?.();
                   }}
                   className="rounded-[var(--radius-full)] shadow-[var(--shadow-lg)]"
                   aria-label={actionItem.label}
