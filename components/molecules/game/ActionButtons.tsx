@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
+import { useEventBus } from '../../../hooks/useEventBus';
 import { ControlButton } from '../../atoms/game/ControlButton';
 
 export interface ActionButtonConfig {
@@ -17,7 +18,9 @@ export interface ActionButtonsProps {
   /** Button configurations */
   buttons: ActionButtonConfig[];
   /** Called when a button is pressed/released */
-  onAction: (id: string, pressed: boolean) => void;
+  onAction?: (id: string, pressed: boolean) => void;
+  /** Declarative event name emitted on action via useEventBus */
+  actionEvent?: string;
   /** Layout variant */
   layout?: 'horizontal' | 'vertical' | 'diamond';
   /** Size variant */
@@ -43,19 +46,22 @@ const layoutMap = {
 export function ActionButtons({
   buttons,
   onAction,
+  actionEvent,
   layout = 'horizontal',
   size = 'md',
   className,
   disabled,
 }: ActionButtonsProps) {
+  const eventBus = useEventBus();
   const [activeButtons, setActiveButtons] = React.useState<Set<string>>(new Set());
 
   const handlePress = React.useCallback(
     (id: string) => {
       setActiveButtons((prev) => new Set(prev).add(id));
-      onAction(id, true);
+      if (actionEvent) eventBus.emit(`UI:${actionEvent}`, { id, pressed: true });
+      onAction?.(id, true);
     },
-    [onAction]
+    [actionEvent, eventBus, onAction]
   );
 
   const handleRelease = React.useCallback(
@@ -65,9 +71,10 @@ export function ActionButtons({
         next.delete(id);
         return next;
       });
-      onAction(id, false);
+      if (actionEvent) eventBus.emit(`UI:${actionEvent}`, { id, pressed: false });
+      onAction?.(id, false);
     },
-    [onAction]
+    [actionEvent, eventBus, onAction]
   );
 
   // Diamond layout: special positioning for 4 buttons (A, B, X, Y style)

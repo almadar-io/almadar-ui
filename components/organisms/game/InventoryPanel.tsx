@@ -6,6 +6,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { cn } from '../../../lib/cn';
+import { useEventBus } from '../../../hooks/useEventBus';
 
 export interface InventoryItem {
   id: string;
@@ -26,11 +27,17 @@ export interface InventoryPanelProps {
   /** Currently selected slot index */
   selectedSlot?: number;
   /** Called when a slot is selected */
-  onSelectSlot: (index: number) => void;
+  onSelectSlot?: (index: number) => void;
   /** Called when an item is used (double-click or Enter) */
   onUseItem?: (item: InventoryItem) => void;
   /** Called when an item is dropped */
   onDropItem?: (item: InventoryItem) => void;
+  /** Declarative event: emits UI:{selectSlotEvent} with { index } when a slot is selected */
+  selectSlotEvent?: string;
+  /** Declarative event: emits UI:{useItemEvent} with { item } when an item is used */
+  useItemEvent?: string;
+  /** Declarative event: emits UI:{dropItemEvent} with { item } when an item is dropped */
+  dropItemEvent?: string;
   /** Show item tooltips on hover */
   showTooltips?: boolean;
   /** Optional className */
@@ -63,10 +70,14 @@ export function InventoryPanel({
   onSelectSlot,
   onUseItem,
   onDropItem,
+  selectSlotEvent,
+  useItemEvent,
+  dropItemEvent,
   showTooltips = true,
   className,
   slotSize = 48,
 }: InventoryPanelProps): JSX.Element {
+  const eventBus = useEventBus();
   const [hoveredSlot, setHoveredSlot] = useState<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
@@ -78,15 +89,17 @@ export function InventoryPanel({
   const rows = Math.ceil(slots / columns);
 
   const handleSlotClick = useCallback((index: number) => {
-    onSelectSlot(index);
-  }, [onSelectSlot]);
+    if (selectSlotEvent) eventBus.emit(`UI:${selectSlotEvent}`, { index });
+    onSelectSlot?.(index);
+  }, [onSelectSlot, selectSlotEvent, eventBus]);
 
   const handleSlotDoubleClick = useCallback((index: number) => {
     const item = slotArray[index];
-    if (item && onUseItem) {
-      onUseItem(item);
+    if (item) {
+      if (useItemEvent) eventBus.emit(`UI:${useItemEvent}`, { item });
+      onUseItem?.(item);
     }
-  }, [slotArray, onUseItem]);
+  }, [slotArray, onUseItem, useItemEvent, eventBus]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent, index: number) => {
     const item = slotArray[index];
@@ -94,36 +107,38 @@ export function InventoryPanel({
     switch (e.key) {
       case 'Enter':
       case ' ':
-        if (item && onUseItem) {
+        if (item) {
           e.preventDefault();
-          onUseItem(item);
+          if (useItemEvent) eventBus.emit(`UI:${useItemEvent}`, { item });
+          onUseItem?.(item);
         }
         break;
       case 'Delete':
       case 'Backspace':
-        if (item && onDropItem) {
+        if (item) {
           e.preventDefault();
-          onDropItem(item);
+          if (dropItemEvent) eventBus.emit(`UI:${dropItemEvent}`, { item });
+          onDropItem?.(item);
         }
         break;
       case 'ArrowRight':
         e.preventDefault();
-        onSelectSlot(Math.min(index + 1, slots - 1));
+        onSelectSlot?.(Math.min(index + 1, slots - 1));
         break;
       case 'ArrowLeft':
         e.preventDefault();
-        onSelectSlot(Math.max(index - 1, 0));
+        onSelectSlot?.(Math.max(index - 1, 0));
         break;
       case 'ArrowDown':
         e.preventDefault();
-        onSelectSlot(Math.min(index + columns, slots - 1));
+        onSelectSlot?.(Math.min(index + columns, slots - 1));
         break;
       case 'ArrowUp':
         e.preventDefault();
-        onSelectSlot(Math.max(index - columns, 0));
+        onSelectSlot?.(Math.max(index - columns, 0));
         break;
     }
-  }, [slotArray, onUseItem, onDropItem, onSelectSlot, columns, slots]);
+  }, [slotArray, onUseItem, onDropItem, onSelectSlot, columns, slots, useItemEvent, dropItemEvent, eventBus]);
 
   const handleMouseEnter = useCallback((e: React.MouseEvent, index: number) => {
     if (showTooltips && slotArray[index]) {

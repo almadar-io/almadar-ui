@@ -20,6 +20,7 @@
 import * as React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '../../../lib/cn';
+import { useEventBus } from '../../../hooks/useEventBus';
 import { Box } from '../../atoms/Box';
 import { LoadingState } from '../../molecules/LoadingState';
 import { ErrorState } from '../../molecules/ErrorState';
@@ -78,6 +79,16 @@ export interface IsometricCanvasProps {
     onTileHover?: (x: number, y: number) => void;
     /** Tile leave handler */
     onTileLeave?: () => void;
+
+    // --- Declarative event props ---
+    /** Declarative event: emits UI:{tileClickEvent} with { x, y } on tile click */
+    tileClickEvent?: string;
+    /** Declarative event: emits UI:{unitClickEvent} with { unitId } on unit click */
+    unitClickEvent?: string;
+    /** Declarative event: emits UI:{tileHoverEvent} with { x, y } on tile hover */
+    tileHoverEvent?: string;
+    /** Declarative event: emits UI:{tileLeaveEvent} with {} on tile leave */
+    tileLeaveEvent?: string;
 
     // --- Rendering options ---
     /** Render scale (0.4 = 40% zoom) */
@@ -152,6 +163,11 @@ export function IsometricCanvas({
     onUnitClick,
     onTileHover,
     onTileLeave,
+    // Declarative event props
+    tileClickEvent,
+    unitClickEvent,
+    tileHoverEvent,
+    tileLeaveEvent,
     // Rendering options
     scale = 0.4,
     debug = false,
@@ -171,6 +187,8 @@ export function IsometricCanvas({
     assetBaseUrl,
     assetManifest,
 }: IsometricCanvasProps): JSX.Element {
+    const eventBus = useEventBus();
+
     // -- Refs --
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
@@ -841,7 +859,7 @@ export function IsometricCanvas({
             if (wasPanning) return;
         }
 
-        if (!onTileHover || !canvasRef.current) return;
+        if ((!onTileHover && !tileHoverEvent) || !canvasRef.current) return;
 
         const world = screenToWorld(e.clientX, e.clientY, canvasRef.current, viewportSize);
         const adjustedX = world.x - scaledTileWidth / 2;
@@ -850,14 +868,16 @@ export function IsometricCanvas({
 
         const tileExists = tilesProp.some(t => t.x === isoPos.x && t.y === isoPos.y);
         if (tileExists) {
-            onTileHover(isoPos.x, isoPos.y);
+            if (tileHoverEvent) eventBus.emit(`UI:${tileHoverEvent}`, { x: isoPos.x, y: isoPos.y });
+            onTileHover?.(isoPos.x, isoPos.y);
         }
-    }, [enableCamera, handleMouseMove, draw, onTileHover, screenToWorld, viewportSize, scaledTileWidth, scaledTileHeight, scaledFloorHeight, scale, baseOffsetX, tilesProp]);
+    }, [enableCamera, handleMouseMove, draw, onTileHover, screenToWorld, viewportSize, scaledTileWidth, scaledTileHeight, scaledFloorHeight, scale, baseOffsetX, tilesProp, tileHoverEvent, eventBus]);
 
     const handleMouseLeaveWithCamera = useCallback(() => {
         handleMouseLeave();
+        if (tileLeaveEvent) eventBus.emit(`UI:${tileLeaveEvent}`, {});
         onTileLeave?.();
-    }, [handleMouseLeave, onTileLeave]);
+    }, [handleMouseLeave, onTileLeave, tileLeaveEvent, eventBus]);
 
     const handleWheelWithCamera = useCallback((e: React.WheelEvent) => {
         if (enableCamera) {
@@ -876,15 +896,17 @@ export function IsometricCanvas({
 
         // Check for unit click
         const clickedUnit = units.find(u => u.position.x === isoPos.x && u.position.y === isoPos.y);
-        if (clickedUnit && onUnitClick) {
-            onUnitClick(clickedUnit.id);
-        } else if (onTileClick) {
+        if (clickedUnit && (onUnitClick || unitClickEvent)) {
+            if (unitClickEvent) eventBus.emit(`UI:${unitClickEvent}`, { unitId: clickedUnit.id });
+            onUnitClick?.(clickedUnit.id);
+        } else if (onTileClick || tileClickEvent) {
             const tileExists = tilesProp.some(t => t.x === isoPos.x && t.y === isoPos.y);
             if (tileExists) {
-                onTileClick(isoPos.x, isoPos.y);
+                if (tileClickEvent) eventBus.emit(`UI:${tileClickEvent}`, { x: isoPos.x, y: isoPos.y });
+                onTileClick?.(isoPos.x, isoPos.y);
             }
         }
-    }, [dragDistance, screenToWorld, viewportSize, scaledTileWidth, scaledTileHeight, scaledFloorHeight, scale, baseOffsetX, units, tilesProp, onUnitClick, onTileClick]);
+    }, [dragDistance, screenToWorld, viewportSize, scaledTileWidth, scaledTileHeight, scaledFloorHeight, scale, baseOffsetX, units, tilesProp, onUnitClick, onTileClick, unitClickEvent, tileClickEvent, eventBus]);
 
     // =========================================================================
     // Render

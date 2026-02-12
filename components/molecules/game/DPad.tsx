@@ -1,12 +1,15 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
+import { useEventBus } from '../../../hooks/useEventBus';
 import { ControlButton } from '../../atoms/game/ControlButton';
 
 export type DPadDirection = 'up' | 'down' | 'left' | 'right';
 
 export interface DPadProps {
   /** Called when a direction is pressed/released */
-  onDirection: (direction: DPadDirection, pressed: boolean) => void;
+  onDirection?: (direction: DPadDirection, pressed: boolean) => void;
+  /** Declarative event name emitted on direction press/release via useEventBus */
+  directionEvent?: string;
   /** Size variant */
   size?: 'sm' | 'md' | 'lg';
   /** Whether to include diagonal buttons */
@@ -32,20 +35,23 @@ const arrowIcons: Record<DPadDirection, React.ReactNode> = {
 
 export function DPad({
   onDirection,
+  directionEvent,
   size = 'md',
   includeDiagonals = false,
   className,
   disabled,
 }: DPadProps) {
+  const eventBus = useEventBus();
   const sizes = sizeMap[size];
   const [activeDirections, setActiveDirections] = React.useState<Set<DPadDirection>>(new Set());
 
   const handlePress = React.useCallback(
     (direction: DPadDirection) => {
       setActiveDirections((prev) => new Set(prev).add(direction));
-      onDirection(direction, true);
+      if (directionEvent) eventBus.emit(`UI:${directionEvent}`, { direction, pressed: true });
+      onDirection?.(direction, true);
     },
-    [onDirection]
+    [directionEvent, eventBus, onDirection]
   );
 
   const handleRelease = React.useCallback(
@@ -55,9 +61,10 @@ export function DPad({
         next.delete(direction);
         return next;
       });
-      onDirection(direction, false);
+      if (directionEvent) eventBus.emit(`UI:${directionEvent}`, { direction, pressed: false });
+      onDirection?.(direction, false);
     },
-    [onDirection]
+    [directionEvent, eventBus, onDirection]
   );
 
   const createButton = (direction: DPadDirection) => (

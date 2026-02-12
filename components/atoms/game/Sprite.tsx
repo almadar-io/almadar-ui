@@ -5,6 +5,7 @@
  */
 
 import React, { useMemo } from 'react';
+import { useEventBus } from '../../../hooks/useEventBus';
 
 export interface SpriteProps {
   /** Spritesheet image URL */
@@ -37,6 +38,8 @@ export interface SpriteProps {
   className?: string;
   /** Optional onClick handler */
   onClick?: () => void;
+  /** Declarative event name emitted on click via useEventBus */
+  action?: string;
 }
 
 /**
@@ -72,7 +75,9 @@ export function Sprite({
   columns = 16,
   className,
   onClick,
+  action,
 }: SpriteProps): JSX.Element {
+  const eventBus = useEventBus();
   // Calculate source position in spritesheet
   const sourcePosition = useMemo(() => {
     const frameX = frame % columns;
@@ -107,10 +112,15 @@ export function Sprite({
   // Background position for spritesheet clipping
   const backgroundPosition = `-${sourcePosition.x}px -${sourcePosition.y}px`;
 
+  const handleClick = () => {
+    if (action) eventBus.emit(`UI:${action}`, {});
+    onClick?.();
+  };
+
   return (
     <div
       className={className}
-      onClick={onClick}
+      onClick={(action || onClick) ? handleClick : undefined}
       style={{
         position: 'absolute',
         width: frameWidth,
@@ -123,7 +133,7 @@ export function Sprite({
         transformOrigin: 'center center',
         opacity,
         zIndex,
-        pointerEvents: onClick ? 'auto' : 'none',
+        pointerEvents: (action || onClick) ? 'auto' : 'none',
       }}
     />
   );

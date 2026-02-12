@@ -18,6 +18,7 @@
 import * as React from 'react';
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { cn } from '../../../lib/cn';
+import { useEventBus } from '../../../hooks/useEventBus';
 import { Box } from '../../atoms/Box';
 import type { CombatActionType, CanvasEffectState, EffectAssetManifest } from './types/effects';
 import { EMPTY_EFFECT_STATE } from './types/effects';
@@ -48,6 +49,8 @@ export interface CanvasEffectProps {
     intensity?: number;
     /** Callback when the effect animation completes */
     onComplete?: () => void;
+    /** Declarative event: emits UI:{completeEvent} when the effect animation completes */
+    completeEvent?: string;
     /** Additional CSS classes */
     className?: string;
     /** Loading state indicator */
@@ -342,10 +345,20 @@ function EmojiEffect({
 // =============================================================================
 
 export function CanvasEffect(props: CanvasEffectProps): JSX.Element | null {
+    const eventBus = useEventBus();
+    const { completeEvent, onComplete, ...rest } = props;
+
+    const handleComplete = useCallback(() => {
+        if (completeEvent) eventBus.emit(`UI:${completeEvent}`, {});
+        onComplete?.();
+    }, [completeEvent, eventBus, onComplete]);
+
+    const enhancedProps = { ...rest, onComplete: handleComplete };
+
     if (props.assetManifest) {
-        return <CanvasEffectEngine {...props} assetManifest={props.assetManifest} />;
+        return <CanvasEffectEngine {...enhancedProps} assetManifest={props.assetManifest} />;
     }
-    return <EmojiEffect {...props} />;
+    return <EmojiEffect {...enhancedProps} />;
 }
 
 CanvasEffect.displayName = 'CanvasEffect';

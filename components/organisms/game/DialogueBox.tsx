@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { cn } from '../../../lib/cn';
+import { useEventBus } from '../../../hooks/useEventBus';
 
 export interface DialogueChoice {
   text: string;
@@ -36,6 +37,12 @@ export interface DialogueBoxProps {
   onChoice?: (choice: DialogueChoice) => void;
   /** Called when dialogue is advanced (no choices) */
   onAdvance?: () => void;
+  /** Declarative event: emits UI:{completeEvent} when text animation completes */
+  completeEvent?: string;
+  /** Declarative event: emits UI:{choiceEvent} with { choice } when a choice is selected */
+  choiceEvent?: string;
+  /** Declarative event: emits UI:{advanceEvent} when dialogue is advanced */
+  advanceEvent?: string;
   /** Optional className */
   className?: string;
 }
@@ -68,8 +75,12 @@ export function DialogueBox({
   onComplete,
   onChoice,
   onAdvance,
+  completeEvent,
+  choiceEvent,
+  advanceEvent,
   className,
 }: DialogueBoxProps): JSX.Element {
+  const eventBus = useEventBus();
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [selectedChoice, setSelectedChoice] = useState(0);
@@ -88,6 +99,7 @@ export function DialogueBox({
       // Instant display
       setDisplayedText(dialogue.text);
       setIsTyping(false);
+      if (completeEvent) eventBus.emit(`UI:${completeEvent}`, {});
       onComplete?.();
     } else {
       setIsTyping(true);
@@ -111,11 +123,13 @@ export function DialogueBox({
       } else {
         setIsTyping(false);
         clearInterval(interval);
+        if (completeEvent) eventBus.emit(`UI:${completeEvent}`, {});
         onComplete?.();
 
         // Auto-advance if configured
         if (dialogue.autoAdvance && !dialogue.choices?.length) {
           autoAdvanceTimerRef.current = setTimeout(() => {
+            if (advanceEvent) eventBus.emit(`UI:${advanceEvent}`, {});
             onAdvance?.();
           }, dialogue.autoAdvance);
         }
@@ -131,18 +145,20 @@ export function DialogueBox({
       charIndexRef.current = textRef.current.length;
       setDisplayedText(textRef.current);
       setIsTyping(false);
+      if (completeEvent) eventBus.emit(`UI:${completeEvent}`, {});
       onComplete?.();
     }
-  }, [isTyping, onComplete]);
+  }, [isTyping, onComplete, completeEvent, eventBus]);
 
   // Handle click/tap
   const handleClick = useCallback(() => {
     if (isTyping) {
       skipTypewriter();
     } else if (!dialogue.choices?.length) {
+      if (advanceEvent) eventBus.emit(`UI:${advanceEvent}`, {});
       onAdvance?.();
     }
-  }, [isTyping, skipTypewriter, dialogue.choices, onAdvance]);
+  }, [isTyping, skipTypewriter, dialogue.choices, onAdvance, advanceEvent, eventBus]);
 
   // Handle keyboard input
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -171,6 +187,7 @@ export function DialogueBox({
           e.preventDefault();
           const choice = enabledChoices[selectedChoice];
           if (choice) {
+            if (choiceEvent) eventBus.emit(`UI:${choiceEvent}`, { choice });
             onChoice?.(choice);
           }
           break;
@@ -181,6 +198,7 @@ export function DialogueBox({
           const choiceIndex = parseInt(e.key) - 1;
           if (choiceIndex < enabledChoices.length) {
             e.preventDefault();
+            if (choiceEvent) eventBus.emit(`UI:${choiceEvent}`, { choice: enabledChoices[choiceIndex] });
             onChoice?.(enabledChoices[choiceIndex]);
           }
           break;
@@ -188,10 +206,11 @@ export function DialogueBox({
     } else {
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault();
+        if (advanceEvent) eventBus.emit(`UI:${advanceEvent}`, {});
         onAdvance?.();
       }
     }
-  }, [isTyping, skipTypewriter, dialogue.choices, selectedChoice, onChoice, onAdvance]);
+  }, [isTyping, skipTypewriter, dialogue.choices, selectedChoice, onChoice, onAdvance, choiceEvent, advanceEvent, eventBus]);
 
   const enabledChoices = dialogue.choices?.filter(c => !c.disabled) ?? [];
 
@@ -253,6 +272,7 @@ export function DialogueBox({
                     )}
                     onClick={(e) => {
                       e.stopPropagation();
+                      if (choiceEvent) eventBus.emit(`UI:${choiceEvent}`, { choice });
                       onChoice?.(choice);
                     }}
                   >

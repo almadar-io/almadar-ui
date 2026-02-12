@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
+import { useEventBus } from '../../../hooks/useEventBus';
 
 export interface ControlButtonProps {
   /** Button label text */
@@ -16,6 +17,10 @@ export interface ControlButtonProps {
   onPress?: () => void;
   /** Called when button is released */
   onRelease?: () => void;
+  /** Declarative event name emitted on press via useEventBus */
+  pressEvent?: string;
+  /** Declarative event name emitted on release via useEventBus */
+  releaseEvent?: string;
   /** Whether the button is currently pressed */
   pressed?: boolean;
   /** Whether the button is disabled */
@@ -51,10 +56,13 @@ export function ControlButton({
   variant = 'secondary',
   onPress,
   onRelease,
+  pressEvent,
+  releaseEvent,
   pressed,
   disabled,
   className,
 }: ControlButtonProps) {
+  const eventBus = useEventBus();
   const [isPressed, setIsPressed] = React.useState(false);
   const actualPressed = pressed ?? isPressed;
 
@@ -63,9 +71,10 @@ export function ControlButton({
       e.preventDefault();
       if (disabled) return;
       setIsPressed(true);
+      if (pressEvent) eventBus.emit(`UI:${pressEvent}`, {});
       onPress?.();
     },
-    [disabled, onPress]
+    [disabled, pressEvent, eventBus, onPress]
   );
 
   const handlePointerUp = React.useCallback(
@@ -73,19 +82,21 @@ export function ControlButton({
       e.preventDefault();
       if (disabled) return;
       setIsPressed(false);
+      if (releaseEvent) eventBus.emit(`UI:${releaseEvent}`, {});
       onRelease?.();
     },
-    [disabled, onRelease]
+    [disabled, releaseEvent, eventBus, onRelease]
   );
 
   const handlePointerLeave = React.useCallback(
     (e: React.PointerEvent) => {
       if (isPressed) {
         setIsPressed(false);
+        if (releaseEvent) eventBus.emit(`UI:${releaseEvent}`, {});
         onRelease?.();
       }
     },
-    [isPressed, onRelease]
+    [isPressed, releaseEvent, eventBus, onRelease]
   );
 
   return (
