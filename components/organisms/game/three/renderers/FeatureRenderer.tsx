@@ -292,11 +292,11 @@ export function FeatureRenderer({
                 const z = ((feature.z ?? feature.y ?? 0) - offsetZ) * cellSize;
                 const y = (feature.elevation ?? 0) * 0.1;
 
-                const isSelected = selectedFeatureIds.includes(feature.id);
+                const isSelected = feature.id ? selectedFeatureIds.includes(feature.id) : false;
 
                 return (
                     <FeatureVisual
-                        key={feature.id}
+                        key={feature.id ?? `feature-${feature.x}-${feature.y}`}
                         feature={feature}
                         position={[x, y, z]}
                         isSelected={isSelected}

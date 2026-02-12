@@ -107,7 +107,7 @@ export function TileRenderer({
 
             // Determine color based on terrain type
             const colorHex =
-                terrainColors[tile.type] || terrainColors[tile.terrain || ''] || '#808080'
+                terrainColors[tile.type || ''] || terrainColors[tile.terrain || ''] || '#808080'
             const color = new THREE.Color(colorHex)
 
             // Apply highlight for valid moves
@@ -117,7 +117,7 @@ export function TileRenderer({
             const isAttackTarget = attackTargets.some(
                 (m) => m.x === tile.x && m.z === (tile.z ?? tile.y ?? 0)
             )
-            const isSelected = selectedTileIds.includes(tile.id)
+            const isSelected = tile.id ? selectedTileIds.includes(tile.id) : false
 
             if (isSelected) {
                 color.addScalar(0.3)
@@ -201,8 +201,8 @@ export function TileRenderer({
             const y = (tile.elevation ?? 0) * 0.1
 
             const colorHex =
-                terrainColors[tile.type] || terrainColors[tile.terrain || ''] || '#808080'
-            const isSelected = selectedTileIds.includes(tile.id)
+                terrainColors[tile.type || ''] || terrainColors[tile.terrain || ''] || '#808080'
+            const isSelected = tile.id ? selectedTileIds.includes(tile.id) : false
             const isValidMove = validMoves.some(
                 (m) => m.x === tile.x && m.z === (tile.z ?? tile.y ?? 0)
             )
@@ -217,7 +217,7 @@ export function TileRenderer({
 
             return (
                 <mesh
-                    key={tile.id}
+                    key={tile.id ?? `tile-${tile.x}-${tile.y}`}
                     position={[x, y, z]}
                     userData={{ type: 'tile', tileId: tile.id, gridX: tile.x, gridZ: tile.z ?? tile.y }}
                     onClick={() => onTileClick?.(tile)}

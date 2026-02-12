@@ -686,31 +686,31 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                         )}
 
                         {/* Tiles */}
-                        {tiles.map((tile) => {
+                        {tiles.map((tile, index) => {
                             const position = gridToWorld(
                                 tile.x,
                                 tile.z ?? tile.y ?? 0,
                                 tile.elevation ?? 0
                             );
                             const Renderer = CustomTileRenderer || DefaultTileRenderer;
-                            return <Renderer key={tile.id} tile={tile} position={position} />;
+                            return <Renderer key={tile.id ?? `tile-${index}`} tile={tile} position={position} />;
                         })}
 
                         {/* Features */}
-                        {features.map((feature) => {
+                        {features.map((feature, index) => {
                             const position = gridToWorld(
                                 feature.x,
                                 feature.z ?? feature.y ?? 0,
                                 (feature.elevation ?? 0) + 0.5
                             );
                             const Renderer = CustomFeatureRenderer || DefaultFeatureRenderer;
-                            return <Renderer key={feature.id} feature={feature} position={position} />;
+                            return <Renderer key={feature.id ?? `feature-${index}`} feature={feature} position={position} />;
                         })}
 
                         {/* Units */}
                         {units.map((unit) => {
                             const position = gridToWorld(
-                                unit.x,
+                                unit.x ?? 0,
                                 unit.z ?? unit.y ?? 0,
                                 (unit.elevation ?? 0) + 0.5
                             );

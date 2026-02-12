@@ -180,8 +180,10 @@ export function UnitRenderer({
     return (
         <group>
             {units.map((unit) => {
-                const x = (unit.x - offsetX) * cellSize;
-                const z = ((unit.z ?? unit.y ?? 0) - offsetZ) * cellSize;
+                const unitX = unit.x ?? unit.position?.x ?? 0;
+                const unitY = unit.z ?? unit.y ?? unit.position?.y ?? 0;
+                const x = (unitX - offsetX) * cellSize;
+                const z = (unitY - offsetZ) * cellSize;
                 const y = (unit.elevation ?? 0) * 0.1 + 0.5;
 
                 return (
