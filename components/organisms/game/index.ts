@@ -84,3 +84,55 @@ export { GameMenu, type GameMenuProps, type MenuOption } from './GameMenu';
 export { GameOverScreen, type GameOverScreenProps, type GameOverStat, type GameOverAction } from './GameOverScreen';
 export { InventoryPanel, type InventoryPanelProps, type InventoryItem } from './InventoryPanel';
 export { DialogueBox, type DialogueBoxProps, type DialogueNode, type DialogueChoice } from './DialogueBox';
+
+// ---------------------------------------------------------------------------
+// Board Organisms (game-logic containers — templates are thin wrappers)
+// ---------------------------------------------------------------------------
+export {
+    BattleBoard,
+    type BattleBoardProps,
+    type BattleEntity,
+    type BattlePhase,
+    type BattleUnit,
+    type BattleTile,
+    type BattleSlotContext,
+} from './BattleBoard';
+export {
+    WorldMapBoard,
+    type WorldMapBoardProps,
+    type WorldMapEntity,
+    type MapHero,
+    type MapHex,
+    type WorldMapSlotContext,
+} from './WorldMapBoard';
+export {
+    CastleBoard,
+    type CastleBoardProps,
+    type CastleEntity,
+    type CastleSlotContext,
+} from './CastleBoard';
+
+// ---------------------------------------------------------------------------
+// Editor Utilities (Storybook map editor components)
+// ---------------------------------------------------------------------------
+export {
+    CollapsibleSection,
+    EditorSlider,
+    EditorSelect,
+    EditorCheckbox,
+    EditorTextInput,
+    StatusBar,
+    TerrainPalette,
+    EditorToolbar,
+    TERRAIN_COLORS,
+    FEATURE_TYPES,
+    type EditorMode,
+    type CollapsibleSectionProps,
+    type EditorSliderProps,
+    type EditorSelectProps,
+    type EditorCheckboxProps,
+    type EditorTextInputProps,
+    type StatusBarProps,
+    type TerrainPaletteProps,
+    type EditorToolbarProps,
+} from './editor';

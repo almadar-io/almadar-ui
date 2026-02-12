@@ -21,3 +21,9 @@ export {
     FeatureRenderer,
     type FeatureRendererProps,
 } from './FeatureRenderer';
+
+export {
+    FeatureRenderer3D,
+    preloadFeatures,
+    type FeatureRenderer3DProps,
+} from './FeatureRenderer3D';

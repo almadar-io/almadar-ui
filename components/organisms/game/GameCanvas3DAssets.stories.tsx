@@ -1,0 +1,383 @@
+/**
+ * @almadar/ui - GameCanvas3DAssets Stories
+ * 
+ * Storybook stories demonstrating GameCanvas3D with actual 3D assets
+ * loaded from the Trait Wars CDN (https://trait-wars-assets.web.app/3d/).
+ * 
+ * All assets are loaded from remote CDN URLs using the GLTFLoader.
+ * Preloading is handled automatically when preloadAssets is provided.
+ */
+
+import React from 'react';
+import type { Meta, StoryObj } from '@storybook/react';
+import { GameCanvas3D } from './GameCanvas3D';
+import { ASSETS_3D, ALL_ASSET_URLS } from '../../../projects/trait-wars/design-system/assets-3d';
+import { IsometricTile, IsometricFeature, IsometricUnit, GridPosition } from './types';
+import { generateDungeonMap } from './utils/grid-3d';
+
+/**
+ * Helper to create tile data
+ */
+const createTile = (id: string, q: number, r: number, height = 0, walkable = true): IsometricTile => ({
+    id,
+    x: q,
+    y: r,
+    z: 0,
+    height,
+    walkable,
+});
+
+/**
+ * Dungeon map with corridor and room
+ */
+const dungeonTiles: IsometricTile[] = [
+    // Corridor path
+    createTile('c1', 0, 0, 0),
+    createTile('c2', 1, 0, 0),
+    createTile('c3', 2, 0, 0),
+    createTile('c4', 3, 0, 0),
+    createTile('c5', 4, 0, 0),
+    // Side room
+    createTile('r1', 2, 1, 0),
+    createTile('r2', 2, 2, 0),
+    createTile('r3', 3, 1, 0),
+    createTile('r4', 3, 2, 0),
+    // Corner
+    createTile('corner1', 5, 0, 0),
+    createTile('corner2', 5, 1, 0),
+    createTile('corner3', 6, 1, 0),
+];
+
+const dungeonFeatures: IsometricFeature[] = [
+    // Corridor pieces
+    { id: 'corridor-1', x: 1, y: 0, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridor },
+    { id: 'corridor-2', x: 2, y: 0, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridor },
+    { id: 'corridor-3', x: 3, y: 0, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridor },
+    // Corner
+    { id: 'corner-1', x: 5, y: 0, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridorCorner, rotation: 90 },
+    { id: 'corner-2', x: 5, y: 1, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridorCorner, rotation: 180 },
+    // Room
+    { id: 'room-1', x: 2.5, y: 1.5, z: 0, type: 'room', assetUrl: ASSETS_3D.roomSmall },
+    // Props
+    { id: 'barrels-1', x: 1, y: 1, z: 0, type: 'prop', assetUrl: ASSETS_3D.barrels, rotation: 45 },
+    { id: 'column-1', x: 0, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.column },
+    { id: 'gate-1', x: 0, y: 0, z: 0, type: 'gate', assetUrl: ASSETS_3D.gate, rotation: -90 },
+];
+
+/**
+ * Sample units for demonstration
+ */
+const sampleUnits: IsometricUnit[] = [
+    {
+        id: 'hero-1',
+        x: 1,
+        y: 0,
+        z: 0,
+        type: 'hero',
+        color: '#4a90d9',
+        name: 'Hero',
+    },
+    {
+        id: 'monster-1',
+        x: 4,
+        y: 0,
+        z: 0,
+        type: 'monster',
+        color: '#d94a4a',
+        name: 'Goblin',
+    },
+];
+
+const meta: Meta<typeof GameCanvas3D> = {
+    title: 'Game/GameCanvas3D/With Assets',
+    component: GameCanvas3D,
+    parameters: {
+        layout: 'fullscreen',
+        docs: {
+            description: {
+                component: `
+GameCanvas3D stories with actual 3D assets loaded from CDN.
+
+## Asset Sources
+
+All assets are loaded from the Trait Wars CDN:
+\`\`\`
+https://trait-wars-assets.web.app/3d/
+\`\`\`
+
+Available asset categories:
+- **Corridors**: corridor, corridorCorner, corridorEnd
+- **Rooms**: roomSmall, roomLarge
+- **Gates**: gate
+- **Props**: barrels, crate, chest, ladder, bridge
+- **Columns**: column, columnDamaged, wallCorner, wallGate
+- **Siege**: ballista, catapult
+- **Graveyard**: coffin, coffinLid, coffinOld, crossColumn, crossWood, gravestone, plate, shovel
+
+## Preloading
+
+Assets are automatically preloaded using useGLTF.preload() when
+\`preloadAssets\` is provided. This ensures smooth rendering without
+loading flicker.
+
+## Usage
+
+\`\`\`tsx
+import { ASSETS_3D } from '@almadar/trait-wars/assets';
+
+<GameCanvas3D
+    features={[
+        { id: 'f1', x: 0, y: 0, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridor },
+    ]}
+    preloadAssets={[ASSETS_3D.corridor]}
+/>
+\`\`\`
+                `,
+            },
+        },
+    },
+    argTypes: {
+        cameraMode: {
+            control: 'select',
+            options: ['isometric', 'top-down', 'perspective'],
+        },
+        shadows: {
+            control: 'boolean',
+        },
+        showGrid: {
+            control: 'boolean',
+        },
+        isLoading: {
+            control: 'boolean',
+        },
+    },
+    decorators: [
+        (Story) => (
+            <div style={{ width: '100vw', height: '100vh', background: '#1a1a2e' }}>
+                <Story />
+            </div>
+        ),
+    ],
+};
+
+export default meta;
+type Story = StoryObj<typeof GameCanvas3D>;
+
+/**
+ * Default story - Dungeon corridor with actual 3D assets
+ */
+export const Default: Story = {
+    args: {
+        tiles: dungeonTiles,
+        features: dungeonFeatures,
+        units: sampleUnits,
+        cameraMode: 'isometric',
+        showGrid: true,
+        shadows: true,
+        preloadAssets: ALL_ASSET_URLS,
+    },
+};
+
+/**
+ * Full Asset Gallery - Shows all available 3D assets
+ */
+export const AssetGallery: Story = {
+    args: {
+        tiles: generateDungeonMap(12, 8),
+        features: [
+            // Row 1: Corridors
+            { id: 'gallery-corridor', x: 0, y: 0, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridor },
+            { id: 'gallery-corridorCorner', x: 2, y: 0, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridorCorner },
+            { id: 'gallery-corridorEnd', x: 4, y: 0, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridorEnd },
+            
+            // Row 2: Rooms
+            { id: 'gallery-roomSmall', x: 0, y: 2, z: 0, type: 'room', assetUrl: ASSETS_3D.roomSmall },
+            { id: 'gallery-roomLarge', x: 3, y: 2, z: 0, type: 'room', assetUrl: ASSETS_3D.roomLarge },
+            
+            // Row 3: Gates
+            { id: 'gallery-gate', x: 0, y: 4, z: 0, type: 'gate', assetUrl: ASSETS_3D.gate },
+            
+            // Row 4: Props
+            { id: 'gallery-barrels', x: 0, y: 6, z: 0, type: 'prop', assetUrl: ASSETS_3D.barrels },
+            { id: 'gallery-crate', x: 1, y: 6, z: 0, type: 'prop', assetUrl: ASSETS_3D.crate },
+            { id: 'gallery-chest', x: 2, y: 6, z: 0, type: 'prop', assetUrl: ASSETS_3D.chest },
+            { id: 'gallery-ladder', x: 3, y: 6, z: 0, type: 'prop', assetUrl: ASSETS_3D.ladder },
+            { id: 'gallery-bridge', x: 4, y: 6, z: 0, type: 'prop', assetUrl: ASSETS_3D.bridge },
+            
+            // Row 5: Columns
+            { id: 'gallery-column', x: 0, y: 8, z: 0, type: 'prop', assetUrl: ASSETS_3D.column },
+            { id: 'gallery-columnDamaged', x: 1, y: 8, z: 0, type: 'prop', assetUrl: ASSETS_3D.columnDamaged },
+            { id: 'gallery-wallCorner', x: 2, y: 8, z: 0, type: 'prop', assetUrl: ASSETS_3D.wallCorner },
+            { id: 'gallery-wallGate', x: 3, y: 8, z: 0, type: 'prop', assetUrl: ASSETS_3D.wallGate },
+            
+            // Row 6: Siege
+            { id: 'gallery-ballista', x: 0, y: 10, z: 0, type: 'prop', assetUrl: ASSETS_3D.ballista },
+            { id: 'gallery-catapult', x: 2, y: 10, z: 0, type: 'prop', assetUrl: ASSETS_3D.catapult },
+        ],
+        units: [],
+        cameraMode: 'top-down',
+        showGrid: true,
+        shadows: true,
+        preloadAssets: ALL_ASSET_URLS,
+    },
+    parameters: {
+        docs: {
+            description: {
+                story: 'Gallery showing all available 3D asset types from the Trait Wars CDN.',
+            },
+        },
+    },
+};
+
+/**
+ * Graveyard Theme
+ */
+export const GraveyardTheme: Story = {
+    args: {
+        tiles: generateDungeonMap(8, 6),
+        features: [
+            // Graveyard props
+            { id: 'grave-1', x: 0, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.gravestone },
+            { id: 'grave-2', x: 1, y: 1, z: 0, type: 'prop', assetUrl: ASSETS_3D.gravestone, rotation: 45 },
+            { id: 'coffin-1', x: 2, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.coffin },
+            { id: 'coffin-lid', x: 3, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.coffinLid, rotation: 90 },
+            { id: 'cross-wood', x: 4, y: 1, z: 0, type: 'prop', assetUrl: ASSETS_3D.crossWood },
+            { id: 'shovel', x: 5, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.shovel },
+            { id: 'coffin-old', x: 1, y: 2, z: 0, type: 'prop', assetUrl: ASSETS_3D.coffinOld },
+            { id: 'cross-col', x: 3, y: 2, z: 0, type: 'prop', assetUrl: ASSETS_3D.crossColumn },
+            { id: 'plate', x: 4, y: 3, z: 0, type: 'prop', assetUrl: ASSETS_3D.plate },
+        ],
+        units: [],
+        cameraMode: 'isometric',
+        showGrid: true,
+        shadows: true,
+        backgroundColor: '#2d1b2e', // Dark purple for graveyard
+        preloadAssets: [
+            ASSETS_3D.gravestone,
+            ASSETS_3D.coffin,
+            ASSETS_3D.coffinLid,
+            ASSETS_3D.coffinOld,
+            ASSETS_3D.crossWood,
+            ASSETS_3D.crossColumn,
+            ASSETS_3D.shovel,
+            ASSETS_3D.plate,
+        ],
+    },
+    parameters: {
+        docs: {
+            description: {
+                story: 'Graveyard theme using coffin, gravestone, and cross assets.',
+            },
+        },
+    },
+};
+
+/**
+ * Siege Weapons
+ */
+export const SiegeWeapons: Story = {
+    args: {
+        tiles: generateDungeonMap(8, 6),
+        features: [
+            { id: 'ballista-1', x: 0, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.ballista },
+            { id: 'catapult-1', x: 3, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.catapult },
+            { id: 'ballista-2', x: 1, y: 2, z: 0, type: 'prop', assetUrl: ASSETS_3D.ballista, rotation: 45 },
+        ],
+        units: [],
+        cameraMode: 'isometric',
+        showGrid: true,
+        shadows: true,
+        preloadAssets: [ASSETS_3D.ballista, ASSETS_3D.catapult],
+    },
+};
+
+/**
+ * Loading state demonstration with actual assets
+ */
+export const AssetLoadingState: Story = {
+    args: {
+        tiles: dungeonTiles,
+        features: dungeonFeatures,
+        units: [],
+        isLoading: true,
+        cameraMode: 'isometric',
+        preloadAssets: ALL_ASSET_URLS,
+        loadingMessage: 'Loading dungeon assets from CDN...',
+    },
+};
+
+/**
+ * Single asset test - Corridor
+ */
+export const SingleAssetTest: Story = {
+    args: {
+        tiles: generateDungeonMap(4, 4),
+        features: [
+            { id: 'single-corridor', x: 1, y: 1, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridor },
+        ],
+        cameraMode: 'isometric',
+        showGrid: true,
+        shadows: true,
+        preloadAssets: [ASSETS_3D.corridor],
+    },
+};
+
+/**
+ * Performance test - Many assets
+ */
+export const PerformanceTest: Story = {
+    args: {
+        tiles: generateDungeonMap(10, 10),
+        features: Array.from({ length: 20 }, (_, i) => {
+            const x = Math.floor(Math.random() * 8) + 1;
+            const y = Math.floor(Math.random() * 8) + 1;
+            const assetKeys = ['barrels', 'crate', 'column', 'columnDamaged', 'ladder'] as const;
+            const assetKey = assetKeys[i % assetKeys.length];
+            return {
+                id: `prop-${i}`,
+                x,
+                y,
+                z: 0,
+                type: assetKey,
+                assetUrl: ASSETS_3D[assetKey],
+            };
+        }),
+        cameraMode: 'isometric',
+        showGrid: false,
+        shadows: true,
+        useInstancing: true,
+        preloadAssets: [
+            ASSETS_3D.barrels,
+            ASSETS_3D.crate,
+            ASSETS_3D.column,
+            ASSETS_3D.columnDamaged,
+            ASSETS_3D.ladder,
+        ],
+    },
+};
+
+/**
+ * Error handling - Invalid asset URL
+ */
+export const InvalidAssetHandling: Story = {
+    args: {
+        tiles: generateDungeonMap(4, 4),
+        features: [
+            // Valid asset
+            { id: 'valid', x: 1, y: 1, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridor },
+            // Invalid asset (will show fallback)
+            { id: 'invalid', x: 2, y: 1, z: 0, type: 'prop', assetUrl: 'https://invalid-url.glb' },
+        ],
+        cameraMode: 'isometric',
+        showGrid: true,
+        shadows: true,
+        preloadAssets: [ASSETS_3D.corridor],
+    },
+    parameters: {
+        docs: {
+            description: {
+                story: 'Demonstrates error handling when asset fails to load. Shows fallback geometry.',
+            },
+        },
+    },
+};

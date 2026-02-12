@@ -100,6 +100,8 @@ export interface IsometricFeature {
     type: string;
     /** Direct sprite URL override (bypasses getFeatureSprite resolver) */
     sprite?: string;
+    /** 3D model URL (GLB format) for GameCanvas3D */
+    assetUrl?: string;
     /** Color override for 3D rendering */
     color?: string;
     /** Elevation offset for 3D rendering */

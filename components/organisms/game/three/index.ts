@@ -80,9 +80,12 @@ export {
     TileRenderer,
     UnitRenderer,
     FeatureRenderer,
+    FeatureRenderer3D,
+    preloadFeatures,
     type TileRendererProps,
     type UnitRendererProps,
     type FeatureRendererProps,
+    type FeatureRenderer3DProps,
     type UnitAnimationState,
 } from './renderers';
 
