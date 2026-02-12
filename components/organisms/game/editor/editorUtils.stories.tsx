@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { Box } from '../../../../atoms/Box';
-import { VStack } from '../../../../atoms/Stack';
+import { Box } from '../../../atoms/Box';
+import { VStack } from '../../../atoms/Stack';
 import {
     CollapsibleSection,
     EditorSlider,
@@ -58,7 +58,7 @@ function AllControlsRender() {
     const [unitScale, setUnitScale] = useState(2.5);
     const [animSpeed, setAnimSpeed] = useState(2.0);
     const [selectedTerrain, setSelectedTerrain] = useState('grass');
-    const [selectedFeature, setSelectedFeature] = useState(FEATURE_TYPES[0]);
+    const [selectedFeature, setSelectedFeature] = useState<string>(FEATURE_TYPES[0]);
     const [showGrid, setShowGrid] = useState(true);
     const [showCoords, setShowCoords] = useState(false);
     const [unitName, setUnitName] = useState('Knight');

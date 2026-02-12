@@ -11,12 +11,32 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { GameCanvas3D } from './GameCanvas3D';
-import { ASSETS_3D, ALL_ASSET_URLS } from '../../../../projects/trait-wars/design-system/assets-3d';
-import { IsometricTile, IsometricFeature, IsometricUnit, GridPosition } from './types';
-import { generateDungeonMap } from './utils/grid-3d';
+import { ASSETS_3D, ALL_ASSET_URLS } from '../../../../../projects/trait-wars/design-system/assets-3d';
+import type { IsometricTile, IsometricFeature, IsometricUnit } from './types/isometric';
 
 // Extend IsometricFeature for stories to include rotation
 type StoryFeature = IsometricFeature & { rotation?: number };
+
+/**
+ * Generate a simple dungeon tile grid
+ */
+function generateDungeonMap(width: number, height: number): IsometricTile[] {
+    const tiles: IsometricTile[] = [];
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            tiles.push({
+                id: `tile-${x}-${y}`,
+                x,
+                y,
+                z: 0,
+                type: 'floor',
+                terrain: 'stone',
+                passable: true,
+            });
+        }
+    }
+    return tiles;
+}
 
 /**
  * Helper to create tile data
@@ -189,7 +209,7 @@ export const AssetGallery: Story = {
         tiles: generateDungeonMap(12, 8),
         features: [
             // Row 1: Corridors
-            { id: 'gallery-corridor', x: 0, y: 0, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridor },
+            { id: 'gallery-corridor', x: 0, y: 0, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridor } as StoryFeature,
             { id: 'gallery-corridorCorner', x: 2, y: 0, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridorCorner },
             { id: 'gallery-corridorEnd', x: 4, y: 0, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridorEnd },
             
@@ -240,7 +260,7 @@ export const GraveyardTheme: Story = {
         tiles: generateDungeonMap(8, 6),
         features: [
             // Graveyard props
-            { id: 'grave-1', x: 0, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.gravestone },
+            { id: 'grave-1', x: 0, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.gravestone } as StoryFeature,
             { id: 'grave-2', x: 1, y: 1, z: 0, type: 'prop', assetUrl: ASSETS_3D.gravestone, rotation: 45 },
             { id: 'coffin-1', x: 2, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.coffin },
             { id: 'coffin-lid', x: 3, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.coffinLid, rotation: 90 },
@@ -282,7 +302,7 @@ export const SiegeWeapons: Story = {
     args: {
         tiles: generateDungeonMap(8, 6),
         features: [
-            { id: 'ballista-1', x: 0, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.ballista },
+            { id: 'ballista-1', x: 0, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.ballista } as StoryFeature,
             { id: 'catapult-1', x: 3, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.catapult },
             { id: 'ballista-2', x: 1, y: 2, z: 0, type: 'prop', assetUrl: ASSETS_3D.ballista, rotation: 45 },
         ],
@@ -316,7 +336,7 @@ export const SingleAssetTest: Story = {
     args: {
         tiles: generateDungeonMap(4, 4),
         features: [
-            { id: 'single-corridor', x: 1, y: 1, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridor },
+            { id: 'single-corridor', x: 1, y: 1, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridor } as StoryFeature,
         ],
         cameraMode: 'isometric',
         showGrid: true,
@@ -367,9 +387,9 @@ export const InvalidAssetHandling: Story = {
         tiles: generateDungeonMap(4, 4),
         features: [
             // Valid asset
-            { id: 'valid', x: 1, y: 1, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridor },
+            { id: 'valid', x: 1, y: 1, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridor } as StoryFeature,
             // Invalid asset (will show fallback)
-            { id: 'invalid', x: 2, y: 1, z: 0, type: 'prop', assetUrl: 'https://invalid-url.glb' },
+            { id: 'invalid', x: 2, y: 1, z: 0, type: 'prop', assetUrl: 'https://invalid-url.glb' } as StoryFeature,
         ],
         cameraMode: 'isometric',
         showGrid: true,

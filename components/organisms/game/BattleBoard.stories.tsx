@@ -244,7 +244,7 @@ function SidebarSlot(ctx: BattleSlotContext) {
 
     return (
         <VStack gap="md" className="p-3 bg-gray-900/80 rounded-lg border border-gray-700 h-full overflow-y-auto">
-            <Typography variant="heading" size="sm" weight="bold" className="text-gray-100">
+            <Typography variant="h3" size="sm" weight="bold" className="text-gray-100">
                 Unit Roster
             </Typography>
             {renderUnitList(ctx.playerUnits, 'Player Units', 'text-blue-400')}
@@ -478,7 +478,7 @@ function EditorStory() {
                 className="w-[320px] shrink-0 h-full bg-gray-900 border-r border-gray-700 overflow-y-auto"
             >
                 <Box padding="sm" className="border-b border-gray-700">
-                    <Typography variant="heading" size="sm" weight="bold" className="text-gray-100">
+                    <Typography variant="h3" size="sm" weight="bold" className="text-gray-100">
                         BattleBoard Editor
                     </Typography>
                 </Box>

@@ -3,11 +3,11 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { CastleBoard } from './CastleBoard';
 import type { CastleEntity, CastleSlotContext } from './CastleBoard';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from './types/isometric';
-import { Box } from '../../../atoms/Box';
-import { VStack, HStack } from '../../../atoms/Stack';
-import { Typography } from '../../../atoms/Typography';
-import { Button } from '../../../atoms/Button';
-import { Badge } from '../../../atoms/Badge';
+import { Box } from '../../atoms/Box';
+import { VStack, HStack } from '../../atoms/Stack';
+import { Typography } from '../../atoms/Typography';
+import { Button } from '../../atoms/Button';
+import { Badge } from '../../atoms/Badge';
 import {
     CollapsibleSection,
     EditorSlider,

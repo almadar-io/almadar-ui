@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import React from 'react';
 import { BattleTemplate } from './BattleTemplate';
-import type { BattleUnit, BattleSlotContext } from './BattleTemplate';
+import type { BattleUnit } from './BattleTemplate';
 import type { IsometricTile } from '../organisms/game/types/isometric';
 
 // =============================================================================
@@ -88,129 +88,64 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 // =============================================================================
-// SLOT HELPERS
-// =============================================================================
-
-function DefaultHeader(ctx: BattleSlotContext) {
-    const phaseColors: Record<string, string> = {
-        observation: '#6366f1',
-        selection: '#f59e0b',
-        movement: '#10b981',
-        action: '#ef4444',
-        enemy_turn: '#a855f7',
-        game_over: '#6b7280',
-    };
-    return (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <h3 style={{ margin: 0 }}>⚔️ Tactical Battle</h3>
-                <span
-                    style={{
-                        padding: '2px 10px',
-                        borderRadius: 6,
-                        fontSize: 12,
-                        fontWeight: 700,
-                        background: phaseColors[ctx.phase] ?? '#999',
-                        color: '#fff',
-                    }}
-                >
-                    {ctx.phase.toUpperCase().replace('_', ' ')}
-                </span>
-                <span style={{ fontSize: 13, color: '#888' }}>Turn {ctx.turn}</span>
-            </div>
-            {ctx.selectedUnit && (
-                <span style={{ fontSize: 13, color: '#10b981' }}>
-                    Selected: {ctx.selectedUnit.name} (HP {ctx.selectedUnit.health}/{ctx.selectedUnit.maxHealth})
-                </span>
-            )}
-        </div>
-    );
-}
-
-function DefaultSidebar(ctx: BattleSlotContext) {
-    return (
-        <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <h4 style={{ margin: 0 }}>🗡️ Combat Log</h4>
-            <div style={{ fontSize: 13, color: '#888' }}>
-                <p>Turn {ctx.turn} — {ctx.phase}</p>
-                <p>Players alive: {ctx.playerUnits.length}</p>
-                <p>Enemies alive: {ctx.enemyUnits.length}</p>
-            </div>
-            <hr />
-            <h4 style={{ margin: 0 }}>Units</h4>
-            {[...ctx.playerUnits, ...ctx.enemyUnits].map(u => (
-                <div
-                    key={u.id}
-                    style={{
-                        padding: 8,
-                        borderRadius: 6,
-                        border: '1px solid #333',
-                        fontSize: 12,
-                        background: u.team === 'player' ? '#10b98120' : '#ef444420',
-                    }}
-                >
-                    <strong>{u.name}</strong>
-                    <span style={{ float: 'right' }}>{u.health}/{u.maxHealth} HP</span>
-                </div>
-            ))}
-        </div>
-    );
-}
-
-// =============================================================================
 // STORIES
 // =============================================================================
 
 export const Default: Story = {
     args: {
-        initialUnits: MOCK_UNITS,
-        tiles: generateMockTiles(),
+        entity: {
+            id: 'battle-default',
+            initialUnits: MOCK_UNITS,
+            tiles: generateMockTiles(),
+        },
         scale: 0.45,
-        header: DefaultHeader,
-        sidebar: DefaultSidebar,
     },
 };
 
 export const MinimalNoSlots: Story = {
     args: {
-        initialUnits: MOCK_UNITS,
-        tiles: generateMockTiles(),
+        entity: {
+            id: 'battle-minimal',
+            initialUnits: MOCK_UNITS,
+            tiles: generateMockTiles(),
+        },
         scale: 0.45,
     },
 };
 
 export const LargeMap: Story = {
     args: {
-        initialUnits: [
-            ...MOCK_UNITS,
-            {
-                id: 'hero-3',
-                name: 'Storm Knight',
-                team: 'player',
-                position: { x: 3, y: 6 },
-                health: 90,
-                maxHealth: 90,
-                movement: 3,
-                attack: 15,
-                defense: 5,
-            },
-            {
-                id: 'enemy-3',
-                name: 'Plague Drone',
-                team: 'enemy',
-                position: { x: 9, y: 2 },
-                health: 40,
-                maxHealth: 40,
-                movement: 5,
-                attack: 8,
-                defense: 2,
-            },
-        ],
-        tiles: generateMockTiles(12, 8),
-        boardWidth: 12,
-        boardHeight: 8,
+        entity: {
+            id: 'battle-large',
+            initialUnits: [
+                ...MOCK_UNITS,
+                {
+                    id: 'hero-3',
+                    name: 'Storm Knight',
+                    team: 'player' as const,
+                    position: { x: 3, y: 6 },
+                    health: 90,
+                    maxHealth: 90,
+                    movement: 3,
+                    attack: 15,
+                    defense: 5,
+                },
+                {
+                    id: 'enemy-3',
+                    name: 'Plague Drone',
+                    team: 'enemy' as const,
+                    position: { x: 9, y: 2 },
+                    health: 40,
+                    maxHealth: 40,
+                    movement: 5,
+                    attack: 8,
+                    defense: 2,
+                },
+            ],
+            tiles: generateMockTiles(12, 8),
+            boardWidth: 12,
+            boardHeight: 8,
+        },
         scale: 0.35,
-        header: DefaultHeader,
-        sidebar: DefaultSidebar,
     },
 };
