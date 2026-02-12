@@ -42,7 +42,20 @@ interface FeatureModelProps {
 }
 
 /**
- * Hook to load GLTF model without Suspense
+ * Detect the 3D asset root from a model URL.
+ * Looks for "/3d/" segment and returns everything up to and including it.
+ */
+function detectAssetRoot(modelUrl: string): string {
+    const idx = modelUrl.indexOf('/3d/');
+    if (idx !== -1) {
+        return modelUrl.substring(0, idx + 4);
+    }
+    return modelUrl.substring(0, modelUrl.lastIndexOf('/') + 1);
+}
+
+/**
+ * Hook to load GLTF model without Suspense.
+ * Resolves shared texture paths against the asset root directory.
  */
 function useGLTFModel(url: string | undefined) {
     const [model, setModel] = useState<THREE.Group | null>(null);
@@ -58,8 +71,21 @@ function useGLTFModel(url: string | undefined) {
         setIsLoading(true);
         setError(null);
 
-        // Use the GLTFLoader directly to avoid Suspense
-        const loader = new GLTFLoader();
+        const manager = new THREE.LoadingManager();
+        const modelDir = url.substring(0, url.lastIndexOf('/') + 1);
+        const assetRoot = detectAssetRoot(url);
+
+        manager.setURLModifier((resourceUrl) => {
+            if (resourceUrl.startsWith('http') || resourceUrl.startsWith('data:') || resourceUrl.startsWith('blob:') || resourceUrl.startsWith('/')) {
+                return resourceUrl;
+            }
+            if (/^(Textures|Materials|Shaders)\//i.test(resourceUrl)) {
+                return assetRoot + resourceUrl;
+            }
+            return modelDir + resourceUrl;
+        });
+
+        const loader = new GLTFLoader(manager);
         loader.load(
             url,
             (gltf) => {
@@ -245,10 +271,21 @@ export default FeatureRenderer3D;
 
 // Preload function for storybook - preloads GLB models into THREE.js cache
 export function preloadFeatures(urls: string[]) {
-    const loader = new GLTFLoader();
     urls.forEach(url => {
         if (url) {
-            // Load into cache but don't wait for it
+            const manager = new THREE.LoadingManager();
+            const modelDir = url.substring(0, url.lastIndexOf('/') + 1);
+            const assetRoot = detectAssetRoot(url);
+            manager.setURLModifier((resourceUrl) => {
+                if (resourceUrl.startsWith('http') || resourceUrl.startsWith('data:') || resourceUrl.startsWith('blob:') || resourceUrl.startsWith('/')) {
+                    return resourceUrl;
+                }
+                if (/^(Textures|Materials|Shaders)\//i.test(resourceUrl)) {
+                    return assetRoot + resourceUrl;
+                }
+                return modelDir + resourceUrl;
+            });
+            const loader = new GLTFLoader(manager);
             loader.load(url, () => {
                 console.log('[FeatureRenderer3D] Preloaded:', url);
             });

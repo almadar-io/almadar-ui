@@ -17,8 +17,41 @@ export interface LoadedModel {
     animations: THREE.AnimationClip[];
 }
 
+/**
+ * Detect the 3D asset root from a model URL.
+ * Looks for "/3d/" segment and returns everything up to and including it.
+ */
+function detectAssetRoot(modelUrl: string): string {
+    const idx = modelUrl.indexOf('/3d/');
+    if (idx !== -1) {
+        return modelUrl.substring(0, idx + 4);
+    }
+    return modelUrl.substring(0, modelUrl.lastIndexOf('/') + 1);
+}
+
+/**
+ * Create a GLTFLoader with a LoadingManager that resolves shared texture paths
+ * (e.g. "Textures/colormap.png") against the asset root directory.
+ */
+function createGLTFLoaderForUrl(url: string): GLTFLoader {
+    const manager = new THREE.LoadingManager();
+    const modelDir = url.substring(0, url.lastIndexOf('/') + 1);
+    const assetRoot = detectAssetRoot(url);
+
+    manager.setURLModifier((resourceUrl) => {
+        if (resourceUrl.startsWith('http') || resourceUrl.startsWith('data:') || resourceUrl.startsWith('blob:') || resourceUrl.startsWith('/')) {
+            return resourceUrl;
+        }
+        if (/^(Textures|Materials|Shaders)\//i.test(resourceUrl)) {
+            return assetRoot + resourceUrl;
+        }
+        return modelDir + resourceUrl;
+    });
+
+    return new GLTFLoader(manager);
+}
+
 export class AssetLoader {
-    private gltfLoader: GLTFLoader;
     private objLoader: OBJLoader;
     private textureLoader: THREE.TextureLoader;
     private modelCache: Map<string, LoadedModel>;
@@ -26,7 +59,6 @@ export class AssetLoader {
     private loadingPromises: Map<string, Promise<unknown>>;
 
     constructor() {
-        this.gltfLoader = new GLTFLoader();
         this.objLoader = new OBJLoader();
         this.textureLoader = new THREE.TextureLoader();
         this.modelCache = new Map();
@@ -50,8 +82,9 @@ export class AssetLoader {
             return this.loadingPromises.get(url) as Promise<LoadedModel>;
         }
 
-        // Start loading
-        const loadPromise = this.gltfLoader
+        // Start loading — create a per-URL loader with correct texture resolution
+        const loader = createGLTFLoaderForUrl(url);
+        const loadPromise = loader
             .loadAsync(url)
             .then((gltf) => {
                 const result: LoadedModel = {

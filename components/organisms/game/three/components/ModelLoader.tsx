@@ -34,6 +34,12 @@ export interface ModelLoaderProps {
     castShadow?: boolean;
     /** Receive shadows */
     receiveShadow?: boolean;
+    /**
+     * Base path for shared resources (textures, materials).
+     * If not provided, auto-detected from the URL by looking for a `/3d/` segment.
+     * E.g. "https://host/3d/" so that "Textures/colormap.png" resolves correctly.
+     */
+    resourceBasePath?: string;
 }
 
 interface ModelLoadState {
@@ -43,10 +49,25 @@ interface ModelLoadState {
 }
 
 /**
- * Hook to load GLTF model without Suspense
- * Handles external texture references by resolving paths relative to the GLB file
+ * Detect the 3D asset root from a model URL.
+ * Looks for "/3d/" segment and returns everything up to and including it.
+ * Falls back to the model's own directory.
  */
-function useGLTFModel(url: string): ModelLoadState {
+function detectAssetRoot(modelUrl: string): string {
+    const idx = modelUrl.indexOf('/3d/');
+    if (idx !== -1) {
+        return modelUrl.substring(0, idx + 4); // "https://host/3d/"
+    }
+    // Fallback: model's own directory
+    return modelUrl.substring(0, modelUrl.lastIndexOf('/') + 1);
+}
+
+/**
+ * Hook to load GLTF model without Suspense.
+ * Resolves shared texture paths (e.g. "Textures/colormap.png") against the
+ * asset root directory rather than the model's own subdirectory.
+ */
+function useGLTFModel(url: string, resourceBasePath?: string): ModelLoadState {
     const [state, setState] = useState<ModelLoadState>({
         model: null,
         isLoading: false,
@@ -62,54 +83,45 @@ function useGLTFModel(url: string): ModelLoadState {
         console.log('[ModelLoader] Loading:', url);
         setState(prev => ({ ...prev, isLoading: true, error: null }));
 
-        // Create a loading manager to resolve relative texture paths
         const manager = new THREE.LoadingManager();
 
-        // Extract base paths from the GLB URL
-        // e.g. "https://host/3d/graveyard/altar-stone.glb"
-        //   basePath  = "https://host/3d/graveyard/"
-        //   parentPath = "https://host/3d/"
-        const urlObj = new URL(url, window.location.href);
-        const basePath = urlObj.href.substring(0, urlObj.href.lastIndexOf('/') + 1);
-        const parentPath = basePath.slice(0, basePath.slice(0, -1).lastIndexOf('/') + 1);
+        // The model's own directory (for co-located resources like .bin files)
+        const modelDir = url.substring(0, url.lastIndexOf('/') + 1);
+        // Where shared resources like Textures/ live
+        const assetRoot = resourceBasePath || detectAssetRoot(url);
 
-        // Intercept texture loading to resolve paths correctly
-        // Many asset packs (e.g. Kenney) share a Textures/ folder at the parent level,
-        // not inside each model's subdirectory.
-        manager.setURLModifier((textureUrl) => {
-            if (!textureUrl.startsWith('http') && !textureUrl.startsWith('data:') && !textureUrl.startsWith('/')) {
-                // Resolve relative to parent dir (where shared Textures/ folder lives)
-                const resolvedUrl = parentPath + textureUrl;
-                console.log('[ModelLoader] Resolving texture:', textureUrl, '->', resolvedUrl);
-                return resolvedUrl;
+        // Resolve relative resource paths
+        manager.setURLModifier((resourceUrl) => {
+            // Skip absolute URLs and data URIs
+            if (resourceUrl.startsWith('http') || resourceUrl.startsWith('data:') || resourceUrl.startsWith('blob:') || resourceUrl.startsWith('/')) {
+                return resourceUrl;
             }
-            return textureUrl;
+            // Shared directories (Textures/, Materials/) resolve against asset root
+            if (/^(Textures|Materials|Shaders)\//i.test(resourceUrl)) {
+                const resolved = assetRoot + resourceUrl;
+                console.log('[ModelLoader] Texture:', resourceUrl, '->', resolved);
+                return resolved;
+            }
+            // Everything else resolves against the model's own directory
+            return modelDir + resourceUrl;
         });
 
-        // Create loader with the manager
         const loader = new GLTFLoader(manager);
-        
+
         loader.load(
             url,
             (gltf) => {
-                console.log('[ModelLoader] Loaded successfully:', url);
+                console.log('[ModelLoader] Loaded:', url);
                 setState({
                     model: gltf.scene,
                     isLoading: false,
                     error: null,
                 });
             },
-            // onProgress
-            (progress) => {
-                if (progress.total > 0) {
-                    const percent = (progress.loaded / progress.total) * 100;
-                    console.log(`[ModelLoader] ${url} - ${percent.toFixed(1)}%`);
-                }
-            },
-            // onError
+            undefined,
             (err) => {
                 const errorMsg = err instanceof Error ? err.message : String(err);
-                console.error('[ModelLoader] Error loading', url, ':', errorMsg);
+                console.warn('[ModelLoader] Failed:', url, errorMsg);
                 setState({
                     model: null,
                     isLoading: false,
@@ -117,7 +129,7 @@ function useGLTFModel(url: string): ModelLoadState {
                 });
             }
         );
-    }, [url]);
+    }, [url, resourceBasePath]);
 
     return state;
 }
@@ -137,8 +149,9 @@ export function ModelLoader({
     fallbackGeometry = 'box',
     castShadow = true,
     receiveShadow = true,
+    resourceBasePath,
 }: ModelLoaderProps): JSX.Element {
-    const { model: loadedModel, isLoading, error } = useGLTFModel(url);
+    const { model: loadedModel, isLoading, error } = useGLTFModel(url, resourceBasePath);
 
     // Clone and prepare the model
     const model = useMemo(() => {
