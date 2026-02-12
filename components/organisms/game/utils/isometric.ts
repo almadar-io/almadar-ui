@@ -14,11 +14,11 @@
 /** Base tile width in pixels (before scale) */
 export const TILE_WIDTH = 256;
 
-/** Base tile height in pixels (before scale) — full diamond height */
-export const TILE_HEIGHT = 384;
+/** Base tile height in pixels (before scale) — full sprite image height (Kenney 256×512) */
+export const TILE_HEIGHT = 512;
 
-/** Floor diamond height — the "walkable surface" portion of the tile */
-export const FLOOR_HEIGHT = 149;
+/** Floor diamond height — the "walkable surface" portion of the tile (TILE_WIDTH / 2 for 2:1 ratio) */
+export const FLOOR_HEIGHT = 128;
 
 /**
  * Feature type → fallback color mapping (when sprites not loaded).
