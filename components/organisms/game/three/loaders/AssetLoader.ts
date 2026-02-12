@@ -30,25 +30,14 @@ function detectAssetRoot(modelUrl: string): string {
 }
 
 /**
- * Create a GLTFLoader with a LoadingManager that resolves shared texture paths
- * (e.g. "Textures/colormap.png") against the asset root directory.
+ * Create a GLTFLoader with resourcePath set so that relative texture URIs
+ * inside the GLTF JSON (e.g. "Textures/colormap.png") resolve against
+ * the asset root directory, not the model's own subdirectory.
  */
 function createGLTFLoaderForUrl(url: string): GLTFLoader {
-    const manager = new THREE.LoadingManager();
-    const modelDir = url.substring(0, url.lastIndexOf('/') + 1);
-    const assetRoot = detectAssetRoot(url);
-
-    manager.setURLModifier((resourceUrl) => {
-        if (resourceUrl.startsWith('http') || resourceUrl.startsWith('data:') || resourceUrl.startsWith('blob:') || resourceUrl.startsWith('/')) {
-            return resourceUrl;
-        }
-        if (/^(Textures|Materials|Shaders)\//i.test(resourceUrl)) {
-            return assetRoot + resourceUrl;
-        }
-        return modelDir + resourceUrl;
-    });
-
-    return new GLTFLoader(manager);
+    const loader = new GLTFLoader();
+    loader.setResourcePath(detectAssetRoot(url));
+    return loader;
 }
 
 export class AssetLoader {

@@ -83,30 +83,15 @@ function useGLTFModel(url: string, resourceBasePath?: string): ModelLoadState {
         console.log('[ModelLoader] Loading:', url);
         setState(prev => ({ ...prev, isLoading: true, error: null }));
 
-        const manager = new THREE.LoadingManager();
-
-        // The model's own directory (for co-located resources like .bin files)
-        const modelDir = url.substring(0, url.lastIndexOf('/') + 1);
         // Where shared resources like Textures/ live
         const assetRoot = resourceBasePath || detectAssetRoot(url);
 
-        // Resolve relative resource paths
-        manager.setURLModifier((resourceUrl) => {
-            // Skip absolute URLs and data URIs
-            if (resourceUrl.startsWith('http') || resourceUrl.startsWith('data:') || resourceUrl.startsWith('blob:') || resourceUrl.startsWith('/')) {
-                return resourceUrl;
-            }
-            // Shared directories (Textures/, Materials/) resolve against asset root
-            if (/^(Textures|Materials|Shaders)\//i.test(resourceUrl)) {
-                const resolved = assetRoot + resourceUrl;
-                console.log('[ModelLoader] Texture:', resourceUrl, '->', resolved);
-                return resolved;
-            }
-            // Everything else resolves against the model's own directory
-            return modelDir + resourceUrl;
-        });
-
-        const loader = new GLTFLoader(manager);
+        // setResourcePath tells GLTFLoader where to resolve relative URIs
+        // (textures, buffers) found inside the GLTF JSON — BEFORE they become
+        // absolute. This is the only way to redirect "Textures/colormap.png"
+        // since the LoadingManager URL modifier only sees already-resolved URLs.
+        const loader = new GLTFLoader();
+        loader.setResourcePath(assetRoot);
 
         loader.load(
             url,

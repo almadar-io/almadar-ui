@@ -71,21 +71,9 @@ function useGLTFModel(url: string | undefined) {
         setIsLoading(true);
         setError(null);
 
-        const manager = new THREE.LoadingManager();
-        const modelDir = url.substring(0, url.lastIndexOf('/') + 1);
         const assetRoot = detectAssetRoot(url);
-
-        manager.setURLModifier((resourceUrl) => {
-            if (resourceUrl.startsWith('http') || resourceUrl.startsWith('data:') || resourceUrl.startsWith('blob:') || resourceUrl.startsWith('/')) {
-                return resourceUrl;
-            }
-            if (/^(Textures|Materials|Shaders)\//i.test(resourceUrl)) {
-                return assetRoot + resourceUrl;
-            }
-            return modelDir + resourceUrl;
-        });
-
-        const loader = new GLTFLoader(manager);
+        const loader = new GLTFLoader();
+        loader.setResourcePath(assetRoot);
         loader.load(
             url,
             (gltf) => {
@@ -273,19 +261,8 @@ export default FeatureRenderer3D;
 export function preloadFeatures(urls: string[]) {
     urls.forEach(url => {
         if (url) {
-            const manager = new THREE.LoadingManager();
-            const modelDir = url.substring(0, url.lastIndexOf('/') + 1);
-            const assetRoot = detectAssetRoot(url);
-            manager.setURLModifier((resourceUrl) => {
-                if (resourceUrl.startsWith('http') || resourceUrl.startsWith('data:') || resourceUrl.startsWith('blob:') || resourceUrl.startsWith('/')) {
-                    return resourceUrl;
-                }
-                if (/^(Textures|Materials|Shaders)\//i.test(resourceUrl)) {
-                    return assetRoot + resourceUrl;
-                }
-                return modelDir + resourceUrl;
-            });
-            const loader = new GLTFLoader(manager);
+            const loader = new GLTFLoader();
+            loader.setResourcePath(detectAssetRoot(url));
             loader.load(url, () => {
                 console.log('[FeatureRenderer3D] Preloaded:', url);
             });
