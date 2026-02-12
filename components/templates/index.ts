@@ -1,3 +1,6 @@
+// Base Types
+export type { TemplateProps } from './types';
+
 // Layout Templates
 export { DashboardLayout, type DashboardLayoutProps, type NavItem } from './DashboardLayout';
 export { AuthLayout, type AuthLayoutProps } from './AuthLayout';
@@ -58,10 +61,11 @@ export {
   type GameShellProps
 } from './GameShell';
 
-// Game View Templates
+// Game View Templates (thin wrappers — logic in Board organisms)
 export {
   BattleTemplate,
   type BattleTemplateProps,
+  type BattleEntity,
   type BattlePhase,
   type BattleUnit,
   type BattleTile,
@@ -71,12 +75,14 @@ export {
 export {
   CastleTemplate,
   type CastleTemplateProps,
+  type CastleEntity,
   type CastleSlotContext,
 } from './CastleTemplate';
 
 export {
   WorldMapTemplate,
   type WorldMapTemplateProps,
+  type WorldMapEntity,
   type MapHero,
   type MapHex,
   type WorldMapSlotContext,
