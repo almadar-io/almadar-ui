@@ -19,8 +19,8 @@
  */
 
 import React from 'react';
-import { GameCanvas3D, type GameCanvas3DProps } from '../components/organisms/game/GameCanvas3D';
-import type { IsometricTile, IsometricUnit, IsometricFeature } from '../components/organisms/game/types/isometric';
+import { GameCanvas3D, type GameCanvas3DProps } from '../organisms/game/GameCanvas3D';
+import type { IsometricTile, IsometricUnit, IsometricFeature } from '../organisms/game/types/isometric';
 
 export interface Castle3DEntity {
     /** Castle grounds tiles */

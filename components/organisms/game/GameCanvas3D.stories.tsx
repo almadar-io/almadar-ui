@@ -23,10 +23,11 @@ function generateGrid3D(width: number, height: number, terrainFn?: (x: number, z
             tiles.push({
                 id: `tile-${x}-${z}`,
                 x,
-                z,
+                y: z,
                 type: terrain,
                 terrain,
                 passable: terrain !== 'water' && terrain !== 'mountain',
+                z,
             });
         }
     }
@@ -62,16 +63,17 @@ function castleTerrain3D(x: number, z: number): string {
 const worldMapTiles = generateGrid3D(12, 12, worldMapTerrain3D);
 
 const worldMapFeatures: IsometricFeature[] = [
-    { id: 'castle-1', x: 2, z: 2, type: 'castle' },
-    { id: 'mine-1', x: 9, z: 3, type: 'rock' },
-    { id: 'tree-1', x: 5, z: 9, type: 'tree' },
-    { id: 'tree-2', x: 7, z: 5, type: 'tree' },
-    { id: 'rock-1', x: 1, z: 8, type: 'rock' },
+    { id: 'castle-1', x: 2, y: 2, z: 2, type: 'castle' },
+    { id: 'mine-1', x: 9, y: 3, z: 3, type: 'rock' },
+    { id: 'tree-1', x: 5, y: 9, z: 9, type: 'tree' },
+    { id: 'tree-2', x: 7, y: 5, z: 5, type: 'tree' },
+    { id: 'rock-1', x: 1, y: 8, z: 8, type: 'rock' },
 ];
 
 const worldMapUnits: IsometricUnit[] = [
     { 
         id: 'hero-1', 
+        position: { x: 3, y: 5 },
         x: 3, 
         z: 5, 
         name: 'Archmage', 
@@ -83,6 +85,7 @@ const worldMapUnits: IsometricUnit[] = [
     },
     { 
         id: 'hero-2', 
+        position: { x: 8, y: 4 },
         x: 8, 
         z: 4, 
         name: 'Warlord', 
@@ -93,7 +96,8 @@ const worldMapUnits: IsometricUnit[] = [
         unitType: 'warrior'
     },
     { 
-        id: 'scout', 
+        id: 'scout',
+        position: { x: 6, y: 8 },
         x: 6, 
         z: 8, 
         name: 'Scout', 
@@ -106,26 +110,26 @@ const worldMapUnits: IsometricUnit[] = [
 const battleTiles = generateGrid3D(8, 8, battleTerrain3D);
 
 const battleUnits: IsometricUnit[] = [
-    { id: 'p1', x: 1, z: 1, name: 'Knight', faction: 'player', team: 'player', health: 80, maxHealth: 100 },
-    { id: 'p2', x: 1, z: 3, name: 'Archer', faction: 'player', team: 'player', health: 60, maxHealth: 60 },
-    { id: 'p3', x: 2, z: 2, name: 'Mage', faction: 'player', team: 'player', health: 45, maxHealth: 50 },
-    { id: 'e1', x: 6, z: 5, name: 'Orc', faction: 'enemy', team: 'enemy', health: 70, maxHealth: 90 },
-    { id: 'e2', x: 5, z: 6, name: 'Goblin', faction: 'enemy', team: 'enemy', health: 30, maxHealth: 40 },
-    { id: 'e3', x: 6, z: 6, name: 'Troll', faction: 'enemy', team: 'enemy', health: 120, maxHealth: 150 },
+    { id: 'p1', position: { x: 1, y: 1 }, x: 1, z: 1, name: 'Knight', faction: 'player', team: 'player', health: 80, maxHealth: 100 },
+    { id: 'p2', position: { x: 1, y: 3 }, x: 1, z: 3, name: 'Archer', faction: 'player', team: 'player', health: 60, maxHealth: 60 },
+    { id: 'p3', position: { x: 2, y: 2 }, x: 2, z: 2, name: 'Mage', faction: 'player', team: 'player', health: 45, maxHealth: 50 },
+    { id: 'e1', position: { x: 6, y: 5 }, x: 6, z: 5, name: 'Orc', faction: 'enemy', team: 'enemy', health: 70, maxHealth: 90 },
+    { id: 'e2', position: { x: 5, y: 6 }, x: 5, z: 6, name: 'Goblin', faction: 'enemy', team: 'enemy', health: 30, maxHealth: 40 },
+    { id: 'e3', position: { x: 6, y: 6 }, x: 6, z: 6, name: 'Troll', faction: 'enemy', team: 'enemy', health: 120, maxHealth: 150 },
 ];
 
 const castleTiles = generateGrid3D(8, 8, castleTerrain3D);
 
 const castleFeatures: IsometricFeature[] = [
-    { id: 'castle-main', x: 3, z: 3, type: 'castle' },
-    { id: 'tree-3', x: 2, z: 6, type: 'tree' },
-    { id: 'rock-2', x: 6, z: 2, type: 'rock' },
+    { id: 'castle-main', x: 3, y: 3, z: 3, type: 'castle' },
+    { id: 'tree-3', x: 2, y: 6, z: 6, type: 'tree' },
+    { id: 'rock-2', x: 6, y: 2, z: 2, type: 'rock' },
 ];
 
 const garrisonUnits: IsometricUnit[] = [
-    { id: 'g1', x: 3, z: 4, name: 'Guardian', faction: 'player', team: 'player', health: 100, maxHealth: 100 },
-    { id: 'g2', x: 4, z: 3, name: 'Sentinel', faction: 'player', team: 'player', health: 85, maxHealth: 85 },
-    { id: 'g3', x: 4, z: 4, name: 'Recruit', faction: 'player', team: 'player', health: 40, maxHealth: 40 },
+    { id: 'g1', position: { x: 3, y: 4 }, x: 3, z: 4, name: 'Guardian', faction: 'player', team: 'player', health: 100, maxHealth: 100 },
+    { id: 'g2', position: { x: 4, y: 3 }, x: 4, z: 3, name: 'Sentinel', faction: 'player', team: 'player', health: 85, maxHealth: 85 },
+    { id: 'g3', position: { x: 4, y: 4 }, x: 4, z: 4, name: 'Recruit', faction: 'player', team: 'player', health: 40, maxHealth: 40 },
 ];
 
 // =============================================================================

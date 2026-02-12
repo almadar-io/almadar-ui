@@ -81,3 +81,22 @@ export {
   type MapHex,
   type WorldMapSlotContext,
 } from './WorldMapTemplate';
+
+// 3D Game Canvas Templates
+export {
+  GameCanvas3DWorldMapTemplate,
+  type GameCanvas3DWorldMapTemplateProps,
+  type WorldMap3DEntity,
+} from './GameCanvas3DWorldMapTemplate';
+
+export {
+  GameCanvas3DBattleTemplate,
+  type GameCanvas3DBattleTemplateProps,
+  type Battle3DEntity,
+} from './GameCanvas3DBattleTemplate';
+
+export {
+  GameCanvas3DCastleTemplate,
+  type GameCanvas3DCastleTemplateProps,
+  type Castle3DEntity,
+} from './GameCanvas3DCastleTemplate';
