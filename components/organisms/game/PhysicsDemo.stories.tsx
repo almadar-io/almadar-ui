@@ -234,7 +234,6 @@ function Physics3DDemo() {
                 cameraMode="perspective"
                 showGrid={true}
                 shadows={true}
-                style={{ height: '100%' }}
             >
                 {/* Ground plane */}
                 <mesh position={[0, -1, 0]} receiveShadow>
