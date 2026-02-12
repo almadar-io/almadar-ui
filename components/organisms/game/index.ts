@@ -11,6 +11,15 @@
 // Core Canvas Components
 // ---------------------------------------------------------------------------
 export { IsometricCanvas, type IsometricCanvasProps } from './IsometricCanvas';
+export {
+    GameCanvas3D,
+    type GameCanvas3DProps,
+    type GameCanvas3DHandle,
+    type CameraMode,
+    type MapOrientation,
+    type OverlayControl,
+    type UnitAnimationState,
+} from './GameCanvas3D';
 export { CanvasEffect, type CanvasEffectProps, type CombatActionType } from './CanvasEffect';
 
 // ---------------------------------------------------------------------------
