@@ -82,21 +82,9 @@ export {
   type WorldMapSlotContext,
 } from './WorldMapTemplate';
 
-// 3D Game Canvas Templates
-export {
-  GameCanvas3DWorldMapTemplate,
-  type GameCanvas3DWorldMapTemplateProps,
-  type WorldMap3DEntity,
-} from './GameCanvas3DWorldMapTemplate';
-
-export {
-  GameCanvas3DBattleTemplate,
-  type GameCanvas3DBattleTemplateProps,
-  type Battle3DEntity,
-} from './GameCanvas3DBattleTemplate';
-
-export {
-  GameCanvas3DCastleTemplate,
-  type GameCanvas3DCastleTemplateProps,
-  type Castle3DEntity,
-} from './GameCanvas3DCastleTemplate';
+// 3D Game Canvas Templates are NOT barrel-exported because they depend on
+// @react-three/fiber + three which are optional peer dependencies.
+// Import directly if needed:
+//   import { GameCanvas3DWorldMapTemplate } from '@almadar/ui/components/templates/GameCanvas3DWorldMapTemplate';
+//   import { GameCanvas3DBattleTemplate } from '@almadar/ui/components/templates/GameCanvas3DBattleTemplate';
+//   import { GameCanvas3DCastleTemplate } from '@almadar/ui/components/templates/GameCanvas3DCastleTemplate';
