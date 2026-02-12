@@ -11,15 +11,8 @@
 // Core Canvas Components
 // ---------------------------------------------------------------------------
 export { IsometricCanvas, type IsometricCanvasProps } from './IsometricCanvas';
-export {
-    GameCanvas3D,
-    type GameCanvas3DProps,
-    type GameCanvas3DHandle,
-    type CameraMode,
-    type MapOrientation,
-    type OverlayControl,
-    type UnitAnimationState,
-} from './GameCanvas3D';
+// GameCanvas3D is NOT barrel-exported because it depends on @react-three/fiber + three
+// which are optional peer dependencies. Import directly from './GameCanvas3D' if needed.
 export { CanvasEffect, type CanvasEffectProps, type CombatActionType } from './CanvasEffect';
 
 // ---------------------------------------------------------------------------
