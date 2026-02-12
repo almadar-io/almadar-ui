@@ -62,26 +62,26 @@ function useGLTFModel(url: string): ModelLoadState {
         console.log('[ModelLoader] Loading:', url);
         setState(prev => ({ ...prev, isLoading: true, error: null }));
 
-        // Create a texture loader manager to resolve relative texture paths
+        // Create a loading manager to resolve relative texture paths
         const manager = new THREE.LoadingManager();
-        const textureLoader = new THREE.TextureLoader(manager);
-        
-        // Set up path resolution - extract base URL from the GLB URL
+
+        // Extract base paths from the GLB URL
+        // e.g. "https://host/3d/graveyard/altar-stone.glb"
+        //   basePath  = "https://host/3d/graveyard/"
+        //   parentPath = "https://host/3d/"
         const urlObj = new URL(url, window.location.href);
         const basePath = urlObj.href.substring(0, urlObj.href.lastIndexOf('/') + 1);
-        
+        const parentPath = basePath.slice(0, basePath.slice(0, -1).lastIndexOf('/') + 1);
+
         // Intercept texture loading to resolve paths correctly
+        // Many asset packs (e.g. Kenney) share a Textures/ folder at the parent level,
+        // not inside each model's subdirectory.
         manager.setURLModifier((textureUrl) => {
-            // If it's a relative texture path, resolve it against the base path
-            if (!textureUrl.startsWith('http') && !textureUrl.startsWith('/')) {
-                // Check if it's a texture reference like "Textures/colormap.png"
-                if (textureUrl.includes('Textures/')) {
-                    // Try to resolve relative to the GLB first, then fall back to root
-                    const resolvedUrl = basePath + textureUrl;
-                    console.log('[ModelLoader] Resolving texture:', textureUrl, '->', resolvedUrl);
-                    return resolvedUrl;
-                }
-                return basePath + textureUrl;
+            if (!textureUrl.startsWith('http') && !textureUrl.startsWith('data:') && !textureUrl.startsWith('/')) {
+                // Resolve relative to parent dir (where shared Textures/ folder lives)
+                const resolvedUrl = parentPath + textureUrl;
+                console.log('[ModelLoader] Resolving texture:', textureUrl, '->', resolvedUrl);
+                return resolvedUrl;
             }
             return textureUrl;
         });
