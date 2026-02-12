@@ -155,7 +155,7 @@ export const Typography: React.FC<TypographyProps> = ({
   // Determine variant: explicit variant takes precedence, then level, then default
   const variant: TypographyVariant =
     variantProp ?? (level ? (`h${level}` as TypographyVariant) : "body1");
-  const Component = as || defaultElements[variant];
+  const Component = (as || defaultElements[variant]) as React.ElementType;
 
   return (
     <Component
