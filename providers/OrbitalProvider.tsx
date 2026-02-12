@@ -7,19 +7,18 @@
  * Combines:
  * - ThemeProvider - Theme and color mode management
  * - EventBusProvider - Page-scoped event pub/sub
- * - UISlotProvider - UI slot management for render_ui effects
  * - SelectionProvider - Selected entity tracking
  * - FetchedDataProvider - Server-fetched entity data
  *
  * @packageDocumentation
  */
 
-import React, { type ReactNode } from 'react';
+import React, { type ReactNode, useMemo } from 'react';
 import { ThemeProvider, type ThemeProviderProps, type ThemeDefinition } from '../context/ThemeContext';
-import { UISlotProvider } from '../context/UISlotContext';
 import { EventBusProvider } from './EventBusProvider';
 import { SelectionProvider } from './SelectionProvider';
-import { FetchedDataProvider } from './FetchedDataProvider';
+import { FetchedDataProvider, useFetchedData } from './FetchedDataProvider';
+import { EntityDataProvider, type EntityDataAdapter } from '../hooks/useEntityData';
 
 // ============================================================================
 // Types
@@ -43,6 +42,31 @@ export interface OrbitalProviderProps {
   // Data options
   /** Initial fetched data */
   initialData?: Record<string, unknown[]>;
+}
+
+// ============================================================================
+// FetchedData → EntityData Bridge
+// ============================================================================
+
+/**
+ * Bridges FetchedDataContext (builder-specific) to EntityDataContext (generic).
+ * Must be rendered inside FetchedDataProvider.
+ */
+function FetchedDataBridge({ children }: { children: ReactNode }) {
+  const fetchedData = useFetchedData();
+
+  const adapter: EntityDataAdapter = useMemo(() => ({
+    getData: (entity: string) => fetchedData.getData(entity) as Record<string, unknown>[],
+    getById: (entity: string, id: string) => fetchedData.getById(entity, id) as Record<string, unknown> | undefined,
+    isLoading: fetchedData.loading,
+    error: fetchedData.error,
+  }), [fetchedData.getData, fetchedData.getById, fetchedData.loading, fetchedData.error]);
+
+  return (
+    <EntityDataProvider adapter={adapter}>
+      {children}
+    </EntityDataProvider>
+  );
 }
 
 // ============================================================================
@@ -111,13 +135,13 @@ export function OrbitalProvider({
       defaultMode={defaultMode}
     >
       <FetchedDataProvider initialData={initialData}>
-        <EventBusProvider debug={debug}>
-          <UISlotProvider>
+        <FetchedDataBridge>
+          <EventBusProvider debug={debug}>
             <SelectionProvider debug={debug}>
               {children}
             </SelectionProvider>
-          </UISlotProvider>
-        </EventBusProvider>
+          </EventBusProvider>
+        </FetchedDataBridge>
       </FetchedDataProvider>
     </ThemeProvider>
   );
@@ -130,7 +154,6 @@ OrbitalProvider.displayName = 'OrbitalProvider';
 // ============================================================================
 
 export { ThemeProvider } from '../context/ThemeContext';
-export { UISlotProvider } from '../context/UISlotContext';
 export { EventBusProvider } from './EventBusProvider';
 export { SelectionProvider } from './SelectionProvider';
 export { FetchedDataProvider } from './FetchedDataProvider';
