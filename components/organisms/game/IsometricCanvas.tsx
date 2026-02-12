@@ -104,6 +104,9 @@ export interface IsometricCanvasProps {
     enableCamera?: boolean;
     /** Extra scale multiplier for unit draw size. 1 = default. */
     unitScale?: number;
+    /** Override for the diamond-top Y offset within the tile sprite (default: 374).
+     *  This controls where the flat diamond face sits vertically inside the tile image. */
+    diamondTopY?: number;
 
     // --- Asset resolution (project-agnostic) ---
     /** Resolve terrain sprite URL from terrain key */
@@ -184,6 +187,8 @@ export function IsometricCanvas({
     effectSpriteUrls = [],
     onDrawEffects,
     hasActiveEffects = false,
+    // Tuning
+    diamondTopY: diamondTopYProp,
     // Remote asset loading
     assetBaseUrl,
     assetManifest,
@@ -243,7 +248,8 @@ export function IsometricCanvas({
     const scaledTileWidth = TILE_WIDTH * scale;
     const scaledTileHeight = TILE_HEIGHT * scale;
     const scaledFloorHeight = FLOOR_HEIGHT * scale;
-    const scaledDiamondTopY = DIAMOND_TOP_Y * scale;
+    const effectiveDiamondTopY = diamondTopYProp ?? DIAMOND_TOP_Y;
+    const scaledDiamondTopY = effectiveDiamondTopY * scale;
 
     const baseOffsetX = useMemo(() => {
         return (gridHeight - 1) * (scaledTileWidth / 2);
