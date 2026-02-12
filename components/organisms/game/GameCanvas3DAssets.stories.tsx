@@ -41,13 +41,14 @@ function generateDungeonMap(width: number, height: number): IsometricTile[] {
 /**
  * Helper to create tile data
  */
-const createTile = (id: string, q: number, r: number, height = 0, walkable = true): IsometricTile => ({
+const createTile = (id: string, q: number, r: number, elevation = 0, passable = true): IsometricTile => ({
     id,
     x: q,
     y: r,
     z: 0,
-    height,
-    walkable,
+    elevation,
+    passable,
+    terrain: 'stone',
 });
 
 /**
@@ -96,8 +97,8 @@ const sampleUnits: IsometricUnit[] = [
         x: 1,
         y: 0,
         z: 0,
-        type: 'hero',
-        color: '#4a90d9',
+        unitType: 'hero',
+        faction: 'player',
         name: 'Hero',
     },
     {
@@ -105,8 +106,8 @@ const sampleUnits: IsometricUnit[] = [
         x: 4,
         y: 0,
         z: 0,
-        type: 'monster',
-        color: '#d94a4a',
+        unitType: 'monster',
+        faction: 'enemy',
         name: 'Goblin',
     },
 ];
@@ -210,32 +211,32 @@ export const AssetGallery: Story = {
         features: [
             // Row 1: Corridors
             { id: 'gallery-corridor', x: 0, y: 0, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridor } as StoryFeature,
-            { id: 'gallery-corridorCorner', x: 2, y: 0, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridorCorner },
-            { id: 'gallery-corridorEnd', x: 4, y: 0, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridorEnd },
+            { id: 'gallery-corridorCorner', x: 2, y: 0, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridorCorner } as StoryFeature,
+            { id: 'gallery-corridorEnd', x: 4, y: 0, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridorEnd } as StoryFeature,
             
             // Row 2: Rooms
-            { id: 'gallery-roomSmall', x: 0, y: 2, z: 0, type: 'room', assetUrl: ASSETS_3D.roomSmall },
-            { id: 'gallery-roomLarge', x: 3, y: 2, z: 0, type: 'room', assetUrl: ASSETS_3D.roomLarge },
+            { id: 'gallery-roomSmall', x: 0, y: 2, z: 0, type: 'room', assetUrl: ASSETS_3D.roomSmall } as StoryFeature,
+            { id: 'gallery-roomLarge', x: 3, y: 2, z: 0, type: 'room', assetUrl: ASSETS_3D.roomLarge } as StoryFeature,
             
             // Row 3: Gates
-            { id: 'gallery-gate', x: 0, y: 4, z: 0, type: 'gate', assetUrl: ASSETS_3D.gate },
+            { id: 'gallery-gate', x: 0, y: 4, z: 0, type: 'gate', assetUrl: ASSETS_3D.gate } as StoryFeature,
             
             // Row 4: Props
-            { id: 'gallery-barrels', x: 0, y: 6, z: 0, type: 'prop', assetUrl: ASSETS_3D.barrels },
-            { id: 'gallery-crate', x: 1, y: 6, z: 0, type: 'prop', assetUrl: ASSETS_3D.crate },
-            { id: 'gallery-chest', x: 2, y: 6, z: 0, type: 'prop', assetUrl: ASSETS_3D.chest },
-            { id: 'gallery-ladder', x: 3, y: 6, z: 0, type: 'prop', assetUrl: ASSETS_3D.ladder },
-            { id: 'gallery-bridge', x: 4, y: 6, z: 0, type: 'prop', assetUrl: ASSETS_3D.bridge },
+            { id: 'gallery-barrels', x: 0, y: 6, z: 0, type: 'prop', assetUrl: ASSETS_3D.barrels } as StoryFeature,
+            { id: 'gallery-crate', x: 1, y: 6, z: 0, type: 'prop', assetUrl: ASSETS_3D.crate } as StoryFeature,
+            { id: 'gallery-chest', x: 2, y: 6, z: 0, type: 'prop', assetUrl: ASSETS_3D.chest } as StoryFeature,
+            { id: 'gallery-ladder', x: 3, y: 6, z: 0, type: 'prop', assetUrl: ASSETS_3D.ladder } as StoryFeature,
+            { id: 'gallery-bridge', x: 4, y: 6, z: 0, type: 'prop', assetUrl: ASSETS_3D.bridge } as StoryFeature,
             
             // Row 5: Columns
-            { id: 'gallery-column', x: 0, y: 8, z: 0, type: 'prop', assetUrl: ASSETS_3D.column },
-            { id: 'gallery-columnDamaged', x: 1, y: 8, z: 0, type: 'prop', assetUrl: ASSETS_3D.columnDamaged },
-            { id: 'gallery-wallCorner', x: 2, y: 8, z: 0, type: 'prop', assetUrl: ASSETS_3D.wallCorner },
-            { id: 'gallery-wallGate', x: 3, y: 8, z: 0, type: 'prop', assetUrl: ASSETS_3D.wallGate },
+            { id: 'gallery-column', x: 0, y: 8, z: 0, type: 'prop', assetUrl: ASSETS_3D.column } as StoryFeature,
+            { id: 'gallery-columnDamaged', x: 1, y: 8, z: 0, type: 'prop', assetUrl: ASSETS_3D.columnDamaged } as StoryFeature,
+            { id: 'gallery-wallCorner', x: 2, y: 8, z: 0, type: 'prop', assetUrl: ASSETS_3D.wallCorner } as StoryFeature,
+            { id: 'gallery-wallGate', x: 3, y: 8, z: 0, type: 'prop', assetUrl: ASSETS_3D.wallGate } as StoryFeature,
             
             // Row 6: Siege
-            { id: 'gallery-ballista', x: 0, y: 10, z: 0, type: 'prop', assetUrl: ASSETS_3D.ballista },
-            { id: 'gallery-catapult', x: 2, y: 10, z: 0, type: 'prop', assetUrl: ASSETS_3D.catapult },
+            { id: 'gallery-ballista', x: 0, y: 10, z: 0, type: 'prop', assetUrl: ASSETS_3D.ballista } as StoryFeature,
+            { id: 'gallery-catapult', x: 2, y: 10, z: 0, type: 'prop', assetUrl: ASSETS_3D.catapult } as StoryFeature,
         ],
         units: [],
         cameraMode: 'top-down',
@@ -261,14 +262,14 @@ export const GraveyardTheme: Story = {
         features: [
             // Graveyard props
             { id: 'grave-1', x: 0, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.gravestone } as StoryFeature,
-            { id: 'grave-2', x: 1, y: 1, z: 0, type: 'prop', assetUrl: ASSETS_3D.gravestone, rotation: 45 },
-            { id: 'coffin-1', x: 2, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.coffin },
-            { id: 'coffin-lid', x: 3, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.coffinLid, rotation: 90 },
-            { id: 'cross-wood', x: 4, y: 1, z: 0, type: 'prop', assetUrl: ASSETS_3D.crossWood },
-            { id: 'shovel', x: 5, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.shovel },
-            { id: 'coffin-old', x: 1, y: 2, z: 0, type: 'prop', assetUrl: ASSETS_3D.coffinOld },
-            { id: 'cross-col', x: 3, y: 2, z: 0, type: 'prop', assetUrl: ASSETS_3D.crossColumn },
-            { id: 'plate', x: 4, y: 3, z: 0, type: 'prop', assetUrl: ASSETS_3D.plate },
+            { id: 'grave-2', x: 1, y: 1, z: 0, type: 'prop', assetUrl: ASSETS_3D.gravestone, rotation: 45 } as StoryFeature,
+            { id: 'coffin-1', x: 2, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.coffin } as StoryFeature,
+            { id: 'coffin-lid', x: 3, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.coffinLid, rotation: 90 } as StoryFeature,
+            { id: 'cross-wood', x: 4, y: 1, z: 0, type: 'prop', assetUrl: ASSETS_3D.crossWood } as StoryFeature,
+            { id: 'shovel', x: 5, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.shovel } as StoryFeature,
+            { id: 'coffin-old', x: 1, y: 2, z: 0, type: 'prop', assetUrl: ASSETS_3D.coffinOld } as StoryFeature,
+            { id: 'cross-col', x: 3, y: 2, z: 0, type: 'prop', assetUrl: ASSETS_3D.crossColumn } as StoryFeature,
+            { id: 'plate', x: 4, y: 3, z: 0, type: 'prop', assetUrl: ASSETS_3D.plate } as StoryFeature,
         ],
         units: [],
         cameraMode: 'isometric',
@@ -303,8 +304,8 @@ export const SiegeWeapons: Story = {
         tiles: generateDungeonMap(8, 6),
         features: [
             { id: 'ballista-1', x: 0, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.ballista } as StoryFeature,
-            { id: 'catapult-1', x: 3, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.catapult },
-            { id: 'ballista-2', x: 1, y: 2, z: 0, type: 'prop', assetUrl: ASSETS_3D.ballista, rotation: 45 },
+            { id: 'catapult-1', x: 3, y: 0, z: 0, type: 'prop', assetUrl: ASSETS_3D.catapult } as StoryFeature,
+            { id: 'ballista-2', x: 1, y: 2, z: 0, type: 'prop', assetUrl: ASSETS_3D.ballista, rotation: 45 } as StoryFeature,
         ],
         units: [],
         cameraMode: 'isometric',
@@ -363,7 +364,7 @@ export const PerformanceTest: Story = {
                 z: 0,
                 type: assetKey,
                 assetUrl: ASSETS_3D[assetKey],
-            };
+            } as StoryFeature;
         }),
         cameraMode: 'isometric',
         showGrid: false,
