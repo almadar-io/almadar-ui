@@ -380,22 +380,30 @@ export const LargeMap: Story = {
             if (Math.random() > 0.8) return 'stone';
             return 'grass';
         }),
-        features: Array.from({ length: 50 }, (_, i) => ({
-            id: `feature-${i}`,
-            x: Math.floor(Math.random() * 28) + 1,
-            z: Math.floor(Math.random() * 28) + 1,
-            type: Math.random() > 0.5 ? 'tree' : 'rock',
-        })),
-        units: Array.from({ length: 20 }, (_, i) => ({
-            id: `unit-${i}`,
-            x: Math.floor(Math.random() * 28) + 1,
-            z: Math.floor(Math.random() * 28) + 1,
-            name: `Unit ${i}`,
-            faction: Math.random() > 0.5 ? 'player' : 'enemy',
-            team: Math.random() > 0.5 ? 'player' : 'enemy',
-            health: Math.floor(Math.random() * 100),
-            maxHealth: 100,
-        })),
+        features: Array.from({ length: 50 }, (_, i) => {
+            const z = Math.floor(Math.random() * 28) + 1;
+            return {
+                id: `feature-${i}`,
+                x: Math.floor(Math.random() * 28) + 1,
+                y: z,
+                z,
+                type: Math.random() > 0.5 ? 'tree' : 'rock',
+            };
+        }),
+        units: Array.from({ length: 20 }, (_, i) => {
+            const z = Math.floor(Math.random() * 28) + 1;
+            return {
+                id: `unit-${i}`,
+                x: Math.floor(Math.random() * 28) + 1,
+                y: z,
+                z,
+                name: `Unit ${i}`,
+                faction: Math.random() > 0.5 ? 'player' : 'enemy',
+                team: Math.random() > 0.5 ? 'player' : 'enemy',
+                health: Math.floor(Math.random() * 100),
+                maxHealth: 100,
+            };
+        }),
         cameraMode: 'isometric',
         showGrid: false,
         shadows: true,
