@@ -34,6 +34,7 @@ import {
     TILE_WIDTH,
     TILE_HEIGHT,
     FLOOR_HEIGHT,
+    DIAMOND_TOP_Y,
     FEATURE_COLORS,
 } from './utils/isometric';
 
@@ -242,6 +243,7 @@ export function IsometricCanvas({
     const scaledTileWidth = TILE_WIDTH * scale;
     const scaledTileHeight = TILE_HEIGHT * scale;
     const scaledFloorHeight = FLOOR_HEIGHT * scale;
+    const scaledDiamondTopY = DIAMOND_TOP_Y * scale;
 
     const baseOffsetX = useMemo(() => {
         return (gridHeight - 1) * (scaledTileWidth / 2);
@@ -494,7 +496,7 @@ export function IsometricCanvas({
             } else {
                 // Fallback: draw colored diamond
                 const centerX = pos.x + scaledTileWidth / 2;
-                const topY = pos.y + (scaledTileHeight - scaledFloorHeight);
+                const topY = pos.y + scaledDiamondTopY;
                 ctx.fillStyle = tile.terrain === 'water' ? '#3b82f6' :
                     tile.terrain === 'mountain' ? '#78716c' :
                         tile.terrain === 'stone' ? '#9ca3af' : '#4ade80';
@@ -514,7 +516,7 @@ export function IsometricCanvas({
             // Hover highlight
             if (hoveredTile && hoveredTile.x === tile.x && hoveredTile.y === tile.y) {
                 const centerX = pos.x + scaledTileWidth / 2;
-                const topY = pos.y + (scaledTileHeight - scaledFloorHeight);
+                const topY = pos.y + scaledDiamondTopY;
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
                 ctx.beginPath();
                 ctx.moveTo(centerX, topY);
@@ -529,7 +531,7 @@ export function IsometricCanvas({
             const tileKey = `${tile.x},${tile.y}`;
             if (validMoveSet.has(tileKey)) {
                 const centerX = pos.x + scaledTileWidth / 2;
-                const topY = pos.y + (scaledTileHeight - scaledFloorHeight);
+                const topY = pos.y + scaledDiamondTopY;
                 const pulse = 0.15 + 0.1 * Math.sin(animTime * 0.004);
                 ctx.fillStyle = `rgba(74, 222, 128, ${pulse})`;
                 ctx.beginPath();
@@ -544,7 +546,7 @@ export function IsometricCanvas({
             // Attack target highlight
             if (attackTargetSet.has(tileKey)) {
                 const centerX = pos.x + scaledTileWidth / 2;
-                const topY = pos.y + (scaledTileHeight - scaledFloorHeight);
+                const topY = pos.y + scaledDiamondTopY;
                 const pulse = 0.2 + 0.15 * Math.sin(animTime * 0.005);
                 ctx.fillStyle = `rgba(239, 68, 68, ${pulse})`;
                 ctx.beginPath();
@@ -559,7 +561,7 @@ export function IsometricCanvas({
             // Debug coordinates
             if (debug) {
                 const centerX = pos.x + scaledTileWidth / 2;
-                const centerY = pos.y + scaledFloorHeight / 2 + (scaledTileHeight - scaledFloorHeight);
+                const centerY = pos.y + scaledFloorHeight / 2 + scaledDiamondTopY;
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                 ctx.font = `${12 * scale * 2}px monospace`;
                 ctx.textAlign = 'center';
@@ -586,7 +588,7 @@ export function IsometricCanvas({
             const img = spriteUrl ? getImage(spriteUrl) : null;
 
             const centerX = pos.x + scaledTileWidth / 2;
-            const featureGroundY = pos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight * 0.50;
+            const featureGroundY = pos.y + scaledDiamondTopY + scaledFloorHeight * 0.50;
             const isCastle = feature.type === 'castle';
             const featureDrawH = isCastle ? scaledFloorHeight * 3.5 : scaledFloorHeight * 1.6;
             const maxFeatureW = isCastle ? scaledTileWidth * 1.8 : scaledTileWidth * 0.7;
@@ -631,7 +633,7 @@ export function IsometricCanvas({
 
             const isSelected = unit.id === selectedUnitId;
             const centerX = pos.x + scaledTileWidth / 2;
-            const groundY = pos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight * 0.50;
+            const groundY = pos.y + scaledDiamondTopY + scaledFloorHeight * 0.50;
 
             // Idle breathing animation
             const breatheOffset = 0.8 * scale * (1 + Math.sin(animTime * 0.002 + (unit.position.x * 3.7 + unit.position.y * 5.3)));
@@ -653,7 +655,7 @@ export function IsometricCanvas({
             if (unit.previousPosition && (unit.previousPosition.x !== unit.position.x || unit.previousPosition.y !== unit.position.y)) {
                 const ghostPos = isoToScreen(unit.previousPosition.x, unit.previousPosition.y, scale, baseOffsetX);
                 const ghostCenterX = ghostPos.x + scaledTileWidth / 2;
-                const ghostGroundY = ghostPos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight * 0.50;
+                const ghostGroundY = ghostPos.y + scaledDiamondTopY + scaledFloorHeight * 0.50;
 
                 ctx.save();
                 ctx.globalAlpha = 0.25;
@@ -802,7 +804,7 @@ export function IsometricCanvas({
     }, [
         sortedTiles, units, features, selectedUnitId,
         scale, debug, resolveTerrainSpriteUrl, resolveFeatureSpriteUrl, resolveUnitSpriteUrl, resolveUnitFrame, getImage,
-        gridWidth, gridHeight, baseOffsetX, scaledTileWidth, scaledTileHeight, scaledFloorHeight,
+        gridWidth, gridHeight, baseOffsetX, scaledTileWidth, scaledTileHeight, scaledFloorHeight, scaledDiamondTopY,
         validMoveSet, attackTargetSet, hoveredTile, viewportSize, drawMinimap, onDrawEffects,
         backgroundImage, cameraRef, unitScale,
     ]);
@@ -816,12 +818,12 @@ export function IsometricCanvas({
         if (!unit) return;
         const pos = isoToScreen(unit.position.x, unit.position.y, scale, baseOffsetX);
         const centerX = pos.x + scaledTileWidth / 2;
-        const centerY = pos.y + (scaledTileHeight - scaledFloorHeight) + scaledFloorHeight / 2;
+        const centerY = pos.y + scaledDiamondTopY + scaledFloorHeight / 2;
         targetCameraRef.current = {
             x: centerX - viewportSize.width / 2,
             y: centerY - viewportSize.height / 2,
         };
-    }, [selectedUnitId, units, scale, baseOffsetX, scaledTileWidth, scaledTileHeight, scaledFloorHeight, viewportSize, targetCameraRef]);
+    }, [selectedUnitId, units, scale, baseOffsetX, scaledTileWidth, scaledDiamondTopY, scaledFloorHeight, viewportSize, targetCameraRef]);
 
     // =========================================================================
     // Animation loop
@@ -863,7 +865,7 @@ export function IsometricCanvas({
 
         const world = screenToWorld(e.clientX, e.clientY, canvasRef.current, viewportSize);
         const adjustedX = world.x - scaledTileWidth / 2;
-        const adjustedY = world.y - (scaledTileHeight - scaledFloorHeight) - scaledFloorHeight / 2;
+        const adjustedY = world.y - scaledDiamondTopY - scaledFloorHeight / 2;
         const isoPos = screenToIso(adjustedX, adjustedY, scale, baseOffsetX);
 
         const tileExists = tilesProp.some(t => t.x === isoPos.x && t.y === isoPos.y);
@@ -871,7 +873,7 @@ export function IsometricCanvas({
             if (tileHoverEvent) eventBus.emit(`UI:${tileHoverEvent}`, { x: isoPos.x, y: isoPos.y });
             onTileHover?.(isoPos.x, isoPos.y);
         }
-    }, [enableCamera, handleMouseMove, draw, onTileHover, screenToWorld, viewportSize, scaledTileWidth, scaledTileHeight, scaledFloorHeight, scale, baseOffsetX, tilesProp, tileHoverEvent, eventBus]);
+    }, [enableCamera, handleMouseMove, draw, onTileHover, screenToWorld, viewportSize, scaledTileWidth, scaledDiamondTopY, scaledFloorHeight, scale, baseOffsetX, tilesProp, tileHoverEvent, eventBus]);
 
     const handleMouseLeaveWithCamera = useCallback(() => {
         handleMouseLeave();
@@ -891,7 +893,7 @@ export function IsometricCanvas({
 
         const world = screenToWorld(e.clientX, e.clientY, canvasRef.current, viewportSize);
         const adjustedX = world.x - scaledTileWidth / 2;
-        const adjustedY = world.y - (scaledTileHeight - scaledFloorHeight) - scaledFloorHeight / 2;
+        const adjustedY = world.y - scaledDiamondTopY - scaledFloorHeight / 2;
         const isoPos = screenToIso(adjustedX, adjustedY, scale, baseOffsetX);
 
         // Check for unit click
@@ -906,7 +908,7 @@ export function IsometricCanvas({
                 onTileClick?.(isoPos.x, isoPos.y);
             }
         }
-    }, [dragDistance, screenToWorld, viewportSize, scaledTileWidth, scaledTileHeight, scaledFloorHeight, scale, baseOffsetX, units, tilesProp, onUnitClick, onTileClick, unitClickEvent, tileClickEvent, eventBus]);
+    }, [dragDistance, screenToWorld, viewportSize, scaledTileWidth, scaledDiamondTopY, scaledFloorHeight, scale, baseOffsetX, units, tilesProp, onUnitClick, onTileClick, unitClickEvent, tileClickEvent, eventBus]);
 
     // =========================================================================
     // Render

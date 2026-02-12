@@ -21,6 +21,18 @@ export const TILE_HEIGHT = 512;
 export const FLOOR_HEIGHT = 128;
 
 /**
+ * Measured Y offset from sprite top to the diamond top vertex within a Kenney
+ * 256×512 tile sprite.  The code previously assumed `TILE_HEIGHT - FLOOR_HEIGHT = 384`,
+ * but the actual diamond (dirt_E.png) begins at y = 374 because the 3D side walls
+ * occupy 10 extra pixels above the pure 128 px diamond.
+ *
+ * Use `DIAMOND_TOP_Y * scale` for highlight positioning, unit groundY, feature
+ * placement, and hit-testing — NOT `(TILE_HEIGHT - FLOOR_HEIGHT) * scale`.
+ * `FLOOR_HEIGHT` remains 128 for the isoToScreen spacing formula (2:1 ratio).
+ */
+export const DIAMOND_TOP_Y = 374;
+
+/**
  * Feature type → fallback color mapping (when sprites not loaded).
  */
 export const FEATURE_COLORS: Record<string, string> = {

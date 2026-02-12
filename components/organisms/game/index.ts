@@ -55,6 +55,7 @@ export {
     TILE_WIDTH,
     TILE_HEIGHT,
     FLOOR_HEIGHT,
+    DIAMOND_TOP_Y,
     FEATURE_COLORS,
 } from './utils/isometric';
 export {
