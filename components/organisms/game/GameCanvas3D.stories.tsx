@@ -260,8 +260,8 @@ export const TopDownTactical: Story = {
         tiles: battleTiles,
         units: battleUnits,
         features: [
-            { id: 'cover-1', x: 3, z: 3, type: 'rock' },
-            { id: 'cover-2', x: 5, z: 5, type: 'rock' },
+            { id: 'cover-1', x: 3, y: 3, z: 3, type: 'rock' },
+            { id: 'cover-2', x: 5, y: 5, z: 5, type: 'rock' },
         ],
         cameraMode: 'top-down',
         showGrid: true,

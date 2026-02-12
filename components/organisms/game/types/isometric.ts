@@ -93,7 +93,7 @@ export interface IsometricFeature {
     /** Grid x coordinate */
     x: number;
     /** Grid y coordinate (2D) */
-    y?: number;
+    y: number;
     /** Grid z coordinate (3D alternative to y) */
     z?: number;
     /** Feature type key (e.g., 'goldMine', 'castle', 'portal') */
