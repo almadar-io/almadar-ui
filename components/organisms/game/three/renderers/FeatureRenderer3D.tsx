@@ -7,11 +7,14 @@
  * @packageDocumentation
  */
 
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { useGLTF } from '@react-three/drei';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import type { IsometricFeature } from '../../types/isometric';
+
+// Extend IsometricFeature to support rotation
+type FeatureWithRotation = IsometricFeature & { rotation?: number };
 
 export interface FeatureRenderer3DProps {
     /** Array of features to render */
@@ -31,11 +34,47 @@ export interface FeatureRenderer3DProps {
 }
 
 interface FeatureModelProps {
-    feature: IsometricFeature;
+    feature: FeatureWithRotation;
     position: [number, number, number];
     isSelected: boolean;
     onClick: () => void;
     onHover: (hovered: boolean) => void;
+}
+
+/**
+ * Hook to load GLTF model without Suspense
+ */
+function useGLTFModel(url: string | undefined) {
+    const [model, setModel] = useState<THREE.Group | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<Error | null>(null);
+
+    useEffect(() => {
+        if (!url) {
+            setModel(null);
+            return;
+        }
+
+        setIsLoading(true);
+        setError(null);
+
+        // Use the GLTFLoader directly to avoid Suspense
+        const loader = new GLTFLoader();
+        loader.load(
+            url,
+            (gltf) => {
+                setModel(gltf.scene);
+                setIsLoading(false);
+            },
+            undefined,
+            (err) => {
+                setError(err instanceof Error ? err : new Error(String(err)));
+                setIsLoading(false);
+            }
+        );
+    }, [url]);
+
+    return { model, isLoading, error };
 }
 
 /**
@@ -50,17 +89,16 @@ function FeatureModel({
 }: FeatureModelProps): JSX.Element | null {
     const groupRef = useRef<THREE.Group>(null);
     
-    // Load GLB model if assetUrl is provided
-    const { scene } = useGLTF(feature.assetUrl || '', true);
+    // Load GLB model if assetUrl is provided (without Suspense)
+    const { model: loadedModel, isLoading } = useGLTFModel(feature.assetUrl);
     
-    // Clone the scene for this instance
+    // Clone and prepare the scene for this instance
     const model = useMemo(() => {
-        if (!scene) return null;
-        const cloned = scene.clone();
+        if (!loadedModel) return null;
+        const cloned = loadedModel.clone();
         
-        // Adjust model scale and rotation
-        cloned.scale.setScalar(0.5); // Adjust based on model size
-        cloned.rotation.y = -Math.PI / 4; // Isometric alignment
+        // Adjust model scale - many Kenny assets are large, scale down to fit grid
+        cloned.scale.setScalar(0.3); // Adjust based on model size
         
         // Enable shadows
         cloned.traverse((child) => {
@@ -71,15 +109,37 @@ function FeatureModel({
         });
         
         return cloned;
-    }, [scene]);
+    }, [loadedModel]);
 
-    // Idle animation
+    // Idle animation and apply rotation
     useFrame((state) => {
-        if (groupRef.current && isSelected) {
-            groupRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 2) * 0.1 - Math.PI / 4;
+        if (groupRef.current) {
+            // Apply base rotation
+            const featureRotation = feature.rotation;
+            const baseRotation = featureRotation !== undefined 
+                ? (featureRotation * Math.PI / 180) - Math.PI / 4 
+                : -Math.PI / 4;
+            
+            // Add idle wobble when selected
+            const wobble = isSelected ? Math.sin(state.clock.elapsedTime * 2) * 0.1 : 0;
+            groupRef.current.rotation.y = baseRotation + wobble;
         }
     });
 
+    // Show loading indicator
+    if (isLoading) {
+        return (
+            <group position={position}>
+                {/* Loading spinner */}
+                <mesh rotation={[Math.PI / 2, 0, 0]}>
+                    <ringGeometry args={[0.3, 0.35, 16]} />
+                    <meshBasicMaterial color="#4a90d9" transparent opacity={0.8} />
+                </mesh>
+            </group>
+        );
+    }
+
+    // Show fallback if no model and no asset URL
     if (!model && !feature.assetUrl) {
         // Fallback to primitive geometry if no asset URL
         return (
@@ -183,9 +243,15 @@ export function FeatureRenderer3D({
 
 export default FeatureRenderer3D;
 
-// Preload function for storybook
+// Preload function for storybook - preloads GLB models into THREE.js cache
 export function preloadFeatures(urls: string[]) {
+    const loader = new GLTFLoader();
     urls.forEach(url => {
-        if (url) useGLTF.preload(url);
+        if (url) {
+            // Load into cache but don't wait for it
+            loader.load(url, () => {
+                console.log('[FeatureRenderer3D] Preloaded:', url);
+            });
+        }
     });
 }

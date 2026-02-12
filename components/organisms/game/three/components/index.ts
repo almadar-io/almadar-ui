@@ -16,3 +16,8 @@ export {
     type Canvas3DErrorBoundaryProps,
     type Canvas3DErrorBoundaryState,
 } from './Canvas3DErrorBoundary';
+
+export {
+    ModelLoader,
+    type ModelLoaderProps,
+} from './ModelLoader';
