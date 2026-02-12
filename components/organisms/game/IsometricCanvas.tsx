@@ -624,7 +624,8 @@ export function IsometricCanvas({
         }
 
         // =========== UNITS ===========
-        const sortedUnits = [...units].sort((a, b) => {
+        const unitsWithPosition = units.filter((u): u is typeof u & { position: { x: number; y: number } } => !!u.position);
+        const sortedUnits = [...unitsWithPosition].sort((a, b) => {
             const depthA = a.position.x + a.position.y;
             const depthB = b.position.x + b.position.y;
             return depthA !== depthB ? depthA - depthB : a.position.y - b.position.y;
@@ -822,7 +823,7 @@ export function IsometricCanvas({
     useEffect(() => {
         if (!selectedUnitId) return;
         const unit = units.find(u => u.id === selectedUnitId);
-        if (!unit) return;
+        if (!unit?.position) return;
         const pos = isoToScreen(unit.position.x, unit.position.y, scale, baseOffsetX);
         const centerX = pos.x + scaledTileWidth / 2;
         const centerY = pos.y + scaledDiamondTopY + scaledFloorHeight / 2;
@@ -904,7 +905,7 @@ export function IsometricCanvas({
         const isoPos = screenToIso(adjustedX, adjustedY, scale, baseOffsetX);
 
         // Check for unit click
-        const clickedUnit = units.find(u => u.position.x === isoPos.x && u.position.y === isoPos.y);
+        const clickedUnit = units.find(u => u.position?.x === isoPos.x && u.position?.y === isoPos.y);
         if (clickedUnit && (onUnitClick || unitClickEvent)) {
             if (unitClickEvent) eventBus.emit(`UI:${unitClickEvent}`, { unitId: clickedUnit.id });
             onUnitClick?.(clickedUnit.id);

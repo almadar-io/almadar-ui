@@ -114,7 +114,7 @@ export function useSpriteAnimations(
 
             // Detect movement and infer direction
             const prev = prevPos.get(unit.id);
-            if (prev) {
+            if (prev && unit.position) {
                 const dx = unit.position.x - prev.x;
                 const dy = unit.position.y - prev.y;
 
@@ -135,7 +135,9 @@ export function useSpriteAnimations(
                     }
                 }
             }
-            prevPos.set(unit.id, { ...unit.position });
+            if (unit.position) {
+                prevPos.set(unit.id, { x: unit.position.x, y: unit.position.y });
+            }
 
             // Tick animation forward
             state = tickAnimationState(state, scaledDelta);

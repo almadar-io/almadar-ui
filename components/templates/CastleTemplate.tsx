@@ -112,7 +112,7 @@ export function CastleTemplate({
     const hoveredUnit = useMemo(() => {
         if (!hoveredTile) return null;
         return units.find(
-            u => u.position.x === hoveredTile.x && u.position.y === hoveredTile.y,
+            u => u.position?.x === hoveredTile.x && u.position?.y === hoveredTile.y,
         ) ?? null;
     }, [hoveredTile, units]);
 
