@@ -4,8 +4,9 @@
  * A versatile layout primitive that provides spacing, background, border, and shadow controls.
  * Think of it as a styled div with consistent design tokens.
  */
-import React from "react";
+import React, { useCallback } from "react";
 import { cn } from "../../lib/cn";
+import { useEventBus } from "../../hooks/useEventBus";
 
 export type BoxPadding = "none" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
 export type BoxMargin =
@@ -67,6 +68,12 @@ export interface BoxProps extends React.HTMLAttributes<HTMLDivElement> {
   position?: "relative" | "absolute" | "fixed" | "sticky";
   /** HTML element to render as */
   as?: React.ElementType;
+  /** Declarative event name — emits UI:{action} via eventBus on click */
+  action?: string;
+  /** Payload to include with the action event */
+  actionPayload?: Record<string, unknown>;
+  /** Declarative hover event — emits UI:{hoverEvent} with { hovered: true/false } on mouseEnter/mouseLeave */
+  hoverEvent?: string;
 }
 
 const paddingStyles: Record<BoxPadding, string> = {
@@ -209,11 +216,41 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
       className,
       children,
       as: Component = "div",
+      action,
+      actionPayload,
+      hoverEvent,
       onClick,
+      onMouseEnter,
+      onMouseLeave,
       ...rest
     },
     ref,
   ) => {
+    const eventBus = useEventBus();
+
+    const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+      if (action) {
+        eventBus.emit(`UI:${action}`, actionPayload ?? {});
+      }
+      onClick?.(e);
+    }, [action, actionPayload, eventBus, onClick]);
+
+    const handleMouseEnter = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+      if (hoverEvent) {
+        eventBus.emit(`UI:${hoverEvent}`, { hovered: true });
+      }
+      onMouseEnter?.(e);
+    }, [hoverEvent, eventBus, onMouseEnter]);
+
+    const handleMouseLeave = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+      if (hoverEvent) {
+        eventBus.emit(`UI:${hoverEvent}`, { hovered: false });
+      }
+      onMouseLeave?.(e);
+    }, [hoverEvent, eventBus, onMouseLeave]);
+
+    const isClickable = action || onClick;
+
     return (
       <Component
         ref={ref}
@@ -245,10 +282,12 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
           // Position
           position && positionStyles[position],
           // Cursor for clickable
-          onClick && "cursor-pointer",
+          isClickable && "cursor-pointer",
           className,
         )}
-        onClick={onClick}
+        onClick={isClickable ? handleClick : undefined}
+        onMouseEnter={(hoverEvent || onMouseEnter) ? handleMouseEnter : undefined}
+        onMouseLeave={(hoverEvent || onMouseLeave) ? handleMouseLeave : undefined}
         {...rest}
       >
         {children}

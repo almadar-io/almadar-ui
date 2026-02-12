@@ -39,6 +39,10 @@
       "import": "./dist/lib/index.js",
       "types": "./dist/lib/index.d.ts"
     },
+    "./templates": {
+      "import": "./templates/index.ts",
+      "types": "./templates/index.ts"
+    },
     "./themes/*.css": "./themes/*.css",
     "./index.css": "./index.css"
   },

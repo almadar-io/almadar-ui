@@ -1,6 +1,7 @@
 import React from "react";
 import { cn } from "../../lib/cn";
 import { Loader2, type LucideIcon } from "lucide-react";
+import { useEventBus } from "../../hooks/useEventBus";
 
 export type ButtonVariant =
   | "primary"
@@ -24,6 +25,12 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   icon?: LucideIcon;
   /** Right icon as Lucide icon component (convenience prop) */
   iconRight?: LucideIcon;
+  /** Declarative event name — emits UI:{action} via eventBus on click */
+  action?: string;
+  /** Payload to include with the action event */
+  actionPayload?: Record<string, unknown>;
+  /** Button label text (alternative to children for schema-driven rendering) */
+  label?: string;
 }
 
 // Using CSS variables for theme-aware styling with hover/active effects
@@ -100,11 +107,17 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       rightIcon,
       icon: IconComponent,
       iconRight: IconRightComponent,
+      action,
+      actionPayload,
+      label,
       children,
+      onClick,
       ...props
     },
     ref,
   ) => {
+    const eventBus = useEventBus();
+
     const resolvedLeftIcon =
       leftIcon ||
       (IconComponent && <IconComponent className={iconSizeStyles[size]} />);
@@ -113,6 +126,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       (IconRightComponent && (
         <IconRightComponent className={iconSizeStyles[size]} />
       ));
+
+    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+      if (action) {
+        eventBus.emit(`UI:${action}`, actionPayload ?? {});
+      }
+      onClick?.(e);
+    };
 
     return (
       <button
@@ -129,6 +149,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           sizeStyles[size],
           className,
         )}
+        onClick={handleClick}
         {...props}
       >
         {isLoading ? (
@@ -138,7 +159,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             <span className="flex-shrink-0">{resolvedLeftIcon}</span>
           )
         )}
-        {children}
+        {children || label}
         {resolvedRightIcon && !isLoading && (
           <span className="flex-shrink-0">{resolvedRightIcon}</span>
         )}
