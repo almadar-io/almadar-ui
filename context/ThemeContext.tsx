@@ -56,6 +56,85 @@ export const BUILT_IN_THEMES: ThemeDefinition[] = [
     hasLightMode: true,
     hasDarkMode: true,
   },
+  {
+    name: "trait-wars",
+    displayName: "Trait Wars",
+    hasLightMode: false,
+    hasDarkMode: true,
+  },
+  // Extended themes
+  {
+    name: "ocean",
+    displayName: "Ocean",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
+  {
+    name: "forest",
+    displayName: "Forest",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
+  {
+    name: "sunset",
+    displayName: "Sunset",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
+  {
+    name: "lavender",
+    displayName: "Lavender",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
+  {
+    name: "rose",
+    displayName: "Rose",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
+  {
+    name: "slate",
+    displayName: "Slate",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
+  {
+    name: "ember",
+    displayName: "Ember",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
+  {
+    name: "midnight",
+    displayName: "Midnight",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
+  {
+    name: "sand",
+    displayName: "Sand",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
+  {
+    name: "neon",
+    displayName: "Neon",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
+  {
+    name: "arctic",
+    displayName: "Arctic",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
+  {
+    name: "copper",
+    displayName: "Copper",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
 ];
 
 /** Theme context value */

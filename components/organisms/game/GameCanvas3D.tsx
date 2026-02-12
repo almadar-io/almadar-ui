@@ -24,6 +24,7 @@ import { useAssetLoader } from './three/hooks/useAssetLoader';
 import { useGameCanvas3DEvents } from './three/hooks/useGameCanvas3DEvents';
 import { Canvas3DLoadingState } from './three/components/Canvas3DLoadingState';
 import { Canvas3DErrorBoundary } from './three/components/Canvas3DErrorBoundary';
+import { ModelLoader } from './three/components/ModelLoader';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from './types/isometric';
 import './GameCanvas3D.css';
 
@@ -559,6 +560,21 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                 feature: IsometricFeature;
                 position: [number, number, number];
             }) => {
+                // If feature has assetUrl, use ModelLoader to render GLB model
+                if (feature.assetUrl) {
+                    return (
+                        <ModelLoader
+                            key={feature.id}
+                            url={feature.assetUrl}
+                            position={position}
+                            scale={0.5}
+                            rotation={[0, (feature as { rotation?: number }).rotation ?? 0, 0]}
+                            onClick={() => handleFeatureClick(feature, null as any)}
+                            fallbackGeometry="box"
+                        />
+                    );
+                }
+
                 // Simple tree representation
                 if (feature.type === 'tree') {
                     return (

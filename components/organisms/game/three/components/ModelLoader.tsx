@@ -9,7 +9,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 
 export interface ModelLoaderProps {
     /** URL to the GLB/GLTF model */
@@ -44,6 +44,7 @@ interface ModelLoadState {
 
 /**
  * Hook to load GLTF model without Suspense
+ * Handles external texture references by resolving paths relative to the GLB file
  */
 function useGLTFModel(url: string): ModelLoadState {
     const [state, setState] = useState<ModelLoadState>({
@@ -58,20 +59,57 @@ function useGLTFModel(url: string): ModelLoadState {
             return;
         }
 
+        console.log('[ModelLoader] Loading:', url);
         setState(prev => ({ ...prev, isLoading: true, error: null }));
 
-        const loader = new GLTFLoader();
+        // Create a texture loader manager to resolve relative texture paths
+        const manager = new THREE.LoadingManager();
+        const textureLoader = new THREE.TextureLoader(manager);
+        
+        // Set up path resolution - extract base URL from the GLB URL
+        const urlObj = new URL(url, window.location.href);
+        const basePath = urlObj.href.substring(0, urlObj.href.lastIndexOf('/') + 1);
+        
+        // Intercept texture loading to resolve paths correctly
+        manager.setURLModifier((textureUrl) => {
+            // If it's a relative texture path, resolve it against the base path
+            if (!textureUrl.startsWith('http') && !textureUrl.startsWith('/')) {
+                // Check if it's a texture reference like "Textures/colormap.png"
+                if (textureUrl.includes('Textures/')) {
+                    // Try to resolve relative to the GLB first, then fall back to root
+                    const resolvedUrl = basePath + textureUrl;
+                    console.log('[ModelLoader] Resolving texture:', textureUrl, '->', resolvedUrl);
+                    return resolvedUrl;
+                }
+                return basePath + textureUrl;
+            }
+            return textureUrl;
+        });
+
+        // Create loader with the manager
+        const loader = new GLTFLoader(manager);
+        
         loader.load(
             url,
             (gltf) => {
+                console.log('[ModelLoader] Loaded successfully:', url);
                 setState({
                     model: gltf.scene,
                     isLoading: false,
                     error: null,
                 });
             },
-            undefined,
+            // onProgress
+            (progress) => {
+                if (progress.total > 0) {
+                    const percent = (progress.loaded / progress.total) * 100;
+                    console.log(`[ModelLoader] ${url} - ${percent.toFixed(1)}%`);
+                }
+            },
+            // onError
             (err) => {
+                const errorMsg = err instanceof Error ? err.message : String(err);
+                console.error('[ModelLoader] Error loading', url, ':', errorMsg);
                 setState({
                     model: null,
                     isLoading: false,

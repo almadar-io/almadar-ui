@@ -14,39 +14,57 @@ const preview: Preview = {
                 date: /Date$/i,
             },
         },
-        backgrounds: {
-            options: {
-                light: { name: 'light', value: '#ffffff' },
-                dark: { name: 'dark', value: '#09090b' },
-                "garden-light": { name: 'garden-light', value: '#f0fdf4' },
-                "garden-dark": { name: 'garden-dark', value: '#14532d' }
-            }
-        },
     },
 
     decorators: [
         withThemeByDataAttribute({
             themes: {
-                wireframe: 'wireframe',
-                minimalist: 'minimalist',
-                almadar: 'almadar',
-                'winning-11': 'winning-11',
+                'Minimalist Light': 'minimalist-light',
+                'Minimalist Dark': 'minimalist-dark',
+                'Almadar Light': 'almadar-light',
+                'Almadar Dark': 'almadar-dark',
+                'Wireframe Light': 'wireframe-light',
+                'Wireframe Dark': 'wireframe-dark',
+                'Ocean Light': 'ocean-light',
+                'Ocean Dark': 'ocean-dark',
+                'Forest Light': 'forest-light',
+                'Forest Dark': 'forest-dark',
+                'Sunset Light': 'sunset-light',
+                'Sunset Dark': 'sunset-dark',
+                'Lavender Light': 'lavender-light',
+                'Lavender Dark': 'lavender-dark',
+                'Rose Light': 'rose-light',
+                'Rose Dark': 'rose-dark',
+                'Slate Light': 'slate-light',
+                'Slate Dark': 'slate-dark',
+                'Ember Light': 'ember-light',
+                'Ember Dark': 'ember-dark',
+                'Midnight Light': 'midnight-light',
+                'Midnight Dark': 'midnight-dark',
+                'Sand Light': 'sand-light',
+                'Sand Dark': 'sand-dark',
+                'Neon Light': 'neon-light',
+                'Neon Dark': 'neon-dark',
+                'Arctic Light': 'arctic-light',
+                'Arctic Dark': 'arctic-dark',
+                'Copper Light': 'copper-light',
+                'Copper Dark': 'copper-dark',
+                'Trait Wars': 'trait-wars-dark',
             },
-            defaultTheme: 'minimalist',
-            attributeName: 'data-design-theme',
+            defaultTheme: 'Minimalist Light',
+            attributeName: 'data-theme',
         }),
         (Story) => (
-            <div style={{ padding: '1rem' }}>
+            <div style={{
+                padding: '1rem',
+                backgroundColor: 'var(--color-background)',
+                color: 'var(--color-foreground)',
+                minHeight: '100vh',
+            }}>
                 <Story />
             </div>
         ),
     ],
-
-    initialGlobals: {
-        backgrounds: {
-            value: 'light'
-        }
-    }
 };
 
 export default preview;

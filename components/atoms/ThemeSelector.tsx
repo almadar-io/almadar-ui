@@ -7,10 +7,7 @@
  */
 
 import React from "react";
-import {
-  useDesignTheme,
-  type DesignTheme,
-} from "../../context/DesignThemeContext";
+import { useTheme } from "../../context/ThemeContext";
 
 interface ThemeSelectorProps {
   /** Optional className */
@@ -23,24 +20,77 @@ interface ThemeSelectorProps {
 
 const THEME_LABELS: Record<
   string,
-  { label: string; icon: string; description: string }
+  { label: string; description: string }
 > = {
   wireframe: {
     label: "Wireframe",
-    icon: "📐",
-    description: "Sharp corners, thick borders",
+    description: "Sharp corners, thick borders, brutalist",
   },
   minimalist: {
     label: "Minimalist",
-    icon: "✨",
     description: "Clean, subtle, refined",
   },
   almadar: {
     label: "Almadar",
-    icon: "💎",
     description: "Teal gradients, glowing accents",
   },
+  "trait-wars": {
+    label: "Trait Wars",
+    description: "Gold parchment, game manuscript",
+  },
+  ocean: {
+    label: "Ocean",
+    description: "Deep sea calm, ocean blues",
+  },
+  forest: {
+    label: "Forest",
+    description: "Woodland serenity, earthy greens",
+  },
+  sunset: {
+    label: "Sunset",
+    description: "Golden hour, warm coral and amber",
+  },
+  lavender: {
+    label: "Lavender",
+    description: "Creative studio, soft violet",
+  },
+  rose: {
+    label: "Rose",
+    description: "Elegant bloom, warm pink",
+  },
+  slate: {
+    label: "Slate",
+    description: "Corporate edge, cool gray",
+  },
+  ember: {
+    label: "Ember",
+    description: "Fire and energy, bold red",
+  },
+  midnight: {
+    label: "Midnight",
+    description: "Noir elegance, deep indigo",
+  },
+  sand: {
+    label: "Sand",
+    description: "Desert minimal, warm earth",
+  },
+  neon: {
+    label: "Neon",
+    description: "Cyberpunk, glowing cyan and pink",
+  },
+  arctic: {
+    label: "Arctic",
+    description: "Ice crystal, cool blue",
+  },
+  copper: {
+    label: "Copper",
+    description: "Warm industrial, metallic bronze",
+  },
 };
+
+function getThemeLabel(name: string) {
+  return THEME_LABELS[name] || { label: name, description: name };
+}
 
 /**
  * ThemeSelector component for switching design themes
@@ -50,19 +100,19 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   variant = "dropdown",
   showLabels = true,
 }) => {
-  const { designTheme, setDesignTheme, availableThemes } = useDesignTheme();
+  const { theme, setTheme, availableThemes } = useTheme();
 
   if (variant === "buttons") {
     return (
-      <div className={`flex gap-2 ${className}`}>
-        {availableThemes.map((theme) => {
-          const { label, icon } = THEME_LABELS[theme];
-          const isActive = designTheme === theme;
+      <div className={`flex gap-2 flex-wrap ${className}`}>
+        {availableThemes.map((t) => {
+          const { label } = getThemeLabel(t.name);
+          const isActive = theme === t.name;
 
           return (
             <button
-              key={theme}
-              onClick={() => setDesignTheme(theme)}
+              key={t.name}
+              onClick={() => setTheme(t.name)}
               className={`
                 px-3 py-2 text-sm font-medium transition-all
                 border-[length:var(--border-width)] rounded-[var(--radius-sm)]
@@ -72,9 +122,9 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
                     : "bg-[var(--color-secondary)] text-[var(--color-secondary-foreground)] border-[var(--color-border)] hover:bg-[var(--color-secondary-hover)]"
                 }
               `}
-              title={THEME_LABELS[theme].description}
+              title={getThemeLabel(t.name).description}
             >
-              {icon} {showLabels && label}
+              {showLabels && label}
             </button>
           );
         })}
@@ -86,8 +136,8 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   return (
     <div className={`relative ${className}`}>
       <select
-        value={designTheme}
-        onChange={(e) => setDesignTheme(e.target.value as DesignTheme)}
+        value={theme}
+        onChange={(e) => setTheme(e.target.value)}
         className={`
           px-3 py-2 pr-8 text-sm font-medium
           bg-[var(--color-secondary)] text-[var(--color-secondary-foreground)]
@@ -97,11 +147,11 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
           focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]
         `}
       >
-        {availableThemes.map((theme) => {
-          const { label, icon } = THEME_LABELS[theme];
+        {availableThemes.map((t) => {
+          const { label } = getThemeLabel(t.name);
           return (
-            <option key={theme} value={theme}>
-              {icon} {label}
+            <option key={t.name} value={t.name}>
+              {label}
             </option>
           );
         })}
