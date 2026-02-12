@@ -106,7 +106,7 @@ export const Camera3D = forwardRef<Camera3DHandle, Camera3DProps>(
             newCamera.position.copy(initialPosition.current);
             newCamera.lookAt(initialTarget.current);
 
-            set({ camera: newCamera });
+            set({ camera: newCamera as THREE.PerspectiveCamera });
 
             // For top-down mode
             if (mode === 'top-down') {

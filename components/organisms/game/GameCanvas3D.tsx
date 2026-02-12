@@ -24,13 +24,7 @@ import { useAssetLoader } from './three/hooks/useAssetLoader';
 import { useGameCanvas3DEvents } from './three/hooks/useGameCanvas3DEvents';
 import { Canvas3DLoadingState } from './three/components/Canvas3DLoadingState';
 import { Canvas3DErrorBoundary } from './three/components/Canvas3DErrorBoundary';
-import type {
-    IsometricTile,
-    IsometricUnit,
-    IsometricFeature,
-    GameEvent,
-    ClosedCircuitProps,
-} from '../../../types';
+import type { IsometricTile, IsometricUnit, IsometricFeature } from './types/isometric';
 import './GameCanvas3D.css';
 
 // Re-export types for convenience
@@ -49,7 +43,16 @@ export type OverlayControl = 'default' | 'hidden' | 'minimap';
 export type UnitAnimationState = 'idle' | 'walk' | 'attack' | 'hurt' | 'die';
 
 /** Props for GameCanvas3D component */
-export interface GameCanvas3DProps extends ClosedCircuitProps<'game-canvas-3d'> {
+export interface GameCanvas3DProps {
+    // --- Closed-circuit props (MANDATORY) ---
+    /** Additional CSS classes */
+    className?: string;
+    /** Loading state indicator */
+    isLoading?: boolean;
+    /** Error state */
+    error?: string | null;
+    /** Entity name for schema-driven auto-fetch */
+    entity?: string;
     /** Array of tiles to render */
     tiles?: IsometricTile[];
     /** Array of units to render */
@@ -87,7 +90,7 @@ export interface GameCanvas3DProps extends ClosedCircuitProps<'game-canvas-3d'> 
     /** Callback when mouse moves over a tile */
     onTileHover?: (tile: IsometricTile | null, event: React.MouseEvent) => void;
     /** Callback for unit animation state change */
-    onUnitAnimation?: (unitId: string, state: UnitAnimationState) => void;
+    onUnitAnimation?: (unitId: string, state: string) => void;
     /** Asset loader instance (uses global singleton if not provided) */
     assetLoader?: AssetLoader;
     /** Custom tile renderer component */
