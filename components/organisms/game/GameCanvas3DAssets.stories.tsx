@@ -11,11 +11,43 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { GameCanvas3D } from './GameCanvas3D';
-import { ASSETS_3D, ALL_ASSET_URLS } from '../../../../../projects/trait-wars/design-system/assets-3d';
+import { 
+    DEFAULT_3D_ASSET_MANIFEST, 
+    getAll3DAssetUrls,
+    get3DCorridorUrl,
+    get3DRoomUrl,
+    get3DGateUrl,
+    get3DPropUrl,
+    get3DColumnUrl,
+    get3DSiegeWeaponUrl,
+    get3DGraveyardUrl,
+} from '../../../../../projects/trait-wars/design-system/assets-3d';
 import type { IsometricTile, IsometricFeature, IsometricUnit } from './types/isometric';
 
 // Extend IsometricFeature for stories to include rotation
 type StoryFeature = IsometricFeature & { rotation?: number };
+
+// Create asset URL helpers
+const ASSETS_3D = {
+    corridor: get3DCorridorUrl(DEFAULT_3D_ASSET_MANIFEST, 'corridor')!,
+    corridorCorner: get3DCorridorUrl(DEFAULT_3D_ASSET_MANIFEST, 'corridor-corner')!,
+    corridorEnd: get3DCorridorUrl(DEFAULT_3D_ASSET_MANIFEST, 'corridor-end')!,
+    roomSmall: get3DRoomUrl(DEFAULT_3D_ASSET_MANIFEST, 'room-small')!,
+    roomLarge: get3DRoomUrl(DEFAULT_3D_ASSET_MANIFEST, 'room-large')!,
+    gate: get3DGateUrl(DEFAULT_3D_ASSET_MANIFEST, 'gate')!,
+    barrels: get3DPropUrl(DEFAULT_3D_ASSET_MANIFEST, 'barrels')!,
+    crate: get3DPropUrl(DEFAULT_3D_ASSET_MANIFEST, 'crate')!,
+    ladder: get3DPropUrl(DEFAULT_3D_ASSET_MANIFEST, 'ladder')!,
+    column: get3DColumnUrl(DEFAULT_3D_ASSET_MANIFEST, 'column')!,
+    columnDamaged: get3DColumnUrl(DEFAULT_3D_ASSET_MANIFEST, 'column-damaged')!,
+    ballista: get3DSiegeWeaponUrl(DEFAULT_3D_ASSET_MANIFEST, 'ballista')!,
+    catapult: get3DSiegeWeaponUrl(DEFAULT_3D_ASSET_MANIFEST, 'catapult')!,
+    coffin: get3DGraveyardUrl(DEFAULT_3D_ASSET_MANIFEST, 'coffin')!,
+    coffinOld: get3DGraveyardUrl(DEFAULT_3D_ASSET_MANIFEST, 'coffin-old')!,
+    crossColumn: get3DGraveyardUrl(DEFAULT_3D_ASSET_MANIFEST, 'cross-column')!,
+};
+
+const ALL_ASSET_URLS = getAll3DAssetUrls(DEFAULT_3D_ASSET_MANIFEST);
 
 /**
  * Generate a simple dungeon tile grid
