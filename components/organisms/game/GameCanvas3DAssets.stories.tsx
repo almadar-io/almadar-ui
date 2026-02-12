@@ -11,9 +11,12 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { GameCanvas3D } from './GameCanvas3D';
-import { ASSETS_3D, ALL_ASSET_URLS } from '../../../projects/trait-wars/design-system/assets-3d';
+import { ASSETS_3D, ALL_ASSET_URLS } from '../../../../projects/trait-wars/design-system/assets-3d';
 import { IsometricTile, IsometricFeature, IsometricUnit, GridPosition } from './types';
 import { generateDungeonMap } from './utils/grid-3d';
+
+// Extend IsometricFeature for stories to include rotation
+type StoryFeature = IsometricFeature & { rotation?: number };
 
 /**
  * Helper to create tile data
@@ -48,7 +51,7 @@ const dungeonTiles: IsometricTile[] = [
     createTile('corner3', 6, 1, 0),
 ];
 
-const dungeonFeatures: IsometricFeature[] = [
+const dungeonFeatures: StoryFeature[] = [
     // Corridor pieces
     { id: 'corridor-1', x: 1, y: 0, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridor },
     { id: 'corridor-2', x: 2, y: 0, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridor },

@@ -2,11 +2,11 @@ import React, { useState, useCallback, useMemo } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { WorldMapBoard } from './WorldMapBoard';
 import type { WorldMapEntity, MapHero, MapHex, WorldMapSlotContext } from './WorldMapBoard';
-import { Box } from '../../../atoms/Box';
-import { VStack, HStack } from '../../../atoms/Stack';
-import { Typography } from '../../../atoms/Typography';
-import { Button } from '../../../atoms/Button';
-import { Badge } from '../../../atoms/Badge';
+import { Box } from '../../atoms/Box';
+import { VStack, HStack } from '../../atoms/Stack';
+import { Typography } from '../../atoms/Typography';
+import { Button } from '../../atoms/Button';
+import { Badge } from '../../atoms/Badge';
 import {
     CollapsibleSection,
     EditorSlider,
