@@ -279,10 +279,10 @@ export function IsometricCanvas({
         for (const tile of sortedTiles) {
             if (tile.terrainSprite) urls.push(tile.terrainSprite);
             else if (getTerrainSprite) {
-                const url = getTerrainSprite(tile.terrain);
+                const url = getTerrainSprite(tile.terrain ?? '');
                 if (url) urls.push(url);
             } else {
-                const url = resolveManifestUrl(assetManifest?.terrains?.[tile.terrain]);
+                const url = resolveManifestUrl(assetManifest?.terrains?.[tile.terrain ?? '']);
                 if (url) urls.push(url);
             }
         }
@@ -348,7 +348,7 @@ export function IsometricCanvas({
 
     // -- Sprite resolvers --
     const resolveTerrainSpriteUrl = useCallback((tile: IsometricTile): string | undefined => {
-        return tile.terrainSprite || getTerrainSprite?.(tile.terrain) || resolveManifestUrl(assetManifest?.terrains?.[tile.terrain]);
+        return tile.terrainSprite || getTerrainSprite?.(tile.terrain ?? '') || resolveManifestUrl(assetManifest?.terrains?.[tile.terrain ?? '']);
     }, [getTerrainSprite, assetManifest, resolveManifestUrl]);
 
     const resolveFeatureSpriteUrl = useCallback((featureType: string): string | undefined => {
@@ -411,6 +411,7 @@ export function IsometricCanvas({
 
         // Draw units as dots
         for (const unit of units) {
+            if (!unit.position) continue;
             const pos = isoToScreen(unit.position.x, unit.position.y, scale, baseOffsetX);
             const mx = (pos.x + scaledTileWidth / 2 - minX) * scaleM + offsetMx;
             const my = (pos.y + scaledTileHeight / 2 - minY) * scaleM + offsetMy;
