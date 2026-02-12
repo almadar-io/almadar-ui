@@ -11,8 +11,13 @@
 // Core Canvas Components
 // ---------------------------------------------------------------------------
 export { IsometricCanvas, type IsometricCanvasProps } from './IsometricCanvas';
-// GameCanvas3D is NOT barrel-exported because it depends on @react-three/fiber + three
-// which are optional peer dependencies. Import directly from './GameCanvas3D' if needed.
+// GameCanvas3D and Three.js components are NOT barrel-exported because they depend on
+// @react-three/fiber + three which are optional peer dependencies.
+// Import directly from './GameCanvas3D' or './three' if needed.
+//
+// Example:
+//   import { GameCanvas3D } from '@almadar/ui/components/organisms/game/GameCanvas3D';
+//   import { TileRenderer, useAssetLoader } from '@almadar/ui/components/organisms/game/three';
 export { CanvasEffect, type CanvasEffectProps, type CombatActionType } from './CanvasEffect';
 
 // ---------------------------------------------------------------------------

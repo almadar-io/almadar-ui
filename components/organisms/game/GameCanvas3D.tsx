@@ -16,10 +16,14 @@ import React, {
     forwardRef,
     useImperativeHandle,
 } from 'react';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { OrbitControls, Grid } from '@react-three/drei';
 import { AssetLoader, assetLoader } from './three/loaders/AssetLoader';
+import { useAssetLoader } from './three/hooks/useAssetLoader';
+import { useGameCanvas3DEvents } from './three/hooks/useGameCanvas3DEvents';
+import { Canvas3DLoadingState } from './three/components/Canvas3DLoadingState';
+import { Canvas3DErrorBoundary } from './three/components/Canvas3DErrorBoundary';
 import type {
     IsometricTile,
     IsometricUnit,
@@ -92,6 +96,36 @@ export interface GameCanvas3DProps extends ClosedCircuitProps<'game-canvas-3d'> 
     unitRenderer?: React.FC<{ unit: IsometricUnit; position: [number, number, number] }>;
     /** Custom feature renderer component */
     featureRenderer?: React.FC<{ feature: IsometricFeature; position: [number, number, number] }>;
+    /** URLs to preload */
+    preloadAssets?: string[];
+    /** Declarative event: tile click */
+    tileClickEvent?: string;
+    /** Declarative event: unit click */
+    unitClickEvent?: string;
+    /** Declarative event: feature click */
+    featureClickEvent?: string;
+    /** Declarative event: canvas click */
+    canvasClickEvent?: string;
+    /** Declarative event: tile hover */
+    tileHoverEvent?: string;
+    /** Declarative event: tile leave */
+    tileLeaveEvent?: string;
+    /** Declarative event: unit animation */
+    unitAnimationEvent?: string;
+    /** Declarative event: camera change */
+    cameraChangeEvent?: string;
+    /** Loading message */
+    loadingMessage?: string;
+    /** Whether to use instancing for tiles */
+    useInstancing?: boolean;
+    /** Valid move positions */
+    validMoves?: Array<{ x: number; z: number }>;
+    /** Attack target positions */
+    attackTargets?: Array<{ x: number; z: number }>;
+    /** Selected tile IDs */
+    selectedTileIds?: string[];
+    /** Selected unit ID */
+    selectedUnitId?: string | null;
 }
 
 /** Grid configuration */
@@ -125,6 +159,29 @@ export interface GameCanvas3DHandle {
 }
 
 /**
+ * Camera controller component for imperative handle integration
+ */
+function CameraController({
+    onCameraChange,
+}: {
+    onCameraChange?: (pos: { x: number; y: number; z: number }) => void;
+}): null {
+    const { camera } = useThree();
+
+    useEffect(() => {
+        if (onCameraChange) {
+            onCameraChange({
+                x: camera.position.x,
+                y: camera.position.y,
+                z: camera.position.z,
+            });
+        }
+    }, [camera.position, onCameraChange]);
+
+    return null;
+}
+
+/**
  * GameCanvas3D Component
  *
  * 3D game canvas that mirrors the IsometricCanvas API.
@@ -137,6 +194,7 @@ export interface GameCanvas3DHandle {
  *   units={units}
  *   features={features}
  *   cameraMode="isometric"
+ *   tileClickEvent="TILE_SELECTED"
  *   onTileClick={(tile) => console.log('Clicked:', tile)}
  * />
  * ```
@@ -167,16 +225,55 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
             unitRenderer: CustomUnitRenderer,
             featureRenderer: CustomFeatureRenderer,
             className,
-            isLoading,
-            error,
+            isLoading: externalLoading,
+            error: externalError,
             entity,
+            preloadAssets = [],
+            tileClickEvent,
+            unitClickEvent,
+            featureClickEvent,
+            canvasClickEvent,
+            tileHoverEvent,
+            tileLeaveEvent,
+            unitAnimationEvent,
+            cameraChangeEvent,
+            loadingMessage = 'Loading 3D Scene...',
+            useInstancing = true,
+            validMoves = [],
+            attackTargets = [],
+            selectedTileIds = [],
+            selectedUnitId = null,
         },
         ref
     ) => {
         const containerRef = useRef<HTMLDivElement>(null);
         const controlsRef = useRef<any>(null);
         const [hoveredTile, setHoveredTile] = useState<IsometricTile | null>(null);
-        const [selectedTile, setSelectedTile] = useState<IsometricTile | null>(null);
+        const [internalError, setInternalError] = useState<string | null>(null);
+
+        // Asset loading
+        const { isLoading: assetsLoading, progress, loaded, total } = useAssetLoader({
+            preloadUrls: preloadAssets,
+            loader: customAssetLoader,
+        });
+
+        // Event handlers with event bus integration
+        const eventHandlers = useGameCanvas3DEvents({
+            tileClickEvent,
+            unitClickEvent,
+            featureClickEvent,
+            canvasClickEvent,
+            tileHoverEvent,
+            tileLeaveEvent,
+            unitAnimationEvent,
+            cameraChangeEvent,
+            onTileClick,
+            onUnitClick,
+            onFeatureClick,
+            onCanvasClick,
+            onTileHover,
+            onUnitAnimation,
+        });
 
         // Use custom or global asset loader
         const loader = customAssetLoader || assetLoader;
@@ -228,15 +325,22 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
         // Imperative handle
         useImperativeHandle(ref, () => ({
             getCameraPosition: () => {
-                // This will be populated from the R3F camera
+                if (controlsRef.current) {
+                    const pos = controlsRef.current.object.position;
+                    return new THREE.Vector3(pos.x, pos.y, pos.z);
+                }
                 return null;
             },
             setCameraPosition: (x: number, y: number, z: number) => {
-                // TODO: Implement camera control
+                if (controlsRef.current) {
+                    controlsRef.current.object.position.set(x, y, z);
+                    controlsRef.current.update();
+                }
             },
             lookAt: (x: number, y: number, z: number) => {
                 if (controlsRef.current) {
                     controlsRef.current.target.set(x, y, z);
+                    controlsRef.current.update();
                 }
             },
             resetCamera: () => {
@@ -245,7 +349,10 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                 }
             },
             screenshot: () => {
-                // TODO: Implement screenshot
+                const canvas = containerRef.current?.querySelector('canvas');
+                if (canvas) {
+                    return canvas.toDataURL('image/png');
+                }
                 return null;
             },
             export: () => ({
@@ -255,13 +362,37 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
             }),
         }));
 
-        // Handle tile click
+        // Handle tile click with event bus
         const handleTileClick = useCallback(
-            (tile: IsometricTile) => {
-                setSelectedTile(tile);
-                onTileClick?.(tile, {} as React.MouseEvent);
+            (tile: IsometricTile, event: any) => {
+                eventHandlers.handleTileClick(tile, event);
             },
-            [onTileClick]
+            [eventHandlers]
+        );
+
+        // Handle unit click with event bus
+        const handleUnitClick = useCallback(
+            (unit: IsometricUnit, event: any) => {
+                eventHandlers.handleUnitClick(unit, event);
+            },
+            [eventHandlers]
+        );
+
+        // Handle feature click with event bus
+        const handleFeatureClick = useCallback(
+            (feature: IsometricFeature, event: any) => {
+                eventHandlers.handleFeatureClick(feature, event);
+            },
+            [eventHandlers]
+        );
+
+        // Handle tile hover with event bus
+        const handleTileHover = useCallback(
+            (tile: IsometricTile | null, event: any) => {
+                setHoveredTile(tile);
+                eventHandlers.handleTileHover(tile, event);
+            },
+            [eventHandlers]
         );
 
         // Camera configuration based on mode
@@ -277,20 +408,17 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                     return {
                         position: [distance, distance * 0.8, distance] as [number, number, number],
                         fov: 45,
-                        orthographic: true,
                     };
                 case 'top-down':
                     return {
                         position: [0, distance * 2, 0] as [number, number, number],
                         fov: 45,
-                        orthographic: true,
                     };
                 case 'perspective':
                 default:
                     return {
                         position: [distance, distance, distance] as [number, number, number],
                         fov: 45,
-                        orthographic: false,
                     };
             }
         }, [cameraMode, gridBounds]);
@@ -298,8 +426,14 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
         // Default tile renderer
         const DefaultTileRenderer = useCallback(
             ({ tile, position }: { tile: IsometricTile; position: [number, number, number] }) => {
-                const isSelected = selectedTile?.id === tile.id;
+                const isSelected = selectedTileIds.includes(tile.id);
                 const isHovered = hoveredTile?.id === tile.id;
+                const isValidMove = validMoves.some(
+                    (m) => m.x === tile.x && m.z === (tile.z ?? tile.y ?? 0)
+                );
+                const isAttackTarget = attackTargets.some(
+                    (m) => m.x === tile.x && m.z === (tile.z ?? tile.y ?? 0)
+                );
 
                 // Determine color based on tile type
                 let color = 0x808080;
@@ -309,41 +443,67 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                 else if (tile.type === 'rock') color = 0x888888;
                 else if (tile.type === 'snow') color = 0xeeeeee;
 
-                // Highlight selection
-                const emissive = isSelected ? 0x444444 : isHovered ? 0x222222 : 0;
+                // Apply highlights
+                let emissive = 0x000000;
+                if (isSelected) emissive = 0x444444;
+                else if (isAttackTarget) emissive = 0x440000;
+                else if (isValidMove) emissive = 0x004400;
+                else if (isHovered) emissive = 0x222222;
 
                 return (
                     <mesh
                         position={position}
-                        onClick={() => handleTileClick(tile)}
-                        onPointerEnter={() => setHoveredTile(tile)}
-                        onPointerLeave={() => setHoveredTile(null)}
+                        onClick={(e) => handleTileClick(tile, e)}
+                        onPointerEnter={(e) => handleTileHover(tile, e)}
+                        onPointerLeave={(e) => handleTileHover(null, e)}
+                        userData={{ type: 'tile', tileId: tile.id, gridX: tile.x, gridZ: tile.z ?? tile.y }}
                     >
                         <boxGeometry args={[0.95, 0.2, 0.95]} />
                         <meshStandardMaterial color={color} emissive={emissive} />
                     </mesh>
                 );
             },
-            [selectedTile, hoveredTile, handleTileClick]
+            [selectedTileIds, hoveredTile, validMoves, attackTargets, handleTileClick, handleTileHover]
         );
 
         // Default unit renderer
         const DefaultUnitRenderer = useCallback(
             ({ unit, position }: { unit: IsometricUnit; position: [number, number, number] }) => {
-                const color = unit.faction === 'player' ? 0x4488ff : 0xff4444;
+                const isSelected = selectedUnitId === unit.id;
+                const color = unit.faction === 'player' ? 0x4488ff : unit.faction === 'enemy' ? 0xff4444 : 0xffff44;
 
                 return (
-                    <group position={position}>
+                    <group
+                        position={position}
+                        onClick={(e) => handleUnitClick(unit, e)}
+                        userData={{ type: 'unit', unitId: unit.id }}
+                    >
+                        {/* Selection ring */}
+                        {isSelected && (
+                            <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                                <ringGeometry args={[0.4, 0.5, 32]} />
+                                <meshBasicMaterial color="#ffff00" transparent opacity={0.8} />
+                            </mesh>
+                        )}
+
                         {/* Base */}
                         <mesh position={[0, 0.3, 0]}>
                             <cylinderGeometry args={[0.3, 0.3, 0.1, 8]} />
                             <meshStandardMaterial color={color} />
                         </mesh>
+
                         {/* Body */}
                         <mesh position={[0, 0.6, 0]}>
                             <capsuleGeometry args={[0.2, 0.4, 4, 8]} />
                             <meshStandardMaterial color={color} />
                         </mesh>
+
+                        {/* Head */}
+                        <mesh position={[0, 0.9, 0]}>
+                            <sphereGeometry args={[0.12, 8, 8]} />
+                            <meshStandardMaterial color={color} />
+                        </mesh>
+
                         {/* Health bar */}
                         {unit.health !== undefined && unit.maxHealth !== undefined && (
                             <group position={[0, 1.2, 0]}>
@@ -353,15 +513,12 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                                 </mesh>
                                 <mesh
                                     position={[
-                                        -0.25 +
-                                            (0.5 * (unit.health / unit.maxHealth)) / 2,
+                                        -0.25 + (0.5 * (unit.health / unit.maxHealth)) / 2,
                                         0,
-                                        0,
+                                        0.01,
                                     ]}
                                 >
-                                    <planeGeometry
-                                        args={[0.5 * (unit.health / unit.maxHealth), 0.05]}
-                                    />
+                                    <planeGeometry args={[0.5 * (unit.health / unit.maxHealth), 0.05]} />
                                     <meshBasicMaterial
                                         color={
                                             unit.health / unit.maxHealth > 0.5
@@ -377,7 +534,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                     </group>
                 );
             },
-            []
+            [selectedUnitId, handleUnitClick]
         );
 
         // Default feature renderer
@@ -392,13 +549,15 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                 // Simple tree representation
                 if (feature.type === 'tree') {
                     return (
-                        <group position={position}>
-                            {/* Trunk */}
+                        <group
+                            position={position}
+                            onClick={(e) => handleFeatureClick(feature, e)}
+                            userData={{ type: 'feature', featureId: feature.id }}
+                        >
                             <mesh position={[0, 0.4, 0]}>
                                 <cylinderGeometry args={[0.1, 0.15, 0.8, 6]} />
                                 <meshStandardMaterial color={0x8b4513} />
                             </mesh>
-                            {/* Leaves */}
                             <mesh position={[0, 0.9, 0]}>
                                 <coneGeometry args={[0.5, 0.8, 8]} />
                                 <meshStandardMaterial color={0x228b22} />
@@ -410,7 +569,11 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                 // Simple rock representation
                 if (feature.type === 'rock') {
                     return (
-                        <mesh position={[position[0], position[1] + 0.3, position[2]]}>
+                        <mesh
+                            position={[position[0], position[1] + 0.3, position[2]]}
+                            onClick={(e) => handleFeatureClick(feature, e)}
+                            userData={{ type: 'feature', featureId: feature.id }}
+                        >
                             <dodecahedronGeometry args={[0.3, 0]} />
                             <meshStandardMaterial color={0x808080} />
                         </mesh>
@@ -419,139 +582,159 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
 
                 return null;
             },
-            []
+            [handleFeatureClick]
         );
 
         // Loading state
-        if (isLoading) {
+        if (externalLoading || (assetsLoading && preloadAssets.length > 0)) {
             return (
-                <div className="game-canvas-3d game-canvas-3d--loading">
-                    <div className="game-canvas-3d__loading">Loading 3D assets...</div>
-                </div>
+                <Canvas3DLoadingState
+                    progress={progress}
+                    loaded={loaded}
+                    total={total}
+                    message={loadingMessage}
+                    className={className}
+                />
             );
         }
 
         // Error state
-        if (error) {
+        const displayError = externalError || internalError;
+        if (displayError) {
             return (
-                <div className="game-canvas-3d game-canvas-3d--error">
-                    <div className="game-canvas-3d__error">Error: {error}</div>
-                </div>
+                <Canvas3DErrorBoundary>
+                    <div className="game-canvas-3d game-canvas-3d--error">
+                        <div className="game-canvas-3d__error">Error: {displayError}</div>
+                    </div>
+                </Canvas3DErrorBoundary>
             );
         }
 
         return (
-            <div
-                ref={containerRef}
-                className={`game-canvas-3d ${className || ''}`}
-                data-orientation={orientation}
-                data-camera-mode={cameraMode}
-                data-overlay={overlay}
+            <Canvas3DErrorBoundary
+                onError={(err) => setInternalError(err.message)}
+                onReset={() => setInternalError(null)}
             >
-                <Canvas
-                    shadows={shadows}
-                    camera={{
-                        position: cameraConfig.position,
-                        fov: cameraConfig.fov,
-                        near: 0.1,
-                        far: 1000,
-                    }}
-                    style={{ background: backgroundColor }}
+                <div
+                    ref={containerRef}
+                    className={`game-canvas-3d ${className || ''}`}
+                    data-orientation={orientation}
+                    data-camera-mode={cameraMode}
+                    data-overlay={overlay}
                 >
-                    {/* Lighting */}
-                    <ambientLight intensity={0.6} />
-                    <directionalLight
-                        position={[10, 20, 10]}
-                        intensity={0.8}
-                        castShadow={shadows}
-                        shadow-mapSize={[2048, 2048]}
-                    />
+                    <Canvas
+                        shadows={shadows}
+                        camera={{
+                            position: cameraConfig.position,
+                            fov: cameraConfig.fov,
+                            near: 0.1,
+                            far: 1000,
+                        }}
+                        style={{ background: backgroundColor }}
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget) {
+                                eventHandlers.handleCanvasClick(e as any);
+                            }
+                        }}
+                    >
+                        <CameraController onCameraChange={eventHandlers.handleCameraChange} />
 
-                    {/* Grid */}
-                    {showGrid && (
-                        <Grid
-                            args={[
-                                Math.max(gridBounds.maxX - gridBounds.minX + 2, 10),
-                                Math.max(gridBounds.maxZ - gridBounds.minZ + 2, 10),
-                            ]}
-                            position={[
-                                (gridBounds.maxX - gridBounds.minX) / 2 - 0.5,
-                                0,
-                                (gridBounds.maxZ - gridBounds.minZ) / 2 - 0.5,
-                            ]}
-                            cellSize={1}
-                            cellThickness={1}
-                            cellColor="#444444"
-                            sectionSize={5}
-                            sectionThickness={1.5}
-                            sectionColor="#666666"
-                            fadeDistance={50}
-                            fadeStrength={1}
+                        {/* Lighting */}
+                        <ambientLight intensity={0.6} />
+                        <directionalLight
+                            position={[10, 20, 10]}
+                            intensity={0.8}
+                            castShadow={shadows}
+                            shadow-mapSize={[2048, 2048]}
                         />
+                        <hemisphereLight intensity={0.3} color="#87ceeb" groundColor="#362d1d" />
+
+                        {/* Grid */}
+                        {showGrid && (
+                            <Grid
+                                args={[
+                                    Math.max(gridBounds.maxX - gridBounds.minX + 2, 10),
+                                    Math.max(gridBounds.maxZ - gridBounds.minZ + 2, 10),
+                                ]}
+                                position={[
+                                    (gridBounds.maxX - gridBounds.minX) / 2 - 0.5,
+                                    0,
+                                    (gridBounds.maxZ - gridBounds.minZ) / 2 - 0.5,
+                                ]}
+                                cellSize={1}
+                                cellThickness={1}
+                                cellColor="#444444"
+                                sectionSize={5}
+                                sectionThickness={1.5}
+                                sectionColor="#666666"
+                                fadeDistance={50}
+                                fadeStrength={1}
+                            />
+                        )}
+
+                        {/* Tiles */}
+                        {tiles.map((tile) => {
+                            const position = gridToWorld(
+                                tile.x,
+                                tile.z ?? tile.y ?? 0,
+                                tile.elevation ?? 0
+                            );
+                            const Renderer = CustomTileRenderer || DefaultTileRenderer;
+                            return <Renderer key={tile.id} tile={tile} position={position} />;
+                        })}
+
+                        {/* Features */}
+                        {features.map((feature) => {
+                            const position = gridToWorld(
+                                feature.x,
+                                feature.z ?? feature.y ?? 0,
+                                (feature.elevation ?? 0) + 0.5
+                            );
+                            const Renderer = CustomFeatureRenderer || DefaultFeatureRenderer;
+                            return <Renderer key={feature.id} feature={feature} position={position} />;
+                        })}
+
+                        {/* Units */}
+                        {units.map((unit) => {
+                            const position = gridToWorld(
+                                unit.x,
+                                unit.z ?? unit.y ?? 0,
+                                (unit.elevation ?? 0) + 0.5
+                            );
+                            const Renderer = CustomUnitRenderer || DefaultUnitRenderer;
+                            return <Renderer key={unit.id} unit={unit} position={position} />;
+                        })}
+
+                        {/* Camera controls */}
+                        <OrbitControls
+                            ref={controlsRef}
+                            target={cameraTarget}
+                            enableDamping
+                            dampingFactor={0.05}
+                            minDistance={2}
+                            maxDistance={100}
+                            maxPolarAngle={Math.PI / 2 - 0.1}
+                        />
+                    </Canvas>
+
+                    {/* Coordinate overlay */}
+                    {showCoordinates && hoveredTile && (
+                        <div className="game-canvas-3d__coordinates">
+                            X: {hoveredTile.x}, Z: {hoveredTile.z ?? hoveredTile.y ?? 0}
+                        </div>
                     )}
 
-                    {/* Tiles */}
-                    {tiles.map((tile) => {
-                        const position = gridToWorld(
-                            tile.x,
-                            tile.z ?? tile.y ?? 0,
-                            tile.elevation ?? 0
-                        );
-                        const Renderer = CustomTileRenderer || DefaultTileRenderer;
-                        return <Renderer key={tile.id} tile={tile} position={position} />;
-                    })}
-
-                    {/* Features */}
-                    {features.map((feature) => {
-                        const position = gridToWorld(
-                            feature.x,
-                            feature.z ?? feature.y ?? 0,
-                            (feature.elevation ?? 0) + 0.5
-                        );
-                        const Renderer = CustomFeatureRenderer || DefaultFeatureRenderer;
-                        return <Renderer key={feature.id} feature={feature} position={position} />;
-                    })}
-
-                    {/* Units */}
-                    {units.map((unit) => {
-                        const position = gridToWorld(
-                            unit.x,
-                            unit.z ?? unit.y ?? 0,
-                            (unit.elevation ?? 0) + 0.5
-                        );
-                        const Renderer = CustomUnitRenderer || DefaultUnitRenderer;
-                        return <Renderer key={unit.id} unit={unit} position={position} />;
-                    })}
-
-                    {/* Camera controls */}
-                    <OrbitControls
-                        ref={controlsRef}
-                        target={cameraTarget}
-                        enableDamping
-                        dampingFactor={0.05}
-                        minDistance={2}
-                        maxDistance={100}
-                        maxPolarAngle={Math.PI / 2 - 0.1}
-                    />
-                </Canvas>
-
-                {/* Coordinate overlay */}
-                {showCoordinates && hoveredTile && (
-                    <div className="game-canvas-3d__coordinates">
-                        X: {hoveredTile.x}, Z: {hoveredTile.z ?? hoveredTile.y ?? 0}
-                    </div>
-                )}
-
-                {/* Tile info overlay */}
-                {showTileInfo && hoveredTile && (
-                    <div className="game-canvas-3d__tile-info">
-                        <div className="tile-info__type">{hoveredTile.type}</div>
-                        {hoveredTile.terrain && (
-                            <div className="tile-info__terrain">{hoveredTile.terrain}</div>
-                        )}
-                    </div>
-                )}
-            </div>
+                    {/* Tile info overlay */}
+                    {showTileInfo && hoveredTile && (
+                        <div className="game-canvas-3d__tile-info">
+                            <div className="tile-info__type">{hoveredTile.type}</div>
+                            {hoveredTile.terrain && (
+                                <div className="tile-info__terrain">{hoveredTile.terrain}</div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </Canvas3DErrorBoundary>
         );
     }
 );
