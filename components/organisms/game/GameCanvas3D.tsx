@@ -58,6 +58,8 @@ export interface GameCanvas3DProps {
     // --- Closed-circuit props (MANDATORY) ---
     /** Additional CSS classes */
     className?: string;
+    /** Children to render inside the 3D canvas (e.g., physics objects, custom meshes) */
+    children?: React.ReactNode;
     /** Loading state indicator */
     isLoading?: boolean;
     /** Error state */
@@ -257,6 +259,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
             attackTargets = [],
             selectedTileIds = [],
             selectedUnitId = null,
+            children,
         },
         ref
     ) => {
@@ -733,6 +736,9 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                             const Renderer = CustomUnitRenderer || DefaultUnitRenderer;
                             return <Renderer key={unit.id} unit={unit} position={position} />;
                         })}
+
+                        {/* Custom children */}
+                        {children}
 
                         {/* Camera controls */}
                         <OrbitControls

@@ -52,6 +52,21 @@ export {
     type SheetUrlResolver,
     type FrameDimsResolver,
 } from './hooks/useSpriteAnimations';
+export {
+    usePhysics2D,
+    type UsePhysics2DOptions,
+    type UsePhysics2DReturn,
+} from './hooks/usePhysics2D';
+
+// ---------------------------------------------------------------------------
+// Physics Managers
+// ---------------------------------------------------------------------------
+export {
+    PhysicsManager,
+    type Physics2DState,
+    type PhysicsBounds,
+    type PhysicsConfig,
+} from './managers/PhysicsManager';
 
 // ---------------------------------------------------------------------------
 // Utils (pure functions)

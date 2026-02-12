@@ -29,6 +29,12 @@ export {
     ModelLoader,
     type ModelLoaderProps,
 } from './components/ModelLoader';
+export {
+    PhysicsObject3D,
+    usePhysics3DController,
+    type PhysicsObject3DProps,
+    type Physics3DState,
+} from './components/PhysicsObject3D';
 
 // ---------------------------------------------------------------------------
 // Hooks
