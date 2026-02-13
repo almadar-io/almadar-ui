@@ -139,7 +139,7 @@ export interface DetailField {
 
 export interface DetailSection {
   title: string;
-  fields: DetailField[];
+  fields: (DetailField | string)[];
 }
 
 /**
@@ -188,8 +188,8 @@ export interface DetailPanelProps {
 
   // Schema-based props
   entity?: string;
-  /** Fields to display - accepts string[] or {key, header}[] for unified interface */
-  fields?: readonly FieldDef[] | readonly DetailField[];
+  /** Fields to display - accepts string[], {key, header}[], or DetailField[] */
+  fields?: readonly (FieldDef | DetailField)[];
   /** Alias for fields - backwards compatibility */
   fieldNames?: readonly string[];
   data?: Record<string, unknown> | unknown;
@@ -297,6 +297,24 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     data && typeof data === "object" && !Array.isArray(data)
       ? (data as Record<string, unknown>)
       : undefined;
+
+  // Resolve string fields in sections using entity data
+  if (sections && normalizedData) {
+    sections = sections.map((section) => ({
+      ...section,
+      fields: section.fields.map((field) => {
+        if (typeof field === "string") {
+          const value = getNestedValue(normalizedData, field);
+          return {
+            label: formatFieldLabel(field),
+            value: formatFieldValue(value, field),
+            icon: getFieldIcon(field),
+          };
+        }
+        return field;
+      }),
+    }));
+  }
 
   // Build sections from schema if provided
   if (normalizedData && effectiveFieldNames) {
