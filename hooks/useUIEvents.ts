@@ -126,7 +126,9 @@ export function useUIEvents<E extends string>(
     }
 
     return () => {
-      unsubscribes.forEach((unsub) => unsub());
+      unsubscribes.forEach((unsub) => {
+        if (typeof unsub === 'function') unsub();
+      });
     };
   }, [eventBus, dispatch, stableValidEvents]);
 }
@@ -195,11 +197,9 @@ export function useSelectedEntity<T>(
     const unsubCancel = eventBus.on("UI:CANCEL", handleDeselect);
 
     return () => {
-      unsubSelect();
-      unsubView();
-      unsubDeselect();
-      unsubClose();
-      unsubCancel();
+      [unsubSelect, unsubView, unsubDeselect, unsubClose, unsubCancel].forEach(
+        (unsub) => { if (typeof unsub === 'function') unsub(); }
+      );
     };
   }, [eventBus, usingContext]);
 
