@@ -139,7 +139,7 @@ export interface DetailField {
 
 export interface DetailSection {
   title: string;
-  fields: (DetailField | string)[];
+  fields: DetailField[];
 }
 
 /**
@@ -598,11 +598,15 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
               <Divider />
 
               <SimpleGrid minChildWidth="250px" maxCols={2} gap="lg">
-                {section.fields.map((field, fieldIdx) => (
+                {section.fields.map((field, fieldIdx) => {
+                  const resolved: DetailField = typeof field === "string"
+                    ? { label: formatFieldLabel(field), value: normalizedData ? formatFieldValue(getNestedValue(normalizedData, field), field) : "—", icon: getFieldIcon(field) }
+                    : field;
+                  return (
                   <HStack key={fieldIdx} gap="sm" align="start">
-                    {field.icon && (
+                    {resolved.icon && (
                       <Icon
-                        icon={field.icon}
+                        icon={resolved.icon}
                         size="md"
                         className="text-[var(--color-muted-foreground)] mt-1"
                       />
@@ -614,15 +618,16 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                         color="secondary"
                         weight="medium"
                       >
-                        {field.label}
+                        {resolved.label}
                       </Typography>
 
                       <Typography variant="body" className="break-words">
-                        {field.value || "—"}
+                        {resolved.value || "—"}
                       </Typography>
                     </VStack>
                   </HStack>
-                ))}
+                  );
+                })}
               </SimpleGrid>
             </VStack>
           </Card>
