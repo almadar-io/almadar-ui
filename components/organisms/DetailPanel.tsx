@@ -193,6 +193,10 @@ export interface DetailPanelProps {
   /** Alias for fields - backwards compatibility */
   fieldNames?: readonly string[];
   data?: Record<string, unknown> | unknown;
+  /** Initial data for edit mode (passed by compiler) */
+  initialData?: Record<string, unknown> | unknown;
+  /** Display mode (passed by compiler) */
+  mode?: string;
   isLoading?: boolean;
   error?: Error | null;
   /** Panel position (for drawer/sidebar placement) */
