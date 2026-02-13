@@ -176,7 +176,8 @@ export function useEventListener(
     const wrappedHandler: EventListener = (evt) => {
       handlerRef.current(evt);
     };
-    return eventBus.on(event, wrappedHandler);
+    const unsub = eventBus.on(event, wrappedHandler);
+    return () => { if (typeof unsub === 'function') unsub(); };
   }, [event, eventBus]);
 }
 
