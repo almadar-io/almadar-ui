@@ -36,7 +36,9 @@ export interface GitHubRepo {
 /**
  * API base URL
  */
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_BASE = typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL
+  ? import.meta.env.VITE_API_URL
+  : 'http://localhost:3000';
 
 /**
  * Get user ID from context/auth
