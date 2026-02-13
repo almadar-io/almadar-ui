@@ -139,7 +139,7 @@ export interface DetailField {
 
 export interface DetailSection {
   title: string;
-  fields: DetailField[];
+  fields: (DetailField | string)[];
 }
 
 /**
