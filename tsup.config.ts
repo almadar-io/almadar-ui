@@ -9,6 +9,7 @@ export default defineConfig({
     'renderer/index.ts',
     'stores/index.ts',
     'lib/index.ts',
+    'components/organisms/game/three/index.ts',
   ],
   format: ['esm'],
   dts: true,

@@ -39,6 +39,10 @@
       "import": "./dist/lib/index.js",
       "types": "./dist/lib/index.d.ts"
     },
+    "./components/organisms/game/three": {
+      "import": "./dist/components/organisms/game/three/index.js",
+      "types": "./dist/components/organisms/game/three/index.d.ts"
+    },
     "./templates": {
       "import": "./templates/index.ts",
       "types": "./templates/index.ts"
