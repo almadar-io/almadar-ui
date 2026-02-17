@@ -36,6 +36,8 @@ export interface OrbitalProviderProps {
   defaultMode?: 'light' | 'dark' | 'system';
   /** Optional target element ref for scoped theme application */
   targetRef?: React.RefObject<HTMLElement>;
+  /** Skip ThemeProvider (use when already inside a themed container like shadow DOM) */
+  skipTheme?: boolean;
 
   // Debug options
   /** Enable debug logging for all providers */
@@ -128,9 +130,26 @@ export function OrbitalProvider({
   defaultTheme = 'wireframe',
   defaultMode = 'system',
   targetRef,
+  skipTheme = false,
   debug = false,
   initialData,
 }: OrbitalProviderProps): React.ReactElement {
+  const inner = (
+    <FetchedDataProvider initialData={initialData}>
+      <FetchedDataBridge>
+        <EventBusProvider debug={debug}>
+          <SelectionProvider debug={debug}>
+            {children}
+          </SelectionProvider>
+        </EventBusProvider>
+      </FetchedDataBridge>
+    </FetchedDataProvider>
+  );
+
+  if (skipTheme) {
+    return inner;
+  }
+
   return (
     <ThemeProvider
       themes={themes}
@@ -138,15 +157,7 @@ export function OrbitalProvider({
       defaultMode={defaultMode}
       targetRef={targetRef}
     >
-      <FetchedDataProvider initialData={initialData}>
-        <FetchedDataBridge>
-          <EventBusProvider debug={debug}>
-            <SelectionProvider debug={debug}>
-              {children}
-            </SelectionProvider>
-          </EventBusProvider>
-        </FetchedDataBridge>
-      </FetchedDataProvider>
+      {inner}
     </ThemeProvider>
   );
 }
