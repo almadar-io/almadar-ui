@@ -191,6 +191,8 @@ export interface ThemeProviderProps {
   defaultTheme?: string;
   /** Default color mode */
   defaultMode?: ColorMode;
+  /** Optional target element ref — when provided, theme attributes are applied to this element instead of document.documentElement */
+  targetRef?: React.RefObject<HTMLElement>;
 }
 
 /**
@@ -215,6 +217,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   themes = [],
   defaultTheme = "wireframe",
   defaultMode = "system",
+  targetRef,
 }) => {
   // Merge built-in themes with custom themes
   const availableThemes = useMemo(() => {
@@ -280,15 +283,15 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     return undefined;
   }, [mode]);
 
-  // Apply theme to document
+  // Apply theme to target element (or document root if no targetRef)
   useEffect(() => {
-    const root = document.documentElement;
+    const root = targetRef?.current ?? document.documentElement;
     root.setAttribute("data-theme", appliedTheme);
 
     // Also set class for Tailwind dark: variant compatibility
     root.classList.remove("light", "dark");
     root.classList.add(resolvedMode);
-  }, [appliedTheme, resolvedMode]);
+  }, [appliedTheme, resolvedMode, targetRef]);
 
   // Set theme
   const setTheme = useCallback(

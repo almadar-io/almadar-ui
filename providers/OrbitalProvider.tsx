@@ -34,6 +34,8 @@ export interface OrbitalProviderProps {
   defaultTheme?: string;
   /** Default color mode */
   defaultMode?: 'light' | 'dark' | 'system';
+  /** Optional target element ref for scoped theme application */
+  targetRef?: React.RefObject<HTMLElement>;
 
   // Debug options
   /** Enable debug logging for all providers */
@@ -125,6 +127,7 @@ export function OrbitalProvider({
   themes,
   defaultTheme = 'wireframe',
   defaultMode = 'system',
+  targetRef,
   debug = false,
   initialData,
 }: OrbitalProviderProps): React.ReactElement {
@@ -133,6 +136,7 @@ export function OrbitalProvider({
       themes={themes}
       defaultTheme={defaultTheme}
       defaultMode={defaultMode}
+      targetRef={targetRef}
     >
       <FetchedDataProvider initialData={initialData}>
         <FetchedDataBridge>
