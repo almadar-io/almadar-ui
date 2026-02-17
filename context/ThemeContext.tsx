@@ -229,9 +229,12 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     return Array.from(themeMap.values());
   }, [themes]);
 
+  // When targetRef is provided, this is a scoped (embedded) provider — skip localStorage
+  const isScoped = !!targetRef;
+
   // Initialize theme from storage or default
   const [theme, setThemeState] = useState<string>(() => {
-    if (typeof window === "undefined") return defaultTheme;
+    if (isScoped || typeof window === "undefined") return defaultTheme;
     const stored = localStorage.getItem(THEME_STORAGE_KEY);
     // Validate stored theme exists
     const validThemes = [
@@ -246,7 +249,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
 
   // Initialize mode from storage or default
   const [mode, setModeState] = useState<ColorMode>(() => {
-    if (typeof window === "undefined") return defaultMode;
+    if (isScoped || typeof window === "undefined") return defaultMode;
     const stored = localStorage.getItem(MODE_STORAGE_KEY);
     if (stored === "light" || stored === "dark" || stored === "system") {
       return stored;
@@ -285,13 +288,22 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
 
   // Apply theme to target element (or document root if no targetRef)
   useEffect(() => {
-    const root = targetRef?.current ?? document.documentElement;
+    // When scoped, only apply to the target element — never touch document root
+    if (isScoped) {
+      if (targetRef?.current) {
+        targetRef.current.setAttribute("data-theme", appliedTheme);
+        targetRef.current.classList.remove("light", "dark");
+        targetRef.current.classList.add(resolvedMode);
+      }
+      return;
+    }
+    const root = document.documentElement;
     root.setAttribute("data-theme", appliedTheme);
 
     // Also set class for Tailwind dark: variant compatibility
     root.classList.remove("light", "dark");
     root.classList.add(resolvedMode);
-  }, [appliedTheme, resolvedMode, targetRef]);
+  }, [appliedTheme, resolvedMode, targetRef, isScoped]);
 
   // Set theme
   const setTheme = useCallback(
@@ -299,7 +311,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
       const validTheme = availableThemes.find((t) => t.name === newTheme);
       if (validTheme) {
         setThemeState(newTheme);
-        if (typeof window !== "undefined") {
+        if (!isScoped && typeof window !== "undefined") {
           localStorage.setItem(THEME_STORAGE_KEY, newTheme);
         }
       } else {
@@ -314,7 +326,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
   // Set mode
   const setMode = useCallback((newMode: ColorMode) => {
     setModeState(newMode);
-    if (typeof window !== "undefined") {
+    if (!isScoped && typeof window !== "undefined") {
       localStorage.setItem(MODE_STORAGE_KEY, newMode);
     }
   }, []);
