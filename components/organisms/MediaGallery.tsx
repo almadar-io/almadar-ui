@@ -243,7 +243,8 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                                     )}
                                     onClick={() => handleItemClick(item)}
                                 >
-                                    <img
+                                    <Box
+                                        as="img"
                                         src={item.thumbnail || item.src}
                                         alt={item.alt || item.caption || ""}
                                         className="w-full h-full object-cover"
@@ -306,7 +307,8 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                                 className="text-white hover:bg-white/20"
                             />
                         </HStack>
-                        <img
+                        <Box
+                            as="img"
                             src={lightboxItem.src}
                             alt={lightboxItem.alt || lightboxItem.caption || ""}
                             className="max-w-full max-h-[80vh] object-contain rounded-[var(--radius-md)]"

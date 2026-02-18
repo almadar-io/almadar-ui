@@ -22,6 +22,7 @@
 import React from 'react';
 import { GameCanvas3D, type GameCanvas3DProps } from '../organisms/game/GameCanvas3D';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from '../organisms/game/types/isometric';
+import type { TemplateProps } from './types';
 
 export interface WorldMap3DEntity {
     /** Map tiles */
@@ -36,9 +37,7 @@ export interface WorldMap3DEntity {
     name?: string;
 }
 
-export interface GameCanvas3DWorldMapTemplateProps {
-    /** World map entity data */
-    entity: WorldMap3DEntity;
+export interface GameCanvas3DWorldMapTemplateProps extends TemplateProps<WorldMap3DEntity> {
     /** 3D camera mode */
     cameraMode?: 'isometric' | 'perspective' | 'top-down';
     /** Show grid helper */
@@ -71,8 +70,6 @@ export interface GameCanvas3DWorldMapTemplateProps {
     validMoves?: Array<{ x: number; z: number }>;
     /** Attack target positions */
     attackTargets?: Array<{ x: number; z: number }>;
-    /** Additional CSS classes */
-    className?: string;
 }
 
 /**
