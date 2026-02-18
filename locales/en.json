@@ -99,5 +99,9 @@
   "dialog.cancel": "Cancel",
   "dialog.loading": "Loading...",
   "dialog.delete.title": "Delete {{item}}?",
-  "dialog.delete.message": "This action cannot be undone."
+  "dialog.delete.message": "This action cannot be undone.",
+
+  "trait.availableActions": "Available Actions",
+  "trait.transitions": "Transitions",
+  "trait.availableNow": "Available now"
 }

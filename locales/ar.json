@@ -99,5 +99,9 @@
   "dialog.cancel": "إلغاء",
   "dialog.loading": "جارٍ التحميل...",
   "dialog.delete.title": "حذف {{item}}؟",
-  "dialog.delete.message": "لا يمكن التراجع عن هذا الإجراء."
+  "dialog.delete.message": "لا يمكن التراجع عن هذا الإجراء.",
+
+  "trait.availableActions": "الإجراءات المتاحة",
+  "trait.transitions": "الانتقالات",
+  "trait.availableNow": "متاح الآن"
 }

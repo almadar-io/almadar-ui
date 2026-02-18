@@ -99,5 +99,9 @@
   "dialog.cancel": "Prekliči",
   "dialog.loading": "Nalagam...",
   "dialog.delete.title": "Izbrisati {{item}}?",
-  "dialog.delete.message": "Tega dejanja ni mogoče razveljaviti."
+  "dialog.delete.message": "Tega dejanja ni mogoče razveljaviti.",
+
+  "trait.availableActions": "Razpoložljive akcije",
+  "trait.transitions": "Prehodi",
+  "trait.availableNow": "Trenutno na voljo"
 }

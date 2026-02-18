@@ -43,6 +43,14 @@
       "import": "./dist/components/organisms/game/three/index.js",
       "types": "./dist/components/organisms/game/three/index.d.ts"
     },
+    "./components/organisms/game/TraitStateViewer": {
+      "import": "./components/organisms/game/TraitStateViewer.tsx",
+      "types": "./components/organisms/game/TraitStateViewer.tsx"
+    },
+    "./components/organisms/game/TraitSlot": {
+      "import": "./components/organisms/game/TraitSlot.tsx",
+      "types": "./components/organisms/game/TraitSlot.tsx"
+    },
     "./templates": {
       "import": "./templates/index.ts",
       "types": "./templates/index.ts"

@@ -128,6 +128,21 @@ export {
 } from './CastleBoard';
 
 // ---------------------------------------------------------------------------
+// Trait / State Machine Visualization
+// ---------------------------------------------------------------------------
+export {
+    TraitStateViewer,
+    type TraitStateViewerProps,
+    type TraitStateMachineDefinition,
+    type TraitTransition,
+} from './TraitStateViewer';
+export {
+    TraitSlot,
+    type TraitSlotProps,
+    type SlotItemData,
+} from './TraitSlot';
+
+// ---------------------------------------------------------------------------
 // Editor Utilities (Storybook map editor components)
 // ---------------------------------------------------------------------------
 export {
