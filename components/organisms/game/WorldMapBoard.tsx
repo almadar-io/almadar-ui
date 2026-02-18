@@ -15,7 +15,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
-import { Box } from '../../atoms/Stack';
+import { VStack, HStack, Stack } from '../../atoms/Stack';
 import IsometricCanvas from './IsometricCanvas';
 import type {
     IsometricTile,
@@ -392,14 +392,14 @@ export function WorldMapBoard({
     );
 
     return (
-        <Box className={cn('world-map-board min-h-screen flex flex-col bg-[var(--color-background)]', className)}>
+        <VStack className={cn('world-map-board min-h-screen bg-[var(--color-background)]', className)} gap="none">
             {/* Header slot */}
             {header && header(ctx)}
 
             {/* Main area */}
-            <Box className="flex flex-1 overflow-hidden">
+            <HStack className="flex-1 overflow-hidden" gap="none">
                 {/* Canvas column */}
-                <Box className="flex-1 overflow-auto p-4 relative">
+                <Stack className="flex-1 overflow-auto p-4 relative">
                     <IsometricCanvas
                         tiles={tiles}
                         units={isoUnits}
@@ -424,19 +424,19 @@ export function WorldMapBoard({
 
                     {/* Overlay slot */}
                     {overlay && overlay(ctx)}
-                </Box>
+                </Stack>
 
                 {/* Side panel slot */}
                 {sidePanel && (
-                    <Box className="w-80 shrink-0 border-l border-[var(--color-border)] bg-[var(--color-surface)] overflow-y-auto p-4">
+                    <Stack className="w-80 shrink-0 border-l border-[var(--color-border)] bg-[var(--color-surface)] overflow-y-auto p-4">
                         {sidePanel(ctx)}
-                    </Box>
+                    </Stack>
                 )}
-            </Box>
+            </HStack>
 
             {/* Footer slot */}
             {footer && footer(ctx)}
-        </Box>
+        </VStack>
     );
 }
 
