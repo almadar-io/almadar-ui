@@ -168,7 +168,10 @@ export function TraitSlot({
         if (locked || !onItemDrop) return;
         if (e.dataTransfer.types.includes(DRAG_MIME)) {
             e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
+            // Let the browser pick a compatible dropEffect based on the source's effectAllowed
+            // (ActionTile uses 'copy', TraitSlot-to-TraitSlot uses 'move')
+            const allowed = e.dataTransfer.effectAllowed;
+            e.dataTransfer.dropEffect = allowed === 'copy' ? 'copy' : 'move';
             setIsDragOver(true);
         }
     }, [locked, onItemDrop]);
