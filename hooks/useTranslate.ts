@@ -73,7 +73,7 @@ export function createTranslate(
     let msg = messages[key] ?? key;
     if (params) {
       for (const [k, v] of Object.entries(params)) {
-        msg = msg.replaceAll(`{{${k}}}`, String(v));
+        msg = msg.split(`{{${k}}}`).join(String(v));
       }
     }
     return msg;

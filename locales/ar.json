@@ -53,6 +53,7 @@
   "status.cancelled": "ملغى",
   "status.pending": "قيد الانتظار",
   "status.active": "نشط",
+  "status.inactive": "غير نشط",
   "status.draft": "مسودة",
   "status.archived": "مؤرشف",
 
@@ -61,6 +62,35 @@
   "error.notFound": "غير موجود",
   "error.loadFailed": "فشل التحميل: {{message}}",
   "error.configMissing": "لم يتم العثور على الإعداد: {{id}}",
+
+  "common.loading": "جارٍ التحميل...",
+  "common.saveChanges": "حفظ التغييرات",
+  "common.retry": "إعادة المحاولة",
+  "common.open": "فتح",
+  "common.back": "رجوع",
+
+  "empty.noItems": "لا توجد عناصر",
+  "empty.noData": "لا توجد بيانات",
+  "empty.noItemsYet": "لا توجد عناصر بعد",
+  "empty.noItemsAdded": "لم تتم إضافة عناصر بعد",
+  "empty.noOptionsFound": "لم يتم العثور على خيارات",
+
+  "list.addItemPlaceholder": "إضافة عنصر جديد...",
+
+  "error.occurred": "حدث خطأ",
+  "error.failedToLoad": "فشل تحميل البيانات",
+
+  "wizard.back": "رجوع",
+  "wizard.next": "التالي",
+  "wizard.complete": "إكمال",
+  "wizard.stepOf": "الخطوة {{current}} من {{total}}",
+
+  "pagination.previous": "السابق",
+  "pagination.next": "التالي",
+  "pagination.total": "المجموع:",
+  "pagination.show": "عرض:",
+  "pagination.goTo": "الانتقال إلى:",
+  "pagination.go": "انتقال",
 
   "auth.signIn": "تسجيل الدخول",
   "auth.signOut": "تسجيل الخروج",

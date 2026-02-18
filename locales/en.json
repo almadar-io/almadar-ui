@@ -53,6 +53,7 @@
   "status.cancelled": "Cancelled",
   "status.pending": "Pending",
   "status.active": "Active",
+  "status.inactive": "Inactive",
   "status.draft": "Draft",
   "status.archived": "Archived",
 
@@ -61,6 +62,35 @@
   "error.notFound": "Not found",
   "error.loadFailed": "Failed to load: {{message}}",
   "error.configMissing": "Configuration not found for: {{id}}",
+
+  "common.loading": "Loading...",
+  "common.saveChanges": "Save Changes",
+  "common.retry": "Retry",
+  "common.open": "Open",
+  "common.back": "Back",
+
+  "empty.noItems": "No items",
+  "empty.noData": "No data available",
+  "empty.noItemsYet": "No items yet",
+  "empty.noItemsAdded": "No items added yet",
+  "empty.noOptionsFound": "No options found",
+
+  "list.addItemPlaceholder": "Add new item...",
+
+  "error.occurred": "An error occurred",
+  "error.failedToLoad": "Failed to load data",
+
+  "wizard.back": "Back",
+  "wizard.next": "Next",
+  "wizard.complete": "Complete",
+  "wizard.stepOf": "Step {{current}} of {{total}}",
+
+  "pagination.previous": "Previous",
+  "pagination.next": "Next",
+  "pagination.total": "Total:",
+  "pagination.show": "Show:",
+  "pagination.goTo": "Go to:",
+  "pagination.go": "Go",
 
   "auth.signIn": "Sign in",
   "auth.signOut": "Sign out",

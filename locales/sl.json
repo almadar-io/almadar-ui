@@ -53,6 +53,7 @@
   "status.cancelled": "Preklicano",
   "status.pending": "V čakanju",
   "status.active": "Aktivno",
+  "status.inactive": "Neaktivno",
   "status.draft": "Osnutek",
   "status.archived": "Arhivirano",
 
@@ -61,6 +62,35 @@
   "error.notFound": "Ni najdeno",
   "error.loadFailed": "Nalaganje ni uspelo: {{message}}",
   "error.configMissing": "Konfiguracija ni najdena za: {{id}}",
+
+  "common.loading": "Nalagam...",
+  "common.saveChanges": "Shrani spremembe",
+  "common.retry": "Poskusi znova",
+  "common.open": "Odpri",
+  "common.back": "Nazaj",
+
+  "empty.noItems": "Ni elementov",
+  "empty.noData": "Ni podatkov",
+  "empty.noItemsYet": "Še ni elementov",
+  "empty.noItemsAdded": "Še ni dodanih elementov",
+  "empty.noOptionsFound": "Ni najdenih možnosti",
+
+  "list.addItemPlaceholder": "Dodaj nov element...",
+
+  "error.occurred": "Prišlo je do napake",
+  "error.failedToLoad": "Nalaganje podatkov ni uspelo",
+
+  "wizard.back": "Nazaj",
+  "wizard.next": "Naprej",
+  "wizard.complete": "Zaključi",
+  "wizard.stepOf": "Korak {{current}} od {{total}}",
+
+  "pagination.previous": "Prejšnji",
+  "pagination.next": "Naslednji",
+  "pagination.total": "Skupaj:",
+  "pagination.show": "Prikaži:",
+  "pagination.goTo": "Pojdi na:",
+  "pagination.go": "Pojdi",
 
   "auth.signIn": "Prijava",
   "auth.signOut": "Odjava",
