@@ -15,6 +15,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { Box } from '../../atoms/Stack';
 import IsometricCanvas from './IsometricCanvas';
 import type {
     IsometricTile,
@@ -89,6 +90,10 @@ export interface WorldMapEntity {
 export interface WorldMapBoardProps {
     /** World map entity data */
     entity: WorldMapEntity;
+    /** Loading state indicator */
+    isLoading?: boolean;
+    /** Error state */
+    error?: Error | null;
 
     /** Canvas render scale */
     scale?: number;
@@ -130,6 +135,8 @@ export interface WorldMapBoardProps {
     onFeatureEnter?: (heroId: string, hex: MapHex) => void;
 
     // -- Canvas pass-through --
+    /** Override for the diamond-top Y offset within tile sprites (default: 374). */
+    diamondTopY?: number;
     effectSpriteUrls?: string[];
     resolveUnitFrame?: (unitId: string) => ResolvedFrame | null;
 
@@ -172,6 +179,7 @@ export function WorldMapBoard({
     onHeroMove,
     onBattleEncounter,
     onFeatureEnter,
+    diamondTopY,
     effectSpriteUrls = [],
     resolveUnitFrame,
     className,
@@ -384,14 +392,14 @@ export function WorldMapBoard({
     );
 
     return (
-        <div className={cn('world-map-board min-h-screen flex flex-col bg-[var(--color-background)]', className)}>
+        <Box className={cn('world-map-board min-h-screen flex flex-col bg-[var(--color-background)]', className)}>
             {/* Header slot */}
             {header && header(ctx)}
 
             {/* Main area */}
-            <div className="flex flex-1 overflow-hidden">
+            <Box className="flex flex-1 overflow-hidden">
                 {/* Canvas column */}
-                <div className="flex-1 overflow-auto p-4 relative">
+                <Box className="flex-1 overflow-auto p-4 relative">
                     <IsometricCanvas
                         tiles={tiles}
                         units={isoUnits}
@@ -411,23 +419,24 @@ export function WorldMapBoard({
                         effectSpriteUrls={effectSpriteUrls}
                         resolveUnitFrame={resolveUnitFrame}
                         unitScale={unitScale}
+                        diamondTopY={diamondTopY}
                     />
 
                     {/* Overlay slot */}
                     {overlay && overlay(ctx)}
-                </div>
+                </Box>
 
                 {/* Side panel slot */}
                 {sidePanel && (
-                    <div className="w-80 shrink-0 border-l border-[var(--color-border)] bg-[var(--color-surface)] overflow-y-auto p-4">
+                    <Box className="w-80 shrink-0 border-l border-[var(--color-border)] bg-[var(--color-surface)] overflow-y-auto p-4">
                         {sidePanel(ctx)}
-                    </div>
+                    </Box>
                 )}
-            </div>
+            </Box>
 
             {/* Footer slot */}
             {footer && footer(ctx)}
-        </div>
+        </Box>
     );
 }
 
