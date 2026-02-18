@@ -1,12 +1,17 @@
 import type { Preview } from '@storybook/react-vite';
 import { withThemeByDataAttribute } from '@storybook/addon-themes';
 import React from 'react';
+import { withI18n, i18nGlobalTypes } from './decorators/withI18n';
 
 // Import theme CSS files
 import '../themes/index.css';
 import '../index.css';
 
 const preview: Preview = {
+    globalTypes: {
+        ...i18nGlobalTypes,
+    },
+
     parameters: {
         controls: {
             matchers: {
@@ -17,6 +22,7 @@ const preview: Preview = {
     },
 
     decorators: [
+        withI18n,
         withThemeByDataAttribute({
             themes: {
                 'Minimalist Light': 'minimalist-light',
