@@ -48,7 +48,7 @@ export const HorizontalStack: Story = {
 
 export const BoxWithStyling: Story = {
   render: () => (
-    <BoxPattern p="lg" bg="card" border radius="lg" shadow="md">
+    <BoxPattern p="lg" bg="surface" border radius="lg" shadow="md">
       <VStackPattern gap="sm">
         <Typography variant="h3" weight="semibold">Styled Box</Typography>
         <Typography variant="body" color="secondary">
@@ -114,13 +114,13 @@ export const ComposedLayout: Story = {
       </HStackPattern>
       <DividerPattern spacing="xs" />
       <GridPattern cols={2} gap="md">
-        <BoxPattern p="md" bg="card" border radius="md">
+        <BoxPattern p="md" bg="surface" border radius="md">
           <VStackPattern gap="xs">
             <Typography variant="small" color="secondary">Revenue</Typography>
             <Typography variant="h3" weight="bold">$45,231</Typography>
           </VStackPattern>
         </BoxPattern>
-        <BoxPattern p="md" bg="card" border radius="md">
+        <BoxPattern p="md" bg="surface" border radius="md">
           <VStackPattern gap="xs">
             <Typography variant="small" color="secondary">Users</Typography>
             <Typography variant="h3" weight="bold">2,543</Typography>

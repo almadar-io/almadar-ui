@@ -32,7 +32,7 @@ export interface WorldMap3DEntity {
     /** Map features (castles, resources, etc.) */
     features: IsometricFeature[];
     /** Entity ID */
-    id?: string;
+    id: string;
     /** Entity name */
     name?: string;
 }

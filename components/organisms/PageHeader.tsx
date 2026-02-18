@@ -138,13 +138,13 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                   </Typography>
                 )}
                 {crumb.href ? (
-                  <Box
-                    as="a"
+                  // eslint-disable-next-line almadar/no-raw-dom-elements -- semantic anchor with href
+                  <a
                     href={crumb.href}
                     className="text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
                   >
                     {crumb.label}
-                  </Box>
+                  </a>
                 ) : (
                   <Typography variant="small" className="text-[var(--color-foreground)] font-medium">
                     {crumb.label}

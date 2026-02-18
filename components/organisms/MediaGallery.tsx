@@ -243,8 +243,8 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                                     )}
                                     onClick={() => handleItemClick(item)}
                                 >
-                                    <Box
-                                        as="img"
+                                    {/* eslint-disable-next-line almadar/no-raw-dom-elements -- semantic img with src/alt */}
+                                    <img
                                         src={item.thumbnail || item.src}
                                         alt={item.alt || item.caption || ""}
                                         className="w-full h-full object-cover"
@@ -307,8 +307,8 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                                 className="text-white hover:bg-white/20"
                             />
                         </HStack>
-                        <Box
-                            as="img"
+                        {/* eslint-disable-next-line almadar/no-raw-dom-elements -- semantic img with src/alt */}
+                        <img
                             src={lightboxItem.src}
                             alt={lightboxItem.alt || lightboxItem.caption || ""}
                             className="max-w-full max-h-[80vh] object-contain rounded-[var(--radius-md)]"

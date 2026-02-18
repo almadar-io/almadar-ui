@@ -171,8 +171,8 @@ export function LinkPattern({
   };
 
   return (
-    <Box
-      as="a"
+    // eslint-disable-next-line almadar/no-raw-dom-elements -- semantic anchor with href
+    <a
       href={href ?? '#'}
       target={external ? '_blank' : undefined}
       rel={external ? 'noopener noreferrer' : undefined}
@@ -180,7 +180,7 @@ export function LinkPattern({
       className={className}
     >
       {label}
-    </Box>
+    </a>
   );
 }
 
@@ -339,8 +339,8 @@ export function ImagePattern({
   className,
 }: ImagePatternProps): React.ReactElement {
   return (
-    <Box
-      as="img"
+    // eslint-disable-next-line almadar/no-raw-dom-elements -- semantic img with src/alt
+    <img
       src={src}
       alt={alt}
       width={width}

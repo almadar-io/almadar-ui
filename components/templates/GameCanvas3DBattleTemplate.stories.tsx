@@ -15,7 +15,7 @@ function generateBattleTiles(width: number, height: number) {
                 z,
                 type: terrain,
                 terrain,
-                passable: terrain !== 'water',
+                passable: true,
             });
         }
     }
