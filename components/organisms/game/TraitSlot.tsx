@@ -72,6 +72,9 @@ export interface TraitSlotProps {
     /** Called when drag starts from this slot */
     onDragStart?: (item: SlotItemData) => void;
 
+    /** Per-slot correctness feedback after a failed attempt */
+    feedback?: 'correct' | 'wrong' | null;
+
     // -- Callbacks --
     /** Click handler */
     onClick?: () => void;
@@ -114,6 +117,7 @@ export function TraitSlot({
     categoryColors,
     tooltipFrameUrl,
     className,
+    feedback,
     onItemDrop,
     draggable = false,
     onDragStart,
@@ -235,6 +239,8 @@ export function TraitSlot({
                 !isEmpty && 'border-2',
                 selected && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
                 isDragOver && 'ring-2 ring-accent ring-offset-1 scale-110 border-accent',
+                !isDragOver && feedback === 'correct' && 'ring-2 ring-success ring-offset-1 ring-offset-background',
+                !isDragOver && feedback === 'wrong' && 'ring-2 ring-error ring-offset-1 ring-offset-background',
                 !locked && !isDragOver && 'hover:scale-105',
                 className,
             )}
@@ -242,7 +248,13 @@ export function TraitSlot({
                 width: config.box,
                 height: config.box,
                 backgroundColor: catColor?.bg || 'rgba(30,41,59,0.5)',
-                borderColor: isDragOver ? undefined : (catColor?.border || undefined),
+                borderColor: isDragOver
+                    ? undefined
+                    : feedback === 'correct'
+                        ? 'var(--color-success)'
+                        : feedback === 'wrong'
+                            ? 'var(--color-error)'
+                            : (catColor?.border || undefined),
             }}
             onClick={handleClick}
             onMouseEnter={() => setIsHovered(true)}

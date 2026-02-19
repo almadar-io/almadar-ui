@@ -137,6 +137,8 @@ export interface WorldMapBoardProps {
     // -- Canvas pass-through --
     /** Override for the diamond-top Y offset within tile sprites (default: 374). */
     diamondTopY?: number;
+    /** Disable pan/zoom camera (default: true). Set false for fixed maps where overlay labels need stable positions. */
+    enableCamera?: boolean;
     effectSpriteUrls?: string[];
     resolveUnitFrame?: (unitId: string) => ResolvedFrame | null;
 
@@ -160,6 +162,7 @@ function defaultIsInRange(
 // Component
 // =============================================================================
 
+// eslint-disable-next-line almadar/require-translate -- renders no text; all content via render-prop slots (header, sidePanel, overlay, footer)
 export function WorldMapBoard({
     entity,
     scale = 0.4,
@@ -180,6 +183,7 @@ export function WorldMapBoard({
     onBattleEncounter,
     onFeatureEnter,
     diamondTopY,
+    enableCamera,
     effectSpriteUrls = [],
     resolveUnitFrame,
     className,
@@ -420,6 +424,7 @@ export function WorldMapBoard({
                         resolveUnitFrame={resolveUnitFrame}
                         unitScale={unitScale}
                         diamondTopY={diamondTopY}
+                        enableCamera={enableCamera}
                     />
 
                     {/* Overlay slot */}

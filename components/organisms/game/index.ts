@@ -41,6 +41,28 @@ export type {
 } from './types/spriteAnimation';
 
 // ---------------------------------------------------------------------------
+// Audio System
+// ---------------------------------------------------------------------------
+export {
+    GameAudioProvider,
+    GameAudioContext,
+    useGameAudioContext,
+    type GameAudioProviderProps,
+    type GameAudioContextValue,
+} from './GameAudioProvider';
+export {
+    GameAudioToggle,
+    type GameAudioToggleProps,
+} from './GameAudioToggle';
+export {
+    useGameAudio,
+    type AudioManifest,
+    type SoundEntry,
+    type GameAudioControls,
+    type UseGameAudioOptions,
+} from './hooks/useGameAudio';
+
+// ---------------------------------------------------------------------------
 // Hooks
 // ---------------------------------------------------------------------------
 export { useImageCache } from './hooks/useImageCache';
