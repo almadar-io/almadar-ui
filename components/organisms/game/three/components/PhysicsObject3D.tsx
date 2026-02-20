@@ -1,3 +1,4 @@
+'use client';
 /**
  * PhysicsObject3D Component
  *

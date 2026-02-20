@@ -1,3 +1,4 @@
+'use client';
 /**
  * Meter Organism Component
  *

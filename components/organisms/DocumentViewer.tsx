@@ -1,3 +1,4 @@
+'use client';
 /**
  * DocumentViewer Organism Component
  *

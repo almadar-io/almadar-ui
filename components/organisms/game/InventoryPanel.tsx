@@ -1,7 +1,15 @@
+'use client';
 /**
  * InventoryPanel Component
  *
  * Grid-based inventory UI with item selection and tooltips.
+ *
+ * **State categories (closed-circuit compliant):**
+ * - Data (items, slots, selectedSlot) → received via props
+ * - UI-transient (hoveredSlot, tooltipPosition) → local only
+ * - Events → emitted via `useEventBus()` (selectSlot, useItem, dropItem)
+ *
+ * Local state is hover/tooltip only — rendering-only concerns.
  */
 
 import React, { useState, useCallback } from 'react';

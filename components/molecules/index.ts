@@ -1,7 +1,9 @@
+export { ErrorBoundary, type ErrorBoundaryProps } from './ErrorBoundary';
 export { FormField, type FormFieldProps } from './FormField';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
 export { LoadingState, type LoadingStateProps } from './LoadingState';
 export { ErrorState, type ErrorStateProps } from './ErrorState';
+export { Skeleton, type SkeletonProps, type SkeletonVariant } from './Skeleton';
 
 // Migrated molecules
 export { Accordion, type AccordionProps, type AccordionItem } from './Accordion';

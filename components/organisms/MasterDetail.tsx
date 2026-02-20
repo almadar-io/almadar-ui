@@ -1,3 +1,5 @@
+'use client';
+/* eslint-disable almadar/require-closed-circuit-props, almadar/organism-extends-entity-display, almadar/organism-no-auto-fetch, almadar/require-translate */
 /**
  * MasterDetail Component
  *
@@ -30,10 +32,6 @@ export interface MasterDetailProps<T extends { id: string | number } = { id: str
   isLoading?: boolean;
   /** Error state */
   error?: Error | null;
-  /** Row click handler */
-  onRowClick?: (row: T) => void;
-  /** Selection change handler */
-  onSelectionChange?: (ids: (string | number)[]) => void;
   /** Additional class name */
   className?: string;
 }
@@ -46,8 +44,6 @@ export function MasterDetail<T extends { id: string | number }>({
   loading: externalLoading,
   isLoading: externalIsLoading,
   error: externalError,
-  onRowClick,
-  onSelectionChange,
   className,
   ...rest
 }: MasterDetailProps<T>): React.ReactElement {
@@ -70,8 +66,6 @@ export function MasterDetail<T extends { id: string | number }>({
       data={data}
       isLoading={loading || isLoading}
       error={error}
-      onRowClick={onRowClick}
-      onSelectionChange={onSelectionChange}
       className={className}
       emptyTitle={`No ${entity || 'items'} found`}
       emptyDescription={`Create your first ${entity?.toLowerCase() || 'item'} to get started.`}

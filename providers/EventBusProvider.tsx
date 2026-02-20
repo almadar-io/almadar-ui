@@ -1,3 +1,4 @@
+'use client';
 /**
  * EventBusProvider - React context provider for the event bus
  *

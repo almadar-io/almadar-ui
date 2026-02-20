@@ -1,3 +1,4 @@
+'use client';
 /**
  * Form Organism Component
  *
@@ -30,6 +31,8 @@ import {
 import { Alert } from "../molecules/Alert";
 import { useEventBus } from "../../hooks/useEventBus";
 import { useTranslate } from "../../hooks/useTranslate";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import type { EntityDisplayProps } from "./types";
 import {
   debug,
   debugGroup,
@@ -199,21 +202,21 @@ export interface SchemaField {
   disabled?: boolean;
 }
 
+/**
+ * Form is the ONE EXCEPTION to the "no internal state" rule for organisms.
+ * It manages local `formData` state for field input tracking.
+ * See EntityDisplayProps in ./types.ts for documentation.
+ */
 export interface FormProps extends Omit<
   React.FormHTMLAttributes<HTMLFormElement>,
   "onSubmit"
 > {
   /** Form fields (traditional React children) */
   children?: React.ReactNode;
-  /** Submit handler - receives form data, or event name string for trait dispatch */
-  onSubmit?:
-    | ((
-        e: React.FormEvent<HTMLFormElement>,
-        data?: Record<string, unknown>,
-      ) => void)
-    | string;
-  /** Cancel handler - function or event name string for trait dispatch */
-  onCancel?: (() => void) | string;
+  /** Submit event name for trait dispatch (emitted via eventBus as UI:{onSubmit}) */
+  onSubmit?: string;
+  /** Cancel event name for trait dispatch (emitted via eventBus as UI:{onCancel}) */
+  onCancel?: string;
   /** Form layout */
   layout?: "vertical" | "horizontal" | "inline";
   /** Gap between fields */
@@ -583,10 +586,8 @@ export const Form: React.FC<FormProps> = ({
     e.preventDefault();
     // Dispatch submit event for trait state machine integration
     eventBus.emit(`UI:${submitEvent}`, { data: formData, entity });
-    // Handle onSubmit - can be a function or event name string
-    if (typeof onSubmit === "function") {
-      onSubmit(e, formData);
-    } else if (typeof onSubmit === "string") {
+    // Handle onSubmit - event name string for additional trait dispatch
+    if (onSubmit) {
       eventBus.emit(`UI:${onSubmit}`, { data: formData, entity });
     }
   };
@@ -595,10 +596,8 @@ export const Form: React.FC<FormProps> = ({
     // Dispatch cancel event for trait state machine integration
     eventBus.emit(`UI:${cancelEvent}`);
     eventBus.emit("UI:CLOSE");
-    // Handle onCancel - can be a function or event name string
-    if (typeof onCancel === "function") {
-      onCancel();
-    } else if (typeof onCancel === "string") {
+    // Handle onCancel - event name string for additional trait dispatch
+    if (onCancel) {
       eventBus.emit(`UI:${onCancel}`);
     }
   };

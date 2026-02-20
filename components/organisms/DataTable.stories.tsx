@@ -40,14 +40,14 @@ const columns = [
 
 export const Default: Story = {
     args: {
-        entity: sampleData,
+        data: sampleData,
         columns: columns,
     },
 };
 
 export const WithSearch: Story = {
     args: {
-        entity: sampleData,
+        data: sampleData,
         columns: columns,
         searchable: true,
         searchPlaceholder: 'Search users...',
@@ -56,16 +56,15 @@ export const WithSearch: Story = {
 
 export const Selectable: Story = {
     args: {
-        entity: sampleData,
+        data: sampleData,
         columns: columns,
         selectable: true,
-        onSelectionChange: (ids: (string | number)[]) => console.log('Selected:', ids),
     },
 };
 
 export const Loading: Story = {
     args: {
-        entity: [],
+        data: [],
         columns: columns,
         isLoading: true,
     },
@@ -73,7 +72,7 @@ export const Loading: Story = {
 
 export const Empty: Story = {
     args: {
-        entity: [],
+        data: [],
         columns: columns,
         emptyIcon: Database,
         emptyTitle: 'No users found',
@@ -81,21 +80,40 @@ export const Empty: Story = {
     },
 };
 
-export const WithRowActions: Story = {
+export const WithItemActions: Story = {
     args: {
-        entity: sampleData,
+        data: sampleData,
         columns: columns,
-        rowActions: [
-            { label: 'View', onClick: (row: { id: string | number }) => console.log('View', row) },
-            { label: 'Edit', onClick: (row: { id: string | number }) => console.log('Edit', row) },
-            { label: 'Delete', onClick: (row: { id: string | number }) => console.log('Delete', row), variant: 'danger' as const },
+        itemActions: [
+            { label: 'View', event: 'VIEW' },
+            { label: 'Edit', event: 'EDIT' },
+            { label: 'Delete', event: 'DELETE', variant: 'danger' },
         ],
+    },
+};
+
+export const WithPagination: Story = {
+    args: {
+        data: sampleData,
+        columns: columns,
+        page: 1,
+        pageSize: 2,
+        totalCount: 5,
+    },
+};
+
+export const Sorted: Story = {
+    args: {
+        data: sampleData,
+        columns: columns,
+        sortBy: 'name',
+        sortDirection: 'asc',
     },
 };
 
 export const FullFeatured: Story = {
     args: {
-        entity: sampleData,
+        data: sampleData,
         columns: [
             { key: 'name' as keyof User, header: 'Name', sortable: true },
             { key: 'email' as keyof User, header: 'Email', sortable: true },
@@ -114,11 +132,14 @@ export const FullFeatured: Story = {
                 ),
             },
         ],
+        entity: 'User',
         searchable: true,
         selectable: true,
-        rowActions: [
-            { label: 'View', onClick: (row: { id: string | number }) => console.log('View', row) },
-            { label: 'Edit', onClick: (row: { id: string | number }) => console.log('Edit', row) },
+        sortBy: 'name',
+        sortDirection: 'asc',
+        itemActions: [
+            { label: 'View', event: 'VIEW' },
+            { label: 'Edit', event: 'EDIT' },
         ],
     },
 };

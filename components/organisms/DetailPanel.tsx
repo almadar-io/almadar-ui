@@ -1,14 +1,15 @@
+'use client';
 /**
  * DetailPanel Organism Component
  *
  * Composes atoms and molecules to create a professional detail view.
  *
- * When `entity` prop is provided without `data`, automatically fetches data
- * using the useEntityDetail hook with ID from URL params.
+ * Data is provided by the trait via the `data` prop (render-ui effect).
+ * See EntityDisplayProps in ./types.ts for base prop contract.
  */
 
 import React, { useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Calendar,
   Tag,
@@ -41,9 +42,8 @@ import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
 import { cn } from "../../lib/cn";
 import { getNestedValue } from "../../lib/getNestedValue";
-import { useEntityDetail } from "../../hooks/useEntityData";
-import { useSelectedEntity } from "../../hooks/useUIEvents";
 import { useEventBus } from "../../hooks/useEventBus";
+import type { EntityDisplayProps } from "./types";
 
 function getFieldIcon(fieldName: string): LucideIcon {
   const name = fieldName.toLowerCase();
@@ -171,7 +171,7 @@ function normalizeFieldDefs(fields: readonly FieldDef[] | undefined): string[] {
   return fields.map((f) => (typeof f === "string" ? f : f.key));
 }
 
-export interface DetailPanelProps {
+export interface DetailPanelProps extends Omit<EntityDisplayProps<Record<string, unknown>>, 'data'> {
   title?: string;
   subtitle?: string;
   status?: {
@@ -184,22 +184,17 @@ export interface DetailPanelProps {
   actions?: readonly DetailPanelAction[];
   footer?: React.ReactNode;
   slideOver?: boolean;
-  onClose?: () => void;
-  className?: string;
 
-  // Schema-based props
-  entity?: string;
   /** Fields to display - accepts string[], {key, header}[], or DetailField[] */
   fields?: readonly (FieldDef | DetailField)[];
   /** Alias for fields - backwards compatibility */
   fieldNames?: readonly string[];
+  /** Data object provided by the trait via render-ui */
   data?: Record<string, unknown> | unknown;
   /** Initial data for edit mode (passed by compiler) */
   initialData?: Record<string, unknown> | unknown;
   /** Display mode (passed by compiler) */
   mode?: string;
-  isLoading?: boolean;
-  error?: Error | null;
   /** Panel position (for drawer/sidebar placement) */
   position?: "left" | "right";
   /** Panel width (CSS value, e.g., '400px', '50%') */
@@ -215,17 +210,15 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   actions,
   footer,
   slideOver = false,
-  onClose,
   className,
   entity,
   fields: propFields,
   fieldNames,
   data: externalData,
-  isLoading: externalLoading = false,
-  error: externalError,
+  initialData,
+  isLoading = false,
+  error,
 }) => {
-  // Get ID from URL params for auto-fetching on detail pages
-  const { id: urlId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const eventBus = useEventBus();
 
@@ -245,9 +238,6 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   const effectiveFieldNames = isFieldDefArray(propFields)
     ? normalizeFieldDefs(propFields)
     : fieldNames;
-
-  // Get selected entity from event bus (for drawer/sidebar usage when entity is selected via UI:VIEW/UI:SELECT)
-  const [selectedEntity] = useSelectedEntity<Record<string, unknown>>();
 
   // Handle action click with event bus and navigation support
   const handleActionClick = useCallback(
@@ -270,22 +260,13 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     [navigate, eventBus, entity],
   );
 
-  // Auto-fetch data when entity is provided but no external data and we have an ID
-  const shouldAutoFetch =
-    !!entity && !externalData && !selectedEntity && !!urlId;
-  const {
-    data: fetchedData,
-    isLoading: fetchLoading,
-    error: fetchError,
-  } = useEntityDetail(
-    shouldAutoFetch ? entity : undefined,
-    shouldAutoFetch ? urlId : undefined,
-  );
+  // Handle close via event bus (closed circuit pattern)
+  const handleClose = useCallback(() => {
+    eventBus.emit('UI:CLOSE', {});
+  }, [eventBus]);
 
-  // Use external data if provided, then selected entity from event bus, then fetched data
-  const data = externalData ?? selectedEntity ?? fetchedData;
-  const isLoading = externalLoading || (shouldAutoFetch && fetchLoading);
-  const error = externalError ?? (shouldAutoFetch ? fetchError : null);
+  // Use data prop directly, fall back to initialData for backwards compat
+  const data = externalData ?? initialData;
 
   let title = propTitle;
   // Use a mutable array for building sections, but accept readonly from props
@@ -529,8 +510,8 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
               )}
             </VStack>
 
-            {slideOver && onClose && (
-              <Button variant="ghost" size="sm" onClick={onClose} icon={X} />
+            {slideOver && (
+              <Button variant="ghost" size="sm" onClick={handleClose} icon={X} />
             )}
           </HStack>
 

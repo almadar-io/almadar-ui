@@ -79,8 +79,7 @@ export const Selectable: Story = {
         fields: ['title', 'status', 'priority'],
         entityType: 'Tasks',
         selectable: true,
-        selectedItems: ['1', '3'],
-        onSelectionChange: (ids: string[]) => console.log('Selected:', ids),
+        selectedIds: ['1', '3'],
     },
 };
 

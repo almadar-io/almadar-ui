@@ -1,3 +1,4 @@
+'use client';
 /**
  * OrbitalProvider
  *
@@ -19,6 +20,7 @@ import { EventBusProvider } from './EventBusProvider';
 import { SelectionProvider } from './SelectionProvider';
 import { FetchedDataProvider, useFetchedData } from './FetchedDataProvider';
 import { EntityDataProvider, type EntityDataAdapter } from '../hooks/useEntityData';
+import { SuspenseConfigProvider, type SuspenseConfig } from '../components/organisms/UISlotRenderer';
 
 // ============================================================================
 // Types
@@ -46,6 +48,14 @@ export interface OrbitalProviderProps {
   // Data options
   /** Initial fetched data */
   initialData?: Record<string, unknown[]>;
+
+  // Suspense options
+  /**
+   * Enable Suspense mode. When true, UISlotRenderer wraps each slot in
+   * `<ErrorBoundary><Suspense>` with Skeleton fallbacks.
+   * Opt-in — existing isLoading prop pattern still works when false/absent.
+   */
+  suspense?: boolean;
 }
 
 // ============================================================================
@@ -133,13 +143,21 @@ export function OrbitalProvider({
   skipTheme = false,
   debug = false,
   initialData,
+  suspense = false,
 }: OrbitalProviderProps): React.ReactElement {
+  const suspenseConfig: SuspenseConfig = useMemo(
+    () => ({ enabled: suspense }),
+    [suspense],
+  );
+
   const inner = (
     <FetchedDataProvider initialData={initialData}>
       <FetchedDataBridge>
         <EventBusProvider debug={debug}>
           <SelectionProvider debug={debug}>
-            {children}
+            <SuspenseConfigProvider config={suspenseConfig}>
+              {children}
+            </SuspenseConfigProvider>
           </SelectionProvider>
         </EventBusProvider>
       </FetchedDataBridge>

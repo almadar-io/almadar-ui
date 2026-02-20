@@ -27,11 +27,21 @@ const config: StorybookConfig = {
   staticDirs: [],
   async viteFinal(config) {
     const { mergeConfig, searchForWorkspaceRoot } = await import("vite");
+    const react = (await import("@vitejs/plugin-react")).default;
 
     const projectRoot = path.resolve(__dirname, "..");
     const workspaceRoot = searchForWorkspaceRoot(projectRoot);
 
     return mergeConfig(config, {
+      plugins: [
+        react({
+          babel: {
+            plugins: [
+              ['babel-plugin-react-compiler', { target: '18' }],
+            ],
+          },
+        }),
+      ],
       resolve: {
         // Important for pnpm monorepos with symlinks
         preserveSymlinks: true,

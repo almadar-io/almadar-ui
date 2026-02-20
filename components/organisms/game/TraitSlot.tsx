@@ -1,3 +1,4 @@
+'use client';
 /**
  * TraitSlot Component
  *
@@ -7,6 +8,13 @@
  * - Sequencer (5-8): action slots in the sequence bar
  * - Event Handler (9-12): rule slots on world objects
  * - State Architect (13+): transition slots on state nodes
+ *
+ * **State categories (closed-circuit compliant):**
+ * - Data (equippedItem, slotNumber, locked, selected, feedback) → received via props
+ * - UI-transient (isHovered, isDragOver) → local only
+ * - Events → emitted via `useEventBus()` (click, remove)
+ *
+ * Local state is hover/drag-over detection only — rendering-only concerns.
  *
  * @packageDocumentation
  */

@@ -135,6 +135,16 @@ export {
     type BattleSlotContext,
 } from './BattleBoard';
 export {
+    UncontrolledBattleBoard,
+    type UncontrolledBattleBoardProps,
+} from './UncontrolledBattleBoard';
+export {
+    useBattleState,
+    type BattleStateEventConfig,
+    type BattleStateCallbacks,
+    type BattleStateResult,
+} from './hooks/useBattleState';
+export {
     WorldMapBoard,
     type WorldMapBoardProps,
     type WorldMapEntity,

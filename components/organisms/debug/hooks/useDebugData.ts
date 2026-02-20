@@ -1,3 +1,4 @@
+'use client';
 /**
  * useDebugData - Hook that aggregates data from all debug registries
  * 

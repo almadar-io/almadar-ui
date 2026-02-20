@@ -1,3 +1,4 @@
+'use client';
 /**
  * Sidebar Organism Component
  * 

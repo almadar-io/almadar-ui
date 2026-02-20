@@ -1,3 +1,14 @@
+// Shared organism types — base props contract for all entity-display organisms
+export {
+  type EntityDisplayProps,
+  EntityDisplayEvents,
+  type SortPayload,
+  type PaginatePayload,
+  type SearchPayload,
+  type FilterPayload,
+  type SelectPayload,
+} from "./types";
+
 // Shell organisms - common UI patterns
 export {
   DataTable,

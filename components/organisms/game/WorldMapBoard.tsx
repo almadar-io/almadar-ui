@@ -1,13 +1,21 @@
+'use client';
 /**
  * WorldMapBoard
  *
- * Organism that contains ALL game logic for the strategic world-map view.
- * Renders an isometric hex/iso map with hero selection, movement animation,
- * and encounter callbacks. Game-specific panels (hero detail, hero lists,
- * resource bars) are injected via render-prop slots.
+ * Organism for the strategic world-map view.  Renders an isometric hex/iso
+ * map with hero selection, movement animation, and encounter callbacks.
+ * Game-specific panels (hero detail, hero lists, resource bars) are injected
+ * via render-prop slots.
  *
- * This component is the logic-heavy core; WorldMapTemplate is a thin layout
- * wrapper that delegates to WorldMapBoard.
+ * **State categories (closed-circuit compliant):**
+ * - Game data (hexes, heroes, selectedHeroId, features) → received via
+ *   `entity` prop; the Orbital trait owns this state.
+ * - Rendering state (hoveredTile, movingPositions animation) → local only.
+ * - Events → emitted via `useEventBus()` for trait integration.
+ *
+ * This component is mostly prop-driven.  The only internal state is hover
+ * tracking and movement animation interpolation, both of which are
+ * rendering-only concerns that cannot (and should not) be externalised.
  *
  * @packageDocumentation
  */

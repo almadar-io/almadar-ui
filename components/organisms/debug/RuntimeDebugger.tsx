@@ -1,3 +1,4 @@
+'use client';
 /**
  * RuntimeDebugger - Main debug panel for KFlow applications
  * 
