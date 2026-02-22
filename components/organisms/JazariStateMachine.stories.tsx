@@ -25,10 +25,6 @@ const simpleTrait = {
       { name: 'active' },
       { name: 'completed', isTerminal: true },
     ],
-    events: [
-      { key: 'ACTIVATE', name: 'Activate' },
-      { key: 'COMPLETE', name: 'Complete' },
-    ],
     transitions: [
       { from: 'draft', to: 'active', event: 'ACTIVATE' },
       { from: 'active', to: 'completed', event: 'COMPLETE' },
@@ -46,14 +42,6 @@ const complexTrait = {
       { name: 'shipped' },
       { name: 'delivered', isTerminal: true },
       { name: 'cancelled', isTerminal: true },
-    ],
-    events: [
-      { key: 'CONFIRM', name: 'Confirm' },
-      { key: 'PROCESS', name: 'Process' },
-      { key: 'SHIP', name: 'Ship' },
-      { key: 'DELIVER', name: 'Deliver' },
-      { key: 'CANCEL', name: 'Cancel' },
-      { key: 'RETRY', name: 'Retry' },
     ],
     transitions: [
       { from: 'pending', to: 'confirmed', event: 'CONFIRM', guard: ['>', '@entity.total', 0] },
@@ -79,11 +67,6 @@ const arabicTrait = {
       { name: 'وصول' },
       { name: 'استقرار', isTerminal: true },
     ],
-    events: [
-      { key: 'بدء', name: 'بدء' },
-      { key: 'وصول', name: 'وصول' },
-      { key: 'استقرار', name: 'استقرار' },
-    ],
     transitions: [
       { from: 'تخطيط', to: 'تنفيذ', event: 'بدء', guard: ['>', '@entity.readiness', 0.5] },
       { from: 'تنفيذ', to: 'وصول', event: 'وصول' },
@@ -99,11 +82,6 @@ const selfLoopTrait = {
       { name: 'idle', isInitial: true },
       { name: 'running' },
       { name: 'done', isTerminal: true },
-    ],
-    events: [
-      { key: 'START', name: 'Start' },
-      { key: 'RETRY', name: 'Retry' },
-      { key: 'FINISH', name: 'Finish' },
     ],
     transitions: [
       { from: 'idle', to: 'running', event: 'START' },
@@ -143,22 +121,6 @@ export const SelfLoop: Story = {
   args: {
     trait: selfLoopTrait,
     entityFields: ['attempts', 'lastError'],
-  },
-};
-
-export const NoBorder: Story = {
-  args: {
-    trait: simpleTrait,
-    showBorder: false,
-    entityFields: ['title', 'status'],
-  },
-};
-
-export const NoGuardsOrEffects: Story = {
-  args: {
-    trait: complexTrait,
-    showGuards: false,
-    showEffects: false,
   },
 };
 

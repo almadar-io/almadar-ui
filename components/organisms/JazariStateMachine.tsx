@@ -1,29 +1,25 @@
 'use client';
 
 /**
- * JazariStateMachine — Full Al-Jazari state machine diagram organism.
+ * JazariStateMachine — Al-Jazari themed state machine diagram.
  *
- * Extracts a trait's state machine from an orbital schema (or accepts a trait
- * directly), runs the layout engine, and composes gears, arms, axis, and border
- * into a single SVG wrapped in a Box.
+ * Thin wrapper around StateMachineView that:
+ * 1. Extracts a state machine from an orbital schema (or accepts a trait directly)
+ * 2. Converts it to DomLayoutData via the visualizer lib
+ * 3. Applies Al-Jazari brass/gold/lapis color theme
+ * 4. Renders gear-shaped state nodes via the renderStateNode prop
  */
 
-import React, { useMemo, useState, useCallback, useRef } from 'react';
+import React, { useMemo } from 'react';
 import { Box } from '../atoms/Box';
 import { Typography } from '../atoms/Typography';
-import { VStack } from '../atoms/VStack';
-import { HStack } from '../atoms/HStack';
 import { LoadingState } from '../molecules/LoadingState';
 import { ErrorState } from '../molecules/ErrorState';
-import { DiagramTooltip } from '../molecules/DiagramTooltip';
-import { JazariGear } from '../atoms/JazariGear';
-import { JazariTransitionArm } from '../molecules/JazariTransitionArm';
-import { JazariGoldenAxis } from '../molecules/JazariGoldenAxis';
-import { JazariArabesqueBorder } from '../molecules/JazariArabesqueBorder';
-import { computeJazariLayout } from '../../lib/jazari/layout';
-import { arrowheadPath } from '../../lib/jazari/svg-paths';
+import { StateMachineView } from './StateMachineView';
+import { renderStateMachineToDomData, DEFAULT_CONFIG } from '../../lib/visualizer/index.js';
+import type { DomStateNode, VisualizerConfig, StateMachineDefinition } from '../../lib/visualizer/index.js';
+import { gearTeethPath } from '../../lib/jazari/svg-paths';
 import { JAZARI_COLORS } from '../../lib/jazari/types';
-import type { JazariArmLayout } from '../../lib/jazari/types';
 import { useTranslate } from '../../hooks/useTranslate';
 import { cn } from '../../lib/cn';
 import type { EntityDisplayProps } from './types';
@@ -73,17 +69,30 @@ interface SmSchema {
 }
 
 // ---------------------------------------------------------------------------
-// Tooltip state
+// Jazari theme config
 // ---------------------------------------------------------------------------
 
-interface ArmTooltipState {
-  visible: boolean;
-  x: number;
-  y: number;
-  arm: JazariArmLayout | null;
-}
-
-const INITIAL_TOOLTIP: ArmTooltipState = { visible: false, x: 0, y: 0, arm: null };
+const JAZARI_VISUALIZER_CONFIG: VisualizerConfig = {
+  ...DEFAULT_CONFIG,
+  colors: {
+    background: JAZARI_COLORS.darkBg,
+    node: JAZARI_COLORS.darkBg,
+    nodeBorder: JAZARI_COLORS.brass,
+    nodeText: JAZARI_COLORS.gold,
+    initialNode: JAZARI_COLORS.gold,
+    finalNode: JAZARI_COLORS.crimson,
+    arrow: JAZARI_COLORS.brass,
+    arrowText: JAZARI_COLORS.lapis,
+    effectText: JAZARI_COLORS.sky,
+    guardText: JAZARI_COLORS.crimson,
+    initial: JAZARI_COLORS.gold,
+  },
+  fonts: {
+    node: "18px 'Noto Naskh Arabic', serif",
+    event: "13px 'JetBrains Mono', monospace",
+    effect: "12px 'JetBrains Mono', monospace",
+  },
+};
 
 // ---------------------------------------------------------------------------
 // Props
@@ -96,22 +105,14 @@ export interface JazariStateMachineProps extends EntityDisplayProps {
   trait?: SmTrait;
   /** Which trait to visualize (default: 0) */
   traitIndex?: number;
-  /** Override entity field labels on golden axis */
+  /** Override entity field labels */
   entityFields?: string[];
   /** Text direction (default: 'ltr') */
   direction?: 'ltr' | 'rtl';
-  /** Show arabesque border (default: true) */
-  showBorder?: boolean;
-  /** Show golden axis (default: true) */
-  showAxis?: boolean;
-  /** Show guard lock icons (default: true) */
-  showGuards?: boolean;
-  /** Show effect pipe icons (default: true) */
-  showEffects?: boolean;
 }
 
 // ---------------------------------------------------------------------------
-// Extract trait from schema
+// Helpers
 // ---------------------------------------------------------------------------
 
 function extractTrait(
@@ -121,8 +122,6 @@ function extractTrait(
 ): SmTrait | null {
   if (trait) return trait;
   if (!schema?.orbitals?.length) return null;
-
-  // Scan all orbitals for traits
   for (const orbital of schema.orbitals) {
     const traits = orbital.traits ?? [];
     if (traitIndex < traits.length) {
@@ -139,12 +138,115 @@ function extractEntityFields(schema: SmSchema | undefined): string[] {
   return entity.fields.map((f) => f.name);
 }
 
+function toStateMachineDefinition(sm: SmStateMachine): StateMachineDefinition {
+  return {
+    states: sm.states.map((s) => ({
+      name: s.name,
+      isInitial: s.isInitial,
+      isFinal: s.isTerminal ?? s.isFinal,
+    })),
+    transitions: sm.transitions.map((t) => ({
+      from: t.from,
+      to: t.to,
+      event: t.event,
+      guard: t.guard,
+      effects: t.effects,
+    })),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Gear node renderer
+// ---------------------------------------------------------------------------
+
+const GEAR_INNER_RADIUS = 0.6;
+const GEAR_NUM_TEETH = 12;
+const GEAR_TEETH_DEPTH = 7;
+
+function renderJazariGearNode(state: DomStateNode, _config: VisualizerConfig): React.ReactNode {
+  const outerR = state.radius * 0.5 + GEAR_TEETH_DEPTH;
+  const innerR = state.radius * 0.5 - 2;
+  const coreR = state.radius * 0.5 * GEAR_INNER_RADIUS;
+
+  const fillColor = state.isInitial ? JAZARI_COLORS.gold : JAZARI_COLORS.brass;
+  const teethD = gearTeethPath(state.radius, state.radius, innerR, outerR, GEAR_NUM_TEETH);
+
+  const label = state.name.length > 10 ? `${state.name.slice(0, 9)}…` : state.name;
+  const fontSize = state.name.length > 7 ? 11 : 14;
+
+  const size = state.radius * 2;
+
+  return (
+    <Box
+      className="absolute"
+      style={{
+        left: state.x - state.radius,
+        top: state.y - state.radius,
+        width: size,
+        height: size,
+        zIndex: 5,
+      }}
+      action="STATE_CLICK"
+      actionPayload={{ stateName: state.name }}
+    >
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {/* Glow for initial */}
+        {state.isInitial && (
+          <defs>
+            <filter id={`jazari-glow-${state.name}`}>
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+        )}
+
+        {/* Gear teeth */}
+        <path
+          d={teethD}
+          fill={fillColor}
+          fillOpacity={0.2}
+          stroke={fillColor}
+          strokeWidth={1.5}
+          strokeDasharray={state.isFinal ? '4 3' : undefined}
+          filter={state.isInitial ? `url(#jazari-glow-${state.name})` : undefined}
+        />
+
+        {/* Inner circle */}
+        <circle
+          cx={state.radius}
+          cy={state.radius}
+          r={coreR}
+          fill={fillColor}
+          fillOpacity={0.15}
+          stroke={fillColor}
+          strokeWidth={1}
+          strokeDasharray={state.isFinal ? '4 3' : undefined}
+        />
+
+        {/* State name */}
+        <text
+          x={state.radius}
+          y={state.radius}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fill={fillColor}
+          fontSize={fontSize}
+          fontWeight={600}
+          fontFamily="'Noto Naskh Arabic', serif"
+        >
+          {label}
+        </text>
+      </svg>
+    </Box>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
-
-const ARROW_SIZE = 8;
-const HIDE_DELAY = 300;
 
 export const JazariStateMachine: React.FC<JazariStateMachineProps> = ({
   schema,
@@ -152,42 +254,12 @@ export const JazariStateMachine: React.FC<JazariStateMachineProps> = ({
   traitIndex = 0,
   entityFields: entityFieldsProp,
   direction = 'ltr',
-  showBorder = true,
-  showAxis = true,
-  showGuards = true,
-  showEffects = true,
   className,
   isLoading = false,
   error = null,
 }) => {
   const { t } = useTranslate();
   void t;
-
-  const [tooltip, setTooltip] = useState<ArmTooltipState>(INITIAL_TOOLTIP);
-  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const clearHideTimer = useCallback(() => {
-    if (hideTimerRef.current) {
-      clearTimeout(hideTimerRef.current);
-      hideTimerRef.current = null;
-    }
-  }, []);
-
-  const handleArmHover = useCallback((arm: JazariArmLayout, screenX: number, screenY: number) => {
-    clearHideTimer();
-    setTooltip({ visible: true, x: screenX, y: screenY, arm });
-  }, [clearHideTimer]);
-
-  const scheduleHide = useCallback(() => {
-    clearHideTimer();
-    hideTimerRef.current = setTimeout(() => {
-      setTooltip(INITIAL_TOOLTIP);
-    }, HIDE_DELAY);
-  }, [clearHideTimer]);
-
-  const handleTooltipMouseEnter = useCallback(() => {
-    clearHideTimer();
-  }, [clearHideTimer]);
 
   const resolvedTrait = useMemo(
     () => extractTrait(schema, traitProp, traitIndex),
@@ -199,16 +271,18 @@ export const JazariStateMachine: React.FC<JazariStateMachineProps> = ({
     [entityFieldsProp, schema],
   );
 
-  const layout = useMemo(() => {
+  const layoutData = useMemo(() => {
     if (!resolvedTrait?.stateMachine) return null;
-    const sm = resolvedTrait.stateMachine;
-    return computeJazariLayout({
-      states: sm.states,
-      transitions: sm.transitions,
-      entityFields,
-      direction,
-    });
-  }, [resolvedTrait, entityFields, direction]);
+    const sm = toStateMachineDefinition(resolvedTrait.stateMachine);
+    const entityDef = entityFields.length > 0
+      ? { name: 'entity', fields: entityFields }
+      : undefined;
+    return renderStateMachineToDomData(
+      sm,
+      { title: resolvedTrait.name, entity: entityDef },
+      JAZARI_VISUALIZER_CONFIG,
+    );
+  }, [resolvedTrait, entityFields]);
 
   if (isLoading) {
     return <LoadingState message="Loading state machine…" />;
@@ -218,7 +292,7 @@ export const JazariStateMachine: React.FC<JazariStateMachineProps> = ({
     return <ErrorState error={error} />;
   }
 
-  if (!resolvedTrait || !layout || layout.gears.length === 0) {
+  if (!resolvedTrait || !layoutData || layoutData.states.length === 0) {
     return (
       <Box padding="lg" className={cn('text-center', className)}>
         <Typography variant="body" className="opacity-60">
@@ -229,181 +303,11 @@ export const JazariStateMachine: React.FC<JazariStateMachineProps> = ({
   }
 
   return (
-    <Box className={cn('jazari-state-machine', className)} padding="none">
-      <svg
-        width="100%"
-        viewBox={`0 0 ${layout.width} ${layout.height}`}
-        xmlns="http://www.w3.org/2000/svg"
-        style={{ maxWidth: layout.width, display: 'block', margin: '0 auto' }}
-        role="img"
-        aria-label={`State machine diagram for ${resolvedTrait.name}`}
-      >
-        <defs>
-          {/* Glow filter for initial state */}
-          <filter id="jazari-glow">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-          {/* Arrowhead marker */}
-          <marker
-            id="jazari-arrow"
-            viewBox={`0 0 ${ARROW_SIZE} ${ARROW_SIZE}`}
-            refX={ARROW_SIZE}
-            refY={ARROW_SIZE / 2}
-            markerWidth={ARROW_SIZE}
-            markerHeight={ARROW_SIZE}
-            orient="auto-start-reverse"
-          >
-            <path d={arrowheadPath(ARROW_SIZE)} fill={JAZARI_COLORS.brass} fillOpacity={0.7} />
-          </marker>
-        </defs>
-
-        {/* Background */}
-        <rect
-          x={0}
-          y={0}
-          width={layout.width}
-          height={layout.height}
-          fill={JAZARI_COLORS.ivory}
-          fillOpacity={0.03}
-          rx={8}
-        />
-
-        {/* Arabesque border */}
-        {showBorder && (
-          <JazariArabesqueBorder width={layout.width} height={layout.height} />
-        )}
-
-        {/* Golden axis */}
-        {showAxis && (
-          <JazariGoldenAxis
-            y={layout.axisY}
-            startX={layout.axisStartX}
-            endX={layout.axisEndX}
-            entityFields={layout.entityFields}
-          />
-        )}
-
-        {/* Transition arms (rendered before gears so gears overlap) */}
-        {layout.arms.map((arm, i) => (
-          <JazariTransitionArm
-            key={`${arm.from}-${arm.to}-${arm.event}-${i}`}
-            arm={arm}
-            showGuards={showGuards}
-            showEffects={showEffects}
-            onHover={handleArmHover}
-            onLeave={scheduleHide}
-          />
-        ))}
-
-        {/* State gears */}
-        {layout.gears.map((gear) => (
-          <JazariGear
-            key={gear.name}
-            cx={gear.cx}
-            cy={gear.cy}
-            radius={gear.radius}
-            label={gear.name}
-            isInitial={gear.isInitial}
-            isTerminal={gear.isTerminal}
-          />
-        ))}
-
-        {/* Trait name */}
-        <text
-          x={layout.width / 2}
-          y={20}
-          textAnchor="middle"
-          fill={JAZARI_COLORS.gold}
-          fontSize={13}
-          fontWeight={700}
-          fontFamily="'Noto Naskh Arabic', serif"
-        >
-          {resolvedTrait.name}
-        </text>
-      </svg>
-
-      {/* Transition tooltip (DOM overlay) */}
-      <DiagramTooltip
-        visible={tooltip.visible}
-        x={tooltip.x}
-        y={tooltip.y}
-        onMouseEnter={handleTooltipMouseEnter}
-        onMouseLeave={scheduleHide}
-      >
-        {tooltip.arm && (
-          <VStack gap="sm">
-            {/* Header: from → to */}
-            <HStack gap="sm" align="center">
-              <Typography
-                variant="label"
-                weight="semibold"
-                style={{ color: JAZARI_COLORS.gold, fontFamily: 'monospace' }}
-              >
-                {tooltip.arm.from}
-              </Typography>
-              <Typography variant="caption" style={{ color: '#6b7280' }}>→</Typography>
-              <Typography
-                variant="label"
-                weight="semibold"
-                style={{ color: JAZARI_COLORS.gold, fontFamily: 'monospace' }}
-              >
-                {tooltip.arm.to}
-              </Typography>
-            </HStack>
-
-            {/* Event name */}
-            <Typography
-              variant="body2"
-              weight="semibold"
-              style={{ color: JAZARI_COLORS.sky, fontFamily: 'monospace' }}
-            >
-              {tooltip.arm.event}
-            </Typography>
-
-            {/* Guard */}
-            {tooltip.arm.guard && (
-              <HStack gap="sm" align="start">
-                <Typography variant="caption" weight="semibold" style={{ color: JAZARI_COLORS.crimson }}>
-                  guard:
-                </Typography>
-                <Typography variant="caption" style={{ color: JAZARI_COLORS.crimson }}>
-                  {tooltip.arm.guard.isAI ? 'AI (call-service)' : 'deterministic'}
-                </Typography>
-              </HStack>
-            )}
-
-            {/* Effects */}
-            {tooltip.arm.effect && tooltip.arm.effect.names.length > 0 && (
-              <VStack gap="none">
-                <Typography variant="caption" weight="semibold" style={{ color: JAZARI_COLORS.sky }}>
-                  effects:
-                </Typography>
-                {tooltip.arm.effect.names.map((name, i) => (
-                  <Typography
-                    key={i}
-                    variant="caption"
-                    style={{
-                      color: '#a5b4fc',
-                      fontFamily: 'monospace',
-                      paddingLeft: '8px',
-                      fontSize: '11px',
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-all',
-                    }}
-                  >
-                    {name}
-                  </Typography>
-                ))}
-              </VStack>
-            )}
-          </VStack>
-        )}
-      </DiagramTooltip>
-    </Box>
+    <StateMachineView
+      layoutData={layoutData}
+      renderStateNode={renderJazariGearNode}
+      className={cn('jazari-state-machine', className)}
+    />
   );
 };
 

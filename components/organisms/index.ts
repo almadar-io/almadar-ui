@@ -76,6 +76,15 @@ export {
   type OrbitalVisualizationProps,
 } from "./OrbitalVisualization";
 
+// State machine visualization
+export {
+  StateMachineView,
+  DomStateMachineVisualizer,
+  OrbitalStateMachineView,
+  type StateMachineViewProps,
+  type TransitionBundle,
+} from "./StateMachineView";
+
 // Jazari state machine visualization
 export {
   JazariStateMachine,

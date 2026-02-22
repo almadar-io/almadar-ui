@@ -91,10 +91,5 @@ export {
   type LawReference,
 } from "./LawReferenceTooltip";
 
-// Jazari visualization atoms
-export { JazariGear, type JazariGearProps } from "./JazariGear";
-export { JazariLock, type JazariLockProps } from "./JazariLock";
-export { JazariPipe, type JazariPipeProps } from "./JazariPipe";
-
 // Game atom components
 export * from "./game";
