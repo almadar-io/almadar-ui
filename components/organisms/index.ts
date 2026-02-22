@@ -76,6 +76,12 @@ export {
   type OrbitalVisualizationProps,
 } from "./OrbitalVisualization";
 
+// Jazari state machine visualization
+export {
+  JazariStateMachine,
+  type JazariStateMachineProps,
+} from "./JazariStateMachine";
+
 // Layout organisms
 export * from "./layout";
 

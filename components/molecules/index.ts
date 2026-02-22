@@ -32,6 +32,11 @@ export { Drawer, type DrawerProps, type DrawerPosition, type DrawerSize } from '
 export { WizardProgress, type WizardProgressProps, type WizardProgressStep } from './WizardProgress';
 export { WizardNavigation, type WizardNavigationProps } from './WizardNavigation';
 
+// Jazari visualization molecules
+export { JazariTransitionArm, type JazariTransitionArmProps } from './JazariTransitionArm';
+export { JazariArabesqueBorder, type JazariArabesqueBorderProps } from './JazariArabesqueBorder';
+export { JazariGoldenAxis, type JazariGoldenAxisProps } from './JazariGoldenAxis';
+
 // Inspection form components
 export { RepeatableFormSection, type RepeatableFormSectionProps, type RepeatableItem } from './RepeatableFormSection';
 export { ViolationAlert, type ViolationAlertProps, type ViolationRecord } from './ViolationAlert';
