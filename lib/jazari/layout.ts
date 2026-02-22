@@ -224,8 +224,18 @@ export function computeJazariLayout(input: LayoutInput): JazariLayout {
       ctrlY = axisY + arcSign * (ARC_HEIGHT + Math.abs(parallelShift));
       ctrlX = midX;
 
-      path = `M ${fromGear.cx} ${fromGear.cy} Q ${ctrlX} ${ctrlY} ${toGear.cx} ${toGear.cy}`;
-      const mid = quadBezierPoint(fromGear.cx, fromGear.cy, ctrlX, ctrlY, toGear.cx, toGear.cy, 0.5);
+      // Offset start/end to gear perimeter so arrows don't overlap state names
+      const perimeterR = GEAR_RADIUS + 7; // outer radius including teeth
+      const dx = toGear.cx - fromGear.cx;
+      const dy = toGear.cy - fromGear.cy;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      const startX = dist > 0 ? fromGear.cx + (dx / dist) * perimeterR : fromGear.cx;
+      const startY = dist > 0 ? fromGear.cy + (dy / dist) * perimeterR : fromGear.cy;
+      const endX = dist > 0 ? toGear.cx - (dx / dist) * perimeterR : toGear.cx;
+      const endY = dist > 0 ? toGear.cy - (dy / dist) * perimeterR : toGear.cy;
+
+      path = `M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}`;
+      const mid = quadBezierPoint(startX, startY, ctrlX, ctrlY, endX, endY, 0.5);
       labelX = mid.x;
       labelY = mid.y;
     }
@@ -247,11 +257,15 @@ export function computeJazariLayout(input: LayoutInput): JazariLayout {
     // Effects at 70%
     let effect: JazariEffectInfo | null = null;
     if (t.effects && t.effects.length > 0) {
+      const names = t.effects.map((e) => {
+        if (Array.isArray(e)) return JSON.stringify(e);
+        return String(e);
+      });
       if (isSelfLoop) {
-        effect = { x: fromGear.cx + 18, y: fromGear.cy - GEAR_RADIUS - SELF_LOOP_RADIUS, count: t.effects.length };
+        effect = { x: fromGear.cx + 18, y: fromGear.cy - GEAR_RADIUS - SELF_LOOP_RADIUS, count: t.effects.length, names };
       } else {
         const ep = quadBezierPoint(fromGear.cx, fromGear.cy, ctrlX, ctrlY, toGear.cx, toGear.cy, 0.7);
-        effect = { x: ep.x, y: ep.y, count: t.effects.length };
+        effect = { x: ep.x, y: ep.y, count: t.effects.length, names };
       }
     }
 

@@ -8,11 +8,14 @@
  * into a single SVG wrapped in a Box.
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback, useRef } from 'react';
 import { Box } from '../atoms/Box';
 import { Typography } from '../atoms/Typography';
+import { VStack } from '../atoms/VStack';
+import { HStack } from '../atoms/HStack';
 import { LoadingState } from '../molecules/LoadingState';
 import { ErrorState } from '../molecules/ErrorState';
+import { DiagramTooltip } from '../molecules/DiagramTooltip';
 import { JazariGear } from '../atoms/JazariGear';
 import { JazariTransitionArm } from '../molecules/JazariTransitionArm';
 import { JazariGoldenAxis } from '../molecules/JazariGoldenAxis';
@@ -20,6 +23,7 @@ import { JazariArabesqueBorder } from '../molecules/JazariArabesqueBorder';
 import { computeJazariLayout } from '../../lib/jazari/layout';
 import { arrowheadPath } from '../../lib/jazari/svg-paths';
 import { JAZARI_COLORS } from '../../lib/jazari/types';
+import type { JazariArmLayout } from '../../lib/jazari/types';
 import { useTranslate } from '../../hooks/useTranslate';
 import { cn } from '../../lib/cn';
 import type { EntityDisplayProps } from './types';
@@ -67,6 +71,19 @@ interface SmOrbital {
 interface SmSchema {
   orbitals?: SmOrbital[];
 }
+
+// ---------------------------------------------------------------------------
+// Tooltip state
+// ---------------------------------------------------------------------------
+
+interface ArmTooltipState {
+  visible: boolean;
+  x: number;
+  y: number;
+  arm: JazariArmLayout | null;
+}
+
+const INITIAL_TOOLTIP: ArmTooltipState = { visible: false, x: 0, y: 0, arm: null };
 
 // ---------------------------------------------------------------------------
 // Props
@@ -127,6 +144,7 @@ function extractEntityFields(schema: SmSchema | undefined): string[] {
 // ---------------------------------------------------------------------------
 
 const ARROW_SIZE = 8;
+const HIDE_DELAY = 300;
 
 export const JazariStateMachine: React.FC<JazariStateMachineProps> = ({
   schema,
@@ -144,6 +162,32 @@ export const JazariStateMachine: React.FC<JazariStateMachineProps> = ({
 }) => {
   const { t } = useTranslate();
   void t;
+
+  const [tooltip, setTooltip] = useState<ArmTooltipState>(INITIAL_TOOLTIP);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearHideTimer = useCallback(() => {
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+  }, []);
+
+  const handleArmHover = useCallback((arm: JazariArmLayout, screenX: number, screenY: number) => {
+    clearHideTimer();
+    setTooltip({ visible: true, x: screenX, y: screenY, arm });
+  }, [clearHideTimer]);
+
+  const scheduleHide = useCallback(() => {
+    clearHideTimer();
+    hideTimerRef.current = setTimeout(() => {
+      setTooltip(INITIAL_TOOLTIP);
+    }, HIDE_DELAY);
+  }, [clearHideTimer]);
+
+  const handleTooltipMouseEnter = useCallback(() => {
+    clearHideTimer();
+  }, [clearHideTimer]);
 
   const resolvedTrait = useMemo(
     () => extractTrait(schema, traitProp, traitIndex),
@@ -250,6 +294,8 @@ export const JazariStateMachine: React.FC<JazariStateMachineProps> = ({
             arm={arm}
             showGuards={showGuards}
             showEffects={showEffects}
+            onHover={handleArmHover}
+            onLeave={scheduleHide}
           />
         ))}
 
@@ -279,6 +325,84 @@ export const JazariStateMachine: React.FC<JazariStateMachineProps> = ({
           {resolvedTrait.name}
         </text>
       </svg>
+
+      {/* Transition tooltip (DOM overlay) */}
+      <DiagramTooltip
+        visible={tooltip.visible}
+        x={tooltip.x}
+        y={tooltip.y}
+        onMouseEnter={handleTooltipMouseEnter}
+        onMouseLeave={scheduleHide}
+      >
+        {tooltip.arm && (
+          <VStack gap="sm">
+            {/* Header: from → to */}
+            <HStack gap="sm" align="center">
+              <Typography
+                variant="label"
+                weight="semibold"
+                style={{ color: JAZARI_COLORS.gold, fontFamily: 'monospace' }}
+              >
+                {tooltip.arm.from}
+              </Typography>
+              <Typography variant="caption" style={{ color: '#6b7280' }}>→</Typography>
+              <Typography
+                variant="label"
+                weight="semibold"
+                style={{ color: JAZARI_COLORS.gold, fontFamily: 'monospace' }}
+              >
+                {tooltip.arm.to}
+              </Typography>
+            </HStack>
+
+            {/* Event name */}
+            <Typography
+              variant="body2"
+              weight="semibold"
+              style={{ color: JAZARI_COLORS.sky, fontFamily: 'monospace' }}
+            >
+              {tooltip.arm.event}
+            </Typography>
+
+            {/* Guard */}
+            {tooltip.arm.guard && (
+              <HStack gap="sm" align="start">
+                <Typography variant="caption" weight="semibold" style={{ color: JAZARI_COLORS.crimson }}>
+                  guard:
+                </Typography>
+                <Typography variant="caption" style={{ color: JAZARI_COLORS.crimson }}>
+                  {tooltip.arm.guard.isAI ? 'AI (call-service)' : 'deterministic'}
+                </Typography>
+              </HStack>
+            )}
+
+            {/* Effects */}
+            {tooltip.arm.effect && tooltip.arm.effect.names.length > 0 && (
+              <VStack gap="none">
+                <Typography variant="caption" weight="semibold" style={{ color: JAZARI_COLORS.sky }}>
+                  effects:
+                </Typography>
+                {tooltip.arm.effect.names.map((name, i) => (
+                  <Typography
+                    key={i}
+                    variant="caption"
+                    style={{
+                      color: '#a5b4fc',
+                      fontFamily: 'monospace',
+                      paddingLeft: '8px',
+                      fontSize: '11px',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-all',
+                    }}
+                  >
+                    {name}
+                  </Typography>
+                ))}
+              </VStack>
+            )}
+          </VStack>
+        )}
+      </DiagramTooltip>
     </Box>
   );
 };

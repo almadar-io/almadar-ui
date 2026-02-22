@@ -5,7 +5,7 @@
  * Displays the event label at the midpoint, with optional guard lock and effect pipe.
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import type { JazariArmLayout } from '../../lib/jazari/types';
 import { JAZARI_COLORS } from '../../lib/jazari/types';
 import { JazariLock } from '../atoms/JazariLock';
@@ -20,6 +20,10 @@ export interface JazariTransitionArmProps {
   showGuards?: boolean;
   /** Whether to show effect icons */
   showEffects?: boolean;
+  /** Called when mouse enters the arm area */
+  onHover?: (arm: JazariArmLayout, screenX: number, screenY: number) => void;
+  /** Called when mouse leaves the arm area */
+  onLeave?: () => void;
   /** Additional CSS class */
   className?: string;
 }
@@ -28,10 +32,18 @@ export const JazariTransitionArm: React.FC<JazariTransitionArmProps> = ({
   arm,
   showGuards = true,
   showEffects = true,
+  onHover,
+  onLeave,
   className,
 }) => {
   const { t } = useTranslate();
   void t;
+
+  const handleMouseEnter = useCallback((e: React.MouseEvent<SVGElement>) => {
+    if (onHover) {
+      onHover(arm, e.clientX, e.clientY);
+    }
+  }, [arm, onHover]);
 
   if (!arm.path) return null;
 
@@ -46,19 +58,31 @@ export const JazariTransitionArm: React.FC<JazariTransitionArmProps> = ({
         strokeOpacity={0.7}
         markerEnd="url(#jazari-arrow)"
       />
+      {/* Wide invisible hit area for hover */}
+      <path
+        d={arm.path}
+        fill="none"
+        stroke="transparent"
+        strokeWidth={14}
+        style={{ cursor: 'pointer' }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={onLeave}
+      />
 
-      {/* Event label at midpoint */}
+      {/* Event label at midpoint — opaque background so line doesn't obscure text */}
       <rect
         x={arm.labelX - 30}
         y={arm.labelY - 10}
         width={60}
         height={18}
         rx={4}
-        fill={JAZARI_COLORS.lapis}
-        fillOpacity={0.15}
+        fill={JAZARI_COLORS.darkBg}
         stroke={JAZARI_COLORS.lapis}
         strokeWidth={0.5}
         strokeOpacity={0.4}
+        style={{ cursor: 'pointer' }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={onLeave}
       />
       <text
         x={arm.labelX}
@@ -69,6 +93,7 @@ export const JazariTransitionArm: React.FC<JazariTransitionArmProps> = ({
         fontSize={8}
         fontWeight={600}
         fontFamily="monospace"
+        style={{ pointerEvents: 'none' }}
       >
         {arm.event.length > 12 ? `${arm.event.slice(0, 11)}…` : arm.event}
       </text>

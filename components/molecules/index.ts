@@ -32,6 +32,9 @@ export { Drawer, type DrawerProps, type DrawerPosition, type DrawerSize } from '
 export { WizardProgress, type WizardProgressProps, type WizardProgressStep } from './WizardProgress';
 export { WizardNavigation, type WizardNavigationProps } from './WizardNavigation';
 
+// Diagram visualization
+export { DiagramTooltip, type DiagramTooltipProps } from './DiagramTooltip';
+
 // Jazari visualization molecules
 export { JazariTransitionArm, type JazariTransitionArmProps } from './JazariTransitionArm';
 export { JazariArabesqueBorder, type JazariArabesqueBorderProps } from './JazariArabesqueBorder';

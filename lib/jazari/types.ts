@@ -37,6 +37,8 @@ export interface JazariEffectInfo {
   y: number;
   /** Number of effects */
   count: number;
+  /** Effect labels for tooltip display */
+  names: string[];
 }
 
 /** Layout for a single transition arm */

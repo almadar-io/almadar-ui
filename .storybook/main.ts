@@ -27,12 +27,21 @@ const config: StorybookConfig = {
   staticDirs: [],
   async viteFinal(config) {
     const { mergeConfig, searchForWorkspaceRoot } = await import("vite");
-    const react = (await import("@vitejs/plugin-react")).default;
 
     const projectRoot = path.resolve(__dirname, "..");
     const workspaceRoot = searchForWorkspaceRoot(projectRoot);
 
-    return mergeConfig(config, {
+    // Replace Storybook's default @vitejs/plugin-react with ours that includes
+    // babel-plugin-react-compiler. Adding a second react plugin causes duplicate
+    // HMR preambles (inWebWorker, prevRefreshReg, prevRefreshSig).
+    const react = (await import("@vitejs/plugin-react")).default;
+    const existingPlugins = (config.plugins ?? []).flat();
+    const filteredPlugins = existingPlugins.filter((p) => {
+      const name = (p as Record<string, unknown>)?.name;
+      return typeof name !== 'string' || !name.startsWith('vite:react');
+    });
+
+    return mergeConfig({ ...config, plugins: filteredPlugins }, {
       plugins: [
         react({
           babel: {
