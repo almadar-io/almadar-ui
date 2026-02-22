@@ -39,7 +39,6 @@ export const WithRowClick: Story = {
     entity: 'Task',
     masterFields: ['title', 'status', 'priority'],
     data: sampleTasks,
-    onRowClick: (row: Task) => console.log('Selected:', row),
   },
 };
 

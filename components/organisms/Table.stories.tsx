@@ -37,21 +37,20 @@ const columns = [
     { key: 'status', label: 'Status', sortable: true },
 ];
 
-const getRowKey = (row: Record<string, unknown>) => String(row.id);
 
 export const Default: Story = {
     args: {
-        entity: sampleData,
+        data: sampleData,
         columns,
-        getRowKey,
+
     },
 };
 
 export const WithSearch: Story = {
     args: {
-        entity: sampleData,
+        data: sampleData,
         columns,
-        getRowKey,
+
         searchable: true,
         searchPlaceholder: 'Search people...',
     },
@@ -59,32 +58,30 @@ export const WithSearch: Story = {
 
 export const Selectable: Story = {
     args: {
-        entity: sampleData,
+        data: sampleData,
         columns,
-        getRowKey,
+
         selectable: true,
-        selectedRows: [],
-        onSelectionChange: (keys: string[]) => console.log('Selected:', keys),
+        selectedIds: [],
     },
 };
 
 export const WithSorting: Story = {
     args: {
-        entity: sampleData,
+        data: sampleData,
         columns,
-        getRowKey,
+
         sortable: true,
         sortColumn: 'name',
         sortDirection: 'asc',
-        onSortChange: (col: string, dir: string | null) => console.log('Sort:', col, dir),
     },
 };
 
 export const WithRowActions: Story = {
     args: {
-        entity: sampleData,
+        data: sampleData,
         columns,
-        getRowKey,
+
         rowActions: () => [
             { label: 'View', onClick: () => console.log('View') },
             { label: 'Edit', onClick: () => console.log('Edit') },
@@ -95,39 +92,38 @@ export const WithRowActions: Story = {
 
 export const WithPagination: Story = {
     args: {
-        entity: sampleData,
+        data: sampleData,
         columns,
-        getRowKey,
+
         paginated: true,
         currentPage: 1,
         totalPages: 5,
-        onPageChange: (page: number) => console.log('Page:', page),
     },
 };
 
 export const Loading: Story = {
     args: {
-        entity: [],
+        data: [],
         columns,
-        getRowKey,
+
         isLoading: true,
     },
 };
 
 export const Empty: Story = {
     args: {
-        entity: [],
+        data: [],
         columns,
-        getRowKey,
+
         emptyMessage: 'No records found.',
     },
 };
 
 export const FullFeatured: Story = {
     args: {
-        entity: sampleData,
+        data: sampleData,
         columns,
-        getRowKey,
+
         searchable: true,
         selectable: true,
         sortable: true,
