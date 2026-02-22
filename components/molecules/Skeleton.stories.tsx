@@ -84,14 +84,14 @@ export const TextParagraph: Story = {
 export const FullPage: Story = {
   name: 'Full Page Skeleton',
   render: () => (
-    <VStack gap={4}>
+    <VStack gap="md">
       <Skeleton variant="header" />
-      <HStack gap={4} className="px-6">
+      <HStack gap="md" className="px-6">
         <Box className="flex-1">
           <Skeleton variant="table" rows={8} columns={5} />
         </Box>
         <Box className="w-80">
-          <VStack gap={4}>
+          <VStack gap="md">
             <Skeleton variant="card" />
             <Skeleton variant="card" />
           </VStack>
@@ -104,24 +104,24 @@ export const FullPage: Story = {
 export const SuspenseUsage: Story = {
   name: 'Suspense Usage Example',
   render: () => (
-    <VStack gap={6} className="p-6">
+    <VStack gap="lg" className="p-6">
       <Typography variant="h3">Suspense Fallback Examples</Typography>
       <Typography variant="small" className="text-[var(--color-muted-foreground)]">
         These skeletons are designed to be used as Suspense fallbacks.
       </Typography>
-      <VStack gap={2}>
+      <VStack gap="sm">
         <Typography variant="small" className="font-mono text-xs">
           {'<Suspense fallback={<Skeleton variant="header" />}>'}
         </Typography>
         <Skeleton variant="header" />
       </VStack>
-      <VStack gap={2}>
+      <VStack gap="sm">
         <Typography variant="small" className="font-mono text-xs">
           {'<Suspense fallback={<Skeleton variant="table" />}>'}
         </Typography>
         <Skeleton variant="table" />
       </VStack>
-      <VStack gap={2}>
+      <VStack gap="sm">
         <Typography variant="small" className="font-mono text-xs">
           {'<Suspense fallback={<Skeleton variant="form" />}>'}
         </Typography>
