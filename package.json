@@ -133,7 +133,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/almadar-io/almadar-ui.git"
+    "url": "https://github.com/almadar-io/almadar.git",
+    "directory": "docs/packages/ui"
   },
   "license": "MIT",
   "keywords": [
@@ -142,5 +143,6 @@
     "react",
     "components",
     "hooks"
-  ]
+  ],
+  "homepage": "https://github.com/almadar-io/almadar#readme"
 }
