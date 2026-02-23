@@ -33,7 +33,7 @@ export const BookCoverPage: React.FC<BookCoverPageProps> = ({
   direction,
   className,
 }) => {
-  const { t: _t } = useTranslate();
+  const { t } = useTranslate();
 
   return (
     <VStack
@@ -90,7 +90,7 @@ export const BookCoverPage: React.FC<BookCoverPageProps> = ({
         className="mt-8"
       >
         <Typography variant="body">
-          {direction === 'rtl' ? 'ابدأ القراءة' : 'Start Reading'}
+          {t('book.startReading')}
         </Typography>
       </Button>
     </VStack>

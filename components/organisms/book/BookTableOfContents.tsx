@@ -32,7 +32,7 @@ export const BookTableOfContents: React.FC<BookTableOfContentsProps> = ({
   direction,
   className,
 }) => {
-  const { t: _t } = useTranslate();
+  const { t } = useTranslate();
 
   return (
     <VStack
@@ -41,14 +41,14 @@ export const BookTableOfContents: React.FC<BookTableOfContentsProps> = ({
       style={{ direction }}
     >
       <Typography variant="h1" className="text-3xl font-bold text-center mb-4">
-        {direction === 'rtl' ? 'فهرس المحتويات' : 'Table of Contents'}
+        {t('book.tableOfContents')}
       </Typography>
 
       {parts.map((part, partIdx) => (
         <VStack key={partIdx} gap="sm">
           <HStack gap="sm" align="center">
             <Badge variant="default" size="sm">
-              {direction === 'rtl' ? `الجزء ${partIdx + 1}` : `Part ${partIdx + 1}`}
+              {t('book.partNumber', { number: String(partIdx + 1) })}
             </Badge>
             <Typography variant="h3" className="font-semibold">
               {part.title}

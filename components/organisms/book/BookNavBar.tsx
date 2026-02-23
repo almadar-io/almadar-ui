@@ -38,7 +38,7 @@ export const BookNavBar: React.FC<BookNavBarProps> = ({
   direction,
   className,
 }) => {
-  const { t: _t } = useTranslate();
+  const { t } = useTranslate();
   const isRtl = direction === 'rtl';
   const progress = totalPages > 1 ? (currentPage / (totalPages - 1)) * 100 : 0;
 
@@ -60,7 +60,7 @@ export const BookNavBar: React.FC<BookNavBarProps> = ({
             variant="ghost"
             size="sm"
             action="BOOK_SHOW_TOC"
-            aria-label={isRtl ? 'فهرس المحتويات' : 'Table of Contents'}
+            aria-label={t('book.tableOfContents')}
           >
             <List size={18} />
           </Button>
@@ -68,7 +68,7 @@ export const BookNavBar: React.FC<BookNavBarProps> = ({
             variant="ghost"
             size="sm"
             action="BOOK_PRINT"
-            aria-label={isRtl ? 'طباعة' : 'Print'}
+            aria-label={t('book.print')}
           >
             <Printer size={18} />
           </Button>
@@ -95,7 +95,7 @@ export const BookNavBar: React.FC<BookNavBarProps> = ({
             action="BOOK_PAGE_PREV"
             actionPayload={{ pageIndex: currentPage }}
             disabled={currentPage <= 0}
-            aria-label={isRtl ? 'الصفحة السابقة' : 'Previous page'}
+            aria-label={t('book.previousPage')}
           >
             <PrevIcon size={18} />
           </Button>
@@ -110,7 +110,7 @@ export const BookNavBar: React.FC<BookNavBarProps> = ({
             action="BOOK_PAGE_NEXT"
             actionPayload={{ pageIndex: currentPage }}
             disabled={currentPage >= totalPages - 1}
-            aria-label={isRtl ? 'الصفحة التالية' : 'Next page'}
+            aria-label={t('book.nextPage')}
           >
             <NextIcon size={18} />
           </Button>
