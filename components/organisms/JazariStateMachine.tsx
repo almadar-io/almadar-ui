@@ -293,7 +293,7 @@ export const JazariStateMachine: React.FC<JazariStateMachineProps> = ({
   }
 
   if (error) {
-    return <ErrorState error={error} />;
+    return <ErrorState message={error instanceof Error ? error.message : String(error)} />;
   }
 
   if (!resolvedTrait || !layoutData || layoutData.states.length === 0) {

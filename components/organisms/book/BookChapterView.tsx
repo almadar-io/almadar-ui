@@ -44,7 +44,7 @@ export const BookChapterView: React.FC<BookChapterViewProps> = ({
 
       <Divider />
 
-      {chapter.orbitalSchema && (
+      {!!chapter.orbitalSchema && (
         <ScaledDiagram>
           <JazariStateMachine
             schema={chapter.orbitalSchema as Record<string, unknown>}

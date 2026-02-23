@@ -100,8 +100,8 @@ export const BookViewer: React.FC<BookViewerProps> = ({
       eventBus.on('UI:BOOK_PAGE_PREV', () => navigateTo(currentPage - 1)),
       eventBus.on('UI:BOOK_PAGE_NEXT', () => navigateTo(currentPage + 1)),
       eventBus.on('UI:BOOK_PRINT', () => window.print()),
-      eventBus.on('UI:BOOK_NAVIGATE', (payload: Record<string, unknown>) => {
-        const chapterId = payload.chapterId as string;
+      eventBus.on('UI:BOOK_NAVIGATE', (event) => {
+        const chapterId = event.payload?.chapterId as string;
         const idx = chapters.findIndex((ch) => ch.id === chapterId);
         if (idx >= 0) navigateTo(idx + 2);
       }),
