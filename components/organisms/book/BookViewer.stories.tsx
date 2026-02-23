@@ -12,7 +12,7 @@ export default meta;
 type Story = StoryObj<typeof BookViewer>;
 
 // ---------------------------------------------------------------------------
-// Sample Arabic book data
+// Sample Arabic book data (canonical English fields)
 // ---------------------------------------------------------------------------
 
 const sampleBook: BookData = {
@@ -160,15 +160,15 @@ function transition(state: TaskState, event: string): TaskState {
 };
 
 export const ArabicBook: Story = {
-  args: { book: sampleBook },
+  args: { data: [sampleBook] },
 };
 
 export const StartAtTOC: Story = {
-  args: { book: sampleBook, initialPage: 1 },
+  args: { data: [sampleBook], initialPage: 1 },
 };
 
 export const StartAtChapter: Story = {
-  args: { book: sampleBook, initialPage: 2 },
+  args: { data: [sampleBook], initialPage: 2 },
 };
 
 // ---------------------------------------------------------------------------
@@ -213,7 +213,59 @@ const orbital = {
 };
 
 export const EnglishBook: Story = {
-  args: { book: englishBook },
+  args: { data: [englishBook] },
+};
+
+// ---------------------------------------------------------------------------
+// Arabic entity data with Arabic field names (simulates runtime .orb entity)
+// ---------------------------------------------------------------------------
+
+const arabicEntityData = {
+  العنوان: 'الأمة الرقمية',
+  العنوان_الفرعي: 'رحلة في بناء الأمم',
+  المؤلف: 'المداري',
+  الاتجاه: 'rtl',
+  الأجزاء: [
+    {
+      العنوان: 'الجزء الأول: الهجرة والتأسيس',
+      الفصول: [
+        {
+          المعرف: 'ch-01',
+          العنوان: 'الفصل الأول: الهجرة',
+          المحتوى: `
+## الهجرة النبوية
+
+الهجرة من مكة إلى المدينة كانت نقطة التحول الكبرى في تاريخ الأمة الإسلامية.
+
+\`\`\`json
+{
+  "states": [
+    { "name": "تخطيط", "isInitial": true },
+    { "name": "تنفيذ" },
+    { "name": "تأسيس", "isTerminal": true }
+  ],
+  "transitions": [
+    { "from": "تخطيط", "to": "تنفيذ", "event": "بدء" },
+    { "from": "تنفيذ", "to": "تأسيس", "event": "وصول" }
+  ]
+}
+\`\`\`
+
+<question>ما أهمية الهجرة في بناء الأمة؟</question>
+<answer>الهجرة أسست مجتمعًا جديدًا قائمًا على الإيمان بدلًا من القبيلة.</answer>
+`,
+        },
+      ],
+    },
+  ],
+};
+
+export const ArabicFieldMap: Story = {
+  name: 'Arabic Entity (Field Map)',
+  args: {
+    data: [arabicEntityData],
+    fieldMap: 'ar',
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -336,5 +388,5 @@ And here is a full schema with \`orbitals\` array — also auto-detected:
 
 export const WithOrbitalDiagrams: Story = {
   name: 'With Orbital Diagrams',
-  args: { book: bookWithChapterOrbital, initialPage: 2 },
+  args: { data: [bookWithChapterOrbital], initialPage: 2 },
 };

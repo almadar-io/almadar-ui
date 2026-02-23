@@ -7,6 +7,11 @@
  * Page model:
  *   0 = cover, 1 = TOC, 2+ = chapters (flattened from parts)
  *
+ * Field mapping:
+ *   Entity data may use non-English field names (e.g. Arabic .orb schemas).
+ *   Pass a `fieldMap` prop to translate entity fields to canonical BookData.
+ *   Default: IDENTITY_BOOK_FIELDS (English field names, no translation).
+ *
  * Event Contract:
  * - Emits: UI:BOOK_PAGE_CHANGE { pageIndex, chapterId? }
  * - Listens: UI:BOOK_START, UI:BOOK_NAVIGATE, UI:BOOK_PAGE_PREV/NEXT, UI:BOOK_PRINT, UI:BOOK_SHOW_TOC
@@ -22,13 +27,16 @@ import { BookCoverPage } from './BookCoverPage';
 import { BookTableOfContents } from './BookTableOfContents';
 import { BookChapterView } from './BookChapterView';
 import { BookNavBar } from './BookNavBar';
+import { EmptyState } from '../../molecules/EmptyState';
 import type { EntityDisplayProps } from '../types';
-import type { BookData, BookChapter } from './types';
+import type { BookData, BookChapter, BookFieldMap } from './types';
+import { mapBookData, resolveFieldMap } from './types';
 
 export interface BookViewerProps extends EntityDisplayProps {
-  book: BookData;
   /** Initial page index (default: 0 = cover) */
   initialPage?: number;
+  /** Field name translation map — a BookFieldMap object or locale key ("ar") */
+  fieldMap?: BookFieldMap | string;
 }
 
 /** Flatten all chapters from all parts into a single ordered array */
@@ -50,16 +58,28 @@ const PRINT_STYLES = `
 `;
 
 export const BookViewer: React.FC<BookViewerProps> = ({
-  book,
+  data,
   initialPage = 0,
+  fieldMap,
   className,
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
   const [currentPage, setCurrentPage] = useState(initialPage);
-  const direction = book.direction ?? 'ltr';
 
-  const chapters = useMemo(() => flattenChapters(book), [book]);
+  // Resolve string key ("ar") or object to a BookFieldMap
+  const resolvedFieldMap = useMemo(() => resolveFieldMap(fieldMap), [fieldMap]);
+
+  // Map raw entity data to canonical BookData using field map
+  const book = useMemo<BookData | null>(() => {
+    const raw = data?.[0];
+    if (!raw) return null;
+    return mapBookData(raw as Record<string, unknown>, resolvedFieldMap);
+  }, [data, resolvedFieldMap]);
+
+  const direction = book?.direction ?? 'ltr';
+
+  const chapters = useMemo(() => book ? flattenChapters(book) : [], [book]);
   const totalPages = 2 + chapters.length; // cover + TOC + chapters
 
   const navigateTo = useCallback(
@@ -103,6 +123,9 @@ export const BookViewer: React.FC<BookViewerProps> = ({
   // Resolve current chapter ID for TOC highlighting
   const currentChapterId = currentPage >= 2 ? chapters[currentPage - 2]?.id : undefined;
   const currentChapterTitle = currentPage >= 2 ? chapters[currentPage - 2]?.title : undefined;
+
+  // No data — Suspense/ErrorBoundary handles loading and errors at the parent level
+  if (!book) return <EmptyState message={t('book.noData')} />;
 
   return (
     <VStack className={cn('relative h-full overflow-hidden bg-[var(--color-background)]', className)}>

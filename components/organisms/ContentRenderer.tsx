@@ -74,13 +74,20 @@ export const ContentRenderer: React.FC<ContentRendererProps> = ({
             );
 
           case 'orbital': {
-            // Bare trait ({states, transitions}) → pass via trait prop.
-            // Full schema ({orbitals}) → pass via schema prop.
+            // Normalize both bare traits ({states, transitions}) and full
+            // schemas ({orbitals}) into a schema object so JazariStateMachine
+            // always receives the same prop shape (the `schema` prop path).
             const parsed = segment.schema as Record<string, unknown>;
-            const isBare = !Array.isArray(parsed.orbitals);
-            const traitProp = isBare
-              ? { name: 'inline', stateMachine: parsed as Record<string, unknown> }
-              : undefined;
+            const schema = Array.isArray(parsed.orbitals)
+              ? parsed
+              : {
+                  orbitals: [{
+                    traits: [{
+                      name: 'inline',
+                      stateMachine: parsed,
+                    }],
+                  }],
+                };
             return (
               <VStack key={key} gap="sm">
                 <CodeBlock
@@ -89,9 +96,7 @@ export const ContentRenderer: React.FC<ContentRendererProps> = ({
                 />
                 <ScaledDiagram>
                   <JazariStateMachine
-                    {...(isBare
-                      ? { trait: traitProp }
-                      : { schema: parsed })}
+                    schema={schema}
                     direction={direction}
                   />
                 </ScaledDiagram>
