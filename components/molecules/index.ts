@@ -32,6 +32,13 @@ export { Drawer, type DrawerProps, type DrawerPosition, type DrawerSize } from '
 export { WizardProgress, type WizardProgressProps, type WizardProgressStep } from './WizardProgress';
 export { WizardNavigation, type WizardNavigationProps } from './WizardNavigation';
 
+// Markdown components
+export { MarkdownContent, type MarkdownContentProps } from './markdown/MarkdownContent';
+export { CodeBlock, type CodeBlockProps } from './markdown/CodeBlock';
+
+// Quiz
+export { QuizBlock, type QuizBlockProps } from './QuizBlock';
+
 // Inspection form components
 export { RepeatableFormSection, type RepeatableFormSectionProps, type RepeatableItem } from './RepeatableFormSection';
 export { ViolationAlert, type ViolationAlertProps, type ViolationRecord } from './ViolationAlert';

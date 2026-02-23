@@ -37,3 +37,6 @@ export * from './getNestedValue';
 
 // Visualizer
 export * from './visualizer';
+
+// Content parsing
+export * from './parseContentSegments';
