@@ -14,7 +14,7 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { Box } from '../../atoms/Box';
-import { VStack } from '../../atoms/VStack';
+import { VStack } from '../../atoms/Stack';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';

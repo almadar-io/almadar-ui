@@ -9,9 +9,10 @@
  */
 
 import React from 'react';
-import { VStack } from '../../atoms/VStack';
+import { VStack } from '../../atoms/Stack';
 import { Typography } from '../../atoms/Typography';
 import { Divider } from '../../atoms/Divider';
+import { ScaledDiagram } from '../../molecules/ScaledDiagram';
 import { ContentRenderer } from '../ContentRenderer';
 import { JazariStateMachine } from '../JazariStateMachine';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -44,10 +45,12 @@ export const BookChapterView: React.FC<BookChapterViewProps> = ({
       <Divider />
 
       {chapter.orbitalSchema && (
-        <JazariStateMachine
-          schema={chapter.orbitalSchema as Record<string, unknown>}
-          direction={direction}
-        />
+        <ScaledDiagram>
+          <JazariStateMachine
+            schema={chapter.orbitalSchema as Record<string, unknown>}
+            direction={direction}
+          />
+        </ScaledDiagram>
       )}
 
       <ContentRenderer content={chapter.content} direction={direction} />

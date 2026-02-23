@@ -39,6 +39,9 @@ export { CodeBlock, type CodeBlockProps } from './markdown/CodeBlock';
 // Quiz
 export { QuizBlock, type QuizBlockProps } from './QuizBlock';
 
+// Diagram scaling
+export { ScaledDiagram, type ScaledDiagramProps } from './ScaledDiagram';
+
 // Inspection form components
 export { RepeatableFormSection, type RepeatableFormSectionProps, type RepeatableItem } from './RepeatableFormSection';
 export { ViolationAlert, type ViolationAlertProps, type ViolationRecord } from './ViolationAlert';

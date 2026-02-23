@@ -215,3 +215,126 @@ const orbital = {
 export const EnglishBook: Story = {
   args: { book: englishBook },
 };
+
+// ---------------------------------------------------------------------------
+// Chapter with orbital diagram (chapter-level orbitalSchema)
+// ---------------------------------------------------------------------------
+
+const bookWithChapterOrbital: BookData = {
+  title: 'Orbital Diagrams Test',
+  subtitle: 'Testing JazariStateMachine rendering',
+  author: 'Almadar Team',
+  direction: 'ltr',
+  parts: [
+    {
+      title: 'Diagrams',
+      chapters: [
+        {
+          id: 'diag-01',
+          title: 'Chapter with chapter-level orbital',
+          content: `
+This chapter has an \`orbitalSchema\` prop set at the chapter level.
+The JazariStateMachine diagram should appear **above** this content.
+
+Below is a regular code block (no orbital detection):
+
+\`\`\`typescript
+const x = 42;
+\`\`\`
+`,
+          orbitalSchema: {
+            orbitals: [
+              {
+                entity: {
+                  name: 'Order',
+                  fields: [{ name: 'total' }, { name: 'status' }],
+                },
+                traits: [
+                  {
+                    name: 'OrderLifecycle',
+                    stateMachine: {
+                      states: [
+                        { name: 'pending', isInitial: true },
+                        { name: 'confirmed' },
+                        { name: 'shipped' },
+                        { name: 'delivered', isTerminal: true },
+                        { name: 'cancelled', isTerminal: true },
+                      ],
+                      transitions: [
+                        { from: 'pending', to: 'confirmed', event: 'CONFIRM' },
+                        { from: 'confirmed', to: 'shipped', event: 'SHIP' },
+                        { from: 'shipped', to: 'delivered', event: 'DELIVER' },
+                        { from: 'pending', to: 'cancelled', event: 'CANCEL' },
+                        { from: 'confirmed', to: 'cancelled', event: 'CANCEL' },
+                      ],
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        {
+          id: 'diag-02',
+          title: 'Chapter with inline orbital JSON',
+          content: `
+This chapter has NO chapter-level orbital, but the content contains
+an inline JSON code block with \`states\` + \`transitions\` — it should
+be auto-detected and render a JazariStateMachine below the code block.
+
+\`\`\`json
+{
+  "states": [
+    { "name": "idle", "isInitial": true },
+    { "name": "loading" },
+    { "name": "success", "isTerminal": true },
+    { "name": "error" }
+  ],
+  "transitions": [
+    { "from": "idle", "to": "loading", "event": "FETCH" },
+    { "from": "loading", "to": "success", "event": "RESOLVE" },
+    { "from": "loading", "to": "error", "event": "REJECT" },
+    { "from": "error", "to": "loading", "event": "RETRY" }
+  ]
+}
+\`\`\`
+
+And here is a full schema with \`orbitals\` array — also auto-detected:
+
+\`\`\`json
+{
+  "orbitals": [
+    {
+      "entity": { "name": "User", "fields": [{ "name": "email" }] },
+      "traits": [
+        {
+          "name": "Auth",
+          "stateMachine": {
+            "states": [
+              { "name": "anonymous", "isInitial": true },
+              { "name": "authenticated" },
+              { "name": "locked", "isTerminal": true }
+            ],
+            "transitions": [
+              { "from": "anonymous", "to": "authenticated", "event": "LOGIN" },
+              { "from": "authenticated", "to": "anonymous", "event": "LOGOUT" },
+              { "from": "authenticated", "to": "locked", "event": "LOCK" }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
+\`\`\`
+`,
+        },
+      ],
+    },
+  ],
+};
+
+export const WithOrbitalDiagrams: Story = {
+  name: 'With Orbital Diagrams',
+  args: { book: bookWithChapterOrbital, initialPage: 2 },
+};

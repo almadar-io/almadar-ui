@@ -1,9 +1,9 @@
 /**
  * MarkdownContent Molecule Component
  *
- * Renders markdown content with support for GFM (GitHub Flavored Markdown),
- * math equations (KaTeX), and raw HTML. Handles inline code only — fenced
- * code blocks should be parsed out and rendered with CodeBlock component.
+ * Renders markdown content with support for GFM (GitHub Flavored Markdown)
+ * and math equations (KaTeX). Handles inline code only — fenced code blocks
+ * should be parsed out and rendered with CodeBlock component.
  *
  * Event Contract:
  * - No events emitted (display-only component)
@@ -19,7 +19,6 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
-import rehypeRaw from 'rehype-raw';
 import 'katex/dist/katex.min.css';
 import { Box } from '../../atoms/Box';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -45,7 +44,6 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
         <ReactMarkdown
           remarkPlugins={[remarkMath, remarkGfm]}
           rehypePlugins={[
-            [rehypeRaw, {}],
             [rehypeKatex, { strict: false, throwOnError: false }],
           ]}
           components={{

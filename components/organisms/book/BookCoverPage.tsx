@@ -9,7 +9,7 @@
  */
 
 import React from 'react';
-import { VStack } from '../../atoms/VStack';
+import { VStack } from '../../atoms/Stack';
 import { Typography } from '../../atoms/Typography';
 import { Button } from '../../atoms/Button';
 import { Box } from '../../atoms/Box';

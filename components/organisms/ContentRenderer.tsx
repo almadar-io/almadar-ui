@@ -11,10 +11,11 @@
  */
 
 import React, { useMemo } from 'react';
-import { VStack } from '../atoms/VStack';
+import { VStack } from '../atoms/Stack';
 import { MarkdownContent } from '../molecules/markdown/MarkdownContent';
 import { CodeBlock } from '../molecules/markdown/CodeBlock';
 import { QuizBlock } from '../molecules/QuizBlock';
+import { ScaledDiagram } from '../molecules/ScaledDiagram';
 import { JazariStateMachine } from './JazariStateMachine';
 import {
   parseContentSegments,
@@ -72,19 +73,31 @@ export const ContentRenderer: React.FC<ContentRendererProps> = ({
               />
             );
 
-          case 'orbital':
+          case 'orbital': {
+            // Bare trait ({states, transitions}) → pass via trait prop.
+            // Full schema ({orbitals}) → pass via schema prop.
+            const parsed = segment.schema as Record<string, unknown>;
+            const isBare = !Array.isArray(parsed.orbitals);
+            const traitProp = isBare
+              ? { name: 'inline', stateMachine: parsed as Record<string, unknown> }
+              : undefined;
             return (
               <VStack key={key} gap="sm">
                 <CodeBlock
                   code={segment.content}
                   language={segment.language}
                 />
-                <JazariStateMachine
-                  schema={segment.schema as Record<string, unknown>}
-                  direction={direction}
-                />
+                <ScaledDiagram>
+                  <JazariStateMachine
+                    {...(isBare
+                      ? { trait: traitProp }
+                      : { schema: parsed })}
+                    direction={direction}
+                  />
+                </ScaledDiagram>
               </VStack>
             );
+          }
 
           case 'quiz':
             return (

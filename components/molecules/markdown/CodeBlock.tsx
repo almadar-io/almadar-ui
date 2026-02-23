@@ -15,7 +15,7 @@ import { Copy, Check } from 'lucide-react';
 import { Box } from '../../atoms/Box';
 import { Button } from '../../atoms/Button';
 import { Badge } from '../../atoms/Badge';
-import { HStack } from '../../atoms/HStack';
+import { HStack } from '../../atoms/Stack';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 

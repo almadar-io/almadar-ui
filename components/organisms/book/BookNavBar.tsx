@@ -15,7 +15,7 @@ import {
   Printer,
   List,
 } from 'lucide-react';
-import { HStack } from '../../atoms/HStack';
+import { HStack } from '../../atoms/Stack';
 import { Button } from '../../atoms/Button';
 import { Typography } from '../../atoms/Typography';
 import { ProgressBar } from '../../atoms/ProgressBar';

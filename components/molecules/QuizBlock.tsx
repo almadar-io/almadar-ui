@@ -12,8 +12,7 @@
 import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
 import { Card } from './Card';
-import { VStack } from '../atoms/VStack';
-import { HStack } from '../atoms/HStack';
+import { VStack, HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 import { Button } from '../atoms/Button';
 import { Icon } from '../atoms/Icon';
