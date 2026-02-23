@@ -19,7 +19,7 @@ import { StateMachineView } from './StateMachineView';
 import { renderStateMachineToDomData, DEFAULT_CONFIG } from '../../lib/visualizer/index.js';
 import type { DomStateNode, VisualizerConfig, StateMachineDefinition } from '../../lib/visualizer/index.js';
 import { gearTeethPath } from '../../lib/jazari/svg-paths';
-import { JAZARI_COLORS } from '../../lib/jazari/types';
+
 import { useTranslate } from '../../hooks/useTranslate';
 import { cn } from '../../lib/cn';
 import type { EntityDisplayProps } from './types';
@@ -72,20 +72,24 @@ interface SmSchema {
 // Jazari theme config
 // ---------------------------------------------------------------------------
 
+/**
+ * Theme-aware config: uses CSS custom properties so colors adapt to
+ * whichever theme (minimalist-light, almadar-dark, trait-wars, …) is active.
+ */
 const JAZARI_VISUALIZER_CONFIG: VisualizerConfig = {
   ...DEFAULT_CONFIG,
   colors: {
-    background: JAZARI_COLORS.darkBg,
-    node: JAZARI_COLORS.darkBg,
-    nodeBorder: JAZARI_COLORS.brass,
-    nodeText: JAZARI_COLORS.gold,
-    initialNode: JAZARI_COLORS.gold,
-    finalNode: JAZARI_COLORS.crimson,
-    arrow: JAZARI_COLORS.brass,
-    arrowText: JAZARI_COLORS.lapis,
-    effectText: JAZARI_COLORS.sky,
-    guardText: JAZARI_COLORS.crimson,
-    initial: JAZARI_COLORS.gold,
+    background: 'var(--color-card)',
+    node: 'var(--color-card)',
+    nodeBorder: 'var(--color-border)',
+    nodeText: 'var(--color-foreground)',
+    initialNode: 'var(--color-success)',
+    finalNode: 'var(--color-error)',
+    arrow: 'var(--color-muted-foreground)',
+    arrowText: 'var(--color-foreground)',
+    effectText: 'var(--color-warning)',
+    guardText: 'var(--color-error)',
+    initial: 'var(--color-success)',
   },
   fonts: {
     node: "18px 'Noto Naskh Arabic', serif",
@@ -109,6 +113,8 @@ export interface JazariStateMachineProps extends EntityDisplayProps {
   entityFields?: string[];
   /** Text direction (default: 'ltr') */
   direction?: 'ltr' | 'rtl';
+  /** Max width in pixels — layout scales to fit within this constraint */
+  maxWidth?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -163,12 +169,12 @@ const GEAR_INNER_RADIUS = 0.6;
 const GEAR_NUM_TEETH = 12;
 const GEAR_TEETH_DEPTH = 7;
 
-function renderJazariGearNode(state: DomStateNode, _config: VisualizerConfig): React.ReactNode {
+function renderJazariGearNode(state: DomStateNode, config: VisualizerConfig): React.ReactNode {
   const outerR = state.radius * 0.5 + GEAR_TEETH_DEPTH;
   const innerR = state.radius * 0.5 - 2;
   const coreR = state.radius * 0.5 * GEAR_INNER_RADIUS;
 
-  const fillColor = state.isInitial ? JAZARI_COLORS.gold : JAZARI_COLORS.brass;
+  const fillColor = state.isInitial ? config.colors.initialNode : config.colors.nodeBorder;
   const teethD = gearTeethPath(state.radius, state.radius, innerR, outerR, GEAR_NUM_TEETH);
 
   const label = state.name.length > 10 ? `${state.name.slice(0, 9)}…` : state.name;
@@ -232,7 +238,7 @@ function renderJazariGearNode(state: DomStateNode, _config: VisualizerConfig): R
           y={state.radius}
           textAnchor="middle"
           dominantBaseline="central"
-          fill={fillColor}
+          fill={config.colors.nodeText}
           fontSize={fontSize}
           fontWeight={600}
           fontFamily="'Noto Naskh Arabic', serif"
@@ -254,6 +260,7 @@ export const JazariStateMachine: React.FC<JazariStateMachineProps> = ({
   traitIndex = 0,
   entityFields: entityFieldsProp,
   direction = 'ltr',
+  maxWidth,
   className,
   isLoading = false,
   error = null,
@@ -271,6 +278,11 @@ export const JazariStateMachine: React.FC<JazariStateMachineProps> = ({
     [entityFieldsProp, schema],
   );
 
+  const effectiveConfig = useMemo(() => {
+    if (!maxWidth) return JAZARI_VISUALIZER_CONFIG;
+    return { ...JAZARI_VISUALIZER_CONFIG, maxWidth };
+  }, [maxWidth]);
+
   const layoutData = useMemo(() => {
     if (!resolvedTrait?.stateMachine) return null;
     const sm = toStateMachineDefinition(resolvedTrait.stateMachine);
@@ -280,9 +292,9 @@ export const JazariStateMachine: React.FC<JazariStateMachineProps> = ({
     return renderStateMachineToDomData(
       sm,
       { title: resolvedTrait.name, entity: entityDef },
-      JAZARI_VISUALIZER_CONFIG,
+      effectiveConfig,
     );
-  }, [resolvedTrait, entityFields]);
+  }, [resolvedTrait, entityFields, effectiveConfig]);
 
   if (isLoading) {
     return <LoadingState message="Loading state machine…" />;

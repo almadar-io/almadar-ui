@@ -187,9 +187,10 @@ const TransitionBundleArrow: React.FC<{
   bundleIndex: number;
   totalBundlesForPair: number;
   config: VisualizerConfig;
+  scaleFactor: number;
   onClick?: (bundle: TransitionBundle) => void;
   onHover: (bundle: TransitionBundle | null, x: number, y: number) => void;
-}> = ({ bundle, states, bundleIndex, config, onClick, onHover }) => {
+}> = ({ bundle, states, bundleIndex, config, scaleFactor, onClick, onHover }) => {
   const { t } = useTranslate();
   void t;
 
@@ -207,7 +208,7 @@ const TransitionBundleArrow: React.FC<{
   const dist = Math.sqrt(dx * dx + dy * dy);
 
   if (isSelfLoop) {
-    const loopRadius = 50 + bundleIndex * 25;
+    const loopRadius = (50 + bundleIndex * 25) * scaleFactor;
     const loopDirection = bundleIndex % 2 === 0 ? -1 : 1;
 
     const startAngle = loopDirection === -1 ? -0.5 : 0.5;
@@ -220,7 +221,7 @@ const TransitionBundleArrow: React.FC<{
 
     const isSingle = bundle.labels.length === 1;
     const labelText = isSingle ? bundle.labels[0].event : `${bundle.labels.length} events`;
-    const bundleColor = isSingle ? config.colors.arrow : '#6366f1';
+    const bundleColor = isSingle ? config.colors.arrow : 'var(--color-accent)';
     const labelWidth = labelText.length * 9 + (isSingle ? 24 : 40);
 
     const cx = fromState.x;
@@ -279,7 +280,7 @@ const TransitionBundleArrow: React.FC<{
           width={labelWidth}
           height={28}
           rx={isSingle ? 4 : 14}
-          fill={isSingle ? config.colors.background : '#4f46e5'}
+          fill={isSingle ? config.colors.background : 'var(--color-accent)'}
           stroke={bundleColor}
           strokeWidth={isSingle ? 1 : 0}
         />
@@ -287,7 +288,7 @@ const TransitionBundleArrow: React.FC<{
           x={labelX}
           y={labelY + 5}
           textAnchor="middle"
-          fill={isSingle ? config.colors.arrowText : '#ffffff'}
+          fill={isSingle ? config.colors.arrowText : 'var(--color-accent-foreground)'}
           fontFamily="JetBrains Mono, monospace"
           fontSize="13px"
           fontWeight={isSingle ? 600 : 700}
@@ -317,11 +318,11 @@ const TransitionBundleArrow: React.FC<{
     const projX = fromState.x + t * dx;
     const projY = fromState.y + t * dy;
     const distToLine = Math.sqrt((s.x - projX) ** 2 + (s.y - projY) ** 2);
-    return distToLine < s.radius + 80;
+    return distToLine < s.radius + 80 * scaleFactor;
   });
 
   const baseCurveDirection = bundle.isReverse ? 1 : -1;
-  const laneOffset = 55 + bundleIndex * 55;
+  const laneOffset = (55 + bundleIndex * 55) * scaleFactor;
 
   let avoidanceOffset = 0;
   if (intermediateStates.length > 0) {
@@ -340,10 +341,10 @@ const TransitionBundleArrow: React.FC<{
       else obstaclesBelow++;
     });
 
-    avoidanceOffset = obstaclesAbove > obstaclesBelow ? -100 : 100;
+    avoidanceOffset = (obstaclesAbove > obstaclesBelow ? -100 : 100) * scaleFactor;
   }
 
-  const baseOffset = bundle.isBidirectional ? 60 : 40;
+  const baseOffset = (bundle.isBidirectional ? 60 : 40) * scaleFactor;
   const curveAmount = (baseOffset + laneOffset) * baseCurveDirection + avoidanceOffset;
 
   const midX = (startX + endX) / 2;
@@ -356,7 +357,7 @@ const TransitionBundleArrow: React.FC<{
   const isSingle = bundle.labels.length === 1;
   const labelText = isSingle ? bundle.labels[0].event : `${bundle.labels.length} events`;
   const labelWidth = labelText.length * 9 + (isSingle ? 24 : 40);
-  const bundleColor = isSingle ? config.colors.arrow : '#6366f1';
+  const bundleColor = isSingle ? config.colors.arrow : 'var(--color-accent)';
 
   const curveMidpoint = {
     x: 0.25 * startX + 0.5 * controlX + 0.25 * endX,
@@ -418,7 +419,7 @@ const TransitionBundleArrow: React.FC<{
         width={labelWidth}
         height={28}
         rx={isSingle ? 4 : 14}
-        fill={isSingle ? config.colors.background : '#4f46e5'}
+        fill={isSingle ? config.colors.background : 'var(--color-accent)'}
         stroke={bundleColor}
         strokeWidth={isSingle ? 1 : 0}
       />
@@ -427,7 +428,7 @@ const TransitionBundleArrow: React.FC<{
         x={labelX}
         y={labelY + 5}
         textAnchor="middle"
-        fill={isSingle ? config.colors.arrowText : '#ffffff'}
+        fill={isSingle ? config.colors.arrowText : 'var(--color-accent-foreground)'}
         fontFamily="JetBrains Mono, monospace"
         fontSize="13px"
         fontWeight={isSingle ? 600 : 700}
@@ -449,8 +450,8 @@ const TransitionBundleArrow: React.FC<{
           cx={labelX + labelWidth / 2 - 4}
           cy={labelY - 10}
           r={8}
-          fill="#ef4444"
-          stroke="#ffffff"
+          fill="var(--color-error)"
+          stroke="var(--color-error-foreground)"
           strokeWidth={1}
         />
       )}
@@ -495,10 +496,9 @@ const BundleTooltip: React.FC<{
       }}
     >
       <Box
-        className="rounded-lg shadow-xl border px-4 py-3 max-w-lg relative"
+        className="rounded-lg shadow-xl border px-4 py-3 max-w-lg relative bg-card"
         style={{
-          backgroundColor: 'rgba(22, 27, 34, 0.98)',
-          borderColor: tooltip.pinned ? '#22c55e' : (isSingle ? config.colors.nodeBorder : '#6366f1'),
+          borderColor: tooltip.pinned ? 'var(--color-success)' : (isSingle ? config.colors.nodeBorder : 'var(--color-accent)'),
           borderWidth: tooltip.pinned ? 2 : (isSingle ? 1 : 2),
         }}
       >
@@ -509,10 +509,10 @@ const BundleTooltip: React.FC<{
             size="sm"
             action="TOOLTIP_CLOSE"
             className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center hover:scale-110 transition-transform"
-            style={{ backgroundColor: '#ef4444', padding: 0 }}
+            style={{ backgroundColor: 'var(--color-error)', padding: 0 }}
             title="Close"
           >
-            <Icon icon={X} size="xs" style={{ color: '#ffffff' }} />
+            <Icon icon={X} size="xs" style={{ color: 'var(--color-error-foreground)' }} />
           </Button>
         )}
 
@@ -520,9 +520,9 @@ const BundleTooltip: React.FC<{
         {tooltip.pinned && (
           <Box
             className="absolute -top-2 left-1/2 transform -translate-x-1/2 px-2 py-0.5 rounded-full"
-            style={{ backgroundColor: '#22c55e' }}
+            style={{ backgroundColor: 'var(--color-success)' }}
           >
-            <Typography variant="caption" weight="semibold" style={{ color: '#fff' }}>
+            <Typography variant="caption" weight="semibold" style={{ color: 'var(--color-success-foreground)' }}>
               Pinned
             </Typography>
           </Box>
@@ -535,18 +535,18 @@ const BundleTooltip: React.FC<{
             align="center"
             className="font-bold mb-3 pb-2 border-b"
             style={{
-              color: '#a5b4fc',
-              borderColor: '#4f46e5',
+              color: 'var(--color-accent-foreground)',
+              borderColor: 'var(--color-border)',
             }}
           >
-            <Typography variant="large" style={{ color: '#a5b4fc' }}>{bundle.from}</Typography>
-            <Typography variant="label" style={{ color: '#6b7280' }}>→</Typography>
-            <Typography variant="large" style={{ color: '#a5b4fc' }}>{bundle.to}</Typography>
+            <Typography variant="large" style={{ color: 'var(--color-accent-foreground)' }}>{bundle.from}</Typography>
+            <Typography variant="label" style={{ color: 'var(--color-muted-foreground)' }}>→</Typography>
+            <Typography variant="large" style={{ color: 'var(--color-accent-foreground)' }}>{bundle.to}</Typography>
             <Box
               className="ml-2 px-2 py-0.5 rounded-full"
-              style={{ backgroundColor: '#4f46e5' }}
+              style={{ backgroundColor: 'var(--color-accent)' }}
             >
-              <Typography variant="caption" style={{ color: '#fff' }}>
+              <Typography variant="caption" style={{ color: 'var(--color-accent-foreground)' }}>
                 {bundle.labels.length} events
               </Typography>
             </Box>
@@ -559,7 +559,7 @@ const BundleTooltip: React.FC<{
             <Box
               key={label.id}
               className={!isSingle && idx > 0 ? 'pt-2 border-t' : ''}
-              style={{ borderColor: '#30363d' }}
+              style={{ borderColor: 'var(--color-border)' }}
             >
               {/* Event name */}
               <Typography
@@ -572,7 +572,7 @@ const BundleTooltip: React.FC<{
                   fontSize: isSingle ? '14px' : '13px',
                 }}
               >
-                {!isSingle && <Typography variant="caption" as="span" style={{ color: '#6b7280' }}>• </Typography>}
+                {!isSingle && <Typography variant="caption" as="span" style={{ color: 'var(--color-muted-foreground)' }}>• </Typography>}
                 {label.event}
               </Typography>
 
@@ -629,20 +629,22 @@ const BundleTooltip: React.FC<{
 /** Entity input box */
 const EntityBox: React.FC<{
   entity: DomEntityBox;
-}> = ({ entity }) => {
+  config: VisualizerConfig;
+}> = ({ entity, config }) => {
   const { t } = useTranslate();
   void t;
 
   return (
-    <Box
+    <VStack
+      gap="none"
       className="absolute rounded-lg border-2 p-3"
       style={{
         left: entity.x,
         top: entity.y,
         width: entity.width,
         height: entity.height,
-        backgroundColor: '#1a1f2e',
-        borderColor: '#4a9eff',
+        backgroundColor: config.colors.background,
+        borderColor: 'var(--color-info)',
         zIndex: 5,
       }}
     >
@@ -651,7 +653,7 @@ const EntityBox: React.FC<{
         weight="semibold"
         align="center"
         className="mb-2"
-        style={{ color: '#4a9eff', fontSize: '14px' }}
+        style={{ color: 'var(--color-info)', fontSize: '14px' }}
       >
         {entity.name}
       </Typography>
@@ -659,32 +661,34 @@ const EntityBox: React.FC<{
         <Typography
           key={idx}
           variant="caption"
-          style={{ color: '#8b949e', fontFamily: 'JetBrains Mono, monospace' }}
+          style={{ color: 'var(--color-muted-foreground)', fontFamily: 'JetBrains Mono, monospace' }}
         >
           {field}
         </Typography>
       ))}
-    </Box>
+    </VStack>
   );
 };
 
 /** Outputs box */
 const OutputsBox: React.FC<{
   outputs: DomOutputsBox;
-}> = ({ outputs }) => {
+  config: VisualizerConfig;
+}> = ({ outputs, config }) => {
   const { t } = useTranslate();
   void t;
 
   return (
-    <Box
+    <VStack
+      gap="none"
       className="absolute rounded-lg border-2 p-3"
       style={{
         left: outputs.x,
         top: outputs.y,
         width: outputs.width,
         height: outputs.height,
-        backgroundColor: '#1a1f2e',
-        borderColor: '#ffb86c',
+        backgroundColor: config.colors.background,
+        borderColor: 'var(--color-warning)',
         zIndex: 5,
       }}
     >
@@ -693,7 +697,7 @@ const OutputsBox: React.FC<{
         weight="semibold"
         align="center"
         className="mb-2"
-        style={{ color: '#ffb86c', fontSize: '13px' }}
+        style={{ color: 'var(--color-warning)', fontSize: '13px' }}
       >
         External Effects
       </Typography>
@@ -702,12 +706,12 @@ const OutputsBox: React.FC<{
           key={idx}
           variant="caption"
           className="mb-0.5"
-          style={{ color: '#e6edf3', fontFamily: 'Inter, sans-serif' }}
+          style={{ color: 'var(--color-foreground)', fontFamily: 'Inter, sans-serif' }}
         >
           {output}
         </Typography>
       ))}
-    </Box>
+    </VStack>
   );
 };
 
@@ -723,7 +727,7 @@ const Legend: React.FC<{
     { label: 'Initial', color: config.colors.initialNode },
     { label: 'Final', color: config.colors.finalNode },
     { label: 'State', color: config.colors.nodeBorder },
-    { label: 'Multi-event', color: '#6366f1' },
+    { label: 'Multi-event', color: 'var(--color-accent)' },
   ];
 
   return (
@@ -811,7 +815,7 @@ export const StateMachineView: React.FC<StateMachineViewProps> = ({
   // Listen for tooltip close from the Button action
   useEventListener('UI:TOOLTIP_CLOSE', handleCloseTooltip);
 
-  const { width, height, title, states, labels, entity, outputs, config } = layoutData;
+  const { width, height, scaleFactor, title, states, labels, entity, outputs, config } = layoutData;
 
   // Bundle transitions by from→to pair
   const bundles = useMemo((): TransitionBundle[] => {
@@ -879,7 +883,7 @@ export const StateMachineView: React.FC<StateMachineViewProps> = ({
         style={{ top: title ? 30 : 0 }}
       >
         {/* Entity Box */}
-        {entity && <EntityBox entity={entity} />}
+        {entity && <EntityBox entity={entity} config={config} />}
 
         {/* States Layer */}
         {states.map((state) => (
@@ -909,6 +913,7 @@ export const StateMachineView: React.FC<StateMachineViewProps> = ({
               bundleIndex={idx}
               totalBundlesForPair={bundles.length}
               config={config}
+              scaleFactor={scaleFactor}
               onClick={handleBundleClick}
               onHover={handleBundleHover}
             />
@@ -916,7 +921,7 @@ export const StateMachineView: React.FC<StateMachineViewProps> = ({
         </svg>
 
         {/* Outputs Box */}
-        {outputs && <OutputsBox outputs={outputs} />}
+        {outputs && <OutputsBox outputs={outputs} config={config} />}
       </Box>
 
       {/* Legend */}

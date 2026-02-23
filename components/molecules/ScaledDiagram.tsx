@@ -1,16 +1,17 @@
 /**
  * ScaledDiagram Molecule
  *
- * Wraps a fixed-size diagram (like JazariStateMachine / StateMachineView)
- * and scales it down via CSS transform to fit the parent container width.
- * Measures the child's intrinsic width on mount and computes a scale factor.
+ * Measures the available container width via ResizeObserver and passes it
+ * as a `maxWidth` prop to child diagram components (e.g. JazariStateMachine).
+ * This lets the visualizer compute its layout at the correct size from the
+ * start, rather than rendering large and CSS-scaling down.
  *
  * Event Contract:
  * - No events emitted (layout-only wrapper)
  * - entityAware: false
  */
 
-import React, { useRef, useState, useLayoutEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { Box } from '../atoms/Box';
 import { useTranslate } from '../../hooks/useTranslate';
 import { cn } from '../../lib/cn';
@@ -25,57 +26,48 @@ export const ScaledDiagram: React.FC<ScaledDiagramProps> = ({
   className,
 }) => {
   const { t: _t } = useTranslate();
-  const outerRef = useRef<HTMLDivElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
-  const [innerHeight, setInnerHeight] = useState<number | undefined>(undefined);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState<number>(0);
 
   const measure = useCallback(() => {
-    const outer = outerRef.current;
-    const inner = innerRef.current;
-    if (!outer || !inner) return;
-
-    const containerW = outer.clientWidth;
-    const childW = inner.scrollWidth;
-
-    if (childW > 0 && containerW > 0 && childW > containerW) {
-      const s = containerW / childW;
-      setScale(s);
-      setInnerHeight(inner.scrollHeight * s);
-    } else {
-      setScale(1);
-      setInnerHeight(undefined);
-    }
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+    const w = wrapper.clientWidth;
+    if (w > 0) setContainerWidth(w);
   }, []);
 
-  useLayoutEffect(() => {
-    measure();
-  }, [measure, children]);
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => measure());
+    return () => cancelAnimationFrame(raf);
+  }, [measure]);
 
-  // Re-measure on resize
-  useLayoutEffect(() => {
-    const outer = outerRef.current;
-    if (!outer) return;
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
     const observer = new ResizeObserver(() => measure());
-    observer.observe(outer);
+    observer.observe(wrapper);
     return () => observer.disconnect();
   }, [measure]);
 
+  // Clone children to inject maxWidth prop
+  const enhancedChildren = containerWidth > 0
+    ? React.Children.map(children, (child) => {
+        if (React.isValidElement(child)) {
+          return React.cloneElement(
+            child as React.ReactElement<{ maxWidth?: number }>,
+            { maxWidth: containerWidth },
+          );
+        }
+        return child;
+      })
+    : null;
+
   return (
     <Box
-      ref={outerRef}
-      className={cn('w-full overflow-hidden', className)}
-      style={{ height: innerHeight }}
+      ref={wrapperRef}
+      className={cn('w-full overflow-x-auto', className)}
     >
-      <div
-        ref={innerRef}
-        style={{
-          transformOrigin: 'top left',
-          transform: scale < 1 ? `scale(${scale})` : undefined,
-        }}
-      >
-        {children}
-      </div>
+      {enhancedChildren}
     </Box>
   );
 };

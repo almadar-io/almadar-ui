@@ -35,6 +35,8 @@ export interface VisualizerConfig {
     nodeSpacing: number;
     initialIndicatorOffset: number;
     arrowSize: number;
+    /** Optional max width — layout will scale spacing to fit within this constraint */
+    maxWidth?: number;
     colors: {
         background: string;
         node: string;
@@ -100,6 +102,8 @@ interface LayoutResult {
     positions: Record<string, Position>;
     width: number;
     height: number;
+    /** Scale factor applied when maxWidth constrains the layout (1 = no constraint) */
+    scaleFactor: number;
 }
 
 // =============================================================================
@@ -169,6 +173,8 @@ export interface DomOutputsBox {
 export interface DomLayoutData {
     width: number;
     height: number;
+    /** Scale factor applied when maxWidth constrains the layout (1 = unconstrained) */
+    scaleFactor: number;
     title?: string;
     states: DomStateNode[];
     paths: DomTransitionPath[];
@@ -522,16 +528,38 @@ function calculateLayout(
     const minVerticalSpacing = 420; // More space between states for transitions
     // Extra padding for tooltips (they appear above elements and need room)
     const tooltipPadding = 150;
-    const width = Math.max(1400, numColumns * dynamicSpacing + entityBoxWidth + outputBoxWidth + 400);
-    const height = Math.max(1000, maxRowsInColumn * minVerticalSpacing + 350 + tooltipPadding);
+    const naturalWidth = Math.max(1400, numColumns * dynamicSpacing + entityBoxWidth + outputBoxWidth + 400);
+
+    // If maxWidth is set and smaller than natural width, scale everything to fit
+    const isConstrained = !!(config.maxWidth && config.maxWidth < naturalWidth);
+    const scaleFactor = isConstrained ? config.maxWidth! / naturalWidth : 1;
+
+    let effectiveSpacing = dynamicSpacing;
+    let effectiveLeftOffset = leftOffset;
+    let width = naturalWidth;
+    let effectiveVerticalSpacing = minVerticalSpacing;
+
+    if (isConstrained) {
+        width = config.maxWidth!;
+        // Scale spacing proportionally
+        effectiveSpacing = dynamicSpacing * scaleFactor;
+        effectiveLeftOffset = leftOffset * scaleFactor;
+        // Scale vertical spacing too — keep it proportional
+        effectiveVerticalSpacing = Math.max(200, minVerticalSpacing * scaleFactor);
+    }
+
+    const naturalHeight = Math.max(1000, maxRowsInColumn * minVerticalSpacing + 350 + tooltipPadding);
+    const height = isConstrained
+        ? Math.max(400, maxRowsInColumn * effectiveVerticalSpacing + 200)
+        : naturalHeight;
 
     // Position states
     Object.entries(columns).forEach(([colStr, stateNames]) => {
         const col = parseInt(colStr);
-        const x = leftOffset + col * dynamicSpacing;
+        const x = effectiveLeftOffset + col * effectiveSpacing;
         const numInColumn = stateNames.length;
         // Ensure minimum spacing between states
-        const verticalSpacing = Math.max(minVerticalSpacing, height / (numInColumn + 1));
+        const verticalSpacing = Math.max(effectiveVerticalSpacing, height / (numInColumn + 1));
 
         stateNames.forEach((stateName, rowIndex) => {
             const state = states.find(s => s.name === stateName);
@@ -542,7 +570,7 @@ function calculateLayout(
         });
     });
 
-    return { positions, width, height: height + 60 };
+    return { positions, width, height: height + 60, scaleFactor };
 }
 
 // =============================================================================
@@ -1060,15 +1088,16 @@ export function renderStateMachineToDomData(
         hasOutputs: outputs.length > 0,
     };
 
-    const { positions, width, height } = calculateLayout(states, transitions, layoutOptions, config);
+    const { positions, width, height, scaleFactor } = calculateLayout(states, transitions, layoutOptions, config);
 
-    // Build state nodes
+    // Build state nodes — scale radius when layout is constrained
+    const radiusScale = scaleFactor < 1 ? Math.max(0.5, scaleFactor) : 1;
     const domStates: DomStateNode[] = Object.entries(positions).map(([name, pos]) => ({
         id: `state-${name}`,
         name,
         x: pos.x,
         y: pos.y,
-        radius: getNodeRadius(name, config),
+        radius: Math.round(getNodeRadius(name, config) * radiusScale),
         isInitial: pos.state.isInitial ?? false,
         isFinal: pos.state.isFinal ?? false,
         description: pos.state.description,
@@ -1145,13 +1174,13 @@ export function renderStateMachineToDomData(
     let domEntity: DomEntityBox | undefined;
     if (entity) {
         const fieldCount = entity.fields ? entity.fields.length : 0;
-        const boxWidth = 160;
+        const boxWidth = Math.round(160 * scaleFactor);
         const boxHeight = Math.max(80, fieldCount * 22 + 50);
 
         domEntity = {
             name: entity.name || 'Entity',
             fields: entity.fields?.map(f => typeof f === 'string' ? f : f.name) || [],
-            x: 20,
+            x: Math.round(20 * scaleFactor),
             y: height / 2 - boxHeight / 2,
             width: boxWidth,
             height: boxHeight,
@@ -1163,13 +1192,14 @@ export function renderStateMachineToDomData(
     if (outputs.length > 0) {
         const maxX = Math.max(...Object.values(positions).map((p) => p.x));
         const maxOutputLength = Math.max(...outputs.map(o => o.length));
-        const boxWidth = Math.max(200, maxOutputLength * 7 + 30);
+        const boxWidth = Math.max(150, Math.round(Math.max(200, maxOutputLength * 7 + 30) * scaleFactor));
         const lineHeight = 22;
         const boxHeight = outputs.length * lineHeight + 50;
+        const gap = Math.round(300 * scaleFactor);
 
         domOutputs = {
             outputs,
-            x: maxX + config.nodeRadius + 300, // Increased further to avoid overlap with curved transitions
+            x: maxX + config.nodeRadius + gap,
             y: height / 2 - boxHeight / 2,
             width: boxWidth,
             height: boxHeight,
@@ -1179,6 +1209,7 @@ export function renderStateMachineToDomData(
     return {
         width,
         height: height + 40,
+        scaleFactor,
         title: title || undefined,
         states: domStates,
         paths: domPaths,
