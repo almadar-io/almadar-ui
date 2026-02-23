@@ -73,6 +73,7 @@ export function getGlobalEventBus(): EventBusContextType | null {
 // ============================================================================
 
 const fallbackListeners = new Map<string, Set<EventListener>>();
+const fallbackAnyListeners = new Set<EventListener>();
 
 const fallbackEventBus: EventBusContextType = {
   emit: (type: string, payload?: Record<string, unknown>) => {
@@ -91,6 +92,14 @@ const fallbackEventBus: EventBusContextType = {
         }
       });
     }
+    // Notify wildcard listeners
+    fallbackAnyListeners.forEach((handler) => {
+      try {
+        handler(event);
+      } catch (error) {
+        console.error(`[EventBus] Error in onAny listener for '${type}':`, error);
+      }
+    });
   },
   on: (type: string, listener: EventListener): Unsubscribe => {
     if (!fallbackListeners.has(type)) {
@@ -117,6 +126,10 @@ const fallbackEventBus: EventBusContextType = {
   hasListeners: (type: string): boolean => {
     const handlers = fallbackListeners.get(type);
     return handlers !== undefined && handlers.size > 0;
+  },
+  onAny: (listener: EventListener): Unsubscribe => {
+    fallbackAnyListeners.add(listener);
+    return () => { fallbackAnyListeners.delete(listener); };
   },
 };
 

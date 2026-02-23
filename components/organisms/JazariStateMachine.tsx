@@ -113,8 +113,6 @@ export interface JazariStateMachineProps extends EntityDisplayProps {
   entityFields?: string[];
   /** Text direction (default: 'ltr') */
   direction?: 'ltr' | 'rtl';
-  /** Max width in pixels — layout scales to fit within this constraint */
-  maxWidth?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -260,7 +258,6 @@ export const JazariStateMachine: React.FC<JazariStateMachineProps> = ({
   traitIndex = 0,
   entityFields: entityFieldsProp,
   direction = 'ltr',
-  maxWidth,
   className,
   isLoading = false,
   error = null,
@@ -278,11 +275,6 @@ export const JazariStateMachine: React.FC<JazariStateMachineProps> = ({
     [entityFieldsProp, schema],
   );
 
-  const effectiveConfig = useMemo(() => {
-    if (!maxWidth) return JAZARI_VISUALIZER_CONFIG;
-    return { ...JAZARI_VISUALIZER_CONFIG, maxWidth };
-  }, [maxWidth]);
-
   const layoutData = useMemo(() => {
     if (!resolvedTrait?.stateMachine) return null;
     const sm = toStateMachineDefinition(resolvedTrait.stateMachine);
@@ -292,9 +284,9 @@ export const JazariStateMachine: React.FC<JazariStateMachineProps> = ({
     return renderStateMachineToDomData(
       sm,
       { title: resolvedTrait.name, entity: entityDef },
-      effectiveConfig,
+      JAZARI_VISUALIZER_CONFIG,
     );
-  }, [resolvedTrait, entityFields, effectiveConfig]);
+  }, [resolvedTrait, entityFields]);
 
   if (isLoading) {
     return <LoadingState message="Loading state machine…" />;

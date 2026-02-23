@@ -187,10 +187,9 @@ const TransitionBundleArrow: React.FC<{
   bundleIndex: number;
   totalBundlesForPair: number;
   config: VisualizerConfig;
-  scaleFactor: number;
   onClick?: (bundle: TransitionBundle) => void;
   onHover: (bundle: TransitionBundle | null, x: number, y: number) => void;
-}> = ({ bundle, states, bundleIndex, config, scaleFactor, onClick, onHover }) => {
+}> = ({ bundle, states, bundleIndex, config, onClick, onHover }) => {
   const { t } = useTranslate();
   void t;
 
@@ -208,7 +207,7 @@ const TransitionBundleArrow: React.FC<{
   const dist = Math.sqrt(dx * dx + dy * dy);
 
   if (isSelfLoop) {
-    const loopRadius = (50 + bundleIndex * 25) * scaleFactor;
+    const loopRadius = 50 + bundleIndex * 25;
     const loopDirection = bundleIndex % 2 === 0 ? -1 : 1;
 
     const startAngle = loopDirection === -1 ? -0.5 : 0.5;
@@ -318,11 +317,11 @@ const TransitionBundleArrow: React.FC<{
     const projX = fromState.x + t * dx;
     const projY = fromState.y + t * dy;
     const distToLine = Math.sqrt((s.x - projX) ** 2 + (s.y - projY) ** 2);
-    return distToLine < s.radius + 80 * scaleFactor;
+    return distToLine < s.radius + 80;
   });
 
   const baseCurveDirection = bundle.isReverse ? 1 : -1;
-  const laneOffset = (55 + bundleIndex * 55) * scaleFactor;
+  const laneOffset = 55 + bundleIndex * 55;
 
   let avoidanceOffset = 0;
   if (intermediateStates.length > 0) {
@@ -341,10 +340,10 @@ const TransitionBundleArrow: React.FC<{
       else obstaclesBelow++;
     });
 
-    avoidanceOffset = (obstaclesAbove > obstaclesBelow ? -100 : 100) * scaleFactor;
+    avoidanceOffset = obstaclesAbove > obstaclesBelow ? -100 : 100;
   }
 
-  const baseOffset = (bundle.isBidirectional ? 60 : 40) * scaleFactor;
+  const baseOffset = bundle.isBidirectional ? 60 : 40;
   const curveAmount = (baseOffset + laneOffset) * baseCurveDirection + avoidanceOffset;
 
   const midX = (startX + endX) / 2;
@@ -815,7 +814,7 @@ export const StateMachineView: React.FC<StateMachineViewProps> = ({
   // Listen for tooltip close from the Button action
   useEventListener('UI:TOOLTIP_CLOSE', handleCloseTooltip);
 
-  const { width, height, scaleFactor, title, states, labels, entity, outputs, config } = layoutData;
+  const { width, height, title, states, labels, entity, outputs, config } = layoutData;
 
   // Bundle transitions by from→to pair
   const bundles = useMemo((): TransitionBundle[] => {
@@ -913,7 +912,6 @@ export const StateMachineView: React.FC<StateMachineViewProps> = ({
               bundleIndex={idx}
               totalBundlesForPair={bundles.length}
               config={config}
-              scaleFactor={scaleFactor}
               onClick={handleBundleClick}
               onHover={handleBundleHover}
             />
