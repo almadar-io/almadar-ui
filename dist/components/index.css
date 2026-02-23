@@ -1,4 +1,4 @@
-/* node_modules/.pnpm/katex@0.16.33/node_modules/katex/dist/katex.min.css */
+/* ../../node_modules/.pnpm/katex@0.16.28/node_modules/katex/dist/katex.min.css */
 @font-face {
   font-display: block;
   font-family: KaTeX_AMS;
@@ -213,7 +213,7 @@
   border-color: currentColor;
 }
 .katex .katex-version:after {
-  content: "0.16.33";
+  content: "0.16.28";
 }
 .katex .katex-mathml {
   clip: rect(1px, 1px, 1px, 1px);
@@ -988,15 +988,6 @@
 .katex svg {
   fill: currentColor;
   stroke: currentColor;
-  display: block;
-  height: inherit;
-  position: absolute;
-  width: 100%;
-}
-.katex svg path {
-  stroke: none;
-}
-.katex svg {
   fill-rule: nonzero;
   fill-opacity: 1;
   stroke-width: 1;
@@ -1006,6 +997,13 @@
   stroke-dasharray: none;
   stroke-dashoffset: 0;
   stroke-opacity: 1;
+  display: block;
+  height: inherit;
+  position: absolute;
+  width: 100%;
+}
+.katex svg path {
+  stroke: none;
 }
 .katex img {
   border-style: none;
