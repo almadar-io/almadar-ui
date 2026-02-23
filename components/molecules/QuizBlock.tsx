@@ -35,7 +35,7 @@ export const QuizBlock: React.FC<QuizBlockProps> = ({
   answer,
   className,
 }) => {
-  const { t: _t } = useTranslate();
+  const { t } = useTranslate();
   const [revealed, setRevealed] = useState(false);
 
   return (
@@ -64,7 +64,7 @@ export const QuizBlock: React.FC<QuizBlockProps> = ({
         >
           <HStack gap="xs" align="center">
             <Typography variant="caption">
-              {revealed ? 'Hide answer' : 'Show answer'}
+              {revealed ? t('quiz.hideAnswer') : t('quiz.showAnswer')}
             </Typography>
             {revealed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </HStack>

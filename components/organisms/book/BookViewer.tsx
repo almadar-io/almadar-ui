@@ -55,7 +55,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
   className,
 }) => {
   const eventBus = useEventBus();
-  const { t: _t } = useTranslate();
+  const { t } = useTranslate();
   const [currentPage, setCurrentPage] = useState(initialPage);
   const direction = book.direction ?? 'ltr';
 
@@ -103,8 +103,6 @@ export const BookViewer: React.FC<BookViewerProps> = ({
   // Resolve current chapter ID for TOC highlighting
   const currentChapterId = currentPage >= 2 ? chapters[currentPage - 2]?.id : undefined;
   const currentChapterTitle = currentPage >= 2 ? chapters[currentPage - 2]?.title : undefined;
-
-  const isRtl = direction === 'rtl';
 
   return (
     <VStack className={cn('relative h-full overflow-hidden bg-[var(--color-background)]', className)}>
@@ -172,7 +170,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
           currentPage === 0
             ? book.title
             : currentPage === 1
-              ? (isRtl ? 'فهرس المحتويات' : 'Table of Contents')
+              ? t('book.tableOfContents')
               : currentChapterTitle
         }
         direction={direction}
