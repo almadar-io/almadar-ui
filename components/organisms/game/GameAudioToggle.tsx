@@ -39,7 +39,7 @@ export interface GameAudioToggleProps {
 export function GameAudioToggle({
     size = 'sm',
     className,
-}: GameAudioToggleProps): JSX.Element {
+}: GameAudioToggleProps): React.JSX.Element {
     const { muted, setMuted } = useGameAudioContext();
 
     const handleToggle = useCallback(() => {

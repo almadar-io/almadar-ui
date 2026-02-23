@@ -77,7 +77,7 @@ export function Sprite({
   className,
   onClick,
   action,
-}: SpriteProps): JSX.Element {
+}: SpriteProps): React.JSX.Element {
   const eventBus = useEventBus();
   // Calculate source position in spritesheet
   const sourcePosition = useMemo(() => {

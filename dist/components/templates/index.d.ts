@@ -1,0 +1,10 @@
+export type { TemplateProps } from './types';
+export { DashboardLayout, type DashboardLayoutProps, type NavItem } from './DashboardLayout';
+export { AuthLayout, type AuthLayoutProps } from './AuthLayout';
+export { CounterTemplate, type CounterTemplateProps, type CounterSize, type CounterVariant } from './CounterTemplate';
+export { GameTemplate, type GameTemplateProps } from './GameTemplate';
+export { GenericAppTemplate, type GenericAppTemplateProps } from './GenericAppTemplate';
+export { GameShell, type GameShellProps } from './GameShell';
+export { BattleTemplate, type BattleTemplateProps, type BattleEntity, type BattlePhase, type BattleUnit, type BattleTile, type BattleSlotContext, } from './BattleTemplate';
+export { CastleTemplate, type CastleTemplateProps, type CastleEntity, type CastleSlotContext, } from './CastleTemplate';
+export { WorldMapTemplate, type WorldMapTemplateProps, type WorldMapEntity, type MapHero, type MapHex, type WorldMapSlotContext, } from './WorldMapTemplate';

@@ -75,7 +75,7 @@ export function GameAudioProvider({
     baseUrl = '',
     children,
     initialMuted = false,
-}: GameAudioProviderProps): JSX.Element {
+}: GameAudioProviderProps): React.JSX.Element {
     const eventBus = useEventBus();
     const { play, stop, stopAll, playMusic, stopMusic, muted, setMuted, masterVolume, setMasterVolume } =
         useGameAudio({ manifest, baseUrl, initialMuted });

@@ -200,7 +200,7 @@ export function IsometricCanvas({
     // Remote asset loading
     assetBaseUrl,
     assetManifest,
-}: IsometricCanvasProps): JSX.Element {
+}: IsometricCanvasProps): React.JSX.Element {
     const eventBus = useEventBus();
 
     // -- Refs --

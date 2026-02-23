@@ -75,7 +75,7 @@ function LinearView({
     trait,
     size = 'md',
     className,
-}: Pick<TraitStateViewerProps, 'trait' | 'size' | 'className'>): JSX.Element {
+}: Pick<TraitStateViewerProps, 'trait' | 'size' | 'className'>): React.JSX.Element {
     const currentIdx = trait.states.indexOf(trait.currentState);
 
     return (
@@ -134,7 +134,7 @@ function CompactView({
     size = 'md',
     stateStyles,
     className,
-}: Pick<TraitStateViewerProps, 'trait' | 'size' | 'stateStyles' | 'className'>): JSX.Element {
+}: Pick<TraitStateViewerProps, 'trait' | 'size' | 'stateStyles' | 'className'>): React.JSX.Element {
     const { t } = useTranslate();
     const config = SIZE_CONFIG[size || 'md'];
     const currentTransitions = trait.transitions.filter(t => t.from === trait.currentState);
@@ -196,7 +196,7 @@ function FullView({
     onStateClick,
     stateStyles,
     className,
-}: Pick<TraitStateViewerProps, 'trait' | 'size' | 'showTransitions' | 'onStateClick' | 'stateStyles' | 'className'>): JSX.Element {
+}: Pick<TraitStateViewerProps, 'trait' | 'size' | 'showTransitions' | 'onStateClick' | 'stateStyles' | 'className'>): React.JSX.Element {
     const { t } = useTranslate();
     const config = SIZE_CONFIG[size || 'md'];
     const currentTransitions = trait.transitions.filter(t => t.from === trait.currentState);
@@ -336,7 +336,7 @@ export function TraitStateViewer({
     onStateClick,
     stateStyles,
     className,
-}: TraitStateViewerProps): JSX.Element {
+}: TraitStateViewerProps): React.JSX.Element {
     switch (variant) {
         case 'linear':
             return <LinearView trait={trait} size={size} className={className} />;

@@ -8,7 +8,7 @@ import { useGameAudioContext } from './GameAudioProvider';
 
 /** Demo child that shows the current audio state */
 // eslint-disable-next-line almadar/require-translate -- storybook-only, not a shipped component
-function AudioStatusDemo(): JSX.Element {
+function AudioStatusDemo(): React.JSX.Element {
     const { muted, masterVolume, setMasterVolume } = useGameAudioContext();
     return (
         <VStack gap="sm" className="p-4 border border-border rounded-lg bg-card">

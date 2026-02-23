@@ -48,7 +48,7 @@ export function WorldMapTemplate({
     diamondTopY,
     allowMoveAllHeroes = false,
     className,
-}: WorldMapTemplateProps): JSX.Element {
+}: WorldMapTemplateProps): React.JSX.Element {
     return (
         <WorldMapBoard
             entity={entity}

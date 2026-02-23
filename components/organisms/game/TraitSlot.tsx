@@ -133,7 +133,7 @@ export function TraitSlot({
     onRemove,
     clickEvent,
     removeEvent,
-}: TraitSlotProps): JSX.Element {
+}: TraitSlotProps): React.JSX.Element {
     const { emit } = useEventBus();
     const [isHovered, setIsHovered] = useState(false);
     const [isDragOver, setIsDragOver] = useState(false);

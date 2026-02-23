@@ -84,7 +84,7 @@ export function InventoryPanel({
   showTooltips = true,
   className,
   slotSize = 48,
-}: InventoryPanelProps): JSX.Element {
+}: InventoryPanelProps): React.JSX.Element {
   const eventBus = useEventBus();
   const [hoveredSlot, setHoveredSlot] = useState<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });

@@ -195,7 +195,7 @@ export function WorldMapBoard({
     effectSpriteUrls = [],
     resolveUnitFrame,
     className,
-}: WorldMapBoardProps): JSX.Element {
+}: WorldMapBoardProps): React.JSX.Element {
     const eventBus = useEventBus();
 
     // Destructure entity for convenience

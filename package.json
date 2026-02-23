@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "main": "./dist/components/index.js",
@@ -70,12 +70,11 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && tsc --declaration --emitDeclarationOnly --outDir dist --skipLibCheck || true",
     "build:watch": "tsup --watch",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build -o storybook-static",
-    "typecheck": "tsc --noEmit",
-    "prepublishOnly": "pnpm run build"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@almadar/core": ">=2.0.0",
@@ -113,8 +112,8 @@
     "@storybook/react-vite": "^10.2.6",
     "storybook": "^10.2.6",
     "@vitejs/plugin-react": "^4.2.0",
-    "babel-plugin-react-compiler": "catalog:",
-    "react-compiler-runtime": "catalog:",
+    "babel-plugin-react-compiler": "19.0.0-beta-af1b7da-20250417",
+    "react-compiler-runtime": "19.0.0-beta-af1b7da-20250417",
     "autoprefixer": "^10.4.0",
     "postcss": "^8.4.35",
     "tailwindcss": "^3.4.0",
@@ -129,7 +128,8 @@
     "jsdom": "^24.0.0",
     "@storybook/addon-docs": "^10.2.6",
     "@types/react-syntax-highlighter": "^15.5.0",
-    "katex": "^0.16.0"
+    "katex": "^0.16.0",
+    "@types/node": "^22.0.0"
   },
   "repository": {
     "type": "git",

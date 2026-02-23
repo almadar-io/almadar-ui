@@ -88,7 +88,7 @@ export function DialogueBox({
   choiceEvent,
   advanceEvent,
   className,
-}: DialogueBoxProps): JSX.Element {
+}: DialogueBoxProps): React.JSX.Element {
   const eventBus = useEventBus();
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);

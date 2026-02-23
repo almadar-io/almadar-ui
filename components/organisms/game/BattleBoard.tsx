@@ -216,7 +216,7 @@ export function BattleBoard({
     playAgainEvent,
     attackEvent,
     className,
-}: BattleBoardProps): JSX.Element {
+}: BattleBoardProps): React.JSX.Element {
     // -- Unpack entity --
     const tiles = entity.tiles;
     const features = entity.features ?? [];

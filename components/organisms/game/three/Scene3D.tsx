@@ -39,7 +39,7 @@ export interface Scene3DProps {
  * </Canvas>
  * ```
  */
-export function Scene3D({ background = '#1a1a2e', fog, children }: Scene3DProps): JSX.Element {
+export function Scene3D({ background = '#1a1a2e', fog, children }: Scene3DProps): React.JSX.Element {
     const { scene } = useThree();
     const initializedRef = useRef(false);
 

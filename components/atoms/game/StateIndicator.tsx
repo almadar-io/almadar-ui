@@ -60,7 +60,7 @@ export function StateIndicator({
     animated = true,
     stateStyles,
     className,
-}: StateIndicatorProps): JSX.Element {
+}: StateIndicatorProps): React.JSX.Element {
     const mergedStyles = stateStyles
         ? { ...DEFAULT_STATE_STYLES, ...stateStyles }
         : DEFAULT_STATE_STYLES;

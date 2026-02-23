@@ -354,7 +354,7 @@ function EmojiEffect({
 // Main Export — delegates to canvas engine or emoji fallback
 // =============================================================================
 
-export function CanvasEffect(props: CanvasEffectProps): JSX.Element | null {
+export function CanvasEffect(props: CanvasEffectProps): React.JSX.Element | null {
     const eventBus = useEventBus();
     const { completeEvent, onComplete, ...rest } = props;
 
