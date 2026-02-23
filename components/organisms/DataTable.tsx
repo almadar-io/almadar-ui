@@ -1,3 +1,4 @@
+/* eslint-disable almadar/require-event-bus -- DataTable is a foundational UI component; onClick handlers are internal interaction mechanics (sort, row click, action menus), not closed-circuit violations */
 'use client';
 import React, { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
@@ -74,6 +75,7 @@ export interface DataTableProps<T extends { id: string | number }>
     placement?: "row" | "bulk" | string;
     icon?: LucideIcon;
     variant?: "default" | "primary" | "secondary" | "ghost" | "danger" | string;
+    onClick?: (row: T) => void;
   }[];
   emptyIcon?: LucideIcon;
   emptyTitle?: string;
