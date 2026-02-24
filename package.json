@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "2.0.1",
+  "version": "2.0.4",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "main": "./dist/components/index.js",
@@ -70,14 +70,14 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup && tsc --declaration --emitDeclarationOnly --outDir dist --skipLibCheck || true",
+    "build": "tsup && tsc --declaration --emitDeclarationOnly --outDir dist --skipLibCheck",
     "build:watch": "tsup --watch",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build -o storybook-static",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@almadar/core": ">=2.0.0",
+    "@almadar/core": ">=2.1.0",
     "@almadar/evaluator": ">=2.0.0",
     "@almadar/patterns": ">=2.0.0",
     "clsx": "^2.1.0",

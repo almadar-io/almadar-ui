@@ -1,13 +1,14 @@
 // React 19 moves JSX to React.JSX namespace
 // This shim re-exports it globally for tsup DTS compatibility
+//
+// @react-three/fiber v8 augments the old global JSX.IntrinsicElements.
+// React 19 uses React.JSX, so we bridge ThreeElements into React.JSX
+// to fix the "Property 'mesh' does not exist" errors.
 import 'react';
-declare global {
+import type { ThreeElements } from '@react-three/fiber';
+
+declare module 'react' {
   namespace JSX {
-    interface IntrinsicElements extends React.JSX.IntrinsicElements {}
-    type Element = React.JSX.Element;
-    type ElementClass = React.JSX.ElementClass;
-    interface IntrinsicAttributes extends React.JSX.IntrinsicAttributes {}
-    interface IntrinsicClassAttributes<T> extends React.JSX.IntrinsicClassAttributes<T> {}
-    interface ElementChildrenAttribute extends React.JSX.ElementChildrenAttribute {}
+    interface IntrinsicElements extends ThreeElements {}
   }
 }
