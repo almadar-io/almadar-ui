@@ -9,7 +9,6 @@
  */
 
 import React, { useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   Calendar,
   Tag,
@@ -219,7 +218,6 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   isLoading = false,
   error,
 }) => {
-  const navigate = useNavigate();
   const eventBus = useEventBus();
 
   // Support fields and fieldNames (alias) - normalize to string array
@@ -247,7 +245,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         const url = action.navigatesTo.replace(/\{\{(\w+)\}\}/g, (_, key) =>
           String(data?.[key] ?? ""),
         );
-        navigate(url);
+        eventBus.emit('UI:NAVIGATE', { url, row: data, entity });
         return;
       }
       if (action.event) {
@@ -257,7 +255,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         action.onClick();
       }
     },
-    [navigate, eventBus, entity],
+    [eventBus, entity],
   );
 
   // Handle close via event bus (closed circuit pattern)

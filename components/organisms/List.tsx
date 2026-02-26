@@ -19,7 +19,6 @@
  */
 
 import React, { useMemo } from "react";
-import { useNavigate } from "react-router-dom";
 import type { LucideIcon } from "lucide-react";
 import {
   Calendar,
@@ -295,7 +294,6 @@ export const List: React.FC<ListProps> = ({
   fieldNames,
   entityType,
 }) => {
-  const navigate = useNavigate();
   const eventBus = useEventBus();
   const { t } = useTranslate();
   const resolvedEmptyMessage = emptyMessage ?? t('empty.noData');
@@ -332,7 +330,7 @@ export const List: React.FC<ListProps> = ({
             const url = action.navigatesTo.replace(/\{\{(\w+)\}\}/g, (_, key) =>
               String(item[key] || item.id || ""),
             );
-            navigate(url);
+            eventBus.emit('UI:NAVIGATE', { url, row: item, entity: entityName });
             return;
           }
           // Dispatch event via event bus if defined (for trait state machine integration)
@@ -345,7 +343,7 @@ export const List: React.FC<ListProps> = ({
         },
       }));
     },
-    [itemActions, navigate, eventBus, entityName],
+    [itemActions, eventBus, entityName],
   );
 
   const normalizedItemActions = itemActions ? getItemActions : undefined;

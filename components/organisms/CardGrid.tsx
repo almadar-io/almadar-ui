@@ -10,7 +10,6 @@
  * for pagination, filtering, or search. All state is owned by the trait state machine.
  */
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { cn } from '../../lib/cn';
 import { getNestedValue } from '../../lib/getNestedValue';
 import { useEventBus } from '../../hooks/useEventBus';
@@ -127,7 +126,6 @@ export const CardGrid: React.FC<CardGridProps> = ({
   showTotal = true,
 }) => {
   const eventBus = useEventBus();
-  const navigate = useNavigate();
 
   // Support fields, fieldNames, and columns (aliases) - normalize to string[]
   const effectiveFieldNames =
@@ -202,7 +200,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
             const value = getNestedValue(itemData, field);
             return value !== undefined && value !== null ? String(value) : '';
           });
-          navigate(url);
+          eventBus.emit('UI:NAVIGATE', { url, row: itemData, entity });
           return;
         }
 

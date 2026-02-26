@@ -1,18 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { PageHeader } from './PageHeader';
-import { MemoryRouter } from 'react-router-dom';
 
 const meta: Meta<typeof PageHeader> = {
   title: 'Organisms/PageHeader',
   component: PageHeader,
   tags: ['autodocs'],
-  decorators: [
-    (Story) => (
-      <MemoryRouter>
-        <Story />
-      </MemoryRouter>
-    ),
-  ],
 };
 
 export default meta;

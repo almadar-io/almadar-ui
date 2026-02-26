@@ -1,7 +1,6 @@
 /* eslint-disable almadar/require-event-bus -- DataTable is a foundational UI component; onClick handlers are internal interaction mechanics (sort, row click, action menus), not closed-circuit violations */
 'use client';
 import React, { useState, useMemo, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { cn } from "../../lib/cn";
 import { getNestedValue } from "../../lib/getNestedValue";
 import { Button, Input, Badge, Checkbox, Spinner } from "../atoms";
@@ -139,7 +138,6 @@ export function DataTable<T extends { id: string | number }>({
     null,
   );
   const eventBus = useEventBus();
-  const navigate = useNavigate();
   const { t } = useTranslate();
 
   const resolvedEmptyTitle = emptyTitle ?? t("table.empty.title");
@@ -178,7 +176,7 @@ export function DataTable<T extends { id: string | number }>({
                 /\{\{id\}\}/g,
                 String((row as { id: string | number }).id),
               );
-            navigate(url);
+            eventBus.emit('UI:NAVIGATE', { url, row, entity });
             return;
           }
           if (action.event) {
@@ -205,13 +203,13 @@ export function DataTable<T extends { id: string | number }>({
               /\{\{id\}\}/g,
               String((row as { id: string | number }).id),
             );
-          navigate(url);
+          eventBus.emit('UI:NAVIGATE', { url, row, entity });
           return;
         }
         eventBus.emit("UI:VIEW", { row, entity });
       }
     },
-    [viewAction, navigate, eventBus, entity],
+    [viewAction, eventBus, entity],
   );
 
   const isRowClickable = !!viewAction;
