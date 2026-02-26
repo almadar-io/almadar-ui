@@ -1,26 +1,26 @@
-import { useAuthContext } from '../chunk-6WHMUKED.js';
-export { ENTITY_EVENTS, useAgentChat, useAuthContext, useCompile, useConnectGitHub, useCreateEntity, useDeepAgentGeneration, useDeleteEntity, useDisconnectGitHub, useEntities, useEntitiesByType, useEntity as useEntityById, useEntityMutations, useExtensions, useFileEditor, useFileSystem, useGitHubBranches, useGitHubRepo, useGitHubRepos, useGitHubStatus, useInput, useOrbitalHistory, useOrbitalMutations, usePhysics, usePlayer, usePreview, useResolvedEntity, useSelectedEntity, useSendOrbitalEvent, useSingletonEntity, useUIEvents, useUpdateEntity, useValidation } from '../chunk-6WHMUKED.js';
 import { DEFAULT_CONFIG, renderStateMachineToDomData, parseContentSegments } from '../chunk-N6DJVKZ6.js';
-import '../chunk-XSEDIUM6.js';
-export { clearEntities, getAllEntities, getByType, getEntity, getSingleton, removeEntity, spawnEntity, updateEntity, updateSingleton } from '../chunk-N7MVUW4R.js';
-import { VStack, HStack, Typography, Button, Icon, Box, Card, Avatar, Badge, SearchInput, Checkbox, Menu as Menu$1, Pagination, LoadingState, EmptyState, Modal, ErrorState, QuizBlock, CodeBlock, ScaledDiagram, MarkdownContent, Divider, ProgressBar, Stack, Drawer, Toast, Tabs, Input, ThemeToggle, HealthBar, ScoreDisplay, StateIndicator, Container, EntityDisplayEvents } from '../chunk-FZJ73RDM.js';
-export { Accordion, Card2 as ActionCard, Alert, Avatar, Badge, Box, Breadcrumb, Button, ButtonGroup, Card, CardBody, CardContent, CardFooter, CardGrid, CardHeader, CardTitle, Center, Checkbox, CodeBlock, ConditionalWrapper, Container, ControlButton, DataTable, DetailPanel, Divider, Drawer, EmptyState, EntityDisplayEvents, ErrorBoundary, ErrorState, FilterGroup, Flex, FloatingActionButton, Form, FormField, FormSectionHeader, Grid, HStack, Heading, HealthBar, Icon, Input, InputGroup, Label, LawReferenceTooltip, LoadingState, MarkdownContent, MasterDetail, Menu, Modal, Overlay, PageHeader, Pagination, Popover, ProgressBar, QuizBlock, Radio, RelationSelect, RepeatableFormSection, ScaledDiagram, ScoreDisplay, SearchInput, Select, SidePanel, SimpleGrid, Skeleton, SlotContentRenderer, Spacer, Spinner, Sprite, Stack, StatCard, StateIndicator, Switch, Tabs, Text, TextHighlight, Textarea, ThemeSelector, ThemeToggle, Toast, Tooltip, Typography, UISlotComponent, UISlotRenderer, VStack, ViolationAlert, WizardNavigation, WizardProgress, drawSprite } from '../chunk-FZJ73RDM.js';
+import { VStack, HStack, Typography, Button, Icon, Box, Card, Avatar, Badge, SearchInput, Checkbox, Menu as Menu$1, Pagination, LoadingState, EmptyState, Modal, ErrorState, QuizBlock, CodeBlock, ScaledDiagram, MarkdownContent, Divider, ProgressBar, Stack, Drawer, Toast, Tabs, Input, ThemeToggle, HealthBar, ScoreDisplay, StateIndicator, Container, EntityDisplayEvents } from '../chunk-6YV5YRGT.js';
+export { Accordion, Card2 as ActionCard, Alert, Avatar, Badge, Box, Breadcrumb, Button, ButtonGroup, Card, CardBody, CardContent, CardFooter, CardGrid, CardHeader, CardTitle, Center, Checkbox, CodeBlock, ConditionalWrapper, Container, ControlButton, DataTable, DetailPanel, Divider, Drawer, EmptyState, EntityDisplayEvents, ErrorBoundary, ErrorState, FilterGroup, Flex, FloatingActionButton, Form, FormField, FormSectionHeader, Grid, HStack, Heading, HealthBar, Icon, Input, InputGroup, Label, LawReferenceTooltip, LoadingState, MarkdownContent, MasterDetail, Menu, Modal, Overlay, PageHeader, Pagination, Popover, ProgressBar, QuizBlock, Radio, RelationSelect, RepeatableFormSection, ScaledDiagram, ScoreDisplay, SearchInput, Select, SidePanel, SimpleGrid, Skeleton, SlotContentRenderer, Spacer, Spinner, Sprite, Stack, StatCard, StateIndicator, Switch, Tabs, Text, TextHighlight, Textarea, ThemeSelector, ThemeToggle, Toast, Tooltip, Typography, UISlotComponent, UISlotRenderer, VStack, ViolationAlert, WizardNavigation, WizardProgress, drawSprite } from '../chunk-6YV5YRGT.js';
 import '../chunk-BTXQJGFB.js';
+import { cn, getNestedValue } from '../chunk-KKCVDUK7.js';
+export { cn } from '../chunk-KKCVDUK7.js';
+import { useAuthContext } from '../chunk-BKC4XU44.js';
+export { ENTITY_EVENTS, useAgentChat, useAuthContext, useCompile, useConnectGitHub, useCreateEntity, useDeepAgentGeneration, useDeleteEntity, useDisconnectGitHub, useEntities, useEntitiesByType, useEntity as useEntityById, useEntityMutations, useExtensions, useFileEditor, useFileSystem, useGitHubBranches, useGitHubRepo, useGitHubRepos, useGitHubStatus, useInput, useOrbitalHistory, useOrbitalMutations, usePhysics, usePlayer, usePreview, useResolvedEntity, useSelectedEntity, useSendOrbitalEvent, useSingletonEntity, useUIEvents, useUpdateEntity, useValidation } from '../chunk-BKC4XU44.js';
+import '../chunk-XSEDIUM6.js';
 import { useTranslate } from '../chunk-PE2H3NAW.js';
 export { EntityDataProvider, I18nProvider, createTranslate, entityDataKeys, parseQueryBinding, useEntity, useEntityDataAdapter, useEntityDetail, useEntityList, useEntityListSuspense, useEntitySuspense, useQuerySingleton, useTranslate } from '../chunk-PE2H3NAW.js';
 import { useEventBus, useEventListener } from '../chunk-YXZM3WCF.js';
 export { useEmitEvent, useEventBus, useEventListener } from '../chunk-YXZM3WCF.js';
 export { DEFAULT_SLOTS, useUISlotManager } from '../chunk-7NEWMNNU.js';
-import { cn, getNestedValue } from '../chunk-KKCVDUK7.js';
-export { cn } from '../chunk-KKCVDUK7.js';
+export { clearEntities, getAllEntities, getByType, getEntity, getSingleton, removeEntity, spawnEntity, updateEntity, updateSingleton } from '../chunk-N7MVUW4R.js';
 import { __publicField } from '../chunk-PKBMQBKP.js';
 import * as React25 from 'react';
 import React25__default, { createContext, useState, useMemo, useCallback, useEffect, useRef, useContext } from 'react';
 import { ChevronDown, X, Menu, ChevronRight, ChevronLeft, ArrowUp, ArrowDown, MoreVertical, Package, Check, AlertTriangle, Trash2, List as List$1, Printer, AlertCircle, Circle, Clock, CheckCircle2, Image as Image$1, Upload, ZoomIn, Eraser, FileText, ZoomOut, Download, RotateCcw, Code, WrapText, Copy, Settings, Search, Bell, LogOut, Pause, Play, Calendar, Pencil, Eye, MoreHorizontal, Minus, Plus } from 'lucide-react';
 import { jsxs, Fragment, jsx } from 'react/jsx-runtime';
-import { useNavigate, useLocation, Link, Outlet } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { Button as Button$1, cn as cn$1 } from '@almadar/ui';
+import { useLocation, Link, Outlet } from 'react-router-dom';
 
 var FormSection = ({
   title,
@@ -1008,7 +1008,6 @@ var List = ({
   fieldNames,
   entityType
 }) => {
-  const navigate = useNavigate();
   const eventBus = useEventBus();
   const { t } = useTranslate();
   const resolvedEmptyMessage = emptyMessage ?? t("empty.noData");
@@ -1035,7 +1034,7 @@ var List = ({
               /\{\{(\w+)\}\}/g,
               (_, key) => String(item[key] || item.id || "")
             );
-            navigate(url);
+            eventBus.emit("UI:NAVIGATE", { url, row: item, entity: entityName });
             return;
           }
           if (action.event) {
@@ -1047,7 +1046,7 @@ var List = ({
         }
       }));
     },
-    [itemActions, navigate, eventBus, entityName]
+    [itemActions, eventBus, entityName]
   );
   const normalizedItemActions = itemActions ? getItemActions : void 0;
   if (isLoading) {
@@ -6743,15 +6742,6 @@ var variantMap2 = {
   secondary: "bg-gray-700 hover:bg-gray-600 text-white border-gray-500",
   ghost: "bg-transparent hover:bg-white/10 text-white border-white/20"
 };
-function useSafeNavigate() {
-  try {
-    const navigate = useNavigate();
-    return navigate;
-  } catch {
-    return () => {
-    };
-  }
-}
 function GameMenu({
   title,
   subtitle,
@@ -6764,7 +6754,6 @@ function GameMenu({
   className
 }) {
   const resolvedOptions = options ?? menuItems ?? [];
-  const navigate = useSafeNavigate();
   let eventBusFromHook = null;
   try {
     eventBusFromHook = useEventBus();
@@ -6779,11 +6768,11 @@ function GameMenu({
       if (onSelect) {
         onSelect(option);
       }
-      if (option.navigatesTo) {
-        navigate(option.navigatesTo);
+      if (option.navigatesTo && eventBus) {
+        eventBus.emit("UI:NAVIGATE", { url: option.navigatesTo, option });
       }
     },
-    [eventBus, onSelect, navigate]
+    [eventBus, onSelect]
   );
   return /* @__PURE__ */ jsxs(
     "div",

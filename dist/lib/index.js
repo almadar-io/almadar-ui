@@ -1,7 +1,7 @@
 export { DEFAULT_CONFIG, extractOutputsFromTransitions, extractStateMachine, formatGuard, getEffectSummary, parseContentSegments, parseMarkdownWithCodeBlocks, renderStateMachineToDomData, renderStateMachineToSvg } from '../chunk-N6DJVKZ6.js';
-export { ApiError, apiClient } from '../chunk-XSEDIUM6.js';
 export { bindEventBus, bindTraitStateGetter, clearVerification, getAllChecks, getBridgeHealth, getSnapshot, getSummary, getTransitions, getTransitionsForTrait, recordTransition, registerCheck, subscribeToVerification, updateBridgeHealth, updateCheck, waitForTransition } from '../chunk-45CTDYBT.js';
 export { cn, debug, debugCollision, debugError, debugGameState, debugGroup, debugGroupEnd, debugInput, debugPhysics, debugTable, debugTime, debugTimeEnd, debugWarn, formatNestedFieldLabel, getNestedValue, isDebugEnabled } from '../chunk-KKCVDUK7.js';
+export { ApiError, apiClient } from '../chunk-XSEDIUM6.js';
 import '../chunk-PKBMQBKP.js';
 
 // lib/debugUtils.ts

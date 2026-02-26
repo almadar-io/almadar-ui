@@ -1,7 +1,7 @@
 import { useTheme, useUISlots } from './chunk-BTXQJGFB.js';
+import { cn, debugGroup, debug, debugGroupEnd, getNestedValue, isDebugEnabled } from './chunk-KKCVDUK7.js';
 import { useTranslate, useQuerySingleton, useEntityList } from './chunk-PE2H3NAW.js';
 import { useEventBus } from './chunk-YXZM3WCF.js';
-import { cn, debugGroup, debug, debugGroupEnd, getNestedValue, isDebugEnabled } from './chunk-KKCVDUK7.js';
 import { __publicField } from './chunk-PKBMQBKP.js';
 import * as React41 from 'react';
 import React41__default, { useCallback, useRef, useState, useLayoutEffect, useEffect, createContext, useMemo, useContext, Suspense } from 'react';
@@ -9,7 +9,6 @@ import * as LucideIcons from 'lucide-react';
 import { Loader2, ChevronDown, X, Check, Copy, AlertCircle, User, Sun, Moon, FileQuestion, Inbox, Search, Info, XCircle, CheckCircle, AlertTriangle, ChevronRight, Filter, Plus, ChevronLeft, HelpCircle, ChevronUp, MoreHorizontal, TrendingUp, TrendingDown, Minus, ArrowLeft, Calendar, Tag, Clock, CheckCircle2, DollarSign, FileText, Package } from 'lucide-react';
 import { jsxs, jsx, Fragment } from 'react/jsx-runtime';
 import { evaluate, createMinimalContext } from '@almadar/evaluator';
-import { useNavigate, useParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -3097,15 +3096,6 @@ var Breadcrumb = ({
   );
 };
 Breadcrumb.displayName = "Breadcrumb";
-function useSafeNavigate() {
-  try {
-    const navigate = useNavigate();
-    return navigate;
-  } catch {
-    return () => {
-    };
-  }
-}
 function useSafeEventBus() {
   try {
     return useEventBus();
@@ -3127,7 +3117,6 @@ var ButtonGroup = ({
   entity: _entity,
   filters
 }) => {
-  const navigate = useSafeNavigate();
   const eventBus = useSafeEventBus();
   const variantClasses2 = {
     default: "gap-0",
@@ -3143,7 +3132,7 @@ var ButtonGroup = ({
       eventBus.emit("UI:DISPATCH", { event: action.event });
     }
     if (action.navigatesTo) {
-      navigate(action.navigatesTo);
+      eventBus.emit("UI:NAVIGATE", { url: action.navigatesTo });
     }
   };
   const renderFormActions = () => {
@@ -6482,7 +6471,6 @@ function DataTable({
     null
   );
   const eventBus = useEventBus();
-  const navigate = useNavigate();
   const { t } = useTranslate();
   const resolvedEmptyTitle = emptyTitle ?? t("table.empty.title");
   const resolvedEmptyDescription = emptyDescription ?? t("table.empty.description");
@@ -6506,7 +6494,7 @@ function DataTable({
           /\{\{id\}\}/g,
           String(row.id)
         );
-        navigate(url);
+        eventBus.emit("UI:NAVIGATE", { url, row, entity });
         return;
       }
       if (action.event) {
@@ -6528,13 +6516,13 @@ function DataTable({
             /\{\{id\}\}/g,
             String(row.id)
           );
-          navigate(url);
+          eventBus.emit("UI:NAVIGATE", { url, row, entity });
           return;
         }
         eventBus.emit("UI:VIEW", { row, entity });
       }
     },
-    [viewAction, navigate, eventBus, entity]
+    [viewAction, eventBus, entity]
   );
   const isRowClickable = !!viewAction;
   const effectiveColumns = fields ?? columns ?? [];
@@ -7054,24 +7042,16 @@ var PageHeader = ({
   children,
   className
 }) => {
-  const navigate = useNavigate();
-  const params = useParams();
   const eventBus = useEventBus();
   const handleBack = () => {
     eventBus.emit(`UI:${backEvent}`);
-  };
-  const replacePlaceholders = (url) => {
-    return url.replace(/\{\{(\w+)\}\}/g, (_, key) => {
-      return String(params[key] || "");
-    });
   };
   const createActionHandler = (action) => () => {
     if (action.event) {
       eventBus.emit(`UI:${action.event}`);
     }
     if (action.navigatesTo) {
-      const resolvedUrl = replacePlaceholders(action.navigatesTo);
-      navigate(resolvedUrl);
+      eventBus.emit("UI:NAVIGATE", { url: action.navigatesTo });
     }
     if (action.onClick) {
       action.onClick();
@@ -7246,7 +7226,6 @@ var DetailPanel = ({
   isLoading = false,
   error
 }) => {
-  const navigate = useNavigate();
   const eventBus = useEventBus();
   const isFieldDefArray = (arr) => {
     if (!arr || arr.length === 0) return false;
@@ -7261,7 +7240,7 @@ var DetailPanel = ({
           /\{\{(\w+)\}\}/g,
           (_, key) => String(data2?.[key] ?? "")
         );
-        navigate(url);
+        eventBus.emit("UI:NAVIGATE", { url, row: data2, entity });
         return;
       }
       if (action.event) {
@@ -7271,7 +7250,7 @@ var DetailPanel = ({
         action.onClick();
       }
     },
-    [navigate, eventBus, entity]
+    [eventBus, entity]
   );
   const handleClose = useCallback(() => {
     eventBus.emit("UI:CLOSE", {});
@@ -8084,7 +8063,6 @@ var CardGrid = ({
   showTotal = true
 }) => {
   const eventBus = useEventBus();
-  const navigate = useNavigate();
   const effectiveFieldNames = normalizeFields(fields).length > 0 ? normalizeFields(fields) : fieldNames ?? normalizeFields(columns);
   const gridTemplateColumns = `repeat(auto-fit, minmax(min(${minCardWidth}px, 100%), 1fr))`;
   const normalizedData = Array.isArray(externalData) ? externalData : externalData ? [externalData] : [];
@@ -8133,7 +8111,7 @@ var CardGrid = ({
             const value = getNestedValue(itemData, field);
             return value !== void 0 && value !== null ? String(value) : "";
           });
-          navigate(url);
+          eventBus.emit("UI:NAVIGATE", { url, row: itemData, entity });
           return;
         }
         if (action.event) {
