@@ -6113,6 +6113,1011 @@ declare namespace EditorToolbar {
 }
 
 /**
+ * ActionTile Component
+ *
+ * A draggable action tile for the Sequencer tier (ages 5-8).
+ * Kids drag these from the ActionPalette into SequenceBar slots.
+ * Sets SlotItemData on dataTransfer for TraitSlot compatibility.
+ *
+ * @packageDocumentation
+ */
+
+interface ActionTileProps {
+    /** The action data */
+    action: SlotItemData;
+    /** Size variant */
+    size?: 'sm' | 'md' | 'lg';
+    /** Whether the tile is disabled / already used */
+    disabled?: boolean;
+    /** Category → color mapping */
+    categoryColors?: Record<string, {
+        bg: string;
+        border: string;
+    }>;
+    /** Additional CSS classes */
+    className?: string;
+}
+declare function ActionTile({ action, size, disabled, categoryColors, className, }: ActionTileProps): React__default.JSX.Element;
+declare namespace ActionTile {
+    var displayName: string;
+}
+
+/**
+ * ActionPalette Component
+ *
+ * Grid of draggable ActionTile components for the Sequencer tier.
+ * Kids pick from these to build their sequence.
+ *
+ * @packageDocumentation
+ */
+
+interface ActionPaletteProps {
+    /** Available actions */
+    actions: SlotItemData[];
+    /** IDs of actions that are already used (shown as disabled) */
+    usedActionIds?: string[];
+    /** Whether each action can be used multiple times */
+    allowDuplicates?: boolean;
+    /** Category → color mapping */
+    categoryColors?: Record<string, {
+        bg: string;
+        border: string;
+    }>;
+    /** Size variant */
+    size?: 'sm' | 'md' | 'lg';
+    /** Label above the palette */
+    label?: string;
+    /** Additional CSS classes */
+    className?: string;
+}
+declare function ActionPalette({ actions, usedActionIds, allowDuplicates, categoryColors, size, label, className, }: ActionPaletteProps): React__default.JSX.Element;
+declare namespace ActionPalette {
+    var displayName: string;
+}
+
+/**
+ * SequenceBar Component
+ *
+ * A row of TraitSlot components forming the action sequence for the
+ * Sequencer tier (ages 5-8). Kids drag ActionTiles from the palette
+ * into these slots to build their sequence.
+ *
+ * @packageDocumentation
+ */
+
+interface SequenceBarProps {
+    /** The current sequence (sparse — undefined means empty slot) */
+    slots: Array<SlotItemData | undefined>;
+    /** Max number of slots */
+    maxSlots: number;
+    /** Called when an item is dropped into slot at index */
+    onSlotDrop: (index: number, item: SlotItemData) => void;
+    /** Called when a slot is cleared */
+    onSlotRemove: (index: number) => void;
+    /** Whether the sequence is currently playing (disable interaction) */
+    playing?: boolean;
+    /** Current step index during playback (-1 = not playing) */
+    currentStep?: number;
+    /** Category → color mapping */
+    categoryColors?: Record<string, {
+        bg: string;
+        border: string;
+    }>;
+    /** Per-slot correctness feedback shown after a failed attempt */
+    slotFeedback?: Array<'correct' | 'wrong' | null>;
+    /** Size variant */
+    size?: 'sm' | 'md' | 'lg';
+    /** Additional CSS classes */
+    className?: string;
+}
+declare function SequenceBar({ slots, maxSlots, onSlotDrop, onSlotRemove, playing, currentStep, categoryColors, slotFeedback, size, className, }: SequenceBarProps): React__default.JSX.Element;
+declare namespace SequenceBar {
+    var displayName: string;
+}
+
+/**
+ * SequencerBoard Organism
+ *
+ * Contains ALL game logic for the Sequencer tier (ages 5-8).
+ * Manages the action sequence, validates it, and animates Kekec
+ * executing each step on the puzzle scene.
+ *
+ * Feedback-first UX:
+ * - On failure: slots stay in place, each slot gets a green or red
+ *   ring showing exactly which steps are correct and which need to change.
+ * - Modifying a slot clears its individual feedback so the kid can re-try.
+ * - After 3 failures a persistent hint appears above the sequence bar.
+ * - "Reset" clears everything including attempts / hint.
+ *
+ * TraitStateViewer states use indexed labels ("1. Walk", "2. Jump") so that
+ * repeated actions are correctly highlighted during playback.
+ *
+ * @packageDocumentation
+ */
+
+interface SequencerPuzzleEntity {
+    id: string;
+    title: string;
+    description: string;
+    /** Available actions the kid can use */
+    availableActions: SlotItemData[];
+    /** How many slots in the sequence bar */
+    maxSlots: number;
+    /** Whether actions can be reused */
+    allowDuplicates?: boolean;
+    /** The correct sequence(s) — list of action IDs. First match wins. */
+    solutions: string[][];
+    /** Feedback messages */
+    successMessage?: string;
+    failMessage?: string;
+    /** Progressive hint shown after 3 failures */
+    hint?: string;
+    /** Hex coordinates for map animation — one per action + starting position */
+    path?: Array<{
+        x: number;
+        y: number;
+    }>;
+}
+interface SequencerBoardProps extends Omit<EntityDisplayProps, 'entity'> {
+    /** Puzzle data */
+    entity: SequencerPuzzleEntity;
+    /** Category → color mapping */
+    categoryColors?: Record<string, {
+        bg: string;
+        border: string;
+    }>;
+    /** Playback speed in ms per step */
+    stepDurationMs?: number;
+    /** Emits UI:{playEvent} with { sequence: string[] } */
+    playEvent?: string;
+    /** Emits UI:{completeEvent} with { success: boolean } */
+    completeEvent?: string;
+}
+declare function SequencerBoard({ entity, categoryColors, stepDurationMs, playEvent, completeEvent, className, }: SequencerBoardProps): React__default.JSX.Element;
+declare namespace SequencerBoard {
+    var displayName: string;
+}
+
+/**
+ * RuleEditor Component
+ *
+ * A single WHEN/THEN rule row for the Event Handler tier (ages 9-12).
+ * Kid picks an event trigger and an action from dropdowns.
+ *
+ * @packageDocumentation
+ */
+
+interface RuleDefinition {
+    id: string;
+    whenEvent: string;
+    thenAction: string;
+}
+interface RuleEditorProps {
+    /** The current rule */
+    rule: RuleDefinition;
+    /** Available event triggers to listen for */
+    availableEvents: Array<{
+        value: string;
+        label: string;
+    }>;
+    /** Available actions to perform */
+    availableActions: Array<{
+        value: string;
+        label: string;
+    }>;
+    /** Called when rule changes */
+    onChange: (rule: RuleDefinition) => void;
+    /** Called when rule is removed */
+    onRemove?: () => void;
+    /** Whether editing is disabled (during playback) */
+    disabled?: boolean;
+    /** Additional CSS classes */
+    className?: string;
+}
+declare function RuleEditor({ rule, availableEvents, availableActions, onChange, onRemove, disabled, className, }: RuleEditorProps): React__default.JSX.Element;
+declare namespace RuleEditor {
+    var displayName: string;
+}
+
+/**
+ * EventLog Component
+ *
+ * Scrolling log of events during playback in the Event Handler tier.
+ * Shows the chain reaction as events cascade through objects.
+ *
+ * @packageDocumentation
+ */
+
+interface EventLogEntry {
+    id: string;
+    timestamp: number;
+    icon: string;
+    message: string;
+    status: 'pending' | 'active' | 'done' | 'error';
+}
+interface EventLogProps {
+    /** Log entries */
+    entries: EventLogEntry[];
+    /** Max visible height before scroll */
+    maxHeight?: number;
+    /** Title label */
+    label?: string;
+    /** Additional CSS classes */
+    className?: string;
+}
+declare function EventLog({ entries, maxHeight, label, className, }: EventLogProps): React__default.JSX.Element;
+declare namespace EventLog {
+    var displayName: string;
+}
+
+/**
+ * ObjectRulePanel Component
+ *
+ * Shows the rules panel for a selected world object in the Event Handler tier.
+ * Displays object info, its current state (via TraitStateViewer), and
+ * a list of WHEN/THEN rules the kid has set.
+ *
+ * @packageDocumentation
+ */
+
+interface PuzzleObjectDef {
+    id: string;
+    name: string;
+    icon: string;
+    states: string[];
+    initialState: string;
+    currentState: string;
+    availableEvents: Array<{
+        value: string;
+        label: string;
+    }>;
+    availableActions: Array<{
+        value: string;
+        label: string;
+    }>;
+    rules: RuleDefinition[];
+    /** Max rules allowed on this object */
+    maxRules?: number;
+}
+interface ObjectRulePanelProps {
+    /** The selected object */
+    object: PuzzleObjectDef;
+    /** Called when rules change */
+    onRulesChange: (objectId: string, rules: RuleDefinition[]) => void;
+    /** Whether editing is disabled */
+    disabled?: boolean;
+    /** Additional CSS classes */
+    className?: string;
+}
+declare function ObjectRulePanel({ object, onRulesChange, disabled, className, }: ObjectRulePanelProps): React__default.JSX.Element;
+declare namespace ObjectRulePanel {
+    var displayName: string;
+}
+
+/**
+ * EventHandlerBoard Organism
+ *
+ * Contains ALL game logic for the Event Handler tier (ages 9-12).
+ * Kids click on world objects, set WHEN/THEN rules, and watch
+ * event chains cascade during playback.
+ *
+ * Encourages experimentation: on failure, resets to editing so the kid
+ * can try different rules. After 3 failures, shows a progressive hint.
+ *
+ * @packageDocumentation
+ */
+
+interface EventHandlerPuzzleEntity {
+    id: string;
+    title: string;
+    description: string;
+    /** Objects the kid can configure */
+    objects: PuzzleObjectDef[];
+    /** Goal condition description */
+    goalCondition: string;
+    /** Event that represents goal completion */
+    goalEvent: string;
+    /** Sequence of events that auto-fire to start the simulation */
+    triggerEvents?: string[];
+    /** Feedback */
+    successMessage?: string;
+    failMessage?: string;
+    /** Progressive hint shown after 3 failures */
+    hint?: string;
+}
+interface EventHandlerBoardProps extends Omit<EntityDisplayProps, 'entity'> {
+    /** Puzzle data */
+    entity: EventHandlerPuzzleEntity;
+    /** Playback speed in ms per event */
+    stepDurationMs?: number;
+    /** Emits UI:{playEvent} */
+    playEvent?: string;
+    /** Emits UI:{completeEvent} with { success } */
+    completeEvent?: string;
+}
+declare function EventHandlerBoard({ entity, stepDurationMs, playEvent, completeEvent, className, }: EventHandlerBoardProps): React__default.JSX.Element;
+declare namespace EventHandlerBoard {
+    var displayName: string;
+}
+
+/**
+ * StateNode Component
+ *
+ * A draggable state circle for the graph editor in the State Architect tier (ages 13+).
+ * Shows state name, highlights when current, and supports click to select.
+ *
+ * @packageDocumentation
+ */
+
+interface StateNodeProps {
+    /** State name */
+    name: string;
+    /** Whether this is the current active state */
+    isCurrent?: boolean;
+    /** Whether this node is selected for editing */
+    isSelected?: boolean;
+    /** Whether this is the initial state */
+    isInitial?: boolean;
+    /** Position on the graph canvas */
+    position: {
+        x: number;
+        y: number;
+    };
+    /** Click handler */
+    onClick?: () => void;
+    /** Additional CSS classes */
+    className?: string;
+}
+declare function StateNode({ name, isCurrent, isSelected, isInitial, position, onClick, className, }: StateNodeProps): React__default.JSX.Element;
+declare namespace StateNode {
+    var displayName: string;
+}
+
+/**
+ * TransitionArrow Component
+ *
+ * An SVG arrow connecting two state nodes in the graph editor.
+ * Shows the event name as a label on the arrow.
+ *
+ * @packageDocumentation
+ */
+
+interface TransitionArrowProps {
+    /** Start position (center of from-node) */
+    from: {
+        x: number;
+        y: number;
+    };
+    /** End position (center of to-node) */
+    to: {
+        x: number;
+        y: number;
+    };
+    /** Event label shown on the arrow */
+    eventLabel: string;
+    /** Guard hint shown below event */
+    guardHint?: string;
+    /** Whether this transition is currently active */
+    isActive?: boolean;
+    /** Click handler */
+    onClick?: () => void;
+    /** Additional CSS classes for the SVG group */
+    className?: string;
+}
+declare function TransitionArrow({ from, to, eventLabel, guardHint, isActive, onClick, className, }: TransitionArrowProps): React__default.JSX.Element;
+declare namespace TransitionArrow {
+    var displayName: string;
+}
+
+/**
+ * VariablePanel Component
+ *
+ * Shows entity variables and their current values during State Architect playback.
+ *
+ * @packageDocumentation
+ */
+
+interface VariableDef {
+    name: string;
+    value: number;
+    min?: number;
+    max?: number;
+    unit?: string;
+}
+interface VariablePanelProps {
+    /** Entity name */
+    entityName: string;
+    /** Variables to display */
+    variables: VariableDef[];
+    /** Additional CSS classes */
+    className?: string;
+}
+declare function VariablePanel({ entityName, variables, className, }: VariablePanelProps): React__default.JSX.Element;
+declare namespace VariablePanel {
+    var displayName: string;
+}
+
+/**
+ * CodeView Component
+ *
+ * Shows the JSON code representation of a state machine.
+ * Toggle between visual and code view in State Architect tier.
+ *
+ * @packageDocumentation
+ */
+
+interface CodeViewProps {
+    /** JSON data to display */
+    data: Record<string, unknown>;
+    /** Label */
+    label?: string;
+    /** Whether the code is expanded by default */
+    defaultExpanded?: boolean;
+    /** Additional CSS classes */
+    className?: string;
+}
+declare function CodeView({ data, label, defaultExpanded, className, }: CodeViewProps): React__default.JSX.Element;
+declare namespace CodeView {
+    var displayName: string;
+}
+
+/**
+ * StateArchitectBoard Organism
+ *
+ * Contains ALL game logic for the State Architect tier (ages 13+).
+ * Kids design state machines via a visual graph editor, then run
+ * them to see if the behavior matches the puzzle goal.
+ *
+ * @packageDocumentation
+ */
+
+interface StateArchitectTransition {
+    id: string;
+    from: string;
+    to: string;
+    event: string;
+    guardHint?: string;
+}
+interface TestCase {
+    /** Sequence of events to fire */
+    events: string[];
+    /** Expected final state */
+    expectedState: string;
+    /** Description */
+    label: string;
+}
+interface StateArchitectPuzzleEntity {
+    id: string;
+    title: string;
+    description: string;
+    hint: string;
+    /** Entity being designed */
+    entityName: string;
+    /** Variables with initial values */
+    variables: VariableDef[];
+    /** States provided (kid may need to add more) */
+    states: string[];
+    /** Initial state */
+    initialState: string;
+    /** Pre-existing transitions (puzzle may have some already) */
+    transitions: StateArchitectTransition[];
+    /** Events available to use */
+    availableEvents: string[];
+    /** States available to add */
+    availableStates?: string[];
+    /** Test cases to validate against */
+    testCases: TestCase[];
+    /** Show code view toggle */
+    showCodeView?: boolean;
+    /** Feedback */
+    successMessage?: string;
+    failMessage?: string;
+}
+interface StateArchitectBoardProps extends Omit<EntityDisplayProps, 'entity'> {
+    /** Puzzle data */
+    entity: StateArchitectPuzzleEntity;
+    /** Playback speed */
+    stepDurationMs?: number;
+    /** Emits UI:{testEvent} */
+    testEvent?: string;
+    /** Emits UI:{completeEvent} with { success, passedTests } */
+    completeEvent?: string;
+}
+declare function StateArchitectBoard({ entity, stepDurationMs, testEvent, completeEvent, className, }: StateArchitectBoardProps): React__default.JSX.Element;
+declare namespace StateArchitectBoard {
+    var displayName: string;
+}
+
+/**
+ * SimulatorBoard
+ *
+ * Parameter-slider game board. The player adjusts parameters
+ * and observes real-time output. Correct parameter values
+ * must bring the output within a target range to win.
+ *
+ * Good for: physics, economics, system design stories.
+ *
+ * Events emitted via completeEvent (default UI:PUZZLE_COMPLETE).
+ */
+
+interface SimulatorParameter {
+    id: string;
+    label: string;
+    unit: string;
+    min: number;
+    max: number;
+    step: number;
+    initial: number;
+    correct: number;
+    tolerance: number;
+}
+interface SimulatorPuzzleEntity {
+    id: string;
+    title: string;
+    description: string;
+    parameters: SimulatorParameter[];
+    outputLabel: string;
+    outputUnit: string;
+    /** Pure function body as string: receives params object, returns number */
+    computeExpression: string;
+    targetValue: number;
+    targetTolerance: number;
+    successMessage?: string;
+    failMessage?: string;
+    hint?: string;
+}
+interface SimulatorBoardProps {
+    entity: SimulatorPuzzleEntity;
+    completeEvent?: string;
+    className?: string;
+}
+declare function SimulatorBoard({ entity, completeEvent, className, }: SimulatorBoardProps): React__default.JSX.Element;
+declare namespace SimulatorBoard {
+    var displayName: string;
+}
+
+/**
+ * ClassifierBoard
+ *
+ * Drag-and-drop classification game. The player sorts items
+ * into the correct category buckets. All items must be correctly
+ * classified to win.
+ *
+ * Good for: taxonomy, pattern recognition, sorting stories.
+ *
+ * Events emitted via completeEvent (default UI:PUZZLE_COMPLETE).
+ */
+
+interface ClassifierItem {
+    id: string;
+    label: string;
+    description?: string;
+    correctCategory: string;
+}
+interface ClassifierCategory {
+    id: string;
+    label: string;
+    color?: string;
+}
+interface ClassifierPuzzleEntity {
+    id: string;
+    title: string;
+    description: string;
+    items: ClassifierItem[];
+    categories: ClassifierCategory[];
+    successMessage?: string;
+    failMessage?: string;
+    hint?: string;
+}
+interface ClassifierBoardProps {
+    entity: ClassifierPuzzleEntity;
+    completeEvent?: string;
+    className?: string;
+}
+declare function ClassifierBoard({ entity, completeEvent, className, }: ClassifierBoardProps): React__default.JSX.Element;
+declare namespace ClassifierBoard {
+    var displayName: string;
+}
+
+/**
+ * BuilderBoard
+ *
+ * Component-snapping game board. The player places components
+ * onto slots in a blueprint. Correct placement completes the build.
+ *
+ * Good for: architecture, circuits, molecules, system design stories.
+ *
+ * Events emitted via completeEvent (default UI:PUZZLE_COMPLETE).
+ */
+
+interface BuilderComponent {
+    id: string;
+    label: string;
+    description?: string;
+    iconEmoji?: string;
+    category?: string;
+}
+interface BuilderSlot {
+    id: string;
+    label: string;
+    description?: string;
+    acceptsComponentId: string;
+}
+interface BuilderPuzzleEntity {
+    id: string;
+    title: string;
+    description: string;
+    components: BuilderComponent[];
+    slots: BuilderSlot[];
+    successMessage?: string;
+    failMessage?: string;
+    hint?: string;
+}
+interface BuilderBoardProps {
+    entity: BuilderPuzzleEntity;
+    completeEvent?: string;
+    className?: string;
+}
+declare function BuilderBoard({ entity, completeEvent, className, }: BuilderBoardProps): React__default.JSX.Element;
+declare namespace BuilderBoard {
+    var displayName: string;
+}
+
+/**
+ * DebuggerBoard
+ *
+ * Error-finding game board. The player reviews a code/system
+ * listing and identifies lines or elements that contain bugs.
+ *
+ * Good for: programming, logic, troubleshooting stories.
+ *
+ * Events emitted via completeEvent (default UI:PUZZLE_COMPLETE).
+ */
+
+interface DebuggerLine {
+    id: string;
+    content: string;
+    isBug: boolean;
+    explanation?: string;
+}
+interface DebuggerPuzzleEntity {
+    id: string;
+    title: string;
+    description: string;
+    language?: string;
+    lines: DebuggerLine[];
+    /** How many bugs the player should find */
+    bugCount: number;
+    successMessage?: string;
+    failMessage?: string;
+    hint?: string;
+}
+interface DebuggerBoardProps {
+    entity: DebuggerPuzzleEntity;
+    completeEvent?: string;
+    className?: string;
+}
+declare function DebuggerBoard({ entity, completeEvent, className, }: DebuggerBoardProps): React__default.JSX.Element;
+declare namespace DebuggerBoard {
+    var displayName: string;
+}
+
+/**
+ * NegotiatorBoard
+ *
+ * Turn-based decision matrix game. The player makes choices
+ * over multiple rounds against an AI opponent. Each round
+ * both sides pick an action, and payoffs are determined by
+ * the combination.
+ *
+ * Good for: ethics, business, game theory, economics stories.
+ *
+ * Events emitted via completeEvent (default UI:PUZZLE_COMPLETE).
+ */
+
+interface NegotiatorAction {
+    id: string;
+    label: string;
+    description?: string;
+}
+interface PayoffEntry {
+    playerAction: string;
+    opponentAction: string;
+    playerPayoff: number;
+    opponentPayoff: number;
+}
+interface NegotiatorPuzzleEntity {
+    id: string;
+    title: string;
+    description: string;
+    actions: NegotiatorAction[];
+    payoffMatrix: PayoffEntry[];
+    totalRounds: number;
+    /** AI strategy: 'tit-for-tat' | 'always-cooperate' | 'always-defect' | 'random' */
+    opponentStrategy: string;
+    targetScore: number;
+    successMessage?: string;
+    failMessage?: string;
+    hint?: string;
+}
+interface NegotiatorBoardProps {
+    entity: NegotiatorPuzzleEntity;
+    completeEvent?: string;
+    className?: string;
+}
+declare function NegotiatorBoard({ entity, completeEvent, className, }: NegotiatorBoardProps): React__default.JSX.Element;
+declare namespace NegotiatorBoard {
+    var displayName: string;
+}
+
+/**
+ * Physics Preset Types
+ *
+ * Configuration for physics simulation presets.
+ */
+interface PhysicsBody {
+    id: string;
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    mass: number;
+    radius: number;
+    color: string;
+    fixed: boolean;
+}
+interface PhysicsConstraint {
+    bodyA: number;
+    bodyB: number;
+    length: number;
+    stiffness: number;
+}
+interface PhysicsPreset {
+    id: string;
+    name: string;
+    description: string;
+    domain: string;
+    gravity?: {
+        x: number;
+        y: number;
+    };
+    bodies: PhysicsBody[];
+    constraints?: PhysicsConstraint[];
+    backgroundColor?: string;
+    showVelocity?: boolean;
+    parameters: Record<string, {
+        value: number;
+        min: number;
+        max: number;
+        step: number;
+        label: string;
+    }>;
+}
+
+/**
+ * SimulationCanvas
+ *
+ * Self-contained 2D physics canvas for educational presets.
+ * Runs its own Euler integration loop — no external physics hook needed.
+ */
+
+interface SimulationCanvasProps {
+    preset: PhysicsPreset;
+    width?: number;
+    height?: number;
+    running: boolean;
+    speed?: number;
+    className?: string;
+}
+declare function SimulationCanvas({ preset, width, height, running, speed, className, }: SimulationCanvasProps): React__default.JSX.Element;
+declare namespace SimulationCanvas {
+    var displayName: string;
+}
+
+/**
+ * SimulationControls
+ *
+ * Play/pause/step/reset controls with speed and parameter sliders.
+ */
+
+interface SimulationControlsProps {
+    running: boolean;
+    speed: number;
+    parameters: Record<string, {
+        value: number;
+        min: number;
+        max: number;
+        step: number;
+        label: string;
+    }>;
+    onPlay: () => void;
+    onPause: () => void;
+    onStep: () => void;
+    onReset: () => void;
+    onSpeedChange: (speed: number) => void;
+    onParameterChange: (name: string, value: number) => void;
+    className?: string;
+}
+declare function SimulationControls({ running, speed, parameters, onPlay, onPause, onStep, onReset, onSpeedChange, onParameterChange, className, }: SimulationControlsProps): React__default.JSX.Element;
+declare namespace SimulationControls {
+    var displayName: string;
+}
+
+/**
+ * SimulationGraph
+ *
+ * Real-time measurement graph for physics simulations.
+ * Renders measurement data as a simple line chart on canvas.
+ */
+
+interface MeasurementPoint {
+    time: number;
+    value: number;
+}
+interface SimulationGraphProps {
+    label: string;
+    unit: string;
+    data: MeasurementPoint[];
+    maxPoints?: number;
+    width?: number;
+    height?: number;
+    color?: string;
+    className?: string;
+}
+declare function SimulationGraph({ label, unit, data, maxPoints, width, height, color, className, }: SimulationGraphProps): React__default.JSX.Element;
+declare namespace SimulationGraph {
+    var displayName: string;
+}
+
+declare const projectileMotion: PhysicsPreset;
+declare const pendulum: PhysicsPreset;
+declare const springOscillator: PhysicsPreset;
+
+declare const ALL_PRESETS: PhysicsPreset[];
+
+/**
+ * CombatLog Component
+ *
+ * Scrollable log of combat events with icons and colors.
+ * Generalized from Trait Wars — removed asset manifest coupling.
+ */
+
+type CombatLogEventType = 'attack' | 'defend' | 'heal' | 'move' | 'special' | 'death' | 'spawn';
+interface CombatEvent {
+    id: string;
+    type: CombatLogEventType;
+    message: string;
+    timestamp: number;
+    actorName?: string;
+    targetName?: string;
+    value?: number;
+    turn?: number;
+}
+interface CombatLogProps {
+    events: CombatEvent[];
+    maxVisible?: number;
+    autoScroll?: boolean;
+    showTimestamps?: boolean;
+    title?: string;
+    className?: string;
+}
+declare function CombatLog({ events, maxVisible, autoScroll, showTimestamps, className, title, }: CombatLogProps): React__default.JSX.Element;
+declare namespace CombatLog {
+    var displayName: string;
+}
+
+/**
+ * Game Types — Generalized
+ *
+ * Core type definitions for tactical game state.
+ * Extracted from Trait Wars and generalized for any game project.
+ */
+interface Position {
+    x: number;
+    y: number;
+}
+interface GameUnit {
+    id: string;
+    name: string;
+    characterType: string;
+    team: 'player' | 'enemy';
+    position: Position;
+    health: number;
+    maxHealth: number;
+    movement: number;
+    attack: number;
+    defense: number;
+    traits: UnitTrait[];
+}
+interface UnitTrait {
+    name: string;
+    currentState: string;
+    states: string[];
+    cooldown: number;
+}
+interface BoardTile {
+    terrain: string;
+    unitId?: string;
+    isBlocked?: boolean;
+}
+type GamePhase = 'observation' | 'planning' | 'execution' | 'tick';
+interface GameState {
+    board: BoardTile[][];
+    units: Record<string, GameUnit>;
+    currentPhase: GamePhase;
+    currentTurn: number;
+    activeTeam: 'player' | 'enemy';
+    selectedUnitId?: string;
+    validMoves: Position[];
+    attackTargets: Position[];
+}
+type GameAction = {
+    type: 'SELECT_UNIT';
+    unitId: string;
+} | {
+    type: 'MOVE_UNIT';
+    from: Position;
+    to: Position;
+} | {
+    type: 'ATTACK';
+    attackerId: string;
+    targetId: string;
+} | {
+    type: 'END_TURN';
+} | {
+    type: 'EXECUTE_TRAITS';
+};
+declare function createInitialGameState(width: number, height: number, units: GameUnit[], defaultTerrain?: string): GameState;
+declare function calculateValidMoves(state: GameState, unitId: string): Position[];
+declare function calculateAttackTargets(state: GameState, unitId: string): Position[];
+
+/**
+ * Combat Effects Utility
+ *
+ * CSS animation utilities and effect triggers for combat visualization.
+ * Extracted from Trait Wars design-system.
+ */
+declare const combatAnimations: {
+    shake: string;
+    flash: string;
+    pulseRed: string;
+    healGlow: string;
+};
+declare const combatClasses: {
+    shake: string;
+    flash: string;
+    pulseRed: string;
+    healGlow: string;
+    hit: string;
+    defend: string;
+    critical: string;
+};
+interface CombatEffect {
+    className: string;
+    duration: number;
+    sound?: string;
+}
+declare const combatEffects: Record<string, CombatEffect>;
+declare function applyTemporaryEffect(element: HTMLElement, effect: CombatEffect, onComplete?: () => void): void;
+interface DamageResult {
+    baseDamage: number;
+    finalDamage: number;
+    isCritical: boolean;
+    isBlocked: boolean;
+    damageReduction: number;
+}
+declare function calculateDamage(attack: number, defense: number, isDefending?: boolean, criticalChance?: number): DamageResult;
+type CombatEventType = 'attack' | 'critical' | 'defend' | 'heal' | 'defeat' | 'level_up' | 'state_change';
+interface CombatEventData {
+    type: CombatEventType;
+    sourceId: string;
+    targetId?: string;
+    value?: number;
+    message: string;
+}
+declare function generateCombatMessage(event: CombatEventData): string;
+
+/**
  * UISlotRenderer Component
  *
  * Renders all UI slots. This is the central component that displays
@@ -7077,4 +8082,4 @@ declare namespace WorldMapTemplate {
     var displayName: string;
 }
 
-export { AR_BOOK_FIELDS, Accordion, type AccordionItem, type AccordionProps, Card as ActionCard, type CardProps as ActionCardProps, Alert, type AlertProps, type AlertVariant, type AnimationDef, type AnimationName, type AudioManifest, AuthLayout, type AuthLayoutProps, Avatar, type AvatarProps, type AvatarSize, type AvatarStatus, Badge, type BadgeProps, type BadgeVariant, BattleBoard, type BattleBoardProps, type BattleEntity, type BattlePhase, type BattleSlotContext, type BattleStateCallbacks, type BattleStateEventConfig, type BattleStateResult, BattleTemplate, type BattleTemplateProps, type BattleTile, type BattleUnit, type BookChapter, BookChapterView, type BookChapterViewProps, BookCoverPage, type BookCoverPageProps, type BookData, type BookFieldMap, BookNavBar, type BookNavBarProps, type BookPart, BookTableOfContents, type BookTableOfContentsProps, BookViewer, type BookViewerProps, Box, type BoxBg, type BoxMargin, type BoxPadding, type BoxProps, type BoxRounded, type BoxShadow, Breadcrumb, type BreadcrumbItem, type BreadcrumbProps, Button, ButtonGroup, type ButtonGroupProps, type ButtonProps, CameraState, CanvasEffect, type CanvasEffectProps, Card$1 as Card, type CardAction, CardBody, CardContent, CardFooter, CardGrid, type CardGridGap, type CardGridProps, CardHeader, type CardProps$1 as CardProps, CardTitle, CastleBoard, type CastleBoardProps, type CastleEntity, type CastleSlotContext, CastleTemplate, type CastleTemplateProps, Center, type CenterProps, Chart, type ChartDataPoint, type ChartProps, type ChartSeries, type ChartType, Checkbox, type CheckboxProps, CodeBlock, type CodeBlockProps, CodeViewer, type CodeViewerMode, type CodeViewerProps, CollapsibleSection, type CollapsibleSectionProps, type Column, type CombatActionType, type ConditionalContext, ConditionalWrapper, type ConditionalWrapperProps, ConfirmDialog, type ConfirmDialogProps, type ConfirmDialogVariant, Container, type ContainerProps, ContentRenderer, type ContentRendererProps, ControlButton, type ControlButtonProps, type CounterSize, CounterTemplate, type CounterTemplateProps, type CounterVariant, DIAMOND_TOP_Y, DashboardGrid, type DashboardGridCell, type DashboardGridProps, DashboardLayout, type DashboardLayoutProps, DataTable, type DataTableProps, type DetailField, DetailPanel, type DetailPanelProps, type DetailSection, DialogueBox, type DialogueBoxProps, type DialogueChoice, type DialogueNode, type DiffLine, Divider, type DividerOrientation, type DividerProps, type DocumentType, DocumentViewer, type DocumentViewerProps, StateMachineView as DomStateMachineVisualizer, Drawer, type DrawerPosition, type DrawerProps, type DrawerSize, DrawerSlot, type DrawerSlotProps, EditorCheckbox, type EditorCheckboxProps, type EditorMode, EditorSelect, type EditorSelectProps, EditorSlider, type EditorSliderProps, EditorTextInput, type EditorTextInputProps, EditorToolbar, type EditorToolbarProps, EmptyState, type EmptyStateProps, EntityDisplayEvents, type EntityDisplayProps, ErrorBoundary, type ErrorBoundaryProps, ErrorState, type ErrorStateProps, EventBusContextType, FEATURE_COLORS, FEATURE_TYPES, FLOOR_HEIGHT, type FacingDirection, type FilterDefinition, FilterGroup, type FilterGroupProps, type FilterPayload, Flex, type FlexProps, FloatingActionButton, type FloatingActionButtonProps, Form, FormActions, type FormActionsProps, FormField, type FormFieldProps, FormLayout, type FormLayoutProps, type FormProps, FormSection$1 as FormSection, FormSectionHeader, type FormSectionHeaderProps, type FormSectionProps, type FrameDimsResolver, GameAudioContext, type GameAudioContextValue, type GameAudioControls, GameAudioProvider, type GameAudioProviderProps, GameAudioToggle, type GameAudioToggleProps, GameHud, type GameHudElement, type GameHudProps, type GameHudStat, GameMenu, type GameMenuProps, type GameOverAction, GameOverScreen, type GameOverScreenProps, type GameOverStat, GameShell, type GameShellProps, GameTemplate, type GameTemplateProps, GenericAppTemplate, type GenericAppTemplateProps, GraphCanvas, type GraphCanvasProps, type GraphEdge, type GraphNode, Grid, type GridProps, HStack, type HStackProps, Header, type HeaderProps, Heading, type HeadingProps, HealthBar, type HealthBarProps, type HighlightType, IDENTITY_BOOK_FIELDS, Icon, type IconAnimation, type IconProps, type IconSize, Input, InputGroup, type InputGroupProps, type InputProps, type InventoryItem, InventoryPanel, type InventoryPanelProps, IsometricCanvas, type IsometricCanvasProps, IsometricFeature, IsometricTile, IsometricUnit, JazariStateMachine, type JazariStateMachineProps, Label, type LabelProps, type LawReference, LawReferenceTooltip, type LawReferenceTooltipProps, List, type ListItem, type ListProps, LoadingState, type LoadingStateProps, type MapHero, type MapHex, MarkdownContent, type MarkdownContentProps, MasterDetail, type MasterDetailProps, MediaGallery, type MediaGalleryProps, type MediaItem, Menu, type MenuItem, type MenuOption, type MenuProps, Meter, type MeterProps, type MeterThreshold, type MeterVariant, Modal, type ModalProps, type ModalSize, ModalSlot, type ModalSlotProps, type NavItem, Navigation, type NavigationItem, type NavigationProps, StateMachineView as OrbitalStateMachineView, OrbitalVisualization, type OrbitalVisualizationProps, Overlay, type OverlayProps, type PageBreadcrumb, PageHeader, type PageHeaderProps, type PaginatePayload, Pagination, type PaginationProps, type Physics2DState, type PhysicsBounds, type PhysicsConfig, PhysicsManager, Popover, type PopoverProps, ProgressBar, type ProgressBarColor, type ProgressBarProps, type ProgressBarVariant, QuizBlock, type QuizBlockProps, Radio, type RadioProps, type RelationOption, RelationSelect, type RelationSelectProps, RepeatableFormSection, type RepeatableFormSectionProps, type RepeatableItem, type ResolvedFrame, type RowAction, SHEET_COLUMNS, SPRITE_SHEET_LAYOUT, ScaledDiagram, type ScaledDiagramProps, ScoreDisplay, type ScoreDisplayProps, SearchInput, type SearchInputProps, type SearchPayload, Section, type SectionProps, Select, type SelectOption, type SelectPayload, type SelectProps, type SheetUrlResolver, SidePanel, type SidePanelProps, Sidebar, type SidebarItem, type SidebarProps, SignaturePad, type SignaturePadProps, SimpleGrid, type SimpleGridProps, Skeleton, type SkeletonProps, type SkeletonVariant, SlotContent, SlotContentRenderer, type SlotItemData, type SortDirection, type SortPayload, type SoundEntry, Spacer, type SpacerProps, type SpacerSize, Spinner, type SpinnerProps, Split, SplitPane, type SplitPaneProps, type SplitProps, Sprite, type SpriteDirection, type SpriteFrameDims, type SpriteProps, type SpriteSheetUrls, Stack, type StackAlign, type StackDirection, type StackGap, type StackJustify, type StackProps, StatCard, type StatCardProps, StateIndicator, type StateIndicatorProps, StateMachineView, type StateMachineViewProps, type StateStyle, StatusBar, type StatusBarProps, Switch, type SwitchProps, TERRAIN_COLORS, TILE_HEIGHT, TILE_WIDTH, type TabDefinition, type TabItem, TabbedContainer, type TabbedContainerProps, Table, type TableColumn, type TableProps, Tabs, type TabsProps, type TemplateProps, TerrainPalette, type TerrainPaletteProps, Text, TextHighlight, type TextHighlightProps, type TextProps, Textarea, type TextareaProps, ThemeSelector, ThemeToggle, type ThemeToggleProps, Timeline, type TimelineItem, type TimelineItemStatus, type TimelineProps, Toast, type ToastProps, ToastSlot, type ToastSlotProps, type ToastVariant, Tooltip, type TooltipProps, TraitSlot, type TraitSlotProps, type TraitStateMachineDefinition, TraitStateViewer, type TraitStateViewerProps, type TraitTransition, type TransitionBundle, Typography, type TypographyProps, type TypographyVariant, UISlot, UISlotComponent, UISlotRenderer, type UISlotRendererProps, UncontrolledBattleBoard, type UncontrolledBattleBoardProps, type UnitAnimationState, type UseGameAudioOptions, type UsePhysics2DOptions, type UsePhysics2DReturn, type UseSpriteAnimationsOptions, type UseSpriteAnimationsResult, VStack, type VStackProps, ViolationAlert, type ViolationAlertProps, type ViolationRecord, WizardContainer, type WizardContainerProps, WizardNavigation, type WizardNavigationProps, WizardProgress, type WizardProgressProps, type WizardProgressStep, type WizardStep, WorldMapBoard, type WorldMapBoardProps, type WorldMapEntity, type WorldMapSlotContext, WorldMapTemplate, type WorldMapTemplateProps, createUnitAnimationState, drawSprite, getCurrentFrame, inferDirection, isoToScreen, mapBookData, resolveFieldMap, resolveFrame, resolveSheetDirection, screenToIso, tickAnimationState, transitionAnimation, useBattleState, useCamera, useGameAudio, useGameAudioContext, useImageCache, usePhysics2D, useSpriteAnimations };
+export { ALL_PRESETS, AR_BOOK_FIELDS, Accordion, type AccordionItem, type AccordionProps, Card as ActionCard, type CardProps as ActionCardProps, ActionPalette, type ActionPaletteProps, ActionTile, type ActionTileProps, Alert, type AlertProps, type AlertVariant, type AnimationDef, type AnimationName, type AudioManifest, AuthLayout, type AuthLayoutProps, Avatar, type AvatarProps, type AvatarSize, type AvatarStatus, Badge, type BadgeProps, type BadgeVariant, BattleBoard, type BattleBoardProps, type BattleEntity, type BattlePhase, type BattleSlotContext, type BattleStateCallbacks, type BattleStateEventConfig, type BattleStateResult, BattleTemplate, type BattleTemplateProps, type BattleTile, type BattleUnit, type BoardTile, type BookChapter, BookChapterView, type BookChapterViewProps, BookCoverPage, type BookCoverPageProps, type BookData, type BookFieldMap, BookNavBar, type BookNavBarProps, type BookPart, BookTableOfContents, type BookTableOfContentsProps, BookViewer, type BookViewerProps, Box, type BoxBg, type BoxMargin, type BoxPadding, type BoxProps, type BoxRounded, type BoxShadow, Breadcrumb, type BreadcrumbItem, type BreadcrumbProps, BuilderBoard, type BuilderBoardProps, type BuilderComponent, type BuilderPuzzleEntity, type BuilderSlot, Button, ButtonGroup, type ButtonGroupProps, type ButtonProps, CameraState, CanvasEffect, type CanvasEffectProps, Card$1 as Card, type CardAction, CardBody, CardContent, CardFooter, CardGrid, type CardGridGap, type CardGridProps, CardHeader, type CardProps$1 as CardProps, CardTitle, CastleBoard, type CastleBoardProps, type CastleEntity, type CastleSlotContext, CastleTemplate, type CastleTemplateProps, Center, type CenterProps, Chart, type ChartDataPoint, type ChartProps, type ChartSeries, type ChartType, Checkbox, type CheckboxProps, ClassifierBoard, type ClassifierBoardProps, type ClassifierCategory, type ClassifierItem, type ClassifierPuzzleEntity, CodeBlock, type CodeBlockProps, CodeView, type CodeViewProps, CodeViewer, type CodeViewerMode, type CodeViewerProps, CollapsibleSection, type CollapsibleSectionProps, type Column, type CombatActionType, type CombatEffect, type CombatEvent, type CombatEventData, type CombatEventType, CombatLog, type CombatLogEventType, type CombatLogProps, type ConditionalContext, ConditionalWrapper, type ConditionalWrapperProps, ConfirmDialog, type ConfirmDialogProps, type ConfirmDialogVariant, Container, type ContainerProps, ContentRenderer, type ContentRendererProps, ControlButton, type ControlButtonProps, type CounterSize, CounterTemplate, type CounterTemplateProps, type CounterVariant, DIAMOND_TOP_Y, type DamageResult, DashboardGrid, type DashboardGridCell, type DashboardGridProps, DashboardLayout, type DashboardLayoutProps, DataTable, type DataTableProps, DebuggerBoard, type DebuggerBoardProps, type DebuggerLine, type DebuggerPuzzleEntity, type DetailField, DetailPanel, type DetailPanelProps, type DetailSection, DialogueBox, type DialogueBoxProps, type DialogueChoice, type DialogueNode, type DiffLine, Divider, type DividerOrientation, type DividerProps, type DocumentType, DocumentViewer, type DocumentViewerProps, StateMachineView as DomStateMachineVisualizer, Drawer, type DrawerPosition, type DrawerProps, type DrawerSize, DrawerSlot, type DrawerSlotProps, EditorCheckbox, type EditorCheckboxProps, type EditorMode, EditorSelect, type EditorSelectProps, EditorSlider, type EditorSliderProps, EditorTextInput, type EditorTextInputProps, EditorToolbar, type EditorToolbarProps, EmptyState, type EmptyStateProps, EntityDisplayEvents, type EntityDisplayProps, ErrorBoundary, type ErrorBoundaryProps, ErrorState, type ErrorStateProps, EventBusContextType, EventHandlerBoard, type EventHandlerBoardProps, type EventHandlerPuzzleEntity, EventLog, type EventLogEntry, type EventLogProps, FEATURE_COLORS, FEATURE_TYPES, FLOOR_HEIGHT, type FacingDirection, type FilterDefinition, FilterGroup, type FilterGroupProps, type FilterPayload, Flex, type FlexProps, FloatingActionButton, type FloatingActionButtonProps, Form, FormActions, type FormActionsProps, FormField, type FormFieldProps, FormLayout, type FormLayoutProps, type FormProps, FormSection$1 as FormSection, FormSectionHeader, type FormSectionHeaderProps, type FormSectionProps, type FrameDimsResolver, type GameAction, GameAudioContext, type GameAudioContextValue, type GameAudioControls, GameAudioProvider, type GameAudioProviderProps, GameAudioToggle, type GameAudioToggleProps, GameHud, type GameHudElement, type GameHudProps, type GameHudStat, GameMenu, type GameMenuProps, type GameOverAction, GameOverScreen, type GameOverScreenProps, type GameOverStat, type GamePhase, GameShell, type GameShellProps, type GameState, GameTemplate, type GameTemplateProps, type GameUnit, GenericAppTemplate, type GenericAppTemplateProps, GraphCanvas, type GraphCanvasProps, type GraphEdge, type GraphNode, Grid, type GridProps, HStack, type HStackProps, Header, type HeaderProps, Heading, type HeadingProps, HealthBar, type HealthBarProps, type HighlightType, IDENTITY_BOOK_FIELDS, Icon, type IconAnimation, type IconProps, type IconSize, Input, InputGroup, type InputGroupProps, type InputProps, type InventoryItem, InventoryPanel, type InventoryPanelProps, IsometricCanvas, type IsometricCanvasProps, IsometricFeature, IsometricTile, IsometricUnit, JazariStateMachine, type JazariStateMachineProps, Label, type LabelProps, type LawReference, LawReferenceTooltip, type LawReferenceTooltipProps, List, type ListItem, type ListProps, LoadingState, type LoadingStateProps, type MapHero, type MapHex, MarkdownContent, type MarkdownContentProps, MasterDetail, type MasterDetailProps, type MeasurementPoint, MediaGallery, type MediaGalleryProps, type MediaItem, Menu, type MenuItem, type MenuOption, type MenuProps, Meter, type MeterProps, type MeterThreshold, type MeterVariant, Modal, type ModalProps, type ModalSize, ModalSlot, type ModalSlotProps, type NavItem, Navigation, type NavigationItem, type NavigationProps, type NegotiatorAction, NegotiatorBoard, type NegotiatorBoardProps, type NegotiatorPuzzleEntity, ObjectRulePanel, type ObjectRulePanelProps, StateMachineView as OrbitalStateMachineView, OrbitalVisualization, type OrbitalVisualizationProps, Overlay, type OverlayProps, type PageBreadcrumb, PageHeader, type PageHeaderProps, type PaginatePayload, Pagination, type PaginationProps, type PayoffEntry, type Physics2DState, type PhysicsBody, type PhysicsBounds, type PhysicsConfig, type PhysicsConstraint, PhysicsManager, type PhysicsPreset, Popover, type PopoverProps, type Position, ProgressBar, type ProgressBarColor, type ProgressBarProps, type ProgressBarVariant, type PuzzleObjectDef, QuizBlock, type QuizBlockProps, Radio, type RadioProps, type RelationOption, RelationSelect, type RelationSelectProps, RepeatableFormSection, type RepeatableFormSectionProps, type RepeatableItem, type ResolvedFrame, type RowAction, type RuleDefinition, RuleEditor, type RuleEditorProps, SHEET_COLUMNS, SPRITE_SHEET_LAYOUT, ScaledDiagram, type ScaledDiagramProps, ScoreDisplay, type ScoreDisplayProps, SearchInput, type SearchInputProps, type SearchPayload, Section, type SectionProps, Select, type SelectOption, type SelectPayload, type SelectProps, SequenceBar, type SequenceBarProps, SequencerBoard, type SequencerBoardProps, type SequencerPuzzleEntity, type SheetUrlResolver, SidePanel, type SidePanelProps, Sidebar, type SidebarItem, type SidebarProps, SignaturePad, type SignaturePadProps, SimpleGrid, type SimpleGridProps, SimulationCanvas, type SimulationCanvasProps, SimulationControls, type SimulationControlsProps, SimulationGraph, type SimulationGraphProps, SimulatorBoard, type SimulatorBoardProps, type SimulatorParameter, type SimulatorPuzzleEntity, Skeleton, type SkeletonProps, type SkeletonVariant, SlotContent, SlotContentRenderer, type SlotItemData, type SortDirection, type SortPayload, type SoundEntry, Spacer, type SpacerProps, type SpacerSize, Spinner, type SpinnerProps, Split, SplitPane, type SplitPaneProps, type SplitProps, Sprite, type SpriteDirection, type SpriteFrameDims, type SpriteProps, type SpriteSheetUrls, Stack, type StackAlign, type StackDirection, type StackGap, type StackJustify, type StackProps, StatCard, type StatCardProps, StateArchitectBoard, type StateArchitectBoardProps, type StateArchitectPuzzleEntity, type StateArchitectTransition, StateIndicator, type StateIndicatorProps, StateMachineView, type StateMachineViewProps, StateNode, type StateNodeProps, type StateStyle, StatusBar, type StatusBarProps, Switch, type SwitchProps, TERRAIN_COLORS, TILE_HEIGHT, TILE_WIDTH, type TabDefinition, type TabItem, TabbedContainer, type TabbedContainerProps, Table, type TableColumn, type TableProps, Tabs, type TabsProps, type TemplateProps, TerrainPalette, type TerrainPaletteProps, type TestCase, Text, TextHighlight, type TextHighlightProps, type TextProps, Textarea, type TextareaProps, ThemeSelector, ThemeToggle, type ThemeToggleProps, Timeline, type TimelineItem, type TimelineItemStatus, type TimelineProps, Toast, type ToastProps, ToastSlot, type ToastSlotProps, type ToastVariant, Tooltip, type TooltipProps, TraitSlot, type TraitSlotProps, type TraitStateMachineDefinition, TraitStateViewer, type TraitStateViewerProps, type TraitTransition, TransitionArrow, type TransitionArrowProps, type TransitionBundle, Typography, type TypographyProps, type TypographyVariant, UISlot, UISlotComponent, UISlotRenderer, type UISlotRendererProps, UncontrolledBattleBoard, type UncontrolledBattleBoardProps, type UnitAnimationState, type UnitTrait, type UseGameAudioOptions, type UsePhysics2DOptions, type UsePhysics2DReturn, type UseSpriteAnimationsOptions, type UseSpriteAnimationsResult, VStack, type VStackProps, type VariableDef, VariablePanel, type VariablePanelProps, ViolationAlert, type ViolationAlertProps, type ViolationRecord, WizardContainer, type WizardContainerProps, WizardNavigation, type WizardNavigationProps, WizardProgress, type WizardProgressProps, type WizardProgressStep, type WizardStep, WorldMapBoard, type WorldMapBoardProps, type WorldMapEntity, type WorldMapSlotContext, WorldMapTemplate, type WorldMapTemplateProps, applyTemporaryEffect, calculateAttackTargets, calculateDamage, calculateValidMoves, combatAnimations, combatClasses, combatEffects, createInitialGameState, createUnitAnimationState, drawSprite, generateCombatMessage, getCurrentFrame, inferDirection, isoToScreen, mapBookData, pendulum, projectileMotion, resolveFieldMap, resolveFrame, resolveSheetDirection, screenToIso, springOscillator, tickAnimationState, transitionAnimation, useBattleState, useCamera, useGameAudio, useGameAudioContext, useImageCache, usePhysics2D, useSpriteAnimations };

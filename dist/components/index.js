@@ -1,12 +1,12 @@
 import { DEFAULT_CONFIG, renderStateMachineToDomData, parseContentSegments } from '../chunk-N6DJVKZ6.js';
-import { VStack, HStack, Typography, Button, Icon, Box, Card, Avatar, Badge, SearchInput, Checkbox, Menu as Menu$1, Pagination, LoadingState, EmptyState, Modal, ErrorState, QuizBlock, CodeBlock, ScaledDiagram, MarkdownContent, Divider, ProgressBar, Stack, Drawer, Toast, Tabs, Input, ThemeToggle, HealthBar, ScoreDisplay, StateIndicator, Container, EntityDisplayEvents } from '../chunk-6YV5YRGT.js';
+import { useAuthContext } from '../chunk-BKC4XU44.js';
+export { ENTITY_EVENTS, useAgentChat, useAuthContext, useCompile, useConnectGitHub, useCreateEntity, useDeepAgentGeneration, useDeleteEntity, useDisconnectGitHub, useEntities, useEntitiesByType, useEntity as useEntityById, useEntityMutations, useExtensions, useFileEditor, useFileSystem, useGitHubBranches, useGitHubRepo, useGitHubRepos, useGitHubStatus, useInput, useOrbitalHistory, useOrbitalMutations, usePhysics, usePlayer, usePreview, useResolvedEntity, useSelectedEntity, useSendOrbitalEvent, useSingletonEntity, useUIEvents, useUpdateEntity, useValidation } from '../chunk-BKC4XU44.js';
+import '../chunk-XSEDIUM6.js';
+import { VStack, HStack, Typography, Button, Icon, Box, Card, Avatar, Badge, SearchInput, Checkbox, Menu as Menu$1, Pagination, LoadingState, EmptyState, Modal, ErrorState, QuizBlock, CodeBlock, ScaledDiagram, MarkdownContent, Divider, ProgressBar, Stack, Select, Drawer, Toast, Tabs, Input, ThemeToggle, HealthBar, ScoreDisplay, StateIndicator, Container, EntityDisplayEvents } from '../chunk-6YV5YRGT.js';
 export { Accordion, Card2 as ActionCard, Alert, Avatar, Badge, Box, Breadcrumb, Button, ButtonGroup, Card, CardBody, CardContent, CardFooter, CardGrid, CardHeader, CardTitle, Center, Checkbox, CodeBlock, ConditionalWrapper, Container, ControlButton, DataTable, DetailPanel, Divider, Drawer, EmptyState, EntityDisplayEvents, ErrorBoundary, ErrorState, FilterGroup, Flex, FloatingActionButton, Form, FormField, FormSectionHeader, Grid, HStack, Heading, HealthBar, Icon, Input, InputGroup, Label, LawReferenceTooltip, LoadingState, MarkdownContent, MasterDetail, Menu, Modal, Overlay, PageHeader, Pagination, Popover, ProgressBar, QuizBlock, Radio, RelationSelect, RepeatableFormSection, ScaledDiagram, ScoreDisplay, SearchInput, Select, SidePanel, SimpleGrid, Skeleton, SlotContentRenderer, Spacer, Spinner, Sprite, Stack, StatCard, StateIndicator, Switch, Tabs, Text, TextHighlight, Textarea, ThemeSelector, ThemeToggle, Toast, Tooltip, Typography, UISlotComponent, UISlotRenderer, VStack, ViolationAlert, WizardNavigation, WizardProgress, drawSprite } from '../chunk-6YV5YRGT.js';
 import '../chunk-BTXQJGFB.js';
 import { cn, getNestedValue } from '../chunk-KKCVDUK7.js';
 export { cn } from '../chunk-KKCVDUK7.js';
-import { useAuthContext } from '../chunk-BKC4XU44.js';
-export { ENTITY_EVENTS, useAgentChat, useAuthContext, useCompile, useConnectGitHub, useCreateEntity, useDeepAgentGeneration, useDeleteEntity, useDisconnectGitHub, useEntities, useEntitiesByType, useEntity as useEntityById, useEntityMutations, useExtensions, useFileEditor, useFileSystem, useGitHubBranches, useGitHubRepo, useGitHubRepos, useGitHubStatus, useInput, useOrbitalHistory, useOrbitalMutations, usePhysics, usePlayer, usePreview, useResolvedEntity, useSelectedEntity, useSendOrbitalEvent, useSingletonEntity, useUIEvents, useUpdateEntity, useValidation } from '../chunk-BKC4XU44.js';
-import '../chunk-XSEDIUM6.js';
 import { useTranslate } from '../chunk-PE2H3NAW.js';
 export { EntityDataProvider, I18nProvider, createTranslate, entityDataKeys, parseQueryBinding, useEntity, useEntityDataAdapter, useEntityDetail, useEntityList, useEntityListSuspense, useEntitySuspense, useQuerySingleton, useTranslate } from '../chunk-PE2H3NAW.js';
 import { useEventBus, useEventListener } from '../chunk-YXZM3WCF.js';
@@ -14,12 +14,11 @@ export { useEmitEvent, useEventBus, useEventListener } from '../chunk-YXZM3WCF.j
 export { DEFAULT_SLOTS, useUISlotManager } from '../chunk-7NEWMNNU.js';
 export { clearEntities, getAllEntities, getByType, getEntity, getSingleton, removeEntity, spawnEntity, updateEntity, updateSingleton } from '../chunk-N7MVUW4R.js';
 import { __publicField } from '../chunk-PKBMQBKP.js';
-import * as React25 from 'react';
-import React25__default, { createContext, useState, useMemo, useCallback, useEffect, useRef, useContext } from 'react';
-import { ChevronDown, X, Menu, ChevronRight, ChevronLeft, ArrowUp, ArrowDown, MoreVertical, Package, Check, AlertTriangle, Trash2, List as List$1, Printer, AlertCircle, Circle, Clock, CheckCircle2, Image as Image$1, Upload, ZoomIn, Eraser, FileText, ZoomOut, Download, RotateCcw, Code, WrapText, Copy, Settings, Search, Bell, LogOut, Pause, Play, Calendar, Pencil, Eye, MoreHorizontal, Minus, Plus } from 'lucide-react';
+import * as React42 from 'react';
+import React42__default, { createContext, useState, useMemo, useCallback, useEffect, useRef, useContext } from 'react';
+import { ChevronDown, X, Menu, ChevronRight, ChevronLeft, ArrowUp, ArrowDown, MoreVertical, Package, Check, AlertTriangle, Trash2, List as List$1, Printer, CheckCircle, XCircle, Play, RotateCcw, Send, Wrench, Bug, ArrowRight, Pause, SkipForward, Zap, Sword, Move, Heart, Shield, AlertCircle, Circle, Clock, CheckCircle2, Image as Image$1, Upload, ZoomIn, Eraser, FileText, ZoomOut, Download, Code, WrapText, Copy, Settings, Search, Bell, LogOut, Calendar, Pencil, Eye, MoreHorizontal, Minus, Plus } from 'lucide-react';
 import { jsxs, Fragment, jsx } from 'react/jsx-runtime';
 import { createPortal } from 'react-dom';
-import { Button as Button$1, cn as cn$1 } from '@almadar/ui';
 import { useLocation, Link, Outlet } from 'react-router-dom';
 
 var FormSection = ({
@@ -32,7 +31,7 @@ var FormSection = ({
   columns = 1,
   className
 }) => {
-  const [collapsed, setCollapsed] = React25__default.useState(defaultCollapsed);
+  const [collapsed, setCollapsed] = React42__default.useState(defaultCollapsed);
   const gridClass = {
     1: "grid-cols-1",
     2: "grid-cols-1 md:grid-cols-2",
@@ -407,7 +406,7 @@ var Section = ({
 };
 Section.displayName = "Section";
 var SidebarNavItem = ({ item, collapsed }) => {
-  const Icon2 = item.icon;
+  const Icon3 = item.icon;
   const isActive = item.active ?? item.isActive;
   return /* @__PURE__ */ jsxs(
     Button,
@@ -429,8 +428,8 @@ var SidebarNavItem = ({ item, collapsed }) => {
       ),
       title: collapsed ? item.label : void 0,
       children: [
-        Icon2 && /* @__PURE__ */ jsx(
-          Icon2,
+        Icon3 && /* @__PURE__ */ jsx(
+          Icon3,
           {
             size: 20,
             className: cn(
@@ -1019,7 +1018,7 @@ var List = ({
     if (d && typeof d === "object" && "id" in d) return [d];
     return [];
   }, [data]);
-  const getItemActions = React25__default.useCallback(
+  const getItemActions = React42__default.useCallback(
     (item) => {
       if (!itemActions) return [];
       if (typeof itemActions === "function") {
@@ -1522,7 +1521,7 @@ var WizardContainer = ({
           const isCompleted = index < currentStep;
           const stepKey = step.id ?? step.tabId ?? `step-${index}`;
           const stepTitle = step.title ?? step.name ?? `Step ${index + 1}`;
-          return /* @__PURE__ */ jsxs(React25__default.Fragment, { children: [
+          return /* @__PURE__ */ jsxs(React42__default.Fragment, { children: [
             /* @__PURE__ */ jsx(
               Button,
               {
@@ -2746,7 +2745,7 @@ var StateMachineView = ({
             style: { top: title ? 30 : 0 },
             children: [
               entity && /* @__PURE__ */ jsx(EntityBox, { entity, config }),
-              states.map((state) => renderStateNode ? /* @__PURE__ */ jsx(React25__default.Fragment, { children: renderStateNode(state, config) }, state.id) : /* @__PURE__ */ jsx(
+              states.map((state) => renderStateNode ? /* @__PURE__ */ jsx(React42__default.Fragment, { children: renderStateNode(state, config) }, state.id) : /* @__PURE__ */ jsx(
                 StateNode,
                 {
                   state,
@@ -6129,12 +6128,12 @@ function GameAudioToggle({
     setMuted(!muted);
   }, [muted, setMuted]);
   return /* @__PURE__ */ jsx(
-    Button$1,
+    Button,
     {
       variant: "ghost",
       size,
       onClick: handleToggle,
-      className: cn$1("text-lg leading-none px-2", className),
+      className: cn("text-lg leading-none px-2", className),
       "aria-pressed": muted,
       children: muted ? "\u{1F507}" : "\u{1F50A}"
     }
@@ -6760,7 +6759,7 @@ function GameMenu({
   } catch {
   }
   const eventBus = eventBusProp || eventBusFromHook;
-  const handleOptionClick = React25.useCallback(
+  const handleOptionClick = React42.useCallback(
     (option) => {
       if (option.event && eventBus) {
         eventBus.emit(`UI:${option.event}`, { option });
@@ -6883,7 +6882,7 @@ function GameOverScreen({
   } catch {
   }
   const eventBus = eventBusProp || eventBusFromHook;
-  const handleActionClick = React25.useCallback(
+  const handleActionClick = React42.useCallback(
     (action) => {
       if (action.event && eventBus) {
         eventBus.emit(`UI:${action.event}`, { action });
@@ -7308,7 +7307,7 @@ function BattleBoard({
   onAttack,
   onGameEnd,
   onUnitMove,
-  calculateDamage,
+  calculateDamage: calculateDamage2,
   onDrawEffects,
   hasActiveEffects: hasActiveEffects2 = false,
   effectSpriteUrls = [],
@@ -7460,7 +7459,7 @@ function BattleBoard({
     }
     if (currentPhase === "action" && selectedUnit) {
       if (unit.team === "enemy" && attackTargets.some((t) => t.x === unit.position.x && t.y === unit.position.y)) {
-        const damage = calculateDamage ? calculateDamage(selectedUnit, unit) : Math.max(1, selectedUnit.attack - unit.defense);
+        const damage = calculateDamage2 ? calculateDamage2(selectedUnit, unit) : Math.max(1, selectedUnit.attack - unit.defense);
         setIsShaking(true);
         setTimeout(() => setIsShaking(false), 300);
         onAttack?.(selectedUnit, unit, damage);
@@ -7474,7 +7473,7 @@ function BattleBoard({
         setTimeout(checkGameEnd, 100);
       }
     }
-  }, [currentPhase, selectedUnit, attackTargets, units, checkGameEnd, onAttack, calculateDamage, unitClickEvent, attackEvent, eventBus]);
+  }, [currentPhase, selectedUnit, attackTargets, units, checkGameEnd, onAttack, calculateDamage2, unitClickEvent, attackEvent, eventBus]);
   const handleTileClick = useCallback((x, y) => {
     if (tileClickEvent) {
       eventBus.emit(`UI:${tileClickEvent}`, { x, y });
@@ -7639,7 +7638,7 @@ function useBattleState(initialUnits, eventConfig = {}, callbacks = {}) {
     attackEvent,
     cancelEvent
   } = eventConfig;
-  const { onAttack, onGameEnd, onUnitMove, calculateDamage } = callbacks;
+  const { onAttack, onGameEnd, onUnitMove, calculateDamage: calculateDamage2 } = callbacks;
   const [units, setUnits] = useState(initialUnits);
   const [selectedUnitId, setSelectedUnitId] = useState(null);
   const [phase, setPhase] = useState("observation");
@@ -7682,7 +7681,7 @@ function useBattleState(initialUnits, eventConfig = {}, callbacks = {}) {
         const dx = Math.abs(unit.position.x - selectedUnit.position.x);
         const dy = Math.abs(unit.position.y - selectedUnit.position.y);
         if (dx <= 1 && dy <= 1 && dx + dy > 0) {
-          const damage = calculateDamage ? calculateDamage(selectedUnit, unit) : Math.max(1, selectedUnit.attack - unit.defense);
+          const damage = calculateDamage2 ? calculateDamage2(selectedUnit, unit) : Math.max(1, selectedUnit.attack - unit.defense);
           const newHealth = Math.max(0, unit.health - damage);
           const updatedUnits = units.map(
             (u) => u.id === unit.id ? { ...u, health: newHealth } : u
@@ -7703,7 +7702,7 @@ function useBattleState(initialUnits, eventConfig = {}, callbacks = {}) {
         }
       }
     }
-  }, [units, selectedUnitId, phase, checkGameEnd, onAttack, calculateDamage, unitClickEvent, attackEvent, eventBus]);
+  }, [units, selectedUnitId, phase, checkGameEnd, onAttack, calculateDamage2, unitClickEvent, attackEvent, eventBus]);
   const handleTileClick = useCallback((x, y) => {
     if (tileClickEvent) {
       eventBus.emit(`UI:${tileClickEvent}`, { x, y });
@@ -8144,7 +8143,7 @@ function LinearView({
     /* @__PURE__ */ jsx(HStack, { className: "flex-wrap items-center", gap: "xs", children: trait.states.map((state, i) => {
       const isDone = i < currentIdx;
       const isCurrent = i === currentIdx;
-      return /* @__PURE__ */ jsxs(React25__default.Fragment, { children: [
+      return /* @__PURE__ */ jsxs(React42__default.Fragment, { children: [
         i > 0 && /* @__PURE__ */ jsx(
           Typography,
           {
@@ -8562,7 +8561,7 @@ var FEATURE_TYPES = [
   "castle"
 ];
 function CollapsibleSection({ title, expanded, onToggle, children, className }) {
-  const Icon2 = expanded ? ChevronDown : ChevronRight;
+  const Icon3 = expanded ? ChevronDown : ChevronRight;
   return /* @__PURE__ */ jsxs(VStack, { gap: "xs", className, children: [
     /* @__PURE__ */ jsx(
       Button,
@@ -8572,7 +8571,7 @@ function CollapsibleSection({ title, expanded, onToggle, children, className }) 
         onClick: onToggle,
         className: "w-full justify-start text-left",
         children: /* @__PURE__ */ jsxs(HStack, { gap: "xs", align: "center", children: [
-          /* @__PURE__ */ jsx(Icon2, { size: 14 }),
+          /* @__PURE__ */ jsx(Icon3, { size: 14 }),
           /* @__PURE__ */ jsx(Typography, { variant: "label", weight: "semibold", children: title })
         ] })
       }
@@ -8704,8 +8703,2285 @@ function EditorToolbar({ mode, onModeChange, className }) {
   )) });
 }
 EditorToolbar.displayName = "EditorToolbar";
+var DRAG_MIME2 = "application/x-almadar-slot-item";
+var SIZE_CONFIG3 = {
+  sm: { px: "px-2 py-1", icon: "text-lg", text: "text-xs" },
+  md: { px: "px-3 py-2", icon: "text-2xl", text: "text-sm" },
+  lg: { px: "px-4 py-3", icon: "text-3xl", text: "text-base" }
+};
+function ActionTile({
+  action,
+  size = "md",
+  disabled = false,
+  categoryColors,
+  className
+}) {
+  const config = SIZE_CONFIG3[size];
+  const catColor = categoryColors?.[action.category];
+  const handleDragStart = useCallback((e) => {
+    if (disabled) {
+      e.preventDefault();
+      return;
+    }
+    e.dataTransfer.setData(DRAG_MIME2, JSON.stringify(action));
+    e.dataTransfer.effectAllowed = "copy";
+  }, [action, disabled]);
+  return /* @__PURE__ */ jsxs(
+    Box,
+    {
+      display: "flex",
+      className: cn(
+        "flex-col items-center gap-1 rounded-lg border-2 transition-all select-none",
+        config.px,
+        disabled ? "opacity-40 cursor-not-allowed border-border bg-muted" : "cursor-grab active:cursor-grabbing hover:scale-105 hover:shadow-md border-border bg-card",
+        className
+      ),
+      style: {
+        backgroundColor: !disabled && catColor ? catColor.bg : void 0,
+        borderColor: !disabled && catColor ? catColor.border : void 0
+      },
+      draggable: !disabled,
+      onDragStart: handleDragStart,
+      children: [
+        /* @__PURE__ */ jsx(Typography, { variant: "body1", className: cn(config.icon, "leading-none"), children: action.iconEmoji || "\u2726" }),
+        /* @__PURE__ */ jsx(Typography, { variant: "caption", className: cn(config.text, "text-foreground font-medium whitespace-nowrap"), children: action.name })
+      ]
+    }
+  );
+}
+ActionTile.displayName = "ActionTile";
+function ActionPalette({
+  actions,
+  usedActionIds = [],
+  allowDuplicates = true,
+  categoryColors,
+  size = "md",
+  label,
+  className
+}) {
+  const { t } = useTranslate();
+  return /* @__PURE__ */ jsxs(VStack, { className: cn("p-3 rounded-lg bg-card border border-border", className), gap: "sm", children: [
+    /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground font-medium", children: label ?? t("sequencer.actions") }),
+    /* @__PURE__ */ jsx(HStack, { className: "flex-wrap", gap: "sm", children: actions.map((action) => /* @__PURE__ */ jsx(
+      ActionTile,
+      {
+        action,
+        size,
+        categoryColors,
+        disabled: !allowDuplicates && usedActionIds.includes(action.id)
+      },
+      action.id
+    )) })
+  ] });
+}
+ActionPalette.displayName = "ActionPalette";
+function SequenceBar({
+  slots,
+  maxSlots,
+  onSlotDrop,
+  onSlotRemove,
+  playing = false,
+  currentStep = -1,
+  categoryColors,
+  slotFeedback,
+  size = "lg",
+  className
+}) {
+  const handleDrop = useCallback((index) => (item) => {
+    if (playing) return;
+    onSlotDrop(index, item);
+  }, [onSlotDrop, playing]);
+  const handleRemove = useCallback((index) => () => {
+    if (playing) return;
+    onSlotRemove(index);
+  }, [onSlotRemove, playing]);
+  const paddedSlots = Array.from({ length: maxSlots }, (_, i) => slots[i]);
+  return /* @__PURE__ */ jsx(HStack, { className: cn("items-center", className), gap: "sm", children: paddedSlots.map((slot, i) => /* @__PURE__ */ jsxs(React42__default.Fragment, { children: [
+    i > 0 && /* @__PURE__ */ jsx(
+      Typography,
+      {
+        variant: "body1",
+        className: cn(
+          "text-lg",
+          currentStep >= 0 && i <= currentStep ? "text-primary" : "text-muted-foreground"
+        ),
+        children: "\u2192"
+      }
+    ),
+    /* @__PURE__ */ jsx(
+      TraitSlot,
+      {
+        slotNumber: i + 1,
+        equippedItem: slot,
+        size,
+        categoryColors,
+        onItemDrop: handleDrop(i),
+        onRemove: slot ? handleRemove(i) : void 0,
+        draggable: !playing && !!slot,
+        selected: currentStep === i,
+        locked: playing,
+        feedback: slotFeedback?.[i]
+      }
+    )
+  ] }, i)) });
+}
+SequenceBar.displayName = "SequenceBar";
+var ENCOURAGEMENT_KEYS = [
+  "puzzle.tryAgain1",
+  "puzzle.tryAgain2",
+  "puzzle.tryAgain3"
+];
+var stepLabel = (slot, i) => slot ? `${i + 1}. ${slot.name}` : `Step ${i + 1}`;
+function computeSlotFeedback(playerSeq, solutions) {
+  let bestSolution = solutions[0];
+  let bestMatches = -1;
+  for (const sol of solutions) {
+    const matches = sol.filter((id, i) => id === playerSeq[i]).length;
+    if (matches > bestMatches) {
+      bestMatches = matches;
+      bestSolution = sol;
+    }
+  }
+  return playerSeq.map(
+    (id, i) => id !== void 0 && id === bestSolution[i] ? "correct" : "wrong"
+  );
+}
+function SequencerBoard({
+  entity,
+  categoryColors,
+  stepDurationMs = 1e3,
+  playEvent,
+  completeEvent,
+  className
+}) {
+  const { emit } = useEventBus();
+  const { t } = useTranslate();
+  const [slots, setSlots] = useState(
+    () => Array.from({ length: entity.maxSlots }, () => void 0)
+  );
+  const [playState, setPlayState] = useState("idle");
+  const [currentStep, setCurrentStep] = useState(-1);
+  const [attempts, setAttempts] = useState(0);
+  const [slotFeedback, setSlotFeedback] = useState(
+    () => Array.from({ length: entity.maxSlots }, () => null)
+  );
+  const timerRef = useRef(null);
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }, []);
+  const handleSlotDrop = useCallback((index, item) => {
+    setSlots((prev) => {
+      const next = [...prev];
+      next[index] = item;
+      return next;
+    });
+    setSlotFeedback((prev) => {
+      const next = [...prev];
+      next[index] = null;
+      return next;
+    });
+    emit("UI:PLAY_SOUND", { key: "drop_slot" });
+  }, [emit]);
+  const handleSlotRemove = useCallback((index) => {
+    setSlots((prev) => {
+      const next = [...prev];
+      next[index] = void 0;
+      return next;
+    });
+    setSlotFeedback((prev) => {
+      const next = [...prev];
+      next[index] = null;
+      return next;
+    });
+    emit("UI:PLAY_SOUND", { key: "back" });
+  }, [emit]);
+  const handleReset = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setSlots(Array.from({ length: entity.maxSlots }, () => void 0));
+    setPlayState("idle");
+    setCurrentStep(-1);
+    setAttempts(0);
+    setSlotFeedback(Array.from({ length: entity.maxSlots }, () => null));
+  }, [entity.maxSlots]);
+  const filledSlots = slots.filter((s) => !!s);
+  const canPlay = filledSlots.length > 0 && playState === "idle";
+  const handlePlay = useCallback(() => {
+    if (!canPlay) return;
+    setSlotFeedback(Array.from({ length: entity.maxSlots }, () => null));
+    emit("UI:PLAY_SOUND", { key: "confirm" });
+    const sequence = slots.map((s) => s?.id || "");
+    if (playEvent) {
+      emit(`UI:${playEvent}`, { sequence });
+    }
+    setPlayState("playing");
+    setCurrentStep(0);
+    let step = 0;
+    const advance = () => {
+      step++;
+      if (step >= entity.maxSlots) {
+        const playerSeq = slots.map((s) => s?.id);
+        const playerIds = slots.filter(Boolean).map((s) => s?.id || "");
+        const success = entity.solutions.some(
+          (sol) => sol.length === playerIds.length && sol.every((id, i) => id === playerIds[i])
+        );
+        if (success) {
+          setPlayState("success");
+          setCurrentStep(-1);
+          emit("UI:PLAY_SOUND", { key: "levelComplete" });
+          if (completeEvent) {
+            emit(`UI:${completeEvent}`, { success: true, sequence: playerIds });
+          }
+        } else {
+          setAttempts((prev) => prev + 1);
+          const feedback = computeSlotFeedback(playerSeq, entity.solutions);
+          setSlotFeedback(feedback);
+          setPlayState("idle");
+          setCurrentStep(-1);
+          emit("UI:PLAY_SOUND", { key: "fail" });
+          const correctCount2 = feedback.filter((f) => f === "correct").length;
+          for (let ci = 0; ci < correctCount2; ci++) {
+            setTimeout(() => {
+              emit("UI:PLAY_SOUND", { key: "correctSlot" });
+            }, 300 + ci * 150);
+          }
+        }
+      } else {
+        setCurrentStep(step);
+        timerRef.current = setTimeout(advance, stepDurationMs);
+      }
+    };
+    timerRef.current = setTimeout(advance, stepDurationMs);
+  }, [canPlay, slots, entity.maxSlots, entity.solutions, stepDurationMs, playEvent, completeEvent, emit]);
+  const machine = {
+    name: entity.title,
+    description: entity.description,
+    states: slots.map((s, i) => stepLabel(s, i)),
+    currentState: currentStep >= 0 ? stepLabel(slots[currentStep], currentStep) : "__idle__",
+    transitions: slots.slice(0, -1).map((s, i) => ({
+      from: stepLabel(s, i),
+      to: stepLabel(slots[i + 1], i + 1),
+      event: "NEXT"
+    }))
+  };
+  const usedIds = entity.allowDuplicates === false ? slots.filter(Boolean).map((s) => s?.id || "") : [];
+  const showHint = attempts >= 3 && !!entity.hint;
+  const hasFeedback = slotFeedback.some((f) => f !== null);
+  const correctCount = slotFeedback.filter((f) => f === "correct").length;
+  const encourageKey = ENCOURAGEMENT_KEYS[Math.min(attempts - 1, ENCOURAGEMENT_KEYS.length - 1)] ?? ENCOURAGEMENT_KEYS[0];
+  return /* @__PURE__ */ jsxs(VStack, { className: cn("p-4 gap-6", className), children: [
+    /* @__PURE__ */ jsxs(VStack, { gap: "xs", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "h4", className: "text-foreground", children: entity.title }),
+      /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground", children: entity.description })
+    ] }),
+    showHint && /* @__PURE__ */ jsx(Box, { className: "p-3 rounded-lg bg-accent/10 border border-accent/30", children: /* @__PURE__ */ jsxs(HStack, { className: "items-start", gap: "xs", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-accent font-bold shrink-0", children: "\u{1F4A1} " + t("game.hint") + ":" }),
+      /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-foreground", children: entity.hint })
+    ] }) }),
+    filledSlots.length > 0 && /* @__PURE__ */ jsx(TraitStateViewer, { trait: machine, variant: "linear", size: "md" }),
+    /* @__PURE__ */ jsxs(VStack, { gap: "xs", children: [
+      /* @__PURE__ */ jsxs(HStack, { className: "items-center justify-between", children: [
+        /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground font-medium", children: t("sequencer.yourSequence") + ":" }),
+        hasFeedback && playState === "idle" && /* @__PURE__ */ jsxs(Typography, { variant: "caption", className: "text-muted-foreground", children: [
+          `${correctCount}/${entity.maxSlots} `,
+          "\u2705"
+        ] })
+      ] }),
+      /* @__PURE__ */ jsx(
+        SequenceBar,
+        {
+          slots,
+          maxSlots: entity.maxSlots,
+          onSlotDrop: handleSlotDrop,
+          onSlotRemove: handleSlotRemove,
+          playing: playState === "playing",
+          currentStep,
+          categoryColors,
+          slotFeedback,
+          size: "lg"
+        }
+      )
+    ] }),
+    playState !== "playing" && /* @__PURE__ */ jsx(
+      ActionPalette,
+      {
+        actions: entity.availableActions,
+        usedActionIds: usedIds,
+        allowDuplicates: entity.allowDuplicates !== false,
+        categoryColors,
+        label: t("sequencer.dragActions")
+      }
+    ),
+    hasFeedback && playState === "idle" && attempts > 0 && /* @__PURE__ */ jsx(Box, { className: "p-3 rounded-lg bg-warning/10 border border-warning/30 text-center", children: /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-foreground", children: t(encourageKey) }) }),
+    playState === "success" && /* @__PURE__ */ jsx(Box, { className: "p-4 rounded-lg bg-success/20 border border-success text-center", children: /* @__PURE__ */ jsx(Typography, { variant: "h5", className: "text-success", children: entity.successMessage || t("sequencer.levelComplete") }) }),
+    /* @__PURE__ */ jsxs(HStack, { gap: "sm", children: [
+      /* @__PURE__ */ jsx(
+        Button,
+        {
+          variant: "primary",
+          onClick: handlePlay,
+          disabled: !canPlay,
+          children: "\u25B6 " + t("game.play")
+        }
+      ),
+      /* @__PURE__ */ jsx(Button, { variant: "ghost", onClick: handleReset, children: "\u21BA " + t("game.reset") })
+    ] })
+  ] });
+}
+SequencerBoard.displayName = "SequencerBoard";
+function RuleEditor({
+  rule,
+  availableEvents,
+  availableActions,
+  onChange,
+  onRemove,
+  disabled = false,
+  className
+}) {
+  const { t } = useTranslate();
+  const handleWhenChange = useCallback((e) => {
+    onChange({ ...rule, whenEvent: e.target.value });
+  }, [rule, onChange]);
+  const handleThenChange = useCallback((e) => {
+    onChange({ ...rule, thenAction: e.target.value });
+  }, [rule, onChange]);
+  return /* @__PURE__ */ jsxs(HStack, { className: cn("items-center p-2 rounded-lg bg-muted/50 border border-border", className), gap: "sm", children: [
+    /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-primary font-bold whitespace-nowrap", children: t("eventHandler.when") }),
+    /* @__PURE__ */ jsx(
+      Select,
+      {
+        value: rule.whenEvent,
+        onChange: handleWhenChange,
+        options: availableEvents,
+        disabled,
+        className: "flex-1 min-w-0"
+      }
+    ),
+    /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-accent font-bold whitespace-nowrap", children: "\u2192 " + t("eventHandler.then") }),
+    /* @__PURE__ */ jsx(
+      Select,
+      {
+        value: rule.thenAction,
+        onChange: handleThenChange,
+        options: availableActions,
+        disabled,
+        className: "flex-1 min-w-0"
+      }
+    ),
+    onRemove && /* @__PURE__ */ jsx(Button, { variant: "ghost", onClick: onRemove, disabled, className: "shrink-0", children: "\xD7" })
+  ] });
+}
+RuleEditor.displayName = "RuleEditor";
+var STATUS_STYLES2 = {
+  pending: "text-muted-foreground",
+  active: "text-primary animate-pulse",
+  done: "text-success",
+  error: "text-error"
+};
+var STATUS_DOTS = {
+  pending: "\u25CB",
+  active: "\u25CF",
+  done: "\u2714",
+  error: "\u2717"
+};
+function EventLog({
+  entries,
+  maxHeight = 200,
+  label,
+  className
+}) {
+  const { t } = useTranslate();
+  const scrollRef = useRef(null);
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [entries.length]);
+  return /* @__PURE__ */ jsxs(VStack, { className: cn("p-3 rounded-lg bg-card border border-border", className), gap: "sm", children: [
+    /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground font-medium", children: label ?? t("eventHandler.eventLog") }),
+    /* @__PURE__ */ jsx(
+      Box,
+      {
+        ref: scrollRef,
+        className: "overflow-y-auto",
+        style: { maxHeight },
+        children: /* @__PURE__ */ jsxs(VStack, { gap: "xs", children: [
+          entries.length === 0 && /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-muted-foreground italic", children: t("eventHandler.noEvents") }),
+          entries.map((entry) => /* @__PURE__ */ jsxs(HStack, { className: "items-start", gap: "xs", children: [
+            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: STATUS_STYLES2[entry.status], children: STATUS_DOTS[entry.status] }),
+            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-foreground", children: entry.icon }),
+            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: cn("flex-1", STATUS_STYLES2[entry.status]), children: entry.message })
+          ] }, entry.id))
+        ] })
+      }
+    )
+  ] });
+}
+EventLog.displayName = "EventLog";
+var nextRuleId = 1;
+function ObjectRulePanel({
+  object,
+  onRulesChange,
+  disabled = false,
+  className
+}) {
+  const { t } = useTranslate();
+  const maxRules = object.maxRules || 3;
+  const canAdd = object.rules.length < maxRules;
+  const handleRuleChange = useCallback((index, updatedRule) => {
+    const newRules = [...object.rules];
+    newRules[index] = updatedRule;
+    onRulesChange(object.id, newRules);
+  }, [object.id, object.rules, onRulesChange]);
+  const handleRuleRemove = useCallback((index) => {
+    const newRules = object.rules.filter((_, i) => i !== index);
+    onRulesChange(object.id, newRules);
+  }, [object.id, object.rules, onRulesChange]);
+  const handleAddRule = useCallback(() => {
+    if (!canAdd || disabled) return;
+    const firstEvent = object.availableEvents[0]?.value || "";
+    const firstAction = object.availableActions[0]?.value || "";
+    const newRule = {
+      id: `rule-${nextRuleId++}`,
+      whenEvent: firstEvent,
+      thenAction: firstAction
+    };
+    onRulesChange(object.id, [...object.rules, newRule]);
+  }, [canAdd, disabled, object, onRulesChange]);
+  const machine = {
+    name: object.name,
+    states: object.states,
+    currentState: object.currentState,
+    transitions: object.rules.map((r) => ({
+      from: object.currentState,
+      to: object.states.find((s) => s !== object.currentState) || object.currentState,
+      event: r.whenEvent
+    }))
+  };
+  return /* @__PURE__ */ jsxs(VStack, { className: cn("p-4 rounded-lg bg-card border border-border", className), gap: "sm", children: [
+    /* @__PURE__ */ jsxs(HStack, { className: "items-center", gap: "sm", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "h5", children: object.icon }),
+      /* @__PURE__ */ jsxs(VStack, { gap: "none", children: [
+        /* @__PURE__ */ jsx(Typography, { variant: "body1", className: "text-foreground font-bold", children: object.name }),
+        /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-muted-foreground", children: t("eventHandler.state") + ": " + object.currentState })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsx(TraitStateViewer, { trait: machine, variant: "compact", size: "sm" }),
+    /* @__PURE__ */ jsxs(VStack, { gap: "xs", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground font-medium", children: t("eventHandler.rules", { count: object.rules.length, max: maxRules }) + ":" }),
+      object.rules.map((rule, i) => /* @__PURE__ */ jsx(
+        RuleEditor,
+        {
+          rule,
+          availableEvents: object.availableEvents,
+          availableActions: object.availableActions,
+          onChange: (r) => handleRuleChange(i, r),
+          onRemove: () => handleRuleRemove(i),
+          disabled
+        },
+        rule.id
+      )),
+      canAdd && !disabled && /* @__PURE__ */ jsx(Button, { variant: "ghost", onClick: handleAddRule, className: "self-start", children: t("eventHandler.addRule") })
+    ] })
+  ] });
+}
+ObjectRulePanel.displayName = "ObjectRulePanel";
+var ENCOURAGEMENT_KEYS2 = [
+  "puzzle.tryAgain1",
+  "puzzle.tryAgain2",
+  "puzzle.tryAgain3"
+];
+function EventHandlerBoard({
+  entity,
+  stepDurationMs = 800,
+  playEvent,
+  completeEvent,
+  className
+}) {
+  const { emit } = useEventBus();
+  const { t } = useTranslate();
+  const [objects, setObjects] = useState(entity.objects);
+  const [selectedObjectId, setSelectedObjectId] = useState(
+    entity.objects[0]?.id || null
+  );
+  const [playState, setPlayState] = useState("editing");
+  const [eventLog, setEventLog] = useState([]);
+  const [attempts, setAttempts] = useState(0);
+  const timerRef = useRef(null);
+  const logIdCounter = useRef(0);
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }, []);
+  const selectedObject = objects.find((o) => o.id === selectedObjectId) || null;
+  const handleRulesChange = useCallback((objectId, rules) => {
+    setObjects((prev) => prev.map(
+      (o) => o.id === objectId ? { ...o, rules } : o
+    ));
+  }, []);
+  const addLogEntry = useCallback((icon, message, status = "done") => {
+    const id = `log-${logIdCounter.current++}`;
+    setEventLog((prev) => [...prev, { id, timestamp: Date.now(), icon, message, status }]);
+  }, []);
+  const handlePlay = useCallback(() => {
+    if (playState !== "editing") return;
+    if (playEvent) emit(`UI:${playEvent}`, {});
+    setPlayState("playing");
+    setEventLog([]);
+    const allRules = [];
+    objects.forEach((obj) => {
+      obj.rules.forEach((rule) => {
+        allRules.push({ object: obj, rule });
+      });
+    });
+    const triggers = entity.triggerEvents || [];
+    const eventQueue = [...triggers];
+    const firedEvents = /* @__PURE__ */ new Set();
+    let stepIdx = 0;
+    let goalReached = false;
+    const processNext = () => {
+      if (eventQueue.length === 0 || stepIdx > 20) {
+        if (goalReached) {
+          setPlayState("success");
+          if (completeEvent) {
+            emit(`UI:${completeEvent}`, { success: true });
+          }
+        } else {
+          setAttempts((prev) => prev + 1);
+          setPlayState("fail");
+        }
+        return;
+      }
+      const currentEvent = eventQueue.shift();
+      if (firedEvents.has(currentEvent)) {
+        timerRef.current = setTimeout(processNext, 100);
+        return;
+      }
+      firedEvents.add(currentEvent);
+      const matching = allRules.filter((r) => r.rule.whenEvent === currentEvent);
+      if (matching.length === 0) {
+        addLogEntry("\u26A1", t("eventHandler.noListeners", { event: currentEvent }), "done");
+      } else {
+        matching.forEach(({ object, rule }) => {
+          addLogEntry(object.icon, t("eventHandler.heardEvent", { object: object.name, event: currentEvent, action: rule.thenAction }), "done");
+          eventQueue.push(rule.thenAction);
+          if (rule.thenAction === entity.goalEvent) {
+            goalReached = true;
+          }
+        });
+      }
+      if (currentEvent === entity.goalEvent) {
+        goalReached = true;
+      }
+      stepIdx++;
+      timerRef.current = setTimeout(processNext, stepDurationMs);
+    };
+    if (triggers.length > 0) {
+      addLogEntry("\u{1F3AC}", t("eventHandler.simulationStarted", { events: triggers.join(", ") }), "active");
+    }
+    timerRef.current = setTimeout(processNext, stepDurationMs);
+  }, [playState, objects, entity, stepDurationMs, playEvent, completeEvent, emit, addLogEntry, t]);
+  const handleTryAgain = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setPlayState("editing");
+    setEventLog([]);
+  }, []);
+  const handleReset = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setObjects(entity.objects);
+    setPlayState("editing");
+    setEventLog([]);
+    setSelectedObjectId(entity.objects[0]?.id || null);
+    setAttempts(0);
+  }, [entity.objects]);
+  const objectViewers = objects.map((obj) => {
+    const machine = {
+      name: obj.name,
+      states: obj.states,
+      currentState: obj.currentState,
+      transitions: obj.rules.map((r) => ({
+        from: obj.currentState,
+        to: obj.states.find((s) => s !== obj.currentState) || obj.currentState,
+        event: r.whenEvent
+      }))
+    };
+    return { obj, machine };
+  });
+  const showHint = attempts >= 3 && entity.hint;
+  const encourageKey = ENCOURAGEMENT_KEYS2[Math.min(attempts - 1, ENCOURAGEMENT_KEYS2.length - 1)] ?? ENCOURAGEMENT_KEYS2[0];
+  return /* @__PURE__ */ jsxs(VStack, { className: cn("p-4 gap-6", className), children: [
+    /* @__PURE__ */ jsxs(VStack, { gap: "xs", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "h4", className: "text-foreground", children: entity.title }),
+      /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground", children: entity.description }),
+      /* @__PURE__ */ jsxs(HStack, { className: "items-center p-2 rounded bg-primary/10 border border-primary/30", gap: "xs", children: [
+        /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-primary font-bold", children: t("game.goal") + ":" }),
+        /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-foreground", children: entity.goalCondition })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground font-medium", children: t("eventHandler.clickObject") + ":" }),
+      /* @__PURE__ */ jsx(HStack, { className: "flex-wrap", gap: "sm", children: objectViewers.map(({ obj, machine }) => /* @__PURE__ */ jsx(
+        Box,
+        {
+          className: cn(
+            "p-3 rounded-lg border-2 cursor-pointer transition-all hover:scale-105",
+            selectedObjectId === obj.id ? "border-primary bg-primary/10" : "border-border bg-card hover:border-muted-foreground"
+          ),
+          onClick: () => setSelectedObjectId(obj.id),
+          children: /* @__PURE__ */ jsxs(VStack, { gap: "xs", className: "items-center min-w-[120px]", children: [
+            /* @__PURE__ */ jsx(Typography, { variant: "h5", children: obj.icon }),
+            /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-foreground font-medium", children: obj.name }),
+            /* @__PURE__ */ jsx(TraitStateViewer, { trait: machine, variant: "compact", size: "sm" })
+          ] })
+        },
+        obj.id
+      )) })
+    ] }),
+    selectedObject && /* @__PURE__ */ jsx(
+      ObjectRulePanel,
+      {
+        object: selectedObject,
+        onRulesChange: handleRulesChange,
+        disabled: playState !== "editing"
+      }
+    ),
+    eventLog.length > 0 && /* @__PURE__ */ jsx(EventLog, { entries: eventLog }),
+    playState === "success" && /* @__PURE__ */ jsx(Box, { className: "p-4 rounded-lg bg-success/20 border border-success text-center", children: /* @__PURE__ */ jsx(Typography, { variant: "h5", className: "text-success", children: entity.successMessage || t("eventHandler.chainComplete") }) }),
+    playState === "fail" && /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+      /* @__PURE__ */ jsx(Box, { className: "p-4 rounded-lg bg-warning/10 border border-warning/30 text-center", children: /* @__PURE__ */ jsx(Typography, { variant: "body1", className: "text-foreground font-medium", children: t(encourageKey) }) }),
+      showHint && /* @__PURE__ */ jsx(Box, { className: "p-3 rounded-lg bg-accent/10 border border-accent/30", children: /* @__PURE__ */ jsxs(HStack, { className: "items-start", gap: "xs", children: [
+        /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-accent font-bold shrink-0", children: "\u{1F4A1} " + t("game.hint") + ":" }),
+        /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-foreground", children: entity.hint })
+      ] }) })
+    ] }),
+    /* @__PURE__ */ jsxs(HStack, { gap: "sm", children: [
+      playState === "fail" ? /* @__PURE__ */ jsx(Button, { variant: "primary", onClick: handleTryAgain, children: "\u{1F504} " + t("puzzle.tryAgainButton") }) : /* @__PURE__ */ jsx(
+        Button,
+        {
+          variant: "primary",
+          onClick: handlePlay,
+          disabled: playState !== "editing",
+          children: "\u25B6 " + t("game.play")
+        }
+      ),
+      /* @__PURE__ */ jsx(Button, { variant: "ghost", onClick: handleReset, children: "\u21BA " + t("game.reset") })
+    ] })
+  ] });
+}
+EventHandlerBoard.displayName = "EventHandlerBoard";
+function StateNode2({
+  name,
+  isCurrent = false,
+  isSelected = false,
+  isInitial = false,
+  position,
+  onClick,
+  className
+}) {
+  return /* @__PURE__ */ jsx(
+    Box,
+    {
+      position: "absolute",
+      display: "flex",
+      className: cn(
+        "items-center justify-center rounded-full border-3 transition-all cursor-pointer select-none",
+        "min-w-[80px] h-[80px] px-3",
+        isCurrent && "bg-primary/20 border-primary shadow-lg shadow-primary/30 scale-110",
+        isSelected && !isCurrent && "bg-accent/20 border-accent ring-2 ring-accent/50",
+        !isCurrent && !isSelected && "bg-card border-border hover:border-muted-foreground hover:scale-105",
+        className
+      ),
+      style: {
+        left: position.x,
+        top: position.y,
+        transform: "translate(-50%, -50%)"
+      },
+      onClick,
+      children: /* @__PURE__ */ jsxs(Box, { className: "text-center", children: [
+        isInitial && /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-muted-foreground text-xs block", children: "\u25B6 start" }),
+        /* @__PURE__ */ jsx(
+          Typography,
+          {
+            variant: "body2",
+            className: cn(
+              "font-bold whitespace-nowrap",
+              isCurrent ? "text-primary" : "text-foreground"
+            ),
+            children: name
+          }
+        )
+      ] })
+    }
+  );
+}
+StateNode2.displayName = "StateNode";
+var NODE_RADIUS = 40;
+function TransitionArrow({
+  from,
+  to,
+  eventLabel,
+  guardHint,
+  isActive = false,
+  onClick,
+  className
+}) {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist === 0) return /* @__PURE__ */ jsx(Fragment, {});
+  const nx = dx / dist;
+  const ny = dy / dist;
+  const startX = from.x + nx * NODE_RADIUS;
+  const startY = from.y + ny * NODE_RADIUS;
+  const endX = to.x - nx * NODE_RADIUS;
+  const endY = to.y - ny * NODE_RADIUS;
+  const midX = (startX + endX) / 2;
+  const midY = (startY + endY) / 2;
+  const perpX = -ny * 20;
+  const perpY = nx * 20;
+  const ctrlX = midX + perpX;
+  const ctrlY = midY + perpY;
+  const path = `M ${startX} ${startY} Q ${ctrlX} ${ctrlY} ${endX} ${endY}`;
+  return /* @__PURE__ */ jsxs("g", { className: cn("cursor-pointer", className), onClick, children: [
+    /* @__PURE__ */ jsx(
+      "path",
+      {
+        d: path,
+        fill: "none",
+        stroke: isActive ? "var(--color-primary)" : "var(--color-border)",
+        strokeWidth: isActive ? 3 : 2,
+        markerEnd: isActive ? "url(#arrowhead-active)" : "url(#arrowhead)"
+      }
+    ),
+    /* @__PURE__ */ jsx(
+      "text",
+      {
+        x: ctrlX,
+        y: ctrlY - 8,
+        textAnchor: "middle",
+        fill: isActive ? "var(--color-primary)" : "var(--color-foreground)",
+        fontSize: 12,
+        fontWeight: isActive ? "bold" : "normal",
+        className: "select-none",
+        children: eventLabel
+      }
+    ),
+    guardHint && /* @__PURE__ */ jsx(
+      "text",
+      {
+        x: ctrlX,
+        y: ctrlY + 6,
+        textAnchor: "middle",
+        fill: "var(--color-warning)",
+        fontSize: 10,
+        className: "select-none",
+        children: "\u26A0 " + guardHint
+      }
+    )
+  ] });
+}
+TransitionArrow.displayName = "TransitionArrow";
+function VariablePanel({
+  entityName,
+  variables,
+  className
+}) {
+  const { t } = useTranslate();
+  return /* @__PURE__ */ jsxs(VStack, { className: cn("p-3 rounded-lg bg-card border border-border", className), gap: "sm", children: [
+    /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground font-medium", children: t("stateArchitect.variables", { name: entityName }) }),
+    variables.map((v) => {
+      const max = v.max ?? 100;
+      const min = v.min ?? 0;
+      const pct = Math.round((v.value - min) / (max - min) * 100);
+      const isHigh = pct > 80;
+      const isLow = pct < 20;
+      return /* @__PURE__ */ jsxs(VStack, { gap: "none", children: [
+        /* @__PURE__ */ jsxs(HStack, { className: "items-center justify-between", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-foreground font-medium", children: v.name }),
+          /* @__PURE__ */ jsxs(Typography, { variant: "caption", className: cn(
+            isHigh ? "text-error" : isLow ? "text-warning" : "text-foreground"
+          ), children: [
+            v.value,
+            v.unit || "",
+            " / ",
+            max,
+            v.unit || ""
+          ] })
+        ] }),
+        /* @__PURE__ */ jsx(
+          ProgressBar,
+          {
+            value: pct,
+            color: isHigh ? "danger" : isLow ? "warning" : "primary",
+            size: "sm"
+          }
+        )
+      ] }, v.name);
+    })
+  ] });
+}
+VariablePanel.displayName = "VariablePanel";
+function CodeView({
+  data,
+  label,
+  defaultExpanded = false,
+  className
+}) {
+  const { t } = useTranslate();
+  const [expanded, setExpanded] = useState(defaultExpanded);
+  const jsonString = JSON.stringify(data, null, 2);
+  return /* @__PURE__ */ jsxs(VStack, { className: cn("rounded-lg border border-border overflow-hidden", className), gap: "none", children: [
+    /* @__PURE__ */ jsxs(HStack, { className: "items-center justify-between p-2 bg-muted", gap: "sm", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-muted-foreground font-medium", children: label ?? t("stateArchitect.viewCode") }),
+      /* @__PURE__ */ jsx(Button, { variant: "ghost", onClick: () => setExpanded(!expanded), className: "text-xs", children: expanded ? t("stateArchitect.hideJson") : t("stateArchitect.showJson") })
+    ] }),
+    expanded && /* @__PURE__ */ jsx(Box, { className: "p-3 bg-background overflow-x-auto", children: /* @__PURE__ */ jsx(
+      Typography,
+      {
+        variant: "caption",
+        className: "text-foreground font-mono whitespace-pre text-xs leading-relaxed block",
+        children: jsonString
+      }
+    ) })
+  ] });
+}
+CodeView.displayName = "CodeView";
+var ENCOURAGEMENT_KEYS3 = [
+  "puzzle.tryAgain1",
+  "puzzle.tryAgain2",
+  "puzzle.tryAgain3"
+];
+function layoutStates(states, width, height) {
+  const cx = width / 2;
+  const cy = height / 2;
+  const radius = Math.min(cx, cy) - 60;
+  const positions = {};
+  states.forEach((state, i) => {
+    const angle = 2 * Math.PI * i / states.length - Math.PI / 2;
+    positions[state] = {
+      x: cx + radius * Math.cos(angle),
+      y: cy + radius * Math.sin(angle)
+    };
+  });
+  return positions;
+}
+var nextTransId = 100;
+function StateArchitectBoard({
+  entity,
+  stepDurationMs = 600,
+  testEvent,
+  completeEvent,
+  className
+}) {
+  const { emit } = useEventBus();
+  const { t } = useTranslate();
+  const [transitions, setTransitions] = useState(entity.transitions);
+  const [playState, setPlayState] = useState("editing");
+  const [currentState, setCurrentState] = useState(entity.initialState);
+  const [selectedState, setSelectedState] = useState(null);
+  const [testResults, setTestResults] = useState([]);
+  const [variables, setVariables] = useState(entity.variables);
+  const [attempts, setAttempts] = useState(0);
+  const timerRef = useRef(null);
+  const [addingFrom, setAddingFrom] = useState(null);
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }, []);
+  const GRAPH_W = 500;
+  const GRAPH_H = 400;
+  const positions = useMemo(() => layoutStates(entity.states, GRAPH_W, GRAPH_H), [entity.states]);
+  const handleStateClick = useCallback((state) => {
+    if (playState !== "editing") return;
+    if (addingFrom) {
+      if (addingFrom !== state) {
+        const event = entity.availableEvents[0] || "EVENT";
+        const newTrans = {
+          id: `t-${nextTransId++}`,
+          from: addingFrom,
+          to: state,
+          event
+        };
+        setTransitions((prev) => [...prev, newTrans]);
+      }
+      setAddingFrom(null);
+    } else {
+      setSelectedState(state);
+    }
+  }, [playState, addingFrom, entity.availableEvents]);
+  const handleStartAddTransition = useCallback(() => {
+    if (!selectedState) return;
+    setAddingFrom(selectedState);
+  }, [selectedState]);
+  const handleRemoveTransition = useCallback((transId) => {
+    setTransitions((prev) => prev.filter((t2) => t2.id !== transId));
+  }, []);
+  const machine = useMemo(() => ({
+    name: entity.entityName,
+    description: entity.description,
+    states: entity.states,
+    currentState,
+    transitions: transitions.map((t2) => ({
+      from: t2.from,
+      to: t2.to,
+      event: t2.event,
+      guardHint: t2.guardHint
+    }))
+  }), [entity, currentState, transitions]);
+  const handleTest = useCallback(() => {
+    if (playState !== "editing") return;
+    if (testEvent) emit(`UI:${testEvent}`, {});
+    setPlayState("testing");
+    setTestResults([]);
+    const results = [];
+    let testIdx = 0;
+    const runNextTest = () => {
+      if (testIdx >= entity.testCases.length) {
+        const allPassed = results.every((r) => r.passed);
+        setPlayState(allPassed ? "success" : "fail");
+        setTestResults(results);
+        if (allPassed && completeEvent) {
+          emit(`UI:${completeEvent}`, {
+            success: true,
+            passedTests: results.filter((r) => r.passed).length
+          });
+        }
+        if (!allPassed) {
+          setAttempts((prev) => prev + 1);
+        }
+        return;
+      }
+      const testCase = entity.testCases[testIdx];
+      let state = entity.initialState;
+      for (const event of testCase.events) {
+        const trans = transitions.find((t2) => t2.from === state && t2.event === event);
+        if (trans) {
+          state = trans.to;
+        }
+      }
+      setCurrentState(state);
+      results.push({
+        label: testCase.label,
+        passed: state === testCase.expectedState,
+        actualState: state,
+        expectedState: testCase.expectedState
+      });
+      testIdx++;
+      timerRef.current = setTimeout(runNextTest, stepDurationMs);
+    };
+    timerRef.current = setTimeout(runNextTest, stepDurationMs);
+  }, [playState, transitions, entity, stepDurationMs, testEvent, completeEvent, emit]);
+  const handleTryAgain = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setPlayState("editing");
+    setCurrentState(entity.initialState);
+    setTestResults([]);
+  }, [entity.initialState]);
+  const handleReset = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setTransitions(entity.transitions);
+    setPlayState("editing");
+    setCurrentState(entity.initialState);
+    setTestResults([]);
+    setVariables(entity.variables);
+    setSelectedState(null);
+    setAddingFrom(null);
+    setAttempts(0);
+  }, [entity]);
+  const codeData = useMemo(() => ({
+    name: entity.entityName,
+    states: entity.states,
+    initialState: entity.initialState,
+    transitions: transitions.map((t2) => ({
+      from: t2.from,
+      to: t2.to,
+      event: t2.event,
+      ...t2.guardHint ? { guard: t2.guardHint } : {}
+    }))
+  }), [entity, transitions]);
+  return /* @__PURE__ */ jsxs(VStack, { className: cn("p-4 gap-6", className), children: [
+    /* @__PURE__ */ jsxs(VStack, { gap: "xs", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "h4", className: "text-foreground", children: entity.title }),
+      /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground", children: entity.description }),
+      /* @__PURE__ */ jsxs(HStack, { className: "items-center p-2 rounded bg-warning/10 border border-warning/30", gap: "xs", children: [
+        /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-warning font-bold", children: t("game.hint") + ":" }),
+        /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-foreground", children: entity.hint })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs(HStack, { className: "flex-wrap items-start", gap: "lg", children: [
+      /* @__PURE__ */ jsxs(VStack, { gap: "sm", className: "flex-1 min-w-[300px]", children: [
+        /* @__PURE__ */ jsxs(HStack, { className: "items-center justify-between", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground font-medium", children: t("stateArchitect.graph") }),
+          addingFrom && /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-accent animate-pulse", children: t("stateArchitect.clickTarget", { state: addingFrom || "" }) })
+        ] }),
+        /* @__PURE__ */ jsxs(
+          Box,
+          {
+            position: "relative",
+            className: "rounded-lg border border-border bg-background overflow-hidden",
+            style: { width: GRAPH_W, height: GRAPH_H },
+            children: [
+              /* @__PURE__ */ jsxs(
+                "svg",
+                {
+                  width: GRAPH_W,
+                  height: GRAPH_H,
+                  className: "absolute inset-0",
+                  style: { pointerEvents: "none" },
+                  children: [
+                    /* @__PURE__ */ jsxs("defs", { children: [
+                      /* @__PURE__ */ jsx("marker", { id: "arrowhead", markerWidth: "10", markerHeight: "7", refX: "10", refY: "3.5", orient: "auto", children: /* @__PURE__ */ jsx("polygon", { points: "0 0, 10 3.5, 0 7", fill: "var(--color-border)" }) }),
+                      /* @__PURE__ */ jsx("marker", { id: "arrowhead-active", markerWidth: "10", markerHeight: "7", refX: "10", refY: "3.5", orient: "auto", children: /* @__PURE__ */ jsx("polygon", { points: "0 0, 10 3.5, 0 7", fill: "var(--color-primary)" }) })
+                    ] }),
+                    transitions.map((t2) => {
+                      const fromPos = positions[t2.from];
+                      const toPos = positions[t2.to];
+                      if (!fromPos || !toPos) return null;
+                      const isActive = t2.from === currentState;
+                      return /* @__PURE__ */ jsx(
+                        TransitionArrow,
+                        {
+                          from: fromPos,
+                          to: toPos,
+                          eventLabel: t2.event,
+                          guardHint: t2.guardHint,
+                          isActive
+                        },
+                        t2.id
+                      );
+                    })
+                  ]
+                }
+              ),
+              entity.states.map((state) => /* @__PURE__ */ jsx(
+                StateNode2,
+                {
+                  name: state,
+                  position: positions[state],
+                  isCurrent: state === currentState,
+                  isSelected: state === selectedState,
+                  isInitial: state === entity.initialState,
+                  onClick: () => handleStateClick(state)
+                },
+                state
+              ))
+            ]
+          }
+        ),
+        playState === "editing" && /* @__PURE__ */ jsx(HStack, { gap: "sm", children: /* @__PURE__ */ jsx(
+          Button,
+          {
+            variant: "ghost",
+            onClick: handleStartAddTransition,
+            disabled: !selectedState,
+            children: selectedState ? t("stateArchitect.addTransition", { state: selectedState }) : t("stateArchitect.addTransitionPrompt")
+          }
+        ) }),
+        transitions.length > 0 && /* @__PURE__ */ jsxs(VStack, { gap: "xs", className: "p-3 rounded-lg bg-muted/50 border border-border", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-muted-foreground font-medium", children: t("stateArchitect.transitions", { count: transitions.length }) + ":" }),
+          transitions.map((t2) => /* @__PURE__ */ jsxs(HStack, { className: "items-center text-xs", gap: "xs", children: [
+            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-foreground", children: t2.from }),
+            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-muted-foreground", children: "\u2014[" }),
+            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-accent font-medium", children: t2.event }),
+            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-muted-foreground", children: "]\u2192" }),
+            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-success", children: t2.to }),
+            t2.guardHint && /* @__PURE__ */ jsxs(Typography, { variant: "caption", className: "text-warning", children: [
+              "(",
+              t2.guardHint,
+              ")"
+            ] }),
+            playState === "editing" && /* @__PURE__ */ jsx(
+              Button,
+              {
+                variant: "ghost",
+                onClick: () => handleRemoveTransition(t2.id),
+                className: "text-xs ml-auto",
+                children: "\xD7"
+              }
+            )
+          ] }, t2.id))
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxs(VStack, { gap: "sm", className: "w-[280px] shrink-0", children: [
+        /* @__PURE__ */ jsx(TraitStateViewer, { trait: machine, variant: "full", size: "sm" }),
+        /* @__PURE__ */ jsx(
+          VariablePanel,
+          {
+            entityName: entity.entityName,
+            variables
+          }
+        ),
+        testResults.length > 0 && /* @__PURE__ */ jsxs(VStack, { className: "p-3 rounded-lg bg-card border border-border", gap: "xs", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground font-medium", children: t("stateArchitect.testResults") + ":" }),
+          testResults.map((r, i) => /* @__PURE__ */ jsxs(HStack, { className: "items-center text-xs", gap: "xs", children: [
+            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: r.passed ? "text-success" : "text-error", children: r.passed ? "\u2714" : "\u2717" }),
+            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-foreground flex-1", children: r.label }),
+            !r.passed && /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-error", children: t("stateArchitect.gotState", { state: r.actualState }) })
+          ] }, i))
+        ] }),
+        entity.showCodeView !== false && /* @__PURE__ */ jsx(CodeView, { data: codeData, label: "View Code" })
+      ] })
+    ] }),
+    playState === "success" && /* @__PURE__ */ jsx(Box, { className: "p-4 rounded-lg bg-success/20 border border-success text-center", children: /* @__PURE__ */ jsx(Typography, { variant: "h5", className: "text-success", children: entity.successMessage || t("stateArchitect.allPassed") }) }),
+    playState === "fail" && /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+      /* @__PURE__ */ jsx(Box, { className: "p-4 rounded-lg bg-warning/10 border border-warning/30 text-center", children: /* @__PURE__ */ jsx(Typography, { variant: "body1", className: "text-foreground font-medium", children: t(ENCOURAGEMENT_KEYS3[Math.min(attempts - 1, ENCOURAGEMENT_KEYS3.length - 1)] ?? ENCOURAGEMENT_KEYS3[0]) }) }),
+      attempts >= 3 && entity.hint && /* @__PURE__ */ jsx(Box, { className: "p-3 rounded-lg bg-accent/10 border border-accent/30", children: /* @__PURE__ */ jsxs(HStack, { className: "items-start", gap: "xs", children: [
+        /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-accent font-bold shrink-0", children: "\u{1F4A1} " + t("game.hint") + ":" }),
+        /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-foreground", children: entity.hint })
+      ] }) })
+    ] }),
+    /* @__PURE__ */ jsxs(HStack, { gap: "sm", children: [
+      playState === "fail" ? /* @__PURE__ */ jsx(Button, { variant: "primary", onClick: handleTryAgain, children: "\u{1F504} " + t("puzzle.tryAgainButton") }) : /* @__PURE__ */ jsx(
+        Button,
+        {
+          variant: "primary",
+          onClick: handleTest,
+          disabled: playState !== "editing",
+          children: "\u25B6 " + t("game.runTests")
+        }
+      ),
+      /* @__PURE__ */ jsx(Button, { variant: "ghost", onClick: handleReset, children: "\u21BA " + t("game.reset") })
+    ] })
+  ] });
+}
+StateArchitectBoard.displayName = "StateArchitectBoard";
+function SimulatorBoard({
+  entity,
+  completeEvent = "PUZZLE_COMPLETE",
+  className
+}) {
+  const { emit } = useEventBus();
+  const { t } = useTranslate();
+  const [values, setValues] = useState(() => {
+    const init = {};
+    for (const p2 of entity.parameters) {
+      init[p2.id] = p2.initial;
+    }
+    return init;
+  });
+  const [submitted, setSubmitted] = useState(false);
+  const [attempts, setAttempts] = useState(0);
+  const [showHint, setShowHint] = useState(false);
+  const computeOutput = useCallback((params) => {
+    try {
+      const fn = new Function("params", `return (${entity.computeExpression})`);
+      return fn(params);
+    } catch {
+      return 0;
+    }
+  }, [entity.computeExpression]);
+  const output = useMemo(() => computeOutput(values), [computeOutput, values]);
+  const isCorrect = Math.abs(output - entity.targetValue) <= entity.targetTolerance;
+  const handleParameterChange = (id, value) => {
+    if (submitted) return;
+    setValues((prev) => ({ ...prev, [id]: value }));
+  };
+  const handleSubmit = () => {
+    setSubmitted(true);
+    setAttempts((a) => a + 1);
+    if (isCorrect) {
+      emit(`UI:${completeEvent}`, { success: true, attempts: attempts + 1 });
+    }
+  };
+  const handleReset = () => {
+    setSubmitted(false);
+    if (attempts >= 2 && entity.hint) {
+      setShowHint(true);
+    }
+  };
+  const handleFullReset = () => {
+    const init = {};
+    for (const p2 of entity.parameters) {
+      init[p2.id] = p2.initial;
+    }
+    setValues(init);
+    setSubmitted(false);
+    setAttempts(0);
+    setShowHint(false);
+  };
+  return /* @__PURE__ */ jsx(Box, { className, children: /* @__PURE__ */ jsxs(VStack, { gap: "lg", className: "p-4", children: [
+    /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "h4", weight: "bold", children: entity.title }),
+      /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.description })
+    ] }) }),
+    /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "md", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "small", weight: "bold", className: "uppercase tracking-wider text-[var(--color-muted-foreground)]", children: t("simulator.parameters") }),
+      entity.parameters.map((param) => /* @__PURE__ */ jsxs(VStack, { gap: "xs", children: [
+        /* @__PURE__ */ jsxs(HStack, { justify: "between", align: "center", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "body", weight: "medium", children: param.label }),
+          /* @__PURE__ */ jsxs(Badge, { size: "sm", children: [
+            values[param.id],
+            " ",
+            param.unit
+          ] })
+        ] }),
+        /* @__PURE__ */ jsx(
+          "input",
+          {
+            type: "range",
+            min: param.min,
+            max: param.max,
+            step: param.step,
+            value: values[param.id],
+            onChange: (e) => handleParameterChange(param.id, Number(e.target.value)),
+            disabled: submitted,
+            className: "w-full accent-[var(--color-foreground)]"
+          }
+        ),
+        /* @__PURE__ */ jsxs(HStack, { justify: "between", children: [
+          /* @__PURE__ */ jsxs(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: [
+            param.min,
+            " ",
+            param.unit
+          ] }),
+          /* @__PURE__ */ jsxs(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: [
+            param.max,
+            " ",
+            param.unit
+          ] })
+        ] })
+      ] }, param.id))
+    ] }) }),
+    /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", align: "center", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "small", weight: "bold", className: "uppercase tracking-wider text-[var(--color-muted-foreground)]", children: entity.outputLabel }),
+      /* @__PURE__ */ jsxs(Typography, { variant: "h3", weight: "bold", children: [
+        output.toFixed(2),
+        " ",
+        entity.outputUnit
+      ] }),
+      submitted && /* @__PURE__ */ jsxs(HStack, { gap: "xs", align: "center", children: [
+        /* @__PURE__ */ jsx(Icon, { icon: isCorrect ? CheckCircle : XCircle, size: "sm", className: isCorrect ? "text-green-600" : "text-red-600" }),
+        /* @__PURE__ */ jsx(Typography, { variant: "body", className: isCorrect ? "text-green-600" : "text-red-600", children: isCorrect ? entity.successMessage ?? t("simulator.correct") : entity.failMessage ?? t("simulator.incorrect") })
+      ] }),
+      /* @__PURE__ */ jsxs(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: [
+        t("simulator.target"),
+        ": ",
+        entity.targetValue,
+        " ",
+        entity.outputUnit,
+        " (\xB1",
+        entity.targetTolerance,
+        ")"
+      ] })
+    ] }) }),
+    showHint && entity.hint && /* @__PURE__ */ jsx(Card, { className: "p-4 border-l-4 border-l-yellow-500", children: /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.hint }) }),
+    /* @__PURE__ */ jsxs(HStack, { gap: "sm", justify: "center", children: [
+      !submitted ? /* @__PURE__ */ jsxs(Button, { variant: "primary", onClick: handleSubmit, children: [
+        /* @__PURE__ */ jsx(Icon, { icon: Play, size: "sm" }),
+        t("simulator.simulate")
+      ] }) : !isCorrect ? /* @__PURE__ */ jsx(Button, { variant: "primary", onClick: handleReset, children: t("simulator.tryAgain") }) : null,
+      /* @__PURE__ */ jsxs(Button, { variant: "secondary", onClick: handleFullReset, children: [
+        /* @__PURE__ */ jsx(Icon, { icon: RotateCcw, size: "sm" }),
+        t("simulator.reset")
+      ] })
+    ] })
+  ] }) });
+}
+SimulatorBoard.displayName = "SimulatorBoard";
+function ClassifierBoard({
+  entity,
+  completeEvent = "PUZZLE_COMPLETE",
+  className
+}) {
+  const { emit } = useEventBus();
+  const { t } = useTranslate();
+  const [assignments, setAssignments] = useState({});
+  const [submitted, setSubmitted] = useState(false);
+  const [attempts, setAttempts] = useState(0);
+  const [showHint, setShowHint] = useState(false);
+  const unassignedItems = entity.items.filter((item) => !assignments[item.id]);
+  const allAssigned = Object.keys(assignments).length === entity.items.length;
+  const results = submitted ? entity.items.map((item) => ({
+    item,
+    assigned: assignments[item.id],
+    correct: assignments[item.id] === item.correctCategory
+  })) : [];
+  const allCorrect = results.length > 0 && results.every((r) => r.correct);
+  const correctCount = results.filter((r) => r.correct).length;
+  const handleAssign = (itemId, categoryId) => {
+    if (submitted) return;
+    setAssignments((prev) => ({ ...prev, [itemId]: categoryId }));
+  };
+  const handleUnassign = (itemId) => {
+    if (submitted) return;
+    setAssignments((prev) => {
+      const next = { ...prev };
+      delete next[itemId];
+      return next;
+    });
+  };
+  const handleSubmit = useCallback(() => {
+    setSubmitted(true);
+    setAttempts((a) => a + 1);
+    const correct = entity.items.every((item) => assignments[item.id] === item.correctCategory);
+    if (correct) {
+      emit(`UI:${completeEvent}`, { success: true, attempts: attempts + 1 });
+    }
+  }, [entity.items, assignments, attempts, completeEvent, emit]);
+  const handleReset = () => {
+    setSubmitted(false);
+    if (attempts >= 2 && entity.hint) {
+      setShowHint(true);
+    }
+  };
+  const handleFullReset = () => {
+    setAssignments({});
+    setSubmitted(false);
+    setAttempts(0);
+    setShowHint(false);
+  };
+  return /* @__PURE__ */ jsx(Box, { className, children: /* @__PURE__ */ jsxs(VStack, { gap: "lg", className: "p-4", children: [
+    /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "h4", weight: "bold", children: entity.title }),
+      /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.description })
+    ] }) }),
+    unassignedItems.length > 0 && /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "small", weight: "bold", className: "uppercase tracking-wider text-[var(--color-muted-foreground)]", children: t("classifier.itemsToSort") }),
+      /* @__PURE__ */ jsx(HStack, { gap: "sm", className: "flex-wrap", children: unassignedItems.map((item) => /* @__PURE__ */ jsx(Badge, { size: "md", className: "cursor-pointer", children: item.label }, item.id)) })
+    ] }) }),
+    /* @__PURE__ */ jsx(VStack, { gap: "md", children: entity.categories.map((cat) => {
+      const catItems = entity.items.filter((item) => assignments[item.id] === cat.id);
+      return /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+        /* @__PURE__ */ jsxs(HStack, { justify: "between", align: "center", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "body", weight: "bold", children: cat.label }),
+          /* @__PURE__ */ jsx(Badge, { size: "sm", children: catItems.length })
+        ] }),
+        /* @__PURE__ */ jsx(HStack, { gap: "xs", className: "flex-wrap min-h-[2rem]", children: catItems.map((item) => {
+          const result = results.find((r) => r.item.id === item.id);
+          return /* @__PURE__ */ jsxs(
+            Badge,
+            {
+              size: "sm",
+              className: `cursor-pointer ${result ? result.correct ? "border-green-500 bg-green-50 dark:bg-green-950" : "border-red-500 bg-red-50 dark:bg-red-950" : ""}`,
+              onClick: () => handleUnassign(item.id),
+              children: [
+                item.label,
+                result && /* @__PURE__ */ jsx(Icon, { icon: result.correct ? CheckCircle : XCircle, size: "xs", className: result.correct ? "text-green-600" : "text-red-600" })
+              ]
+            },
+            item.id
+          );
+        }) }),
+        !submitted && unassignedItems.length > 0 && /* @__PURE__ */ jsx(HStack, { gap: "xs", className: "flex-wrap", children: unassignedItems.map((item) => /* @__PURE__ */ jsxs(
+          Button,
+          {
+            size: "sm",
+            variant: "ghost",
+            onClick: () => handleAssign(item.id, cat.id),
+            className: "text-xs opacity-50 hover:opacity-100",
+            children: [
+              "+ ",
+              item.label
+            ]
+          },
+          item.id
+        )) })
+      ] }) }, cat.id);
+    }) }),
+    submitted && /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", align: "center", children: [
+      /* @__PURE__ */ jsx(Icon, { icon: allCorrect ? CheckCircle : XCircle, size: "lg", className: allCorrect ? "text-green-600" : "text-red-600" }),
+      /* @__PURE__ */ jsx(Typography, { variant: "body", weight: "bold", children: allCorrect ? entity.successMessage ?? t("classifier.allCorrect") : `${correctCount}/${entity.items.length} ${t("classifier.correct")}` }),
+      !allCorrect && entity.failMessage && /* @__PURE__ */ jsx(Typography, { variant: "body", className: "text-[var(--color-muted-foreground)]", children: entity.failMessage })
+    ] }) }),
+    showHint && entity.hint && /* @__PURE__ */ jsx(Card, { className: "p-4 border-l-4 border-l-yellow-500", children: /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.hint }) }),
+    /* @__PURE__ */ jsxs(HStack, { gap: "sm", justify: "center", children: [
+      !submitted ? /* @__PURE__ */ jsxs(Button, { variant: "primary", onClick: handleSubmit, disabled: !allAssigned, children: [
+        /* @__PURE__ */ jsx(Icon, { icon: Send, size: "sm" }),
+        t("classifier.check")
+      ] }) : !allCorrect ? /* @__PURE__ */ jsx(Button, { variant: "primary", onClick: handleReset, children: t("classifier.tryAgain") }) : null,
+      /* @__PURE__ */ jsxs(Button, { variant: "secondary", onClick: handleFullReset, children: [
+        /* @__PURE__ */ jsx(Icon, { icon: RotateCcw, size: "sm" }),
+        t("classifier.reset")
+      ] })
+    ] })
+  ] }) });
+}
+ClassifierBoard.displayName = "ClassifierBoard";
+function BuilderBoard({
+  entity,
+  completeEvent = "PUZZLE_COMPLETE",
+  className
+}) {
+  const { emit } = useEventBus();
+  const { t } = useTranslate();
+  const [placements, setPlacements] = useState({});
+  const [submitted, setSubmitted] = useState(false);
+  const [attempts, setAttempts] = useState(0);
+  const [showHint, setShowHint] = useState(false);
+  const usedComponentIds = new Set(Object.values(placements));
+  const availableComponents = entity.components.filter((c) => !usedComponentIds.has(c.id));
+  const [selectedComponent, setSelectedComponent] = useState(null);
+  const allPlaced = Object.keys(placements).length === entity.slots.length;
+  const results = submitted ? entity.slots.map((slot) => ({
+    slot,
+    placed: placements[slot.id],
+    correct: placements[slot.id] === slot.acceptsComponentId
+  })) : [];
+  const allCorrect = results.length > 0 && results.every((r) => r.correct);
+  const handlePlaceComponent = (slotId) => {
+    if (submitted || !selectedComponent) return;
+    setPlacements((prev) => ({ ...prev, [slotId]: selectedComponent }));
+    setSelectedComponent(null);
+  };
+  const handleRemoveFromSlot = (slotId) => {
+    if (submitted) return;
+    setPlacements((prev) => {
+      const next = { ...prev };
+      delete next[slotId];
+      return next;
+    });
+  };
+  const handleSubmit = useCallback(() => {
+    setSubmitted(true);
+    setAttempts((a) => a + 1);
+    const correct = entity.slots.every((slot) => placements[slot.id] === slot.acceptsComponentId);
+    if (correct) {
+      emit(`UI:${completeEvent}`, { success: true, attempts: attempts + 1 });
+    }
+  }, [entity.slots, placements, attempts, completeEvent, emit]);
+  const handleReset = () => {
+    setSubmitted(false);
+    if (attempts >= 2 && entity.hint) {
+      setShowHint(true);
+    }
+  };
+  const handleFullReset = () => {
+    setPlacements({});
+    setSubmitted(false);
+    setSelectedComponent(null);
+    setAttempts(0);
+    setShowHint(false);
+  };
+  const getComponentById = (id) => entity.components.find((c) => c.id === id);
+  return /* @__PURE__ */ jsx(Box, { className, children: /* @__PURE__ */ jsxs(VStack, { gap: "lg", className: "p-4", children: [
+    /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "h4", weight: "bold", children: entity.title }),
+      /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.description })
+    ] }) }),
+    /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "small", weight: "bold", className: "uppercase tracking-wider text-[var(--color-muted-foreground)]", children: t("builder.components") }),
+      /* @__PURE__ */ jsxs(HStack, { gap: "sm", className: "flex-wrap", children: [
+        availableComponents.map((comp) => /* @__PURE__ */ jsxs(
+          Button,
+          {
+            size: "sm",
+            variant: selectedComponent === comp.id ? "primary" : "secondary",
+            onClick: () => setSelectedComponent(selectedComponent === comp.id ? null : comp.id),
+            disabled: submitted,
+            children: [
+              comp.iconEmoji && `${comp.iconEmoji} `,
+              comp.label
+            ]
+          },
+          comp.id
+        )),
+        availableComponents.length === 0 && !submitted && /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: t("builder.allPlaced") })
+      ] })
+    ] }) }),
+    /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "small", weight: "bold", className: "uppercase tracking-wider text-[var(--color-muted-foreground)]", children: t("builder.blueprint") }),
+      /* @__PURE__ */ jsx(VStack, { gap: "sm", children: entity.slots.map((slot) => {
+        const placedComp = placements[slot.id] ? getComponentById(placements[slot.id]) : null;
+        const result = results.find((r) => r.slot.id === slot.id);
+        return /* @__PURE__ */ jsxs(
+          HStack,
+          {
+            gap: "sm",
+            align: "center",
+            className: `p-3 border-2 rounded ${result ? result.correct ? "border-green-500" : "border-red-500" : selectedComponent ? "border-dashed border-[var(--color-foreground)] cursor-pointer" : "border-[var(--color-border)]"}`,
+            onClick: () => handlePlaceComponent(slot.id),
+            children: [
+              /* @__PURE__ */ jsxs(VStack, { gap: "none", className: "flex-1", children: [
+                /* @__PURE__ */ jsx(Typography, { variant: "body", weight: "medium", children: slot.label }),
+                slot.description && /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: slot.description })
+              ] }),
+              placedComp ? /* @__PURE__ */ jsxs(HStack, { gap: "xs", align: "center", children: [
+                /* @__PURE__ */ jsxs(Badge, { size: "sm", onClick: () => handleRemoveFromSlot(slot.id), children: [
+                  placedComp.iconEmoji && `${placedComp.iconEmoji} `,
+                  placedComp.label
+                ] }),
+                result && /* @__PURE__ */ jsx(Icon, { icon: result.correct ? CheckCircle : XCircle, size: "sm", className: result.correct ? "text-green-600" : "text-red-600" })
+              ] }) : /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: t("builder.empty") })
+            ]
+          },
+          slot.id
+        );
+      }) })
+    ] }) }),
+    submitted && /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", align: "center", children: [
+      /* @__PURE__ */ jsx(Icon, { icon: allCorrect ? CheckCircle : XCircle, size: "lg", className: allCorrect ? "text-green-600" : "text-red-600" }),
+      /* @__PURE__ */ jsx(Typography, { variant: "body", weight: "bold", children: allCorrect ? entity.successMessage ?? t("builder.success") : entity.failMessage ?? t("builder.incorrect") })
+    ] }) }),
+    showHint && entity.hint && /* @__PURE__ */ jsx(Card, { className: "p-4 border-l-4 border-l-yellow-500", children: /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.hint }) }),
+    /* @__PURE__ */ jsxs(HStack, { gap: "sm", justify: "center", children: [
+      !submitted ? /* @__PURE__ */ jsxs(Button, { variant: "primary", onClick: handleSubmit, disabled: !allPlaced, children: [
+        /* @__PURE__ */ jsx(Icon, { icon: Wrench, size: "sm" }),
+        t("builder.build")
+      ] }) : !allCorrect ? /* @__PURE__ */ jsx(Button, { variant: "primary", onClick: handleReset, children: t("builder.tryAgain") }) : null,
+      /* @__PURE__ */ jsxs(Button, { variant: "secondary", onClick: handleFullReset, children: [
+        /* @__PURE__ */ jsx(Icon, { icon: RotateCcw, size: "sm" }),
+        t("builder.reset")
+      ] })
+    ] })
+  ] }) });
+}
+BuilderBoard.displayName = "BuilderBoard";
+function DebuggerBoard({
+  entity,
+  completeEvent = "PUZZLE_COMPLETE",
+  className
+}) {
+  const { emit } = useEventBus();
+  const { t } = useTranslate();
+  const [flaggedLines, setFlaggedLines] = useState(/* @__PURE__ */ new Set());
+  const [submitted, setSubmitted] = useState(false);
+  const [attempts, setAttempts] = useState(0);
+  const [showHint, setShowHint] = useState(false);
+  const toggleLine = (lineId) => {
+    if (submitted) return;
+    setFlaggedLines((prev) => {
+      const next = new Set(prev);
+      if (next.has(lineId)) {
+        next.delete(lineId);
+      } else {
+        next.add(lineId);
+      }
+      return next;
+    });
+  };
+  const bugLines = entity.lines.filter((l) => l.isBug);
+  const correctFlags = entity.lines.filter((l) => l.isBug && flaggedLines.has(l.id));
+  const falseFlags = entity.lines.filter((l) => !l.isBug && flaggedLines.has(l.id));
+  const allCorrect = submitted && correctFlags.length === bugLines.length && falseFlags.length === 0;
+  const handleSubmit = useCallback(() => {
+    setSubmitted(true);
+    setAttempts((a) => a + 1);
+    const correct = correctFlags.length === bugLines.length && falseFlags.length === 0;
+    if (correct) {
+      emit(`UI:${completeEvent}`, { success: true, attempts: attempts + 1 });
+    }
+  }, [correctFlags.length, bugLines.length, falseFlags.length, attempts, completeEvent, emit]);
+  const handleReset = () => {
+    setSubmitted(false);
+    if (attempts >= 2 && entity.hint) {
+      setShowHint(true);
+    }
+  };
+  const handleFullReset = () => {
+    setFlaggedLines(/* @__PURE__ */ new Set());
+    setSubmitted(false);
+    setAttempts(0);
+    setShowHint(false);
+  };
+  return /* @__PURE__ */ jsx(Box, { className, children: /* @__PURE__ */ jsxs(VStack, { gap: "lg", className: "p-4", children: [
+    /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+      /* @__PURE__ */ jsxs(HStack, { gap: "xs", align: "center", children: [
+        /* @__PURE__ */ jsx(Icon, { icon: Bug, size: "sm" }),
+        /* @__PURE__ */ jsx(Typography, { variant: "h4", weight: "bold", children: entity.title })
+      ] }),
+      /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.description }),
+      /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: t("debugger.findBugs", { count: String(entity.bugCount) }) })
+    ] }) }),
+    /* @__PURE__ */ jsx(Card, { className: "p-0 overflow-hidden", children: /* @__PURE__ */ jsx(VStack, { gap: "none", children: entity.lines.map((line, i) => {
+      const isFlagged = flaggedLines.has(line.id);
+      let lineStyle = "";
+      if (submitted) {
+        if (line.isBug && isFlagged) lineStyle = "bg-green-50 dark:bg-green-950";
+        else if (line.isBug && !isFlagged) lineStyle = "bg-yellow-50 dark:bg-yellow-950";
+        else if (!line.isBug && isFlagged) lineStyle = "bg-red-50 dark:bg-red-950";
+      } else if (isFlagged) {
+        lineStyle = "bg-red-50 dark:bg-red-950";
+      }
+      return /* @__PURE__ */ jsxs(
+        HStack,
+        {
+          gap: "none",
+          align: "stretch",
+          className: `border-b border-[var(--color-border)] cursor-pointer hover:bg-[var(--color-muted)] ${lineStyle}`,
+          onClick: () => toggleLine(line.id),
+          children: [
+            /* @__PURE__ */ jsx(Box, { className: "w-10 flex-shrink-0 flex items-center justify-center border-r border-[var(--color-border)] text-[var(--color-muted-foreground)]", children: /* @__PURE__ */ jsx(Typography, { variant: "caption", children: i + 1 }) }),
+            /* @__PURE__ */ jsx(Box, { className: "flex-1 px-3 py-1.5 font-mono text-sm whitespace-pre", children: /* @__PURE__ */ jsx(Typography, { variant: "body", className: "font-mono text-sm", children: line.content }) }),
+            /* @__PURE__ */ jsxs(Box, { className: "w-8 flex-shrink-0 flex items-center justify-center", children: [
+              isFlagged && /* @__PURE__ */ jsx(Icon, { icon: Bug, size: "xs", className: "text-red-600" }),
+              submitted && line.isBug && !isFlagged && /* @__PURE__ */ jsx(Icon, { icon: Bug, size: "xs", className: "text-yellow-600" })
+            ] })
+          ]
+        },
+        line.id
+      );
+    }) }) }),
+    submitted && /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "body", weight: "bold", children: allCorrect ? entity.successMessage ?? t("debugger.allFound") : `${correctFlags.length}/${bugLines.length} ${t("debugger.bugsFound")}` }),
+      bugLines.map((line) => /* @__PURE__ */ jsxs(HStack, { gap: "xs", align: "start", children: [
+        /* @__PURE__ */ jsx(
+          Icon,
+          {
+            icon: flaggedLines.has(line.id) ? CheckCircle : XCircle,
+            size: "xs",
+            className: flaggedLines.has(line.id) ? "text-green-600 mt-0.5" : "text-yellow-600 mt-0.5"
+          }
+        ),
+        /* @__PURE__ */ jsxs(VStack, { gap: "none", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "caption", weight: "bold", className: "font-mono", children: line.content.trim() }),
+          line.explanation && /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: line.explanation })
+        ] })
+      ] }, line.id))
+    ] }) }),
+    showHint && entity.hint && /* @__PURE__ */ jsx(Card, { className: "p-4 border-l-4 border-l-yellow-500", children: /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.hint }) }),
+    /* @__PURE__ */ jsxs(HStack, { gap: "sm", justify: "center", children: [
+      !submitted ? /* @__PURE__ */ jsxs(Button, { variant: "primary", onClick: handleSubmit, disabled: flaggedLines.size === 0, children: [
+        /* @__PURE__ */ jsx(Icon, { icon: Send, size: "sm" }),
+        t("debugger.submit")
+      ] }) : !allCorrect ? /* @__PURE__ */ jsx(Button, { variant: "primary", onClick: handleReset, children: t("debugger.tryAgain") }) : null,
+      /* @__PURE__ */ jsxs(Button, { variant: "secondary", onClick: handleFullReset, children: [
+        /* @__PURE__ */ jsx(Icon, { icon: RotateCcw, size: "sm" }),
+        t("debugger.reset")
+      ] })
+    ] })
+  ] }) });
+}
+DebuggerBoard.displayName = "DebuggerBoard";
+function getOpponentAction(strategy, actions, history) {
+  const actionIds = actions.map((a) => a.id);
+  switch (strategy) {
+    case "always-cooperate":
+      return actionIds[0];
+    case "always-defect":
+      return actionIds[actionIds.length - 1];
+    case "tit-for-tat":
+      if (history.length === 0) return actionIds[0];
+      return history[history.length - 1].playerAction;
+    case "random":
+    default:
+      return actionIds[Math.floor(Math.random() * actionIds.length)];
+  }
+}
+function NegotiatorBoard({
+  entity,
+  completeEvent = "PUZZLE_COMPLETE",
+  className
+}) {
+  const { emit } = useEventBus();
+  const { t } = useTranslate();
+  const [history, setHistory] = useState([]);
+  const [showHint, setShowHint] = useState(false);
+  const currentRound = history.length;
+  const isComplete = currentRound >= entity.totalRounds;
+  const playerTotal = history.reduce((s, r) => s + r.playerPayoff, 0);
+  const opponentTotal = history.reduce((s, r) => s + r.opponentPayoff, 0);
+  const won = isComplete && playerTotal >= entity.targetScore;
+  const handleAction = useCallback((actionId) => {
+    if (isComplete) return;
+    const opponentAction = getOpponentAction(entity.opponentStrategy, entity.actions, history);
+    const payoff = entity.payoffMatrix.find(
+      (p2) => p2.playerAction === actionId && p2.opponentAction === opponentAction
+    );
+    const result = {
+      round: currentRound + 1,
+      playerAction: actionId,
+      opponentAction,
+      playerPayoff: payoff?.playerPayoff ?? 0,
+      opponentPayoff: payoff?.opponentPayoff ?? 0
+    };
+    const newHistory = [...history, result];
+    setHistory(newHistory);
+    if (newHistory.length >= entity.totalRounds) {
+      const total = newHistory.reduce((s, r) => s + r.playerPayoff, 0);
+      if (total >= entity.targetScore) {
+        emit(`UI:${completeEvent}`, { success: true, score: total });
+      }
+      if (newHistory.length >= 3 && entity.hint) {
+        setShowHint(true);
+      }
+    }
+  }, [isComplete, entity, history, currentRound, completeEvent, emit]);
+  const handleReset = () => {
+    setHistory([]);
+    setShowHint(false);
+  };
+  const getActionLabel = (id) => entity.actions.find((a) => a.id === id)?.label ?? id;
+  return /* @__PURE__ */ jsx(Box, { className, children: /* @__PURE__ */ jsxs(VStack, { gap: "lg", className: "p-4", children: [
+    /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "h4", weight: "bold", children: entity.title }),
+      /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.description }),
+      /* @__PURE__ */ jsxs(HStack, { gap: "md", children: [
+        /* @__PURE__ */ jsx(Badge, { size: "sm", children: t("negotiator.round", { current: String(currentRound), total: String(entity.totalRounds) }) }),
+        /* @__PURE__ */ jsxs(Badge, { size: "sm", children: [
+          t("negotiator.target"),
+          ": ",
+          entity.targetScore
+        ] })
+      ] })
+    ] }) }),
+    /* @__PURE__ */ jsxs(HStack, { gap: "md", justify: "center", children: [
+      /* @__PURE__ */ jsx(Card, { className: "p-4 flex-1 text-center", children: /* @__PURE__ */ jsxs(VStack, { gap: "xs", align: "center", children: [
+        /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: t("negotiator.you") }),
+        /* @__PURE__ */ jsx(Typography, { variant: "h3", weight: "bold", children: playerTotal })
+      ] }) }),
+      /* @__PURE__ */ jsx(Card, { className: "p-4 flex-1 text-center", children: /* @__PURE__ */ jsxs(VStack, { gap: "xs", align: "center", children: [
+        /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: t("negotiator.opponent") }),
+        /* @__PURE__ */ jsx(Typography, { variant: "h3", weight: "bold", children: opponentTotal })
+      ] }) })
+    ] }),
+    !isComplete && /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "small", weight: "bold", className: "uppercase tracking-wider text-[var(--color-muted-foreground)]", children: t("negotiator.chooseAction") }),
+      /* @__PURE__ */ jsx(HStack, { gap: "sm", justify: "center", className: "flex-wrap", children: entity.actions.map((action) => /* @__PURE__ */ jsx(
+        Button,
+        {
+          variant: "primary",
+          onClick: () => handleAction(action.id),
+          children: action.label
+        },
+        action.id
+      )) })
+    ] }) }),
+    history.length > 0 && /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "small", weight: "bold", className: "uppercase tracking-wider text-[var(--color-muted-foreground)]", children: t("negotiator.history") }),
+      history.map((round) => /* @__PURE__ */ jsxs(HStack, { gap: "sm", align: "center", className: "text-sm", children: [
+        /* @__PURE__ */ jsxs(Badge, { size: "sm", children: [
+          "R",
+          round.round
+        ] }),
+        /* @__PURE__ */ jsx(Typography, { variant: "caption", children: getActionLabel(round.playerAction) }),
+        /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: "vs" }),
+        /* @__PURE__ */ jsx(Typography, { variant: "caption", children: getActionLabel(round.opponentAction) }),
+        /* @__PURE__ */ jsx(Icon, { icon: ArrowRight, size: "xs" }),
+        /* @__PURE__ */ jsxs(Typography, { variant: "caption", weight: "bold", className: "text-green-600", children: [
+          "+",
+          round.playerPayoff
+        ] }),
+        /* @__PURE__ */ jsxs(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: [
+          "/ +",
+          round.opponentPayoff
+        ] })
+      ] }, round.round))
+    ] }) }),
+    isComplete && /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", align: "center", children: [
+      /* @__PURE__ */ jsx(Icon, { icon: CheckCircle, size: "lg", className: won ? "text-green-600" : "text-red-600" }),
+      /* @__PURE__ */ jsx(Typography, { variant: "body", weight: "bold", children: won ? entity.successMessage ?? t("negotiator.success") : entity.failMessage ?? t("negotiator.failed") }),
+      /* @__PURE__ */ jsxs(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: [
+        t("negotiator.finalScore"),
+        ": ",
+        playerTotal,
+        "/",
+        entity.targetScore
+      ] })
+    ] }) }),
+    showHint && entity.hint && !won && /* @__PURE__ */ jsx(Card, { className: "p-4 border-l-4 border-l-yellow-500", children: /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.hint }) }),
+    isComplete && !won && /* @__PURE__ */ jsx(HStack, { justify: "center", children: /* @__PURE__ */ jsx(Button, { variant: "primary", onClick: handleReset, children: t("negotiator.playAgain") }) })
+  ] }) });
+}
+NegotiatorBoard.displayName = "NegotiatorBoard";
+function SimulationCanvas({
+  preset,
+  width = 600,
+  height = 400,
+  running,
+  speed = 1,
+  className
+}) {
+  const canvasRef = useRef(null);
+  const bodiesRef = useRef(structuredClone(preset.bodies));
+  useEffect(() => {
+    bodiesRef.current = structuredClone(preset.bodies);
+  }, [preset]);
+  const step = useCallback(() => {
+    const dt = 1 / 60 * speed;
+    const gx = preset.gravity?.x ?? 0;
+    const gy = preset.gravity?.y ?? 9.81;
+    const bodies = bodiesRef.current;
+    for (const body of bodies) {
+      if (body.fixed) continue;
+      body.vx += gx * dt;
+      body.vy += gy * dt;
+      body.x += body.vx * dt;
+      body.y += body.vy * dt;
+      if (body.y + body.radius > height) {
+        body.y = height - body.radius;
+        body.vy = -body.vy * 0.8;
+      }
+      if (body.x + body.radius > width) {
+        body.x = width - body.radius;
+        body.vx = -body.vx * 0.8;
+      }
+      if (body.x - body.radius < 0) {
+        body.x = body.radius;
+        body.vx = -body.vx * 0.8;
+      }
+    }
+    if (preset.constraints) {
+      for (const c of preset.constraints) {
+        const a = bodies[c.bodyA];
+        const b = bodies[c.bodyB];
+        if (!a || !b) continue;
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1e-3;
+        const diff = (dist - c.length) / dist;
+        const fx = dx * diff * c.stiffness;
+        const fy = dy * diff * c.stiffness;
+        if (!a.fixed) {
+          a.vx += fx * dt;
+          a.vy += fy * dt;
+        }
+        if (!b.fixed) {
+          b.vx -= fx * dt;
+          b.vy -= fy * dt;
+        }
+      }
+    }
+  }, [preset, width, height, speed]);
+  const draw = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const bodies = bodiesRef.current;
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = preset.backgroundColor ?? "#1a1a2e";
+    ctx.fillRect(0, 0, width, height);
+    if (preset.constraints) {
+      for (const c of preset.constraints) {
+        const a = bodies[c.bodyA];
+        const b = bodies[c.bodyB];
+        if (a && b) {
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.strokeStyle = "#533483";
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 4]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      }
+    }
+    for (const body of bodies) {
+      ctx.beginPath();
+      ctx.arc(body.x, body.y, body.radius, 0, Math.PI * 2);
+      ctx.fillStyle = body.color ?? "#e94560";
+      ctx.fill();
+      if (preset.showVelocity) {
+        ctx.beginPath();
+        ctx.moveTo(body.x, body.y);
+        ctx.lineTo(body.x + body.vx * 0.1, body.y + body.vy * 0.1);
+        ctx.strokeStyle = "#16213e";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+  }, [width, height, preset]);
+  useEffect(() => {
+    if (!running) return;
+    let raf;
+    const loop = () => {
+      step();
+      draw();
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [running, step, draw]);
+  useEffect(() => {
+    draw();
+  }, [draw]);
+  return /* @__PURE__ */ jsx(Box, { className, children: /* @__PURE__ */ jsx("canvas", { ref: canvasRef, width, height, className: "rounded-md" }) });
+}
+SimulationCanvas.displayName = "SimulationCanvas";
+function SimulationControls({
+  running,
+  speed,
+  parameters,
+  onPlay,
+  onPause,
+  onStep,
+  onReset,
+  onSpeedChange,
+  onParameterChange,
+  className
+}) {
+  return /* @__PURE__ */ jsxs(VStack, { gap: "md", className, children: [
+    /* @__PURE__ */ jsxs(HStack, { gap: "sm", align: "center", children: [
+      running ? /* @__PURE__ */ jsx(Button, { size: "sm", variant: "secondary", onClick: onPause, icon: Pause, children: "Pause" }) : /* @__PURE__ */ jsx(Button, { size: "sm", variant: "primary", onClick: onPlay, icon: Play, children: "Play" }),
+      /* @__PURE__ */ jsx(Button, { size: "sm", variant: "ghost", onClick: onStep, icon: SkipForward, disabled: running, children: "Step" }),
+      /* @__PURE__ */ jsx(Button, { size: "sm", variant: "ghost", onClick: onReset, icon: RotateCcw, children: "Reset" })
+    ] }),
+    /* @__PURE__ */ jsxs(VStack, { gap: "xs", children: [
+      /* @__PURE__ */ jsxs(Typography, { variant: "caption", color: "muted", children: [
+        "Speed: ",
+        speed.toFixed(1),
+        "x"
+      ] }),
+      /* @__PURE__ */ jsx(
+        "input",
+        {
+          type: "range",
+          min: 0.1,
+          max: 5,
+          step: 0.1,
+          value: speed,
+          onChange: (e) => onSpeedChange(parseFloat(e.target.value)),
+          className: "w-full"
+        }
+      )
+    ] }),
+    Object.entries(parameters).map(([name, param]) => /* @__PURE__ */ jsxs(VStack, { gap: "xs", children: [
+      /* @__PURE__ */ jsxs(Typography, { variant: "caption", color: "muted", children: [
+        param.label,
+        ": ",
+        param.value.toFixed(2)
+      ] }),
+      /* @__PURE__ */ jsx(
+        "input",
+        {
+          type: "range",
+          min: param.min,
+          max: param.max,
+          step: param.step,
+          value: param.value,
+          onChange: (e) => onParameterChange(name, parseFloat(e.target.value)),
+          className: "w-full"
+        }
+      )
+    ] }, name))
+  ] });
+}
+SimulationControls.displayName = "SimulationControls";
+function SimulationGraph({
+  label,
+  unit,
+  data,
+  maxPoints = 200,
+  width = 300,
+  height = 120,
+  color = "#e94560",
+  className
+}) {
+  const canvasRef = useRef(null);
+  const visibleData = data.slice(-maxPoints);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || visibleData.length < 2) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = "#0f0f23";
+    ctx.fillRect(0, 0, width, height);
+    ctx.strokeStyle = "#1a1a3e";
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < 5; i++) {
+      const y = height / 5 * i;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(width, y);
+      ctx.stroke();
+    }
+    let minVal = Infinity;
+    let maxVal = -Infinity;
+    for (const pt of visibleData) {
+      if (pt.value < minVal) minVal = pt.value;
+      if (pt.value > maxVal) maxVal = pt.value;
+    }
+    const range = maxVal - minVal || 1;
+    const pad = height * 0.1;
+    ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 2;
+    for (let i = 0; i < visibleData.length; i++) {
+      const x = i / (maxPoints - 1) * width;
+      const y = pad + (maxVal - visibleData[i].value) / range * (height - 2 * pad);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    const last = visibleData[visibleData.length - 1];
+    ctx.fillStyle = color;
+    ctx.font = "12px monospace";
+    ctx.fillText(`${last.value.toFixed(2)} ${unit}`, width - 80, 16);
+  }, [visibleData, width, height, color, unit, maxPoints]);
+  return /* @__PURE__ */ jsx(Card, { padding: "sm", className, children: /* @__PURE__ */ jsxs(VStack, { gap: "xs", children: [
+    /* @__PURE__ */ jsx(Typography, { variant: "caption", weight: "bold", children: label }),
+    /* @__PURE__ */ jsx("canvas", { ref: canvasRef, width, height, className: "rounded" })
+  ] }) });
+}
+SimulationGraph.displayName = "SimulationGraph";
+
+// components/organisms/game/physics-sim/presets/mechanics.ts
+var projectileMotion = {
+  id: "mechanics-projectile",
+  name: "Projectile Motion",
+  description: "Launch a ball and observe parabolic trajectory under gravity.",
+  domain: "natural",
+  gravity: { x: 0, y: 9.81 },
+  bodies: [
+    { id: "ball", x: 50, y: 350, vx: 80, vy: -120, mass: 1, radius: 10, color: "#e94560", fixed: false },
+    { id: "ground", x: 300, y: 390, vx: 0, vy: 0, mass: 1e3, radius: 400, color: "#333", fixed: true }
+  ],
+  showVelocity: true,
+  parameters: {
+    angle: { value: 45, min: 0, max: 90, step: 1, label: "Launch angle (deg)" },
+    velocity: { value: 100, min: 10, max: 200, step: 5, label: "Initial velocity (m/s)" },
+    gravity: { value: 9.81, min: 0, max: 20, step: 0.1, label: "Gravity (m/s\xB2)" }
+  }
+};
+var pendulum = {
+  id: "mechanics-pendulum",
+  name: "Simple Pendulum",
+  description: "A mass on a string swinging under gravity.",
+  domain: "natural",
+  gravity: { x: 0, y: 9.81 },
+  bodies: [
+    { id: "pivot", x: 300, y: 50, vx: 0, vy: 0, mass: 1e3, radius: 5, color: "#888", fixed: true },
+    { id: "bob", x: 400, y: 200, vx: 0, vy: 0, mass: 5, radius: 15, color: "#e94560", fixed: false }
+  ],
+  constraints: [{ bodyA: 0, bodyB: 1, length: 180, stiffness: 1 }],
+  parameters: {
+    length: { value: 180, min: 50, max: 300, step: 10, label: "String length (px)" },
+    mass: { value: 5, min: 1, max: 20, step: 0.5, label: "Mass (kg)" },
+    gravity: { value: 9.81, min: 0, max: 20, step: 0.1, label: "Gravity (m/s\xB2)" }
+  }
+};
+var springOscillator = {
+  id: "mechanics-spring",
+  name: "Spring Oscillator",
+  description: "A mass bouncing on a spring \u2014 simple harmonic motion.",
+  domain: "natural",
+  gravity: { x: 0, y: 0 },
+  bodies: [
+    { id: "anchor", x: 300, y: 50, vx: 0, vy: 0, mass: 1e3, radius: 8, color: "#888", fixed: true },
+    { id: "mass", x: 300, y: 250, vx: 0, vy: 0, mass: 2, radius: 20, color: "#0f3460", fixed: false }
+  ],
+  constraints: [{ bodyA: 0, bodyB: 1, length: 150, stiffness: 0.5 }],
+  parameters: {
+    stiffness: { value: 0.5, min: 0.1, max: 2, step: 0.05, label: "Spring stiffness (k)" },
+    mass: { value: 2, min: 0.5, max: 10, step: 0.5, label: "Mass (kg)" },
+    damping: { value: 0, min: 0, max: 0.5, step: 0.01, label: "Damping" }
+  }
+};
+
+// components/organisms/game/physics-sim/presets/index.ts
+var ALL_PRESETS = [
+  projectileMotion,
+  pendulum,
+  springOscillator
+];
+var eventIcons = {
+  attack: Sword,
+  defend: Shield,
+  heal: Heart,
+  move: Move,
+  special: Zap,
+  death: Sword,
+  spawn: Zap
+};
+var eventColors = {
+  attack: "text-error",
+  defend: "text-info",
+  heal: "text-success",
+  move: "text-primary",
+  special: "text-warning",
+  death: "text-muted-foreground",
+  spawn: "text-accent"
+};
+var eventBadgeVariants = {
+  attack: "danger",
+  defend: "primary",
+  heal: "success",
+  move: "warning",
+  special: "secondary",
+  death: "secondary",
+  spawn: "secondary"
+};
+function CombatLog({
+  events,
+  maxVisible = 50,
+  autoScroll = true,
+  showTimestamps = false,
+  className,
+  title = "Combat Log"
+}) {
+  const scrollRef = useRef(null);
+  useEffect(() => {
+    if (autoScroll && scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [events, autoScroll]);
+  const visibleEvents = events.slice(-maxVisible);
+  return /* @__PURE__ */ jsxs(Card, { variant: "default", className: cn("flex flex-col", className), children: [
+    /* @__PURE__ */ jsx(Box, { padding: "sm", border: true, className: "border-b-2 border-x-0 border-t-0 border-[var(--color-border)]", children: /* @__PURE__ */ jsxs(Box, { display: "flex", className: "items-center justify-between", children: [
+      /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "font-bold", children: title }),
+      /* @__PURE__ */ jsxs(Badge, { variant: "neutral", size: "sm", children: [
+        events.length,
+        " events"
+      ] })
+    ] }) }),
+    /* @__PURE__ */ jsx(Box, { ref: scrollRef, overflow: "auto", className: "flex-1 max-h-64", children: visibleEvents.length === 0 ? /* @__PURE__ */ jsx(Box, { padding: "md", className: "text-center opacity-50", children: /* @__PURE__ */ jsx(Typography, { variant: "body2", children: "No events yet" }) }) : /* @__PURE__ */ jsx(Box, { padding: "xs", className: "space-y-1", children: visibleEvents.map((event) => {
+      const EventIcon = eventIcons[event.type];
+      const colorClass = eventColors[event.type];
+      return /* @__PURE__ */ jsxs(
+        Box,
+        {
+          display: "flex",
+          padding: "xs",
+          rounded: "sm",
+          className: cn("items-start gap-2 hover:bg-[var(--color-muted)] transition-colors", event.type === "death" && "opacity-60"),
+          children: [
+            /* @__PURE__ */ jsx(Box, { className: cn("flex-shrink-0 mt-0.5", colorClass), children: /* @__PURE__ */ jsx(EventIcon, { className: "h-4 w-4" }) }),
+            /* @__PURE__ */ jsxs(Box, { className: "flex-1 min-w-0", children: [
+              /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "block", children: event.message }),
+              event.value !== void 0 && /* @__PURE__ */ jsxs(Badge, { variant: eventBadgeVariants[event.type], size: "sm", className: "mt-1", children: [
+                event.type === "heal" ? "+" : event.type === "attack" ? "-" : "",
+                event.value
+              ] })
+            ] }),
+            (event.turn || showTimestamps) && /* @__PURE__ */ jsx(Box, { className: "flex-shrink-0", children: /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "opacity-40", children: event.turn ? `T${event.turn}` : "" }) })
+          ]
+        },
+        event.id
+      );
+    }) }) })
+  ] });
+}
+CombatLog.displayName = "CombatLog";
+
+// components/organisms/game/types/game.ts
+function createInitialGameState(width, height, units, defaultTerrain = "floorStone") {
+  const board = Array.from(
+    { length: height },
+    () => Array.from({ length: width }, () => ({
+      terrain: defaultTerrain
+    }))
+  );
+  const unitsMap = {};
+  for (const unit of units) {
+    unitsMap[unit.id] = unit;
+    if (unit.position.y < height && unit.position.x < width) {
+      board[unit.position.y][unit.position.x].unitId = unit.id;
+    }
+  }
+  return {
+    board,
+    units: unitsMap,
+    currentPhase: "observation",
+    currentTurn: 1,
+    activeTeam: "player",
+    validMoves: [],
+    attackTargets: []
+  };
+}
+function calculateValidMoves(state, unitId) {
+  const unit = state.units[unitId];
+  if (!unit) return [];
+  const moves = [];
+  const { x, y } = unit.position;
+  const range = unit.movement;
+  for (let dy = -range; dy <= range; dy++) {
+    for (let dx = -range; dx <= range; dx++) {
+      const nx = x + dx;
+      const ny = y + dy;
+      const distance = Math.abs(dx) + Math.abs(dy);
+      if (distance > 0 && distance <= range && ny >= 0 && ny < state.board.length && nx >= 0 && nx < state.board[0].length && !state.board[ny][nx].unitId && !state.board[ny][nx].isBlocked) {
+        moves.push({ x: nx, y: ny });
+      }
+    }
+  }
+  return moves;
+}
+function calculateAttackTargets(state, unitId) {
+  const unit = state.units[unitId];
+  if (!unit) return [];
+  const targets = [];
+  const { x, y } = unit.position;
+  const directions = [
+    { dx: -1, dy: 0 },
+    { dx: 1, dy: 0 },
+    { dx: 0, dy: -1 },
+    { dx: 0, dy: 1 }
+  ];
+  for (const { dx, dy } of directions) {
+    const nx = x + dx;
+    const ny = y + dy;
+    if (ny >= 0 && ny < state.board.length && nx >= 0 && nx < state.board[0].length) {
+      const targetTile = state.board[ny][nx];
+      if (targetTile.unitId) {
+        const targetUnit = state.units[targetTile.unitId];
+        if (targetUnit && targetUnit.team !== unit.team) {
+          targets.push({ x: nx, y: ny });
+        }
+      }
+    }
+  }
+  return targets;
+}
+
+// components/organisms/game/utils/combatEffects.ts
+var combatAnimations = {
+  shake: `
+    @keyframes combat-shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+      20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+  `,
+  flash: `
+    @keyframes combat-flash {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; filter: brightness(2); }
+    }
+  `,
+  pulseRed: `
+    @keyframes combat-pulse-red {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+      50% { box-shadow: 0 0 20px 5px rgba(239, 68, 68, 0.6); }
+    }
+  `,
+  healGlow: `
+    @keyframes combat-heal-glow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+      50% { box-shadow: 0 0 30px 10px rgba(34, 197, 94, 0.5); }
+    }
+  `
+};
+var combatClasses = {
+  shake: "animate-[combat-shake_0.3s_ease-in-out]",
+  flash: "animate-[combat-flash_0.2s_ease-in-out_2]",
+  pulseRed: "animate-[combat-pulse-red_0.5s_ease-in-out]",
+  healGlow: "animate-[combat-heal-glow_0.8s_ease-in-out]",
+  hit: "animate-pulse brightness-150",
+  defend: "animate-bounce",
+  critical: "animate-ping"
+};
+var combatEffects = {
+  attack: { className: "animate-pulse brightness-125", duration: 300 },
+  hit: { className: "animate-[shake_0.3s_ease-in-out] brightness-150", duration: 300 },
+  critical: { className: "animate-ping scale-110", duration: 500 },
+  defend: { className: "animate-bounce ring-4 ring-blue-400", duration: 400 },
+  heal: { className: "brightness-125 ring-4 ring-green-400", duration: 600 },
+  defeat: { className: "grayscale opacity-50 scale-75", duration: 800 },
+  levelUp: { className: "animate-bounce ring-4 ring-yellow-400 brightness-150", duration: 1e3 }
+};
+function applyTemporaryEffect(element, effect, onComplete) {
+  const originalClass = element.className;
+  element.className = `${originalClass} ${effect.className}`;
+  setTimeout(() => {
+    element.className = originalClass;
+    onComplete?.();
+  }, effect.duration);
+}
+function calculateDamage(attack, defense, isDefending = false, criticalChance = 0.1) {
+  const isCritical = Math.random() < criticalChance;
+  const baseDamage = attack;
+  const defenseMultiplier = isDefending ? 2 : 1;
+  const effectiveDefense = defense * defenseMultiplier;
+  let finalDamage = Math.max(1, baseDamage - effectiveDefense);
+  if (isCritical) finalDamage = Math.floor(finalDamage * 2);
+  const isBlocked = finalDamage <= 1 && effectiveDefense > baseDamage;
+  const damageReduction = baseDamage - finalDamage;
+  return { baseDamage, finalDamage, isCritical, isBlocked, damageReduction };
+}
+function generateCombatMessage(event) {
+  return event.message;
+}
 function extractTitle(children) {
-  if (!React25__default.isValidElement(children)) return void 0;
+  if (!React42__default.isValidElement(children)) return void 0;
   const props = children.props;
   if (typeof props.title === "string") {
     return props.title;
@@ -8740,7 +11016,7 @@ var ModalSlot = ({
 };
 ModalSlot.displayName = "ModalSlot";
 function extractTitle2(children) {
-  if (!React25__default.isValidElement(children)) return void 0;
+  if (!React42__default.isValidElement(children)) return void 0;
   const props = children.props;
   if (typeof props.title === "string") {
     return props.title;
@@ -8777,7 +11053,7 @@ var DrawerSlot = ({
 };
 DrawerSlot.displayName = "DrawerSlot";
 function extractToastProps(children) {
-  if (!React25__default.isValidElement(children)) {
+  if (!React42__default.isValidElement(children)) {
     if (typeof children === "string") {
       return { message: children };
     }
@@ -8808,7 +11084,7 @@ var ToastSlot = ({
     eventBus.emit("UI:CLOSE");
   };
   if (!isVisible) return null;
-  const isCustomContent = React25__default.isValidElement(children) && !message;
+  const isCustomContent = React42__default.isValidElement(children) && !message;
   return /* @__PURE__ */ jsx(Box, { className: "fixed bottom-4 right-4 z-50", children: isCustomContent ? children : /* @__PURE__ */ jsx(
     Toast,
     {
@@ -9279,7 +11555,7 @@ var Meter = ({
   ] }) });
 };
 Meter.displayName = "Meter";
-var STATUS_STYLES2 = {
+var STATUS_STYLES3 = {
   complete: {
     dotColor: "text-[var(--color-success)]",
     lineColor: "bg-[var(--color-success)]",
@@ -9321,7 +11597,7 @@ var Timeline = ({
     },
     [eventBus, entity]
   );
-  const items = React25__default.useMemo(() => {
+  const items = React42__default.useMemo(() => {
     if (propItems) return propItems;
     if (!data) return [];
     return data.map((record, idx) => {
@@ -9369,7 +11645,7 @@ var Timeline = ({
     title && /* @__PURE__ */ jsx(Typography, { variant: "h5", weight: "semibold", children: title }),
     /* @__PURE__ */ jsx(VStack, { gap: "none", className: "relative", children: items.map((item, idx) => {
       const status = item.status || "pending";
-      const style = STATUS_STYLES2[status];
+      const style = STATUS_STYLES3[status];
       const ItemIcon = item.icon || style.icon;
       const isLast = idx === items.length - 1;
       return /* @__PURE__ */ jsxs(HStack, { gap: "md", align: "start", className: "relative", children: [
@@ -9470,7 +11746,7 @@ var MediaGallery = ({
   const handleUpload = useCallback(() => {
     eventBus.emit("UI:MEDIA_UPLOAD", { entity });
   }, [eventBus, entity]);
-  const items = React25__default.useMemo(() => {
+  const items = React42__default.useMemo(() => {
     if (propItems) return propItems;
     if (!data) return [];
     return data.map((record, idx) => ({
@@ -10804,7 +13080,7 @@ var NavLink = ({
   currentPath
 }) => {
   const isActive = currentPath === item.href || currentPath.startsWith(item.href + "/");
-  const Icon2 = item.icon;
+  const Icon3 = item.icon;
   return /* @__PURE__ */ jsxs(
     Link,
     {
@@ -10815,7 +13091,7 @@ var NavLink = ({
       ),
       children: [
         /* @__PURE__ */ jsx(
-          Icon2,
+          Icon3,
           {
             className: cn(
               "h-5 w-5",
@@ -11446,4 +13722,4 @@ function WorldMapTemplate({
 }
 WorldMapTemplate.displayName = "WorldMapTemplate";
 
-export { AR_BOOK_FIELDS, AuthLayout, BattleBoard, BattleTemplate, BookChapterView, BookCoverPage, BookNavBar, BookTableOfContents, BookViewer, CanvasEffect, CastleBoard, CastleTemplate, Chart, CodeViewer, CollapsibleSection, ConfirmDialog, ContentRenderer, CounterTemplate, DIAMOND_TOP_Y, DashboardGrid, DashboardLayout, DialogueBox, DocumentViewer, StateMachineView as DomStateMachineVisualizer, DrawerSlot, EditorCheckbox, EditorSelect, EditorSlider, EditorTextInput, EditorToolbar, FEATURE_COLORS, FEATURE_TYPES, FLOOR_HEIGHT, FormActions, FormLayout, FormSection, GameAudioContext, GameAudioProvider, GameAudioToggle, GameHud, GameMenu, GameOverScreen, GameShell, GameTemplate, GenericAppTemplate, GraphCanvas, Header, IDENTITY_BOOK_FIELDS, InventoryPanel, IsometricCanvas, JazariStateMachine, List, MediaGallery, Meter, ModalSlot, Navigation, StateMachineView as OrbitalStateMachineView, OrbitalVisualization, PhysicsManager, SHEET_COLUMNS, SPRITE_SHEET_LAYOUT, Section, Sidebar, SignaturePad, Split, SplitPane, StateMachineView, StatusBar, TERRAIN_COLORS, TILE_HEIGHT, TILE_WIDTH, TabbedContainer, Table, TerrainPalette, Timeline, ToastSlot, TraitSlot, TraitStateViewer, UncontrolledBattleBoard, WizardContainer, WorldMapBoard, WorldMapTemplate, createUnitAnimationState, getCurrentFrame, inferDirection, isoToScreen, mapBookData, resolveFieldMap, resolveFrame, resolveSheetDirection, screenToIso, tickAnimationState, transitionAnimation, useBattleState, useCamera, useGameAudio, useGameAudioContext, useImageCache, usePhysics2D, useSpriteAnimations };
+export { ALL_PRESETS, AR_BOOK_FIELDS, ActionPalette, ActionTile, AuthLayout, BattleBoard, BattleTemplate, BookChapterView, BookCoverPage, BookNavBar, BookTableOfContents, BookViewer, BuilderBoard, CanvasEffect, CastleBoard, CastleTemplate, Chart, ClassifierBoard, CodeView, CodeViewer, CollapsibleSection, CombatLog, ConfirmDialog, ContentRenderer, CounterTemplate, DIAMOND_TOP_Y, DashboardGrid, DashboardLayout, DebuggerBoard, DialogueBox, DocumentViewer, StateMachineView as DomStateMachineVisualizer, DrawerSlot, EditorCheckbox, EditorSelect, EditorSlider, EditorTextInput, EditorToolbar, EventHandlerBoard, EventLog, FEATURE_COLORS, FEATURE_TYPES, FLOOR_HEIGHT, FormActions, FormLayout, FormSection, GameAudioContext, GameAudioProvider, GameAudioToggle, GameHud, GameMenu, GameOverScreen, GameShell, GameTemplate, GenericAppTemplate, GraphCanvas, Header, IDENTITY_BOOK_FIELDS, InventoryPanel, IsometricCanvas, JazariStateMachine, List, MediaGallery, Meter, ModalSlot, Navigation, NegotiatorBoard, ObjectRulePanel, StateMachineView as OrbitalStateMachineView, OrbitalVisualization, PhysicsManager, RuleEditor, SHEET_COLUMNS, SPRITE_SHEET_LAYOUT, Section, SequenceBar, SequencerBoard, Sidebar, SignaturePad, SimulationCanvas, SimulationControls, SimulationGraph, SimulatorBoard, Split, SplitPane, StateArchitectBoard, StateMachineView, StateNode2 as StateNode, StatusBar, TERRAIN_COLORS, TILE_HEIGHT, TILE_WIDTH, TabbedContainer, Table, TerrainPalette, Timeline, ToastSlot, TraitSlot, TraitStateViewer, TransitionArrow, UncontrolledBattleBoard, VariablePanel, WizardContainer, WorldMapBoard, WorldMapTemplate, applyTemporaryEffect, calculateAttackTargets, calculateDamage, calculateValidMoves, combatAnimations, combatClasses, combatEffects, createInitialGameState, createUnitAnimationState, generateCombatMessage, getCurrentFrame, inferDirection, isoToScreen, mapBookData, pendulum, projectileMotion, resolveFieldMap, resolveFrame, resolveSheetDirection, screenToIso, springOscillator, tickAnimationState, transitionAnimation, useBattleState, useCamera, useGameAudio, useGameAudioContext, useImageCache, usePhysics2D, useSpriteAnimations };
