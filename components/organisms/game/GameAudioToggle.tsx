@@ -11,7 +11,8 @@
  */
 
 import React, { useCallback } from 'react';
-import { Button, cn } from '@almadar/ui';
+import { Button } from '../../atoms';
+import { cn } from '../../../lib/cn';
 import { useGameAudioContext } from './GameAudioProvider';
 
 // =============================================================================
