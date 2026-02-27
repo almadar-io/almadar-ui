@@ -1,7 +1,30 @@
 import { useUISlotManager } from './chunk-7NEWMNNU.js';
-import { createContext, useMemo, useState, useEffect, useCallback, useContext } from 'react';
+import { createContext, useMemo, useContext, useState, useEffect, useCallback } from 'react';
 import { jsx } from 'react/jsx-runtime';
 
+var UISlotContext = createContext(null);
+function UISlotProvider({ children }) {
+  const slotManager = useUISlotManager();
+  const contextValue = useMemo(() => slotManager, [slotManager]);
+  return /* @__PURE__ */ jsx(UISlotContext.Provider, { value: contextValue, children });
+}
+function useUISlots() {
+  const context = useContext(UISlotContext);
+  if (!context) {
+    throw new Error(
+      "useUISlots must be used within a UISlotProvider. Make sure your component tree is wrapped with <UISlotProvider>."
+    );
+  }
+  return context;
+}
+function useSlotContent(slot) {
+  const { getContent } = useUISlots();
+  return getContent(slot);
+}
+function useSlotHasContent(slot) {
+  const { hasContent } = useUISlots();
+  return hasContent(slot);
+}
 var BUILT_IN_THEMES = [
   {
     name: "wireframe",
@@ -252,28 +275,5 @@ function useTheme() {
   return context;
 }
 var ThemeContext_default = ThemeContext;
-var UISlotContext = createContext(null);
-function UISlotProvider({ children }) {
-  const slotManager = useUISlotManager();
-  const contextValue = useMemo(() => slotManager, [slotManager]);
-  return /* @__PURE__ */ jsx(UISlotContext.Provider, { value: contextValue, children });
-}
-function useUISlots() {
-  const context = useContext(UISlotContext);
-  if (!context) {
-    throw new Error(
-      "useUISlots must be used within a UISlotProvider. Make sure your component tree is wrapped with <UISlotProvider>."
-    );
-  }
-  return context;
-}
-function useSlotContent(slot) {
-  const { getContent } = useUISlots();
-  return getContent(slot);
-}
-function useSlotHasContent(slot) {
-  const { hasContent } = useUISlots();
-  return hasContent(slot);
-}
 
 export { BUILT_IN_THEMES, ThemeContext_default, ThemeProvider, UISlotContext, UISlotProvider, useSlotContent, useSlotHasContent, useTheme, useUISlots };

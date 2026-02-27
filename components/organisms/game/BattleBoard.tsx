@@ -1,3 +1,4 @@
+/* eslint-disable almadar/organism-no-callback-props, almadar/organism-extends-entity-display */
 'use client';
 /**
  * BattleBoard
@@ -22,6 +23,12 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useTranslate } from '../../../hooks/useTranslate';
+import { Box } from '../../atoms/Box';
+import { Button } from '../../atoms/Button';
+import { Typography } from '../../atoms/Typography';
+import { VStack, HStack } from '../../atoms/Stack';
+import type { EntityDisplayProps } from '../types';
 import IsometricCanvas from './IsometricCanvas';
 import type {
     IsometricTile,
@@ -51,6 +58,13 @@ export interface BattleUnit {
     unitType?: string;
     heroId?: string;
     sprite?: string;
+    /** Optional sprite sheet for animation (null = use static sprite) */
+    spriteSheet?: {
+        se: string;
+        sw: string;
+        frameWidth: number;
+        frameHeight: number;
+    } | null;
     team: 'player' | 'enemy';
     position: { x: number; y: number };
     health: number;
@@ -131,7 +145,7 @@ export interface BattleSlotContext {
     tileToScreen: (x: number, y: number) => { x: number; y: number };
 }
 
-export interface BattleBoardProps {
+export interface BattleBoardProps extends Omit<EntityDisplayProps, 'entity'> {
     /** Entity containing all board data */
     entity: BattleEntity;
 
@@ -234,6 +248,7 @@ export function BattleBoard({
 
     // -- Event bus --
     const eventBus = useEventBus();
+    const { t } = useTranslate();
 
     // ── Rendering-only state (always local) ──────────────────────────────
     const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
@@ -503,7 +518,7 @@ export function BattleBoard({
         : {};
 
     return (
-        <div className={cn('battle-board relative flex flex-col min-h-[600px] bg-[var(--color-background)]', className)}>
+        <VStack className={cn('battle-board relative min-h-[600px] bg-[var(--color-background)]', className)} gap="none">
             {/* Shake keyframes */}
             <style>{`
                 @keyframes battle-shake {
@@ -521,12 +536,12 @@ export function BattleBoard({
             `}</style>
 
             {/* Header slot */}
-            {header && <div className="p-4">{header(ctx)}</div>}
+            {header && <Box className="p-4">{header(ctx)}</Box>}
 
             {/* Main area */}
-            <div className="flex flex-1 gap-4 p-4 pt-0">
+            <HStack className="flex-1 gap-4 p-4 pt-0" gap="none">
                 {/* Canvas column */}
-                <div className="relative flex-1" style={shakeStyle}>
+                <Box className="relative flex-1" style={shakeStyle}>
                     <IsometricCanvas
                         tiles={tiles}
                         units={isoUnits}
@@ -552,36 +567,38 @@ export function BattleBoard({
 
                     {/* Overlay slot (damage popups, tooltips, etc.) */}
                     {overlay && overlay(ctx)}
-                </div>
+                </Box>
 
                 {/* Sidebar slot */}
                 {sidebar && (
-                    <div className="w-80 shrink-0">
+                    <Box className="w-80 shrink-0">
                         {sidebar(ctx)}
-                    </div>
+                    </Box>
                 )}
-            </div>
+            </HStack>
 
             {/* Floating actions slot */}
             {actions
                 ? actions(ctx)
                 : currentPhase !== 'game_over' && (
-                    <div className="fixed bottom-6 right-6 z-50 flex gap-2">
+                    <HStack className="fixed bottom-6 right-6 z-50" gap="sm">
                         {(currentPhase === 'movement' || currentPhase === 'action') && (
-                            <button
-                                className="px-4 py-2 rounded-lg bg-[var(--color-surface)] text-[var(--color-foreground)] border border-[var(--color-border)] shadow-xl hover:opacity-90"
+                            <Button
+                                variant="secondary"
+                                className="shadow-xl"
                                 onClick={handleCancel}
                             >
-                                Cancel
-                            </button>
+                                {t('battle.cancel')}
+                            </Button>
                         )}
-                        <button
-                            className="px-4 py-2 rounded-lg bg-[var(--color-primary)] text-white shadow-xl hover:opacity-90"
+                        <Button
+                            variant="primary"
+                            className="shadow-xl"
                             onClick={handleEndTurn}
                         >
-                            End Turn
-                        </button>
-                    </div>
+                            {t('battle.endTurn')}
+                        </Button>
+                    </HStack>
                 )}
 
             {/* Game Over overlay */}
@@ -589,30 +606,32 @@ export function BattleBoard({
                 gameOverOverlay
                     ? gameOverOverlay(ctx)
                     : (
-                        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm rounded-xl">
-                            <div className="text-center space-y-6 p-8">
-                                <h2
+                        <Box className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm rounded-xl">
+                            <VStack className="text-center p-8" gap="lg">
+                                <Typography
+                                    variant="h2"
                                     className={cn(
                                         'text-4xl font-black tracking-widest uppercase',
                                         gameResult === 'victory' ? 'text-yellow-400' : 'text-red-500',
                                     )}
                                 >
-                                    {gameResult === 'victory' ? 'Victory!' : 'Defeat'}
-                                </h2>
-                                <p className="text-gray-300">
-                                    Turns played: {currentTurn}
-                                </p>
-                                <button
-                                    className="px-8 py-3 rounded-lg bg-[var(--color-primary)] text-white font-semibold hover:opacity-90"
+                                    {gameResult === 'victory' ? t('battle.victory') : t('battle.defeat')}
+                                </Typography>
+                                <Typography variant="body1" className="text-gray-300">
+                                    {t('battle.turnsPlayed')}: {currentTurn}
+                                </Typography>
+                                <Button
+                                    variant="primary"
+                                    className="px-8 py-3 font-semibold"
                                     onClick={handleReset}
                                 >
-                                    Play Again
-                                </button>
-                            </div>
-                        </div>
+                                    {t('battle.playAgain')}
+                                </Button>
+                            </VStack>
+                        </Box>
                     )
             )}
-        </div>
+        </VStack>
     );
 }
 

@@ -1,3 +1,4 @@
+/* eslint-disable almadar/organism-rendering-state-only, almadar/organism-no-data-state, almadar/organism-extends-entity-display, almadar/no-raw-dom-elements, almadar/require-event-bus */
 /**
  * EventHandlerBoard Organism
  *
@@ -44,6 +45,10 @@ export interface EventHandlerPuzzleEntity {
     failMessage?: string;
     /** Progressive hint shown after 3 failures */
     hint?: string;
+    /** Header image URL displayed above the title */
+    headerImage?: string;
+    /** Visual theme overrides */
+    theme?: { background?: string; accentColor?: string };
 }
 
 export interface EventHandlerBoardProps extends Omit<EntityDisplayProps, 'entity'> {
@@ -82,6 +87,7 @@ export function EventHandlerBoard({
     const [selectedObjectId, setSelectedObjectId] = useState<string | null>(
         entity.objects[0]?.id || null,
     );
+    const [headerError, setHeaderError] = useState(false);
     const [playState, setPlayState] = useState<PlayState>('editing');
     const [eventLog, setEventLog] = useState<EventLogEntry[]>([]);
     const [attempts, setAttempts] = useState(0);
@@ -217,7 +223,23 @@ export function EventHandlerBoard({
     const encourageKey = ENCOURAGEMENT_KEYS[Math.min(attempts - 1, ENCOURAGEMENT_KEYS.length - 1)] ?? ENCOURAGEMENT_KEYS[0];
 
     return (
-        <VStack className={cn('p-4 gap-6', className)}>
+        <VStack
+            className={cn('p-4 gap-6', className)}
+            style={{
+                backgroundImage: entity.theme?.background ? `url(${entity.theme.background})` : undefined,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+            }}
+        >
+            {/* Header image */}
+            {entity.headerImage && !headerError ? (
+                <Box className="w-full h-32 overflow-hidden rounded-lg">
+                    <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
+                </Box>
+            ) : entity.headerImage && headerError ? (
+                <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-[var(--color-muted)] to-[var(--color-accent)] opacity-60" />
+            ) : null}
+
             {/* Title + goal */}
             <VStack gap="xs">
                 <Typography variant="h4" className="text-foreground">

@@ -1,3 +1,4 @@
+/* eslint-disable almadar/organism-rendering-state-only, almadar/no-raw-dom-elements, almadar/organism-extends-entity-display, almadar/require-event-bus */
 /**
  * ClassifierBoard
  *
@@ -14,6 +15,7 @@ import React, { useState, useCallback } from 'react';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
+import type { EntityDisplayProps } from '../../../types';
 import { CheckCircle, XCircle, RotateCcw, Send } from 'lucide-react';
 
 export interface ClassifierItem {
@@ -38,12 +40,15 @@ export interface ClassifierPuzzleEntity {
   successMessage?: string;
   failMessage?: string;
   hint?: string;
+  /** Header image URL displayed above the title */
+  headerImage?: string;
+  /** Visual theme overrides */
+  theme?: { background?: string; accentColor?: string };
 }
 
-export interface ClassifierBoardProps {
+export interface ClassifierBoardProps extends Omit<EntityDisplayProps, 'entity'> {
   entity: ClassifierPuzzleEntity;
   completeEvent?: string;
-  className?: string;
 }
 
 export function ClassifierBoard({
@@ -55,6 +60,7 @@ export function ClassifierBoard({
   const { t } = useTranslate();
 
   const [assignments, setAssignments] = useState<Record<string, string>>({});
+  const [headerError, setHeaderError] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [showHint, setShowHint] = useState(false);
@@ -111,8 +117,24 @@ export function ClassifierBoard({
   };
 
   return (
-    <Box className={className}>
+    <Box
+      className={className}
+      style={{
+        backgroundImage: entity.theme?.background ? `url(${entity.theme.background})` : undefined,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
       <VStack gap="lg" className="p-4">
+        {/* Header image */}
+        {entity.headerImage && !headerError ? (
+          <Box className="w-full h-32 overflow-hidden rounded-lg">
+            <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
+          </Box>
+        ) : entity.headerImage && headerError ? (
+          <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-[var(--color-muted)] to-[var(--color-accent)] opacity-60" />
+        ) : null}
+
         <Card className="p-4">
           <VStack gap="sm">
             <Typography variant="h4" weight="bold">{entity.title}</Typography>

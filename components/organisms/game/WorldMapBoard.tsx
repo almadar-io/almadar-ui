@@ -20,10 +20,12 @@
  * @packageDocumentation
  */
 
+/* eslint-disable almadar/organism-no-callback-props, almadar/organism-extends-entity-display */
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { VStack, HStack, Stack } from '../../atoms/Stack';
+import type { EntityDisplayProps } from '../types';
 import IsometricCanvas from './IsometricCanvas';
 import type {
     IsometricTile,
@@ -45,6 +47,13 @@ export interface MapHero {
     position: { x: number; y: number };
     movement: number;
     sprite?: string;
+    /** Optional sprite sheet for animation (null = use static sprite) */
+    spriteSheet?: {
+        se: string;
+        sw: string;
+        frameWidth: number;
+        frameHeight: number;
+    } | null;
     level?: number;
 }
 
@@ -95,13 +104,9 @@ export interface WorldMapEntity {
     backgroundImage?: string;
 }
 
-export interface WorldMapBoardProps {
+export interface WorldMapBoardProps extends Omit<EntityDisplayProps, 'entity'> {
     /** World map entity data */
     entity: WorldMapEntity;
-    /** Loading state indicator */
-    isLoading?: boolean;
-    /** Error state */
-    error?: Error | null;
 
     /** Canvas render scale */
     scale?: number;

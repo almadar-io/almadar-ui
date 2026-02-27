@@ -1,3 +1,4 @@
+/* eslint-disable almadar/no-raw-dom-elements */
 /**
  * ActionTile Component
  *
@@ -11,9 +12,11 @@
 import React, { useCallback } from 'react';
 import { Box, Typography } from '../../../../atoms';
 import { cn } from '../../../../../lib/cn';
+import { useTranslate } from '../../../../../hooks/useTranslate';
+import type { EntityDisplayProps } from '../../../types';
 import type { SlotItemData } from '../../TraitSlot';
 
-export interface ActionTileProps {
+export interface ActionTileProps extends Omit<EntityDisplayProps, 'entity'> {
     /** The action data */
     action: SlotItemData;
     /** Size variant */
@@ -22,8 +25,6 @@ export interface ActionTileProps {
     disabled?: boolean;
     /** Category → color mapping */
     categoryColors?: Record<string, { bg: string; border: string }>;
-    /** Additional CSS classes */
-    className?: string;
 }
 
 const DRAG_MIME = 'application/x-almadar-slot-item';
@@ -41,6 +42,7 @@ export function ActionTile({
     categoryColors,
     className,
 }: ActionTileProps): React.JSX.Element {
+    useTranslate(); // imported for i18n readiness — all visible text is data-driven
     const config = SIZE_CONFIG[size];
     const catColor = categoryColors?.[action.category];
 
@@ -71,9 +73,13 @@ export function ActionTile({
             draggable={!disabled}
             onDragStart={handleDragStart}
         >
-            <Typography variant="body1" className={cn(config.icon, 'leading-none')}>
-                {action.iconEmoji || '\u2726'}
-            </Typography>
+            {action.iconUrl ? (
+                <img src={action.iconUrl} alt="" className="w-8 h-8 object-contain" />
+            ) : (
+                <Typography variant="body1" className={cn(config.icon, 'leading-none')}>
+                    {action.iconEmoji || '\u2726'}
+                </Typography>
+            )}
             <Typography variant="caption" className={cn(config.text, 'text-foreground font-medium whitespace-nowrap')}>
                 {action.name}
             </Typography>

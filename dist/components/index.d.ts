@@ -5465,6 +5465,13 @@ interface BattleUnit {
     unitType?: string;
     heroId?: string;
     sprite?: string;
+    /** Optional sprite sheet for animation (null = use static sprite) */
+    spriteSheet?: {
+        se: string;
+        sw: string;
+        frameWidth: number;
+        frameHeight: number;
+    } | null;
     team: 'player' | 'enemy';
     position: {
         x: number;
@@ -5548,7 +5555,7 @@ interface BattleSlotContext {
         y: number;
     };
 }
-interface BattleBoardProps {
+interface BattleBoardProps extends Omit<EntityDisplayProps, 'entity'> {
     /** Entity containing all board data */
     entity: BattleEntity;
     /** Canvas render scale */
@@ -5678,6 +5685,13 @@ interface MapHero {
     };
     movement: number;
     sprite?: string;
+    /** Optional sprite sheet for animation (null = use static sprite) */
+    spriteSheet?: {
+        se: string;
+        sw: string;
+        frameWidth: number;
+        frameHeight: number;
+    } | null;
     level?: number;
 }
 /** A hex on the map */
@@ -5733,13 +5747,9 @@ interface WorldMapEntity {
     };
     backgroundImage?: string;
 }
-interface WorldMapBoardProps {
+interface WorldMapBoardProps extends Omit<EntityDisplayProps, 'entity'> {
     /** World map entity data */
     entity: WorldMapEntity;
-    /** Loading state indicator */
-    isLoading?: boolean;
-    /** Error state */
-    error?: Error | null;
     /** Canvas render scale */
     scale?: number;
     /** Unit draw-size multiplier */
@@ -6122,7 +6132,7 @@ declare namespace EditorToolbar {
  * @packageDocumentation
  */
 
-interface ActionTileProps {
+interface ActionTileProps extends Omit<EntityDisplayProps, 'entity'> {
     /** The action data */
     action: SlotItemData;
     /** Size variant */
@@ -6134,8 +6144,6 @@ interface ActionTileProps {
         bg: string;
         border: string;
     }>;
-    /** Additional CSS classes */
-    className?: string;
 }
 declare function ActionTile({ action, size, disabled, categoryColors, className, }: ActionTileProps): React__default.JSX.Element;
 declare namespace ActionTile {
@@ -6257,6 +6265,13 @@ interface SequencerPuzzleEntity {
         x: number;
         y: number;
     }>;
+    /** Header image URL displayed above the title */
+    headerImage?: string;
+    /** Visual theme overrides */
+    theme?: {
+        background?: string;
+        accentColor?: string;
+    };
 }
 interface SequencerBoardProps extends Omit<EntityDisplayProps, 'entity'> {
     /** Puzzle data */
@@ -6424,6 +6439,13 @@ interface EventHandlerPuzzleEntity {
     failMessage?: string;
     /** Progressive hint shown after 3 failures */
     hint?: string;
+    /** Header image URL displayed above the title */
+    headerImage?: string;
+    /** Visual theme overrides */
+    theme?: {
+        background?: string;
+        accentColor?: string;
+    };
 }
 interface EventHandlerBoardProps extends Omit<EntityDisplayProps, 'entity'> {
     /** Puzzle data */
@@ -6612,6 +6634,13 @@ interface StateArchitectPuzzleEntity {
     /** Feedback */
     successMessage?: string;
     failMessage?: string;
+    /** Header image URL displayed above the title */
+    headerImage?: string;
+    /** Visual theme overrides */
+    theme?: {
+        background?: string;
+        accentColor?: string;
+    };
 }
 interface StateArchitectBoardProps extends Omit<EntityDisplayProps, 'entity'> {
     /** Puzzle data */
@@ -6665,11 +6694,17 @@ interface SimulatorPuzzleEntity {
     successMessage?: string;
     failMessage?: string;
     hint?: string;
+    /** Header image URL displayed above the title */
+    headerImage?: string;
+    /** Visual theme overrides */
+    theme?: {
+        background?: string;
+        accentColor?: string;
+    };
 }
-interface SimulatorBoardProps {
+interface SimulatorBoardProps extends Omit<EntityDisplayProps, 'entity'> {
     entity: SimulatorPuzzleEntity;
     completeEvent?: string;
-    className?: string;
 }
 declare function SimulatorBoard({ entity, completeEvent, className, }: SimulatorBoardProps): React__default.JSX.Element;
 declare namespace SimulatorBoard {
@@ -6708,11 +6743,17 @@ interface ClassifierPuzzleEntity {
     successMessage?: string;
     failMessage?: string;
     hint?: string;
+    /** Header image URL displayed above the title */
+    headerImage?: string;
+    /** Visual theme overrides */
+    theme?: {
+        background?: string;
+        accentColor?: string;
+    };
 }
-interface ClassifierBoardProps {
+interface ClassifierBoardProps extends Omit<EntityDisplayProps, 'entity'> {
     entity: ClassifierPuzzleEntity;
     completeEvent?: string;
-    className?: string;
 }
 declare function ClassifierBoard({ entity, completeEvent, className, }: ClassifierBoardProps): React__default.JSX.Element;
 declare namespace ClassifierBoard {
@@ -6735,6 +6776,8 @@ interface BuilderComponent {
     label: string;
     description?: string;
     iconEmoji?: string;
+    /** Image URL icon (takes precedence over iconEmoji) */
+    iconUrl?: string;
     category?: string;
 }
 interface BuilderSlot {
@@ -6752,11 +6795,17 @@ interface BuilderPuzzleEntity {
     successMessage?: string;
     failMessage?: string;
     hint?: string;
+    /** Header image URL displayed above the title */
+    headerImage?: string;
+    /** Visual theme overrides */
+    theme?: {
+        background?: string;
+        accentColor?: string;
+    };
 }
-interface BuilderBoardProps {
+interface BuilderBoardProps extends Omit<EntityDisplayProps, 'entity'> {
     entity: BuilderPuzzleEntity;
     completeEvent?: string;
-    className?: string;
 }
 declare function BuilderBoard({ entity, completeEvent, className, }: BuilderBoardProps): React__default.JSX.Element;
 declare namespace BuilderBoard {
@@ -6791,11 +6840,17 @@ interface DebuggerPuzzleEntity {
     successMessage?: string;
     failMessage?: string;
     hint?: string;
+    /** Header image URL displayed above the title */
+    headerImage?: string;
+    /** Visual theme overrides */
+    theme?: {
+        background?: string;
+        accentColor?: string;
+    };
 }
-interface DebuggerBoardProps {
+interface DebuggerBoardProps extends Omit<EntityDisplayProps, 'entity'> {
     entity: DebuggerPuzzleEntity;
     completeEvent?: string;
-    className?: string;
 }
 declare function DebuggerBoard({ entity, completeEvent, className, }: DebuggerBoardProps): React__default.JSX.Element;
 declare namespace DebuggerBoard {
@@ -6839,11 +6894,17 @@ interface NegotiatorPuzzleEntity {
     successMessage?: string;
     failMessage?: string;
     hint?: string;
+    /** Header image URL displayed above the title */
+    headerImage?: string;
+    /** Visual theme overrides */
+    theme?: {
+        background?: string;
+        accentColor?: string;
+    };
 }
-interface NegotiatorBoardProps {
+interface NegotiatorBoardProps extends Omit<EntityDisplayProps, 'entity'> {
     entity: NegotiatorPuzzleEntity;
     completeEvent?: string;
-    className?: string;
 }
 declare function NegotiatorBoard({ entity, completeEvent, className, }: NegotiatorBoardProps): React__default.JSX.Element;
 declare namespace NegotiatorBoard {

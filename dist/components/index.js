@@ -1,17 +1,17 @@
+import { DEFAULT_CONFIG, renderStateMachineToDomData, parseContentSegments } from '../chunk-N6DJVKZ6.js';
 import { useAuthContext } from '../chunk-BKC4XU44.js';
 export { ENTITY_EVENTS, useAgentChat, useAuthContext, useCompile, useConnectGitHub, useCreateEntity, useDeepAgentGeneration, useDeleteEntity, useDisconnectGitHub, useEntities, useEntitiesByType, useEntity as useEntityById, useEntityMutations, useExtensions, useFileEditor, useFileSystem, useGitHubBranches, useGitHubRepo, useGitHubRepos, useGitHubStatus, useInput, useOrbitalHistory, useOrbitalMutations, usePhysics, usePlayer, usePreview, useResolvedEntity, useSelectedEntity, useSendOrbitalEvent, useSingletonEntity, useUIEvents, useUpdateEntity, useValidation } from '../chunk-BKC4XU44.js';
-import { DEFAULT_CONFIG, renderStateMachineToDomData, parseContentSegments } from '../chunk-N6DJVKZ6.js';
 import '../chunk-XSEDIUM6.js';
-import { VStack, HStack, Typography, Button, Icon, Box, Card, Avatar, Badge, SearchInput, Checkbox, Menu as Menu$1, Pagination, LoadingState, EmptyState, Modal, ErrorState, QuizBlock, CodeBlock, ScaledDiagram, MarkdownContent, Divider, ProgressBar, Stack, Select, Drawer, Toast, Tabs, Input, ThemeToggle, HealthBar, ScoreDisplay, StateIndicator, Container, EntityDisplayEvents } from '../chunk-LB3HXNAR.js';
-export { Accordion, Card2 as ActionCard, Alert, Avatar, Badge, Box, Breadcrumb, Button, ButtonGroup, Card, CardBody, CardContent, CardFooter, CardGrid, CardHeader, CardTitle, Center, Checkbox, CodeBlock, ConditionalWrapper, Container, ControlButton, DataTable, DetailPanel, Divider, Drawer, EmptyState, EntityDisplayEvents, ErrorBoundary, ErrorState, FilterGroup, Flex, FloatingActionButton, Form, FormField, FormSectionHeader, Grid, HStack, Heading, HealthBar, Icon, Input, InputGroup, Label, LawReferenceTooltip, LoadingState, MarkdownContent, MasterDetail, Menu, Modal, Overlay, PageHeader, Pagination, Popover, ProgressBar, QuizBlock, Radio, RelationSelect, RepeatableFormSection, ScaledDiagram, ScoreDisplay, SearchInput, Select, SidePanel, SimpleGrid, Skeleton, SlotContentRenderer, Spacer, Spinner, Sprite, Stack, StatCard, StateIndicator, Switch, Tabs, Text, TextHighlight, Textarea, ThemeSelector, ThemeToggle, Toast, Tooltip, Typography, UISlotComponent, UISlotRenderer, VStack, ViolationAlert, WizardNavigation, WizardProgress, drawSprite } from '../chunk-LB3HXNAR.js';
-import '../chunk-BTXQJGFB.js';
+import { VStack, HStack, Typography, Button, Icon, Box, Card, Avatar, Badge, SearchInput, Checkbox, Menu as Menu$1, Pagination, LoadingState, EmptyState, Modal, ErrorState, QuizBlock, CodeBlock, ScaledDiagram, MarkdownContent, Divider, ProgressBar, Stack, Select, Drawer, Toast, Tabs, Input, ThemeToggle, HealthBar, ScoreDisplay, StateIndicator, Container, EntityDisplayEvents } from '../chunk-LX4G4SVJ.js';
+export { Accordion, Card2 as ActionCard, Alert, Avatar, Badge, Box, Breadcrumb, Button, ButtonGroup, Card, CardBody, CardContent, CardFooter, CardGrid, CardHeader, CardTitle, Center, Checkbox, CodeBlock, ConditionalWrapper, Container, ControlButton, DataTable, DetailPanel, Divider, Drawer, EmptyState, EntityDisplayEvents, ErrorBoundary, ErrorState, FilterGroup, Flex, FloatingActionButton, Form, FormField, FormSectionHeader, Grid, HStack, Heading, HealthBar, Icon, Input, InputGroup, Label, LawReferenceTooltip, LoadingState, MarkdownContent, MasterDetail, Menu, Modal, Overlay, PageHeader, Pagination, Popover, ProgressBar, QuizBlock, Radio, RelationSelect, RepeatableFormSection, ScaledDiagram, ScoreDisplay, SearchInput, Select, SidePanel, SimpleGrid, Skeleton, SlotContentRenderer, Spacer, Spinner, Sprite, Stack, StatCard, StateIndicator, Switch, Tabs, Text, TextHighlight, Textarea, ThemeSelector, ThemeToggle, Toast, Tooltip, Typography, UISlotComponent, UISlotRenderer, VStack, ViolationAlert, WizardNavigation, WizardProgress, drawSprite } from '../chunk-LX4G4SVJ.js';
+import '../chunk-QU4JHKVC.js';
+import { cn, getNestedValue } from '../chunk-KKCVDUK7.js';
+export { cn } from '../chunk-KKCVDUK7.js';
 import { useTranslate } from '../chunk-PE2H3NAW.js';
 export { EntityDataProvider, I18nProvider, createTranslate, entityDataKeys, parseQueryBinding, useEntity, useEntityDataAdapter, useEntityDetail, useEntityList, useEntityListSuspense, useEntitySuspense, useQuerySingleton, useTranslate } from '../chunk-PE2H3NAW.js';
 import { useEventBus, useEventListener } from '../chunk-YXZM3WCF.js';
 export { useEmitEvent, useEventBus, useEventListener } from '../chunk-YXZM3WCF.js';
 export { DEFAULT_SLOTS, useUISlotManager } from '../chunk-7NEWMNNU.js';
-import { cn, getNestedValue } from '../chunk-KKCVDUK7.js';
-export { cn } from '../chunk-KKCVDUK7.js';
 export { clearEntities, getAllEntities, getByType, getEntity, getSingleton, removeEntity, spawnEntity, updateEntity, updateSingleton } from '../chunk-N7MVUW4R.js';
 import { __publicField } from '../chunk-PKBMQBKP.js';
 import * as React42 from 'react';
@@ -7333,6 +7333,7 @@ function BattleBoard({
   const currentTurn = entity.turn;
   const gameResult = entity.gameResult;
   const eventBus = useEventBus();
+  const { t } = useTranslate();
   const [hoveredTile, setHoveredTile] = useState(null);
   const [isShaking, setIsShaking] = useState(false);
   const selectedUnit = useMemo(
@@ -7386,11 +7387,11 @@ function BattleBoard({
       const anim2 = movementAnimRef.current;
       if (!anim2) return;
       anim2.elapsed += 16;
-      const t = Math.min(anim2.elapsed / anim2.duration, 1);
-      const eased = 1 - (1 - t) * (1 - t);
+      const t2 = Math.min(anim2.elapsed / anim2.duration, 1);
+      const eased = 1 - (1 - t2) * (1 - t2);
       const cx = anim2.from.x + (anim2.to.x - anim2.from.x) * eased;
       const cy = anim2.from.y + (anim2.to.y - anim2.from.y) * eased;
-      if (t >= 1) {
+      if (t2 >= 1) {
         movementAnimRef.current = null;
         setMovingPositions((prev) => {
           const next = new Map(prev);
@@ -7421,16 +7422,16 @@ function BattleBoard({
         unitType: unit.unitType,
         heroId: unit.heroId,
         sprite: unit.sprite,
-        traits: unit.traits?.map((t) => ({
-          name: t.name,
-          currentState: t.currentState,
-          states: t.states,
-          cooldown: t.cooldown ?? 0
+        traits: unit.traits?.map((t2) => ({
+          name: t2.name,
+          currentState: t2.currentState,
+          states: t2.states,
+          cooldown: t2.cooldown ?? 0
         }))
       };
     });
   }, [units, movingPositions]);
-  const maxY = Math.max(...tiles.map((t) => t.y), 0);
+  const maxY = Math.max(...tiles.map((t2) => t2.y), 0);
   const baseOffsetX = (maxY + 1) * (TILE_WIDTH * scale / 2);
   const tileToScreen = useCallback(
     (tx, ty) => isoToScreen(tx, ty, scale, baseOffsetX),
@@ -7458,7 +7459,7 @@ function BattleBoard({
       eventBus.emit(`UI:${unitClickEvent}`, { unitId });
     }
     if (currentPhase === "action" && selectedUnit) {
-      if (unit.team === "enemy" && attackTargets.some((t) => t.x === unit.position.x && t.y === unit.position.y)) {
+      if (unit.team === "enemy" && attackTargets.some((t2) => t2.x === unit.position.x && t2.y === unit.position.y)) {
         const damage = calculateDamage2 ? calculateDamage2(selectedUnit, unit) : Math.max(1, selectedUnit.attack - unit.defense);
         setIsShaking(true);
         setTimeout(() => setIsShaking(false), 300);
@@ -7535,7 +7536,7 @@ function BattleBoard({
     ]
   );
   const shakeStyle = isShaking ? { animation: "battle-shake 0.3s ease-in-out" } : {};
-  return /* @__PURE__ */ jsxs("div", { className: cn("battle-board relative flex flex-col min-h-[600px] bg-[var(--color-background)]", className), children: [
+  return /* @__PURE__ */ jsxs(VStack, { className: cn("battle-board relative min-h-[600px] bg-[var(--color-background)]", className), gap: "none", children: [
     /* @__PURE__ */ jsx("style", { children: `
                 @keyframes battle-shake {
                     0%, 100% { transform: translate(0, 0); }
@@ -7550,9 +7551,9 @@ function BattleBoard({
                     90% { transform: translate(-2px, 1px); }
                 }
             ` }),
-    header && /* @__PURE__ */ jsx("div", { className: "p-4", children: header(ctx) }),
-    /* @__PURE__ */ jsxs("div", { className: "flex flex-1 gap-4 p-4 pt-0", children: [
-      /* @__PURE__ */ jsxs("div", { className: "relative flex-1", style: shakeStyle, children: [
+    header && /* @__PURE__ */ jsx(Box, { className: "p-4", children: header(ctx) }),
+    /* @__PURE__ */ jsxs(HStack, { className: "flex-1 gap-4 p-4 pt-0", gap: "none", children: [
+      /* @__PURE__ */ jsxs(Box, { className: "relative flex-1", style: shakeStyle, children: [
         /* @__PURE__ */ jsx(
           IsometricCanvas_default,
           {
@@ -7580,47 +7581,52 @@ function BattleBoard({
         ),
         overlay && overlay(ctx)
       ] }),
-      sidebar && /* @__PURE__ */ jsx("div", { className: "w-80 shrink-0", children: sidebar(ctx) })
+      sidebar && /* @__PURE__ */ jsx(Box, { className: "w-80 shrink-0", children: sidebar(ctx) })
     ] }),
-    actions ? actions(ctx) : currentPhase !== "game_over" && /* @__PURE__ */ jsxs("div", { className: "fixed bottom-6 right-6 z-50 flex gap-2", children: [
+    actions ? actions(ctx) : currentPhase !== "game_over" && /* @__PURE__ */ jsxs(HStack, { className: "fixed bottom-6 right-6 z-50", gap: "sm", children: [
       (currentPhase === "movement" || currentPhase === "action") && /* @__PURE__ */ jsx(
-        "button",
+        Button,
         {
-          className: "px-4 py-2 rounded-lg bg-[var(--color-surface)] text-[var(--color-foreground)] border border-[var(--color-border)] shadow-xl hover:opacity-90",
+          variant: "secondary",
+          className: "shadow-xl",
           onClick: handleCancel,
-          children: "Cancel"
+          children: t("battle.cancel")
         }
       ),
       /* @__PURE__ */ jsx(
-        "button",
+        Button,
         {
-          className: "px-4 py-2 rounded-lg bg-[var(--color-primary)] text-white shadow-xl hover:opacity-90",
+          variant: "primary",
+          className: "shadow-xl",
           onClick: handleEndTurn,
-          children: "End Turn"
+          children: t("battle.endTurn")
         }
       )
     ] }),
-    gameResult && (gameOverOverlay ? gameOverOverlay(ctx) : /* @__PURE__ */ jsx("div", { className: "absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm rounded-xl", children: /* @__PURE__ */ jsxs("div", { className: "text-center space-y-6 p-8", children: [
+    gameResult && (gameOverOverlay ? gameOverOverlay(ctx) : /* @__PURE__ */ jsx(Box, { className: "absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm rounded-xl", children: /* @__PURE__ */ jsxs(VStack, { className: "text-center p-8", gap: "lg", children: [
       /* @__PURE__ */ jsx(
-        "h2",
+        Typography,
         {
+          variant: "h2",
           className: cn(
             "text-4xl font-black tracking-widest uppercase",
             gameResult === "victory" ? "text-yellow-400" : "text-red-500"
           ),
-          children: gameResult === "victory" ? "Victory!" : "Defeat"
+          children: gameResult === "victory" ? t("battle.victory") : t("battle.defeat")
         }
       ),
-      /* @__PURE__ */ jsxs("p", { className: "text-gray-300", children: [
-        "Turns played: ",
+      /* @__PURE__ */ jsxs(Typography, { variant: "body1", className: "text-gray-300", children: [
+        t("battle.turnsPlayed"),
+        ": ",
         currentTurn
       ] }),
       /* @__PURE__ */ jsx(
-        "button",
+        Button,
         {
-          className: "px-8 py-3 rounded-lg bg-[var(--color-primary)] text-white font-semibold hover:opacity-90",
+          variant: "primary",
+          className: "px-8 py-3 font-semibold",
           onClick: handleReset,
-          children: "Play Again"
+          children: t("battle.playAgain")
         }
       )
     ] }) }))
@@ -8716,6 +8722,7 @@ function ActionTile({
   categoryColors,
   className
 }) {
+  useTranslate();
   const config = SIZE_CONFIG3[size];
   const catColor = categoryColors?.[action.category];
   const handleDragStart = useCallback((e) => {
@@ -8743,7 +8750,7 @@ function ActionTile({
       draggable: !disabled,
       onDragStart: handleDragStart,
       children: [
-        /* @__PURE__ */ jsx(Typography, { variant: "body1", className: cn(config.icon, "leading-none"), children: action.iconEmoji || "\u2726" }),
+        action.iconUrl ? /* @__PURE__ */ jsx("img", { src: action.iconUrl, alt: "", className: "w-8 h-8 object-contain" }) : /* @__PURE__ */ jsx(Typography, { variant: "body1", className: cn(config.icon, "leading-none"), children: action.iconEmoji || "\u2726" }),
         /* @__PURE__ */ jsx(Typography, { variant: "caption", className: cn(config.text, "text-foreground font-medium whitespace-nowrap"), children: action.name })
       ]
     }
@@ -8856,6 +8863,7 @@ function SequencerBoard({
 }) {
   const { emit } = useEventBus();
   const { t } = useTranslate();
+  const [headerError, setHeaderError] = useState(false);
   const [slots, setSlots] = useState(
     () => Array.from({ length: entity.maxSlots }, () => void 0)
   );
@@ -8968,64 +8976,76 @@ function SequencerBoard({
   const hasFeedback = slotFeedback.some((f) => f !== null);
   const correctCount = slotFeedback.filter((f) => f === "correct").length;
   const encourageKey = ENCOURAGEMENT_KEYS[Math.min(attempts - 1, ENCOURAGEMENT_KEYS.length - 1)] ?? ENCOURAGEMENT_KEYS[0];
-  return /* @__PURE__ */ jsxs(VStack, { className: cn("p-4 gap-6", className), children: [
-    /* @__PURE__ */ jsxs(VStack, { gap: "xs", children: [
-      /* @__PURE__ */ jsx(Typography, { variant: "h4", className: "text-foreground", children: entity.title }),
-      /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground", children: entity.description })
-    ] }),
-    showHint && /* @__PURE__ */ jsx(Box, { className: "p-3 rounded-lg bg-accent/10 border border-accent/30", children: /* @__PURE__ */ jsxs(HStack, { className: "items-start", gap: "xs", children: [
-      /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-accent font-bold shrink-0", children: "\u{1F4A1} " + t("game.hint") + ":" }),
-      /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-foreground", children: entity.hint })
-    ] }) }),
-    filledSlots.length > 0 && /* @__PURE__ */ jsx(TraitStateViewer, { trait: machine, variant: "linear", size: "md" }),
-    /* @__PURE__ */ jsxs(VStack, { gap: "xs", children: [
-      /* @__PURE__ */ jsxs(HStack, { className: "items-center justify-between", children: [
-        /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground font-medium", children: t("sequencer.yourSequence") + ":" }),
-        hasFeedback && playState === "idle" && /* @__PURE__ */ jsxs(Typography, { variant: "caption", className: "text-muted-foreground", children: [
-          `${correctCount}/${entity.maxSlots} `,
-          "\u2705"
+  return /* @__PURE__ */ jsxs(
+    VStack,
+    {
+      className: cn("p-4 gap-6", className),
+      style: {
+        backgroundImage: entity.theme?.background ? `url(${entity.theme.background})` : void 0,
+        backgroundSize: "cover",
+        backgroundPosition: "center"
+      },
+      children: [
+        entity.headerImage && !headerError ? /* @__PURE__ */ jsx(Box, { className: "w-full h-32 overflow-hidden rounded-lg", children: /* @__PURE__ */ jsx("img", { src: entity.headerImage, alt: "", onError: () => setHeaderError(true), className: "w-full h-full object-cover" }) }) : entity.headerImage && headerError ? /* @__PURE__ */ jsx(Box, { className: "w-full h-32 rounded-lg bg-gradient-to-br from-[var(--color-muted)] to-[var(--color-accent)] opacity-60" }) : null,
+        /* @__PURE__ */ jsxs(VStack, { gap: "xs", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "h4", className: "text-foreground", children: entity.title }),
+          /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground", children: entity.description })
+        ] }),
+        showHint && /* @__PURE__ */ jsx(Box, { className: "p-3 rounded-lg bg-accent/10 border border-accent/30", children: /* @__PURE__ */ jsxs(HStack, { className: "items-start", gap: "xs", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-accent font-bold shrink-0", children: "\u{1F4A1} " + t("game.hint") + ":" }),
+          /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-foreground", children: entity.hint })
+        ] }) }),
+        filledSlots.length > 0 && /* @__PURE__ */ jsx(TraitStateViewer, { trait: machine, variant: "linear", size: "md" }),
+        /* @__PURE__ */ jsxs(VStack, { gap: "xs", children: [
+          /* @__PURE__ */ jsxs(HStack, { className: "items-center justify-between", children: [
+            /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground font-medium", children: t("sequencer.yourSequence") + ":" }),
+            hasFeedback && playState === "idle" && /* @__PURE__ */ jsxs(Typography, { variant: "caption", className: "text-muted-foreground", children: [
+              `${correctCount}/${entity.maxSlots} `,
+              "\u2705"
+            ] })
+          ] }),
+          /* @__PURE__ */ jsx(
+            SequenceBar,
+            {
+              slots,
+              maxSlots: entity.maxSlots,
+              onSlotDrop: handleSlotDrop,
+              onSlotRemove: handleSlotRemove,
+              playing: playState === "playing",
+              currentStep,
+              categoryColors,
+              slotFeedback,
+              size: "lg"
+            }
+          )
+        ] }),
+        playState !== "playing" && /* @__PURE__ */ jsx(
+          ActionPalette,
+          {
+            actions: entity.availableActions,
+            usedActionIds: usedIds,
+            allowDuplicates: entity.allowDuplicates !== false,
+            categoryColors,
+            label: t("sequencer.dragActions")
+          }
+        ),
+        hasFeedback && playState === "idle" && attempts > 0 && /* @__PURE__ */ jsx(Box, { className: "p-3 rounded-lg bg-warning/10 border border-warning/30 text-center", children: /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-foreground", children: t(encourageKey) }) }),
+        playState === "success" && /* @__PURE__ */ jsx(Box, { className: "p-4 rounded-lg bg-success/20 border border-success text-center", children: /* @__PURE__ */ jsx(Typography, { variant: "h5", className: "text-success", children: entity.successMessage || t("sequencer.levelComplete") }) }),
+        /* @__PURE__ */ jsxs(HStack, { gap: "sm", children: [
+          /* @__PURE__ */ jsx(
+            Button,
+            {
+              variant: "primary",
+              onClick: handlePlay,
+              disabled: !canPlay,
+              children: "\u25B6 " + t("game.play")
+            }
+          ),
+          /* @__PURE__ */ jsx(Button, { variant: "ghost", onClick: handleReset, children: "\u21BA " + t("game.reset") })
         ] })
-      ] }),
-      /* @__PURE__ */ jsx(
-        SequenceBar,
-        {
-          slots,
-          maxSlots: entity.maxSlots,
-          onSlotDrop: handleSlotDrop,
-          onSlotRemove: handleSlotRemove,
-          playing: playState === "playing",
-          currentStep,
-          categoryColors,
-          slotFeedback,
-          size: "lg"
-        }
-      )
-    ] }),
-    playState !== "playing" && /* @__PURE__ */ jsx(
-      ActionPalette,
-      {
-        actions: entity.availableActions,
-        usedActionIds: usedIds,
-        allowDuplicates: entity.allowDuplicates !== false,
-        categoryColors,
-        label: t("sequencer.dragActions")
-      }
-    ),
-    hasFeedback && playState === "idle" && attempts > 0 && /* @__PURE__ */ jsx(Box, { className: "p-3 rounded-lg bg-warning/10 border border-warning/30 text-center", children: /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-foreground", children: t(encourageKey) }) }),
-    playState === "success" && /* @__PURE__ */ jsx(Box, { className: "p-4 rounded-lg bg-success/20 border border-success text-center", children: /* @__PURE__ */ jsx(Typography, { variant: "h5", className: "text-success", children: entity.successMessage || t("sequencer.levelComplete") }) }),
-    /* @__PURE__ */ jsxs(HStack, { gap: "sm", children: [
-      /* @__PURE__ */ jsx(
-        Button,
-        {
-          variant: "primary",
-          onClick: handlePlay,
-          disabled: !canPlay,
-          children: "\u25B6 " + t("game.play")
-        }
-      ),
-      /* @__PURE__ */ jsx(Button, { variant: "ghost", onClick: handleReset, children: "\u21BA " + t("game.reset") })
-    ] })
-  ] });
+      ]
+    }
+  );
 }
 SequencerBoard.displayName = "SequencerBoard";
 function RuleEditor({
@@ -9203,6 +9223,7 @@ function EventHandlerBoard({
   const [selectedObjectId, setSelectedObjectId] = useState(
     entity.objects[0]?.id || null
   );
+  const [headerError, setHeaderError] = useState(false);
   const [playState, setPlayState] = useState("editing");
   const [eventLog, setEventLog] = useState([]);
   const [attempts, setAttempts] = useState(0);
@@ -9307,64 +9328,76 @@ function EventHandlerBoard({
   });
   const showHint = attempts >= 3 && entity.hint;
   const encourageKey = ENCOURAGEMENT_KEYS2[Math.min(attempts - 1, ENCOURAGEMENT_KEYS2.length - 1)] ?? ENCOURAGEMENT_KEYS2[0];
-  return /* @__PURE__ */ jsxs(VStack, { className: cn("p-4 gap-6", className), children: [
-    /* @__PURE__ */ jsxs(VStack, { gap: "xs", children: [
-      /* @__PURE__ */ jsx(Typography, { variant: "h4", className: "text-foreground", children: entity.title }),
-      /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground", children: entity.description }),
-      /* @__PURE__ */ jsxs(HStack, { className: "items-center p-2 rounded bg-primary/10 border border-primary/30", gap: "xs", children: [
-        /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-primary font-bold", children: t("game.goal") + ":" }),
-        /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-foreground", children: entity.goalCondition })
-      ] })
-    ] }),
-    /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
-      /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground font-medium", children: t("eventHandler.clickObject") + ":" }),
-      /* @__PURE__ */ jsx(HStack, { className: "flex-wrap", gap: "sm", children: objectViewers.map(({ obj, machine }) => /* @__PURE__ */ jsx(
-        Box,
-        {
-          className: cn(
-            "p-3 rounded-lg border-2 cursor-pointer transition-all hover:scale-105",
-            selectedObjectId === obj.id ? "border-primary bg-primary/10" : "border-border bg-card hover:border-muted-foreground"
-          ),
-          onClick: () => setSelectedObjectId(obj.id),
-          children: /* @__PURE__ */ jsxs(VStack, { gap: "xs", className: "items-center min-w-[120px]", children: [
-            /* @__PURE__ */ jsx(Typography, { variant: "h5", children: obj.icon }),
-            /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-foreground font-medium", children: obj.name }),
-            /* @__PURE__ */ jsx(TraitStateViewer, { trait: machine, variant: "compact", size: "sm" })
+  return /* @__PURE__ */ jsxs(
+    VStack,
+    {
+      className: cn("p-4 gap-6", className),
+      style: {
+        backgroundImage: entity.theme?.background ? `url(${entity.theme.background})` : void 0,
+        backgroundSize: "cover",
+        backgroundPosition: "center"
+      },
+      children: [
+        entity.headerImage && !headerError ? /* @__PURE__ */ jsx(Box, { className: "w-full h-32 overflow-hidden rounded-lg", children: /* @__PURE__ */ jsx("img", { src: entity.headerImage, alt: "", onError: () => setHeaderError(true), className: "w-full h-full object-cover" }) }) : entity.headerImage && headerError ? /* @__PURE__ */ jsx(Box, { className: "w-full h-32 rounded-lg bg-gradient-to-br from-[var(--color-muted)] to-[var(--color-accent)] opacity-60" }) : null,
+        /* @__PURE__ */ jsxs(VStack, { gap: "xs", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "h4", className: "text-foreground", children: entity.title }),
+          /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground", children: entity.description }),
+          /* @__PURE__ */ jsxs(HStack, { className: "items-center p-2 rounded bg-primary/10 border border-primary/30", gap: "xs", children: [
+            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-primary font-bold", children: t("game.goal") + ":" }),
+            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-foreground", children: entity.goalCondition })
           ] })
-        },
-        obj.id
-      )) })
-    ] }),
-    selectedObject && /* @__PURE__ */ jsx(
-      ObjectRulePanel,
-      {
-        object: selectedObject,
-        onRulesChange: handleRulesChange,
-        disabled: playState !== "editing"
-      }
-    ),
-    eventLog.length > 0 && /* @__PURE__ */ jsx(EventLog, { entries: eventLog }),
-    playState === "success" && /* @__PURE__ */ jsx(Box, { className: "p-4 rounded-lg bg-success/20 border border-success text-center", children: /* @__PURE__ */ jsx(Typography, { variant: "h5", className: "text-success", children: entity.successMessage || t("eventHandler.chainComplete") }) }),
-    playState === "fail" && /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
-      /* @__PURE__ */ jsx(Box, { className: "p-4 rounded-lg bg-warning/10 border border-warning/30 text-center", children: /* @__PURE__ */ jsx(Typography, { variant: "body1", className: "text-foreground font-medium", children: t(encourageKey) }) }),
-      showHint && /* @__PURE__ */ jsx(Box, { className: "p-3 rounded-lg bg-accent/10 border border-accent/30", children: /* @__PURE__ */ jsxs(HStack, { className: "items-start", gap: "xs", children: [
-        /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-accent font-bold shrink-0", children: "\u{1F4A1} " + t("game.hint") + ":" }),
-        /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-foreground", children: entity.hint })
-      ] }) })
-    ] }),
-    /* @__PURE__ */ jsxs(HStack, { gap: "sm", children: [
-      playState === "fail" ? /* @__PURE__ */ jsx(Button, { variant: "primary", onClick: handleTryAgain, children: "\u{1F504} " + t("puzzle.tryAgainButton") }) : /* @__PURE__ */ jsx(
-        Button,
-        {
-          variant: "primary",
-          onClick: handlePlay,
-          disabled: playState !== "editing",
-          children: "\u25B6 " + t("game.play")
-        }
-      ),
-      /* @__PURE__ */ jsx(Button, { variant: "ghost", onClick: handleReset, children: "\u21BA " + t("game.reset") })
-    ] })
-  ] });
+        ] }),
+        /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground font-medium", children: t("eventHandler.clickObject") + ":" }),
+          /* @__PURE__ */ jsx(HStack, { className: "flex-wrap", gap: "sm", children: objectViewers.map(({ obj, machine }) => /* @__PURE__ */ jsx(
+            Box,
+            {
+              className: cn(
+                "p-3 rounded-lg border-2 cursor-pointer transition-all hover:scale-105",
+                selectedObjectId === obj.id ? "border-primary bg-primary/10" : "border-border bg-card hover:border-muted-foreground"
+              ),
+              onClick: () => setSelectedObjectId(obj.id),
+              children: /* @__PURE__ */ jsxs(VStack, { gap: "xs", className: "items-center min-w-[120px]", children: [
+                /* @__PURE__ */ jsx(Typography, { variant: "h5", children: obj.icon }),
+                /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-foreground font-medium", children: obj.name }),
+                /* @__PURE__ */ jsx(TraitStateViewer, { trait: machine, variant: "compact", size: "sm" })
+              ] })
+            },
+            obj.id
+          )) })
+        ] }),
+        selectedObject && /* @__PURE__ */ jsx(
+          ObjectRulePanel,
+          {
+            object: selectedObject,
+            onRulesChange: handleRulesChange,
+            disabled: playState !== "editing"
+          }
+        ),
+        eventLog.length > 0 && /* @__PURE__ */ jsx(EventLog, { entries: eventLog }),
+        playState === "success" && /* @__PURE__ */ jsx(Box, { className: "p-4 rounded-lg bg-success/20 border border-success text-center", children: /* @__PURE__ */ jsx(Typography, { variant: "h5", className: "text-success", children: entity.successMessage || t("eventHandler.chainComplete") }) }),
+        playState === "fail" && /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+          /* @__PURE__ */ jsx(Box, { className: "p-4 rounded-lg bg-warning/10 border border-warning/30 text-center", children: /* @__PURE__ */ jsx(Typography, { variant: "body1", className: "text-foreground font-medium", children: t(encourageKey) }) }),
+          showHint && /* @__PURE__ */ jsx(Box, { className: "p-3 rounded-lg bg-accent/10 border border-accent/30", children: /* @__PURE__ */ jsxs(HStack, { className: "items-start", gap: "xs", children: [
+            /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-accent font-bold shrink-0", children: "\u{1F4A1} " + t("game.hint") + ":" }),
+            /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-foreground", children: entity.hint })
+          ] }) })
+        ] }),
+        /* @__PURE__ */ jsxs(HStack, { gap: "sm", children: [
+          playState === "fail" ? /* @__PURE__ */ jsx(Button, { variant: "primary", onClick: handleTryAgain, children: "\u{1F504} " + t("puzzle.tryAgainButton") }) : /* @__PURE__ */ jsx(
+            Button,
+            {
+              variant: "primary",
+              onClick: handlePlay,
+              disabled: playState !== "editing",
+              children: "\u25B6 " + t("game.play")
+            }
+          ),
+          /* @__PURE__ */ jsx(Button, { variant: "ghost", onClick: handleReset, children: "\u21BA " + t("game.reset") })
+        ] })
+      ]
+    }
+  );
 }
 EventHandlerBoard.displayName = "EventHandlerBoard";
 function StateNode2({
@@ -9574,6 +9607,7 @@ function StateArchitectBoard({
   const { emit } = useEventBus();
   const { t } = useTranslate();
   const [transitions, setTransitions] = useState(entity.transitions);
+  const [headerError, setHeaderError] = useState(false);
   const [playState, setPlayState] = useState("editing");
   const [currentState, setCurrentState] = useState(entity.initialState);
   const [selectedState, setSelectedState] = useState(null);
@@ -9696,150 +9730,162 @@ function StateArchitectBoard({
       ...t2.guardHint ? { guard: t2.guardHint } : {}
     }))
   }), [entity, transitions]);
-  return /* @__PURE__ */ jsxs(VStack, { className: cn("p-4 gap-6", className), children: [
-    /* @__PURE__ */ jsxs(VStack, { gap: "xs", children: [
-      /* @__PURE__ */ jsx(Typography, { variant: "h4", className: "text-foreground", children: entity.title }),
-      /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground", children: entity.description }),
-      /* @__PURE__ */ jsxs(HStack, { className: "items-center p-2 rounded bg-warning/10 border border-warning/30", gap: "xs", children: [
-        /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-warning font-bold", children: t("game.hint") + ":" }),
-        /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-foreground", children: entity.hint })
-      ] })
-    ] }),
-    /* @__PURE__ */ jsxs(HStack, { className: "flex-wrap items-start", gap: "lg", children: [
-      /* @__PURE__ */ jsxs(VStack, { gap: "sm", className: "flex-1 min-w-[300px]", children: [
-        /* @__PURE__ */ jsxs(HStack, { className: "items-center justify-between", children: [
-          /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground font-medium", children: t("stateArchitect.graph") }),
-          addingFrom && /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-accent animate-pulse", children: t("stateArchitect.clickTarget", { state: addingFrom || "" }) })
+  return /* @__PURE__ */ jsxs(
+    VStack,
+    {
+      className: cn("p-4 gap-6", className),
+      style: {
+        backgroundImage: entity.theme?.background ? `url(${entity.theme.background})` : void 0,
+        backgroundSize: "cover",
+        backgroundPosition: "center"
+      },
+      children: [
+        entity.headerImage && !headerError ? /* @__PURE__ */ jsx(Box, { className: "w-full h-32 overflow-hidden rounded-lg", children: /* @__PURE__ */ jsx("img", { src: entity.headerImage, alt: "", onError: () => setHeaderError(true), className: "w-full h-full object-cover" }) }) : entity.headerImage && headerError ? /* @__PURE__ */ jsx(Box, { className: "w-full h-32 rounded-lg bg-gradient-to-br from-[var(--color-muted)] to-[var(--color-accent)] opacity-60" }) : null,
+        /* @__PURE__ */ jsxs(VStack, { gap: "xs", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "h4", className: "text-foreground", children: entity.title }),
+          /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground", children: entity.description }),
+          /* @__PURE__ */ jsxs(HStack, { className: "items-center p-2 rounded bg-warning/10 border border-warning/30", gap: "xs", children: [
+            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-warning font-bold", children: t("game.hint") + ":" }),
+            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-foreground", children: entity.hint })
+          ] })
         ] }),
-        /* @__PURE__ */ jsxs(
-          Box,
-          {
-            position: "relative",
-            className: "rounded-lg border border-border bg-background overflow-hidden",
-            style: { width: GRAPH_W, height: GRAPH_H },
-            children: [
-              /* @__PURE__ */ jsxs(
-                "svg",
-                {
-                  width: GRAPH_W,
-                  height: GRAPH_H,
-                  className: "absolute inset-0",
-                  style: { pointerEvents: "none" },
-                  children: [
-                    /* @__PURE__ */ jsxs("defs", { children: [
-                      /* @__PURE__ */ jsx("marker", { id: "arrowhead", markerWidth: "10", markerHeight: "7", refX: "10", refY: "3.5", orient: "auto", children: /* @__PURE__ */ jsx("polygon", { points: "0 0, 10 3.5, 0 7", fill: "var(--color-border)" }) }),
-                      /* @__PURE__ */ jsx("marker", { id: "arrowhead-active", markerWidth: "10", markerHeight: "7", refX: "10", refY: "3.5", orient: "auto", children: /* @__PURE__ */ jsx("polygon", { points: "0 0, 10 3.5, 0 7", fill: "var(--color-primary)" }) })
-                    ] }),
-                    transitions.map((t2) => {
-                      const fromPos = positions[t2.from];
-                      const toPos = positions[t2.to];
-                      if (!fromPos || !toPos) return null;
-                      const isActive = t2.from === currentState;
-                      return /* @__PURE__ */ jsx(
-                        TransitionArrow,
-                        {
-                          from: fromPos,
-                          to: toPos,
-                          eventLabel: t2.event,
-                          guardHint: t2.guardHint,
-                          isActive
-                        },
-                        t2.id
-                      );
-                    })
-                  ]
-                }
-              ),
-              entity.states.map((state) => /* @__PURE__ */ jsx(
-                StateNode2,
-                {
-                  name: state,
-                  position: positions[state],
-                  isCurrent: state === currentState,
-                  isSelected: state === selectedState,
-                  isInitial: state === entity.initialState,
-                  onClick: () => handleStateClick(state)
-                },
-                state
-              ))
-            ]
-          }
-        ),
-        playState === "editing" && /* @__PURE__ */ jsx(HStack, { gap: "sm", children: /* @__PURE__ */ jsx(
-          Button,
-          {
-            variant: "ghost",
-            onClick: handleStartAddTransition,
-            disabled: !selectedState,
-            children: selectedState ? t("stateArchitect.addTransition", { state: selectedState }) : t("stateArchitect.addTransitionPrompt")
-          }
-        ) }),
-        transitions.length > 0 && /* @__PURE__ */ jsxs(VStack, { gap: "xs", className: "p-3 rounded-lg bg-muted/50 border border-border", children: [
-          /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-muted-foreground font-medium", children: t("stateArchitect.transitions", { count: transitions.length }) + ":" }),
-          transitions.map((t2) => /* @__PURE__ */ jsxs(HStack, { className: "items-center text-xs", gap: "xs", children: [
-            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-foreground", children: t2.from }),
-            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-muted-foreground", children: "\u2014[" }),
-            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-accent font-medium", children: t2.event }),
-            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-muted-foreground", children: "]\u2192" }),
-            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-success", children: t2.to }),
-            t2.guardHint && /* @__PURE__ */ jsxs(Typography, { variant: "caption", className: "text-warning", children: [
-              "(",
-              t2.guardHint,
-              ")"
+        /* @__PURE__ */ jsxs(HStack, { className: "flex-wrap items-start", gap: "lg", children: [
+          /* @__PURE__ */ jsxs(VStack, { gap: "sm", className: "flex-1 min-w-[300px]", children: [
+            /* @__PURE__ */ jsxs(HStack, { className: "items-center justify-between", children: [
+              /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground font-medium", children: t("stateArchitect.graph") }),
+              addingFrom && /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-accent animate-pulse", children: t("stateArchitect.clickTarget", { state: addingFrom || "" }) })
             ] }),
-            playState === "editing" && /* @__PURE__ */ jsx(
+            /* @__PURE__ */ jsxs(
+              Box,
+              {
+                position: "relative",
+                className: "rounded-lg border border-border bg-background overflow-hidden",
+                style: { width: GRAPH_W, height: GRAPH_H },
+                children: [
+                  /* @__PURE__ */ jsxs(
+                    "svg",
+                    {
+                      width: GRAPH_W,
+                      height: GRAPH_H,
+                      className: "absolute inset-0",
+                      style: { pointerEvents: "none" },
+                      children: [
+                        /* @__PURE__ */ jsxs("defs", { children: [
+                          /* @__PURE__ */ jsx("marker", { id: "arrowhead", markerWidth: "10", markerHeight: "7", refX: "10", refY: "3.5", orient: "auto", children: /* @__PURE__ */ jsx("polygon", { points: "0 0, 10 3.5, 0 7", fill: "var(--color-border)" }) }),
+                          /* @__PURE__ */ jsx("marker", { id: "arrowhead-active", markerWidth: "10", markerHeight: "7", refX: "10", refY: "3.5", orient: "auto", children: /* @__PURE__ */ jsx("polygon", { points: "0 0, 10 3.5, 0 7", fill: "var(--color-primary)" }) })
+                        ] }),
+                        transitions.map((t2) => {
+                          const fromPos = positions[t2.from];
+                          const toPos = positions[t2.to];
+                          if (!fromPos || !toPos) return null;
+                          const isActive = t2.from === currentState;
+                          return /* @__PURE__ */ jsx(
+                            TransitionArrow,
+                            {
+                              from: fromPos,
+                              to: toPos,
+                              eventLabel: t2.event,
+                              guardHint: t2.guardHint,
+                              isActive
+                            },
+                            t2.id
+                          );
+                        })
+                      ]
+                    }
+                  ),
+                  entity.states.map((state) => /* @__PURE__ */ jsx(
+                    StateNode2,
+                    {
+                      name: state,
+                      position: positions[state],
+                      isCurrent: state === currentState,
+                      isSelected: state === selectedState,
+                      isInitial: state === entity.initialState,
+                      onClick: () => handleStateClick(state)
+                    },
+                    state
+                  ))
+                ]
+              }
+            ),
+            playState === "editing" && /* @__PURE__ */ jsx(HStack, { gap: "sm", children: /* @__PURE__ */ jsx(
               Button,
               {
                 variant: "ghost",
-                onClick: () => handleRemoveTransition(t2.id),
-                className: "text-xs ml-auto",
-                children: "\xD7"
+                onClick: handleStartAddTransition,
+                disabled: !selectedState,
+                children: selectedState ? t("stateArchitect.addTransition", { state: selectedState }) : t("stateArchitect.addTransitionPrompt")
               }
-            )
-          ] }, t2.id))
-        ] })
-      ] }),
-      /* @__PURE__ */ jsxs(VStack, { gap: "sm", className: "w-[280px] shrink-0", children: [
-        /* @__PURE__ */ jsx(TraitStateViewer, { trait: machine, variant: "full", size: "sm" }),
-        /* @__PURE__ */ jsx(
-          VariablePanel,
-          {
-            entityName: entity.entityName,
-            variables
-          }
-        ),
-        testResults.length > 0 && /* @__PURE__ */ jsxs(VStack, { className: "p-3 rounded-lg bg-card border border-border", gap: "xs", children: [
-          /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground font-medium", children: t("stateArchitect.testResults") + ":" }),
-          testResults.map((r, i) => /* @__PURE__ */ jsxs(HStack, { className: "items-center text-xs", gap: "xs", children: [
-            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: r.passed ? "text-success" : "text-error", children: r.passed ? "\u2714" : "\u2717" }),
-            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-foreground flex-1", children: r.label }),
-            !r.passed && /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-error", children: t("stateArchitect.gotState", { state: r.actualState }) })
-          ] }, i))
+            ) }),
+            transitions.length > 0 && /* @__PURE__ */ jsxs(VStack, { gap: "xs", className: "p-3 rounded-lg bg-muted/50 border border-border", children: [
+              /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-muted-foreground font-medium", children: t("stateArchitect.transitions", { count: transitions.length }) + ":" }),
+              transitions.map((t2) => /* @__PURE__ */ jsxs(HStack, { className: "items-center text-xs", gap: "xs", children: [
+                /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-foreground", children: t2.from }),
+                /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-muted-foreground", children: "\u2014[" }),
+                /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-accent font-medium", children: t2.event }),
+                /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-muted-foreground", children: "]\u2192" }),
+                /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-success", children: t2.to }),
+                t2.guardHint && /* @__PURE__ */ jsxs(Typography, { variant: "caption", className: "text-warning", children: [
+                  "(",
+                  t2.guardHint,
+                  ")"
+                ] }),
+                playState === "editing" && /* @__PURE__ */ jsx(
+                  Button,
+                  {
+                    variant: "ghost",
+                    onClick: () => handleRemoveTransition(t2.id),
+                    className: "text-xs ml-auto",
+                    children: "\xD7"
+                  }
+                )
+              ] }, t2.id))
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxs(VStack, { gap: "sm", className: "w-[280px] shrink-0", children: [
+            /* @__PURE__ */ jsx(TraitStateViewer, { trait: machine, variant: "full", size: "sm" }),
+            /* @__PURE__ */ jsx(
+              VariablePanel,
+              {
+                entityName: entity.entityName,
+                variables
+              }
+            ),
+            testResults.length > 0 && /* @__PURE__ */ jsxs(VStack, { className: "p-3 rounded-lg bg-card border border-border", gap: "xs", children: [
+              /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-muted-foreground font-medium", children: t("stateArchitect.testResults") + ":" }),
+              testResults.map((r, i) => /* @__PURE__ */ jsxs(HStack, { className: "items-center text-xs", gap: "xs", children: [
+                /* @__PURE__ */ jsx(Typography, { variant: "caption", className: r.passed ? "text-success" : "text-error", children: r.passed ? "\u2714" : "\u2717" }),
+                /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-foreground flex-1", children: r.label }),
+                !r.passed && /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-error", children: t("stateArchitect.gotState", { state: r.actualState }) })
+              ] }, i))
+            ] }),
+            entity.showCodeView !== false && /* @__PURE__ */ jsx(CodeView, { data: codeData, label: "View Code" })
+          ] })
         ] }),
-        entity.showCodeView !== false && /* @__PURE__ */ jsx(CodeView, { data: codeData, label: "View Code" })
-      ] })
-    ] }),
-    playState === "success" && /* @__PURE__ */ jsx(Box, { className: "p-4 rounded-lg bg-success/20 border border-success text-center", children: /* @__PURE__ */ jsx(Typography, { variant: "h5", className: "text-success", children: entity.successMessage || t("stateArchitect.allPassed") }) }),
-    playState === "fail" && /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
-      /* @__PURE__ */ jsx(Box, { className: "p-4 rounded-lg bg-warning/10 border border-warning/30 text-center", children: /* @__PURE__ */ jsx(Typography, { variant: "body1", className: "text-foreground font-medium", children: t(ENCOURAGEMENT_KEYS3[Math.min(attempts - 1, ENCOURAGEMENT_KEYS3.length - 1)] ?? ENCOURAGEMENT_KEYS3[0]) }) }),
-      attempts >= 3 && entity.hint && /* @__PURE__ */ jsx(Box, { className: "p-3 rounded-lg bg-accent/10 border border-accent/30", children: /* @__PURE__ */ jsxs(HStack, { className: "items-start", gap: "xs", children: [
-        /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-accent font-bold shrink-0", children: "\u{1F4A1} " + t("game.hint") + ":" }),
-        /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-foreground", children: entity.hint })
-      ] }) })
-    ] }),
-    /* @__PURE__ */ jsxs(HStack, { gap: "sm", children: [
-      playState === "fail" ? /* @__PURE__ */ jsx(Button, { variant: "primary", onClick: handleTryAgain, children: "\u{1F504} " + t("puzzle.tryAgainButton") }) : /* @__PURE__ */ jsx(
-        Button,
-        {
-          variant: "primary",
-          onClick: handleTest,
-          disabled: playState !== "editing",
-          children: "\u25B6 " + t("game.runTests")
-        }
-      ),
-      /* @__PURE__ */ jsx(Button, { variant: "ghost", onClick: handleReset, children: "\u21BA " + t("game.reset") })
-    ] })
-  ] });
+        playState === "success" && /* @__PURE__ */ jsx(Box, { className: "p-4 rounded-lg bg-success/20 border border-success text-center", children: /* @__PURE__ */ jsx(Typography, { variant: "h5", className: "text-success", children: entity.successMessage || t("stateArchitect.allPassed") }) }),
+        playState === "fail" && /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+          /* @__PURE__ */ jsx(Box, { className: "p-4 rounded-lg bg-warning/10 border border-warning/30 text-center", children: /* @__PURE__ */ jsx(Typography, { variant: "body1", className: "text-foreground font-medium", children: t(ENCOURAGEMENT_KEYS3[Math.min(attempts - 1, ENCOURAGEMENT_KEYS3.length - 1)] ?? ENCOURAGEMENT_KEYS3[0]) }) }),
+          attempts >= 3 && entity.hint && /* @__PURE__ */ jsx(Box, { className: "p-3 rounded-lg bg-accent/10 border border-accent/30", children: /* @__PURE__ */ jsxs(HStack, { className: "items-start", gap: "xs", children: [
+            /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-accent font-bold shrink-0", children: "\u{1F4A1} " + t("game.hint") + ":" }),
+            /* @__PURE__ */ jsx(Typography, { variant: "body2", className: "text-foreground", children: entity.hint })
+          ] }) })
+        ] }),
+        /* @__PURE__ */ jsxs(HStack, { gap: "sm", children: [
+          playState === "fail" ? /* @__PURE__ */ jsx(Button, { variant: "primary", onClick: handleTryAgain, children: "\u{1F504} " + t("puzzle.tryAgainButton") }) : /* @__PURE__ */ jsx(
+            Button,
+            {
+              variant: "primary",
+              onClick: handleTest,
+              disabled: playState !== "editing",
+              children: "\u25B6 " + t("game.runTests")
+            }
+          ),
+          /* @__PURE__ */ jsx(Button, { variant: "ghost", onClick: handleReset, children: "\u21BA " + t("game.reset") })
+        ] })
+      ]
+    }
+  );
 }
 StateArchitectBoard.displayName = "StateArchitectBoard";
 function SimulatorBoard({
@@ -9856,6 +9902,7 @@ function SimulatorBoard({
     }
     return init;
   });
+  const [headerError, setHeaderError] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [showHint, setShowHint] = useState(false);
@@ -9896,83 +9943,95 @@ function SimulatorBoard({
     setAttempts(0);
     setShowHint(false);
   };
-  return /* @__PURE__ */ jsx(Box, { className, children: /* @__PURE__ */ jsxs(VStack, { gap: "lg", className: "p-4", children: [
-    /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
-      /* @__PURE__ */ jsx(Typography, { variant: "h4", weight: "bold", children: entity.title }),
-      /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.description })
-    ] }) }),
-    /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "md", children: [
-      /* @__PURE__ */ jsx(Typography, { variant: "small", weight: "bold", className: "uppercase tracking-wider text-[var(--color-muted-foreground)]", children: t("simulator.parameters") }),
-      entity.parameters.map((param) => /* @__PURE__ */ jsxs(VStack, { gap: "xs", children: [
-        /* @__PURE__ */ jsxs(HStack, { justify: "between", align: "center", children: [
-          /* @__PURE__ */ jsx(Typography, { variant: "body", weight: "medium", children: param.label }),
-          /* @__PURE__ */ jsxs(Badge, { size: "sm", children: [
-            values[param.id],
+  return /* @__PURE__ */ jsx(
+    Box,
+    {
+      className,
+      style: {
+        backgroundImage: entity.theme?.background ? `url(${entity.theme.background})` : void 0,
+        backgroundSize: "cover",
+        backgroundPosition: "center"
+      },
+      children: /* @__PURE__ */ jsxs(VStack, { gap: "lg", className: "p-4", children: [
+        entity.headerImage && !headerError ? /* @__PURE__ */ jsx(Box, { className: "w-full h-32 overflow-hidden rounded-lg", children: /* @__PURE__ */ jsx("img", { src: entity.headerImage, alt: "", onError: () => setHeaderError(true), className: "w-full h-full object-cover" }) }) : entity.headerImage && headerError ? /* @__PURE__ */ jsx(Box, { className: "w-full h-32 rounded-lg bg-gradient-to-br from-[var(--color-muted)] to-[var(--color-accent)] opacity-60" }) : null,
+        /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "h4", weight: "bold", children: entity.title }),
+          /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.description })
+        ] }) }),
+        /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "md", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "small", weight: "bold", className: "uppercase tracking-wider text-[var(--color-muted-foreground)]", children: t("simulator.parameters") }),
+          entity.parameters.map((param) => /* @__PURE__ */ jsxs(VStack, { gap: "xs", children: [
+            /* @__PURE__ */ jsxs(HStack, { justify: "between", align: "center", children: [
+              /* @__PURE__ */ jsx(Typography, { variant: "body", weight: "medium", children: param.label }),
+              /* @__PURE__ */ jsxs(Badge, { size: "sm", children: [
+                values[param.id],
+                " ",
+                param.unit
+              ] })
+            ] }),
+            /* @__PURE__ */ jsx(
+              "input",
+              {
+                type: "range",
+                min: param.min,
+                max: param.max,
+                step: param.step,
+                value: values[param.id],
+                onChange: (e) => handleParameterChange(param.id, Number(e.target.value)),
+                disabled: submitted,
+                className: "w-full accent-[var(--color-foreground)]"
+              }
+            ),
+            /* @__PURE__ */ jsxs(HStack, { justify: "between", children: [
+              /* @__PURE__ */ jsxs(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: [
+                param.min,
+                " ",
+                param.unit
+              ] }),
+              /* @__PURE__ */ jsxs(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: [
+                param.max,
+                " ",
+                param.unit
+              ] })
+            ] })
+          ] }, param.id))
+        ] }) }),
+        /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", align: "center", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "small", weight: "bold", className: "uppercase tracking-wider text-[var(--color-muted-foreground)]", children: entity.outputLabel }),
+          /* @__PURE__ */ jsxs(Typography, { variant: "h3", weight: "bold", children: [
+            output.toFixed(2),
             " ",
-            param.unit
-          ] })
-        ] }),
-        /* @__PURE__ */ jsx(
-          "input",
-          {
-            type: "range",
-            min: param.min,
-            max: param.max,
-            step: param.step,
-            value: values[param.id],
-            onChange: (e) => handleParameterChange(param.id, Number(e.target.value)),
-            disabled: submitted,
-            className: "w-full accent-[var(--color-foreground)]"
-          }
-        ),
-        /* @__PURE__ */ jsxs(HStack, { justify: "between", children: [
-          /* @__PURE__ */ jsxs(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: [
-            param.min,
-            " ",
-            param.unit
+            entity.outputUnit
+          ] }),
+          submitted && /* @__PURE__ */ jsxs(HStack, { gap: "xs", align: "center", children: [
+            /* @__PURE__ */ jsx(Icon, { icon: isCorrect ? CheckCircle : XCircle, size: "sm", className: isCorrect ? "text-green-600" : "text-red-600" }),
+            /* @__PURE__ */ jsx(Typography, { variant: "body", className: isCorrect ? "text-green-600" : "text-red-600", children: isCorrect ? entity.successMessage ?? t("simulator.correct") : entity.failMessage ?? t("simulator.incorrect") })
           ] }),
           /* @__PURE__ */ jsxs(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: [
-            param.max,
+            t("simulator.target"),
+            ": ",
+            entity.targetValue,
             " ",
-            param.unit
+            entity.outputUnit,
+            " (\xB1",
+            entity.targetTolerance,
+            ")"
+          ] })
+        ] }) }),
+        showHint && entity.hint && /* @__PURE__ */ jsx(Card, { className: "p-4 border-l-4 border-l-yellow-500", children: /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.hint }) }),
+        /* @__PURE__ */ jsxs(HStack, { gap: "sm", justify: "center", children: [
+          !submitted ? /* @__PURE__ */ jsxs(Button, { variant: "primary", onClick: handleSubmit, children: [
+            /* @__PURE__ */ jsx(Icon, { icon: Play, size: "sm" }),
+            t("simulator.simulate")
+          ] }) : !isCorrect ? /* @__PURE__ */ jsx(Button, { variant: "primary", onClick: handleReset, children: t("simulator.tryAgain") }) : null,
+          /* @__PURE__ */ jsxs(Button, { variant: "secondary", onClick: handleFullReset, children: [
+            /* @__PURE__ */ jsx(Icon, { icon: RotateCcw, size: "sm" }),
+            t("simulator.reset")
           ] })
         ] })
-      ] }, param.id))
-    ] }) }),
-    /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", align: "center", children: [
-      /* @__PURE__ */ jsx(Typography, { variant: "small", weight: "bold", className: "uppercase tracking-wider text-[var(--color-muted-foreground)]", children: entity.outputLabel }),
-      /* @__PURE__ */ jsxs(Typography, { variant: "h3", weight: "bold", children: [
-        output.toFixed(2),
-        " ",
-        entity.outputUnit
-      ] }),
-      submitted && /* @__PURE__ */ jsxs(HStack, { gap: "xs", align: "center", children: [
-        /* @__PURE__ */ jsx(Icon, { icon: isCorrect ? CheckCircle : XCircle, size: "sm", className: isCorrect ? "text-green-600" : "text-red-600" }),
-        /* @__PURE__ */ jsx(Typography, { variant: "body", className: isCorrect ? "text-green-600" : "text-red-600", children: isCorrect ? entity.successMessage ?? t("simulator.correct") : entity.failMessage ?? t("simulator.incorrect") })
-      ] }),
-      /* @__PURE__ */ jsxs(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: [
-        t("simulator.target"),
-        ": ",
-        entity.targetValue,
-        " ",
-        entity.outputUnit,
-        " (\xB1",
-        entity.targetTolerance,
-        ")"
       ] })
-    ] }) }),
-    showHint && entity.hint && /* @__PURE__ */ jsx(Card, { className: "p-4 border-l-4 border-l-yellow-500", children: /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.hint }) }),
-    /* @__PURE__ */ jsxs(HStack, { gap: "sm", justify: "center", children: [
-      !submitted ? /* @__PURE__ */ jsxs(Button, { variant: "primary", onClick: handleSubmit, children: [
-        /* @__PURE__ */ jsx(Icon, { icon: Play, size: "sm" }),
-        t("simulator.simulate")
-      ] }) : !isCorrect ? /* @__PURE__ */ jsx(Button, { variant: "primary", onClick: handleReset, children: t("simulator.tryAgain") }) : null,
-      /* @__PURE__ */ jsxs(Button, { variant: "secondary", onClick: handleFullReset, children: [
-        /* @__PURE__ */ jsx(Icon, { icon: RotateCcw, size: "sm" }),
-        t("simulator.reset")
-      ] })
-    ] })
-  ] }) });
+    }
+  );
 }
 SimulatorBoard.displayName = "SimulatorBoard";
 function ClassifierBoard({
@@ -9983,6 +10042,7 @@ function ClassifierBoard({
   const { emit } = useEventBus();
   const { t } = useTranslate();
   const [assignments, setAssignments] = useState({});
+  const [headerError, setHeaderError] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [showHint, setShowHint] = useState(false);
@@ -10027,71 +10087,83 @@ function ClassifierBoard({
     setAttempts(0);
     setShowHint(false);
   };
-  return /* @__PURE__ */ jsx(Box, { className, children: /* @__PURE__ */ jsxs(VStack, { gap: "lg", className: "p-4", children: [
-    /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
-      /* @__PURE__ */ jsx(Typography, { variant: "h4", weight: "bold", children: entity.title }),
-      /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.description })
-    ] }) }),
-    unassignedItems.length > 0 && /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
-      /* @__PURE__ */ jsx(Typography, { variant: "small", weight: "bold", className: "uppercase tracking-wider text-[var(--color-muted-foreground)]", children: t("classifier.itemsToSort") }),
-      /* @__PURE__ */ jsx(HStack, { gap: "sm", className: "flex-wrap", children: unassignedItems.map((item) => /* @__PURE__ */ jsx(Badge, { size: "md", className: "cursor-pointer", children: item.label }, item.id)) })
-    ] }) }),
-    /* @__PURE__ */ jsx(VStack, { gap: "md", children: entity.categories.map((cat) => {
-      const catItems = entity.items.filter((item) => assignments[item.id] === cat.id);
-      return /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
-        /* @__PURE__ */ jsxs(HStack, { justify: "between", align: "center", children: [
-          /* @__PURE__ */ jsx(Typography, { variant: "body", weight: "bold", children: cat.label }),
-          /* @__PURE__ */ jsx(Badge, { size: "sm", children: catItems.length })
-        ] }),
-        /* @__PURE__ */ jsx(HStack, { gap: "xs", className: "flex-wrap min-h-[2rem]", children: catItems.map((item) => {
-          const result = results.find((r) => r.item.id === item.id);
-          return /* @__PURE__ */ jsxs(
-            Badge,
-            {
-              size: "sm",
-              className: `cursor-pointer ${result ? result.correct ? "border-green-500 bg-green-50 dark:bg-green-950" : "border-red-500 bg-red-50 dark:bg-red-950" : ""}`,
-              onClick: () => handleUnassign(item.id),
-              children: [
-                item.label,
-                result && /* @__PURE__ */ jsx(Icon, { icon: result.correct ? CheckCircle : XCircle, size: "xs", className: result.correct ? "text-green-600" : "text-red-600" })
-              ]
-            },
-            item.id
-          );
+  return /* @__PURE__ */ jsx(
+    Box,
+    {
+      className,
+      style: {
+        backgroundImage: entity.theme?.background ? `url(${entity.theme.background})` : void 0,
+        backgroundSize: "cover",
+        backgroundPosition: "center"
+      },
+      children: /* @__PURE__ */ jsxs(VStack, { gap: "lg", className: "p-4", children: [
+        entity.headerImage && !headerError ? /* @__PURE__ */ jsx(Box, { className: "w-full h-32 overflow-hidden rounded-lg", children: /* @__PURE__ */ jsx("img", { src: entity.headerImage, alt: "", onError: () => setHeaderError(true), className: "w-full h-full object-cover" }) }) : entity.headerImage && headerError ? /* @__PURE__ */ jsx(Box, { className: "w-full h-32 rounded-lg bg-gradient-to-br from-[var(--color-muted)] to-[var(--color-accent)] opacity-60" }) : null,
+        /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "h4", weight: "bold", children: entity.title }),
+          /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.description })
+        ] }) }),
+        unassignedItems.length > 0 && /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "small", weight: "bold", className: "uppercase tracking-wider text-[var(--color-muted-foreground)]", children: t("classifier.itemsToSort") }),
+          /* @__PURE__ */ jsx(HStack, { gap: "sm", className: "flex-wrap", children: unassignedItems.map((item) => /* @__PURE__ */ jsx(Badge, { size: "md", className: "cursor-pointer", children: item.label }, item.id)) })
+        ] }) }),
+        /* @__PURE__ */ jsx(VStack, { gap: "md", children: entity.categories.map((cat) => {
+          const catItems = entity.items.filter((item) => assignments[item.id] === cat.id);
+          return /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+            /* @__PURE__ */ jsxs(HStack, { justify: "between", align: "center", children: [
+              /* @__PURE__ */ jsx(Typography, { variant: "body", weight: "bold", children: cat.label }),
+              /* @__PURE__ */ jsx(Badge, { size: "sm", children: catItems.length })
+            ] }),
+            /* @__PURE__ */ jsx(HStack, { gap: "xs", className: "flex-wrap min-h-[2rem]", children: catItems.map((item) => {
+              const result = results.find((r) => r.item.id === item.id);
+              return /* @__PURE__ */ jsxs(
+                Badge,
+                {
+                  size: "sm",
+                  className: `cursor-pointer ${result ? result.correct ? "border-green-500 bg-green-50 dark:bg-green-950" : "border-red-500 bg-red-50 dark:bg-red-950" : ""}`,
+                  onClick: () => handleUnassign(item.id),
+                  children: [
+                    item.label,
+                    result && /* @__PURE__ */ jsx(Icon, { icon: result.correct ? CheckCircle : XCircle, size: "xs", className: result.correct ? "text-green-600" : "text-red-600" })
+                  ]
+                },
+                item.id
+              );
+            }) }),
+            !submitted && unassignedItems.length > 0 && /* @__PURE__ */ jsx(HStack, { gap: "xs", className: "flex-wrap", children: unassignedItems.map((item) => /* @__PURE__ */ jsxs(
+              Button,
+              {
+                size: "sm",
+                variant: "ghost",
+                onClick: () => handleAssign(item.id, cat.id),
+                className: "text-xs opacity-50 hover:opacity-100",
+                children: [
+                  "+ ",
+                  item.label
+                ]
+              },
+              item.id
+            )) })
+          ] }) }, cat.id);
         }) }),
-        !submitted && unassignedItems.length > 0 && /* @__PURE__ */ jsx(HStack, { gap: "xs", className: "flex-wrap", children: unassignedItems.map((item) => /* @__PURE__ */ jsxs(
-          Button,
-          {
-            size: "sm",
-            variant: "ghost",
-            onClick: () => handleAssign(item.id, cat.id),
-            className: "text-xs opacity-50 hover:opacity-100",
-            children: [
-              "+ ",
-              item.label
-            ]
-          },
-          item.id
-        )) })
-      ] }) }, cat.id);
-    }) }),
-    submitted && /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", align: "center", children: [
-      /* @__PURE__ */ jsx(Icon, { icon: allCorrect ? CheckCircle : XCircle, size: "lg", className: allCorrect ? "text-green-600" : "text-red-600" }),
-      /* @__PURE__ */ jsx(Typography, { variant: "body", weight: "bold", children: allCorrect ? entity.successMessage ?? t("classifier.allCorrect") : `${correctCount}/${entity.items.length} ${t("classifier.correct")}` }),
-      !allCorrect && entity.failMessage && /* @__PURE__ */ jsx(Typography, { variant: "body", className: "text-[var(--color-muted-foreground)]", children: entity.failMessage })
-    ] }) }),
-    showHint && entity.hint && /* @__PURE__ */ jsx(Card, { className: "p-4 border-l-4 border-l-yellow-500", children: /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.hint }) }),
-    /* @__PURE__ */ jsxs(HStack, { gap: "sm", justify: "center", children: [
-      !submitted ? /* @__PURE__ */ jsxs(Button, { variant: "primary", onClick: handleSubmit, disabled: !allAssigned, children: [
-        /* @__PURE__ */ jsx(Icon, { icon: Send, size: "sm" }),
-        t("classifier.check")
-      ] }) : !allCorrect ? /* @__PURE__ */ jsx(Button, { variant: "primary", onClick: handleReset, children: t("classifier.tryAgain") }) : null,
-      /* @__PURE__ */ jsxs(Button, { variant: "secondary", onClick: handleFullReset, children: [
-        /* @__PURE__ */ jsx(Icon, { icon: RotateCcw, size: "sm" }),
-        t("classifier.reset")
+        submitted && /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", align: "center", children: [
+          /* @__PURE__ */ jsx(Icon, { icon: allCorrect ? CheckCircle : XCircle, size: "lg", className: allCorrect ? "text-green-600" : "text-red-600" }),
+          /* @__PURE__ */ jsx(Typography, { variant: "body", weight: "bold", children: allCorrect ? entity.successMessage ?? t("classifier.allCorrect") : `${correctCount}/${entity.items.length} ${t("classifier.correct")}` }),
+          !allCorrect && entity.failMessage && /* @__PURE__ */ jsx(Typography, { variant: "body", className: "text-[var(--color-muted-foreground)]", children: entity.failMessage })
+        ] }) }),
+        showHint && entity.hint && /* @__PURE__ */ jsx(Card, { className: "p-4 border-l-4 border-l-yellow-500", children: /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.hint }) }),
+        /* @__PURE__ */ jsxs(HStack, { gap: "sm", justify: "center", children: [
+          !submitted ? /* @__PURE__ */ jsxs(Button, { variant: "primary", onClick: handleSubmit, disabled: !allAssigned, children: [
+            /* @__PURE__ */ jsx(Icon, { icon: Send, size: "sm" }),
+            t("classifier.check")
+          ] }) : !allCorrect ? /* @__PURE__ */ jsx(Button, { variant: "primary", onClick: handleReset, children: t("classifier.tryAgain") }) : null,
+          /* @__PURE__ */ jsxs(Button, { variant: "secondary", onClick: handleFullReset, children: [
+            /* @__PURE__ */ jsx(Icon, { icon: RotateCcw, size: "sm" }),
+            t("classifier.reset")
+          ] })
+        ] })
       ] })
-    ] })
-  ] }) });
+    }
+  );
 }
 ClassifierBoard.displayName = "ClassifierBoard";
 function BuilderBoard({
@@ -10102,6 +10174,7 @@ function BuilderBoard({
   const { emit } = useEventBus();
   const { t } = useTranslate();
   const [placements, setPlacements] = useState({});
+  const [headerError, setHeaderError] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [showHint, setShowHint] = useState(false);
@@ -10150,77 +10223,95 @@ function BuilderBoard({
     setShowHint(false);
   };
   const getComponentById = (id) => entity.components.find((c) => c.id === id);
-  return /* @__PURE__ */ jsx(Box, { className, children: /* @__PURE__ */ jsxs(VStack, { gap: "lg", className: "p-4", children: [
-    /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
-      /* @__PURE__ */ jsx(Typography, { variant: "h4", weight: "bold", children: entity.title }),
-      /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.description })
-    ] }) }),
-    /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
-      /* @__PURE__ */ jsx(Typography, { variant: "small", weight: "bold", className: "uppercase tracking-wider text-[var(--color-muted-foreground)]", children: t("builder.components") }),
-      /* @__PURE__ */ jsxs(HStack, { gap: "sm", className: "flex-wrap", children: [
-        availableComponents.map((comp) => /* @__PURE__ */ jsxs(
-          Button,
-          {
-            size: "sm",
-            variant: selectedComponent === comp.id ? "primary" : "secondary",
-            onClick: () => setSelectedComponent(selectedComponent === comp.id ? null : comp.id),
-            disabled: submitted,
-            children: [
-              comp.iconEmoji && `${comp.iconEmoji} `,
-              comp.label
-            ]
-          },
-          comp.id
-        )),
-        availableComponents.length === 0 && !submitted && /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: t("builder.allPlaced") })
+  return /* @__PURE__ */ jsx(
+    Box,
+    {
+      className,
+      style: {
+        backgroundImage: entity.theme?.background ? `url(${entity.theme.background})` : void 0,
+        backgroundSize: "cover",
+        backgroundPosition: "center"
+      },
+      children: /* @__PURE__ */ jsxs(VStack, { gap: "lg", className: "p-4", children: [
+        entity.headerImage && !headerError ? /* @__PURE__ */ jsx(Box, { className: "w-full h-32 overflow-hidden rounded-lg", children: /* @__PURE__ */ jsx("img", { src: entity.headerImage, alt: "", onError: () => setHeaderError(true), className: "w-full h-full object-cover" }) }) : entity.headerImage && headerError ? /* @__PURE__ */ jsx(Box, { className: "w-full h-32 rounded-lg bg-gradient-to-br from-[var(--color-muted)] to-[var(--color-accent)] opacity-60" }) : null,
+        /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "h4", weight: "bold", children: entity.title }),
+          /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.description })
+        ] }) }),
+        /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "small", weight: "bold", className: "uppercase tracking-wider text-[var(--color-muted-foreground)]", children: t("builder.components") }),
+          /* @__PURE__ */ jsxs(HStack, { gap: "sm", className: "flex-wrap", children: [
+            availableComponents.map((comp) => /* @__PURE__ */ jsxs(
+              Button,
+              {
+                size: "sm",
+                variant: selectedComponent === comp.id ? "primary" : "secondary",
+                onClick: () => setSelectedComponent(selectedComponent === comp.id ? null : comp.id),
+                disabled: submitted,
+                children: [
+                  comp.iconUrl ? /* @__PURE__ */ jsx("img", { src: comp.iconUrl, alt: "", className: "w-5 h-5 object-contain inline-block mr-1" }) : comp.iconEmoji ? /* @__PURE__ */ jsxs(Fragment, { children: [
+                    comp.iconEmoji,
+                    " "
+                  ] }) : null,
+                  comp.label
+                ]
+              },
+              comp.id
+            )),
+            availableComponents.length === 0 && !submitted && /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: t("builder.allPlaced") })
+          ] })
+        ] }) }),
+        /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "small", weight: "bold", className: "uppercase tracking-wider text-[var(--color-muted-foreground)]", children: t("builder.blueprint") }),
+          /* @__PURE__ */ jsx(VStack, { gap: "sm", children: entity.slots.map((slot) => {
+            const placedComp = placements[slot.id] ? getComponentById(placements[slot.id]) : null;
+            const result = results.find((r) => r.slot.id === slot.id);
+            return /* @__PURE__ */ jsxs(
+              HStack,
+              {
+                gap: "sm",
+                align: "center",
+                className: `p-3 border-2 rounded ${result ? result.correct ? "border-green-500" : "border-red-500" : selectedComponent ? "border-dashed border-[var(--color-foreground)] cursor-pointer" : "border-[var(--color-border)]"}`,
+                onClick: () => handlePlaceComponent(slot.id),
+                children: [
+                  /* @__PURE__ */ jsxs(VStack, { gap: "none", className: "flex-1", children: [
+                    /* @__PURE__ */ jsx(Typography, { variant: "body", weight: "medium", children: slot.label }),
+                    slot.description && /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: slot.description })
+                  ] }),
+                  placedComp ? /* @__PURE__ */ jsxs(HStack, { gap: "xs", align: "center", children: [
+                    /* @__PURE__ */ jsxs(Badge, { size: "sm", onClick: () => handleRemoveFromSlot(slot.id), children: [
+                      placedComp.iconUrl ? /* @__PURE__ */ jsx("img", { src: placedComp.iconUrl, alt: "", className: "w-4 h-4 object-contain inline-block mr-1" }) : placedComp.iconEmoji ? /* @__PURE__ */ jsxs(Fragment, { children: [
+                        placedComp.iconEmoji,
+                        " "
+                      ] }) : null,
+                      placedComp.label
+                    ] }),
+                    result && /* @__PURE__ */ jsx(Icon, { icon: result.correct ? CheckCircle : XCircle, size: "sm", className: result.correct ? "text-green-600" : "text-red-600" })
+                  ] }) : /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: t("builder.empty") })
+                ]
+              },
+              slot.id
+            );
+          }) })
+        ] }) }),
+        submitted && /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", align: "center", children: [
+          /* @__PURE__ */ jsx(Icon, { icon: allCorrect ? CheckCircle : XCircle, size: "lg", className: allCorrect ? "text-green-600" : "text-red-600" }),
+          /* @__PURE__ */ jsx(Typography, { variant: "body", weight: "bold", children: allCorrect ? entity.successMessage ?? t("builder.success") : entity.failMessage ?? t("builder.incorrect") })
+        ] }) }),
+        showHint && entity.hint && /* @__PURE__ */ jsx(Card, { className: "p-4 border-l-4 border-l-yellow-500", children: /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.hint }) }),
+        /* @__PURE__ */ jsxs(HStack, { gap: "sm", justify: "center", children: [
+          !submitted ? /* @__PURE__ */ jsxs(Button, { variant: "primary", onClick: handleSubmit, disabled: !allPlaced, children: [
+            /* @__PURE__ */ jsx(Icon, { icon: Wrench, size: "sm" }),
+            t("builder.build")
+          ] }) : !allCorrect ? /* @__PURE__ */ jsx(Button, { variant: "primary", onClick: handleReset, children: t("builder.tryAgain") }) : null,
+          /* @__PURE__ */ jsxs(Button, { variant: "secondary", onClick: handleFullReset, children: [
+            /* @__PURE__ */ jsx(Icon, { icon: RotateCcw, size: "sm" }),
+            t("builder.reset")
+          ] })
+        ] })
       ] })
-    ] }) }),
-    /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
-      /* @__PURE__ */ jsx(Typography, { variant: "small", weight: "bold", className: "uppercase tracking-wider text-[var(--color-muted-foreground)]", children: t("builder.blueprint") }),
-      /* @__PURE__ */ jsx(VStack, { gap: "sm", children: entity.slots.map((slot) => {
-        const placedComp = placements[slot.id] ? getComponentById(placements[slot.id]) : null;
-        const result = results.find((r) => r.slot.id === slot.id);
-        return /* @__PURE__ */ jsxs(
-          HStack,
-          {
-            gap: "sm",
-            align: "center",
-            className: `p-3 border-2 rounded ${result ? result.correct ? "border-green-500" : "border-red-500" : selectedComponent ? "border-dashed border-[var(--color-foreground)] cursor-pointer" : "border-[var(--color-border)]"}`,
-            onClick: () => handlePlaceComponent(slot.id),
-            children: [
-              /* @__PURE__ */ jsxs(VStack, { gap: "none", className: "flex-1", children: [
-                /* @__PURE__ */ jsx(Typography, { variant: "body", weight: "medium", children: slot.label }),
-                slot.description && /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: slot.description })
-              ] }),
-              placedComp ? /* @__PURE__ */ jsxs(HStack, { gap: "xs", align: "center", children: [
-                /* @__PURE__ */ jsxs(Badge, { size: "sm", onClick: () => handleRemoveFromSlot(slot.id), children: [
-                  placedComp.iconEmoji && `${placedComp.iconEmoji} `,
-                  placedComp.label
-                ] }),
-                result && /* @__PURE__ */ jsx(Icon, { icon: result.correct ? CheckCircle : XCircle, size: "sm", className: result.correct ? "text-green-600" : "text-red-600" })
-              ] }) : /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: t("builder.empty") })
-            ]
-          },
-          slot.id
-        );
-      }) })
-    ] }) }),
-    submitted && /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", align: "center", children: [
-      /* @__PURE__ */ jsx(Icon, { icon: allCorrect ? CheckCircle : XCircle, size: "lg", className: allCorrect ? "text-green-600" : "text-red-600" }),
-      /* @__PURE__ */ jsx(Typography, { variant: "body", weight: "bold", children: allCorrect ? entity.successMessage ?? t("builder.success") : entity.failMessage ?? t("builder.incorrect") })
-    ] }) }),
-    showHint && entity.hint && /* @__PURE__ */ jsx(Card, { className: "p-4 border-l-4 border-l-yellow-500", children: /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.hint }) }),
-    /* @__PURE__ */ jsxs(HStack, { gap: "sm", justify: "center", children: [
-      !submitted ? /* @__PURE__ */ jsxs(Button, { variant: "primary", onClick: handleSubmit, disabled: !allPlaced, children: [
-        /* @__PURE__ */ jsx(Icon, { icon: Wrench, size: "sm" }),
-        t("builder.build")
-      ] }) : !allCorrect ? /* @__PURE__ */ jsx(Button, { variant: "primary", onClick: handleReset, children: t("builder.tryAgain") }) : null,
-      /* @__PURE__ */ jsxs(Button, { variant: "secondary", onClick: handleFullReset, children: [
-        /* @__PURE__ */ jsx(Icon, { icon: RotateCcw, size: "sm" }),
-        t("builder.reset")
-      ] })
-    ] })
-  ] }) });
+    }
+  );
 }
 BuilderBoard.displayName = "BuilderBoard";
 function DebuggerBoard({
@@ -10231,6 +10322,7 @@ function DebuggerBoard({
   const { emit } = useEventBus();
   const { t } = useTranslate();
   const [flaggedLines, setFlaggedLines] = useState(/* @__PURE__ */ new Set());
+  const [headerError, setHeaderError] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [showHint, setShowHint] = useState(false);
@@ -10270,73 +10362,85 @@ function DebuggerBoard({
     setAttempts(0);
     setShowHint(false);
   };
-  return /* @__PURE__ */ jsx(Box, { className, children: /* @__PURE__ */ jsxs(VStack, { gap: "lg", className: "p-4", children: [
-    /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
-      /* @__PURE__ */ jsxs(HStack, { gap: "xs", align: "center", children: [
-        /* @__PURE__ */ jsx(Icon, { icon: Bug, size: "sm" }),
-        /* @__PURE__ */ jsx(Typography, { variant: "h4", weight: "bold", children: entity.title })
-      ] }),
-      /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.description }),
-      /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: t("debugger.findBugs", { count: String(entity.bugCount) }) })
-    ] }) }),
-    /* @__PURE__ */ jsx(Card, { className: "p-0 overflow-hidden", children: /* @__PURE__ */ jsx(VStack, { gap: "none", children: entity.lines.map((line, i) => {
-      const isFlagged = flaggedLines.has(line.id);
-      let lineStyle = "";
-      if (submitted) {
-        if (line.isBug && isFlagged) lineStyle = "bg-green-50 dark:bg-green-950";
-        else if (line.isBug && !isFlagged) lineStyle = "bg-yellow-50 dark:bg-yellow-950";
-        else if (!line.isBug && isFlagged) lineStyle = "bg-red-50 dark:bg-red-950";
-      } else if (isFlagged) {
-        lineStyle = "bg-red-50 dark:bg-red-950";
-      }
-      return /* @__PURE__ */ jsxs(
-        HStack,
-        {
-          gap: "none",
-          align: "stretch",
-          className: `border-b border-[var(--color-border)] cursor-pointer hover:bg-[var(--color-muted)] ${lineStyle}`,
-          onClick: () => toggleLine(line.id),
-          children: [
-            /* @__PURE__ */ jsx(Box, { className: "w-10 flex-shrink-0 flex items-center justify-center border-r border-[var(--color-border)] text-[var(--color-muted-foreground)]", children: /* @__PURE__ */ jsx(Typography, { variant: "caption", children: i + 1 }) }),
-            /* @__PURE__ */ jsx(Box, { className: "flex-1 px-3 py-1.5 font-mono text-sm whitespace-pre", children: /* @__PURE__ */ jsx(Typography, { variant: "body", className: "font-mono text-sm", children: line.content }) }),
-            /* @__PURE__ */ jsxs(Box, { className: "w-8 flex-shrink-0 flex items-center justify-center", children: [
-              isFlagged && /* @__PURE__ */ jsx(Icon, { icon: Bug, size: "xs", className: "text-red-600" }),
-              submitted && line.isBug && !isFlagged && /* @__PURE__ */ jsx(Icon, { icon: Bug, size: "xs", className: "text-yellow-600" })
-            ] })
-          ]
-        },
-        line.id
-      );
-    }) }) }),
-    submitted && /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
-      /* @__PURE__ */ jsx(Typography, { variant: "body", weight: "bold", children: allCorrect ? entity.successMessage ?? t("debugger.allFound") : `${correctFlags.length}/${bugLines.length} ${t("debugger.bugsFound")}` }),
-      bugLines.map((line) => /* @__PURE__ */ jsxs(HStack, { gap: "xs", align: "start", children: [
-        /* @__PURE__ */ jsx(
-          Icon,
-          {
-            icon: flaggedLines.has(line.id) ? CheckCircle : XCircle,
-            size: "xs",
-            className: flaggedLines.has(line.id) ? "text-green-600 mt-0.5" : "text-yellow-600 mt-0.5"
+  return /* @__PURE__ */ jsx(
+    Box,
+    {
+      className,
+      style: {
+        backgroundImage: entity.theme?.background ? `url(${entity.theme.background})` : void 0,
+        backgroundSize: "cover",
+        backgroundPosition: "center"
+      },
+      children: /* @__PURE__ */ jsxs(VStack, { gap: "lg", className: "p-4", children: [
+        entity.headerImage && !headerError ? /* @__PURE__ */ jsx(Box, { className: "w-full h-32 overflow-hidden rounded-lg", children: /* @__PURE__ */ jsx("img", { src: entity.headerImage, alt: "", onError: () => setHeaderError(true), className: "w-full h-full object-cover" }) }) : entity.headerImage && headerError ? /* @__PURE__ */ jsx(Box, { className: "w-full h-32 rounded-lg bg-gradient-to-br from-[var(--color-muted)] to-[var(--color-accent)] opacity-60" }) : null,
+        /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+          /* @__PURE__ */ jsxs(HStack, { gap: "xs", align: "center", children: [
+            /* @__PURE__ */ jsx(Icon, { icon: Bug, size: "sm" }),
+            /* @__PURE__ */ jsx(Typography, { variant: "h4", weight: "bold", children: entity.title })
+          ] }),
+          /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.description }),
+          /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: t("debugger.findBugs", { count: String(entity.bugCount) }) })
+        ] }) }),
+        /* @__PURE__ */ jsx(Card, { className: "p-0 overflow-hidden", children: /* @__PURE__ */ jsx(VStack, { gap: "none", children: entity.lines.map((line, i) => {
+          const isFlagged = flaggedLines.has(line.id);
+          let lineStyle = "";
+          if (submitted) {
+            if (line.isBug && isFlagged) lineStyle = "bg-green-50 dark:bg-green-950";
+            else if (line.isBug && !isFlagged) lineStyle = "bg-yellow-50 dark:bg-yellow-950";
+            else if (!line.isBug && isFlagged) lineStyle = "bg-red-50 dark:bg-red-950";
+          } else if (isFlagged) {
+            lineStyle = "bg-red-50 dark:bg-red-950";
           }
-        ),
-        /* @__PURE__ */ jsxs(VStack, { gap: "none", children: [
-          /* @__PURE__ */ jsx(Typography, { variant: "caption", weight: "bold", className: "font-mono", children: line.content.trim() }),
-          line.explanation && /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: line.explanation })
+          return /* @__PURE__ */ jsxs(
+            HStack,
+            {
+              gap: "none",
+              align: "stretch",
+              className: `border-b border-[var(--color-border)] cursor-pointer hover:bg-[var(--color-muted)] ${lineStyle}`,
+              onClick: () => toggleLine(line.id),
+              children: [
+                /* @__PURE__ */ jsx(Box, { className: "w-10 flex-shrink-0 flex items-center justify-center border-r border-[var(--color-border)] text-[var(--color-muted-foreground)]", children: /* @__PURE__ */ jsx(Typography, { variant: "caption", children: i + 1 }) }),
+                /* @__PURE__ */ jsx(Box, { className: "flex-1 px-3 py-1.5 font-mono text-sm whitespace-pre", children: /* @__PURE__ */ jsx(Typography, { variant: "body", className: "font-mono text-sm", children: line.content }) }),
+                /* @__PURE__ */ jsxs(Box, { className: "w-8 flex-shrink-0 flex items-center justify-center", children: [
+                  isFlagged && /* @__PURE__ */ jsx(Icon, { icon: Bug, size: "xs", className: "text-red-600" }),
+                  submitted && line.isBug && !isFlagged && /* @__PURE__ */ jsx(Icon, { icon: Bug, size: "xs", className: "text-yellow-600" })
+                ] })
+              ]
+            },
+            line.id
+          );
+        }) }) }),
+        submitted && /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "body", weight: "bold", children: allCorrect ? entity.successMessage ?? t("debugger.allFound") : `${correctFlags.length}/${bugLines.length} ${t("debugger.bugsFound")}` }),
+          bugLines.map((line) => /* @__PURE__ */ jsxs(HStack, { gap: "xs", align: "start", children: [
+            /* @__PURE__ */ jsx(
+              Icon,
+              {
+                icon: flaggedLines.has(line.id) ? CheckCircle : XCircle,
+                size: "xs",
+                className: flaggedLines.has(line.id) ? "text-green-600 mt-0.5" : "text-yellow-600 mt-0.5"
+              }
+            ),
+            /* @__PURE__ */ jsxs(VStack, { gap: "none", children: [
+              /* @__PURE__ */ jsx(Typography, { variant: "caption", weight: "bold", className: "font-mono", children: line.content.trim() }),
+              line.explanation && /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: line.explanation })
+            ] })
+          ] }, line.id))
+        ] }) }),
+        showHint && entity.hint && /* @__PURE__ */ jsx(Card, { className: "p-4 border-l-4 border-l-yellow-500", children: /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.hint }) }),
+        /* @__PURE__ */ jsxs(HStack, { gap: "sm", justify: "center", children: [
+          !submitted ? /* @__PURE__ */ jsxs(Button, { variant: "primary", onClick: handleSubmit, disabled: flaggedLines.size === 0, children: [
+            /* @__PURE__ */ jsx(Icon, { icon: Send, size: "sm" }),
+            t("debugger.submit")
+          ] }) : !allCorrect ? /* @__PURE__ */ jsx(Button, { variant: "primary", onClick: handleReset, children: t("debugger.tryAgain") }) : null,
+          /* @__PURE__ */ jsxs(Button, { variant: "secondary", onClick: handleFullReset, children: [
+            /* @__PURE__ */ jsx(Icon, { icon: RotateCcw, size: "sm" }),
+            t("debugger.reset")
+          ] })
         ] })
-      ] }, line.id))
-    ] }) }),
-    showHint && entity.hint && /* @__PURE__ */ jsx(Card, { className: "p-4 border-l-4 border-l-yellow-500", children: /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.hint }) }),
-    /* @__PURE__ */ jsxs(HStack, { gap: "sm", justify: "center", children: [
-      !submitted ? /* @__PURE__ */ jsxs(Button, { variant: "primary", onClick: handleSubmit, disabled: flaggedLines.size === 0, children: [
-        /* @__PURE__ */ jsx(Icon, { icon: Send, size: "sm" }),
-        t("debugger.submit")
-      ] }) : !allCorrect ? /* @__PURE__ */ jsx(Button, { variant: "primary", onClick: handleReset, children: t("debugger.tryAgain") }) : null,
-      /* @__PURE__ */ jsxs(Button, { variant: "secondary", onClick: handleFullReset, children: [
-        /* @__PURE__ */ jsx(Icon, { icon: RotateCcw, size: "sm" }),
-        t("debugger.reset")
       ] })
-    ] })
-  ] }) });
+    }
+  );
 }
 DebuggerBoard.displayName = "DebuggerBoard";
 function getOpponentAction(strategy, actions, history) {
@@ -10362,6 +10466,7 @@ function NegotiatorBoard({
   const { emit } = useEventBus();
   const { t } = useTranslate();
   const [history, setHistory] = useState([]);
+  const [headerError, setHeaderError] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const currentRound = history.length;
   const isComplete = currentRound >= entity.totalRounds;
@@ -10398,76 +10503,88 @@ function NegotiatorBoard({
     setShowHint(false);
   };
   const getActionLabel = (id) => entity.actions.find((a) => a.id === id)?.label ?? id;
-  return /* @__PURE__ */ jsx(Box, { className, children: /* @__PURE__ */ jsxs(VStack, { gap: "lg", className: "p-4", children: [
-    /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
-      /* @__PURE__ */ jsx(Typography, { variant: "h4", weight: "bold", children: entity.title }),
-      /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.description }),
-      /* @__PURE__ */ jsxs(HStack, { gap: "md", children: [
-        /* @__PURE__ */ jsx(Badge, { size: "sm", children: t("negotiator.round", { current: String(currentRound), total: String(entity.totalRounds) }) }),
-        /* @__PURE__ */ jsxs(Badge, { size: "sm", children: [
-          t("negotiator.target"),
-          ": ",
-          entity.targetScore
-        ] })
-      ] })
-    ] }) }),
-    /* @__PURE__ */ jsxs(HStack, { gap: "md", justify: "center", children: [
-      /* @__PURE__ */ jsx(Card, { className: "p-4 flex-1 text-center", children: /* @__PURE__ */ jsxs(VStack, { gap: "xs", align: "center", children: [
-        /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: t("negotiator.you") }),
-        /* @__PURE__ */ jsx(Typography, { variant: "h3", weight: "bold", children: playerTotal })
-      ] }) }),
-      /* @__PURE__ */ jsx(Card, { className: "p-4 flex-1 text-center", children: /* @__PURE__ */ jsxs(VStack, { gap: "xs", align: "center", children: [
-        /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: t("negotiator.opponent") }),
-        /* @__PURE__ */ jsx(Typography, { variant: "h3", weight: "bold", children: opponentTotal })
-      ] }) })
-    ] }),
-    !isComplete && /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
-      /* @__PURE__ */ jsx(Typography, { variant: "small", weight: "bold", className: "uppercase tracking-wider text-[var(--color-muted-foreground)]", children: t("negotiator.chooseAction") }),
-      /* @__PURE__ */ jsx(HStack, { gap: "sm", justify: "center", className: "flex-wrap", children: entity.actions.map((action) => /* @__PURE__ */ jsx(
-        Button,
-        {
-          variant: "primary",
-          onClick: () => handleAction(action.id),
-          children: action.label
-        },
-        action.id
-      )) })
-    ] }) }),
-    history.length > 0 && /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
-      /* @__PURE__ */ jsx(Typography, { variant: "small", weight: "bold", className: "uppercase tracking-wider text-[var(--color-muted-foreground)]", children: t("negotiator.history") }),
-      history.map((round) => /* @__PURE__ */ jsxs(HStack, { gap: "sm", align: "center", className: "text-sm", children: [
-        /* @__PURE__ */ jsxs(Badge, { size: "sm", children: [
-          "R",
-          round.round
+  return /* @__PURE__ */ jsx(
+    Box,
+    {
+      className,
+      style: {
+        backgroundImage: entity.theme?.background ? `url(${entity.theme.background})` : void 0,
+        backgroundSize: "cover",
+        backgroundPosition: "center"
+      },
+      children: /* @__PURE__ */ jsxs(VStack, { gap: "lg", className: "p-4", children: [
+        entity.headerImage && !headerError ? /* @__PURE__ */ jsx(Box, { className: "w-full h-32 overflow-hidden rounded-lg", children: /* @__PURE__ */ jsx("img", { src: entity.headerImage, alt: "", onError: () => setHeaderError(true), className: "w-full h-full object-cover" }) }) : entity.headerImage && headerError ? /* @__PURE__ */ jsx(Box, { className: "w-full h-32 rounded-lg bg-gradient-to-br from-[var(--color-muted)] to-[var(--color-accent)] opacity-60" }) : null,
+        /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "h4", weight: "bold", children: entity.title }),
+          /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.description }),
+          /* @__PURE__ */ jsxs(HStack, { gap: "md", children: [
+            /* @__PURE__ */ jsx(Badge, { size: "sm", children: t("negotiator.round", { current: String(currentRound), total: String(entity.totalRounds) }) }),
+            /* @__PURE__ */ jsxs(Badge, { size: "sm", children: [
+              t("negotiator.target"),
+              ": ",
+              entity.targetScore
+            ] })
+          ] })
+        ] }) }),
+        /* @__PURE__ */ jsxs(HStack, { gap: "md", justify: "center", children: [
+          /* @__PURE__ */ jsx(Card, { className: "p-4 flex-1 text-center", children: /* @__PURE__ */ jsxs(VStack, { gap: "xs", align: "center", children: [
+            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: t("negotiator.you") }),
+            /* @__PURE__ */ jsx(Typography, { variant: "h3", weight: "bold", children: playerTotal })
+          ] }) }),
+          /* @__PURE__ */ jsx(Card, { className: "p-4 flex-1 text-center", children: /* @__PURE__ */ jsxs(VStack, { gap: "xs", align: "center", children: [
+            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: t("negotiator.opponent") }),
+            /* @__PURE__ */ jsx(Typography, { variant: "h3", weight: "bold", children: opponentTotal })
+          ] }) })
         ] }),
-        /* @__PURE__ */ jsx(Typography, { variant: "caption", children: getActionLabel(round.playerAction) }),
-        /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: "vs" }),
-        /* @__PURE__ */ jsx(Typography, { variant: "caption", children: getActionLabel(round.opponentAction) }),
-        /* @__PURE__ */ jsx(Icon, { icon: ArrowRight, size: "xs" }),
-        /* @__PURE__ */ jsxs(Typography, { variant: "caption", weight: "bold", className: "text-green-600", children: [
-          "+",
-          round.playerPayoff
-        ] }),
-        /* @__PURE__ */ jsxs(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: [
-          "/ +",
-          round.opponentPayoff
-        ] })
-      ] }, round.round))
-    ] }) }),
-    isComplete && /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", align: "center", children: [
-      /* @__PURE__ */ jsx(Icon, { icon: CheckCircle, size: "lg", className: won ? "text-green-600" : "text-red-600" }),
-      /* @__PURE__ */ jsx(Typography, { variant: "body", weight: "bold", children: won ? entity.successMessage ?? t("negotiator.success") : entity.failMessage ?? t("negotiator.failed") }),
-      /* @__PURE__ */ jsxs(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: [
-        t("negotiator.finalScore"),
-        ": ",
-        playerTotal,
-        "/",
-        entity.targetScore
+        !isComplete && /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "small", weight: "bold", className: "uppercase tracking-wider text-[var(--color-muted-foreground)]", children: t("negotiator.chooseAction") }),
+          /* @__PURE__ */ jsx(HStack, { gap: "sm", justify: "center", className: "flex-wrap", children: entity.actions.map((action) => /* @__PURE__ */ jsx(
+            Button,
+            {
+              variant: "primary",
+              onClick: () => handleAction(action.id),
+              children: action.label
+            },
+            action.id
+          )) })
+        ] }) }),
+        history.length > 0 && /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+          /* @__PURE__ */ jsx(Typography, { variant: "small", weight: "bold", className: "uppercase tracking-wider text-[var(--color-muted-foreground)]", children: t("negotiator.history") }),
+          history.map((round) => /* @__PURE__ */ jsxs(HStack, { gap: "sm", align: "center", className: "text-sm", children: [
+            /* @__PURE__ */ jsxs(Badge, { size: "sm", children: [
+              "R",
+              round.round
+            ] }),
+            /* @__PURE__ */ jsx(Typography, { variant: "caption", children: getActionLabel(round.playerAction) }),
+            /* @__PURE__ */ jsx(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: "vs" }),
+            /* @__PURE__ */ jsx(Typography, { variant: "caption", children: getActionLabel(round.opponentAction) }),
+            /* @__PURE__ */ jsx(Icon, { icon: ArrowRight, size: "xs" }),
+            /* @__PURE__ */ jsxs(Typography, { variant: "caption", weight: "bold", className: "text-green-600", children: [
+              "+",
+              round.playerPayoff
+            ] }),
+            /* @__PURE__ */ jsxs(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: [
+              "/ +",
+              round.opponentPayoff
+            ] })
+          ] }, round.round))
+        ] }) }),
+        isComplete && /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", align: "center", children: [
+          /* @__PURE__ */ jsx(Icon, { icon: CheckCircle, size: "lg", className: won ? "text-green-600" : "text-red-600" }),
+          /* @__PURE__ */ jsx(Typography, { variant: "body", weight: "bold", children: won ? entity.successMessage ?? t("negotiator.success") : entity.failMessage ?? t("negotiator.failed") }),
+          /* @__PURE__ */ jsxs(Typography, { variant: "caption", className: "text-[var(--color-muted-foreground)]", children: [
+            t("negotiator.finalScore"),
+            ": ",
+            playerTotal,
+            "/",
+            entity.targetScore
+          ] })
+        ] }) }),
+        showHint && entity.hint && !won && /* @__PURE__ */ jsx(Card, { className: "p-4 border-l-4 border-l-yellow-500", children: /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.hint }) }),
+        isComplete && !won && /* @__PURE__ */ jsx(HStack, { justify: "center", children: /* @__PURE__ */ jsx(Button, { variant: "primary", onClick: handleReset, children: t("negotiator.playAgain") }) })
       ] })
-    ] }) }),
-    showHint && entity.hint && !won && /* @__PURE__ */ jsx(Card, { className: "p-4 border-l-4 border-l-yellow-500", children: /* @__PURE__ */ jsx(Typography, { variant: "body", children: entity.hint }) }),
-    isComplete && !won && /* @__PURE__ */ jsx(HStack, { justify: "center", children: /* @__PURE__ */ jsx(Button, { variant: "primary", onClick: handleReset, children: t("negotiator.playAgain") }) })
-  ] }) });
+    }
+  );
 }
 NegotiatorBoard.displayName = "NegotiatorBoard";
 function SimulationCanvas({

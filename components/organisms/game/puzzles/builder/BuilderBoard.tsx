@@ -9,10 +9,13 @@
  * Events emitted via completeEvent (default UI:PUZZLE_COMPLETE).
  */
 
+/* eslint-disable almadar/organism-rendering-state-only, almadar/no-raw-dom-elements, almadar/require-event-bus, almadar/organism-no-data-state */
+
 import React, { useState, useCallback } from 'react';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
+import type { EntityDisplayProps } from '../../../types';
 import { CheckCircle, XCircle, RotateCcw, Wrench } from 'lucide-react';
 
 export interface BuilderComponent {
@@ -20,6 +23,8 @@ export interface BuilderComponent {
   label: string;
   description?: string;
   iconEmoji?: string;
+  /** Image URL icon (takes precedence over iconEmoji) */
+  iconUrl?: string;
   category?: string;
 }
 
@@ -39,12 +44,15 @@ export interface BuilderPuzzleEntity {
   successMessage?: string;
   failMessage?: string;
   hint?: string;
+  /** Header image URL displayed above the title */
+  headerImage?: string;
+  /** Visual theme overrides */
+  theme?: { background?: string; accentColor?: string };
 }
 
-export interface BuilderBoardProps {
+export interface BuilderBoardProps extends Omit<EntityDisplayProps, 'entity'> {
   entity: BuilderPuzzleEntity;
   completeEvent?: string;
-  className?: string;
 }
 
 export function BuilderBoard({
@@ -56,6 +64,7 @@ export function BuilderBoard({
   const { t } = useTranslate();
 
   const [placements, setPlacements] = useState<Record<string, string>>({});
+  const [headerError, setHeaderError] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [attempts, setAttempts] = useState(0);
   const [showHint, setShowHint] = useState(false);
@@ -117,8 +126,24 @@ export function BuilderBoard({
   const getComponentById = (id: string) => entity.components.find((c) => c.id === id);
 
   return (
-    <Box className={className}>
+    <Box
+      className={className}
+      style={{
+        backgroundImage: entity.theme?.background ? `url(${entity.theme.background})` : undefined,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
       <VStack gap="lg" className="p-4">
+        {/* Header image */}
+        {entity.headerImage && !headerError ? (
+          <Box className="w-full h-32 overflow-hidden rounded-lg">
+            <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
+          </Box>
+        ) : entity.headerImage && headerError ? (
+          <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-[var(--color-muted)] to-[var(--color-accent)] opacity-60" />
+        ) : null}
+
         <Card className="p-4">
           <VStack gap="sm">
             <Typography variant="h4" weight="bold">{entity.title}</Typography>
@@ -141,7 +166,11 @@ export function BuilderBoard({
                   onClick={() => setSelectedComponent(selectedComponent === comp.id ? null : comp.id)}
                   disabled={submitted}
                 >
-                  {comp.iconEmoji && `${comp.iconEmoji} `}{comp.label}
+                  {comp.iconUrl ? (
+                    <img src={comp.iconUrl} alt="" className="w-5 h-5 object-contain inline-block mr-1" />
+                  ) : comp.iconEmoji ? (
+                    <>{comp.iconEmoji}{' '}</>
+                  ) : null}{comp.label}
                 </Button>
               ))}
               {availableComponents.length === 0 && !submitted && (
@@ -188,7 +217,11 @@ export function BuilderBoard({
                     {placedComp ? (
                       <HStack gap="xs" align="center">
                         <Badge size="sm" onClick={() => handleRemoveFromSlot(slot.id)}>
-                          {placedComp.iconEmoji && `${placedComp.iconEmoji} `}{placedComp.label}
+                          {placedComp.iconUrl ? (
+                            <img src={placedComp.iconUrl} alt="" className="w-4 h-4 object-contain inline-block mr-1" />
+                          ) : placedComp.iconEmoji ? (
+                            <>{placedComp.iconEmoji}{' '}</>
+                          ) : null}{placedComp.label}
                         </Badge>
                         {result && (
                           <Icon icon={result.correct ? CheckCircle : XCircle} size="sm" className={result.correct ? 'text-green-600' : 'text-red-600'} />

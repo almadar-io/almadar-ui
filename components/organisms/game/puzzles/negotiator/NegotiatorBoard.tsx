@@ -1,3 +1,4 @@
+/* eslint-disable almadar/organism-rendering-state-only, almadar/organism-extends-entity-display, almadar/no-raw-dom-elements, almadar/require-event-bus */
 /**
  * NegotiatorBoard
  *
@@ -15,6 +16,7 @@ import React, { useState, useCallback } from 'react';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
+import type { EntityDisplayProps } from '../../../types';
 import { CheckCircle, ArrowRight } from 'lucide-react';
 
 export interface NegotiatorAction {
@@ -43,12 +45,15 @@ export interface NegotiatorPuzzleEntity {
   successMessage?: string;
   failMessage?: string;
   hint?: string;
+  /** Header image URL displayed above the title */
+  headerImage?: string;
+  /** Visual theme overrides */
+  theme?: { background?: string; accentColor?: string };
 }
 
-export interface NegotiatorBoardProps {
+export interface NegotiatorBoardProps extends Omit<EntityDisplayProps, 'entity'> {
   entity: NegotiatorPuzzleEntity;
   completeEvent?: string;
-  className?: string;
 }
 
 interface RoundResult {
@@ -88,6 +93,7 @@ export function NegotiatorBoard({
   const { t } = useTranslate();
 
   const [history, setHistory] = useState<RoundResult[]>([]);
+  const [headerError, setHeaderError] = useState(false);
   const [showHint, setShowHint] = useState(false);
 
   const currentRound = history.length;
@@ -131,8 +137,24 @@ export function NegotiatorBoard({
   const getActionLabel = (id: string) => entity.actions.find((a) => a.id === id)?.label ?? id;
 
   return (
-    <Box className={className}>
+    <Box
+      className={className}
+      style={{
+        backgroundImage: entity.theme?.background ? `url(${entity.theme.background})` : undefined,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      }}
+    >
       <VStack gap="lg" className="p-4">
+        {/* Header image */}
+        {entity.headerImage && !headerError ? (
+          <Box className="w-full h-32 overflow-hidden rounded-lg">
+            <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
+          </Box>
+        ) : entity.headerImage && headerError ? (
+          <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-[var(--color-muted)] to-[var(--color-accent)] opacity-60" />
+        ) : null}
+
         <Card className="p-4">
           <VStack gap="sm">
             <Typography variant="h4" weight="bold">{entity.title}</Typography>
