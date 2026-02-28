@@ -23,12 +23,16 @@ export interface ClassifierItem {
   label: string;
   description?: string;
   correctCategory: string;
+  /** Image URL icon for story-specific visual skin */
+  iconUrl?: string;
 }
 
 export interface ClassifierCategory {
   id: string;
   label: string;
   color?: string;
+  /** Image URL for story-specific category header */
+  imageUrl?: string;
 }
 
 export interface ClassifierPuzzleEntity {
@@ -152,6 +156,9 @@ export function ClassifierBoard({
               <HStack gap="sm" className="flex-wrap">
                 {unassignedItems.map((item) => (
                   <Badge key={item.id} size="md" className="cursor-pointer">
+                    {item.iconUrl && (
+                      <img src={item.iconUrl} alt="" className="w-4 h-4 object-contain inline-block" />
+                    )}
                     {item.label}
                   </Badge>
                 ))}
@@ -167,6 +174,11 @@ export function ClassifierBoard({
             return (
               <Card key={cat.id} className="p-4">
                 <VStack gap="sm">
+                  {cat.imageUrl && (
+                    <Box className="w-full h-16 overflow-hidden rounded-md">
+                      <img src={cat.imageUrl} alt="" className="w-full h-full object-cover" />
+                    </Box>
+                  )}
                   <HStack justify="between" align="center">
                     <Typography variant="body" weight="bold">{cat.label}</Typography>
                     <Badge size="sm">{catItems.length}</Badge>
@@ -187,6 +199,9 @@ export function ClassifierBoard({
                           }`}
                           onClick={() => handleUnassign(item.id)}
                         >
+                          {item.iconUrl && (
+                            <img src={item.iconUrl} alt="" className="w-3 h-3 object-contain inline-block" />
+                          )}
                           {item.label}
                           {result && (
                             <Icon icon={result.correct ? CheckCircle : XCircle} size="xs" className={result.correct ? 'text-green-600' : 'text-red-600'} />
