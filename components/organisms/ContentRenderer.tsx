@@ -25,7 +25,7 @@ import { useTranslate } from '../../hooks/useTranslate';
 import { cn } from '../../lib/cn';
 import type { EntityDisplayProps } from './types';
 
-export interface ContentRendererProps extends EntityDisplayProps {
+export interface ContentRendererProps extends EntityDisplayProps<Record<string, unknown>> {
   /** Raw content string — auto-parsed into segments */
   content?: string;
   /** Pre-parsed segments (overrides content) */

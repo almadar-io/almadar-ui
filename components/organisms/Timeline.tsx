@@ -12,14 +12,14 @@
  * - className for external styling
  */
 
-import React, { useCallback } from "react";
+import React from "react";
 import { cn } from "../../lib/cn";
 import { Card, Typography, Badge, Icon, Box } from "../atoms";
 import { VStack, HStack } from "../atoms/Stack";
 import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
-import { useEventBus } from "../../hooks/useEventBus";
+import { useTranslate } from "../../hooks/useTranslate";
 import type { EntityDisplayProps } from "./types";
 import type { LucideIcon } from "lucide-react";
 import { Circle, CheckCircle2, Clock, AlertCircle } from "lucide-react";
@@ -97,16 +97,8 @@ export const Timeline: React.FC<TimelineProps> = ({
     error,
     className,
 }) => {
-    const eventBus = useEventBus();
-
-    const handleAction = useCallback(
-        (action: TimelineAction, item: TimelineItem) => {
-            if (action.event) {
-                eventBus.emit(`UI:${action.event}`, { row: item });
-            }
-        },
-        [eventBus],
-    );
+    const { t } = useTranslate();
+    void t;
 
     // Normalize entity data to TimelineItem[] if schema data is provided
     const entityData = Array.isArray(entity) ? entity as readonly Record<string, unknown>[] : [];
@@ -226,14 +218,16 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     {itemActions && itemActions.length > 0 && (
                                         <HStack gap="xs" className="mt-1">
                                             {itemActions.map((action, actionIdx) => (
-                                                <Badge
+                                                <Box
                                                     key={actionIdx}
-                                                    variant="default"
+                                                    action={action.event}
+                                                    actionPayload={{ row: item }}
                                                     className="cursor-pointer hover:opacity-80 transition-opacity"
-                                                    onClick={() => handleAction(action, item)}
                                                 >
-                                                    {action.label}
-                                                </Badge>
+                                                    <Badge variant="default">
+                                                        {action.label}
+                                                    </Badge>
+                                                </Box>
                                             ))}
                                         </HStack>
                                     )}

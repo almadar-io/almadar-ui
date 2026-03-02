@@ -23,8 +23,9 @@ import { Box } from '../../atoms/Box';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';
 import type { EntityDisplayProps } from '../types';
+import type { BookData } from './types';
 
-export interface BookNavBarProps extends EntityDisplayProps {
+export interface BookNavBarProps extends EntityDisplayProps<BookData> {
   currentPage: number;
   totalPages: number;
   chapterTitle?: string;

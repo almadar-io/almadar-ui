@@ -16,8 +16,9 @@ import { Box } from '../../atoms/Box';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';
 import type { EntityDisplayProps } from '../types';
+import type { BookData } from './types';
 
-export interface BookCoverPageProps extends EntityDisplayProps {
+export interface BookCoverPageProps extends EntityDisplayProps<BookData> {
   title: string;
   subtitle?: string;
   author?: string;

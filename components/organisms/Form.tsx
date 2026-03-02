@@ -31,8 +31,7 @@ import {
 import { Alert } from "../molecules/Alert";
 import { useEventBus } from "../../hooks/useEventBus";
 import { useTranslate } from "../../hooks/useTranslate";
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import type { EntityDisplayProps } from "./types";
+import type { OrbitalEntity } from "@almadar/core";
 import {
   debug,
   debugGroup,
@@ -225,8 +224,8 @@ export interface FormProps extends Omit<
   className?: string;
 
   // Schema-based props
-  /** Entity type name (schema format) */
-  entity?: string;
+  /** Entity type name or schema object. When OrbitalEntity, fields are auto-derived if not provided. */
+  entity?: string | OrbitalEntity;
   /** Form mode - 'create' for new records, 'edit' for updating existing */
   mode?: "create" | "edit";
   /** Fields definition (schema format) - accepts readonly for generated const arrays */
@@ -408,6 +407,26 @@ export const Form: React.FC<FormProps> = ({
   const resolvedSubmitLabel = submitLabel ?? t('common.save');
   const resolvedCancelLabel = cancelLabel ?? t('common.cancel');
   const normalizedInitialData = (initialData as Record<string, unknown>) ?? {};
+
+  // Resolve entity: string name or OrbitalEntity schema object
+  const entityName = typeof entity === "string" ? entity : entity?.name;
+  const entityDerivedFields: readonly Readonly<SchemaField>[] | undefined =
+    React.useMemo(() => {
+      if (fields && fields.length > 0) return undefined;
+      if (!entity || typeof entity === "string") return undefined;
+      return entity.fields.map(
+        (f): SchemaField => ({
+          name: f.name,
+          type: f.type,
+          required: f.required,
+          defaultValue: f.default,
+          values: f.values,
+          min: f.min,
+          max: f.max,
+          relation: f.relation ? { entity: f.relation.entity } : undefined,
+        }),
+      );
+    }, [entity, fields]);
 
   // Normalize props that might come as boolean true from generated code
   const conditionalFields =
@@ -641,32 +660,33 @@ export const Form: React.FC<FormProps> = ({
     [formData, isFieldVisible, relationsData, relationsLoading, isLoading],
   );
 
-  // Normalize fields - handle both string[] and SchemaField[]
+  // Normalize fields - handle both string[] and SchemaField[], with entity-derived fallback
+  const effectiveFields = entityDerivedFields ?? fields;
   const normalizedFields = React.useMemo(() => {
-    if (!fields || fields.length === 0) return [];
+    if (!effectiveFields || effectiveFields.length === 0) return [];
 
-    return fields.map((field): SchemaField => {
+    return effectiveFields.map((field): SchemaField => {
       // If field is a string, convert to SchemaField object
       if (typeof field === 'string') {
         return { name: field, type: 'string' };
       }
       return field as SchemaField;
     });
-  }, [fields]);
+  }, [effectiveFields]);
 
   // Generate form fields from schema
   const schemaFields = React.useMemo(() => {
     if (normalizedFields.length === 0) return null;
 
     if (isDebugEnabled()) {
-      debugGroup(`Form: ${entity || "unknown"}`);
+      debugGroup(`Form: ${entityName || "unknown"}`);
       debug(`Fields count: ${normalizedFields.length}`);
       debug("Conditional fields:", Object.keys(conditionalFields));
       debugGroupEnd();
     }
 
     return normalizedFields.map(renderField).filter(Boolean);
-  }, [normalizedFields, renderField, entity, conditionalFields]);
+  }, [normalizedFields, renderField, entityName, conditionalFields]);
 
   // Generate form sections with nested fields
   const sectionElements = React.useMemo(() => {

@@ -182,6 +182,15 @@ export const StatCard: React.FC<StatCardProps> = ({
     }));
   }, [metrics, data, computeMetricValue]);
 
+  // Calculate trend (must be before early returns per Rules of Hooks)
+  const calculatedTrend = React.useMemo(() => {
+    if (manualTrend !== undefined) return manualTrend;
+    if (previousValue === undefined || currentValue === undefined)
+      return undefined;
+    if (previousValue === 0) return currentValue > 0 ? 100 : 0;
+    return ((currentValue - previousValue) / previousValue) * 100;
+  }, [manualTrend, previousValue, currentValue]);
+
   // If multiple metrics, render them as a row of stats
   if (schemaStats && schemaStats.length > 1) {
     if (isLoading) {
@@ -228,14 +237,6 @@ export const StatCard: React.FC<StatCardProps> = ({
     ? (propValue[0] ?? propValue.length)
     : propValue;
   const value = schemaStats?.[0]?.value ?? normalizedPropValue ?? 0;
-  // Calculate trend if not provided manually
-  const calculatedTrend = useMemo(() => {
-    if (manualTrend !== undefined) return manualTrend;
-    if (previousValue === undefined || currentValue === undefined)
-      return undefined;
-    if (previousValue === 0) return currentValue > 0 ? 100 : 0;
-    return ((currentValue - previousValue) / previousValue) * 100;
-  }, [manualTrend, previousValue, currentValue]);
 
   const trendDirection =
     manualDirection ||
@@ -347,7 +348,3 @@ export const StatCard: React.FC<StatCardProps> = ({
 };
 
 StatCard.displayName = "StatCard";
-
-function useMemo<T>(factory: () => T, deps: unknown[]): T {
-  return React.useMemo(factory, deps);
-}

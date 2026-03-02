@@ -19,7 +19,7 @@ import { cn } from '../../../lib/cn';
 import type { EntityDisplayProps } from '../types';
 import type { BookPart } from './types';
 
-export interface BookTableOfContentsProps extends EntityDisplayProps {
+export interface BookTableOfContentsProps extends EntityDisplayProps<BookPart> {
   parts: BookPart[];
   currentChapterId?: string;
   direction?: 'rtl' | 'ltr';

@@ -102,7 +102,7 @@ const JAZARI_VISUALIZER_CONFIG: VisualizerConfig = {
 // Props
 // ---------------------------------------------------------------------------
 
-export interface JazariStateMachineProps extends EntityDisplayProps {
+export interface JazariStateMachineProps extends EntityDisplayProps<SmSchema> {
   /** Full schema — extracts first trait's state machine */
   schema?: SmSchema;
   /** Or pass a single trait directly */

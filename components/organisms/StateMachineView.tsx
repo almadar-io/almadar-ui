@@ -61,7 +61,7 @@ interface TooltipState {
   bundle: TransitionBundle | null;
 }
 
-export interface StateMachineViewProps extends EntityDisplayProps {
+export interface StateMachineViewProps extends EntityDisplayProps<DomLayoutData> {
   layoutData: DomLayoutData;
   /** Custom state node renderer — when provided, replaces the default circle nodes */
   renderStateNode?: (state: DomStateNode, config: VisualizerConfig) => React.ReactNode;
