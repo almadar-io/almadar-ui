@@ -25,17 +25,15 @@ const sampleData = [
 
 export const Default: Story = {
     args: {
-        data: sampleData,
+        entity: sampleData,
         fields: ['title', 'status', 'owner'],
-        entity: 'Project',
     },
 };
 
 export const WithActions: Story = {
     args: {
-        data: sampleData,
+        entity: sampleData,
         fields: ['title', 'status'],
-        entity: 'Project',
         itemActions: [
             { label: 'View', event: 'VIEW', variant: 'primary' },
             { label: 'Edit', event: 'EDIT', variant: 'secondary' },
@@ -45,9 +43,8 @@ export const WithActions: Story = {
 
 export const CustomColumnWidth: Story = {
     args: {
-        data: sampleData,
+        entity: sampleData,
         fields: ['title', 'status', 'owner'],
-        entity: 'Project',
         minCardWidth: 200,
         maxCols: 3,
         gap: 'lg',
@@ -56,7 +53,6 @@ export const CustomColumnWidth: Story = {
 
 export const Loading: Story = {
     args: {
-        entity: 'Project',
         fields: ['title', 'status'],
         isLoading: true,
     },
@@ -64,8 +60,7 @@ export const Loading: Story = {
 
 export const Empty: Story = {
     args: {
-        data: [],
-        entity: 'Project',
+        entity: [],
         fields: ['title', 'status'],
     },
 };

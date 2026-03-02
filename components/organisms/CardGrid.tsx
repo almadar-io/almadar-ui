@@ -5,7 +5,7 @@
  * A dumb, responsive grid specifically designed for card layouts.
  * Uses CSS Grid auto-fit for automatic responsive columns.
  *
- * Data comes exclusively from the `data` prop (provided by the trait via render-ui).
+ * Data comes exclusively from the `entity` prop (injected by the runtime).
  * All user interactions emit events via useEventBus — never manages internal state
  * for pagination, filtering, or search. All state is owned by the trait state machine.
  */
@@ -55,7 +55,7 @@ function normalizeFields(fields: readonly FieldDef[] | undefined): string[] {
   return fields.map((f) => (typeof f === 'string' ? f : f.key));
 }
 
-export interface CardGridProps extends EntityDisplayProps {
+export interface CardGridProps extends EntityDisplayProps<Record<string, unknown>> {
   /** Minimum width of each card (default: 280px) */
   minCardWidth?: number;
   /** Maximum number of columns */
@@ -64,7 +64,7 @@ export interface CardGridProps extends EntityDisplayProps {
   gap?: CardGridGap;
   /** Align cards vertically in their cells */
   alignItems?: 'start' | 'center' | 'end' | 'stretch';
-  /** Children elements (cards) - optional when using entity/data props */
+  /** Children elements (cards) - optional when using entity prop */
   children?: React.ReactNode;
   /** Fields to display - accepts string[] or {key, header}[] for unified interface */
   fields?: readonly FieldDef[];
@@ -98,9 +98,9 @@ const alignStyles = {
  *
  * Can be used in two ways:
  * 1. With children: <CardGrid><Card>...</Card></CardGrid>
- * 2. With data: <CardGrid entity="Task" fieldNames={['title']} data={tasks} />
+ * 2. With entity data: <CardGrid entity={tasks} fieldNames={['title']} />
  *
- * All data comes from the `data` prop. Pagination display hints come from
+ * All data comes from the `entity` prop. Pagination display hints come from
  * `page`, `pageSize`, and `totalCount` props (set by the trait via render-ui).
  */
 export const CardGrid: React.FC<CardGridProps> = ({
@@ -112,7 +112,6 @@ export const CardGrid: React.FC<CardGridProps> = ({
   children,
   // EntityDisplayProps
   entity,
-  data: externalData,
   isLoading = false,
   error = null,
   page,
@@ -136,8 +135,8 @@ export const CardGrid: React.FC<CardGridProps> = ({
   // Build the grid-template-columns value
   const gridTemplateColumns = `repeat(auto-fit, minmax(min(${minCardWidth}px, 100%), 1fr))`;
 
-  // Normalize data to array
-  const normalizedData = Array.isArray(externalData) ? externalData : externalData ? [externalData] : [];
+  // Normalize entity data to array
+  const normalizedData = Array.isArray(entity) ? entity : entity ? [entity] : [];
 
   // Compute pagination display hints from EntityDisplayProps
   const resolvedPage = page ?? 1;
@@ -150,7 +149,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
 
   // Handle card click — emit UI:VIEW event
   const handleCardClick = (itemData: Record<string, unknown>) => {
-    eventBus.emit('UI:VIEW', { row: itemData, entity });
+    eventBus.emit('UI:VIEW', { row: itemData });
   };
 
   // Render data-bound cards if data is provided
@@ -163,7 +162,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
     if (isLoading) {
       return (
         <Box className="col-span-full text-center py-8 text-[var(--color-muted-foreground)]">
-          <Typography variant="body" color="secondary">Loading {entity || 'items'}...</Typography>
+          <Typography variant="body" color="secondary">Loading items...</Typography>
         </Box>
       );
     }
@@ -172,7 +171,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
     if (error) {
       return (
         <Box className="col-span-full text-center py-8 text-[var(--color-error)]">
-          <Typography variant="body" color="error">Error loading {entity || 'items'}: {error.message}</Typography>
+          <Typography variant="body" color="error">Error loading items: {error.message}</Typography>
         </Box>
       );
     }
@@ -180,7 +179,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
     if (normalizedData.length === 0) {
       return (
         <Box className="col-span-full text-center py-8 text-[var(--color-muted-foreground)]">
-          <Typography variant="body" color="secondary">No {entity || 'items'} found</Typography>
+          <Typography variant="body" color="secondary">No items found</Typography>
         </Box>
       );
     }
@@ -200,12 +199,12 @@ export const CardGrid: React.FC<CardGridProps> = ({
             const value = getNestedValue(itemData, field);
             return value !== undefined && value !== null ? String(value) : '';
           });
-          eventBus.emit('UI:NAVIGATE', { url, row: itemData, entity });
+          eventBus.emit('UI:NAVIGATE', { url, row: itemData });
           return;
         }
 
         if (action.event) {
-          eventBus.emit(`UI:${action.event}`, { row: itemData, entity });
+          eventBus.emit(`UI:${action.event}`, { row: itemData });
         }
         if (action.onClick) {
           action.onClick(itemData);

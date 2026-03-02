@@ -117,10 +117,10 @@ export const Meter: React.FC<MeterProps> = ({
     const handleAction = useCallback(
         (action: MeterAction) => {
             if (action.event) {
-                eventBus.emit(`UI:${action.event}`, { entity, value });
+                eventBus.emit(`UI:${action.event}`, { value });
             }
         },
-        [eventBus, entity, value],
+        [eventBus, value],
     );
 
     const percentage = useMemo(() => {

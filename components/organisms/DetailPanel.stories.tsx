@@ -62,9 +62,8 @@ export const WithActions: Story = {
 
 export const SchemaBasedFields: Story = {
   args: {
-    entity: 'Project',
     fields: ['name', 'status', 'priority', 'progress', 'budget', 'startDate', 'description'],
-    data: {
+    entity: {
       id: '1',
       name: 'Project Alpha',
       status: 'Active',
@@ -112,14 +111,12 @@ export const MultipleSections: Story = {
 
 export const Loading: Story = {
   args: {
-    entity: 'Task',
     isLoading: true,
   },
 };
 
 export const ErrorState: Story = {
   args: {
-    entity: 'Task',
     error: new Error('Failed to load task details. Please try again.'),
   },
 };

@@ -49,10 +49,8 @@ export interface SelectPayload {
 // ── Base Props ────────────────────────────────────────────────────────
 
 export interface EntityDisplayProps<T = unknown> {
-  /** Entity name for schema-driven integration */
-  entity?: string;
-  /** Data array provided by the trait via render-ui */
-  data?: readonly T[] | T[];
+  /** Entity data injected by the runtime (array for lists, single object for detail) */
+  entity?: T | readonly T[];
   /** Additional CSS classes */
   className?: string;
   /** Loading state indicator */

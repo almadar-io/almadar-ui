@@ -160,15 +160,15 @@ function transition(state: TaskState, event: string): TaskState {
 };
 
 export const ArabicBook: Story = {
-  args: { data: [sampleBook] },
+  args: { entity: [sampleBook] },
 };
 
 export const StartAtTOC: Story = {
-  args: { data: [sampleBook], initialPage: 1 },
+  args: { entity: [sampleBook], initialPage: 1 },
 };
 
 export const StartAtChapter: Story = {
-  args: { data: [sampleBook], initialPage: 2 },
+  args: { entity: [sampleBook], initialPage: 2 },
 };
 
 // ---------------------------------------------------------------------------
@@ -213,14 +213,14 @@ const orbital = {
 };
 
 export const EnglishBook: Story = {
-  args: { data: [englishBook] },
+  args: { entity: [englishBook] },
 };
 
 // ---------------------------------------------------------------------------
 // Arabic entity data with Arabic field names (simulates runtime .orb entity)
 // ---------------------------------------------------------------------------
 
-const arabicEntityData = {
+const arabicEntityData: Record<string, unknown> = {
   العنوان: 'الأمة الرقمية',
   العنوان_الفرعي: 'رحلة في بناء الأمم',
   المؤلف: 'المداري',
@@ -263,7 +263,7 @@ const arabicEntityData = {
 export const ArabicFieldMap: Story = {
   name: 'Arabic Entity (Field Map)',
   args: {
-    data: [arabicEntityData],
+    entity: [arabicEntityData],
     fieldMap: 'ar',
   },
 };
@@ -388,5 +388,5 @@ And here is a full schema with \`orbitals\` array — also auto-detected:
 
 export const WithOrbitalDiagrams: Story = {
   name: 'With Orbital Diagrams',
-  args: { data: [bookWithChapterOrbital], initialPage: 2 },
+  args: { entity: [bookWithChapterOrbital], initialPage: 2 },
 };

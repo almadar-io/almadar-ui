@@ -28,23 +28,20 @@ type Story = StoryObj<typeof MasterDetail<Task>>;
 
 export const Default: Story = {
   args: {
-    entity: 'Task',
+    entity: sampleTasks,
     masterFields: ['title', 'status', 'assignee', 'priority'],
-    data: sampleTasks,
   },
 };
 
 export const WithRowClick: Story = {
   args: {
-    entity: 'Task',
+    entity: sampleTasks,
     masterFields: ['title', 'status', 'priority'],
-    data: sampleTasks,
   },
 };
 
 export const Loading: Story = {
   args: {
-    entity: 'Task',
     masterFields: ['title', 'status', 'assignee'],
     isLoading: true,
   },
@@ -52,7 +49,6 @@ export const Loading: Story = {
 
 export const ErrorState: Story = {
   args: {
-    entity: 'Task',
     masterFields: ['title', 'status'],
     error: new Error('Failed to load tasks. Check your network connection.'),
   },
@@ -60,8 +56,7 @@ export const ErrorState: Story = {
 
 export const EmptyData: Story = {
   args: {
-    entity: 'Task',
+    entity: [],
     masterFields: ['title', 'status', 'assignee'],
-    data: [],
   },
 };

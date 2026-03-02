@@ -132,7 +132,6 @@ export const Table = <T extends Record<string, any>>({
   columns,
   // EntityDisplayProps
   entity,
-  data,
   className,
   isLoading,
   error,
@@ -162,12 +161,10 @@ export const Table = <T extends Record<string, any>>({
   const resolvedEmptyMessage = emptyMessage ?? t('empty.noData');
   const resolvedSearchPlaceholder = searchPlaceholder ?? t('common.search');
 
-  // Resolve data: support both `data` (EntityDisplayProps) and legacy `entity` (array)
-  const resolvedData: T[] = Array.isArray(data)
-    ? (data as T[])
-    : Array.isArray(entity)
-      ? (entity as T[])
-      : [];
+  // Resolve data from entity prop
+  const resolvedData: T[] = Array.isArray(entity)
+    ? (entity as T[])
+    : [];
 
   // Resolve display hints — prefer explicit Table props, fall back to EntityDisplayProps
   const resolvedSortColumn = sortColumnProp ?? sortBy;

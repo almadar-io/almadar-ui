@@ -4,7 +4,7 @@
  *
  * Composes atoms and molecules to create a professional detail view.
  *
- * Data is provided by the trait via the `data` prop (render-ui effect).
+ * Data is provided by the runtime via the `entity` prop.
  * See EntityDisplayProps in ./types.ts for base prop contract.
  */
 
@@ -170,7 +170,7 @@ function normalizeFieldDefs(fields: readonly FieldDef[] | undefined): string[] {
   return fields.map((f) => (typeof f === "string" ? f : f.key));
 }
 
-export interface DetailPanelProps extends Omit<EntityDisplayProps<Record<string, unknown>>, 'data'> {
+export interface DetailPanelProps extends EntityDisplayProps<Record<string, unknown>> {
   title?: string;
   subtitle?: string;
   status?: {
@@ -188,8 +188,6 @@ export interface DetailPanelProps extends Omit<EntityDisplayProps<Record<string,
   fields?: readonly (FieldDef | DetailField)[];
   /** Alias for fields - backwards compatibility */
   fieldNames?: readonly string[];
-  /** Data object provided by the trait via render-ui */
-  data?: Record<string, unknown> | unknown;
   /** Initial data for edit mode (passed by compiler) */
   initialData?: Record<string, unknown> | unknown;
   /** Display mode (passed by compiler) */
@@ -213,7 +211,6 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   entity,
   fields: propFields,
   fieldNames,
-  data: externalData,
   initialData,
   isLoading = false,
   error,
@@ -245,17 +242,17 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         const url = action.navigatesTo.replace(/\{\{(\w+)\}\}/g, (_, key) =>
           String(data?.[key] ?? ""),
         );
-        eventBus.emit('UI:NAVIGATE', { url, row: data, entity });
+        eventBus.emit('UI:NAVIGATE', { url, row: data });
         return;
       }
       if (action.event) {
-        eventBus.emit(`UI:${action.event}`, { row: data, entity });
+        eventBus.emit(`UI:${action.event}`, { row: data });
       }
       if (action.onClick) {
         action.onClick();
       }
     },
-    [eventBus, entity],
+    [eventBus],
   );
 
   // Handle close via event bus (closed circuit pattern)
@@ -263,8 +260,9 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     eventBus.emit('UI:CLOSE', {});
   }, [eventBus]);
 
-  // Use data prop directly, fall back to initialData for backwards compat
-  const data = externalData ?? initialData;
+  // entity is now the data itself (single record or first element of array)
+  const entityRecord = Array.isArray(entity) ? entity[0] : entity;
+  const data = entityRecord ?? initialData;
 
   let title = propTitle;
   // Use a mutable array for building sections, but accept readonly from props
@@ -426,7 +424,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   if (isLoading) {
     return (
       <LoadingState
-        message={`Loading ${entity || "details"}...`}
+        message="Loading details..."
         className={className}
       />
     );
@@ -452,7 +450,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     return (
       <EmptyState
         title="Not Found"
-        description={`The requested ${entity || "item"} could not be found.`}
+        description="The requested item could not be found."
         className={className}
       />
     );
@@ -468,7 +466,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
               {avatar}
 
               <Typography variant="h2" weight="bold">
-                {title || entity || "Details"}
+                {title || "Details"}
               </Typography>
 
               {subtitle && (

@@ -32,7 +32,7 @@ import type { EntityDisplayProps } from '../types';
 import type { BookData, BookChapter, BookFieldMap } from './types';
 import { mapBookData, resolveFieldMap } from './types';
 
-export interface BookViewerProps extends EntityDisplayProps {
+export interface BookViewerProps extends EntityDisplayProps<BookData | Record<string, unknown>> {
   /** Initial page index (default: 0 = cover) */
   initialPage?: number;
   /** Field name translation map — a BookFieldMap object or locale key ("ar") */
@@ -58,7 +58,7 @@ const PRINT_STYLES = `
 `;
 
 export const BookViewer: React.FC<BookViewerProps> = ({
-  data,
+  entity,
   initialPage = 0,
   fieldMap,
   className,
@@ -72,10 +72,11 @@ export const BookViewer: React.FC<BookViewerProps> = ({
 
   // Map raw entity data to canonical BookData using field map
   const book = useMemo<BookData | null>(() => {
-    const raw = data?.[0];
+    const entityArray = Array.isArray(entity) ? entity : entity ? [entity] : [];
+    const raw = entityArray[0];
     if (!raw) return null;
     return mapBookData(raw as Record<string, unknown>, resolvedFieldMap);
-  }, [data, resolvedFieldMap]);
+  }, [entity, resolvedFieldMap]);
 
   const direction = book?.direction ?? 'ltr';
 

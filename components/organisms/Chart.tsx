@@ -313,10 +313,10 @@ export const Chart: React.FC<ChartProps> = ({
     const handleAction = useCallback(
         (action: ChartAction) => {
             if (action.event) {
-                eventBus.emit(`UI:${action.event}`, { entity });
+                eventBus.emit(`UI:${action.event}`, {});
             }
         },
-        [eventBus, entity],
+        [eventBus],
     );
 
     // Normalize data: simple data → single series

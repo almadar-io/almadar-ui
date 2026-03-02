@@ -40,14 +40,14 @@ const columns = [
 
 export const Default: Story = {
     args: {
-        data: sampleData,
+        entity: sampleData,
         columns: columns,
     },
 };
 
 export const WithSearch: Story = {
     args: {
-        data: sampleData,
+        entity: sampleData,
         columns: columns,
         searchable: true,
         searchPlaceholder: 'Search users...',
@@ -56,7 +56,7 @@ export const WithSearch: Story = {
 
 export const Selectable: Story = {
     args: {
-        data: sampleData,
+        entity: sampleData,
         columns: columns,
         selectable: true,
     },
@@ -64,7 +64,7 @@ export const Selectable: Story = {
 
 export const Loading: Story = {
     args: {
-        data: [],
+        entity: [],
         columns: columns,
         isLoading: true,
     },
@@ -72,7 +72,7 @@ export const Loading: Story = {
 
 export const Empty: Story = {
     args: {
-        data: [],
+        entity: [],
         columns: columns,
         emptyIcon: Database,
         emptyTitle: 'No users found',
@@ -82,7 +82,7 @@ export const Empty: Story = {
 
 export const WithItemActions: Story = {
     args: {
-        data: sampleData,
+        entity: sampleData,
         columns: columns,
         itemActions: [
             { label: 'View', event: 'VIEW' },
@@ -94,7 +94,7 @@ export const WithItemActions: Story = {
 
 export const WithPagination: Story = {
     args: {
-        data: sampleData,
+        entity: sampleData,
         columns: columns,
         page: 1,
         pageSize: 2,
@@ -104,7 +104,7 @@ export const WithPagination: Story = {
 
 export const Sorted: Story = {
     args: {
-        data: sampleData,
+        entity: sampleData,
         columns: columns,
         sortBy: 'name',
         sortDirection: 'asc',
@@ -113,7 +113,7 @@ export const Sorted: Story = {
 
 export const FullFeatured: Story = {
     args: {
-        data: sampleData,
+        entity: sampleData,
         columns: [
             { key: 'name' as keyof User, header: 'Name', sortable: true },
             { key: 'email' as keyof User, header: 'Email', sortable: true },
@@ -132,7 +132,6 @@ export const FullFeatured: Story = {
                 ),
             },
         ],
-        entity: 'User',
         searchable: true,
         selectable: true,
         sortBy: 'name',

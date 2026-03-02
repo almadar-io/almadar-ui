@@ -109,7 +109,6 @@ export interface DataTableProps<T extends { id: string | number }>
 export function DataTable<T extends { id: string | number }>({
   fields,
   columns,
-  data,
   entity,
   itemActions,
   isLoading = false,
@@ -146,10 +145,10 @@ export function DataTable<T extends { id: string | number }>({
   const resolvedSearchPlaceholder =
     searchPlaceholder ?? t("common.search");
 
-  // Data comes from props only — trait provides it via render-ui
+  // Normalize entity data to array
   const items = useMemo(
-    () => (Array.isArray(data) ? data : []) as readonly T[],
-    [data],
+    () => (Array.isArray(entity) ? entity : []) as readonly T[],
+    [entity],
   );
 
   // Pagination display info
@@ -176,13 +175,12 @@ export function DataTable<T extends { id: string | number }>({
                 /\{\{id\}\}/g,
                 String((row as { id: string | number }).id),
               );
-            eventBus.emit('UI:NAVIGATE', { url, row, entity });
+            eventBus.emit('UI:NAVIGATE', { url, row });
             return;
           }
           if (action.event) {
             eventBus.emit(`UI:${action.event}`, {
               row,
-              entity,
             });
           }
         },
@@ -206,10 +204,10 @@ export function DataTable<T extends { id: string | number }>({
           eventBus.emit('UI:NAVIGATE', { url, row, entity });
           return;
         }
-        eventBus.emit("UI:VIEW", { row, entity });
+        eventBus.emit("UI:VIEW", { row });
       }
     },
-    [viewAction, eventBus, entity],
+    [viewAction, eventBus],
   );
 
   const isRowClickable = !!viewAction;
@@ -228,31 +226,27 @@ export function DataTable<T extends { id: string | number }>({
     if (allSelected) {
       eventBus.emit(`UI:${EntityDisplayEvents.DESELECT}`, {
         ids: [],
-        entity,
       });
     } else {
       eventBus.emit(`UI:${EntityDisplayEvents.SELECT}`, {
         ids: items.map((row) => row.id),
-        entity,
       });
     }
-  }, [allSelected, items, eventBus, entity]);
+  }, [allSelected, items, eventBus]);
 
   const handleSelectRow = useCallback(
     (id: string | number) => {
       if (selectedIds.includes(id)) {
         eventBus.emit(`UI:${EntityDisplayEvents.DESELECT}`, {
           ids: selectedIds.filter((i) => i !== id),
-          entity,
         });
       } else {
         eventBus.emit(`UI:${EntityDisplayEvents.SELECT}`, {
           ids: [...selectedIds, id],
-          entity,
         });
       }
     },
-    [selectedIds, eventBus, entity],
+    [selectedIds, eventBus],
   );
 
   const handleSort = useCallback(
@@ -262,20 +256,18 @@ export function DataTable<T extends { id: string | number }>({
       eventBus.emit(`UI:${EntityDisplayEvents.SORT}`, {
         field: key,
         direction: newDirection,
-        entity,
       });
     },
-    [sortBy, sortDirection, eventBus, entity],
+    [sortBy, sortDirection, eventBus],
   );
 
   const handleSearch = useCallback(
     (value: string) => {
       eventBus.emit(`UI:${EntityDisplayEvents.SEARCH}`, {
         query: value,
-        entity,
       });
     },
-    [eventBus, entity],
+    [eventBus],
   );
 
   const handlePageChange = useCallback(
@@ -283,10 +275,9 @@ export function DataTable<T extends { id: string | number }>({
       eventBus.emit(`UI:${EntityDisplayEvents.PAGINATE}`, {
         page: newPage,
         pageSize: currentPageSize,
-        entity,
       });
     },
-    [eventBus, currentPageSize, entity],
+    [eventBus, currentPageSize],
   );
 
   const selectedRows = useMemo(

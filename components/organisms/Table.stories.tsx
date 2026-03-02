@@ -40,7 +40,7 @@ const columns = [
 
 export const Default: Story = {
     args: {
-        data: sampleData,
+        entity: sampleData,
         columns,
 
     },
@@ -48,7 +48,7 @@ export const Default: Story = {
 
 export const WithSearch: Story = {
     args: {
-        data: sampleData,
+        entity: sampleData,
         columns,
 
         searchable: true,
@@ -58,7 +58,7 @@ export const WithSearch: Story = {
 
 export const Selectable: Story = {
     args: {
-        data: sampleData,
+        entity: sampleData,
         columns,
 
         selectable: true,
@@ -68,7 +68,7 @@ export const Selectable: Story = {
 
 export const WithSorting: Story = {
     args: {
-        data: sampleData,
+        entity: sampleData,
         columns,
 
         sortable: true,
@@ -79,7 +79,7 @@ export const WithSorting: Story = {
 
 export const WithRowActions: Story = {
     args: {
-        data: sampleData,
+        entity: sampleData,
         columns,
 
         rowActions: () => [
@@ -92,7 +92,7 @@ export const WithRowActions: Story = {
 
 export const WithPagination: Story = {
     args: {
-        data: sampleData,
+        entity: sampleData,
         columns,
 
         paginated: true,
@@ -103,7 +103,7 @@ export const WithPagination: Story = {
 
 export const Loading: Story = {
     args: {
-        data: [],
+        entity: [],
         columns,
 
         isLoading: true,
@@ -112,7 +112,7 @@ export const Loading: Story = {
 
 export const Empty: Story = {
     args: {
-        data: [],
+        entity: [],
         columns,
 
         emptyMessage: 'No records found.',
@@ -121,7 +121,7 @@ export const Empty: Story = {
 
 export const FullFeatured: Story = {
     args: {
-        data: sampleData,
+        entity: sampleData,
         columns,
 
         searchable: true,

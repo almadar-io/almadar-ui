@@ -86,7 +86,7 @@ function normalizeFields(fields: readonly FieldDef[] | undefined): string[] {
   return fields.map((f) => (typeof f === "string" ? f : f.key));
 }
 
-export interface ListProps extends EntityDisplayProps {
+export interface ListProps extends EntityDisplayProps<Record<string, unknown>> {
   /** Entity type name for display */
   entityType?: string;
   selectable?: boolean;
@@ -281,7 +281,6 @@ const ProgressIndicator: React.FC<{ value: number }> = ({ value }) => {
 
 export const List: React.FC<ListProps> = ({
   entity,
-  data,
   isLoading = false,
   error,
   selectable = false,
@@ -298,20 +297,16 @@ export const List: React.FC<ListProps> = ({
   const { t } = useTranslate();
   const resolvedEmptyMessage = emptyMessage ?? t('empty.noData');
 
-  // entity is string metadata only — used for event payloads
-  const entityName = typeof entity === "string" ? entity : undefined;
-
   // Support fields and fieldNames (alias) - normalize to string[]
   const effectiveFieldNames =
     normalizeFields(fields).length > 0 ? normalizeFields(fields) : fieldNames;
 
-  // Normalize data: handle arrays, single objects
+  // Normalize entity data: handle arrays, single objects
   const rawItems = useMemo(() => {
-    const d = data ?? [];
-    if (Array.isArray(d)) return d;
-    if (d && typeof d === "object" && "id" in d) return [d];
+    if (Array.isArray(entity)) return entity;
+    if (entity && typeof entity === "object" && "id" in entity) return [entity];
     return [];
-  }, [data]);
+  }, [entity]);
 
   const getItemActions = React.useCallback(
     (item: ListItem): MenuItem[] => {
@@ -330,20 +325,19 @@ export const List: React.FC<ListProps> = ({
             const url = action.navigatesTo.replace(/\{\{(\w+)\}\}/g, (_, key) =>
               String(item[key] || item.id || ""),
             );
-            eventBus.emit('UI:NAVIGATE', { url, row: item, entity: entityName });
+            eventBus.emit('UI:NAVIGATE', { url, row: item });
             return;
           }
           // Dispatch event via event bus if defined (for trait state machine integration)
           if (action.event) {
             eventBus.emit(`UI:${action.event}`, {
               row: item,
-              entity: entityName,
             });
           }
         },
       }));
     },
-    [itemActions, eventBus, entityName],
+    [itemActions, eventBus],
   );
 
   const normalizedItemActions = itemActions ? getItemActions : undefined;
@@ -351,7 +345,7 @@ export const List: React.FC<ListProps> = ({
   if (isLoading) {
     return (
       <LoadingState
-        message={`Loading ${entityType || "items"}...`}
+        message="Loading items..."
         className={className}
       />
     );
@@ -362,7 +356,7 @@ export const List: React.FC<ListProps> = ({
     return (
       <EmptyState
         icon={Package}
-        title={`Error loading ${entityType || "items"}`}
+        title="Error loading items"
         description={error.message}
         className={className}
       />
@@ -421,7 +415,7 @@ export const List: React.FC<ListProps> = ({
   };
 
   const handleRowClick = (item: ListItem) => {
-    eventBus.emit('UI:VIEW', { row: item, entity: entityName });
+    eventBus.emit('UI:VIEW', { row: item });
   };
 
   const defaultRenderItem = (
@@ -700,7 +694,7 @@ export const List: React.FC<ListProps> = ({
     return (
       <EmptyState
         icon={Package}
-        title={`No ${entityType || "items"} found`}
+        title="No items found"
         description={resolvedEmptyMessage}
         className={className}
       />

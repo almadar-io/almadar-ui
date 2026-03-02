@@ -585,10 +585,10 @@ export const Form: React.FC<FormProps> = ({
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // Dispatch submit event for trait state machine integration
-    eventBus.emit(`UI:${submitEvent}`, { data: formData, entity });
+    eventBus.emit(`UI:${submitEvent}`, { data: formData });
     // Handle onSubmit - event name string for additional trait dispatch
     if (onSubmit) {
-      eventBus.emit(`UI:${onSubmit}`, { data: formData, entity });
+      eventBus.emit(`UI:${onSubmit}`, { data: formData });
     }
   };
 

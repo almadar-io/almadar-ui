@@ -20,6 +20,7 @@ import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
 import { useEventBus } from "../../hooks/useEventBus";
+import type { EntityDisplayProps } from "./types";
 import { X, ZoomIn, Upload, Image as ImageIcon } from "lucide-react";
 
 export interface MediaItem {
@@ -46,13 +47,11 @@ export interface MediaGalleryAction {
     variant?: "primary" | "secondary" | "ghost";
 }
 
-export interface MediaGalleryProps {
+export interface MediaGalleryProps extends EntityDisplayProps<MediaItem> {
     /** Gallery title */
     title?: string;
     /** Media items */
     items?: readonly MediaItem[];
-    /** Schema-driven data */
-    data?: readonly Record<string, unknown>[];
     /** Column count */
     columns?: 2 | 3 | 4 | 5 | 6;
     /** Enable item selection */
@@ -67,14 +66,6 @@ export interface MediaGalleryProps {
     actions?: readonly MediaGalleryAction[];
     /** Aspect ratio for thumbnails */
     aspectRatio?: "square" | "landscape" | "portrait";
-    /** Entity name for schema-driven auto-fetch */
-    entity?: string;
-    /** Loading state */
-    isLoading?: boolean;
-    /** Error state */
-    error?: Error | null;
-    /** Additional CSS classes */
-    className?: string;
 }
 
 const COLUMN_CLASSES: Record<number, string> = {
@@ -94,7 +85,6 @@ const ASPECT_CLASSES: Record<string, string> = {
 export const MediaGallery: React.FC<MediaGalleryProps> = ({
     title,
     items: propItems,
-    data,
     columns = 3,
     selectable = false,
     selectedItems = [],
@@ -113,10 +103,10 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
     const handleAction = useCallback(
         (action: MediaGalleryAction) => {
             if (action.event) {
-                eventBus.emit(`UI:${action.event}`, { entity });
+                eventBus.emit(`UI:${action.event}`, {});
             }
         },
-        [eventBus, entity],
+        [eventBus],
     );
 
     const handleItemClick = useCallback(
@@ -130,28 +120,29 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
             } else {
                 setLightboxItem(item);
             }
-            eventBus.emit("UI:MEDIA_SELECT", { entity, row: item });
+            eventBus.emit("UI:MEDIA_SELECT", { row: item });
         },
-        [selectable, selectedItems, onSelectionChange, eventBus, entity],
+        [selectable, selectedItems, onSelectionChange, eventBus],
     );
 
     const handleUpload = useCallback(() => {
-        eventBus.emit("UI:MEDIA_UPLOAD", { entity });
-    }, [eventBus, entity]);
+        eventBus.emit("UI:MEDIA_UPLOAD", {});
+    }, [eventBus]);
 
-    // Normalize data
+    // Normalize entity data
+    const entityData = Array.isArray(entity) ? entity as readonly Record<string, unknown>[] : [];
     const items: readonly MediaItem[] = React.useMemo(() => {
         if (propItems) return propItems;
-        if (!data) return [];
+        if (entityData.length === 0) return [];
 
-        return data.map((record, idx) => ({
+        return entityData.map((record, idx) => ({
             id: String(record.id ?? idx),
             src: String(record.src ?? record.url ?? record.image ?? ""),
             alt: record.alt ? String(record.alt) : undefined,
             thumbnail: record.thumbnail ? String(record.thumbnail) : undefined,
             caption: record.caption ? String(record.caption) : record.title ? String(record.title) : undefined,
         }));
-    }, [propItems, data]);
+    }, [propItems, entityData]);
 
     if (isLoading) {
         return <LoadingState message="Loading media..." className={className} />;
