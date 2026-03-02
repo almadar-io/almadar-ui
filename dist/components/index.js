@@ -1,21 +1,21 @@
 import { DEFAULT_CONFIG, renderStateMachineToDomData, parseContentSegments } from '../chunk-N6DJVKZ6.js';
-import { useAuthContext } from '../chunk-BKC4XU44.js';
-export { ENTITY_EVENTS, useAgentChat, useAuthContext, useCompile, useConnectGitHub, useCreateEntity, useDeepAgentGeneration, useDeleteEntity, useDisconnectGitHub, useEntities, useEntitiesByType, useEntity as useEntityById, useEntityMutations, useExtensions, useFileEditor, useFileSystem, useGitHubBranches, useGitHubRepo, useGitHubRepos, useGitHubStatus, useInput, useOrbitalHistory, useOrbitalMutations, usePhysics, usePlayer, usePreview, useResolvedEntity, useSelectedEntity, useSendOrbitalEvent, useSingletonEntity, useUIEvents, useUpdateEntity, useValidation } from '../chunk-BKC4XU44.js';
+import { useAuthContext } from '../chunk-E3EXHX2Z.js';
+export { ENTITY_EVENTS, useAgentChat, useAuthContext, useCompile, useConnectGitHub, useCreateEntity, useDeepAgentGeneration, useDeleteEntity, useDisconnectGitHub, useEntities, useEntitiesByType, useEntity as useEntityById, useEntityMutations, useExtensions, useFileEditor, useFileSystem, useGitHubBranches, useGitHubRepo, useGitHubRepos, useGitHubStatus, useInput, useOrbitalHistory, useOrbitalMutations, usePhysics, usePlayer, usePreview, useResolvedEntity, useSelectedEntity, useSendOrbitalEvent, useSingletonEntity, useUIEvents, useUpdateEntity, useValidation } from '../chunk-E3EXHX2Z.js';
 import '../chunk-XSEDIUM6.js';
-import { VStack, HStack, Typography, Button, Icon, Box, Card, Avatar, Badge, SearchInput, Checkbox, Menu as Menu$1, Pagination, LoadingState, EmptyState, Modal, ErrorState, QuizBlock, CodeBlock, ScaledDiagram, MarkdownContent, Divider, ProgressBar, Stack, Select, Drawer, Toast, Tabs, Input, ThemeToggle, HealthBar, ScoreDisplay, StateIndicator, Container, EntityDisplayEvents } from '../chunk-LX4G4SVJ.js';
-export { Accordion, Card2 as ActionCard, Alert, Avatar, Badge, Box, Breadcrumb, Button, ButtonGroup, Card, CardBody, CardContent, CardFooter, CardGrid, CardHeader, CardTitle, Center, Checkbox, CodeBlock, ConditionalWrapper, Container, ControlButton, DataTable, DetailPanel, Divider, Drawer, EmptyState, EntityDisplayEvents, ErrorBoundary, ErrorState, FilterGroup, Flex, FloatingActionButton, Form, FormField, FormSectionHeader, Grid, HStack, Heading, HealthBar, Icon, Input, InputGroup, Label, LawReferenceTooltip, LoadingState, MarkdownContent, MasterDetail, Menu, Modal, Overlay, PageHeader, Pagination, Popover, ProgressBar, QuizBlock, Radio, RelationSelect, RepeatableFormSection, ScaledDiagram, ScoreDisplay, SearchInput, Select, SidePanel, SimpleGrid, Skeleton, SlotContentRenderer, Spacer, Spinner, Sprite, Stack, StatCard, StateIndicator, Switch, Tabs, Text, TextHighlight, Textarea, ThemeSelector, ThemeToggle, Toast, Tooltip, Typography, UISlotComponent, UISlotRenderer, VStack, ViolationAlert, WizardNavigation, WizardProgress, drawSprite } from '../chunk-LX4G4SVJ.js';
-import '../chunk-QU4JHKVC.js';
+import { VStack, HStack, Typography, Button, Icon, Box, Card, Avatar, Badge, SearchInput, Checkbox, Menu as Menu$1, Pagination, LoadingState, EmptyState, Modal, ErrorState, QuizBlock, CodeBlock, ScaledDiagram, MarkdownContent, Divider, ProgressBar, Stack, Select, Drawer, Toast, Tabs, Input, ThemeToggle, HealthBar, ScoreDisplay, StateIndicator, Container, EntityDisplayEvents } from '../chunk-KDAREX22.js';
+export { Accordion, Card2 as ActionCard, Alert, Avatar, Badge, Box, Breadcrumb, Button, ButtonGroup, Card, CardBody, CardContent, CardFooter, CardGrid, CardHeader, CardTitle, Center, Checkbox, CodeBlock, ConditionalWrapper, Container, ControlButton, DataTable, DetailPanel, Divider, Drawer, EmptyState, EntityDisplayEvents, ErrorBoundary, ErrorState, FilterGroup, Flex, FloatingActionButton, Form, FormField, FormSectionHeader, Grid, HStack, Heading, HealthBar, Icon, Input, InputGroup, Label, LawReferenceTooltip, LoadingState, MarkdownContent, MasterDetail, Menu, Modal, Overlay, PageHeader, Pagination, Popover, ProgressBar, QuizBlock, Radio, RelationSelect, RepeatableFormSection, ScaledDiagram, ScoreDisplay, SearchInput, Select, SidePanel, SimpleGrid, Skeleton, SlotContentRenderer, Spacer, Spinner, Sprite, Stack, StatCard, StateIndicator, Switch, Tabs, Text, TextHighlight, Textarea, ThemeSelector, ThemeToggle, Toast, Tooltip, Typography, UISlotComponent, UISlotRenderer, VStack, ViolationAlert, WizardNavigation, WizardProgress, drawSprite } from '../chunk-KDAREX22.js';
+import '../chunk-BTXQJGFB.js';
 import { cn, getNestedValue } from '../chunk-KKCVDUK7.js';
 export { cn } from '../chunk-KKCVDUK7.js';
-import { useTranslate } from '../chunk-PE2H3NAW.js';
-export { EntityDataProvider, I18nProvider, createTranslate, entityDataKeys, parseQueryBinding, useEntity, useEntityDataAdapter, useEntityDetail, useEntityList, useEntityListSuspense, useEntitySuspense, useQuerySingleton, useTranslate } from '../chunk-PE2H3NAW.js';
+import { useTranslate } from '../chunk-JLEMVREZ.js';
+export { EntityDataProvider, I18nProvider, createTranslate, entityDataKeys, parseQueryBinding, useEntity, useEntityDataAdapter, useEntityDetail, useEntityList, useEntityListSuspense, useEntitySuspense, useQuerySingleton, useTranslate } from '../chunk-JLEMVREZ.js';
 import { useEventBus, useEventListener } from '../chunk-YXZM3WCF.js';
 export { useEmitEvent, useEventBus, useEventListener } from '../chunk-YXZM3WCF.js';
 export { DEFAULT_SLOTS, useUISlotManager } from '../chunk-7NEWMNNU.js';
 export { clearEntities, getAllEntities, getByType, getEntity, getSingleton, removeEntity, spawnEntity, updateEntity, updateSingleton } from '../chunk-N7MVUW4R.js';
 import { __publicField } from '../chunk-PKBMQBKP.js';
 import * as React42 from 'react';
-import React42__default, { createContext, useState, useMemo, useCallback, useEffect, useRef, useContext } from 'react';
+import React42__default, { createContext, useState, useCallback, useMemo, useEffect, useRef, useContext } from 'react';
 import { ChevronDown, X, Menu, ChevronRight, ChevronLeft, ArrowUp, ArrowDown, MoreVertical, Package, Check, AlertTriangle, Trash2, List as List$1, Printer, CheckCircle, XCircle, Play, RotateCcw, Send, Wrench, Bug, ArrowRight, Pause, SkipForward, Zap, Sword, Move, Heart, Shield, AlertCircle, Circle, Clock, CheckCircle2, Image as Image$1, Upload, ZoomIn, Eraser, FileText, ZoomOut, Download, Code, WrapText, Copy, Settings, Search, Bell, LogOut, Calendar, Pencil, Eye, MoreHorizontal, Minus, Plus } from 'lucide-react';
 import { jsxs, Fragment, jsx } from 'react/jsx-runtime';
 import { createPortal } from 'react-dom';
@@ -417,13 +417,13 @@ var SidebarNavItem = ({ item, collapsed }) => {
         "w-full flex items-center gap-3 px-3 py-2.5 transition-all duration-[var(--transition-fast)] group relative",
         "rounded-[var(--radius-sm)] border-[length:var(--border-width-thin)] border-transparent",
         isActive ? [
-          "bg-[var(--color-foreground)] text-[var(--color-background)]",
+          "bg-[var(--color-primary)] text-[var(--color-primary-foreground)]",
           "font-medium shadow-[var(--shadow-sm)]",
-          "border-[var(--color-border)] translate-x-1 -translate-y-0.5"
+          "border-[var(--color-primary)] translate-x-1 -translate-y-0.5"
         ].join(" ") : [
           "text-[var(--color-foreground)]",
           "hover:bg-[var(--color-muted)] hover:border-[var(--color-border)]",
-          "active:bg-[var(--color-foreground)] active:text-[var(--color-background)]"
+          "active:bg-[var(--color-primary)] active:text-[var(--color-primary-foreground)]"
         ].join(" ")
       ),
       title: collapsed ? item.label : void 0,
@@ -434,7 +434,7 @@ var SidebarNavItem = ({ item, collapsed }) => {
             size: 20,
             className: cn(
               "min-w-[20px] flex-shrink-0",
-              isActive && "text-[var(--color-background)]"
+              isActive && "text-[var(--color-primary-foreground)]"
             )
           }
         ),
@@ -460,22 +460,36 @@ var Sidebar = ({
   footerContent,
   collapsed: controlledCollapsed,
   defaultCollapsed = false,
-  onCollapseChange,
+  collapseChangeEvent,
   hideCollapseButton = false,
   showCloseButton = false,
-  onClose,
-  onLogoClick,
+  closeEvent,
+  logoClickEvent,
   className
 }) => {
+  const { emit } = useEventBus();
+  const { t } = useTranslate();
   const [internalCollapsed, setInternalCollapsed] = useState(defaultCollapsed);
   const collapsed = controlledCollapsed !== void 0 ? controlledCollapsed : internalCollapsed;
-  const handleToggle = () => {
+  const handleToggle = useCallback(() => {
     const newCollapsed = !collapsed;
     if (controlledCollapsed === void 0) {
       setInternalCollapsed(newCollapsed);
     }
-    onCollapseChange?.(newCollapsed);
-  };
+    if (collapseChangeEvent) {
+      emit(collapseChangeEvent, { collapsed: newCollapsed });
+    }
+  }, [collapsed, controlledCollapsed, collapseChangeEvent, emit]);
+  const handleClose = useCallback(() => {
+    if (closeEvent) {
+      emit(closeEvent, {});
+    }
+  }, [closeEvent, emit]);
+  const handleLogoClick = useCallback(() => {
+    if (logoClickEvent) {
+      emit(logoClickEvent, {});
+    }
+  }, [logoClickEvent, emit]);
   return /* @__PURE__ */ jsxs(
     Box,
     {
@@ -496,7 +510,7 @@ var Sidebar = ({
                 "flex items-center gap-3 cursor-pointer",
                 collapsed && "justify-center w-full"
               ),
-              onClick: onLogoClick,
+              onClick: handleLogoClick,
               children: [
                 logo ? typeof logo === "string" ? (
                   // eslint-disable-next-line almadar/no-raw-dom-elements -- semantic img with src/alt
@@ -519,7 +533,7 @@ var Sidebar = ({
                 "rounded-[var(--radius-sm)]",
                 collapsed && "mx-auto"
               ),
-              title: collapsed ? "Expand Sidebar" : "Collapse Sidebar",
+              title: collapsed ? t("sidebar.expand") : t("sidebar.collapse"),
               children: collapsed ? /* @__PURE__ */ jsx(ChevronRight, { size: 18 }) : /* @__PURE__ */ jsx(ChevronLeft, { size: 18 })
             }
           ),
@@ -527,9 +541,9 @@ var Sidebar = ({
             Button,
             {
               variant: "ghost",
-              onClick: onClose,
+              onClick: handleClose,
               className: "p-1.5 hover:bg-[var(--color-muted)] text-[var(--color-foreground)] lg:hidden rounded-[var(--radius-sm)]",
-              "aria-label": "Close sidebar",
+              "aria-label": t("sidebar.close"),
               children: /* @__PURE__ */ jsx(X, { size: 18 })
             }
           )
@@ -635,7 +649,6 @@ var Table = ({
   columns,
   // EntityDisplayProps
   entity,
-  data,
   className,
   isLoading,
   error,
@@ -664,7 +677,7 @@ var Table = ({
   const eventBus = useEventBus();
   const resolvedEmptyMessage = emptyMessage ?? t("empty.noData");
   const resolvedSearchPlaceholder = searchPlaceholder ?? t("common.search");
-  const resolvedData = Array.isArray(data) ? data : Array.isArray(entity) ? entity : [];
+  const resolvedData = Array.isArray(entity) ? entity : [];
   const resolvedSortColumn = sortColumnProp ?? sortBy;
   const resolvedSortDirection = sortDirectionProp ?? entitySortDirection ?? void 0;
   const resolvedCurrentPage = currentPageProp ?? page ?? 1;
@@ -994,7 +1007,6 @@ var ProgressIndicator = ({ value }) => {
 };
 var List = ({
   entity,
-  data,
   isLoading = false,
   error,
   selectable = false,
@@ -1010,14 +1022,12 @@ var List = ({
   const eventBus = useEventBus();
   const { t } = useTranslate();
   const resolvedEmptyMessage = emptyMessage ?? t("empty.noData");
-  const entityName = typeof entity === "string" ? entity : void 0;
   const effectiveFieldNames = normalizeFields(fields).length > 0 ? normalizeFields(fields) : fieldNames;
   const rawItems = useMemo(() => {
-    const d = data ?? [];
-    if (Array.isArray(d)) return d;
-    if (d && typeof d === "object" && "id" in d) return [d];
+    if (Array.isArray(entity)) return entity;
+    if (entity && typeof entity === "object" && "id" in entity) return [entity];
     return [];
-  }, [data]);
+  }, [entity]);
   const getItemActions = React42__default.useCallback(
     (item) => {
       if (!itemActions) return [];
@@ -1033,26 +1043,25 @@ var List = ({
               /\{\{(\w+)\}\}/g,
               (_, key) => String(item[key] || item.id || "")
             );
-            eventBus.emit("UI:NAVIGATE", { url, row: item, entity: entityName });
+            eventBus.emit("UI:NAVIGATE", { url, row: item });
             return;
           }
           if (action.event) {
             eventBus.emit(`UI:${action.event}`, {
-              row: item,
-              entity: entityName
+              row: item
             });
           }
         }
       }));
     },
-    [itemActions, eventBus, entityName]
+    [itemActions, eventBus]
   );
   const normalizedItemActions = itemActions ? getItemActions : void 0;
   if (isLoading) {
     return /* @__PURE__ */ jsx(
       LoadingState,
       {
-        message: `Loading ${entityType || "items"}...`,
+        message: "Loading items...",
         className
       }
     );
@@ -1062,7 +1071,7 @@ var List = ({
       EmptyState,
       {
         icon: Package,
-        title: `Error loading ${entityType || "items"}`,
+        title: "Error loading items",
         description: error.message,
         className
       }
@@ -1109,7 +1118,7 @@ var List = ({
     }
   };
   const handleRowClick = (item) => {
-    eventBus.emit("UI:VIEW", { row: item, entity: entityName });
+    eventBus.emit("UI:VIEW", { row: item });
   };
   const defaultRenderItem = (item, index, isLast) => {
     const isSelected = selectedIds.map(String).includes(item.id);
@@ -1325,7 +1334,7 @@ var List = ({
       EmptyState,
       {
         icon: Package,
-        title: `No ${entityType || "items"} found`,
+        title: "No items found",
         description: resolvedEmptyMessage,
         className
       }
@@ -3376,7 +3385,7 @@ var PRINT_STYLES = `
 }
 `;
 var BookViewer = ({
-  data,
+  entity,
   initialPage = 0,
   fieldMap,
   className
@@ -3386,10 +3395,11 @@ var BookViewer = ({
   const [currentPage, setCurrentPage] = useState(initialPage);
   const resolvedFieldMap = useMemo(() => resolveFieldMap(fieldMap), [fieldMap]);
   const book = useMemo(() => {
-    const raw = data?.[0];
+    const entityArray = Array.isArray(entity) ? entity : entity ? [entity] : [];
+    const raw = entityArray[0];
     if (!raw) return null;
     return mapBookData(raw, resolvedFieldMap);
-  }, [data, resolvedFieldMap]);
+  }, [entity, resolvedFieldMap]);
   const direction = book?.direction ?? "ltr";
   const chapters = useMemo(() => book ? flattenChapters(book) : [], [book]);
   const totalPages = 2 + chapters.length;
@@ -10104,11 +10114,15 @@ function ClassifierBoard({
         ] }) }),
         unassignedItems.length > 0 && /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
           /* @__PURE__ */ jsx(Typography, { variant: "small", weight: "bold", className: "uppercase tracking-wider text-[var(--color-muted-foreground)]", children: t("classifier.itemsToSort") }),
-          /* @__PURE__ */ jsx(HStack, { gap: "sm", className: "flex-wrap", children: unassignedItems.map((item) => /* @__PURE__ */ jsx(Badge, { size: "md", className: "cursor-pointer", children: item.label }, item.id)) })
+          /* @__PURE__ */ jsx(HStack, { gap: "sm", className: "flex-wrap", children: unassignedItems.map((item) => /* @__PURE__ */ jsxs(Badge, { size: "md", className: "cursor-pointer", children: [
+            item.iconUrl && /* @__PURE__ */ jsx("img", { src: item.iconUrl, alt: "", className: "w-4 h-4 object-contain inline-block" }),
+            item.label
+          ] }, item.id)) })
         ] }) }),
         /* @__PURE__ */ jsx(VStack, { gap: "md", children: entity.categories.map((cat) => {
           const catItems = entity.items.filter((item) => assignments[item.id] === cat.id);
           return /* @__PURE__ */ jsx(Card, { className: "p-4", children: /* @__PURE__ */ jsxs(VStack, { gap: "sm", children: [
+            cat.imageUrl && /* @__PURE__ */ jsx(Box, { className: "w-full h-16 overflow-hidden rounded-md", children: /* @__PURE__ */ jsx("img", { src: cat.imageUrl, alt: "", className: "w-full h-full object-cover" }) }),
             /* @__PURE__ */ jsxs(HStack, { justify: "between", align: "center", children: [
               /* @__PURE__ */ jsx(Typography, { variant: "body", weight: "bold", children: cat.label }),
               /* @__PURE__ */ jsx(Badge, { size: "sm", children: catItems.length })
@@ -10122,6 +10136,7 @@ function ClassifierBoard({
                   className: `cursor-pointer ${result ? result.correct ? "border-green-500 bg-green-50 dark:bg-green-950" : "border-red-500 bg-red-50 dark:bg-red-950" : ""}`,
                   onClick: () => handleUnassign(item.id),
                   children: [
+                    item.iconUrl && /* @__PURE__ */ jsx("img", { src: item.iconUrl, alt: "", className: "w-3 h-3 object-contain inline-block" }),
                     item.label,
                     result && /* @__PURE__ */ jsx(Icon, { icon: result.correct ? CheckCircle : XCircle, size: "xs", className: result.correct ? "text-green-600" : "text-red-600" })
                   ]
@@ -11406,10 +11421,10 @@ var Chart = ({
   const handleAction = useCallback(
     (action) => {
       if (action.event) {
-        eventBus.emit(`UI:${action.event}`, { entity });
+        eventBus.emit(`UI:${action.event}`, {});
       }
     },
-    [eventBus, entity]
+    [eventBus]
   );
   const normalizedData = useMemo(() => {
     if (simpleData) return simpleData;
@@ -11509,10 +11524,10 @@ var Meter = ({
   const handleAction = useCallback(
     (action) => {
       if (action.event) {
-        eventBus.emit(`UI:${action.event}`, { entity, value });
+        eventBus.emit(`UI:${action.event}`, { value });
       }
     },
-    [eventBus, entity, value]
+    [eventBus, value]
   );
   const percentage = useMemo(() => {
     const range = max - min;
@@ -11697,7 +11712,6 @@ var STATUS_STYLES3 = {
 var Timeline = ({
   title,
   items: propItems,
-  data,
   fields,
   itemActions,
   entity,
@@ -11709,15 +11723,16 @@ var Timeline = ({
   const handleAction = useCallback(
     (action, item) => {
       if (action.event) {
-        eventBus.emit(`UI:${action.event}`, { entity, row: item });
+        eventBus.emit(`UI:${action.event}`, { row: item });
       }
     },
-    [eventBus, entity]
+    [eventBus]
   );
+  const entityData = Array.isArray(entity) ? entity : [];
   const items = React42__default.useMemo(() => {
     if (propItems) return propItems;
-    if (!data) return [];
-    return data.map((record, idx) => {
+    if (entityData.length === 0) return [];
+    return entityData.map((record, idx) => {
       const titleField = fields?.[0] || "title";
       const descField = fields?.[1] || "description";
       const dateField = fields?.find(
@@ -11734,7 +11749,7 @@ var Timeline = ({
         status: record[statusField] || "pending"
       };
     });
-  }, [propItems, data, fields]);
+  }, [propItems, entityData, fields]);
   if (isLoading) {
     return /* @__PURE__ */ jsx(LoadingState, { message: "Loading timeline...", className });
   }
@@ -11824,7 +11839,6 @@ var ASPECT_CLASSES = {
 var MediaGallery = ({
   title,
   items: propItems,
-  data,
   columns = 3,
   selectable = false,
   selectedItems = [],
@@ -11842,10 +11856,10 @@ var MediaGallery = ({
   const handleAction = useCallback(
     (action) => {
       if (action.event) {
-        eventBus.emit(`UI:${action.event}`, { entity });
+        eventBus.emit(`UI:${action.event}`, {});
       }
     },
-    [eventBus, entity]
+    [eventBus]
   );
   const handleItemClick = useCallback(
     (item) => {
@@ -11856,24 +11870,25 @@ var MediaGallery = ({
       } else {
         setLightboxItem(item);
       }
-      eventBus.emit("UI:MEDIA_SELECT", { entity, row: item });
+      eventBus.emit("UI:MEDIA_SELECT", { row: item });
     },
-    [selectable, selectedItems, onSelectionChange, eventBus, entity]
+    [selectable, selectedItems, onSelectionChange, eventBus]
   );
   const handleUpload = useCallback(() => {
-    eventBus.emit("UI:MEDIA_UPLOAD", { entity });
-  }, [eventBus, entity]);
+    eventBus.emit("UI:MEDIA_UPLOAD", {});
+  }, [eventBus]);
+  const entityData = Array.isArray(entity) ? entity : [];
   const items = React42__default.useMemo(() => {
     if (propItems) return propItems;
-    if (!data) return [];
-    return data.map((record, idx) => ({
+    if (entityData.length === 0) return [];
+    return entityData.map((record, idx) => ({
       id: String(record.id ?? idx),
       src: String(record.src ?? record.url ?? record.image ?? ""),
       alt: record.alt ? String(record.alt) : void 0,
       thumbnail: record.thumbnail ? String(record.thumbnail) : void 0,
       caption: record.caption ? String(record.caption) : record.title ? String(record.title) : void 0
     }));
-  }, [propItems, data]);
+  }, [propItems, entityData]);
   if (isLoading) {
     return /* @__PURE__ */ jsx(LoadingState, { message: "Loading media...", className });
   }
@@ -12121,15 +12136,15 @@ var SignaturePad = ({
     setHasSignature(false);
     onChange?.(null);
     if (clearEvent) {
-      eventBus.emit(`UI:${clearEvent}`, { entity });
+      eventBus.emit(`UI:${clearEvent}`, {});
     }
-  }, [onChange, clearEvent, eventBus, entity]);
+  }, [onChange, clearEvent, eventBus]);
   const confirmSignature = useCallback(() => {
     const dataUrl = canvasRef.current?.toDataURL("image/png") ?? null;
     if (signEvent) {
-      eventBus.emit(`UI:${signEvent}`, { entity, signature: dataUrl });
+      eventBus.emit(`UI:${signEvent}`, { signature: dataUrl });
     }
-  }, [signEvent, eventBus, entity]);
+  }, [signEvent, eventBus]);
   if (isLoading) {
     return /* @__PURE__ */ jsx(LoadingState, { message: "Loading signature pad...", className });
   }
@@ -12226,34 +12241,34 @@ var DocumentViewer = ({
   const handleAction = useCallback(
     (action) => {
       if (action.event) {
-        eventBus.emit(`UI:${action.event}`, { entity, page: currentPage });
+        eventBus.emit(`UI:${action.event}`, { page: currentPage });
       }
     },
-    [eventBus, entity, currentPage]
+    [eventBus, currentPage]
   );
   const handleDownload = useCallback(() => {
     const downloadSrc = documents?.[activeDocIndex]?.src ?? src;
     if (downloadSrc) {
-      eventBus.emit("UI:DOCUMENT_DOWNLOAD", { entity, src: downloadSrc });
+      eventBus.emit("UI:DOCUMENT_DOWNLOAD", { src: downloadSrc });
       window.open(downloadSrc, "_blank");
     }
-  }, [documents, activeDocIndex, src, eventBus, entity]);
+  }, [documents, activeDocIndex, src, eventBus]);
   const handlePrint = useCallback(() => {
-    eventBus.emit("UI:DOCUMENT_PRINT", { entity });
+    eventBus.emit("UI:DOCUMENT_PRINT", {});
     window.print();
-  }, [eventBus, entity]);
+  }, [eventBus]);
   const handleZoomIn = useCallback(() => setZoom((z) => Math.min(z + 25, 200)), []);
   const handleZoomOut = useCallback(() => setZoom((z) => Math.max(z - 25, 50)), []);
   const handlePagePrev = useCallback(() => {
     setCurrentPage((p2) => Math.max(p2 - 1, 1));
-    eventBus.emit("UI:DOCUMENT_PAGE_CHANGE", { entity, page: currentPage - 1 });
-  }, [eventBus, entity, currentPage]);
+    eventBus.emit("UI:DOCUMENT_PAGE_CHANGE", { page: currentPage - 1 });
+  }, [eventBus, currentPage]);
   const handlePageNext = useCallback(() => {
     if (totalPages) {
       setCurrentPage((p2) => Math.min(p2 + 1, totalPages));
-      eventBus.emit("UI:DOCUMENT_PAGE_CHANGE", { entity, page: currentPage + 1 });
+      eventBus.emit("UI:DOCUMENT_PAGE_CHANGE", { page: currentPage + 1 });
     }
-  }, [totalPages, eventBus, entity, currentPage]);
+  }, [totalPages, eventBus, currentPage]);
   if (isLoading) {
     return /* @__PURE__ */ jsx(LoadingState, { message: "Loading document...", className });
   }
@@ -12427,19 +12442,19 @@ var GraphCanvas = ({
   const handleAction = useCallback(
     (action) => {
       if (action.event) {
-        eventBus.emit(`UI:${action.event}`, { entity });
+        eventBus.emit(`UI:${action.event}`, {});
       }
     },
-    [eventBus, entity]
+    [eventBus]
   );
   const handleNodeClick = useCallback(
     (node) => {
       if (nodeClickEvent) {
-        eventBus.emit(`UI:${nodeClickEvent}`, { entity, row: node });
+        eventBus.emit(`UI:${nodeClickEvent}`, { row: node });
       }
       onNodeClick?.(node);
     },
-    [nodeClickEvent, eventBus, entity, onNodeClick]
+    [nodeClickEvent, eventBus, onNodeClick]
   );
   const groups = useMemo(
     () => [...new Set(propNodes.map((n) => n.group).filter(Boolean))],
@@ -12751,10 +12766,10 @@ var CodeViewer = ({
   const handleAction = useCallback(
     (action) => {
       if (action.event) {
-        eventBus.emit(`UI:${action.event}`, { entity });
+        eventBus.emit(`UI:${action.event}`, {});
       }
     },
-    [eventBus, entity]
+    [eventBus]
   );
   const activeFile = files?.[activeFileIndex];
   const activeCode = activeFile?.code ?? code ?? "";
@@ -12771,11 +12786,11 @@ var CodeViewer = ({
     try {
       await navigator.clipboard.writeText(activeCode);
       setCopied(true);
-      eventBus.emit("UI:CODE_COPY", { entity, language: activeLanguage });
+      eventBus.emit("UI:CODE_COPY", { language: activeLanguage });
       setTimeout(() => setCopied(false), 2e3);
     } catch {
     }
-  }, [activeCode, eventBus, entity, activeLanguage]);
+  }, [activeCode, eventBus, activeLanguage]);
   const tabItems = files?.map((file, idx) => ({
     id: `file-${idx}`,
     label: file.label,

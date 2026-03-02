@@ -1,6 +1,6 @@
-import { useTheme, useUISlots } from './chunk-QU4JHKVC.js';
+import { useTheme, useUISlots } from './chunk-BTXQJGFB.js';
 import { cn, debugGroup, debug, debugGroupEnd, getNestedValue, isDebugEnabled } from './chunk-KKCVDUK7.js';
-import { useTranslate, useQuerySingleton, useEntityList } from './chunk-PE2H3NAW.js';
+import { useTranslate, useQuerySingleton } from './chunk-JLEMVREZ.js';
 import { useEventBus } from './chunk-YXZM3WCF.js';
 import { __publicField } from './chunk-PKBMQBKP.js';
 import * as React41 from 'react';
@@ -6442,7 +6442,6 @@ function normalizeColumns(columns) {
 function DataTable({
   fields,
   columns,
-  data,
   entity,
   itemActions,
   isLoading = false,
@@ -6476,8 +6475,8 @@ function DataTable({
   const resolvedEmptyDescription = emptyDescription ?? t("table.empty.description");
   const resolvedSearchPlaceholder = searchPlaceholder ?? t("common.search");
   const items = useMemo(
-    () => Array.isArray(data) ? data : [],
-    [data]
+    () => Array.isArray(entity) ? entity : [],
+    [entity]
   );
   const currentPage = page ?? 1;
   const currentPageSize = pageSize ?? 20;
@@ -6494,13 +6493,12 @@ function DataTable({
           /\{\{id\}\}/g,
           String(row.id)
         );
-        eventBus.emit("UI:NAVIGATE", { url, row, entity });
+        eventBus.emit("UI:NAVIGATE", { url, row });
         return;
       }
       if (action.event) {
         eventBus.emit(`UI:${action.event}`, {
-          row,
-          entity
+          row
         });
       }
     }
@@ -6519,10 +6517,10 @@ function DataTable({
           eventBus.emit("UI:NAVIGATE", { url, row, entity });
           return;
         }
-        eventBus.emit("UI:VIEW", { row, entity });
+        eventBus.emit("UI:VIEW", { row });
       }
     },
-    [viewAction, eventBus, entity]
+    [viewAction, eventBus]
   );
   const isRowClickable = !!viewAction;
   const effectiveColumns = fields ?? columns ?? [];
@@ -6535,61 +6533,54 @@ function DataTable({
   const handleSelectAll = useCallback(() => {
     if (allSelected) {
       eventBus.emit(`UI:${EntityDisplayEvents.DESELECT}`, {
-        ids: [],
-        entity
+        ids: []
       });
     } else {
       eventBus.emit(`UI:${EntityDisplayEvents.SELECT}`, {
-        ids: items.map((row) => row.id),
-        entity
+        ids: items.map((row) => row.id)
       });
     }
-  }, [allSelected, items, eventBus, entity]);
+  }, [allSelected, items, eventBus]);
   const handleSelectRow = useCallback(
     (id) => {
       if (selectedIds.includes(id)) {
         eventBus.emit(`UI:${EntityDisplayEvents.DESELECT}`, {
-          ids: selectedIds.filter((i) => i !== id),
-          entity
+          ids: selectedIds.filter((i) => i !== id)
         });
       } else {
         eventBus.emit(`UI:${EntityDisplayEvents.SELECT}`, {
-          ids: [...selectedIds, id],
-          entity
+          ids: [...selectedIds, id]
         });
       }
     },
-    [selectedIds, eventBus, entity]
+    [selectedIds, eventBus]
   );
   const handleSort = useCallback(
     (key) => {
       const newDirection = sortBy === key && sortDirection === "asc" ? "desc" : "asc";
       eventBus.emit(`UI:${EntityDisplayEvents.SORT}`, {
         field: key,
-        direction: newDirection,
-        entity
+        direction: newDirection
       });
     },
-    [sortBy, sortDirection, eventBus, entity]
+    [sortBy, sortDirection, eventBus]
   );
   const handleSearch = useCallback(
     (value) => {
       eventBus.emit(`UI:${EntityDisplayEvents.SEARCH}`, {
-        query: value,
-        entity
+        query: value
       });
     },
-    [eventBus, entity]
+    [eventBus]
   );
   const handlePageChange = useCallback(
     (newPage) => {
       eventBus.emit(`UI:${EntityDisplayEvents.PAGINATE}`, {
         page: newPage,
-        pageSize: currentPageSize,
-        entity
+        pageSize: currentPageSize
       });
     },
-    [eventBus, currentPageSize, entity]
+    [eventBus, currentPageSize]
   );
   const selectedRows = useMemo(
     () => items.filter((row) => selectedIds.includes(row.id)),
@@ -6857,7 +6848,6 @@ var StatCard = ({
   // Schema-based props
   entity,
   metrics,
-  data: externalData,
   isLoading: externalLoading,
   error: externalError
 }) => {
@@ -6866,19 +6856,14 @@ var StatCard = ({
   const { t } = useTranslate();
   const handleActionClick = React41__default.useCallback(() => {
     if (action?.event) {
-      eventBus.emit(`UI:${action.event}`, { entity });
+      eventBus.emit(`UI:${action.event}`, {});
     }
     if (action?.onClick) {
       action.onClick();
     }
-  }, [action, eventBus, entity]);
-  const shouldAutoFetch = !!entity && !externalData && !!metrics;
-  const { data: fetchedData, isLoading: fetchLoading } = useEntityList(
-    shouldAutoFetch ? entity : void 0,
-    { skip: !shouldAutoFetch }
-  );
-  const data = externalData ?? fetchedData ?? [];
-  const isLoading = externalLoading ?? (shouldAutoFetch ? fetchLoading : false);
+  }, [action, eventBus]);
+  const data = Array.isArray(entity) ? entity : entity ? [entity] : [];
+  const isLoading = externalLoading ?? false;
   const error = externalError;
   const computeMetricValue = React41__default.useCallback(
     (metric, items) => {
@@ -6953,7 +6938,7 @@ var StatCard = ({
       }
     );
   }
-  const label = schemaStats?.[0]?.label || labelToUse || entity || "Stat";
+  const label = schemaStats?.[0]?.label || labelToUse || "Stat";
   const normalizedPropValue = Array.isArray(propValue) ? propValue[0] ?? propValue.length : propValue;
   const value = schemaStats?.[0]?.value ?? normalizedPropValue ?? 0;
   const calculatedTrend = useMemo4(() => {
@@ -7221,7 +7206,6 @@ var DetailPanel = ({
   entity,
   fields: propFields,
   fieldNames,
-  data: externalData,
   initialData,
   isLoading = false,
   error
@@ -7240,22 +7224,23 @@ var DetailPanel = ({
           /\{\{(\w+)\}\}/g,
           (_, key) => String(data2?.[key] ?? "")
         );
-        eventBus.emit("UI:NAVIGATE", { url, row: data2, entity });
+        eventBus.emit("UI:NAVIGATE", { url, row: data2 });
         return;
       }
       if (action.event) {
-        eventBus.emit(`UI:${action.event}`, { row: data2, entity });
+        eventBus.emit(`UI:${action.event}`, { row: data2 });
       }
       if (action.onClick) {
         action.onClick();
       }
     },
-    [eventBus, entity]
+    [eventBus]
   );
   const handleClose = useCallback(() => {
     eventBus.emit("UI:CLOSE", {});
   }, [eventBus]);
-  const data = externalData ?? initialData;
+  const entityRecord = Array.isArray(entity) ? entity[0] : entity;
+  const data = entityRecord ?? initialData;
   let title = propTitle;
   let sections = propSections ? [...propSections] : void 0;
   const normalizedData = data && typeof data === "object" && !Array.isArray(data) ? data : void 0;
@@ -7368,7 +7353,7 @@ var DetailPanel = ({
     return /* @__PURE__ */ jsx(
       LoadingState,
       {
-        message: `Loading ${entity || "details"}...`,
+        message: "Loading details...",
         className
       }
     );
@@ -7389,7 +7374,7 @@ var DetailPanel = ({
       EmptyState,
       {
         title: "Not Found",
-        description: `The requested ${entity || "item"} could not be found.`,
+        description: "The requested item could not be found.",
         className
       }
     );
@@ -7399,7 +7384,7 @@ var DetailPanel = ({
       /* @__PURE__ */ jsxs(HStack, { justify: "between", align: "start", children: [
         /* @__PURE__ */ jsxs(VStack, { gap: "sm", flex: true, className: "min-w-0", children: [
           avatar,
-          /* @__PURE__ */ jsx(Typography, { variant: "h2", weight: "bold", children: title || entity || "Details" }),
+          /* @__PURE__ */ jsx(Typography, { variant: "h2", weight: "bold", children: title || "Details" }),
           subtitle && /* @__PURE__ */ jsx(Typography, { variant: "body", color: "secondary", children: subtitle }),
           normalizedData && effectiveFieldNames && /* @__PURE__ */ jsx(HStack, { gap: "xs", wrap: true, children: effectiveFieldNames.filter(
             (f) => f.toLowerCase().includes("status") || f.toLowerCase().includes("priority")
@@ -7723,9 +7708,9 @@ var Form = ({
   };
   const handleSubmit = (e) => {
     e.preventDefault();
-    eventBus.emit(`UI:${submitEvent}`, { data: formData, entity });
+    eventBus.emit(`UI:${submitEvent}`, { data: formData });
     if (onSubmit) {
-      eventBus.emit(`UI:${onSubmit}`, { data: formData, entity });
+      eventBus.emit(`UI:${onSubmit}`, { data: formData });
     }
   };
   const handleCancel = () => {
@@ -8049,7 +8034,6 @@ var CardGrid = ({
   children,
   // EntityDisplayProps
   entity,
-  data: externalData,
   isLoading = false,
   error = null,
   page,
@@ -8065,40 +8049,30 @@ var CardGrid = ({
   const eventBus = useEventBus();
   const effectiveFieldNames = normalizeFields(fields).length > 0 ? normalizeFields(fields) : fieldNames ?? normalizeFields(columns);
   const gridTemplateColumns = `repeat(auto-fit, minmax(min(${minCardWidth}px, 100%), 1fr))`;
-  const normalizedData = Array.isArray(externalData) ? externalData : externalData ? [externalData] : [];
+  const normalizedData = Array.isArray(entity) ? entity : entity ? [entity] : [];
   const resolvedPage = page ?? 1;
   const resolvedTotalPages = totalCount && pageSize ? Math.ceil(totalCount / pageSize) : 1;
   const handlePageChange = (newPage) => {
     eventBus.emit("UI:PAGINATE", { page: newPage, pageSize });
   };
   const handleCardClick = (itemData) => {
-    eventBus.emit("UI:VIEW", { row: itemData, entity });
+    eventBus.emit("UI:VIEW", { row: itemData });
   };
   const renderContent = () => {
     if (children) {
       return children;
     }
     if (isLoading) {
-      return /* @__PURE__ */ jsx(Box, { className: "col-span-full text-center py-8 text-[var(--color-muted-foreground)]", children: /* @__PURE__ */ jsxs(Typography, { variant: "body", color: "secondary", children: [
-        "Loading ",
-        entity || "items",
-        "..."
-      ] }) });
+      return /* @__PURE__ */ jsx(Box, { className: "col-span-full text-center py-8 text-[var(--color-muted-foreground)]", children: /* @__PURE__ */ jsx(Typography, { variant: "body", color: "secondary", children: "Loading items..." }) });
     }
     if (error) {
       return /* @__PURE__ */ jsx(Box, { className: "col-span-full text-center py-8 text-[var(--color-error)]", children: /* @__PURE__ */ jsxs(Typography, { variant: "body", color: "error", children: [
-        "Error loading ",
-        entity || "items",
-        ": ",
+        "Error loading items: ",
         error.message
       ] }) });
     }
     if (normalizedData.length === 0) {
-      return /* @__PURE__ */ jsx(Box, { className: "col-span-full text-center py-8 text-[var(--color-muted-foreground)]", children: /* @__PURE__ */ jsxs(Typography, { variant: "body", color: "secondary", children: [
-        "No ",
-        entity || "items",
-        " found"
-      ] }) });
+      return /* @__PURE__ */ jsx(Box, { className: "col-span-full text-center py-8 text-[var(--color-muted-foreground)]", children: /* @__PURE__ */ jsx(Typography, { variant: "body", color: "secondary", children: "No items found" }) });
     }
     return normalizedData.map((item, index) => {
       const itemData = item;
@@ -8111,11 +8085,11 @@ var CardGrid = ({
             const value = getNestedValue(itemData, field);
             return value !== void 0 && value !== null ? String(value) : "";
           });
-          eventBus.emit("UI:NAVIGATE", { url, row: itemData, entity });
+          eventBus.emit("UI:NAVIGATE", { url, row: itemData });
           return;
         }
         if (action.event) {
-          eventBus.emit(`UI:${action.event}`, { row: itemData, entity });
+          eventBus.emit(`UI:${action.event}`, { row: itemData });
         }
         if (action.onClick) {
           action.onClick(itemData);
@@ -8195,32 +8169,25 @@ function MasterDetail({
   masterFields = [],
   detailFields: _detailFields,
   // Captured but not used here - detail handled separately
-  data: externalData,
   loading: externalLoading,
   isLoading: externalIsLoading,
   error: externalError,
   className,
   ...rest
 }) {
-  const shouldAutoFetch = !!entity && !externalData;
-  const { data: fetchedData, isLoading: fetchLoading, error: fetchError } = useEntityList(
-    shouldAutoFetch ? entity : void 0,
-    { skip: !shouldAutoFetch }
-  );
-  const data = externalData ?? fetchedData;
-  const loading = externalLoading ?? (shouldAutoFetch ? fetchLoading : false);
-  const isLoading = externalIsLoading ?? (shouldAutoFetch ? fetchLoading : false);
-  const error = externalError ?? (shouldAutoFetch ? fetchError : null);
+  const loading = externalLoading ?? false;
+  const isLoading = externalIsLoading ?? false;
+  const error = externalError ?? null;
   return /* @__PURE__ */ jsx(
     DataTable,
     {
       columns: masterFields,
-      data,
+      entity,
       isLoading: loading || isLoading,
       error,
       className,
-      emptyTitle: `No ${entity || "items"} found`,
-      emptyDescription: `Create your first ${entity?.toLowerCase() || "item"} to get started.`,
+      emptyTitle: "No items found",
+      emptyDescription: "Create your first item to get started.",
       ...rest
     }
   );

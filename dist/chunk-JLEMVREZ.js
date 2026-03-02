@@ -1,5 +1,5 @@
 import { useEventBus } from './chunk-YXZM3WCF.js';
-import React, { createContext, useContext, useState, useMemo, useCallback, useEffect } from 'react';
+import React2, { createContext, useContext, useState, useMemo, useCallback, useEffect } from 'react';
 import { jsx } from 'react/jsx-runtime';
 
 var I18nContext = createContext({
@@ -90,12 +90,99 @@ function parseQueryBinding(binding) {
     field: parts.length > 1 ? parts.slice(1).join(".") : void 0
   };
 }
+var SelectionContext = createContext(null);
+var defaultCompareEntities = (a, b) => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (typeof a === "object" && typeof b === "object") {
+    const aId = a.id;
+    const bId = b.id;
+    return aId !== void 0 && aId === bId;
+  }
+  return false;
+};
+function SelectionProvider({
+  children,
+  debug = false,
+  compareEntities = defaultCompareEntities
+}) {
+  const eventBus = useEventBus();
+  const [selected, setSelectedState] = useState(null);
+  const setSelected = useCallback(
+    (entity) => {
+      setSelectedState(entity);
+      if (debug) {
+        console.log("[SelectionProvider] Selection set:", entity);
+      }
+    },
+    [debug]
+  );
+  const clearSelection = useCallback(() => {
+    setSelectedState(null);
+    if (debug) {
+      console.log("[SelectionProvider] Selection cleared");
+    }
+  }, [debug]);
+  const isSelected = useCallback(
+    (entity) => {
+      return compareEntities(selected, entity);
+    },
+    [selected, compareEntities]
+  );
+  useEffect(() => {
+    const handleSelect = (event) => {
+      const row = event.payload?.row;
+      if (row) {
+        setSelected(row);
+        if (debug) {
+          console.log(`[SelectionProvider] ${event.type} received:`, row);
+        }
+      }
+    };
+    const handleDeselect = (event) => {
+      clearSelection();
+      if (debug) {
+        console.log(`[SelectionProvider] ${event.type} received - clearing selection`);
+      }
+    };
+    const unsubView = eventBus.on("UI:VIEW", handleSelect);
+    const unsubSelect = eventBus.on("UI:SELECT", handleSelect);
+    const unsubClose = eventBus.on("UI:CLOSE", handleDeselect);
+    const unsubDeselect = eventBus.on("UI:DESELECT", handleDeselect);
+    const unsubCancel = eventBus.on("UI:CANCEL", handleDeselect);
+    return () => {
+      unsubView();
+      unsubSelect();
+      unsubClose();
+      unsubDeselect();
+      unsubCancel();
+    };
+  }, [eventBus, setSelected, clearSelection, debug]);
+  const contextValue = {
+    selected,
+    setSelected,
+    clearSelection,
+    isSelected
+  };
+  return /* @__PURE__ */ jsx(SelectionContext.Provider, { value: contextValue, children });
+}
+function useSelection() {
+  const context = useContext(SelectionContext);
+  if (!context) {
+    throw new Error("useSelection must be used within a SelectionProvider");
+  }
+  return context;
+}
+function useSelectionOptional() {
+  const context = useContext(SelectionContext);
+  return context;
+}
 var EntityDataContext = createContext(null);
 function EntityDataProvider({
   adapter,
   children
 }) {
-  return React.createElement(
+  return React2.createElement(
     EntityDataContext.Provider,
     { value: adapter },
     children
@@ -291,93 +378,6 @@ function useEntitySuspense(entity, id) {
   }
   return { data: null, refetch: () => {
   } };
-}
-var SelectionContext = createContext(null);
-var defaultCompareEntities = (a, b) => {
-  if (a === b) return true;
-  if (!a || !b) return false;
-  if (typeof a === "object" && typeof b === "object") {
-    const aId = a.id;
-    const bId = b.id;
-    return aId !== void 0 && aId === bId;
-  }
-  return false;
-};
-function SelectionProvider({
-  children,
-  debug = false,
-  compareEntities = defaultCompareEntities
-}) {
-  const eventBus = useEventBus();
-  const [selected, setSelectedState] = useState(null);
-  const setSelected = useCallback(
-    (entity) => {
-      setSelectedState(entity);
-      if (debug) {
-        console.log("[SelectionProvider] Selection set:", entity);
-      }
-    },
-    [debug]
-  );
-  const clearSelection = useCallback(() => {
-    setSelectedState(null);
-    if (debug) {
-      console.log("[SelectionProvider] Selection cleared");
-    }
-  }, [debug]);
-  const isSelected = useCallback(
-    (entity) => {
-      return compareEntities(selected, entity);
-    },
-    [selected, compareEntities]
-  );
-  useEffect(() => {
-    const handleSelect = (event) => {
-      const row = event.payload?.row;
-      if (row) {
-        setSelected(row);
-        if (debug) {
-          console.log(`[SelectionProvider] ${event.type} received:`, row);
-        }
-      }
-    };
-    const handleDeselect = (event) => {
-      clearSelection();
-      if (debug) {
-        console.log(`[SelectionProvider] ${event.type} received - clearing selection`);
-      }
-    };
-    const unsubView = eventBus.on("UI:VIEW", handleSelect);
-    const unsubSelect = eventBus.on("UI:SELECT", handleSelect);
-    const unsubClose = eventBus.on("UI:CLOSE", handleDeselect);
-    const unsubDeselect = eventBus.on("UI:DESELECT", handleDeselect);
-    const unsubCancel = eventBus.on("UI:CANCEL", handleDeselect);
-    return () => {
-      unsubView();
-      unsubSelect();
-      unsubClose();
-      unsubDeselect();
-      unsubCancel();
-    };
-  }, [eventBus, setSelected, clearSelection, debug]);
-  const contextValue = {
-    selected,
-    setSelected,
-    clearSelection,
-    isSelected
-  };
-  return /* @__PURE__ */ jsx(SelectionContext.Provider, { value: contextValue, children });
-}
-function useSelection() {
-  const context = useContext(SelectionContext);
-  if (!context) {
-    throw new Error("useSelection must be used within a SelectionProvider");
-  }
-  return context;
-}
-function useSelectionOptional() {
-  const context = useContext(SelectionContext);
-  return context;
 }
 
 export { EntityDataProvider, I18nProvider, SelectionContext, SelectionProvider, createTranslate, entityDataKeys, parseQueryBinding, useEntity, useEntityDataAdapter, useEntityDetail, useEntityList, useEntityListSuspense, useEntitySuspense, useQuerySingleton, useSelection, useSelectionOptional, useTranslate };

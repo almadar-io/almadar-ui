@@ -2543,10 +2543,8 @@ interface SelectPayload {
     ids: (string | number)[];
 }
 interface EntityDisplayProps<T = unknown> {
-    /** Entity name for schema-driven integration */
-    entity?: string;
-    /** Data array provided by the trait via render-ui */
-    data?: readonly T[] | T[];
+    /** Entity data injected by the runtime (array for lists, single object for detail) */
+    entity?: T | readonly T[];
     /** Additional CSS classes */
     className?: string;
     /** Loading state indicator */
@@ -2627,7 +2625,7 @@ interface DataTableProps<T extends {
 }
 declare function DataTable<T extends {
     id: string | number;
-}>({ fields, columns, data, entity, itemActions, isLoading, error, emptyIcon, emptyTitle, emptyDescription, emptyAction, selectable, selectedIds, sortBy, sortDirection, searchable, searchValue, searchPlaceholder, page, pageSize, totalCount, rowActions: externalRowActions, bulkActions, headerActions, showTotal, className, }: DataTableProps<T>): react_jsx_runtime.JSX.Element;
+}>({ fields, columns, entity, itemActions, isLoading, error, emptyIcon, emptyTitle, emptyDescription, emptyAction, selectable, selectedIds, sortBy, sortDirection, searchable, searchValue, searchPlaceholder, page, pageSize, totalCount, rowActions: externalRowActions, bulkActions, headerActions, showTotal, className, }: DataTableProps<T>): react_jsx_runtime.JSX.Element;
 declare namespace DataTable {
     var displayName: string;
 }
@@ -2648,7 +2646,7 @@ interface MetricDefinition {
     /** Value format (e.g., 'currency', 'percent', 'number') */
     format?: "currency" | "percent" | "number" | string;
 }
-interface StatCardProps {
+interface StatCardProps extends EntityDisplayProps<Record<string, unknown>> {
     /** Main label */
     label?: string;
     /** Title (alias for label) */
@@ -2683,17 +2681,8 @@ interface StatCardProps {
         /** Legacy onClick callback */
         onClick?: () => void;
     };
-    className?: string;
-    /** Entity name for schema-driven stats */
-    entity?: string;
     /** Metrics to display (schema format) - accepts readonly for compatibility with generated const arrays */
     metrics?: readonly MetricDefinition[];
-    /** Data to calculate stats from - accepts readonly for compatibility with generated const arrays */
-    data?: readonly Record<string, unknown>[];
-    /** Loading state indicator */
-    isLoading?: boolean;
-    /** Error state */
-    error?: Error | null;
 }
 declare const StatCard: React__default.FC<StatCardProps>;
 
@@ -2760,7 +2749,7 @@ declare const PageHeader: React__default.FC<PageHeaderProps>;
  *
  * Composes atoms and molecules to create a professional detail view.
  *
- * Data is provided by the trait via the `data` prop (render-ui effect).
+ * Data is provided by the runtime via the `entity` prop.
  * See EntityDisplayProps in ./types.ts for base prop contract.
  */
 
@@ -2795,7 +2784,7 @@ type FieldDef$2 = string | {
     key: string;
     header?: string;
 };
-interface DetailPanelProps extends Omit<EntityDisplayProps<Record<string, unknown>>, 'data'> {
+interface DetailPanelProps extends EntityDisplayProps<Record<string, unknown>> {
     title?: string;
     subtitle?: string;
     status?: {
@@ -2812,8 +2801,6 @@ interface DetailPanelProps extends Omit<EntityDisplayProps<Record<string, unknow
     fields?: readonly (FieldDef$2 | DetailField)[];
     /** Alias for fields - backwards compatibility */
     fieldNames?: readonly string[];
-    /** Data object provided by the trait via render-ui */
-    data?: Record<string, unknown> | unknown;
     /** Initial data for edit mode (passed by compiler) */
     initialData?: Record<string, unknown> | unknown;
     /** Display mode (passed by compiler) */
@@ -3293,6 +3280,11 @@ declare const Section: React__default.FC<SectionProps>;
  *
  * A sidebar component with logo, navigation items, user section, and collapse/expand.
  * Styled to match the main Layout component with theme-aware CSS variables.
+ *
+ * Events:
+ * - collapseChangeEvent — emitted when sidebar collapse state changes, payload: { collapsed: boolean }
+ * - closeEvent — emitted when close button clicked (mobile)
+ * - logoClickEvent — emitted when logo/brand area clicked
  */
 
 interface SidebarItem {
@@ -3315,7 +3307,7 @@ interface SidebarItem {
     /** Sub-items (for nested navigation) */
     subItems?: SidebarItem[];
 }
-interface SidebarProps {
+interface SidebarProps extends EntityDisplayProps<SidebarItem> {
     /** Logo/Brand content - can be a ReactNode or logo config */
     logo?: React__default.ReactNode;
     /** Logo image source */
@@ -3332,24 +3324,16 @@ interface SidebarProps {
     collapsed?: boolean;
     /** Default collapsed state */
     defaultCollapsed?: boolean;
-    /** Callback when collapse state changes */
-    onCollapseChange?: (collapsed: boolean) => void;
+    /** Event emitted when collapse state changes, payload: { collapsed: boolean } */
+    collapseChangeEvent?: string;
     /** Hide the collapse/expand button */
     hideCollapseButton?: boolean;
     /** Show a close button (for mobile) */
     showCloseButton?: boolean;
-    /** Callback when close button is clicked */
-    onClose?: () => void;
-    /** Callback when logo/brand is clicked */
-    onLogoClick?: () => void;
-    /** Additional CSS classes */
-    className?: string;
-    /** Loading state indicator */
-    isLoading?: boolean;
-    /** Error state */
-    error?: Error | null;
-    /** Entity name for schema-driven auto-fetch */
-    entity?: string;
+    /** Event emitted when close button is clicked */
+    closeEvent?: string;
+    /** Event emitted when logo/brand is clicked */
+    logoClickEvent?: string;
 }
 declare const Sidebar: React__default.FC<SidebarProps>;
 
@@ -3479,7 +3463,7 @@ interface TableProps<T = Record<string, unknown>> extends EntityDisplayProps<T> 
     loading?: boolean;
 }
 declare const Table: {
-    <T extends Record<string, any>>({ columns, entity, data, className, isLoading, error, sortBy, sortDirection: entitySortDirection, searchValue, page, pageSize, totalCount, selectedIds, selectable, sortable, sortColumn: sortColumnProp, sortDirection: sortDirectionProp, searchable, searchPlaceholder, paginated, currentPage: currentPageProp, totalPages: totalPagesProp, rowActions, emptyMessage, loading, }: TableProps<T>): react_jsx_runtime.JSX.Element;
+    <T extends Record<string, any>>({ columns, entity, className, isLoading, error, sortBy, sortDirection: entitySortDirection, searchValue, page, pageSize, totalCount, selectedIds, selectable, sortable, sortColumn: sortColumnProp, sortDirection: sortDirectionProp, searchable, searchPlaceholder, paginated, currentPage: currentPageProp, totalPages: totalPagesProp, rowActions, emptyMessage, loading, }: TableProps<T>): react_jsx_runtime.JSX.Element;
     displayName: string;
 };
 
@@ -3539,7 +3523,7 @@ type FieldDef$1 = string | {
     key: string;
     header?: string;
 };
-interface ListProps extends EntityDisplayProps {
+interface ListProps extends EntityDisplayProps<Record<string, unknown>> {
     /** Entity type name for display */
     entityType?: string;
     selectable?: boolean;
@@ -3563,7 +3547,7 @@ declare const List: React__default.FC<ListProps>;
  * A dumb, responsive grid specifically designed for card layouts.
  * Uses CSS Grid auto-fit for automatic responsive columns.
  *
- * Data comes exclusively from the `data` prop (provided by the trait via render-ui).
+ * Data comes exclusively from the `entity` prop (injected by the runtime).
  * All user interactions emit events via useEventBus — never manages internal state
  * for pagination, filtering, or search. All state is owned by the trait state machine.
  */
@@ -3595,7 +3579,7 @@ type FieldDef = string | {
     key: string;
     header?: string;
 };
-interface CardGridProps extends EntityDisplayProps {
+interface CardGridProps extends EntityDisplayProps<Record<string, unknown>> {
     /** Minimum width of each card (default: 280px) */
     minCardWidth?: number;
     /** Maximum number of columns */
@@ -3604,7 +3588,7 @@ interface CardGridProps extends EntityDisplayProps {
     gap?: CardGridGap;
     /** Align cards vertically in their cells */
     alignItems?: 'start' | 'center' | 'end' | 'stretch';
-    /** Children elements (cards) - optional when using entity/data props */
+    /** Children elements (cards) - optional when using entity prop */
     children?: React__default.ReactNode;
     /** Fields to display - accepts string[] or {key, header}[] for unified interface */
     fields?: readonly FieldDef[];
@@ -3622,9 +3606,9 @@ interface CardGridProps extends EntityDisplayProps {
  *
  * Can be used in two ways:
  * 1. With children: <CardGrid><Card>...</Card></CardGrid>
- * 2. With data: <CardGrid entity="Task" fieldNames={['title']} data={tasks} />
+ * 2. With entity data: <CardGrid entity={tasks} fieldNames={['title']} />
  *
- * All data comes from the `data` prop. Pagination display hints come from
+ * All data comes from the `entity` prop. Pagination display hints come from
  * `page`, `pageSize`, and `totalCount` props (set by the trait via render-ui).
  */
 declare const CardGrid: React__default.FC<CardGridProps>;
@@ -3635,9 +3619,7 @@ declare const CardGrid: React__default.FC<CardGridProps>;
  * A layout pattern that shows a list/table of entities.
  * This is a thin wrapper around DataTable that accepts master-detail specific props.
  *
- * When `entity` prop is provided without `data`, automatically fetches data
- * using the useEntityList hook.
- *
+ * The `entity` prop carries the data array (injected by the runtime).
  * The "detail" part is typically rendered separately via another render_ui effect
  * to a sidebar or detail panel when an item is selected.
  */
@@ -3646,28 +3628,18 @@ interface MasterDetailProps<T extends {
     id: string | number;
 } = {
     id: string | number;
-}> {
-    /** Entity type name - when provided without data, auto-fetches from API */
-    entity?: string;
+}> extends EntityDisplayProps<T> {
     /** Fields to show in the master list (maps to DataTable columns) */
     masterFields?: readonly string[];
     /** Fields for detail view (passed through but typically handled by separate render_ui) */
     detailFields?: readonly string[];
-    /** Data array - if not provided and entity is set, data is auto-fetched */
-    data?: readonly T[] | T[];
-    /** Loading state */
+    /** Loading state (alias for isLoading) */
     loading?: boolean;
-    /** Loading state alias */
-    isLoading?: boolean;
-    /** Error state */
-    error?: Error | null;
-    /** Additional class name */
-    className?: string;
 }
 declare function MasterDetail<T extends {
     id: string | number;
 }>({ entity, masterFields, detailFields: _detailFields, // Captured but not used here - detail handled separately
-data: externalData, loading: externalLoading, isLoading: externalIsLoading, error: externalError, className, ...rest }: MasterDetailProps<T>): React__default.ReactElement;
+loading: externalLoading, isLoading: externalIsLoading, error: externalError, className, ...rest }: MasterDetailProps<T>): React__default.ReactElement;
 declare namespace MasterDetail {
     var displayName: string;
 }
@@ -4140,7 +4112,7 @@ declare function mapBookData(raw: Record<string, unknown>, fields?: BookFieldMap
  * - Listens: UI:BOOK_START, UI:BOOK_NAVIGATE, UI:BOOK_PAGE_PREV/NEXT, UI:BOOK_PRINT, UI:BOOK_SHOW_TOC
  */
 
-interface BookViewerProps extends EntityDisplayProps {
+interface BookViewerProps extends EntityDisplayProps<BookData | Record<string, unknown>> {
     /** Initial page index (default: 0 = cover) */
     initialPage?: number;
     /** Field name translation map — a BookFieldMap object or locale key ("ar") */
@@ -4158,7 +4130,7 @@ declare const BookViewer: React__default.FC<BookViewerProps>;
  * - Delegates to ContentRenderer children
  */
 
-interface BookChapterViewProps extends EntityDisplayProps {
+interface BookChapterViewProps extends EntityDisplayProps<BookChapter> {
     chapter: BookChapter;
     direction?: 'rtl' | 'ltr';
 }
@@ -6728,11 +6700,15 @@ interface ClassifierItem {
     label: string;
     description?: string;
     correctCategory: string;
+    /** Image URL icon for story-specific visual skin */
+    iconUrl?: string;
 }
 interface ClassifierCategory {
     id: string;
     label: string;
     color?: string;
+    /** Image URL for story-specific category header */
+    imageUrl?: string;
 }
 interface ClassifierPuzzleEntity {
     id: string;
@@ -7538,25 +7514,15 @@ interface TimelineAction {
     navigatesTo?: string;
     variant?: "primary" | "secondary" | "ghost";
 }
-interface TimelineProps {
+interface TimelineProps extends EntityDisplayProps<TimelineItem> {
     /** Timeline title */
     title?: string;
     /** Timeline items */
     items?: readonly TimelineItem[];
-    /** Schema-driven data */
-    data?: readonly Record<string, unknown>[];
     /** Fields to display */
     fields?: readonly string[];
     /** Actions per item */
     itemActions?: readonly TimelineAction[];
-    /** Entity name for schema-driven auto-fetch */
-    entity?: string;
-    /** Loading state */
-    isLoading?: boolean;
-    /** Error state */
-    error?: Error | null;
-    /** Additional CSS classes */
-    className?: string;
 }
 declare const Timeline: React__default.FC<TimelineProps>;
 
@@ -7595,13 +7561,11 @@ interface MediaGalleryAction {
     navigatesTo?: string;
     variant?: "primary" | "secondary" | "ghost";
 }
-interface MediaGalleryProps {
+interface MediaGalleryProps extends EntityDisplayProps<MediaItem> {
     /** Gallery title */
     title?: string;
     /** Media items */
     items?: readonly MediaItem[];
-    /** Schema-driven data */
-    data?: readonly Record<string, unknown>[];
     /** Column count */
     columns?: 2 | 3 | 4 | 5 | 6;
     /** Enable item selection */
@@ -7616,14 +7580,6 @@ interface MediaGalleryProps {
     actions?: readonly MediaGalleryAction[];
     /** Aspect ratio for thumbnails */
     aspectRatio?: "square" | "landscape" | "portrait";
-    /** Entity name for schema-driven auto-fetch */
-    entity?: string;
-    /** Loading state */
-    isLoading?: boolean;
-    /** Error state */
-    error?: Error | null;
-    /** Additional CSS classes */
-    className?: string;
 }
 declare const MediaGallery: React__default.FC<MediaGalleryProps>;
 
