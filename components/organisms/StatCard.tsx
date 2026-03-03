@@ -339,6 +339,7 @@ export const StatCard: React.FC<StatCardProps> = ({
           variant="ghost"
           onClick={handleActionClick}
           className="mt-4 text-sm font-bold text-[var(--color-foreground)] hover:underline"
+          data-testid={action.event ? `action-${action.event}` : undefined}
         >
           {action.label} →
         </Button>

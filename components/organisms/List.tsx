@@ -319,6 +319,7 @@ export const List: React.FC<ListProps> = ({
       return (itemActions as SchemaItemAction[]).map((action, idx) => ({
         id: `${item.id}-action-${idx}`,
         label: action.label,
+        event: action.event,
         onClick: () => {
           // Handle navigation if navigatesTo is defined
           if (action.navigatesTo) {
@@ -414,9 +415,7 @@ export const List: React.FC<ListProps> = ({
     }
   };
 
-  const handleRowClick = (item: ListItem) => {
-    eventBus.emit('UI:VIEW', { row: item });
-  };
+
 
   const defaultRenderItem = (
     item: ListItem,
@@ -439,12 +438,10 @@ export const List: React.FC<ListProps> = ({
       a.label.toLowerCase().includes("edit"),
     );
 
-    // Row click: item's own onClick > view action > generic row click via event bus
-    const hasExplicitClick = !!(item.onClick || viewAction?.onClick);
-    const handleClick =
-      item.onClick ||
-      viewAction?.onClick ||
-      (() => handleRowClick(item));
+    // Row click dispatches VIEW via event bus action prop
+    const hasExplicitClick = !!(viewAction?.event || item.onClick);
+    const rowAction = viewAction?.event ?? "VIEW";
+    const rowActionPayload = { row: item };
 
     // Categorize fields
     const primaryField = effectiveFieldNames?.[0];
@@ -499,15 +496,19 @@ export const List: React.FC<ListProps> = ({
             isSelected && "bg-[var(--color-primary)]/10 shadow-inner",
             item.disabled && "opacity-50 cursor-not-allowed grayscale",
           )}
-          onClick={handleClick}
+          action={rowAction}
+          actionPayload={rowActionPayload}
         >
           {/* Checkbox if selectable */}
           {selectable && (
-            <Box className="flex-shrink-0 pt-0.5">
+            <Box
+              className="flex-shrink-0 pt-0.5"
+              action={isSelected ? EntityDisplayEvents.DESELECT : EntityDisplayEvents.SELECT}
+              actionPayload={{ ids: isSelected ? selectedIds.filter((sid) => String(sid) !== item.id) : [...selectedIds.map(String), item.id] }}
+            >
               <Checkbox
                 checked={isSelected}
                 onChange={(e) => handleSelect(item.id, e.target.checked)}
-                onClick={(e) => e.stopPropagation()}
                 className={cn(
                   "transition-transform active:scale-95",
                   isSelected
@@ -610,10 +611,7 @@ export const List: React.FC<ListProps> = ({
             {editAction && (
               <Button
                 variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  editAction.onClick?.();
-                }}
+                action={editAction.event}
                 className={cn(
                   "p-2 rounded-[var(--radius-lg)] transition-all duration-200",
                   "hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)]",
@@ -621,19 +619,17 @@ export const List: React.FC<ListProps> = ({
                   "active:scale-95",
                 )}
                 title={editAction.label}
+                data-testid={editAction.event ? `action-${editAction.event}` : undefined}
               >
                 <Pencil className="w-4 h-4" />
               </Button>
             )}
 
-            {/* Direct View Action (Only if explicit button needed - optional if row click handles it, but keeping for clarity/accessibility) */}
+            {/* Direct View Action */}
             {viewAction && (
               <Button
                 variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  viewAction.onClick?.();
-                }}
+                action={viewAction.event}
                 className={cn(
                   "p-2 rounded-[var(--radius-lg)] transition-all duration-200",
                   "hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]",
@@ -641,6 +637,7 @@ export const List: React.FC<ListProps> = ({
                   "active:scale-95",
                 )}
                 title={viewAction.label}
+                data-testid={viewAction.event ? `action-${viewAction.event}` : undefined}
               >
                 <Eye className="w-4 h-4" />
               </Button>

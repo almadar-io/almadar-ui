@@ -13,6 +13,7 @@ import React from 'react';
 import { cn } from '../../lib/cn';
 import { getNestedValue } from '../../lib/getNestedValue';
 import { useEventBus } from '../../hooks/useEventBus';
+import { useTranslate } from '../../hooks/useTranslate';
 import { Button } from '../atoms';
 import { Box } from '../atoms/Box';
 import { Typography } from '../atoms/Typography';
@@ -125,6 +126,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
   showTotal = true,
 }) => {
   const eventBus = useEventBus();
+  const { t } = useTranslate();
 
   // Support fields, fieldNames, and columns (aliases) - normalize to string[]
   const effectiveFieldNames =
@@ -147,10 +149,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
     eventBus.emit('UI:PAGINATE', { page: newPage, pageSize });
   };
 
-  // Handle card click — emit UI:VIEW event
-  const handleCardClick = (itemData: Record<string, unknown>) => {
-    eventBus.emit('UI:VIEW', { row: itemData });
-  };
+  // Card click is handled via action="VIEW" prop on the Box element
 
   // Render data-bound cards if data is provided
   const renderContent = () => {
@@ -218,7 +217,8 @@ export const CardGrid: React.FC<CardGridProps> = ({
             'bg-[var(--color-card)] rounded-[var(--radius-lg)] border border-[var(--color-border)] p-4 shadow-[var(--shadow-sm)]',
             'cursor-pointer hover:border-[var(--color-primary)] transition-colors'
           )}
-          onClick={() => handleCardClick(itemData)}
+          action="VIEW"
+          actionPayload={{ row: itemData }}
         >
           {cardFields.map((field) => {
             const value = getNestedValue(itemData, field);
@@ -250,6 +250,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
                     variant={buttonVariant}
                     size="sm"
                     onClick={handleActionClick(action)}
+                    data-testid={action.event ? `action-${action.event}` : undefined}
                   >
                     {action.label}
                   </Button>

@@ -231,6 +231,7 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
 
     const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
       if (action) {
+        e.stopPropagation();
         eventBus.emit(`UI:${action}`, actionPayload ?? {});
       }
       onClick?.(e);

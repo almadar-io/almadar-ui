@@ -53,7 +53,8 @@ const config: StorybookConfig = {
       ],
       resolve: {
         // Important for pnpm monorepos with symlinks
-        preserveSymlinks: true,
+        alias: {
+        },
         // Dedupe these packages to fix version conflicts
         dedupe: [
           "refractor",

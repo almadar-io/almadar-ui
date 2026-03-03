@@ -15,6 +15,7 @@ import { Typography } from "../atoms/Typography";
 import { Badge } from "../atoms/Badge";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
+import { useTranslate } from "../../hooks/useTranslate";
 
 export interface MenuItem {
   /** Item ID (auto-generated from label if not provided) */
@@ -65,6 +66,7 @@ export const Menu: React.FC<MenuProps> = ({
   className,
 }) => {
   const eventBus = useEventBus();
+  const { t } = useTranslate();
   const [isOpen, setIsOpen] = useState(false);
   const [activeSubMenu, setActiveSubMenu] = useState<string | null>(null);
   const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null);
@@ -175,6 +177,7 @@ export const Menu: React.FC<MenuProps> = ({
         onClick={() => handleItemClick({ ...item, id: itemId })}
         disabled={item.disabled}
         onMouseEnter={() => hasSubMenu && setActiveSubMenu(itemId)}
+        data-testid={item.event ? `action-${item.event}` : undefined}
         className={cn(
           "w-full flex items-center justify-between gap-3 px-4 py-2 text-left",
           "text-sm transition-colors",
