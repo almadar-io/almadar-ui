@@ -9,8 +9,8 @@
  */
 
 import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter/dist/cjs/prism';
-import { vscDarkPlus as dark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+import SyntaxHighlighter from 'react-syntax-highlighter/dist/cjs/prism';
+import dark from 'react-syntax-highlighter/dist/cjs/styles/prism/vsc-dark-plus';
 import { Copy, Check } from 'lucide-react';
 import { Box } from '../../atoms/Box';
 import { Button } from '../../atoms/Button';
