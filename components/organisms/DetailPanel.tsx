@@ -42,6 +42,7 @@ import { EmptyState } from "../molecules/EmptyState";
 import { cn } from "../../lib/cn";
 import { getNestedValue } from "../../lib/getNestedValue";
 import { useEventBus } from "../../hooks/useEventBus";
+import { useTranslate } from "../../hooks/useTranslate";
 import type { EntityDisplayProps } from "./types";
 
 function getFieldIcon(fieldName: string): LucideIcon {
@@ -170,7 +171,7 @@ function normalizeFieldDefs(fields: readonly FieldDef[] | undefined): string[] {
   return fields.map((f) => (typeof f === "string" ? f : f.key));
 }
 
-export interface DetailPanelProps extends EntityDisplayProps<Record<string, unknown>> {
+export interface DetailPanelProps extends EntityDisplayProps {
   title?: string;
   subtitle?: string;
   status?: {
@@ -196,6 +197,12 @@ export interface DetailPanelProps extends EntityDisplayProps<Record<string, unkn
   position?: "left" | "right";
   /** Panel width (CSS value, e.g., '400px', '50%') */
   width?: string;
+  /** Entity ID for fetching specific entity */
+  entityId?: string;
+  /** Display fields (alias for fields) */
+  displayFields?: readonly string[];
+  /** Show actions flag */
+  showActions?: boolean;
 }
 
 export const DetailPanel: React.FC<DetailPanelProps> = ({
@@ -216,6 +223,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   error,
 }) => {
   const eventBus = useEventBus();
+  const { t } = useTranslate();
 
   // Support fields and fieldNames (alias) - normalize to string array
   // Check if propFields contains FieldDef (string or {key}) or DetailField (has label/value)
@@ -433,9 +441,9 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   if (error) {
     return (
       <ErrorState
-        title="Error loading data"
-        message={error.message || "An error occurred while loading the data."}
-        onRetry={() => window.location.reload()}
+        title={t("error.loadingData")}
+        message={error.message || t("error.genericLoad")}
+        retryEvent="RETRY"
         className={className}
       />
     );
@@ -552,7 +560,8 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                   <Button
                     key={idx}
                     variant={action.variant || "secondary"}
-                    onClick={() => handleActionClick(action, normalizedData)}
+                    action={action.event}
+                    actionPayload={{ row: normalizedData }}
                     icon={action.icon}
                   >
                     {action.label}

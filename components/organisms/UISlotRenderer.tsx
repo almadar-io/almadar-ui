@@ -331,6 +331,12 @@ interface UISlotComponentProps {
   isLoading?: boolean;
   error?: Error | null;
   entity?: string;
+  /** Compiled mode: render children directly instead of resolving from context */
+  children?: React.ReactNode;
+  /** Pattern type for data-pattern attribute (compiled mode) */
+  pattern?: string;
+  /** Source trait name for data-source-trait attribute (compiled mode) */
+  sourceTrait?: string;
 }
 
 /**
@@ -343,10 +349,27 @@ function UISlotComponent({
   portal = false,
   position,
   className,
+  children,
+  pattern,
+  sourceTrait,
 }: UISlotComponentProps): React.ReactElement | null {
   const { slots, clear } = useUISlots();
   const suspenseConfig = useContext(SuspenseConfigContext);
   const content = slots[slot];
+
+  // Compiled mode: children provided directly, skip context resolution
+  if (children !== undefined) {
+    return (
+      <Box
+        id={`slot-${slot}`}
+        className={cn("ui-slot", `ui-slot-${slot}`, className)}
+        data-pattern={pattern}
+        data-source-trait={sourceTrait}
+      >
+        {children}
+      </Box>
+    );
+  }
 
   // Handle empty slot
   if (!content) {

@@ -49,8 +49,8 @@ export interface SelectPayload {
 // ── Base Props ────────────────────────────────────────────────────────
 
 export interface EntityDisplayProps<T = unknown> {
-  /** Entity data injected by the runtime (array for lists, single object for detail) */
-  entity?: T | readonly T[];
+  /** Entity name (string) or data injected by the runtime (array for lists, single object for detail) */
+  entity?: string | T | readonly T[];
   /** Additional CSS classes */
   className?: string;
   /** Loading state indicator */

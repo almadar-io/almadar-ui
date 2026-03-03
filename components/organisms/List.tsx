@@ -86,7 +86,7 @@ function normalizeFields(fields: readonly FieldDef[] | undefined): string[] {
   return fields.map((f) => (typeof f === "string" ? f : f.key));
 }
 
-export interface ListProps extends EntityDisplayProps<Record<string, unknown>> {
+export interface ListProps extends EntityDisplayProps {
   /** Entity type name for display */
   entityType?: string;
   selectable?: boolean;

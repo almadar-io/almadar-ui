@@ -27,7 +27,7 @@ export interface MetricDefinition {
   format?: "currency" | "percent" | "number" | string;
 }
 
-export interface StatCardProps extends EntityDisplayProps<Record<string, unknown>> {
+export interface StatCardProps extends EntityDisplayProps {
   /** Main label */
   label?: string;
   /** Title (alias for label) */

@@ -55,7 +55,7 @@ function normalizeFields(fields: readonly FieldDef[] | undefined): string[] {
   return fields.map((f) => (typeof f === 'string' ? f : f.key));
 }
 
-export interface CardGridProps extends EntityDisplayProps<Record<string, unknown>> {
+export interface CardGridProps extends EntityDisplayProps {
   /** Minimum width of each card (default: 280px) */
   minCardWidth?: number;
   /** Maximum number of columns */
