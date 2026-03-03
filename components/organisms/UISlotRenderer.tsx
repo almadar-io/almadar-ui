@@ -359,6 +359,10 @@ function UISlotComponent({
 
   // Compiled mode: children provided directly, skip context resolution
   if (children !== undefined) {
+    // "clear" pattern means dismiss/hide the slot, render nothing
+    if (pattern === "clear") {
+      return null;
+    }
     return (
       <Box
         id={`slot-${slot}`}

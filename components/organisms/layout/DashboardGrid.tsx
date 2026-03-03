@@ -8,27 +8,30 @@
  */
 import React from "react";
 import { cn } from "../../../lib/cn";
+import { Box } from "../../atoms/Box";
+import { useTranslate } from "../../../hooks/useTranslate";
+import type { EntityDisplayProps } from "../types";
 
 export interface DashboardGridCell {
-  /** Unique cell ID */
-  id: string;
+  /** Optional unique cell ID */
+  id?: string;
   /** Content to render in the cell */
-  content: React.ReactNode;
+  content?: React.ReactNode;
   /** Number of columns this cell spans (1-4) */
   colSpan?: 1 | 2 | 3 | 4;
   /** Number of rows this cell spans (1-2) */
   rowSpan?: 1 | 2;
+  /** Allow additional schema-driven properties */
+  [key: string]: unknown;
 }
 
-export interface DashboardGridProps {
+export interface DashboardGridProps extends EntityDisplayProps {
   /** Number of columns */
   columns?: 2 | 3 | 4;
   /** Gap between cells */
   gap?: "sm" | "md" | "lg";
   /** Cell definitions */
   cells: DashboardGridCell[];
-  /** Additional CSS classes */
-  className?: string;
 }
 
 const gapStyles = {
@@ -64,8 +67,10 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
   cells,
   className,
 }) => {
+  const { t: _t } = useTranslate();
+
   return (
-    <div
+    <Box
       className={cn(
         "grid w-full",
         columnStyles[columns],
@@ -73,19 +78,19 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
         className,
       )}
     >
-      {cells.map((cell) => (
-        <div
-          key={cell.id}
+      {cells.map((cell, idx) => (
+        <Box
+          key={cell.id != null ? String(cell.id) : idx}
           className={cn(
             "border-2 border-[var(--color-border)] bg-[var(--color-card)]",
-            colSpanStyles[cell.colSpan || 1],
-            rowSpanStyles[cell.rowSpan || 1],
+            colSpanStyles[cell.colSpan ?? 1],
+            rowSpanStyles[cell.rowSpan ?? 1],
           )}
         >
-          {cell.content}
-        </div>
+          {cell.content as React.ReactNode}
+        </Box>
       ))}
-    </div>
+    </Box>
   );
 };
 
