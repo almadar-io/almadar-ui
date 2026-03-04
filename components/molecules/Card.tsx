@@ -92,7 +92,7 @@ export function Card({
         <div className="aspect-video w-full overflow-hidden rounded-t-lg">
           <img
             src={image}
-            alt={title || t('card.imageAlt', 'Card image')}
+            alt={title || t('card.imageAlt')}
             className="w-full h-full object-cover"
           />
         </div>

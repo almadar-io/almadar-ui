@@ -941,7 +941,7 @@ export function IsometricCanvas({
 
     // Closed-circuit: error state
     if (error) {
-        return <ErrorState title={t('canvas.errorTitle', 'Canvas Error')} message={error.message} className={className} />;
+        return <ErrorState title={t('canvas.errorTitle')} message={error.message} className={className} />;
     }
 
     // Closed-circuit: loading state
