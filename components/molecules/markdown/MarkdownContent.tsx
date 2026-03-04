@@ -48,7 +48,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
           ]}
           components={{
             // Handle inline code only — fenced code blocks are parsed out separately
-            code({ className: codeClassName, children, ...props }) {
+            code({ className: codeClassName, children, ...props }: React.ComponentPropsWithoutRef<'code'>) {
               return (
                 <code
                   {...props}
@@ -67,7 +67,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
               );
             },
             // Style links
-            a({ href, children, ...props }) {
+            a({ href, children, ...props }: React.ComponentPropsWithoutRef<'a'>) {
               return (
                 <a
                   href={href}
@@ -81,7 +81,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
               );
             },
             // Style tables
-            table({ children, ...props }) {
+            table({ children, ...props }: React.ComponentPropsWithoutRef<'table'>) {
               return (
                 <div className="overflow-x-auto my-4">
                   <table
@@ -93,7 +93,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                 </div>
               );
             },
-            th({ children, ...props }) {
+            th({ children, ...props }: React.ComponentPropsWithoutRef<'th'>) {
               return (
                 <th
                   {...props}
@@ -103,7 +103,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                 </th>
               );
             },
-            td({ children, ...props }) {
+            td({ children, ...props }: React.ComponentPropsWithoutRef<'td'>) {
               return (
                 <td
                   {...props}
@@ -114,7 +114,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
               );
             },
             // Style blockquotes
-            blockquote({ children, ...props }) {
+            blockquote({ children, ...props }: React.ComponentPropsWithoutRef<'blockquote'>) {
               return (
                 <blockquote
                   {...props}
