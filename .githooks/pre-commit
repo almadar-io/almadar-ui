@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# Pre-commit hook — ensures pnpm-lock.yaml specifiers match package.json.
+#
+# Two contexts:
+#   Standalone repo: run `pnpm install` to fully regenerate the lockfile.
+#   Inside monorepo:  sync specifiers directly via node (pnpm install in a
+#                     subdir uses the root workspace lockfile, not this one).
+
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR)
+
+# Only act when a package.json is staged and a lockfile exists
+echo "$STAGED" | grep -q 'package\.json$' || exit 0
+[ -f pnpm-lock.yaml ] || exit 0
+
+# ── Detect monorepo parent ─────────────────────────────────────────────────
+IN_WORKSPACE=0
+CHECK_DIR=$(dirname "$(pwd)")
+while [ "$CHECK_DIR" != "/" ]; do
+  [ -f "$CHECK_DIR/pnpm-workspace.yaml" ] && { IN_WORKSPACE=1; break; }
+  CHECK_DIR=$(dirname "$CHECK_DIR")
+done
+
+if [ "$IN_WORKSPACE" -eq 1 ]; then
+  # Inside monorepo: sync specifiers from package.json into pnpm-lock.yaml
+  node - <<'EOF'
+const fs = require('fs');
+const lockRaw = fs.readFileSync('pnpm-lock.yaml', 'utf8');
+
+// Collect all deps from root package.json (and nested ones if present)
+const allDeps = {};
+for (const f of ['package.json', 'design-system/package.json']) {
+  try {
+    const pkg = JSON.parse(fs.readFileSync(f, 'utf8'));
+    for (const section of ['dependencies', 'devDependencies', 'peerDependencies']) {
+      for (const [name, ver] of Object.entries(pkg[section] || {})) {
+        allDeps[name] = ver;
+      }
+    }
+  } catch {}
+}
+
+// For each dep, find its specifier line in the lockfile and update if needed
+let lock = lockRaw;
+let changed = false;
+
+for (const [name, version] of Object.entries(allDeps)) {
+  // Match: '  'package-name':\n        specifier: <old>'
+  // The package key line is followed immediately by '        specifier: ...'
+  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\//g, '\\/');
+  const re = new RegExp(`('${escapedName}':\\n)(\\s+specifier: )[^\\n]+`, 'g');
+  lock = lock.replace(re, (match, nameLine, specPrefix) => {
+    const current = match.slice(nameLine.length + specPrefix.length);
+    if (current !== version) {
+      changed = true;
+      return nameLine + specPrefix + version;
+    }
+    return match;
+  });
+}
+
+if (changed) {
+  fs.writeFileSync('pnpm-lock.yaml', lock);
+  process.stdout.write('Updated pnpm-lock.yaml specifiers to match package.json\n');
+} else {
+  process.stdout.write('pnpm-lock.yaml specifiers already in sync\n');
+}
+EOF
+  git add pnpm-lock.yaml
+else
+  # Standalone: let pnpm regenerate the lockfile properly
+  pnpm install --frozen-lockfile > /dev/null 2>&1
+  if [ $? -ne 0 ]; then
+    echo "pnpm-lock.yaml is out of sync — running pnpm install to fix..."
+    pnpm install
+    git add pnpm-lock.yaml
+    echo "Staged updated pnpm-lock.yaml"
+  fi
+fi
+
+exit 0
