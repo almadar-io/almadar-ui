@@ -10,6 +10,7 @@
 
 import React from "react";
 import { useEventBus } from "../../hooks/useEventBus";
+import { useTranslate } from "../../hooks/useTranslate";
 
 export interface CardAction {
   label: string;
@@ -38,6 +39,14 @@ export interface CardProps {
   className?: string;
   /** Declarative event name — emits UI:{action} via eventBus on card click */
   action?: string;
+  /** Whether the card is selected (highlighted state) */
+  isSelected?: boolean;
+  /** Card name (alias for title) */
+  name?: string;
+  /** Level indicator */
+  level?: number;
+  /** Maximum level */
+  maxLevel?: number;
 }
 
 /**
@@ -54,6 +63,7 @@ export function Card({
   action,
 }: CardProps) {
   const eventBus = useEventBus();
+  const { t } = useTranslate();
   const isClickable = !!onClick || !!action;
 
   const handleClick = () => {
@@ -82,7 +92,7 @@ export function Card({
         <div className="aspect-video w-full overflow-hidden rounded-t-lg">
           <img
             src={image}
-            alt={title || "Card image"}
+            alt={title || t('card.imageAlt', 'Card image')}
             className="w-full h-full object-cover"
           />
         </div>

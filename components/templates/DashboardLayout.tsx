@@ -1,6 +1,6 @@
 'use client';
 import React, { useState } from "react";
-import { Outlet, Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { cn } from "../../lib/cn";
 import {
   Menu,
@@ -48,6 +48,8 @@ export interface DashboardLayoutProps {
   sidebarFooter?: React.ReactNode;
   /** Callback when user clicks sign out (optional - uses auth context signOut if not provided) */
   onSignOut?: () => void;
+  /** Page content rendered inside the main area */
+  children?: React.ReactNode;
 }
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
@@ -59,6 +61,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   showSearch = true,
   sidebarFooter,
   onSignOut: onSignOutProp,
+  children,
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -300,7 +303,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
         {/* Page content */}
         <Box as="main" className="p-4 sm:p-6 pb-20 sm:pb-6">
-          <Outlet />
+          {children}
         </Box>
       </Box>
     </Box>

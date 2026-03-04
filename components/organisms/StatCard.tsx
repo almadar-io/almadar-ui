@@ -64,6 +64,8 @@ export interface StatCardProps extends EntityDisplayProps {
   };
   /** Metrics to display (schema format) - accepts readonly for compatibility with generated const arrays */
   metrics?: readonly MetricDefinition[];
+  /** Compact display mode */
+  compact?: boolean;
 }
 
 export const StatCard: React.FC<StatCardProps> = ({

@@ -5,17 +5,15 @@
  * Replaces DashboardLayout for game clients — no sidebar nav, just full-viewport
  * rendering with an optional HUD overlay bar.
  *
- * Used as a React Router layout route element:
- *   <Route element={<GameShell appName="TraitWars" />}>
- *     <Route index element={<WorldMapPage />} />
- *     ...
- *   </Route>
+ * Wrap game page content directly as children:
+ *   <GameShell appName="TraitWars">
+ *     <WorldMapPage />
+ *   </GameShell>
  *
  * @generated pattern — can be customised per-game via props
  */
 
 import React from "react";
-import { Outlet } from "react-router-dom";
 import { cn } from "../../lib/cn";
 import { Box } from "../atoms/Box";
 import { HStack } from "../atoms/Stack";
@@ -30,12 +28,14 @@ export interface GameShellProps {
     className?: string;
     /** Whether to show the minimal top bar (default: true) */
     showTopBar?: boolean;
+    /** Game content rendered inside the full-screen area */
+    children?: React.ReactNode;
 }
 
 /**
  * Full-viewport game shell layout.
  *
- * Renders child routes via `<Outlet />` inside a full-height flex container.
+ * Renders children inside a full-height flex container.
  * An optional top bar shows the game title and can host HUD widgets.
  */
 export const GameShell: React.FC<GameShellProps> = ({
@@ -43,6 +43,7 @@ export const GameShell: React.FC<GameShellProps> = ({
     hud,
     className,
     showTopBar = true,
+    children,
 }) => {
     return (
         <Box
@@ -86,7 +87,7 @@ export const GameShell: React.FC<GameShellProps> = ({
                 </HStack>
             )}
 
-            {/* Main game area — child routes render here */}
+            {/* Main game area */}
             <Box
                 className="game-shell__content"
                 style={{
@@ -95,7 +96,7 @@ export const GameShell: React.FC<GameShellProps> = ({
                     position: "relative",
                 }}
             >
-                <Outlet />
+                {children}
             </Box>
         </Box>
     );

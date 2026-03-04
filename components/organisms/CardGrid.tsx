@@ -77,6 +77,10 @@ export interface CardGridProps extends EntityDisplayProps {
   itemActions?: readonly CardItemAction[];
   /** Show total count in pagination */
   showTotal?: boolean;
+  /** Show avatar/image field on cards */
+  showAvatar?: boolean;
+  /** Visual variant for the card grid */
+  variant?: string;
 }
 
 const gapStyles: Record<CardGridGap, string> = {

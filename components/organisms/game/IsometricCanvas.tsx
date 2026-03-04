@@ -29,9 +29,11 @@ import * as React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { Box } from '../../atoms/Box';
 import { LoadingState } from '../../molecules/LoadingState';
 import { ErrorState } from '../../molecules/ErrorState';
+import type { EntityDisplayProps } from '../types';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from './types/isometric';
 import type { ResolvedFrame } from './types/spriteAnimation';
 import { useImageCache } from './hooks/useImageCache';
@@ -56,16 +58,9 @@ import {
  *  Emits: UI:TILE_HOVER
  *  Emits: UI:TILE_LEAVE
  */
-export interface IsometricCanvasProps {
-    // --- Closed-circuit props (MANDATORY) ---
-    /** Additional CSS classes */
-    className?: string;
-    /** Loading state indicator */
-    isLoading?: boolean;
-    /** Error state */
-    error?: Error | null;
-    /** Entity name for schema-driven auto-fetch */
-    entity?: string;
+export interface IsometricCanvasProps extends EntityDisplayProps {
+    // EntityDisplayProps provides: className, isLoading, error, entity,
+    // sortBy, sortDirection, searchValue, page, pageSize, totalCount, etc.
 
     // --- Grid data ---
     /** Array of tiles to render */
@@ -85,14 +80,14 @@ export interface IsometricCanvasProps {
     /** Hovered tile position */
     hoveredTile?: { x: number; y: number } | null;
 
-    // --- Event handlers ---
-    /** Tile click handler */
+    // --- Event handlers (legacy callbacks — prefer declarative event string props below) ---
+    // eslint-disable-next-line almadar/organism-no-callback-props
     onTileClick?: (x: number, y: number) => void;
-    /** Unit click handler */
+    // eslint-disable-next-line almadar/organism-no-callback-props
     onUnitClick?: (unitId: string) => void;
-    /** Tile hover handler */
+    // eslint-disable-next-line almadar/organism-no-callback-props
     onTileHover?: (x: number, y: number) => void;
-    /** Tile leave handler */
+    // eslint-disable-next-line almadar/organism-no-callback-props
     onTileLeave?: () => void;
 
     // --- Declarative event props ---
@@ -118,6 +113,10 @@ export interface IsometricCanvasProps {
     enableCamera?: boolean;
     /** Extra scale multiplier for unit draw size. 1 = default. */
     unitScale?: number;
+    /** Board width in tiles (overrides tile-derived size) */
+    boardWidth?: number;
+    /** Board height in tiles (overrides tile-derived size) */
+    boardHeight?: number;
     /** Override for the diamond-top Y offset within the tile sprite (default: 374).
      *  This controls where the flat diamond face sits vertically inside the tile image. */
     diamondTopY?: number;
@@ -133,7 +132,8 @@ export interface IsometricCanvasProps {
     resolveUnitFrame?: (unitId: string) => ResolvedFrame | null;
     /** Additional sprite URLs to preload (e.g., effect sprites) */
     effectSpriteUrls?: string[];
-    /** Callback to draw canvas effects after units */
+    /** Callback to draw canvas effects after units (canvas-specific: cannot be declarative) */
+    // eslint-disable-next-line almadar/organism-no-callback-props
     onDrawEffects?: (
         ctx: CanvasRenderingContext2D,
         animTime: number,
@@ -208,6 +208,7 @@ export function IsometricCanvas({
     assetManifest,
 }: IsometricCanvasProps): React.JSX.Element {
     const eventBus = useEventBus();
+    const { t } = useTranslate();
 
     // -- Refs --
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -842,6 +843,7 @@ export function IsometricCanvas({
         const pos = isoToScreen(unit.position.x, unit.position.y, scale, baseOffsetX);
         const centerX = pos.x + scaledTileWidth / 2;
         const centerY = pos.y + scaledDiamondTopY + scaledFloorHeight / 2;
+        // eslint-disable-next-line react-compiler/react-compiler
         targetCameraRef.current = {
             x: centerX - viewportSize.width / 2,
             y: centerY - viewportSize.height / 2,
@@ -939,7 +941,7 @@ export function IsometricCanvas({
 
     // Closed-circuit: error state
     if (error) {
-        return <ErrorState title="Canvas Error" message={error.message} className={className} />;
+        return <ErrorState title={t('canvas.errorTitle', 'Canvas Error')} message={error.message} className={className} />;
     }
 
     // Closed-circuit: loading state

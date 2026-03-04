@@ -16,6 +16,8 @@ export type BadgeSize = "sm" | "md" | "lg";
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: BadgeVariant;
   size?: BadgeSize;
+  /** Numeric count or amount to display in badge */
+  amount?: number;
 }
 
 // Using CSS variables for theme-aware styling
