@@ -50,6 +50,12 @@ import {
 // Props
 // =============================================================================
 
+/** Event Contract:
+ *  Emits: UI:TILE_CLICK
+ *  Emits: UI:UNIT_CLICK
+ *  Emits: UI:TILE_HOVER
+ *  Emits: UI:TILE_LEAVE
+ */
 export interface IsometricCanvasProps {
     // --- Closed-circuit props (MANDATORY) ---
     /** Additional CSS classes */

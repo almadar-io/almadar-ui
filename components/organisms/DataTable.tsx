@@ -368,6 +368,7 @@ export function DataTable<T extends { id: string | number }>({
                 // eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements in DataTable
                 <th
                   key={String(col.key)}
+                  data-column={String(col.key)}
                   className={cn(
                     "px-4 py-3 text-left text-xs font-bold text-[var(--color-foreground)] uppercase tracking-wider whitespace-nowrap",
                     col.sortable &&
@@ -459,6 +460,7 @@ export function DataTable<T extends { id: string | number }>({
                 // eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements in DataTable
                 <tr
                   key={row.id}
+                  data-entity-row
                   className={cn(
                     "border-b border-[var(--color-table-border)] last:border-0 hover:bg-[var(--color-table-row-hover)] transition-colors",
                     selectedIds.includes(row.id) &&
@@ -485,6 +487,7 @@ export function DataTable<T extends { id: string | number }>({
                       // eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements in DataTable
                       <td
                         key={String(col.key)}
+                        data-column={String(col.key)}
                         className="px-4 py-3 text-sm text-[var(--color-foreground)] whitespace-nowrap sm:whitespace-normal"
                       >
                         {col.render

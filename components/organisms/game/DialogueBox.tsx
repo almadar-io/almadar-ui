@@ -33,6 +33,11 @@ export interface DialogueNode {
   autoAdvance?: number; // ms to auto-advance, undefined = wait for input
 }
 
+/** Event Contract:
+ *  Emits: UI:COMPLETE
+ *  Emits: UI:CHOICE
+ *  Emits: UI:ADVANCE
+ */
 export interface DialogueBoxProps {
   /** Current dialogue node to display */
   dialogue: DialogueNode;

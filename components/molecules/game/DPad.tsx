@@ -6,6 +6,9 @@ import { ControlButton } from '../../atoms/game/ControlButton';
 
 export type DPadDirection = 'up' | 'down' | 'left' | 'right';
 
+/** Event Contract:
+ *  Emits: UI:DIRECTION
+ */
 export interface DPadProps {
   /** Called when a direction is pressed/released */
   onDirection?: (direction: DPadDirection, pressed: boolean) => void;

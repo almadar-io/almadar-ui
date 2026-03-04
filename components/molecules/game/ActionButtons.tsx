@@ -15,6 +15,9 @@ export interface ActionButtonConfig {
   variant?: 'primary' | 'secondary' | 'ghost' | string;
 }
 
+/** Event Contract:
+ *  Emits: UI:ACTION
+ */
 export interface ActionButtonsProps {
   /** Button configurations */
   buttons: ActionButtonConfig[];

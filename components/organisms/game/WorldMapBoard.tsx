@@ -104,6 +104,13 @@ export interface WorldMapEntity {
     backgroundImage?: string;
 }
 
+/** Event Contract:
+ *  Emits: UI:HERO_SELECT
+ *  Emits: UI:HERO_MOVE
+ *  Emits: UI:BATTLE_ENCOUNTER
+ *  Emits: UI:FEATURE_ENTER
+ *  Emits: UI:TILE_CLICK
+ */
 export interface WorldMapBoardProps extends Omit<EntityDisplayProps, 'entity'> {
     /** World map entity data */
     entity: WorldMapEntity;

@@ -587,11 +587,12 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
 
               <SimpleGrid minChildWidth="250px" maxCols={2} gap="lg">
                 {section.fields.map((field, fieldIdx) => {
+                  const fieldKey = typeof field === "string" ? field : undefined;
                   const resolved: DetailField = typeof field === "string"
                     ? { label: formatFieldLabel(field), value: normalizedData ? formatFieldValue(getNestedValue(normalizedData, field), field) : "—", icon: getFieldIcon(field) }
                     : field;
                   return (
-                  <HStack key={fieldIdx} gap="sm" align="start">
+                  <HStack key={fieldIdx} gap="sm" align="start" data-field={fieldKey}>
                     {resolved.icon && (
                       <Icon
                         icon={resolved.icon}

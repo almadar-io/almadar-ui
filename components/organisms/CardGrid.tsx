@@ -213,6 +213,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
       return (
         <Box
           key={id}
+          data-entity-row
           className={cn(
             'bg-[var(--color-card)] rounded-[var(--radius-lg)] border border-[var(--color-border)] p-4 shadow-[var(--shadow-sm)]',
             'cursor-pointer hover:border-[var(--color-primary)] transition-colors'

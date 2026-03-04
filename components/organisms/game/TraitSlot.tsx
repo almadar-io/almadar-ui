@@ -44,6 +44,10 @@ export interface SlotItemData {
     stateMachine?: TraitStateMachineDefinition;
 }
 
+/** Event Contract:
+ *  Emits: UI:CLICK
+ *  Emits: UI:REMOVE
+ */
 export interface TraitSlotProps {
     /** Slot index (1-based) */
     slotNumber: number;
