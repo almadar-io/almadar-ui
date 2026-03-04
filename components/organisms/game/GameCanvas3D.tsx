@@ -483,8 +483,8 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                     <mesh
                         position={position}
                         onClick={(e) => handleTileClick(tile, e)}
-                        onPointerEnter={(e) => handleTileHover(tile, e)}
-                        onPointerLeave={(e) => handleTileHover(null, e)}
+                        onPointerEnter={(e) => handleTileHover(tile, e as unknown as React.MouseEvent)}
+                        onPointerLeave={(e) => handleTileHover(null, e as unknown as React.MouseEvent)}
                         userData={{ type: 'tile', tileId: tile.id, gridX: tile.x, gridZ: tile.z ?? tile.y }}
                     >
                         <boxGeometry args={[0.95, 0.2, 0.95]} />
@@ -595,7 +595,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                     return (
                         <group
                             position={position}
-                            onClick={(e) => handleFeatureClick(feature, e)}
+                            onClick={(e) => handleFeatureClick(feature, e as unknown as React.MouseEvent)}
                             userData={{ type: 'feature', featureId: feature.id }}
                         >
                             <mesh position={[0, 0.4, 0]}>
@@ -615,7 +615,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                     return (
                         <mesh
                             position={[position[0], position[1] + 0.3, position[2]]}
-                            onClick={(e) => handleFeatureClick(feature, e)}
+                            onClick={(e) => handleFeatureClick(feature, e as unknown as React.MouseEvent)}
                             userData={{ type: 'feature', featureId: feature.id }}
                         >
                             <dodecahedronGeometry args={[0.3, 0]} />
