@@ -22,7 +22,7 @@ import { useTranslate } from "../../hooks/useTranslate";
 export interface NavItem {
   label: string;
   href: string;
-  icon: LucideIcon;
+  icon?: LucideIcon;
   badge?: string | number;
   children?: NavItem[];
 }
@@ -331,14 +331,16 @@ const NavLink: React.FC<{ item: NavItem; currentPath: string }> = ({
           : "text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]",
       )}
     >
-      <Icon
-        className={cn(
-          "h-5 w-5",
-          isActive
-            ? "text-[var(--color-background)]"
-            : "text-[var(--color-muted-foreground)]",
-        )}
-      />
+      {Icon && (
+        <Icon
+          className={cn(
+            "h-5 w-5",
+            isActive
+              ? "text-[var(--color-background)]"
+              : "text-[var(--color-muted-foreground)]",
+          )}
+        />
+      )}
       <Typography
         variant="small"
         className="flex-1"
