@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# Pre-commit hook — ensures pnpm-lock.yaml specifiers match package.json.
+# Pre-commit hook — ensures pnpm-lock.yaml is up to date with package.json.
 #
 # Two contexts:
 #   Standalone repo: run `pnpm install` to fully regenerate the lockfile.
-#   Inside monorepo:  sync specifiers directly via node (pnpm install in a
-#                     subdir uses the root workspace lockfile, not this one).
+#   Inside monorepo:  copy project into /tmp isolation and run `pnpm update`
+#                     there (monorepo workspace absorbs pnpm commands in-place,
+#                     preventing standalone lockfile updates).
 
 STAGED=$(git diff --cached --name-only --diff-filter=ACMR)
 
@@ -21,57 +22,32 @@ while [ "$CHECK_DIR" != "/" ]; do
 done
 
 if [ "$IN_WORKSPACE" -eq 1 ]; then
-  # Inside monorepo: sync specifiers from package.json into pnpm-lock.yaml
-  node - <<'EOF'
-const fs = require('fs');
-const lockRaw = fs.readFileSync('pnpm-lock.yaml', 'utf8');
+  # Inside monorepo: use /tmp isolation so pnpm treats it as standalone
+  TMPDIR=$(mktemp -d)
+  trap 'rm -rf "$TMPDIR"' EXIT
 
-// Collect all deps from root package.json (and nested ones if present)
-const allDeps = {};
-for (const f of ['package.json', 'design-system/package.json']) {
-  try {
-    const pkg = JSON.parse(fs.readFileSync(f, 'utf8'));
-    for (const section of ['dependencies', 'devDependencies', 'peerDependencies']) {
-      for (const [name, ver] of Object.entries(pkg[section] || {})) {
-        allDeps[name] = ver;
-      }
-    }
-  } catch {}
-}
+  cp package.json "$TMPDIR/"
+  cp pnpm-lock.yaml "$TMPDIR/"
 
-// For each dep, find its specifier line in the lockfile and update if needed
-let lock = lockRaw;
-let changed = false;
+  echo "Updating pnpm-lock.yaml in isolation..."
+  (
+    cd "$TMPDIR" || exit 1
+    pnpm update --ignore-scripts > /dev/null 2>&1
+  )
 
-for (const [name, version] of Object.entries(allDeps)) {
-  // Match: '  'package-name':\n        specifier: <old>'
-  // The package key line is followed immediately by '        specifier: ...'
-  const escapedName = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/\//g, '\\/');
-  const re = new RegExp(`('${escapedName}':\\n)(\\s+specifier: )[^\\n]+`, 'g');
-  lock = lock.replace(re, (match, nameLine, specPrefix) => {
-    const current = match.slice(nameLine.length + specPrefix.length);
-    if (current !== version) {
-      changed = true;
-      return nameLine + specPrefix + version;
-    }
-    return match;
-  });
-}
-
-if (changed) {
-  fs.writeFileSync('pnpm-lock.yaml', lock);
-  process.stdout.write('Updated pnpm-lock.yaml specifiers to match package.json\n');
-} else {
-  process.stdout.write('pnpm-lock.yaml specifiers already in sync\n');
-}
-EOF
-  git add pnpm-lock.yaml
+  if [ $? -eq 0 ]; then
+    cp "$TMPDIR/pnpm-lock.yaml" pnpm-lock.yaml
+    git add pnpm-lock.yaml
+    echo "Updated pnpm-lock.yaml"
+  else
+    echo "Warning: pnpm update failed in isolation — lockfile may be outdated"
+  fi
 else
   # Standalone: let pnpm regenerate the lockfile properly
   pnpm install --frozen-lockfile > /dev/null 2>&1
   if [ $? -ne 0 ]; then
     echo "pnpm-lock.yaml is out of sync — running pnpm install to fix..."
-    pnpm install
+    pnpm install --ignore-scripts
     git add pnpm-lock.yaml
     echo "Staged updated pnpm-lock.yaml"
   fi
