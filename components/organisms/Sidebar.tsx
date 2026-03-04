@@ -204,13 +204,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Logo image or custom logo */}
           {logo ? (
             typeof logo === 'string' ? (
-              // eslint-disable-next-line almadar/no-raw-dom-elements -- semantic img with src/alt
+               
               <img src={logo} alt={brandName} className="h-8 w-8" />
             ) : (
               logo
             )
           ) : logoSrc ? (
-            // eslint-disable-next-line almadar/no-raw-dom-elements -- semantic img with src/alt
+             
             <img src={logoSrc} alt={brandName} className="h-8 w-8" />
           ) : (
             <Box className="h-8 w-8 bg-[var(--color-primary)] flex items-center justify-center rounded-[var(--radius-sm)]">

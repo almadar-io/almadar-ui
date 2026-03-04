@@ -185,8 +185,7 @@ function CanvasEffectEngine({
         }, duration);
 
         return () => clearTimeout(timer);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, []); // intentional empty dep array — runs once on mount only
 
     // RAF loop
     useEffect(() => {

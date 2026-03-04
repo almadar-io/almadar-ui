@@ -117,7 +117,7 @@ const DRAG_MIME = 'application/x-almadar-slot-item';
 // Component
 // =============================================================================
 
-// eslint-disable-next-line almadar/require-translate -- no translatable text, all content is data-driven
+ 
 export function TraitSlot({
     slotNumber,
     equippedItem,

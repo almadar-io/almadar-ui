@@ -9,7 +9,7 @@
  * Events emitted via completeEvent (default UI:PUZZLE_COMPLETE).
  */
 
-/* eslint-disable almadar/organism-rendering-state-only, almadar/no-raw-dom-elements, almadar/require-event-bus, almadar/organism-no-data-state */
+ 
 
 import React, { useState, useCallback } from 'react';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../atoms';

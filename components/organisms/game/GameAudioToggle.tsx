@@ -36,7 +36,7 @@ export interface GameAudioToggleProps {
 // Component
 // =============================================================================
 
-// eslint-disable-next-line almadar/require-translate -- emoji only, no translatable text
+ 
 export function GameAudioToggle({
     size = 'sm',
     className,

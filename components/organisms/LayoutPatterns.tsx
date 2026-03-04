@@ -336,7 +336,7 @@ DividerPattern.displayName = 'DividerPattern';
 // Exports
 // ============================================================================
 
-// eslint-disable-next-line almadar/require-display-name -- registry object, not a component
+ 
 export const LAYOUT_PATTERNS = {
   'vstack': VStackPattern,
   'hstack': HStackPattern,

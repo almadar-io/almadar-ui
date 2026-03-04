@@ -23,13 +23,19 @@ interface ComponentMappingJson {
   }>;
 }
 
-interface RegistryJson {
-  patterns: Record<string, {
-    type: string;
-    category: string;
-    description: string;
-    propsSchema?: Record<string, unknown>;
+interface PatternDefinition {
+  type: string;
+  category: string;
+  description: string;
+  propsSchema?: Record<string, {
+    required?: boolean;
+    types?: string[];
+    description?: string;
   }>;
+}
+
+interface RegistryJson {
+  patterns: Record<string, PatternDefinition>;
 }
 
 /**
@@ -59,8 +65,7 @@ export function initializePatterns(): number {
   // Use type assertion since JSON types are compatible at runtime
   initializePatternResolver({
     componentMapping,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    patternRegistry: patternRegistry as any,
+    patternRegistry,
   });
 
   console.log(`[PatternResolver] Initialized with ${Object.keys(componentMapping).length} component mappings and ${Object.keys(patternRegistry).length} pattern definitions`);

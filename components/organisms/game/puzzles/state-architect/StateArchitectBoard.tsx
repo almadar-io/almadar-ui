@@ -1,4 +1,4 @@
-/* eslint-disable almadar/organism-extends-entity-display, almadar/organism-rendering-state-only, almadar/organism-no-data-state, almadar/no-raw-dom-elements, almadar/require-event-bus */
+ 
 /**
  * StateArchitectBoard Organism
  *

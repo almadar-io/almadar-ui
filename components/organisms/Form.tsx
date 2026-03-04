@@ -153,7 +153,7 @@ export interface FormTabDefinition {
  */
 export interface RelationConfig {
   /** Target entity name (e.g., 'User', 'Project') */
-  // eslint-disable-next-line almadar/no-entity-string-type -- entity here is a target entity NAME reference, not data
+   
   entity: string;
   /** Field on target entity to display (defaults to 'name') */
   displayField?: string;
@@ -226,7 +226,7 @@ export interface FormProps extends Omit<
 
   // Schema-based props
   /** Entity type name or schema object. When OrbitalEntity, fields are auto-derived if not provided. */
-  // eslint-disable-next-line almadar/no-entity-string-type -- Form accepts entity NAME (string) or OrbitalEntity schema object
+   
   entity?: string | OrbitalEntity;
   /** Form mode - 'create' for new records, 'edit' for updating existing */
   mode?: "create" | "edit";
@@ -903,7 +903,7 @@ export const Form: React.FC<FormProps> = ({
   }
 
   return (
-    // eslint-disable-next-line almadar/no-raw-dom-elements -- native <form> needed for onSubmit semantics
+     
     <form
       className={cn(layoutStyles[layout], gapStyles[gap], className)}
       onSubmit={handleSubmit}

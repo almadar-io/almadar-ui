@@ -1,5 +1,5 @@
 'use client';
-/* eslint-disable almadar/require-closed-circuit-props, almadar/organism-extends-entity-display, almadar/require-translate */
+ 
 /**
  * MasterDetail Component
  *

@@ -227,10 +227,10 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                                             : "border-transparent hover:border-[var(--color-border)]",
                                         ASPECT_CLASSES[aspectRatio],
                                     )}
-                                    // eslint-disable-next-line almadar/require-event-bus -- onClick manages local lightbox/selection state + emits UI:MEDIA_SELECT
+                                     
                                     onClick={() => handleItemClick(item)}
                                 >
-                                    {/* eslint-disable-next-line almadar/no-raw-dom-elements -- semantic img with src/alt */}
+                                    { }
                                     <img
                                         src={item.thumbnail || item.src}
                                         alt={item.alt || item.caption || ""}
@@ -283,7 +283,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                         align="center"
                         justify="center"
                         className="w-full h-full p-8"
-                        // eslint-disable-next-line almadar/require-event-bus -- stopPropagation prevents backdrop close when clicking content
+                         
                         onClick={(e: React.MouseEvent) => e.stopPropagation()}
                     >
                         <HStack justify="end" className="w-full max-w-4xl mb-2">
@@ -295,7 +295,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                                 className="text-white hover:bg-white/20"
                             />
                         </HStack>
-                        {/* eslint-disable-next-line almadar/no-raw-dom-elements -- semantic img with src/alt */}
+                        { }
                         <img
                             src={lightboxItem.src}
                             alt={lightboxItem.alt || lightboxItem.caption || ""}

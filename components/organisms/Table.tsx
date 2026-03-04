@@ -241,14 +241,14 @@ export const Table = <T extends Record<string, any>>({
       {/* Table */}
       <Card>
         <Box className="overflow-x-auto">
-          {/* eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements needed */}
+          { }
           <table className="w-full">
-            {/* eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements needed */}
+            { }
             <thead>
-              {/* eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements needed */}
+              { }
               <tr className="border-b-[length:var(--border-width)] border-[var(--color-table-border)]">
                 {selectable && (
-                  // eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements needed
+                   
                   <th className="px-4 py-3 text-left bg-[var(--color-table-header)]">
                     <Checkbox
                       checked={allSelected}
@@ -257,7 +257,7 @@ export const Table = <T extends Record<string, any>>({
                   </th>
                 )}
                 {columns.map((column) => (
-                  // eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements needed
+                   
                   <th
                     key={column.key}
                     className={cn(
@@ -267,7 +267,7 @@ export const Table = <T extends Record<string, any>>({
                         "cursor-pointer hover:bg-[var(--color-table-row-hover)]",
                     )}
                     style={{ width: column.width }}
-                    // eslint-disable-next-line almadar/require-event-bus -- native th element; handleSort already emits UI:SORT via eventBus
+                     
                     onClick={() => column.sortable && handleSort(column.key)}
                   >
                     <HStack className="flex items-center gap-2">
@@ -286,17 +286,17 @@ export const Table = <T extends Record<string, any>>({
                   </th>
                 ))}
                 {rowActions && (
-                  // eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements needed
+                   
                   <th className="px-4 py-3 text-right">Actions</th>
                 )}
               </tr>
             </thead>
-            {/* eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements needed */}
+            { }
             <tbody>
               {loading || isLoading ? (
-                // eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements needed
+                 
                 <tr>
-                  {/* eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements needed */}
+                  { }
                   <td
                     colSpan={
                       columns.length +
@@ -311,9 +311,9 @@ export const Table = <T extends Record<string, any>>({
                   </td>
                 </tr>
               ) : resolvedData.length === 0 ? (
-                // eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements needed
+                 
                 <tr>
-                  {/* eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements needed */}
+                  { }
                   <td
                     colSpan={
                       columns.length +
@@ -332,7 +332,7 @@ export const Table = <T extends Record<string, any>>({
                   const rowKey = String((row as Record<string, any>).id ?? index);
                   const isSelected = selectedRows.includes(rowKey);
                   return (
-                    // eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements needed
+                     
                     <tr
                       key={rowKey}
                       className={cn(
@@ -343,7 +343,7 @@ export const Table = <T extends Record<string, any>>({
                       )}
                     >
                       {selectable && (
-                        // eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements needed
+                         
                         <td className="px-4 py-3">
                           <Checkbox
                             checked={isSelected}
@@ -354,7 +354,7 @@ export const Table = <T extends Record<string, any>>({
                         </td>
                       )}
                       {columns.map((column) => (
-                        // eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements needed
+                         
                         <td key={column.key} className="px-4 py-3">
                           {column.render ? (
                             column.render(row[column.key], row, index)
@@ -366,7 +366,7 @@ export const Table = <T extends Record<string, any>>({
                         </td>
                       ))}
                       {rowActions && (
-                        // eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements needed
+                         
                         <td className="px-4 py-3 text-right">
                           <Menu
                             trigger={

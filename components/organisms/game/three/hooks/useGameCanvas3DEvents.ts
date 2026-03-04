@@ -31,6 +31,13 @@ export interface GameCanvas3DEventConfig {
     cameraChangeEvent?: string;
 }
 
+/** Minimal mouse event interface — satisfied by both React.MouseEvent and ThreeEvent<MouseEvent> */
+export interface MinimalMouseEvent {
+    clientX: number;
+    clientY: number;
+    button: number;
+}
+
 export interface UseGameCanvas3DEventsOptions extends GameCanvas3DEventConfig {
     /** Callback for tile clicks (direct) */
     onTileClick?: (tile: IsometricTile, event: React.MouseEvent) => void;
@@ -54,7 +61,7 @@ export interface UseGameCanvas3DEventsReturn {
     /** Handle feature click - emits event and calls callback */
     handleFeatureClick: (feature: IsometricFeature, event: React.MouseEvent) => void;
     /** Handle canvas click - emits event and calls callback */
-    handleCanvasClick: (event: React.MouseEvent) => void;
+    handleCanvasClick: (event: MinimalMouseEvent) => void;
     /** Handle tile hover - emits event and calls callback */
     handleTileHover: (tile: IsometricTile | null, event: React.MouseEvent) => void;
     /** Handle unit animation - emits event and calls callback */
@@ -166,7 +173,7 @@ export function useGameCanvas3DEvents(
     );
 
     const handleCanvasClick = useCallback(
-        (event: React.MouseEvent) => {
+        (event: MinimalMouseEvent) => {
             if (canvasClickEvent) {
                 emit(canvasClickEvent, {
                     clientX: event.clientX,
@@ -175,7 +182,7 @@ export function useGameCanvas3DEvents(
                 });
             }
 
-            optionsRef.current.onCanvasClick?.(event);
+            optionsRef.current.onCanvasClick?.(event as React.MouseEvent);
         },
         [canvasClickEvent, emit]
     );

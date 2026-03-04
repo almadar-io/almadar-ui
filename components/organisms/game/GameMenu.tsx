@@ -70,7 +70,6 @@ export function GameMenu({
   // Use provided eventBus or get from context (with fallback for outside provider)
   let eventBusFromHook: EventBusContextType | null = null;
   try {
-    // eslint-disable-next-line react-hooks/rules-of-hooks
     eventBusFromHook = useEventBus();
   } catch {
     // Outside EventBusProvider context - will use prop or skip emission

@@ -247,7 +247,7 @@ const TransitionBundleArrow: React.FC<{
         ref={groupRef}
         className="transition-bundle cursor-pointer"
         data-bundle-id={bundle.id}
-        // eslint-disable-next-line almadar/require-event-bus -- SVG <g> has no action prop
+         
         onClick={() => onClick?.(bundle)}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
@@ -384,7 +384,7 @@ const TransitionBundleArrow: React.FC<{
       ref={groupRef}
       className="transition-bundle cursor-pointer"
       data-bundle-id={bundle.id}
-      // eslint-disable-next-line almadar/require-event-bus -- SVG <g> has no action prop
+       
       onClick={() => onClick?.(bundle)}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}

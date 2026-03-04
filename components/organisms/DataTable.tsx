@@ -1,4 +1,4 @@
-/* eslint-disable almadar/require-event-bus -- DataTable is a foundational UI component; onClick handlers are internal interaction mechanics (sort, row click, action menus), not closed-circuit violations */
+ 
 'use client';
 import React, { useState, useMemo, useCallback } from "react";
 import { cn } from "../../lib/cn";
@@ -347,14 +347,14 @@ export function DataTable<T extends { id: string | number }>({
 
       {/* Table */}
       <Box className="overflow-x-auto">
-        {/* eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements in DataTable */}
+        { }
         <table className="w-full">
-          {/* eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements in DataTable */}
+          { }
           <thead className="bg-[var(--color-table-header)] border-b-2 border-[var(--color-border)]">
-            {/* eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements in DataTable */}
+            { }
             <tr>
               {selectable && (
-                // eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements in DataTable
+                 
                 <th className="w-12 px-4 py-3">
                   <Checkbox
                     checked={allSelected}
@@ -365,7 +365,7 @@ export function DataTable<T extends { id: string | number }>({
                 </th>
               )}
               {normalizedColumns.map((col) => (
-                // eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements in DataTable
+                 
                 <th
                   key={String(col.key)}
                   data-column={String(col.key)}
@@ -389,16 +389,16 @@ export function DataTable<T extends { id: string | number }>({
                   </HStack>
                 </th>
               ))}
-              {/* eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements in DataTable */}
+              { }
               {rowActions && <th className="w-12 px-4 py-3" />}
             </tr>
           </thead>
-          {/* eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements in DataTable */}
+          { }
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
             {isLoading ? (
-              // eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements in DataTable
+               
               <tr>
-                {/* eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements in DataTable */}
+                { }
                 <td
                   colSpan={
                     normalizedColumns.length +
@@ -419,9 +419,9 @@ export function DataTable<T extends { id: string | number }>({
                 </td>
               </tr>
             ) : error ? (
-              // eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements in DataTable
+               
               <tr>
-                {/* eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements in DataTable */}
+                { }
                 <td
                   colSpan={
                     normalizedColumns.length +
@@ -435,9 +435,9 @@ export function DataTable<T extends { id: string | number }>({
                 </td>
               </tr>
             ) : items.length === 0 ? (
-              // eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements in DataTable
+               
               <tr>
-                {/* eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements in DataTable */}
+                { }
                 <td
                   colSpan={
                     normalizedColumns.length +
@@ -457,7 +457,7 @@ export function DataTable<T extends { id: string | number }>({
               </tr>
             ) : (
               items.map((row, rowIndex) => (
-                // eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements in DataTable
+                 
                 <tr
                   key={row.id}
                   data-entity-row
@@ -470,7 +470,7 @@ export function DataTable<T extends { id: string | number }>({
                   onClick={() => isRowClickable && handleRowClick(row)}
                 >
                   {selectable && (
-                    // eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements in DataTable
+                     
                     <td className="px-4 py-3">
                       <Checkbox
                         checked={selectedIds.includes(row.id)}
@@ -484,7 +484,7 @@ export function DataTable<T extends { id: string | number }>({
                       String(col.key),
                     );
                     return (
-                      // eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements in DataTable
+                       
                       <td
                         key={String(col.key)}
                         data-column={String(col.key)}
@@ -497,7 +497,7 @@ export function DataTable<T extends { id: string | number }>({
                     );
                   })}
                   {rowActions && (
-                    // eslint-disable-next-line almadar/no-raw-dom-elements -- native table elements in DataTable
+                     
                     <td className="px-4 py-3 relative">
                       <Button
                         variant="ghost"

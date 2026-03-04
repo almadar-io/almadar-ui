@@ -206,14 +206,12 @@ export function useOrbitalHistory(options: UseOrbitalHistoryOptions): UseOrbital
     if (appId && authToken && userId) {
       refresh();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appId, authToken, userId]);
+  }, [appId, authToken, userId]); // intentional — refresh is excluded to avoid circular dep
 
   // Call onHistoryChange when timeline changes (separate effect to avoid infinite loop)
   useEffect(() => {
     onHistoryChange?.(timeline);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeline]);
+  }, [timeline]); // intentional — onHistoryChange excluded to avoid infinite loop
 
   return {
     timeline,

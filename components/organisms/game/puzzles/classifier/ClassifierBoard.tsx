@@ -1,4 +1,4 @@
-/* eslint-disable almadar/organism-rendering-state-only, almadar/no-raw-dom-elements, almadar/organism-extends-entity-display, almadar/require-event-bus */
+ 
 /**
  * ClassifierBoard
  *

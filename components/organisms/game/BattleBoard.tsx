@@ -1,4 +1,4 @@
-/* eslint-disable almadar/organism-no-callback-props, almadar/organism-extends-entity-display */
+ 
 'use client';
 /**
  * BattleBoard

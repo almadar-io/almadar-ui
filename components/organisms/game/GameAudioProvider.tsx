@@ -30,7 +30,7 @@ export type GameAudioContextValue = Pick<GameAudioControls,
     'muted' | 'setMuted' | 'masterVolume' | 'setMasterVolume' | 'play' | 'playMusic' | 'stopMusic'
 >;
 
-// eslint-disable-next-line almadar/require-translate -- createContext is not a React component, no translatable text
+ 
 export const GameAudioContext = createContext<GameAudioContextValue | null>(null);
 GameAudioContext.displayName = 'GameAudioContext';
 

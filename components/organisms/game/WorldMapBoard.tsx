@@ -20,7 +20,7 @@
  * @packageDocumentation
  */
 
-/* eslint-disable almadar/organism-no-callback-props, almadar/organism-extends-entity-display */
+ 
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -182,7 +182,7 @@ function defaultIsInRange(
 // Component
 // =============================================================================
 
-// eslint-disable-next-line almadar/require-translate -- renders no text; all content via render-prop slots (header, sidePanel, overlay, footer)
+ 
 export function WorldMapBoard({
     entity,
     scale = 0.4,

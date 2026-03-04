@@ -405,17 +405,21 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
 
         // Handle feature click with event bus
         const handleFeatureClick = useCallback(
-            (feature: IsometricFeature, event: any) => {
-                eventHandlers.handleFeatureClick(feature, event);
+            (feature: IsometricFeature, event: React.MouseEvent | null) => {
+                if (event) {
+                    eventHandlers.handleFeatureClick(feature, event);
+                }
             },
             [eventHandlers]
         );
 
         // Handle tile hover with event bus
         const handleTileHover = useCallback(
-            (tile: IsometricTile | null, event: any) => {
+            (tile: IsometricTile | null, event: React.MouseEvent | null) => {
                 setHoveredTile(tile);
-                eventHandlers.handleTileHover(tile, event);
+                if (event) {
+                    eventHandlers.handleTileHover(tile, event);
+                }
             },
             [eventHandlers]
         );
@@ -580,7 +584,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                             position={position}
                             scale={0.5}
                             rotation={[0, (feature as { rotation?: number }).rotation ?? 0, 0]}
-                            onClick={() => handleFeatureClick(feature, null as any)}
+                            onClick={() => handleFeatureClick(feature, null)}
                             fallbackGeometry="box"
                         />
                     );
@@ -673,7 +677,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                         style={{ background: backgroundColor }}
                         onClick={(e) => {
                             if (e.target === e.currentTarget) {
-                                eventHandlers.handleCanvasClick(e as any);
+                                eventHandlers.handleCanvasClick(e);
                             }
                         }}
                     >

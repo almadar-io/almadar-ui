@@ -81,13 +81,13 @@ export interface IsometricCanvasProps extends EntityDisplayProps {
     hoveredTile?: { x: number; y: number } | null;
 
     // --- Event handlers (legacy callbacks — prefer declarative event string props below) ---
-    // eslint-disable-next-line almadar/organism-no-callback-props
+     
     onTileClick?: (x: number, y: number) => void;
-    // eslint-disable-next-line almadar/organism-no-callback-props
+     
     onUnitClick?: (unitId: string) => void;
-    // eslint-disable-next-line almadar/organism-no-callback-props
+     
     onTileHover?: (x: number, y: number) => void;
-    // eslint-disable-next-line almadar/organism-no-callback-props
+     
     onTileLeave?: () => void;
 
     // --- Declarative event props ---
@@ -133,7 +133,7 @@ export interface IsometricCanvasProps extends EntityDisplayProps {
     /** Additional sprite URLs to preload (e.g., effect sprites) */
     effectSpriteUrls?: string[];
     /** Callback to draw canvas effects after units (canvas-specific: cannot be declarative) */
-    // eslint-disable-next-line almadar/organism-no-callback-props
+     
     onDrawEffects?: (
         ctx: CanvasRenderingContext2D,
         animTime: number,
@@ -843,7 +843,6 @@ export function IsometricCanvas({
         const pos = isoToScreen(unit.position.x, unit.position.y, scale, baseOffsetX);
         const centerX = pos.x + scaledTileWidth / 2;
         const centerY = pos.y + scaledDiamondTopY + scaledFloorHeight / 2;
-        // eslint-disable-next-line react-compiler/react-compiler
         targetCameraRef.current = {
             x: centerX - viewportSize.width / 2,
             y: centerY - viewportSize.height / 2,

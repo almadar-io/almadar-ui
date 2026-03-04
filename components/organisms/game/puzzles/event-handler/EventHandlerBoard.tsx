@@ -1,4 +1,4 @@
-/* eslint-disable almadar/organism-rendering-state-only, almadar/organism-no-data-state, almadar/organism-extends-entity-display, almadar/no-raw-dom-elements, almadar/require-event-bus */
+ 
 /**
  * EventHandlerBoard Organism
  *

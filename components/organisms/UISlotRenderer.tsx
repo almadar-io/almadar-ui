@@ -1,5 +1,5 @@
 'use client';
-/* eslint-disable almadar/require-closed-circuit-props, almadar/organism-extends-entity-display, almadar/organism-no-callback-props, almadar/require-event-bus, almadar/require-translate */
+ 
 /**
  * UISlotRenderer Component
  *
@@ -148,7 +148,7 @@ import { CustomPattern } from "./CustomPattern";
  *
  * Component names match those in orbital-shared/patterns/component-mapping.json
  */
-// eslint-disable-next-line almadar/require-display-name
+ 
 export const COMPONENT_REGISTRY: Record<string, React.ComponentType<any>> = {
   // Display patterns
   PageHeader,

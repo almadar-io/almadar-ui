@@ -544,7 +544,7 @@ export function useOfflineExecutor(
       executor.dispose();
       executorRef.current = null;
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // intentional empty dep array — runs once on mount only
 
   // Auto-sync when coming online
   useEffect(() => {

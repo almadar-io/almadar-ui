@@ -67,7 +67,7 @@ export function useImageCache(urls: string[]): ImageCacheResult {
         return () => {
             cancelled = true;
         };
-    }, [urls.join(',')]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [urls.join(',')]);  
 
     const getImage = useCallback((url: string): HTMLImageElement | undefined => {
         return cacheRef.current.get(url);

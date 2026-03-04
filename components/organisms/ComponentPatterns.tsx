@@ -172,7 +172,7 @@ export function LinkPattern({
   };
 
   return (
-    // eslint-disable-next-line almadar/no-raw-dom-elements -- semantic anchor with href
+     
     <a
       href={href ?? '#'}
       target={external ? '_blank' : undefined}
@@ -340,7 +340,7 @@ export function ImagePattern({
   className,
 }: ImagePatternProps): React.ReactElement {
   return (
-    // eslint-disable-next-line almadar/no-raw-dom-elements -- semantic img with src/alt
+     
     <img
       src={src}
       alt={alt}
@@ -981,7 +981,7 @@ FloatButtonPattern.displayName = 'FloatButtonPattern';
 // Export Pattern Registry
 // ============================================================================
 
-// eslint-disable-next-line almadar/require-display-name -- registry object, not a component
+ 
 export const COMPONENT_PATTERNS = {
   // Interactive
   'button': ButtonPattern,

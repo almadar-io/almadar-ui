@@ -24,7 +24,7 @@ import { Input } from "../atoms/Input";
 /**
  * Allowed element types for custom patterns.
  */
-// eslint-disable-next-line almadar/require-display-name -- constant array, not a component
+ 
 export const ALLOWED_CUSTOM_COMPONENTS = [
   "div",
   "span",
@@ -238,7 +238,7 @@ export function CustomPattern({
 
     case "a":
       return (
-        // eslint-disable-next-line almadar/no-raw-dom-elements -- semantic anchor with href
+         
         <a
           href={href ?? "#"}
           target={external ? "_blank" : undefined}
@@ -251,7 +251,7 @@ export function CustomPattern({
 
     case "img":
       return (
-        // eslint-disable-next-line almadar/no-raw-dom-elements -- semantic img with src/alt
+         
         <img
           src={src}
           alt={alt ?? ""}

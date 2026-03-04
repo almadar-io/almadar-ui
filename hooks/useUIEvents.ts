@@ -66,8 +66,7 @@ export function useUIEvents<E extends string>(
     : "";
   const stableValidEvents = useMemo(
     () => validEvents,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [validEventsKey],
+    [validEventsKey], // intentional — validEventsKey is the stable dep, not validEvents array ref
   );
 
   useEffect(() => {
