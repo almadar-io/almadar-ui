@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "2.1.10",
+  "version": "2.1.11",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "main": "./dist/components/index.js",
@@ -130,7 +130,11 @@
     "@storybook/addon-docs": "^10.2.6",
     "@types/react-syntax-highlighter": "^15.5.0",
     "katex": "^0.16.0",
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.0.0",
+    "eslint": "10.0.0",
+    "@typescript-eslint/parser": "8.56.0",
+    "@almadar/eslint-plugin": ">=2.3.0",
+    "eslint-plugin-react-compiler": "19.1.0-rc.2"
   },
   "repository": {
     "type": "git",
