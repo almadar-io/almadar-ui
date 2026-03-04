@@ -521,7 +521,7 @@ export function DataTable<T extends { id: string | number }>({
                             }}
                           />
                           <VStack className="absolute right-0 mt-1 w-48 bg-[var(--color-card)] rounded-[var(--radius-lg)] shadow-[var(--shadow-lg)] border border-[var(--color-border)] py-1 z-50">
-                            {rowActions
+                            {(rowActions ?? [])
                               .filter(
                                 (action) => !action.show || action.show(row),
                               )
