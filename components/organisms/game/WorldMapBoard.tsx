@@ -25,6 +25,7 @@ import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { VStack, HStack, Stack } from '../../atoms/Stack';
+import { LoadingState } from '../../molecules/LoadingState';
 import type { EntityDisplayProps } from '../types';
 import IsometricCanvas from './IsometricCanvas';
 import type {
@@ -33,7 +34,7 @@ import type {
     IsometricFeature,
 } from './types/isometric';
 import type { ResolvedFrame } from './types/spriteAnimation';
-import { isoToScreen, TILE_WIDTH, FLOOR_HEIGHT } from './utils/isometric';
+import { isoToScreen, TILE_WIDTH } from './utils/isometric';
 
 // =============================================================================
 // Types
@@ -111,9 +112,7 @@ export interface WorldMapEntity {
  *  Emits: UI:FEATURE_ENTER
  *  Emits: UI:TILE_CLICK
  */
-export interface WorldMapBoardProps extends Omit<EntityDisplayProps, 'entity'> {
-    /** World map entity data */
-    entity: WorldMapEntity;
+export interface WorldMapBoardProps extends EntityDisplayProps<WorldMapEntity> {
 
     /** Canvas render scale */
     scale?: number;
@@ -185,6 +184,7 @@ function defaultIsInRange(
  
 export function WorldMapBoard({
     entity,
+    isLoading,
     scale = 0.4,
     unitScale = 2.5,
     allowMoveAllHeroes = false,
@@ -210,13 +210,14 @@ export function WorldMapBoard({
 }: WorldMapBoardProps): React.JSX.Element {
     const eventBus = useEventBus();
 
-    // Destructure entity for convenience
-    const hexes = entity.hexes;
-    const heroes = entity.heroes;
-    const features = entity.features ?? [];
-    const selectedHeroId = entity.selectedHeroId;
-    const assetManifest = entity.assetManifest;
-    const backgroundImage = entity.backgroundImage;
+    // Resolve entity (handles undefined, array, or single object)
+    const resolved = Array.isArray(entity) ? entity[0] : (entity as WorldMapEntity | undefined);
+    const hexes = resolved?.hexes ?? [];
+    const heroes = resolved?.heroes ?? [];
+    const features = resolved?.features ?? [];
+    const selectedHeroId = resolved?.selectedHeroId;
+    const assetManifest = resolved?.assetManifest;
+    const backgroundImage = resolved?.backgroundImage;
 
     const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
 
@@ -414,6 +415,10 @@ export function WorldMapBoard({
         }),
         [hoveredTile, hoveredHex, hoveredHero, selectedHero, validMoves, selectHero, tileToScreen, scale],
     );
+
+    if (isLoading || !resolved) {
+        return <LoadingState message="Loading map..." />;
+    }
 
     return (
         <VStack className={cn('world-map-board min-h-screen bg-[var(--color-background)]', className)} gap="none">
