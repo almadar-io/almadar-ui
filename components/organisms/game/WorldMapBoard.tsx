@@ -223,13 +223,13 @@ export function WorldMapBoard({
 
     // -- Selected hero --------------------------------------------------------
     const selectedHero = useMemo(
-        () => heroes.find(h => h.id === selectedHeroId) ?? null,
+        () => heroes.find((h: MapHero) => h.id === selectedHeroId) ?? null,
         [heroes, selectedHeroId],
     );
 
     // -- Convert hexes -> IsometricTile[] -------------------------------------
     const tiles: IsometricTile[] = useMemo(
-        () => hexes.map(hex => ({
+        () => hexes.map((hex: MapHex) => ({
             x: hex.x,
             y: hex.y,
             terrain: hex.terrain,
@@ -240,7 +240,7 @@ export function WorldMapBoard({
 
     // -- Convert heroes -> IsometricUnit[] ------------------------------------
     const baseUnits: IsometricUnit[] = useMemo(
-        () => heroes.map(hero => ({
+        () => heroes.map((hero: MapHero) => ({
             id: hero.id,
             position: hero.position,
             name: hero.name,
@@ -308,12 +308,12 @@ export function WorldMapBoard({
     const validMoves = useMemo(() => {
         if (!selectedHero || selectedHero.movement <= 0) return [];
         const moves: Array<{ x: number; y: number }> = [];
-        hexes.forEach(hex => {
+        hexes.forEach((hex: MapHex) => {
             if (hex.passable === false) return;
             if (hex.x === selectedHero.position.x && hex.y === selectedHero.position.y) return;
             if (!isInRange(selectedHero.position, { x: hex.x, y: hex.y }, selectedHero.movement)) return;
             // Don't overlap friendly heroes
-            if (heroes.some(h => h.position.x === hex.x && h.position.y === hex.y && h.owner === selectedHero.owner)) return;
+            if (heroes.some((h: MapHero) => h.position.x === hex.x && h.position.y === hex.y && h.owner === selectedHero.owner)) return;
             moves.push({ x: hex.x, y: hex.y });
         });
         return moves;
@@ -323,13 +323,13 @@ export function WorldMapBoard({
     const attackTargets = useMemo(() => {
         if (!selectedHero || selectedHero.movement <= 0) return [];
         return heroes
-            .filter(h => h.owner !== selectedHero.owner)
-            .filter(h => isInRange(selectedHero.position, h.position, selectedHero.movement))
-            .map(h => h.position);
+            .filter((h: MapHero) => h.owner !== selectedHero.owner)
+            .filter((h: MapHero) => isInRange(selectedHero.position, h.position, selectedHero.movement))
+            .map((h: MapHero) => h.position);
     }, [selectedHero, heroes, isInRange]);
 
     // -- Tile-to-screen helper ------------------------------------------------
-    const maxY = Math.max(...hexes.map(h => h.y), 0);
+    const maxY = Math.max(...hexes.map((h: MapHex) => h.y), 0);
     const baseOffsetX = (maxY + 1) * (TILE_WIDTH * scale / 2);
     const tileToScreen = useCallback(
         (tx: number, ty: number) => isoToScreen(tx, ty, scale, baseOffsetX),
@@ -338,18 +338,18 @@ export function WorldMapBoard({
 
     // -- Hovered info ---------------------------------------------------------
     const hoveredHex = useMemo(
-        () => hoveredTile ? hexes.find(h => h.x === hoveredTile.x && h.y === hoveredTile.y) ?? null : null,
+        () => hoveredTile ? hexes.find((h: MapHex) => h.x === hoveredTile.x && h.y === hoveredTile.y) ?? null : null,
         [hoveredTile, hexes],
     );
     const hoveredHero = useMemo(
-        () => hoveredTile ? heroes.find(h => h.position.x === hoveredTile.x && h.position.y === hoveredTile.y) ?? null : null,
+        () => hoveredTile ? heroes.find((h: MapHero) => h.position.x === hoveredTile.x && h.position.y === hoveredTile.y) ?? null : null,
         [hoveredTile, heroes],
     );
 
     // -- Handle tile click ----------------------------------------------------
     const handleTileClick = useCallback((x: number, y: number) => {
         if (movementAnimRef.current) return;
-        const hex = hexes.find(h => h.x === x && h.y === y);
+        const hex = hexes.find((h: MapHex) => h.x === x && h.y === y);
         if (!hex) return;
 
         // Emit declarative tile click event
@@ -374,8 +374,8 @@ export function WorldMapBoard({
         }
 
         // Check for battle encounter
-        const enemy = heroes.find(h => h.position.x === x && h.position.y === y && h.owner === 'enemy');
-        if (selectedHero && enemy && attackTargets.some(t => t.x === x && t.y === y)) {
+        const enemy = heroes.find((h: MapHero) => h.position.x === x && h.position.y === y && h.owner === 'enemy');
+        if (selectedHero && enemy && attackTargets.some((t: { x: number; y: number }) => t.x === x && t.y === y)) {
             onBattleEncounter?.(selectedHero.id, enemy.id);
             if (battleEncounterEvent) {
                 eventBus.emit(`UI:${battleEncounterEvent}`, { attackerId: selectedHero.id, defenderId: enemy.id });
@@ -385,7 +385,7 @@ export function WorldMapBoard({
 
     // -- Handle unit click ----------------------------------------------------
     const handleUnitClick = useCallback((unitId: string) => {
-        const hero = heroes.find(h => h.id === unitId);
+        const hero = heroes.find((h: MapHero) => h.id === unitId);
         if (hero && (hero.owner === 'player' || allowMoveAllHeroes)) {
             onHeroSelect?.(unitId);
             if (heroSelectEvent) {

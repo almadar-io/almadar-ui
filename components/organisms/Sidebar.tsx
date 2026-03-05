@@ -115,7 +115,7 @@ const SidebarNavItem: React.FC<{
       )}
 
       {!collapsed && (
-        <Typography variant="body" className="font-medium truncate flex-1 text-left">{item.label}</Typography>
+        <Typography variant="body" color={isActive ? 'inherit' : 'primary'} className="font-medium truncate flex-1 text-left">{item.label}</Typography>
       )}
 
       {!collapsed && item.badge !== undefined && (

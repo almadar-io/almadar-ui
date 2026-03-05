@@ -15,6 +15,11 @@
  */
 
 import { createContext, useContext } from 'react';
+import coreLocaleRaw from '../locales/en.json';
+
+// Strip $meta (object, not a string) so the lookup is Record<string, string>
+const { $meta: _meta, ...coreMessages } = coreLocaleRaw;
+const coreLocale: Record<string, string> = coreMessages;
 
 export type TranslateFunction = (
   key: string,
@@ -33,7 +38,7 @@ export interface I18nContextValue {
 const I18nContext = createContext<I18nContextValue>({
   locale: 'en',
   direction: 'ltr',
-  t: (key) => key, // passthrough fallback
+  t: (key) => coreLocale[key] ?? key, // core locale fallback
 });
 
 I18nContext.displayName = 'I18nContext';
@@ -71,7 +76,7 @@ export function createTranslate(
   messages: Record<string, string>,
 ): TranslateFunction {
   return (key, params) => {
-    let msg = messages[key] ?? key;
+    let msg = messages[key] ?? coreLocale[key] ?? key;
     if (params) {
       for (const [k, v] of Object.entries(params)) {
         msg = msg.split(`{{${k}}}`).join(String(v));

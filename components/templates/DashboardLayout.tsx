@@ -327,7 +327,7 @@ const NavLink: React.FC<{ item: NavItem; currentPath: string }> = ({
       className={cn(
         "flex items-center gap-3 px-3 py-2 rounded-[var(--radius-lg)] text-sm font-medium transition-colors",
         isActive
-          ? "bg-[var(--color-foreground)] text-[var(--color-background)] shadow-[var(--shadow-sm)]"
+          ? "bg-[var(--color-primary)] text-[var(--color-primary-foreground)] shadow-[var(--shadow-sm)]"
           : "text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]",
       )}
     >
@@ -336,13 +336,14 @@ const NavLink: React.FC<{ item: NavItem; currentPath: string }> = ({
           className={cn(
             "h-5 w-5",
             isActive
-              ? "text-[var(--color-background)]"
+              ? "text-[var(--color-primary-foreground)]"
               : "text-[var(--color-muted-foreground)]",
           )}
         />
       )}
       <Typography
         variant="small"
+        color={isActive ? 'inherit' : 'primary'}
         className="flex-1"
         as="span"
       >
