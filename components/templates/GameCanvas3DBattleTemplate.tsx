@@ -108,13 +108,15 @@ export function GameCanvas3DBattleTemplate({
     validMoves,
     attackTargets,
     className,
-}: GameCanvas3DBattleTemplateProps): React.JSX.Element {
+}: GameCanvas3DBattleTemplateProps): React.JSX.Element | null {
+    const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as Battle3DEntity : undefined;
+    if (!resolved) return null;
     return (
         <Box className={cn('game-canvas-3d-battle-template', className)}>
             <GameCanvas3D
-                tiles={entity.tiles}
-                units={entity.units}
-                features={entity.features}
+                tiles={resolved.tiles}
+                units={resolved.units}
+                features={resolved.features}
                 cameraMode={cameraMode}
                 showGrid={showGrid}
                 showCoordinates={false}
@@ -130,18 +132,18 @@ export function GameCanvas3DBattleTemplate({
             />
 
             {/* Turn indicator overlay */}
-            {entity.currentTurn && (
+            {resolved.currentTurn && (
                 <HStack
                     gap="sm"
                     align="center"
-                    className={cn('battle-template__turn-indicator', `battle-template__turn-indicator--${entity.currentTurn}`)}
+                    className={cn('battle-template__turn-indicator', `battle-template__turn-indicator--${resolved.currentTurn}`)}
                 >
                     <Typography variant="body" className="turn-indicator__label">
-                        {entity.currentTurn === 'player' ? 'Your Turn' : "Enemy's Turn"}
+                        {resolved.currentTurn === 'player' ? 'Your Turn' : "Enemy's Turn"}
                     </Typography>
-                    {entity.round && (
+                    {resolved.round && (
                         <Typography variant="small" className="turn-indicator__round">
-                            Round {entity.round}
+                            Round {resolved.round}
                         </Typography>
                     )}
                 </HStack>

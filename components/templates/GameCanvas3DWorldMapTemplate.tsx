@@ -106,12 +106,14 @@ export function GameCanvas3DWorldMapTemplate({
     validMoves,
     attackTargets,
     className,
-}: GameCanvas3DWorldMapTemplateProps): React.JSX.Element {
+}: GameCanvas3DWorldMapTemplateProps): React.JSX.Element | null {
+    const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as WorldMap3DEntity : undefined;
+    if (!resolved) return null;
     return (
         <GameCanvas3D
-            tiles={entity.tiles}
-            units={entity.units}
-            features={entity.features}
+            tiles={resolved.tiles}
+            units={resolved.units}
+            features={resolved.features}
             cameraMode={cameraMode}
             showGrid={showGrid}
             showCoordinates={showCoordinates}

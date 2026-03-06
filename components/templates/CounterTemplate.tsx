@@ -66,17 +66,19 @@ function CounterMinimal({
   onDecrement,
   onIncrement,
   className,
-}: CounterTemplateProps): React.JSX.Element {
+}: CounterTemplateProps): React.JSX.Element | null {
+  const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as CounterEntity : undefined;
+  if (!resolved) return null;
   return (
     <HStack gap="lg" align="center" justify="center" className={className}>
       <Button
         variant="secondary"
         size={sizeStyles[size].button}
         onClick={onDecrement}
-        disabled={entity.decrementDisabled}
+        disabled={resolved.decrementDisabled}
         icon={Minus}
       >
-        {entity.decrementLabel}
+        {resolved.decrementLabel}
       </Button>
       <Typography
         variant="h1"
@@ -85,16 +87,16 @@ function CounterMinimal({
           "font-bold tabular-nums min-w-[3ch] text-center",
         )}
       >
-        {entity.count}
+        {resolved.count}
       </Typography>
       <Button
         variant="secondary"
         size={sizeStyles[size].button}
         onClick={onIncrement}
-        disabled={entity.incrementDisabled}
+        disabled={resolved.incrementDisabled}
         icon={Plus}
       >
-        {entity.incrementLabel}
+        {resolved.incrementLabel}
       </Button>
     </HStack>
   );
@@ -110,7 +112,9 @@ function CounterStandard({
   onIncrement,
   onReset,
   className,
-}: CounterTemplateProps): React.JSX.Element {
+}: CounterTemplateProps): React.JSX.Element | null {
+  const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as CounterEntity : undefined;
+  if (!resolved) return null;
   return (
     <Container size="sm" padding="lg" className={className}>
       <VStack gap="lg" align="center">
@@ -127,21 +131,21 @@ function CounterStandard({
             "font-bold tabular-nums text-primary-600",
           )}
         >
-          {entity.count}
+          {resolved.count}
         </Typography>
         <HStack gap="md">
           <Button
             variant="secondary"
             size={sizeStyles[size].button}
             onClick={onDecrement}
-            disabled={entity.decrementDisabled}
+            disabled={resolved.decrementDisabled}
             icon={Minus}
           />
           <Button
             variant="primary"
             size={sizeStyles[size].button}
             onClick={onIncrement}
-            disabled={entity.incrementDisabled}
+            disabled={resolved.incrementDisabled}
             icon={Plus}
           />
         </HStack>
@@ -170,7 +174,9 @@ function CounterFull({
   onIncrement,
   onReset,
   className,
-}: CounterTemplateProps): React.JSX.Element {
+}: CounterTemplateProps): React.JSX.Element | null {
+  const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as CounterEntity : undefined;
+  if (!resolved) return null;
   return (
     <Container size="sm" padding="lg" className={className}>
       <VStack gap="xl" align="center">
@@ -188,11 +194,11 @@ function CounterFull({
               "font-bold tabular-nums text-primary-600",
             )}
           >
-            {entity.count}
+            {resolved.count}
           </Typography>
-          {entity.rangeText && (
+          {resolved.rangeText && (
             <Typography variant="small" color="muted">
-              {entity.rangeText}
+              {resolved.rangeText}
             </Typography>
           )}
         </VStack>
@@ -201,19 +207,19 @@ function CounterFull({
             variant="secondary"
             size={sizeStyles[size].button}
             onClick={onDecrement}
-            disabled={entity.decrementDisabled}
+            disabled={resolved.decrementDisabled}
             icon={Minus}
           >
-            {entity.decrementLabel}
+            {resolved.decrementLabel}
           </Button>
           <Button
             variant="primary"
             size={sizeStyles[size].button}
             onClick={onIncrement}
-            disabled={entity.incrementDisabled}
+            disabled={resolved.incrementDisabled}
             icon={Plus}
           >
-            {entity.incrementLabel}
+            {resolved.incrementLabel}
           </Button>
         </HStack>
         {showReset && (

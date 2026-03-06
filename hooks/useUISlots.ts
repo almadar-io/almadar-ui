@@ -39,6 +39,8 @@ export type UISlot =
   | 'toast'
   | 'hud-top'
   | 'hud-bottom'
+  | 'hud-left'
+  | 'hud-right'
   | 'floating';
 
 /**
@@ -131,6 +133,8 @@ const DEFAULT_SLOTS: Record<UISlot, SlotContent | null> = {
   toast: null,
   'hud-top': null,
   'hud-bottom': null,
+  'hud-left': null,
+  'hud-right': null,
   floating: null,
 };
 

@@ -43,10 +43,12 @@ export function BattleTemplate({
     scale = 0.45,
     unitScale = 1,
     className,
-}: BattleTemplateProps): React.JSX.Element {
+}: BattleTemplateProps): React.JSX.Element | null {
+    const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as BattleEntity : undefined;
+    if (!resolved) return null;
     return (
         <BattleBoard
-            entity={entity}
+            entity={resolved}
             scale={scale}
             unitScale={unitScale}
             tileClickEvent="TILE_CLICK"

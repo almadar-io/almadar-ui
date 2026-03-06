@@ -105,26 +105,28 @@ export function GameCanvas3DCastleTemplate({
     availableBuildSites,
     showHeader = true,
     className,
-}: GameCanvas3DCastleTemplateProps): React.JSX.Element {
+}: GameCanvas3DCastleTemplateProps): React.JSX.Element | null {
+    const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as Castle3DEntity : undefined;
+    if (!resolved) return null;
     return (
         <VStack className={cn('game-canvas-3d-castle-template', className)}>
             {/* Castle header */}
-            {showHeader && entity.name && (
+            {showHeader && resolved.name && (
                 <HStack gap="md" align="center" className="castle-template__header">
-                    <Typography variant="h2" className="header__name">{entity.name}</Typography>
-                    {entity.level && (
-                        <Typography variant="small" className="header__level">Level {entity.level}</Typography>
+                    <Typography variant="h2" className="header__name">{resolved.name}</Typography>
+                    {resolved.level && (
+                        <Typography variant="small" className="header__level">Level {resolved.level}</Typography>
                     )}
-                    {entity.owner && (
-                        <Typography variant="small" color="muted" className="header__owner">{entity.owner}</Typography>
+                    {resolved.owner && (
+                        <Typography variant="small" color="muted" className="header__owner">{resolved.owner}</Typography>
                     )}
                 </HStack>
             )}
 
             <GameCanvas3D
-                tiles={entity.tiles}
-                units={entity.units}
-                features={entity.features}
+                tiles={resolved.tiles}
+                units={resolved.units}
+                features={resolved.features}
                 cameraMode={cameraMode}
                 showGrid={showGrid}
                 showCoordinates={false}
@@ -139,10 +141,10 @@ export function GameCanvas3DCastleTemplate({
             />
 
             {/* Garrison info overlay */}
-            {entity.units.length > 0 && (
+            {resolved.units.length > 0 && (
                 <HStack gap="sm" align="center" className="castle-template__garrison-info">
                     <Typography variant="small" className="garrison-info__label">Garrison:</Typography>
-                    <Typography variant="small" weight="bold" className="garrison-info__count">{entity.units.length} units</Typography>
+                    <Typography variant="small" weight="bold" className="garrison-info__count">{resolved.units.length} units</Typography>
                 </HStack>
             )}
         </VStack>

@@ -227,7 +227,7 @@ export interface FormProps extends Omit<
   // Schema-based props
   /** Entity type name or schema object. When OrbitalEntity, fields are auto-derived if not provided. */
    
-  entity?: string | OrbitalEntity;
+  entity?: string | OrbitalEntity | readonly Record<string, unknown>[];
   /** Form mode - 'create' for new records, 'edit' for updating existing */
   mode?: "create" | "edit";
   /** Fields definition (schema format) - accepts readonly for generated const arrays */
@@ -410,13 +410,14 @@ export const Form: React.FC<FormProps> = ({
   const resolvedCancelLabel = cancelLabel ?? t('common.cancel');
   const normalizedInitialData = (initialData as Record<string, unknown>) ?? {};
 
-  // Resolve entity: string name or OrbitalEntity schema object
-  const entityName = typeof entity === "string" ? entity : entity?.name;
+  // Resolve entity: string name, OrbitalEntity schema object, or array (ignore arrays)
+  const resolvedEntity = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as OrbitalEntity : undefined;
+  const entityName = typeof entity === "string" ? entity : resolvedEntity?.name;
   const entityDerivedFields: readonly Readonly<SchemaField>[] | undefined =
     React.useMemo(() => {
       if (fields && fields.length > 0) return undefined;
-      if (!entity || typeof entity === "string") return undefined;
-      return entity.fields.map(
+      if (!resolvedEntity) return undefined;
+      return resolvedEntity.fields.map(
         (f): SchemaField => ({
           name: f.name,
           type: f.type,

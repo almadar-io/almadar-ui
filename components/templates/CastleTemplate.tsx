@@ -37,10 +37,12 @@ export function CastleTemplate({
     entity,
     scale = 0.45,
     className,
-}: CastleTemplateProps): React.JSX.Element {
+}: CastleTemplateProps): React.JSX.Element | null {
+    const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as CastleEntity : undefined;
+    if (!resolved) return null;
     return (
         <CastleBoard
-            entity={entity}
+            entity={resolved}
             scale={scale}
             featureClickEvent="FEATURE_CLICK"
             unitClickEvent="UNIT_CLICK"
