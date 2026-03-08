@@ -69,7 +69,7 @@ describe('CardGrid', () => {
 
     render(
       <TestWrapper>
-        <CardGrid entity={mockProducts} fieldNames={['name', 'price']} />
+        <CardGrid entity={mockProducts} fields={['name', 'price']} fieldNames={['name', 'price']} />
       </TestWrapper>
     );
 
@@ -95,7 +95,7 @@ describe('CardGrid', () => {
     render(
       <TestWrapper>
         <SearchController />
-        <CardGrid entity={mockProducts} fieldNames={['name', 'price']} />
+        <CardGrid entity={mockProducts} fields={['name', 'price']} fieldNames={['name', 'price']} />
       </TestWrapper>
     );
 
@@ -131,7 +131,7 @@ describe('CardGrid', () => {
     render(
       <TestWrapper>
         <SearchController />
-        <CardGrid entity={mockProducts} fieldNames={['name', 'price', 'category']} />
+        <CardGrid entity={mockProducts} fields={['name', 'price', 'category']} fieldNames={['name', 'price', 'category']} />
       </TestWrapper>
     );
 
@@ -171,7 +171,7 @@ describe('CardGrid', () => {
     render(
       <TestWrapper>
         <SearchController />
-        <CardGrid entity={mockProducts} fieldNames={['name', 'price']} />
+        <CardGrid entity={mockProducts} fields={['name', 'price']} fieldNames={['name', 'price']} />
       </TestWrapper>
     );
 
@@ -217,6 +217,7 @@ describe('CardGrid', () => {
         <EventListener />
         <CardGrid
           entity={mockProducts}
+          fields={['name', 'price']}
           fieldNames={['name', 'price']}
           itemActions={[{ label: 'View', event: 'VIEW' }]}
         />
@@ -272,6 +273,7 @@ describe('CardGrid navigation', () => {
                     <LocationTracker />
                     <CardGrid
                       entity={mockProducts}
+                      fields={['name', 'price']}
                       fieldNames={['name', 'price']}
                       itemActions={[{ label: 'View', navigatesTo: '/products/{{row.id}}' }]}
                     />
@@ -327,6 +329,7 @@ describe('CardGrid navigation', () => {
                     <LocationTracker />
                     <CardGrid
                       entity={mockItems}
+                      fields={['name']}
                       fieldNames={['name']}
                       itemActions={[{ label: 'View', navigatesTo: '/{{row.category}}/{{row.id}}' }]}
                     />
@@ -368,6 +371,7 @@ describe('CardGrid navigation', () => {
         <EventListener />
         <CardGrid
           entity={mockProducts}
+          fields={['name', 'price']}
           fieldNames={['name', 'price']}
           itemActions={[{ label: 'View', navigatesTo: '/products/{{row.id}}' }]}
         />

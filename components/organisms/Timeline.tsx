@@ -56,7 +56,7 @@ export interface TimelineProps extends EntityDisplayProps<TimelineItem> {
     /** Timeline items */
     items?: readonly TimelineItem[];
     /** Fields to display */
-    fields?: readonly string[];
+    fields: readonly string[];
     /** Actions per item */
     itemActions?: readonly TimelineAction[];
 }

@@ -89,12 +89,17 @@ export function InventoryPanel({
   const [hoveredSlot, setHoveredSlot] = useState<number | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
+  // Defensive: ensure items is always a valid array even if props are malformed
+  const safeItems = Array.isArray(items) ? items : [];
+  const safeSlots = typeof slots === 'number' && slots > 0 ? slots : 0;
+  const safeColumns = typeof columns === 'number' && columns > 0 ? columns : 1;
+
   // Create slot array with items mapped to indices
-  const slotArray = Array.from({ length: slots }, (_, index) => {
-    return items[index] ?? null;
+  const slotArray = Array.from({ length: safeSlots }, (_, index) => {
+    return safeItems[index] ?? null;
   });
 
-  const rows = Math.ceil(slots / columns);
+  const rows = Math.ceil(safeSlots / safeColumns);
 
   const handleSlotClick = useCallback((index: number) => {
     if (selectSlotEvent) eventBus.emit(`UI:${selectSlotEvent}`, { index });
@@ -131,7 +136,7 @@ export function InventoryPanel({
         break;
       case 'ArrowRight':
         e.preventDefault();
-        onSelectSlot?.(Math.min(index + 1, slots - 1));
+        onSelectSlot?.(Math.min(index + 1, safeSlots - 1));
         break;
       case 'ArrowLeft':
         e.preventDefault();
@@ -139,14 +144,14 @@ export function InventoryPanel({
         break;
       case 'ArrowDown':
         e.preventDefault();
-        onSelectSlot?.(Math.min(index + columns, slots - 1));
+        onSelectSlot?.(Math.min(index + safeColumns, safeSlots - 1));
         break;
       case 'ArrowUp':
         e.preventDefault();
-        onSelectSlot?.(Math.max(index - columns, 0));
+        onSelectSlot?.(Math.max(index - safeColumns, 0));
         break;
     }
-  }, [slotArray, onUseItem, onDropItem, onSelectSlot, columns, slots, useItemEvent, dropItemEvent, eventBus]);
+  }, [slotArray, onUseItem, onDropItem, onSelectSlot, safeColumns, safeSlots, useItemEvent, dropItemEvent, eventBus]);
 
   const handleMouseEnter = useCallback((e: React.MouseEvent, index: number) => {
     if (showTooltips && slotArray[index]) {
@@ -170,7 +175,7 @@ export function InventoryPanel({
       <div
         className="grid gap-1 bg-gray-900 p-2 rounded-lg border border-gray-700"
         style={{
-          gridTemplateColumns: `repeat(${columns}, ${slotSize}px)`,
+          gridTemplateColumns: `repeat(${safeColumns}, ${slotSize}px)`,
           gridTemplateRows: `repeat(${rows}, ${slotSize}px)`,
         }}
       >

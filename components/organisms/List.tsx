@@ -98,7 +98,7 @@ export interface ListProps extends EntityDisplayProps {
   renderItem?: (item: ListItem, index: number) => React.ReactNode;
   children?: React.ReactNode;
   /** Fields to display - accepts string[] or {key, header}[] for unified interface */
-  fields?: readonly FieldDef[];
+  fields: readonly FieldDef[];
   /** Alias for fields - backwards compatibility */
   fieldNames?: readonly string[];
 }

@@ -30,6 +30,26 @@ export interface Column<T> {
 }
 
 /**
+ * Convert a camelCase, PascalCase, ALLCAPS, or snake_case field name
+ * to a human-readable header: "estimatedDelivery" → "Estimated Delivery",
+ * "PURCHASEPRICE" → "Purchase Price", "is_active" → "Is Active".
+ */
+function humanizeFieldName(name: string): string {
+  return name
+    // Insert space before uppercase letters preceded by a lowercase letter: "estimatedDelivery" → "estimated Delivery"
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    // Insert space between consecutive uppercase and a following lowercase: "HTMLParser" → "HTML Parser"
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+    // Replace underscores/hyphens with spaces
+    .replace(/[_-]/g, " ")
+    // Title-case each word
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    // Lowercase remaining chars within all-caps runs that became words
+    .replace(/\b([A-Z])([A-Z]+)\b/g, (_, first: string, rest: string) => first + rest.toLowerCase())
+    .trim();
+}
+
+/**
  * Normalize column input - accepts either Column objects or string field names.
  * String field names are converted to Column objects with auto-generated headers.
  * Accepts readonly arrays for compatibility with generated const arrays.
@@ -39,15 +59,22 @@ function normalizeColumns<T>(
 ): Column<T>[] {
   return columns.map((col) => {
     if (typeof col === "string") {
-      const header = col
-        .replace(/([A-Z])/g, " $1")
-        .replace(/_/g, " ")
-        .replace(/^\w/, (c) => c.toUpperCase())
-        .trim();
+      const header = humanizeFieldName(col);
       return { key: col, header } as Column<T>;
     }
     return col;
   });
+}
+
+/**
+ * Detect boolean values (actual booleans or "true"/"false" strings)
+ * and return the boolean, or null if the value is not boolean-like.
+ */
+function asBooleanValue(value: unknown): boolean | null {
+  if (typeof value === "boolean") return value;
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return null;
 }
 
 export interface RowAction<T> {
@@ -62,7 +89,7 @@ export interface RowAction<T> {
 export interface DataTableProps<T extends { id: string | number }>
   extends EntityDisplayProps<T> {
   /** Fields to display - accepts string[] or Column[] for unified interface. Alias for columns */
-  fields?: readonly Column<T>[] | readonly string[];
+  fields: readonly Column<T>[] | readonly string[];
   /** Columns can be Column objects or simple string field names */
   columns?: readonly Column<T>[] | readonly string[];
   /** Item actions from generated code - maps to rowActions */
@@ -492,7 +519,17 @@ export function DataTable<T extends { id: string | number }>({
                       >
                         {col.render
                           ? col.render(cellValue, row, rowIndex)
-                          : String(cellValue ?? "")}
+                          : (() => {
+                              const boolVal = asBooleanValue(cellValue);
+                              if (boolVal !== null) {
+                                return boolVal ? (
+                                  <Badge variant="success">{t("common.yes")}</Badge>
+                                ) : (
+                                  <Badge variant="neutral">{t("common.no")}</Badge>
+                                );
+                              }
+                              return String(cellValue ?? "");
+                            })()}
                       </td>
                     );
                   })}

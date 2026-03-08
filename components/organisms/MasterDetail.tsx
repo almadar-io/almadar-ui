@@ -17,7 +17,7 @@ import type { EntityDisplayProps } from './types';
 
 export interface MasterDetailProps<T extends { id: string | number } = { id: string | number }> extends EntityDisplayProps<T> {
   /** Fields to show in the master list (maps to DataTable columns) */
-  masterFields?: readonly string[];
+  masterFields: readonly string[];
   /** Fields for detail view (passed through but typically handled by separate render_ui) */
   detailFields?: readonly string[];
   /** Loading state (alias for isLoading) */
@@ -26,7 +26,7 @@ export interface MasterDetailProps<T extends { id: string | number } = { id: str
 
 export function MasterDetail<T extends { id: string | number }>({
   entity,
-  masterFields = [],
+  masterFields,
   detailFields: _detailFields, // Captured but not used here - detail handled separately
   loading: externalLoading,
   isLoading: externalIsLoading,
@@ -40,6 +40,7 @@ export function MasterDetail<T extends { id: string | number }>({
 
   return (
     <DataTable<T>
+      fields={masterFields}
       columns={masterFields}
       entity={entity}
       isLoading={loading || isLoading}

@@ -114,8 +114,8 @@ export function getSlotDefinition(slot: UISlot): SlotDefinition {
 /**
  * Check if a slot is a portal slot.
  */
-export function isPortalSlot(slot: UISlot): boolean {
-  return SLOT_DEFINITIONS[slot]?.type === 'portal';
+export function isPortalSlot(slot: string): boolean {
+  return SLOT_DEFINITIONS[slot as UISlot]?.type === 'portal';
 }
 
 /**

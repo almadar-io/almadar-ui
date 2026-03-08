@@ -78,6 +78,7 @@ export {
 export { ThemeToggle, type ThemeToggleProps } from "./ThemeToggle";
 export { ThemeSelector } from "./ThemeSelector";
 export { Overlay, type OverlayProps } from "./Overlay";
+export { FlipContainer, type FlipContainerProps } from "./FlipContainer";
 
 // Inspection form components
 export {
@@ -90,6 +91,10 @@ export {
   type LawReferenceTooltipProps,
   type LawReference,
 } from "./LawReferenceTooltip";
+
+// Calendar atoms
+export { DayCell, type DayCellProps } from "./DayCell";
+export { TimeSlotCell, type TimeSlotCellProps } from "./TimeSlotCell";
 
 // Game atom components
 export * from "./game";

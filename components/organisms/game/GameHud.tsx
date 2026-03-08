@@ -82,8 +82,10 @@ export function GameHud({
   transparent = true,
 }: GameHudProps) {
   // Convert elements to stats if provided, with items as alias for stats
-  const stats =
-    propStats ?? items ?? (elements ? convertElementsToStats(elements) : []);
+  // Defensive: ensure stats is always a valid array even if props are malformed
+  const rawStats =
+    propStats ?? items ?? (elements && Array.isArray(elements) ? convertElementsToStats(elements) : []);
+  const stats = Array.isArray(rawStats) ? rawStats : [];
 
   // Determine position from props or derive from elements
   const position = propPosition ?? "corners";

@@ -21,7 +21,7 @@ export const Overlay: React.FC<OverlayProps> = ({
   isVisible = true,
   onClick,
   className,
-  blur = true,
+  blur = false,
   action,
 }) => {
   const eventBus = useEventBus();
@@ -38,7 +38,7 @@ export const Overlay: React.FC<OverlayProps> = ({
   return (
     <div
       className={cn(
-        "fixed inset-0 z-40 bg-[var(--color-background)]/80",
+        "fixed inset-0 z-40 bg-black/50",
         blur && "backdrop-blur-sm",
         className,
       )}

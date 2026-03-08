@@ -363,6 +363,16 @@ function UISlotComponent({
     if (pattern === "clear") {
       return null;
     }
+
+    // Portal slots (modal, drawer, toast): render through a portal with proper wrapper
+    if (isPortalSlot(slot)) {
+      return (
+        <CompiledPortal slot={slot} className={className} pattern={pattern} sourceTrait={sourceTrait}>
+          {children}
+        </CompiledPortal>
+      );
+    }
+
     return (
       <Box
         id={`slot-${slot}`}
@@ -429,6 +439,98 @@ function UISlotComponent({
       {wrappedContent}
     </Box>
   );
+}
+
+// ============================================================================
+// Compiled Portal — wraps compiled children in portal for modal/drawer/toast
+// ============================================================================
+
+interface CompiledPortalProps {
+  slot: UISlot;
+  className?: string;
+  pattern?: string;
+  sourceTrait?: string;
+  children: React.ReactNode;
+}
+
+function CompiledPortal({ slot, className, pattern, sourceTrait, children }: CompiledPortalProps): React.ReactElement | null {
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
+  const eventBus = useUISlots();
+
+  useEffect(() => {
+    let root = document.getElementById("ui-slot-portal-root");
+    if (!root) {
+      root = document.createElement("div");
+      root.id = "ui-slot-portal-root";
+      document.body.appendChild(root);
+    }
+    setPortalRoot(root);
+  }, []);
+
+  const handleDismiss = () => {
+    eventBus.clear(slot);
+  };
+
+  if (!portalRoot) return null;
+
+  let wrapper: React.ReactElement;
+
+  switch (slot) {
+    case "modal":
+      wrapper = (
+        <Modal isOpen={true} onClose={handleDismiss} showCloseButton={false}>
+          <Box
+            className={cn("ui-slot", `ui-slot-${slot}`, className)}
+            data-pattern={pattern}
+            data-source-trait={sourceTrait}
+          >
+            {children}
+          </Box>
+        </Modal>
+      );
+      break;
+
+    case "drawer":
+      wrapper = (
+        <Drawer isOpen={true} onClose={handleDismiss} position="right">
+          <Box
+            className={cn("ui-slot", `ui-slot-${slot}`, className)}
+            data-pattern={pattern}
+            data-source-trait={sourceTrait}
+          >
+            {children}
+          </Box>
+        </Drawer>
+      );
+      break;
+
+    case "toast":
+      wrapper = (
+        <Box className="fixed top-4 right-4 z-50">
+          <Box
+            className={cn("ui-slot", `ui-slot-${slot}`, className)}
+            data-pattern={pattern}
+            data-source-trait={sourceTrait}
+          >
+            {children}
+          </Box>
+        </Box>
+      );
+      break;
+
+    default:
+      wrapper = (
+        <Box
+          className={cn("ui-slot", `ui-slot-${slot}`, className)}
+          data-pattern={pattern}
+          data-source-trait={sourceTrait}
+        >
+          {children}
+        </Box>
+      );
+  }
+
+  return createPortal(wrapper, portalRoot);
 }
 
 // ============================================================================

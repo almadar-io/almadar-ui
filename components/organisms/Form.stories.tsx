@@ -434,6 +434,7 @@ export const WithSections: Story = {
         </Typography>
         <Form
           entity="InspectionForm"
+          fields={[]}
           sections={formSections}
           initialData={formValues}
           evaluationContext={{

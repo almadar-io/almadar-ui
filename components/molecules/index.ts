@@ -42,7 +42,20 @@ export { QuizBlock, type QuizBlockProps } from './QuizBlock';
 // Diagram scaling
 export { ScaledDiagram, type ScaledDiagramProps } from './ScaledDiagram';
 
+// Calendar
+export { CalendarGrid, type CalendarGridProps, type CalendarEvent } from './CalendarGrid';
+
 // Inspection form components
 export { RepeatableFormSection, type RepeatableFormSectionProps, type RepeatableItem } from './RepeatableFormSection';
 export { ViolationAlert, type ViolationAlertProps, type ViolationRecord } from './ViolationAlert';
 export { FormSectionHeader, type FormSectionHeaderProps } from './FormSectionHeader';
+export { FlipCard, type FlipCardProps } from './FlipCard';
+
+// Chart molecules
+export { DateRangeSelector, type DateRangeSelectorProps, type DateRangeSelectorOption } from './DateRangeSelector';
+export { ChartLegend, type ChartLegendProps, type ChartLegendItem } from './ChartLegend';
+export { LineChart, type LineChartProps, type ChartDataPoint } from './LineChart';
+export { ProgressDots, type ProgressDotsProps, type DotState, type DotSize } from './ProgressDots';
+
+// Graph visualization
+export { GraphView, type GraphViewProps, type GraphViewNode, type GraphViewEdge } from './GraphView';

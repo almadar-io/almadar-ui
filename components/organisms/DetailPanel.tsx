@@ -8,7 +8,7 @@
  * See EntityDisplayProps in ./types.ts for base prop contract.
  */
 
-import React, { useCallback } from "react";
+import React, { useCallback, Suspense, lazy } from "react";
 import {
   Calendar,
   Tag,
@@ -131,6 +131,92 @@ function formatFieldValue(value: unknown, fieldName: string): string {
   return String(value);
 }
 
+// Lazy-load react-markdown only when needed
+const ReactMarkdown = lazy(() => import("react-markdown"));
+
+/** Typed field definition from entity schema (name + type). */
+interface TypedFieldDef {
+  name: string;
+  type: string;
+}
+
+/**
+ * Render a field value with rich content support based on entity field type.
+ * Uses the schema-declared type (not regex heuristics) to decide rendering.
+ */
+function renderRichFieldValue(
+  value: unknown,
+  fieldName: string,
+  fieldType?: string,
+): React.ReactNode {
+  if (value === undefined || value === null) return "—";
+
+  const str = String(value);
+
+  switch (fieldType) {
+    case "image":
+    case "url": {
+      // Only render as image if the URL looks like an image
+      if (str.match(/\.(png|jpe?g|gif|svg|webp|avif)(\?|$)/i) || str.startsWith("data:image/")) {
+        return (
+          <Box className="mt-1 max-w-full">
+            <img
+              src={str}
+              alt={formatFieldLabel(fieldName)}
+              className="max-w-full max-h-64 rounded-[var(--radius-md)] object-contain"
+              loading="lazy"
+            />
+          </Box>
+        );
+      }
+      return str;
+    }
+
+    case "markdown":
+    case "richtext":
+      return (
+        <Suspense fallback={<Typography variant="body" className="break-words">{str}</Typography>}>
+          <Box className="prose prose-sm max-w-none dark:prose-invert">
+            <ReactMarkdown>{str}</ReactMarkdown>
+          </Box>
+        </Suspense>
+      );
+
+    case "code":
+      return (
+        <Box className="mt-1 rounded-[var(--radius-md)] bg-[var(--color-muted)] p-3 overflow-x-auto">
+          <pre className="text-sm font-mono whitespace-pre-wrap break-words m-0">
+            <code>{str}</code>
+          </pre>
+        </Box>
+      );
+
+    case "html":
+      return (
+        <Box className="mt-1 prose prose-sm max-w-none dark:prose-invert break-words">
+          <Typography variant="body">{str}</Typography>
+        </Box>
+      );
+
+    case "date":
+    case "datetime": {
+      const d = new Date(str);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString(undefined, {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+          ...(fieldType === "datetime" ? { hour: "2-digit", minute: "2-digit" } : {}),
+        });
+      }
+      return str;
+    }
+
+    default:
+      return formatFieldValue(value, fieldName);
+  }
+}
+
 export interface DetailField {
   label: string;
   value: React.ReactNode;
@@ -159,16 +245,35 @@ export interface DetailPanelAction {
 }
 
 /**
- * Field definition for unified interface - can be a simple string or object
+ * Field definition for unified interface - can be a simple string, key/header object, or typed object
  */
-export type FieldDef = string | { key: string; header?: string };
+export type FieldDef = string | { key: string; header?: string } | { name: string; type: string };
 
 /**
  * Normalize fields to simple string array
  */
 function normalizeFieldDefs(fields: readonly FieldDef[] | undefined): string[] {
   if (!fields) return [];
-  return fields.map((f) => (typeof f === "string" ? f : f.key));
+  return fields.map((f) => {
+    if (typeof f === "string") return f;
+    if ("key" in f) return f.key;
+    if ("name" in f) return f.name;
+    return String(f);
+  });
+}
+
+/**
+ * Build a map of field name -> field type from typed field definitions.
+ */
+function buildFieldTypeMap(fields: readonly FieldDef[] | undefined): Record<string, string> {
+  const map: Record<string, string> = {};
+  if (!fields) return map;
+  for (const f of fields) {
+    if (typeof f === "object" && "name" in f && "type" in f) {
+      map[f.name] = f.type;
+    }
+  }
+  return map;
 }
 
 export interface DetailPanelProps extends EntityDisplayProps {
@@ -186,7 +291,7 @@ export interface DetailPanelProps extends EntityDisplayProps {
   slideOver?: boolean;
 
   /** Fields to display - accepts string[], {key, header}[], or DetailField[] */
-  fields?: readonly (FieldDef | DetailField)[];
+  fields: readonly (FieldDef | DetailField)[];
   /** Alias for fields - backwards compatibility */
   fieldNames?: readonly string[];
   /** Initial data for edit mode (passed by compiler) */
@@ -234,13 +339,18 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     const first = arr[0];
     return (
       typeof first === "string" ||
-      (typeof first === "object" && first !== null && "key" in first)
+      (typeof first === "object" && first !== null && ("key" in first || "name" in first))
     );
   };
 
   const effectiveFieldNames = isFieldDefArray(propFields)
     ? normalizeFieldDefs(propFields)
     : fieldNames;
+
+  // Build field type map from typed field definitions
+  const fieldTypeMap = isFieldDefArray(propFields)
+    ? buildFieldTypeMap(propFields)
+    : {};
 
   // Handle action click with event bus and navigation support
   const handleActionClick = useCallback(
@@ -357,7 +467,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         if (value !== undefined && value !== null) {
           overviewFields.push({
             label: formatFieldLabel(field),
-            value: formatFieldValue(value, field),
+            value: renderRichFieldValue(value, field, fieldTypeMap[field]),
             icon: getFieldIcon(field),
           });
         }
@@ -377,7 +487,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         if (value !== undefined && value !== null) {
           metricsFields.push({
             label: formatFieldLabel(field),
-            value: formatFieldValue(value, field),
+            value: renderRichFieldValue(value, field, fieldTypeMap[field]),
             icon: getFieldIcon(field),
           });
         }
@@ -397,7 +507,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         if (value !== undefined && value !== null) {
           timelineFields.push({
             label: formatFieldLabel(field),
-            value: formatFieldValue(value, field),
+            value: renderRichFieldValue(value, field, fieldTypeMap[field]),
             icon: getFieldIcon(field),
           });
         }
@@ -417,7 +527,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         if (value !== undefined && value !== null) {
           descFields.push({
             label: formatFieldLabel(field),
-            value: String(value),
+            value: renderRichFieldValue(value, field, fieldTypeMap[field]),
             icon: getFieldIcon(field),
           });
         }
@@ -464,167 +574,175 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     );
   }
 
+  // Flatten all section fields into a single list (no section headings)
+  const allFields: DetailField[] = [];
+  if (sections) {
+    for (const section of sections) {
+      for (const field of section.fields) {
+        if (typeof field === "string") {
+          const value = normalizedData ? getNestedValue(normalizedData, field) : undefined;
+          allFields.push({
+            label: formatFieldLabel(field),
+            value: renderRichFieldValue(value, field, fieldTypeMap[field]),
+            icon: getFieldIcon(field),
+          });
+        } else {
+          allFields.push(field);
+        }
+      }
+    }
+  }
+
+  // Separate close action from other actions. Close always renders as X top-right.
+  const closeAction = actions?.find(
+    (a) => a.event === "CLOSE" || a.event === "CANCEL" || a.label?.toLowerCase() === "close",
+  );
+  const otherActions = actions?.filter((a) => a !== closeAction) ?? [];
+  // If no explicit close action, create a default one using handleClose
+  const effectiveCloseAction = closeAction ?? { event: undefined as string | undefined, label: "Close" };
+
   const content = (
-    <VStack gap="lg">
-      {/* Header Card */}
-      <Card variant="elevated">
-        <VStack gap="md" className="p-6">
-          <HStack justify="between" align="start">
-            <VStack gap="sm" flex className="min-w-0">
-              {avatar}
+    <Card variant="elevated">
+      <VStack gap="md" className="p-6">
+        {/* Top bar: action buttons + close X on the right */}
+        <HStack justify="end" align="center" gap="xs">
+          {otherActions.map((action, idx) => (
+            <Button
+              key={idx}
+              variant={action.variant || "secondary"}
+              size="sm"
+              action={action.event}
+              actionPayload={{ row: normalizedData }}
+              icon={action.icon}
+              data-testid={action.event ? `action-${action.event}` : undefined}
+            >
+              {action.label}
+            </Button>
+          ))}
+          <Button
+            variant="ghost"
+            size="sm"
+            action={effectiveCloseAction.event}
+            actionPayload={{ row: normalizedData }}
+            onClick={effectiveCloseAction.event ? undefined : handleClose}
+            icon={X}
+            data-testid={effectiveCloseAction.event ? `action-${effectiveCloseAction.event}` : "action-close"}
+          />
+        </HStack>
 
-              <Typography variant="h2" weight="bold">
-                {title || "Details"}
-              </Typography>
+        {/* Avatar + Title */}
+        {avatar}
+        <Typography variant="h2" weight="bold">
+          {title || "Details"}
+        </Typography>
 
-              {subtitle && (
-                <Typography variant="body" color="secondary">
-                  {subtitle}
-                </Typography>
-              )}
+        {subtitle && (
+          <Typography variant="body" color="secondary">
+            {subtitle}
+          </Typography>
+        )}
 
-              {/* Status badges */}
-              {normalizedData && effectiveFieldNames && (
-                <HStack gap="xs" wrap>
-                  {effectiveFieldNames
-                    .filter(
-                      (f) =>
-                        f.toLowerCase().includes("status") ||
-                        f.toLowerCase().includes("priority"),
-                    )
-                    .map((field) => {
-                      const value = getNestedValue(normalizedData, field);
-                      if (!value) return null;
-                      return (
-                        <Badge
-                          key={field}
-                          variant={getBadgeVariant(field, String(value))}
-                        >
-                          {String(value)}
-                        </Badge>
-                      );
-                    })}
-                </HStack>
-              )}
-
-              {status && (
-                <Badge variant={status.variant ?? "default"}>
-                  {status.label}
-                </Badge>
-              )}
-            </VStack>
-
-            {slideOver && (
-              <Button variant="ghost" size="sm" onClick={handleClose} icon={X} />
-            )}
-          </HStack>
-
-          {/* Progress bars */}
-          {normalizedData &&
-            effectiveFieldNames &&
+        {/* Status badges inline with title */}
+        <HStack gap="xs" wrap>
+          {normalizedData && effectiveFieldNames &&
             effectiveFieldNames
               .filter(
                 (f) =>
-                  f.toLowerCase().includes("progress") ||
-                  f.toLowerCase().includes("percent"),
+                  f.toLowerCase().includes("status") ||
+                  f.toLowerCase().includes("priority"),
               )
               .map((field) => {
                 const value = getNestedValue(normalizedData, field);
-                if (
-                  value === undefined ||
-                  value === null ||
-                  typeof value !== "number"
-                )
-                  return null;
+                if (!value) return null;
                 return (
-                  <VStack key={field} gap="xs" className="w-full">
-                    <HStack justify="between">
-                      <Typography variant="small" color="secondary">
-                        {formatFieldLabel(field)}
-                      </Typography>
-                      <Typography variant="small" weight="medium">
-                        {value}%
-                      </Typography>
-                    </HStack>
-                    <ProgressBar value={value} />
-                  </VStack>
+                  <Badge
+                    key={field}
+                    variant={getBadgeVariant(field, String(value))}
+                  >
+                    {String(value)}
+                  </Badge>
                 );
               })}
-
-          {/* Actions */}
-          {actions && actions.length > 0 && (
-            <>
-              <Divider />
-              <HStack gap="sm">
-                {actions.map((action, idx) => (
-                  <Button
-                    key={idx}
-                    variant={action.variant || "secondary"}
-                    action={action.event}
-                    actionPayload={{ row: normalizedData }}
-                    icon={action.icon}
-                    data-testid={action.event ? `action-${action.event}` : undefined}
-                  >
-                    {action.label}
-                  </Button>
-                ))}
-              </HStack>
-            </>
+          {status && (
+            <Badge variant={status.variant ?? "default"}>
+              {status.label}
+            </Badge>
           )}
-        </VStack>
-      </Card>
+        </HStack>
 
-      {/* Sections */}
-      {sections &&
-        sections.map((section, sectionIdx) => (
-          <Card key={sectionIdx} variant="bordered">
-            <VStack gap="md" className="p-6">
-              <Typography variant="h4" weight="semibold">
-                {section.title}
-              </Typography>
-
-              <Divider />
-
-              <SimpleGrid minChildWidth="250px" maxCols={2} gap="lg">
-                {section.fields.map((field, fieldIdx) => {
-                  const fieldKey = typeof field === "string" ? field : undefined;
-                  const resolved: DetailField = typeof field === "string"
-                    ? { label: formatFieldLabel(field), value: normalizedData ? formatFieldValue(getNestedValue(normalizedData, field), field) : "—", icon: getFieldIcon(field) }
-                    : field;
-                  return (
-                  <HStack key={fieldIdx} gap="sm" align="start" data-field={fieldKey}>
-                    {resolved.icon && (
-                      <Icon
-                        icon={resolved.icon}
-                        size="md"
-                        className="text-[var(--color-muted-foreground)] mt-1"
-                      />
-                    )}
-
-                    <VStack gap="xs" flex className="min-w-0">
-                      <Typography
-                        variant="small"
-                        color="secondary"
-                        weight="medium"
-                      >
-                        {resolved.label}
-                      </Typography>
-
-                      <Typography variant="body" className="break-words">
-                        {resolved.value || "—"}
-                      </Typography>
-                    </VStack>
+        {/* Progress bars */}
+        {normalizedData &&
+          effectiveFieldNames &&
+          effectiveFieldNames
+            .filter(
+              (f) =>
+                f.toLowerCase().includes("progress") ||
+                f.toLowerCase().includes("percent"),
+            )
+            .map((field) => {
+              const value = getNestedValue(normalizedData, field);
+              if (
+                value === undefined ||
+                value === null ||
+                typeof value !== "number"
+              )
+                return null;
+              return (
+                <VStack key={field} gap="xs" className="w-full">
+                  <HStack justify="between">
+                    <Typography variant="small" color="secondary">
+                      {formatFieldLabel(field)}
+                    </Typography>
+                    <Typography variant="small" weight="medium">
+                      {value}%
+                    </Typography>
                   </HStack>
-                  );
-                })}
-              </SimpleGrid>
-            </VStack>
-          </Card>
-        ))}
+                  <ProgressBar value={value} />
+                </VStack>
+              );
+            })}
 
-      {/* Footer */}
-      {footer && <Card variant="bordered">{footer}</Card>}
-    </VStack>
+        {/* All fields in a flat grid (no section headings) */}
+        {allFields.length > 0 && (
+          <>
+            <Divider />
+            <SimpleGrid minChildWidth="250px" maxCols={2} gap="lg">
+              {allFields.map((field, idx) => (
+                <HStack key={idx} gap="sm" align="start">
+                  {field.icon && (
+                    <Icon
+                      icon={field.icon}
+                      size="md"
+                      className="text-[var(--color-muted-foreground)] mt-1"
+                    />
+                  )}
+                  <VStack gap="xs" flex className="min-w-0">
+                    <Typography
+                      variant="small"
+                      color="secondary"
+                      weight="medium"
+                    >
+                      {field.label}
+                    </Typography>
+                    <Typography variant="body" className="break-words">
+                      {field.value || "—"}
+                    </Typography>
+                  </VStack>
+                </HStack>
+              ))}
+            </SimpleGrid>
+          </>
+        )}
+
+        {/* Footer */}
+        {footer && (
+          <>
+            <Divider />
+            {footer}
+          </>
+        )}
+      </VStack>
+    </Card>
   );
 
   return (

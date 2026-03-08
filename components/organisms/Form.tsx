@@ -231,7 +231,7 @@ export interface FormProps extends Omit<
   /** Form mode - 'create' for new records, 'edit' for updating existing */
   mode?: "create" | "edit";
   /** Fields definition (schema format) - accepts readonly for generated const arrays */
-  fields?: readonly Readonly<SchemaField>[];
+  fields: readonly Readonly<SchemaField>[];
   /** Initial form data */
   initialData?: Record<string, unknown> | unknown;
   /** Loading state */
@@ -252,6 +252,8 @@ export interface FormProps extends Omit<
   submitEvent?: string;
   /** Event to dispatch on cancel (defaults to 'CANCEL') */
   cancelEvent?: string;
+  /** Entity ID binding for edit mode (triggers initialData from selectedEntity in compiled code) */
+  entityId?: string;
 
   // Relation data props
   /** Data for relation fields: { fieldName: RelationOption[] } */
