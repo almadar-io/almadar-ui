@@ -132,6 +132,7 @@ import {
   ContainerPattern,
   SimpleGridPattern,
   FloatButtonPattern,
+  MapViewPattern,
 } from "./ComponentPatterns";
 
 // Custom pattern import
@@ -206,6 +207,8 @@ export const COMPONENT_REGISTRY: Record<string, React.ComponentType<any>> = {
   ContainerPattern,
   SimpleGridPattern,
   FloatButtonPattern,
+  // Map patterns
+  MapViewPattern,
   // Custom pattern
   CustomPattern,
 };
@@ -275,6 +278,8 @@ const PATTERN_TO_COMPONENT: Record<string, string> = {
   "float-button": "FloatButtonPattern",
   // Custom pattern
   custom: "CustomPattern",
+  // Map patterns
+  "map-view": "MapViewPattern",
 };
 
 /**

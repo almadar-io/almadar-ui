@@ -37,6 +37,7 @@ import { Accordion } from '../molecules/Accordion';
 import { Container } from '../molecules/Container';
 import { SimpleGrid } from '../molecules/SimpleGrid';
 import { FloatingActionButton } from '../molecules/FloatingActionButton';
+import { MapView, type MapViewProps } from '../molecules/MapView';
 
 /**
  * Base closed circuit props required by all organism components.
@@ -978,6 +979,46 @@ export function FloatButtonPattern({
 FloatButtonPattern.displayName = 'FloatButtonPattern';
 
 // ============================================================================
+// Map Pattern
+// ============================================================================
+
+export type MapViewPatternProps = Omit<MapViewProps, 'onMapClick' | 'onMarkerClick'> & ClosedCircuitProps;
+
+/**
+ * Map view pattern. Passes through all MapView props.
+ * Event dispatch is handled internally by MapView via mapClickEvent/markerClickEvent.
+ */
+export function MapViewPattern({
+  markers,
+  centerLat,
+  centerLng,
+  zoom,
+  height,
+  mapClickEvent,
+  markerClickEvent,
+  showClickedPin,
+  className,
+  showAttribution,
+}: MapViewPatternProps): React.ReactElement {
+  return (
+    <MapView
+      markers={markers}
+      centerLat={centerLat}
+      centerLng={centerLng}
+      zoom={zoom}
+      height={height}
+      mapClickEvent={mapClickEvent}
+      markerClickEvent={markerClickEvent}
+      showClickedPin={showClickedPin}
+      className={className}
+      showAttribution={showAttribution}
+    />
+  );
+}
+
+MapViewPattern.displayName = 'MapViewPattern';
+
+// ============================================================================
 // Export Pattern Registry
 // ============================================================================
 
@@ -1015,4 +1056,6 @@ export const COMPONENT_PATTERNS = {
   'container': ContainerPattern,
   'simple-grid': SimpleGridPattern,
   'float-button': FloatButtonPattern,
+  // Map
+  'map-view': MapViewPattern,
 } as const;

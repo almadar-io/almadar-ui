@@ -57,8 +57,14 @@ export { ChartLegend, type ChartLegendProps, type ChartLegendItem } from './Char
 export { LineChart, type LineChartProps, type ChartDataPoint } from './LineChart';
 export { ProgressDots, type ProgressDotsProps, type DotState, type DotSize } from './ProgressDots';
 
+// Game molecules
+export * from './game';
+
 // Graph visualization
 export { GraphView, type GraphViewProps, type GraphViewNode, type GraphViewEdge } from './GraphView';
+
+// Map visualization
+export { MapView, type MapViewProps, type MapMarkerData } from './MapView';
 
 // Data iteration molecules (simplified from organisms)
 export { DataGrid, type DataGridProps, type DataGridField, type DataGridItemAction } from './DataGrid';

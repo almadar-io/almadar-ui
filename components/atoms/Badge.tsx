@@ -1,5 +1,6 @@
 import React from "react";
 import { cn } from "../../lib/cn";
+import { resolveIcon } from "./Icon";
 
 export type BadgeVariant =
   | "default"
@@ -20,6 +21,8 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   amount?: number;
   /** Badge label text (alternative to children for schema-driven rendering) */
   label?: string;
+  /** Icon name (Lucide icon string) or React node */
+  icon?: React.ReactNode;
 }
 
 // Using CSS variables for theme-aware styling
@@ -64,18 +67,23 @@ const sizeStyles: Record<BadgeSize, string> = {
 };
 
 export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
-  ({ className, variant = "default", size = "sm", label, children, ...props }, ref) => {
+  ({ className, variant = "default", size = "sm", label, icon, children, ...props }, ref) => {
+    const iconSizes: Record<BadgeSize, string> = { sm: "w-3 h-3", md: "w-3.5 h-3.5", lg: "w-4 h-4" };
+    const resolvedIcon = typeof icon === "string"
+      ? (() => { const I = resolveIcon(icon); return I ? <I className={iconSizes[size]} /> : null; })()
+      : icon;
     return (
       <span
         ref={ref}
         className={cn(
-          "inline-flex items-center font-bold rounded-[var(--radius-sm)]",
+          "inline-flex items-center gap-1 font-bold rounded-[var(--radius-sm)]",
           variantStyles[variant],
           sizeStyles[size],
           className,
         )}
         {...props}
       >
+        {resolvedIcon}
         {children || label}
       </span>
     );

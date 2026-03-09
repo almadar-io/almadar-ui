@@ -11,6 +11,7 @@
 // Core Canvas Components
 // ---------------------------------------------------------------------------
 export { IsometricCanvas, type IsometricCanvasProps } from './IsometricCanvas';
+export { PlatformerCanvas, type PlatformerCanvasProps, type PlatformerPlatform, type PlatformerPlayer } from './PlatformerCanvas';
 // GameCanvas3D and Three.js components are NOT barrel-exported because they depend on
 // @react-three/fiber + three which are optional peer dependencies.
 // Import directly from './GameCanvas3D' or './three' if needed.

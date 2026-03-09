@@ -8,6 +8,7 @@ import { Button } from "../atoms/Button";
 import { TrendingUp, TrendingDown, Minus, LucideIcon } from "lucide-react";
 import { useEventBus } from "../../hooks/useEventBus";
 import { useTranslate } from "../../hooks/useTranslate";
+import { resolveIcon } from "../atoms/Icon";
 import type { EntityDisplayProps } from "./types";
 
 /**
@@ -44,8 +45,8 @@ export interface StatCardProps extends EntityDisplayProps {
   trendDirection?: "up" | "down" | "neutral";
   /** Whether up is good (green) or bad (red) */
   invertTrend?: boolean;
-  /** Icon to display */
-  icon?: LucideIcon;
+  /** Icon to display (Lucide component or icon name string) */
+  icon?: LucideIcon | string;
   /** Icon background color */
   iconBg?: string;
   /** Icon color */
@@ -77,7 +78,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   trend: manualTrend,
   trendDirection: manualDirection,
   invertTrend = false,
-  icon: Icon,
+  icon: iconProp,
   iconBg = "bg-[var(--color-muted)]",
   iconColor = "text-[var(--color-foreground)]",
   subtitle,
@@ -89,6 +90,9 @@ export const StatCard: React.FC<StatCardProps> = ({
   isLoading: externalLoading,
   error: externalError,
 }) => {
+  // Resolve icon: accept both LucideIcon components and string names
+  const Icon = typeof iconProp === "string" ? resolveIcon(iconProp) ?? undefined : iconProp;
+
   // Use title as fallback for label
   const labelToUse = propLabel ?? propTitle;
   const eventBus = useEventBus();

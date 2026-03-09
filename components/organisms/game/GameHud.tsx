@@ -14,10 +14,18 @@ export interface GameHudStat extends Omit<StatBadgeProps, "size"> {
  * Used when elements are passed from schema render_ui effects.
  */
 export interface GameHudElement {
-  type: string;
+  type?: string;
   bind?: string;
   position?: string;
   label?: string;
+  /** Direct value (from compiled render-ui effects) */
+  value?: number | string;
+  /** Icon name or node */
+  icon?: React.ReactNode;
+  /** Display format */
+  format?: string;
+  /** Max value (for bars/hearts) */
+  max?: number;
 }
 
 export interface GameHudProps {
@@ -65,9 +73,14 @@ function convertElementsToStats(
     };
 
     return {
-      label: el.label || labelMap[el.type] || el.type,
+      label: el.label || labelMap[el.type ?? ""] || el.type || "",
       source,
       field,
+      // Pass through direct values from compiled render-ui effects
+      ...(el.value !== undefined && { value: el.value }),
+      ...(el.icon !== undefined && { icon: el.icon }),
+      ...(el.format !== undefined && { format: el.format }),
+      ...(el.max !== undefined && { max: el.max }),
     };
   });
 }

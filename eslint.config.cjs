@@ -18,6 +18,7 @@ module.exports = [
     rules: {
       "almadar/no-as-any": "error",
       "almadar/no-import-generated": "error",
+      "almadar/atom-molecule-no-entity-prop": "error",
       // react-compiler: disabled at package level — pre-existing patterns need incremental cleanup
       "react-compiler/react-compiler": "off",
     },

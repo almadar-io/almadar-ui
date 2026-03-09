@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
+import { resolveIcon } from '../../atoms/Icon';
 import { HealthBar } from '../../atoms/game/HealthBar';
 import { ScoreDisplay } from '../../atoms/game/ScoreDisplay';
 
@@ -64,7 +65,7 @@ export function StatBadge({
         className
       )}
     >
-      {icon && <span className="flex-shrink-0 text-lg">{icon}</span>}
+      {icon && <span className="flex-shrink-0 text-lg">{typeof icon === 'string' ? (() => { const I = resolveIcon(icon); return I ? <I className="w-4 h-4" /> : icon; })() : icon}</span>}
       
       <span className="text-gray-400 font-medium">{label}</span>
       
