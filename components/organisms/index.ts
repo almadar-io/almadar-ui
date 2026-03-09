@@ -123,7 +123,6 @@ export {
   Chart,
   type ChartProps,
   type ChartType,
-  type ChartDataPoint,
   type ChartSeries,
 } from "./Chart";
 export {

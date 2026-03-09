@@ -59,3 +59,7 @@ export { ProgressDots, type ProgressDotsProps, type DotState, type DotSize } fro
 
 // Graph visualization
 export { GraphView, type GraphViewProps, type GraphViewNode, type GraphViewEdge } from './GraphView';
+
+// Data iteration molecules (simplified from organisms)
+export { DataGrid, type DataGridProps, type DataGridField, type DataGridItemAction } from './DataGrid';
+export { DataList, type DataListProps, type DataListField, type DataListItemAction } from './DataList';

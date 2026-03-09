@@ -33,6 +33,7 @@ import { useTranslate } from '../../../hooks/useTranslate';
 import { Box } from '../../atoms/Box';
 import { LoadingState } from '../../molecules/LoadingState';
 import { ErrorState } from '../../molecules/ErrorState';
+import { EmptyState } from '../../molecules/EmptyState';
 import type { EntityDisplayProps } from '../types';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from './types/isometric';
 import type { ResolvedFrame } from './types/spriteAnimation';
@@ -948,6 +949,18 @@ export function IsometricCanvas({
         return <LoadingState className={className} />;
     }
 
+    // Empty state: no tiles provided
+    if (sortedTiles.length === 0) {
+        return (
+            <EmptyState
+                title={t('canvas.emptyTitle')}
+                message={t('canvas.emptyMessage')}
+                icon="map"
+                className={className}
+            />
+        );
+    }
+
     return (
         <Box
             ref={containerRef}
@@ -955,6 +968,7 @@ export function IsometricCanvas({
         >
             <canvas
                 ref={canvasRef}
+                data-testid="game-canvas"
                 onClick={handleClick}
                 onMouseDown={enableCamera ? handleMouseDown : undefined}
                 onMouseMove={handleMouseMoveWithCamera}
@@ -968,6 +982,30 @@ export function IsometricCanvas({
                     height: viewportSize.height,
                 }}
             />
+            {/* Test bridge: hidden action buttons for Playwright to discover and trigger game events */}
+            {process.env.NODE_ENV !== 'production' && (
+                <div data-game-actions="" className="sr-only" aria-hidden="true">
+                    {tileClickEvent && (
+                        <button
+                            data-event={tileClickEvent}
+                            data-x="0"
+                            data-y="0"
+                            onClick={() => eventBus.emit(`UI:${tileClickEvent}`, { x: 0, y: 0 })}
+                        >
+                            {tileClickEvent}
+                        </button>
+                    )}
+                    {unitClickEvent && units && units.length > 0 && (
+                        <button
+                            data-event={unitClickEvent}
+                            data-unit-id={units[0].id}
+                            onClick={() => eventBus.emit(`UI:${unitClickEvent}`, { unitId: units[0].id })}
+                        >
+                            {unitClickEvent}
+                        </button>
+                    )}
+                </div>
+            )}
             {showMinimap && (
                 <canvas
                     ref={minimapRef}

@@ -14,6 +14,8 @@ export type TypographyVariant =
   | "h4"
   | "h5"
   | "h6"
+  | "heading"
+  | "subheading"
   | "body1"
   | "body2"
   | "body"
@@ -71,6 +73,8 @@ const variantStyles: Record<TypographyVariant, string> = {
   h4: "text-xl font-bold text-[var(--color-foreground)]",
   h5: "text-lg font-bold text-[var(--color-foreground)]",
   h6: "text-base font-bold text-[var(--color-foreground)]",
+  heading: "text-2xl font-bold text-[var(--color-foreground)]",
+  subheading: "text-lg font-semibold text-[var(--color-foreground)]",
   body1: "text-base font-normal text-[var(--color-foreground)]",
   body2: "text-sm font-normal text-[var(--color-foreground)]",
   body: "text-base font-normal text-[var(--color-foreground)]",
@@ -108,6 +112,8 @@ const defaultElements: Record<TypographyVariant, keyof React.JSX.IntrinsicElemen
   h4: "h4",
   h5: "h5",
   h6: "h6",
+  heading: "h2",
+  subheading: "h3",
   body1: "p",
   body2: "p",
   body: "p",

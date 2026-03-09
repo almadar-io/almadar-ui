@@ -74,16 +74,16 @@ export interface SchemaItemAction {
 }
 
 /**
- * Field definition - can be a simple string or object with key/header
+ * Field definition - can be a simple string or object with key/header or name/label
  */
-export type FieldDef = string | { key: string; header?: string };
+export type FieldDef = string | { key?: string; header?: string; name?: string; label?: string };
 
 /**
  * Normalize fields to simple string array
  */
 function normalizeFields(fields: readonly FieldDef[] | undefined): string[] {
   if (!fields) return [];
-  return fields.map((f) => (typeof f === "string" ? f : f.key));
+  return fields.map((f) => (typeof f === "string" ? f : f.key ?? f.name ?? ''));
 }
 
 export interface ListProps extends EntityDisplayProps {

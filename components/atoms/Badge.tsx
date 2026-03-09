@@ -18,6 +18,8 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   size?: BadgeSize;
   /** Numeric count or amount to display in badge */
   amount?: number;
+  /** Badge label text (alternative to children for schema-driven rendering) */
+  label?: string;
 }
 
 // Using CSS variables for theme-aware styling
@@ -62,7 +64,7 @@ const sizeStyles: Record<BadgeSize, string> = {
 };
 
 export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
-  ({ className, variant = "default", size = "sm", ...props }, ref) => {
+  ({ className, variant = "default", size = "sm", label, children, ...props }, ref) => {
     return (
       <span
         ref={ref}
@@ -73,7 +75,9 @@ export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
           className,
         )}
         {...props}
-      />
+      >
+        {children || label}
+      </span>
     );
   },
 );

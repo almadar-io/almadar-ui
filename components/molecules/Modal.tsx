@@ -150,6 +150,7 @@ export const Modal: React.FC<ModalProps> = ({
                 <button
                   type="button"
                   onClick={handleClose}
+                  data-event="CLOSE"
                   className={cn(
                     "p-1 transition-colors rounded-[var(--radius-sm)]",
                     "hover:bg-[var(--color-muted)]",

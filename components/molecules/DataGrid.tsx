@@ -1,0 +1,375 @@
+'use client';
+/**
+ * DataGrid Molecule
+ *
+ * A simplified, schema-driven card grid for iterating over entity data.
+ * Extracted from the CardGrid organism with all complexity removed:
+ * no built-in search, sort, filter, pagination, selection, or bulk actions.
+ *
+ * Accepts `fields` config for per-field rendering control (icon, variant, format)
+ * and `itemActions` for per-item event bus wiring.
+ *
+ * Uses atoms only internally: Box, VStack, HStack, Typography, Badge, Button, Icon.
+ */
+import React from 'react';
+import { cn } from '../../lib/cn';
+import { getNestedValue } from '../../lib/getNestedValue';
+import { useEventBus } from '../../hooks/useEventBus';
+import { useTranslate } from '../../hooks/useTranslate';
+import { Box } from '../atoms/Box';
+import { VStack, HStack } from '../atoms/Stack';
+import { Typography } from '../atoms/Typography';
+import { Badge } from '../atoms/Badge';
+import { Button } from '../atoms/Button';
+import { Icon } from '../atoms/Icon';
+
+// ── Field Definition ─────────────────────────────────────────────────
+
+export interface DataGridField {
+  /** Entity field name (dot-notation supported) */
+  name: string;
+  /** Display label (auto-generated from name if omitted) */
+  label?: string;
+  /** Lucide icon name to show beside the field */
+  icon?: string;
+  /** Rendering variant: 'h3' for title, 'body' for text, 'caption' for small,
+   *  'badge' for status badge, 'progress' for progress display */
+  variant?: 'h3' | 'h4' | 'body' | 'caption' | 'badge' | 'small' | 'progress';
+  /** Optional format function name: 'date', 'currency', 'number', 'boolean' */
+  format?: 'date' | 'currency' | 'number' | 'boolean' | 'percent';
+}
+
+// ── Item Action Definition ───────────────────────────────────────────
+
+export interface DataGridItemAction {
+  /** Button label */
+  label: string;
+  /** Event name to emit (dispatched as UI:{event} with { row: itemData }) */
+  event: string;
+  /** Lucide icon name */
+  icon?: string;
+  /** Button variant */
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+}
+
+// ── Props ────────────────────────────────────────────────────────────
+
+export interface DataGridProps {
+  /** Entity data array */
+  entity?: unknown | readonly unknown[];
+  /** Field definitions for rendering each card */
+  fields?: readonly DataGridField[];
+  /** Alias for fields (compiler generates `columns` for field definitions) */
+  columns?: readonly DataGridField[];
+  /** Per-item action buttons */
+  itemActions?: readonly DataGridItemAction[];
+  /** Number of columns (uses auto-fit if omitted) */
+  cols?: 1 | 2 | 3 | 4 | 5 | 6;
+  /** Gap between cards */
+  gap?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+  /** Minimum card width in pixels (used when cols is not set, default 280) */
+  minCardWidth?: number;
+  /** Additional CSS classes */
+  className?: string;
+  /** Loading state */
+  isLoading?: boolean;
+  /** Error state */
+  error?: Error | null;
+  /** Entity field name containing an image URL for card thumbnails */
+  imageField?: string;
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────
+
+function fieldLabel(key: string): string {
+  return key
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[_-]/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function statusVariant(value: string): 'success' | 'warning' | 'error' | 'info' | 'default' {
+  const v = value.toLowerCase();
+  if (['active', 'completed', 'done', 'approved', 'published', 'resolved', 'open', 'online'].includes(v)) return 'success';
+  if (['pending', 'in_progress', 'in-progress', 'review', 'draft', 'processing', 'warning'].includes(v)) return 'warning';
+  if (['inactive', 'deleted', 'rejected', 'failed', 'error', 'blocked', 'closed', 'offline'].includes(v)) return 'error';
+  if (['new', 'created', 'scheduled', 'queued', 'info'].includes(v)) return 'info';
+  return 'default';
+}
+
+function formatDate(value: unknown): string {
+  if (!value) return '';
+  const d = new Date(String(value));
+  if (isNaN(d.getTime())) return String(value);
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function formatValue(value: unknown, format?: DataGridField['format']): string {
+  if (value === undefined || value === null) return '';
+  switch (format) {
+    case 'date': return formatDate(value);
+    case 'currency': return typeof value === 'number' ? `$${value.toFixed(2)}` : String(value);
+    case 'number': return typeof value === 'number' ? value.toLocaleString() : String(value);
+    case 'percent': return typeof value === 'number' ? `${Math.round(value)}%` : String(value);
+    case 'boolean': return value ? 'Yes' : 'No';
+    default: return String(value);
+  }
+}
+
+const gapStyles: Record<string, string> = {
+  none: 'gap-0',
+  sm: 'gap-2',
+  md: 'gap-4',
+  lg: 'gap-6',
+  xl: 'gap-8',
+};
+
+// ── Component ────────────────────────────────────────────────────────
+
+export const DataGrid: React.FC<DataGridProps> = ({
+  entity,
+  fields: fieldsProp,
+  columns: columnsProp,
+  itemActions,
+  cols,
+  gap = 'md',
+  minCardWidth = 280,
+  className,
+  isLoading = false,
+  error = null,
+  imageField,
+}) => {
+  const eventBus = useEventBus();
+  const { t } = useTranslate();
+
+  const fields = fieldsProp ?? columnsProp ?? [];
+  const data = Array.isArray(entity) ? entity : entity ? [entity] : [];
+
+  // Separate fields by variant for smart card layout
+  const titleField = fields.find((f) => f.variant === 'h3' || f.variant === 'h4') ?? fields[0];
+  const badgeFields = fields.filter((f) => f.variant === 'badge' && f !== titleField);
+  const bodyFields = fields.filter((f) => f !== titleField && !badgeFields.includes(f));
+
+  // Separate actions by variant
+  const primaryActions = itemActions?.filter((a) => a.variant !== 'danger') ?? [];
+  const dangerActions = itemActions?.filter((a) => a.variant === 'danger') ?? [];
+
+  const handleActionClick = (action: DataGridItemAction, itemData: Record<string, unknown>) => (e: React.MouseEvent) => {
+    e.stopPropagation();
+    eventBus.emit(`UI:${action.event}`, { row: itemData });
+  };
+
+  // Grid template
+  const gridTemplateColumns = cols
+    ? undefined
+    : `repeat(auto-fit, minmax(min(${minCardWidth}px, 100%), 1fr))`;
+
+  const colsClass = cols
+    ? {
+        1: 'grid-cols-1',
+        2: 'sm:grid-cols-2',
+        3: 'sm:grid-cols-2 lg:grid-cols-3',
+        4: 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
+        5: 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
+        6: 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
+      }[cols]
+    : undefined;
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <Box className="text-center py-8">
+        <Typography variant="body" color="secondary">
+          {t('loading.items') || 'Loading...'}
+        </Typography>
+      </Box>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <Box className="text-center py-8">
+        <Typography variant="body" color="error">
+          {error.message}
+        </Typography>
+      </Box>
+    );
+  }
+
+  // Empty state
+  if (data.length === 0) {
+    return (
+      <Box className="text-center py-12">
+        <Typography variant="body" color="secondary">
+          {t('empty.noItems') || 'No items found'}
+        </Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <Box
+      className={cn('grid', gapStyles[gap], colsClass, className)}
+      style={gridTemplateColumns ? { gridTemplateColumns } : undefined}
+    >
+      {data.map((item, index) => {
+        const itemData = item as Record<string, unknown>;
+        const id = (itemData.id as string) || String(index);
+        const titleValue = getNestedValue(itemData, titleField?.name ?? '');
+
+        return (
+          <Box
+            key={id}
+            data-entity-row
+            className={cn(
+              'bg-[var(--color-card)] rounded-[var(--radius-lg)]',
+              'border border-[var(--color-border)]',
+              'shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-hover)]',
+              'hover:border-[var(--color-primary)] transition-all',
+              'flex flex-col'
+            )}
+          >
+            {/* Card Image */}
+            {imageField && (() => {
+              const imgUrl = getNestedValue(itemData, imageField);
+              if (!imgUrl || typeof imgUrl !== 'string') return null;
+              return (
+                <Box className="w-full aspect-video overflow-hidden rounded-t-[var(--radius-lg)]">
+                  <img
+                    src={imgUrl}
+                    alt={titleValue !== undefined ? String(titleValue) : ''}
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </Box>
+              );
+            })()}
+
+            {/* Card Header: title + badges + danger actions */}
+            <Box className="p-4 pb-0">
+              <HStack gap="sm" className="justify-between items-start">
+                <VStack gap="xs" className="flex-1 min-w-0">
+                  {titleValue !== undefined && titleValue !== null && (
+                    <HStack gap="xs" className="items-center">
+                      {titleField?.icon && (
+                        <Icon name={titleField.icon} size="sm" className="text-[var(--color-primary)] flex-shrink-0" />
+                      )}
+                      <Typography
+                        variant={titleField?.variant === 'h3' ? 'h3' : 'h4'}
+                        className="font-semibold truncate"
+                      >
+                        {String(titleValue)}
+                      </Typography>
+                    </HStack>
+                  )}
+                  {badgeFields.length > 0 && (
+                    <HStack gap="xs" className="flex-wrap">
+                      {badgeFields.map((field) => {
+                        const val = getNestedValue(itemData, field.name);
+                        if (val === undefined || val === null) return null;
+                        return (
+                          <HStack key={field.name} gap="xs" className="items-center">
+                            {field.icon && <Icon name={field.icon} size="xs" />}
+                            <Badge variant={statusVariant(String(val))}>
+                              {String(val)}
+                            </Badge>
+                          </HStack>
+                        );
+                      })}
+                    </HStack>
+                  )}
+                </VStack>
+                {dangerActions.length > 0 && (
+                  <HStack gap="xs" className="flex-shrink-0">
+                    {dangerActions.map((action, idx) => (
+                      <Button
+                        key={idx}
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleActionClick(action, itemData)}
+                        data-testid={`action-${action.event}`}
+                        className="text-[var(--color-error)] hover:bg-[var(--color-error)]/10 px-2"
+                      >
+                        {action.icon && <Icon name={action.icon} size="xs" />}
+                        {action.label}
+                      </Button>
+                    ))}
+                  </HStack>
+                )}
+              </HStack>
+            </Box>
+
+            {/* Card Body: remaining fields */}
+            {bodyFields.length > 0 && (
+              <Box className="px-4 py-3 flex-1">
+                <VStack gap="xs">
+                  {bodyFields.map((field) => {
+                    const value = getNestedValue(itemData, field.name);
+                    if (value === undefined || value === null || value === '') return null;
+
+                    // Boolean format renders as badge
+                    if (field.format === 'boolean') {
+                      return (
+                        <HStack key={field.name} gap="sm" className="justify-between items-center">
+                          <HStack gap="xs" className="items-center">
+                            {field.icon && <Icon name={field.icon} size="xs" className="text-[var(--color-muted-foreground)]" />}
+                            <Typography variant="caption" color="secondary">
+                              {field.label ?? fieldLabel(field.name)}
+                            </Typography>
+                          </HStack>
+                          <Badge variant={value ? 'success' : 'neutral'}>
+                            {value ? (t('common.yes') || 'Yes') : (t('common.no') || 'No')}
+                          </Badge>
+                        </HStack>
+                      );
+                    }
+
+                    return (
+                      <HStack key={field.name} gap="sm" className="justify-between items-center">
+                        <HStack gap="xs" className="items-center">
+                          {field.icon && <Icon name={field.icon} size="xs" className="text-[var(--color-muted-foreground)]" />}
+                          <Typography variant="caption" color="secondary">
+                            {field.label ?? fieldLabel(field.name)}
+                          </Typography>
+                        </HStack>
+                        <Typography
+                          variant={field.variant === 'caption' ? 'caption' : 'small'}
+                          className="text-right truncate max-w-[60%]"
+                        >
+                          {formatValue(value, field.format)}
+                        </Typography>
+                      </HStack>
+                    );
+                  })}
+                </VStack>
+              </Box>
+            )}
+
+            {/* Card Footer: primary actions */}
+            {primaryActions.length > 0 && (
+              <Box className="px-4 py-3 mt-auto border-t border-[var(--color-border)]">
+                <HStack gap="sm" className="justify-end">
+                  {primaryActions.map((action, idx) => (
+                    <Button
+                      key={idx}
+                      variant={action.variant === 'primary' ? 'primary' : 'ghost'}
+                      size="sm"
+                      onClick={handleActionClick(action, itemData)}
+                      data-testid={`action-${action.event}`}
+                    >
+                      {action.icon && <Icon name={action.icon} size="xs" className="mr-1" />}
+                      {action.label}
+                    </Button>
+                  ))}
+                </HStack>
+              </Box>
+            )}
+          </Box>
+        );
+      })}
+    </Box>
+  );
+};
+
+DataGrid.displayName = 'DataGrid';

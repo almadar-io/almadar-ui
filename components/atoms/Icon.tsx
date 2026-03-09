@@ -18,135 +18,63 @@ export type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 export type IconAnimation = 'spin' | 'pulse' | 'none';
 
 /**
- * Map of icon names to Lucide icon components.
- * Supports common icons used in patterns.
+ * Explicit aliases for icon names that don't follow standard kebab-to-PascalCase conversion.
+ * Standard names (e.g. 'shopping-cart' -> ShoppingCart) are resolved dynamically.
  */
-const iconMap: Record<string, LucideIcon> = {
-  // Navigation & Actions
-  'chevron-right': LucideIcons.ChevronRight,
-  'chevron-left': LucideIcons.ChevronLeft,
-  'chevron-down': LucideIcons.ChevronDown,
-  'chevron-up': LucideIcons.ChevronUp,
-  'arrow-right': LucideIcons.ArrowRight,
-  'arrow-left': LucideIcons.ArrowLeft,
-  'arrow-up': LucideIcons.ArrowUp,
-  'arrow-down': LucideIcons.ArrowDown,
-  'x': LucideIcons.X,
+const iconAliases: Record<string, LucideIcon> = {
   'close': LucideIcons.X,
-  'menu': LucideIcons.Menu,
-  'more-vertical': LucideIcons.MoreVertical,
-  'more-horizontal': LucideIcons.MoreHorizontal,
-
-  // Status & Feedback
-  'check': LucideIcons.Check,
-  'check-circle': LucideIcons.CheckCircle,
-  'alert-circle': LucideIcons.AlertCircle,
-  'alert-triangle': LucideIcons.AlertTriangle,
-  'info': LucideIcons.Info,
-  'help-circle': LucideIcons.HelpCircle,
-  'loader': LucideIcons.Loader2,
-
-  // CRUD Operations
-  'plus': LucideIcons.Plus,
-  'minus': LucideIcons.Minus,
-  'edit': LucideIcons.Edit,
-  'pencil': LucideIcons.Pencil,
   'trash': LucideIcons.Trash2,
-  'trash-2': LucideIcons.Trash2,
-  'save': LucideIcons.Save,
-  'copy': LucideIcons.Copy,
-  'clipboard': LucideIcons.Clipboard,
-
-  // Files & Documents
-  'file': LucideIcons.File,
-  'file-text': LucideIcons.FileText,
-  'folder': LucideIcons.Folder,
-  'folder-open': LucideIcons.FolderOpen,
-  'download': LucideIcons.Download,
-  'upload': LucideIcons.Upload,
-  'image': LucideIcons.Image,
-
-  // Communication
-  'mail': LucideIcons.Mail,
-  'message-circle': LucideIcons.MessageCircle,
-  'send': LucideIcons.Send,
-  'phone': LucideIcons.Phone,
-
-  // User & Profile
-  'user': LucideIcons.User,
-  'users': LucideIcons.Users,
-  'user-plus': LucideIcons.UserPlus,
-  'settings': LucideIcons.Settings,
-  'log-out': LucideIcons.LogOut,
-  'log-in': LucideIcons.LogIn,
-
-  // Search & Filter
-  'search': LucideIcons.Search,
-  'filter': LucideIcons.Filter,
-  'sort-asc': LucideIcons.ArrowUpNarrowWide,
-  'sort-desc': LucideIcons.ArrowDownNarrowWide,
-
-  // Layout & View
-  'grid': LucideIcons.Grid,
-  'list': LucideIcons.List,
-  'layout': LucideIcons.Layout,
-  'maximize': LucideIcons.Maximize,
-  'minimize': LucideIcons.Minimize,
-  'eye': LucideIcons.Eye,
-  'eye-off': LucideIcons.EyeOff,
-
-  // Media & Playback
-  'play': LucideIcons.Play,
-  'pause': LucideIcons.Pause,
+  'loader': LucideIcons.Loader2,
   'stop': LucideIcons.Square,
   'volume': LucideIcons.Volume2,
   'volume-off': LucideIcons.VolumeX,
-
-  // Time & Calendar
-  'calendar': LucideIcons.Calendar,
-  'clock': LucideIcons.Clock,
-
-  // Misc
-  'star': LucideIcons.Star,
-  'heart': LucideIcons.Heart,
-  'home': LucideIcons.Home,
-  'link': LucideIcons.Link,
-  'external-link': LucideIcons.ExternalLink,
   'refresh': LucideIcons.RefreshCw,
-  'refresh-cw': LucideIcons.RefreshCw,
-  'zap': LucideIcons.Zap,
-  'bell': LucideIcons.Bell,
-  'bookmark': LucideIcons.Bookmark,
   'share': LucideIcons.Share2,
-  'lock': LucideIcons.Lock,
-  'unlock': LucideIcons.Unlock,
-  'globe': LucideIcons.Globe,
-  'database': LucideIcons.Database,
-  'code': LucideIcons.Code,
-  'terminal': LucideIcons.Terminal,
+  'sort-asc': LucideIcons.ArrowUpNarrowWide,
+  'sort-desc': LucideIcons.ArrowDownNarrowWide,
 };
+
+/** Convert kebab-case to PascalCase: 'shopping-cart' -> 'ShoppingCart' */
+function kebabToPascal(name: string): string {
+  return name
+    .split('-')
+    .map(part => {
+      // Handle numeric segments: 'trash-2' -> 'Trash2'
+      if (/^\d+$/.test(part)) return part;
+      return part.charAt(0).toUpperCase() + part.slice(1);
+    })
+    .join('');
+}
+
+/** Cache resolved icons to avoid repeated lookups */
+const resolvedCache = new Map<string, LucideIcon>();
 
 /**
  * Resolve an icon name to a Lucide icon component.
+ * Supports all 1500+ Lucide icons via dynamic PascalCase lookup.
  * Falls back to HelpCircle if not found.
  */
 export function resolveIcon(name: string): LucideIcon {
-  // Try exact match first
-  if (iconMap[name]) {
-    return iconMap[name];
-  }
+  const cached = resolvedCache.get(name);
+  if (cached) return cached;
 
-  // Try lowercase
-  const lowerName = name.toLowerCase();
-  if (iconMap[lowerName]) {
-    return iconMap[lowerName];
-  }
+  const resolved = doResolve(name);
+  resolvedCache.set(name, resolved);
+  return resolved;
+}
 
-  // Try converting camelCase to kebab-case
-  const kebabName = name.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
-  if (iconMap[kebabName]) {
-    return iconMap[kebabName];
-  }
+function doResolve(name: string): LucideIcon {
+  // Check aliases first (non-standard mappings)
+  if (iconAliases[name]) return iconAliases[name];
+
+  // Convert kebab-case name to PascalCase and look up in lucide-react exports
+  const pascalName = kebabToPascal(name);
+  const directLookup = (LucideIcons as unknown as Record<string, LucideIcon>)[pascalName];
+  if (directLookup && typeof directLookup === 'object') return directLookup;
+
+  // Try the name as-is (already PascalCase)
+  const asIs = (LucideIcons as unknown as Record<string, LucideIcon>)[name];
+  if (asIs && typeof asIs === 'object') return asIs;
 
   // Fallback
   return LucideIcons.HelpCircle;

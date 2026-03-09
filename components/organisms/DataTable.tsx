@@ -24,6 +24,10 @@ import { EntityDisplayProps, EntityDisplayEvents } from "./types";
 export interface Column<T> {
   key: keyof T | string;
   header: string;
+  /** Alias for key (used by compiler-generated fields) */
+  name?: string;
+  /** Alias for header (used by compiler-generated fields) */
+  label?: string;
   width?: string;
   sortable?: boolean;
   render?: (value: unknown, row: T, index: number) => React.ReactNode;
@@ -62,7 +66,10 @@ function normalizeColumns<T>(
       const header = humanizeFieldName(col);
       return { key: col, header } as Column<T>;
     }
-    return col;
+    // Normalize name→key and label→header aliases from compiler output
+    const key = col.key ?? (col.name as keyof T | string) ?? '';
+    const header = col.header ?? col.label ?? humanizeFieldName(String(key));
+    return { ...col, key, header } as Column<T>;
   });
 }
 

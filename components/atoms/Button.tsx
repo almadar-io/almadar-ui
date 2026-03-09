@@ -3,6 +3,7 @@ import React from "react";
 import { cn } from "../../lib/cn";
 import { Loader2, type LucideIcon } from "lucide-react";
 import { useEventBus } from "../../hooks/useEventBus";
+import { resolveIcon } from "./Icon";
 
 export type ButtonVariant =
   | "primary"
@@ -22,10 +23,10 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   leftIcon?: React.ReactNode;
   /** Right icon as ReactNode (preferred) */
   rightIcon?: React.ReactNode;
-  /** Left icon as Lucide icon component (convenience prop, renders with default size) */
-  icon?: LucideIcon;
-  /** Right icon as Lucide icon component (convenience prop) */
-  iconRight?: LucideIcon;
+  /** Left icon as Lucide icon component or string name (e.g. "plus", "trash") */
+  icon?: LucideIcon | string;
+  /** Right icon as Lucide icon component or string name */
+  iconRight?: LucideIcon | string;
   /** Declarative event name — emits UI:{action} via eventBus on click */
   action?: string;
   /** Payload to include with the action event */
@@ -106,8 +107,8 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       disabled,
       leftIcon,
       rightIcon,
-      icon: IconComponent,
-      iconRight: IconRightComponent,
+      icon: iconProp,
+      iconRight: iconRightProp,
       action,
       actionPayload,
       label,
@@ -118,6 +119,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref,
   ) => {
     const eventBus = useEventBus();
+
+    const IconComponent = typeof iconProp === 'string' ? resolveIcon(iconProp) : iconProp;
+    const IconRightComponent = typeof iconRightProp === 'string' ? resolveIcon(iconRightProp) : iconRightProp;
 
     const resolvedLeftIcon =
       leftIcon ||
@@ -152,6 +156,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         )}
         onClick={handleClick}
         {...props}
+        data-testid={(props as Record<string, unknown>)['data-testid'] as string ?? (action ? `action-${action}` : undefined)}
       >
         {isLoading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
