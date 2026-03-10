@@ -963,7 +963,7 @@ export function IsometricCanvas({
                     <Stack direction="vertical" gap="md" align="center">
                         <Icon name="map" size="xl" />
                         <Typography variant="body" className="text-slate-400">
-                            {t('canvas.emptyMessage', 'No map data loaded')}
+                            {t('canvas.emptyMessage') || 'No map data loaded'}
                         </Typography>
                     </Stack>
                 </Box>
