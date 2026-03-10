@@ -31,9 +31,11 @@ import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { Box } from '../../atoms/Box';
+import { Stack } from '../../atoms/Stack';
+import { Icon } from '../../atoms/Icon';
+import { Typography } from '../../atoms/Typography';
 import { LoadingState } from '../../molecules/LoadingState';
 import { ErrorState } from '../../molecules/ErrorState';
-import { EmptyState } from '../../molecules/EmptyState';
 import type { EntityDisplayProps } from '../types';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from './types/isometric';
 import type { ResolvedFrame } from './types/spriteAnimation';
@@ -949,15 +951,23 @@ export function IsometricCanvas({
         return <LoadingState className={className} />;
     }
 
-    // Empty state: no tiles provided
+    // Empty state: no tiles provided — render a meaningful dark canvas placeholder
     if (sortedTiles.length === 0) {
         return (
-            <EmptyState
-                title={t('canvas.emptyTitle')}
-                message={t('canvas.emptyMessage')}
-                icon="map"
-                className={className}
-            />
+            <Box
+                className={cn('relative w-full overflow-hidden rounded-lg', className)}
+                style={{ height: viewportSize.height }}
+                data-testid="game-canvas-empty"
+            >
+                <Box className="flex items-center justify-center h-full bg-slate-800 rounded-lg">
+                    <Stack direction="vertical" gap="md" align="center">
+                        <Icon name="map" size="xl" />
+                        <Typography variant="body" className="text-slate-400">
+                            {t('canvas.emptyMessage', 'No map data loaded')}
+                        </Typography>
+                    </Stack>
+                </Box>
+            </Box>
         );
     }
 
