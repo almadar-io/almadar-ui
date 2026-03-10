@@ -292,7 +292,7 @@ export const DataList: React.FC<DataListProps> = ({
                     <Typography variant="body">
                       {content !== undefined && content !== null ? String(content) : ''}
                     </Typography>
-                    {timestamp && (
+                    {timestamp != null ? (
                       <Typography
                         variant="caption"
                         className={cn(
@@ -302,7 +302,7 @@ export const DataList: React.FC<DataListProps> = ({
                       >
                         {formatDate(timestamp)}
                       </Typography>
-                    )}
+                    ) : null}
                   </Box>
                 </Box>
               );
