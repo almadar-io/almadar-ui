@@ -126,12 +126,6 @@ export {
   type ChartSeries,
 } from "./Chart";
 export {
-  Meter,
-  type MeterProps,
-  type MeterVariant,
-  type MeterThreshold,
-} from "./Meter";
-export {
   Timeline,
   type TimelineProps,
   type TimelineItem,

@@ -237,7 +237,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
     }
 
     if (action.event) {
-      eventBus.emit(`UI:${action.event}`, { row: itemData });
+      eventBus.emit(`UI:${action.event}`, { id: itemData.id, row: itemData });
     }
     if (action.onClick) {
       action.onClick(itemData);

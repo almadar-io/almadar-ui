@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useRef, useEffect, useCallback } from 'react';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { bindCanvasCapture, updateAssetStatus } from '../../../lib/verificationRegistry';
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -39,6 +40,14 @@ export interface PlatformerCanvasProps {
   followCamera?: boolean;
   /** Background color */
   bgColor?: string;
+  /** Player sprite image URL */
+  playerSprite?: string;
+  /** Map of platform type to tile sprite URL */
+  tileSprites?: Record<string, string>;
+  /** Background image URL */
+  backgroundImage?: string;
+  /** Base URL prefix for asset URLs */
+  assetBaseUrl?: string;
   /** Event names for keyboard controls */
   leftEvent?: string;
   rightEvent?: string;
@@ -76,6 +85,10 @@ export function PlatformerCanvas({
   canvasHeight = 400,
   followCamera = true,
   bgColor,
+  playerSprite,
+  tileSprites,
+  backgroundImage,
+  assetBaseUrl = '',
   leftEvent = 'MOVE_LEFT',
   rightEvent = 'MOVE_RIGHT',
   jumpEvent = 'JUMP',
@@ -86,6 +99,33 @@ export function PlatformerCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const eventBus = useEventBus();
   const keysRef = useRef<Set<string>>(new Set());
+  const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
+
+  // Load an image and cache it
+  const loadImage = useCallback((url: string): HTMLImageElement | null => {
+    const fullUrl = url.startsWith('http') ? url : `${assetBaseUrl}${url}`;
+    const cached = imageCache.current.get(fullUrl);
+    if (cached?.complete && cached.naturalWidth > 0) return cached;
+    if (!cached) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = fullUrl;
+      img.onload = () => { updateAssetStatus(fullUrl, 'loaded'); };
+      img.onerror = () => { updateAssetStatus(fullUrl, 'failed'); };
+      imageCache.current.set(fullUrl, img);
+      updateAssetStatus(fullUrl, 'pending');
+    }
+    return null;
+  }, [assetBaseUrl]);
+
+  // -- Verification bridge: register canvas frame capture --
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    bindCanvasCapture(() => canvas.toDataURL('image/png'));
+    return () => { bindCanvasCapture(() => null); };
+  }, []);
 
   // Resolve player from entity if not passed directly
   const resolvedPlayer: PlatformerPlayer = player ?? {
@@ -166,8 +206,11 @@ export function PlatformerCanvas({
       camY = Math.max(0, Math.min(resolvedPlayer.y - canvasHeight / 2 - 50, worldHeight - canvasHeight));
     }
 
-    // Background gradient
-    if (bgColor) {
+    // Background: image, solid color, or gradient
+    const bgImg = backgroundImage ? loadImage(backgroundImage) : null;
+    if (bgImg) {
+      ctx.drawImage(bgImg, 0, 0, canvasWidth, canvasHeight);
+    } else if (bgColor) {
       ctx.fillStyle = bgColor;
       ctx.fillRect(0, 0, canvasWidth, canvasHeight);
     } else {
@@ -199,38 +242,53 @@ export function PlatformerCanvas({
     for (const plat of platforms) {
       const px = plat.x - camX;
       const py = plat.y - camY;
-      const color = PLATFORM_COLORS[plat.type ?? 'ground'] ?? PLATFORM_COLORS.ground;
+      const platType = plat.type ?? 'ground';
+      const spriteUrl = tileSprites?.[platType];
+      const tileImg = spriteUrl ? loadImage(spriteUrl) : null;
 
-      // Platform body
-      ctx.fillStyle = color;
-      ctx.fillRect(px, py, plat.width, plat.height);
-
-      // Top highlight
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-      ctx.fillRect(px, py, plat.width, 3);
-
-      // Bottom shadow
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-      ctx.fillRect(px, py + plat.height - 2, plat.width, 2);
-
-      // Hazard stripes
-      if (plat.type === 'hazard') {
-        ctx.strokeStyle = '#e74c3c';
-        ctx.lineWidth = 2;
-        for (let sx = px; sx < px + plat.width; sx += 12) {
-          ctx.beginPath();
-          ctx.moveTo(sx, py);
-          ctx.lineTo(sx + 6, py + plat.height);
-          ctx.stroke();
+      if (tileImg) {
+        // Tile the sprite across the platform width
+        const tileW = tileImg.naturalWidth;
+        const tileH = tileImg.naturalHeight;
+        const scaleH = plat.height / tileH;
+        const scaledW = tileW * scaleH;
+        for (let tx = 0; tx < plat.width; tx += scaledW) {
+          const drawW = Math.min(scaledW, plat.width - tx);
+          const srcW = drawW / scaleH;
+          ctx.drawImage(tileImg, 0, 0, srcW, tileH, px + tx, py, drawW, plat.height);
         }
-      }
+      } else {
+        const color = PLATFORM_COLORS[platType] ?? PLATFORM_COLORS.ground;
+        ctx.fillStyle = color;
+        ctx.fillRect(px, py, plat.width, plat.height);
 
-      // Goal sparkle
-      if (plat.type === 'goal') {
-        ctx.fillStyle = 'rgba(241, 196, 15, 0.5)';
-        ctx.beginPath();
-        ctx.arc(px + plat.width / 2, py - 10, 8, 0, Math.PI * 2);
-        ctx.fill();
+        // Top highlight
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.fillRect(px, py, plat.width, 3);
+
+        // Bottom shadow
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.fillRect(px, py + plat.height - 2, plat.width, 2);
+
+        // Hazard stripes
+        if (platType === 'hazard') {
+          ctx.strokeStyle = '#e74c3c';
+          ctx.lineWidth = 2;
+          for (let sx = px; sx < px + plat.width; sx += 12) {
+            ctx.beginPath();
+            ctx.moveTo(sx, py);
+            ctx.lineTo(sx + 6, py + plat.height);
+            ctx.stroke();
+          }
+        }
+
+        // Goal sparkle
+        if (platType === 'goal') {
+          ctx.fillStyle = 'rgba(241, 196, 15, 0.5)';
+          ctx.beginPath();
+          ctx.arc(px + plat.width / 2, py - 10, 8, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
     }
 
@@ -239,34 +297,46 @@ export function PlatformerCanvas({
     const ph = resolvedPlayer.height ?? 32;
     const ppx = resolvedPlayer.x - camX;
     const ppy = resolvedPlayer.y - camY;
-
-    // Body
-    ctx.fillStyle = PLAYER_COLOR;
-    const radius = Math.min(pw, ph) * 0.25;
-    ctx.beginPath();
-    ctx.moveTo(ppx + radius, ppy);
-    ctx.lineTo(ppx + pw - radius, ppy);
-    ctx.quadraticCurveTo(ppx + pw, ppy, ppx + pw, ppy + radius);
-    ctx.lineTo(ppx + pw, ppy + ph - radius);
-    ctx.quadraticCurveTo(ppx + pw, ppy + ph, ppx + pw - radius, ppy + ph);
-    ctx.lineTo(ppx + radius, ppy + ph);
-    ctx.quadraticCurveTo(ppx, ppy + ph, ppx, ppy + ph - radius);
-    ctx.lineTo(ppx, ppy + radius);
-    ctx.quadraticCurveTo(ppx, ppy, ppx + radius, ppy);
-    ctx.fill();
-
-    // Eyes
-    const eyeY = ppy + ph * 0.3;
-    const eyeSize = 3;
     const facingRight = resolvedPlayer.facingRight ?? true;
-    const eyeOffsetX = facingRight ? pw * 0.55 : pw * 0.2;
-    ctx.fillStyle = PLAYER_EYE_COLOR;
-    ctx.beginPath();
-    ctx.arc(ppx + eyeOffsetX, eyeY, eyeSize, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(ppx + eyeOffsetX + 7, eyeY, eyeSize, 0, Math.PI * 2);
-    ctx.fill();
+    const playerImg = playerSprite ? loadImage(playerSprite) : null;
+
+    if (playerImg) {
+      ctx.save();
+      if (!facingRight) {
+        ctx.translate(ppx + pw, ppy);
+        ctx.scale(-1, 1);
+        ctx.drawImage(playerImg, 0, 0, pw, ph);
+      } else {
+        ctx.drawImage(playerImg, ppx, ppy, pw, ph);
+      }
+      ctx.restore();
+    } else {
+      // Fallback: colored rectangle with eyes
+      ctx.fillStyle = PLAYER_COLOR;
+      const radius = Math.min(pw, ph) * 0.25;
+      ctx.beginPath();
+      ctx.moveTo(ppx + radius, ppy);
+      ctx.lineTo(ppx + pw - radius, ppy);
+      ctx.quadraticCurveTo(ppx + pw, ppy, ppx + pw, ppy + radius);
+      ctx.lineTo(ppx + pw, ppy + ph - radius);
+      ctx.quadraticCurveTo(ppx + pw, ppy + ph, ppx + pw - radius, ppy + ph);
+      ctx.lineTo(ppx + radius, ppy + ph);
+      ctx.quadraticCurveTo(ppx, ppy + ph, ppx, ppy + ph - radius);
+      ctx.lineTo(ppx, ppy + radius);
+      ctx.quadraticCurveTo(ppx, ppy, ppx + radius, ppy);
+      ctx.fill();
+
+      const eyeY = ppy + ph * 0.3;
+      const eyeSize = 3;
+      const eyeOffsetX = facingRight ? pw * 0.55 : pw * 0.2;
+      ctx.fillStyle = PLAYER_EYE_COLOR;
+      ctx.beginPath();
+      ctx.arc(ppx + eyeOffsetX, eyeY, eyeSize, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(ppx + eyeOffsetX + 7, eyeY, eyeSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
   });
 
   return (

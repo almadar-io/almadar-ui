@@ -248,6 +248,16 @@ export function subscribeToVerification(listener: ChangeListener): () => void {
 // Window exposure for Playwright/automation
 // ============================================================================
 
+/** Asset load status for canvas verification */
+export type AssetLoadStatus = "loaded" | "failed" | "pending";
+
+/** Event bus log entry for verification */
+export interface EventLogEntry {
+  type: string;
+  payload?: Record<string, unknown>;
+  timestamp: number;
+}
+
 /** Exposed on window for Playwright to query */
 interface OrbitalVerificationAPI {
   getSnapshot: () => VerificationSnapshot;
@@ -264,6 +274,14 @@ interface OrbitalVerificationAPI {
   sendEvent?: (event: string, payload?: Record<string, unknown>) => void;
   /** Get current trait state */
   getTraitState?: (traitName: string) => string | undefined;
+  /** Capture a canvas frame as PNG data URL. Registered by game organisms. */
+  captureFrame?: () => string | null;
+  /** Asset load status map. Registered by game organisms. */
+  assetStatus?: Record<string, AssetLoadStatus>;
+  /** Event bus log. Records all emit() calls for verification. */
+  eventLog?: EventLogEntry[];
+  /** Clear the event log. */
+  clearEventLog?: () => void;
 }
 
 declare global {
@@ -320,11 +338,12 @@ export function waitForTransition(
 }
 
 /**
- * Bind the EventBus so automation can send events.
+ * Bind the EventBus so automation can send events and log emissions.
  * Call this during app initialization.
  */
 export function bindEventBus(eventBus: {
   emit: (type: string, payload?: Record<string, unknown>) => void;
+  onAny?: (listener: (event: { type: string; payload?: Record<string, unknown> }) => void) => () => void;
 }): void {
   if (typeof window === "undefined") return;
 
@@ -333,6 +352,26 @@ export function bindEventBus(eventBus: {
     window.__orbitalVerification.sendEvent = (event, payload) => {
       eventBus.emit(event, payload);
     };
+
+    // Initialize event log
+    const eventLog: EventLogEntry[] = [];
+    window.__orbitalVerification.eventLog = eventLog;
+    window.__orbitalVerification.clearEventLog = () => {
+      eventLog.length = 0;
+    };
+
+    // Instrument event bus to log all emissions
+    if (eventBus.onAny) {
+      eventBus.onAny((event) => {
+        if (eventLog.length < 200) {
+          eventLog.push({
+            type: event.type,
+            payload: event.payload as Record<string, unknown> | undefined,
+            timestamp: Date.now(),
+          });
+        }
+      });
+    }
   }
 }
 
@@ -347,6 +386,45 @@ export function bindTraitStateGetter(
   exposeOnWindow();
   if (window.__orbitalVerification) {
     window.__orbitalVerification.getTraitState = getter;
+  }
+}
+
+// ============================================================================
+// Canvas Frame Capture API (for game verification)
+// ============================================================================
+
+/**
+ * Register a canvas frame capture function.
+ * Called by game organisms (IsometricCanvas, PlatformerCanvas, SimulationCanvas)
+ * so the verifier can snapshot canvas content at checkpoints.
+ */
+export function bindCanvasCapture(
+  captureFn: () => string | null,
+): void {
+  if (typeof window === "undefined") return;
+
+  exposeOnWindow();
+  if (window.__orbitalVerification) {
+    window.__orbitalVerification.captureFrame = captureFn;
+  }
+}
+
+/**
+ * Update asset load status for canvas verification.
+ * Game organisms call this when images load or fail.
+ */
+export function updateAssetStatus(
+  url: string,
+  status: AssetLoadStatus,
+): void {
+  if (typeof window === "undefined") return;
+
+  exposeOnWindow();
+  if (window.__orbitalVerification) {
+    if (!window.__orbitalVerification.assetStatus) {
+      window.__orbitalVerification.assetStatus = {};
+    }
+    window.__orbitalVerification.assetStatus[url] = status;
   }
 }
 

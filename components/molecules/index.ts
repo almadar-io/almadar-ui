@@ -76,6 +76,12 @@ export { Lightbox, type LightboxProps, type LightboxImage } from './Lightbox';
 export { DataGrid, type DataGridProps, type DataGridField, type DataGridItemAction } from './DataGrid';
 export { DataList, type DataListProps, type DataListField, type DataListItemAction } from './DataList';
 
+// Stat display molecule (behavior-safe replacement for StatCard organism)
+export { StatDisplay, type StatDisplayProps } from './StatDisplay';
+
+// Meter molecule (relocated from organisms - no entity prop)
+export { Meter, type MeterProps, type MeterVariant, type MeterThreshold, type MeterAction } from './Meter';
+
 // UX Phase 5 molecules
 export { SwipeableRow, type SwipeableRowProps, type SwipeAction } from './SwipeableRow';
 export { SortableList, type SortableListProps } from './SortableList';

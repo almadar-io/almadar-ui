@@ -10,6 +10,7 @@
  */
 
 import { useRef, useEffect, useState, useCallback } from 'react';
+import { updateAssetStatus } from '../../../../lib/verificationRegistry';
 
 interface ImageCacheResult {
     /** Get a cached image by URL. Returns undefined if not yet loaded. */
@@ -53,14 +54,17 @@ export function useImageCache(urls: string[]): ImageCacheResult {
                 cache.set(url, img);
                 loading.delete(url);
                 setPendingCount(prev => Math.max(0, prev - 1));
+                updateAssetStatus(url, 'loaded');
             };
 
             img.onerror = () => {
                 if (cancelled) return;
                 loading.delete(url);
                 setPendingCount(prev => Math.max(0, prev - 1));
+                updateAssetStatus(url, 'failed');
             };
 
+            updateAssetStatus(url, 'pending');
             img.src = url;
         }
 

@@ -6,7 +6,9 @@
  */
 
 import React, { useRef, useEffect, useCallback, useMemo } from 'react';
+import { cn } from '../../../../lib/cn';
 import { Box } from '../../../atoms';
+import { bindCanvasCapture } from '../../../../lib/verificationRegistry';
 import type { PhysicsPreset, PhysicsBody } from './presets/types';
 import { ALL_PRESETS, projectileMotion } from './presets';
 
@@ -45,10 +47,11 @@ export function SimulationCanvas({
     }, [preset]);
 
     const step = useCallback(() => {
-        const dt = (1 / 60) * speed;
+        const dt = Math.min((1 / 60) * speed, 1 / 15); // clamp to prevent spiral
         const gx = preset.gravity?.x ?? 0;
         const gy = preset.gravity?.y ?? 9.81;
         const bodies = bodiesRef.current;
+        const maxVel = Math.max(width, height) * 5; // velocity cap
 
         for (const body of bodies) {
             if (body.fixed) continue;
@@ -56,12 +59,21 @@ export function SimulationCanvas({
             // Euler integration
             body.vx += gx * dt;
             body.vy += gy * dt;
+
+            // Velocity capping
+            body.vx = Math.max(-maxVel, Math.min(maxVel, body.vx));
+            body.vy = Math.max(-maxVel, Math.min(maxVel, body.vy));
+
             body.x += body.vx * dt;
             body.y += body.vy * dt;
 
-            // Boundary bounce
+            // Boundary bounce (all 4 edges)
             if (body.y + body.radius > height) {
                 body.y = height - body.radius;
+                body.vy = -body.vy * 0.8;
+            }
+            if (body.y - body.radius < 0) {
+                body.y = body.radius;
                 body.vy = -body.vy * 0.8;
             }
             if (body.x + body.radius > width) {
@@ -160,9 +172,23 @@ export function SimulationCanvas({
         draw();
     }, [draw]);
 
+    // -- Verification bridge: register canvas frame capture --
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        bindCanvasCapture(() => canvas.toDataURL('image/png'));
+        return () => { bindCanvasCapture(() => null); };
+    }, []);
+
     return (
-        <Box className={className}>
-            <canvas ref={canvasRef} width={width} height={height} className="rounded-md" />
+        <Box className={cn('flex justify-center', className)}>
+            <canvas
+                ref={canvasRef}
+                width={width}
+                height={height}
+                className="rounded-md block max-w-full h-auto"
+            />
         </Box>
     );
 }

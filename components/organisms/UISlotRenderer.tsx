@@ -483,7 +483,7 @@ function CompiledPortal({ slot, className, pattern, sourceTrait, children }: Com
   switch (slot) {
     case "modal":
       wrapper = (
-        <Modal isOpen={true} onClose={handleDismiss} showCloseButton={true}>
+        <Modal isOpen={true} onClose={handleDismiss} showCloseButton={true} size="lg">
           <Box
             className={cn("ui-slot", `ui-slot-${slot}`, className)}
             data-pattern={pattern}

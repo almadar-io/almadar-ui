@@ -47,7 +47,7 @@ export interface DataListField {
 export interface DataListItemAction {
   /** Button label */
   label: string;
-  /** Event name to emit (dispatched as UI:{event} with { row: itemData }) */
+  /** Event name to emit (dispatched as UI:{event} with { id, row: itemData }) */
   event: string;
   /** Lucide icon name */
   icon?: string;
@@ -102,6 +102,10 @@ export interface DataListProps {
   loadMoreEvent?: string;
   /** Whether more items are available for infinite scroll */
   hasMore?: boolean;
+  /** Render prop for custom per-item content. When provided, `fields` and `itemActions` are ignored. */
+  children?: (item: Record<string, unknown>, index: number) => React.ReactNode;
+  /** Max items to show before "Show More" button. Defaults to 5. Set to 0 to disable. */
+  pageSize?: number;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -183,12 +187,17 @@ export const DataList: React.FC<DataListProps> = ({
   infiniteScroll,
   loadMoreEvent,
   hasMore,
+  children,
+  pageSize = 5,
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
+  const [visibleCount, setVisibleCount] = React.useState(pageSize || Infinity);
 
   const fields = fieldsProp ?? columnsProp ?? [];
-  const data = Array.isArray(entity) ? entity : entity ? [entity] : [];
+  const allData = Array.isArray(entity) ? entity : entity ? [entity] : [];
+  const data = pageSize > 0 ? allData.slice(0, visibleCount) : allData;
+  const hasMoreLocal = pageSize > 0 && visibleCount < allData.length;
 
   // Separate fields by role
   const titleField = fields.find((f) => f.variant === 'h3' || f.variant === 'h4') ?? fields[0];
@@ -200,7 +209,7 @@ export const DataList: React.FC<DataListProps> = ({
 
   const handleActionClick = (action: DataListItemAction, itemData: Record<string, unknown>) => (e: React.MouseEvent) => {
     e.stopPropagation();
-    eventBus.emit(`UI:${action.event}`, { row: itemData });
+    eventBus.emit(`UI:${action.event}`, { id: itemData.id, row: itemData });
   };
 
   // Loading state
@@ -313,11 +322,64 @@ export const DataList: React.FC<DataListProps> = ({
     );
   }
 
+  // ── Render-prop children (custom per-item content) ───────────────
+  const hasRenderProp = typeof children === 'function';
+
   // ── Grouped rendering (non-message variants) ─────────────────────
   const items = data.map((item) => item as Record<string, unknown>);
   const groups = groupBy ? groupData(items, groupBy) : [{ label: '', items }];
 
   const renderItem = (itemData: Record<string, unknown>, index: number, isLast: boolean) => {
+    // Custom render-prop path: delegate item content to children, keep itemActions
+    if (hasRenderProp) {
+      const id = (itemData.id as string) || String(index);
+      return (
+        <Box key={id} data-entity-row>
+          <Box
+            className={cn(
+              'group flex items-center gap-4 transition-all duration-200',
+              isCompact ? 'px-4 py-2' : 'px-6 py-4',
+              'hover:bg-[var(--color-muted)]/80',
+              !isCard && !isCompact && 'rounded-[var(--radius-lg)] border border-transparent hover:border-[var(--color-border)]',
+            )}
+          >
+            <Box className="flex-1 min-w-0">
+              {children(itemData, index)}
+            </Box>
+            {itemActions && itemActions.length > 0 && (
+              <HStack
+                gap="xs"
+                className={cn(
+                  'flex-shrink-0 transition-opacity duration-200',
+                  'opacity-0 group-hover:opacity-100',
+                )}
+              >
+                {itemActions.map((action, idx) => (
+                  <Button
+                    key={idx}
+                    variant={action.variant ?? 'ghost'}
+                    size="sm"
+                    onClick={handleActionClick(action, itemData)}
+                    data-testid={`action-${action.event}`}
+                    className={cn(
+                      action.variant === 'danger' && 'text-[var(--color-error)] hover:bg-[var(--color-error)]/10',
+                    )}
+                  >
+                    {action.icon && <Icon name={action.icon} size="xs" className="mr-1" />}
+                    {action.label}
+                  </Button>
+                ))}
+              </HStack>
+            )}
+          </Box>
+          {isCard && !isLast && (
+            <Box className="mx-6 border-b border-[var(--color-border)]/40" />
+          )}
+        </Box>
+      );
+    }
+
+    // Default fields-based path
     const id = (itemData.id as string) || String(index);
     const titleValue = getNestedValue(itemData, titleField?.name ?? '');
 
@@ -461,6 +523,18 @@ export const DataList: React.FC<DataListProps> = ({
           )}
         </React.Fragment>
       ))}
+      {hasMoreLocal && (
+        <Box className="flex justify-center py-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setVisibleCount((prev) => prev + (pageSize || 5))}
+          >
+            <Icon name="chevron-down" size="xs" className="mr-1" />
+            {t('common.showMore') || 'Show More'} ({allData.length - visibleCount} remaining)
+          </Button>
+        </Box>
+      )}
       {infiniteScroll && loadMoreEvent && (
         <InfiniteScrollSentinel
           loadMoreEvent={loadMoreEvent}

@@ -142,7 +142,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     const handleNodeClick = useCallback(
         (node: GraphNode) => {
             if (nodeClickEvent) {
-                eventBus.emit(`UI:${nodeClickEvent}`, { row: node });
+                eventBus.emit(`UI:${nodeClickEvent}`, { id: node.id, row: node });
             }
             onNodeClick?.(node);
         },

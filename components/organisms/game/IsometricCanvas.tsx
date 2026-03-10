@@ -41,6 +41,7 @@ import type { IsometricTile, IsometricUnit, IsometricFeature } from './types/iso
 import type { ResolvedFrame } from './types/spriteAnimation';
 import { useImageCache } from './hooks/useImageCache';
 import { useCamera } from './hooks/useCamera';
+import { bindCanvasCapture } from '../../../lib/verificationRegistry';
 import {
     isoToScreen,
     screenToIso,
@@ -349,6 +350,16 @@ export function IsometricCanvas({
     }, [sortedTiles, features, units, getTerrainSprite, getFeatureSprite, getUnitSprite, effectSpriteUrls, backgroundImage, assetManifest, resolveManifestUrl]);
 
     const { getImage } = useImageCache(spriteUrls);
+
+    // -- Verification bridge: register canvas frame capture --
+    // Asset status tracking is handled by useImageCache automatically.
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        bindCanvasCapture(() => canvas.toDataURL('image/png'));
+        return () => { bindCanvasCapture(() => null); };
+    }, []);
 
     // -- Camera --
     const {

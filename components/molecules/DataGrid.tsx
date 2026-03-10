@@ -88,6 +88,10 @@ export interface DataGridProps {
   loadMoreEvent?: string;
   /** Whether more items are available for infinite scroll */
   hasMore?: boolean;
+  /** Render prop for custom per-item content. When provided, `fields` and `itemActions` are ignored. */
+  children?: (item: Record<string, unknown>, index: number) => React.ReactNode;
+  /** Max items to show before "Show More" button. Defaults to 0 (disabled). */
+  pageSize?: number;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -154,13 +158,18 @@ export const DataGrid: React.FC<DataGridProps> = ({
   infiniteScroll,
   loadMoreEvent,
   hasMore,
+  children,
+  pageSize = 0,
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [visibleCount, setVisibleCount] = useState(pageSize || Infinity);
 
   const fields = fieldsProp ?? columnsProp ?? [];
-  const data = Array.isArray(entity) ? entity : entity ? [entity] : [];
+  const allData = Array.isArray(entity) ? entity : entity ? [entity] : [];
+  const data = pageSize > 0 ? allData.slice(0, visibleCount) : allData;
+  const hasMoreLocal = pageSize > 0 && visibleCount < allData.length;
 
   const toggleSelection = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -197,7 +206,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
 
   const handleActionClick = (action: DataGridItemAction, itemData: Record<string, unknown>) => (e: React.MouseEvent) => {
     e.stopPropagation();
-    eventBus.emit(`UI:${action.event}`, { row: itemData });
+    eventBus.emit(`UI:${action.event}`, { id: itemData.id, row: itemData });
   };
 
   // Grid template
@@ -249,6 +258,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
     );
   }
 
+  const hasRenderProp = typeof children === 'function';
   const allIds = data.map((item, i) => ((item as Record<string, unknown>).id as string) || String(i));
   const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
   const someSelected = selectedIds.size > 0;
@@ -278,8 +288,30 @@ export const DataGrid: React.FC<DataGridProps> = ({
         {data.map((item, index) => {
           const itemData = item as Record<string, unknown>;
           const id = (itemData.id as string) || String(index);
-          const titleValue = getNestedValue(itemData, titleField?.name ?? '');
           const isSelected = selectedIds.has(id);
+
+          // Custom render-prop path: delegate card content to children
+          if (hasRenderProp) {
+            return (
+              <Box
+                key={id}
+                data-entity-row
+                className={cn(
+                  'bg-[var(--color-card)] rounded-[var(--radius-lg)]',
+                  'border border-[var(--color-border)]',
+                  'shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-hover)]',
+                  'hover:border-[var(--color-primary)] transition-all',
+                  'p-4',
+                  isSelected && 'ring-2 ring-[var(--color-primary)] border-[var(--color-primary)]',
+                )}
+              >
+                {children(itemData, index)}
+              </Box>
+            );
+          }
+
+          // Default fields-based path
+          const titleValue = getNestedValue(itemData, titleField?.name ?? '');
 
           return (
             <Box
@@ -443,6 +475,18 @@ export const DataGrid: React.FC<DataGridProps> = ({
         );
         })}
       </Box>
+      {hasMoreLocal && (
+        <Box className="flex justify-center py-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setVisibleCount((prev) => prev + (pageSize || 5))}
+          >
+            <Icon name="chevron-down" size="xs" className="mr-1" />
+            {t('common.showMore') || 'Show More'} ({allData.length - visibleCount} remaining)
+          </Button>
+        </Box>
+      )}
       {infiniteScroll && loadMoreEvent && (
         <InfiniteScrollSentinel
           loadMoreEvent={loadMoreEvent}

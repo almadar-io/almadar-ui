@@ -364,7 +364,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         return;
       }
       if (action.event) {
-        eventBus.emit(`UI:${action.event}`, { row: data });
+        eventBus.emit(`UI:${action.event}`, { id: data?.id, row: data });
       }
       if (action.onClick) {
         action.onClick();
