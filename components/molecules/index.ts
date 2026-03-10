@@ -66,6 +66,20 @@ export { GraphView, type GraphViewProps, type GraphViewNode, type GraphViewEdge 
 // Map visualization
 export { MapView, type MapViewProps, type MapMarkerData } from './MapView';
 
+// UX Phase 1 molecules
+export { NumberStepper, type NumberStepperProps, type NumberStepperSize } from './NumberStepper';
+export { StarRating, type StarRatingProps, type StarRatingSize, type StarRatingPrecision } from './StarRating';
+export { UploadDropZone, type UploadDropZoneProps } from './UploadDropZone';
+export { Lightbox, type LightboxProps, type LightboxImage } from './Lightbox';
+
 // Data iteration molecules (simplified from organisms)
 export { DataGrid, type DataGridProps, type DataGridField, type DataGridItemAction } from './DataGrid';
 export { DataList, type DataListProps, type DataListField, type DataListItemAction } from './DataList';
+
+// UX Phase 5 molecules
+export { SwipeableRow, type SwipeableRowProps, type SwipeAction } from './SwipeableRow';
+export { SortableList, type SortableListProps } from './SortableList';
+
+// Carousel and PullToRefresh
+export { Carousel, type CarouselProps } from './Carousel';
+export { PullToRefresh, type PullToRefreshProps } from './PullToRefresh';

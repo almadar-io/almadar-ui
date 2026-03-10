@@ -1,6 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Modal } from './Modal';
 import { Button } from '../atoms/Button';
+import { Typography } from '../atoms/Typography';
+import { VStack } from '../atoms/Stack';
 import { useState } from 'react';
 
 const meta: Meta<typeof Modal> = {
@@ -143,4 +145,73 @@ export const FormModal: Story = {
             </>
         );
     },
+};
+
+export const OpenDesktop: Story = {
+    name: "Open (Desktop View)",
+    render: () => (
+        <Modal
+            isOpen={true}
+            onClose={() => {}}
+            title="Desktop Modal"
+            footer={
+                <div className="flex gap-2 justify-end">
+                    <Button variant="secondary">Cancel</Button>
+                    <Button variant="primary">Confirm</Button>
+                </div>
+            }
+        >
+            <VStack gap="md">
+                <Typography variant="body">
+                    This modal renders as a centered dialog on desktop. On screens below 640px it would render as a bottom sheet with a drag handle.
+                </Typography>
+                <Typography variant="caption" color="secondary">
+                    The drag handle is only visible at small screen widths (max-sm breakpoint).
+                </Typography>
+            </VStack>
+        </Modal>
+    ),
+};
+
+export const OpenSmall: Story = {
+    name: "Open (Small Size)",
+    render: () => (
+        <Modal
+            isOpen={true}
+            onClose={() => {}}
+            title="Small Modal"
+            size="sm"
+        >
+            <Typography variant="body">
+                A small modal for simple confirmations or short messages.
+            </Typography>
+        </Modal>
+    ),
+};
+
+export const OpenLarge: Story = {
+    name: "Open (Large Size)",
+    render: () => (
+        <Modal
+            isOpen={true}
+            onClose={() => {}}
+            title="Large Modal with Content"
+            size="lg"
+            footer={
+                <div className="flex gap-2 justify-end">
+                    <Button variant="secondary">Cancel</Button>
+                    <Button variant="primary">Save Changes</Button>
+                </div>
+            }
+        >
+            <VStack gap="md">
+                <Typography variant="body">
+                    This is a large modal with multiple sections of content.
+                </Typography>
+                <Typography variant="body">
+                    It demonstrates the header, scrollable content area, and footer layout at the lg size.
+                </Typography>
+            </VStack>
+        </Modal>
+    ),
 };

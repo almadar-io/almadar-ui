@@ -11,7 +11,7 @@
  *
  * Uses atoms only internally: Box, VStack, HStack, Typography, Badge, Button, Icon.
  */
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { cn } from '../../lib/cn';
 import { getNestedValue } from '../../lib/getNestedValue';
 import { useEventBus } from '../../hooks/useEventBus';
@@ -22,6 +22,7 @@ import { Typography } from '../atoms/Typography';
 import { Badge } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
 import { Icon } from '../atoms/Icon';
+import { InfiniteScrollSentinel } from '../atoms/InfiniteScrollSentinel';
 
 // ── Field Definition ─────────────────────────────────────────────────
 
@@ -77,6 +78,16 @@ export interface DataGridProps {
   error?: Error | null;
   /** Entity field name containing an image URL for card thumbnails */
   imageField?: string;
+  /** Enable multi-select with checkboxes */
+  selectable?: boolean;
+  /** Selection change event name (emits UI:{selectionEvent} with { selectedIds: string[] }) */
+  selectionEvent?: string;
+  /** Enable infinite scroll loading */
+  infiniteScroll?: boolean;
+  /** Event emitted when more items needed: UI:{loadMoreEvent} */
+  loadMoreEvent?: string;
+  /** Whether more items are available for infinite scroll */
+  hasMore?: boolean;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -138,12 +149,42 @@ export const DataGrid: React.FC<DataGridProps> = ({
   isLoading = false,
   error = null,
   imageField,
+  selectable = false,
+  selectionEvent,
+  infiniteScroll,
+  loadMoreEvent,
+  hasMore,
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const fields = fieldsProp ?? columnsProp ?? [];
   const data = Array.isArray(entity) ? entity : entity ? [entity] : [];
+
+  const toggleSelection = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      if (selectionEvent) {
+        eventBus.emit(`UI:${selectionEvent}`, { selectedIds: Array.from(next) });
+      }
+      return next;
+    });
+  }, [selectionEvent, eventBus]);
+
+  const toggleAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      const allIds = data.map((item, i) => ((item as Record<string, unknown>).id as string) || String(i));
+      const allSelected = allIds.length > 0 && allIds.every((id) => prev.has(id));
+      const next = allSelected ? new Set<string>() : new Set(allIds);
+      if (selectionEvent) {
+        eventBus.emit(`UI:${selectionEvent}`, { selectedIds: Array.from(next) });
+      }
+      return next;
+    });
+  }, [data, selectionEvent, eventBus]);
 
   // Separate fields by variant for smart card layout
   const titleField = fields.find((f) => f.variant === 'h3' || f.variant === 'h4') ?? fields[0];
@@ -208,28 +249,51 @@ export const DataGrid: React.FC<DataGridProps> = ({
     );
   }
 
-  return (
-    <Box
-      className={cn('grid', gapStyles[gap], colsClass, className)}
-      style={gridTemplateColumns ? { gridTemplateColumns } : undefined}
-    >
-      {data.map((item, index) => {
-        const itemData = item as Record<string, unknown>;
-        const id = (itemData.id as string) || String(index);
-        const titleValue = getNestedValue(itemData, titleField?.name ?? '');
+  const allIds = data.map((item, i) => ((item as Record<string, unknown>).id as string) || String(i));
+  const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
+  const someSelected = selectedIds.size > 0;
 
-        return (
-          <Box
-            key={id}
-            data-entity-row
-            className={cn(
-              'bg-[var(--color-card)] rounded-[var(--radius-lg)]',
-              'border border-[var(--color-border)]',
-              'shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-hover)]',
-              'hover:border-[var(--color-primary)] transition-all',
-              'flex flex-col'
-            )}
-          >
+  return (
+    <VStack gap="sm">
+      {/* Selection toolbar */}
+      {selectable && someSelected && (
+        <HStack gap="sm" className="items-center px-2 py-2 bg-[var(--color-muted)] rounded-[var(--radius-sm)]">
+          <input
+            type="checkbox"
+            checked={allSelected}
+            onChange={toggleAll}
+            className="w-4 h-4 accent-[var(--color-primary)]"
+            aria-label="Select all"
+          />
+          <Typography variant="caption" className="font-semibold">
+            {selectedIds.size} {t('common.selected') || 'selected'}
+          </Typography>
+        </HStack>
+      )}
+
+      <Box
+        className={cn('grid', gapStyles[gap], colsClass, className)}
+        style={gridTemplateColumns ? { gridTemplateColumns } : undefined}
+      >
+        {data.map((item, index) => {
+          const itemData = item as Record<string, unknown>;
+          const id = (itemData.id as string) || String(index);
+          const titleValue = getNestedValue(itemData, titleField?.name ?? '');
+          const isSelected = selectedIds.has(id);
+
+          return (
+            <Box
+              key={id}
+              data-entity-row
+              className={cn(
+                'bg-[var(--color-card)] rounded-[var(--radius-lg)]',
+                'border border-[var(--color-border)]',
+                'shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-hover)]',
+                'hover:border-[var(--color-primary)] transition-all',
+                'flex flex-col',
+                isSelected && 'ring-2 ring-[var(--color-primary)] border-[var(--color-primary)]',
+              )}
+            >
             {/* Card Image */}
             {imageField && (() => {
               const imgUrl = getNestedValue(itemData, imageField);
@@ -249,6 +313,16 @@ export const DataGrid: React.FC<DataGridProps> = ({
             {/* Card Header: title + badges + danger actions */}
             <Box className="p-4 pb-0">
               <HStack gap="sm" className="justify-between items-start">
+                {selectable && (
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleSelection(id)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-4 h-4 mt-1 flex-shrink-0 accent-[var(--color-primary)]"
+                    aria-label={`Select ${titleValue !== undefined ? String(titleValue) : 'item'}`}
+                  />
+                )}
                 <VStack gap="xs" className="flex-1 min-w-0">
                   {titleValue !== undefined && titleValue !== null && (
                     <HStack gap="xs" className="items-center">
@@ -367,8 +441,16 @@ export const DataGrid: React.FC<DataGridProps> = ({
             )}
           </Box>
         );
-      })}
-    </Box>
+        })}
+      </Box>
+      {infiniteScroll && loadMoreEvent && (
+        <InfiniteScrollSentinel
+          loadMoreEvent={loadMoreEvent}
+          isLoading={isLoading}
+          hasMore={hasMore}
+        />
+      )}
+    </VStack>
   );
 };
 

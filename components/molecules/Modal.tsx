@@ -6,7 +6,7 @@
  * Uses theme-aware CSS variables for styling.
  */
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { X } from "lucide-react";
 import { Icon } from "../atoms/Icon";
 import { Box } from "../atoms/Box";
@@ -33,6 +33,8 @@ export interface ModalProps {
   className?: string;
   /** Declarative close event — emits UI:{closeEvent} via eventBus when modal should close */
   closeEvent?: string;
+  /** Enable swipe-down-to-close on mobile bottom sheet (default: true) */
+  swipeDownToClose?: boolean;
 }
 
 const sizeClasses: Record<ModalSize, string> = {
@@ -55,10 +57,14 @@ export const Modal: React.FC<ModalProps> = ({
   closeOnEscape = true,
   className,
   closeEvent,
+  swipeDownToClose = true,
 }) => {
   const eventBus = useEventBus();
   const modalRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
+  const [dragY, setDragY] = useState(0);
+  const dragStartY = useRef(0);
+  const isDragging = useRef(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -117,7 +123,12 @@ export const Modal: React.FC<ModalProps> = ({
         className="z-40"
       />
 
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+      {/* Desktop: centered dialog. Mobile (<640px): bottom sheet */}
+      <div className={cn(
+        "fixed inset-0 z-50 pointer-events-none",
+        "flex items-center justify-center p-4",
+        "max-sm:items-end max-sm:p-0",
+      )}>
         <Box
           ref={modalRef}
           bg="surface"
@@ -127,12 +138,47 @@ export const Modal: React.FC<ModalProps> = ({
           className={cn(
             "pointer-events-auto w-full flex flex-col max-h-[90vh]",
             sizeClasses[size],
+            "max-sm:max-w-full max-sm:max-h-[85vh] max-sm:rounded-b-none max-sm:rounded-t-2xl",
             className,
           )}
+          style={dragY > 0 ? {
+            transform: `translateY(${dragY}px)`,
+            transition: isDragging.current ? 'none' : 'transform 200ms ease-out',
+          } : undefined}
           role="dialog"
           aria-modal="true"
           {...(title && { "aria-labelledby": "modal-title" })}
         >
+          {/* Drag handle (mobile bottom sheet) */}
+          <div
+            className="hidden max-sm:flex justify-center py-2 cursor-grab active:cursor-grabbing touch-none"
+            onPointerDown={(e) => {
+              if (!swipeDownToClose) return;
+              dragStartY.current = e.clientY;
+              isDragging.current = true;
+              (e.target as HTMLElement).setPointerCapture(e.pointerId);
+            }}
+            onPointerMove={(e) => {
+              if (!isDragging.current) return;
+              const dy = Math.max(0, e.clientY - dragStartY.current);
+              setDragY(dy);
+            }}
+            onPointerUp={() => {
+              if (!isDragging.current) return;
+              isDragging.current = false;
+              if (dragY > 100) {
+                handleClose();
+              }
+              setDragY(0);
+            }}
+            onPointerCancel={() => {
+              isDragging.current = false;
+              setDragY(0);
+            }}
+          >
+            <div className="w-10 h-1 rounded-full bg-[var(--color-border)]" />
+          </div>
+
           {/* Header */}
           {(title || showCloseButton) && (
             <div

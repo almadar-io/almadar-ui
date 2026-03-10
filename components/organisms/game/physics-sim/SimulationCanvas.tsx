@@ -5,12 +5,21 @@
  * Runs its own Euler integration loop — no external physics hook needed.
  */
 
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useMemo } from 'react';
 import { Box } from '../../../atoms';
 import type { PhysicsPreset, PhysicsBody } from './presets/types';
+import { ALL_PRESETS, projectileMotion } from './presets';
+
+function resolvePreset(preset: string | PhysicsPreset): PhysicsPreset {
+    if (typeof preset !== 'string') return preset;
+    const needle = preset.toLowerCase();
+    return ALL_PRESETS.find(
+        (p) => p.id === preset || p.id.includes(needle) || p.name.toLowerCase().includes(needle),
+    ) ?? projectileMotion;
+}
 
 export interface SimulationCanvasProps {
-    preset: PhysicsPreset;
+    preset: string | PhysicsPreset;
     width?: number;
     height?: number;
     running: boolean;
@@ -19,13 +28,14 @@ export interface SimulationCanvasProps {
 }
 
 export function SimulationCanvas({
-    preset,
+    preset: presetProp,
     width = 600,
     height = 400,
     running,
     speed = 1,
     className,
 }: SimulationCanvasProps): React.JSX.Element {
+    const preset = useMemo(() => resolvePreset(presetProp), [presetProp]);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const bodiesRef = useRef<PhysicsBody[]>(structuredClone(preset.bodies));
 

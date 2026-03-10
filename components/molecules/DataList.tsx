@@ -23,6 +23,8 @@ import { Badge } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
 import { Icon } from '../atoms/Icon';
 import { ProgressBar } from '../atoms/ProgressBar';
+import { Divider } from '../atoms/Divider';
+import { InfiniteScrollSentinel } from '../atoms/InfiniteScrollSentinel';
 
 // ── Field Definition ─────────────────────────────────────────────────
 
@@ -67,13 +69,39 @@ export interface DataListProps {
   /** Gap between rows */
   gap?: 'none' | 'sm' | 'md' | 'lg';
   /** Visual variant */
-  variant?: 'default' | 'card' | 'compact';
+  variant?: 'default' | 'card' | 'compact' | 'message';
+  /** Group items by a field value (renders section headers between groups) */
+  groupBy?: string;
+  /** Field name identifying the sender (used with variant: "message") */
+  senderField?: string;
+  /** Current user identifier; messages matching this value align right (used with variant: "message") */
+  currentUser?: string;
   /** Additional CSS classes */
   className?: string;
   /** Loading state */
   isLoading?: boolean;
   /** Error state */
   error?: Error | null;
+  /** Enable drag-to-reorder with grip handles */
+  reorderable?: boolean;
+  /** Event emitted on reorder: UI:{reorderEvent} with { fromIndex, toIndex } */
+  reorderEvent?: string;
+  /** Event emitted on left swipe: UI:{swipeLeftEvent} with { row } */
+  swipeLeftEvent?: string;
+  /** Actions revealed on left swipe */
+  swipeLeftActions?: readonly { label: string; icon?: string; variant?: 'primary' | 'secondary' | 'danger' | 'ghost' }[];
+  /** Event emitted on right swipe: UI:{swipeRightEvent} with { row } */
+  swipeRightEvent?: string;
+  /** Actions revealed on right swipe */
+  swipeRightActions?: readonly { label: string; icon?: string; variant?: 'primary' | 'secondary' | 'danger' | 'ghost' }[];
+  /** Event emitted on long press: UI:{longPressEvent} with { row } */
+  longPressEvent?: string;
+  /** Enable infinite scroll loading */
+  infiniteScroll?: boolean;
+  /** Event emitted when more items needed: UI:{loadMoreEvent} */
+  loadMoreEvent?: string;
+  /** Whether more items are available for infinite scroll */
+  hasMore?: boolean;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -113,6 +141,20 @@ function formatValue(value: unknown, format?: DataListField['format']): string {
   }
 }
 
+function groupData(
+  items: Record<string, unknown>[],
+  field: string,
+): { label: string; items: Record<string, unknown>[] }[] {
+  const groups = new Map<string, Record<string, unknown>[]>();
+  for (const item of items) {
+    const key = String(getNestedValue(item, field) ?? '');
+    const group = groups.get(key);
+    if (group) group.push(item);
+    else groups.set(key, [item]);
+  }
+  return Array.from(groups.entries()).map(([label, groupItems]) => ({ label, items: groupItems }));
+}
+
 // ── Component ────────────────────────────────────────────────────────
 
 export const DataList: React.FC<DataListProps> = ({
@@ -122,9 +164,25 @@ export const DataList: React.FC<DataListProps> = ({
   itemActions,
   gap = 'none',
   variant = 'default',
+  groupBy,
+  senderField,
+  currentUser,
   className,
   isLoading = false,
   error = null,
+  // Gesture props: reorderable, swipeLeftEvent, swipeRightEvent, longPressEvent
+  // are consumed by the compiler to wrap items in SwipeableRow/SortableList.
+  // DataList destructures them here to prevent DOM passthrough.
+  reorderable: _reorderable,
+  reorderEvent: _reorderEvent,
+  swipeLeftEvent: _swipeLeftEvent,
+  swipeLeftActions: _swipeLeftActions,
+  swipeRightEvent: _swipeRightEvent,
+  swipeRightActions: _swipeRightActions,
+  longPressEvent: _longPressEvent,
+  infiniteScroll,
+  loadMoreEvent,
+  hasMore,
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -187,6 +245,203 @@ export const DataList: React.FC<DataListProps> = ({
 
   const isCard = variant === 'card';
   const isCompact = variant === 'compact';
+  const isMessage = variant === 'message';
+
+  // ── Message variant ──────────────────────────────────────────────
+  if (isMessage) {
+    const items = data.map((item) => item as Record<string, unknown>);
+    const groups = groupBy ? groupData(items, groupBy) : [{ label: '', items }];
+    const contentField = titleField?.name ?? fields[0]?.name ?? '';
+
+    return (
+      <VStack gap="sm" className={cn('py-2', className)}>
+        {groups.map((group, gi) => (
+          <React.Fragment key={gi}>
+            {group.label && (
+              <Divider label={group.label} className="my-2" />
+            )}
+            {group.items.map((itemData, index) => {
+              const id = (itemData.id as string) || `${gi}-${index}`;
+              const sender = senderField ? String(getNestedValue(itemData, senderField) ?? '') : '';
+              const isSent = Boolean(currentUser && sender === currentUser);
+              const content = getNestedValue(itemData, contentField);
+              const timestampField = fields.find((f) => f.format === 'date');
+              const timestamp = timestampField ? getNestedValue(itemData, timestampField.name) : null;
+
+              return (
+                <Box
+                  key={id}
+                  className={cn(
+                    'flex px-4',
+                    isSent ? 'justify-end' : 'justify-start',
+                  )}
+                >
+                  <Box
+                    className={cn(
+                      'max-w-[75%] px-4 py-2',
+                      isSent
+                        ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)] rounded-2xl rounded-br-sm'
+                        : 'bg-[var(--color-muted)] text-[var(--color-foreground)] rounded-2xl rounded-bl-sm',
+                    )}
+                  >
+                    {!isSent && senderField && (
+                      <Typography variant="caption" className="font-semibold mb-0.5">
+                        {sender}
+                      </Typography>
+                    )}
+                    <Typography variant="body">
+                      {content !== undefined && content !== null ? String(content) : ''}
+                    </Typography>
+                    {timestamp && (
+                      <Typography
+                        variant="caption"
+                        className={cn(
+                          'mt-1 text-[0.65rem]',
+                          isSent ? 'opacity-70' : 'text-[var(--color-muted-foreground)]',
+                        )}
+                      >
+                        {formatDate(timestamp)}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+              );
+            })}
+          </React.Fragment>
+        ))}
+      </VStack>
+    );
+  }
+
+  // ── Grouped rendering (non-message variants) ─────────────────────
+  const items = data.map((item) => item as Record<string, unknown>);
+  const groups = groupBy ? groupData(items, groupBy) : [{ label: '', items }];
+
+  const renderItem = (itemData: Record<string, unknown>, index: number, isLast: boolean) => {
+    const id = (itemData.id as string) || String(index);
+    const titleValue = getNestedValue(itemData, titleField?.name ?? '');
+
+    return (
+      <Box key={id} data-entity-row>
+        <Box
+          className={cn(
+            'group flex items-center gap-4 transition-all duration-200',
+            isCompact ? 'px-4 py-2' : 'px-6 py-4',
+            'hover:bg-[var(--color-muted)]/80',
+            !isCard && !isCompact && 'rounded-[var(--radius-lg)] border border-transparent hover:border-[var(--color-border)]',
+          )}
+        >
+          {/* Main content area */}
+          <Box className="flex-1 min-w-0">
+            {/* Primary row: icon + title + badges */}
+            <HStack gap="sm" className="items-center">
+              {titleField?.icon && (
+                <Icon
+                  name={titleField.icon}
+                  size={isCompact ? 'xs' : 'sm'}
+                  className="text-[var(--color-primary)] flex-shrink-0"
+                />
+              )}
+              {titleValue !== undefined && titleValue !== null && (
+                <Typography
+                  variant={titleField?.variant === 'h3' ? 'h3' : 'h4'}
+                  className={cn('font-semibold truncate flex-1', isCompact && 'text-sm')}
+                >
+                  {String(titleValue)}
+                </Typography>
+              )}
+              {/* Inline badges */}
+              {badgeFields.map((field) => {
+                const val = getNestedValue(itemData, field.name);
+                if (val === undefined || val === null) return null;
+                return (
+                  <HStack key={field.name} gap="xs" className="items-center flex-shrink-0">
+                    {field.icon && <Icon name={field.icon} size="xs" />}
+                    <Badge variant={statusVariant(String(val))}>
+                      {String(val)}
+                    </Badge>
+                  </HStack>
+                );
+              })}
+            </HStack>
+
+            {/* Secondary row: metadata fields */}
+            {bodyFields.length > 0 && !isCompact && (
+              <HStack gap="md" className="mt-1.5 flex-wrap">
+                {bodyFields.map((field) => {
+                  const value = getNestedValue(itemData, field.name);
+                  if (value === undefined || value === null || value === '') return null;
+
+                  return (
+                    <HStack key={field.name} gap="xs" className="items-center">
+                      {field.icon && (
+                        <Icon name={field.icon} size="xs" className="text-[var(--color-muted-foreground)]" />
+                      )}
+                      <Typography variant="caption" color="secondary">
+                        {field.label ?? fieldLabel(field.name)}:
+                      </Typography>
+                      <Typography variant="small">
+                        {formatValue(value, field.format)}
+                      </Typography>
+                    </HStack>
+                  );
+                })}
+              </HStack>
+            )}
+
+            {/* Progress fields */}
+            {progressFields.map((field) => {
+              const value = getNestedValue(itemData, field.name);
+              if (typeof value !== 'number') return null;
+              return (
+                <Box key={field.name} className="mt-2 max-w-xs">
+                  <HStack gap="xs" className="items-center mb-1">
+                    {field.icon && <Icon name={field.icon} size="xs" className="text-[var(--color-muted-foreground)]" />}
+                    <Typography variant="caption" color="secondary">
+                      {field.label ?? fieldLabel(field.name)}
+                    </Typography>
+                  </HStack>
+                  <ProgressBar value={value} max={100} />
+                </Box>
+              );
+            })}
+          </Box>
+
+          {/* Actions (visible on hover) */}
+          {itemActions && itemActions.length > 0 && (
+            <HStack
+              gap="xs"
+              className={cn(
+                'flex-shrink-0 transition-opacity duration-200',
+                'opacity-0 group-hover:opacity-100',
+              )}
+            >
+              {itemActions.map((action, idx) => (
+                <Button
+                  key={idx}
+                  variant={action.variant ?? 'ghost'}
+                  size="sm"
+                  onClick={handleActionClick(action, itemData)}
+                  data-testid={`action-${action.event}`}
+                  className={cn(
+                    action.variant === 'danger' && 'text-[var(--color-error)] hover:bg-[var(--color-error)]/10',
+                  )}
+                >
+                  {action.icon && <Icon name={action.icon} size="xs" className="mr-1" />}
+                  {action.label}
+                </Button>
+              ))}
+            </HStack>
+          )}
+        </Box>
+
+        {/* Divider between items (card variant) */}
+        {isCard && !isLast && (
+          <Box className="mx-6 border-b border-[var(--color-border)]/40" />
+        )}
+      </Box>
+    );
+  };
 
   return (
     <Box
@@ -196,133 +451,23 @@ export const DataList: React.FC<DataListProps> = ({
         className,
       )}
     >
-      {data.map((item, index) => {
-        const itemData = item as Record<string, unknown>;
-        const id = (itemData.id as string) || String(index);
-        const titleValue = getNestedValue(itemData, titleField?.name ?? '');
-        const isLast = index === data.length - 1;
-
-        return (
-          <Box key={id} data-entity-row>
-            <Box
-              className={cn(
-                'group flex items-center gap-4 transition-all duration-200',
-                isCompact ? 'px-4 py-2' : 'px-6 py-4',
-                'hover:bg-[var(--color-muted)]/80',
-                !isCard && !isCompact && 'rounded-[var(--radius-lg)] border border-transparent hover:border-[var(--color-border)]',
-              )}
-            >
-              {/* Main content area */}
-              <Box className="flex-1 min-w-0">
-                {/* Primary row: icon + title + badges */}
-                <HStack gap="sm" className="items-center">
-                  {titleField?.icon && (
-                    <Icon
-                      name={titleField.icon}
-                      size={isCompact ? 'xs' : 'sm'}
-                      className="text-[var(--color-primary)] flex-shrink-0"
-                    />
-                  )}
-                  {titleValue !== undefined && titleValue !== null && (
-                    <Typography
-                      variant={titleField?.variant === 'h3' ? 'h3' : 'h4'}
-                      className={cn('font-semibold truncate flex-1', isCompact && 'text-sm')}
-                    >
-                      {String(titleValue)}
-                    </Typography>
-                  )}
-                  {/* Inline badges */}
-                  {badgeFields.map((field) => {
-                    const val = getNestedValue(itemData, field.name);
-                    if (val === undefined || val === null) return null;
-                    return (
-                      <HStack key={field.name} gap="xs" className="items-center flex-shrink-0">
-                        {field.icon && <Icon name={field.icon} size="xs" />}
-                        <Badge variant={statusVariant(String(val))}>
-                          {String(val)}
-                        </Badge>
-                      </HStack>
-                    );
-                  })}
-                </HStack>
-
-                {/* Secondary row: metadata fields */}
-                {bodyFields.length > 0 && !isCompact && (
-                  <HStack gap="md" className="mt-1.5 flex-wrap">
-                    {bodyFields.map((field) => {
-                      const value = getNestedValue(itemData, field.name);
-                      if (value === undefined || value === null || value === '') return null;
-
-                      return (
-                        <HStack key={field.name} gap="xs" className="items-center">
-                          {field.icon && (
-                            <Icon name={field.icon} size="xs" className="text-[var(--color-muted-foreground)]" />
-                          )}
-                          <Typography variant="caption" color="secondary">
-                            {field.label ?? fieldLabel(field.name)}:
-                          </Typography>
-                          <Typography variant="small">
-                            {formatValue(value, field.format)}
-                          </Typography>
-                        </HStack>
-                      );
-                    })}
-                  </HStack>
-                )}
-
-                {/* Progress fields */}
-                {progressFields.map((field) => {
-                  const value = getNestedValue(itemData, field.name);
-                  if (typeof value !== 'number') return null;
-                  return (
-                    <Box key={field.name} className="mt-2 max-w-xs">
-                      <HStack gap="xs" className="items-center mb-1">
-                        {field.icon && <Icon name={field.icon} size="xs" className="text-[var(--color-muted-foreground)]" />}
-                        <Typography variant="caption" color="secondary">
-                          {field.label ?? fieldLabel(field.name)}
-                        </Typography>
-                      </HStack>
-                      <ProgressBar value={value} max={100} />
-                    </Box>
-                  );
-                })}
-              </Box>
-
-              {/* Actions (visible on hover) */}
-              {itemActions && itemActions.length > 0 && (
-                <HStack
-                  gap="xs"
-                  className={cn(
-                    'flex-shrink-0 transition-opacity duration-200',
-                    'opacity-0 group-hover:opacity-100',
-                  )}
-                >
-                  {itemActions.map((action, idx) => (
-                    <Button
-                      key={idx}
-                      variant={action.variant ?? 'ghost'}
-                      size="sm"
-                      onClick={handleActionClick(action, itemData)}
-                      data-testid={`action-${action.event}`}
-                      className={cn(
-                        action.variant === 'danger' && 'text-[var(--color-error)] hover:bg-[var(--color-error)]/10',
-                      )}
-                    >
-                      {action.icon && <Icon name={action.icon} size="xs" className="mr-1" />}
-                      {action.label}
-                    </Button>
-                  ))}
-                </HStack>
-              )}
-            </Box>
-
-            {/* Divider between items (card variant) */}
-            {isCard && !isLast && (
-              <Box className="mx-6 border-b border-[var(--color-border)]/40" />
-            )}
-          </Box>
-        );
-      })}
+      {groups.map((group, gi) => (
+        <React.Fragment key={gi}>
+          {group.label && (
+            <Divider label={group.label} className={gi > 0 ? 'mt-4' : 'mt-0'} />
+          )}
+          {group.items.map((itemData, index) =>
+            renderItem(itemData, index, gi === groups.length - 1 && index === group.items.length - 1)
+          )}
+        </React.Fragment>
+      ))}
+      {infiniteScroll && loadMoreEvent && (
+        <InfiniteScrollSentinel
+          loadMoreEvent={loadMoreEvent}
+          isLoading={isLoading}
+          hasMore={hasMore}
+        />
+      )}
     </Box>
   );
 };

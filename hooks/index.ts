@@ -166,6 +166,38 @@ export {
   type AuthContextValue,
 } from './useAuthContext';
 
+// Gesture hooks (Phase 5 — rich interactions)
+export {
+  useSwipeGesture,
+  type SwipeGestureOptions,
+  type SwipeGestureResult,
+  type SwipeHandlers,
+} from './useSwipeGesture';
+export {
+  useLongPress,
+  type LongPressOptions,
+  type LongPressHandlers,
+} from './useLongPress';
+export {
+  useDragReorder,
+  type DragReorderResult,
+} from './useDragReorder';
+export {
+  useInfiniteScroll,
+  type InfiniteScrollOptions,
+  type InfiniteScrollResult,
+} from './useInfiniteScroll';
+export {
+  usePullToRefresh,
+  type PullToRefreshOptions,
+  type PullToRefreshResult,
+} from './usePullToRefresh';
+export {
+  usePinchZoom,
+  type PinchZoomOptions,
+  type PinchZoomResult,
+} from './usePinchZoom';
+
 // GitHub integration hooks
 export {
   useGitHubStatus,

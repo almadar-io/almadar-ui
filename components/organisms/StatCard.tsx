@@ -67,6 +67,8 @@ export interface StatCardProps extends EntityDisplayProps {
   metrics?: readonly MetricDefinition[];
   /** Compact display mode */
   compact?: boolean;
+  /** Sparkline data points for an inline trend chart */
+  sparklineData?: readonly number[];
 }
 
 export const StatCard: React.FC<StatCardProps> = ({
@@ -87,6 +89,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   // Schema-based props
   entity,
   metrics,
+  sparklineData,
   isLoading: externalLoading,
   error: externalError,
 }) => {
@@ -333,11 +336,44 @@ export const StatCard: React.FC<StatCardProps> = ({
           )}
         </VStack>
 
-        {Icon && (
-          <Box className={cn("p-3", iconBg)}>
-            <Icon className={cn("h-6 w-6", iconColor)} />
-          </Box>
-        )}
+        <VStack gap="xs" align="end">
+          {Icon && (
+            <Box className={cn("p-3", iconBg)}>
+              <Icon className={cn("h-6 w-6", iconColor)} />
+            </Box>
+          )}
+
+          {/* Sparkline chart */}
+          {sparklineData && sparklineData.length > 1 && (() => {
+            const w = 80;
+            const h = 32;
+            const pad = 2;
+            const min = Math.min(...sparklineData);
+            const max = Math.max(...sparklineData);
+            const range = max - min || 1;
+            const points = sparklineData
+              .map((v, i) => {
+                const x = pad + (i / (sparklineData.length - 1)) * (w - pad * 2);
+                const y = pad + (1 - (v - min) / range) * (h - pad * 2);
+                return `${x},${y}`;
+              })
+              .join(' ');
+            const trending = sparklineData[sparklineData.length - 1] >= sparklineData[0];
+            const strokeColor = trending ? 'var(--color-success)' : 'var(--color-error)';
+            return (
+              <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="flex-shrink-0">
+                <polyline
+                  fill="none"
+                  stroke={strokeColor}
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  points={points}
+                />
+              </svg>
+            );
+          })()}
+        </VStack>
       </HStack>
 
       {action && (

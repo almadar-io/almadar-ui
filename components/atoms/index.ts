@@ -96,5 +96,16 @@ export {
 export { DayCell, type DayCellProps } from "./DayCell";
 export { TimeSlotCell, type TimeSlotCellProps } from "./TimeSlotCell";
 
+// UX Phase 1 atoms
+export { StatusDot, type StatusDotProps, type StatusDotStatus, type StatusDotSize } from "./StatusDot";
+export { TrendIndicator, type TrendIndicatorProps, type TrendDirection, type TrendIndicatorSize } from "./TrendIndicator";
+export { RangeSlider, type RangeSliderProps, type RangeSliderSize } from "./RangeSlider";
+
+// UX Phase 5 atoms
+export { AnimatedCounter, type AnimatedCounterProps } from "./AnimatedCounter";
+export { InfiniteScrollSentinel, type InfiniteScrollSentinelProps } from "./InfiniteScrollSentinel";
+export { ConfettiEffect, type ConfettiEffectProps } from "./ConfettiEffect";
+export { TypewriterText, type TypewriterTextProps } from "./TypewriterText";
+
 // Game atom components
 export * from "./game";

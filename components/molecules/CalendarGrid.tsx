@@ -6,7 +6,7 @@
  * No entity binding, no event bus, no translations.
  * Composes DayCell and TimeSlotCell atoms into a 7-day grid.
  */
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo, useCallback, useRef } from "react";
 import { cn } from "../../lib/cn";
 import { Box } from "../atoms/Box";
 import { VStack } from "../atoms/Stack";
@@ -14,6 +14,8 @@ import { Typography } from "../atoms/Typography";
 import { Badge } from "../atoms/Badge";
 import { DayCell } from "../atoms/DayCell";
 import { TimeSlotCell } from "../atoms/TimeSlotCell";
+import { useEventBus } from "../../hooks/useEventBus";
+import { useSwipeGesture } from "../../hooks/useSwipeGesture";
 
 export interface CalendarEvent {
   id: string;
@@ -38,6 +40,14 @@ export interface CalendarGridProps {
   onEventClick?: (event: CalendarEvent) => void;
   /** Additional CSS classes */
   className?: string;
+  /** Event emitted on long-press of a time slot: UI:{longPressEvent} with { date, time } */
+  longPressEvent?: string;
+  /** Additional payload for long-press events */
+  longPressPayload?: Record<string, unknown>;
+  /** Event emitted on swipe left (next week): UI:{swipeLeftEvent} */
+  swipeLeftEvent?: string;
+  /** Event emitted on swipe right (prev week): UI:{swipeRightEvent} */
+  swipeRightEvent?: string;
 }
 
 /** Get the Monday of the week containing the given date */
@@ -94,7 +104,13 @@ export function CalendarGrid({
   onDayClick,
   onEventClick,
   className,
+  longPressEvent,
+  longPressPayload,
+  swipeLeftEvent,
+  swipeRightEvent,
 }: CalendarGridProps): React.JSX.Element {
+  const eventBus = useEventBus();
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resolvedWeekStart = useMemo(
     () => (weekStart ? getStartOfWeek(weekStart) : getStartOfWeek(new Date())),
     [weekStart],
@@ -133,6 +149,27 @@ export function CalendarGrid({
     [events],
   );
 
+  const swipeCallbacks = useMemo(() => ({
+    onSwipeLeft: swipeLeftEvent ? () => eventBus.emit(`UI:${swipeLeftEvent}`, {}) : undefined,
+    onSwipeRight: swipeRightEvent ? () => eventBus.emit(`UI:${swipeRightEvent}`, {}) : undefined,
+  }), [swipeLeftEvent, swipeRightEvent, eventBus]);
+
+  const swipe = useSwipeGesture(swipeCallbacks);
+
+  const clearLongPress = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  const startLongPress = useCallback((day: Date, time: string) => {
+    if (!longPressEvent) return;
+    longPressTimer.current = setTimeout(() => {
+      eventBus.emit(`UI:${longPressEvent}`, { date: day.toISOString(), time, ...longPressPayload });
+    }, 500);
+  }, [longPressEvent, longPressPayload, eventBus]);
+
   const renderEvent = (event: CalendarEvent) => (
     <Box
       key={event.id}
@@ -154,7 +191,15 @@ export function CalendarGrid({
   );
 
   return (
-    <Box className={cn("overflow-x-auto", className)}>
+    <Box
+      className={cn("overflow-x-auto", className)}
+      {...(swipeLeftEvent || swipeRightEvent ? {
+        onPointerDown: swipe.onPointerDown,
+        onPointerMove: swipe.onPointerMove,
+        onPointerUp: swipe.onPointerUp,
+        onPointerCancel: swipe.onPointerCancel,
+      } : {})}
+    >
       <Box className="min-w-[800px]">
         {/* Day Headers */}
         <Box className="grid grid-cols-8 border-b border-[var(--color-border)]">
@@ -221,6 +266,11 @@ export function CalendarGrid({
                       "border-l border-[var(--color-border)]",
                       isToday && "bg-blue-50/30",
                     )}
+                    {...(longPressEvent ? {
+                      onPointerDown: () => startLongPress(day, time),
+                      onPointerUp: clearLongPress,
+                      onPointerCancel: clearLongPress,
+                    } : {})}
                   >
                     <VStack gap="xs">
                       {slotEvents.map(renderEvent)}

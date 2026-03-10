@@ -55,6 +55,8 @@ export interface StackProps {
   action?: string;
   /** Payload to include with the action event */
   actionPayload?: Record<string, unknown>;
+  /** When true, horizontal stacks flip to vertical below the md breakpoint (768px) */
+  responsive?: boolean;
 }
 
 const gapStyles: Record<StackGap, string> = {
@@ -105,6 +107,7 @@ export const Stack: React.FC<StackProps> = ({
   tabIndex,
   action,
   actionPayload,
+  responsive = false,
 }) => {
   const eventBus = useEventBus();
 
@@ -115,14 +118,20 @@ export const Stack: React.FC<StackProps> = ({
     onClick?.(e);
   };
 
+  // Responsive: horizontal stacks become vertical below md breakpoint
+  const isHorizontal = direction === "horizontal";
   const directionClass =
-    direction === "horizontal"
+    responsive && isHorizontal
       ? reverse
-        ? "flex-row-reverse"
-        : "flex-row"
-      : reverse
-        ? "flex-col-reverse"
-        : "flex-col";
+        ? "flex-col-reverse md:flex-row-reverse"
+        : "flex-col md:flex-row"
+      : isHorizontal
+        ? reverse
+          ? "flex-row-reverse"
+          : "flex-row"
+        : reverse
+          ? "flex-col-reverse"
+          : "flex-col";
 
   return (
     <Component
