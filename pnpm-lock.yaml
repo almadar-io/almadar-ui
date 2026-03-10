@@ -58,7 +58,7 @@ importers:
         version: 0.160.1
     devDependencies:
       '@almadar/eslint-plugin':
-        specifier: ^2.4.1
+        specifier: '>=2.3.0'
         version: 2.4.1(eslint@10.0.0(jiti@1.21.7))
       '@storybook/addon-docs':
         specifier: ^10.2.6
