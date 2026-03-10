@@ -29,9 +29,13 @@ jobs:
 
       - name: Typecheck
         run: pnpm typecheck
+        env:
+          NODE_OPTIONS: '--max-old-space-size=4096'
 
       - name: Build
         run: pnpm build
+        env:
+          NODE_OPTIONS: '--max-old-space-size=4096'
 
       - name: Test
         run: pnpm test --if-present
