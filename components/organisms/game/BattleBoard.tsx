@@ -552,7 +552,7 @@ export function BattleBoard({
                         hoveredTile={hoveredTile}
                         onTileClick={handleTileClick}
                         onUnitClick={handleUnitClick}
-                        onTileHover={(x, y) => setHoveredTile({ x, y })}
+                        onTileHover={(x: number, y: number) => setHoveredTile({ x, y })}
                         onTileLeave={() => setHoveredTile(null)}
                         scale={scale}
                         assetBaseUrl={assetManifest?.baseUrl}
