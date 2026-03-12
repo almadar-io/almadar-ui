@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "2.8.1",
+  "version": "2.9.0",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "main": "./dist/components/index.js",
@@ -30,6 +30,10 @@
     "./renderer": {
       "import": "./dist/renderer/index.js",
       "types": "./dist/renderer/index.d.ts"
+    },
+    "./runtime": {
+      "import": "./dist/runtime/index.js",
+      "types": "./dist/runtime/index.d.ts"
     },
     "./stores": {
       "import": "./dist/stores/index.js",
@@ -80,6 +84,7 @@
     "@almadar/core": ">=2.1.0",
     "@almadar/evaluator": ">=2.0.0",
     "@almadar/patterns": ">=2.0.0",
+    "@almadar/runtime": ">=2.0.0",
     "clsx": "^2.1.0",
     "leaflet": "1.9.4",
     "lucide-react": "^0.344.0",

@@ -57,9 +57,9 @@ export interface DataGridItemAction {
 
 export interface DataGridProps {
   /** Entity data array */
-  entity?: unknown | readonly unknown[];
+  entity: unknown | readonly unknown[];
   /** Field definitions for rendering each card */
-  fields?: readonly DataGridField[];
+  fields: readonly DataGridField[];
   /** Alias for fields (compiler generates `columns` for field definitions) */
   columns?: readonly DataGridField[];
   /** Per-item action buttons */

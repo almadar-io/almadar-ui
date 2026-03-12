@@ -7,6 +7,7 @@ export default defineConfig({
     'providers/index.ts',
     'context/index.ts',
     'renderer/index.ts',
+    'runtime/index.ts',
     'stores/index.ts',
     'lib/index.ts',
     'components/organisms/game/three/index.ts',

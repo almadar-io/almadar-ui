@@ -1,0 +1,63 @@
+/**
+ * Client Effect Handlers Factory
+ *
+ * Creates the standard effect handler set for client-side trait execution.
+ *
+ * @packageDocumentation
+ */
+
+import type { EffectHandlers } from '@almadar/runtime';
+
+export interface ClientEventBus {
+    emit: (type: string, payload?: Record<string, unknown>) => void;
+}
+
+export interface SlotSetter {
+    addPattern: (slot: string, pattern: unknown, props?: Record<string, unknown>) => void;
+    clearSlot: (slot: string) => void;
+}
+
+export interface CreateClientEffectHandlersOptions {
+    eventBus: ClientEventBus;
+    slotSetter: SlotSetter;
+    navigate?: (path: string, params?: Record<string, unknown>) => void;
+    notify?: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
+    enrichPattern?: (pattern: unknown) => unknown;
+}
+
+export function createClientEffectHandlers(
+    options: CreateClientEffectHandlersOptions
+): EffectHandlers {
+    const { eventBus, slotSetter, navigate, notify, enrichPattern } = options;
+
+    return {
+        emit: (event: string, payload?: Record<string, unknown>) => {
+            const prefixedEvent = event.startsWith('UI:') ? event : `UI:${event}`;
+            eventBus.emit(prefixedEvent, { payload });
+        },
+        persist: async () => {
+            console.warn('[ClientEffectHandlers] persist is server-side only, ignored on client');
+        },
+        set: () => {
+            console.warn('[ClientEffectHandlers] set is server-side only, ignored on client');
+        },
+        callService: async () => {
+            console.warn('[ClientEffectHandlers] callService is server-side only, ignored on client');
+            return {};
+        },
+        renderUI: (slot: string, pattern: unknown, props?: Record<string, unknown>) => {
+            if (pattern === null) {
+                slotSetter.clearSlot(slot);
+                return;
+            }
+            const enriched = enrichPattern ? enrichPattern(pattern) : pattern;
+            slotSetter.addPattern(slot, enriched, props);
+        },
+        navigate: navigate ?? ((path: string) => {
+            console.warn('[ClientEffectHandlers] No navigate handler, ignoring:', path);
+        }),
+        notify: notify ?? ((msg: string, type?: string) => {
+            console.log(`[ClientEffectHandlers] notify (${type}):`, msg);
+        }),
+    };
+}

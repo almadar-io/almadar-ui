@@ -18,7 +18,7 @@ export interface StatDisplayProps {
   /** Display label (e.g., "Total", "Remaining") */
   label: string;
   /** Primary value (number or formatted string) */
-  value?: number | string;
+  value: number | string;
   /** Maximum value (renders as "value / max") */
   max?: number;
   /** Lucide icon name or React node */

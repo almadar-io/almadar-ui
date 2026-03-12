@@ -59,9 +59,9 @@ export interface DataListItemAction {
 
 export interface DataListProps {
   /** Entity data array */
-  entity?: unknown | readonly unknown[];
+  entity: unknown | readonly unknown[];
   /** Field definitions for rendering each row */
-  fields?: readonly DataListField[];
+  fields: readonly DataListField[];
   /** Alias for fields (compiler may generate `columns` for field definitions) */
   columns?: readonly DataListField[];
   /** Per-item action buttons */
