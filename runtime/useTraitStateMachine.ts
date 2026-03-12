@@ -228,24 +228,36 @@ export function useTraitStateMachine(
                     navigate: optionsRef.current?.navigate,
                     notify: optionsRef.current?.notify,
                     enrichPattern: (pattern) => {
-                        const patternType = (pattern as PatternConfig)?.type;
-                        if (patternType && isEntityAwarePattern(patternType) && fetchedDataContext) {
-                            const patternRecord = pattern as Record<string, unknown>;
-                            // If entity is a string (name reference from schema), resolve to actual data
-                            if (typeof patternRecord.entity === 'string') {
-                                const records = fetchedDataContext.getData(patternRecord.entity as string);
-                                if (records.length > 0) {
-                                    return { type: patternType, ...patternRecord, entity: records } as PatternConfig;
-                                }
-                            } else if (!patternRecord.entity && linkedEntity) {
-                                // No entity specified, use linkedEntity from trait binding
-                                const records = fetchedDataContext.getData(linkedEntity);
-                                if (records.length > 0) {
-                                    return { type: patternType, ...patternRecord, entity: records } as PatternConfig;
+                        const enrichNode = (node: unknown): unknown => {
+                            if (!node || typeof node !== 'object') return node;
+                            const rec = node as Record<string, unknown>;
+                            const nodeType = rec.type as string | undefined;
+
+                            // Recursively enrich children first
+                            let enriched = rec;
+                            if (Array.isArray(rec.children)) {
+                                const enrichedChildren = (rec.children as unknown[]).map(enrichNode);
+                                enriched = { ...rec, children: enrichedChildren };
+                            }
+
+                            // Enrich this node if it's entity-aware
+                            if (nodeType && isEntityAwarePattern(nodeType) && fetchedDataContext) {
+                                if (typeof enriched.entity === 'string') {
+                                    const records = fetchedDataContext.getData(enriched.entity as string);
+                                    if (records.length > 0) {
+                                        return { ...enriched, entity: records };
+                                    }
+                                } else if (!enriched.entity && linkedEntity) {
+                                    const records = fetchedDataContext.getData(linkedEntity);
+                                    if (records.length > 0) {
+                                        return { ...enriched, entity: records };
+                                    }
                                 }
                             }
-                        }
-                        return pattern;
+
+                            return enriched;
+                        };
+                        return enrichNode(pattern);
                     },
                 });
 
