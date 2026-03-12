@@ -229,9 +229,16 @@ export function useTraitStateMachine(
                     notify: optionsRef.current?.notify,
                     enrichPattern: (pattern) => {
                         const patternType = (pattern as PatternConfig)?.type;
-                        if (linkedEntity && patternType && isEntityAwarePattern(patternType)) {
+                        if (patternType && isEntityAwarePattern(patternType) && fetchedDataContext) {
                             const patternRecord = pattern as Record<string, unknown>;
-                            if (!patternRecord.entity && fetchedDataContext) {
+                            // If entity is a string (name reference from schema), resolve to actual data
+                            if (typeof patternRecord.entity === 'string') {
+                                const records = fetchedDataContext.getData(patternRecord.entity as string);
+                                if (records.length > 0) {
+                                    return { type: patternType, ...patternRecord, entity: records } as PatternConfig;
+                                }
+                            } else if (!patternRecord.entity && linkedEntity) {
+                                // No entity specified, use linkedEntity from trait binding
                                 const records = fetchedDataContext.getData(linkedEntity);
                                 if (records.length > 0) {
                                     return { type: patternType, ...patternRecord, entity: records } as PatternConfig;
