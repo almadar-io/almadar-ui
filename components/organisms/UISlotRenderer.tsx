@@ -33,6 +33,9 @@ import { Skeleton, type SkeletonVariant } from "../molecules/Skeleton";
 // Shared renderer imports (synced from orbital-shared/design-system/renderer)
 import { isKnownPattern, isPortalSlot, SLOT_DEFINITIONS } from "../../renderer";
 
+// Pattern registry — single source of truth for pattern → component name resolution
+import { getComponentForPattern as getComponentName } from "@almadar/patterns";
+
 // ============================================================================
 // Suspense Configuration Context
 // ============================================================================
@@ -138,6 +141,35 @@ import {
 // Custom pattern import
 import { CustomPattern } from "./CustomPattern";
 
+// Direct component imports for patterns not covered by wrapper patterns
+import { Stack } from "../atoms/Stack";
+import { StatusDot } from "../atoms/StatusDot";
+import { TrendIndicator } from "../atoms/TrendIndicator";
+import { RangeSlider } from "../atoms/RangeSlider";
+import { HealthBar } from "../atoms/game/HealthBar";
+import { ScoreDisplay } from "../atoms/game/ScoreDisplay";
+import { Tabs } from "../molecules/Tabs";
+import { StatDisplay } from "../molecules/StatDisplay";
+import { StatBadge } from "../molecules/game/StatBadge";
+import { StarRating } from "../molecules/StarRating";
+import { LineChart } from "../molecules/LineChart";
+import { DataGrid } from "../molecules/DataGrid";
+import { DataList } from "../molecules/DataList";
+import { CalendarGrid } from "../molecules/CalendarGrid";
+import { Lightbox } from "../molecules/Lightbox";
+import { UploadDropZone } from "../molecules/UploadDropZone";
+import { WizardNavigation } from "../molecules/WizardNavigation";
+import { WizardProgress } from "../molecules/WizardProgress";
+import { Meter } from "../molecules/Meter";
+import { ActionButtons } from "../molecules/game/ActionButtons";
+import { DPad } from "../molecules/game/DPad";
+import { CanvasEffect } from "./game/CanvasEffect";
+import { CombatLog } from "./game/CombatLog";
+import { DialogueBox } from "./game/DialogueBox";
+import { InventoryPanel } from "./game/InventoryPanel";
+import { GameHud } from "./game/GameHud";
+import { GameMenu } from "./game/GameMenu";
+
 // ============================================================================
 // Component Registry
 // ============================================================================
@@ -211,99 +243,103 @@ export const COMPONENT_REGISTRY: Record<string, React.ComponentType<any>> = {
   MapViewPattern,
   // Custom pattern
   CustomPattern,
-};
-
-/**
- * Maps pattern types to component names.
- * This provides a local fallback when the shared resolver is not initialized.
- * Ideally, this should come from the shared resolver (orbital-shared/patterns/component-mapping.json).
- */
-const PATTERN_TO_COMPONENT: Record<string, string> = {
-  "page-header": "PageHeader",
-  "entity-table": "DataTable",
-  "entity-cards": "CardGrid",
-  "entity-detail": "DetailPanel",
-  "detail-panel": "DetailPanel",
-  "entity-list": "List",
-  "master-detail": "MasterDetail",
-  "search-bar": "SearchInput",
-  "empty-state": "EmptyState",
-  "loading-state": "LoadingState",
-  breadcrumb: "Breadcrumb",
-  stats: "StatCard",
-  "form-section": "Form",
-  form: "Form",
-  "form-actions": "ButtonGroup",
-  "filter-group": "ButtonGroup",
-  "button-group": "ButtonGroup",
-  // Layout patterns
-  vstack: "VStackPattern",
-  hstack: "HStackPattern",
-  box: "BoxPattern",
-  grid: "GridPattern",
-  center: "CenterPattern",
-  spacer: "SpacerPattern",
-  divider: "DividerPattern",
-  // Component patterns - Interactive
-  button: "ButtonPattern",
-  "icon-button": "IconButtonPattern",
-  link: "LinkPattern",
-  // Component patterns - Display
-  text: "TextPattern",
-  heading: "HeadingPattern",
-  badge: "BadgePattern",
-  avatar: "AvatarPattern",
-  icon: "IconPattern",
-  image: "ImagePattern",
-  card: "CardPattern",
-  "progress-bar": "ProgressBarPattern",
-  spinner: "SpinnerPattern",
-  // Component patterns - Form inputs
-  input: "InputPattern",
-  textarea: "TextareaPattern",
-  select: "SelectPattern",
-  checkbox: "CheckboxPattern",
-  radio: "RadioPattern",
-  label: "LabelPattern",
-  // Component patterns - Feedback
-  alert: "AlertPattern",
-  tooltip: "TooltipPattern",
-  popover: "PopoverPattern",
-  // Component patterns - Navigation
-  menu: "MenuPattern",
-  accordion: "AccordionPattern",
-  // Component patterns - Layout
-  container: "ContainerPattern",
-  "simple-grid": "SimpleGridPattern",
-  "float-button": "FloatButtonPattern",
-  // Custom pattern
-  custom: "CustomPattern",
-  // Map patterns
-  "map-view": "MapViewPattern",
+  // Direct components (not wrapped in pattern adapters)
+  Stack,
+  VStack: VStackPattern,
+  HStack: HStackPattern,
+  Typography: TextPattern,
+  Tabs,
+  StatDisplay,
+  StatBadge,
+  StatusDot,
+  TrendIndicator,
+  RangeSlider,
+  StarRating,
+  LineChart,
+  DataGrid,
+  DataList,
+  CalendarGrid,
+  Lightbox,
+  UploadDropZone,
+  WizardNavigation,
+  WizardProgress,
+  Meter,
+  ActionButtons,
+  HealthBar,
+  ScoreDisplay,
+  DPad,
+  CanvasEffect,
+  CombatLog,
+  DialogueBox,
+  InventoryPanel,
+  GameHud,
+  GameMenu,
+  FilterGroup: ButtonGroup,
+  ErrorState: EmptyState,
+  Toast: AlertPattern,
+  // Plain component name aliases — component-mapping.json returns these names
+  // (e.g., "button" → "Button") but registry above uses "ButtonPattern" keys.
+  Button: ButtonPattern,
+  IconButton: IconButtonPattern,
+  Link: LinkPattern,
+  Text: TextPattern,
+  Heading: HeadingPattern,
+  Badge: BadgePattern,
+  Avatar: AvatarPattern,
+  Icon: IconPattern,
+  Image: ImagePattern,
+  Card: CardPattern,
+  ProgressBar: ProgressBarPattern,
+  Spinner: SpinnerPattern,
+  Input: InputPattern,
+  Textarea: TextareaPattern,
+  Select: SelectPattern,
+  Checkbox: CheckboxPattern,
+  Radio: RadioPattern,
+  Label: LabelPattern,
+  Alert: AlertPattern,
+  Tooltip: TooltipPattern,
+  Popover: PopoverPattern,
+  Menu: MenuPattern,
+  Accordion: AccordionPattern,
+  Container: ContainerPattern,
+  SimpleGrid: SimpleGridPattern,
+  FloatButton: FloatButtonPattern,
+  MapView: MapViewPattern,
+  Box: BoxPattern,
+  Grid: GridPattern,
+  Center: CenterPattern,
+  Spacer: SpacerPattern,
+  Divider: DividerPattern,
 };
 
 /**
  * Get the React component for a pattern type.
- * Uses shared resolver if available, falls back to local mapping.
+ * Uses @almadar/patterns component-mapping.json (auto-generated, single source of truth)
+ * to resolve pattern type → component name, then looks up in COMPONENT_REGISTRY.
+ *
+ * NOTE: getComponentName() returns the full mapping entry object
+ * { component, importPath, category } despite its `string | null` type signature.
+ * We extract .component to get the actual component name string.
  */
 function getComponentForPattern(
   patternType: string
 ): React.ComponentType<any> | null {
-  // Get component name from local mapping
-  // TODO: When shared resolver is initialized at app startup, use:
-  // const resolved = resolvePattern({ type: patternType });
-  // const componentName = resolved.component;
-  const componentName = PATTERN_TO_COMPONENT[patternType];
-
-  if (!componentName) {
+  const mapping = getComponentName(patternType);
+  if (!mapping) {
     return null;
   }
-
-  return COMPONENT_REGISTRY[componentName] ?? null;
+  // Extract the component name from the mapping entry
+  const name = typeof mapping === 'string'
+    ? mapping
+    : (mapping as unknown as { component: string }).component;
+  if (!name) return null;
+  return COMPONENT_REGISTRY[name] ?? null;
 }
 
 // Patterns that support nested children
 const PATTERNS_WITH_CHILDREN = new Set([
+  "stack",
   "vstack",
   "hstack",
   "box",
@@ -753,7 +789,7 @@ function SlotContentRenderer({
         data-pattern={content.pattern}
         data-id={content.id}
       >
-        <PatternComponent {...restProps} onDismiss={onDismiss}>
+        <PatternComponent {...restProps}>
           {renderedChildren}
         </PatternComponent>
       </Box>

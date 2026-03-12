@@ -83,7 +83,7 @@ export const WizardProgress: React.FC<WizardProgressProps> = ({
           const isCompleted = index < currentStep;
 
           return (
-            <React.Fragment key={step.id}>
+            <React.Fragment key={step.id || `step-${index}`}>
               {/* Step indicator */}
               <button
                 onClick={() => handleStepClick(index)}

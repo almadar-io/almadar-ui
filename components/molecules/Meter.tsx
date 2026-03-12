@@ -115,21 +115,23 @@ export const Meter: React.FC<MeterProps> = ({
         [eventBus, value],
     );
 
+    const safeVal = value ?? 0;
+
     const percentage = useMemo(() => {
         const range = max - min;
         if (range <= 0) return 0;
-        return Math.min(Math.max(((value - min) / range) * 100, 0), 100);
-    }, [value, min, max]);
+        return Math.min(Math.max(((safeVal - min) / range) * 100, 0), 100);
+    }, [safeVal, min, max]);
 
     const activeColor = useMemo(
-        () => getColorForValue(value, max, thresholds),
-        [value, max, thresholds],
+        () => getColorForValue(safeVal, max, thresholds),
+        [safeVal, max, thresholds],
     );
 
     const displayValue = useMemo(() => {
-        const formatted = Number.isInteger(value) ? value : value.toFixed(1);
+        const formatted = Number.isInteger(safeVal) ? safeVal : safeVal.toFixed(1);
         return unit ? `${formatted}${unit}` : `${formatted}`;
-    }, [value, unit]);
+    }, [safeVal, unit]);
 
     if (isLoading) {
         return <LoadingState message="Loading meter..." className={className} />;

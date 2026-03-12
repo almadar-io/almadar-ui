@@ -24,7 +24,7 @@ export function getNestedValue(
   obj: Record<string, unknown> | null | undefined,
   path: string
 ): unknown {
-  if (obj === null || obj === undefined) {
+  if (obj === null || obj === undefined || !path) {
     return undefined;
   }
 

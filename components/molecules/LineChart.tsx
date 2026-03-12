@@ -57,11 +57,14 @@ export const LineChart: React.FC<LineChartProps> = ({
 }) => {
   const gradientId = useId();
 
+  const safeData = data ?? [];
+
   const sortedData = useMemo(() => {
-    return [...data].sort(
+    if (safeData.length === 0) return [];
+    return [...safeData].sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
-  }, [data]);
+  }, [safeData]);
 
   const points: NormalizedPoint[] = useMemo(() => {
     if (sortedData.length === 0) return [];
@@ -98,7 +101,7 @@ export const LineChart: React.FC<LineChartProps> = ({
     return `${linePath} L ${last.x} ${bottom} L ${first.x} ${bottom} Z`;
   }, [linePath, points, height, showArea]);
 
-  if (data.length === 0) {
+  if (safeData.length === 0) {
     return (
       <Box className={cn('flex items-center justify-center text-[var(--color-muted-foreground)]', className)} style={{ width, height }}>
         No data
