@@ -242,15 +242,40 @@ export function useTraitStateMachine(
 
                             // Enrich this node if it's entity-aware
                             if (nodeType && isEntityAwarePattern(nodeType) && fetchedDataContext) {
+                                let injected = false;
                                 if (typeof enriched.entity === 'string') {
                                     const records = fetchedDataContext.getData(enriched.entity as string);
                                     if (records.length > 0) {
-                                        return { ...enriched, entity: records };
+                                        enriched = { ...enriched, entity: records };
+                                        injected = true;
                                     }
                                 } else if (!enriched.entity && linkedEntity) {
                                     const records = fetchedDataContext.getData(linkedEntity);
                                     if (records.length > 0) {
-                                        return { ...enriched, entity: records };
+                                        enriched = { ...enriched, entity: records };
+                                        injected = true;
+                                    }
+                                }
+
+                                // Auto-generate fields for data-iterating patterns when
+                                // entity data was injected but no fields/columns are defined.
+                                // Schema children are pattern configs (not render functions),
+                                // so DataList can't use them; fields-based rendering works.
+                                if (injected && !enriched.fields && !enriched.columns) {
+                                    const sample = (enriched.entity as unknown[])[0];
+                                    if (sample && typeof sample === 'object') {
+                                        const keys = Object.keys(sample as Record<string, unknown>)
+                                            .filter(k => k !== 'id' && k !== '_id');
+                                        enriched = {
+                                            ...enriched,
+                                            fields: keys.map((k, i) => ({
+                                                name: k,
+                                                variant: i === 0 ? 'h4' : 'body',
+                                            })),
+                                            // Remove pattern-config children that components
+                                            // can't render (they expect a function or nothing)
+                                            children: undefined,
+                                        };
                                     }
                                 }
                             }
