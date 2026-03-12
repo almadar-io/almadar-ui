@@ -59,6 +59,7 @@ export interface ButtonPatternProps extends ClosedCircuitProps {
   size?: ButtonSize;
   disabled?: boolean;
   onClick?: string; // Event name to emit
+  event?: string; // Alias for onClick (used by all .orb schemas)
   icon?: string;
   iconPosition?: 'left' | 'right';
   className?: string;
@@ -73,15 +74,17 @@ export function ButtonPattern({
   size = 'md',
   disabled = false,
   onClick,
+  event,
   icon,
   iconPosition = 'left',
   className,
 }: ButtonPatternProps): React.ReactElement {
   const { emit } = useEventBus();
+  const eventName = onClick ?? event;
 
   const handleClick = () => {
-    if (onClick && !disabled) {
-      emit(`UI:${onClick}`, {});
+    if (eventName && !disabled) {
+      emit(`UI:${eventName}`, {});
     }
   };
 

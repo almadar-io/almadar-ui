@@ -169,6 +169,10 @@ import { DialogueBox } from "./game/DialogueBox";
 import { InventoryPanel } from "./game/InventoryPanel";
 import { GameHud } from "./game/GameHud";
 import { GameMenu } from "./game/GameMenu";
+import { IsometricCanvas } from "./game/IsometricCanvas";
+import { PlatformerCanvas } from "./game/PlatformerCanvas";
+import { SimulationCanvas } from "./game/physics-sim";
+import { Chart } from "./Chart";
 
 // ============================================================================
 // Component Registry
@@ -274,6 +278,10 @@ export const COMPONENT_REGISTRY: Record<string, React.ComponentType<any>> = {
   InventoryPanel,
   GameHud,
   GameMenu,
+  IsometricCanvas,
+  PlatformerCanvas,
+  SimulationCanvas,
+  Chart,
   FilterGroup: ButtonGroup,
   ErrorState: EmptyState,
   Toast: AlertPattern,
