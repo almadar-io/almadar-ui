@@ -350,7 +350,10 @@ export function bindEventBus(eventBus: {
   exposeOnWindow();
   if (window.__orbitalVerification) {
     window.__orbitalVerification.sendEvent = (event, payload) => {
-      eventBus.emit(event, payload);
+      // Use UI: prefix — useTraitStateMachine and useOrbitalBridge
+      // subscribe to UI:* events for user-initiated actions
+      const prefixed = event.startsWith('UI:') ? event : `UI:${event}`;
+      eventBus.emit(prefixed, payload);
     };
 
     // Initialize event log
