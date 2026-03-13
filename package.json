@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "2.12.0",
+  "version": "2.12.1",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "main": "./dist/components/index.js",
@@ -8,44 +8,54 @@
   "types": "./dist/components/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/components/index.d.ts",
       "import": "./dist/components/index.js",
-      "types": "./dist/components/index.d.ts"
+      "require": "./dist/components/index.js"
     },
     "./components": {
+      "types": "./dist/components/index.d.ts",
       "import": "./dist/components/index.js",
-      "types": "./dist/components/index.d.ts"
+      "require": "./dist/components/index.js"
     },
     "./hooks": {
+      "types": "./dist/hooks/index.d.ts",
       "import": "./dist/hooks/index.js",
-      "types": "./dist/hooks/index.d.ts"
+      "require": "./dist/hooks/index.js"
     },
     "./providers": {
+      "types": "./dist/providers/index.d.ts",
       "import": "./dist/providers/index.js",
-      "types": "./dist/providers/index.d.ts"
+      "require": "./dist/providers/index.js"
     },
     "./context": {
+      "types": "./dist/context/index.d.ts",
       "import": "./dist/context/index.js",
-      "types": "./dist/context/index.d.ts"
+      "require": "./dist/context/index.js"
     },
     "./renderer": {
+      "types": "./dist/renderer/index.d.ts",
       "import": "./dist/renderer/index.js",
-      "types": "./dist/renderer/index.d.ts"
+      "require": "./dist/renderer/index.js"
     },
     "./runtime": {
+      "types": "./dist/runtime/index.d.ts",
       "import": "./dist/runtime/index.js",
-      "types": "./dist/runtime/index.d.ts"
+      "require": "./dist/runtime/index.js"
     },
     "./stores": {
+      "types": "./dist/stores/index.d.ts",
       "import": "./dist/stores/index.js",
-      "types": "./dist/stores/index.d.ts"
+      "require": "./dist/stores/index.js"
     },
     "./lib": {
+      "types": "./dist/lib/index.d.ts",
       "import": "./dist/lib/index.js",
-      "types": "./dist/lib/index.d.ts"
+      "require": "./dist/lib/index.js"
     },
     "./components/organisms/game/three": {
+      "types": "./dist/components/organisms/game/three/index.d.ts",
       "import": "./dist/components/organisms/game/three/index.js",
-      "types": "./dist/components/organisms/game/three/index.d.ts"
+      "require": "./dist/components/organisms/game/three/index.js"
     },
     "./components/organisms/game/TraitStateViewer": {
       "import": "./components/organisms/game/TraitStateViewer.tsx",
@@ -61,8 +71,9 @@
     },
     "./themes/*.css": "./themes/*.css",
     "./locales": {
+      "types": "./dist/locales/index.d.ts",
       "import": "./dist/locales/index.js",
-      "types": "./dist/locales/index.d.ts"
+      "require": "./dist/locales/index.js"
     },
     "./index.css": "./index.css"
   },
