@@ -244,9 +244,15 @@ export function useTraitStateMachine(
                 // Get entity data for context from FetchedDataContext (server data)
                 const linkedEntity = binding.linkedEntity || '';
                 const entityId = payload?.entityId as string | undefined;
-                const entityData = linkedEntity && entityId && fetchedDataContext
-                    ? (fetchedDataContext.getById(linkedEntity, entityId) as Record<string, unknown>) || {}
-                    : payload || {};
+                const entityData = (() => {
+                    if (!linkedEntity || !fetchedDataContext) return payload || {};
+                    if (entityId) {
+                        return (fetchedDataContext.getById(linkedEntity, entityId) as Record<string, unknown>) || {};
+                    }
+                    // No entityId: fall back to first available record so @entity bindings work
+                    const records = fetchedDataContext.getData(linkedEntity);
+                    return (records[0] as Record<string, unknown>) || payload || {};
+                })();
 
                 // Accumulator for render-ui effects — grouped by slot
                 const pendingSlots = new Map<string, SlotPatternEntry[]>();
