@@ -198,7 +198,7 @@ export function InventoryPanel({
             onMouseEnter={(e) => handleMouseEnter(e, index)}
             onMouseLeave={handleMouseLeave}
             tabIndex={0}
-            aria-label={item ? `${item.name || item.type}, quantity: ${item.quantity}` : `Empty slot ${index + 1}`}
+            aria-label={item ? `${item.name || item.type || 'Item'}, quantity: ${item.quantity}` : `Empty slot ${index + 1}`}
           >
             {item && (
               <>
@@ -206,13 +206,13 @@ export function InventoryPanel({
                 {item.sprite ? (
                   <img
                     src={item.sprite}
-                    alt={item.name || item.type}
+                    alt={item.name || item.type || 'Item'}
                     className="w-8 h-8 object-contain"
                     style={{ imageRendering: 'pixelated' }}
                   />
                 ) : (
                   <div className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs text-gray-300">
-                    {item.type.charAt(0).toUpperCase()}
+                    {(item.type ?? item.name ?? 'I').charAt(0).toUpperCase()}
                   </div>
                 )}
 
