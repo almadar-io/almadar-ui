@@ -22,10 +22,12 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useEventBus } from '../hooks';
 import { useFetchedDataContext } from '../providers';
 import { isCircuitEvent } from '@almadar/core';
-import type { PatternConfig } from '@almadar/core';
+import type { PatternConfig, ResolvedTraitTick } from '@almadar/core';
 import {
     StateMachineManager,
     EffectExecutor,
+    interpolateValue,
+    createContextFromBindings,
     type TraitState,
     type TraitDefinition,
     type EffectHandlers,
@@ -147,6 +149,16 @@ export function useTraitStateMachine(
         optionsRef.current = options;
     }, [options]);
 
+    // Refs for tick loop callbacks — read current values without causing re-renders.
+    // Mirror of traitStates and fetchedDataContext kept in sync on every render so
+    // that RAF/interval callbacks always see the latest values without needing to
+    // be recreated (mirrors the _tickStateRef/_tickEntityRef pattern in the compiled shell).
+    const traitStatesRef = useRef<Map<string, TraitState>>(traitStates);
+    const fetchedDataContextRef = useRef(fetchedDataContext);
+
+    useEffect(() => { traitStatesRef.current = traitStates; }, [traitStates]);
+    useEffect(() => { fetchedDataContextRef.current = fetchedDataContext; }, [fetchedDataContext]);
+
     // Register traits with debug registry and clean up on unmount/rebind
     useEffect(() => {
         const mgr = managerRef.current;
@@ -195,6 +207,190 @@ export function useTraitStateMachine(
         console.log('[TraitStateMachine] Reset states for page navigation:',
             Array.from(newManager.getAllStates().keys()).join(', '));
     }, [traitBindings]);
+
+    /**
+     * Execute a single tick's effects synchronously.
+     *
+     * Mirrors the compiled shell output (orbital-shell-typescript/src/backend.rs lines 5353-5516):
+     * - `set` effects mutate a local entity copy, then batch-persist to FetchedDataContext
+     * - `render-ui` effects resolve bindings and flush slots
+     * - No EffectExecutor (async) — ticks must be synchronous to work inside RAF
+     * - `@payload` is empty (invalid in tick context per the Rust validator)
+     */
+    const runTickEffects = useCallback((tick: ResolvedTraitTick, binding: ResolvedTraitBinding) => {
+        const fdc = fetchedDataContextRef.current;
+        const actions = slotsActionsRef.current;
+        const linkedEntity = binding.linkedEntity ?? '';
+        const currentState = traitStatesRef.current.get(binding.trait.name)?.currentState ?? '';
+
+        // appliesTo: empty array means fire in all states (same as Rust OirTick default)
+        if (tick.appliesTo.length > 0 && !tick.appliesTo.includes(currentState)) return;
+
+        // Build entity data — same shape as processEvent
+        const records = linkedEntity && fdc ? fdc.getData(linkedEntity) : [];
+        const entityData: Record<string, unknown> = records.length > 0
+            ? Object.assign([...(records as unknown[])], records[0] as Record<string, unknown>) as unknown as Record<string, unknown>
+            : {};
+
+        const bindingCtx: BindingContext = { entity: entityData, payload: {}, state: currentState };
+        const evalCtx = createContextFromBindings(bindingCtx);
+
+        // Guard: use interpolateValue to evaluate the s-expression (returns truthy/falsy)
+        if (tick.guard !== undefined) {
+            const passed = interpolateValue(tick.guard, evalCtx);
+            if (!passed) return;
+        }
+
+        // Process effects synchronously — set effects first so render-ui sees updated values
+        const entityMutations = new Map<string, unknown>();
+        const pendingSlots = new Map<string, Array<{ pattern: PatternConfig; props: Record<string, unknown> }>>();
+
+        const slotSource: SlotSource = {
+            trait: binding.trait.name,
+            state: currentState,
+            transition: `${currentState}->tick:${tick.name}`,
+            effects: tick.effects,
+            traitDefinition: binding.trait,
+        };
+
+        // Helper: enrich entity-aware pattern nodes (same logic as processEvent's enrichNode)
+        const enrichTickNode = (node: unknown): unknown => {
+            if (!node || typeof node !== 'object') return node;
+            const rec = node as Record<string, unknown>;
+            const nodeType = rec.type as string | undefined;
+
+            let enriched = rec;
+            if (Array.isArray(rec.children)) {
+                enriched = { ...rec, children: (rec.children as unknown[]).map(enrichTickNode) };
+            }
+
+            if (nodeType && isEntityAwarePattern(nodeType) && fdc) {
+                let injected = false;
+                if (typeof enriched.entity === 'string') {
+                    const entityRecords = fdc.getData(enriched.entity as string);
+                    if (entityRecords.length > 0) { enriched = { ...enriched, entity: entityRecords }; injected = true; }
+                } else if (!enriched.entity && linkedEntity) {
+                    const entityRecords = fdc.getData(linkedEntity);
+                    if (entityRecords.length > 0) { enriched = { ...enriched, entity: entityRecords }; injected = true; }
+                }
+                if (injected && !enriched.fields && !enriched.columns) {
+                    const sample = (enriched.entity as unknown[])[0];
+                    if (sample && typeof sample === 'object') {
+                        const keys = Object.keys(sample as Record<string, unknown>).filter(k => k !== 'id' && k !== '_id');
+                        enriched = { ...enriched, fields: keys.map((k, i) => ({ name: k, variant: i === 0 ? 'h4' : 'body' })), children: undefined };
+                    }
+                }
+            }
+            return enriched;
+        };
+
+        for (const effect of tick.effects) {
+            if (!Array.isArray(effect)) continue;
+            const op = effect[0] as string;
+
+            if (op === 'set') {
+                const path = effect[1];
+                if (typeof path !== 'string' || !path.startsWith('@entity.')) continue;
+                const field = path.slice('@entity.'.length);
+                // Re-create evalCtx after each mutation so chained sets see updated values
+                const updatedCtx = createContextFromBindings(bindingCtx);
+                const value = interpolateValue(effect[2] as unknown, updatedCtx);
+                (bindingCtx.entity as Record<string, unknown>)[field] = value;
+                entityMutations.set(field, value);
+
+            } else if (op === 'render-ui' || op === 'render') {
+                const slot = effect[1] as string;
+                const rawPattern = effect[2];
+                if (rawPattern === null || rawPattern === undefined) {
+                    pendingSlots.set(slot, []);
+                    continue;
+                }
+                // Resolve bindings (same as EffectExecutor.resolveArgs for render-ui args)
+                const updatedCtx = createContextFromBindings(bindingCtx);
+                const resolved = interpolateValue(rawPattern, updatedCtx);
+                const enriched = enrichTickNode(resolved);
+                const existing = pendingSlots.get(slot) ?? [];
+                existing.push({ pattern: enriched as PatternConfig, props: {} });
+                pendingSlots.set(slot, existing);
+            }
+        }
+
+        // Flush slots atomically
+        for (const [slot, patterns] of pendingSlots) {
+            if (patterns.length === 0) {
+                actions.clearSlot(slot);
+            } else {
+                actions.setSlotPatterns(slot, patterns, slotSource);
+            }
+        }
+
+        // Batch-persist entity mutations (single setData call like compiled shell's dispatchReducer TICK)
+        if (linkedEntity && entityMutations.size > 0 && fdc) {
+            const latestRecords = fdc.getData(linkedEntity);
+            if (latestRecords.length > 0) {
+                const updated = (latestRecords as Record<string, unknown>[]).map((r, i) =>
+                    i === 0 ? { ...r, ...Object.fromEntries(entityMutations) } : r
+                );
+                fdc.setData({ [linkedEntity]: updated as unknown[] });
+            }
+        }
+    }, []);
+
+    /**
+     * RAF loop for frame-interval ticks (interval: "frame").
+     * Reads traitBindingsRef.current every frame so it never needs to restart
+     * when bindings change — mirrors the generated shell's requestAnimationFrame pattern.
+     */
+    useEffect(() => {
+        // Check if any binding has frame ticks before starting the loop
+        const hasFrameTicks = traitBindingsRef.current.some(b =>
+            b.trait.ticks?.some(t => t.interval === 'frame')
+        );
+        if (!hasFrameTicks) return;
+
+        let running = true;
+        let rafId = 0;
+
+        const frame = () => {
+            if (!running) return;
+            for (const binding of traitBindingsRef.current) {
+                for (const tick of binding.trait.ticks ?? []) {
+                    if (tick.interval !== 'frame') continue;
+                    runTickEffects(tick, binding);
+                }
+            }
+            rafId = requestAnimationFrame(frame);
+        };
+
+        rafId = requestAnimationFrame(frame);
+        return () => {
+            running = false;
+            cancelAnimationFrame(rafId);
+        };
+    // Re-run when bindings change (new behaviors may add/remove frame ticks)
+    }, [traitBindings, runTickEffects]);
+
+    /**
+     * Interval loops for time-based ticks (interval: number ms).
+     * One setInterval per tick. Re-created when bindings change.
+     */
+    useEffect(() => {
+        const intervals: ReturnType<typeof setInterval>[] = [];
+
+        for (const binding of traitBindings) {
+            for (const tick of binding.trait.ticks ?? []) {
+                if (tick.interval === 'frame') continue;
+                const ms = tick.interval as number;
+                intervals.push(setInterval(() => {
+                    runTickEffects(tick, binding);
+                }, ms));
+            }
+        }
+
+        return () => {
+            for (const id of intervals) clearInterval(id);
+        };
+    }, [traitBindings, runTickEffects]);
 
     /**
      * Process an event and trigger matching transitions.
@@ -349,6 +545,24 @@ export function useTraitStateMachine(
                     state: result.previousState,
                 };
 
+                // Pre-process ["set", "@entity.field", value] effects.
+                // createClientEffectHandlers treats "set" as server-only (no-op on client).
+                // We handle it here: evaluate the value expression and mutate bindingCtx.entity
+                // so subsequent render-ui effects see the updated field values.
+                const entityMutations = new Map<string, unknown>();
+                for (const effect of result.effects) {
+                    if (!Array.isArray(effect) || effect[0] !== 'set') continue;
+                    const path = effect[1];
+                    if (typeof path !== 'string' || !path.startsWith('@entity.')) continue;
+                    const field = path.slice('@entity.'.length);
+                    const evalCtx = createContextFromBindings(bindingCtx);
+                    const value = interpolateValue(effect[2] as unknown, evalCtx);
+                    if (bindingCtx.entity !== null && typeof bindingCtx.entity === 'object') {
+                        (bindingCtx.entity as Record<string, unknown>)[field] = value;
+                    }
+                    entityMutations.set(field, value);
+                }
+
                 const effectContext: EffectContext = {
                     traitName: binding.trait.name,
                     state: result.previousState,
@@ -372,6 +586,18 @@ export function useTraitStateMachine(
                             actions.clearSlot(slot);
                         } else {
                             actions.setSlotPatterns(slot, patterns, slotSource);
+                        }
+                    }
+
+                    // Persist entity mutations from ["set"] effects back to FetchedDataContext
+                    // so the next render/event sees the updated field values.
+                    if (linkedEntity && entityMutations.size > 0 && fetchedDataContext) {
+                        const records = fetchedDataContext.getData(linkedEntity);
+                        if (records.length > 0) {
+                            const updated = (records as Record<string, unknown>[]).map((r, i) =>
+                                i === 0 ? { ...r, ...Object.fromEntries(entityMutations) } : r
+                            );
+                            fetchedDataContext.setData({ [linkedEntity]: updated as unknown[] });
                         }
                     }
                 }).catch((error: unknown) => {
