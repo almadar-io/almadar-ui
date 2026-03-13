@@ -157,3 +157,9 @@ export {
   type CodeViewerMode,
   type DiffLine,
 } from "./CodeViewer";
+
+// Debug organisms
+export {
+  RuntimeDebugger,
+  type RuntimeDebuggerProps,
+} from "./debug";

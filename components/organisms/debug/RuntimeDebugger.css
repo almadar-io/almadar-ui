@@ -100,3 +100,13 @@
 .dark .runtime-debugger__content::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.2);
 }
+
+/* Inline mode (embedded in layout, not floating) */
+.runtime-debugger--inline {
+    width: 100%;
+}
+
+.runtime-debugger__panel--inline {
+    max-height: 300px;
+    overflow: hidden;
+}

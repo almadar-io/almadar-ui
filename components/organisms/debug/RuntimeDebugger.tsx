@@ -25,6 +25,7 @@ import { GuardsPanel } from './tabs/GuardsPanel';
 import { VerificationTab } from './tabs/VerificationTab';
 import { TransitionTimeline } from './tabs/TransitionTimeline';
 import { ServerBridgeTab } from './tabs/ServerBridgeTab';
+import { EventDispatcherTab } from './tabs/EventDispatcherTab';
 import './RuntimeDebugger.css';
 
 export interface RuntimeDebuggerProps {
@@ -34,30 +35,41 @@ export interface RuntimeDebuggerProps {
     defaultCollapsed?: boolean;
     /** Additional CSS classes */
     className?: string;
+    /** Display mode: floating (fixed overlay) or inline (block element) */
+    mode?: 'floating' | 'inline';
+    /** Default active tab id */
+    defaultTab?: string;
+    /** Raw schema for EventDispatcherTab payload extraction */
+    schema?: Record<string, unknown>;
 }
 
 export function RuntimeDebugger({
     position = 'bottom-right',
     defaultCollapsed = true,
     className,
+    mode = 'floating',
+    defaultTab,
+    schema,
 }: RuntimeDebuggerProps) {
     const [isCollapsed, setIsCollapsed] = React.useState(defaultCollapsed);
-    const [isVisible, setIsVisible] = React.useState(isDebugEnabled());
+    const [isVisible, setIsVisible] = React.useState(mode === 'inline' || isDebugEnabled());
 
     const debugData = useDebugData();
 
-    // Listen for keyboard toggle
+    // Listen for keyboard toggle (floating mode only)
     React.useEffect(() => {
+        if (mode === 'inline') return;
         return onDebugToggle((enabled) => {
             setIsVisible(enabled);
             if (enabled) {
                 setIsCollapsed(false);
             }
         });
-    }, []);
+    }, [mode]);
 
-    // Keyboard shortcut to toggle collapse
+    // Keyboard shortcut to toggle collapse (floating mode only)
     React.useEffect(() => {
+        if (mode === 'inline') return;
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === '`' && isVisible) {
                 // Don't toggle if typing in input
@@ -69,7 +81,7 @@ export function RuntimeDebugger({
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isVisible]);
+    }, [isVisible, mode]);
 
     if (!isVisible) {
         return null;
@@ -87,6 +99,12 @@ export function RuntimeDebugger({
 
     // Build tab items using existing Tabs molecule
     const tabItems: TabItem[] = [
+        {
+            id: 'dispatch',
+            label: 'Dispatch',
+            badge: debugData.traits.length || undefined,
+            content: <EventDispatcherTab traits={debugData.traits} schema={schema} />,
+        },
         {
             id: 'verify',
             label: failedChecks > 0 ? 'Verify (!)' : 'Verify',
@@ -137,6 +155,47 @@ export function RuntimeDebugger({
         },
     ];
 
+    // Inline mode: always render expanded, no fixed positioning
+    if (mode === 'inline') {
+        return (
+            <div
+                className={cn(
+                    'runtime-debugger',
+                    'runtime-debugger--inline',
+                    className
+                )}
+                data-testid="debugger-inline"
+            >
+                <Card className="runtime-debugger__panel runtime-debugger__panel--inline">
+                    {/* Header */}
+                    <div className="runtime-debugger__header">
+                        <div className="flex items-center gap-2">
+                            <Typography variant="h6">Debugger</Typography>
+                            {failedChecks > 0 ? (
+                                <Badge variant="danger" size="sm">{failedChecks} failed</Badge>
+                            ) : debugData.traits.length > 0 ? (
+                                <Badge variant="success" size="sm">{debugData.traits.length} traits</Badge>
+                            ) : (
+                                <Badge variant="info" size="sm">Idle</Badge>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Tabs */}
+                    <div className="runtime-debugger__content">
+                        <Tabs
+                            items={tabItems}
+                            defaultActiveTab={defaultTab}
+                            variant="pills"
+                            className="runtime-debugger__tabs"
+                        />
+                    </div>
+                </Card>
+            </div>
+        );
+    }
+
+    // Floating mode: fixed position overlay with collapse/expand
     return (
         <div
             className={cn(
@@ -194,6 +253,7 @@ export function RuntimeDebugger({
                     <div className="runtime-debugger__content">
                         <Tabs
                             items={tabItems}
+                            defaultActiveTab={defaultTab}
                             variant="pills"
                             className="runtime-debugger__tabs"
                         />
