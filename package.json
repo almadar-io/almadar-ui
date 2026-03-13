@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "2.11.9",
+  "version": "2.12.0",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "main": "./dist/components/index.js",
@@ -100,6 +100,7 @@
     "@react-three/drei": "^9.92.0 || ^10.0.0",
     "@react-three/fiber": "^8.15.0",
     "@tanstack/react-query": "^5.0.0",
+    "@docusaurus/theme-common": "*",
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0",
     "react-router-dom": "^7.0.0",
