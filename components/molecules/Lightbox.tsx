@@ -39,7 +39,7 @@ export interface LightboxProps {
 }
 
 export const Lightbox: React.FC<LightboxProps> = ({
-  images,
+  images = [],
   currentIndex = 0,
   isOpen = false,
   showCounter = true,
@@ -48,6 +48,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
   onIndexChange,
   className,
 }) => {
+  const safeImages = Array.isArray(images) ? images : [];
   const [index, setIndex] = useState(currentIndex);
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
@@ -67,11 +68,12 @@ export const Lightbox: React.FC<LightboxProps> = ({
 
   const goTo = useCallback(
     (newIndex: number) => {
-      const clamped = Math.max(0, Math.min(images.length - 1, newIndex));
+      if (safeImages.length === 0) return;
+      const clamped = Math.max(0, Math.min(safeImages.length - 1, newIndex));
       setIndex(clamped);
       onIndexChange?.(clamped);
     },
-    [images.length, onIndexChange],
+    [safeImages.length, onIndexChange],
   );
 
   const goPrev = useCallback(() => goTo(index - 1), [goTo, index]);
@@ -109,11 +111,11 @@ export const Lightbox: React.FC<LightboxProps> = ({
     }
   }, [isOpen]);
 
-  if (!isOpen || images.length === 0) return null;
+  if (!isOpen || safeImages.length === 0) return null;
 
-  const currentImage = images[index];
+  const currentImage = safeImages[index];
   const hasPrev = index > 0;
-  const hasNext = index < images.length - 1;
+  const hasNext = index < safeImages.length - 1;
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStartX(e.touches[0].clientX);
@@ -160,7 +162,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
       </button>
 
       {/* Previous button */}
-      {hasPrev && images.length > 1 && (
+      {hasPrev && safeImages.length > 1 && (
         <button
           type="button"
           onClick={(e) => {
@@ -198,7 +200,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
       </div>
 
       {/* Next button */}
-      {hasNext && images.length > 1 && (
+      {hasNext && safeImages.length > 1 && (
         <button
           type="button"
           onClick={(e) => {
@@ -220,9 +222,9 @@ export const Lightbox: React.FC<LightboxProps> = ({
 
       {/* Counter + caption */}
       <div className="absolute bottom-4 left-0 right-0 text-center">
-        {showCounter && images.length > 1 && (
+        {showCounter && safeImages.length > 1 && (
           <div className="text-white text-sm mb-1">
-            {index + 1} of {images.length}
+            {index + 1} of {safeImages.length}
           </div>
         )}
         {currentImage?.caption && (

@@ -34,18 +34,25 @@ export function ScoreDisplay({
   className,
   animated = true,
   locale = 'en-US',
-}: ScoreDisplayProps) {
-  const [displayValue, setDisplayValue] = React.useState(value);
+  ...rest
+}: ScoreDisplayProps & Record<string, unknown>) {
+  // Accept "score" as alias for "value" (common schema binding)
+  const resolvedValue = typeof value === 'number' && !Number.isNaN(value)
+    ? value
+    : typeof (rest as Record<string, unknown>).score === 'number' && !Number.isNaN((rest as Record<string, unknown>).score)
+      ? (rest as Record<string, unknown>).score as number
+      : 0;
+  const [displayValue, setDisplayValue] = React.useState(resolvedValue);
   const [isAnimating, setIsAnimating] = React.useState(false);
 
   React.useEffect(() => {
-    if (!animated || displayValue === value) {
-      setDisplayValue(value);
+    if (!animated || displayValue === resolvedValue) {
+      setDisplayValue(resolvedValue);
       return;
     }
 
     setIsAnimating(true);
-    const diff = value - displayValue;
+    const diff = resolvedValue - displayValue;
     const steps = Math.min(Math.abs(diff), 20);
     const increment = diff / steps;
     let current = displayValue;
@@ -58,13 +65,13 @@ export function ScoreDisplay({
 
       if (step >= steps) {
         clearInterval(timer);
-        setDisplayValue(value);
+        setDisplayValue(resolvedValue);
         setIsAnimating(false);
       }
     }, 50);
 
     return () => clearInterval(timer);
-  }, [value, animated]);
+  }, [resolvedValue, animated]);
 
   const formattedValue = new Intl.NumberFormat(locale).format(displayValue);
 

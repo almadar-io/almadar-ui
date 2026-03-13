@@ -343,7 +343,7 @@ export function IsometricCanvas({
         }
 
         // Effect sprites from explicit list
-        urls.push(...effectSpriteUrls);
+        if (effectSpriteUrls) urls.push(...effectSpriteUrls);
 
         // Background
         if (backgroundImage) urls.push(backgroundImage);
