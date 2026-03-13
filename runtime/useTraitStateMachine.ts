@@ -249,9 +249,14 @@ export function useTraitStateMachine(
                     if (entityId) {
                         return (fetchedDataContext.getById(linkedEntity, entityId) as Record<string, unknown>) || {};
                     }
-                    // No entityId: fall back to first available record so @entity bindings work
+                    // No entityId: expose the full records array so @entity resolves to all
+                    // records (for list patterns like `items: "@entity"`), while also
+                    // spreading first-record fields onto the array so @entity.field access
+                    // (e.g. @entity.dialogue, @entity.cacheHits) still works correctly.
                     const records = fetchedDataContext.getData(linkedEntity);
-                    return (records[0] as Record<string, unknown>) || payload || {};
+                    if (records.length === 0) return payload || {};
+                    const firstRecord = records[0] as Record<string, unknown>;
+                    return Object.assign([...records], firstRecord) as unknown as Record<string, unknown>;
                 })();
 
                 // Accumulator for render-ui effects — grouped by slot
