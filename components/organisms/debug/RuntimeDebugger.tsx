@@ -155,7 +155,7 @@ export function RuntimeDebugger({
         },
     ];
 
-    // Inline mode: always render expanded, no fixed positioning
+    // Inline mode: collapsible, no fixed positioning
     if (mode === 'inline') {
         return (
             <div
@@ -166,11 +166,20 @@ export function RuntimeDebugger({
                 )}
                 data-testid="debugger-inline"
             >
-                <Card className="runtime-debugger__panel runtime-debugger__panel--inline">
-                    {/* Header */}
-                    <div className="runtime-debugger__header">
+                <Card className={cn(
+                    'runtime-debugger__panel',
+                    isCollapsed ? 'runtime-debugger__panel--inline-collapsed' : 'runtime-debugger__panel--inline',
+                )}>
+                    {/* Header - always visible, acts as toggle */}
+                    <div
+                        className="runtime-debugger__header"
+                        onClick={() => setIsCollapsed(prev => !prev)}
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                    >
                         <div className="flex items-center gap-2">
-                            <Typography variant="h6">Debugger</Typography>
+                            <Typography variant="h6" style={{ fontSize: '0.75rem' }}>
+                                {isCollapsed ? '\u25B6' : '\u25BC'} Debugger
+                            </Typography>
                             {failedChecks > 0 ? (
                                 <Badge variant="danger" size="sm">{failedChecks} failed</Badge>
                             ) : debugData.traits.length > 0 ? (
@@ -181,15 +190,17 @@ export function RuntimeDebugger({
                         </div>
                     </div>
 
-                    {/* Tabs */}
-                    <div className="runtime-debugger__content">
-                        <Tabs
-                            items={tabItems}
-                            defaultActiveTab={defaultTab}
-                            variant="pills"
-                            className="runtime-debugger__tabs"
-                        />
-                    </div>
+                    {/* Tabs - only visible when expanded */}
+                    {!isCollapsed && (
+                        <div className="runtime-debugger__content">
+                            <Tabs
+                                items={tabItems}
+                                defaultActiveTab={defaultTab}
+                                variant="pills"
+                                className="runtime-debugger__tabs"
+                            />
+                        </div>
+                    )}
                 </Card>
             </div>
         );

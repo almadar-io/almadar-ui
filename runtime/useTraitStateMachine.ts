@@ -37,6 +37,13 @@ import { createClientEffectHandlers } from './createClientEffectHandlers';
 import type { ResolvedTraitBinding } from './types';
 import type { SlotsActions, SlotPatternEntry, SlotSource } from './ui/SlotsContext';
 import { useEntitySchema } from './EntitySchemaContext';
+import {
+    registerTrait,
+    unregisterTrait,
+    updateTraitState,
+    type TraitDebugInfo,
+} from '../lib/traitRegistry';
+import { recordTransition, type EffectTrace } from '../lib/verificationRegistry';
 
 // ============================================================================
 // Types
@@ -139,6 +146,45 @@ export function useTraitStateMachine(
     useEffect(() => {
         optionsRef.current = options;
     }, [options]);
+
+    // Register traits with debug registry and clean up on unmount/rebind
+    useEffect(() => {
+        const mgr = managerRef.current;
+        const bindings = traitBindingsRef.current;
+        const ids: string[] = [];
+
+        for (const binding of bindings) {
+            const trait = binding.trait;
+            const state = mgr.getState(trait.name);
+            const info: TraitDebugInfo = {
+                id: trait.name,
+                name: trait.name,
+                currentState: state?.currentState ?? trait.states[0]?.name ?? 'unknown',
+                states: trait.states.map((s: { name: string }) => s.name),
+                transitions: trait.transitions.flatMap((t) => {
+                    const froms = Array.isArray(t.from) ? t.from : [t.from];
+                    return froms.map((f) => ({
+                        from: f,
+                        to: t.to,
+                        event: t.event,
+                        guard: t.guard ? String(t.guard) : undefined,
+                    }));
+                }),
+                guards: trait.transitions
+                    .filter((t) => t.guard)
+                    .map((t) => ({ name: String(t.guard) })),
+                transitionCount: 0,
+            };
+            registerTrait(info);
+            ids.push(trait.name);
+        }
+
+        return () => {
+            for (const id of ids) {
+                unregisterTrait(id);
+            }
+        };
+    }, [traitBindings]);
 
     // Reinitialize when trait bindings change (e.g., page navigation)
     useEffect(() => {
@@ -354,6 +400,31 @@ export function useTraitStateMachine(
                         );
                     }
                 }
+            }
+        }
+
+        // Update debug registries for each transition
+        for (const { traitName, result } of results) {
+            if (result.executed) {
+                updateTraitState(traitName, result.newState);
+                const effectTraces: EffectTrace[] = result.effects.map(
+                    (e: unknown) => {
+                        const eff = e as Record<string, unknown>;
+                        return {
+                            type: String(eff.type ?? 'unknown'),
+                            args: Array.isArray(eff.args) ? eff.args : [],
+                            status: 'executed' as const,
+                        };
+                    }
+                );
+                recordTransition({
+                    traitName,
+                    from: result.previousState,
+                    to: result.newState,
+                    event: normalizedEvent,
+                    effects: effectTraces,
+                    timestamp: Date.now(),
+                });
             }
         }
 

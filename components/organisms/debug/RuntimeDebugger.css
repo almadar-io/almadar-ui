@@ -110,3 +110,7 @@
     max-height: 300px;
     overflow: hidden;
 }
+
+.runtime-debugger__panel--inline-collapsed {
+    overflow: hidden;
+}
