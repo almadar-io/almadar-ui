@@ -6,6 +6,35 @@
  *   [data-theme="themename-dark"] { ... }
  */
 
+/**
+ * Minimal element reset for @almadar/ui components.
+ *
+ * Host apps that skip @tailwind base (e.g. Docusaurus, apps/builder) keep
+ * browser-default borders/backgrounds on raw HTML elements. This scoped
+ * reset normalizes them inside themed containers and the portal root.
+ */
+[data-theme] button,
+#ui-slot-portal-root button {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+
+[data-theme] *,
+[data-theme] *::before,
+[data-theme] *::after,
+#ui-slot-portal-root *,
+#ui-slot-portal-root *::before,
+#ui-slot-portal-root *::after {
+    box-sizing: border-box;
+    border-width: 0;
+    border-style: solid;
+    border-color: var(--color-border, #e5e7eb);
+}
+
 /* Core themes */
 @import "./wireframe.css";
 @import "./minimalist.css";
