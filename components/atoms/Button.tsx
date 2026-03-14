@@ -83,7 +83,10 @@ const variantStyles = {
     "hover:bg-[var(--color-secondary-hover)]",
     "active:scale-[var(--active-scale)]",
   ].join(" "),
-};
+} as Record<string, string>;
+
+// Alias "destructive" to "danger" for schema/compiler compatibility
+variantStyles.destructive = variantStyles.danger;
 
 const sizeStyles = {
   sm: "px-3 py-1.5 text-sm",

@@ -109,7 +109,7 @@ export function GameHud({
     const rightStats = stats.slice(Math.ceil(stats.length / 2));
 
     return (
-      <div className={cn("absolute", positionMap[position], className)}>
+      <div className={cn("relative", positionMap[position], className)}>
         {/* Top-left */}
         <div className="absolute top-4 left-4 flex flex-col gap-2 pointer-events-auto">
           {leftStats.map((stat, i) => (
@@ -130,7 +130,7 @@ export function GameHud({
   return (
     <div
       className={cn(
-        "absolute z-10",
+        "relative z-10",
         positionMap[position],
         transparent && "bg-gradient-to-b from-black/50 to-transparent",
         position === "bottom" &&

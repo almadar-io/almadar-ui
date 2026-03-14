@@ -176,8 +176,8 @@ export function IsometricCanvas({
     error = null,
     // Grid data
     tiles: tilesProp = [],
-    units = [],
-    features = [],
+    units: unitsProp = [],
+    features: featuresProp = [],
     // Interaction state
     selectedUnitId = null,
     validMoves = [],
@@ -246,6 +246,20 @@ export function IsometricCanvas({
         observer.observe(el);
         return () => observer.disconnect();
     }, []);
+
+    // -- Normalize units: accept flat x/y or position.x/y --
+    const units = useMemo(() =>
+        unitsProp.map(u => u.position ? u : { ...u, position: { x: u.x ?? 0, y: u.y ?? 0 } }),
+    [unitsProp]);
+
+    // -- Normalize features: accept featureType or type --
+    const features = useMemo(() =>
+        featuresProp.map(f => {
+            if (f.type) return f;
+            const raw = f as IsometricFeature & { featureType?: string };
+            return raw.featureType ? { ...f, type: raw.featureType } : f;
+        }),
+    [featuresProp]);
 
     // -- Tiles default sort (stable for painter's algorithm) --
     const sortedTiles = useMemo(() => {
@@ -354,7 +368,7 @@ export function IsometricCanvas({
         return [...new Set(urls.filter(Boolean))];
     }, [sortedTiles, features, units, getTerrainSprite, getFeatureSprite, getUnitSprite, effectSpriteUrls, backgroundImage, assetManifest, resolveManifestUrl]);
 
-    const { getImage } = useImageCache(spriteUrls);
+    const { getImage, pendingCount } = useImageCache(spriteUrls);
 
     // -- Verification bridge: register canvas frame capture --
     // Asset status tracking is handled by useImageCache automatically.
@@ -872,7 +886,7 @@ export function IsometricCanvas({
     // Animation loop
     // =========================================================================
     useEffect(() => {
-        const hasAnimations = units.length > 0 || validMoves.length > 0 || attackTargets.length > 0 || selectedUnitId != null || targetCameraRef.current != null || hasActiveEffects;
+        const hasAnimations = units.length > 0 || validMoves.length > 0 || attackTargets.length > 0 || selectedUnitId != null || targetCameraRef.current != null || hasActiveEffects || pendingCount > 0;
 
         // Always draw at least once
         draw(animTimeRef.current);
@@ -893,7 +907,7 @@ export function IsometricCanvas({
             running = false;
             cancelAnimationFrame(rafIdRef.current);
         };
-    }, [draw, units.length, validMoves.length, attackTargets.length, selectedUnitId, hasActiveEffects, lerpToTarget, targetCameraRef]);
+    }, [draw, units.length, validMoves.length, attackTargets.length, selectedUnitId, hasActiveEffects, pendingCount, lerpToTarget, targetCameraRef]);
 
     // =========================================================================
     // Mouse handlers

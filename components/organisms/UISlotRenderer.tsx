@@ -49,6 +49,17 @@ export interface SuspenseConfig {
 
 const SuspenseConfigContext = createContext<SuspenseConfig>({ enabled: false });
 
+// ============================================================================
+// Slot Containment Context
+// ============================================================================
+
+/**
+ * When true, portal slots render inline with absolute positioning instead of
+ * via createPortal with fixed positioning. This keeps all content contained
+ * within the UISlotRenderer's bounds (used by playground/builder previews).
+ */
+const SlotContainedContext = createContext<boolean>(false);
+
 /**
  * Provider for Suspense configuration.
  * When enabled, each UI slot is wrapped in `<ErrorBoundary><Suspense>`.
@@ -389,6 +400,133 @@ interface UISlotComponentProps {
 }
 
 /**
+ * Render portal slot content inline with absolute positioning (contained mode).
+ * Used by playground/builder previews to keep all content within the preview box.
+ * Mirrors SlotPortal's wrapper logic but uses absolute instead of fixed positioning.
+ */
+function renderContainedPortal(
+  slot: UISlot,
+  content: SlotContent,
+  onDismiss: () => void,
+): React.ReactElement {
+  const slotContent = <SlotContentRenderer content={content} onDismiss={onDismiss} />;
+
+  switch (slot) {
+    case "modal":
+      // Skip the Modal component (it uses fixed positioning internally).
+      // Build the dialog chrome inline with absolute positioning.
+      return (
+        <Box
+          className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-auto"
+          onClick={onDismiss}
+        >
+          <Box
+            bg="surface"
+            border
+            shadow="lg"
+            rounded="md"
+            className="pointer-events-auto max-w-[calc(100%-2rem)] max-h-full overflow-auto flex flex-col"
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+          >
+            {content.props.title ? (
+              <Box className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
+                <Typography variant="h3" className="text-lg font-semibold">
+                  {String(content.props.title)}
+                </Typography>
+                <Box
+                  as="button"
+                  className="text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] cursor-pointer"
+                  onClick={onDismiss}
+                >
+                  ✕
+                </Box>
+              </Box>
+            ) : null}
+            <Box className="flex-1 overflow-auto p-4">
+              {slotContent}
+            </Box>
+          </Box>
+        </Box>
+      );
+
+    case "drawer":
+      // Skip the Drawer component (it uses fixed positioning internally).
+      // Build drawer chrome inline with absolute positioning.
+      return (
+        <Box
+          className="absolute inset-0 z-50 bg-black/50 overflow-hidden"
+          onClick={onDismiss}
+        >
+          <Box
+            bg="surface"
+            className={cn(
+              "absolute top-0 bottom-0 w-80 max-w-[80%] overflow-auto pointer-events-auto",
+              (content.props.position as string) === "left" ? "left-0" : "right-0",
+            )}
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+          >
+            {content.props.title ? (
+              <Box className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
+                <Typography variant="h3" className="text-lg font-semibold">
+                  {String(content.props.title)}
+                </Typography>
+                <Box
+                  as="button"
+                  className="text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] cursor-pointer"
+                  onClick={onDismiss}
+                >
+                  ✕
+                </Box>
+              </Box>
+            ) : null}
+            <Box className="p-4">
+              {slotContent}
+            </Box>
+          </Box>
+        </Box>
+      );
+
+    case "toast":
+      return (
+        <Box className="absolute top-4 right-4 z-50">
+          <Toast
+            variant={
+              (content.props.variant as "success" | "error" | "warning" | "info") ?? "info"
+            }
+            title={content.props.title as string | undefined}
+            message={(content.props.message as string) ?? ""}
+            onDismiss={onDismiss}
+          />
+        </Box>
+      );
+
+    case "overlay":
+      return (
+        <Box
+          className="absolute inset-0 z-50 bg-[var(--color-foreground)]/50 flex items-center justify-center overflow-auto"
+          onClick={onDismiss}
+        >
+          <Box className="max-h-full overflow-auto" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+            {slotContent}
+          </Box>
+        </Box>
+      );
+
+    case "center":
+      return (
+        <Box className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none overflow-auto">
+          <Box className="pointer-events-auto max-h-full overflow-auto">
+            {slotContent}
+          </Box>
+        </Box>
+      );
+
+    default:
+      return slotContent;
+  }
+}
+
+/**
  * Individual slot renderer.
  *
  * Handles different slot types with appropriate wrappers.
@@ -404,6 +542,7 @@ function UISlotComponent({
 }: UISlotComponentProps): React.ReactElement | null {
   const { slots, clear } = useUISlots();
   const suspenseConfig = useContext(SuspenseConfigContext);
+  const contained = useContext(SlotContainedContext);
   const content = slots[slot];
 
   // Compiled mode: children provided directly, skip context resolution
@@ -414,7 +553,20 @@ function UISlotComponent({
     }
 
     // Portal slots (modal, drawer, toast): render through a portal with proper wrapper
+    // In contained mode, use inline rendering with absolute positioning
     if (isPortalSlot(slot)) {
+      if (contained) {
+        return (
+          <Box
+            id={`slot-${slot}`}
+            className={cn("ui-slot", `ui-slot-${slot}`, className)}
+            data-pattern={pattern}
+            data-source-trait={sourceTrait}
+          >
+            {children}
+          </Box>
+        );
+      }
       return (
         <CompiledPortal slot={slot} className={className} pattern={pattern} sourceTrait={sourceTrait}>
           {children}
@@ -455,6 +607,10 @@ function UISlotComponent({
 
   // Portal-based slots
   if (portal) {
+    // In contained mode, render inline with absolute positioning
+    if (contained) {
+      return renderContainedPortal(slot, content, handleDismiss);
+    }
     return (
       <SlotPortal
         slot={slot}
@@ -905,13 +1061,18 @@ export function UISlotRenderer({
   className,
   suspense,
 }: UISlotRendererProps): React.ReactElement {
+  const isContained = hudMode === 'inline';
   const suspenseConfig: SuspenseConfig =
     suspense === true ? { enabled: true } :
     suspense && typeof suspense === 'object' ? suspense :
     { enabled: false };
 
   const content = (
-    <Box className={cn("ui-slot-renderer", className)}>
+    <Box className={cn(
+      "ui-slot-renderer",
+      isContained && "relative",
+      className,
+    )}>
       {/* Layout slots */}
       <UISlotComponent slot="sidebar" className="ui-slot-sidebar" />
       <UISlotComponent slot="main" className="ui-slot-main flex-1" />
@@ -928,13 +1089,13 @@ export function UISlotRenderer({
         <>
           <UISlotComponent
             slot="hud-top"
-            className={hudMode === 'inline'
+            className={isContained
               ? "sticky top-0 inset-x-0 z-40"
               : "fixed top-0 inset-x-0 z-40"}
           />
           <UISlotComponent
             slot="hud-bottom"
-            className={hudMode === 'inline'
+            className={isContained
               ? "sticky bottom-0 inset-x-0 z-40"
               : "fixed bottom-0 inset-x-0 z-40"}
           />
@@ -943,21 +1104,35 @@ export function UISlotRenderer({
 
       {/* Floating slot (optional) */}
       {includeFloating && (
-        <UISlotComponent slot="floating" className="fixed z-50" draggable />
+        <UISlotComponent
+          slot="floating"
+          className={isContained ? "absolute z-50" : "fixed z-50"}
+          draggable
+        />
       )}
     </Box>
   );
 
-  // Wrap with SuspenseConfigProvider when Suspense is enabled
+  // Wrap with SlotContainedContext + optional SuspenseConfigProvider
+  let wrapped = content;
+
   if (suspenseConfig.enabled) {
-    return (
+    wrapped = (
       <SuspenseConfigProvider config={suspenseConfig}>
-        {content}
+        {wrapped}
       </SuspenseConfigProvider>
     );
   }
 
-  return content;
+  if (isContained) {
+    wrapped = (
+      <SlotContainedContext.Provider value={true}>
+        {wrapped}
+      </SlotContainedContext.Provider>
+    );
+  }
+
+  return wrapped;
 }
 
 UISlotRenderer.displayName = "UISlotRenderer";

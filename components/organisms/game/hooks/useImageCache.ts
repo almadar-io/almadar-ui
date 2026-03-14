@@ -35,7 +35,6 @@ export function useImageCache(urls: string[]): ImageCacheResult {
     useEffect(() => {
         const cache = cacheRef.current;
         const loading = loadingRef.current;
-        let cancelled = false;
 
         // Collect URLs that aren't already cached or loading
         const newUrls = urls.filter(url => url && !cache.has(url) && !loading.has(url));
@@ -50,7 +49,6 @@ export function useImageCache(urls: string[]): ImageCacheResult {
             img.crossOrigin = 'anonymous';
 
             img.onload = () => {
-                if (cancelled) return;
                 cache.set(url, img);
                 loading.delete(url);
                 setPendingCount(prev => Math.max(0, prev - 1));
@@ -58,7 +56,6 @@ export function useImageCache(urls: string[]): ImageCacheResult {
             };
 
             img.onerror = () => {
-                if (cancelled) return;
                 loading.delete(url);
                 setPendingCount(prev => Math.max(0, prev - 1));
                 updateAssetStatus(url, 'failed');
@@ -67,11 +64,7 @@ export function useImageCache(urls: string[]): ImageCacheResult {
             updateAssetStatus(url, 'pending');
             img.src = url;
         }
-
-        return () => {
-            cancelled = true;
-        };
-    }, [urls.join(',')]);  
+    }, [urls.join(',')]);
 
     const getImage = useCallback((url: string): HTMLImageElement | undefined => {
         return cacheRef.current.get(url);
