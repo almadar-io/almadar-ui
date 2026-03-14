@@ -48,19 +48,19 @@ export function Scene3D({ background = '#1a1a2e', fog, children }: Scene3DProps)
         initializedRef.current = true;
 
         // Set background
+        // Cast needed: project @types/three version differs from @react-three/fiber's bundled three types
         if (background.startsWith('#') || background.startsWith('rgb')) {
-            scene.background = new THREE.Color(background);
+            (scene as { background: unknown }).background = new THREE.Color(background);
         } else {
-            // Assume it's a texture URL
             const loader = new THREE.TextureLoader();
             loader.load(background, (texture) => {
-                scene.background = texture;
+                (scene as { background: unknown }).background = texture;
             });
         }
 
         // Set fog
         if (fog) {
-            scene.fog = new THREE.Fog(fog.color, fog.near, fog.far);
+            (scene as { fog: unknown }).fog = new THREE.Fog(fog.color, fog.near, fog.far);
         }
 
         return () => {

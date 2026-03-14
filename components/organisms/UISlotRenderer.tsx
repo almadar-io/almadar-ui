@@ -862,6 +862,8 @@ function SlotContentRenderer({
 export interface UISlotRendererProps {
   /** Include HUD slots */
   includeHud?: boolean;
+  /** HUD positioning mode: 'fixed' (default, viewport-relative) or 'inline' (container-relative, uses sticky) */
+  hudMode?: 'fixed' | 'inline';
   /** Include floating slot */
   includeFloating?: boolean;
   /** Additional class name for the container */
@@ -898,6 +900,7 @@ export interface UISlotRendererProps {
  */
 export function UISlotRenderer({
   includeHud = false,
+  hudMode = 'fixed',
   includeFloating = false,
   className,
   suspense,
@@ -925,11 +928,15 @@ export function UISlotRenderer({
         <>
           <UISlotComponent
             slot="hud-top"
-            className="fixed top-0 inset-x-0 z-40"
+            className={hudMode === 'inline'
+              ? "sticky top-0 inset-x-0 z-40"
+              : "fixed top-0 inset-x-0 z-40"}
           />
           <UISlotComponent
             slot="hud-bottom"
-            className="fixed bottom-0 inset-x-0 z-40"
+            className={hudMode === 'inline'
+              ? "sticky bottom-0 inset-x-0 z-40"
+              : "fixed bottom-0 inset-x-0 z-40"}
           />
         </>
       )}

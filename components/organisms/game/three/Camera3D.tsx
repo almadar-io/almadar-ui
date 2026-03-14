@@ -107,7 +107,8 @@ export const Camera3D = forwardRef<Camera3DHandle, Camera3DProps>(
             newCamera.position.copy(initialPosition.current);
             newCamera.lookAt(initialTarget.current);
 
-            set({ camera: newCamera as THREE.PerspectiveCamera });
+            // Cast needed: project @types/three version differs from @react-three/fiber's bundled three types
+            (set as (state: Record<string, unknown>) => void)({ camera: newCamera });
 
             // For top-down mode
             if (mode === 'top-down') {
@@ -123,13 +124,13 @@ export const Camera3D = forwardRef<Camera3DHandle, Camera3DProps>(
         // Update camera on changes
         useFrame(() => {
             if (onChange) {
-                onChange(camera);
+                onChange(camera as unknown as THREE.Camera);
             }
         });
 
         // Imperative handle
         useImperativeHandle(ref, () => ({
-            getCamera: () => camera,
+            getCamera: () => camera as unknown as THREE.Camera,
             setPosition: (x: number, y: number, z: number) => {
                 camera.position.set(x, y, z);
                 if (controlsRef.current) {
@@ -145,7 +146,7 @@ export const Camera3D = forwardRef<Camera3DHandle, Camera3DProps>(
             },
             reset: () => {
                 camera.position.copy(initialPosition.current);
-                camera.lookAt(initialTarget.current);
+                (camera as unknown as THREE.Camera).lookAt(initialTarget.current);
                 if (controlsRef.current) {
                     controlsRef.current.target.copy(initialTarget.current);
                     controlsRef.current.update();

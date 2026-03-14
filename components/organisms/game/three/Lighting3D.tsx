@@ -91,7 +91,7 @@ export function Lighting3D({
                 <>
                     <directionalLightHelper
                         args={[
-                            new THREE.DirectionalLight(directionalColor, directionalIntensity),
+                            new THREE.DirectionalLight(directionalColor, directionalIntensity) as never,
                             5,
                         ]}
                     />

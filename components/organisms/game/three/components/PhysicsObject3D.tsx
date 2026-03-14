@@ -179,7 +179,7 @@ export function PhysicsObject3D({
         : scale;
 
     return (
-        <group ref={groupRef} scale={scaleArray}>
+        <group ref={groupRef as React.RefObject<never>} scale={scaleArray}>
             <ModelLoader 
                 url={modelUrl}
                 fallbackGeometry="box"

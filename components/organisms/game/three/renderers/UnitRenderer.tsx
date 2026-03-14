@@ -81,7 +81,7 @@ function UnitVisual({ unit, position, isSelected, onClick }: UnitVisualProps): R
 
     return (
         <group
-            ref={groupRef}
+            ref={groupRef as React.RefObject<never>}
             position={position}
             onClick={onClick}
             onPointerEnter={() => setIsHovered(true)}

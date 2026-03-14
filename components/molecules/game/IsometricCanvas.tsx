@@ -235,9 +235,11 @@ export function IsometricCanvas({
         const observer = new ResizeObserver((entries) => {
             const entry = entries[0];
             if (entry) {
-                setViewportSize({
-                    width: entry.contentRect.width || 800,
-                    height: entry.contentRect.height || 600,
+                const w = Math.round(entry.contentRect.width) || 800;
+                const h = Math.round(entry.contentRect.height) || 600;
+                setViewportSize((prev) => {
+                    if (Math.abs(prev.width - w) < 2 && Math.abs(prev.height - h) < 2) return prev;
+                    return { width: w, height: h };
                 });
             }
         });

@@ -240,8 +240,8 @@ export function TileRenderer({
     if (useInstancing && tiles.length > 0) {
         return (
             <instancedMesh
-                ref={meshRef}
-                args={[geometry, material, tiles.length]}
+                ref={meshRef as React.RefObject<never>}
+                args={[geometry as never, material as never, tiles.length]}
                 onPointerMove={handlePointerMove}
                 onClick={handleClick}
             />

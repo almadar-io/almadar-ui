@@ -181,7 +181,7 @@ function FeatureModel({
 
     return (
         <group
-            ref={groupRef}
+            ref={groupRef as React.RefObject<never>}
             position={position}
             onClick={onClick}
             onPointerEnter={() => onHover(true)}
