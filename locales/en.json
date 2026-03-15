@@ -64,6 +64,9 @@
   "error.configMissing": "Configuration not found for: {{id}}",
 
   "common.loading": "Loading...",
+  "common.showMore": "Show More",
+  "common.showLess": "Show Less",
+  "common.noResults": "No results found",
   "common.saveChanges": "Save Changes",
   "common.retry": "Retry",
   "common.open": "Open",
