@@ -69,7 +69,7 @@
 
     /* Typography - Clean, slightly loose */
     --font-family:
-        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-weight-normal: 400;
     --font-weight-medium: 500;
     --font-weight-bold: 600;
@@ -163,7 +163,7 @@
 
     /* Typography */
     --font-family:
-        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-weight-normal: 400;
     --font-weight-medium: 500;
     --font-weight-bold: 600;
