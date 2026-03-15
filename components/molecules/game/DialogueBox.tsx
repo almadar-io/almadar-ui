@@ -98,20 +98,20 @@ export function DialogueBox({
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [selectedChoice, setSelectedChoice] = useState(0);
-  const textRef = useRef(dialogue.text);
+  const textRef = useRef(dialogue.text ?? '');
   const charIndexRef = useRef(0);
   const autoAdvanceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Reset when dialogue changes
   useEffect(() => {
-    textRef.current = dialogue.text;
+    textRef.current = dialogue.text ?? '';
     charIndexRef.current = 0;
     setDisplayedText('');
     setSelectedChoice(0);
 
     if (typewriterSpeed === 0) {
       // Instant display
-      setDisplayedText(dialogue.text);
+      setDisplayedText(dialogue.text ?? '');
       setIsTyping(false);
       if (completeEvent) eventBus.emit(`UI:${completeEvent}`, {});
       onComplete?.();

@@ -79,14 +79,15 @@ export function CombatLog({
         }
     }, [events, autoScroll]);
 
-    const visibleEvents = events.slice(-maxVisible);
+    const safeEvents = events ?? [];
+    const visibleEvents = safeEvents.slice(-maxVisible);
 
     return (
         <Card variant="default" className={cn('flex flex-col', className)}>
             <Box padding="sm" border className="border-b-2 border-x-0 border-t-0 border-[var(--color-border)]">
                 <Box display="flex" className="items-center justify-between">
                     <Typography variant="body2" className="font-bold">{title}</Typography>
-                    <Badge variant="neutral" size="sm">{events.length} events</Badge>
+                    <Badge variant="neutral" size="sm">{safeEvents.length} events</Badge>
                 </Box>
             </Box>
             <Box ref={scrollRef} overflow="auto" className="flex-1 max-h-64">
