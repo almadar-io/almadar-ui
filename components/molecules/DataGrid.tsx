@@ -296,6 +296,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
               <Box
                 key={id}
                 data-entity-row
+                data-entity-id={id}
                 className={cn(
                   'bg-[var(--color-card)] rounded-[var(--radius-lg)]',
                   'border border-[var(--color-border)]',
@@ -317,6 +318,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
             <Box
               key={id}
               data-entity-row
+              data-entity-id={id}
               className={cn(
                 'bg-[var(--color-card)] rounded-[var(--radius-lg)]',
                 'border border-[var(--color-border)]',

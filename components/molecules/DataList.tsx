@@ -334,7 +334,7 @@ export const DataList: React.FC<DataListProps> = ({
     if (hasRenderProp) {
       const id = (itemData.id as string) || String(index);
       return (
-        <Box key={id} data-entity-row>
+        <Box key={id} data-entity-row data-entity-id={id}>
           <Box
             className={cn(
               'group flex items-center gap-4 transition-all duration-200',
@@ -384,7 +384,7 @@ export const DataList: React.FC<DataListProps> = ({
     const titleValue = getNestedValue(itemData, titleField?.name ?? '');
 
     return (
-      <Box key={id} data-entity-row>
+      <Box key={id} data-entity-row data-entity-id={id}>
         <Box
           className={cn(
             'group flex items-center gap-4 transition-all duration-200',
