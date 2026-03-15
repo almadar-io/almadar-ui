@@ -19,14 +19,14 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   variant?: ButtonVariant;
   size?: ButtonSize;
   isLoading?: boolean;
-  /** Left icon as ReactNode (preferred) */
-  leftIcon?: React.ReactNode;
-  /** Right icon as ReactNode (preferred) */
-  rightIcon?: React.ReactNode;
-  /** Left icon as Lucide icon component or string name (e.g. "plus", "trash") */
-  icon?: LucideIcon | string;
-  /** Right icon as Lucide icon component or string name */
-  iconRight?: LucideIcon | string;
+  /** Left icon as ReactNode, Lucide component, or string name (e.g. "plus", "trash") */
+  leftIcon?: React.ReactNode | LucideIcon | string;
+  /** Right icon as ReactNode, Lucide component, or string name */
+  rightIcon?: React.ReactNode | LucideIcon | string;
+  /** Alias for leftIcon */
+  icon?: React.ReactNode | LucideIcon | string;
+  /** Alias for rightIcon */
+  iconRight?: React.ReactNode | LucideIcon | string;
   /** Declarative event name — emits UI:{action} via eventBus on click */
   action?: string;
   /** Payload to include with the action event */
@@ -100,6 +100,24 @@ const iconSizeStyles = {
   lg: "h-5 w-5",
 };
 
+/** Resolve an icon prop that can be a string name, LucideIcon component, or ReactNode */
+function resolveIconProp(
+  value: React.ReactNode | LucideIcon | string | undefined,
+  sizeClass: string,
+): React.ReactNode | null {
+  if (!value) return null;
+  if (typeof value === 'string') {
+    const Resolved = resolveIcon(value);
+    return Resolved ? <Resolved className={sizeClass} /> : null;
+  }
+  if (typeof value === 'function') {
+    const IconComp = value as LucideIcon;
+    return <IconComp className={sizeClass} />;
+  }
+  // Already a ReactNode (JSX element)
+  return value;
+}
+
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   (
     {
@@ -123,17 +141,12 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     const eventBus = useEventBus();
 
-    const IconComponent = typeof iconProp === 'string' ? resolveIcon(iconProp) : iconProp;
-    const IconRightComponent = typeof iconRightProp === 'string' ? resolveIcon(iconRightProp) : iconRightProp;
+    // Merge icon/leftIcon and iconRight/rightIcon (icon and iconRight are aliases)
+    const leftIconValue = leftIcon || iconProp;
+    const rightIconValue = rightIcon || iconRightProp;
 
-    const resolvedLeftIcon =
-      leftIcon ||
-      (IconComponent && <IconComponent className={iconSizeStyles[size]} />);
-    const resolvedRightIcon =
-      rightIcon ||
-      (IconRightComponent && (
-        <IconRightComponent className={iconSizeStyles[size]} />
-      ));
+    const resolvedLeftIcon = resolveIconProp(leftIconValue, iconSizeStyles[size]);
+    const resolvedRightIcon = resolveIconProp(rightIconValue, iconSizeStyles[size]);
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
       if (action) {
