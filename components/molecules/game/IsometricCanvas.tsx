@@ -938,11 +938,19 @@ export function IsometricCanvas({
         onTileLeave?.();
     }, [handleMouseLeave, onTileLeave, tileLeaveEvent, eventBus]);
 
-    const handleWheelWithCamera = useCallback((e: React.WheelEvent) => {
+    const handleWheelWithCamera = useCallback((e: WheelEvent) => {
         if (enableCamera) {
-            handleWheel(e, () => draw(animTimeRef.current));
+            handleWheel(e as unknown as React.WheelEvent, () => draw(animTimeRef.current));
         }
     }, [enableCamera, handleWheel, draw]);
+
+    // Attach wheel listener with { passive: false } so preventDefault() works
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        canvas.addEventListener('wheel', handleWheelWithCamera, { passive: false });
+        return () => { canvas.removeEventListener('wheel', handleWheelWithCamera); };
+    }, [handleWheelWithCamera]);
 
     const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
         if (dragDistance() > 5) return;
@@ -1014,7 +1022,6 @@ export function IsometricCanvas({
                 onMouseMove={handleMouseMoveWithCamera}
                 onMouseUp={enableCamera ? handleMouseUp : undefined}
                 onMouseLeave={handleMouseLeaveWithCamera}
-                onWheel={handleWheelWithCamera}
                 onContextMenu={(e) => e.preventDefault()}
                 className="cursor-pointer"
                 style={{
