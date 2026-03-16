@@ -175,9 +175,9 @@ export function IsometricCanvas({
     isLoading = false,
     error = null,
     // Grid data
-    tiles: tilesProp = [],
-    units: unitsProp = [],
-    features: featuresProp = [],
+    tiles: _tilesPropRaw = [],
+    units: _unitsPropRaw = [],
+    features: _featuresPropRaw = [],
     // Interaction state
     selectedUnitId = null,
     validMoves = [],
@@ -214,6 +214,11 @@ export function IsometricCanvas({
     assetBaseUrl,
     assetManifest,
 }: IsometricCanvasProps): React.JSX.Element {
+    // Defensive: ensure array props are always iterable even if passed as undefined
+    const tilesProp = Array.isArray(_tilesPropRaw) ? _tilesPropRaw : [];
+    const unitsProp = Array.isArray(_unitsPropRaw) ? _unitsPropRaw : [];
+    const featuresProp = Array.isArray(_featuresPropRaw) ? _featuresPropRaw : [];
+
     const eventBus = useEventBus();
     const { t } = useTranslate();
 

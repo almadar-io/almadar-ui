@@ -38,6 +38,38 @@ export function GameCanvas2D({
   const onTickRef = React.useRef(onTick);
   onTickRef.current = onTick;
 
+  // Default placeholder when no onDraw is provided (standalone mode)
+  const defaultDraw = React.useCallback((ctx: CanvasRenderingContext2D, frame: number) => {
+    const w = ctx.canvas.width;
+    const h = ctx.canvas.height;
+    // Background
+    ctx.fillStyle = '#1a1a2e';
+    ctx.fillRect(0, 0, w, h);
+    // Grid
+    ctx.strokeStyle = '#16213e';
+    ctx.lineWidth = 1;
+    const gridSize = 40;
+    for (let x = 0; x < w; x += gridSize) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+    }
+    for (let y = 0; y < h; y += gridSize) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+    }
+    // Animated dot
+    const cx = w / 2 + Math.cos(frame * 0.03) * 80;
+    const cy = h / 2 + Math.sin(frame * 0.03) * 80;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 8, 0, Math.PI * 2);
+    ctx.fillStyle = '#e94560';
+    ctx.fill();
+    // Label
+    ctx.fillStyle = '#eee';
+    ctx.font = '14px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('Game Canvas 2D', w / 2, 30);
+    ctx.fillText(`Frame: ${frame}`, w / 2, h - 15);
+  }, []);
+
   React.useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -47,6 +79,8 @@ export function GameCanvas2D({
 
     const interval = 1000 / fps;
     let running = true;
+
+    const drawFn = onDrawRef.current ?? defaultDraw;
 
     const loop = (timestamp: number) => {
       if (!running) return;
@@ -62,7 +96,7 @@ export function GameCanvas2D({
         lastTimeRef.current = timestamp - (elapsed % interval);
 
         onTickRef.current?.(dt);
-        onDrawRef.current?.(ctx, frameRef.current);
+        (onDrawRef.current ?? defaultDraw)(ctx, frameRef.current);
         frameRef.current += 1;
       }
 
@@ -75,7 +109,7 @@ export function GameCanvas2D({
       running = false;
       cancelAnimationFrame(rafRef.current);
     };
-  }, [fps]);
+  }, [fps, defaultDraw]);
 
   return (
     <Box className={cn('inline-block', className)}>
