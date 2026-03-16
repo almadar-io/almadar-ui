@@ -93,64 +93,243 @@ function getSlotFallback(slot: UISlot, config: SuspenseConfig): React.ReactNode 
   return <Skeleton variant={variant} />;
 }
 
-// All @almadar/ui components — imported by layer for dynamic registry
-import * as Atoms from "../atoms";
-import * as Molecules from "../molecules";
-import * as Organisms from ".";
-import * as Templates from "../templates";
+// Pattern component imports
+import { PageHeader } from "./PageHeader";
+import { DataTable } from "./DataTable";
+import { CardGrid } from "./CardGrid";
+import { DetailPanel } from "./DetailPanel";
+import { MasterDetail } from "./MasterDetail";
+import { SearchInput } from "../molecules/SearchInput";
+import { EmptyState } from "../molecules/EmptyState";
+import { LoadingState } from "../molecules/LoadingState";
+import { Breadcrumb } from "../molecules/Breadcrumb";
+import { StatCard } from "./StatCard";
+import { Form } from "./Form";
+import { ButtonGroup } from "../molecules/ButtonGroup";
 
-// Pattern wrappers (adapter components bridging pattern config to component API)
-import * as LayoutPatterns from "./LayoutPatterns";
-import * as ComponentPatterns from "./ComponentPatterns";
+// Layout pattern imports
+import {
+  VStackPattern,
+  HStackPattern,
+  BoxPattern,
+  GridPattern,
+  CenterPattern,
+  SpacerPattern,
+  DividerPattern,
+} from "./LayoutPatterns";
+
+// Component pattern imports
+import {
+  ButtonPattern,
+  IconButtonPattern,
+  LinkPattern,
+  TextPattern,
+  HeadingPattern,
+  BadgePattern,
+  AvatarPattern,
+  IconPattern,
+  ImagePattern,
+  CardPattern,
+  ProgressBarPattern,
+  SpinnerPattern,
+  InputPattern,
+  TextareaPattern,
+  SelectPattern,
+  CheckboxPattern,
+  RadioPattern,
+  LabelPattern,
+  AlertPattern,
+  TooltipPattern,
+  PopoverPattern,
+  MenuPattern,
+  AccordionPattern,
+  ContainerPattern,
+  SimpleGridPattern,
+  FloatButtonPattern,
+  MapViewPattern,
+} from "./ComponentPatterns";
+
+// Custom pattern import
 import { CustomPattern } from "./CustomPattern";
 
+// Direct component imports for patterns not covered by wrapper patterns
+import { Stack } from "../atoms/Stack";
+import { StatusDot } from "../atoms/StatusDot";
+import { TrendIndicator } from "../atoms/TrendIndicator";
+import { RangeSlider } from "../atoms/RangeSlider";
+import { HealthBar } from "../atoms/game/HealthBar";
+import { ScoreDisplay } from "../atoms/game/ScoreDisplay";
+import { Tabs } from "../molecules/Tabs";
+import { StatDisplay } from "../molecules/StatDisplay";
+import { StatBadge } from "../molecules/game/StatBadge";
+import { StarRating } from "../molecules/StarRating";
+import { LineChart } from "../molecules/LineChart";
+import { DataGrid } from "../molecules/DataGrid";
+import { DataList } from "../molecules/DataList";
+import { CalendarGrid } from "../molecules/CalendarGrid";
+import { Lightbox } from "../molecules/Lightbox";
+import { UploadDropZone } from "../molecules/UploadDropZone";
+import { WizardNavigation } from "../molecules/WizardNavigation";
+import { WizardProgress } from "../molecules/WizardProgress";
+import { Meter } from "../molecules/Meter";
+import { ActionButtons } from "../molecules/game/ActionButtons";
+import { DPad } from "../molecules/game/DPad";
+import { CanvasEffect } from "./game/CanvasEffect";
+import { CombatLog } from "./game/CombatLog";
+import { DialogueBox } from "./game/DialogueBox";
+import { InventoryPanel } from "./game/InventoryPanel";
+import { GameHud } from "./game/GameHud";
+import { GameMenu } from "./game/GameMenu";
+import { IsometricCanvas } from "./game/IsometricCanvas";
+import { PlatformerCanvas } from "./game/PlatformerCanvas";
+import { SimulationCanvas } from "./game/physics-sim";
+import { Chart } from "./Chart";
+
 // ============================================================================
-// Component Registry (auto-built from @almadar/ui exports)
+// Component Registry
 // ============================================================================
 
 /**
  * Maps component names to actual React components.
+ * The pattern resolver returns a component name (e.g., "DataTable"),
+ * and this registry provides the actual component.
  *
- * Built dynamically from @almadar/ui component exports + pattern wrappers.
- * When a new component is added to @almadar/ui and registered in
- * component-mapping.json (via pattern sync), it's automatically available here.
- * No manual registry maintenance needed.
+ * Component names match those in orbital-shared/patterns/component-mapping.json
  */
-
-// Merge all component exports into a single lookup.
-// Non-component exports (types, constants) are harmless — they just won't match
-// any component-mapping entry since those entries use PascalCase component names.
-const _allExports: Record<string, unknown> = {
-  ...Atoms,
-  ...Molecules,
-  ...Organisms,
-  ...Templates,
-  ...LayoutPatterns,
-  ...ComponentPatterns,
-  CustomPattern,
-};
-
-// Filter to only React components (functions or classes with a name)
-const _componentEntries: Array<[string, React.ComponentType<any>]> = [];
-for (const [key, value] of Object.entries(_allExports)) {
-  if (typeof value === 'function' && /^[A-Z]/.test(key)) {
-    _componentEntries.push([key, value as React.ComponentType<any>]);
-  }
-}
-
+ 
 export const COMPONENT_REGISTRY: Record<string, React.ComponentType<any>> = {
-  // All PascalCase exports from atoms, molecules, organisms, templates, patterns
-  ...Object.fromEntries(_componentEntries),
-
-  // Aliases where component-mapping name differs from the exported name
-  VStack: LayoutPatterns.VStackPattern,
-  HStack: LayoutPatterns.HStackPattern,
-  Typography: ComponentPatterns.TextPattern,
-  Text: ComponentPatterns.TextPattern,
-  List: (_allExports.DataTable ?? _allExports.DataGrid) as React.ComponentType<any>,
-  FilterGroup: _allExports.ButtonGroup as React.ComponentType<any>,
-  ErrorState: _allExports.EmptyState as React.ComponentType<any>,
-  Toast: ComponentPatterns.AlertPattern,
+  // Display patterns
+  PageHeader,
+  DataTable,
+  CardGrid,
+  DetailPanel,
+  MasterDetail,
+  List: DataTable, // List uses DataTable component
+  StatCard,
+  // Form patterns
+  Form,
+  ButtonGroup,
+  SearchInput,
+  // State patterns
+  EmptyState,
+  LoadingState,
+  Breadcrumb,
+  // Layout patterns
+  VStackPattern,
+  HStackPattern,
+  BoxPattern,
+  GridPattern,
+  CenterPattern,
+  SpacerPattern,
+  DividerPattern,
+  // Component patterns - Interactive
+  ButtonPattern,
+  IconButtonPattern,
+  LinkPattern,
+  // Component patterns - Display
+  TextPattern,
+  HeadingPattern,
+  BadgePattern,
+  AvatarPattern,
+  IconPattern,
+  ImagePattern,
+  CardPattern,
+  ProgressBarPattern,
+  SpinnerPattern,
+  // Component patterns - Form inputs
+  InputPattern,
+  TextareaPattern,
+  SelectPattern,
+  CheckboxPattern,
+  RadioPattern,
+  LabelPattern,
+  // Component patterns - Feedback
+  AlertPattern,
+  TooltipPattern,
+  PopoverPattern,
+  // Component patterns - Navigation
+  MenuPattern,
+  AccordionPattern,
+  // Component patterns - Layout
+  ContainerPattern,
+  SimpleGridPattern,
+  FloatButtonPattern,
+  // Map patterns
+  MapViewPattern,
+  // Custom pattern
+  CustomPattern,
+  // Direct components (not wrapped in pattern adapters)
+  Stack,
+  VStack: VStackPattern,
+  HStack: HStackPattern,
+  Typography: TextPattern,
+  Tabs,
+  StatDisplay,
+  StatBadge,
+  StatusDot,
+  TrendIndicator,
+  RangeSlider,
+  StarRating,
+  LineChart,
+  DataGrid,
+  DataList,
+  CalendarGrid,
+  Lightbox,
+  UploadDropZone,
+  WizardNavigation,
+  WizardProgress,
+  Meter,
+  ActionButtons,
+  HealthBar,
+  ScoreDisplay,
+  DPad,
+  CanvasEffect,
+  CombatLog,
+  DialogueBox,
+  InventoryPanel,
+  GameHud,
+  GameMenu,
+  IsometricCanvas,
+  PlatformerCanvas,
+  SimulationCanvas,
+  Chart,
+  FilterGroup: ButtonGroup,
+  ErrorState: EmptyState,
+  Toast: AlertPattern,
+  // Plain component name aliases — component-mapping.json returns these names
+  // (e.g., "button" → "Button") but registry above uses "ButtonPattern" keys.
+  Button: ButtonPattern,
+  IconButton: IconButtonPattern,
+  Link: LinkPattern,
+  Text: TextPattern,
+  Heading: HeadingPattern,
+  Badge: BadgePattern,
+  Avatar: AvatarPattern,
+  Icon: IconPattern,
+  Image: ImagePattern,
+  Card: CardPattern,
+  ProgressBar: ProgressBarPattern,
+  Spinner: SpinnerPattern,
+  Input: InputPattern,
+  Textarea: TextareaPattern,
+  Select: SelectPattern,
+  Checkbox: CheckboxPattern,
+  Radio: RadioPattern,
+  Label: LabelPattern,
+  Alert: AlertPattern,
+  Tooltip: TooltipPattern,
+  Popover: PopoverPattern,
+  Menu: MenuPattern,
+  Accordion: AccordionPattern,
+  Container: ContainerPattern,
+  SimpleGrid: SimpleGridPattern,
+  FloatButton: FloatButtonPattern,
+  MapView: MapViewPattern,
+  Box: BoxPattern,
+  Grid: GridPattern,
+  Center: CenterPattern,
+  Spacer: SpacerPattern,
+  Divider: DividerPattern,
 };
 
 /**
