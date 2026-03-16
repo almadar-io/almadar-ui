@@ -57,6 +57,15 @@ export type GameAction =
     | { type: 'END_TURN' }
     | { type: 'EXECUTE_TRAITS' };
 
+/**
+ * Create the initial game state with board and units.
+ *
+ * @param {number} width - Board width in tiles
+ * @param {number} height - Board height in tiles
+ * @param {GameUnit[]} units - Initial units to place on the board
+ * @param {string} [defaultTerrain] - Default terrain type for empty tiles
+ * @returns {GameState} The initialized game state
+ */
 export function createInitialGameState(
     width: number,
     height: number,
@@ -88,6 +97,16 @@ export function createInitialGameState(
     };
 }
 
+/**
+ * Calculate valid movement positions for a unit.
+ *
+ * Returns all tiles within the unit's movement range that are
+ * not blocked and don't contain other units.
+ *
+ * @param {GameState} state - Current game state
+ * @param {string} unitId - ID of the unit to calculate moves for
+ * @returns {Position[]} Array of valid move positions
+ */
 export function calculateValidMoves(
     state: GameState,
     unitId: string,
@@ -121,6 +140,15 @@ export function calculateValidMoves(
     return moves;
 }
 
+/**
+ * Calculate valid attack targets for a unit.
+ *
+ * Returns adjacent positions containing enemy units that can be attacked.
+ *
+ * @param {GameState} state - Current game state
+ * @param {string} unitId - ID of the unit to calculate targets for
+ * @returns {Position[]} Array of valid attack target positions
+ */
 export function calculateAttackTargets(
     state: GameState,
     unitId: string,

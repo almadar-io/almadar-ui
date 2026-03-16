@@ -59,6 +59,16 @@ export const combatEffects: Record<string, CombatEffect> = {
     levelUp: { className: 'animate-bounce ring-4 ring-yellow-400 brightness-150', duration: 1000 },
 };
 
+/**
+ * Apply a temporary combat effect to an HTML element.
+ *
+ * Adds the effect's CSS class to the element and removes it after
+ * the effect duration completes.
+ *
+ * @param {HTMLElement} element - The DOM element to apply the effect to
+ * @param {CombatEffect} effect - The combat effect to apply
+ * @param {() => void} [onComplete] - Optional callback when effect completes
+ */
 export function applyTemporaryEffect(
     element: HTMLElement,
     effect: CombatEffect,
@@ -80,6 +90,15 @@ export interface DamageResult {
     damageReduction: number;
 }
 
+/**
+ * Calculate combat damage with defense and critical hit mechanics.
+ *
+ * @param {number} attack - Attacker's attack power
+ * @param {number} defense - Defender's defense power
+ * @param {boolean} [isDefending] - Whether defender is in defend stance (doubles defense)
+ * @param {number} [criticalChance] - Probability of critical hit (0-1, default 0.1)
+ * @returns {DamageResult} Calculated damage with critical/block info
+ */
 export function calculateDamage(
     attack: number,
     defense: number,

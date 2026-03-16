@@ -126,6 +126,11 @@ export function useTraitStateMachine(
         return manager.getAllStates();
     });
 
+    // Actor model queue: events are enqueued and drained one at a time,
+    // awaiting all effects before processing the next event.
+    const eventQueueRef = useRef<Array<{ eventKey: string; payload?: Record<string, unknown> }>>([]);
+    const processingRef = useRef(false);
+
     // Keep refs for callbacks to avoid stale closures
     const traitBindingsRef = useRef(traitBindings);
     const managerRef = useRef(manager);
@@ -393,16 +398,17 @@ export function useTraitStateMachine(
     }, [traitBindings, runTickEffects]);
 
     /**
-     * Process an event and trigger matching transitions.
+     * Process a single event through the state machine and AWAIT all effects.
      *
-     * Uses the shared StateMachineManager for state transitions,
-     * then executes effects. Render-ui effects are accumulated per slot
-     * and flushed atomically after all effects execute.
+     * This is the core of the actor model: one event is fully processed (including
+     * all async effects like fetch, persist, emit) before the next event is dequeued.
+     * This guarantees that emitted events (which get enqueued) only run after the
+     * current transition's effects have completed and entity mutations are persisted.
      */
-    const processEvent = useCallback((
+    const processEventQueued = useCallback(async (
         eventKey: string,
         payload?: Record<string, unknown>
-    ) => {
+    ): Promise<void> => {
         const normalizedEvent = normalizeEventKey(eventKey);
         const bindings = traitBindingsRef.current;
         const currentManager = managerRef.current;
@@ -455,7 +461,7 @@ export function useTraitStateMachine(
                     return Object.assign([...records], firstRecord) as unknown as Record<string, unknown>;
                 })();
 
-                // Accumulator for render-ui effects — grouped by slot
+                // Accumulator for render-ui effects -- grouped by slot
                 const pendingSlots = new Map<string, SlotPatternEntry[]>();
                 const slotSource: SlotSource = {
                     trait: binding.trait.name,
@@ -573,8 +579,14 @@ export function useTraitStateMachine(
 
                 const executor = new EffectExecutor({ handlers, bindings: bindingCtx, context: effectContext });
 
-                // executeAll is async — must await before flushing pendingSlots
-                executor.executeAll(result.effects).then(() => {
+                // AWAIT effects: the actor model requires all effects (fetch, persist,
+                // emit) to complete before the next event is dequeued. Emitted events
+                // land in eventQueueRef synchronously during executeAll (the bus is sync),
+                // but they won't be processed until this await resolves and the drain
+                // loop picks up the next entry.
+                try {
+                    await executor.executeAll(result.effects);
+
                     console.log(
                         '[TraitStateMachine] After executeAll, pendingSlots:',
                         Object.fromEntries(pendingSlots.entries()),
@@ -600,14 +612,14 @@ export function useTraitStateMachine(
                             fetchedDataContext.setData({ [linkedEntity]: updated as unknown[] });
                         }
                     }
-                }).catch((error: unknown) => {
+                } catch (error: unknown) {
                     console.error(
                         '[TraitStateMachine] Effect execution error:',
                         error,
                         '| effects:',
                         JSON.stringify(result.effects)
                     );
-                });
+                }
             } else if (!result.executed) {
                 // Log guard failures and missing transitions
                 if (result.guardResult === false) {
@@ -678,14 +690,60 @@ export function useTraitStateMachine(
     }, [entities, fetchedDataContext, eventBus]);
 
     /**
+     * Drain the event queue one entry at a time (actor model).
+     *
+     * While draining, any new events (e.g. from emit effects hitting the bus)
+     * are appended to the queue and processed in FIFO order after the current
+     * event's effects complete. The processingRef guard prevents re-entrant
+     * draining: if an emit causes a synchronous bus delivery that calls
+     * enqueueAndDrain, the new event is queued but drainEventQueue returns
+     * immediately because processingRef is already true.
+     */
+    const drainEventQueue = useCallback(async () => {
+        if (processingRef.current) return;
+        processingRef.current = true;
+
+        try {
+            while (eventQueueRef.current.length > 0) {
+                const entry = eventQueueRef.current.shift()!;
+                await processEventQueued(entry.eventKey, entry.payload);
+            }
+        } finally {
+            processingRef.current = false;
+        }
+    }, [processEventQueued]);
+
+    /**
+     * Enqueue an event and start draining if not already in progress.
+     *
+     * This replaces direct processEvent calls. Events arriving while the queue
+     * is draining (e.g. from emit effects) are appended and processed in order.
+     */
+    const enqueueAndDrain = useCallback((eventKey: string, payload?: Record<string, unknown>) => {
+        eventQueueRef.current.push({ eventKey, payload });
+        void drainEventQueue();
+    }, [drainEventQueue]);
+
+    /**
+     * Legacy synchronous processEvent -- delegates to the actor queue.
+     * Kept for backward compatibility with any code that calls processEvent directly.
+     */
+    const processEvent = useCallback((
+        eventKey: string,
+        payload?: Record<string, unknown>
+    ) => {
+        enqueueAndDrain(eventKey, payload);
+    }, [enqueueAndDrain]);
+
+    /**
      * Public API to send an event
      */
     const sendEvent = useCallback((
         eventKey: string,
         payload?: Record<string, unknown>
     ) => {
-        processEvent(eventKey, payload);
-    }, [processEvent]);
+        enqueueAndDrain(eventKey, payload);
+    }, [enqueueAndDrain]);
 
     /**
      * Get current state for a specific trait
@@ -702,7 +760,7 @@ export function useTraitStateMachine(
         return managerRef.current.canHandleEvent(traitName, normalizedEvent);
     }, []);
 
-    // Subscribe to eventBus events
+    // Subscribe to eventBus events -- uses enqueueAndDrain for actor model ordering
     useEffect(() => {
         const allEvents = new Set<string>();
 
@@ -726,7 +784,7 @@ export function useTraitStateMachine(
 
             const unsub = eventBus.on(`UI:${eventKey}`, (event) => {
                 console.log('[TraitStateMachine] Received event:', `UI:${eventKey}`, event);
-                processEvent(eventKey, event.payload as Record<string, unknown>);
+                enqueueAndDrain(eventKey, event.payload as Record<string, unknown>);
             });
             unsubscribes.push(unsub);
         }
@@ -736,7 +794,7 @@ export function useTraitStateMachine(
                 unsub();
             }
         };
-    }, [traitBindings, eventBus, processEvent]);
+    }, [traitBindings, eventBus, enqueueAndDrain]);
 
     return {
         traitStates,
