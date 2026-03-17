@@ -218,7 +218,7 @@ import { XPBar } from '../atoms/game/XPBar';
  * Pattern wrappers (ButtonPattern, VStackPattern, etc.) adapt the raw component
  * API to the render-ui config format. Direct components are used when no wrapper exists.
  */
-export const COMPONENT_REGISTRY: Record<string, React.ComponentType<Record<string, unknown>>> = {
+export const COMPONENT_REGISTRY: Record<string, React.ComponentType<any>> = {
   'Accordion': AccordionPattern,
   'AccordionPattern': AccordionPattern,
   'ActionButton': ActionButton,
