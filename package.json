@@ -93,10 +93,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@almadar/core": ">=2.6.0",
-    "@almadar/evaluator": ">=2.5.0",
-    "@almadar/patterns": ">=2.8.0",
-    "@almadar/runtime": ">=2.1.0",
+    "@almadar/core": ">=2.1.0",
+    "@almadar/evaluator": ">=2.0.0",
+    "@almadar/patterns": ">=2.0.0",
+    "@almadar/runtime": ">=2.0.0",
     "clsx": "^2.1.0",
     "leaflet": "1.9.4",
     "lucide-react": "^0.344.0",
@@ -158,7 +158,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/almadar-io/almadar.git",
+    "url": "https://github.com/almadar-io/almadar-ui.git",
     "directory": "docs/packages/ui"
   },
   "license": "MIT",
