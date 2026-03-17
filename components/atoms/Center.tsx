@@ -45,11 +45,9 @@ export const Center: React.FC<CenterProps> = ({
   as: Component = 'div',
 }) => {
   const mergedStyle = minHeight ? { minHeight, ...style } : style;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const Tag = Component as any;
-
   return (
-    <Tag
+    // @ts-expect-error polymorphic as prop
+    <Component
       className={cn(
         inline ? 'inline-flex' : 'flex',
         horizontal && 'justify-center',
@@ -61,7 +59,7 @@ export const Center: React.FC<CenterProps> = ({
       style={mergedStyle}
     >
       {children}
-    </Tag>
+    </Component>
   );
 };
 

@@ -84,11 +84,9 @@ export const Section: React.FC<SectionProps> = ({
   as: Component = 'section',
 }) => {
   const hasHeader = title || description || action;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const Tag = Component as any;
-
   return (
-    <Tag
+    // @ts-expect-error polymorphic as prop
+    <Component
       className={cn(
         paddingStyles[padding],
         variantStyles[variant],
@@ -133,7 +131,7 @@ export const Section: React.FC<SectionProps> = ({
       <Box className={contentClassName}>
         {children}
       </Box>
-    </Tag>
+    </Component>
   );
 };
 

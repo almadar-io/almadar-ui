@@ -59,10 +59,9 @@ export const Container: React.FC<ContainerProps> = ({
 }) => {
   // Use maxWidth if provided, otherwise fall back to size, then default to 'lg'
   const resolvedSize = maxWidth ?? size ?? 'lg';
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const Tag = Component as any;
   return (
-    <Tag
+    // @ts-expect-error polymorphic as prop
+    <Component
       className={cn(
         'w-full',
         sizeStyles[resolvedSize],
@@ -72,7 +71,7 @@ export const Container: React.FC<ContainerProps> = ({
       )}
     >
       {children}
-    </Tag>
+    </Component>
   );
 };
 

@@ -166,11 +166,9 @@ export const Grid: React.FC<GridProps> = ({
   const mergedStyle = rows
     ? { gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`, ...style }
     : style;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const Tag = Component as any;
-
   return (
-    <Tag
+    // @ts-expect-error polymorphic as prop
+    <Component
       className={cn(
         'grid',
         getColsClass(cols),
@@ -188,7 +186,7 @@ export const Grid: React.FC<GridProps> = ({
       style={mergedStyle}
     >
       {children}
-    </Tag>
+    </Component>
   );
 };
 
