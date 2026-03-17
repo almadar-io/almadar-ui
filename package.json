@@ -118,7 +118,7 @@
     "three": "^0.160.0"
   },
   "devDependencies": {
-    "@almadar/eslint-plugin": ">=2.5.0",
+    "@almadar/eslint-plugin": ">=2.3.0",
     "@storybook/addon-docs": "^10.2.6",
     "@storybook/addon-links": "^10.2.6",
     "@storybook/addon-themes": "^10.2.6",
