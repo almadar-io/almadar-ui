@@ -161,7 +161,8 @@ export const Typography: React.FC<TypographyProps> = ({
   // Determine variant: explicit variant takes precedence, then level, then default
   const variant: TypographyVariant =
     variantProp ?? (level ? (`h${level}` as TypographyVariant) : "body1");
-  const Component = (as || defaultElements[variant]) as React.ElementType;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const Component = (as || defaultElements[variant]) as any;
 
   return (
     <Component

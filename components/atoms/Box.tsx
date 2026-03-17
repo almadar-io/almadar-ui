@@ -252,9 +252,11 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
     }, [hoverEvent, eventBus, onMouseLeave]);
 
     const isClickable = action || onClick;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const Tag = Component as any;
 
     return (
-      <Component
+      <Tag
         ref={ref}
         className={cn(
           // Padding
@@ -293,7 +295,7 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
         {...rest}
       >
         {children}
-      </Component>
+      </Tag>
     );
   },
 );

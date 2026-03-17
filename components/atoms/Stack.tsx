@@ -132,9 +132,11 @@ export const Stack: React.FC<StackProps> = ({
         : reverse
           ? "flex-col-reverse"
           : "flex-col";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const Tag = Component as any;
 
   return (
-    <Component
+    <Tag
       className={cn(
         "flex",
         directionClass,
@@ -152,7 +154,7 @@ export const Stack: React.FC<StackProps> = ({
       tabIndex={tabIndex}
     >
       {children}
-    </Component>
+    </Tag>
   );
 };
 

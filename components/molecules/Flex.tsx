@@ -109,8 +109,11 @@ export const Flex: React.FC<FlexProps> = ({
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const Tag = Component as any;
+
   return (
-    <Component
+    <Tag
       className={cn(
         inline ? 'inline-flex' : 'flex',
         directionStyles[direction],
@@ -123,7 +126,7 @@ export const Flex: React.FC<FlexProps> = ({
       style={Object.keys(flexStyle).length > 0 ? flexStyle : undefined}
     >
       {children}
-    </Component>
+    </Tag>
   );
 };
 

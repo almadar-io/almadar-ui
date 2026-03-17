@@ -84,9 +84,11 @@ export const Section: React.FC<SectionProps> = ({
   as: Component = 'section',
 }) => {
   const hasHeader = title || description || action;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const Tag = Component as any;
 
   return (
-    <Component
+    <Tag
       className={cn(
         paddingStyles[padding],
         variantStyles[variant],
@@ -131,7 +133,7 @@ export const Section: React.FC<SectionProps> = ({
       <Box className={contentClassName}>
         {children}
       </Box>
-    </Component>
+    </Tag>
   );
 };
 
