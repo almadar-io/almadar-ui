@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "2.13.3",
+  "version": "2.14.0",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "main": "./dist/components/index.js",
@@ -82,6 +82,7 @@
     "themes"
   ],
   "publishConfig": {
+    "registry": "https://registry.npmjs.org",
     "access": "public"
   },
   "scripts": {
@@ -92,10 +93,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@almadar/core": ">=2.1.0",
-    "@almadar/evaluator": ">=2.0.0",
-    "@almadar/patterns": ">=2.0.0",
-    "@almadar/runtime": ">=2.0.0",
+    "@almadar/core": ">=2.6.0",
+    "@almadar/evaluator": ">=2.5.0",
+    "@almadar/patterns": ">=2.8.0",
+    "@almadar/runtime": ">=2.1.0",
     "clsx": "^2.1.0",
     "leaflet": "1.9.4",
     "lucide-react": "^0.344.0",
@@ -117,7 +118,7 @@
     "three": "^0.160.0"
   },
   "devDependencies": {
-    "@almadar/eslint-plugin": ">=2.3.0",
+    "@almadar/eslint-plugin": ">=2.5.0",
     "@storybook/addon-docs": "^10.2.6",
     "@storybook/addon-links": "^10.2.6",
     "@storybook/addon-themes": "^10.2.6",
