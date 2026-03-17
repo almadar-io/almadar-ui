@@ -14,7 +14,7 @@ export default defineConfig({
     'locales/index.ts',
   ],
   format: ['esm'],
-  dts: true,
+  dts: false,
   clean: true,
   sourcemap: false,
   splitting: true,
