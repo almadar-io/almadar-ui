@@ -252,9 +252,9 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
     }, [hoverEvent, eventBus, onMouseLeave]);
 
     const isClickable = action || onClick;
+    const Comp = Component as React.FC<Record<string, unknown>>;
     return (
-      // @ts-expect-error polymorphic as prop
-      <Component
+      <Comp
         ref={ref}
         className={cn(
           // Padding
@@ -293,7 +293,7 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
         {...rest}
       >
         {children}
-      </Component>
+      </Comp>
     );
   },
 );

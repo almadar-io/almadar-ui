@@ -84,9 +84,9 @@ export const Section: React.FC<SectionProps> = ({
   as: Component = 'section',
 }) => {
   const hasHeader = title || description || action;
+  const Comp = Component as React.FC<Record<string, unknown>>;
   return (
-    // @ts-expect-error polymorphic as prop
-    <Component
+    <Comp
       className={cn(
         paddingStyles[padding],
         variantStyles[variant],
@@ -131,7 +131,7 @@ export const Section: React.FC<SectionProps> = ({
       <Box className={contentClassName}>
         {children}
       </Box>
-    </Component>
+    </Comp>
   );
 };
 

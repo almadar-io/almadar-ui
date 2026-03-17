@@ -163,9 +163,9 @@ export const Typography: React.FC<TypographyProps> = ({
     variantProp ?? (level ? (`h${level}` as TypographyVariant) : "body1");
   const Component = as || defaultElements[variant];
 
+  const Comp = Component as unknown as React.FC<Record<string, unknown>>;
   return (
-    // @ts-expect-error polymorphic as prop
-    <Component
+    <Comp
       id={id}
       className={cn(
         variantStyles[variant],
@@ -180,7 +180,7 @@ export const Typography: React.FC<TypographyProps> = ({
       style={style}
     >
       {children ?? content}
-    </Component>
+    </Comp>
   );
 };
 

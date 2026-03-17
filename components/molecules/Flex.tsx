@@ -109,9 +109,9 @@ export const Flex: React.FC<FlexProps> = ({
     }
   }
 
+  const Comp = Component as React.FC<Record<string, unknown>>;
   return (
-    // @ts-expect-error polymorphic as prop
-    <Component
+    <Comp
       className={cn(
         inline ? 'inline-flex' : 'flex',
         directionStyles[direction],
@@ -124,7 +124,7 @@ export const Flex: React.FC<FlexProps> = ({
       style={Object.keys(flexStyle).length > 0 ? flexStyle : undefined}
     >
       {children}
-    </Component>
+    </Comp>
   );
 };
 

@@ -132,9 +132,9 @@ export const Stack: React.FC<StackProps> = ({
         : reverse
           ? "flex-col-reverse"
           : "flex-col";
+  const Comp = Component as React.FC<Record<string, unknown>>;
   return (
-    // @ts-expect-error polymorphic as prop
-    <Component
+    <Comp
       className={cn(
         "flex",
         directionClass,
@@ -152,7 +152,7 @@ export const Stack: React.FC<StackProps> = ({
       tabIndex={tabIndex}
     >
       {children}
-    </Component>
+    </Comp>
   );
 };
 

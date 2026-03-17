@@ -59,9 +59,9 @@ export const Container: React.FC<ContainerProps> = ({
 }) => {
   // Use maxWidth if provided, otherwise fall back to size, then default to 'lg'
   const resolvedSize = maxWidth ?? size ?? 'lg';
+  const Comp = Component as React.FC<Record<string, unknown>>;
   return (
-    // @ts-expect-error polymorphic as prop
-    <Component
+    <Comp
       className={cn(
         'w-full',
         sizeStyles[resolvedSize],
@@ -71,7 +71,7 @@ export const Container: React.FC<ContainerProps> = ({
       )}
     >
       {children}
-    </Component>
+    </Comp>
   );
 };
 
