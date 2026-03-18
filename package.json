@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "2.14.0",
+  "version": "2.15.0",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "main": "./dist/components/index.js",
@@ -86,7 +86,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsup && (tsc --declaration --emitDeclarationOnly --outDir dist --skipLibCheck || true)",
+    "build": "tsup && tsc -p tsconfig.build.json",
     "build:watch": "tsup --watch",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build -o storybook-static",
