@@ -201,7 +201,7 @@ export const Pagination: React.FC<PaginationProps> = ({
           size="sm"
           onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          icon={ChevronLeft}
+          icon={<ChevronLeft className="h-4 w-4" />}
         >
           {t('pagination.previous')}
         </Button>
@@ -242,7 +242,7 @@ export const Pagination: React.FC<PaginationProps> = ({
           size="sm"
           onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          iconRight={ChevronRight}
+          iconRight={<ChevronRight className="h-4 w-4" />}
         >
           {t('pagination.next')}
         </Button>

@@ -114,6 +114,11 @@ function resolveIconProp(
     const IconComp = value as LucideIcon;
     return <IconComp className={sizeClass} />;
   }
+  // Handle React.forwardRef components (e.g., Lucide icons)
+  if (typeof value === 'object' && value !== null && '$$typeof' in (value as unknown as Record<string, unknown>)) {
+    const IconComp = value as unknown as LucideIcon;
+    return <IconComp className={sizeClass} />;
+  }
   // Already a ReactNode (JSX element)
   return value;
 }
