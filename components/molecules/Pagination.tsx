@@ -7,7 +7,7 @@
  */
 
 import React, { useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+// Icons resolved by string name via Button's resolveIconProp
 import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
 import { Input } from "../atoms/Input";
@@ -201,7 +201,7 @@ export const Pagination: React.FC<PaginationProps> = ({
           size="sm"
           onClick={() => handlePageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          icon={<ChevronLeft className="h-4 w-4" />}
+          icon="chevron-left"
         >
           {t('pagination.previous')}
         </Button>
@@ -242,7 +242,7 @@ export const Pagination: React.FC<PaginationProps> = ({
           size="sm"
           onClick={() => handlePageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          iconRight={<ChevronRight className="h-4 w-4" />}
+          iconRight="chevron-right"
         >
           {t('pagination.next')}
         </Button>
