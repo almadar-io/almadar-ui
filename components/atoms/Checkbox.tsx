@@ -6,6 +6,10 @@ export interface CheckboxProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
   "type"
 > {
+  /** Whether the checkbox is checked */
+  checked?: boolean;
+  /** Default checked state (uncontrolled) */
+  defaultChecked?: boolean;
   label?: string;
 }
 
