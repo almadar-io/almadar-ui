@@ -107,12 +107,19 @@ export const Timeline: React.FC<TimelineProps> = ({
         if (entityData.length === 0) return [];
 
         return entityData.map((record, idx) => {
-            const titleField = fields?.[0] || "title";
-            const descField = fields?.[1] || "description";
-            const dateField = fields?.find((f) =>
+            // Handle both string[] and {name: string}[] field formats from compiler
+            const resolveField = (f: unknown): string => {
+                if (typeof f === 'string') return f;
+                if (f && typeof f === 'object' && 'name' in (f as Record<string, unknown>)) return String((f as Record<string, unknown>).name);
+                return '';
+            };
+            const resolvedFields = fields?.map(resolveField) ?? [];
+            const titleField = resolvedFields[0] || "title";
+            const descField = resolvedFields[1] || "description";
+            const dateField = resolvedFields.find((f) =>
                 f.toLowerCase().includes("date"),
             ) || "date";
-            const statusField = fields?.find((f) =>
+            const statusField = resolvedFields.find((f) =>
                 f.toLowerCase().includes("status"),
             ) || "status";
 

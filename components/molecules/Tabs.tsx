@@ -65,7 +65,12 @@ export const Tabs: React.FC<TabsProps> = ({
   className,
 }) => {
   // Guard against undefined or empty items - support both 'items' and 'tabs' props
-  const safeItems = items ?? tabs ?? [];
+  // Also normalize {value, label} format from schema to {id, label} format for component
+  const rawItems = items ?? tabs ?? [];
+  const safeItems = rawItems.map(item => ({
+    ...item,
+    id: item.id || (item as unknown as Record<string, string>).value || '',
+  }));
   const eventBus = useEventBus();
   const { t } = useTranslate();
 
