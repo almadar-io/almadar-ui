@@ -32,7 +32,9 @@ export interface CarouselProps<T = Record<string, unknown>> {
   /** Array of items to display as slides */
   items: T[];
   /** Render function for each slide */
-  renderItem: (item: T, index: number) => React.ReactNode;
+  renderItem?: (item: T, index: number) => React.ReactNode;
+  /** Children-as-function fallback for renderItem (compiler compatibility) */
+  children?: (item: T, index: number) => React.ReactNode;
   /** Enable auto-play rotation */
   autoPlay?: boolean;
   /** Auto-play interval in milliseconds (default: 5000) */
@@ -54,6 +56,7 @@ export interface CarouselProps<T = Record<string, unknown>> {
 export const Carousel = <T = Record<string, unknown>,>({
   items,
   renderItem,
+  children,
   autoPlay = false,
   autoPlayInterval = 5000,
   showDots = true,
@@ -210,7 +213,7 @@ export const Carousel = <T = Record<string, unknown>,>({
               scrollSnapAlign: 'start',
             }}
           >
-            {renderItem(item, index)}
+            {(renderItem ?? children)?.(item, index)}
           </Box>
         ))}
       </Box>
