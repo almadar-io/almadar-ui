@@ -11,6 +11,14 @@ export interface InputProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
   "onChange"
 > {
+  /** Placeholder text */
+  placeholder?: string;
+  /** Current value */
+  value?: string | number;
+  /** Whether input is disabled */
+  disabled?: boolean;
+  /** Declarative event name for trait dispatch */
+  action?: string;
   /** Input type - supports 'select' and 'textarea' in addition to standard types */
   inputType?:
   | "text"

@@ -531,7 +531,7 @@ export const DataList: React.FC<DataListProps> = ({
             onClick={() => setVisibleCount((prev) => prev + (pageSize || 5))}
           >
             <Icon name="chevron-down" size="xs" className="mr-1" />
-            {t('common.showMore') || 'Show More'} ({allData.length - visibleCount} remaining)
+            {t('common.showMore')} ({allData.length - visibleCount} remaining)
           </Button>
         </Box>
       )}

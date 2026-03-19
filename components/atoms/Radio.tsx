@@ -11,6 +11,12 @@ export interface RadioProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
   "type" | "size"
 > {
+  /** Radio options (string array or SelectOption array) */
+  options?: string[];
+  /** Current selected value */
+  value?: string;
+  /** Declarative event name for trait dispatch */
+  action?: string;
   /**
    * Label text displayed next to the radio button
    */

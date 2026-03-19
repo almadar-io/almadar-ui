@@ -12,8 +12,15 @@ export interface SelectProps extends Omit<
   React.SelectHTMLAttributes<HTMLSelectElement>,
   "children"
 > {
+  /** Select options */
   options: SelectOption[];
+  /** Placeholder text */
   placeholder?: string;
+  /** Current value */
+  value?: string;
+  /** Declarative event name for trait dispatch */
+  action?: string;
+  /** Error message */
   error?: string;
 }
 

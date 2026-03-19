@@ -2,6 +2,11 @@ import React from "react";
 import { cn } from "../../lib/cn";
 
 export interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {
+  /** Label text content */
+  text?: string;
+  /** Associated input element ID */
+  htmlFor?: string;
+  /** Show required indicator */
   required?: boolean;
 }
 

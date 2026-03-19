@@ -2,6 +2,13 @@ import React from "react";
 import { cn } from "../../lib/cn";
 
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  /** Placeholder text */
+  placeholder?: string;
+  /** Number of visible rows */
+  rows?: number;
+  /** Declarative event name for trait dispatch */
+  action?: string;
+  /** Error message */
   error?: string;
 }
 
