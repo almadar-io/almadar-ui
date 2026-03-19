@@ -16,13 +16,15 @@ import { Button, Input, Badge, ThemeToggle, Avatar } from "../atoms";
 import { Box } from "../atoms/Box";
 import { HStack, VStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
+import { Icon as AlmadarIcon } from "../atoms/Icon";
 import { useAuthContext } from "../../hooks/useAuthContext";
 import { useTranslate } from "../../hooks/useTranslate";
 
 export interface NavItem {
   label: string;
   href: string;
-  icon?: LucideIcon;
+  /** Lucide icon component or string icon name (resolved by @almadar/ui Icon) */
+  icon?: LucideIcon | string;
   badge?: string | number;
   children?: NavItem[];
 }
@@ -319,7 +321,13 @@ const NavLink: React.FC<{ item: NavItem; currentPath: string }> = ({
 }) => {
   const isActive =
     currentPath === item.href || currentPath.startsWith(item.href + "/");
-  const Icon = item.icon;
+
+  const iconClassName = cn(
+    "h-5 w-5",
+    isActive
+      ? "text-[var(--color-primary-foreground)]"
+      : "text-[var(--color-muted-foreground)]",
+  );
 
   return (
     <Link
@@ -331,15 +339,10 @@ const NavLink: React.FC<{ item: NavItem; currentPath: string }> = ({
           : "text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]",
       )}
     >
-      {Icon && (
-        <Icon
-          className={cn(
-            "h-5 w-5",
-            isActive
-              ? "text-[var(--color-primary-foreground)]"
-              : "text-[var(--color-muted-foreground)]",
-          )}
-        />
+      {item.icon && (
+        typeof item.icon === 'string'
+          ? <AlmadarIcon name={item.icon} className={iconClassName} />
+          : <item.icon className={iconClassName} />
       )}
       <Typography
         variant="small"
