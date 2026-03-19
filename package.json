@@ -75,12 +75,14 @@
       "import": "./dist/locales/index.js",
       "require": "./dist/locales/index.js"
     },
+    "./locales/*.json": "./locales/*.json",
     "./index.css": "./index.css",
     "./tailwind-preset": "./tailwind-preset.cjs"
   },
   "files": [
     "dist",
     "themes",
+    "locales",
     "tailwind-preset.cjs"
   ],
   "publishConfig": {
