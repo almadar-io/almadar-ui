@@ -48,7 +48,7 @@ export function ActionPalette({
                 {label ?? t('sequencer.actions')}
             </Typography>
             <HStack className="flex-wrap" gap="sm">
-                {actions.map(action => (
+                {(actions ?? []).map(action => (
                     <ActionTile
                         key={action.id}
                         action={action}
