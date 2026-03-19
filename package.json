@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "2.15.6",
+  "version": "2.15.7",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "main": "./dist/components/index.js",
@@ -75,7 +75,9 @@
       "import": "./dist/locales/index.js",
       "require": "./dist/locales/index.js"
     },
-    "./locales/*.json": "./locales/*.json",
+    "./locales/en.json": "./locales/en.json",
+    "./locales/ar.json": "./locales/ar.json",
+    "./locales/sl.json": "./locales/sl.json",
     "./index.css": "./index.css",
     "./tailwind-preset": "./tailwind-preset.cjs"
   },
