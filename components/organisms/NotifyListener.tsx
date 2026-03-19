@@ -22,6 +22,7 @@ interface NotifyItem {
   variant: ToastVariant;
 }
 
+const MAX_VISIBLE = 4;
 let nextId = 0;
 
 export function NotifyListener(): React.ReactElement | null {
@@ -55,7 +56,12 @@ export function NotifyListener(): React.ReactElement | null {
       };
       const variant = severityMap[String(payload.severity)] || 'info';
       const id = ++nextId;
-      setItems(prev => [...prev, { id, message, variant }]);
+      setItems(prev => {
+        // Deduplicate: skip if last toast has same message and variant
+        const last = prev[prev.length - 1];
+        if (last && last.message === message && last.variant === variant) return prev;
+        return [...prev, { id, message, variant }].slice(-MAX_VISIBLE);
+      });
     });
     return unsubscribe;
   }, [eventBus]);

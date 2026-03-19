@@ -908,6 +908,7 @@ export const Form: React.FC<FormProps> = ({
   return (
      
     <form
+      noValidate
       className={cn(layoutStyles[layout], gapStyles[gap], className)}
       onSubmit={handleSubmit}
       {...props}
