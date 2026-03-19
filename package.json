@@ -75,11 +75,13 @@
       "import": "./dist/locales/index.js",
       "require": "./dist/locales/index.js"
     },
-    "./index.css": "./index.css"
+    "./index.css": "./index.css",
+    "./tailwind-preset": "./tailwind-preset.js"
   },
   "files": [
     "dist",
-    "themes"
+    "themes",
+    "tailwind-preset.js"
   ],
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
