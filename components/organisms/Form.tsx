@@ -673,11 +673,25 @@ export const Form: React.FC<FormProps> = ({
     return effectiveFields.map((field): SchemaField => {
       // If field is a string, convert to SchemaField object
       if (typeof field === 'string') {
+        // Look up type info from the entity schema when available
+        const entityField = resolvedEntity?.fields?.find((f) => f.name === field);
+        if (entityField) {
+          return {
+            name: field,
+            type: entityField.type,
+            required: entityField.required,
+            defaultValue: entityField.default,
+            values: entityField.values,
+            min: entityField.min,
+            max: entityField.max,
+            relation: entityField.relation ? { entity: entityField.relation.entity } : undefined,
+          };
+        }
         return { name: field, type: 'string' };
       }
       return field as SchemaField;
     });
-  }, [effectiveFields]);
+  }, [effectiveFields, resolvedEntity]);
 
   // Generate form fields from schema
   const schemaFields = React.useMemo(() => {
