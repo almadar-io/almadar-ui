@@ -92,7 +92,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <Box
-          className="fixed inset-0 bg-[var(--color-foreground)]/50 dark:bg-[var(--color-foreground)]/70 z-40 lg:hidden"
+          className="fixed inset-0 bg-[var(--color-foreground)]/50 dark:bg-[var(--color-foreground)]/70 z-20 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -101,7 +101,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <Box
         as="aside"
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-[var(--color-card)] dark:bg-[var(--color-card)] border-r border-[var(--color-border)] dark:border-[var(--color-border)]",
+          "fixed inset-y-0 left-0 z-30 w-64 bg-[var(--color-card)] dark:bg-[var(--color-card)] border-r border-[var(--color-border)] dark:border-[var(--color-border)]",
           "transform transition-transform duration-200 ease-in-out lg:translate-x-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}
@@ -175,7 +175,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         {/* Header */}
         <Box
           as="header"
-          className="sticky top-0 z-30 h-16 bg-[var(--color-card)] dark:bg-[var(--color-card)] border-b border-[var(--color-border)] dark:border-[var(--color-border)]"
+          className="sticky top-0 z-20 h-16 bg-[var(--color-card)] dark:bg-[var(--color-card)] border-b border-[var(--color-border)] dark:border-[var(--color-border)]"
         >
           <HStack
             align="center"
@@ -256,10 +256,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   {userMenuOpen && (
                     <>
                       <Box
-                        className="fixed inset-0 z-40"
+                        className="fixed inset-0 z-20"
                         onClick={() => setUserMenuOpen(false)}
                       />
-                      <Box className="absolute right-0 mt-2 w-48 bg-[var(--color-card)] dark:bg-[var(--color-card)] rounded-[var(--radius-lg)] shadow-[var(--shadow-lg)] border border-[var(--color-border)] dark:border-[var(--color-border)] py-1 z-50">
+                      <Box className="absolute right-0 mt-2 w-48 bg-[var(--color-card)] dark:bg-[var(--color-card)] rounded-[var(--radius-lg)] shadow-[var(--shadow-lg)] border border-[var(--color-border)] dark:border-[var(--color-border)] py-1 z-30">
                         <Box className="px-4 py-2 border-b border-[var(--color-border)] dark:border-[var(--color-border)]">
                           <Typography
                             variant="small"
