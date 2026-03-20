@@ -33,10 +33,10 @@ export interface FeatureCardProps {
   className?: string;
 }
 
-const iconSizeMap: Record<string, 'sm' | 'md' | 'lg'> = {
-  sm: 'sm',
-  md: 'md',
-  lg: 'lg',
+const iconSizeMap: Record<string, 'sm' | 'md' | 'lg' | 'xl'> = {
+  sm: 'lg',
+  md: 'xl',
+  lg: 'xl',
 };
 
 const gapMap: Record<string, 'sm' | 'md' | 'lg'> = {
