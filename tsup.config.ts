@@ -1,6 +1,5 @@
-import { defineConfig } from 'tsup';
+import { defineConfig, type Options } from 'tsup';
 import { resolve } from 'node:path';
-import type { Plugin } from 'esbuild';
 
 // All entry points that import context/UISlotContext.tsx inline their own
 // createContext() call when splitting is off. This causes duplicate React
@@ -10,11 +9,11 @@ import type { Plugin } from 'esbuild';
 const contextPath = resolve(__dirname, 'context/UISlotContext.tsx');
 const contextDir = resolve(__dirname, 'context');
 
-const dedupeContextPlugin: Plugin = {
+const dedupeContextPlugin = {
   name: 'dedupe-ui-slot-context',
-  setup(build) {
+  setup(build: { onResolve: (opts: { filter: RegExp }, cb: (args: { importer: string }) => { path: string; external: boolean } | undefined) => void }) {
     // For any file outside context/ that imports UISlotContext, redirect to the package export
-    build.onResolve({ filter: /UISlotContext/ }, (args) => {
+    build.onResolve({ filter: /UISlotContext/ }, (args: { importer: string }) => {
       // Only redirect if the importer is NOT inside the context/ directory itself
       // (context/index.ts must bundle UISlotContext normally)
       if (args.importer && !args.importer.startsWith(contextDir)) {
