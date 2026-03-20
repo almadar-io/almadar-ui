@@ -63,9 +63,10 @@ export function SimulatorBoard({
   const { emit } = useEventBus();
   const { t } = useTranslate();
 
+  const parameters = entity?.parameters ?? [];
   const [values, setValues] = useState<Record<string, number>>(() => {
     const init: Record<string, number> = {};
-    for (const p of entity.parameters) {
+    for (const p of parameters) {
       init[p.id] = p.initial;
     }
     return init;
@@ -84,8 +85,10 @@ export function SimulatorBoard({
     }
   }, [entity.computeExpression]);
 
-  const output = useMemo(() => computeOutput(values), [computeOutput, values]);
-  const isCorrect = Math.abs(output - entity.targetValue) <= entity.targetTolerance;
+  const output = useMemo(() => computeOutput(values) ?? 0, [computeOutput, values]);
+  const targetValue = entity?.targetValue ?? 0;
+  const targetTolerance = entity?.targetTolerance ?? 0;
+  const isCorrect = Math.abs(output - targetValue) <= targetTolerance;
 
   const handleParameterChange = (id: string, value: number) => {
     if (submitted) return;
@@ -109,7 +112,7 @@ export function SimulatorBoard({
 
   const handleFullReset = () => {
     const init: Record<string, number> = {};
-    for (const p of entity.parameters) {
+    for (const p of parameters) {
       init[p.id] = p.initial;
     }
     setValues(init);
@@ -150,7 +153,7 @@ export function SimulatorBoard({
             <Typography variant="small" weight="bold" className="uppercase tracking-wider text-[var(--color-muted-foreground)]">
               {t('simulator.parameters')}
             </Typography>
-            {entity.parameters.map((param) => (
+            {parameters.map((param) => (
               <VStack key={param.id} gap="xs">
                 <HStack justify="between" align="center">
                   <Typography variant="body" weight="medium">{param.label}</Typography>
@@ -195,7 +198,7 @@ export function SimulatorBoard({
               </HStack>
             )}
             <Typography variant="caption" className="text-[var(--color-muted-foreground)]">
-              {t('simulator.target')}: {entity.targetValue} {entity.outputUnit} (±{entity.targetTolerance})
+              {t('simulator.target')}: {targetValue} {entity?.outputUnit ?? ''} (±{targetTolerance})
             </Typography>
           </VStack>
         </Card>

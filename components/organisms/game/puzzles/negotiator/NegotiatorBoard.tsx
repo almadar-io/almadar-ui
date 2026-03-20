@@ -102,10 +102,13 @@ export function NegotiatorBoard({
   const opponentTotal = history.reduce((s, r) => s + r.opponentPayoff, 0);
   const won = isComplete && playerTotal >= entity.targetScore;
 
+  const actions = entity?.actions ?? [];
+  const payoffMatrix = entity?.payoffMatrix ?? [];
+
   const handleAction = useCallback((actionId: string) => {
     if (isComplete) return;
-    const opponentAction = getOpponentAction(entity.opponentStrategy, entity.actions, history);
-    const payoff = entity.payoffMatrix.find(
+    const opponentAction = getOpponentAction(entity.opponentStrategy, actions, history);
+    const payoff = payoffMatrix.find(
       (p) => p.playerAction === actionId && p.opponentAction === opponentAction,
     );
     const result: RoundResult = {
@@ -127,14 +130,14 @@ export function NegotiatorBoard({
         setShowHint(true);
       }
     }
-  }, [isComplete, entity, history, currentRound, completeEvent, emit]);
+  }, [isComplete, entity, actions, payoffMatrix, history, currentRound, completeEvent, emit]);
 
   const handleReset = () => {
     setHistory([]);
     setShowHint(false);
   };
 
-  const getActionLabel = (id: string) => entity.actions.find((a) => a.id === id)?.label ?? id;
+  const getActionLabel = (id: string) => actions.find((a) => a.id === id)?.label ?? id;
 
   return (
     <Box
@@ -190,7 +193,7 @@ export function NegotiatorBoard({
                 {t('negotiator.chooseAction')}
               </Typography>
               <HStack gap="sm" justify="center" className="flex-wrap">
-                {entity.actions.map((action) => (
+                {actions.map((action) => (
                   <Button
                     key={action.id}
                     variant="primary"

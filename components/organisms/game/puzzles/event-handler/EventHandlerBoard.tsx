@@ -83,9 +83,10 @@ export function EventHandlerBoard({
 }: EventHandlerBoardProps): React.JSX.Element {
     const { emit } = useEventBus();
     const { t } = useTranslate();
-    const [objects, setObjects] = useState<PuzzleObjectDef[]>(entity.objects);
+    const entityObjects = entity?.objects ?? [];
+    const [objects, setObjects] = useState<PuzzleObjectDef[]>(entityObjects);
     const [selectedObjectId, setSelectedObjectId] = useState<string | null>(
-        entity.objects[0]?.id || null,
+        entityObjects[0]?.id || null,
     );
     const [headerError, setHeaderError] = useState(false);
     const [playState, setPlayState] = useState<PlayState>('editing');
@@ -196,12 +197,12 @@ export function EventHandlerBoard({
 
     const handleReset = useCallback(() => {
         if (timerRef.current) clearTimeout(timerRef.current);
-        setObjects(entity.objects);
+        setObjects(entity?.objects ?? []);
         setPlayState('editing');
         setEventLog([]);
-        setSelectedObjectId(entity.objects[0]?.id || null);
+        setSelectedObjectId((entity?.objects ?? [])[0]?.id || null);
         setAttempts(0);
-    }, [entity.objects]);
+    }, [entity?.objects]);
 
     // -- Build compact viewers ------------------------------------------------
 

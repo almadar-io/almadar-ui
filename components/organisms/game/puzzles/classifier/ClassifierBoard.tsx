@@ -69,11 +69,13 @@ export function ClassifierBoard({
   const [attempts, setAttempts] = useState(0);
   const [showHint, setShowHint] = useState(false);
 
-  const unassignedItems = entity.items.filter((item) => !assignments[item.id]);
-  const allAssigned = Object.keys(assignments).length === entity.items.length;
+  const items = entity?.items ?? [];
+  const categories = entity?.categories ?? [];
+  const unassignedItems = items.filter((item) => !assignments[item.id]);
+  const allAssigned = Object.keys(assignments).length === items.length;
 
   const results = submitted
-    ? entity.items.map((item) => ({
+    ? items.map((item) => ({
       item,
       assigned: assignments[item.id],
       correct: assignments[item.id] === item.correctCategory,
@@ -100,11 +102,11 @@ export function ClassifierBoard({
   const handleSubmit = useCallback(() => {
     setSubmitted(true);
     setAttempts((a) => a + 1);
-    const correct = entity.items.every((item) => assignments[item.id] === item.correctCategory);
+    const correct = items.every((item) => assignments[item.id] === item.correctCategory);
     if (correct) {
       emit(`UI:${completeEvent}`, { success: true, attempts: attempts + 1 });
     }
-  }, [entity.items, assignments, attempts, completeEvent, emit]);
+  }, [items, assignments, attempts, completeEvent, emit]);
 
   const handleReset = () => {
     setSubmitted(false);
@@ -169,8 +171,8 @@ export function ClassifierBoard({
 
         {/* Category buckets */}
         <VStack gap="md">
-          {entity.categories.map((cat) => {
-            const catItems = entity.items.filter((item) => assignments[item.id] === cat.id);
+          {categories.map((cat) => {
+            const catItems = items.filter((item) => assignments[item.id] === cat.id);
             return (
               <Card key={cat.id} className="p-4">
                 <VStack gap="sm">
@@ -240,7 +242,7 @@ export function ClassifierBoard({
               <Typography variant="body" weight="bold">
                 {allCorrect
                   ? (entity.successMessage ?? t('classifier.allCorrect'))
-                  : `${correctCount}/${entity.items.length} ${t('classifier.correct')}`}
+                  : `${correctCount}/${items.length} ${t('classifier.correct')}`}
               </Typography>
               {!allCorrect && entity.failMessage && (
                 <Typography variant="body" className="text-[var(--color-muted-foreground)]">{entity.failMessage}</Typography>

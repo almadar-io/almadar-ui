@@ -697,6 +697,7 @@ function renderPatternChildren(
     | Array<{ type: string; props?: Record<string, unknown> }>
     | undefined,
   onDismiss: () => void,
+  parentId = "root",
 ): React.ReactNode {
   if (!children || !Array.isArray(children) || children.length === 0) {
     return null;
@@ -705,8 +706,9 @@ function renderPatternChildren(
   return children.map((child, index) => {
     if (!child || typeof child !== "object") return null;
 
+    const childId = `${parentId}-${index}`;
     const childContent: SlotContent = {
-      id: `child-${index}`,
+      id: childId,
       pattern: child.type,
       props: child.props ?? {},
       priority: 0,
@@ -714,7 +716,7 @@ function renderPatternChildren(
 
     return (
       <SlotContentRenderer
-        key={`child-${index}-${child.type}`}
+        key={childId}
         content={childContent}
         onDismiss={onDismiss}
       />
@@ -790,7 +792,7 @@ function SlotContentRenderer({
 
     // Render children recursively for layout patterns
     const renderedChildren = supportsChildren
-      ? renderPatternChildren(childrenConfig, onDismiss)
+      ? renderPatternChildren(childrenConfig, onDismiss, content.id)
       : undefined;
 
     // Extract props without the children config (we pass rendered children instead)

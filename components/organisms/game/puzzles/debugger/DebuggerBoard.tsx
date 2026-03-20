@@ -74,9 +74,10 @@ export function DebuggerBoard({
     });
   };
 
-  const bugLines = entity.lines.filter((l) => l.isBug);
-  const correctFlags = entity.lines.filter((l) => l.isBug && flaggedLines.has(l.id));
-  const falseFlags = entity.lines.filter((l) => !l.isBug && flaggedLines.has(l.id));
+  const lines = entity?.lines ?? [];
+  const bugLines = lines.filter((l) => l.isBug);
+  const correctFlags = lines.filter((l) => l.isBug && flaggedLines.has(l.id));
+  const falseFlags = lines.filter((l) => !l.isBug && flaggedLines.has(l.id));
   const allCorrect = submitted && correctFlags.length === bugLines.length && falseFlags.length === 0;
 
   const handleSubmit = useCallback(() => {
@@ -137,7 +138,7 @@ export function DebuggerBoard({
         {/* Code listing */}
         <Card className="p-0 overflow-hidden">
           <VStack gap="none">
-            {entity.lines.map((line, i) => {
+            {lines.map((line, i) => {
               const isFlagged = flaggedLines.has(line.id);
               let lineStyle = '';
               if (submitted) {

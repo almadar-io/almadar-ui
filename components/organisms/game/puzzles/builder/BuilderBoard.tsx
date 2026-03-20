@@ -69,13 +69,15 @@ export function BuilderBoard({
   const [attempts, setAttempts] = useState(0);
   const [showHint, setShowHint] = useState(false);
 
+  const components = entity?.components ?? [];
+  const slots = entity?.slots ?? [];
   const usedComponentIds = new Set(Object.values(placements));
-  const availableComponents = entity.components.filter((c) => !usedComponentIds.has(c.id));
+  const availableComponents = components.filter((c) => !usedComponentIds.has(c.id));
   const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
-  const allPlaced = Object.keys(placements).length === entity.slots.length;
+  const allPlaced = Object.keys(placements).length === slots.length;
 
   const results = submitted
-    ? entity.slots.map((slot) => ({
+    ? slots.map((slot) => ({
       slot,
       placed: placements[slot.id],
       correct: placements[slot.id] === slot.acceptsComponentId,
@@ -102,11 +104,11 @@ export function BuilderBoard({
   const handleSubmit = useCallback(() => {
     setSubmitted(true);
     setAttempts((a) => a + 1);
-    const correct = entity.slots.every((slot) => placements[slot.id] === slot.acceptsComponentId);
+    const correct = slots.every((slot) => placements[slot.id] === slot.acceptsComponentId);
     if (correct) {
       emit(`UI:${completeEvent}`, { success: true, attempts: attempts + 1 });
     }
-  }, [entity.slots, placements, attempts, completeEvent, emit]);
+  }, [slots, placements, attempts, completeEvent, emit]);
 
   const handleReset = () => {
     setSubmitted(false);
@@ -123,7 +125,7 @@ export function BuilderBoard({
     setShowHint(false);
   };
 
-  const getComponentById = (id: string) => entity.components.find((c) => c.id === id);
+  const getComponentById = (id: string) => components.find((c) => c.id === id);
 
   return (
     <Box
@@ -189,7 +191,7 @@ export function BuilderBoard({
               {t('builder.blueprint')}
             </Typography>
             <VStack gap="sm">
-              {entity.slots.map((slot) => {
+              {slots.map((slot) => {
                 const placedComp = placements[slot.id] ? getComponentById(placements[slot.id]) : null;
                 const result = results.find((r) => r.slot.id === slot.id);
                 return (
