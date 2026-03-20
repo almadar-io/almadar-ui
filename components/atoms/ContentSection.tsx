@@ -35,11 +35,11 @@ const paddingClasses: Record<ContentSectionPadding, string> = {
   lg: "py-24",
 };
 
-export const ContentSection = React.forwardRef<HTMLElement, ContentSectionProps>(
+export const ContentSection = React.forwardRef<HTMLDivElement, ContentSectionProps>(
   ({ children, background = "default", padding = "lg", id, className }, ref) => {
     return (
       <Box
-        ref={ref}
+        ref={ref as React.Ref<HTMLDivElement>}
         as="section"
         id={id}
         className={cn(

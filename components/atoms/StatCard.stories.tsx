@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { StatCard } from './StatCard';
+import { MarketingStatCard } from './StatCard';
 import { HStack } from './Stack';
 
-const meta: Meta<typeof StatCard> = {
-  title: 'Atoms/StatCard',
-  component: StatCard,
+const meta: Meta<typeof MarketingStatCard> = {
+  title: 'Atoms/MarketingStatCard',
+  component: MarketingStatCard,
   parameters: {
     layout: 'centered',
     backgrounds: { default: 'wireframe' },
@@ -47,9 +47,9 @@ export const Large: Story = {
 export const AllSizes: Story = {
   render: () => (
     <HStack gap="xl" align="end">
-      <StatCard value="128" label="Small" size="sm" />
-      <StatCard value="256" label="Medium" size="md" />
-      <StatCard value="512" label="Large" size="lg" />
+      <MarketingStatCard value="128" label="Small" size="sm" />
+      <MarketingStatCard value="256" label="Medium" size="md" />
+      <MarketingStatCard value="512" label="Large" size="lg" />
     </HStack>
   ),
 };
@@ -57,9 +57,9 @@ export const AllSizes: Story = {
 export const InContext: Story = {
   render: () => (
     <HStack gap="xl" align="center">
-      <StatCard value="93" label="Behaviors" />
-      <StatCard value="18" label="Domains" />
-      <StatCard value="7" label="Shells" />
+      <MarketingStatCard value="93" label="Behaviors" />
+      <MarketingStatCard value="18" label="Domains" />
+      <MarketingStatCard value="7" label="Shells" />
     </HStack>
   ),
 };

@@ -35,13 +35,13 @@ const alignToStack: Record<string, "center" | "start" | "end"> = {
   right: "end",
 };
 
-export const SectionHeader = React.forwardRef<HTMLDivElement, SectionHeaderProps>(
-  ({ title, subtitle, align = "center", level = 2, className }, ref) => {
+export const SectionHeader: React.FC<SectionHeaderProps> = (
+  { title, subtitle, align = "center", level = 2, className },
+) => {
     const variant = levelToVariant[level];
 
     return (
       <VStack
-        ref={ref}
         gap="sm"
         align={alignToStack[align]}
         className={cn(alignClasses[align], className)}
@@ -56,7 +56,6 @@ export const SectionHeader = React.forwardRef<HTMLDivElement, SectionHeaderProps
         ) : null}
       </VStack>
     );
-  },
-);
+};
 
 SectionHeader.displayName = "SectionHeader";

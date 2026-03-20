@@ -109,7 +109,7 @@ export { TypewriterText, type TypewriterTextProps } from "./TypewriterText";
 
 // Landing page atoms
 export { SectionHeader, type SectionHeaderProps } from "./SectionHeader";
-export { StatCard, type StatCardProps, type StatCardSize } from "./StatCard";
+export { MarketingStatCard, type StatCardProps as MarketingStatCardProps, type StatCardSize } from "./StatCard";
 export {
   ContentSection,
   type ContentSectionProps,

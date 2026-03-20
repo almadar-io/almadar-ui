@@ -22,10 +22,11 @@ const sizeClasses: Record<StatCardSize, string> = {
   lg: "text-5xl",
 };
 
-export const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
-  ({ value, label, size = "md", className }, ref) => {
+export const MarketingStatCard: React.FC<StatCardProps> = (
+  { value, label, size = "md", className },
+) => {
     return (
-      <VStack ref={ref} gap="xs" align="center" className={cn(className)}>
+      <VStack gap="xs" align="center" className={cn(className)}>
         <Typography
           weight="bold"
           color="primary"
@@ -38,7 +39,6 @@ export const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
         </Typography>
       </VStack>
     );
-  },
-);
+};
 
-StatCard.displayName = "StatCard";
+MarketingStatCard.displayName = "MarketingStatCard";

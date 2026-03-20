@@ -8,6 +8,7 @@
 
 import React from 'react';
 import { cn } from '../../lib/cn';
+import { Box } from '../atoms/Box';
 import { Card } from '../atoms/Card';
 import { VStack } from '../atoms/Stack';
 import { Avatar } from '../atoms/Avatar';
@@ -46,9 +47,11 @@ export const TeamCard: React.FC<TeamCardProps> = ({
           {name}
         </Typography>
         {nameAr && (
-          <Typography variant="caption" className="text-center" dir="rtl">
-            {nameAr}
-          </Typography>
+          <Box className="text-center" style={{ direction: 'rtl' }}>
+            <Typography variant="caption">
+              {nameAr}
+            </Typography>
+          </Box>
         )}
         <Typography variant="caption" color="muted" className="text-center">
           {role}
