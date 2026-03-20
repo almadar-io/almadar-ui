@@ -76,10 +76,20 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
   onNavigateToField,
   compact = false,
   className,
+  ...flatProps
 }) => {
+  // Support flat props from playground render-ui (message, category passed directly)
+  const resolvedViolation: ViolationRecord = violation ?? {
+    id: "unknown",
+    law: "",
+    article: "",
+    message: (flatProps as Record<string, unknown>).message as string ?? "Violation",
+    actionType: "measure",
+  };
+
   // Derive severity from actionType if not explicitly set
   const effectiveSeverity =
-    severity ?? (violation.actionType === "measure" ? "warning" : "error");
+    severity ?? (resolvedViolation.actionType === "measure" ? "warning" : "error");
 
   const bgColor =
     effectiveSeverity === "warning"
@@ -108,7 +118,7 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
         <HStack gap="sm" align="center" justify="between">
           <HStack gap="sm" align="center">
             <Icon
-              name={actionTypeIcons[violation.actionType]}
+              name={actionTypeIcons[resolvedViolation.actionType]}
               size="sm"
               className={iconColor}
             />
@@ -117,10 +127,10 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
               className={textColor}
               weight="semibold"
             >
-              {violation.law} Art. {violation.article}
+              {resolvedViolation.law} Art. {resolvedViolation.article}
             </Typography>
             <Typography variant="caption" className={textColor}>
-              {violation.message}
+              {resolvedViolation.message}
             </Typography>
           </HStack>
           {dismissible && onDismiss && (
@@ -151,19 +161,19 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
         <HStack justify="between" align="start">
           <HStack gap="sm" align="center">
             <Icon
-              name={actionTypeIcons[violation.actionType]}
+              name={actionTypeIcons[resolvedViolation.actionType]}
               size="md"
               className={iconColor}
             />
             <VStack gap="xs">
               <Typography variant="label" weight="bold" className={textColor}>
-                {violation.law} Art. {violation.article}
+                {resolvedViolation.law} Art. {resolvedViolation.article}
               </Typography>
               <Typography
                 variant="caption"
                 className={cn(textColor, "opacity-75")}
               >
-                {actionTypeLabels[violation.actionType]}
+                {actionTypeLabels[resolvedViolation.actionType]}
               </Typography>
             </VStack>
           </HStack>
@@ -181,11 +191,11 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
 
         {/* Message */}
         <Typography variant="body2" className={textColor}>
-          {violation.message}
+          {resolvedViolation.message}
         </Typography>
 
         {/* Action references */}
-        {(violation.adminAction || violation.penaltyAction) && (
+        {(resolvedViolation.adminAction || resolvedViolation.penaltyAction) && (
           <Box
             className={cn(
               "pt-2 border-t",
@@ -195,7 +205,7 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
             )}
           >
             <VStack gap="xs">
-              {violation.adminAction && (
+              {resolvedViolation.adminAction && (
                 <HStack gap="xs" align="center">
                   <Typography
                     variant="caption"
@@ -208,11 +218,11 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
                     weight="semibold"
                     className={textColor}
                   >
-                    {violation.adminAction}
+                    {resolvedViolation.adminAction}
                   </Typography>
                 </HStack>
               )}
-              {violation.penaltyAction && (
+              {resolvedViolation.penaltyAction && (
                 <HStack gap="xs" align="center">
                   <Typography
                     variant="caption"
@@ -225,7 +235,7 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
                     weight="semibold"
                     className={textColor}
                   >
-                    {violation.penaltyAction}
+                    {resolvedViolation.penaltyAction}
                   </Typography>
                 </HStack>
               )}
@@ -234,11 +244,11 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
         )}
 
         {/* Navigate to field button */}
-        {violation.fieldId && onNavigateToField && (
+        {resolvedViolation.fieldId && onNavigateToField && (
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => onNavigateToField(violation.fieldId!)}
+            onClick={() => onNavigateToField(resolvedViolation.fieldId!)}
             className={cn(textColor, "self-start")}
           >
             <Icon name="arrow-right" size="sm" className="mr-1" />

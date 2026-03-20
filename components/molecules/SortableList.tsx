@@ -16,6 +16,8 @@ import { HStack } from '../atoms/Stack';
 import { VStack } from '../atoms/Stack';
 import { Icon } from '../atoms/Icon';
 
+const EMPTY_ITEMS: never[] = [];
+
 export interface SortableListProps<T = Record<string, unknown>> {
   items: T[];
   renderItem: (item: T, index: number) => React.ReactNode;
@@ -34,7 +36,7 @@ function useSafeEventBus() {
 }
 
 function SortableListInner<T = Record<string, unknown>>({
-  items: initialItems,
+  items: initialItems = EMPTY_ITEMS as T[],
   renderItem,
   reorderEvent,
   reorderPayload,
@@ -116,7 +118,7 @@ function SortableListInner<T = Record<string, unknown>>({
               {dragHandlePosition === 'left' && dragHandle}
 
               <Box className="flex-1 min-w-0">
-                {renderItem(item, index)}
+                {typeof renderItem === 'function' ? renderItem(item, index) : JSON.stringify(item)}
               </Box>
 
               {dragHandlePosition === 'right' && dragHandle}

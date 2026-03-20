@@ -723,10 +723,56 @@ function renderPatternChildren(
 }
 
 /**
+ * Check if a value looks like a pattern config object (has a `type` string field).
+ */
+function isPatternConfig(value: unknown): value is { type: string; [key: string]: unknown } {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    "type" in value &&
+    typeof (value as Record<string, unknown>).type === "string"
+  );
+}
+
+/**
+ * Recursively render any named props that contain pattern config objects.
+ * E.g., flip-card's `front` and `back` props are pattern configs that need
+ * to be converted to React elements before being passed to the component.
+ */
+function renderPatternProps(
+  props: Record<string, unknown>,
+  onDismiss: () => void,
+): Record<string, unknown> {
+  const rendered: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(props)) {
+    if (key === "children") {
+      rendered[key] = value;
+    } else if (isPatternConfig(value)) {
+      const childContent: SlotContent = {
+        id: `prop-${key}`,
+        pattern: value.type,
+        props: Object.fromEntries(
+          Object.entries(value).filter(([k]) => k !== "type"),
+        ),
+        priority: 0,
+      };
+      rendered[key] = (
+        <SlotContentRenderer content={childContent} onDismiss={onDismiss} />
+      );
+    } else {
+      rendered[key] = value;
+    }
+  }
+  return rendered;
+}
+
+/**
  * Renders the actual content of a slot.
  *
  * Dynamically renders pattern components from the registry.
  * For layout patterns with `hasChildren`, recursively renders nested patterns.
+ * For all patterns, named props containing pattern configs are also rendered.
  */
 function SlotContentRenderer({
   content,
@@ -750,13 +796,16 @@ function SlotContentRenderer({
     // Extract props without the children config (we pass rendered children instead)
     const { children: _childrenConfig, ...restProps } = content.props;
 
+    // Recursively render any named props that are pattern configs
+    const renderedProps = renderPatternProps(restProps, onDismiss);
+
     return (
       <Box
         className="slot-content"
         data-pattern={content.pattern}
         data-id={content.id}
       >
-        <PatternComponent {...restProps}>
+        <PatternComponent {...renderedProps}>
           {renderedChildren}
         </PatternComponent>
       </Box>
