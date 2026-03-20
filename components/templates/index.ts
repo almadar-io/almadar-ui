@@ -56,6 +56,40 @@ export {
   type WorldMapSlotContext,
 } from './WorldMapTemplate';
 
+// Marketing Page Templates
+export {
+  LandingPageTemplate,
+  type LandingPageTemplateProps,
+  type LandingPageEntity,
+  type HeroEntity,
+  type FeatureEntity,
+  type StatEntity,
+  type StepEntity,
+  type ShowcaseEntity,
+} from './LandingPageTemplate';
+
+export {
+  PricingPageTemplate,
+  type PricingPageTemplateProps,
+  type PricingPageEntity,
+  type PricingPlanEntity,
+} from './PricingPageTemplate';
+
+export {
+  FeatureDetailPageTemplate,
+  type FeatureDetailPageTemplateProps,
+  type FeatureDetailPageEntity,
+  type FeatureDetailSection,
+} from './FeatureDetailPageTemplate';
+
+export {
+  AboutPageTemplate,
+  type AboutPageTemplateProps,
+  type AboutPageEntity,
+  type TeamMemberEntity,
+  type CaseStudyEntity,
+} from './AboutPageTemplate';
+
 // 3D Game Canvas Templates are NOT barrel-exported because they depend on
 // @react-three/fiber + three which are optional peer dependencies.
 // Import directly if needed:

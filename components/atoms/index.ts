@@ -107,5 +107,15 @@ export { InfiniteScrollSentinel, type InfiniteScrollSentinelProps } from "./Infi
 export { ConfettiEffect, type ConfettiEffectProps } from "./ConfettiEffect";
 export { TypewriterText, type TypewriterTextProps } from "./TypewriterText";
 
+// Landing page atoms
+export { SectionHeader, type SectionHeaderProps } from "./SectionHeader";
+export { StatCard, type StatCardProps, type StatCardSize } from "./StatCard";
+export {
+  ContentSection,
+  type ContentSectionProps,
+  type ContentSectionBackground,
+  type ContentSectionPadding,
+} from "./ContentSection";
+
 // Game atom components
 export * from "./game";

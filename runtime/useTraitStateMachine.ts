@@ -612,6 +612,57 @@ export function useTraitStateMachine(
                             fetchedDataContext.setData({ [linkedEntity]: updated as unknown[] });
                         }
                     }
+
+                    // Handle ["persist", action, entityType, data] effects client-side.
+                    // The handler in createClientEffectHandlers is a no-op stub.
+                    // We apply create/update/delete mutations to FetchedDataContext here
+                    // so the playground and any client-only runtime sees entity changes.
+                    if (fetchedDataContext) {
+                        for (const effect of result.effects) {
+                            if (!Array.isArray(effect) || effect[0] !== 'persist') continue;
+                            const action = effect[1] as string;
+                            const entityType = (effect[2] as string) || linkedEntity;
+                            if (!entityType) continue;
+                            const records = fetchedDataContext.getData(entityType) as Record<string, unknown>[];
+
+                            if (action === 'create') {
+                                const evalCtx = createContextFromBindings(bindingCtx);
+                                const rawData = effect[3] as Record<string, unknown> | undefined;
+                                const newRecord: Record<string, unknown> = { id: `${entityType}-${Date.now()}` };
+                                if (rawData) {
+                                    for (const [k, v] of Object.entries(rawData)) {
+                                        newRecord[k] = interpolateValue(v, evalCtx);
+                                    }
+                                }
+                                // Also include any set mutations from this transition
+                                for (const [k, v] of entityMutations) {
+                                    newRecord[k] = v;
+                                }
+                                fetchedDataContext.setData({ [entityType]: [...records, newRecord] });
+                            } else if (action === 'delete') {
+                                const deleteId = effect[3] as string | undefined;
+                                if (deleteId) {
+                                    const filtered = records.filter(r => r.id !== deleteId);
+                                    fetchedDataContext.setData({ [entityType]: filtered });
+                                }
+                            } else if (action === 'update') {
+                                const updateId = effect[3] as string | undefined;
+                                const updateData = effect[4] as Record<string, unknown> | undefined;
+                                if (updateId && updateData) {
+                                    const evalCtx = createContextFromBindings(bindingCtx);
+                                    const updated = records.map(r => {
+                                        if (r.id !== updateId) return r;
+                                        const patched = { ...r };
+                                        for (const [k, v] of Object.entries(updateData)) {
+                                            patched[k] = interpolateValue(v, evalCtx);
+                                        }
+                                        return patched;
+                                    });
+                                    fetchedDataContext.setData({ [entityType]: updated });
+                                }
+                            }
+                        }
+                    }
                 } catch (error: unknown) {
                     console.error(
                         '[TraitStateMachine] Effect execution error:',

@@ -163,3 +163,51 @@ export {
   RuntimeDebugger,
   type RuntimeDebuggerProps,
 } from "./debug";
+
+// Marketing entity types
+export type {
+  MarketingAction,
+  MarketingImage,
+  HeroEntity,
+  FeatureEntity,
+  PricingPlanEntity,
+  StatEntity,
+  StepEntity,
+  ShowcaseEntity,
+  TeamMemberEntity,
+  CaseStudyEntity,
+} from "./marketing-types";
+
+// Marketing organisms
+export {
+  HeroOrganism,
+  type HeroOrganismProps,
+} from "./HeroOrganism";
+export {
+  FeatureGridOrganism,
+  type FeatureGridOrganismProps,
+} from "./FeatureGridOrganism";
+export {
+  PricingOrganism,
+  type PricingOrganismProps,
+} from "./PricingOrganism";
+export {
+  StatsOrganism,
+  type StatsOrganismProps,
+} from "./StatsOrganism";
+export {
+  StepFlowOrganism,
+  type StepFlowOrganismProps,
+} from "./StepFlowOrganism";
+export {
+  ShowcaseOrganism,
+  type ShowcaseOrganismProps,
+} from "./ShowcaseOrganism";
+export {
+  TeamOrganism,
+  type TeamOrganismProps,
+} from "./TeamOrganism";
+export {
+  CaseStudyOrganism,
+  type CaseStudyOrganismProps,
+} from "./CaseStudyOrganism";

@@ -12,8 +12,8 @@ const config: StorybookConfig = {
   ],
   addons: [
     "@storybook/addon-links",
-    "@storybook/addon-themes",
-    // addon-docs removed for faster builds - re-enable if needed
+    // addon-themes removed — theme switching now handled via globalTypes + custom decorator in preview.tsx
+    // addon-docs removed for faster builds — re-enable if needed
   ],
   framework: {
     name: "@storybook/react-vite",
@@ -95,7 +95,6 @@ const config: StorybookConfig = {
           "react/jsx-dev-runtime",
           "clsx",
           // Storybook addons — pre-bundle to avoid runtime re-optimization
-          "@storybook/addon-themes",
           "@storybook/addon-links",
           // Include refractor for proper CommonJS -> ESM conversion
           "refractor",
