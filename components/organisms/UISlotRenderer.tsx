@@ -140,7 +140,9 @@ const PATTERNS_WITH_CHILDREN = new Set([
   "popover",
   "container",
   "simple-grid",
-  "custom", // Custom patterns support nested children
+  "custom",
+  "dashboard-layout",
+  "game-shell",
 ]);
 
 // ============================================================================

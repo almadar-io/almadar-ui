@@ -95,15 +95,16 @@ export const RepeatableFormSection: React.FC<RepeatableFormSectionProps> = ({
   const resolvedAddLabel = addLabel ?? t('common.add');
   const resolvedEmptyMessage = emptyMessage ?? t('empty.noItemsAdded');
 
-  const canAdd = !readOnly && items.length < maxItems;
-  const canRemove = !readOnly && items.length > minItems;
+  const safeItems = items ?? [];
+  const canAdd = !readOnly && safeItems.length < maxItems;
+  const canRemove = !readOnly && safeItems.length > minItems;
 
   const handleAdd = useCallback(() => {
     onAdd?.();
 
     const eventPayload: Record<string, unknown> = {
       sectionType,
-      index: items.length,
+      index: safeItems.length,
     };
 
     // Include state tracking info if enabled
@@ -115,7 +116,7 @@ export const RepeatableFormSection: React.FC<RepeatableFormSectionProps> = ({
     eventBus.emit("UI:SECTION_ADDED", eventPayload);
   }, [
     sectionType,
-    items.length,
+    safeItems.length,
     onAdd,
     eventBus,
     trackAddedInState,
@@ -137,7 +138,7 @@ export const RepeatableFormSection: React.FC<RepeatableFormSectionProps> = ({
         <HStack gap="sm" align="center">
           <Typography variant="h4">{title}</Typography>
           <Typography variant="caption" color="muted">
-            ({items.length}
+            ({safeItems.length}
             {maxItems !== Infinity ? `/${maxItems}` : ""})
           </Typography>
         </HStack>
@@ -151,7 +152,7 @@ export const RepeatableFormSection: React.FC<RepeatableFormSectionProps> = ({
       </HStack>
 
       {/* Items */}
-      {items.length === 0 ? (
+      {safeItems.length === 0 ? (
         <Card className="p-6">
           <VStack align="center" gap="sm">
             <Typography variant="body" color="muted">
@@ -167,7 +168,7 @@ export const RepeatableFormSection: React.FC<RepeatableFormSectionProps> = ({
         </Card>
       ) : (
         <VStack gap="sm">
-          {items.map((item, index) => (
+          {safeItems.map((item, index) => (
             <Card key={item.id} className="p-4">
               <VStack gap="sm">
                 {/* Audit info header */}
@@ -229,7 +230,7 @@ export const RepeatableFormSection: React.FC<RepeatableFormSectionProps> = ({
       )}
 
       {/* Min items warning */}
-      {items.length < minItems && (
+      {safeItems.length < minItems && (
         <Typography variant="caption" color="warning">
           At least {minItems} item{minItems !== 1 ? "s" : ""} required
         </Typography>
