@@ -50,9 +50,9 @@ const StepCircle: React.FC<{ step: StepItemProps; index: number }> = ({ step, in
         'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]',
       )}
     >
-      <Typography variant="body2" className="font-semibold text-[var(--color-primary-foreground)]">
+      <span className="font-semibold text-sm text-[var(--color-primary-foreground)] leading-none">
         {step.number ?? index + 1}
-      </Typography>
+      </span>
     </Center>
   );
 };

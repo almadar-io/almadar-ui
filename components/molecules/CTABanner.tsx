@@ -71,7 +71,6 @@ export const CTABanner: React.FC<CTABannerProps> = ({
     <Box
       className={cn(
         backgroundStyles[background],
-        'rounded-[var(--radius-lg)]',
         'py-16 px-4',
         className,
       )}
@@ -101,8 +100,9 @@ export const CTABanner: React.FC<CTABannerProps> = ({
           <HStack gap="md" align="center">
             {primaryAction && (
               <Button
-                variant="primary"
+                variant={background === 'dark' ? 'secondary' : 'primary'}
                 size="lg"
+                className={background === 'dark' ? 'bg-[var(--color-background)] text-[var(--color-foreground)] hover:bg-[var(--color-muted)]' : undefined}
                 onClick={() => handleAction(primaryAction.href)}
               >
                 {primaryAction.label}
@@ -110,8 +110,9 @@ export const CTABanner: React.FC<CTABannerProps> = ({
             )}
             {secondaryAction && (
               <Button
-                variant="secondary"
+                variant="ghost"
                 size="lg"
+                className={background === 'dark' ? 'text-[var(--color-background)] border border-[var(--color-background)]/30 hover:bg-[var(--color-background)]/10' : undefined}
                 onClick={() => handleAction(secondaryAction.href)}
               >
                 {secondaryAction.label}

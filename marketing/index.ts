@@ -56,3 +56,5 @@ export type { CaseStudyCardProps } from '../components/molecules/CaseStudyCard';
 export { ArticleSection } from '../components/molecules/ArticleSection';
 export type { ArticleSectionProps } from '../components/molecules/ArticleSection';
 export { SimpleGrid } from '../components/molecules/SimpleGrid';
+export { MarketingFooter } from '../components/molecules/MarketingFooter';
+export type { MarketingFooterProps, FooterLinkColumn, FooterLinkItem } from '../components/molecules/MarketingFooter';

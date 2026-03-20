@@ -47,11 +47,11 @@ export const SplitSection: React.FC<SplitSectionProps> = ({
       {bullets && bullets.length > 0 && (
         <VStack gap="sm">
           {bullets.map((bullet, index) => (
-            <HStack key={index} gap="sm" align="center">
+            <HStack key={index} gap="sm" align="start" className="mt-0.5">
               <Icon
                 name="check"
                 size="sm"
-                className="text-[var(--color-primary)] flex-shrink-0"
+                className="text-[var(--color-primary)] flex-shrink-0 mt-0.5"
               />
               <Typography variant="body2">{bullet}</Typography>
             </HStack>
@@ -88,7 +88,7 @@ export const SplitSection: React.FC<SplitSectionProps> = ({
       )}
       padding="lg"
     >
-      <HStack gap="lg" align="start" className="flex-wrap">
+      <HStack gap="lg" align="start" className="flex-wrap gap-16">
         {isImageLeft ? (
           <>
             {mediaContent}
