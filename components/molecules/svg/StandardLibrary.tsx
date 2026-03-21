@@ -10,42 +10,15 @@ export interface StandardLibraryProps {
 
 let standardLibraryId = 0;
 
-// Domain clusters on 3 orbital rings
-// Each cluster is a group of small dots representing behaviors in that domain
-const RING_DATA = [
-  {
-    r: 70,
-    clusters: [
-      { angle: 0, dots: 3 },
-      { angle: 1.57, dots: 2 },
-      { angle: 3.14, dots: 3 },
-      { angle: 4.71, dots: 2 },
-    ],
-  },
-  {
-    r: 120,
-    clusters: [
-      { angle: 0.5, dots: 3 },
-      { angle: 1.3, dots: 2 },
-      { angle: 2.1, dots: 3 },
-      { angle: 3.5, dots: 2 },
-      { angle: 4.3, dots: 3 },
-      { angle: 5.5, dots: 2 },
-    ],
-  },
-  {
-    r: 170,
-    clusters: [
-      { angle: 0.3, dots: 2 },
-      { angle: 1.0, dots: 2 },
-      { angle: 1.7, dots: 1 },
-      { angle: 2.4, dots: 2 },
-      { angle: 3.1, dots: 2 },
-      { angle: 3.9, dots: 1 },
-      { angle: 4.6, dots: 2 },
-      { angle: 5.6, dots: 2 },
-    ],
-  },
+// 6 domain groups arranged in a hexagonal pattern around a center
+// Each group is a cluster of 3-5 small dots representing behaviors
+const GROUPS = [
+  { x: 300, y: 80, dots: 5 },   // top
+  { x: 430, y: 140, dots: 4 },  // top-right
+  { x: 430, y: 260, dots: 5 },  // bottom-right
+  { x: 300, y: 320, dots: 4 },  // bottom
+  { x: 170, y: 260, dots: 5 },  // bottom-left
+  { x: 170, y: 140, dots: 4 },  // top-left
 ];
 
 export const StandardLibrary: React.FC<StandardLibraryProps> = ({
@@ -56,13 +29,7 @@ export const StandardLibrary: React.FC<StandardLibraryProps> = ({
   const ids = React.useMemo(() => {
     standardLibraryId += 1;
     const base = `sl-${standardLibraryId}`;
-    return {
-      glow: `${base}-glow`,
-      grad1: `${base}-g1`,
-      grad2: `${base}-g2`,
-      grad3: `${base}-g3`,
-      nucGlow: `${base}-ng`,
-    };
+    return { glow: `${base}-glow`, groupGlow: `${base}-gg` };
   }, []);
 
   const cx = 300;
@@ -76,104 +43,81 @@ export const StandardLibrary: React.FC<StandardLibraryProps> = ({
     >
       <defs>
         <filter id={ids.glow} x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
+          <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
-        <radialGradient id={ids.nucGlow} cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor={color} stopOpacity={0.25} />
+        <radialGradient id={ids.groupGlow} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor={color} stopOpacity={0.1} />
           <stop offset="100%" stopColor={color} stopOpacity={0} />
         </radialGradient>
-        <linearGradient id={ids.grad1} x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor={color} stopOpacity={0.35} />
-          <stop offset="50%" stopColor={color} stopOpacity={0.15} />
-          <stop offset="100%" stopColor={color} stopOpacity={0.35} />
-        </linearGradient>
-        <linearGradient id={ids.grad2} x1="100%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor={color} stopOpacity={0.25} />
-          <stop offset="50%" stopColor={color} stopOpacity={0.1} />
-          <stop offset="100%" stopColor={color} stopOpacity={0.25} />
-        </linearGradient>
-        <linearGradient id={ids.grad3} x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor={color} stopOpacity={0.2} />
-          <stop offset="50%" stopColor={color} stopOpacity={0.06} />
-          <stop offset="100%" stopColor={color} stopOpacity={0.2} />
-        </linearGradient>
       </defs>
 
       {animated && (
         <style>{`
-          @keyframes sl-orbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+          @keyframes sl-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.7; } }
         `}</style>
       )}
 
-      {/* Background ambient */}
-      <circle cx={cx} cy={cy} r={190} fill="none" stroke={color} strokeWidth={0.3} opacity={0.03} />
-
-      {/* Orbital rings */}
-      {[ids.grad1, ids.grad2, ids.grad3].map((gradId, ri) => (
-        <circle
-          key={`ring-${ri}`}
-          cx={cx}
-          cy={cy}
-          r={RING_DATA[ri].r}
-          fill="none"
-          stroke={`url(#${gradId})`}
-          strokeWidth={ri === 0 ? 1.5 : 1}
-          strokeDasharray={ri === 2 ? '3 6' : undefined}
+      {/* Connections from center to each group */}
+      {GROUPS.map((g, i) => (
+        <line
+          key={`conn-${i}`}
+          x1={cx} y1={cy} x2={g.x} y2={g.y}
+          stroke={color} strokeWidth={0.8} opacity={0.1}
+          strokeDasharray="4 6"
         />
       ))}
 
-      {/* Domain clusters on each ring */}
-      {RING_DATA.map((ring, ri) => (
-        <g
-          key={`ring-clusters-${ri}`}
-          style={
-            animated
-              ? {
-                  transformOrigin: `${cx}px ${cy}px`,
-                  animation: `sl-orbit ${40 + ri * 20}s linear infinite${ri % 2 === 1 ? ' reverse' : ''}`,
-                }
-              : undefined
-          }
-        >
-          {ring.clusters.map((cluster, ci) => {
-            const basex = cx + Math.cos(cluster.angle) * ring.r;
-            const basey = cy + Math.sin(cluster.angle) * ring.r;
-            const opacity = ri === 0 ? 0.6 : ri === 1 ? 0.45 : 0.3;
-            const dotR = ri === 0 ? 3.5 : ri === 1 ? 3 : 2.5;
+      {/* Connections between adjacent groups */}
+      {GROUPS.map((g, i) => {
+        const next = GROUPS[(i + 1) % GROUPS.length];
+        return (
+          <line
+            key={`adj-${i}`}
+            x1={g.x} y1={g.y} x2={next.x} y2={next.y}
+            stroke={color} strokeWidth={0.5} opacity={0.06}
+          />
+        );
+      })}
 
-            return (
-              <g key={`cluster-${ri}-${ci}`}>
-                {Array.from({ length: cluster.dots }, (_, di) => {
-                  const offsetAngle = cluster.angle + ((di - (cluster.dots - 1) / 2) * 0.12);
-                  const offsetR = ring.r + (di % 2 === 0 ? 6 : -6);
-                  const dx = cx + Math.cos(offsetAngle) * offsetR;
-                  const dy = cy + Math.sin(offsetAngle) * offsetR;
-                  return (
-                    <circle
-                      key={`dot-${ri}-${ci}-${di}`}
-                      cx={dx}
-                      cy={dy}
-                      r={dotR}
-                      fill={color}
-                      opacity={opacity}
-                    />
-                  );
-                })}
-                {/* Cluster anchor dot */}
-                <circle cx={basex} cy={basey} r={dotR + 1} fill={color} opacity={opacity * 0.7} />
-              </g>
-            );
-          })}
-        </g>
-      ))}
+      {/* Domain groups */}
+      {GROUPS.map((group, gi) => {
+        const dotR = 3;
+        const spread = 14;
+        return (
+          <g key={`group-${gi}`}>
+            {/* Group glow */}
+            <circle cx={group.x} cy={group.y} r={28} fill={`url(#${ids.groupGlow})`} />
 
-      {/* Central nucleus */}
-      <circle cx={cx} cy={cy} r={25} fill={`url(#${ids.nucGlow})`} />
-      <circle cx={cx} cy={cy} r={8} fill={color} opacity={0.7} filter={`url(#${ids.glow})`} />
+            {/* Group boundary */}
+            <circle cx={group.x} cy={group.y} r={24} fill="none" stroke={color} strokeWidth={0.7} opacity={0.15} />
+
+            {/* Behavior dots in a tight cluster */}
+            {Array.from({ length: group.dots }, (_, di) => {
+              const angle = (di / group.dots) * Math.PI * 2 - Math.PI / 2;
+              const r = di === 0 ? 0 : spread * 0.55;
+              const dx = di === 0 ? group.x : group.x + Math.cos(angle) * r;
+              const dy = di === 0 ? group.y : group.y + Math.sin(angle) * r;
+              return (
+                <circle
+                  key={`dot-${gi}-${di}`}
+                  cx={dx} cy={dy} r={di === 0 ? dotR + 1 : dotR}
+                  fill={color}
+                  opacity={di === 0 ? 0.6 : 0.35}
+                  style={animated && di === 0 ? { animation: `sl-pulse 3s ease-in-out ${gi * 0.4}s infinite` } : undefined}
+                />
+              );
+            })}
+          </g>
+        );
+      })}
+
+      {/* Center hub */}
+      <circle cx={cx} cy={cy} r={16} fill="none" stroke={color} strokeWidth={1} opacity={0.25} />
+      <circle cx={cx} cy={cy} r={6} fill={color} opacity={0.6} filter={`url(#${ids.glow})`} />
     </svg>
   );
 };
