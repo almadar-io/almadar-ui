@@ -202,7 +202,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       className={cn(
         'w-full min-h-[60vh] flex items-center justify-center',
         'px-6 py-20',
-        'relative overflow-x-hidden overflow-y-visible',
+        'relative overflow-hidden',
         className,
       )}
     >
