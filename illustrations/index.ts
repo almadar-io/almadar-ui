@@ -37,3 +37,31 @@ export { EventBus } from '../components/molecules/svg';
 export { StateMachine } from '../components/molecules/svg';
 export { OrbitalUnit } from '../components/molecules/svg';
 export { DomainGrid } from '../components/molecules/svg';
+
+// AVL Atoms (formal visual notation)
+export { AvlState } from '../components/atoms/avl';
+export { AvlTransition } from '../components/atoms/avl';
+export { AvlEvent } from '../components/atoms/avl';
+export { AvlGuard } from '../components/atoms/avl';
+export { AvlEffect } from '../components/atoms/avl';
+export { AvlEntity } from '../components/atoms/avl';
+export { AvlTrait } from '../components/atoms/avl';
+export { AvlPage } from '../components/atoms/avl';
+export { AvlOrbital } from '../components/atoms/avl';
+export { AvlApplication } from '../components/atoms/avl';
+export { AvlField } from '../components/atoms/avl';
+export { AvlFieldType } from '../components/atoms/avl';
+export { AvlBinding } from '../components/atoms/avl';
+export { AvlPersistence } from '../components/atoms/avl';
+export { AvlOperator } from '../components/atoms/avl';
+export { AvlSExpr } from '../components/atoms/avl';
+export { AvlLiteral } from '../components/atoms/avl';
+export { AvlBindingRef } from '../components/atoms/avl';
+
+// AVL Molecules (composed diagrams)
+export { AvlStateMachine } from '../components/molecules/avl';
+export { AvlOrbitalUnit } from '../components/molecules/avl';
+export { AvlClosedCircuit } from '../components/molecules/avl';
+export { AvlEmitListen } from '../components/molecules/avl';
+export { AvlSlotMap } from '../components/molecules/avl';
+export { AvlExprTree } from '../components/molecules/avl';

@@ -84,6 +84,11 @@
       "import": "./dist/illustrations/index.js",
       "require": "./dist/illustrations/index.cjs"
     },
+    "./avl": {
+      "types": "./dist/avl/index.d.ts",
+      "import": "./dist/avl/index.js",
+      "require": "./dist/avl/index.cjs"
+    },
     "./themes/*.css": "./themes/*.css",
     "./locales": {
       "types": "./dist/locales/index.d.ts",
