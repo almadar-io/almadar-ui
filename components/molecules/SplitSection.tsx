@@ -88,19 +88,10 @@ export const SplitSection: React.FC<SplitSectionProps> = ({
       )}
       padding="lg"
     >
-      <HStack gap="lg" align="start" className="flex-wrap gap-16">
-        {isImageLeft ? (
-          <>
-            {mediaContent}
-            {textContent}
-          </>
-        ) : (
-          <>
-            {textContent}
-            {mediaContent}
-          </>
-        )}
-      </HStack>
+      <Box className={cn('flex flex-col lg:flex-row gap-10 lg:gap-16 items-start', isImageLeft && 'lg:flex-row-reverse')}>
+        {textContent}
+        {mediaContent}
+      </Box>
     </Box>
   );
 };

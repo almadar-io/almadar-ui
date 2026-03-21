@@ -93,10 +93,10 @@ export const StepFlow: React.FC<StepFlowProps> = ({
   }
 
   return (
-    <HStack gap="none" align="start" className={cn('w-full', className)}>
+    <Box className={cn('w-full flex flex-col md:flex-row items-start gap-0', className)}>
       {steps.map((step, index) => (
         <React.Fragment key={index}>
-          <VStack gap="sm" align="center" className="flex-1">
+          <VStack gap="sm" align="center" className="flex-1 w-full md:w-auto">
             <StepCircle step={step} index={index} />
             <Typography variant="h4" className="text-center">
               {step.title}
@@ -106,13 +106,13 @@ export const StepFlow: React.FC<StepFlowProps> = ({
             </Typography>
           </VStack>
           {showConnectors && index < steps.length - 1 && (
-            <Box className="flex-shrink-0 pt-5 px-2">
-              <Divider orientation="horizontal" className="w-12" />
+            <Box className="flex-shrink-0 self-center py-2 md:pt-5 md:py-0 md:px-2">
+              <Divider orientation="horizontal" className="w-12 md:w-12" />
             </Box>
           )}
         </React.Fragment>
       ))}
-    </HStack>
+    </Box>
   );
 };
 
