@@ -79,6 +79,11 @@
       "import": "./dist/docs/index.js",
       "require": "./dist/docs/index.cjs"
     },
+    "./illustrations": {
+      "types": "./dist/illustrations/index.d.ts",
+      "import": "./dist/illustrations/index.js",
+      "require": "./dist/illustrations/index.cjs"
+    },
     "./themes/*.css": "./themes/*.css",
     "./locales": {
       "types": "./dist/locales/index.d.ts",
