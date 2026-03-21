@@ -119,7 +119,7 @@ function resolveIconProp(
     return value;
   }
   // Handle React.forwardRef components (e.g., Lucide icons passed as component references)
-  if (typeof value === 'object' && value !== null && 'render' in (value as Record<string, unknown>)) {
+  if (typeof value === 'object' && value !== null && 'render' in (value as unknown as Record<string, unknown>)) {
     const IconComp = value as unknown as LucideIcon;
     return <IconComp className={sizeClass} />;
   }
