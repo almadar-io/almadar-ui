@@ -58,3 +58,9 @@ export type { ArticleSectionProps } from '../components/molecules/ArticleSection
 export { SimpleGrid } from '../components/molecules/SimpleGrid';
 export { MarketingFooter } from '../components/molecules/MarketingFooter';
 export type { MarketingFooterProps, FooterLinkColumn, FooterLinkItem } from '../components/molecules/MarketingFooter';
+export { GradientDivider } from '../components/molecules/GradientDivider';
+export type { GradientDividerProps } from '../components/molecules/GradientDivider';
+export { PullQuote } from '../components/molecules/PullQuote';
+export type { PullQuoteProps } from '../components/molecules/PullQuote';
+export { AnimatedCounter } from '../components/molecules/AnimatedCounter';
+export type { AnimatedCounterProps } from '../components/molecules/AnimatedCounter';

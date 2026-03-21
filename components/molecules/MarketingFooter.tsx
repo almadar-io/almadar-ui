@@ -42,6 +42,7 @@ export const MarketingFooter: React.FC<MarketingFooterProps> = ({
       as="footer"
       className={cn(
         'bg-[var(--color-foreground)] text-[var(--color-background)]',
+        'border-t border-[var(--color-border)]',
         'pt-12 pb-8 px-4',
         className,
       )}

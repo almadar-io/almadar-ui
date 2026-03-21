@@ -64,4 +64,18 @@ export default defineConfig([
     noExternal: ['clsx', 'tailwind-merge'],
     banner: { js: '"use client";' },
   },
+  // Docs build: SSR-safe doc components for Docusaurus swizzles
+  {
+    entry: { 'docs/index': 'docs/index.ts' },
+    format: ['esm', 'cjs'],
+    dts: true,
+    outDir: 'dist',
+    clean: false,
+    sourcemap: false,
+    splitting: false,
+    treeshake: true,
+    external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react'],
+    noExternal: ['clsx', 'tailwind-merge'],
+    banner: { js: '"use client";' },
+  },
 ]);

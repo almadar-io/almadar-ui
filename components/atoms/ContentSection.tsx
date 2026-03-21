@@ -20,7 +20,7 @@ export interface ContentSectionProps {
 
 const backgroundClasses: Record<ContentSectionBackground, string> = {
   default: "",
-  alt: "bg-[var(--color-muted)]/30",
+  alt: "bg-[var(--color-surface)]",
   dark: "bg-[var(--color-foreground)] text-[var(--color-background)]",
   gradient: [
     "bg-gradient-to-b",

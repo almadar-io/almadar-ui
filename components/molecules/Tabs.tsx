@@ -184,7 +184,9 @@ export const Tabs: React.FC<TabsProps> = ({
                 isDisabled && 'opacity-50 cursor-not-allowed',
                 variantClasses[variant],
                 isActive
-                  ? 'text-[var(--color-foreground)] font-bold'
+                  ? variant === 'pills'
+                    ? 'text-[var(--color-primary-foreground)] font-bold'
+                    : 'text-[var(--color-foreground)] font-bold'
                   : 'text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]'
               )}
             >

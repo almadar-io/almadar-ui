@@ -177,6 +177,15 @@ module.exports = {
   'text-[var(--color-warning)]',
   'text-[var(--color-warning-foreground)]',
   'to-[var(--color-accent)]',
+  // Hover elevation & micro-interactions
+  'hover:-translate-y-0.5',
+  'hover:-translate-y-1',
+  'hover:scale-105',
+  'scale-[1.05]',
+  'transition-all',
+  'duration-200',
+  'ring-2',
+  'ring-[var(--color-primary)]',
   ],
   theme: {
     fontFamily: {

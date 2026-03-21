@@ -35,6 +35,7 @@ const StepCircle: React.FC<{ step: StepItemProps; index: number }> = ({ step, in
       <Center
         className={cn(
           'w-10 h-10 rounded-full flex-shrink-0',
+          'flex items-center justify-center',
           'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]',
         )}
       >
@@ -47,6 +48,7 @@ const StepCircle: React.FC<{ step: StepItemProps; index: number }> = ({ step, in
     <Center
       className={cn(
         'w-10 h-10 rounded-full flex-shrink-0',
+        'flex items-center justify-center',
         'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]',
       )}
     >

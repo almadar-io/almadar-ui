@@ -74,6 +74,11 @@
       "import": "./dist/marketing/index.js",
       "require": "./dist/marketing/index.cjs"
     },
+    "./docs": {
+      "types": "./dist/docs/index.d.ts",
+      "import": "./dist/docs/index.js",
+      "require": "./dist/docs/index.cjs"
+    },
     "./themes/*.css": "./themes/*.css",
     "./locales": {
       "types": "./dist/locales/index.d.ts",

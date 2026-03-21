@@ -3,7 +3,7 @@
  * CTABanner Molecule Component
  *
  * A call-to-action banner with title, subtitle, and action buttons.
- * Supports dark, gradient, and primary background styles.
+ * Uses the site's theme naturally - no forced color inversions.
  */
 
 import React from 'react';
@@ -13,7 +13,7 @@ import { VStack, HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 import { Button } from '../atoms/Button';
 
-export type CTABannerBackground = 'dark' | 'gradient' | 'primary';
+export type CTABannerBackground = 'default' | 'alt' | 'dark' | 'gradient' | 'primary';
 
 export interface CTABannerProps {
   /** Banner headline */
@@ -32,34 +32,12 @@ export interface CTABannerProps {
   className?: string;
 }
 
-const backgroundStyles: Record<CTABannerBackground, string> = {
-  dark: 'bg-[var(--color-foreground)]',
-  gradient: [
-    'bg-gradient-to-br',
-    'from-[var(--color-primary)]',
-    'to-[var(--color-secondary)]',
-  ].join(' '),
-  primary: 'bg-[var(--color-primary)]',
-};
-
-const titleColorMap: Record<CTABannerBackground, string> = {
-  dark: 'text-[var(--color-background)]',
-  gradient: 'text-[var(--color-primary-foreground)]',
-  primary: 'text-[var(--color-primary-foreground)]',
-};
-
-const subtitleColorMap: Record<CTABannerBackground, string> = {
-  dark: 'text-[var(--color-muted-foreground)]',
-  gradient: 'text-[var(--color-primary-foreground)] opacity-80',
-  primary: 'text-[var(--color-primary-foreground)] opacity-80',
-};
-
 export const CTABanner: React.FC<CTABannerProps> = ({
   title,
   subtitle,
   primaryAction,
   secondaryAction,
-  background = 'dark',
+  background = 'alt',
   align = 'center',
   className,
 }) => {
@@ -70,8 +48,11 @@ export const CTABanner: React.FC<CTABannerProps> = ({
   return (
     <Box
       className={cn(
-        backgroundStyles[background],
         'py-16 px-4',
+        background === 'alt' && 'bg-[var(--color-surface)]',
+        background === 'dark' && 'bg-[var(--color-surface)]',
+        background === 'gradient' && 'bg-[var(--color-surface)]',
+        background === 'primary' && 'bg-[var(--color-surface)]',
         className,
       )}
     >
@@ -80,19 +61,11 @@ export const CTABanner: React.FC<CTABannerProps> = ({
         align={align === 'center' ? 'center' : 'start'}
         className="max-w-3xl mx-auto"
       >
-        <Typography
-          variant="h2"
-          align={align}
-          className={titleColorMap[background]}
-        >
+        <Typography variant="h2" align={align}>
           {title}
         </Typography>
         {subtitle && (
-          <Typography
-            variant="body"
-            align={align}
-            className={subtitleColorMap[background]}
-          >
+          <Typography variant="body" color="muted" align={align}>
             {subtitle}
           </Typography>
         )}
@@ -100,9 +73,8 @@ export const CTABanner: React.FC<CTABannerProps> = ({
           <HStack gap="md" align="center">
             {primaryAction && (
               <Button
-                variant={background === 'dark' ? 'secondary' : 'primary'}
+                variant="primary"
                 size="lg"
-                className={background === 'dark' ? 'bg-[var(--color-background)] text-[var(--color-foreground)] hover:bg-[var(--color-muted)]' : undefined}
                 onClick={() => handleAction(primaryAction.href)}
               >
                 {primaryAction.label}
@@ -110,9 +82,8 @@ export const CTABanner: React.FC<CTABannerProps> = ({
             )}
             {secondaryAction && (
               <Button
-                variant="ghost"
+                variant="secondary"
                 size="lg"
-                className={background === 'dark' ? 'text-[var(--color-background)] border border-[var(--color-background)]/30 hover:bg-[var(--color-background)]/10' : undefined}
                 onClick={() => handleAction(secondaryAction.href)}
               >
                 {secondaryAction.label}

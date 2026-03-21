@@ -61,7 +61,7 @@ export const InstallBox: React.FC<InstallBoxProps> = ({
           </Typography>
           <Button
             variant="ghost"
-            size="sm"
+            size="md"
             onClick={handleCopy}
             className="flex-shrink-0 text-[var(--color-background)] hover:text-[var(--color-background)]"
           >

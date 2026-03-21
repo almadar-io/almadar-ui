@@ -45,10 +45,12 @@ export const PricingCard: React.FC<PricingCardProps> = ({
       padding="lg"
       className={cn(
         'flex flex-col h-full',
+        'hover:-translate-y-1 transition-all',
         highlighted && [
           'border-[length:2px] border-[var(--color-primary)]',
           'shadow-[var(--shadow-lg)]',
-          'scale-[1.02]',
+          'scale-[1.05]',
+          'ring-2 ring-[var(--color-primary)]',
         ],
         className,
       )}
