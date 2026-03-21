@@ -29,6 +29,8 @@ export interface HeroSectionProps {
   imagePosition?: 'below' | 'right' | 'background';
   background?: 'dark' | 'gradient' | 'subtle';
   align?: 'center' | 'left';
+  /** Background element (SVG animation, etc.) rendered behind hero content */
+  backgroundElement?: React.ReactNode;
   children?: React.ReactNode;
   className?: string;
 }
@@ -84,6 +86,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   imagePosition = 'below',
   background = 'subtle',
   align = 'center',
+  backgroundElement,
   children,
   className,
 }) => {
@@ -197,13 +200,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
     <Box
       as="header"
       className={cn(
-        'w-full min-h-[85vh] flex items-center justify-center',
-        'px-6 py-16',
-        backgroundStyles[background],
-        image && imagePosition === 'background' && 'relative overflow-hidden',
+        'w-full min-h-[60vh] flex items-center justify-center',
+        'px-6 py-20',
+        'relative overflow-hidden',
         className,
       )}
     >
+      {backgroundElement}
       {image && imagePosition === 'background' && (
         <MarketingImage
           src={image.src}
@@ -211,7 +214,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           className="absolute inset-0 w-full h-full opacity-20"
         />
       )}
-      <Box className={cn(image && imagePosition === 'background' && 'relative z-10', 'w-full flex justify-center')}>
+      <Box className="relative z-10 w-full flex justify-center">
         {innerContent}
       </Box>
     </Box>
