@@ -35,7 +35,7 @@ function layoutTree(node: AvlExprTreeNode, x: number, y: number, hSpacing: numbe
   const startX = x - totalWidth / 2;
 
   const layoutChildren = children.map((child, i) =>
-    layoutTree(child, startX + i * hSpacing, y + vSpacing, hSpacing * 0.65, vSpacing)
+    layoutTree(child, startX + i * hSpacing, y + vSpacing, hSpacing * 0.75, vSpacing)
   );
 
   return { label: node.label, type: node.type, x, y, children: layoutChildren };
@@ -128,7 +128,7 @@ export const AvlExprTree: React.FC<AvlExprTreeProps> = ({
     return { glow: `avl-et-${avlEtId}-glow` };
   }, []);
 
-  const layout = layoutTree(expression, 300, 70, 150, 85);
+  const layout = layoutTree(expression, 300, 60, 200, 90);
 
   return (
     <svg viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg" className={className}>

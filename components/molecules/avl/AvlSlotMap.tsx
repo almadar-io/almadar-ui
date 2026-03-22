@@ -126,9 +126,24 @@ export const AvlSlotMap: React.FC<AvlSlotMapProps> = ({
         Page Layout
       </text>
 
-      {/* Named slot regions */}
-      {resolvedSlots.map((slot) => (
+      {/* Named slot regions - content slots first, then overlays on top */}
+      {resolvedSlots.map((slot) => {
+        const isOverlay = ['modal', 'drawer', 'toast'].includes(slot.name);
+        return (
         <g key={slot.name}>
+          {/* Drop shadow for overlays */}
+          {isOverlay && (
+            <rect
+              x={ox + slot.x + 3}
+              y={oy + 24 + slot.y + 3}
+              width={slot.width}
+              height={slot.height}
+              rx={3}
+              ry={3}
+              fill="black"
+              opacity={0.06}
+            />
+          )}
           <rect
             x={ox + slot.x}
             y={oy + 24 + slot.y}
@@ -136,11 +151,11 @@ export const AvlSlotMap: React.FC<AvlSlotMapProps> = ({
             height={slot.height}
             rx={3}
             ry={3}
-            fill={color}
-            opacity={0.08}
+            fill={isOverlay ? 'var(--color-surface, #fff)' : color}
+            opacity={isOverlay ? 0.9 : 0.08}
             stroke={color}
-            strokeWidth={1}
-            strokeDasharray="4 2"
+            strokeWidth={isOverlay ? 1.5 : 1}
+            strokeDasharray={isOverlay ? '6 3' : '4 2'}
             style={animated ? { animation: 'avl-slot-pulse 2s ease-in-out infinite' } : undefined}
           />
           <text
@@ -153,10 +168,11 @@ export const AvlSlotMap: React.FC<AvlSlotMapProps> = ({
             fontFamily="inherit"
             opacity={0.6}
           >
-            {slot.name}
+            {slot.name}{isOverlay ? ' (overlay)' : ''}
           </text>
         </g>
-      ))}
+        );
+      })}
     </svg>
   );
 };
