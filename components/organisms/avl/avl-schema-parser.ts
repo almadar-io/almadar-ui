@@ -134,7 +134,7 @@ function getEntity(orbital: OrbitalDefinition): { name: string; fields: Array<Re
   if (typeof entity === 'string') {
     return { name: entity, fields: [], persistence: 'runtime' };
   }
-  const e = entity as Record<string, unknown>;
+  const e = entity as unknown as Record<string, unknown>;
   return {
     name: (e.name as string) ?? orbital.name,
     fields: (e.fields as Array<Record<string, unknown>>) ?? [],
@@ -154,7 +154,7 @@ function getPages(orbital: OrbitalDefinition): Array<Record<string, unknown>> {
   if (!orbital.pages) return [];
   return orbital.pages.map(p => {
     if (typeof p === 'string') return { name: p, path: `/${p.toLowerCase()}` };
-    return p as Record<string, unknown>;
+    return p as unknown as Record<string, unknown>;
   });
 }
 

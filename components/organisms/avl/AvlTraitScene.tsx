@@ -105,44 +105,49 @@ async function computeLayout(data: TraitLevelData): Promise<ElkLayout> {
     }),
   };
 
-  const layout = await elk.layout(elkGraph);
+  const layout = await elk.layout(elkGraph) as Record<string, unknown>;
 
-  const nodes: LayoutNode[] = (layout.children ?? []).map(n => ({
-    id: n.id,
-    x: n.x ?? 0,
-    y: n.y ?? 0,
-    width: n.width ?? STATE_W,
-    height: n.height ?? STATE_H,
-    isInitial: data.states.find(s => s.name === n.id)?.isInitial,
-    isTerminal: data.states.find(s => s.name === n.id)?.isTerminal,
+  const layoutChildren = (layout.children ?? []) as Array<Record<string, unknown>>;
+  const layoutEdges = (layout.edges ?? []) as Array<Record<string, unknown>>;
+
+  const nodes: LayoutNode[] = layoutChildren.map(n => ({
+    id: n.id as string,
+    x: (n.x as number) ?? 0,
+    y: (n.y as number) ?? 0,
+    width: (n.width as number) ?? STATE_W,
+    height: (n.height as number) ?? STATE_H,
+    isInitial: data.states.find(s => s.name === (n.id as string))?.isInitial,
+    isTerminal: data.states.find(s => s.name === (n.id as string))?.isTerminal,
   }));
 
-  const edges: LayoutEdge[] = (layout.edges ?? []).map((e, i) => {
+  const edges: LayoutEdge[] = layoutEdges.map((e, i) => {
     const t = data.transitions[i];
-    const label = e.labels?.[0];
-    const sections = e.sections ?? [];
+    const labels = (e.labels ?? []) as Array<Record<string, unknown>>;
+    const label = labels[0];
+    const sections = (e.sections ?? []) as Array<Record<string, unknown>>;
     const points: Array<{ x: number; y: number }> = [];
 
     for (const section of sections) {
-      points.push({ x: section.startPoint.x, y: section.startPoint.y });
-      if (section.bendPoints) {
-        for (const bp of section.bendPoints) {
-          points.push({ x: bp.x, y: bp.y });
-        }
+      const startPoint = section.startPoint as { x: number; y: number };
+      const endPoint = section.endPoint as { x: number; y: number };
+      const bendPoints = (section.bendPoints ?? []) as Array<{ x: number; y: number }>;
+      points.push({ x: startPoint.x, y: startPoint.y });
+      for (const bp of bendPoints) {
+        points.push({ x: bp.x, y: bp.y });
       }
-      points.push({ x: section.endPoint.x, y: section.endPoint.y });
+      points.push({ x: endPoint.x, y: endPoint.y });
     }
 
     return {
-      id: e.id,
+      id: e.id as string,
       from: t.from,
       to: t.to,
       event: t.event,
       effects: t.effects,
       guard: !!t.guard,
       index: t.index,
-      labelX: (label?.x ?? 0) + (label?.width ?? 0) / 2,
-      labelY: (label?.y ?? 0) + (label?.height ?? 0) / 2,
+      labelX: ((label?.x as number) ?? 0) + ((label?.width as number) ?? 0) / 2,
+      labelY: ((label?.y as number) ?? 0) + ((label?.height as number) ?? 0) / 2,
       points,
       isSelf: t.from === t.to,
     };
@@ -151,8 +156,8 @@ async function computeLayout(data: TraitLevelData): Promise<ElkLayout> {
   return {
     nodes,
     edges,
-    width: layout.width ?? 600,
-    height: layout.height ?? 400,
+    width: (layout.width as number) ?? 600,
+    height: (layout.height as number) ?? 400,
   };
 }
 

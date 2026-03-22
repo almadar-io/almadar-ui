@@ -269,15 +269,21 @@ export const AvlCosmicZoom: React.FC<AvlCosmicZoomProps> = ({
             {i > 0 && (
               <Typography variant="small" color="muted" className="mx-1">/</Typography>
             )}
-            <Typography
-              variant="small"
-              color={i === breadcrumbs.length - 1 ? 'primary' : 'muted'}
-              weight={i === breadcrumbs.length - 1 ? 'bold' : 'normal'}
-              className={i < breadcrumbs.length - 1 ? 'cursor-pointer hover:underline' : ''}
-              onClick={i < breadcrumbs.length - 1 ? () => handleBreadcrumbClick(crumb.level) : undefined}
-            >
-              {crumb.label}
-            </Typography>
+            {i < breadcrumbs.length - 1 ? (
+              <Box
+                as="span"
+                className="cursor-pointer hover:underline"
+                onClick={() => handleBreadcrumbClick(crumb.level)}
+              >
+                <Typography variant="small" color="muted">
+                  {crumb.label}
+                </Typography>
+              </Box>
+            ) : (
+              <Typography variant="small" color="primary" className="font-bold">
+                {crumb.label}
+              </Typography>
+            )}
           </React.Fragment>
         ))}
       </HStack>
