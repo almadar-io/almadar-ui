@@ -2,7 +2,8 @@
  * AVL layout utilities for positioning atoms in composed diagrams.
  */
 
-/** Distribute N points evenly around a ring. */
+/** Distribute N points evenly around a ring.
+ *  Handles edge cases: 1 state (centered), 2 states (horizontal). */
 export function ringPositions(
   cx: number,
   cy: number,
@@ -10,6 +11,17 @@ export function ringPositions(
   count: number,
   startAngle = -Math.PI / 2,
 ): Array<{ x: number; y: number; angle: number }> {
+  if (count === 0) return [];
+  if (count === 1) {
+    return [{ x: cx, y: cy, angle: 0 }];
+  }
+  if (count === 2) {
+    // Place horizontally so the two states don't stack vertically
+    return [
+      { x: cx - r * 0.7, y: cy, angle: Math.PI },
+      { x: cx + r * 0.7, y: cy, angle: 0 },
+    ];
+  }
   return Array.from({ length: count }, (_, i) => {
     const angle = startAngle + (Math.PI * 2 * i) / count;
     return {

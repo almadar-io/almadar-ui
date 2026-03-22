@@ -88,8 +88,49 @@ export const AvlStateMachine: React.FC<AvlStateMachineProps> = ({
       {/* Background */}
       <circle cx={cx} cy={cy} r={r + 30} fill={`url(#${ids.grad})`} />
 
-      {/* Transitions */}
+      {/* Self-transitions (loop-back arcs) */}
       {transitions.map((tr, i) => {
+        if (tr.from !== tr.to) return null;
+        const idx = stateIndex.get(tr.from);
+        if (idx === undefined) return null;
+        const pos = positions[idx];
+
+        // Draw a loop arc above the state
+        const loopR = 20;
+        const loopY = pos.y - stateHeight / 2 - 4;
+        const d = `M${pos.x - 14},${loopY} C${pos.x - 14},${loopY - loopR * 2} ${pos.x + 14},${loopY - loopR * 2} ${pos.x + 14},${loopY}`;
+
+        return (
+          <g key={`self-${i}`}>
+            <path
+              d={d}
+              fill="none"
+              stroke={color}
+              strokeWidth={1.5}
+              opacity={0.7}
+              markerEnd={`url(#${ids.grad})`}
+            />
+            {tr.event && (
+              <text
+                x={pos.x}
+                y={loopY - loopR * 2 + 4}
+                textAnchor="middle"
+                fill={color}
+                fontSize={9}
+                fontFamily="inherit"
+                fontWeight="bold"
+                opacity={0.8}
+              >
+                {tr.event}
+              </text>
+            )}
+          </g>
+        );
+      })}
+
+      {/* Transitions (non-self) */}
+      {transitions.map((tr, i) => {
+        if (tr.from === tr.to) return null; // handled above
         const fromIdx = stateIndex.get(tr.from);
         const toIdx = stateIndex.get(tr.to);
         if (fromIdx === undefined || toIdx === undefined) return null;

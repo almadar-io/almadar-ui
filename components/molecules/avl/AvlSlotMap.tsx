@@ -4,10 +4,11 @@ import React from 'react';
 
 export interface AvlSlotMapSlot {
   name: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
+  /** Manual position overrides. Omit for auto-layout. */
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
 }
 
 export interface AvlSlotMapProps {
@@ -17,6 +18,48 @@ export interface AvlSlotMapProps {
   className?: string;
   color?: string;
   animated?: boolean;
+}
+
+/** Known slot positions within a standard page layout (360x256 content area). */
+const SLOT_PRESETS: Record<string, { x: number; y: number; width: number; height: number }> = {
+  header:  { x: 10, y: 5,   width: 340, height: 35 },
+  main:    { x: 120, y: 50,  width: 230, height: 195 },
+  sidebar: { x: 10, y: 50,  width: 100, height: 195 },
+  modal:   { x: 80, y: 60,  width: 200, height: 140 },
+  drawer:  { x: 220, y: 50, width: 130, height: 195 },
+  toast:   { x: 220, y: 210, width: 130, height: 35 },
+  footer:  { x: 10, y: 220, width: 340, height: 30 },
+  center:  { x: 60, y: 50,  width: 240, height: 195 },
+  'hud-top':    { x: 10, y: 5,   width: 340, height: 30 },
+  'hud-bottom': { x: 10, y: 220, width: 340, height: 30 },
+};
+
+function resolveSlot(slot: AvlSlotMapSlot, fallbackIdx: number): Required<AvlSlotMapSlot> {
+  // If all coordinates provided, use them directly
+  if (slot.x !== undefined && slot.y !== undefined && slot.width !== undefined && slot.height !== undefined) {
+    return slot as Required<AvlSlotMapSlot>;
+  }
+  // Look up preset by name
+  const preset = SLOT_PRESETS[slot.name];
+  if (preset) {
+    return {
+      name: slot.name,
+      x: slot.x ?? preset.x,
+      y: slot.y ?? preset.y,
+      width: slot.width ?? preset.width,
+      height: slot.height ?? preset.height,
+    };
+  }
+  // Unknown slot: place in a grid in the remaining space
+  const col = fallbackIdx % 2;
+  const row = Math.floor(fallbackIdx / 2);
+  return {
+    name: slot.name,
+    x: 10 + col * 175,
+    y: 50 + row * 100,
+    width: 165,
+    height: 90,
+  };
 }
 
 export const AvlSlotMap: React.FC<AvlSlotMapProps> = ({
@@ -30,6 +73,14 @@ export const AvlSlotMap: React.FC<AvlSlotMapProps> = ({
   // Center the page frame in the viewBox
   const ox = (600 - pageWidth) / 2;
   const oy = (400 - pageHeight) / 2;
+
+  let unknownIdx = 0;
+  const resolvedSlots = slots.map((slot) => {
+    const isUnknown = !SLOT_PRESETS[slot.name] && (slot.x === undefined || slot.y === undefined);
+    const resolved = resolveSlot(slot, isUnknown ? unknownIdx : 0);
+    if (isUnknown) unknownIdx++;
+    return resolved;
+  });
 
   return (
     <svg viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg" className={className}>
@@ -76,7 +127,7 @@ export const AvlSlotMap: React.FC<AvlSlotMapProps> = ({
       </text>
 
       {/* Named slot regions */}
-      {slots.map((slot) => (
+      {resolvedSlots.map((slot) => (
         <g key={slot.name}>
           <rect
             x={ox + slot.x}
