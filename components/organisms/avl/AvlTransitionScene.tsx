@@ -36,7 +36,9 @@ function mapEffectType(label: string): 'render-ui' | 'set' | 'persist' | 'fetch'
 function EffectNode({ node, x, y, color, id }: { node: ExprTreeNode; x: number; y: number; color: string; id: string }): React.ReactElement {
   if (node.type === 'operator') {
     const children = node.children ?? [];
-    const childSpacing = 90;
+    // Space children based on max label length to avoid overlap
+    const maxLabelLen = Math.max(...children.map(c => c.label.length), 4);
+    const childSpacing = Math.max(90, maxLabelLen * 8 + 20);
     const totalW = (children.length - 1) * childSpacing;
     const startX = x - totalW / 2;
 
@@ -182,7 +184,8 @@ export const AvlTransitionScene: React.FC<AvlTransitionSceneProps> = ({
             EFFECTS
           </text>
           {data.effects.map((effect, i) => {
-            const effectX = CX - ((data.effects.length - 1) * 100) / 2 + i * 100;
+            const effectSpacing = 130;
+            const effectX = CX - ((data.effects.length - 1) * effectSpacing) / 2 + i * effectSpacing;
             return <EffectNode key={`eff-${i}`} node={effect} x={effectX} y={effectsY + 20} color={color} id={`eff-${i}`} />;
           })}
         </g>
