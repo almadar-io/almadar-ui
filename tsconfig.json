@@ -20,7 +20,12 @@
     "baseUrl": ".",
     "paths": {
       "@almadar/ui": ["./components/index.ts"],
-      "@almadar/ui/components/organisms/game/three": ["./components/organisms/game/three/index.ts"]
+      "@almadar/ui/components": ["./components/index.ts"],
+      "@almadar/ui/components/organisms/game/three": ["./components/organisms/game/three/index.ts"],
+      "@almadar/ui/providers": ["./providers/index.ts"],
+      "@almadar/ui/context": ["./context/index.ts"],
+      "@almadar/ui/runtime": ["./runtime/index.ts"],
+      "@almadar/ui/hooks": ["./hooks/index.ts"]
     },
     "typeRoots": ["./types", "./node_modules/@types"]
   },
