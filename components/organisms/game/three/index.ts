@@ -100,6 +100,15 @@ export {
 } from './renderers';
 
 // ---------------------------------------------------------------------------
+// GameCanvas3D + Templates (re-exported here so the component registry can
+// lazy-load ALL Three.js-dependent components from a single external path)
+// ---------------------------------------------------------------------------
+export { GameCanvas3D, type GameCanvas3DProps } from '../GameCanvas3D';
+export { GameCanvas3DBattleTemplate, type GameCanvas3DBattleTemplateProps } from '../../../templates/GameCanvas3DBattleTemplate';
+export { GameCanvas3DCastleTemplate, type GameCanvas3DCastleTemplateProps } from '../../../templates/GameCanvas3DCastleTemplate';
+export { GameCanvas3DWorldMapTemplate, type GameCanvas3DWorldMapTemplateProps } from '../../../templates/GameCanvas3DWorldMapTemplate';
+
+// ---------------------------------------------------------------------------
 // Utils
 // ---------------------------------------------------------------------------
 export {
