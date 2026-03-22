@@ -51,3 +51,29 @@ export { AvlExprTree, type AvlExprTreeProps, type AvlExprTreeNode } from '../com
 
 // Layout utilities
 export { ringPositions, arcPath, radialPositions, gridPositions, curveControlPoint } from '../components/molecules/avl';
+
+// AVL Organisms - Interactive Cosmic Zoom
+export {
+  AvlCosmicZoom,
+  type AvlCosmicZoomProps,
+  AvlApplicationScene,
+  type AvlApplicationSceneProps,
+  AvlOrbitalScene,
+  type AvlOrbitalSceneProps,
+  AvlTraitScene,
+  type AvlTraitSceneProps,
+  AvlTransitionScene,
+  type AvlTransitionSceneProps,
+  AvlClickTarget,
+  type AvlClickTargetProps,
+  parseApplicationLevel,
+  parseOrbitalLevel,
+  parseTraitLevel,
+  parseTransitionLevel,
+  type ApplicationLevelData,
+  type OrbitalLevelData,
+  type TraitLevelData,
+  type TransitionLevelData,
+  type CrossLink,
+  type ZoomLevel,
+} from '../components/organisms/avl';
