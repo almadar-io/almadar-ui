@@ -24,6 +24,26 @@ const dedupeContextPlugin = {
   },
 };
 
+// Same pattern for EventBusProvider/EventBusContext.
+// hooks/useEventBus.ts imports EventBusContext from providers/EventBusProvider.
+// Without this plugin, the hooks chunk inlines its own createContext() call,
+// creating a different context than the one in the providers chunk.
+// This plugin redirects the import to @almadar/ui/providers (external),
+// so both chunks share the same EventBusContext at runtime.
+const providersDir = resolve(__dirname, 'providers');
+
+const dedupeEventBusPlugin = {
+  name: 'dedupe-event-bus-context',
+  setup(build: { onResolve: (opts: { filter: RegExp }, cb: (args: { importer: string }) => { path: string; external: boolean } | undefined) => void }) {
+    build.onResolve({ filter: /EventBusProvider/ }, (args: { importer: string }) => {
+      if (args.importer && !args.importer.startsWith(providersDir)) {
+        return { path: '@almadar/ui/providers', external: true };
+      }
+      return undefined;
+    });
+  },
+};
+
 export default defineConfig([
   // Main build: all components (ESM + CJS, no splitting)
   {
@@ -47,7 +67,7 @@ export default defineConfig([
     treeshake: true,
     external: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query', '@almadar/ui'],
     banner: { js: '"use client";' },
-    esbuildPlugins: [dedupeContextPlugin],
+    esbuildPlugins: [dedupeContextPlugin, dedupeEventBusPlugin],
   },
   // Marketing build: SSR-safe subset for Docusaurus/webpack sites
   // No game engines, no Three.js, no browser globals at module scope
