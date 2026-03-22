@@ -57,15 +57,15 @@ async function loadRuntime(): Promise<RuntimeComponents> {
     OrbitalProvider: providers.OrbitalProvider,
     UISlotProvider: context.UISlotProvider,
     SlotsProvider: runtime.SlotsProvider,
-    EntitySchemaProvider: runtime.EntitySchemaProvider,
+    EntitySchemaProvider: runtime.EntitySchemaProvider as unknown as RuntimeComponents['EntitySchemaProvider'],
     VerificationProvider: providers.VerificationProvider,
     UISlotRenderer: components.UISlotRenderer,
-    useResolvedSchema: runtime.useResolvedSchema,
-    useTraitStateMachine: runtime.useTraitStateMachine,
+    useResolvedSchema: runtime.useResolvedSchema as unknown as RuntimeComponents['useResolvedSchema'],
+    useTraitStateMachine: runtime.useTraitStateMachine as unknown as RuntimeComponents['useTraitStateMachine'],
     useSlotsActions: runtime.useSlotsActions,
     useSlots: runtime.useSlots,
-    useUISlots: context.useUISlots,
-  };
+    useUISlots: context.useUISlots as unknown as RuntimeComponents['useUISlots'],
+  } satisfies Record<string, unknown> as RuntimeComponents;
   return runtimeCache;
 }
 
