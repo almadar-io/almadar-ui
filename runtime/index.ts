@@ -52,6 +52,9 @@ export {
     type CreateClientEffectHandlersOptions,
 } from './createClientEffectHandlers';
 
+// OrbPreview — live orbital schema renderer
+export { OrbPreview, type OrbPreviewProps } from './OrbPreview';
+
 // Types
 export type {
     ResolvedTraitBinding,

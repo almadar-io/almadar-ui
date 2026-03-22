@@ -155,12 +155,18 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       {(primaryAction || secondaryAction) && (
         <HStack gap="md" align="center">
           {primaryAction && (
-            <Button variant="primary" size="lg">
+            <Button variant="primary" size="lg" onClick={() => {
+              const external = primaryAction.href.startsWith('http');
+              window.open(primaryAction.href, external ? '_blank' : '_self');
+            }}>
               {primaryAction.label}
             </Button>
           )}
           {secondaryAction && (
-            <Button variant="secondary" size="lg">
+            <Button variant="secondary" size="lg" onClick={() => {
+              const external = secondaryAction.href.startsWith('http');
+              window.open(secondaryAction.href, external ? '_blank' : '_self');
+            }}>
               {secondaryAction.label}
             </Button>
           )}
