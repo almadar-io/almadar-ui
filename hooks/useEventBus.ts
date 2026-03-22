@@ -10,7 +10,7 @@
  */
 
 import { useCallback, useEffect, useRef, useContext } from 'react';
-import { EventBusContext } from '../providers/EventBusProvider';
+import { EventBusContext } from '../internals/event-bus-context';
 import type { KFlowEvent, EventListener, Unsubscribe, EventBusContextType } from './event-bus-types';
 
 // Re-export types for convenience

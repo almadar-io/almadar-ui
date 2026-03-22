@@ -11,34 +11,14 @@
  * @packageDocumentation
  */
 
-import React, { createContext, useCallback, useRef, useMemo, useEffect, type ReactNode } from 'react';
+import React, { useCallback, useRef, useMemo, useEffect, type ReactNode } from 'react';
 import type { KFlowEvent, EventListener, Unsubscribe, EventBusContextType } from '../hooks/event-bus-types';
 import { setGlobalEventBus } from '../hooks/useEventBus';
+import { EventBusContext } from '../internals/event-bus-context';
+import type { EventBusContextTypeExtended } from '../internals/event-bus-context';
 
-// ============================================================================
-// Context
-// ============================================================================
-
-/**
- * Extended context type for backward compatibility.
- *
- * @deprecated getSelectedEntity and clearSelectedEntity are deprecated.
- * Use SelectionProvider and useSelection hook instead.
- */
-export interface EventBusContextTypeExtended extends EventBusContextType {
-  /**
-   * @deprecated Use useSelection from SelectionProvider instead.
-   * This method now returns null - selection state moved to SelectionProvider.
-   */
-  getSelectedEntity: () => unknown | null;
-  /**
-   * @deprecated Use useSelection from SelectionProvider instead.
-   * This method is now a no-op - selection state moved to SelectionProvider.
-   */
-  clearSelectedEntity: () => void;
-}
-
-export const EventBusContext = createContext<EventBusContextTypeExtended | null>(null);
+// Re-export for backward compatibility
+export { EventBusContext, type EventBusContextTypeExtended };
 
 // ============================================================================
 // Provider Component
