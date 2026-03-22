@@ -53,6 +53,24 @@ const TASK_MANAGER_SCHEMA: OrbitalSchema = {
           { from: 'Editing', to: 'Listing', event: 'CANCEL' },
         ],
       },
+    }, {
+      name: 'TaskAssign',
+      linkedEntity: 'Task',
+      category: 'interaction',
+      stateMachine: {
+        states: [
+          { name: 'Unassigned', isInitial: true },
+          { name: 'Assigned' },
+        ],
+        events: [
+          { key: 'ASSIGN', name: 'Assign' },
+          { key: 'UNASSIGN', name: 'Unassign' },
+        ],
+        transitions: [
+          { from: 'Unassigned', to: 'Assigned', event: 'ASSIGN', effects: [['set', 'assignee', '@payload.userId']] },
+          { from: 'Assigned', to: 'Unassigned', event: 'UNASSIGN', effects: [['set', 'assignee', '']] },
+        ],
+      },
     }],
     pages: [
       { name: 'TaskList', path: '/tasks' },

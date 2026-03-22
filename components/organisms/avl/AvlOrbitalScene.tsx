@@ -18,18 +18,25 @@ import type { OrbitalLevelData } from './avl-schema-parser';
 export interface AvlOrbitalSceneProps {
   data: OrbitalLevelData;
   color?: string;
+  /** Currently highlighted trait (before zooming in) */
+  highlightedTrait?: string | null;
   onTraitClick?: (traitName: string, position: { x: number; y: number }) => void;
+  /** Called when a trait tab is hovered/selected (highlight without zoom) */
+  onTraitHighlight?: (traitName: string | null) => void;
 }
 
 const CX = 300;
 const CY = 200;
+const VIEWBOX_H = 400;
 const ORBITAL_R = 130;
 const ENTITY_R = 24;
 
 export const AvlOrbitalScene: React.FC<AvlOrbitalSceneProps> = ({
   data,
   color = 'var(--color-primary)',
+  highlightedTrait,
   onTraitClick,
+  onTraitHighlight,
 }) => {
   const traitAngleStart = -Math.PI / 3;
   const traitAngleStep = data.traits.length > 1
@@ -68,7 +75,7 @@ export const AvlOrbitalScene: React.FC<AvlOrbitalSceneProps> = ({
               rotation={rotationDeg}
               label={trait.name}
               color={color}
-              opacity={0.7}
+              opacity={highlightedTrait ? (highlightedTrait === trait.name ? 1 : 0.25) : 0.7}
             />
 
             {/* Clickable target over the trait ring area */}
@@ -147,6 +154,54 @@ export const AvlOrbitalScene: React.FC<AvlOrbitalSceneProps> = ({
           <AvlPage key={page.name} x={px} y={py} label={page.route} color={color} />
         );
       })}
+
+      {/* Trait tab pills at bottom */}
+      {data.traits.length > 1 && (
+        <g>
+          {data.traits.map((trait, i) => {
+            const pillW = 70;
+            const gap = 8;
+            const totalW = data.traits.length * pillW + (data.traits.length - 1) * gap;
+            const startX = CX - totalW / 2;
+            const px = startX + i * (pillW + gap);
+            const py = VIEWBOX_H - 30;
+            const isHighlighted = highlightedTrait === trait.name;
+
+            return (
+              <g
+                key={`tab-${trait.name}`}
+                style={{ cursor: 'pointer' }}
+                onClick={() => onTraitClick?.(trait.name, { x: CX, y: CY })}
+                onMouseEnter={() => onTraitHighlight?.(trait.name)}
+                onMouseLeave={() => onTraitHighlight?.(null)}
+              >
+                <rect
+                  x={px}
+                  y={py}
+                  width={pillW}
+                  height={22}
+                  rx={11}
+                  fill={isHighlighted ? color : 'transparent'}
+                  stroke={color}
+                  strokeWidth={isHighlighted ? 1.5 : 0.8}
+                  opacity={isHighlighted ? 0.15 : 0.3}
+                />
+                <text
+                  x={px + pillW / 2}
+                  y={py + 14}
+                  textAnchor="middle"
+                  fill={color}
+                  fontSize={8}
+                  fontWeight={isHighlighted ? 'bold' : 'normal'}
+                  opacity={isHighlighted ? 1 : 0.6}
+                >
+                  {trait.name.length > 10 ? trait.name.slice(0, 9) + '…' : trait.name}
+                </text>
+              </g>
+            );
+          })}
+        </g>
+      )}
 
       {/* External links (arrows to/from viewport edge) */}
       {data.externalLinks.map((link, i) => {

@@ -29,7 +29,8 @@ export type ZoomAction =
   | { type: 'ZOOM_INTO_TRANSITION'; transitionIndex: number; targetPosition: { x: number; y: number } }
   | { type: 'ZOOM_OUT' }
   | { type: 'ANIMATION_COMPLETE' }
-  | { type: 'RESET' };
+  | { type: 'RESET' }
+  | { type: 'SWITCH_TRAIT'; trait: string };
 
 // ---------------------------------------------------------------------------
 // Initial state
@@ -140,6 +141,16 @@ export function zoomReducer(state: ZoomState, action: ZoomAction): ZoomState {
         };
       }
       return state;
+    }
+
+    case 'SWITCH_TRAIT': {
+      // Switch to a sibling trait without animation (stays at trait level)
+      if (state.level !== 'trait' || state.animating) return state;
+      return {
+        ...state,
+        selectedTrait: action.trait,
+        selectedTransition: null,
+      };
     }
 
     case 'RESET': {

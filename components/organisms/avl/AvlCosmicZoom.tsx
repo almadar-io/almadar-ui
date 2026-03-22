@@ -178,6 +178,13 @@ export const AvlCosmicZoom: React.FC<AvlCosmicZoomProps> = ({
     dispatch({ type: 'ZOOM_INTO_TRAIT', trait: name, targetPosition: pos });
   }, []);
 
+  const handleTraitSwitch = useCallback((name: string) => {
+    dispatch({ type: 'SWITCH_TRAIT', trait: name });
+  }, []);
+
+  // Highlighted trait at orbital level (hover, not zoom)
+  const [highlightedTrait, setHighlightedTrait] = React.useState<string | null>(null);
+
   const handleTransitionClick = useCallback((index: number, pos: { x: number; y: number }) => {
     dispatch({ type: 'ZOOM_INTO_TRANSITION', transitionIndex: index, targetPosition: pos });
   }, []);
@@ -214,7 +221,9 @@ export const AvlCosmicZoom: React.FC<AvlCosmicZoomProps> = ({
           <AvlOrbitalScene
             data={data}
             color={color}
+            highlightedTrait={highlightedTrait}
             onTraitClick={handleTraitClick}
+            onTraitHighlight={setHighlightedTrait}
           />
         );
       }
@@ -247,7 +256,7 @@ export const AvlCosmicZoom: React.FC<AvlCosmicZoomProps> = ({
       default:
         return null;
     }
-  }, [state.level, state.selectedOrbital, state.selectedTrait, state.selectedTransition, schema, color, handleOrbitalClick, handleTraitClick, handleTransitionClick]);
+  }, [state.level, state.selectedOrbital, state.selectedTrait, state.selectedTransition, schema, color, handleOrbitalClick, handleTraitClick, handleTransitionClick, highlightedTrait, setHighlightedTrait]);
 
   const breadcrumbs = getBreadcrumbs(state);
 
@@ -287,6 +296,34 @@ export const AvlCosmicZoom: React.FC<AvlCosmicZoomProps> = ({
           </React.Fragment>
         ))}
       </HStack>
+
+      {/* Sibling trait tabs (shown at trait level) */}
+      {state.level === 'trait' && state.selectedOrbital && (() => {
+        const orbData = parseOrbitalLevel(schema, state.selectedOrbital!);
+        if (!orbData || orbData.traits.length <= 1) return null;
+        return (
+          <HStack
+            gap="xs"
+            align="center"
+            className="absolute top-2 right-2 z-10 bg-[var(--color-surface)]/80 backdrop-blur rounded-md px-1.5 py-1"
+          >
+            {orbData.traits.map((t) => (
+              <Box
+                key={t.name}
+                as="button"
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer border-none ${
+                  t.name === state.selectedTrait
+                    ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]'
+                    : 'bg-transparent text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-surface)]'
+                }`}
+                onClick={() => handleTraitSwitch(t.name)}
+              >
+                {t.name}
+              </Box>
+            ))}
+          </HStack>
+        );
+      })()}
 
       {/* Zoom out hint */}
       {state.level !== 'application' && (
