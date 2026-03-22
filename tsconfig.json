@@ -19,7 +19,8 @@
     "allowSyntheticDefaultImports": true,
     "baseUrl": ".",
     "paths": {
-      "@almadar/ui": ["./components/index.ts"]
+      "@almadar/ui": ["./components/index.ts"],
+      "@almadar/ui/components/organisms/game/three": ["./components/organisms/game/three/index.ts"]
     },
     "typeRoots": ["./types", "./node_modules/@types"]
   },
