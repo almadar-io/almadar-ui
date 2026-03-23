@@ -65,7 +65,7 @@ export default defineConfig([
     sourcemap: false,
     splitting: false,
     treeshake: true,
-    external: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query', '@almadar/ui'],
+    external: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query', '@almadar/ui', '@almadar/runtime', '@almadar/core', '@almadar/evaluator', '@almadar/patterns'],
     banner: { js: '"use client";' },
     esbuildPlugins: [dedupeContextPlugin, dedupeEventBusPlugin],
   },

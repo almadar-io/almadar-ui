@@ -9,7 +9,9 @@
  * - ThemeProvider - Theme and color mode management
  * - EventBusProvider - Page-scoped event pub/sub
  * - SelectionProvider - Selected entity tracking
- * - FetchedDataProvider - Server-fetched entity data
+ *
+ * Entity data flows through props (via enrichFromResponse in ServerBridge),
+ * not through context. FetchedDataProvider has been removed.
  *
  * @packageDocumentation
  */
@@ -18,8 +20,6 @@ import React, { type ReactNode, useMemo } from 'react';
 import { ThemeProvider, type ThemeProviderProps, type ThemeDefinition } from '../context/ThemeContext';
 import { EventBusProvider } from './EventBusProvider';
 import { SelectionProvider } from './SelectionProvider';
-import { FetchedDataProvider, useFetchedData } from './FetchedDataProvider';
-import { EntityDataProvider, type EntityDataAdapter } from '../hooks/useEntityData';
 import { SuspenseConfigProvider, type SuspenseConfig } from '../components/organisms/UISlotRenderer';
 import { VerificationProvider } from './VerificationProvider';
 
@@ -48,6 +48,7 @@ export interface OrbitalProviderProps {
 
   // Data options
   /** Initial fetched data */
+  /** @deprecated No longer used. Entity data flows through server response props. */
   initialData?: Record<string, unknown[]>;
 
   // Suspense options
@@ -66,31 +67,6 @@ export interface OrbitalProviderProps {
    * Default: true in development, false in production.
    */
   verification?: boolean;
-}
-
-// ============================================================================
-// FetchedData → EntityData Bridge
-// ============================================================================
-
-/**
- * Bridges FetchedDataContext (builder-specific) to EntityDataContext (generic).
- * Must be rendered inside FetchedDataProvider.
- */
-function FetchedDataBridge({ children }: { children: ReactNode }) {
-  const fetchedData = useFetchedData();
-
-  const adapter: EntityDataAdapter = useMemo(() => ({
-    getData: (entity: string) => fetchedData.getData(entity) as Record<string, unknown>[],
-    getById: (entity: string, id: string) => fetchedData.getById(entity, id) as Record<string, unknown> | undefined,
-    isLoading: fetchedData.loading,
-    error: fetchedData.error,
-  }), [fetchedData.getData, fetchedData.getById, fetchedData.loading, fetchedData.error]);
-
-  return (
-    <EntityDataProvider adapter={adapter}>
-      {children}
-    </EntityDataProvider>
-  );
 }
 
 // ============================================================================
@@ -162,19 +138,15 @@ export function OrbitalProvider({
   );
 
   const inner = (
-    <FetchedDataProvider initialData={initialData}>
-      <FetchedDataBridge>
-        <EventBusProvider debug={debug}>
-          <VerificationProvider enabled={verification}>
-            <SelectionProvider debug={debug}>
-              <SuspenseConfigProvider config={suspenseConfig}>
-                {children}
-              </SuspenseConfigProvider>
-            </SelectionProvider>
-          </VerificationProvider>
-        </EventBusProvider>
-      </FetchedDataBridge>
-    </FetchedDataProvider>
+    <EventBusProvider debug={debug}>
+      <VerificationProvider enabled={verification}>
+        <SelectionProvider debug={debug}>
+          <SuspenseConfigProvider config={suspenseConfig}>
+            {children}
+          </SuspenseConfigProvider>
+        </SelectionProvider>
+      </VerificationProvider>
+    </EventBusProvider>
   );
 
   if (skipTheme) {
@@ -202,4 +174,3 @@ OrbitalProvider.displayName = 'OrbitalProvider';
 export { ThemeProvider } from '../context/ThemeContext';
 export { EventBusProvider } from './EventBusProvider';
 export { SelectionProvider } from './SelectionProvider';
-export { FetchedDataProvider } from './FetchedDataProvider';

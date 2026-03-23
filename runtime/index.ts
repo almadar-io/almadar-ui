@@ -55,6 +55,12 @@ export {
 // OrbPreview — live orbital schema renderer
 export { OrbPreview, type OrbPreviewProps } from './OrbPreview';
 
+// ServerBridge — client-server bridge for dual execution
+export { ServerBridgeProvider, useServerBridge, type ServerBridgeContextValue, type ServerClientEffect } from './ServerBridge';
+
+// Entity enrichment from server response
+export { enrichFromResponse } from './enrichFromResponse';
+
 // Types
 export type {
     ResolvedTraitBinding,

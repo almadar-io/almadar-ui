@@ -20,7 +20,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 // Use hooks from @almadar/ui
 import { useEventBus } from '../hooks';
-import { useFetchedDataContext } from '../providers';
 import { isCircuitEvent } from '@almadar/core';
 import type { PatternConfig, ResolvedTraitTick } from '@almadar/core';
 import {
@@ -34,7 +33,6 @@ import {
     type BindingContext,
     type EffectContext,
 } from '@almadar/runtime';
-import { isEntityAwarePattern } from '@almadar/patterns';
 import { createClientEffectHandlers } from './createClientEffectHandlers';
 import type { ResolvedTraitBinding } from './types';
 import type { SlotsActions, SlotPatternEntry, SlotSource } from './ui/SlotsContext';
@@ -113,8 +111,6 @@ export function useTraitStateMachine(
 ): TraitStateMachineResult {
     const eventBus = useEventBus();
     const { entities } = useEntitySchema();
-    const fetchedDataContext = useFetchedDataContext();
-
     // Create StateMachineManager - shared with server runtime
     const manager = useMemo(() => {
         const traitDefs = traitBindings.map(toTraitDefinition);
@@ -155,14 +151,11 @@ export function useTraitStateMachine(
     }, [options]);
 
     // Refs for tick loop callbacks — read current values without causing re-renders.
-    // Mirror of traitStates and fetchedDataContext kept in sync on every render so
-    // that RAF/interval callbacks always see the latest values without needing to
-    // be recreated (mirrors the _tickStateRef/_tickEntityRef pattern in the compiled shell).
+    // Mirror of traitStates kept in sync on every render so that RAF/interval
+    // callbacks always see the latest values without needing to be recreated.
     const traitStatesRef = useRef<Map<string, TraitState>>(traitStates);
-    const fetchedDataContextRef = useRef(fetchedDataContext);
 
     useEffect(() => { traitStatesRef.current = traitStates; }, [traitStates]);
-    useEffect(() => { fetchedDataContextRef.current = fetchedDataContext; }, [fetchedDataContext]);
 
 
     // Register traits with debug registry and clean up on unmount/rebind
@@ -218,27 +211,19 @@ export function useTraitStateMachine(
      * Execute a single tick's effects synchronously.
      *
      * Mirrors the compiled shell output (orbital-shell-typescript/src/backend.rs lines 5353-5516):
-     * - `set` effects mutate a local entity copy, then batch-persist to FetchedDataContext
+     * - `set` effects are server-side only
      * - `render-ui` effects resolve bindings and flush slots
      * - No EffectExecutor (async) — ticks must be synchronous to work inside RAF
      * - `@payload` is empty (invalid in tick context per the Rust validator)
      */
     const runTickEffects = useCallback((tick: ResolvedTraitTick, binding: ResolvedTraitBinding) => {
-        const fdc = fetchedDataContextRef.current;
         const actions = slotsActionsRef.current;
-        const linkedEntity = binding.linkedEntity ?? '';
         const currentState = traitStatesRef.current.get(binding.trait.name)?.currentState ?? '';
 
         // appliesTo: empty array means fire in all states (same as Rust OirTick default)
         if (tick.appliesTo.length > 0 && !tick.appliesTo.includes(currentState)) return;
 
-        // Build entity data — same shape as processEvent
-        const records = linkedEntity && fdc ? fdc.getData(linkedEntity) : [];
-        const entityData: Record<string, unknown> = records.length > 0
-            ? Object.assign([...(records as unknown[])], records[0] as Record<string, unknown>) as unknown as Record<string, unknown>
-            : {};
-
-        const bindingCtx: BindingContext = { entity: entityData, payload: {}, state: currentState };
+        const bindingCtx: BindingContext = { entity: {}, payload: {}, state: currentState };
         const evalCtx = createContextFromBindings(bindingCtx);
 
         // Guard: use interpolateValue to evaluate the s-expression (returns truthy/falsy)
@@ -247,8 +232,7 @@ export function useTraitStateMachine(
             if (!passed) return;
         }
 
-        // Process effects synchronously — set effects first so render-ui sees updated values
-        const entityMutations = new Map<string, unknown>();
+        // Process effects synchronously
         const pendingSlots = new Map<string, Array<{ pattern: PatternConfig; props: Record<string, unknown> }>>();
 
         const slotSource: SlotSource = {
@@ -259,64 +243,21 @@ export function useTraitStateMachine(
             traitDefinition: binding.trait,
         };
 
-        // Helper: enrich entity-aware pattern nodes (same logic as processEvent's enrichNode)
-        const enrichTickNode = (node: unknown): unknown => {
-            if (!node || typeof node !== 'object') return node;
-            const rec = node as Record<string, unknown>;
-            const nodeType = rec.type as string | undefined;
-
-            let enriched = rec;
-            if (Array.isArray(rec.children)) {
-                enriched = { ...rec, children: (rec.children as unknown[]).map(enrichTickNode) };
-            }
-
-            if (nodeType && isEntityAwarePattern(nodeType) && fdc) {
-                let injected = false;
-                if (typeof enriched.entity === 'string') {
-                    const entityRecords = fdc.getData(enriched.entity as string);
-                    if (entityRecords.length > 0) { enriched = { ...enriched, entity: entityRecords }; injected = true; }
-                } else if (!enriched.entity && linkedEntity) {
-                    const entityRecords = fdc.getData(linkedEntity);
-                    if (entityRecords.length > 0) { enriched = { ...enriched, entity: entityRecords }; injected = true; }
-                }
-                if (injected && !enriched.fields && !enriched.columns) {
-                    const sample = (enriched.entity as unknown[])[0];
-                    if (sample && typeof sample === 'object') {
-                        const keys = Object.keys(sample as Record<string, unknown>).filter(k => k !== 'id' && k !== '_id');
-                        enriched = { ...enriched, fields: keys.map((k, i) => ({ name: k, variant: i === 0 ? 'h4' : 'body' })), children: undefined };
-                    }
-                }
-            }
-            return enriched;
-        };
-
         for (const effect of tick.effects) {
             if (!Array.isArray(effect)) continue;
             const op = effect[0] as string;
 
-            if (op === 'set') {
-                const path = effect[1];
-                if (typeof path !== 'string' || !path.startsWith('@entity.')) continue;
-                const field = path.slice('@entity.'.length);
-                // Re-create evalCtx after each mutation so chained sets see updated values
-                const updatedCtx = createContextFromBindings(bindingCtx);
-                const value = interpolateValue(effect[2] as unknown, updatedCtx);
-                (bindingCtx.entity as Record<string, unknown>)[field] = value;
-                entityMutations.set(field, value);
-
-            } else if (op === 'render-ui' || op === 'render') {
+            if (op === 'render-ui' || op === 'render') {
                 const slot = effect[1] as string;
                 const rawPattern = effect[2];
                 if (rawPattern === null || rawPattern === undefined) {
                     pendingSlots.set(slot, []);
                     continue;
                 }
-                // Resolve bindings (same as EffectExecutor.resolveArgs for render-ui args)
                 const updatedCtx = createContextFromBindings(bindingCtx);
                 const resolved = interpolateValue(rawPattern, updatedCtx);
-                const enriched = enrichTickNode(resolved);
                 const existing = pendingSlots.get(slot) ?? [];
-                existing.push({ pattern: enriched as PatternConfig, props: {} });
+                existing.push({ pattern: resolved as PatternConfig, props: {} });
                 pendingSlots.set(slot, existing);
             }
         }
@@ -327,17 +268,6 @@ export function useTraitStateMachine(
                 actions.clearSlot(slot);
             } else {
                 actions.setSlotPatterns(slot, patterns, slotSource);
-            }
-        }
-
-        // Batch-persist entity mutations (single setData call like compiled shell's dispatchReducer TICK)
-        if (linkedEntity && entityMutations.size > 0 && fdc) {
-            const latestRecords = fdc.getData(linkedEntity);
-            if (latestRecords.length > 0) {
-                const updated = (latestRecords as Record<string, unknown>[]).map((r, i) =>
-                    i === 0 ? { ...r, ...Object.fromEntries(entityMutations) } : r
-                );
-                fdc.setData({ [linkedEntity]: updated as unknown[] });
             }
         }
     }, []);
@@ -444,23 +374,8 @@ export function useTraitStateMachine(
                     JSON.stringify(result.effects),
                 );
 
-                // Get entity data for context from FetchedDataContext (server data)
                 const linkedEntity = binding.linkedEntity || '';
                 const entityId = payload?.entityId as string | undefined;
-                const entityData = (() => {
-                    if (!linkedEntity || !fetchedDataContext) return payload || {};
-                    if (entityId) {
-                        return (fetchedDataContext.getById(linkedEntity, entityId) as Record<string, unknown>) || {};
-                    }
-                    // No entityId: expose the full records array so @entity resolves to all
-                    // records (for list patterns like `items: "@entity"`), while also
-                    // spreading first-record fields onto the array so @entity.field access
-                    // (e.g. @entity.dialogue, @entity.cacheHits) still works correctly.
-                    const records = fetchedDataContext.getData(linkedEntity);
-                    if (records.length === 0) return payload || {};
-                    const firstRecord = records[0] as Record<string, unknown>;
-                    return Object.assign([...records], firstRecord) as unknown as Record<string, unknown>;
-                })();
 
                 // Accumulator for render-ui effects -- grouped by slot
                 const pendingSlots = new Map<string, SlotPatternEntry[]>();
@@ -473,6 +388,8 @@ export function useTraitStateMachine(
                 };
 
                 // Build handlers using factory from @almadar/runtime
+                // No enrichPattern: entity data comes from server response via
+                // enrichFromResponse in ServerBridge, not from local context.
                 const handlers = createClientEffectHandlers({
                     eventBus,
                     slotSetter: {
@@ -487,88 +404,13 @@ export function useTraitStateMachine(
                     },
                     navigate: optionsRef.current?.navigate,
                     notify: optionsRef.current?.notify,
-                    enrichPattern: (pattern) => {
-                        const enrichNode = (node: unknown): unknown => {
-                            if (!node || typeof node !== 'object') return node;
-                            const rec = node as Record<string, unknown>;
-                            const nodeType = rec.type as string | undefined;
-
-                            // Recursively enrich children first
-                            let enriched = rec;
-                            if (Array.isArray(rec.children)) {
-                                const enrichedChildren = (rec.children as unknown[]).map(enrichNode);
-                                enriched = { ...rec, children: enrichedChildren };
-                            }
-
-                            // Enrich this node if it's entity-aware
-                            if (nodeType && isEntityAwarePattern(nodeType) && fetchedDataContext) {
-                                let injected = false;
-                                if (typeof enriched.entity === 'string') {
-                                    const records = fetchedDataContext.getData(enriched.entity as string);
-                                    if (records.length > 0) {
-                                        enriched = { ...enriched, entity: records };
-                                        injected = true;
-                                    }
-                                } else if (!enriched.entity && linkedEntity) {
-                                    const records = fetchedDataContext.getData(linkedEntity);
-                                    if (records.length > 0) {
-                                        enriched = { ...enriched, entity: records };
-                                        injected = true;
-                                    }
-                                }
-
-                                // Auto-generate fields for data-iterating patterns when
-                                // entity data was injected but no fields/columns are defined.
-                                // Schema children are pattern configs (not render functions),
-                                // so DataList can't use them; fields-based rendering works.
-                                if (injected && !enriched.fields && !enriched.columns) {
-                                    const sample = (enriched.entity as unknown[])[0];
-                                    if (sample && typeof sample === 'object') {
-                                        const keys = Object.keys(sample as Record<string, unknown>)
-                                            .filter(k => k !== 'id' && k !== '_id');
-                                        enriched = {
-                                            ...enriched,
-                                            fields: keys.map((k, i) => ({
-                                                name: k,
-                                                variant: i === 0 ? 'h4' : 'body',
-                                            })),
-                                            // Remove pattern-config children that components
-                                            // can't render (they expect a function or nothing)
-                                            children: undefined,
-                                        };
-                                    }
-                                }
-                            }
-
-                            return enriched;
-                        };
-                        return enrichNode(pattern);
-                    },
                 });
 
                 const bindingCtx: BindingContext = {
-                    entity: entityData,
+                    entity: payload || {},
                     payload: payload || {},
                     state: result.previousState,
                 };
-
-                // Pre-process ["set", "@entity.field", value] effects.
-                // createClientEffectHandlers treats "set" as server-only (no-op on client).
-                // We handle it here: evaluate the value expression and mutate bindingCtx.entity
-                // so subsequent render-ui effects see the updated field values.
-                const entityMutations = new Map<string, unknown>();
-                for (const effect of result.effects) {
-                    if (!Array.isArray(effect) || effect[0] !== 'set') continue;
-                    const path = effect[1];
-                    if (typeof path !== 'string' || !path.startsWith('@entity.')) continue;
-                    const field = path.slice('@entity.'.length);
-                    const evalCtx = createContextFromBindings(bindingCtx);
-                    const value = interpolateValue(effect[2] as unknown, evalCtx);
-                    if (bindingCtx.entity !== null && typeof bindingCtx.entity === 'object') {
-                        (bindingCtx.entity as Record<string, unknown>)[field] = value;
-                    }
-                    entityMutations.set(field, value);
-                }
 
                 const effectContext: EffectContext = {
                     traitName: binding.trait.name,
@@ -599,69 +441,6 @@ export function useTraitStateMachine(
                             actions.clearSlot(slot);
                         } else {
                             actions.setSlotPatterns(slot, patterns, slotSource);
-                        }
-                    }
-
-                    // Persist entity mutations from ["set"] effects back to FetchedDataContext
-                    // so the next render/event sees the updated field values.
-                    if (linkedEntity && entityMutations.size > 0 && fetchedDataContext) {
-                        const records = fetchedDataContext.getData(linkedEntity);
-                        if (records.length > 0) {
-                            const updated = (records as Record<string, unknown>[]).map((r, i) =>
-                                i === 0 ? { ...r, ...Object.fromEntries(entityMutations) } : r
-                            );
-                            fetchedDataContext.setData({ [linkedEntity]: updated as unknown[] });
-                        }
-                    }
-
-                    // Handle ["persist", action, entityType, data] effects client-side.
-                    // The handler in createClientEffectHandlers is a no-op stub.
-                    // We apply create/update/delete mutations to FetchedDataContext here
-                    // so the playground and any client-only runtime sees entity changes.
-                    if (fetchedDataContext) {
-                        for (const effect of result.effects) {
-                            if (!Array.isArray(effect) || effect[0] !== 'persist') continue;
-                            const action = effect[1] as string;
-                            const entityType = (effect[2] as string) || linkedEntity;
-                            if (!entityType) continue;
-                            const records = fetchedDataContext.getData(entityType) as Record<string, unknown>[];
-
-                            if (action === 'create') {
-                                const evalCtx = createContextFromBindings(bindingCtx);
-                                const rawData = effect[3] as Record<string, unknown> | undefined;
-                                const newRecord: Record<string, unknown> = { id: `${entityType}-${Date.now()}` };
-                                if (rawData) {
-                                    for (const [k, v] of Object.entries(rawData)) {
-                                        newRecord[k] = interpolateValue(v, evalCtx);
-                                    }
-                                }
-                                // Also include any set mutations from this transition
-                                for (const [k, v] of entityMutations) {
-                                    newRecord[k] = v;
-                                }
-                                fetchedDataContext.setData({ [entityType]: [...records, newRecord] });
-                            } else if (action === 'delete') {
-                                const deleteId = effect[3] as string | undefined;
-                                if (deleteId) {
-                                    const filtered = records.filter(r => r.id !== deleteId);
-                                    fetchedDataContext.setData({ [entityType]: filtered });
-                                }
-                            } else if (action === 'update') {
-                                const updateId = effect[3] as string | undefined;
-                                const updateData = effect[4] as Record<string, unknown> | undefined;
-                                if (updateId && updateData) {
-                                    const evalCtx = createContextFromBindings(bindingCtx);
-                                    const updated = records.map(r => {
-                                        if (r.id !== updateId) return r;
-                                        const patched = { ...r };
-                                        for (const [k, v] of Object.entries(updateData)) {
-                                            patched[k] = interpolateValue(v, evalCtx);
-                                        }
-                                        return patched;
-                                    });
-                                    fetchedDataContext.setData({ [entityType]: updated });
-                                }
-                            }
                         }
                     }
                 } catch (error: unknown) {
@@ -739,7 +518,7 @@ export function useTraitStateMachine(
         if (onEventProcessed) {
             onEventProcessed(normalizedEvent, payload);
         }
-    }, [entities, fetchedDataContext, eventBus]);
+    }, [entities, eventBus]);
 
     /**
      * Drain the event queue one entry at a time (actor model).
@@ -796,29 +575,6 @@ export function useTraitStateMachine(
     ) => {
         enqueueAndDrain(eventKey, payload);
     }, [enqueueAndDrain]);
-
-    // Re-process INIT when FetchedDataContext receives server data.
-    // On first INIT, entity data is empty (server hasn't responded). When the server
-    // bridge stores fetched data via setData(), re-run INIT so render-ui effects
-    // resolve entity bindings against the now-populated data.
-    const dataSeenRef = useRef(false);
-    useEffect(() => {
-        console.log('[TraitStateMachine] fetchedDataContext effect fired, context:', fetchedDataContext ? 'exists' : 'null');
-        if (!fetchedDataContext) return;
-        const bindings = traitBindingsRef.current;
-        for (const binding of bindings) {
-            const entityName = binding.linkedEntity;
-            if (!entityName) continue;
-            const records = fetchedDataContext.getData(entityName);
-            console.log('[TraitStateMachine] Data check for', entityName, ':', records.length, 'records, loading:', fetchedDataContext.loading, 'dataSeen:', dataSeenRef.current);
-            if (records.length > 0 && !dataSeenRef.current) {
-                dataSeenRef.current = true;
-                console.log('[TraitStateMachine] FetchedDataContext received data, re-processing INIT');
-                enqueueAndDrain('INIT');
-                return;
-            }
-        }
-    }, [fetchedDataContext, enqueueAndDrain]);
 
     /**
      * Get current state for a specific trait

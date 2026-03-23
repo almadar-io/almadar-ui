@@ -4,71 +4,28 @@
  * OrbPreview Component
  *
  * Renders a live preview of an Orbital schema (.orb program).
- * Lazily loads the full runtime stack (providers, context, state machines)
- * and renders the schema's UI via UISlotRenderer.
+ * Uses static imports (no lazy loading) to ensure all providers,
+ * hooks, and components share the same module instances.
  *
  * Usage:
  *   <OrbPreview schema={orbJsonStringOrObject} />
+ *   <OrbPreview schema={schema} serverUrl="/api/orbitals" />
  *
  * @packageDocumentation
  */
 
-import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import type { ReactNode } from 'react';
+import React, { useEffect, useMemo, useCallback, useRef } from 'react';
 import { Box } from '../components/atoms/Box';
 import { Typography } from '../components/atoms/Typography';
+import { OrbitalProvider } from '../providers/OrbitalProvider';
+import { VerificationProvider } from '../providers/VerificationProvider';
+import { UISlotProvider, useUISlots } from '../context/UISlotContext';
+import { UISlotRenderer } from '../components/organisms/UISlotRenderer';
+import { useResolvedSchema } from './useResolvedSchema';
+import { useTraitStateMachine } from './useTraitStateMachine';
+import { useSlotsActions, useSlots, SlotsProvider } from './ui/SlotsContext';
+import { EntitySchemaProvider } from './EntitySchemaContext';
 import { ServerBridgeProvider, useServerBridge } from './ServerBridge';
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-interface SlotPatternEntry { pattern: Record<string, unknown>; props: Record<string, unknown> }
-interface SlotState { patterns: SlotPatternEntry[]; source?: { trait?: string } }
-
-interface RuntimeComponents {
-  OrbitalProvider: React.ComponentType<{ children: ReactNode; initialData?: Record<string, unknown[]>; skipTheme?: boolean; verification?: boolean }>;
-  UISlotProvider: React.ComponentType<{ children: ReactNode }>;
-  SlotsProvider: React.ComponentType<{ children: ReactNode }>;
-  EntitySchemaProvider: React.ComponentType<{ entities: unknown[]; children: ReactNode }>;
-  VerificationProvider: React.ComponentType<{ children: ReactNode; enabled?: boolean }>;
-  UISlotRenderer: React.ComponentType<{ includeHud?: boolean; hudMode?: 'fixed' | 'inline'; includeFloating?: boolean }>;
-  useResolvedSchema: (schema: unknown) => { page: unknown; traits: unknown[]; allEntities: Map<string, unknown>; ir: { pages?: Map<string, { traits: unknown[] }> } | null };
-  useTraitStateMachine: (traits: unknown[], actions: unknown, opts?: unknown) => { sendEvent: (event: string, payload?: Record<string, unknown>) => void };
-  useSlotsActions: () => unknown;
-  useSlots: () => Record<string, SlotState>;
-  useUISlots: () => { render: (cfg: { target: string; pattern: string; props?: Record<string, unknown>; sourceTrait?: string }) => void; clear: (slot: string) => void };
-}
-
-// ---------------------------------------------------------------------------
-// Runtime loader (cached)
-// ---------------------------------------------------------------------------
-
-let runtimeCache: RuntimeComponents | null = null;
-
-async function loadRuntime(): Promise<RuntimeComponents> {
-  if (runtimeCache) return runtimeCache;
-  const [providers, context, runtime, components] = await Promise.all([
-    import('@almadar/ui/providers'),
-    import('@almadar/ui/context'),
-    import('@almadar/ui/runtime'),
-    import('@almadar/ui/components'),
-  ]);
-  runtimeCache = {
-    OrbitalProvider: providers.OrbitalProvider,
-    UISlotProvider: context.UISlotProvider,
-    SlotsProvider: runtime.SlotsProvider,
-    EntitySchemaProvider: runtime.EntitySchemaProvider as unknown as RuntimeComponents['EntitySchemaProvider'],
-    VerificationProvider: providers.VerificationProvider,
-    UISlotRenderer: components.UISlotRenderer,
-    useResolvedSchema: runtime.useResolvedSchema as unknown as RuntimeComponents['useResolvedSchema'],
-    useTraitStateMachine: runtime.useTraitStateMachine as unknown as RuntimeComponents['useTraitStateMachine'],
-    useSlotsActions: runtime.useSlotsActions,
-    useSlots: runtime.useSlots,
-    useUISlots: context.useUISlots as unknown as RuntimeComponents['useUISlots'],
-  } satisfies Record<string, unknown> as RuntimeComponents;
-  return runtimeCache;
-}
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -93,23 +50,24 @@ function normalizeChild(child: Record<string, unknown>): Record<string, unknown>
  * Bridges SlotsStateContext (written by useTraitStateMachine) to
  * UISlotContext (read by UISlotRenderer). Syncs on every slot state change.
  */
-function SlotBridge({ rt }: { rt: RuntimeComponents }) {
-  const slots = rt.useSlots();
-  const { render, clear } = rt.useUISlots();
+function SlotBridge() {
+  const slots = useSlots();
+  const { render, clear } = useUISlots();
 
   useEffect(() => {
     for (const [slotName, slotState] of Object.entries(slots)) {
       if (slotState.patterns.length === 0) {
-        clear(slotName);
+        clear(slotName as Parameters<typeof clear>[0]);
         continue;
       }
       const entry = slotState.patterns[slotState.patterns.length - 1];
-      const { type: patternType, children, ...inlineProps } = entry.pattern;
+      const patternRecord = entry.pattern as unknown as Record<string, unknown>;
+      const { type: patternType, children, ...inlineProps } = patternRecord;
       const normalizedChildren = Array.isArray(children)
         ? children.map((c) => normalizeChild(c as Record<string, unknown>))
         : children;
       render({
-        target: slotName,
+        target: slotName as Parameters<typeof render>[0]['target'],
         pattern: patternType as string,
         props: {
           ...inlineProps,
@@ -119,7 +77,7 @@ function SlotBridge({ rt }: { rt: RuntimeComponents }) {
         sourceTrait: slotState.source?.trait,
       });
     }
-  }, [slots]);
+  }, [slots, render, clear]);
 
   return null;
 }
@@ -129,41 +87,63 @@ function SlotBridge({ rt }: { rt: RuntimeComponents }) {
  * transition execute. Must be inside SlotsProvider + EntitySchemaProvider.
  *
  * When `orbitalNames` is provided (server bridge mode), events are forwarded
- * to the server after local processing via onEventProcessed.
+ * to the server after local processing. Server response provides enriched
+ * patterns with entity data injected via enrichFromResponse.
  */
-function TraitInitializer({ rt, traits, orbitalNames }: {
-  rt: RuntimeComponents;
+function TraitInitializer({ traits, orbitalNames }: {
   traits: unknown[];
   orbitalNames?: string[];
 }) {
-  const slotsActions = rt.useSlotsActions();
+  const slotsActions = useSlotsActions();
   const bridge = useServerBridge();
 
-  const onEventProcessed = useCallback((event: string, payload?: Record<string, unknown>) => {
+  // Forward events to server, apply enriched effects directly to slots
+  const onEventProcessed = useCallback(async (event: string, payload?: Record<string, unknown>) => {
     if (!bridge.connected || !orbitalNames?.length) return;
     for (const name of orbitalNames) {
-      bridge.sendEvent(name, event, payload);
+      const effects = await bridge.sendEvent(name, event, payload);
+      for (const eff of effects) {
+        if (eff.type === 'render-ui' && eff.slot && eff.pattern) {
+          slotsActions.setSlotPatterns(
+            eff.slot,
+            [{ pattern: eff.pattern as Parameters<typeof slotsActions.setSlotPatterns>[1][0]['pattern'], props: {} }],
+            { trait: 'server', state: 'server', transition: 'server-effect' },
+          );
+        }
+      }
     }
-  }, [bridge.connected, bridge.sendEvent, orbitalNames]);
+  }, [bridge.connected, bridge.sendEvent, orbitalNames, slotsActions]);
 
   const opts = orbitalNames ? { onEventProcessed } : {};
-  const { sendEvent } = rt.useTraitStateMachine(traits, slotsActions, opts);
+  const { sendEvent } = useTraitStateMachine(traits as Parameters<typeof useTraitStateMachine>[0], slotsActions, opts);
 
-  // Send INIT after mount
+  // Local INIT - only when no server bridge (server INIT provides enriched data)
   useEffect(() => {
+    if (orbitalNames?.length) return;
     const t = setTimeout(() => sendEvent('INIT'), 50);
     return () => clearTimeout(t);
-  }, [traits]);
+  }, [traits, orbitalNames, sendEvent]);
 
-  // Re-send INIT to server when bridge connects (fixes timing: local INIT fires before server is ready)
+  // Server INIT when bridge connects. Apply enriched effects to slots.
   const initSentRef = useRef(false);
   useEffect(() => {
     if (!bridge.connected || !orbitalNames?.length || initSentRef.current) return;
     initSentRef.current = true;
-    for (const name of orbitalNames) {
-      bridge.sendEvent(name, 'INIT', {});
-    }
-  }, [bridge.connected, orbitalNames, bridge.sendEvent]);
+    (async () => {
+      for (const name of orbitalNames) {
+        const effects = await bridge.sendEvent(name, 'INIT', {});
+        for (const eff of effects) {
+          if (eff.type === 'render-ui' && eff.slot && eff.pattern) {
+            slotsActions.setSlotPatterns(
+              eff.slot,
+              [{ pattern: eff.pattern as Parameters<typeof slotsActions.setSlotPatterns>[1][0]['pattern'], props: {} }],
+              { trait: 'server', state: 'server', transition: 'server-effect' },
+            );
+          }
+        }
+      }
+    })();
+  }, [bridge.connected, orbitalNames, bridge.sendEvent, slotsActions]);
 
   return null;
 }
@@ -173,13 +153,11 @@ function TraitInitializer({ rt, traits, orbitalNames }: {
  * When `serverUrl` is provided, wraps with ServerBridgeProvider and
  * forwards events to the server after local processing.
  */
-function SchemaRunner({ rt, schema, mockData, serverUrl }: {
-  rt: RuntimeComponents;
+function SchemaRunner({ schema, serverUrl }: {
   schema: unknown;
-  mockData: Record<string, unknown[]>;
   serverUrl?: string;
 }) {
-  const { traits, allEntities, ir } = rt.useResolvedSchema(schema);
+  const { traits, allEntities, ir } = useResolvedSchema(schema as Parameters<typeof useResolvedSchema>[0]);
 
   // For multi-page schemas, collect traits from ALL pages
   const allPageTraits = useMemo(() => {
@@ -188,7 +166,7 @@ function SchemaRunner({ rt, schema, mockData, serverUrl }: {
     const seen = new Set<string>();
     for (const page of ir.pages.values()) {
       for (const t of page.traits) {
-        const binding = t as Record<string, unknown>;
+        const binding = t as unknown as Record<string, unknown>;
         const traitObj = binding.trait as Record<string, unknown> | undefined;
         const name = (traitObj?.name ?? binding.name ?? '') as string;
         if (name && !seen.has(name)) {
@@ -211,17 +189,17 @@ function SchemaRunner({ rt, schema, mockData, serverUrl }: {
   }, [schema]);
 
   const inner = (
-    <rt.VerificationProvider enabled>
-      <rt.SlotsProvider>
-        <rt.EntitySchemaProvider entities={Array.from(allEntities.values())}>
-          <TraitInitializer rt={rt} traits={allPageTraits} orbitalNames={serverUrl ? orbitalNames : undefined} />
-          <SlotBridge rt={rt} />
+    <VerificationProvider enabled>
+      <SlotsProvider>
+        <EntitySchemaProvider entities={Array.from(allEntities.values())}>
+          <TraitInitializer traits={allPageTraits} orbitalNames={serverUrl ? orbitalNames : undefined} />
+          <SlotBridge />
           <Box className="min-h-full p-4">
-            <rt.UISlotRenderer includeHud hudMode="inline" includeFloating />
+            <UISlotRenderer includeHud hudMode="inline" includeFloating />
           </Box>
-        </rt.EntitySchemaProvider>
-      </rt.SlotsProvider>
-    </rt.VerificationProvider>
+        </EntitySchemaProvider>
+      </SlotsProvider>
+    </VerificationProvider>
   );
 
   if (serverUrl) {
@@ -255,13 +233,13 @@ export interface OrbPreviewProps {
 /**
  * Renders a live preview of an Orbital schema.
  *
- * Lazily loads the full Almadar runtime (providers, state machines, slot system)
- * and renders the schema's UI. Suitable for documentation sites, playgrounds,
- * and any context where you want to show a running .orb program.
+ * Uses static imports for all runtime components to ensure providers
+ * and hooks share the same module instances (no context duplication).
  *
  * @example
  * ```tsx
  * <OrbPreview schema={orbJsonString} height="300px" />
+ * <OrbPreview schema={schema} serverUrl="/api/orbitals" />
  * ```
  */
 export function OrbPreview({
@@ -271,9 +249,6 @@ export function OrbPreview({
   className,
   serverUrl,
 }: OrbPreviewProps): React.ReactElement {
-  const [rt, setRt] = useState<RuntimeComponents | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
   const parsedSchema = useMemo(() => {
     if (typeof schema === 'string') {
       try {
@@ -285,10 +260,6 @@ export function OrbPreview({
     return schema;
   }, [schema]);
 
-  useEffect(() => {
-    loadRuntime().then(setRt).catch((e) => setError(String(e)));
-  }, []);
-
   if (parsedSchema.error) {
     return (
       <Box className={className} style={{ height }}>
@@ -299,34 +270,16 @@ export function OrbPreview({
     );
   }
 
-  if (error) {
-    return (
-      <Box className={className} style={{ height }}>
-        <Typography as="pre" color="error" variant="small" className="font-mono whitespace-pre-wrap break-all m-0 p-4">
-          {error}
-        </Typography>
-      </Box>
-    );
-  }
-
-  if (!rt) {
-    return (
-      <Box className={`flex items-center justify-center ${className ?? ''}`} style={{ height }}>
-        <Typography color="muted" variant="small">Loading runtime...</Typography>
-      </Box>
-    );
-  }
-
   return (
     <Box
       className={`overflow-auto border border-[var(--color-border)] rounded-[var(--radius-md)] ${className ?? ''}`}
       style={{ height }}
     >
-      <rt.OrbitalProvider initialData={mockData} skipTheme verification>
-        <rt.UISlotProvider>
-          <SchemaRunner rt={rt} schema={parsedSchema} mockData={mockData} serverUrl={serverUrl} />
-        </rt.UISlotProvider>
-      </rt.OrbitalProvider>
+      <OrbitalProvider initialData={mockData} skipTheme verification>
+        <UISlotProvider>
+          <SchemaRunner schema={parsedSchema} serverUrl={serverUrl} />
+        </UISlotProvider>
+      </OrbitalProvider>
     </Box>
   );
 }
