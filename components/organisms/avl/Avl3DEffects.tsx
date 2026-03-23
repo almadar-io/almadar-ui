@@ -128,13 +128,13 @@ export const Avl3DEffects: React.FC<Avl3DEffectsProps> = ({
           mipmapBlur
         />
 
-        {dof && (
+        {dof ? (
           <DepthOfField
             focusDistance={dof.focusDistance}
             focalLength={dof.focalLength}
             bokehScale={dof.bokehScale}
           />
-        )}
+        ) : null}
 
         <Vignette
           eskil={false}

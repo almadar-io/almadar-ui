@@ -64,7 +64,7 @@ const ServerBridgeContext = createContext<ServerBridgeContextValue | null>(null)
 export function useServerBridge(): ServerBridgeContextValue {
   const ctx = useContext(ServerBridgeContext);
   if (!ctx) {
-    return { connected: false, sendEvent: async () => {} };
+    return { connected: false, sendEvent: async () => [] };
   }
   return ctx;
 }
