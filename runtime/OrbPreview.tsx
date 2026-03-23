@@ -13,10 +13,11 @@
  * @packageDocumentation
  */
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { Box } from '../components/atoms/Box';
 import { Typography } from '../components/atoms/Typography';
+import { ServerBridgeProvider, useServerBridge } from './ServerBridge';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -126,23 +127,58 @@ function SlotBridge({ rt }: { rt: RuntimeComponents }) {
 /**
  * Fires INIT event after mount so render-ui effects on the INIT
  * transition execute. Must be inside SlotsProvider + EntitySchemaProvider.
+ *
+ * When `orbitalNames` is provided (server bridge mode), events are forwarded
+ * to the server after local processing via onEventProcessed.
  */
-function TraitInitializer({ rt, traits }: { rt: RuntimeComponents; traits: unknown[] }) {
+function TraitInitializer({ rt, traits, orbitalNames }: {
+  rt: RuntimeComponents;
+  traits: unknown[];
+  orbitalNames?: string[];
+}) {
   const slotsActions = rt.useSlotsActions();
-  const { sendEvent } = rt.useTraitStateMachine(traits, slotsActions, {});
+  const bridge = useServerBridge();
 
+  const onEventProcessed = useCallback((event: string, payload?: Record<string, unknown>) => {
+    if (!bridge.connected || !orbitalNames?.length) return;
+    for (const name of orbitalNames) {
+      bridge.sendEvent(name, event, payload);
+    }
+  }, [bridge.connected, bridge.sendEvent, orbitalNames]);
+
+  const opts = orbitalNames ? { onEventProcessed } : {};
+  const { sendEvent } = rt.useTraitStateMachine(traits, slotsActions, opts);
+
+  // Send INIT after mount
   useEffect(() => {
     const t = setTimeout(() => sendEvent('INIT'), 50);
     return () => clearTimeout(t);
   }, [traits]);
+
+  // Re-send INIT to server when bridge connects (fixes timing: local INIT fires before server is ready)
+  const initSentRef = useRef(false);
+  useEffect(() => {
+    if (!bridge.connected || !orbitalNames?.length || initSentRef.current) return;
+    initSentRef.current = true;
+    for (const name of orbitalNames) {
+      bridge.sendEvent(name, 'INIT', {});
+    }
+  }, [bridge.connected, orbitalNames, bridge.sendEvent]);
 
   return null;
 }
 
 /**
  * Resolves schema, mounts trait state machines, and renders the UI.
+ * When `serverUrl` is provided, wraps with ServerBridgeProvider and
+ * forwards events to the server after local processing.
  */
-function SchemaRunner({ rt, schema, mockData }: { rt: RuntimeComponents; schema: unknown; mockData: Record<string, unknown[]> }) {
+function SchemaRunner({ rt, schema, mockData, serverUrl }: {
+  rt: RuntimeComponents;
+  schema: unknown;
+  mockData: Record<string, unknown[]>;
+  serverUrl?: string;
+}) {
   const { traits, allEntities, ir } = rt.useResolvedSchema(schema);
 
   // For multi-page schemas, collect traits from ALL pages
@@ -164,11 +200,21 @@ function SchemaRunner({ rt, schema, mockData }: { rt: RuntimeComponents; schema:
     return combined.length > 0 ? combined : traits;
   }, [ir, traits]);
 
-  return (
+  // Extract orbital names from schema for server event forwarding
+  const orbitalNames = useMemo(() => {
+    const parsed = schema as Record<string, unknown>;
+    const orbitals = parsed?.orbitals as Array<Record<string, unknown>> | undefined;
+    if (!orbitals) return [];
+    return orbitals
+      .filter((o) => typeof o.name === 'string')
+      .map((o) => o.name as string);
+  }, [schema]);
+
+  const inner = (
     <rt.VerificationProvider enabled>
       <rt.SlotsProvider>
         <rt.EntitySchemaProvider entities={Array.from(allEntities.values())}>
-          <TraitInitializer rt={rt} traits={allPageTraits} />
+          <TraitInitializer rt={rt} traits={allPageTraits} orbitalNames={serverUrl ? orbitalNames : undefined} />
           <SlotBridge rt={rt} />
           <Box className="min-h-full p-4">
             <rt.UISlotRenderer includeHud hudMode="inline" includeFloating />
@@ -177,6 +223,16 @@ function SchemaRunner({ rt, schema, mockData }: { rt: RuntimeComponents; schema:
       </rt.SlotsProvider>
     </rt.VerificationProvider>
   );
+
+  if (serverUrl) {
+    return (
+      <ServerBridgeProvider schema={schema} serverUrl={serverUrl}>
+        {inner}
+      </ServerBridgeProvider>
+    );
+  }
+
+  return inner;
 }
 
 // ---------------------------------------------------------------------------
@@ -192,6 +248,8 @@ export interface OrbPreviewProps {
   height?: string;
   /** CSS class for the outer container. */
   className?: string;
+  /** Server URL for dual execution (e.g. "/api/orbitals"). When set, events are forwarded to the server. */
+  serverUrl?: string;
 }
 
 /**
@@ -211,6 +269,7 @@ export function OrbPreview({
   mockData = {},
   height = '400px',
   className,
+  serverUrl,
 }: OrbPreviewProps): React.ReactElement {
   const [rt, setRt] = useState<RuntimeComponents | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -265,7 +324,7 @@ export function OrbPreview({
     >
       <rt.OrbitalProvider initialData={mockData} skipTheme verification>
         <rt.UISlotProvider>
-          <SchemaRunner rt={rt} schema={parsedSchema} mockData={mockData} />
+          <SchemaRunner rt={rt} schema={parsedSchema} mockData={mockData} serverUrl={serverUrl} />
         </rt.UISlotProvider>
       </rt.OrbitalProvider>
     </Box>

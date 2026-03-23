@@ -164,6 +164,7 @@ export function useTraitStateMachine(
     useEffect(() => { traitStatesRef.current = traitStates; }, [traitStates]);
     useEffect(() => { fetchedDataContextRef.current = fetchedDataContext; }, [fetchedDataContext]);
 
+
     // Register traits with debug registry and clean up on unmount/rebind
     useEffect(() => {
         const mgr = managerRef.current;
@@ -795,6 +796,29 @@ export function useTraitStateMachine(
     ) => {
         enqueueAndDrain(eventKey, payload);
     }, [enqueueAndDrain]);
+
+    // Re-process INIT when FetchedDataContext receives server data.
+    // On first INIT, entity data is empty (server hasn't responded). When the server
+    // bridge stores fetched data via setData(), re-run INIT so render-ui effects
+    // resolve entity bindings against the now-populated data.
+    const dataSeenRef = useRef(false);
+    useEffect(() => {
+        console.log('[TraitStateMachine] fetchedDataContext effect fired, context:', fetchedDataContext ? 'exists' : 'null');
+        if (!fetchedDataContext) return;
+        const bindings = traitBindingsRef.current;
+        for (const binding of bindings) {
+            const entityName = binding.linkedEntity;
+            if (!entityName) continue;
+            const records = fetchedDataContext.getData(entityName);
+            console.log('[TraitStateMachine] Data check for', entityName, ':', records.length, 'records, loading:', fetchedDataContext.loading, 'dataSeen:', dataSeenRef.current);
+            if (records.length > 0 && !dataSeenRef.current) {
+                dataSeenRef.current = true;
+                console.log('[TraitStateMachine] FetchedDataContext received data, re-processing INIT');
+                enqueueAndDrain('INIT');
+                return;
+            }
+        }
+    }, [fetchedDataContext, enqueueAndDrain]);
 
     /**
      * Get current state for a specific trait

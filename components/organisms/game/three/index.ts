@@ -127,6 +127,31 @@ export {
     type GridCoordinate,
 } from './utils/grid3D';
 
+// ---------------------------------------------------------------------------
+// AVL 3D (exported here because Three.js-dependent, not from avl/index.ts)
+// ---------------------------------------------------------------------------
+export { Avl3DViewer, type Avl3DViewerProps } from '../../avl/Avl3DViewer';
+export { Avl3DApplicationScene, type Avl3DApplicationSceneProps } from '../../avl/Avl3DApplicationScene';
+export { Avl3DOrbitalScene, type Avl3DOrbitalSceneProps } from '../../avl/Avl3DOrbitalScene';
+export { Avl3DTraitScene, type Avl3DTraitSceneProps } from '../../avl/Avl3DTraitScene';
+export { Avl3DTransitionScene, type Avl3DTransitionSceneProps } from '../../avl/Avl3DTransitionScene';
+export { Avl3DEffects, type Avl3DEffectsProps } from '../../avl/Avl3DEffects';
+export { Avl3DContext, useAvl3DConfig, type Avl3DModelOverrides, type Avl3DConfig } from '../../avl/avl-3d-context';
+export {
+    AVL_3D_COLORS,
+    CAMERA_POSITIONS,
+    goldenSpiralPositions,
+    fibonacciSpherePositions,
+    orbitRingPositions,
+    arcCurve3D,
+    selfLoopCurve3D,
+    treeLayout3D,
+    type Position3D,
+} from '../../avl/avl-3d-layout';
+
+// ---------------------------------------------------------------------------
+// Utils
+// ---------------------------------------------------------------------------
 export {
     isInFrustum,
     filterByFrustum,

@@ -139,6 +139,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
       )}
       onClick={handleClose}
       role="dialog"
+      data-pattern="lightbox"
       aria-modal="true"
       aria-label={currentImage?.alt ?? "Image viewer"}
     >
