@@ -188,7 +188,7 @@
     "url": "https://github.com/almadar-io/almadar-ui.git",
     "directory": "docs/packages/ui"
   },
-  "license": "MIT",
+  "license": "BSL-1.1",
   "keywords": [
     "almadar",
     "ui",
