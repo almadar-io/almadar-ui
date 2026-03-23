@@ -141,6 +141,7 @@ export function MapView({
       data-testid="map-view"
     >
       <MapContainer
+        key={`map-${centerLat}-${centerLng}-${zoom}`}
         center={[centerLat, centerLng]}
         zoom={zoom}
         style={{ height: '100%', width: '100%' }}
