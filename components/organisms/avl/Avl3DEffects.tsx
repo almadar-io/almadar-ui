@@ -120,28 +120,32 @@ export const Avl3DEffects: React.FC<Avl3DEffectsProps> = ({
       ))}
 
       {/* Postprocessing stack */}
-      <EffectComposer>
-        <Bloom
-          intensity={bloom.intensity}
-          luminanceThreshold={bloom.luminanceThreshold}
-          luminanceSmoothing={bloom.luminanceSmoothing}
-          mipmapBlur
-        />
-
-        {dof ? (
+      {dof ? (
+        <EffectComposer>
+          <Bloom
+            intensity={bloom.intensity}
+            luminanceThreshold={bloom.luminanceThreshold}
+            luminanceSmoothing={bloom.luminanceSmoothing}
+            mipmapBlur
+          />
           <DepthOfField
             focusDistance={dof.focusDistance}
             focalLength={dof.focalLength}
             bokehScale={dof.bokehScale}
           />
-        ) : null}
-
-        <Vignette
-          eskil={false}
-          offset={0.2}
-          darkness={0.35}
-        />
-      </EffectComposer>
+          <Vignette eskil={false} offset={0.2} darkness={0.35} />
+        </EffectComposer>
+      ) : (
+        <EffectComposer>
+          <Bloom
+            intensity={bloom.intensity}
+            luminanceThreshold={bloom.luminanceThreshold}
+            luminanceSmoothing={bloom.luminanceSmoothing}
+            mipmapBlur
+          />
+          <Vignette eskil={false} offset={0.2} darkness={0.35} />
+        </EffectComposer>
+      )}
     </>
   );
 };
