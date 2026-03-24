@@ -80,21 +80,11 @@ export const AvlEmitListen: React.FC<AvlEmitListenProps> = ({
         style={animated ? { animation: 'avl-el-dash 1s linear infinite' } : undefined}
       />
 
-      {/* Emit icon on emitter side, above the wire */}
-      <AvlEffect
-        x={leftCx + orbR + 20}
-        y={cy - 20}
-        effectType="emit"
-        size={6}
-        color={color}
-        opacity={0.8}
-      />
-
-      {/* Event label above the wire */}
+      {/* Event label centered above the wire */}
       {eventName && (
         <text
           x={300}
-          y={cy - 18}
+          y={cy - 22}
           textAnchor="middle"
           fill={color}
           fontSize={11}
@@ -105,6 +95,16 @@ export const AvlEmitListen: React.FC<AvlEmitListenProps> = ({
           ~{eventName}
         </text>
       )}
+
+      {/* Emit icon centered above the label */}
+      <AvlEffect
+        x={300}
+        y={cy - 46}
+        effectType="emit"
+        size={7}
+        color={color}
+        opacity={0.6}
+      />
 
       {/* Tilde markers below the wire */}
       <text

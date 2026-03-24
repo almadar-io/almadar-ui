@@ -22,13 +22,18 @@ export interface ScoreBoardProps {
 }
 
 export function ScoreBoard({
-  score,
-  highScore,
-  combo,
-  multiplier,
-  level,
+  score: rawScore,
+  highScore: rawHighScore,
+  combo: rawCombo,
+  multiplier: rawMultiplier,
+  level: rawLevel,
   className,
 }: ScoreBoardProps) {
+  const score = rawScore ?? 0;
+  const highScore = rawHighScore ?? 0;
+  const combo = rawCombo ?? 0;
+  const multiplier = rawMultiplier ?? 1;
+  const level = rawLevel ?? 1;
   return (
     <Card
       className={cn(

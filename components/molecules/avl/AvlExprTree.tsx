@@ -35,7 +35,7 @@ function layoutTree(node: AvlExprTreeNode, x: number, y: number, hSpacing: numbe
   const startX = x - totalWidth / 2;
 
   const layoutChildren = children.map((child, i) =>
-    layoutTree(child, startX + i * hSpacing, y + vSpacing, hSpacing * 0.75, vSpacing)
+    layoutTree(child, startX + i * hSpacing, y + vSpacing, hSpacing * 0.85, vSpacing)
   );
 
   return { label: node.label, type: node.type, x, y, children: layoutChildren };
@@ -109,7 +109,7 @@ function renderNode(node: LayoutNode, color: string, glowId: string): React.Reac
         fontFamily="inherit"
         fontWeight={node.type === 'operator' ? 'bold' : 'normal'}
       >
-        {node.type === 'binding' ? `@${node.label}` : node.label}
+        {node.type === 'binding' && !node.label.startsWith('@') ? `@${node.label}` : node.label}
       </text>
 
       {/* Recurse children */}
@@ -128,10 +128,10 @@ export const AvlExprTree: React.FC<AvlExprTreeProps> = ({
     return { glow: `avl-et-${avlEtId}-glow` };
   }, []);
 
-  const layout = layoutTree(expression, 300, 60, 200, 90);
+  const layout = layoutTree(expression, 400, 60, 280, 100);
 
   return (
-    <svg viewBox="0 0 600 400" xmlns="http://www.w3.org/2000/svg" className={className}>
+    <svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg" className={className}>
       <defs>
         <filter id={ids.glow} x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur" />

@@ -30,9 +30,10 @@ export interface AnimatedCounterProps {
  * e.g. "$1.2M" -> { num: 1.2, prefix: "$", suffix: "M" }
  */
 function parseValue(value: string): { num: number; prefix: string; suffix: string; decimals: number } {
-  const match = value.match(/^([^0-9]*)([0-9]+(?:\.[0-9]+)?)(.*)$/);
+  if (!value) return { num: 0, prefix: '', suffix: '', decimals: 0 };
+  const match = String(value).match(/^([^0-9]*)([0-9]+(?:\.[0-9]+)?)(.*)$/);
   if (!match) {
-    return { num: 0, prefix: '', suffix: value, decimals: 0 };
+    return { num: 0, prefix: '', suffix: String(value), decimals: 0 };
   }
   const numStr = match[2];
   const decimalIdx = numStr.indexOf('.');

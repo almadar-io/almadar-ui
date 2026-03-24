@@ -27,12 +27,13 @@ function easeOut(t: number): number {
 }
 
 export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
-  value,
+  value: rawValue,
   duration = 600,
   prefix,
   suffix,
   className,
 }) => {
+  const value = typeof rawValue === 'number' && !Number.isNaN(rawValue) ? rawValue : 0;
   const [displayValue, setDisplayValue] = useState(value);
   const previousValueRef = useRef(value);
   const animationFrameRef = useRef<number | null>(null);

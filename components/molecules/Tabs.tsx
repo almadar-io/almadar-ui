@@ -191,7 +191,7 @@ export const Tabs: React.FC<TabsProps> = ({
               )}
             >
               {item.icon && <Icon icon={item.icon} size="sm" />}
-              <Typography variant="small" weight={isActive ? 'semibold' : 'normal'}>
+              <Typography variant="small" weight={isActive ? 'semibold' : 'normal'} className="!text-inherit">
                 {item.label}
               </Typography>
               {item.badge !== undefined && (

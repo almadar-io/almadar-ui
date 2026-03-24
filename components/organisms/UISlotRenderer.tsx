@@ -143,6 +143,8 @@ const PATTERNS_WITH_CHILDREN = new Set([
   "custom",
   "dashboard-layout",
   "game-shell",
+  "scaled-diagram",
+  "master-detail",
 ]);
 
 // ============================================================================
