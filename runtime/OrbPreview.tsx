@@ -26,6 +26,7 @@ import { useTraitStateMachine } from './useTraitStateMachine';
 import { useSlotsActions, useSlots, SlotsProvider } from './ui/SlotsContext';
 import { EntitySchemaProvider } from './EntitySchemaContext';
 import { ServerBridgeProvider, useServerBridge } from './ServerBridge';
+import { enrichFromResponse } from './enrichFromResponse';
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -50,7 +51,7 @@ function normalizeChild(child: Record<string, unknown>): Record<string, unknown>
  * Bridges SlotsStateContext (written by useTraitStateMachine) to
  * UISlotContext (read by UISlotRenderer). Syncs on every slot state change.
  */
-function SlotBridge() {
+function SlotBridge({ mockData }: { mockData?: Record<string, unknown[]> }) {
   const slots = useSlots();
   const { render, clear } = useUISlots();
 
@@ -61,7 +62,15 @@ function SlotBridge() {
         continue;
       }
       const entry = slotState.patterns[slotState.patterns.length - 1];
-      const patternRecord = entry.pattern as unknown as Record<string, unknown>;
+      let patternRecord = entry.pattern as unknown as Record<string, unknown>;
+
+      // Offline entity enrichment: resolve entity string refs to actual data
+      // from mockData. In server mode, enrichFromResponse does this on the
+      // server response. In offline mode, we do it here.
+      if (mockData && Object.keys(mockData).length > 0) {
+        patternRecord = enrichFromResponse(patternRecord, mockData);
+      }
+
       const { type: patternType, children, ...inlineProps } = patternRecord;
       const normalizedChildren = Array.isArray(children)
         ? children.map((c) => normalizeChild(c as Record<string, unknown>))
@@ -77,7 +86,7 @@ function SlotBridge() {
         sourceTrait: slotState.source?.trait,
       });
     }
-  }, [slots, render, clear]);
+  }, [slots, render, clear, mockData]);
 
   return null;
 }
@@ -153,9 +162,10 @@ function TraitInitializer({ traits, orbitalNames }: {
  * When `serverUrl` is provided, wraps with ServerBridgeProvider and
  * forwards events to the server after local processing.
  */
-function SchemaRunner({ schema, serverUrl }: {
+function SchemaRunner({ schema, serverUrl, mockData }: {
   schema: unknown;
   serverUrl?: string;
+  mockData?: Record<string, unknown[]>;
 }) {
   const { traits, allEntities, ir } = useResolvedSchema(schema as Parameters<typeof useResolvedSchema>[0]);
 
@@ -193,7 +203,7 @@ function SchemaRunner({ schema, serverUrl }: {
       <SlotsProvider>
         <EntitySchemaProvider entities={Array.from(allEntities.values())}>
           <TraitInitializer traits={allPageTraits} orbitalNames={serverUrl ? orbitalNames : undefined} />
-          <SlotBridge />
+          <SlotBridge mockData={!serverUrl ? mockData : undefined} />
           <Box className="min-h-full p-4">
             <UISlotRenderer includeHud hudMode="inline" includeFloating />
           </Box>
@@ -277,7 +287,7 @@ export function OrbPreview({
     >
       <OrbitalProvider initialData={mockData} skipTheme verification>
         <UISlotProvider>
-          <SchemaRunner schema={parsedSchema} serverUrl={serverUrl} />
+          <SchemaRunner schema={parsedSchema} serverUrl={serverUrl} mockData={mockData} />
         </UISlotProvider>
       </OrbitalProvider>
     </Box>
