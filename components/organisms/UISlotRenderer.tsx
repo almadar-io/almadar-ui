@@ -145,6 +145,15 @@ const PATTERNS_WITH_CHILDREN = new Set([
   "game-shell",
   "scaled-diagram",
   "master-detail",
+  "form-field",
+  "form-section",
+  "form",
+  "accordion",
+  "tabs",
+  "tab-content",
+  "collapsible",
+  "alert",
+  "dialog",
 ]);
 
 // ============================================================================
@@ -788,14 +797,18 @@ function SlotContentRenderer({
 
   // If we have a registered component, render it with props
   if (PatternComponent) {
-    // Check if this pattern supports children and has children defined
-    const supportsChildren = PATTERNS_WITH_CHILDREN.has(content.pattern);
+    // Check if this pattern has children to render.
+    // Any pattern with children array in props gets recursive rendering.
+    // The PATTERNS_WITH_CHILDREN set is kept as a fast-path hint but
+    // we also check for actual children presence to avoid missing any.
     const childrenConfig = content.props.children as
       | Array<{ type: string; props?: Record<string, unknown> }>
       | undefined;
+    const hasChildren = PATTERNS_WITH_CHILDREN.has(content.pattern)
+      || (Array.isArray(childrenConfig) && childrenConfig.length > 0);
 
-    // Render children recursively for layout patterns
-    const renderedChildren = supportsChildren
+    // Render children recursively
+    const renderedChildren = hasChildren
       ? renderPatternChildren(childrenConfig, onDismiss, content.id)
       : undefined;
 
