@@ -7,6 +7,9 @@ export type {
   AvlOperatorNamespace,
 } from './types';
 export { AVL_OPERATOR_COLORS, AVL_FIELD_TYPE_SHAPES } from './types';
+// V2 color system
+export type { StateRole, EffectCategory } from './types';
+export { STATE_COLORS, EFFECT_CATEGORY_COLORS, EFFECT_TYPE_TO_CATEGORY, CONNECTION_COLORS, getStateRole } from './types';
 
 // Tier 1: Structural Primitives
 export { AvlOrbital, type AvlOrbitalProps } from './AvlOrbital';

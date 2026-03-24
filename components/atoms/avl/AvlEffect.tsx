@@ -2,11 +2,14 @@
 
 import React from 'react';
 import type { AvlBaseProps, AvlEffectType } from './types';
+import { EFFECT_TYPE_TO_CATEGORY, EFFECT_CATEGORY_COLORS } from './types';
 
 export interface AvlEffectProps extends AvlBaseProps {
   effectType: AvlEffectType;
   size?: number;
   label?: string;
+  /** V2: Render a category-colored background circle behind the icon. */
+  showBackground?: boolean;
 }
 
 function effectIcon(type: AvlEffectType, x: number, y: number, s: number, color: string): React.ReactNode {
@@ -149,17 +152,29 @@ export const AvlEffect: React.FC<AvlEffectProps> = ({
   color = 'var(--color-primary)',
   opacity = 1,
   className,
+  showBackground = false,
 }) => {
+  const category = EFFECT_TYPE_TO_CATEGORY[effectType];
+  const catColors = EFFECT_CATEGORY_COLORS[category];
+  const iconColor = showBackground ? catColors.color : color;
+
   return (
     <g className={className} opacity={opacity}>
-      {effectIcon(effectType, x, y, size, color)}
+      {showBackground && (
+        <>
+          <circle cx={x} cy={y} r={size * 1.2} fill={catColors.bg} />
+          <circle cx={x} cy={y} r={size * 1.2} fill="none" stroke={catColors.color} strokeWidth={0.5} opacity={0.3} />
+        </>
+      )}
+      {effectIcon(effectType, x, y, size, iconColor)}
       {label && (
         <text
           x={x}
           y={y + size + 10}
           textAnchor="middle"
-          fill={color}
-          fontSize={8}
+          fill={iconColor}
+          fontSize={11}
+          fontWeight={500}
           fontFamily="inherit"
           opacity={0.7}
         >

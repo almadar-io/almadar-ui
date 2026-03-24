@@ -4,6 +4,8 @@ export { AvlClosedCircuit, type AvlClosedCircuitProps, type AvlClosedCircuitStat
 export { AvlEmitListen, type AvlEmitListenProps } from './AvlEmitListen';
 export { AvlSlotMap, type AvlSlotMapProps, type AvlSlotMapSlot } from './AvlSlotMap';
 export { AvlExprTree, type AvlExprTreeProps, type AvlExprTreeNode } from './AvlExprTree';
+export { AvlTransitionLane, type AvlTransitionLaneProps, type AvlTransitionLaneEffect } from './AvlTransitionLane';
+export { AvlSwimLane, type AvlSwimLaneProps } from './AvlSwimLane';
 export { ringPositions, arcPath, radialPositions, gridPositions, curveControlPoint } from './avl-layout';
 
 // 3D Molecules (Three.js dependent - import via game/three barrel for SSR safety)

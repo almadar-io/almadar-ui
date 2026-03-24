@@ -1,18 +1,19 @@
 'use client';
 
 /**
- * AvlTraitScene - Zoom Level 3
+ * AvlTraitScene V2 - Zoom Level 3
  *
- * Shows a trait's state machine using ELK (elkjs) for automatic
- * node and edge label placement. No label overlap.
+ * Left-to-right horizontal flow with color-coded states,
+ * transition lanes, and swim lanes for emit/listen events.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
 import ELK from 'elkjs/lib/elk.bundled.js';
 import { AvlState } from '../../atoms/avl/AvlState';
-import { AvlGuard } from '../../atoms/avl/AvlGuard';
-import { AvlEffect } from '../../atoms/avl/AvlEffect';
+import { AvlTransitionLane } from '../../molecules/avl/AvlTransitionLane';
+import { AvlSwimLane } from '../../molecules/avl/AvlSwimLane';
 import { AvlClickTarget } from './AvlClickTarget';
+import { getStateRole, CONNECTION_COLORS, type StateRole, type AvlEffectType } from '../../atoms/avl/types';
 import type { TraitLevelData } from './avl-schema-parser';
 
 export interface AvlTraitSceneProps {
@@ -22,7 +23,7 @@ export interface AvlTraitSceneProps {
 }
 
 // ---------------------------------------------------------------------------
-// ELK layout computation
+// ELK layout types
 // ---------------------------------------------------------------------------
 
 interface LayoutNode {
@@ -33,6 +34,8 @@ interface LayoutNode {
   height: number;
   isInitial?: boolean;
   isTerminal?: boolean;
+  role: StateRole;
+  transitionCount: number;
 }
 
 interface LayoutEdge {
@@ -42,12 +45,15 @@ interface LayoutEdge {
   event: string;
   effects: Array<{ type: string }>;
   guard: boolean;
+  guardExpr?: string;
   index: number;
-  // ELK-computed positions
   labelX: number;
   labelY: number;
+  labelW: number;
+  labelH: number;
   points: Array<{ x: number; y: number }>;
   isSelf: boolean;
+  isBackward: boolean;
 }
 
 interface ElkLayout {
@@ -57,41 +63,66 @@ interface ElkLayout {
   height: number;
 }
 
-const STATE_W = 110;
-const STATE_H = 38;
-const LABEL_W = 90;
-const LABEL_H = 20;
+// ---------------------------------------------------------------------------
+// Proportional state width
+// ---------------------------------------------------------------------------
+
+function stateWidth(transitionCount: number): number {
+  if (transitionCount >= 5) return 160;
+  if (transitionCount >= 3) return 130;
+  return 110;
+}
+
+const STATE_H = 40;
+
+// ---------------------------------------------------------------------------
+// ELK layout computation — V2: LEFT-TO-RIGHT
+// ---------------------------------------------------------------------------
 
 const elk = new ELK();
 
 async function computeLayout(data: TraitLevelData): Promise<ElkLayout> {
+  // Count transitions per state
+  const transitionCounts: Record<string, number> = {};
+  for (const s of data.states) transitionCounts[s.name] = 0;
+  for (const t of data.transitions) {
+    transitionCounts[t.from] = (transitionCounts[t.from] ?? 0) + 1;
+    transitionCounts[t.to] = (transitionCounts[t.to] ?? 0) + 1;
+  }
+  const maxTC = Math.max(...Object.values(transitionCounts), 0);
+
+  const LABEL_BASE_W = 100;
+  const LABEL_H = 44;
+
   const elkGraph = {
     id: 'root',
     layoutOptions: {
       'elk.algorithm': 'layered',
-      'elk.direction': 'DOWN',
-      'elk.spacing.nodeNode': '50',
+      'elk.direction': 'RIGHT',
+      'elk.spacing.nodeNode': '80',
       'elk.spacing.edgeNode': '30',
-      'elk.spacing.edgeEdge': '20',
-      'elk.spacing.edgeLabel': '8',
-      'elk.spacing.labelLabel': '6',
-      'elk.layered.spacing.nodeNodeBetweenLayers': '60',
+      'elk.spacing.edgeEdge': '24',
+      'elk.spacing.edgeLabel': '10',
+      'elk.spacing.labelLabel': '8',
+      'elk.layered.spacing.nodeNodeBetweenLayers': '100',
       'elk.edgeLabels.placement': 'CENTER',
       'elk.layered.mergeEdges': 'false',
       'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
     },
-    children: data.states.map(s => ({
-      id: s.name,
-      width: STATE_W,
-      height: STATE_H,
-      labels: [{ text: s.name, width: STATE_W - 10, height: 14 }],
-    })),
+    children: data.states.map(s => {
+      const tc = transitionCounts[s.name] ?? 0;
+      const w = stateWidth(tc);
+      return {
+        id: s.name,
+        width: w,
+        height: STATE_H,
+        labels: [{ text: s.name, width: w - 10, height: 14 }],
+      };
+    }),
     edges: data.transitions.map((t, i) => {
-      const hasEffects = t.effects.length > 0;
-      const labelH = hasEffects ? 38 : LABEL_H;
-      const textW = Math.max(t.event.length * 7, 40);
-      const iconsW = Math.min(t.effects.length, 4) * 14;
-      const labelW = Math.max(textW, iconsW, LABEL_W) + 20;
+      const textW = Math.max(t.event.length * 8, 60);
+      const iconsW = Math.min(t.effects.length, 6) * 28 + 20;
+      const labelW = Math.max(textW, iconsW, LABEL_BASE_W);
       return {
         id: `e${i}`,
         sources: [t.from],
@@ -99,26 +130,38 @@ async function computeLayout(data: TraitLevelData): Promise<ElkLayout> {
         labels: [{
           text: t.event,
           width: labelW,
-          height: labelH,
+          height: LABEL_H,
         }],
       };
     }),
   };
 
   const layout = await elk.layout(elkGraph) as Record<string, unknown>;
-
   const layoutChildren = (layout.children ?? []) as Array<Record<string, unknown>>;
   const layoutEdges = (layout.edges ?? []) as Array<Record<string, unknown>>;
 
-  const nodes: LayoutNode[] = layoutChildren.map(n => ({
-    id: n.id as string,
-    x: (n.x as number) ?? 0,
-    y: (n.y as number) ?? 0,
-    width: (n.width as number) ?? STATE_W,
-    height: (n.height as number) ?? STATE_H,
-    isInitial: data.states.find(s => s.name === (n.id as string))?.isInitial,
-    isTerminal: data.states.find(s => s.name === (n.id as string))?.isTerminal,
-  }));
+  // Build node position map for backward detection
+  const nodeXMap: Record<string, number> = {};
+  for (const n of layoutChildren) {
+    nodeXMap[n.id as string] = (n.x as number) ?? 0;
+  }
+
+  const nodes: LayoutNode[] = layoutChildren.map(n => {
+    const name = n.id as string;
+    const stateInfo = data.states.find(s => s.name === name);
+    const tc = transitionCounts[name] ?? 0;
+    return {
+      id: name,
+      x: (n.x as number) ?? 0,
+      y: (n.y as number) ?? 0,
+      width: (n.width as number) ?? 110,
+      height: (n.height as number) ?? STATE_H,
+      isInitial: stateInfo?.isInitial,
+      isTerminal: stateInfo?.isTerminal,
+      role: getStateRole(name, stateInfo?.isInitial, stateInfo?.isTerminal, tc, maxTC),
+      transitionCount: tc,
+    };
+  });
 
   const edges: LayoutEdge[] = layoutEdges.map((e, i) => {
     const t = data.transitions[i];
@@ -132,11 +175,14 @@ async function computeLayout(data: TraitLevelData): Promise<ElkLayout> {
       const endPoint = section.endPoint as { x: number; y: number };
       const bendPoints = (section.bendPoints ?? []) as Array<{ x: number; y: number }>;
       points.push({ x: startPoint.x, y: startPoint.y });
-      for (const bp of bendPoints) {
-        points.push({ x: bp.x, y: bp.y });
-      }
+      for (const bp of bendPoints) points.push({ x: bp.x, y: bp.y });
       points.push({ x: endPoint.x, y: endPoint.y });
     }
+
+    const isSelf = t.from === t.to;
+    const isBackward = !isSelf && (nodeXMap[t.to] ?? 0) <= (nodeXMap[t.from] ?? 0);
+    const lw = (label?.width as number) ?? LABEL_BASE_W;
+    const lh = (label?.height as number) ?? LABEL_H;
 
     return {
       id: e.id as string,
@@ -145,11 +191,15 @@ async function computeLayout(data: TraitLevelData): Promise<ElkLayout> {
       event: t.event,
       effects: t.effects,
       guard: !!t.guard,
+      guardExpr: typeof t.guard === 'string' ? t.guard : undefined,
       index: t.index,
-      labelX: ((label?.x as number) ?? 0) + ((label?.width as number) ?? 0) / 2,
-      labelY: ((label?.y as number) ?? 0) + ((label?.height as number) ?? 0) / 2,
+      labelX: (label?.x as number) ?? 0,
+      labelY: (label?.y as number) ?? 0,
+      labelW: lw,
+      labelH: lh,
       points,
-      isSelf: t.from === t.to,
+      isSelf,
+      isBackward,
     };
   });
 
@@ -162,29 +212,22 @@ async function computeLayout(data: TraitLevelData): Promise<ElkLayout> {
 }
 
 // ---------------------------------------------------------------------------
-// Edge path rendering
+// Edge path
 // ---------------------------------------------------------------------------
 
 function edgePath(points: Array<{ x: number; y: number }>): string {
   if (points.length === 0) return '';
   let d = `M ${points[0].x},${points[0].y}`;
-  for (let i = 1; i < points.length; i++) {
-    d += ` L ${points[i].x},${points[i].y}`;
-  }
+  for (let i = 1; i < points.length; i++) d += ` L ${points[i].x},${points[i].y}`;
   return d;
-}
-
-function mapEffectType(label: string): 'render-ui' | 'set' | 'persist' | 'fetch' | 'emit' | 'navigate' | 'notify' | 'call-service' | 'log' {
-  const map: Record<string, 'render-ui' | 'set' | 'persist' | 'fetch' | 'emit' | 'navigate' | 'notify' | 'call-service' | 'log'> = {
-    'render-ui': 'render-ui', set: 'set', persist: 'persist', fetch: 'fetch',
-    emit: 'emit', navigate: 'navigate', notify: 'notify', 'call-service': 'call-service', log: 'log',
-  };
-  return map[label] ?? 'log';
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
+
+const SWIM_GUTTER = 120;
+const CENTER_W = 360;
 
 export const AvlTraitScene: React.FC<AvlTraitSceneProps> = ({
   data,
@@ -192,9 +235,8 @@ export const AvlTraitScene: React.FC<AvlTraitSceneProps> = ({
   onTransitionClick,
 }) => {
   const [layout, setLayout] = useState<ElkLayout | null>(null);
-
-  // Compute layout when data changes
   const dataKey = useMemo(() => JSON.stringify(data), [data]);
+
   useEffect(() => {
     computeLayout(data).then(setLayout).catch(console.error);
   }, [dataKey]);
@@ -209,148 +251,88 @@ export const AvlTraitScene: React.FC<AvlTraitSceneProps> = ({
     );
   }
 
-  // Center the layout in the viewBox, scaling if needed
-  const padding = 30;
-  const availW = 600 - padding * 2;
-  const availH = 340;
+  const hasExternal = data.listenedEvents.length > 0 || data.emittedEvents.length > 0;
+  const viewW = hasExternal ? SWIM_GUTTER + CENTER_W + SWIM_GUTTER : CENTER_W + 60;
+  const machineOffsetX = hasExternal ? 0 : 30;
+
+  // Scale the ELK layout to fit the center area
+  const padding = 20;
+  const availW = CENTER_W - padding * 2;
+  const availH = 300;
   const scale = Math.min(1, availW / layout.width, availH / layout.height);
   const scaledW = layout.width * scale;
   const scaledH = layout.height * scale;
   const offsetX = padding + (availW - scaledW) / 2;
-  const offsetY = 60 + (availH - scaledH) / 2;
+  const offsetY = 50 + (availH - scaledH) / 2;
 
-  return (
+  const machineHeight = scaledH + 100;
+
+  const renderMachine = (
     <g>
       {/* Trait label */}
-      <text x={300} y={24} textAnchor="middle" fill={color} fontSize={16} fontWeight="bold">
+      <text x={CENTER_W / 2} y={20} textAnchor="middle" fill={color} fontSize={20} fontWeight="700" fontFamily="inherit">
         {data.name}
       </text>
-      <text x={300} y={42} textAnchor="middle" fill={color} fontSize={11} opacity={0.5}>
+      <text x={CENTER_W / 2} y={38} textAnchor="middle" fill={color} fontSize={11} opacity={0.5} fontFamily="inherit">
         linked to {data.linkedEntity}
       </text>
 
-      {/* Arrow marker */}
+      {/* Arrow markers */}
       <defs>
-        <marker id="traitArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-          <path d="M 0 0 L 10 5 L 0 10 z" fill={color} opacity={0.6} />
+        <marker id="traitArrowV2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill={CONNECTION_COLORS.forward.color} opacity={0.7} />
+        </marker>
+        <marker id="traitArrowBack" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill={CONNECTION_COLORS.backward.color} opacity={0.5} />
         </marker>
       </defs>
 
       <g transform={`translate(${offsetX},${offsetY}) scale(${scale})`}>
-        {/* Edges (behind nodes) */}
+        {/* Edge paths */}
         {layout.edges.map((edge) => {
-          const hasEmit = edge.effects.some(e => e.type === 'emit');
+          const conn = edge.isSelf
+            ? CONNECTION_COLORS.selfLoop
+            : edge.isBackward
+              ? CONNECTION_COLORS.backward
+              : CONNECTION_COLORS.forward;
+          const marker = edge.isBackward || edge.isSelf ? 'url(#traitArrowBack)' : 'url(#traitArrowV2)';
 
           return (
             <g key={edge.id}>
-              {/* Edge path */}
               <path
                 d={edgePath(edge.points)}
                 fill="none"
-                stroke={color}
-                strokeWidth={1.5}
-                opacity={0.4}
-                markerEnd="url(#traitArrow)"
+                stroke={conn.color}
+                strokeWidth={conn.width}
+                strokeDasharray={conn.dash === 'none' ? undefined : conn.dash}
+                opacity={0.5}
+                markerEnd={marker}
               />
 
-              {/* Compound label card: event name + effect icons in one card */}
-              {(() => {
-                const visibleEffects = edge.effects.slice(0, 4);
-                const textW = Math.max(edge.event.length * 7, 40);
-                const iconsW = visibleEffects.length * 14;
-                const cardW = Math.max(textW, iconsW) + 20;
-                const hasEffects = visibleEffects.length > 0;
-                const cardH = hasEffects ? 34 : 20;
-                const cardX = edge.labelX - cardW / 2;
-                const cardY = edge.labelY - 10;
-
-                return (
-                  <g>
-                    {/* Card background */}
-                    <rect
-                      x={cardX}
-                      y={cardY}
-                      width={cardW}
-                      height={cardH}
-                      rx={5}
-                      fill="var(--color-surface, white)"
-                      stroke={color}
-                      strokeWidth={0.8}
-                      opacity={0.95}
-                    />
-
-                    {/* Event name */}
-                    <text
-                      x={edge.labelX}
-                      y={cardY + 13}
-                      textAnchor="middle"
-                      fill={color}
-                      fontSize={11}
-                      fontWeight="600"
-                    >
-                      {edge.event}
-                    </text>
-
-                    {/* Effect icons row (inside the card) */}
-                    {hasEffects && (
-                      <g>
-                        {visibleEffects.map((eff, ei) => {
-                          const iconX = edge.labelX - (visibleEffects.length - 1) * 7 + ei * 14;
-                          return (
-                            <AvlEffect
-                              key={`${edge.id}-eff-${ei}`}
-                              x={iconX}
-                              y={cardY + 25}
-                              effectType={mapEffectType(eff.type)}
-                              size={9}
-                              color={color}
-                            />
-                          );
-                        })}
-                      </g>
-                    )}
-
-                    {/* Guard indicator (small diamond inside card) */}
-                    {edge.guard && (
-                      <AvlGuard
-                        x={cardX + cardW - 10}
-                        y={cardY + 10}
-                        label=""
-                        color={color}
-                        size={6}
-                      />
-                    )}
-
-                    {/* Emit pulse (outside card, to the left) */}
-                    {hasEmit && (
-                      <circle cx={cardX - 8} cy={cardY + cardH / 2} r={3} fill={color} opacity={0.5}>
-                        <animate attributeName="r" values="2;5;2" dur="1.5s" repeatCount="indefinite" />
-                        <animate attributeName="opacity" values="0.5;0.15;0.5" dur="1.5s" repeatCount="indefinite" />
-                      </circle>
-                    )}
-                  </g>
-                );
-              })()}
-
-              {/* Click target */}
-              {onTransitionClick && (
-                <AvlClickTarget
-                  x={edge.labelX - 50}
-                  y={edge.labelY - 15}
-                  width={100}
-                  height={30}
-                  onClick={() => onTransitionClick(edge.index, { x: edge.labelX + offsetX, y: edge.labelY + offsetY })}
-                  label={`${edge.event}: ${edge.from} -> ${edge.to}`}
-                  glowColor={color}
-                >
-                  <rect x={0} y={0} width={0} height={0} fill="transparent" />
-                </AvlClickTarget>
-              )}
+              {/* Transition lane at label position */}
+              <AvlTransitionLane
+                x={edge.labelX}
+                y={edge.labelY}
+                event={edge.event}
+                guard={edge.guardExpr}
+                effects={edge.effects.map(e => ({ type: e.type as AvlEffectType }))}
+                width={edge.labelW}
+                isBackward={edge.isBackward}
+                isSelfLoop={edge.isSelf}
+                color={color}
+                onTransitionClick={onTransitionClick
+                  ? () => onTransitionClick(edge.index, {
+                    x: edge.labelX + offsetX + (hasExternal ? SWIM_GUTTER : machineOffsetX),
+                    y: edge.labelY + offsetY,
+                  })
+                  : undefined
+                }
+              />
             </g>
           );
         })}
 
-        {/* State nodes (on top of edges) */}
+        {/* State nodes */}
         {layout.nodes.map((node) => (
           <g key={node.id}>
             <AvlState
@@ -361,28 +343,30 @@ export const AvlTraitScene: React.FC<AvlTraitSceneProps> = ({
               name={node.id}
               isInitial={node.isInitial}
               isTerminal={node.isTerminal}
+              role={node.role}
+              transitionCount={node.transitionCount}
               color={color}
             />
           </g>
         ))}
       </g>
-
-      {/* External emit indicators */}
-      {data.emittedEvents.map((evt, i) => (
-        <g key={`emit-${i}`}>
-          <line x1={450} y1={55 + i * 22} x2={585} y2={55 + i * 22} stroke={color} strokeWidth={1} strokeDasharray="4 3" opacity={0.3} />
-          <text x={588} y={59 + i * 22} fill={color} fontSize={10} opacity={0.5}>emit: {evt}</text>
-        </g>
-      ))}
-
-      {/* External listen indicators */}
-      {data.listenedEvents.map((evt, i) => (
-        <g key={`listen-${i}`}>
-          <line x1={15} y1={55 + i * 22} x2={150} y2={55 + i * 22} stroke={color} strokeWidth={1} strokeDasharray="4 3" opacity={0.3} />
-          <text x={5} y={59 + i * 22} fill={color} fontSize={10} opacity={0.5}>listen: {evt}</text>
-        </g>
-      ))}
     </g>
+  );
+
+  if (!hasExternal) {
+    return <g transform={`translate(${machineOffsetX}, 0)`}>{renderMachine}</g>;
+  }
+
+  return (
+    <AvlSwimLane
+      listenedEvents={data.listenedEvents}
+      emittedEvents={data.emittedEvents}
+      centerWidth={CENTER_W}
+      height={machineHeight}
+      color={color}
+    >
+      {renderMachine}
+    </AvlSwimLane>
   );
 };
 

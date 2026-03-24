@@ -40,6 +40,9 @@ export type {
   AvlOperatorNamespace,
 } from '../components/atoms/avl';
 export { AVL_OPERATOR_COLORS, AVL_FIELD_TYPE_SHAPES } from '../components/atoms/avl';
+// V2 color system
+export type { StateRole, EffectCategory } from '../components/atoms/avl';
+export { STATE_COLORS, EFFECT_CATEGORY_COLORS, EFFECT_TYPE_TO_CATEGORY, CONNECTION_COLORS, getStateRole } from '../components/atoms/avl';
 
 // AVL Molecules
 export { AvlStateMachine, type AvlStateMachineProps, type AvlStateMachineState, type AvlStateMachineTransition } from '../components/molecules/avl';

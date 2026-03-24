@@ -33,6 +33,7 @@ const meta: Meta<typeof AvlEffect> = {
     size: { control: 'number' },
     label: { control: 'text' },
     color: { control: 'color' },
+    showBackground: { control: 'boolean' },
     opacity: { control: { type: 'range', min: 0, max: 1, step: 0.1 } },
   },
 };
@@ -60,6 +61,14 @@ export const Navigate: Story = {
   args: { x: 100, y: 100, effectType: 'navigate', size: 12 },
 };
 
+export const WithBackground: Story = {
+  args: { x: 100, y: 100, effectType: 'render-ui', size: 16, showBackground: true, label: 'render-ui' },
+};
+
+export const LargeSize: Story = {
+  args: { x: 100, y: 100, effectType: 'persist', size: 20, label: 'persist' },
+};
+
 export const AllEffects: Story = {
   decorators: [
     (Story: React.ComponentType) => (
@@ -83,6 +92,37 @@ export const AllEffects: Story = {
             effectType={type}
             size={10}
             label={type}
+          />
+        );
+      })}
+    </g>
+  ),
+};
+
+export const AllEffectsWithBackground: Story = {
+  decorators: [
+    (Story: React.ComponentType) => (
+      <svg viewBox="0 0 280 320" width={280} height={320} xmlns="http://www.w3.org/2000/svg">
+        <Story />
+      </svg>
+    ),
+  ],
+  render: () => (
+    <g>
+      {ALL_EFFECT_TYPES.map((type, i) => {
+        const col = i % 3;
+        const row = Math.floor(i / 3);
+        const cx = 50 + col * 80;
+        const cy = 40 + row * 60;
+        return (
+          <AvlEffect
+            key={type}
+            x={cx}
+            y={cy}
+            effectType={type}
+            size={16}
+            label={type}
+            showBackground
           />
         );
       })}

@@ -45,3 +45,39 @@ export const Terminal: Story = {
 export const Named: Story = {
   args: { x: 50, y: 80, name: 'Loading', width: 120 },
 };
+
+// ─── V2 Role-Based Color Variants ────────────────────────
+
+export const InitialV2: Story = {
+  args: { x: 50, y: 80, name: 'Idle', isInitial: true, role: 'initial' },
+};
+
+export const TerminalV2: Story = {
+  args: { x: 50, y: 80, name: 'Done', isTerminal: true, role: 'terminal' },
+};
+
+export const HubV2: Story = {
+  args: { x: 30, y: 80, name: 'HasItems', role: 'hub', transitionCount: 6 },
+};
+
+export const ErrorV2: Story = {
+  args: { x: 50, y: 80, name: 'ErrorState', role: 'error' },
+};
+
+export const AllRoles: Story = {
+  decorators: [
+    (Story: React.ComponentType) => (
+      <svg viewBox="0 0 500 100" width={500} height={100} xmlns="http://www.w3.org/2000/svg">
+        <Story />
+      </svg>
+    ),
+  ],
+  render: () => (
+    <g>
+      <AvlState x={10} y={30} name="Idle" isInitial role="initial" />
+      <AvlState x={130} y={30} name="Loading" role="default" />
+      <AvlState x={250} y={30} name="Active" role="hub" transitionCount={5} />
+      <AvlState x={380} y={30} name="Done" isTerminal role="terminal" />
+    </g>
+  ),
+};
