@@ -103,6 +103,7 @@
   },
   "files": [
     "dist",
+    "index.css",
     "themes",
     "locales",
     "tailwind-preset.cjs"
@@ -119,9 +120,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@almadar/core": ">=2.1.0",
-    "@almadar/evaluator": ">=2.0.0",
-    "@almadar/patterns": ">=2.0.0",
+    "@almadar/core": ">=2.6.3",
+    "@almadar/evaluator": ">=2.5.4",
+    "@almadar/patterns": ">=2.8.7",
     "@almadar/runtime": ">=2.0.0",
     "clsx": "^2.1.0",
     "elkjs": "0.11.1",
