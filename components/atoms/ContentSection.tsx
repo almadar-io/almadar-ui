@@ -48,7 +48,9 @@ export const ContentSection = React.forwardRef<HTMLDivElement, ContentSectionPro
           className,
         )}
       >
-        {children}
+        <Box className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          {children}
+        </Box>
       </Box>
     );
   },

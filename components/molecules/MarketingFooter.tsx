@@ -47,7 +47,7 @@ export const MarketingFooter: React.FC<MarketingFooterProps> = ({
         className,
       )}
     >
-      <VStack gap="lg" className="w-full mx-auto">
+      <VStack gap="lg" className="max-w-7xl mx-auto">
         {/* Link columns */}
         <HStack gap="lg" align="start" className="flex-wrap w-full justify-between">
           {logo && (

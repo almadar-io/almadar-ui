@@ -199,12 +199,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
 
   const innerContent =
     image && imagePosition === 'right' ? (
-      <HStack gap="xl" align="center" className="w-full" responsive>
+      <HStack gap="xl" align="center" className="w-full max-w-7xl" responsive>
         {textContent}
         {imageNode}
       </HStack>
     ) : (
-      <VStack gap="xl" align={isCenter ? 'center' : 'start'} className="w-full">
+      <VStack gap="xl" align={isCenter ? 'center' : 'start'} className="w-full max-w-7xl">
         {textContent}
         {image && imagePosition === 'below' && imageNode}
       </VStack>

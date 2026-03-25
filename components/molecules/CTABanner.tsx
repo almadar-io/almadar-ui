@@ -59,7 +59,7 @@ export const CTABanner: React.FC<CTABannerProps> = ({
       <VStack
         gap="lg"
         align={align === 'center' ? 'center' : 'start'}
-        className="mx-auto"
+        className="max-w-7xl mx-auto"
       >
         <Typography variant="h2" align={align}>
           {title}
