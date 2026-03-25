@@ -17,14 +17,16 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 // Using CSS variables for theme-aware styling
 const variantStyles = {
   default: [
-    "bg-[var(--color-card)] border-none",
+    "bg-[var(--color-card)]",
+    "border-[length:var(--border-width)] border-[var(--color-border)]",
+    "shadow-[var(--shadow-sm)]",
     "transition-all duration-[var(--transition-normal)]",
     "hover:shadow-[var(--shadow-hover)] hover:-translate-y-0.5",
   ].join(" "),
   bordered: [
     "bg-[var(--color-card)]",
     "border-[length:var(--border-width)] border-[var(--color-border)]",
-    "shadow-none",
+    "shadow-[var(--shadow-sm)]",
     "transition-all duration-[var(--transition-normal)]",
     "hover:shadow-[var(--shadow-hover)] hover:-translate-y-0.5",
   ].join(" "),
