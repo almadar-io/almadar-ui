@@ -64,7 +64,7 @@ export const GameTemplate: React.FC<GameTemplateProps> = ({
         <Box
           padding="md"
           border
-          className="border-b-2 border-x-0 border-t-0 border-[var(--color-border)] flex items-center justify-between"
+          className="border-b-2 border-x-0 border-t-0 border-border flex items-center justify-between"
         >
           <Typography variant="h4">{title}</Typography>
 
@@ -105,7 +105,7 @@ export const GameTemplate: React.FC<GameTemplateProps> = ({
         <Box
           position="relative"
           fullWidth
-          className="flex-1 bg-[var(--color-muted)]"
+          className="flex-1 bg-muted"
         >
           {/* Main game content */}
           {children}
@@ -131,12 +131,12 @@ export const GameTemplate: React.FC<GameTemplateProps> = ({
           border
           shadow="sm"
           overflow="auto"
-          className="w-full lg:w-80 lg:border-l-2 lg:border-t-0 border-t-2 border-[var(--color-border)]"
+          className="w-full lg:w-80 lg:border-l-2 lg:border-t-0 border-t-2 border-border"
         >
           <Box
             padding="md"
             border
-            className="border-b-2 border-x-0 border-t-0 border-[var(--color-border)]"
+            className="border-b-2 border-x-0 border-t-0 border-border"
           >
             <Typography variant="h6">Debug Panel</Typography>
           </Box>

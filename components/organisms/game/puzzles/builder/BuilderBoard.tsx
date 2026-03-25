@@ -143,7 +143,7 @@ export function BuilderBoard({
             <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
           </Box>
         ) : entity.headerImage && headerError ? (
-          <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-[var(--color-muted)] to-[var(--color-accent)] opacity-60" />
+          <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-muted to-accent opacity-60" />
         ) : null}
 
         <Card className="p-4">
@@ -156,7 +156,7 @@ export function BuilderBoard({
         {/* Available components */}
         <Card className="p-4">
           <VStack gap="sm">
-            <Typography variant="small" weight="bold" className="uppercase tracking-wider text-[var(--color-muted-foreground)]">
+            <Typography variant="small" weight="bold" className="uppercase tracking-wider text-muted-foreground">
               {t('builder.components')}
             </Typography>
             <HStack gap="sm" className="flex-wrap">
@@ -176,7 +176,7 @@ export function BuilderBoard({
                 </Button>
               ))}
               {availableComponents.length === 0 && !submitted && (
-                <Typography variant="caption" className="text-[var(--color-muted-foreground)]">
+                <Typography variant="caption" className="text-muted-foreground">
                   {t('builder.allPlaced')}
                 </Typography>
               )}
@@ -187,7 +187,7 @@ export function BuilderBoard({
         {/* Blueprint slots */}
         <Card className="p-4">
           <VStack gap="sm">
-            <Typography variant="small" weight="bold" className="uppercase tracking-wider text-[var(--color-muted-foreground)]">
+            <Typography variant="small" weight="bold" className="uppercase tracking-wider text-muted-foreground">
               {t('builder.blueprint')}
             </Typography>
             <VStack gap="sm">
@@ -205,15 +205,15 @@ export function BuilderBoard({
                           ? 'border-green-500'
                           : 'border-red-500'
                         : selectedComponent
-                          ? 'border-dashed border-[var(--color-foreground)] cursor-pointer'
-                          : 'border-[var(--color-border)]'
+                          ? 'border-dashed border-foreground cursor-pointer'
+                          : 'border-border'
                     }`}
                     onClick={() => handlePlaceComponent(slot.id)}
                   >
                     <VStack gap="none" className="flex-1">
                       <Typography variant="body" weight="medium">{slot.label}</Typography>
                       {slot.description && (
-                        <Typography variant="caption" className="text-[var(--color-muted-foreground)]">{slot.description}</Typography>
+                        <Typography variant="caption" className="text-muted-foreground">{slot.description}</Typography>
                       )}
                     </VStack>
                     {placedComp ? (
@@ -230,7 +230,7 @@ export function BuilderBoard({
                         )}
                       </HStack>
                     ) : (
-                      <Typography variant="caption" className="text-[var(--color-muted-foreground)]">
+                      <Typography variant="caption" className="text-muted-foreground">
                         {t('builder.empty')}
                       </Typography>
                     )}

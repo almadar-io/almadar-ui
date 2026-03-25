@@ -81,11 +81,11 @@ export interface ProgressBarProps {
 }
 
 const colorClasses: Record<ProgressBarVariant, string> = {
-  default: "bg-[var(--color-primary)]",
-  primary: "bg-[var(--color-primary)]",
-  success: "bg-[var(--color-success)]",
-  warning: "bg-[var(--color-warning)]",
-  danger: "bg-[var(--color-error)]",
+  default: "bg-primary",
+  primary: "bg-primary",
+  success: "bg-success",
+  warning: "bg-warning",
+  danger: "bg-error",
 };
 
 const circularSizeClasses = {
@@ -118,17 +118,17 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
       <div className={cn("w-full", className)}>
         {label && (
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-sm font-bold text-[var(--color-foreground)]">
+            <span className="text-sm font-bold text-foreground">
               {label}
             </span>
             {effectiveShowPercentage && (
-              <span className="text-sm text-[var(--color-foreground)] font-medium">
+              <span className="text-sm text-foreground font-medium">
                 {Math.round(percentage)}%
               </span>
             )}
           </div>
         )}
-        <div className="w-full h-2 bg-[var(--color-muted)] border border-[var(--color-border)] overflow-hidden">
+        <div className="w-full h-2 bg-muted border border-border overflow-hidden">
           <div
             className={cn(
               "h-full transition-all duration-300 ease-out",
@@ -170,7 +170,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
             stroke="currentColor"
             strokeWidth="8"
             fill="none"
-            className="text-[var(--color-muted)]"
+            className="text-muted"
           />
           {/* Progress circle */}
           <circle
@@ -191,7 +191,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
         </svg>
         {effectiveShowPercentage && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-sm font-bold text-[var(--color-foreground)]">
+            <span className="text-sm font-bold text-foreground">
               {Math.round(percentage)}%
             </span>
           </div>
@@ -209,11 +209,11 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
       <div className={cn("w-full", className)}>
         {label && (
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-[var(--color-foreground)]">
+            <span className="text-sm font-medium text-foreground">
               {label}
             </span>
             {effectiveShowPercentage && (
-              <span className="text-sm text-[var(--color-muted-foreground)]">
+              <span className="text-sm text-muted-foreground">
                 {Math.round(percentage)}%
               </span>
             )}
@@ -227,7 +227,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
             return (
               <div
                 key={index}
-                className="flex-1 h-2 bg-[var(--color-muted)] border border-[var(--color-border)] overflow-hidden"
+                className="flex-1 h-2 bg-muted border border-border overflow-hidden"
               >
                 <div
                   className={cn(

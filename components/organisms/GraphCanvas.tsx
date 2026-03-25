@@ -384,7 +384,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                         gap="sm"
                         align="center"
                         justify="between"
-                        className="px-4 py-2 border-b border-[var(--color-border)]"
+                        className="px-4 py-2 border-b border-border"
                     >
                         {title && (
                             <Typography variant="h6" weight="semibold">
@@ -414,7 +414,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                 )}
 
                 {/* Canvas — necessary for performant graph rendering */}
-                <Box className="w-full bg-[var(--color-background)]">
+                <Box className="w-full bg-background">
                     <canvas
                         ref={canvasRef}
                         width={800}
@@ -443,11 +443,11 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
 
                 {/* Legend */}
                 {groups.length > 1 && (
-                    <HStack gap="md" className="px-4 py-2 border-t border-[var(--color-border)]" wrap>
+                    <HStack gap="md" className="px-4 py-2 border-t border-border" wrap>
                         {groups.map((group, idx) => (
                             <HStack key={group} gap="xs" align="center">
                                 <Box
-                                    className="w-3 h-3 rounded-[var(--radius-full)] flex-shrink-0"
+                                    className="w-3 h-3 rounded-full flex-shrink-0"
                                     style={{ backgroundColor: GROUP_COLORS[idx % GROUP_COLORS.length] }}
                                 />
                                 <Typography variant="caption" color="secondary">

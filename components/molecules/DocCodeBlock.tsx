@@ -46,7 +46,7 @@ export function DocCodeBlock({
   return (
     <Box
       className={cn(
-        'rounded-[var(--radius-md)] border border-[var(--color-border)] overflow-hidden',
+        'rounded-md border border-border overflow-hidden',
         className,
       )}
       position="relative"
@@ -56,7 +56,7 @@ export function DocCodeBlock({
         <HStack
           align="center"
           justify="between"
-          className="bg-[var(--color-muted)] px-4 py-2 border-b border-[var(--color-border)]"
+          className="bg-muted px-4 py-2 border-b border-border"
         >
           <HStack align="center" gap="sm">
             <Typography variant="caption" color="muted">
@@ -94,11 +94,11 @@ export function DocCodeBlock({
       ) : null}
 
       {/* Code area */}
-      <HStack gap="none" className="bg-[var(--color-foreground)] overflow-x-auto">
+      <HStack gap="none" className="bg-foreground overflow-x-auto">
         {/* Line numbers gutter */}
         {showLineNumbers ? (
           <Box
-            className="py-4 pl-4 pr-3 select-none border-r border-[var(--color-border)] flex-shrink-0"
+            className="py-4 pl-4 pr-3 select-none border-r border-border flex-shrink-0"
           >
             {lines.map((_, i) => (
               <Typography
@@ -118,7 +118,7 @@ export function DocCodeBlock({
         <Box
           as="pre"
           className={cn(
-            'p-4 font-mono text-sm text-[var(--color-background)] leading-6 flex-1 min-w-0',
+            'p-4 font-mono text-sm text-background leading-6 flex-1 min-w-0',
             !title && 'pr-24',
           )}
         >

@@ -115,7 +115,7 @@ export const RangeSlider = React.forwardRef<HTMLDivElement, RangeSliderProps>(
           {/* Background track */}
           <div
             className={cn(
-              "absolute inset-x-0 rounded-full bg-[var(--color-muted)]",
+              "absolute inset-x-0 rounded-full bg-muted",
               trackSizes[size],
             )}
             style={{ top: "50%", transform: "translateY(-50%)" }}
@@ -125,7 +125,7 @@ export const RangeSlider = React.forwardRef<HTMLDivElement, RangeSliderProps>(
           {bufferedPercentage !== undefined && (
             <div
               className={cn(
-                "absolute rounded-full bg-[var(--color-muted-foreground)] opacity-30",
+                "absolute rounded-full bg-muted-foreground opacity-30",
                 trackSizes[size],
               )}
               style={{
@@ -140,7 +140,7 @@ export const RangeSlider = React.forwardRef<HTMLDivElement, RangeSliderProps>(
           {/* Filled track */}
           <div
             className={cn(
-              "absolute rounded-full bg-[var(--color-primary)]",
+              "absolute rounded-full bg-primary",
               trackSizes[size],
             )}
             style={{
@@ -186,9 +186,9 @@ export const RangeSlider = React.forwardRef<HTMLDivElement, RangeSliderProps>(
           {/* Visual thumb */}
           <div
             className={cn(
-              "absolute rounded-full bg-[var(--color-primary-foreground)]",
-              "border-2 border-[var(--color-primary)]",
-              "shadow-[var(--shadow-sm)]",
+              "absolute rounded-full bg-primary-foreground",
+              "border-2 border-primary",
+              "shadow-sm",
               "pointer-events-none",
               "transition-transform duration-100",
               isDragging && "scale-110",
@@ -206,7 +206,7 @@ export const RangeSlider = React.forwardRef<HTMLDivElement, RangeSliderProps>(
             <div
               className={cn(
                 "absolute -top-8 px-2 py-0.5 rounded",
-                "bg-[var(--color-foreground)] text-[var(--color-background)]",
+                "bg-foreground text-background",
                 "text-xs font-medium whitespace-nowrap",
                 "pointer-events-none",
               )}
@@ -228,7 +228,7 @@ export const RangeSlider = React.forwardRef<HTMLDivElement, RangeSliderProps>(
               return (
                 <div
                   key={i}
-                  className="absolute w-px h-1.5 bg-[var(--color-muted-foreground)]"
+                  className="absolute w-px h-1.5 bg-muted-foreground"
                   style={{ left: `${tickPercent}%` }}
                 />
               );

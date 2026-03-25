@@ -29,14 +29,14 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
     >
       <Spinner size="lg" />
       {title && (
-        <Typography variant="h3" className="mt-4 text-lg font-semibold text-[var(--color-foreground)]">
+        <Typography variant="h3" className="mt-4 text-lg font-semibold text-foreground">
           {title}
         </Typography>
       )}
       <Typography
         variant="small"
         className={cn(
-          "text-[var(--color-muted-foreground)]",
+          "text-muted-foreground",
           title ? "mt-2" : "mt-4",
         )}
       >

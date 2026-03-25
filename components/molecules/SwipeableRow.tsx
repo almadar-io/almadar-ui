@@ -216,7 +216,7 @@ export const SwipeableRow: React.FC<SwipeableRowProps> = ({
           transition: isSwiping ? 'none' : 'transform 200ms ease-out',
         }}
         className={cn(
-          'relative bg-[var(--color-surface)]',
+          'relative bg-surface',
           'select-none',
         )}
         onPointerDown={handlePointerDown}

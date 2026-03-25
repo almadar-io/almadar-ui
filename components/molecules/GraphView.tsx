@@ -314,7 +314,7 @@ export const GraphView: React.FC<GraphViewProps> = ({
   if (nodes.length === 0) {
     return (
       <Box className={cn('flex items-center justify-center', className)} style={{ width: w, height: h }}>
-        <Box className="text-[var(--color-muted-foreground)] text-sm">No graph data</Box>
+        <Box className="text-muted-foreground text-sm">No graph data</Box>
       </Box>
     );
   }
@@ -322,7 +322,7 @@ export const GraphView: React.FC<GraphViewProps> = ({
   return (
     <Box
       ref={containerRef}
-      className={cn('relative overflow-hidden rounded-lg border border-[var(--color-border)] bg-[var(--color-card)]', className)}
+      className={cn('relative overflow-hidden rounded-lg border border-border bg-card', className)}
       style={{ width: propWidth ?? '100%', height: h }}
     >
       <svg

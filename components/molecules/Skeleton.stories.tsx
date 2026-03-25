@@ -106,7 +106,7 @@ export const SuspenseUsage: Story = {
   render: () => (
     <VStack gap="lg" className="p-6">
       <Typography variant="h3">Suspense Fallback Examples</Typography>
-      <Typography variant="small" className="text-[var(--color-muted-foreground)]">
+      <Typography variant="small" className="text-muted-foreground">
         These skeletons are designed to be used as Suspense fallbacks.
       </Typography>
       <VStack gap="sm">

@@ -45,16 +45,16 @@ export const InstallBox: React.FC<InstallBoxProps> = ({
       )}
       <Box
         className={cn(
-          'bg-[var(--color-foreground)]',
-          'rounded-[var(--radius-md)]',
-          'border-[length:var(--border-width)] border-[var(--color-border)]',
+          'bg-foreground',
+          'rounded-md',
+          'border-[length:var(--border-width)] border-border',
         )}
         padding="md"
       >
         <HStack gap="md" align="center">
           <Typography
             variant="body2"
-            className="font-mono flex-1 min-w-0 text-[var(--color-background)] select-all"
+            className="font-mono flex-1 min-w-0 text-background select-all"
             truncate
           >
             {command}
@@ -63,7 +63,7 @@ export const InstallBox: React.FC<InstallBoxProps> = ({
             variant="ghost"
             size="md"
             onClick={handleCopy}
-            className="flex-shrink-0 text-[var(--color-background)] hover:text-[var(--color-background)]"
+            className="flex-shrink-0 text-background hover:text-background"
           >
             {copied ? 'Copied!' : 'Copy'}
           </Button>

@@ -78,7 +78,7 @@ export const LandingPageTemplate: React.FC<LandingPageTemplateProps> = ({
       />
 
       {resolved.features.length > 0 && (
-        <Box className="bg-[var(--color-muted)]/20 py-16">
+        <Box className="bg-muted/20 py-16">
           <Container size="xl" padding="lg">
             <VStack gap="lg">
               <SectionHeader title="Features" />
@@ -110,7 +110,7 @@ export const LandingPageTemplate: React.FC<LandingPageTemplateProps> = ({
       )}
 
       {resolved.steps && resolved.steps.length > 0 && (
-        <Box className="bg-[var(--color-muted)]/20 py-16">
+        <Box className="bg-muted/20 py-16">
           <Container size="xl" padding="lg">
             <VStack gap="lg">
               <SectionHeader title="How It Works" />
@@ -158,7 +158,7 @@ export const LandingPageTemplate: React.FC<LandingPageTemplateProps> = ({
       />
 
       {(resolved.communityGithub ?? resolved.communityDiscord) && (
-        <Box className="bg-[var(--color-foreground)] text-[var(--color-background)] py-12">
+        <Box className="bg-foreground text-background py-12">
           <Container size="xl" padding="lg">
             <CommunityLinks
               github={resolved.communityGithub ? { url: resolved.communityGithub } : undefined}

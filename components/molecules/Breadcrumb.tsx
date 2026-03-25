@@ -110,8 +110,8 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
                   className={cn(
                     "flex items-center gap-1.5 transition-colors",
                     isLast
-                      ? "text-[var(--color-foreground)] font-bold"
-                      : "text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]",
+                      ? "text-foreground font-bold"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                   aria-current={isLast ? "page" : undefined}
                 >
@@ -132,10 +132,10 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
                   }}
                   className={cn(
                     "flex items-center gap-1.5 transition-colors",
-                    "focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)] focus:ring-offset-2",
+                    "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
                     isLast
-                      ? "text-[var(--color-foreground)] font-bold cursor-default"
-                      : "text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]",
+                      ? "text-foreground font-bold cursor-default"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                   aria-current={isLast ? "page" : undefined}
                   disabled={isLast}
@@ -154,7 +154,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
                 <Icon
                   icon={separator}
                   size="sm"
-                  className="text-[var(--color-muted-foreground)]"
+                  className="text-muted-foreground"
                 />
               )}
             </li>

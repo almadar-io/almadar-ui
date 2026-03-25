@@ -16,8 +16,8 @@ export const Default: Story = {
     ratio: '1:1',
     gap: 'md',
     children: [
-      <Box key="left" className="p-4 bg-[var(--color-muted)] rounded">Left Panel</Box>,
-      <Box key="right" className="p-4 bg-[var(--color-muted)] rounded">Right Panel</Box>,
+      <Box key="left" className="p-4 bg-muted rounded">Left Panel</Box>,
+      <Box key="right" className="p-4 bg-muted rounded">Right Panel</Box>,
     ],
   },
 };
@@ -27,8 +27,8 @@ export const SidebarContent: Story = {
     ratio: '1:3',
     gap: 'lg',
     children: [
-      <Box key="left" className="p-4 bg-[var(--color-muted)] rounded">Sidebar</Box>,
-      <Box key="right" className="p-4 bg-[var(--color-muted)] rounded">Main Content</Box>,
+      <Box key="left" className="p-4 bg-muted rounded">Sidebar</Box>,
+      <Box key="right" className="p-4 bg-muted rounded">Main Content</Box>,
     ],
   },
 };
@@ -39,8 +39,8 @@ export const Reversed: Story = {
     gap: 'md',
     reverse: true,
     children: [
-      <Box key="left" className="p-4 bg-[var(--color-muted)] rounded">First (shown right)</Box>,
-      <Box key="right" className="p-4 bg-[var(--color-muted)] rounded">Second (shown left)</Box>,
+      <Box key="left" className="p-4 bg-muted rounded">First (shown right)</Box>,
+      <Box key="right" className="p-4 bg-muted rounded">Second (shown left)</Box>,
     ],
   },
 };

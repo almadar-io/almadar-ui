@@ -49,7 +49,7 @@ export const BookNavBar: React.FC<BookNavBarProps> = ({
   return (
     <Box
       className={cn(
-        'sticky bottom-0 bg-[var(--color-background)] border-t border-[var(--color-border)] print:hidden z-10',
+        'sticky bottom-0 bg-background border-t border-border print:hidden z-10',
         className,
       )}
       style={{ direction }}
@@ -80,7 +80,7 @@ export const BookNavBar: React.FC<BookNavBarProps> = ({
           {chapterTitle && (
             <Typography
               variant="caption"
-              className="text-center block truncate text-[var(--color-muted-foreground)]"
+              className="text-center block truncate text-muted-foreground"
             >
               {chapterTitle}
             </Typography>

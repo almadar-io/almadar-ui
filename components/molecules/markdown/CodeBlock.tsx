@@ -107,7 +107,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
                 variant="ghost"
                 size="sm"
                 onClick={handleCopy}
-                className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity text-[var(--color-muted-foreground)] hover:text-white"
+                className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity text-muted-foreground hover:text-white"
                 aria-label="Copy code"
               >
                 {copied ? (

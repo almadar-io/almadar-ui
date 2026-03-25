@@ -52,7 +52,7 @@ export const ShowcaseCard: React.FC<ShowcaseCardProps> = ({
       <Box
         className={cn(
           'w-full aspect-video bg-cover bg-center',
-          'rounded-t-[var(--radius-md)]',
+          'rounded-t-md',
         )}
         style={{ backgroundImage: `url(${image.src})` }}
         role="img"

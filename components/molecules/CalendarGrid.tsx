@@ -202,7 +202,7 @@ export function CalendarGrid({
     >
       <Box className="min-w-[800px]">
         {/* Day Headers */}
-        <Box className="grid grid-cols-8 border-b border-[var(--color-border)]">
+        <Box className="grid grid-cols-8 border-b border-border">
           {/* Empty top-left corner for time column */}
           <Box className="p-2" />
           {weekDays.map((day) => {
@@ -212,7 +212,7 @@ export function CalendarGrid({
             return (
               <Box
                 key={day.toISOString()}
-                className="border-l border-[var(--color-border)]"
+                className="border-l border-border"
               >
                 <DayCell
                   date={day}
@@ -236,13 +236,13 @@ export function CalendarGrid({
           {resolvedTimeSlots.map((time) => (
             <Box
               key={time}
-              className="grid grid-cols-8 border-b border-[var(--color-border)]"
+              className="grid grid-cols-8 border-b border-border"
             >
               {/* Time label */}
               <Box className="p-2 text-right pr-3">
                 <Typography
                   variant="small"
-                  className="text-[var(--color-muted-foreground)]"
+                  className="text-muted-foreground"
                 >
                   {time}
                 </Typography>
@@ -263,7 +263,7 @@ export function CalendarGrid({
                     isOccupied={slotEvents.length > 0}
                     onClick={() => handleSlotClick(day, time)}
                     className={cn(
-                      "border-l border-[var(--color-border)]",
+                      "border-l border-border",
                       isToday && "bg-blue-50/30",
                     )}
                     {...(longPressEvent ? {

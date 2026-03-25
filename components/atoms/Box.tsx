@@ -143,31 +143,31 @@ const marginYStyles: Record<BoxMargin, string> = {
 // Using CSS variables for theme-aware styling
 const bgStyles: Record<BoxBg, string> = {
   transparent: "bg-transparent",
-  primary: "bg-[var(--color-primary)] text-[var(--color-primary-foreground)]",
+  primary: "bg-primary text-primary-foreground",
   secondary:
-    "bg-[var(--color-secondary)] text-[var(--color-secondary-foreground)]",
-  muted: "bg-[var(--color-muted)] text-[var(--color-foreground)]",
-  accent: "bg-[var(--color-accent)] text-[var(--color-accent-foreground)]",
-  surface: "bg-[var(--color-card)]",
-  overlay: "bg-[var(--color-card)]/80 backdrop-blur-sm",
+    "bg-secondary text-secondary-foreground",
+  muted: "bg-muted text-foreground",
+  accent: "bg-accent text-accent-foreground",
+  surface: "bg-card",
+  overlay: "bg-card/80 backdrop-blur-sm",
 };
 
 const roundedStyles: Record<BoxRounded, string> = {
   none: "rounded-none",
-  sm: "rounded-[var(--radius-sm)]",
-  md: "rounded-[var(--radius-md)]",
-  lg: "rounded-[var(--radius-lg)]",
-  xl: "rounded-[var(--radius-xl)]",
-  "2xl": "rounded-[var(--radius-xl)]",
-  full: "rounded-[var(--radius-full)]",
+  sm: "rounded-sm",
+  md: "rounded-md",
+  lg: "rounded-lg",
+  xl: "rounded-xl",
+  "2xl": "rounded-xl",
+  full: "rounded-full",
 };
 
 const shadowStyles: Record<BoxShadow, string> = {
   none: "shadow-none",
-  sm: "shadow-[var(--shadow-sm)]",
-  md: "shadow-[var(--shadow-main)]",
-  lg: "shadow-[var(--shadow-lg)]",
-  xl: "shadow-[var(--shadow-lg)]",
+  sm: "shadow-sm",
+  md: "shadow",
+  lg: "shadow-lg",
+  xl: "shadow-lg",
 };
 
 const displayStyles = {
@@ -269,7 +269,7 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
           bgStyles[bg],
           // Border - uses theme variables
           border &&
-            "border-[length:var(--border-width)] border-[var(--color-border)]",
+            "border-[length:var(--border-width)] border-border",
           // Rounded
           roundedStyles[rounded],
           // Shadow

@@ -15,18 +15,18 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const defaultServices = [
-  { name: 'Auth Service', layer: 'Core', layerColor: 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]' },
-  { name: 'User Service', layer: 'Core', layerColor: 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]' },
-  { name: 'Config Service', layer: 'Core', layerColor: 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]' },
-  { name: 'Notification Service', layer: 'Core', layerColor: 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]' },
-  { name: 'Payment Gateway', layer: 'Integration', layerColor: 'bg-[var(--color-success)] text-white' },
-  { name: 'Email Provider', layer: 'Integration', layerColor: 'bg-[var(--color-success)] text-white' },
-  { name: 'SMS Provider', layer: 'Integration', layerColor: 'bg-[var(--color-success)] text-white' },
-  { name: 'Storage CDN', layer: 'Integration', layerColor: 'bg-[var(--color-success)] text-white' },
-  { name: 'Product Catalog', layer: 'Domain', layerColor: 'bg-[var(--color-warning)] text-white' },
-  { name: 'Order Engine', layer: 'Domain', layerColor: 'bg-[var(--color-warning)] text-white' },
-  { name: 'Inventory Tracker', layer: 'Domain', layerColor: 'bg-[var(--color-warning)] text-white' },
-  { name: 'Analytics Engine', layer: 'Domain', layerColor: 'bg-[var(--color-warning)] text-white' },
+  { name: 'Auth Service', layer: 'Core', layerColor: 'bg-primary text-primary-foreground' },
+  { name: 'User Service', layer: 'Core', layerColor: 'bg-primary text-primary-foreground' },
+  { name: 'Config Service', layer: 'Core', layerColor: 'bg-primary text-primary-foreground' },
+  { name: 'Notification Service', layer: 'Core', layerColor: 'bg-primary text-primary-foreground' },
+  { name: 'Payment Gateway', layer: 'Integration', layerColor: 'bg-success text-white' },
+  { name: 'Email Provider', layer: 'Integration', layerColor: 'bg-success text-white' },
+  { name: 'SMS Provider', layer: 'Integration', layerColor: 'bg-success text-white' },
+  { name: 'Storage CDN', layer: 'Integration', layerColor: 'bg-success text-white' },
+  { name: 'Product Catalog', layer: 'Domain', layerColor: 'bg-warning text-white' },
+  { name: 'Order Engine', layer: 'Domain', layerColor: 'bg-warning text-white' },
+  { name: 'Inventory Tracker', layer: 'Domain', layerColor: 'bg-warning text-white' },
+  { name: 'Analytics Engine', layer: 'Domain', layerColor: 'bg-warning text-white' },
 ];
 
 export const Default: Story = {
@@ -49,12 +49,12 @@ export const ManyServices: Story = {
   args: {
     services: [
       ...defaultServices,
-      { name: 'Search Index', layer: 'Infrastructure', layerColor: 'bg-[var(--color-info)] text-white' },
-      { name: 'Cache Layer', layer: 'Infrastructure', layerColor: 'bg-[var(--color-info)] text-white' },
-      { name: 'Queue Service', layer: 'Infrastructure', layerColor: 'bg-[var(--color-info)] text-white' },
-      { name: 'Log Aggregator', layer: 'Infrastructure', layerColor: 'bg-[var(--color-info)] text-white' },
-      { name: 'Rate Limiter', layer: 'Infrastructure', layerColor: 'bg-[var(--color-info)] text-white' },
-      { name: 'Feature Flags', layer: 'Infrastructure', layerColor: 'bg-[var(--color-info)] text-white' },
+      { name: 'Search Index', layer: 'Infrastructure', layerColor: 'bg-info text-white' },
+      { name: 'Cache Layer', layer: 'Infrastructure', layerColor: 'bg-info text-white' },
+      { name: 'Queue Service', layer: 'Infrastructure', layerColor: 'bg-info text-white' },
+      { name: 'Log Aggregator', layer: 'Infrastructure', layerColor: 'bg-info text-white' },
+      { name: 'Rate Limiter', layer: 'Infrastructure', layerColor: 'bg-info text-white' },
+      { name: 'Feature Flags', layer: 'Infrastructure', layerColor: 'bg-info text-white' },
     ],
   },
 };

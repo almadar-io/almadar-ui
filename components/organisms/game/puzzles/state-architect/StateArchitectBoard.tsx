@@ -308,7 +308,7 @@ export function StateArchitectBoard({
                     <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
                 </Box>
             ) : entity.headerImage && headerError ? (
-                <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-[var(--color-muted)] to-[var(--color-accent)] opacity-60" />
+                <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-muted to-accent opacity-60" />
             ) : null}
 
             {/* Title */}

@@ -81,8 +81,8 @@ function SortableListInner<T = Record<string, unknown>>({
           <Box
             className={cn(
               'flex items-center justify-center',
-              'text-[var(--color-muted-foreground)]',
-              'hover:text-[var(--color-foreground)]',
+              'text-muted-foreground',
+              'hover:text-foreground',
               'transition-colors duration-100',
               'px-1',
             )}
@@ -102,7 +102,7 @@ function SortableListInner<T = Record<string, unknown>>({
             {/* Drop indicator line above this item */}
             {showDropIndicator && (
               <Box
-                className="h-0.5 bg-[var(--color-primary)] rounded-full"
+                className="h-0.5 bg-primary rounded-full"
                 style={{ margin: '0 8px' }}
               />
             )}

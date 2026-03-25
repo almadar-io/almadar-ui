@@ -253,7 +253,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
     // Show loading state
     if (isLoading) {
       return (
-        <Box className="col-span-full text-center py-8 text-[var(--color-muted-foreground)]">
+        <Box className="col-span-full text-center py-8 text-muted-foreground">
           <Typography variant="body" color="secondary">Loading items...</Typography>
         </Box>
       );
@@ -262,7 +262,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
     // Show error state
     if (error) {
       return (
-        <Box className="col-span-full text-center py-8 text-[var(--color-error)]">
+        <Box className="col-span-full text-center py-8 text-error">
           <Typography variant="body" color="error">Error loading items: {error.message}</Typography>
         </Box>
       );
@@ -270,7 +270,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
 
     if (normalizedData.length === 0) {
       return (
-        <Box className="col-span-full text-center py-12 text-[var(--color-muted-foreground)]">
+        <Box className="col-span-full text-center py-12 text-muted-foreground">
           <Typography variant="body" color="secondary">{t('empty.noItems') || 'No items found'}</Typography>
         </Box>
       );
@@ -288,9 +288,9 @@ export const CardGrid: React.FC<CardGridProps> = ({
           key={id}
           data-entity-row
           className={cn(
-            'bg-[var(--color-card)] rounded-[var(--radius-lg)] border border-[var(--color-border)]',
-            'shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-hover)]',
-            'cursor-pointer hover:border-[var(--color-primary)] transition-all',
+            'bg-card rounded-lg border border-border',
+            'shadow-sm hover:shadow-lg',
+            'cursor-pointer hover:border-primary transition-all',
             'flex flex-col'
           )}
           action="VIEW"
@@ -301,7 +301,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
             const imgUrl = getNestedValue(itemData, imageField);
             if (!imgUrl || typeof imgUrl !== 'string') return null;
             return (
-              <Box className="w-full aspect-video overflow-hidden rounded-t-[var(--radius-lg)]">
+              <Box className="w-full aspect-video overflow-hidden rounded-t-lg">
                 <img
                   src={imgUrl}
                   alt={titleValue !== undefined ? String(titleValue) : ''}
@@ -339,7 +339,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
                       size="sm"
                       onClick={handleActionClick(action, itemData)}
                       data-testid={action.event ? `action-${action.event}` : undefined}
-                      className="text-[var(--color-error)] hover:bg-[var(--color-error)]/10 px-2"
+                      className="text-error hover:bg-error/10 px-2"
                     >
                       {action.label}
                     </Button>
@@ -399,7 +399,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
 
           {/* Card Footer: primary actions (Edit, View, etc.) */}
           {primaryActions.length > 0 && (
-            <Box className="px-4 py-3 mt-auto border-t border-[var(--color-border)]">
+            <Box className="px-4 py-3 mt-auto border-t border-border">
               <HStack gap="sm" className="justify-end">
                 {primaryActions.map((action, actionIdx) => (
                   <Button

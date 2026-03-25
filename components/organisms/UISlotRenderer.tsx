@@ -213,13 +213,13 @@ function renderContainedPortal(
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
             {content.props.title ? (
-              <Box className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
+              <Box className="flex items-center justify-between p-4 border-b border-border">
                 <Typography variant="h3" className="text-lg font-semibold">
                   {String(content.props.title)}
                 </Typography>
                 <Box
                   as="button"
-                  className="text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] cursor-pointer"
+                  className="text-muted-foreground hover:text-foreground cursor-pointer"
                   onClick={onDismiss}
                 >
                   ✕
@@ -250,13 +250,13 @@ function renderContainedPortal(
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
             {content.props.title ? (
-              <Box className="flex items-center justify-between p-4 border-b border-[var(--color-border)]">
+              <Box className="flex items-center justify-between p-4 border-b border-border">
                 <Typography variant="h3" className="text-lg font-semibold">
                   {String(content.props.title)}
                 </Typography>
                 <Box
                   as="button"
-                  className="text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] cursor-pointer"
+                  className="text-muted-foreground hover:text-foreground cursor-pointer"
                   onClick={onDismiss}
                 >
                   ✕
@@ -287,7 +287,7 @@ function renderContainedPortal(
     case "overlay":
       return (
         <Box
-          className="absolute inset-0 z-50 bg-[var(--color-foreground)]/50 flex items-center justify-center overflow-auto"
+          className="absolute inset-0 z-50 bg-foreground/50 flex items-center justify-center overflow-auto"
           onClick={onDismiss}
         >
           <Box className="max-h-full overflow-auto" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
@@ -645,7 +645,7 @@ function SlotPortal({
     case "overlay":
       wrapper = (
         <Box
-          className="fixed inset-0 z-50 bg-[var(--color-foreground)]/50 flex items-center justify-center"
+          className="fixed inset-0 z-50 bg-foreground/50 flex items-center justify-center"
           onClick={onDismiss}
         >
           <Box onClick={(e: React.MouseEvent) => e.stopPropagation()}>
@@ -839,7 +839,7 @@ function SlotContentRenderer({
       data-id={content.id}
     >
       {(content.props.children as React.ReactNode) ?? (
-        <Box className="p-4 text-sm text-[var(--color-muted-foreground)] border border-dashed border-[var(--color-border)] rounded">
+        <Box className="p-4 text-sm text-muted-foreground border border-dashed border-border rounded">
           Unknown pattern: {content.pattern}
           {content.sourceTrait && (
             <Typography variant="small" className="ml-2">(from {content.sourceTrait})</Typography>

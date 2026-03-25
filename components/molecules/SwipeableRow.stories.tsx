@@ -47,7 +47,7 @@ export const Default: Story = {
       <HStack
         align="center"
         gap="sm"
-        className="p-4 border-b border-[var(--color-border)]"
+        className="p-4 border-b border-border"
       >
         <Icon name="shopping-cart" size="md" />
         <Typography variant="body1">
@@ -90,7 +90,7 @@ export const BothSides: Story = {
       <HStack
         align="center"
         gap="sm"
-        className="p-4 border-b border-[var(--color-border)]"
+        className="p-4 border-b border-border"
       >
         <Icon name="mail" size="md" />
         <Box className="flex-1 min-w-0">
@@ -141,7 +141,7 @@ function InteractiveDemo() {
           <HStack
             align="center"
             gap="sm"
-            className="p-4 border-b border-[var(--color-border)]"
+            className="p-4 border-b border-border"
           >
             <Icon name={item.icon} size="md" />
             <Typography variant="body1">{item.title}</Typography>

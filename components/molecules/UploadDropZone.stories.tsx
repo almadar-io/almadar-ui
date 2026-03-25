@@ -83,16 +83,16 @@ function InteractiveUpload() {
       />
       {files.length > 0 && (
         <div className="space-y-2">
-          <div className="text-sm font-medium text-[var(--color-foreground)]">
+          <div className="text-sm font-medium text-foreground">
             Selected files:
           </div>
           {files.map((f, i) => (
             <div
               key={i}
-              className="flex items-center justify-between p-2 rounded bg-[var(--color-surface)] border border-[var(--color-border)] text-sm"
+              className="flex items-center justify-between p-2 rounded bg-surface border border-border text-sm"
             >
-              <span className="text-[var(--color-foreground)] truncate">{f.name}</span>
-              <span className="text-[var(--color-muted-foreground)] ml-2 flex-shrink-0">
+              <span className="text-foreground truncate">{f.name}</span>
+              <span className="text-muted-foreground ml-2 flex-shrink-0">
                 {Math.round(f.size / 1024)}KB
               </span>
             </div>

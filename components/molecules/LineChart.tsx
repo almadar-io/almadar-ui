@@ -103,7 +103,7 @@ export const LineChart: React.FC<LineChartProps> = ({
 
   if (safeData.length === 0) {
     return (
-      <Box className={cn('flex items-center justify-center text-[var(--color-muted-foreground)]', className)} style={{ width, height }}>
+      <Box className={cn('flex items-center justify-center text-muted-foreground', className)} style={{ width, height }}>
         No data
       </Box>
     );

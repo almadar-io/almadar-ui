@@ -49,7 +49,7 @@ export const QuizBlock: React.FC<QuizBlockProps> = ({
 
         {revealed ? (
           <Box className="pl-7 pt-2 border-t border-gray-200 dark:border-gray-700">
-            <Typography variant="body" className="text-[var(--color-muted-foreground)]">
+            <Typography variant="body" className="text-muted-foreground">
               {answer}
             </Typography>
           </Box>

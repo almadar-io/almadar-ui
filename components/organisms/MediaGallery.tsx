@@ -220,11 +220,11 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                                 <Box
                                     key={item.id}
                                     className={cn(
-                                        "group relative overflow-hidden rounded-[var(--radius-md)] cursor-pointer",
+                                        "group relative overflow-hidden rounded-md cursor-pointer",
                                         "border-2 transition-all duration-200",
                                         isSelected
-                                            ? "border-[var(--color-primary)] ring-2 ring-[var(--color-primary)]/30"
-                                            : "border-transparent hover:border-[var(--color-border)]",
+                                            ? "border-primary ring-2 ring-primary/30"
+                                            : "border-transparent hover:border-border",
                                         ASPECT_CLASSES[aspectRatio],
                                     )}
                                      
@@ -240,7 +240,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                                     {/* Hover overlay */}
                                     <Box
                                         className={cn(
-                                            "absolute inset-0 bg-[var(--color-foreground)]/0 group-hover:bg-[var(--color-foreground)]/20",
+                                            "absolute inset-0 bg-foreground/0 group-hover:bg-foreground/20",
                                             "transition-colors duration-200 flex items-center justify-center",
                                         )}
                                     >
@@ -260,7 +260,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                                     )}
                                     {/* Selection indicator */}
                                     {selectable && isSelected && (
-                                        <Box className="absolute top-2 right-2 w-5 h-5 rounded-[var(--radius-full)] bg-[var(--color-primary)] flex items-center justify-center">
+                                        <Box className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
                                             <Typography variant="caption" className="text-white text-[10px]">
                                                 ✓
                                             </Typography>
@@ -276,7 +276,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
             {/* Lightbox */}
             {lightboxItem && (
                 <Box
-                    className="fixed inset-0 z-50 bg-[var(--color-background)]/80 backdrop-blur-sm flex items-center justify-center"
+                    className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center"
                     action="LIGHTBOX_CLOSE"
                 >
                     <VStack
@@ -299,7 +299,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                         <img
                             src={lightboxItem.src}
                             alt={lightboxItem.alt || lightboxItem.caption || ""}
-                            className="max-w-full max-h-[80vh] object-contain rounded-[var(--radius-md)]"
+                            className="max-w-full max-h-[80vh] object-contain rounded-md"
                         />
                         {lightboxItem.caption && (
                             <Typography variant="body" className="text-white mt-3 text-center">

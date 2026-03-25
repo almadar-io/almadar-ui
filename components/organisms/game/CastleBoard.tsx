@@ -198,7 +198,7 @@ export function CastleBoard({
     );
 
     return (
-        <div className={cn('castle-board min-h-screen flex flex-col bg-[var(--color-background)]', className)}>
+        <div className={cn('castle-board min-h-screen flex flex-col bg-background', className)}>
             {/* Header slot */}
             {header && header(ctx)}
 
@@ -227,7 +227,7 @@ export function CastleBoard({
 
                 {/* Side panel slot */}
                 {sidePanel && (
-                    <div className="w-96 shrink-0 border-l border-[var(--color-border)] bg-[var(--color-surface)] overflow-y-auto">
+                    <div className="w-96 shrink-0 border-l border-border bg-surface overflow-y-auto">
                         {sidePanel(ctx)}
                     </div>
                 )}

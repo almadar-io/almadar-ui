@@ -52,30 +52,30 @@ export const CodeExample: React.FC<CodeExampleProps> = ({
   return (
     <Box
       className={cn(
-        'bg-[var(--color-foreground)]',
-        'rounded-[var(--radius-md)]',
-        'border-[length:var(--border-width)] border-[var(--color-border)]',
+        'bg-foreground',
+        'rounded-md',
+        'border-[length:var(--border-width)] border-border',
         'overflow-hidden',
         className,
       )}
     >
       {showHeader && (
         <Box
-          className="bg-[var(--color-foreground)] border-b-[length:var(--border-width)] border-[var(--color-border)]"
+          className="bg-foreground border-b-[length:var(--border-width)] border-border"
           padding="sm"
         >
           <HStack gap="sm" align="center">
             {title ? (
               <Typography
                 variant="caption"
-                className="text-[var(--color-background)] opacity-70"
+                className="text-background opacity-70"
               >
                 {title}
               </Typography>
             ) : (
               <Typography
                 variant="caption"
-                className="text-[var(--color-background)] opacity-50"
+                className="text-background opacity-50"
               >
                 {language}
               </Typography>
@@ -86,7 +86,7 @@ export const CodeExample: React.FC<CodeExampleProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={handleCopy}
-                className="text-[var(--color-background)] hover:text-[var(--color-background)] opacity-70 hover:opacity-100"
+                className="text-background hover:text-background opacity-70 hover:opacity-100"
               >
                 {copied ? 'Copied!' : 'Copy'}
               </Button>
@@ -101,7 +101,7 @@ export const CodeExample: React.FC<CodeExampleProps> = ({
       >
         <Typography
           variant="body2"
-          className="font-mono text-sm whitespace-pre text-[var(--color-background)] select-all"
+          className="font-mono text-sm whitespace-pre text-background select-all"
         >
           {code}
         </Typography>

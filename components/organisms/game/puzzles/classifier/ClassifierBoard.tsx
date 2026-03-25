@@ -138,7 +138,7 @@ export function ClassifierBoard({
             <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
           </Box>
         ) : entity.headerImage && headerError ? (
-          <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-[var(--color-muted)] to-[var(--color-accent)] opacity-60" />
+          <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-muted to-accent opacity-60" />
         ) : null}
 
         <Card className="p-4">
@@ -152,7 +152,7 @@ export function ClassifierBoard({
         {unassignedItems.length > 0 && (
           <Card className="p-4">
             <VStack gap="sm">
-              <Typography variant="small" weight="bold" className="uppercase tracking-wider text-[var(--color-muted-foreground)]">
+              <Typography variant="small" weight="bold" className="uppercase tracking-wider text-muted-foreground">
                 {t('classifier.itemsToSort')}
               </Typography>
               <HStack gap="sm" className="flex-wrap">
@@ -245,7 +245,7 @@ export function ClassifierBoard({
                   : `${correctCount}/${items.length} ${t('classifier.correct')}`}
               </Typography>
               {!allCorrect && entity.failMessage && (
-                <Typography variant="body" className="text-[var(--color-muted-foreground)]">{entity.failMessage}</Typography>
+                <Typography variant="body" className="text-muted-foreground">{entity.failMessage}</Typography>
               )}
             </VStack>
           </Card>

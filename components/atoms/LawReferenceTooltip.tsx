@@ -54,12 +54,12 @@ const positionStyles = {
  * Arrow styles based on position
  */
 const arrowStyles = {
-  top: "top-full left-1/2 -translate-x-1/2 border-t-[var(--color-foreground)] border-l-transparent border-r-transparent border-b-transparent",
+  top: "top-full left-1/2 -translate-x-1/2 border-t-foreground border-l-transparent border-r-transparent border-b-transparent",
   bottom:
-    "bottom-full left-1/2 -translate-x-1/2 border-b-[var(--color-foreground)] border-l-transparent border-r-transparent border-t-transparent",
-  left: "left-full top-1/2 -translate-y-1/2 border-l-[var(--color-foreground)] border-t-transparent border-b-transparent border-r-transparent",
+    "bottom-full left-1/2 -translate-x-1/2 border-b-foreground border-l-transparent border-r-transparent border-t-transparent",
+  left: "left-full top-1/2 -translate-y-1/2 border-l-foreground border-t-transparent border-b-transparent border-r-transparent",
   right:
-    "right-full top-1/2 -translate-y-1/2 border-r-[var(--color-foreground)] border-t-transparent border-b-transparent border-l-transparent",
+    "right-full top-1/2 -translate-y-1/2 border-r-foreground border-t-transparent border-b-transparent border-l-transparent",
 };
 
 /**
@@ -121,7 +121,7 @@ export const LawReferenceTooltip: React.FC<LawReferenceTooltipProps> = ({
           shadow="lg"
           position="absolute"
           className={cn(
-            "z-50 w-64 bg-[var(--color-foreground)] text-[var(--color-background)]",
+            "z-50 w-64 bg-foreground text-background",
             positionStyles[position],
           )}
           role="tooltip"
@@ -140,7 +140,7 @@ export const LawReferenceTooltip: React.FC<LawReferenceTooltipProps> = ({
             {reference.lawName && (
               <Typography
                 variant="caption"
-                className="text-[var(--color-muted-foreground)]"
+                className="text-muted-foreground"
               >
                 {reference.lawName}
               </Typography>
@@ -149,10 +149,10 @@ export const LawReferenceTooltip: React.FC<LawReferenceTooltipProps> = ({
             {/* Clause text */}
             {reference.clause && (
               <>
-                <Divider className="border-[var(--color-border)]" />
+                <Divider className="border-border" />
                 <Typography
                   variant="caption"
-                  className="text-[var(--color-background)] leading-relaxed"
+                  className="text-background leading-relaxed"
                 >
                   {reference.clause}
                 </Typography>

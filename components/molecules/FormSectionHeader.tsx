@@ -67,7 +67,7 @@ export const FormSectionHeader: React.FC<FormSectionHeaderProps> = ({
   return (
     <Box
       className={cn(
-        "px-4 py-3 bg-[var(--color-muted)] rounded-t-lg",
+        "px-4 py-3 bg-muted rounded-t-lg",
         isClickable &&
           "cursor-pointer hover:bg-[var(--color-surface-hover)] transition-colors",
         className,
@@ -81,7 +81,7 @@ export const FormSectionHeader: React.FC<FormSectionHeaderProps> = ({
             <Icon
               name={icon}
               size="md"
-              className="text-[var(--color-muted-foreground)]"
+              className="text-muted-foreground"
             />
           )}
 
@@ -92,8 +92,8 @@ export const FormSectionHeader: React.FC<FormSectionHeaderProps> = ({
               size="md"
               className={
                 hasErrors
-                  ? "text-[var(--color-error)]"
-                  : "text-[var(--color-success)]"
+                  ? "text-error"
+                  : "text-success"
               }
             />
           )}
@@ -125,7 +125,7 @@ export const FormSectionHeader: React.FC<FormSectionHeaderProps> = ({
               name="chevron-down"
               size="md"
               className={cn(
-                "text-[var(--color-muted-foreground)] transition-transform",
+                "text-muted-foreground transition-transform",
                 isCollapsed && "-rotate-90",
               )}
             />

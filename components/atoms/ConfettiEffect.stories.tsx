@@ -19,7 +19,7 @@ const meta: Meta<typeof ConfettiEffect> = {
   },
   decorators: [
     (Story) => (
-      <div className="relative w-80 h-48 flex items-center justify-center border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
+      <div className="relative w-80 h-48 flex items-center justify-center border border-border rounded-lg bg-surface">
         <Story />
       </div>
     ),
@@ -53,7 +53,7 @@ function InteractiveConfetti() {
       <ConfettiEffect trigger={trigger} />
       <button
         type="button"
-        className="px-4 py-2 rounded-lg bg-[var(--color-primary)] text-[var(--color-primary-foreground)] text-sm font-medium"
+        className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium"
         onClick={handleClick}
       >
         Celebrate!

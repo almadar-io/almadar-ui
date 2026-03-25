@@ -181,7 +181,7 @@ function WithSlotsRender() {
                 <HStack
                     gap="md"
                     align="center"
-                    className="px-4 py-3 bg-[var(--color-surface)] border-b border-[var(--color-border)]"
+                    className="px-4 py-3 bg-surface border-b border-border"
                 >
                     <Typography variant="h3" weight="bold">World Map</Typography>
                     {ctx.selectedHero && (
@@ -198,7 +198,7 @@ function WithSlotsRender() {
                 <VStack gap="md">
                     <Typography variant="h4" weight="semibold">Hero Detail</Typography>
                     {ctx.selectedHero ? (
-                        <VStack gap="sm" className="p-3 rounded bg-[var(--color-background)]">
+                        <VStack gap="sm" className="p-3 rounded bg-background">
                             <HStack gap="sm" align="center">
                                 <Typography variant="label" weight="bold">
                                     {ctx.selectedHero.name}
@@ -245,7 +245,7 @@ function WithSlotsRender() {
                 <HStack
                     gap="md"
                     align="center"
-                    className="px-4 py-2 bg-[var(--color-surface)] border-t border-[var(--color-border)]"
+                    className="px-4 py-2 bg-surface border-t border-border"
                 >
                     <Badge variant="info" size="sm">
                         Valid Moves: {ctx.validMoves.length}
@@ -479,7 +479,7 @@ function EditorRender() {
     }));
 
     return (
-        <HStack gap="none" className="h-screen bg-[var(--color-background)]">
+        <HStack gap="none" className="h-screen bg-background">
             {/* Editor panel */}
             <Box
                 className="shrink-0 bg-gray-900 border-r border-gray-700 flex flex-col overflow-hidden"

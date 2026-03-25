@@ -42,11 +42,11 @@ export const NoMore: Story = {
 
 export const InContext: Story = {
   render: () => (
-    <div className="w-64 max-h-48 overflow-auto border border-[var(--color-border)] rounded-lg bg-[var(--color-surface)]">
+    <div className="w-64 max-h-48 overflow-auto border border-border rounded-lg bg-surface">
       {Array.from({ length: 8 }, (_, i) => (
         <div
           key={i}
-          className="p-3 border-b border-[var(--color-border)] text-sm text-[var(--color-foreground)]"
+          className="p-3 border-b border-border text-sm text-foreground"
         >
           Item {i + 1}
         </div>

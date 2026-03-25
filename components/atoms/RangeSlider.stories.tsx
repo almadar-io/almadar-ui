@@ -62,7 +62,7 @@ export const Sizes: Story = {
     <div className="w-80 space-y-6">
       {(["sm", "md", "lg"] as const).map((size) => (
         <div key={size}>
-          <span className="text-xs text-[var(--color-muted-foreground)] mb-1 block">{size}</span>
+          <span className="text-xs text-muted-foreground mb-1 block">{size}</span>
           <RangeSlider value={60} size={size} />
         </div>
       ))}
@@ -82,7 +82,7 @@ function InteractiveSlider() {
   return (
     <div className="w-80 space-y-2">
       <RangeSlider value={val} onChange={setVal} showTooltip />
-      <div className="text-sm text-[var(--color-foreground)]">Value: {val}</div>
+      <div className="text-sm text-foreground">Value: {val}</div>
     </div>
   );
 }
@@ -95,7 +95,7 @@ function BufferedSlider() {
   const [val, setVal] = useState(30);
   return (
     <div className="w-80 space-y-2">
-      <div className="text-xs text-[var(--color-muted-foreground)]">Media seek bar (buffered at 70%)</div>
+      <div className="text-xs text-muted-foreground">Media seek bar (buffered at 70%)</div>
       <RangeSlider
         value={val}
         onChange={setVal}
@@ -108,7 +108,7 @@ function BufferedSlider() {
         }}
         max={240}
       />
-      <div className="flex justify-between text-xs text-[var(--color-muted-foreground)]">
+      <div className="flex justify-between text-xs text-muted-foreground">
         <span>0:00</span>
         <span>4:00</span>
       </div>
@@ -124,7 +124,7 @@ function PriceFilter() {
   const [val, setVal] = useState(75);
   return (
     <div className="w-80 space-y-2">
-      <div className="text-sm font-medium text-[var(--color-foreground)]">Max Price</div>
+      <div className="text-sm font-medium text-foreground">Max Price</div>
       <RangeSlider
         value={val}
         onChange={setVal}
@@ -135,7 +135,7 @@ function PriceFilter() {
         showTicks
         formatValue={(v) => `$${v}`}
       />
-      <div className="flex justify-between text-xs text-[var(--color-muted-foreground)]">
+      <div className="flex justify-between text-xs text-muted-foreground">
         <span>$0</span>
         <span>$200</span>
       </div>

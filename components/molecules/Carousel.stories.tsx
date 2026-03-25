@@ -22,7 +22,7 @@ function renderColorSlide(item: ColorSlide, index: number): React.ReactNode {
   return (
     <Box
       display="flex"
-      className="items-center justify-center h-64 w-full rounded-[var(--radius-md)]"
+      className="items-center justify-center h-64 w-full rounded-md"
       style={{ backgroundColor: item.color }}
     >
       <Typography variant="h3" className="text-white font-bold">

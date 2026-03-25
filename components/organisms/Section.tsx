@@ -55,16 +55,16 @@ const paddingStyles: Record<SectionPadding, string> = {
 const variantStyles: Record<SectionVariant, string> = {
   default: '',
   card: [
-    'bg-[var(--color-card)]',
-    'border-[length:var(--border-width)] border-[var(--color-border)]',
-    'shadow-[var(--shadow-main)]',
-    'rounded-[var(--radius-md)]',
+    'bg-card',
+    'border-[length:var(--border-width)] border-border',
+    'shadow',
+    'rounded-md',
   ].join(' '),
   bordered: [
-    'border-[length:var(--border-width)] border-[var(--color-border)]',
-    'rounded-[var(--radius-md)]',
+    'border-[length:var(--border-width)] border-border',
+    'rounded-md',
   ].join(' '),
-  filled: 'bg-[var(--color-muted)] rounded-[var(--radius-md)]',
+  filled: 'bg-muted rounded-md',
 };
 
 /**
@@ -97,7 +97,7 @@ export const Section: React.FC<SectionProps> = ({
         <Box
           className={cn(
             'flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4',
-            divider && 'pb-4 mb-4 border-b-[length:var(--border-width)] border-[var(--color-border)]',
+            divider && 'pb-4 mb-4 border-b-[length:var(--border-width)] border-border',
             !divider && 'mb-4',
             headerClassName
           )}
@@ -106,7 +106,7 @@ export const Section: React.FC<SectionProps> = ({
             {title && (
               <Typography
                 variant="h4"
-                className="text-[var(--color-foreground)] font-semibold"
+                className="text-foreground font-semibold"
               >
                 {title}
               </Typography>

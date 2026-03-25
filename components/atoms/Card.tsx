@@ -17,34 +17,34 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
 // Using CSS variables for theme-aware styling
 const variantStyles = {
   default: [
-    "bg-[var(--color-card)]",
-    "border-[length:var(--border-width)] border-[var(--color-border)]",
-    "shadow-[var(--shadow-sm)]",
+    "bg-card",
+    "border-[length:var(--border-width)] border-border",
+    "shadow-sm",
     "transition-all duration-[var(--transition-normal)]",
-    "hover:shadow-[var(--shadow-hover)] hover:-translate-y-0.5",
+    "hover:shadow-lg hover:-translate-y-0.5",
   ].join(" "),
   bordered: [
-    "bg-[var(--color-card)]",
-    "border-[length:var(--border-width)] border-[var(--color-border)]",
-    "shadow-[var(--shadow-sm)]",
+    "bg-card",
+    "border-[length:var(--border-width)] border-border",
+    "shadow-sm",
     "transition-all duration-[var(--transition-normal)]",
-    "hover:shadow-[var(--shadow-hover)] hover:-translate-y-0.5",
+    "hover:shadow-lg hover:-translate-y-0.5",
   ].join(" "),
   elevated: [
-    "bg-[var(--color-card)]",
-    "border-[length:var(--border-width)] border-[var(--color-border)]",
-    "shadow-[var(--shadow-main)]",
+    "bg-card",
+    "border-[length:var(--border-width)] border-border",
+    "shadow",
     "transition-all duration-[var(--transition-normal)]",
-    "hover:shadow-[var(--shadow-hover)] hover:-translate-y-0.5",
+    "hover:shadow-lg hover:-translate-y-0.5",
   ].join(" "),
   // Interactive variant with theme-specific hover effects
   interactive: [
-    "bg-[var(--color-card)]",
-    "border-[length:var(--border-width)] border-[var(--color-border)]",
-    "shadow-[var(--shadow-main)]",
+    "bg-card",
+    "border-[length:var(--border-width)] border-border",
+    "shadow",
     "cursor-pointer",
     "transition-all duration-[var(--transition-normal)]",
-    "hover:shadow-[var(--shadow-hover)]",
+    "hover:shadow-lg",
   ].join(" "),
 };
 
@@ -57,9 +57,9 @@ const paddingStyles = {
 
 const shadowStyles: Record<CardShadow, string> = {
   none: "shadow-none",
-  sm: "shadow-[var(--shadow-sm)]",
-  md: "shadow-[var(--shadow-main)]",
-  lg: "shadow-[var(--shadow-lg)]",
+  sm: "shadow-sm",
+  md: "shadow",
+  lg: "shadow-lg",
 };
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
@@ -80,7 +80,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={cn(
-          "rounded-[var(--radius-md)]",
+          "rounded-md",
           "transition-all duration-[var(--transition-normal)]",
           variantStyles[variant],
           paddingStyles[padding],
@@ -92,12 +92,12 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
         {(title || subtitle) && (
           <div className="mb-4">
             {title && (
-              <h3 className="text-lg text-[var(--color-card-foreground)] font-[var(--font-weight-bold)]">
+              <h3 className="text-lg text-card-foreground font-[var(--font-weight-bold)]">
                 {title}
               </h3>
             )}
             {subtitle && (
-              <p className="text-sm text-[var(--color-muted-foreground)] mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 {subtitle}
               </p>
             )}
@@ -127,7 +127,7 @@ export const CardTitle = React.forwardRef<
   <h3
     ref={ref}
     className={cn(
-      "text-lg text-[var(--color-card-foreground)]",
+      "text-lg text-card-foreground",
       "font-[var(--font-weight-bold)]",
       className,
     )}

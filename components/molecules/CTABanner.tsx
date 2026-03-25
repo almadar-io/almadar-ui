@@ -49,10 +49,10 @@ export const CTABanner: React.FC<CTABannerProps> = ({
     <Box
       className={cn(
         'py-16',
-        background === 'alt' && 'bg-[var(--color-surface)]',
-        background === 'dark' && 'bg-[var(--color-surface)]',
-        background === 'gradient' && 'bg-[var(--color-surface)]',
-        background === 'primary' && 'bg-[var(--color-surface)]',
+        background === 'alt' && 'bg-surface',
+        background === 'dark' && 'bg-surface',
+        background === 'gradient' && 'bg-surface',
+        background === 'primary' && 'bg-surface',
         className,
       )}
     >

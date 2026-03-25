@@ -152,10 +152,10 @@ export const Menu: React.FC<MenuProps> = ({
 
   // Theme-aware menu container styles
   const menuContainerStyles = cn(
-    "bg-[var(--color-card)]",
-    "border-[length:var(--border-width)] border-[var(--color-border)]",
-    "shadow-[var(--shadow-main)]",
-    "rounded-[var(--radius-sm)]",
+    "bg-card",
+    "border-[length:var(--border-width)] border-border",
+    "shadow",
+    "rounded-sm",
     "min-w-[200px] py-1",
   );
 
@@ -181,12 +181,12 @@ export const Menu: React.FC<MenuProps> = ({
         className={cn(
           "w-full flex items-center justify-between gap-3 px-4 py-2 text-left",
           "text-sm transition-colors",
-          "hover:bg-[var(--color-muted)]",
-          "focus:outline-none focus:bg-[var(--color-muted)]",
+          "hover:bg-muted",
+          "focus:outline-none focus:bg-muted",
           "disabled:opacity-50 disabled:cursor-not-allowed",
           item.disabled && "cursor-not-allowed",
           isDanger &&
-            "text-[var(--color-error)] hover:bg-[var(--color-error)]/10",
+            "text-error hover:bg-error/10",
         )}
       >
         <div className="flex items-center gap-3 flex-1 min-w-0">

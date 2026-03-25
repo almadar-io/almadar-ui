@@ -109,52 +109,52 @@ const STATUS_STYLES: Record<
   { bg: string; text: string; dot: string; border: string }
 > = {
   complete: {
-    bg: "bg-[var(--color-success)]/10",
-    text: "text-[var(--color-success)]",
-    dot: "bg-[var(--color-success)] ring-4 ring-[var(--color-success)]/20",
-    border: "border-[var(--color-success)]/30",
+    bg: "bg-success/10",
+    text: "text-success",
+    dot: "bg-success ring-4 ring-success/20",
+    border: "border-success/30",
   },
   active: {
-    bg: "bg-[var(--color-info)]/10",
-    text: "text-[var(--color-info)]",
-    dot: "bg-[var(--color-info)] ring-4 ring-[var(--color-info)]/20",
-    border: "border-[var(--color-info)]/30",
+    bg: "bg-info/10",
+    text: "text-info",
+    dot: "bg-info ring-4 ring-info/20",
+    border: "border-info/30",
   },
   pending: {
-    bg: "bg-[var(--color-warning)]/10",
-    text: "text-[var(--color-warning)]",
-    dot: "bg-[var(--color-warning)] ring-4 ring-[var(--color-warning)]/20",
-    border: "border-[var(--color-warning)]/30",
+    bg: "bg-warning/10",
+    text: "text-warning",
+    dot: "bg-warning ring-4 ring-warning/20",
+    border: "border-warning/30",
   },
   blocked: {
-    bg: "bg-[var(--color-error)]/10",
-    text: "text-[var(--color-error)]",
-    dot: "bg-[var(--color-error)] ring-4 ring-[var(--color-error)]/20",
-    border: "border-[var(--color-error)]/30",
+    bg: "bg-error/10",
+    text: "text-error",
+    dot: "bg-error ring-4 ring-error/20",
+    border: "border-error/30",
   },
   high: {
-    bg: "bg-[var(--color-warning)]/10",
-    text: "text-[var(--color-warning)]",
-    dot: "bg-[var(--color-warning)] ring-4 ring-[var(--color-warning)]/20",
-    border: "border-[var(--color-warning)]/30",
+    bg: "bg-warning/10",
+    text: "text-warning",
+    dot: "bg-warning ring-4 ring-warning/20",
+    border: "border-warning/30",
   },
   medium: {
-    bg: "bg-[var(--color-accent)]/10",
-    text: "text-[var(--color-accent)]",
-    dot: "bg-[var(--color-accent)] ring-4 ring-[var(--color-accent)]/20",
-    border: "border-[var(--color-accent)]/30",
+    bg: "bg-accent/10",
+    text: "text-accent",
+    dot: "bg-accent ring-4 ring-accent/20",
+    border: "border-accent/30",
   },
   low: {
-    bg: "bg-[var(--color-muted)]",
-    text: "text-[var(--color-muted-foreground)]",
-    dot: "bg-[var(--color-muted-foreground)] ring-4 ring-[var(--color-muted-foreground)]/20",
-    border: "border-[var(--color-border)]",
+    bg: "bg-muted",
+    text: "text-muted-foreground",
+    dot: "bg-muted-foreground ring-4 ring-muted-foreground/20",
+    border: "border-border",
   },
   default: {
-    bg: "bg-[var(--color-muted)]",
-    text: "text-[var(--color-muted-foreground)]",
-    dot: "bg-[var(--color-muted-foreground)] ring-4 ring-[var(--color-muted-foreground)]/20",
-    border: "border-[var(--color-border)]",
+    bg: "bg-muted",
+    text: "text-muted-foreground",
+    dot: "bg-muted-foreground ring-4 ring-muted-foreground/20",
+    border: "border-border",
   },
 };
 
@@ -230,8 +230,8 @@ const StatusBadge: React.FC<{ value: string; fieldName: string }> = ({
     <Typography
       as="span"
       className={cn(
-        "inline-flex items-center gap-2 px-2.5 py-1 rounded-[var(--radius-full)] text-xs font-semibold tracking-wide",
-        "border shadow-[var(--shadow-sm)] backdrop-blur-sm transition-colors",
+        "inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-semibold tracking-wide",
+        "border shadow-sm backdrop-blur-sm transition-colors",
         style.bg,
         style.text,
         style.border,
@@ -240,7 +240,7 @@ const StatusBadge: React.FC<{ value: string; fieldName: string }> = ({
       <Typography
         as="span"
         className={cn(
-          "w-1.5 h-1.5 rounded-[var(--radius-full)] shadow-[var(--shadow-sm)]",
+          "w-1.5 h-1.5 rounded-full shadow-sm",
           style.dot,
         )}
       />
@@ -254,24 +254,24 @@ const ProgressIndicator: React.FC<{ value: number }> = ({ value }) => {
   const clampedValue = Math.min(100, Math.max(0, value));
   return (
     <Box className="flex items-center gap-2 min-w-[100px]">
-      <Box className="flex-1 h-1.5 bg-[var(--color-muted)] rounded-[var(--radius-full)] overflow-hidden">
+      <Box className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
         <Box
           className={cn(
-            "h-full rounded-[var(--radius-full)] transition-all duration-500",
+            "h-full rounded-full transition-all duration-500",
             clampedValue >= 100
-              ? "bg-[var(--color-success)]"
+              ? "bg-success"
               : clampedValue >= 70
-                ? "bg-[var(--color-info)]"
+                ? "bg-info"
                 : clampedValue >= 40
-                  ? "bg-[var(--color-warning)]"
-                  : "bg-[var(--color-muted-foreground)]",
+                  ? "bg-warning"
+                  : "bg-muted-foreground",
           )}
           style={{ width: `${clampedValue}%` }}
         />
       </Box>
       <Typography
         as="span"
-        className="text-xs font-medium text-[var(--color-muted-foreground)] tabular-nums w-8 text-right"
+        className="text-xs font-medium text-muted-foreground tabular-nums w-8 text-right"
       >
         {clampedValue}%
       </Typography>
@@ -491,9 +491,9 @@ export const List: React.FC<ListProps> = ({
             "transition-all duration-300 ease-out",
             hasExplicitClick && "cursor-pointer",
             // Hover state
-            "hover:bg-[var(--color-muted)]/80",
+            "hover:bg-muted/80",
             // Selected state
-            isSelected && "bg-[var(--color-primary)]/10 shadow-inner",
+            isSelected && "bg-primary/10 shadow-inner",
             item.disabled && "opacity-50 cursor-not-allowed grayscale",
           )}
           action={rowAction}
@@ -512,8 +512,8 @@ export const List: React.FC<ListProps> = ({
                 className={cn(
                   "transition-transform active:scale-95",
                   isSelected
-                    ? "border-[var(--color-primary)] bg-[var(--color-primary)]"
-                    : "border-[var(--color-border)]",
+                    ? "border-primary bg-primary"
+                    : "border-border",
                 )}
               />
             </Box>
@@ -526,10 +526,10 @@ export const List: React.FC<ListProps> = ({
               <Typography
                 as="h3"
                 className={cn(
-                  "text-[15px] font-semibold text-[var(--color-foreground)] truncate flex-1",
+                  "text-[15px] font-semibold text-foreground truncate flex-1",
                   "tracking-tight leading-snug",
                   item.completed &&
-                  "line-through text-[var(--color-muted-foreground)]",
+                  "line-through text-muted-foreground",
                 )}
               >
                 {item.title || "Untitled"}
@@ -553,7 +553,7 @@ export const List: React.FC<ListProps> = ({
             </HStack>
 
             {/* Secondary row: Metadata */}
-            <HStack className="flex items-center gap-6 text-[13px] font-medium text-[var(--color-muted-foreground)]">
+            <HStack className="flex items-center gap-6 text-[13px] font-medium text-muted-foreground">
               {/* Date fields with icon */}
               {dateFields.slice(0, 1).map((field) => {
                 const value = item._fields?.[field];
@@ -562,7 +562,7 @@ export const List: React.FC<ListProps> = ({
                   <Typography
                     as="span"
                     key={field}
-                    className="flex items-center gap-2 text-[var(--color-muted-foreground)] group-hover:text-[var(--color-foreground)] transition-colors"
+                    className="flex items-center gap-2 text-muted-foreground group-hover:text-foreground transition-colors"
                   >
                     <Calendar className="w-3.5 h-3.5" />
                     <Typography as="span">{formatValue(value, field)}</Typography>
@@ -578,12 +578,12 @@ export const List: React.FC<ListProps> = ({
                   <Typography
                     as="span"
                     key={field}
-                    className="truncate flex items-center gap-1.5 text-[var(--color-muted-foreground)]"
+                    className="truncate flex items-center gap-1.5 text-muted-foreground"
                   >
                     <Typography as="span" className="opacity-75">
                       {formatFieldLabel(field)}:
                     </Typography>
-                    <Typography as="span" className="text-[var(--color-foreground)]">
+                    <Typography as="span" className="text-foreground">
                       {formatValue(value, field)}
                     </Typography>
                   </Typography>
@@ -613,9 +613,9 @@ export const List: React.FC<ListProps> = ({
                 variant="ghost"
                 action={editAction.event}
                 className={cn(
-                  "p-2 rounded-[var(--radius-lg)] transition-all duration-200",
-                  "hover:bg-[var(--color-primary)]/10 hover:text-[var(--color-primary)]",
-                  "text-[var(--color-muted-foreground)]",
+                  "p-2 rounded-lg transition-all duration-200",
+                  "hover:bg-primary/10 hover:text-primary",
+                  "text-muted-foreground",
                   "active:scale-95",
                 )}
                 title={editAction.label}
@@ -631,9 +631,9 @@ export const List: React.FC<ListProps> = ({
                 variant="ghost"
                 action={viewAction.event}
                 className={cn(
-                  "p-2 rounded-[var(--radius-lg)] transition-all duration-200",
-                  "hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]",
-                  "text-[var(--color-muted-foreground)]",
+                  "p-2 rounded-lg transition-all duration-200",
+                  "hover:bg-muted hover:text-foreground",
+                  "text-muted-foreground",
                   "active:scale-95",
                 )}
                 title={viewAction.label}
@@ -658,9 +658,9 @@ export const List: React.FC<ListProps> = ({
                     <Button
                       variant="ghost"
                       className={cn(
-                        "p-2 rounded-[var(--radius-lg)] transition-all duration-200",
-                        "hover:bg-[var(--color-muted)] hover:shadow-[var(--shadow-sm)]",
-                        "text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]",
+                        "p-2 rounded-lg transition-all duration-200",
+                        "hover:bg-muted hover:shadow-sm",
+                        "text-muted-foreground hover:text-foreground",
                         "active:scale-95",
                       )}
                     >
@@ -674,14 +674,14 @@ export const List: React.FC<ListProps> = ({
             })()}
 
             {hasExplicitClick && (
-              <ChevronRight className="w-4 h-4 text-[var(--color-muted-foreground)]/50 group-hover:text-[var(--color-muted-foreground)] group-hover:translate-x-0.5 transition-all" />
+              <ChevronRight className="w-4 h-4 text-muted-foreground/50 group-hover:text-muted-foreground group-hover:translate-x-0.5 transition-all" />
             )}
           </HStack>
         </Box>
 
         {/* Subtle divider - inset */}
         {!isLast && (
-          <Box className="ml-[calc(1.5rem)] mr-6 border-b border-[var(--color-border)]/40" />
+          <Box className="ml-[calc(1.5rem)] mr-6 border-b border-border/40" />
         )}
       </Box>
     );
@@ -702,10 +702,10 @@ export const List: React.FC<ListProps> = ({
     <Box
       className={cn(
         // Container with refined styling
-        "bg-[var(--color-card)] backdrop-blur-sm",
-        "rounded-[var(--radius-xl)]", // Increased rounding
-        "border border-[var(--color-border)]",
-        "shadow-[var(--shadow-lg)]", // Softer, improved shadow
+        "bg-card backdrop-blur-sm",
+        "rounded-xl", // Increased rounding
+        "border border-border",
+        "shadow-lg", // Softer, improved shadow
         "overflow-hidden",
         className,
       )}

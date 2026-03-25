@@ -58,26 +58,26 @@ export interface ConfirmDialogProps {
 const variantConfig = {
   danger: {
     icon: Trash2,
-    iconBg: "bg-[var(--color-error)]",
-    iconColor: "text-[var(--color-error-foreground)]",
+    iconBg: "bg-error",
+    iconColor: "text-error-foreground",
     confirmVariant: "primary" as const,
   },
   warning: {
     icon: AlertTriangle,
-    iconBg: "bg-[var(--color-warning)]",
-    iconColor: "text-[var(--color-warning-foreground)]",
+    iconBg: "bg-warning",
+    iconColor: "text-warning-foreground",
     confirmVariant: "primary" as const,
   },
   info: {
     icon: Check,
-    iconBg: "bg-[var(--color-info)]",
-    iconColor: "text-[var(--color-info-foreground)]",
+    iconBg: "bg-info",
+    iconColor: "text-info-foreground",
     confirmVariant: "primary" as const,
   },
   default: {
     icon: Check,
-    iconBg: "bg-[var(--color-primary)]",
-    iconColor: "text-[var(--color-primary-foreground)]",
+    iconBg: "bg-primary",
+    iconColor: "text-primary-foreground",
     confirmVariant: "primary" as const,
   },
 };
@@ -158,7 +158,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           {typeof resolvedMessage === "string" ? (
             <Typography
               variant="body2"
-              className="text-[var(--color-muted-foreground)]"
+              className="text-muted-foreground"
             >
               {resolvedMessage}
             </Typography>

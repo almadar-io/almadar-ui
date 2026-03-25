@@ -176,19 +176,19 @@ export const Accordion: React.FC<AccordionProps> = ({
 
         return (
           <div key={item.id} className={index > 0 ? "mt-2" : ""}>
-            <div className="border-2 border-[var(--color-border)] overflow-hidden">
+            <div className="border-2 border-border overflow-hidden">
               <button
                 type="button"
                 onClick={() => !isDisabled && handleToggle(item.id)}
                 disabled={isDisabled}
                 className={cn(
                   "w-full flex items-center justify-between px-4 py-3",
-                  "bg-[var(--color-card)]",
-                  "hover:bg-[var(--color-muted)]",
+                  "bg-card",
+                  "hover:bg-muted",
                   "transition-colors duration-200",
-                  "focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)] focus:ring-inset",
+                  "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-inset",
                   "disabled:opacity-50 disabled:cursor-not-allowed",
-                  isOpen && "bg-[var(--color-muted)] font-bold",
+                  isOpen && "bg-muted font-bold",
                 )}
                 aria-expanded={isOpen}
                 aria-controls={`accordion-content-${item.id}`}
@@ -215,7 +215,7 @@ export const Accordion: React.FC<AccordionProps> = ({
               {isOpen && (
                 <div
                   id={`accordion-content-${item.id}`}
-                  className="px-4 py-3 bg-[var(--color-card)] border-t-2 border-[var(--color-border)]"
+                  className="px-4 py-3 bg-card border-t-2 border-border"
                 >
                   {item.content}
                 </div>

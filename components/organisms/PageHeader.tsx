@@ -104,11 +104,11 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   };
 
   const statusColors = {
-    default: "bg-[var(--color-muted)] text-[var(--color-foreground)]",
-    success: "bg-[var(--color-success)]/10 text-[var(--color-success)]",
-    warning: "bg-[var(--color-warning)]/10 text-[var(--color-warning)]",
-    danger: "bg-[var(--color-error)]/10 text-[var(--color-error)]",
-    info: "bg-[var(--color-info)]/10 text-[var(--color-info)]",
+    default: "bg-muted text-foreground",
+    success: "bg-success/10 text-success",
+    warning: "bg-warning/10 text-warning",
+    danger: "bg-error/10 text-error",
+    info: "bg-info/10 text-info",
   };
 
   return (
@@ -128,12 +128,12 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                    
                   <a
                     href={crumb.href}
-                    className="text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
+                    className="text-muted-foreground hover:text-foreground"
                   >
                     {crumb.label}
                   </a>
                 ) : (
-                  <Typography variant="small" className="text-[var(--color-foreground)] font-medium">
+                  <Typography variant="small" className="text-foreground font-medium">
                     {crumb.label}
                   </Typography>
                 )}
@@ -150,21 +150,21 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
             <Button
               variant="ghost"
               onClick={handleBack}
-              className="mt-1 p-2 rounded-[var(--radius-lg)]"
+              className="mt-1 p-2 rounded-lg"
             >
-              <ArrowLeft className="h-5 w-5 text-[var(--color-muted-foreground)]" />
+              <ArrowLeft className="h-5 w-5 text-muted-foreground" />
             </Button>
           )}
           <Box>
             <Box className="flex items-center gap-3">
-              <Typography variant="h1" className="text-2xl font-bold text-[var(--color-foreground)]">
+              <Typography variant="h1" className="text-2xl font-bold text-foreground">
                 {title != null ? String(title) : ""}
               </Typography>
               {status && (
                 <Typography
                   variant="small"
                   className={cn(
-                    "px-2.5 py-1 rounded-[var(--radius-full)] text-xs font-medium",
+                    "px-2.5 py-1 rounded-full text-xs font-medium",
                     statusColors[status.variant || "default"],
                   )}
                 >
@@ -201,7 +201,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
 
       {/* Tabs */}
       {tabs && tabs.length > 0 && (
-        <Box className="mt-6 border-b border-[var(--color-border)]">
+        <Box className="mt-6 border-b border-border">
           <Box as="nav" className="flex gap-6">
             {tabs.map((tab) => (
               <Button
@@ -211,8 +211,8 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                 className={cn(
                   "pb-3 text-sm font-bold border-b-2 transition-colors rounded-none",
                   activeTab === tab.value
-                    ? "border-[var(--color-primary)] text-[var(--color-foreground)]"
-                    : "border-transparent text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:border-[var(--color-border)]",
+                    ? "border-primary text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border",
                 )}
               >
                 {tab.label}
@@ -220,10 +220,10 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                   <Typography
                     variant="small"
                     className={cn(
-                      "ml-2 px-2 py-0.5 rounded-[var(--radius-full)] text-xs",
+                      "ml-2 px-2 py-0.5 rounded-full text-xs",
                       activeTab === tab.value
-                        ? "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
-                        : "bg-[var(--color-muted)] text-[var(--color-muted-foreground)]",
+                        ? "bg-primary/10 text-primary"
+                        : "bg-muted text-muted-foreground",
                     )}
                   >
                     {tab.count}

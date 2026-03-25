@@ -91,7 +91,7 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
       {displayedText}
       {!isComplete && (
         <span
-          className="inline-block w-[2px] h-[1em] bg-[var(--color-foreground)] ml-[1px] align-text-bottom animate-pulse"
+          className="inline-block w-[2px] h-[1em] bg-foreground ml-[1px] align-text-bottom animate-pulse"
           aria-hidden="true"
         />
       )}

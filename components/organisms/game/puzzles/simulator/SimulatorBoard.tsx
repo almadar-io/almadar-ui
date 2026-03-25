@@ -137,7 +137,7 @@ export function SimulatorBoard({
             <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
           </Box>
         ) : entity.headerImage && headerError ? (
-          <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-[var(--color-muted)] to-[var(--color-accent)] opacity-60" />
+          <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-muted to-accent opacity-60" />
         ) : null}
 
         <Card className="p-4">
@@ -150,7 +150,7 @@ export function SimulatorBoard({
         {/* Parameter sliders */}
         <Card className="p-4">
           <VStack gap="md">
-            <Typography variant="small" weight="bold" className="uppercase tracking-wider text-[var(--color-muted-foreground)]">
+            <Typography variant="small" weight="bold" className="uppercase tracking-wider text-muted-foreground">
               {t('simulator.parameters')}
             </Typography>
             {parameters.map((param) => (
@@ -167,11 +167,11 @@ export function SimulatorBoard({
                   value={values[param.id]}
                   onChange={(e) => handleParameterChange(param.id, Number(e.target.value))}
                   disabled={submitted}
-                  className="w-full accent-[var(--color-foreground)]"
+                  className="w-full accent-foreground"
                 />
                 <HStack justify="between">
-                  <Typography variant="caption" className="text-[var(--color-muted-foreground)]">{param.min} {param.unit}</Typography>
-                  <Typography variant="caption" className="text-[var(--color-muted-foreground)]">{param.max} {param.unit}</Typography>
+                  <Typography variant="caption" className="text-muted-foreground">{param.min} {param.unit}</Typography>
+                  <Typography variant="caption" className="text-muted-foreground">{param.max} {param.unit}</Typography>
                 </HStack>
               </VStack>
             ))}
@@ -181,7 +181,7 @@ export function SimulatorBoard({
         {/* Output display */}
         <Card className="p-4">
           <VStack gap="sm" align="center">
-            <Typography variant="small" weight="bold" className="uppercase tracking-wider text-[var(--color-muted-foreground)]">
+            <Typography variant="small" weight="bold" className="uppercase tracking-wider text-muted-foreground">
               {entity.outputLabel}
             </Typography>
             <Typography variant="h3" weight="bold">
@@ -197,7 +197,7 @@ export function SimulatorBoard({
                 </Typography>
               </HStack>
             )}
-            <Typography variant="caption" className="text-[var(--color-muted-foreground)]">
+            <Typography variant="caption" className="text-muted-foreground">
               {t('simulator.target')}: {targetValue} {entity?.outputUnit ?? ''} (±{targetTolerance})
             </Typography>
           </VStack>

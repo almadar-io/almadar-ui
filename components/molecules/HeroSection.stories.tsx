@@ -114,9 +114,9 @@ export const WithChildren: Story = {
     <HeroSection {...args}>
       <Box
         padding="md"
-        className="rounded-[var(--radius-md)] border border-[var(--color-border)] bg-[var(--color-background)]/10"
+        className="rounded-md border border-border bg-background/10"
       >
-        <Typography variant="body2" align="center" className="text-[var(--color-background)]">
+        <Typography variant="body2" align="center" className="text-background">
           Custom content slot: embed demos, videos, or interactive previews here.
         </Typography>
       </Box>

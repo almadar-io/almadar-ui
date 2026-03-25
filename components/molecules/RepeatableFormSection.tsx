@@ -176,7 +176,7 @@ export const RepeatableFormSection: React.FC<RepeatableFormSectionProps> = ({
                   <HStack
                     justify="between"
                     align="center"
-                    className="pb-2 border-b border-[var(--color-border)]"
+                    className="pb-2 border-b border-border"
                   >
                     <HStack gap="sm" align="center">
                       {item.addedInState && (
@@ -203,7 +203,7 @@ export const RepeatableFormSection: React.FC<RepeatableFormSectionProps> = ({
                 <HStack gap="sm" align="start">
                   {/* Drag handle */}
                   {allowReorder && !readOnly && (
-                    <Box className="pt-2 cursor-move text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]">
+                    <Box className="pt-2 cursor-move text-muted-foreground hover:text-foreground">
                       <Icon name="grip-vertical" size="md" />
                     </Box>
                   )}
@@ -217,7 +217,7 @@ export const RepeatableFormSection: React.FC<RepeatableFormSectionProps> = ({
                       variant="ghost"
                       size="sm"
                       onClick={() => handleRemove(item.id, index)}
-                      className="text-[var(--color-error)] hover:text-[var(--color-error)] hover:bg-[var(--color-error)]/10"
+                      className="text-error hover:text-error hover:bg-error/10"
                     >
                       <Icon name="trash-2" size="sm" />
                     </Button>

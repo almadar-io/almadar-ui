@@ -723,9 +723,9 @@ export const Form: React.FC<FormProps> = ({
           <Box key={section.id} border rounded="lg" overflow="hidden">
             <Box
               className={cn(
-                "px-4 py-3 bg-[var(--color-muted)] flex items-center justify-between",
+                "px-4 py-3 bg-muted flex items-center justify-between",
                 section.collapsible &&
-                  "cursor-pointer hover:bg-[var(--color-muted)]/80",
+                  "cursor-pointer hover:bg-muted/80",
               )}
               onClick={
                 section.collapsible
@@ -741,7 +741,7 @@ export const Form: React.FC<FormProps> = ({
                   name="chevron-down"
                   size="md"
                   className={cn(
-                    "text-[var(--color-muted-foreground)] transition-transform",
+                    "text-muted-foreground transition-transform",
                     isCollapsed && "rotate-180",
                   )}
                 />

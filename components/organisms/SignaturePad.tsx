@@ -198,8 +198,8 @@ export const SignaturePad: React.FC<SignaturePadProps> = ({
                 {/* Canvas container — canvas element is necessary for drawing */}
                 <Box
                     className={cn(
-                        "w-full rounded-[var(--radius-md)] border border-[var(--color-border)]",
-                        "bg-[var(--color-background)]",
+                        "w-full rounded-md border border-border",
+                        "bg-background",
                         readOnly && "opacity-60 cursor-not-allowed",
                         !readOnly && "cursor-crosshair",
                     )}

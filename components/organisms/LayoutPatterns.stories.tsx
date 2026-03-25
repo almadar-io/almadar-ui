@@ -74,7 +74,7 @@ export const GridLayout: Story = {
 
 export const CenterContent: Story = {
   render: () => (
-    <CenterPattern minHeight="200px" className="border border-dashed border-[var(--color-border)] rounded-lg">
+    <CenterPattern minHeight="200px" className="border border-dashed border-border rounded-lg">
       <VStackPattern gap="sm" align="center">
         <Typography variant="h3" weight="semibold">Centered Content</Typography>
         <Typography variant="body" color="secondary">Horizontally and vertically centered.</Typography>
@@ -85,7 +85,7 @@ export const CenterContent: Story = {
 
 export const SpacerUsage: Story = {
   render: () => (
-    <HStackPattern gap="none" className="w-full border border-[var(--color-border)] rounded-lg p-4">
+    <HStackPattern gap="none" className="w-full border border-border rounded-lg p-4">
       <Typography variant="body" weight="semibold">Logo</Typography>
       <SpacerPattern size="flex" />
       <Badge variant="info">Navigation</Badge>

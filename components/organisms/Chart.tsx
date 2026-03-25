@@ -104,7 +104,7 @@ const BarChart: React.FC<{
                         )}
                         <Box
                             className={cn(
-                                "w-full rounded-t-[var(--radius-sm)] transition-all duration-500 ease-out min-h-[4px]",
+                                "w-full rounded-t-sm transition-all duration-500 ease-out min-h-[4px]",
                             )}
                             style={{
                                 height: `${barHeight}%`,
@@ -205,7 +205,7 @@ const PieChart: React.FC<{
                     {segments.map((seg, idx) => (
                         <HStack key={idx} gap="xs" align="center">
                             <Box
-                                className="w-3 h-3 rounded-[var(--radius-sm)] flex-shrink-0"
+                                className="w-3 h-3 rounded-sm flex-shrink-0"
                                 style={{ backgroundColor: seg.color }}
                             />
                             <Typography variant="caption" color="secondary" className="truncate">
@@ -404,7 +404,7 @@ export const Chart: React.FC<ChartProps> = ({
                         {series.map((s, idx) => (
                             <HStack key={idx} gap="xs" align="center">
                                 <Box
-                                    className="w-3 h-3 rounded-[var(--radius-full)] flex-shrink-0"
+                                    className="w-3 h-3 rounded-full flex-shrink-0"
                                     style={{ backgroundColor: s.color || CHART_COLORS[idx % CHART_COLORS.length] }}
                                 />
                                 <Typography variant="caption" color="secondary">

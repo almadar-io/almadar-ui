@@ -119,7 +119,7 @@ export function DebuggerBoard({
             <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
           </Box>
         ) : entity.headerImage && headerError ? (
-          <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-[var(--color-muted)] to-[var(--color-accent)] opacity-60" />
+          <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-muted to-accent opacity-60" />
         ) : null}
 
         <Card className="p-4">
@@ -129,7 +129,7 @@ export function DebuggerBoard({
               <Typography variant="h4" weight="bold">{entity.title}</Typography>
             </HStack>
             <Typography variant="body">{entity.description}</Typography>
-            <Typography variant="caption" className="text-[var(--color-muted-foreground)]">
+            <Typography variant="caption" className="text-muted-foreground">
               {t('debugger.findBugs', { count: String(entity.bugCount) })}
             </Typography>
           </VStack>
@@ -154,10 +154,10 @@ export function DebuggerBoard({
                   key={line.id}
                   gap="none"
                   align="stretch"
-                  className={`border-b border-[var(--color-border)] cursor-pointer hover:bg-[var(--color-muted)] ${lineStyle}`}
+                  className={`border-b border-border cursor-pointer hover:bg-muted ${lineStyle}`}
                   onClick={() => toggleLine(line.id)}
                 >
-                  <Box className="w-10 flex-shrink-0 flex items-center justify-center border-r border-[var(--color-border)] text-[var(--color-muted-foreground)]">
+                  <Box className="w-10 flex-shrink-0 flex items-center justify-center border-r border-border text-muted-foreground">
                     <Typography variant="caption">{i + 1}</Typography>
                   </Box>
                   <Box className="flex-1 px-3 py-1.5 font-mono text-sm whitespace-pre">
@@ -192,7 +192,7 @@ export function DebuggerBoard({
                   <VStack gap="none">
                     <Typography variant="caption" weight="bold" className="font-mono">{line.content.trim()}</Typography>
                     {line.explanation && (
-                      <Typography variant="caption" className="text-[var(--color-muted-foreground)]">{line.explanation}</Typography>
+                      <Typography variant="caption" className="text-muted-foreground">{line.explanation}</Typography>
                     )}
                   </VStack>
                 </HStack>

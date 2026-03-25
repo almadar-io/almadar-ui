@@ -62,7 +62,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
         <Icon
           name={icon}
           size={iconSizeMap[size]}
-          className="text-[var(--color-accent,#06b6d4)]"
+          className="text-accent"
         />
       );
     }
@@ -80,7 +80,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
       variant={variant}
       padding={size}
       className={cn(
-        variant === 'interactive' && 'hover:border-[var(--color-primary)]',
+        variant === 'interactive' && 'hover:border-primary',
         className,
       )}
       onClick={variant === 'interactive' && href ? handleLinkClick : undefined}
@@ -98,7 +98,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
             variant="ghost"
             size="sm"
             onClick={handleLinkClick}
-            className="text-[var(--color-primary)] -ml-2"
+            className="text-primary -ml-2"
           >
             {linkLabel}
           </Button>

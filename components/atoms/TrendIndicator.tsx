@@ -33,10 +33,10 @@ function resolveDirection(value: number | undefined, direction: TrendDirection |
 }
 
 function resolveColor(dir: TrendDirection, invert: boolean): string {
-  if (dir === "flat") return "text-[var(--color-muted-foreground)]";
+  if (dir === "flat") return "text-muted-foreground";
   const isPositive = dir === "up";
   const isGood = invert ? !isPositive : isPositive;
-  return isGood ? "text-[var(--color-success)]" : "text-[var(--color-error)]";
+  return isGood ? "text-success" : "text-error";
 }
 
 const iconMap = {

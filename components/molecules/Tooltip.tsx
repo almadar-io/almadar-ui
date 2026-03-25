@@ -39,10 +39,10 @@ const positionClasses: Record<TooltipPosition, string> = {
 
 // Arrow colors use CSS variables
 const arrowClasses: Record<TooltipPosition, string> = {
-  top: 'top-full left-1/2 -translate-x-1/2 border-t-[var(--color-primary)] border-l-transparent border-r-transparent border-b-transparent',
-  bottom: 'bottom-full left-1/2 -translate-x-1/2 border-b-[var(--color-primary)] border-l-transparent border-r-transparent border-t-transparent',
-  left: 'left-full top-1/2 -translate-y-1/2 border-l-[var(--color-primary)] border-t-transparent border-b-transparent border-r-transparent',
-  right: 'right-full top-1/2 -translate-y-1/2 border-r-[var(--color-primary)] border-t-transparent border-b-transparent border-l-transparent',
+  top: 'top-full left-1/2 -translate-x-1/2 border-t-primary border-l-transparent border-r-transparent border-b-transparent',
+  bottom: 'bottom-full left-1/2 -translate-x-1/2 border-b-primary border-l-transparent border-r-transparent border-t-transparent',
+  left: 'left-full top-1/2 -translate-y-1/2 border-l-primary border-t-transparent border-b-transparent border-r-transparent',
+  right: 'right-full top-1/2 -translate-y-1/2 border-r-primary border-t-transparent border-b-transparent border-l-transparent',
 };
 
 export const Tooltip: React.FC<TooltipProps> = ({
@@ -115,8 +115,8 @@ export const Tooltip: React.FC<TooltipProps> = ({
       ref={tooltipRef}
       className={cn(
         'fixed z-50 px-3 py-2 max-w-xs',
-        'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]',
-        'shadow-[var(--shadow-sm)] rounded-[var(--radius-sm)]',
+        'bg-primary text-primary-foreground',
+        'shadow-sm rounded-sm',
         'text-sm pointer-events-none',
         'break-words whitespace-normal',
         'h-auto min-h-fit',
@@ -140,7 +140,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
     >
       <div className="w-full break-words whitespace-normal h-auto">
         {typeof content === 'string' ? (
-          <Typography variant="small" className="text-[var(--color-primary-foreground)] break-words whitespace-normal">
+          <Typography variant="small" className="text-primary-foreground break-words whitespace-normal">
             {content}
           </Typography>
         ) : (

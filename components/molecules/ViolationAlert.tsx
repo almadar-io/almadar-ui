@@ -93,24 +93,24 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
 
   const bgColor =
     effectiveSeverity === "warning"
-      ? "bg-[var(--color-warning)]/10 border-[var(--color-warning)]/30"
-      : "bg-[var(--color-error)]/10 border-[var(--color-error)]/30";
+      ? "bg-warning/10 border-warning/30"
+      : "bg-error/10 border-error/30";
 
   const textColor =
     effectiveSeverity === "warning"
-      ? "text-[var(--color-warning)]"
-      : "text-[var(--color-error)]";
+      ? "text-warning"
+      : "text-error";
 
   const iconColor =
     effectiveSeverity === "warning"
-      ? "text-[var(--color-warning)]"
-      : "text-[var(--color-error)]";
+      ? "text-warning"
+      : "text-error";
 
   if (compact) {
     return (
       <Box
         className={cn(
-          "px-3 py-2 rounded-[var(--radius-md)] border",
+          "px-3 py-2 rounded-md border",
           bgColor,
           className,
         )}
@@ -151,7 +151,7 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
   return (
     <Box
       className={cn(
-        "p-4 rounded-[var(--radius-lg)] border",
+        "p-4 rounded-lg border",
         bgColor,
         className,
       )}
@@ -200,8 +200,8 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
             className={cn(
               "pt-2 border-t",
               effectiveSeverity === "warning"
-                ? "border-[var(--color-warning)]/30"
-                : "border-[var(--color-error)]/30",
+                ? "border-warning/30"
+                : "border-error/30",
             )}
           >
             <VStack gap="xs">

@@ -54,7 +54,7 @@ export const DocTOC: React.FC<DocTOCProps> = ({
                 'pl-3',
                 indent,
                 isActive
-                  ? 'border-l-[var(--color-primary)]'
+                  ? 'border-l-primary'
                   : 'border-l-transparent hover:border-l-[var(--color-muted)]',
               )}
               onClick={() => {
@@ -69,8 +69,8 @@ export const DocTOC: React.FC<DocTOCProps> = ({
                 className={cn(
                   'transition-colors',
                   isActive
-                    ? 'text-[var(--color-primary)] font-medium'
-                    : 'text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]',
+                    ? 'text-primary font-medium'
+                    : 'text-muted-foreground hover:text-foreground',
                 )}
                 as="span"
               >

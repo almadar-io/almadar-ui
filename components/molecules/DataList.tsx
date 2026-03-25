@@ -289,8 +289,8 @@ export const DataList: React.FC<DataListProps> = ({
                     className={cn(
                       'max-w-[75%] px-4 py-2',
                       isSent
-                        ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)] rounded-2xl rounded-br-sm'
-                        : 'bg-[var(--color-muted)] text-[var(--color-foreground)] rounded-2xl rounded-bl-sm',
+                        ? 'bg-primary text-primary-foreground rounded-2xl rounded-br-sm'
+                        : 'bg-muted text-foreground rounded-2xl rounded-bl-sm',
                     )}
                   >
                     {!isSent && senderField && (
@@ -306,7 +306,7 @@ export const DataList: React.FC<DataListProps> = ({
                         variant="caption"
                         className={cn(
                           'mt-1 text-[0.65rem]',
-                          isSent ? 'opacity-70' : 'text-[var(--color-muted-foreground)]',
+                          isSent ? 'opacity-70' : 'text-muted-foreground',
                         )}
                       >
                         {formatDate(timestamp)}
@@ -339,8 +339,8 @@ export const DataList: React.FC<DataListProps> = ({
             className={cn(
               'group flex items-center gap-4 transition-all duration-200',
               isCompact ? 'px-4 py-2' : 'px-6 py-4',
-              'hover:bg-[var(--color-muted)]/80',
-              !isCard && !isCompact && 'rounded-[var(--radius-lg)] border border-transparent hover:border-[var(--color-border)]',
+              'hover:bg-muted/80',
+              !isCard && !isCompact && 'rounded-lg border border-transparent hover:border-border',
             )}
           >
             <Box className="flex-1 min-w-0">
@@ -362,7 +362,7 @@ export const DataList: React.FC<DataListProps> = ({
                     onClick={handleActionClick(action, itemData)}
                     data-testid={`action-${action.event}`}
                     className={cn(
-                      action.variant === 'danger' && 'text-[var(--color-error)] hover:bg-[var(--color-error)]/10',
+                      action.variant === 'danger' && 'text-error hover:bg-error/10',
                     )}
                   >
                     {action.icon && <Icon name={action.icon} size="xs" className="mr-1" />}
@@ -373,7 +373,7 @@ export const DataList: React.FC<DataListProps> = ({
             )}
           </Box>
           {isCard && !isLast && (
-            <Box className="mx-6 border-b border-[var(--color-border)]/40" />
+            <Box className="mx-6 border-b border-border/40" />
           )}
         </Box>
       );
@@ -389,8 +389,8 @@ export const DataList: React.FC<DataListProps> = ({
           className={cn(
             'group flex items-center gap-4 transition-all duration-200',
             isCompact ? 'px-4 py-2' : 'px-6 py-4',
-            'hover:bg-[var(--color-muted)]/80',
-            !isCard && !isCompact && 'rounded-[var(--radius-lg)] border border-transparent hover:border-[var(--color-border)]',
+            'hover:bg-muted/80',
+            !isCard && !isCompact && 'rounded-lg border border-transparent hover:border-border',
           )}
         >
           {/* Main content area */}
@@ -401,7 +401,7 @@ export const DataList: React.FC<DataListProps> = ({
                 <Icon
                   name={titleField.icon}
                   size={isCompact ? 'xs' : 'sm'}
-                  className="text-[var(--color-primary)] flex-shrink-0"
+                  className="text-primary flex-shrink-0"
                 />
               )}
               {titleValue !== undefined && titleValue !== null && (
@@ -437,7 +437,7 @@ export const DataList: React.FC<DataListProps> = ({
                   return (
                     <HStack key={field.name} gap="xs" className="items-center">
                       {field.icon && (
-                        <Icon name={field.icon} size="xs" className="text-[var(--color-muted-foreground)]" />
+                        <Icon name={field.icon} size="xs" className="text-muted-foreground" />
                       )}
                       <Typography variant="caption" color="secondary">
                         {field.label ?? fieldLabel(field.name)}:
@@ -458,7 +458,7 @@ export const DataList: React.FC<DataListProps> = ({
               return (
                 <Box key={field.name} className="mt-2 max-w-xs">
                   <HStack gap="xs" className="items-center mb-1">
-                    {field.icon && <Icon name={field.icon} size="xs" className="text-[var(--color-muted-foreground)]" />}
+                    {field.icon && <Icon name={field.icon} size="xs" className="text-muted-foreground" />}
                     <Typography variant="caption" color="secondary">
                       {field.label ?? fieldLabel(field.name)}
                     </Typography>
@@ -486,7 +486,7 @@ export const DataList: React.FC<DataListProps> = ({
                   onClick={handleActionClick(action, itemData)}
                   data-testid={`action-${action.event}`}
                   className={cn(
-                    action.variant === 'danger' && 'text-[var(--color-error)] hover:bg-[var(--color-error)]/10',
+                    action.variant === 'danger' && 'text-error hover:bg-error/10',
                   )}
                 >
                   {action.icon && <Icon name={action.icon} size="xs" className="mr-1" />}
@@ -499,7 +499,7 @@ export const DataList: React.FC<DataListProps> = ({
 
         {/* Divider between items (card variant) */}
         {isCard && !isLast && (
-          <Box className="mx-6 border-b border-[var(--color-border)]/40" />
+          <Box className="mx-6 border-b border-border/40" />
         )}
       </Box>
     );
@@ -508,7 +508,7 @@ export const DataList: React.FC<DataListProps> = ({
   return (
     <Box
       className={cn(
-        isCard && 'bg-[var(--color-card)] rounded-[var(--radius-xl)] border border-[var(--color-border)] shadow-[var(--shadow-lg)] overflow-hidden',
+        isCard && 'bg-card rounded-xl border border-border shadow-lg overflow-hidden',
         !isCard && gapClass,
         className,
       )}

@@ -47,13 +47,13 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
         className,
       )}
     >
-      <Box className="mb-4 rounded-[var(--radius-full)] bg-[var(--color-error)]/10 p-3">
-        <AlertCircle className="h-8 w-8 text-[var(--color-error)]" />
+      <Box className="mb-4 rounded-full bg-error/10 p-3">
+        <AlertCircle className="h-8 w-8 text-error" />
       </Box>
-      <Typography variant="h3" className="text-lg font-medium text-[var(--color-foreground)]">
+      <Typography variant="h3" className="text-lg font-medium text-foreground">
         {resolvedTitle}
       </Typography>
-      <Typography variant="small" className="mt-1 text-[var(--color-muted-foreground)] max-w-sm">
+      <Typography variant="small" className="mt-1 text-muted-foreground max-w-sm">
         {resolvedMessage}
       </Typography>
       {(onRetry || retryEvent) && (

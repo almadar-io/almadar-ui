@@ -82,7 +82,7 @@ export const FormSection: React.FC<FormSectionProps> = ({
                     icon={ChevronDown}
                     size="sm"
                     className={cn(
-                      "text-[var(--color-muted-foreground)] transition-transform",
+                      "text-muted-foreground transition-transform",
                       collapsed && "rotate-180",
                     )}
                   />
@@ -131,7 +131,7 @@ export const FormLayout: React.FC<FormLayoutProps> = ({
       gap="lg"
       className={cn(
         dividers &&
-          "[&>*+*]:pt-8 [&>*+*]:border-t [&>*+*]:border-[var(--color-border)]",
+          "[&>*+*]:pt-8 [&>*+*]:border-t [&>*+*]:border-border",
         className,
       )}
     >
@@ -171,10 +171,10 @@ export const FormActions: React.FC<FormActionsProps> = ({
       gap="sm"
       align="center"
       className={cn(
-        "pt-6 border-t border-[var(--color-border)]",
+        "pt-6 border-t border-border",
         alignClass,
         sticky &&
-          "sticky bottom-0 bg-[var(--color-card)] py-4 -mx-6 px-6 shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.05)]",
+          "sticky bottom-0 bg-card py-4 -mx-6 px-6 shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.05)]",
         className,
       )}
     >

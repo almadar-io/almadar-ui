@@ -50,12 +50,12 @@ function CountingDemo() {
       <AnimatedCounter value={count} duration={800} />
       <button
         type="button"
-        className="px-4 py-2 rounded-lg bg-[var(--color-primary)] text-[var(--color-primary-foreground)] text-sm font-medium"
+        className="px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium"
         onClick={() => setCount((prev) => prev + 1000)}
       >
         Add 1000
       </button>
-      <span className="text-xs text-[var(--color-muted-foreground)]">
+      <span className="text-xs text-muted-foreground">
         Current target: {count}
       </span>
     </div>
@@ -69,12 +69,12 @@ export const Counting: Story = {
 export const InContext: Story = {
   render: () => (
     <div className="space-y-4">
-      <div className="flex items-center justify-between p-4 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] w-64">
-        <div className="text-xs text-[var(--color-muted-foreground)]">Revenue</div>
+      <div className="flex items-center justify-between p-4 rounded-lg bg-surface border border-border w-64">
+        <div className="text-xs text-muted-foreground">Revenue</div>
         <AnimatedCounter prefix="$" value={12450} />
       </div>
-      <div className="flex items-center justify-between p-4 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] w-64">
-        <div className="text-xs text-[var(--color-muted-foreground)]">Completion</div>
+      <div className="flex items-center justify-between p-4 rounded-lg bg-surface border border-border w-64">
+        <div className="text-xs text-muted-foreground">Completion</div>
         <AnimatedCounter value={87.5} suffix="%" />
       </div>
     </div>

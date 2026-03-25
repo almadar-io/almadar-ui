@@ -16,13 +16,13 @@ export const Label = React.forwardRef<HTMLLabelElement, LabelProps>(
       <label
         ref={ref}
         className={cn(
-          "block text-sm font-bold text-[var(--color-foreground)]",
+          "block text-sm font-bold text-foreground",
           className,
         )}
         {...props}
       >
         {children}
-        {required && <span className="text-[var(--color-error)] ml-1">*</span>}
+        {required && <span className="text-error ml-1">*</span>}
       </label>
     );
   },

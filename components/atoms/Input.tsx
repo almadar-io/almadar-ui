@@ -84,15 +84,15 @@ export const Input = React.forwardRef<
     const showClearButton = clearable && value && String(value).length > 0;
 
     const baseClassName = cn(
-      "block w-full rounded-[var(--radius-sm)] transition-all duration-[var(--transition-fast)]",
-      "border-[length:var(--border-width-thin)] border-[var(--color-border)]",
+      "block w-full rounded-sm transition-all duration-[var(--transition-fast)]",
+      "border-[length:var(--border-width-thin)] border-border",
       "px-3 py-2 text-sm",
-      "bg-[var(--color-card)] hover:bg-[var(--color-muted)] focus:bg-[var(--color-card)]",
-      "text-[var(--color-foreground)] placeholder:text-[var(--color-muted-foreground)]",
-      "focus:outline-none focus:ring-1 focus:ring-[var(--color-ring)] focus:border-[var(--color-ring)]",
-      "disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[var(--color-muted)]",
+      "bg-card hover:bg-muted focus:bg-card",
+      "text-foreground placeholder:text-muted-foreground",
+      "focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring",
+      "disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-muted",
       error
-        ? "border-[var(--color-error)] focus:border-[var(--color-error)] focus:ring-[var(--color-error)]"
+        ? "border-error focus:border-error focus:ring-error"
         : "",
       resolvedLeftIcon && "pl-10",
       (rightIcon || showClearButton) && "pr-10",
@@ -104,7 +104,7 @@ export const Input = React.forwardRef<
       return (
         <div className="relative">
           {resolvedLeftIcon && (
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[var(--color-muted-foreground)]">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
               {resolvedLeftIcon}
             </div>
           )}
@@ -122,7 +122,7 @@ export const Input = React.forwardRef<
               </option>
             ))}
           </select>
-          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-[var(--color-muted-foreground)]">
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-muted-foreground">
             <ChevronDown className="h-4 w-4" />
           </div>
         </div>
@@ -154,9 +154,9 @@ export const Input = React.forwardRef<
           checked={props.checked}
           onChange={onChange}
           className={cn(
-            "h-4 w-4 rounded-[var(--radius-sm)]",
-            "border-[var(--color-border)]",
-            "text-[var(--color-primary)] focus:ring-[var(--color-ring)]",
+            "h-4 w-4 rounded-sm",
+            "border-border",
+            "text-primary focus:ring-ring",
             "disabled:opacity-50 disabled:cursor-not-allowed",
             className,
           )}
@@ -169,7 +169,7 @@ export const Input = React.forwardRef<
     return (
       <div className="relative">
         {resolvedLeftIcon && (
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-[var(--color-muted-foreground)]">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
             {resolvedLeftIcon}
           </div>
         )}
@@ -185,13 +185,13 @@ export const Input = React.forwardRef<
           <button
             type="button"
             onClick={onClear}
-            className="absolute inset-y-0 right-0 pr-3 flex items-center text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
+            className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
           >
             <X className="h-4 w-4" />
           </button>
         )}
         {rightIcon && !showClearButton && (
-          <div className="absolute inset-y-0 right-0 pr-3 flex items-center text-[var(--color-muted-foreground)]">
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground">
             {rightIcon}
           </div>
         )}

@@ -64,7 +64,7 @@ export const AboutPageTemplate: React.FC<AboutPageTemplateProps> = ({
       {resolved.articles.map((article, index) => (
         <Box
           key={`article-${index}`}
-          className={cn('py-12', index % 2 !== 0 && 'bg-[var(--color-muted)]/20')}
+          className={cn('py-12', index % 2 !== 0 && 'bg-muted/20')}
         >
           <Container size="lg" padding="lg">
             <ArticleSection title={article.title}>
@@ -77,7 +77,7 @@ export const AboutPageTemplate: React.FC<AboutPageTemplateProps> = ({
       ))}
 
       {resolved.team && resolved.team.length > 0 && (
-        <Box className="bg-[var(--color-muted)]/20 py-16">
+        <Box className="bg-muted/20 py-16">
           <Container size="xl" padding="lg">
             <VStack gap="lg">
               <SectionHeader title="Our Team" />

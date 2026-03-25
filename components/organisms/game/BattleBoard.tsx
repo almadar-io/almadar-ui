@@ -518,7 +518,7 @@ export function BattleBoard({
         : {};
 
     return (
-        <VStack className={cn('battle-board relative min-h-[600px] bg-[var(--color-background)]', className)} gap="none">
+        <VStack className={cn('battle-board relative min-h-[600px] bg-background', className)} gap="none">
             {/* Shake keyframes */}
             <style>{`
                 @keyframes battle-shake {

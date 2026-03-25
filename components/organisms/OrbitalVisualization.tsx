@@ -279,7 +279,7 @@ const DumbbellOrbital: React.FC<DumbbellOrbitalProps> = ({
       {/* Node (nucleus) */}
       {config.hasNode && (
         <Box
-          className="absolute rounded-[var(--radius-full)] bg-[var(--color-foreground)]"
+          className="absolute rounded-full bg-foreground"
           style={{
             width: size * 0.06,
             height: size * 0.06,
@@ -350,7 +350,7 @@ const CloverleafOrbital: React.FC<CloverleafOrbitalProps> = ({
       })}
       {/* Central node */}
       <Box
-        className="absolute rounded-[var(--radius-full)] bg-[var(--color-foreground)]"
+        className="absolute rounded-full bg-foreground"
         style={{
           width: size * 0.08,
           height: size * 0.08,
@@ -474,7 +474,7 @@ export const OrbitalVisualization: React.FC<OrbitalVisualizationProps> = ({
       {/* Label */}
       {showLabel && (
         <Box className="mt-4 text-center">
-          <Typography variant="body" className="text-lg font-semibold text-[var(--color-foreground)]">
+          <Typography variant="body" className="text-lg font-semibold text-foreground">
             {config.name}
           </Typography>
           <Typography variant="small" color="muted">

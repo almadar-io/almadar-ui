@@ -88,8 +88,8 @@ export const WithFooter: Story = {
         collapseChangeEvent: 'UI:SIDEBAR_COLLAPSE',
         logoClickEvent: 'UI:SIDEBAR_LOGO',
         footerContent: (
-            <Box className="p-4 border-t-2 border-[var(--color-border)]">
-                <Box className="text-sm text-[var(--color-muted-foreground)]">v1.0.0</Box>
+            <Box className="p-4 border-t-2 border-border">
+                <Box className="text-sm text-muted-foreground">v1.0.0</Box>
             </Box>
         ),
     },

@@ -47,8 +47,8 @@ export const WithDelay: Story = {
 
 export const InContext: Story = {
   render: () => (
-    <div className="p-6 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] w-96">
-      <div className="text-xs text-[var(--color-muted-foreground)] mb-2">AI Response</div>
+    <div className="p-6 rounded-lg bg-surface border border-border w-96">
+      <div className="text-xs text-muted-foreground mb-2">AI Response</div>
       <TypewriterText
         text="Based on the analysis, your revenue grew 23% this quarter, driven primarily by the expansion into three new markets."
         speed={30}

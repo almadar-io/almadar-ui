@@ -65,12 +65,12 @@ function formatValue(value: unknown, format?: string, max?: number): string {
 }
 
 const variantColor: Record<string, string> = {
-  default: 'text-[var(--color-foreground)]',
-  primary: 'text-[var(--color-primary)]',
-  success: 'text-[var(--color-success)]',
-  warning: 'text-[var(--color-warning)]',
-  error: 'text-[var(--color-error)]',
-  info: 'text-[var(--color-info)]',
+  default: 'text-foreground',
+  primary: 'text-primary',
+  success: 'text-success',
+  warning: 'text-warning',
+  error: 'text-error',
+  info: 'text-info',
 };
 
 export const StatDisplay: React.FC<StatDisplayProps> = ({
@@ -78,8 +78,8 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
   value,
   max,
   icon: iconProp,
-  iconBg = 'bg-[var(--color-muted)]',
-  iconColor = 'text-[var(--color-foreground)]',
+  iconBg = 'bg-muted',
+  iconColor = 'text-foreground',
   format,
   size = 'md',
   variant = 'default',
@@ -110,8 +110,8 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
     return (
       <Card className={cn(padSizes[size], className)}>
         <VStack gap="sm" className="animate-pulse">
-          <Box className="h-3 bg-[var(--color-muted)] rounded w-16" />
-          <Box className="h-6 bg-[var(--color-muted)] rounded w-12" />
+          <Box className="h-3 bg-muted rounded w-16" />
+          <Box className="h-6 bg-muted rounded w-12" />
         </VStack>
       </Card>
     );
@@ -142,7 +142,7 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
           </Typography>
         </VStack>
         {(ResolvedIcon || (typeof iconProp !== 'string' && iconProp)) && (
-          <Box className={cn('p-3 rounded-[var(--radius-md)]', iconBg)}>
+          <Box className={cn('p-3 rounded-md', iconBg)}>
             {ResolvedIcon
               ? <ResolvedIcon className={cn(iconSizes[size], iconColor)} />
               : iconProp}

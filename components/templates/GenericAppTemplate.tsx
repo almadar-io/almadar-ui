@@ -50,7 +50,7 @@ export const GenericAppTemplate: React.FC<GenericAppTemplateProps> = ({
       <Box
         padding="md"
         border
-        className="border-b-2 border-x-0 border-t-0 border-[var(--color-border)] flex items-center justify-between flex-shrink-0"
+        className="border-b-2 border-x-0 border-t-0 border-border flex items-center justify-between flex-shrink-0"
       >
         <Box>
           <Typography variant="h3">{title}</Typography>
@@ -76,7 +76,7 @@ export const GenericAppTemplate: React.FC<GenericAppTemplateProps> = ({
           padding="md"
           border
           bg="muted"
-          className="border-t-2 border-x-0 border-b-0 border-[var(--color-border)] flex-shrink-0"
+          className="border-t-2 border-x-0 border-b-0 border-border flex-shrink-0"
         >
           {footer}
         </Box>

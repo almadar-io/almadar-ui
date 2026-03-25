@@ -98,22 +98,22 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       {Icon && (
         <Box
           className={cn(
-            "mb-4 rounded-[var(--radius-full)] p-3",
+            "mb-4 rounded-full p-3",
             isDestructive
-              ? "bg-[var(--color-error)]/10"
+              ? "bg-error/10"
               : isSuccess
-                ? "bg-[var(--color-success)]/10"
-                : "bg-[var(--color-muted)]",
+                ? "bg-success/10"
+                : "bg-muted",
           )}
         >
           <Icon
             className={cn(
               "h-8 w-8",
               isDestructive
-                ? "text-[var(--color-error)]"
+                ? "text-error"
                 : isSuccess
-                  ? "text-[var(--color-success)]"
-                  : "text-[var(--color-muted-foreground)]",
+                  ? "text-success"
+                  : "text-muted-foreground",
             )}
           />
         </Box>
@@ -123,16 +123,16 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         className={cn(
           "text-lg font-medium",
           isDestructive
-            ? "text-[var(--color-error)]"
+            ? "text-error"
             : isSuccess
-              ? "text-[var(--color-success)]"
-              : "text-[var(--color-foreground)]",
+              ? "text-success"
+              : "text-foreground",
         )}
       >
         {displayText}
       </Typography>
       {description && (
-        <Typography variant="small" className="mt-1 text-[var(--color-muted-foreground)] max-w-sm">
+        <Typography variant="small" className="mt-1 text-muted-foreground max-w-sm">
           {description}
         </Typography>
       )}

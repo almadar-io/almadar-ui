@@ -116,11 +116,11 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
               onClick={() => setTheme(t.name)}
               className={`
                 px-3 py-2 text-sm font-medium transition-all
-                border-[length:var(--border-width)] rounded-[var(--radius-sm)]
+                border-[length:var(--border-width)] rounded-sm
                 ${
                   isActive
-                    ? "bg-[var(--color-primary)] text-[var(--color-primary-foreground)] border-[var(--color-primary)]"
-                    : "bg-[var(--color-secondary)] text-[var(--color-secondary-foreground)] border-[var(--color-border)] hover:bg-[var(--color-secondary-hover)]"
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-secondary text-secondary-foreground border-border hover:bg-secondary-hover"
                 }
               `}
               title={getThemeLabel(t.name).description}
@@ -141,11 +141,11 @@ export const ThemeSelector: React.FC<ThemeSelectorProps> = ({
         onChange={(e) => setTheme(e.target.value)}
         className={`
           px-3 py-2 pr-8 text-sm font-medium
-          bg-[var(--color-secondary)] text-[var(--color-secondary-foreground)]
-          border-[length:var(--border-width)] border-[var(--color-border)]
-          rounded-[var(--radius-sm)]
+          bg-secondary text-secondary-foreground
+          border-[length:var(--border-width)] border-border
+          rounded-sm
           cursor-pointer appearance-none
-          focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]
+          focus:outline-none focus:ring-2 focus:ring-ring
         `}
       >
         {availableThemes.map((t) => {

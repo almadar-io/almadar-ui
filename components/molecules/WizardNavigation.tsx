@@ -129,7 +129,7 @@ export const WizardNavigation: React.FC<WizardNavigationProps> = ({
     <Box
       border
       className={cn(
-        "border-t-2 border-x-0 border-b-0 border-[var(--color-border)] flex justify-between items-center",
+        "border-t-2 border-x-0 border-b-0 border-border flex justify-between items-center",
         compact ? "px-4 py-2" : "px-6 py-4",
         className,
       )}

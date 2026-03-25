@@ -27,7 +27,7 @@ function renderTaskItem(item: TaskItem, index: number) {
     <HStack
       align="center"
       gap="sm"
-      className="py-3 px-2 border-b border-[var(--color-border)]"
+      className="py-3 px-2 border-b border-border"
     >
       <Icon name={item.icon} size="sm" />
       <Typography variant="body2">

@@ -118,10 +118,10 @@ export const SplitPane: React.FC<SplitPaneProps> = ({
         <div
           onMouseDown={handleMouseDown}
           className={cn(
-            "flex-shrink-0 bg-[var(--color-border)] transition-colors",
+            "flex-shrink-0 bg-border transition-colors",
             isHorizontal
-              ? "w-1 cursor-col-resize hover:w-1.5 hover:bg-[var(--color-muted-foreground)]"
-              : "h-1 cursor-row-resize hover:h-1.5 hover:bg-[var(--color-muted-foreground)]",
+              ? "w-1 cursor-col-resize hover:w-1.5 hover:bg-muted-foreground"
+              : "h-1 cursor-row-resize hover:h-1.5 hover:bg-muted-foreground",
           )}
         />
       )}

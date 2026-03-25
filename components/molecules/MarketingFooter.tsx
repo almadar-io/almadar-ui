@@ -41,8 +41,8 @@ export const MarketingFooter: React.FC<MarketingFooterProps> = ({
     <Box
       as="footer"
       className={cn(
-        'bg-[var(--color-surface)]',
-        'border-t border-[var(--color-border)]',
+        'bg-surface',
+        'border-t border-border',
         'pt-12 pb-8 px-4',
         className,
       )}
@@ -65,7 +65,7 @@ export const MarketingFooter: React.FC<MarketingFooterProps> = ({
             <VStack key={col.title} gap="sm" className="min-w-[140px] mb-4">
               <Typography
                 variant="body2"
-                className="font-semibold text-[var(--color-foreground)] mb-1"
+                className="font-semibold text-foreground mb-1"
               >
                 {col.title}
               </Typography>
@@ -75,8 +75,8 @@ export const MarketingFooter: React.FC<MarketingFooterProps> = ({
                   href={item.href}
                   className={cn(
                     'text-sm no-underline',
-                    'text-[var(--color-foreground)]/60',
-                    'hover:text-[var(--color-accent)]',
+                    'text-foreground/60',
+                    'hover:text-accent',
                     'transition-colors duration-150',
                   )}
                   target={item.href.startsWith('http') ? '_blank' : undefined}
@@ -93,7 +93,7 @@ export const MarketingFooter: React.FC<MarketingFooterProps> = ({
         {copyright && (
           <Typography
             variant="caption"
-            className="text-[var(--color-foreground)]/30 text-center w-full pt-6"
+            className="text-foreground/30 text-center w-full pt-6"
           >
             {copyright}
           </Typography>

@@ -51,7 +51,7 @@ export const SplitSection: React.FC<SplitSectionProps> = ({
               <Icon
                 name="check"
                 size="sm"
-                className="text-[var(--color-primary)] flex-shrink-0 mt-0.5"
+                className="text-primary flex-shrink-0 mt-0.5"
               />
               <Typography variant="body2">{bullet}</Typography>
             </HStack>
@@ -65,7 +65,7 @@ export const SplitSection: React.FC<SplitSectionProps> = ({
     image ? (
       <Box
         className={cn(
-          'flex-1 min-w-0 min-h-[240px] rounded-[var(--radius-md)]',
+          'flex-1 min-w-0 min-h-[240px] rounded-md',
           'bg-cover bg-center',
         )}
         style={{ backgroundImage: `url(${image.src})` }}
@@ -82,8 +82,8 @@ export const SplitSection: React.FC<SplitSectionProps> = ({
       className={cn(
         'w-full',
         background === 'alt'
-          ? 'bg-[var(--color-muted)]'
-          : 'bg-[var(--color-background)]',
+          ? 'bg-muted'
+          : 'bg-background',
         className,
       )}
       padding="lg"

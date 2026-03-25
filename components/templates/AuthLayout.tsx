@@ -55,7 +55,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           <Box className="relative z-10">
             <Link to="/" className="flex items-center gap-3">
               {logo || (
-                <Box className="w-10 h-10 bg-white/20 rounded-[var(--radius-xl)] flex items-center justify-center backdrop-blur">
+                <Box className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur">
                   <Typography
                     variant="body1"
                     className="text-white font-bold text-lg"
@@ -91,7 +91,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
                 </Typography>
 
                 {/* Testimonial or feature list */}
-                <Box className="mt-12 p-6 bg-white/10 rounded-[var(--radius-xl)] backdrop-blur">
+                <Box className="mt-12 p-6 bg-white/10 rounded-xl backdrop-blur">
                   <Typography
                     variant="body1"
                     className="text-white/90 italic"
@@ -100,7 +100,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
                     recommended!&quot;
                   </Typography>
                   <HStack className="mt-4" gap="sm" align="center">
-                    <Box className="w-10 h-10 bg-white/20 rounded-[var(--radius-full)]" />
+                    <Box className="w-10 h-10 bg-white/20 rounded-full" />
                     <VStack gap="none">
                       <Typography
                         variant="body1"
@@ -122,8 +122,8 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           </Box>
 
           {/* Decorative elements */}
-          <Box className="absolute -bottom-32 -right-32 w-96 h-96 bg-white/5 rounded-[var(--radius-full)]" />
-          <Box className="absolute -top-16 -right-16 w-64 h-64 bg-white/5 rounded-[var(--radius-full)]" />
+          <Box className="absolute -bottom-32 -right-32 w-96 h-96 bg-white/5 rounded-full" />
+          <Box className="absolute -top-16 -right-16 w-64 h-64 bg-white/5 rounded-full" />
         </VStack>
       )}
 
@@ -131,7 +131,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
       <Box
         className={cn(
           "flex-1 flex items-center justify-center p-6 sm:p-12",
-          "bg-[var(--color-background)]",
+          "bg-background",
         )}
       >
         <Box className="w-full max-w-md">
@@ -139,7 +139,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           <Box className="lg:hidden mb-8 text-center">
             <Link to="/" className="inline-flex items-center gap-3">
               {logo || (
-                <Box className="w-12 h-12 bg-primary-600 rounded-[var(--radius-xl)] flex items-center justify-center">
+                <Box className="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center">
                   <Typography
                     variant="body1"
                     className="text-white font-bold text-xl"
@@ -150,7 +150,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
               )}
               <Typography
                 variant="body1"
-                className="text-2xl font-bold text-[var(--color-foreground)]"
+                className="text-2xl font-bold text-foreground"
               >
                 {appName}
               </Typography>

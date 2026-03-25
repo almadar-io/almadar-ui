@@ -163,7 +163,7 @@ function renderRichFieldValue(
             <img
               src={str}
               alt={formatFieldLabel(fieldName)}
-              className="max-w-full max-h-64 rounded-[var(--radius-md)] object-contain"
+              className="max-w-full max-h-64 rounded-md object-contain"
               loading="lazy"
             />
           </Box>
@@ -184,7 +184,7 @@ function renderRichFieldValue(
 
     case "code":
       return (
-        <Box className="mt-1 rounded-[var(--radius-md)] bg-[var(--color-muted)] p-3 overflow-x-auto">
+        <Box className="mt-1 rounded-md bg-muted p-3 overflow-x-auto">
           <pre className="text-sm font-mono whitespace-pre-wrap break-words m-0">
             <code>{str}</code>
           </pre>
@@ -713,7 +713,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                     <Icon
                       icon={field.icon}
                       size="md"
-                      className="text-[var(--color-muted-foreground)] mt-1"
+                      className="text-muted-foreground mt-1"
                     />
                   )}
                   <VStack gap="xs" flex className="min-w-0">
@@ -749,7 +749,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     <Box
       className={cn(
         slideOver &&
-          "fixed inset-y-0 right-0 w-full max-w-2xl bg-[var(--color-card)] shadow-[var(--shadow-lg)] z-50 overflow-y-auto p-6",
+          "fixed inset-y-0 right-0 w-full max-w-2xl bg-card shadow-lg z-50 overflow-y-auto p-6",
         className,
       )}
     >

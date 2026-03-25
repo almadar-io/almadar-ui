@@ -421,7 +421,7 @@ export function WorldMapBoard({
     }
 
     return (
-        <VStack className={cn('world-map-board min-h-screen bg-[var(--color-background)]', className)} gap="none">
+        <VStack className={cn('world-map-board min-h-screen bg-background', className)} gap="none">
             {/* Header slot */}
             {header && header(ctx)}
 
@@ -458,7 +458,7 @@ export function WorldMapBoard({
 
                 {/* Side panel slot */}
                 {sidePanel && (
-                    <Stack className="w-80 shrink-0 border-l border-[var(--color-border)] bg-[var(--color-surface)] overflow-y-auto p-4">
+                    <Stack className="w-80 shrink-0 border-l border-border bg-surface overflow-y-auto p-4">
                         {sidePanel(ctx)}
                     </Stack>
                 )}

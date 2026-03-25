@@ -95,8 +95,8 @@ export const SidePanel: React.FC<SidePanelProps> = ({
       <aside
         className={cn(
           "fixed top-16 lg:top-0 bottom-0 z-[60]",
-          "bg-[var(--color-card)]",
-          "border-l-2 border-[var(--color-border)]",
+          "bg-card",
+          "border-l-2 border-border",
           position === "left" && "border-l-0 border-r-2",
           "flex flex-col",
           "transition-transform duration-300 ease-in-out",
@@ -106,7 +106,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b-2 border-[var(--color-border)] sticky top-0 bg-[var(--color-card)] z-10">
+        <div className="flex items-center justify-between p-4 border-b-2 border-border sticky top-0 bg-card z-10">
           <Typography variant="h6">{title}</Typography>
           <Button
             variant="ghost"

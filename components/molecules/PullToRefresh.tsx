@@ -115,7 +115,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
           <Spinner
             size={pullProgress >= 0.5 ? 'md' : 'sm'}
             className={cn(
-              'text-[var(--color-primary)]',
+              'text-primary',
               isRefreshing && 'animate-spin',
             )}
           />

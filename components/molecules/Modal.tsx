@@ -176,7 +176,7 @@ export const Modal: React.FC<ModalProps> = ({
               setDragY(0);
             }}
           >
-            <div className="w-10 h-1 rounded-full bg-[var(--color-border)]" />
+            <div className="w-10 h-1 rounded-full bg-border" />
           </div>
 
           {/* Header */}
@@ -184,7 +184,7 @@ export const Modal: React.FC<ModalProps> = ({
             <div
               className={cn(
                 "px-6 py-4 flex items-center justify-between",
-                "border-b-[length:var(--border-width)] border-[var(--color-border)]",
+                "border-b-[length:var(--border-width)] border-border",
               )}
             >
               {title && (
@@ -198,8 +198,8 @@ export const Modal: React.FC<ModalProps> = ({
                   onClick={handleClose}
                   data-event="CLOSE"
                   className={cn(
-                    "p-1 transition-colors rounded-[var(--radius-sm)]",
-                    "hover:bg-[var(--color-muted)]",
+                    "p-1 transition-colors rounded-sm",
+                    "hover:bg-muted",
                   )}
                   aria-label="Close modal"
                 >
@@ -216,8 +216,8 @@ export const Modal: React.FC<ModalProps> = ({
           {footer && (
             <div
               className={cn(
-                "px-6 py-4 bg-[var(--color-muted)]",
-                "border-t-[length:var(--border-width)] border-[var(--color-border)]",
+                "px-6 py-4 bg-muted",
+                "border-t-[length:var(--border-width)] border-border",
               )}
             >
               {footer}

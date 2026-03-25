@@ -132,9 +132,9 @@ const _HeroClickInterceptor: React.FC<{
       if (!button) return;
 
       // Determine which button was clicked based on variant class
-      const isPrimary = button.classList.contains('bg-[var(--color-primary)]') ||
+      const isPrimary = button.classList.contains('bg-primary') ||
         button.getAttribute('data-variant') === 'primary';
-      const isSecondary = button.classList.contains('bg-[var(--color-secondary)]') ||
+      const isSecondary = button.classList.contains('bg-secondary') ||
         button.getAttribute('data-variant') === 'secondary';
 
       if (isPrimary && hasPrimary) {

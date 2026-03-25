@@ -119,7 +119,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
               return (
                 <blockquote
                   {...props}
-                  className="border-l-4 border-blue-500 pl-4 italic text-[var(--color-foreground)] my-4"
+                  className="border-l-4 border-blue-500 pl-4 italic text-foreground my-4"
                 >
                   {children}
                 </blockquote>

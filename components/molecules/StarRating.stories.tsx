@@ -52,7 +52,7 @@ export const Sizes: Story = {
       {(["sm", "md", "lg"] as const).map((size) => (
         <div key={size} className="flex items-center gap-3">
           <StarRating value={4} readOnly size={size} />
-          <span className="text-xs text-[var(--color-muted-foreground)]">{size}</span>
+          <span className="text-xs text-muted-foreground">{size}</span>
         </div>
       ))}
     </div>
@@ -78,7 +78,7 @@ function InteractiveRating() {
   return (
     <div className="space-y-2">
       <StarRating value={rating} onChange={setRating} />
-      <div className="text-sm text-[var(--color-foreground)]">
+      <div className="text-sm text-foreground">
         {rating > 0 ? `You rated: ${rating}/5` : "Click to rate"}
       </div>
     </div>
@@ -94,7 +94,7 @@ function HalfStarInteractive() {
   return (
     <div className="space-y-2">
       <StarRating value={rating} onChange={setRating} precision="half" size="lg" />
-      <div className="text-sm text-[var(--color-foreground)]">
+      <div className="text-sm text-foreground">
         {rating > 0 ? `You rated: ${rating}/5` : "Click to rate (half-star precision)"}
       </div>
     </div>
@@ -108,25 +108,25 @@ export const InteractiveHalfStar: Story = {
 export const ReviewContext: Story = {
   render: () => (
     <div className="space-y-4 w-80">
-      <div className="p-4 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)]">
+      <div className="p-4 rounded-lg bg-surface border border-border">
         <div className="flex items-center gap-2 mb-2">
           <StarRating value={5} readOnly size="sm" />
-          <span className="text-sm font-medium text-[var(--color-foreground)]">5.0</span>
+          <span className="text-sm font-medium text-foreground">5.0</span>
         </div>
-        <div className="text-sm text-[var(--color-foreground)]">
+        <div className="text-sm text-foreground">
           Excellent product! Exceeded my expectations.
         </div>
-        <div className="text-xs text-[var(--color-muted-foreground)] mt-2">John D. - 2 days ago</div>
+        <div className="text-xs text-muted-foreground mt-2">John D. - 2 days ago</div>
       </div>
-      <div className="p-4 rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)]">
+      <div className="p-4 rounded-lg bg-surface border border-border">
         <div className="flex items-center gap-2 mb-2">
           <StarRating value={3.5} readOnly size="sm" precision="half" />
-          <span className="text-sm font-medium text-[var(--color-foreground)]">3.5</span>
+          <span className="text-sm font-medium text-foreground">3.5</span>
         </div>
-        <div className="text-sm text-[var(--color-foreground)]">
+        <div className="text-sm text-foreground">
           Good quality but shipping took too long.
         </div>
-        <div className="text-xs text-[var(--color-muted-foreground)] mt-2">Sarah M. - 1 week ago</div>
+        <div className="text-xs text-muted-foreground mt-2">Sarah M. - 1 week ago</div>
       </div>
     </div>
   ),

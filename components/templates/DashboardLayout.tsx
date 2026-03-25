@@ -88,11 +88,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const handleSignOut = onSignOutProp || authSignOut;
 
   return (
-    <Box className="min-h-screen bg-[var(--color-background)] dark:bg-[var(--color-background)]">
+    <Box className="min-h-screen bg-background dark:bg-background">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
         <Box
-          className="fixed inset-0 bg-[var(--color-foreground)]/50 dark:bg-[var(--color-foreground)]/70 z-20 lg:hidden"
+          className="fixed inset-0 bg-foreground/50 dark:bg-foreground/70 z-20 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -101,7 +101,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       <Box
         as="aside"
         className={cn(
-          "fixed inset-y-0 left-0 z-30 w-64 bg-[var(--color-card)] dark:bg-[var(--color-card)] border-r border-[var(--color-border)] dark:border-[var(--color-border)]",
+          "fixed inset-y-0 left-0 z-30 w-64 bg-card dark:bg-card border-r border-border dark:border-border",
           "transform transition-transform duration-200 ease-in-out lg:translate-x-0",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}
@@ -110,11 +110,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <HStack
           align="center"
           justify="between"
-          className="h-16 px-4 border-b border-[var(--color-border)] dark:border-[var(--color-border)]"
+          className="h-16 px-4 border-b border-border dark:border-border"
         >
           <Link to="/" className="flex items-center gap-2">
             {logo || (
-              <Box className="w-8 h-8 bg-primary-600 rounded-[var(--radius-lg)] flex items-center justify-center">
+              <Box className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
                 <Typography
                   variant="small"
                   className="text-white font-bold text-sm"
@@ -126,7 +126,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             )}
             <Typography
               variant="label"
-              className="font-semibold text-[var(--color-foreground)] dark:text-[var(--color-foreground)]"
+              className="font-semibold text-foreground dark:text-foreground"
               as="span"
             >
               {appName}
@@ -134,7 +134,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </Link>
           <Button
             variant="ghost"
-            className="lg:hidden p-2 rounded-[var(--radius-md)] hover:bg-[var(--color-muted)] dark:hover:bg-[var(--color-muted)] text-[var(--color-muted-foreground)] dark:text-[var(--color-muted-foreground)]"
+            className="lg:hidden p-2 rounded-md hover:bg-muted dark:hover:bg-muted text-muted-foreground dark:text-muted-foreground"
             onClick={() => setSidebarOpen(false)}
           >
             <X className="h-5 w-5" />
@@ -158,10 +158,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
         {/* Sidebar footer */}
         {sidebarFooter || (
-          <Box className="p-4 border-t border-[var(--color-border)] dark:border-[var(--color-border)]">
+          <Box className="p-4 border-t border-border dark:border-border">
             <Link
               to="/settings"
-              className="flex items-center gap-3 px-3 py-2 text-sm text-[var(--color-muted-foreground)] dark:text-[var(--color-muted-foreground)] rounded-[var(--radius-lg)] hover:bg-[var(--color-muted)] dark:hover:bg-[var(--color-muted)]"
+              className="flex items-center gap-3 px-3 py-2 text-sm text-muted-foreground dark:text-muted-foreground rounded-lg hover:bg-muted dark:hover:bg-muted"
             >
               <Settings className="h-5 w-5" />
               {t('common.settings')}
@@ -175,7 +175,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         {/* Header */}
         <Box
           as="header"
-          className="sticky top-0 z-20 h-16 bg-[var(--color-card)] dark:bg-[var(--color-card)] border-b border-[var(--color-border)] dark:border-[var(--color-border)]"
+          className="sticky top-0 z-20 h-16 bg-card dark:bg-card border-b border-border dark:border-border"
         >
           <HStack
             align="center"
@@ -185,7 +185,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             {/* Mobile menu button */}
             <Button
               variant="ghost"
-              className="lg:hidden p-2 rounded-[var(--radius-md)] hover:bg-[var(--color-muted)] dark:hover:bg-[var(--color-muted)] text-[var(--color-muted-foreground)] dark:text-[var(--color-muted-foreground)] touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="lg:hidden p-2 rounded-md hover:bg-muted dark:hover:bg-muted text-muted-foreground dark:text-muted-foreground touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open sidebar"
             >
@@ -196,7 +196,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             {showSearch && (
               <Box className="hidden sm:block flex-1 max-w-md">
                 <Box className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-muted-foreground)] dark:text-[var(--color-muted-foreground)]" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-muted-foreground" />
                   <Input
                     type="search"
                     placeholder={t('common.search')}
@@ -216,12 +216,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               {/* Notifications */}
               <Button
                 variant="ghost"
-                className="relative p-2 rounded-[var(--radius-full)] hover:bg-[var(--color-muted)] dark:hover:bg-[var(--color-muted)]"
+                className="relative p-2 rounded-full hover:bg-muted dark:hover:bg-muted"
               >
-                <Bell className="h-5 w-5 text-[var(--color-muted-foreground)] dark:text-[var(--color-muted-foreground)]" />
+                <Bell className="h-5 w-5 text-muted-foreground dark:text-muted-foreground" />
                 <Box
                   as="span"
-                  className="absolute top-1 right-1 w-2 h-2 bg-[var(--color-error)] rounded-[var(--radius-full)]"
+                  className="absolute top-1 right-1 w-2 h-2 bg-error rounded-full"
                 />
               </Button>
 
@@ -230,7 +230,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 <Box className="relative">
                   <Button
                     variant="ghost"
-                    className="flex items-center gap-2 p-2 rounded-[var(--radius-lg)] hover:bg-[var(--color-muted)] dark:hover:bg-[var(--color-muted)]"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted dark:hover:bg-muted"
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                   >
                     <Avatar
@@ -245,12 +245,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     />
                     <Typography
                       variant="small"
-                      className="hidden sm:block text-sm font-medium text-[var(--color-foreground)] dark:text-[var(--color-foreground)]"
+                      className="hidden sm:block text-sm font-medium text-foreground dark:text-foreground"
                       as="span"
                     >
                       {user.name}
                     </Typography>
-                    <ChevronDown className="hidden sm:block h-4 w-4 text-[var(--color-muted-foreground)] dark:text-[var(--color-muted-foreground)]" />
+                    <ChevronDown className="hidden sm:block h-4 w-4 text-muted-foreground dark:text-muted-foreground" />
                   </Button>
 
                   {userMenuOpen && (
@@ -259,18 +259,18 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                         className="fixed inset-0 z-20"
                         onClick={() => setUserMenuOpen(false)}
                       />
-                      <Box className="absolute right-0 mt-2 w-48 bg-[var(--color-card)] dark:bg-[var(--color-card)] rounded-[var(--radius-lg)] shadow-[var(--shadow-lg)] border border-[var(--color-border)] dark:border-[var(--color-border)] py-1 z-30">
-                        <Box className="px-4 py-2 border-b border-[var(--color-border)] dark:border-[var(--color-border)]">
+                      <Box className="absolute right-0 mt-2 w-48 bg-card dark:bg-card rounded-lg shadow-lg border border-border dark:border-border py-1 z-30">
+                        <Box className="px-4 py-2 border-b border-border dark:border-border">
                           <Typography
                             variant="small"
-                            className="text-sm font-medium text-[var(--color-foreground)] dark:text-[var(--color-foreground)]"
+                            className="text-sm font-medium text-foreground dark:text-foreground"
                             as="p"
                           >
                             {user.name}
                           </Typography>
                           <Typography
                             variant="caption"
-                            className="text-xs text-[var(--color-muted-foreground)] dark:text-[var(--color-muted-foreground)]"
+                            className="text-xs text-muted-foreground dark:text-muted-foreground"
                             as="p"
                           >
                             {user.email}
@@ -278,7 +278,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                         </Box>
                         <Link
                           to="/settings"
-                          className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-foreground)] dark:text-[var(--color-foreground)] hover:bg-[var(--color-muted)] dark:hover:bg-[var(--color-muted)]"
+                          className="flex items-center gap-2 px-4 py-2 text-sm text-foreground dark:text-foreground hover:bg-muted dark:hover:bg-muted"
                         >
                           <Settings className="h-4 w-4" />
                           {t('common.settings')}
@@ -289,7 +289,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                             setUserMenuOpen(false);
                             handleSignOut?.();
                           }}
-                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-error)] dark:text-[var(--color-error)] hover:bg-[var(--color-error)]/10 dark:hover:bg-[var(--color-error)]/20"
+                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-error dark:text-error hover:bg-error/10 dark:hover:bg-error/20"
                         >
                           <LogOut className="h-4 w-4" />
                           {t('auth.signOut')}
@@ -325,18 +325,18 @@ const NavLink: React.FC<{ item: NavItem; currentPath: string }> = ({
   const iconClassName = cn(
     "h-5 w-5",
     isActive
-      ? "text-[var(--color-primary-foreground)]"
-      : "text-[var(--color-muted-foreground)]",
+      ? "text-primary-foreground"
+      : "text-muted-foreground",
   );
 
   return (
     <Link
       to={item.href}
       className={cn(
-        "flex items-center gap-3 px-3 py-2 rounded-[var(--radius-lg)] text-sm font-medium transition-colors",
+        "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
         isActive
-          ? "bg-[var(--color-primary)] text-[var(--color-primary-foreground)] shadow-[var(--shadow-sm)]"
-          : "text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]",
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
     >
       {item.icon && (

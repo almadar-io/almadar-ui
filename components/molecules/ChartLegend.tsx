@@ -43,7 +43,7 @@ export const ChartLegend: React.FC<ChartLegendProps> = ({
               backgroundColor: item.color,
             }}
           />
-          <Typography variant="small" className="text-[var(--color-muted-foreground)]">
+          <Typography variant="small" className="text-muted-foreground">
             {item.label}
           </Typography>
         </HStack>

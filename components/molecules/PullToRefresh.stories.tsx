@@ -38,7 +38,7 @@ const sampleItems = [
 function SampleList() {
   return (
     <VStack gap="sm" className="p-4">
-      <Typography variant="caption" className="text-[var(--color-muted-foreground)]">
+      <Typography variant="caption" className="text-muted-foreground">
         Pull down to refresh (touch device or mobile emulation)
       </Typography>
       {sampleItems.map((item, index) => (
@@ -62,7 +62,7 @@ export const Default: Story = {
     threshold: 60,
   },
   render: (args) => (
-    <Box className="max-w-md mx-auto h-96 overflow-auto border border-[var(--color-border)] rounded-[var(--radius-md)]">
+    <Box className="max-w-md mx-auto h-96 overflow-auto border border-border rounded-md">
       <PullToRefresh {...args}>
         <SampleList />
       </PullToRefresh>
@@ -76,10 +76,10 @@ export const Refreshing: Story = {
     threshold: 60,
   },
   render: (args) => (
-    <Box className="max-w-md mx-auto h-96 overflow-auto border border-[var(--color-border)] rounded-[var(--radius-md)]">
+    <Box className="max-w-md mx-auto h-96 overflow-auto border border-border rounded-md">
       <PullToRefresh {...args}>
         <VStack gap="sm" className="p-4">
-          <Typography variant="caption" className="text-[var(--color-muted-foreground)]">
+          <Typography variant="caption" className="text-muted-foreground">
             Pull down on a touch device to see the spinner appear
           </Typography>
           {sampleItems.slice(0, 4).map((item, index) => (

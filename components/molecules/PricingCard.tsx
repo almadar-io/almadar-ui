@@ -47,10 +47,10 @@ export const PricingCard: React.FC<PricingCardProps> = ({
         'flex flex-col h-full',
         'hover:-translate-y-1 transition-all',
         highlighted && [
-          'border-[length:2px] border-[var(--color-primary)]',
-          'shadow-[var(--shadow-lg)]',
+          'border-[length:2px] border-primary',
+          'shadow-lg',
           'scale-[1.05]',
-          'ring-2 ring-[var(--color-primary)]',
+          'ring-2 ring-primary',
         ],
         className,
       )}
@@ -66,7 +66,7 @@ export const PricingCard: React.FC<PricingCardProps> = ({
 
         <Typography
           variant="h2"
-          className="text-[var(--color-primary)] font-bold"
+          className="text-primary font-bold"
         >
           {price}
         </Typography>
@@ -85,7 +85,7 @@ export const PricingCard: React.FC<PricingCardProps> = ({
               <Icon
                 icon={Check}
                 size="sm"
-                className="flex-shrink-0 text-[var(--color-success)]"
+                className="flex-shrink-0 text-success"
               />
               <Typography variant="body2">{feature}</Typography>
             </HStack>

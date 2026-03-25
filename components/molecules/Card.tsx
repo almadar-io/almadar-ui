@@ -89,10 +89,10 @@ export function Card({
   return (
     <div
       className={`
-        bg-[var(--color-card)]
-        border border-[var(--color-border)]
-        rounded-[var(--radius-md)] shadow-[var(--shadow-sm)]
-        ${isClickable ? "cursor-pointer hover:shadow-[var(--shadow-hover)] transition-shadow" : ""}
+        bg-card
+        border border-border
+        rounded-md shadow-sm
+        ${isClickable ? "cursor-pointer hover:shadow-lg transition-shadow" : ""}
         ${className}
       `}
       onClick={isClickable ? handleClick : undefined}
@@ -125,12 +125,12 @@ export function Card({
         {(title || subtitle) && (
           <div className="mb-3">
             {title && (
-              <h3 className="text-lg font-semibold text-[var(--color-card-foreground)]">
+              <h3 className="text-lg font-semibold text-card-foreground">
                 {title}
               </h3>
             )}
             {subtitle && (
-              <p className="text-sm text-[var(--color-muted-foreground)] mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 {subtitle}
               </p>
             )}
@@ -139,12 +139,12 @@ export function Card({
 
         {/* Children */}
         {children && (
-          <div className="text-[var(--color-card-foreground)]">{children}</div>
+          <div className="text-card-foreground">{children}</div>
         )}
 
         {/* Actions */}
         {actions && actions.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-[var(--color-border)]">
+          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-border">
             {actions.map((action, index) => (
               <button
                 key={index}
@@ -155,14 +155,14 @@ export function Card({
                 }}
                 disabled={action.disabled}
                 className={`
-                  px-3 py-1.5 text-sm font-medium rounded-[var(--radius-sm)]
+                  px-3 py-1.5 text-sm font-medium rounded-sm
                   transition-colors
                   ${
                     action.variant === "primary"
-                      ? "bg-[var(--color-primary)] text-[var(--color-primary-foreground)] hover:bg-[var(--color-primary-hover)] disabled:opacity-50"
+                      ? "bg-primary text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                       : action.variant === "danger"
-                        ? "bg-[var(--color-error)] text-[var(--color-error-foreground)] hover:opacity-90 disabled:opacity-50"
-                        : "bg-[var(--color-muted)] text-[var(--color-foreground)] hover:bg-[var(--color-surface-hover)]"
+                        ? "bg-error text-error-foreground hover:opacity-90 disabled:opacity-50"
+                        : "bg-muted text-foreground hover:bg-[var(--color-surface-hover)]"
                   }
                   disabled:cursor-not-allowed
                 `}

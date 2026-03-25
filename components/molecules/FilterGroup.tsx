@@ -169,16 +169,16 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
     return (
       <HStack gap="md" align="center" className={cn("flex-wrap", className)}>
         {showIcon && (
-          <Filter className="h-4 w-4 text-[var(--color-muted-foreground)]" />
+          <Filter className="h-4 w-4 text-muted-foreground" />
         )}
         {filters.map((filter) => (
           <HStack key={filter.field} gap="xs" align="center">
-            <span className="text-sm font-[var(--font-weight-medium)] text-[var(--color-muted-foreground)]">
+            <span className="text-sm font-[var(--font-weight-medium)] text-muted-foreground">
               {filter.label}:
             </span>
             <HStack
               gap="none"
-              className="rounded-[var(--radius-sm)] overflow-hidden border-[length:var(--border-width)] border-[var(--color-border)]"
+              className="rounded-sm overflow-hidden border-[length:var(--border-width)] border-border"
             >
               <button
                 type="button"
@@ -186,8 +186,8 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
                 className={cn(
                   "px-3 py-1.5 text-sm font-[var(--font-weight-medium)] transition-all duration-[var(--transition-fast)]",
                   !selectedValues[filter.field]
-                    ? "bg-[var(--color-primary)] text-[var(--color-primary-foreground)]"
-                    : "bg-[var(--color-card)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)]",
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-card text-muted-foreground hover:bg-muted",
                 )}
               >
                 All
@@ -199,10 +199,10 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
                   onClick={() => handleFilterSelect(filter.field, option)}
                   className={cn(
                     "px-3 py-1.5 text-sm font-[var(--font-weight-medium)] transition-all duration-[var(--transition-fast)]",
-                    "border-l-[length:var(--border-width)] border-[var(--color-border)]",
+                    "border-l-[length:var(--border-width)] border-border",
                     selectedValues[filter.field] === option
-                      ? "bg-[var(--color-primary)] text-[var(--color-primary-foreground)]"
-                      : "bg-[var(--color-card)] text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)]",
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-card text-muted-foreground hover:bg-muted",
                   )}
                 >
                   {option}
@@ -232,7 +232,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
     return (
       <div className={cn("flex flex-col gap-4", className)}>
         {showIcon && (
-          <div className="flex items-center gap-2 text-[var(--color-muted-foreground)]">
+          <div className="flex items-center gap-2 text-muted-foreground">
             <Filter className="h-4 w-4" />
             <span className="text-sm font-[var(--font-weight-bold)] uppercase tracking-wide">
               Filters
@@ -241,7 +241,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
         )}
         {filters.map((filter) => (
           <div key={filter.field} className="flex flex-col gap-1">
-            <label className="text-xs font-[var(--font-weight-bold)] text-[var(--color-muted-foreground)] uppercase tracking-wide">
+            <label className="text-xs font-[var(--font-weight-bold)] text-muted-foreground uppercase tracking-wide">
               {filter.label}
             </label>
             {resolveFilterType(filter) === "date" ? (
@@ -323,7 +323,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
     return (
       <HStack gap="sm" align="center" className={cn("flex-wrap", className)}>
         {showIcon && (
-          <Filter className="h-4 w-4 text-[var(--color-muted-foreground)]" />
+          <Filter className="h-4 w-4 text-muted-foreground" />
         )}
         {filters.map((filter) => (
           <div key={filter.field} className="min-w-[120px]">
@@ -352,7 +352,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
                   }
                   className="text-sm min-w-[100px]"
                 />
-                <span className="text-[var(--color-muted-foreground)]">-</span>
+                <span className="text-muted-foreground">-</span>
                 <Input
                   type="date"
                   value={selectedValues[`${filter.field}_to`] || ""}
@@ -415,9 +415,9 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
   return (
     <div
       className={cn(
-        "p-4 rounded-[var(--radius-md)]",
-        "bg-[var(--color-card)]",
-        "border-[length:var(--border-width)] border-[var(--color-border)]",
+        "p-4 rounded-md",
+        "bg-card",
+        "border-[length:var(--border-width)] border-border",
         className,
       )}
     >
@@ -426,7 +426,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
           <HStack
             gap="xs"
             align="center"
-            className="text-[var(--color-muted-foreground)]"
+            className="text-muted-foreground"
           >
             <Filter className="h-4 w-4" />
             <span className="text-sm font-[var(--font-weight-bold)] uppercase tracking-wide">
@@ -438,7 +438,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
         {/* Filter selects and date inputs */}
         {filters.map((filter) => (
           <div key={filter.field} className="flex flex-col gap-1">
-            <label className="text-xs font-[var(--font-weight-bold)] text-[var(--color-muted-foreground)] uppercase tracking-wide">
+            <label className="text-xs font-[var(--font-weight-bold)] text-muted-foreground uppercase tracking-wide">
               {filter.label}
             </label>
             {resolveFilterType(filter) === "date" ? (
@@ -471,7 +471,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
                   }
                   className="min-w-[130px]"
                 />
-                <span className="text-[var(--color-muted-foreground)]">-</span>
+                <span className="text-muted-foreground">-</span>
                 <Input
                   type="date"
                   value={selectedValues[`${filter.field}_to`] || ""}

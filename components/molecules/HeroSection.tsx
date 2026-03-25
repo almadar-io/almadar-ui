@@ -42,13 +42,13 @@ const tagVariantMap: Record<string, 'primary' | 'secondary' | 'info'> = {
 };
 
 const backgroundStyles: Record<string, string> = {
-  dark: 'bg-[var(--color-foreground)] text-[var(--color-background)]',
+  dark: 'bg-foreground text-background',
   gradient: [
     'bg-[radial-gradient(ellipse_at_top,var(--color-primary)/0.08,transparent_60%),',
     'radial-gradient(ellipse_at_bottom_right,var(--color-accent)/0.06,transparent_50%)]',
-    'bg-[var(--color-background)]',
+    'bg-background',
   ].join(' '),
-  subtle: 'bg-[var(--color-muted)]/30',
+  subtle: 'bg-muted/30',
 };
 
 /**
@@ -62,7 +62,7 @@ const MarketingImage: React.FC<{
 }> = ({ src, alt, className }) => (
   <Box
     className={cn(
-      'overflow-hidden rounded-[var(--radius-lg)] bg-cover bg-center bg-no-repeat',
+      'overflow-hidden rounded-lg bg-cover bg-center bg-no-repeat',
       className,
     )}
     style={{ backgroundImage: `url(${src})` }}
@@ -99,14 +99,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       align={isCenter ? 'center' : 'left'}
       className={cn(
         'max-w-3xl leading-tight',
-        isDark && 'text-[var(--color-background)]',
+        isDark && 'text-background',
       )}
     >
       {title}{' '}
       <Typography
         as="span"
         variant="h1"
-        className="text-[var(--color-primary)]"
+        className="text-primary"
       >
         {titleAccent}
       </Typography>
@@ -117,7 +117,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       align={isCenter ? 'center' : 'left'}
       className={cn(
         'max-w-3xl leading-tight',
-        isDark && 'text-[var(--color-background)]',
+        isDark && 'text-background',
       )}
     >
       {title}

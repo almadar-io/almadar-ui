@@ -325,7 +325,7 @@ export const Avl3DViewer: React.FC<Avl3DViewerProps> = ({
       <HStack
         gap="xs"
         align="center"
-        className="absolute top-2 left-2 z-10 bg-[var(--color-surface)]/80 backdrop-blur rounded-md px-3 py-1.5"
+        className="absolute top-2 left-2 z-10 bg-surface/80 backdrop-blur rounded-md px-3 py-1.5"
       >
         {breadcrumbs.map((crumb, i) => (
           <React.Fragment key={crumb.level}>
@@ -356,7 +356,7 @@ export const Avl3DViewer: React.FC<Avl3DViewerProps> = ({
         <Typography
           variant="small"
           color="muted"
-          className="absolute bottom-2 right-2 z-10 bg-[var(--color-surface)]/60 backdrop-blur rounded px-2 py-1"
+          className="absolute bottom-2 right-2 z-10 bg-surface/60 backdrop-blur rounded px-2 py-1"
         >
           Press Esc to zoom out
         </Typography>

@@ -231,10 +231,10 @@ export const Carousel = <T = Record<string, unknown>,>({
             aria-label="Previous slide"
             className={cn(
               'rounded-full',
-              'bg-[var(--color-surface)]/80',
+              'bg-surface/80',
               'backdrop-blur-sm',
-              'shadow-[var(--shadow-sm)]',
-              'hover:bg-[var(--color-surface)]',
+              'shadow-sm',
+              'hover:bg-surface',
             )}
           >
             <ChevronLeft className="w-5 h-5" />
@@ -255,10 +255,10 @@ export const Carousel = <T = Record<string, unknown>,>({
             aria-label="Next slide"
             className={cn(
               'rounded-full',
-              'bg-[var(--color-surface)]/80',
+              'bg-surface/80',
               'backdrop-blur-sm',
-              'shadow-[var(--shadow-sm)]',
-              'hover:bg-[var(--color-surface)]',
+              'shadow-sm',
+              'hover:bg-surface',
             )}
           >
             <ChevronRight className="w-5 h-5" />

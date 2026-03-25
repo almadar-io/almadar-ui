@@ -137,9 +137,9 @@ export const NumberStepper: React.FC<NumberStepperProps> = ({
     <div
       className={cn(
         "inline-flex items-center",
-        "rounded-[var(--radius-sm)]",
-        "border-[length:var(--border-width)] border-[var(--color-border)]",
-        "bg-[var(--color-surface)]",
+        "rounded-sm",
+        "border-[length:var(--border-width)] border-border",
+        "bg-surface",
         disabled && "opacity-50 cursor-not-allowed",
         className,
       )}
@@ -158,13 +158,13 @@ export const NumberStepper: React.FC<NumberStepperProps> = ({
         disabled={disabled || isAtMin}
         className={cn(
           "inline-flex items-center justify-center",
-          "rounded-l-[var(--radius-sm)]",
-          "text-[var(--color-foreground)]",
-          "hover:bg-[var(--color-muted)]",
-          "active:bg-[var(--color-muted)]",
+          "rounded-l-sm",
+          "text-foreground",
+          "hover:bg-muted",
+          "active:bg-muted",
           "transition-colors duration-100",
           "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent",
-          "focus:outline-none focus:ring-[length:var(--focus-ring-width)] focus:ring-[var(--color-ring)] focus:ring-inset",
+          "focus:outline-none focus:ring-[length:var(--focus-ring-width)] focus:ring-ring focus:ring-inset",
           styles.button,
         )}
         aria-label="Decrease"
@@ -176,8 +176,8 @@ export const NumberStepper: React.FC<NumberStepperProps> = ({
       <span
         className={cn(
           "text-center font-medium tabular-nums",
-          "text-[var(--color-foreground)]",
-          "border-x-[length:var(--border-width)] border-[var(--color-border)]",
+          "text-foreground",
+          "border-x-[length:var(--border-width)] border-border",
           "px-1 select-none",
           styles.text,
         )}
@@ -199,13 +199,13 @@ export const NumberStepper: React.FC<NumberStepperProps> = ({
         disabled={disabled || isAtMax}
         className={cn(
           "inline-flex items-center justify-center",
-          "rounded-r-[var(--radius-sm)]",
-          "text-[var(--color-foreground)]",
-          "hover:bg-[var(--color-muted)]",
-          "active:bg-[var(--color-muted)]",
+          "rounded-r-sm",
+          "text-foreground",
+          "hover:bg-muted",
+          "active:bg-muted",
           "transition-colors duration-100",
           "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent",
-          "focus:outline-none focus:ring-[length:var(--focus-ring-width)] focus:ring-[var(--color-ring)] focus:ring-inset",
+          "focus:outline-none focus:ring-[length:var(--focus-ring-width)] focus:ring-ring focus:ring-inset",
           styles.button,
         )}
         aria-label="Increase"

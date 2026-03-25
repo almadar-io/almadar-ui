@@ -261,7 +261,7 @@ export const Table = <T extends Record<string, any>>({
                   <th
                     key={column.key}
                     className={cn(
-                      "px-4 py-3 text-left text-xs font-bold text-[var(--color-foreground)] uppercase tracking-wider bg-[var(--color-table-header)]",
+                      "px-4 py-3 text-left text-xs font-bold text-foreground uppercase tracking-wider bg-[var(--color-table-header)]",
                       sortable &&
                         column.sortable &&
                         "cursor-pointer hover:bg-[var(--color-table-row-hover)]",

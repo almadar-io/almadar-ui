@@ -36,10 +36,10 @@ const StepCircle: React.FC<{ step: StepItemProps; index: number }> = ({ step, in
         className={cn(
           'w-10 h-10 rounded-full flex-shrink-0',
           'flex items-center justify-center',
-          'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]',
+          'bg-primary text-primary-foreground',
         )}
       >
-        <Icon name={step.icon} size="sm" className="text-[var(--color-primary-foreground)]" />
+        <Icon name={step.icon} size="sm" className="text-primary-foreground" />
       </Center>
     );
   }
@@ -49,10 +49,10 @@ const StepCircle: React.FC<{ step: StepItemProps; index: number }> = ({ step, in
       className={cn(
         'w-10 h-10 rounded-full flex-shrink-0',
         'flex items-center justify-center',
-        'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]',
+        'bg-primary text-primary-foreground',
       )}
     >
-      <span className="font-semibold text-sm text-[var(--color-primary-foreground)] leading-none">
+      <span className="font-semibold text-sm text-primary-foreground leading-none">
         {step.number ?? index + 1}
       </span>
     </Center>
@@ -76,7 +76,7 @@ export const StepFlow: React.FC<StepFlowProps> = ({
               <VStack gap="none" align="center">
                 <StepCircle step={step} index={index} />
                 {showConnectors && index < steps.length - 1 && (
-                  <Box className="w-px h-8 bg-[var(--color-border)]" />
+                  <Box className="w-px h-8 bg-border" />
                 )}
               </VStack>
               <VStack gap="xs" className="flex-1 pt-1">

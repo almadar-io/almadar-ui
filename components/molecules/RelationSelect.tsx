@@ -215,7 +215,7 @@ export const RelationSelect: React.FC<RelationSelectProps> = ({
         <Typography
           variant="body"
           className={cn(
-            !selectedOption && "text-[var(--color-muted-foreground)]",
+            !selectedOption && "text-muted-foreground",
           )}
         >
           {isLoading ? (
@@ -233,15 +233,15 @@ export const RelationSelect: React.FC<RelationSelectProps> = ({
           {clearable && selectedOption && !disabled && (
             <Box
               as="button"
-              className="p-0.5 hover:bg-[var(--color-muted)] rounded cursor-pointer"
+              className="p-0.5 hover:bg-muted rounded cursor-pointer"
               onClick={handleClear}
             >
-              <X className="h-4 w-4 text-[var(--color-muted-foreground)]" />
+              <X className="h-4 w-4 text-muted-foreground" />
             </Box>
           )}
           <ChevronDown
             className={cn(
-              "h-4 w-4 text-[var(--color-muted-foreground)] transition-transform",
+              "h-4 w-4 text-muted-foreground transition-transform",
               isOpen && "transform rotate-180",
             )}
           />
@@ -259,7 +259,7 @@ export const RelationSelect: React.FC<RelationSelectProps> = ({
           className="z-50 w-full mt-1"
         >
           {/* Search input */}
-          <Box padding="sm" className="border-b border-[var(--color-border)]">
+          <Box padding="sm" className="border-b border-border">
             <Input
               ref={searchInputRef}
               type="text"
@@ -298,7 +298,7 @@ export const RelationSelect: React.FC<RelationSelectProps> = ({
                     paddingX="sm"
                     paddingY="sm"
                     className={cn(
-                      "text-left text-sm hover:bg-[var(--color-muted)] focus:outline-none focus:bg-[var(--color-muted)]",
+                      "text-left text-sm hover:bg-muted focus:outline-none focus:bg-muted",
                       option.value === value &&
                         "bg-primary-50 text-primary-700",
                       option.disabled && "opacity-50 cursor-not-allowed",

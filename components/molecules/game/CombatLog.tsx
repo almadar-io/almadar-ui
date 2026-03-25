@@ -84,7 +84,7 @@ export function CombatLog({
 
     return (
         <Card variant="default" className={cn('flex flex-col', className)}>
-            <Box padding="sm" border className="border-b-2 border-x-0 border-t-0 border-[var(--color-border)]">
+            <Box padding="sm" border className="border-b-2 border-x-0 border-t-0 border-border">
                 <Box display="flex" className="items-center justify-between">
                     <Typography variant="body2" className="font-bold">{title}</Typography>
                     <Badge variant="neutral" size="sm">{safeEvents.length} events</Badge>
@@ -103,7 +103,7 @@ export function CombatLog({
                             const colorClass = eventColors[eventType];
                             return (
                                 <Box key={event.id} display="flex" padding="xs" rounded="sm"
-                                    className={cn('items-start gap-2 hover:bg-[var(--color-muted)] transition-colors', eventType === 'death' && 'opacity-60')}>
+                                    className={cn('items-start gap-2 hover:bg-muted transition-colors', eventType === 'death' && 'opacity-60')}>
                                     <Box className={cn('flex-shrink-0 mt-0.5', colorClass)}>
                                         <EventIcon className="h-4 w-4" />
                                     </Box>

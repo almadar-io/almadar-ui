@@ -193,7 +193,7 @@ export const Drawer: React.FC<DrawerProps> = ({
           <div
             className={cn(
               "px-6 py-4 flex items-center justify-between shrink-0",
-              "border-b-[length:var(--border-width)] border-[var(--color-border)]",
+              "border-b-[length:var(--border-width)] border-border",
             )}
           >
             {title && (
@@ -206,8 +206,8 @@ export const Drawer: React.FC<DrawerProps> = ({
                 type="button"
                 onClick={handleClose}
                 className={cn(
-                  "p-1 transition-colors rounded-[var(--radius-sm)]",
-                  "hover:bg-[var(--color-muted)]",
+                  "p-1 transition-colors rounded-sm",
+                  "hover:bg-muted",
                   !title && "ml-auto",
                 )}
                 aria-label="Close drawer"
@@ -225,8 +225,8 @@ export const Drawer: React.FC<DrawerProps> = ({
         {footer && (
           <div
             className={cn(
-              "px-6 py-4 shrink-0 bg-[var(--color-muted)]",
-              "border-t-[length:var(--border-width)] border-[var(--color-border)]",
+              "px-6 py-4 shrink-0 bg-muted",
+              "border-t-[length:var(--border-width)] border-border",
             )}
           >
             {footer}

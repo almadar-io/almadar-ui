@@ -22,7 +22,7 @@ export interface SkeletonProps {
   className?: string;
 }
 
-const pulseClass = 'animate-pulse bg-[var(--color-muted)]/60 rounded';
+const pulseClass = 'animate-pulse bg-muted/60 rounded';
 
 function SkeletonLine({ className }: { className?: string }) {
   return <Box className={cn(pulseClass, 'h-4', className)} />;
@@ -40,8 +40,8 @@ function HeaderSkeleton({ className }: { className?: string }) {
         <SkeletonLine className="w-64" />
       </VStack>
       <HStack gap="sm">
-        <SkeletonBlock className="h-9 w-24 rounded-[var(--radius-md)]" />
-        <SkeletonBlock className="h-9 w-32 rounded-[var(--radius-md)]" />
+        <SkeletonBlock className="h-9 w-24 rounded-md" />
+        <SkeletonBlock className="h-9 w-32 rounded-md" />
       </HStack>
     </HStack>
   );
@@ -49,9 +49,9 @@ function HeaderSkeleton({ className }: { className?: string }) {
 
 function TableSkeleton({ rows = 5, columns = 4, className }: { rows?: number; columns?: number; className?: string }) {
   return (
-    <VStack gap="none" className={cn('border border-[var(--color-border)] rounded-[var(--radius-lg)] overflow-hidden', className)}>
+    <VStack gap="none" className={cn('border border-border rounded-lg overflow-hidden', className)}>
       {/* Table header */}
-      <HStack className="px-4 py-3 bg-[var(--color-muted)]/30 border-b border-[var(--color-border)]">
+      <HStack className="px-4 py-3 bg-muted/30 border-b border-border">
         {Array.from({ length: columns }).map((_, i) => (
           <SkeletonBlock key={i} className="h-4 flex-1 mx-2" />
         ))}
@@ -62,7 +62,7 @@ function TableSkeleton({ rows = 5, columns = 4, className }: { rows?: number; co
           key={rowIdx}
           className={cn(
             'px-4 py-3',
-            rowIdx < rows - 1 && 'border-b border-[var(--color-border)]',
+            rowIdx < rows - 1 && 'border-b border-border',
           )}
         >
           {Array.from({ length: columns }).map((_, colIdx) => (
@@ -83,13 +83,13 @@ function FormSkeleton({ fields = 4, className }: { fields?: number; className?: 
       {Array.from({ length: fields }).map((_, i) => (
         <VStack key={i} gap="sm">
           <SkeletonBlock className="h-4 w-24" />
-          <SkeletonBlock className="h-10 w-full rounded-[var(--radius-md)]" />
+          <SkeletonBlock className="h-10 w-full rounded-md" />
         </VStack>
       ))}
       {/* Form actions */}
       <HStack gap="md" className="justify-end pt-2">
-        <SkeletonBlock className="h-10 w-20 rounded-[var(--radius-md)]" />
-        <SkeletonBlock className="h-10 w-24 rounded-[var(--radius-md)]" />
+        <SkeletonBlock className="h-10 w-20 rounded-md" />
+        <SkeletonBlock className="h-10 w-24 rounded-md" />
       </HStack>
     </VStack>
   );
@@ -100,7 +100,7 @@ function CardSkeleton({ className }: { className?: string }) {
     <VStack
       gap="md"
       className={cn(
-        'p-5 border border-[var(--color-border)] rounded-[var(--radius-lg)]',
+        'p-5 border border-border rounded-lg',
         className,
       )}
     >

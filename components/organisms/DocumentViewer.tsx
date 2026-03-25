@@ -220,7 +220,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
             <VStack gap="none">
                 {/* Tabs for multiple documents */}
                 {tabItems && tabItems.length > 1 && (
-                    <Box className="border-b border-[var(--color-border)]">
+                    <Box className="border-b border-border">
                         <Tabs
                             tabs={tabItems}
                             activeTab={`doc-${activeDocIndex}`}
@@ -238,10 +238,10 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                         gap="sm"
                         align="center"
                         justify="between"
-                        className="px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-muted)]/30"
+                        className="px-4 py-2 border-b border-border bg-muted/30"
                     >
                         <HStack gap="sm" align="center">
-                            <Icon icon={FileText} size="sm" className="text-[var(--color-muted-foreground)]" />
+                            <Icon icon={FileText} size="sm" className="text-muted-foreground" />
                             {title && (
                                 <Typography variant="small" weight="medium" className="truncate max-w-[200px]">
                                     {title}
@@ -260,7 +260,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                             {/* Page navigation */}
                             {totalPages && totalPages > 1 && (
                                 <>
-                                    <Box className="w-px h-4 bg-[var(--color-border)] mx-1" />
+                                    <Box className="w-px h-4 bg-border mx-1" />
                                     <Button variant="ghost" size="sm" icon={ChevronLeft} onClick={handlePagePrev} disabled={currentPage <= 1} />
                                     <Typography variant="caption" color="secondary" className="tabular-nums">
                                         {currentPage} / {totalPages}
@@ -270,7 +270,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                             )}
 
                             {/* Utility actions */}
-                            <Box className="w-px h-4 bg-[var(--color-border)] mx-1" />
+                            <Box className="w-px h-4 bg-border mx-1" />
                             {showDownload && (
                                 <Button variant="ghost" size="sm" icon={Download} onClick={handleDownload} />
                             )}
@@ -292,7 +292,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
                 )}
 
                 {/* Document content */}
-                <Box className="w-full overflow-hidden bg-[var(--color-muted)]/20">
+                <Box className="w-full overflow-hidden bg-muted/20">
                     {renderContent()}
                 </Box>
             </VStack>

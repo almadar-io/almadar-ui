@@ -47,7 +47,7 @@ export const DocBreadcrumb: React.FC<DocBreadcrumbProps> = ({
                 <Icon
                   name="chevron-right"
                   size="xs"
-                  className="text-[var(--color-muted-foreground)] shrink-0"
+                  className="text-muted-foreground shrink-0"
                 />
               )}
 
@@ -56,8 +56,8 @@ export const DocBreadcrumb: React.FC<DocBreadcrumbProps> = ({
                   variant="caption"
                   className={cn(
                     isLast
-                      ? 'text-[var(--color-foreground)] font-medium'
-                      : 'text-[var(--color-muted-foreground)]',
+                      ? 'text-foreground font-medium'
+                      : 'text-muted-foreground',
                   )}
                   as="span"
                 >
@@ -72,7 +72,7 @@ export const DocBreadcrumb: React.FC<DocBreadcrumbProps> = ({
                 >
                   <Typography
                     variant="caption"
-                    className="text-[var(--color-muted-foreground)] hover:text-[var(--color-primary)] transition-colors cursor-pointer"
+                    className="text-muted-foreground hover:text-primary transition-colors cursor-pointer"
                     as="span"
                   >
                     {item.label}

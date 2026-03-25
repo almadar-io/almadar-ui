@@ -75,7 +75,7 @@ function GalleryWithLightbox() {
 
   return (
     <div className="p-8">
-      <div className="text-sm font-medium text-[var(--color-foreground)] mb-4">
+      <div className="text-sm font-medium text-foreground mb-4">
         Click an image to open lightbox
       </div>
       <div className="grid grid-cols-4 gap-2 w-[600px]">

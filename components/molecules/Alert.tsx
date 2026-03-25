@@ -33,17 +33,17 @@ export interface AlertProps {
 }
 
 const variantBorderClasses: Record<AlertVariant, string> = {
-  info: "border-[var(--color-info)]",
-  success: "border-[var(--color-success)]",
-  warning: "border-[var(--color-warning)]",
-  error: "border-[var(--color-error)]",
+  info: "border-info",
+  success: "border-success",
+  warning: "border-warning",
+  error: "border-error",
 };
 
 const variantIconColors: Record<AlertVariant, string> = {
-  info: "text-[var(--color-info)]",
-  success: "text-[var(--color-success)]",
-  warning: "text-[var(--color-warning)]",
-  error: "text-[var(--color-error)]",
+  info: "text-info",
+  success: "text-success",
+  warning: "text-warning",
+  error: "text-error",
 };
 
 const iconMap: Record<AlertVariant, typeof Info> = {
@@ -112,8 +112,8 @@ export const Alert: React.FC<AlertProps> = ({
             type="button"
             onClick={handleDismiss}
             className={cn(
-              "flex-shrink-0 p-1 transition-colors rounded-[var(--radius-sm)]",
-              "hover:bg-[var(--color-muted)]",
+              "flex-shrink-0 p-1 transition-colors rounded-sm",
+              "hover:bg-muted",
             )}
             aria-label="Dismiss alert"
           >

@@ -74,7 +74,7 @@ export const TabbedContainer: React.FC<TabbedContainerProps> = ({
   const activeContent =
     activeTabDef?.content ||
     (activeTabDef?.sectionId ? (
-      <div className="p-4 text-[var(--color-muted-foreground)]">
+      <div className="p-4 text-muted-foreground">
         Section: {activeTabDef.sectionId}
       </div>
     ) : null);
@@ -95,8 +95,8 @@ export const TabbedContainer: React.FC<TabbedContainerProps> = ({
         className={cn(
           "flex flex-shrink-0",
           isVertical
-            ? "flex-col border-r-2 border-[var(--color-border)]"
-            : "flex-row border-b-2 border-[var(--color-border)]",
+            ? "flex-col border-r-2 border-border"
+            : "flex-row border-b-2 border-border",
         )}
       >
         {safeTabs.map((tab) => {
@@ -114,11 +114,11 @@ export const TabbedContainer: React.FC<TabbedContainerProps> = ({
               onClick={() => !isDisabled && handleTabChange(tab.id)}
               className={cn(
                 "flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors",
-                "focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)] focus:ring-offset-2",
+                "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
                 "disabled:opacity-50 disabled:cursor-not-allowed",
                 isActive
-                  ? "bg-[var(--color-primary)] text-[var(--color-primary-foreground)]"
-                  : "bg-[var(--color-card)] text-[var(--color-foreground)] hover:bg-[var(--color-muted)]",
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-card text-foreground hover:bg-muted",
                 isVertical ? "justify-start" : "justify-center",
               )}
             >
@@ -134,8 +134,8 @@ export const TabbedContainer: React.FC<TabbedContainerProps> = ({
                   className={cn(
                     "px-1.5 py-0.5 text-xs font-medium rounded",
                     isActive
-                      ? "bg-[var(--color-primary-foreground)] text-[var(--color-primary)]"
-                      : "bg-[var(--color-primary)] text-[var(--color-primary-foreground)]",
+                      ? "bg-primary-foreground text-primary"
+                      : "bg-primary text-primary-foreground",
                   )}
                 >
                   {tab.badge}

@@ -119,7 +119,7 @@ function WithSlotsRender() {
                 <HStack
                     gap="md"
                     align="center"
-                    className="px-4 py-3 bg-[var(--color-surface)] border-b border-[var(--color-border)]"
+                    className="px-4 py-3 bg-surface border-b border-border"
                 >
                     <Typography variant="h3" weight="bold">
                         Ironhold Castle
@@ -209,7 +209,7 @@ function WithSlotsRender() {
                 <HStack
                     gap="md"
                     align="center"
-                    className="px-4 py-2 bg-[var(--color-surface)] border-t border-[var(--color-border)]"
+                    className="px-4 py-2 bg-surface border-t border-border"
                 >
                     <Typography variant="caption" className="text-gray-400">
                         Buildings: {MOCK_FEATURES.length}
@@ -366,7 +366,7 @@ function EditorRender() {
     }));
 
     return (
-        <HStack gap="none" className="h-screen bg-[var(--color-background)]">
+        <HStack gap="none" className="h-screen bg-background">
             {/* Editor panel */}
             <Box
                 className="shrink-0 bg-gray-900 border-r border-gray-700 overflow-y-auto"

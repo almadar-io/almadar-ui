@@ -136,7 +136,7 @@ export const StarRating: React.FC<StarRatingProps> = ({
             <Star
               className={cn(
                 styles.star,
-                "text-[var(--color-muted)]",
+                "text-muted",
                 "transition-colors duration-100",
               )}
               strokeWidth={1.5}
@@ -148,7 +148,7 @@ export const StarRating: React.FC<StarRatingProps> = ({
                 className={cn(
                   styles.star,
                   "absolute inset-0",
-                  "text-[var(--color-warning)] fill-[var(--color-warning)]",
+                  "text-warning fill-warning",
                   "transition-colors duration-100",
                 )}
                 strokeWidth={1.5}

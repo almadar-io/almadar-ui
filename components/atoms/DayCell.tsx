@@ -38,7 +38,7 @@ export function DayCell({
   return (
     <Box
       className={cn(
-        "p-2 text-center cursor-pointer hover:bg-[var(--color-muted)] transition-colors",
+        "p-2 text-center cursor-pointer hover:bg-muted transition-colors",
         isToday && "bg-blue-500/10",
         className,
       )}
@@ -50,7 +50,7 @@ export function DayCell({
           "font-medium",
           isToday
             ? "text-blue-600"
-            : "text-[var(--color-muted-foreground)]",
+            : "text-muted-foreground",
         )}
       >
         {dayAbbr}

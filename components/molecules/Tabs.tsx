@@ -133,17 +133,17 @@ export const Tabs: React.FC<TabsProps> = ({
   const variantClasses = {
     default: [
       'border-b-[length:var(--border-width)] border-transparent',
-      'hover:border-[var(--color-muted-foreground)]',
-      'data-[active=true]:border-[var(--color-primary)]',
+      'hover:border-muted-foreground',
+      'data-[active=true]:border-primary',
     ].join(' '),
     pills: [
-      'rounded-[var(--radius-sm)]',
-      'data-[active=true]:bg-[var(--color-primary)]',
-      'data-[active=true]:text-[var(--color-primary-foreground)]',
+      'rounded-sm',
+      'data-[active=true]:bg-primary',
+      'data-[active=true]:text-primary-foreground',
     ].join(' '),
     underline: [
       'border-b-[length:var(--border-width)] border-transparent',
-      'data-[active=true]:border-[var(--color-primary)]',
+      'data-[active=true]:border-primary',
     ].join(' '),
   };
 
@@ -154,9 +154,9 @@ export const Tabs: React.FC<TabsProps> = ({
         className={cn(
           'flex',
           orientation === 'horizontal'
-            ? 'flex-row border-b-[length:var(--border-width)] border-[var(--color-border)]'
-            : 'flex-col border-r-[length:var(--border-width)] border-[var(--color-border)]',
-          variant === 'pills' && 'gap-1 p-1 bg-[var(--color-muted)] border-0 rounded-[var(--radius-md)]',
+            ? 'flex-row border-b-[length:var(--border-width)] border-border'
+            : 'flex-col border-r-[length:var(--border-width)] border-border',
+          variant === 'pills' && 'gap-1 p-1 bg-muted border-0 rounded-md',
           variant === 'underline' && orientation === 'vertical' && 'border-b-0'
         )}
       >
@@ -180,14 +180,14 @@ export const Tabs: React.FC<TabsProps> = ({
               data-active={isActive}
               className={cn(
                 'flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all',
-                'focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)] focus:ring-offset-2',
+                'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
                 isDisabled && 'opacity-50 cursor-not-allowed',
                 variantClasses[variant],
                 isActive
                   ? variant === 'pills'
-                    ? 'text-[var(--color-primary-foreground)] font-bold'
-                    : 'text-[var(--color-foreground)] font-bold'
-                  : 'text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]'
+                    ? 'text-primary-foreground font-bold'
+                    : 'text-foreground font-bold'
+                  : 'text-muted-foreground hover:text-foreground'
               )}
             >
               {item.icon && <Icon icon={item.icon} size="sm" />}

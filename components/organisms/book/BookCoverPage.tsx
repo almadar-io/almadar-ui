@@ -68,7 +68,7 @@ export const BookCoverPage: React.FC<BookCoverPageProps> = ({
         {subtitle && (
           <Typography
             variant="h2"
-            className="text-xl text-[var(--color-muted-foreground)]"
+            className="text-xl text-muted-foreground"
           >
             {subtitle}
           </Typography>
@@ -77,7 +77,7 @@ export const BookCoverPage: React.FC<BookCoverPageProps> = ({
         {author && (
           <Typography
             variant="body"
-            className="text-[var(--color-muted-foreground)] mt-4"
+            className="text-muted-foreground mt-4"
           >
             {author}
           </Typography>

@@ -107,7 +107,7 @@ export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
     <Box ref={ref} className={cn('flex flex-col items-center gap-1 p-4', className)}>
       <Typography
         variant="h2"
-        className="text-[var(--color-primary)] font-bold tabular-nums"
+        className="text-primary font-bold tabular-nums"
       >
         {hasAnimated ? displayValue : '0'}
       </Typography>

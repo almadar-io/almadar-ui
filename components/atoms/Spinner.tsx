@@ -20,7 +20,7 @@ export const Spinner = React.forwardRef<HTMLDivElement, SpinnerProps>(
     return (
       <div
         ref={ref}
-        className={cn("text-[var(--color-foreground)]", className)}
+        className={cn("text-foreground", className)}
         {...props}
       >
         <Loader2 className={cn("animate-spin", sizeStyles[size])} />

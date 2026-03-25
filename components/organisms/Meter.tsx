@@ -259,8 +259,8 @@ export const Meter: React.FC<MeterProps> = ({
                                 <Box
                                     key={idx}
                                     className={cn(
-                                        "h-2 flex-1 rounded-[var(--radius-sm)] transition-all duration-300",
-                                        !isActive && "bg-[var(--color-muted)]",
+                                        "h-2 flex-1 rounded-sm transition-all duration-300",
+                                        !isActive && "bg-muted",
                                     )}
                                     style={isActive ? { backgroundColor: segColor } : undefined}
                                 />
@@ -300,9 +300,9 @@ export const Meter: React.FC<MeterProps> = ({
                         )}
                     </HStack>
                 )}
-                <Box className="w-full h-3 bg-[var(--color-muted)] rounded-[var(--radius-full)] overflow-hidden">
+                <Box className="w-full h-3 bg-muted rounded-full overflow-hidden">
                     <Box
-                        className="h-full rounded-[var(--radius-full)] transition-all duration-500 ease-out"
+                        className="h-full rounded-full transition-all duration-500 ease-out"
                         style={{
                             width: `${percentage}%`,
                             backgroundColor: activeColor,

@@ -63,9 +63,9 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
       onClick={toggleMode}
       className={cn(
         "inline-flex items-center justify-center gap-2",
-        "text-[var(--color-foreground)]",
-        "hover:bg-[var(--color-muted)] border-[length:var(--border-width)] border-transparent hover:border-[var(--color-border)]",
-        "focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)] focus:ring-offset-2",
+        "text-foreground",
+        "hover:bg-muted border-[length:var(--border-width)] border-transparent hover:border-border",
+        "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
         "transition-colors duration-200",
         sizeClasses[size],
         className,
@@ -75,11 +75,11 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
     >
       {isDark ? (
         <Sun
-          className={cn(iconSizes[size], "text-[var(--color-foreground)]")}
+          className={cn(iconSizes[size], "text-foreground")}
         />
       ) : (
         <Moon
-          className={cn(iconSizes[size], "text-[var(--color-foreground)]")}
+          className={cn(iconSizes[size], "text-foreground")}
         />
       )}
       {showLabel && (

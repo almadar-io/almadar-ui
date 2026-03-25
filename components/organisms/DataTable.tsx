@@ -322,17 +322,17 @@ export function DataTable<T extends { id: string | number }>({
   return (
     <Box
       className={cn(
-        "bg-[var(--color-card)] border-2 border-[var(--color-border)] rounded-none overflow-hidden",
+        "bg-card border-2 border-border rounded-none overflow-hidden",
         className,
       )}
     >
       {/* Header */}
       {(searchable || bulkActions || headerActions) && (
-        <HStack className="px-4 py-3 border-b-2 border-[var(--color-border)] flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+        <HStack className="px-4 py-3 border-b-2 border-border flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
           <HStack className="flex-col sm:flex-row items-stretch sm:items-center gap-3">
             {searchable && (
               <Box className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--color-muted-foreground)]" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
                   value={searchValue}
@@ -345,10 +345,10 @@ export function DataTable<T extends { id: string | number }>({
 
             {/* Bulk actions */}
             {bulkActions && selectedIds.length > 0 && (
-              <HStack className="items-center gap-2 pl-0 sm:pl-3 border-l-0 sm:border-l border-[var(--color-border)]">
+              <HStack className="items-center gap-2 pl-0 sm:pl-3 border-l-0 sm:border-l border-border">
                 <Typography
                   variant="small"
-                  className="text-[var(--color-muted-foreground)] whitespace-nowrap"
+                  className="text-muted-foreground whitespace-nowrap"
                 >
                   {t("table.bulk.selected", {
                     count: String(selectedIds.length),
@@ -384,7 +384,7 @@ export function DataTable<T extends { id: string | number }>({
         { }
         <table className="w-full">
           { }
-          <thead className="bg-[var(--color-table-header)] border-b-2 border-[var(--color-border)]">
+          <thead className="bg-[var(--color-table-header)] border-b-2 border-border">
             { }
             <tr>
               {selectable && (
@@ -404,7 +404,7 @@ export function DataTable<T extends { id: string | number }>({
                   key={String(col.key)}
                   data-column={String(col.key)}
                   className={cn(
-                    "px-4 py-3 text-left text-xs font-bold text-[var(--color-foreground)] uppercase tracking-wider whitespace-nowrap",
+                    "px-4 py-3 text-left text-xs font-bold text-foreground uppercase tracking-wider whitespace-nowrap",
                     col.sortable &&
                       "cursor-pointer select-none hover:bg-[var(--color-table-row-hover)]",
                   )}
@@ -445,7 +445,7 @@ export function DataTable<T extends { id: string | number }>({
                     <Spinner size="lg" />
                     <Typography
                       variant="small"
-                      className="text-[var(--color-muted-foreground)]"
+                      className="text-muted-foreground"
                     >
                       {t("common.loading")}
                     </Typography>
@@ -462,7 +462,7 @@ export function DataTable<T extends { id: string | number }>({
                     (selectable ? 1 : 0) +
                     (rowActions ? 1 : 0)
                   }
-                  className="px-4 py-12 text-center text-[var(--color-error)]"
+                  className="px-4 py-12 text-center text-error"
                 >
                   {t("error.generic") + ": "}
                   {error.message}
@@ -498,7 +498,7 @@ export function DataTable<T extends { id: string | number }>({
                   className={cn(
                     "border-b border-[var(--color-table-border)] last:border-0 hover:bg-[var(--color-table-row-hover)] transition-colors",
                     selectedIds.includes(row.id) &&
-                      "bg-[var(--color-primary)]/10 font-medium",
+                      "bg-primary/10 font-medium",
                     isRowClickable && "cursor-pointer",
                   )}
                   onClick={() => isRowClickable && handleRowClick(row)}
@@ -522,7 +522,7 @@ export function DataTable<T extends { id: string | number }>({
                       <td
                         key={String(col.key)}
                         data-column={String(col.key)}
-                        className="px-4 py-3 text-sm text-[var(--color-foreground)] whitespace-nowrap sm:whitespace-normal"
+                        className="px-4 py-3 text-sm text-foreground whitespace-nowrap sm:whitespace-normal"
                       >
                         {col.render
                           ? col.render(cellValue, row, rowIndex)
@@ -545,7 +545,7 @@ export function DataTable<T extends { id: string | number }>({
                     <td className="px-4 py-3 relative">
                       <Button
                         variant="ghost"
-                        className="p-1 rounded hover:bg-[var(--color-muted)]"
+                        className="p-1 rounded hover:bg-muted"
                         onClick={(e) => {
                           e.stopPropagation();
                           setOpenActionMenu(
@@ -553,7 +553,7 @@ export function DataTable<T extends { id: string | number }>({
                           );
                         }}
                       >
-                        <MoreHorizontal className="h-4 w-4 text-[var(--color-muted-foreground)]" />
+                        <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
                       </Button>
                       {openActionMenu === row.id && (
                         <>
@@ -564,7 +564,7 @@ export function DataTable<T extends { id: string | number }>({
                               setOpenActionMenu(null);
                             }}
                           />
-                          <VStack className="absolute right-0 mt-1 w-48 bg-[var(--color-card)] rounded-[var(--radius-lg)] shadow-[var(--shadow-lg)] border border-[var(--color-border)] py-1 z-50">
+                          <VStack className="absolute right-0 mt-1 w-48 bg-card rounded-lg shadow-lg border border-border py-1 z-50">
                             {(rowActions ?? [])
                               .filter(
                                 (action) => !action.show || action.show(row),
@@ -582,8 +582,8 @@ export function DataTable<T extends { id: string | number }>({
                                   className={cn(
                                     "w-full flex items-center gap-2 px-4 py-2 text-sm",
                                     action.variant === "danger"
-                                      ? "text-[var(--color-error)] hover:bg-[var(--color-error)]/10"
-                                      : "text-[var(--color-foreground)] hover:bg-[var(--color-muted)]",
+                                      ? "text-error hover:bg-error/10"
+                                      : "text-foreground hover:bg-muted",
                                   )}
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -611,7 +611,7 @@ export function DataTable<T extends { id: string | number }>({
 
       {/* Pagination (display-only — trait controls the state) */}
       {totalCount !== undefined && totalPages > 1 && (
-        <Box className="px-4 py-3 border-t-2 border-[var(--color-border)]">
+        <Box className="px-4 py-3 border-t-2 border-border">
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}

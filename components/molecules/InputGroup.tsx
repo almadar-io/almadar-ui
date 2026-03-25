@@ -52,8 +52,8 @@ export const InputGroup: React.FC<InputGroupProps> = ({
         <div
           className={cn(
             "flex items-center justify-center px-3",
-            "bg-[var(--color-muted)] dark:bg-[var(--color-muted)]",
-            "border border-[var(--color-border)] dark:border-[var(--color-border)]",
+            "bg-muted dark:bg-muted",
+            "border border-border dark:border-border",
             position === "left"
               ? "rounded-l-lg border-r-0"
               : "rounded-r-lg border-l-0",
@@ -69,9 +69,9 @@ export const InputGroup: React.FC<InputGroupProps> = ({
       <div
         className={cn(
           "flex items-center justify-center px-3",
-          "bg-[var(--color-muted)] dark:bg-[var(--color-muted)]",
-          "border border-[var(--color-border)] dark:border-[var(--color-border)]",
-          "text-[var(--color-foreground)] dark:text-[var(--color-foreground)]",
+          "bg-muted dark:bg-muted",
+          "border border-border dark:border-border",
+          "text-foreground dark:text-foreground",
           position === "left"
             ? "rounded-l-lg border-r-0"
             : "rounded-r-lg border-l-0",

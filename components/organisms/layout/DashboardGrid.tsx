@@ -82,7 +82,7 @@ export const DashboardGrid: React.FC<DashboardGridProps> = ({
         <Box
           key={cell.id != null ? String(cell.id) : idx}
           className={cn(
-            "border-2 border-[var(--color-border)] bg-[var(--color-card)]",
+            "border-2 border-border bg-card",
             colSpanStyles[cell.colSpan ?? 1],
             rowSpanStyles[cell.rowSpan ?? 1],
           )}

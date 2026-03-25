@@ -72,7 +72,7 @@ export const PricingPageTemplate: React.FC<PricingPageTemplateProps> = ({
       </Box>
 
       {resolved.faq && resolved.faq.length > 0 && (
-        <Box className="bg-[var(--color-muted)]/20 py-16">
+        <Box className="bg-muted/20 py-16">
           <Container size="lg" padding="lg">
             <VStack gap="lg">
               <SectionHeader title="Frequently Asked Questions" />

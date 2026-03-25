@@ -271,7 +271,7 @@ export const AvlCosmicZoom: React.FC<AvlCosmicZoomProps> = ({
       <HStack
         gap="xs"
         align="center"
-        className="absolute top-2 left-2 z-10 bg-[var(--color-surface)]/80 backdrop-blur rounded-md px-3 py-1.5"
+        className="absolute top-2 left-2 z-10 bg-surface/80 backdrop-blur rounded-md px-3 py-1.5"
       >
         {breadcrumbs.map((crumb, i) => (
           <React.Fragment key={crumb.level}>
@@ -305,7 +305,7 @@ export const AvlCosmicZoom: React.FC<AvlCosmicZoomProps> = ({
           <HStack
             gap="xs"
             align="center"
-            className="absolute top-2 right-2 z-10 bg-[var(--color-surface)]/80 backdrop-blur rounded-md px-1.5 py-1"
+            className="absolute top-2 right-2 z-10 bg-surface/80 backdrop-blur rounded-md px-1.5 py-1"
           >
             {orbData.traits.map((t) => (
               <Box
@@ -313,8 +313,8 @@ export const AvlCosmicZoom: React.FC<AvlCosmicZoomProps> = ({
                 as="button"
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer border-none ${
                   t.name === state.selectedTrait
-                    ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]'
-                    : 'bg-transparent text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] hover:bg-[var(--color-surface)]'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-surface'
                 }`}
                 onClick={() => handleTraitSwitch(t.name)}
               >
@@ -330,7 +330,7 @@ export const AvlCosmicZoom: React.FC<AvlCosmicZoomProps> = ({
         <Typography
           variant="small"
           color="muted"
-          className="absolute bottom-2 right-2 z-10 bg-[var(--color-surface)]/60 backdrop-blur rounded px-2 py-1"
+          className="absolute bottom-2 right-2 z-10 bg-surface/60 backdrop-blur rounded px-2 py-1"
         >
           Press Esc to zoom out
         </Typography>

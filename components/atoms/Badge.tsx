@@ -28,35 +28,35 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 // Using CSS variables for theme-aware styling
 const variantStyles: Record<BadgeVariant, string> = {
   default: [
-    "bg-[var(--color-muted)] text-[var(--color-foreground)]",
-    "border-[length:var(--border-width-thin)] border-[var(--color-border)]",
+    "bg-muted text-foreground",
+    "border-[length:var(--border-width-thin)] border-border",
   ].join(" "),
-  primary: "bg-[var(--color-primary)] text-[var(--color-primary-foreground)]",
+  primary: "bg-primary text-primary-foreground",
   secondary:
-    "bg-[var(--color-secondary)] text-[var(--color-secondary-foreground)]",
+    "bg-secondary text-secondary-foreground",
   success: [
-    "bg-[var(--color-surface)] text-[var(--color-success)]",
-    "border-[length:var(--border-width)] border-[var(--color-success)]",
+    "bg-surface text-success",
+    "border-[length:var(--border-width)] border-success",
   ].join(" "),
   warning: [
-    "bg-[var(--color-surface)] text-[var(--color-warning)]",
-    "border-[length:var(--border-width)] border-[var(--color-warning)]",
+    "bg-surface text-warning",
+    "border-[length:var(--border-width)] border-warning",
   ].join(" "),
   danger: [
-    "bg-[var(--color-surface)] text-[var(--color-error)]",
-    "border-[length:var(--border-width)] border-[var(--color-error)]",
+    "bg-surface text-error",
+    "border-[length:var(--border-width)] border-error",
   ].join(" "),
   error: [
-    "bg-[var(--color-surface)] text-[var(--color-error)]",
-    "border-[length:var(--border-width)] border-[var(--color-error)]",
+    "bg-surface text-error",
+    "border-[length:var(--border-width)] border-error",
   ].join(" "),
   info: [
-    "bg-[var(--color-surface)] text-[var(--color-info)]",
-    "border-[length:var(--border-width)] border-[var(--color-info)]",
+    "bg-surface text-info",
+    "border-[length:var(--border-width)] border-info",
   ].join(" "),
   neutral: [
-    "bg-[var(--color-muted)] text-[var(--color-muted-foreground)]",
-    "border-[length:var(--border-width-thin)] border-[var(--color-border)]",
+    "bg-muted text-muted-foreground",
+    "border-[length:var(--border-width-thin)] border-border",
   ].join(" "),
 };
 
@@ -76,7 +76,7 @@ export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
       <span
         ref={ref}
         className={cn(
-          "inline-flex items-center gap-1 font-bold rounded-[var(--radius-sm)]",
+          "inline-flex items-center gap-1 font-bold rounded-sm",
           variantStyles[variant],
           sizeStyles[size],
           className,

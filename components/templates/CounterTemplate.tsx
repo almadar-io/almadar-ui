@@ -120,7 +120,7 @@ function CounterStandard({
       <VStack gap="lg" align="center">
         <Typography
           variant="h2"
-          className="text-[var(--color-muted-foreground)]"
+          className="text-muted-foreground"
         >
           {title}
         </Typography>
@@ -182,7 +182,7 @@ function CounterFull({
       <VStack gap="xl" align="center">
         <Typography
           variant="h2"
-          className="text-[var(--color-muted-foreground)]"
+          className="text-muted-foreground"
         >
           {title}
         </Typography>

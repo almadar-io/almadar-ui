@@ -81,8 +81,8 @@ export const StatCard: React.FC<StatCardProps> = ({
   trendDirection: manualDirection,
   invertTrend = false,
   icon: iconProp,
-  iconBg = "bg-[var(--color-muted)]",
-  iconColor = "text-[var(--color-foreground)]",
+  iconBg = "bg-muted",
+  iconColor = "text-foreground",
   subtitle,
   action,
   className,
@@ -211,8 +211,8 @@ export const StatCard: React.FC<StatCardProps> = ({
           {schemaStats.map((_, idx) => (
             <Card key={idx} className="p-4">
               <VStack gap="xs" className="animate-pulse">
-                <Box className="h-3 bg-[var(--color-muted)] rounded w-16" />
-                <Box className="h-6 bg-[var(--color-muted)] rounded w-12" />
+                <Box className="h-3 bg-muted rounded w-16" />
+                <Box className="h-6 bg-muted rounded w-12" />
               </VStack>
             </Card>
           ))}
@@ -286,9 +286,9 @@ export const StatCard: React.FC<StatCardProps> = ({
     return (
       <Card className={cn("p-6", className)}>
         <VStack gap="sm" className="animate-pulse">
-          <Box className="h-4 bg-[var(--color-muted)] rounded w-24" />
-          <Box className="h-8 bg-[var(--color-muted)] rounded w-32" />
-          <Box className="h-4 bg-[var(--color-muted)] rounded w-20" />
+          <Box className="h-4 bg-muted rounded w-24" />
+          <Box className="h-8 bg-muted rounded w-32" />
+          <Box className="h-4 bg-muted rounded w-20" />
         </VStack>
       </Card>
     );
@@ -314,10 +314,10 @@ export const StatCard: React.FC<StatCardProps> = ({
                 className={cn(
                   "gap-0.5 text-sm font-bold",
                   isPositive
-                    ? "text-[var(--color-success)]"
+                    ? "text-success"
                     : trendDirection === "neutral"
-                      ? "text-[var(--color-muted-foreground)]"
-                      : "text-[var(--color-error)]",
+                      ? "text-muted-foreground"
+                      : "text-error",
                 )}
               >
                 <TrendIcon className="h-4 w-4" />
@@ -380,7 +380,7 @@ export const StatCard: React.FC<StatCardProps> = ({
         <Button
           variant="ghost"
           onClick={handleActionClick}
-          className="mt-4 text-sm font-bold text-[var(--color-foreground)] hover:underline"
+          className="mt-4 text-sm font-bold text-foreground hover:underline"
           data-testid={action.event ? `action-${action.event}` : undefined}
         >
           {action.label} →

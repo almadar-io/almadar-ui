@@ -155,7 +155,7 @@ export function NegotiatorBoard({
             <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
           </Box>
         ) : entity.headerImage && headerError ? (
-          <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-[var(--color-muted)] to-[var(--color-accent)] opacity-60" />
+          <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-muted to-accent opacity-60" />
         ) : null}
 
         <Card className="p-4">
@@ -173,13 +173,13 @@ export function NegotiatorBoard({
         <HStack gap="md" justify="center">
           <Card className="p-4 flex-1 text-center">
             <VStack gap="xs" align="center">
-              <Typography variant="caption" className="text-[var(--color-muted-foreground)]">{t('negotiator.you')}</Typography>
+              <Typography variant="caption" className="text-muted-foreground">{t('negotiator.you')}</Typography>
               <Typography variant="h3" weight="bold">{playerTotal}</Typography>
             </VStack>
           </Card>
           <Card className="p-4 flex-1 text-center">
             <VStack gap="xs" align="center">
-              <Typography variant="caption" className="text-[var(--color-muted-foreground)]">{t('negotiator.opponent')}</Typography>
+              <Typography variant="caption" className="text-muted-foreground">{t('negotiator.opponent')}</Typography>
               <Typography variant="h3" weight="bold">{opponentTotal}</Typography>
             </VStack>
           </Card>
@@ -189,7 +189,7 @@ export function NegotiatorBoard({
         {!isComplete && (
           <Card className="p-4">
             <VStack gap="sm">
-              <Typography variant="small" weight="bold" className="uppercase tracking-wider text-[var(--color-muted-foreground)]">
+              <Typography variant="small" weight="bold" className="uppercase tracking-wider text-muted-foreground">
                 {t('negotiator.chooseAction')}
               </Typography>
               <HStack gap="sm" justify="center" className="flex-wrap">
@@ -211,18 +211,18 @@ export function NegotiatorBoard({
         {history.length > 0 && (
           <Card className="p-4">
             <VStack gap="sm">
-              <Typography variant="small" weight="bold" className="uppercase tracking-wider text-[var(--color-muted-foreground)]">
+              <Typography variant="small" weight="bold" className="uppercase tracking-wider text-muted-foreground">
                 {t('negotiator.history')}
               </Typography>
               {history.map((round) => (
                 <HStack key={round.round} gap="sm" align="center" className="text-sm">
                   <Badge size="sm">R{round.round}</Badge>
                   <Typography variant="caption">{getActionLabel(round.playerAction)}</Typography>
-                  <Typography variant="caption" className="text-[var(--color-muted-foreground)]">vs</Typography>
+                  <Typography variant="caption" className="text-muted-foreground">vs</Typography>
                   <Typography variant="caption">{getActionLabel(round.opponentAction)}</Typography>
                   <Icon icon={ArrowRight} size="xs" />
                   <Typography variant="caption" weight="bold" className="text-green-600">+{round.playerPayoff}</Typography>
-                  <Typography variant="caption" className="text-[var(--color-muted-foreground)]">/ +{round.opponentPayoff}</Typography>
+                  <Typography variant="caption" className="text-muted-foreground">/ +{round.opponentPayoff}</Typography>
                 </HStack>
               ))}
             </VStack>
@@ -239,7 +239,7 @@ export function NegotiatorBoard({
                   ? (entity.successMessage ?? t('negotiator.success'))
                   : (entity.failMessage ?? t('negotiator.failed'))}
               </Typography>
-              <Typography variant="caption" className="text-[var(--color-muted-foreground)]">
+              <Typography variant="caption" className="text-muted-foreground">
                 {t('negotiator.finalScore')}: {playerTotal}/{entity.targetScore}
               </Typography>
             </VStack>

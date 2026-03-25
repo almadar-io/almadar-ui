@@ -63,7 +63,7 @@ export const CaseStudyCard: React.FC<CaseStudyCardProps> = ({
           variant="ghost"
           size="sm"
           onClick={handleClick}
-          className="text-[var(--color-primary)] -ml-2"
+          className="text-primary -ml-2"
         >
           {linkLabel} →
         </Button>

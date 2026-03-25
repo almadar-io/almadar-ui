@@ -89,17 +89,17 @@ const SidebarNavItem: React.FC<{
       onClick={item.onClick}
       className={cn(
         'w-full flex items-center gap-3 px-3 py-2.5 transition-all duration-[var(--transition-fast)] group relative',
-        'rounded-[var(--radius-sm)] border-[length:var(--border-width-thin)] border-transparent',
+        'rounded-sm border-[length:var(--border-width-thin)] border-transparent',
         isActive
           ? [
-            'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]',
-            'font-medium shadow-[var(--shadow-sm)]',
-            'border-[var(--color-primary)] translate-x-1 -translate-y-0.5',
+            'bg-primary text-primary-foreground',
+            'font-medium shadow-sm',
+            'border-primary translate-x-1 -translate-y-0.5',
           ].join(' ')
           : [
-            'text-[var(--color-foreground)]',
-            'hover:bg-[var(--color-muted)] hover:border-[var(--color-border)]',
-            'active:bg-[var(--color-primary)] active:text-[var(--color-primary-foreground)]',
+            'text-foreground',
+            'hover:bg-muted hover:border-border',
+            'active:bg-primary active:text-primary-foreground',
           ].join(' ')
       )}
       title={collapsed ? item.label : undefined}
@@ -109,7 +109,7 @@ const SidebarNavItem: React.FC<{
           size={20}
           className={cn(
             'min-w-[20px] flex-shrink-0',
-            isActive && 'text-[var(--color-primary-foreground)]'
+            isActive && 'text-primary-foreground'
           )}
         />
       )}
@@ -127,9 +127,9 @@ const SidebarNavItem: React.FC<{
         <Box className={cn(
           'absolute left-full ml-2 px-2 py-1 text-xs opacity-0 group-hover:opacity-100',
           'pointer-events-none whitespace-nowrap z-50 transition-opacity',
-          'bg-[var(--color-primary)] text-[var(--color-primary-foreground)]',
-          'border-[length:var(--border-width-thin)] border-[var(--color-border)]',
-          'rounded-[var(--radius-sm)]'
+          'bg-primary text-primary-foreground',
+          'border-[length:var(--border-width-thin)] border-border',
+          'rounded-sm'
         )}>
           {item.label}
         </Box>
@@ -186,14 +186,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       as="aside"
       className={cn(
         'flex flex-col h-full',
-        'bg-[var(--color-card)] border-r border-[var(--color-border)]',
+        'bg-card border-r border-border',
         'transition-all duration-300 ease-in-out',
         collapsed ? 'w-20' : 'w-64',
         className
       )}
     >
       {/* Header with Logo */}
-      <Box className="h-16 flex items-center justify-between px-4 border-b border-[var(--color-border)] flex-shrink-0">
+      <Box className="h-16 flex items-center justify-between px-4 border-b border-border flex-shrink-0">
         <Box
           className={cn(
             'flex items-center gap-3 cursor-pointer',
@@ -213,14 +213,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
              
             <img src={logoSrc} alt={brandName} className="h-8 w-8" />
           ) : (
-            <Box className="h-8 w-8 bg-[var(--color-primary)] flex items-center justify-center rounded-[var(--radius-sm)]">
-              <Typography variant="small" className="text-[var(--color-primary-foreground)] font-bold text-sm">K</Typography>
+            <Box className="h-8 w-8 bg-primary flex items-center justify-center rounded-sm">
+              <Typography variant="small" className="text-primary-foreground font-bold text-sm">K</Typography>
             </Box>
           )}
 
           {/* Brand name */}
           {!collapsed && (
-            <Typography variant="body" className="text-xl font-bold text-[var(--color-foreground)]">
+            <Typography variant="body" className="text-xl font-bold text-foreground">
               {brandName}
             </Typography>
           )}
@@ -232,8 +232,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             variant="ghost"
             onClick={handleToggle}
             className={cn(
-              'p-1.5 hover:bg-[var(--color-muted)] text-[var(--color-foreground)] hidden lg:block',
-              'rounded-[var(--radius-sm)]',
+              'p-1.5 hover:bg-muted text-foreground hidden lg:block',
+              'rounded-sm',
               collapsed && 'mx-auto'
             )}
             title={collapsed ? t('sidebar.expand') : t('sidebar.collapse')}
@@ -247,7 +247,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <Button
             variant="ghost"
             onClick={handleClose}
-            className="p-1.5 hover:bg-[var(--color-muted)] text-[var(--color-foreground)] lg:hidden rounded-[var(--radius-sm)]"
+            className="p-1.5 hover:bg-muted text-foreground lg:hidden rounded-sm"
             aria-label={t('sidebar.close')}
           >
             <X size={18} />
@@ -268,7 +268,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Footer with User Section and additional content */}
       {(footerContent || userSection) && (
-        <Box className="p-3 border-t border-[var(--color-border)] space-y-1 flex-shrink-0">
+        <Box className="p-3 border-t border-border space-y-1 flex-shrink-0">
           <Box className={cn(
             'flex items-center',
             collapsed ? 'justify-center flex-col gap-4' : 'justify-between px-2'
@@ -289,7 +289,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Button
               variant="ghost"
               onClick={handleToggle}
-              className="w-full flex justify-center p-2 mt-2 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] lg:hidden"
+              className="w-full flex justify-center p-2 mt-2 text-muted-foreground hover:text-foreground lg:hidden"
             >
               <ChevronRight size={20} />
             </Button>

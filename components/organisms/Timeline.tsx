@@ -66,23 +66,23 @@ const STATUS_STYLES: Record<
     { dotColor: string; lineColor: string; icon: LucideIcon }
 > = {
     complete: {
-        dotColor: "text-[var(--color-success)]",
-        lineColor: "bg-[var(--color-success)]",
+        dotColor: "text-success",
+        lineColor: "bg-success",
         icon: CheckCircle2,
     },
     active: {
-        dotColor: "text-[var(--color-primary)]",
-        lineColor: "bg-[var(--color-primary)]",
+        dotColor: "text-primary",
+        lineColor: "bg-primary",
         icon: Clock,
     },
     pending: {
-        dotColor: "text-[var(--color-muted-foreground)]",
-        lineColor: "bg-[var(--color-border)]",
+        dotColor: "text-muted-foreground",
+        lineColor: "bg-border",
         icon: Circle,
     },
     error: {
-        dotColor: "text-[var(--color-error)]",
-        lineColor: "bg-[var(--color-error)]",
+        dotColor: "text-error",
+        lineColor: "bg-error",
         icon: AlertCircle,
     },
 };
@@ -180,7 +180,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     <Icon
                                         icon={ItemIcon}
                                         size="sm"
-                                        className={cn(style.dotColor, "z-10 bg-[var(--color-card)]")}
+                                        className={cn(style.dotColor, "z-10 bg-card")}
                                     />
                                     {!isLast && (
                                         <Box

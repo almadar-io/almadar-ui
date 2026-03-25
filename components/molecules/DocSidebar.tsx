@@ -52,8 +52,8 @@ const DocSidebarCategory: React.FC<DocSidebarCategoryProps> = ({ item, depth }) 
           gap="sm"
           align="center"
           className={cn(
-            'cursor-pointer select-none rounded-[var(--radius-sm)] px-2 py-1.5',
-            'hover:bg-[var(--color-muted)]',
+            'cursor-pointer select-none rounded-sm px-2 py-1.5',
+            'hover:bg-muted',
             depth > 0 && 'pl-4',
           )}
           onClick={() => setExpanded((prev) => !prev)}
@@ -69,11 +69,11 @@ const DocSidebarCategory: React.FC<DocSidebarCategoryProps> = ({ item, depth }) 
           <Icon
             name={expanded ? 'chevron-down' : 'chevron-right'}
             size="xs"
-            className="text-[var(--color-muted-foreground)] shrink-0"
+            className="text-muted-foreground shrink-0"
           />
           <Typography
             variant="caption"
-            className="text-xs uppercase tracking-wider text-[var(--color-muted-foreground)] font-semibold"
+            className="text-xs uppercase tracking-wider text-muted-foreground font-semibold"
             as="span"
           >
             {item.label}
@@ -94,12 +94,12 @@ const DocSidebarCategory: React.FC<DocSidebarCategoryProps> = ({ item, depth }) 
   return (
     <Box
       className={cn(
-        'block rounded-[var(--radius-sm)] px-3 py-1.5 text-sm transition-colors no-underline cursor-pointer',
-        'hover:bg-[var(--color-muted)]',
+        'block rounded-sm px-3 py-1.5 text-sm transition-colors no-underline cursor-pointer',
+        'hover:bg-muted',
         depth > 0 && 'ml-2',
         item.active
-          ? 'bg-[var(--color-primary)]/8 text-[var(--color-primary)] font-semibold'
-          : 'text-[var(--color-muted-foreground)]',
+          ? 'bg-primary/8 text-primary font-semibold'
+          : 'text-muted-foreground',
       )}
       onClick={() => { if (item.href) window.location.href = item.href; }}
       role="link"
@@ -109,8 +109,8 @@ const DocSidebarCategory: React.FC<DocSidebarCategoryProps> = ({ item, depth }) 
         variant="body2"
         className={cn(
           item.active
-            ? 'text-[var(--color-primary)] font-semibold'
-            : 'text-[var(--color-muted-foreground)]',
+            ? 'text-primary font-semibold'
+            : 'text-muted-foreground',
         )}
         as="span"
       >

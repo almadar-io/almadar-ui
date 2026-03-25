@@ -34,10 +34,10 @@ export interface MasterDetailProps {
  * Default empty state for detail panel
  */
 const DefaultEmptyDetail: React.FC = () => (
-  <div className="flex items-center justify-center h-full border-2 border-dashed border-[var(--color-border)]">
+  <div className="flex items-center justify-center h-full border-2 border-dashed border-border">
     <Typography
       variant="body2"
-      className="text-[var(--color-muted-foreground)]"
+      className="text-muted-foreground"
     >
       Select an item to view details
     </Typography>
@@ -73,7 +73,7 @@ export const MasterDetail: React.FC<MasterDetailProps> = ({
       {/* Master panel */}
       <div
         className={cn(
-          "border-r-2 border-[var(--color-border)] overflow-auto",
+          "border-r-2 border-border overflow-auto",
           masterClassName,
         )}
       >

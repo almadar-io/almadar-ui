@@ -29,12 +29,12 @@ export interface DocPaginationProps {
 }
 
 const linkCardStyles = [
-  'border border-[var(--color-border)]',
-  'rounded-[var(--radius-md)]',
+  'border border-border',
+  'rounded-md',
   'p-4',
   'transition-all',
-  'hover:border-[var(--color-primary)]',
-  'hover:shadow-[var(--shadow-hover)]',
+  'hover:border-primary',
+  'hover:shadow-lg',
   'no-underline',
   'flex-1',
   'min-w-0',
@@ -60,7 +60,7 @@ export function DocPagination({ prev, next, className }: DocPaginationProps) {
           tabIndex={0}
         >
           <HStack align="center" gap="sm">
-            <Icon name="arrow-left" size="md" className="text-[var(--color-muted-foreground)] group-hover:text-[var(--color-primary)] transition-colors flex-shrink-0" />
+            <Icon name="arrow-left" size="md" className="text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
             <VStack gap="none" align="start">
               {prev.category ? (
                 <Typography variant="caption" color="muted">
@@ -69,7 +69,7 @@ export function DocPagination({ prev, next, className }: DocPaginationProps) {
               ) : null}
               <Typography
                 variant="body"
-                className="group-hover:text-[var(--color-primary)] transition-colors"
+                className="group-hover:text-primary transition-colors"
               >
                 {prev.label}
               </Typography>
@@ -97,12 +97,12 @@ export function DocPagination({ prev, next, className }: DocPaginationProps) {
               ) : null}
               <Typography
                 variant="body"
-                className="group-hover:text-[var(--color-primary)] transition-colors"
+                className="group-hover:text-primary transition-colors"
               >
                 {next.label}
               </Typography>
             </VStack>
-            <Icon name="arrow-right" size="md" className="text-[var(--color-muted-foreground)] group-hover:text-[var(--color-primary)] transition-colors flex-shrink-0" />
+            <Icon name="arrow-right" size="md" className="text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
           </HStack>
         </Box>
       ) : (

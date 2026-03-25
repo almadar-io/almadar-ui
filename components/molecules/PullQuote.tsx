@@ -25,14 +25,14 @@ export const PullQuote: React.FC<PullQuoteProps> = ({
   return (
     <Box
       className={cn(
-        'border-l-4 border-l-[var(--color-primary)]',
+        'border-l-4 border-l-primary',
         'pl-6 py-2 my-6',
         className,
       )}
     >
       <Typography
         variant="large"
-        className="italic text-[var(--color-foreground)] opacity-90"
+        className="italic text-foreground opacity-90"
       >
         {children}
       </Typography>

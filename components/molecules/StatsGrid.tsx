@@ -30,7 +30,7 @@ export const StatsGrid: React.FC<StatsGridProps> = ({
         <VStack key={stat.label} gap="xs" align="center" className="py-4">
           <Typography
             variant="h2"
-            className="font-bold text-[var(--color-primary)]"
+            className="font-bold text-primary"
           >
             {stat.value}
           </Typography>

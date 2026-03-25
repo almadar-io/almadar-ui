@@ -163,7 +163,7 @@ export function DocSearch({
           onChange={handleChange}
           onFocus={handleFocus}
           onKeyDown={handleKeyDown}
-          leftIcon={<Icon name="search" size="sm" className="text-[var(--color-muted-foreground)]" />}
+          leftIcon={<Icon name="search" size="sm" className="text-muted-foreground" />}
           clearable={query.length > 0}
           onClear={() => {
             setQuery('');
@@ -177,7 +177,7 @@ export function DocSearch({
       {isOpen && results.length > 0 ? (
         <Box
           position="absolute"
-          className="top-full left-0 right-0 mt-1 z-50 bg-[var(--color-card)] border border-[var(--color-border)] rounded-[var(--radius-md)] shadow-[var(--shadow-lg)] max-h-80 overflow-y-auto"
+          className="top-full left-0 right-0 mt-1 z-50 bg-card border border-border rounded-md shadow-lg max-h-80 overflow-y-auto"
         >
           <VStack gap="none">
             {results.map((result, index) => (
@@ -185,10 +185,10 @@ export function DocSearch({
                 key={`${result.href}-${index}`}
                 className={cn(
                   'px-4 py-3 cursor-pointer transition-colors',
-                  'hover:bg-[var(--color-muted)]',
-                  index === activeIndex && 'bg-[var(--color-muted)]',
+                  'hover:bg-muted',
+                  index === activeIndex && 'bg-muted',
                   index < results.length - 1 &&
-                    'border-b border-[var(--color-border)]',
+                    'border-b border-border',
                 )}
                 onClick={() => navigateTo(result.href)}
                 role="option"

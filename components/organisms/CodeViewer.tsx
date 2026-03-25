@@ -104,19 +104,19 @@ function generateDiff(oldVal: string, newVal: string): DiffLine[] {
 
 const DIFF_STYLES: Record<DiffLine["type"], { bg: string; prefix: string; text: string }> = {
     add: {
-        bg: "bg-[var(--color-success)]/10",
+        bg: "bg-success/10",
         prefix: "+",
-        text: "text-[var(--color-success)]",
+        text: "text-success",
     },
     remove: {
-        bg: "bg-[var(--color-error)]/10",
+        bg: "bg-error/10",
         prefix: "-",
-        text: "text-[var(--color-error)]",
+        text: "text-error",
     },
     context: {
         bg: "",
         prefix: " ",
-        text: "text-[var(--color-foreground)]",
+        text: "text-foreground",
     },
 };
 
@@ -215,7 +215,7 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({
             <VStack gap="none">
                 {/* Tabs for multiple files */}
                 {tabItems && tabItems.length > 1 && (
-                    <Box className="border-b border-[var(--color-border)]">
+                    <Box className="border-b border-border">
                         <Tabs
                             tabs={tabItems}
                             activeTab={`file-${activeFileIndex}`}
@@ -232,10 +232,10 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({
                     gap="sm"
                     align="center"
                     justify="between"
-                    className="px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-muted)]/30"
+                    className="px-4 py-2 border-b border-border bg-muted/30"
                 >
                     <HStack gap="sm" align="center">
-                        <Icon icon={mode === "diff" ? FileText : Code} size="sm" className="text-[var(--color-muted-foreground)]" />
+                        <Icon icon={mode === "diff" ? FileText : Code} size="sm" className="text-muted-foreground" />
                         {title && (
                             <Typography variant="small" weight="medium" className="truncate">
                                 {title}
@@ -252,7 +252,7 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({
                             size="sm"
                             icon={WrapText}
                             onClick={() => setWrap(!wrap)}
-                            className={cn(wrap && "text-[var(--color-primary)]")}
+                            className={cn(wrap && "text-primary")}
                         />
                         {showCopy && (
                             <Button
@@ -260,7 +260,7 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({
                                 size="sm"
                                 icon={copied ? Check : Copy}
                                 onClick={handleCopy}
-                                className={cn(copied && "text-[var(--color-success)]")}
+                                className={cn(copied && "text-success")}
                             />
                         )}
                         {actions?.map((action, idx) => (
@@ -278,7 +278,7 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({
 
                 {/* Code content — pre/code are semantically necessary for code display */}
                 <Box
-                    className="overflow-auto bg-[var(--color-muted)]/20"
+                    className="overflow-auto bg-muted/20"
                     style={{ maxHeight }}
                 >
                     {diffLines ? (
@@ -318,7 +318,7 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({
                         /* Code mode */
                         <VStack gap="none" className="font-mono text-xs">
                             {lines.map((line, idx) => (
-                                <HStack key={idx} gap="none" align="start" className="px-4 py-0.5 hover:bg-[var(--color-muted)]/50">
+                                <HStack key={idx} gap="none" align="start" className="px-4 py-0.5 hover:bg-muted/50">
                                     {showLineNumbers && (
                                         <Typography
                                             variant="caption"

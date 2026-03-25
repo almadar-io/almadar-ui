@@ -172,8 +172,8 @@ export const Header: React.FC<HeaderProps> = ({
     <Box
       as="header"
       className={cn(
-        "h-16 border-b border-[var(--color-border)]",
-        "flex items-center px-4 justify-between bg-[var(--color-card)]",
+        "h-16 border-b border-border",
+        "flex items-center px-4 justify-between bg-card",
         sticky && "sticky top-0 z-50",
         variant === "mobile" && "lg:hidden",
         className,
@@ -186,7 +186,7 @@ export const Header: React.FC<HeaderProps> = ({
           <Button
             variant="ghost"
             onClick={onMenuToggle}
-            className="p-2 -ml-2 text-[var(--color-foreground)] hover:bg-[var(--color-muted)] transition-colors"
+            className="p-2 -ml-2 text-foreground hover:bg-muted transition-colors"
             aria-label={isMenuOpen ? "Close menu" : "Open menu"}
           >
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -216,7 +216,7 @@ export const Header: React.FC<HeaderProps> = ({
           {brandName && (
             <Typography
               variant="h5"
-              className="text-lg font-bold text-[var(--color-foreground)]"
+              className="text-lg font-bold text-foreground"
             >
               {brandName}
             </Typography>
@@ -238,10 +238,10 @@ export const Header: React.FC<HeaderProps> = ({
                 variant="ghost"
                 onClick={item.onClick}
                 className={cn(
-                  "flex items-center gap-2 px-3 py-2 rounded-[var(--radius-lg)] transition-colors",
+                  "flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
                   item.active
-                    ? "bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
-                    : "text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)] hover:text-[var(--color-foreground)]",
+                    ? "bg-primary/10 text-primary"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
                 {item.icon && <item.icon size={18} />}
@@ -276,9 +276,9 @@ export const Header: React.FC<HeaderProps> = ({
             variant="ghost"
             onClick={onUserClick}
             className={cn(
-              "w-8 h-8 rounded-[var(--radius-full)] bg-[var(--color-primary)]/10 flex items-center justify-center",
-              "text-[var(--color-primary)] font-bold text-xs",
-              "hover:ring-2 hover:ring-[var(--color-ring)] transition-all",
+              "w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center",
+              "text-primary font-bold text-xs",
+              "hover:ring-2 hover:ring-ring transition-all",
               onUserClick && "cursor-pointer",
             )}
           >

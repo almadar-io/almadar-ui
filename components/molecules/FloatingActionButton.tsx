@@ -176,7 +176,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
           size="lg"
           icon={resolvedAction.icon}
           onClick={resolvedAction.onClick}
-          className="rounded-[var(--radius-full)] shadow-[var(--shadow-lg)]"
+          className="rounded-full shadow-lg"
           aria-label={resolvedAction.label || "Action"}
         >
           {resolvedAction.label && (
@@ -229,7 +229,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                 }}
               >
                 {position.includes("right") && (
-                  <Typography variant="small" className="text-[var(--color-foreground)] dark:text-[var(--color-foreground)] bg-[var(--color-card)] dark:bg-[var(--color-card)] px-2 py-1 rounded shadow-[var(--shadow-sm)] whitespace-nowrap">
+                  <Typography variant="small" className="text-foreground dark:text-foreground bg-card dark:bg-card px-2 py-1 rounded shadow-sm whitespace-nowrap">
                     {actionItem.label}
                   </Typography>
                 )}
@@ -242,13 +242,13 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                     if (actionItem.event) eventBus.emit(`UI:${actionItem.event}`, { actionId: actionItem.id });
                     actionItem.onClick?.();
                   }}
-                  className="rounded-[var(--radius-full)] shadow-[var(--shadow-lg)]"
+                  className="rounded-full shadow-lg"
                   aria-label={actionItem.label}
                 >
                   <Typography as="span" className="sr-only">{actionItem.label}</Typography>
                 </Button>
                 {position.includes("left") && (
-                  <Typography variant="small" className="text-[var(--color-foreground)] dark:text-[var(--color-foreground)] bg-[var(--color-card)] dark:bg-[var(--color-card)] px-2 py-1 rounded shadow-[var(--shadow-sm)] whitespace-nowrap">
+                  <Typography variant="small" className="text-foreground dark:text-foreground bg-card dark:bg-card px-2 py-1 rounded shadow-sm whitespace-nowrap">
                     {actionItem.label}
                   </Typography>
                 )}
@@ -263,7 +263,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
           size="lg"
           icon={isExpanded ? X : Plus}
           onClick={handleMainClick}
-          className="rounded-[var(--radius-full)] shadow-[var(--shadow-lg)] transition-all duration-300"
+          className="rounded-full shadow-lg transition-all duration-300"
           aria-label={isExpanded ? "Close actions" : "Open actions"}
           aria-expanded={isExpanded}
         >

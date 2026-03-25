@@ -267,12 +267,12 @@ export const DataGrid: React.FC<DataGridProps> = ({
     <VStack gap="sm">
       {/* Selection toolbar */}
       {selectable && someSelected && (
-        <HStack gap="sm" className="items-center px-2 py-2 bg-[var(--color-muted)] rounded-[var(--radius-sm)]">
+        <HStack gap="sm" className="items-center px-2 py-2 bg-muted rounded-sm">
           <input
             type="checkbox"
             checked={allSelected}
             onChange={toggleAll}
-            className="w-4 h-4 accent-[var(--color-primary)]"
+            className="w-4 h-4 accent-primary"
             aria-label="Select all"
           />
           <Typography variant="caption" className="font-semibold">
@@ -298,12 +298,12 @@ export const DataGrid: React.FC<DataGridProps> = ({
                 data-entity-row
                 data-entity-id={id}
                 className={cn(
-                  'bg-[var(--color-card)] rounded-[var(--radius-lg)]',
-                  'border border-[var(--color-border)]',
-                  'shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-hover)]',
-                  'hover:border-[var(--color-primary)] transition-all',
+                  'bg-card rounded-lg',
+                  'border border-border',
+                  'shadow-sm hover:shadow-lg',
+                  'hover:border-primary transition-all',
                   'p-4',
-                  isSelected && 'ring-2 ring-[var(--color-primary)] border-[var(--color-primary)]',
+                  isSelected && 'ring-2 ring-primary border-primary',
                 )}
               >
                 {children(itemData, index)}
@@ -320,12 +320,12 @@ export const DataGrid: React.FC<DataGridProps> = ({
               data-entity-row
               data-entity-id={id}
               className={cn(
-                'bg-[var(--color-card)] rounded-[var(--radius-lg)]',
-                'border border-[var(--color-border)]',
-                'shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-hover)]',
-                'hover:border-[var(--color-primary)] transition-all',
+                'bg-card rounded-lg',
+                'border border-border',
+                'shadow-sm hover:shadow-lg',
+                'hover:border-primary transition-all',
                 'flex flex-col',
-                isSelected && 'ring-2 ring-[var(--color-primary)] border-[var(--color-primary)]',
+                isSelected && 'ring-2 ring-primary border-primary',
               )}
             >
             {/* Card Image */}
@@ -333,7 +333,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
               const imgUrl = getNestedValue(itemData, imageField);
               if (!imgUrl || typeof imgUrl !== 'string') return null;
               return (
-                <Box className="w-full aspect-video overflow-hidden rounded-t-[var(--radius-lg)]">
+                <Box className="w-full aspect-video overflow-hidden rounded-t-lg">
                   <img
                     src={imgUrl}
                     alt={titleValue !== undefined ? String(titleValue) : ''}
@@ -353,7 +353,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                     checked={isSelected}
                     onChange={() => toggleSelection(id)}
                     onClick={(e) => e.stopPropagation()}
-                    className="w-4 h-4 mt-1 flex-shrink-0 accent-[var(--color-primary)]"
+                    className="w-4 h-4 mt-1 flex-shrink-0 accent-primary"
                     aria-label={`Select ${titleValue !== undefined ? String(titleValue) : 'item'}`}
                   />
                 )}
@@ -361,7 +361,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                   {titleValue !== undefined && titleValue !== null && (
                     <HStack gap="xs" className="items-center">
                       {titleField?.icon && (
-                        <Icon name={titleField.icon} size="sm" className="text-[var(--color-primary)] flex-shrink-0" />
+                        <Icon name={titleField.icon} size="sm" className="text-primary flex-shrink-0" />
                       )}
                       <Typography
                         variant={titleField?.variant === 'h3' ? 'h3' : 'h4'}
@@ -397,7 +397,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                         size="sm"
                         onClick={handleActionClick(action, itemData)}
                         data-testid={`action-${action.event}`}
-                        className="text-[var(--color-error)] hover:bg-[var(--color-error)]/10 px-2"
+                        className="text-error hover:bg-error/10 px-2"
                       >
                         {action.icon && <Icon name={action.icon} size="xs" />}
                         {action.label}
@@ -421,7 +421,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                       return (
                         <HStack key={field.name} gap="sm" className="justify-between items-center">
                           <HStack gap="xs" className="items-center">
-                            {field.icon && <Icon name={field.icon} size="xs" className="text-[var(--color-muted-foreground)]" />}
+                            {field.icon && <Icon name={field.icon} size="xs" className="text-muted-foreground" />}
                             <Typography variant="caption" color="secondary">
                               {field.label ?? fieldLabel(field.name)}
                             </Typography>
@@ -436,7 +436,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                     return (
                       <HStack key={field.name} gap="sm" className="justify-between items-center">
                         <HStack gap="xs" className="items-center">
-                          {field.icon && <Icon name={field.icon} size="xs" className="text-[var(--color-muted-foreground)]" />}
+                          {field.icon && <Icon name={field.icon} size="xs" className="text-muted-foreground" />}
                           <Typography variant="caption" color="secondary">
                             {field.label ?? fieldLabel(field.name)}
                           </Typography>
@@ -456,7 +456,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
 
             {/* Card Footer: primary actions */}
             {primaryActions.length > 0 && (
-              <Box className="px-4 py-3 mt-auto border-t border-[var(--color-border)]">
+              <Box className="px-4 py-3 mt-auto border-t border-border">
                 <HStack gap="sm" className="justify-end">
                   {primaryActions.map((action, idx) => (
                     <Button

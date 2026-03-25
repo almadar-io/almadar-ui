@@ -129,7 +129,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
   if (!book) return <EmptyState message={t('book.noData')} />;
 
   return (
-    <VStack className={cn('relative h-full overflow-hidden bg-[var(--color-background)]', className)}>
+    <VStack className={cn('relative h-full overflow-hidden bg-background', className)}>
       {/* Page container */}
       <Box
         className="flex-1 overflow-y-auto overflow-x-hidden book-viewer-page"

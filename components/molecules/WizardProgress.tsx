@@ -72,7 +72,7 @@ export const WizardProgress: React.FC<WizardProgressProps> = ({
     <Box
       border
       className={cn(
-        "border-b-2 border-x-0 border-t-0 border-[var(--color-border)]",
+        "border-b-2 border-x-0 border-t-0 border-border",
         compact ? "px-4 py-2" : "px-6 py-4",
         className,
       )}
@@ -90,15 +90,15 @@ export const WizardProgress: React.FC<WizardProgressProps> = ({
                 disabled={!isCompleted || !allowNavigation}
                 className={cn(
                   "flex items-center justify-center text-sm font-bold transition-colors",
-                  "border-2 border-[var(--color-border)]",
+                  "border-2 border-border",
                   compact ? "w-6 h-6" : "w-8 h-8",
                   isActive &&
-                    "bg-[var(--color-foreground)] text-[var(--color-background)]",
+                    "bg-foreground text-background",
                   isCompleted &&
-                    "bg-[var(--color-foreground)] text-[var(--color-background)] cursor-pointer hover:bg-[var(--color-muted-foreground)]",
+                    "bg-foreground text-background cursor-pointer hover:bg-muted-foreground",
                   !isActive &&
                     !isCompleted &&
-                    "bg-[var(--color-card)] text-[var(--color-foreground)]",
+                    "bg-card text-foreground",
                 )}
               >
                 {isCompleted ? <Icon icon={Check} size="sm" /> : index + 1}
@@ -110,8 +110,8 @@ export const WizardProgress: React.FC<WizardProgressProps> = ({
                   className={cn(
                     "hidden md:block",
                     isActive
-                      ? "text-[var(--color-foreground)] font-bold"
-                      : "text-[var(--color-muted-foreground)]",
+                      ? "text-foreground font-bold"
+                      : "text-muted-foreground",
                   )}
                 >
                   <Typography
@@ -129,8 +129,8 @@ export const WizardProgress: React.FC<WizardProgressProps> = ({
                   className={cn(
                     "flex-1 h-0.5",
                     index < currentStep
-                      ? "bg-[var(--color-foreground)]"
-                      : "bg-[var(--color-muted)]",
+                      ? "bg-foreground"
+                      : "bg-muted",
                   )}
                 />
               )}

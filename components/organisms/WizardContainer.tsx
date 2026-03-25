@@ -240,7 +240,7 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
         <Box
           border
           className={cn(
-            "border-b-2 border-x-0 border-t-0 border-[var(--color-border)]",
+            "border-b-2 border-x-0 border-t-0 border-border",
             compact ? "px-4 py-2" : "px-6 py-4",
           )}
         >
@@ -260,14 +260,14 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
                     disabled={!isCompleted || !allowBack}
                     className={cn(
                       "w-8 h-8 flex items-center justify-center text-sm font-bold transition-colors",
-                      "border-2 border-[var(--color-border)]",
+                      "border-2 border-border",
                       isActive &&
-                        "bg-[var(--color-primary)] text-[var(--color-primary-foreground)]",
+                        "bg-primary text-primary-foreground",
                       isCompleted &&
-                        "bg-[var(--color-primary)] text-[var(--color-primary-foreground)] cursor-pointer hover:bg-[var(--color-primary-hover)]",
+                        "bg-primary text-primary-foreground cursor-pointer hover:bg-primary-hover",
                       !isActive &&
                         !isCompleted &&
-                        "bg-[var(--color-card)] text-[var(--color-foreground)]",
+                        "bg-card text-foreground",
                     )}
                   >
                     {isCompleted ? <Icon icon={Check} size="sm" /> : index + 1}
@@ -278,8 +278,8 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
                     className={cn(
                       "hidden md:block",
                       isActive
-                        ? "text-[var(--color-foreground)] font-bold"
-                        : "text-[var(--color-muted-foreground)]",
+                        ? "text-foreground font-bold"
+                        : "text-muted-foreground",
                     )}
                   >
                     <Typography
@@ -296,8 +296,8 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
                       className={cn(
                         "flex-1 h-0.5",
                         index < currentStep
-                          ? "bg-[var(--color-primary)]"
-                          : "bg-[var(--color-border)]",
+                          ? "bg-primary"
+                          : "bg-border",
                       )}
                     />
                   )}
@@ -314,7 +314,7 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
           paddingX="lg"
           paddingY="md"
           border
-          className="border-b-2 border-x-0 border-t-0 border-[var(--color-border)]"
+          className="border-b-2 border-x-0 border-t-0 border-border"
         >
           <Typography variant="h4" as="h2">
             {currentStepData.title ??
@@ -324,7 +324,7 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
           {currentStepData.description && (
             <Typography
               variant="body2"
-              className="text-[var(--color-muted-foreground)] mt-1"
+              className="text-muted-foreground mt-1"
             >
               {currentStepData.description}
             </Typography>
@@ -341,7 +341,7 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
       <Box
         border
         className={cn(
-          "border-t-2 border-x-0 border-b-0 border-[var(--color-border)] flex justify-between",
+          "border-t-2 border-x-0 border-b-0 border-border flex justify-between",
           compact ? "px-4 py-2" : "px-6 py-4",
         )}
       >
@@ -357,7 +357,7 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
         <HStack gap="sm" align="center">
           <Typography
             variant="caption"
-            className="text-[var(--color-muted-foreground)]"
+            className="text-muted-foreground"
           >
             {t('wizard.stepOf', { current: String(currentStep + 1), total: String(steps.length) })}
           </Typography>

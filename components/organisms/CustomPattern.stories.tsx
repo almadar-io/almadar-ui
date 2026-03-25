@@ -13,7 +13,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     component: 'div',
-    className: 'p-4 bg-[var(--color-muted)] rounded-lg',
+    className: 'p-4 bg-muted rounded-lg',
     content: 'A simple custom div rendered via the pattern system.',
   },
 };
@@ -68,7 +68,7 @@ export const NestedCustomPatterns: Story = {
     const config: CustomPatternConfig = {
       type: 'custom',
       component: 'section',
-      className: 'p-6 bg-[var(--color-card)] rounded-lg border border-[var(--color-border)]',
+      className: 'p-6 bg-card rounded-lg border border-border',
       children: [
         {
           type: 'custom',
@@ -79,7 +79,7 @@ export const NestedCustomPatterns: Story = {
         {
           type: 'custom',
           component: 'p',
-          className: 'text-[var(--color-muted-foreground)] mb-4',
+          className: 'text-muted-foreground mb-4',
           content: 'This demonstrates recursively rendered custom patterns.',
         },
         {
@@ -101,12 +101,12 @@ export const SemanticElements: Story = {
     const config: CustomPatternConfig = {
       type: 'custom',
       component: 'article',
-      className: 'p-4 border border-[var(--color-border)] rounded-lg',
+      className: 'p-4 border border-border rounded-lg',
       children: [
         {
           type: 'custom',
           component: 'header',
-          className: 'pb-3 border-b border-[var(--color-border)] mb-3',
+          className: 'pb-3 border-b border-border mb-3',
           children: [
             {
               type: 'custom',
@@ -124,7 +124,7 @@ export const SemanticElements: Story = {
         {
           type: 'custom',
           component: 'footer',
-          className: 'pt-3 mt-3 border-t border-[var(--color-border)] text-sm text-[var(--color-muted-foreground)]',
+          className: 'pt-3 mt-3 border-t border-border text-sm text-muted-foreground',
           content: 'Published on February 18, 2026',
         },
       ],

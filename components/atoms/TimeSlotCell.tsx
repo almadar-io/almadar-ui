@@ -36,8 +36,8 @@ export function TimeSlotCell({
   return (
     <Box
       className={cn(
-        "p-1 min-h-[60px] cursor-pointer hover:bg-[var(--color-muted)] transition-colors",
-        isOccupied && "bg-[var(--color-muted)]/30",
+        "p-1 min-h-[60px] cursor-pointer hover:bg-muted transition-colors",
+        isOccupied && "bg-muted/30",
         className,
       )}
       onClick={handleClick}

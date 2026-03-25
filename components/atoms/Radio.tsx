@@ -97,12 +97,12 @@ export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
                 "border-[length:var(--border-width)] transition-all cursor-pointer",
                 sizeClasses[size],
                 hasError
-                  ? "border-[var(--color-error)] peer-focus:ring-[var(--color-error)]/20"
-                  : "border-[var(--color-border)] peer-focus:ring-[var(--color-ring)]/20",
+                  ? "border-error peer-focus:ring-error/20"
+                  : "border-border peer-focus:ring-ring/20",
                 checked
                   ? hasError
-                    ? "border-[var(--color-error)]"
-                    : "border-[var(--color-primary)] bg-[var(--color-primary)]"
+                    ? "border-error"
+                    : "border-primary bg-primary"
                   : "",
                 "peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-offset-2",
                 disabled && "opacity-50 cursor-not-allowed",
@@ -115,8 +115,8 @@ export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
                     "transition-all",
                     dotSizeClasses[size],
                     hasError
-                      ? "bg-[var(--color-error)]"
-                      : "bg-[var(--color-primary-foreground)]",
+                      ? "bg-error"
+                      : "bg-primary-foreground",
                   )}
                 />
               )}
@@ -130,8 +130,8 @@ export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
                 className={cn(
                   "block text-sm font-medium cursor-pointer select-none",
                   hasError
-                    ? "text-[var(--color-error)]"
-                    : "text-[var(--color-foreground)]",
+                    ? "text-error"
+                    : "text-foreground",
                   disabled && "opacity-50 cursor-not-allowed",
                 )}
               >
@@ -146,7 +146,7 @@ export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
             {error && (
               <p
                 id={`${radioId}-error`}
-                className="text-sm text-[var(--color-error)] font-medium"
+                className="text-sm text-error font-medium"
                 role="alert"
               >
                 {error}
@@ -155,7 +155,7 @@ export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
             {!error && helperText && (
               <p
                 id={`${radioId}-helper`}
-                className="text-sm text-[var(--color-muted-foreground)]"
+                className="text-sm text-muted-foreground"
               >
                 {helperText}
               </p>

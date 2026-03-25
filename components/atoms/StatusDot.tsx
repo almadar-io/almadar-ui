@@ -16,21 +16,21 @@ export interface StatusDotProps extends React.HTMLAttributes<HTMLSpanElement> {
 }
 
 const statusColors: Record<StatusDotStatus, string> = {
-  online: "bg-[var(--color-success)]",
-  offline: "bg-[var(--color-muted-foreground)]",
-  away: "bg-[var(--color-warning)]",
-  busy: "bg-[var(--color-error)]",
-  warning: "bg-[var(--color-warning)]",
-  critical: "bg-[var(--color-error)]",
+  online: "bg-success",
+  offline: "bg-muted-foreground",
+  away: "bg-warning",
+  busy: "bg-error",
+  warning: "bg-warning",
+  critical: "bg-error",
 };
 
 const pulseRingColors: Record<StatusDotStatus, string> = {
-  online: "ring-[var(--color-success)]",
-  offline: "ring-[var(--color-muted-foreground)]",
-  away: "ring-[var(--color-warning)]",
-  busy: "ring-[var(--color-error)]",
-  warning: "ring-[var(--color-warning)]",
-  critical: "ring-[var(--color-error)]",
+  online: "ring-success",
+  offline: "ring-muted-foreground",
+  away: "ring-warning",
+  busy: "ring-error",
+  warning: "ring-warning",
+  critical: "ring-error",
 };
 
 const sizeStyles: Record<StatusDotSize, string> = {

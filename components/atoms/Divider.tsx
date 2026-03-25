@@ -50,7 +50,7 @@ export const Divider: React.FC<DividerProps> = ({
     return (
       <div
         className={cn(
-          "w-0 h-full border-l border-[var(--color-border)]",
+          "w-0 h-full border-l border-border",
           variantStyles[variant],
           className,
         )}
@@ -69,16 +69,16 @@ export const Divider: React.FC<DividerProps> = ({
       >
         <div
           className={cn(
-            "flex-1 h-0 border-t border-[var(--color-border)]",
+            "flex-1 h-0 border-t border-border",
             variantStyles[variant],
           )}
         />
-        <span className="text-sm text-[var(--color-foreground)] font-bold uppercase tracking-wide">
+        <span className="text-sm text-foreground font-bold uppercase tracking-wide">
           {label}
         </span>
         <div
           className={cn(
-            "flex-1 h-0 border-t border-[var(--color-border)]",
+            "flex-1 h-0 border-t border-border",
             variantStyles[variant],
           )}
         />
@@ -89,7 +89,7 @@ export const Divider: React.FC<DividerProps> = ({
   return (
     <div
       className={cn(
-        "w-full h-0 border-t border-[var(--color-border)] my-4",
+        "w-full h-0 border-t border-border my-4",
         variantStyles[variant],
         className,
       )}

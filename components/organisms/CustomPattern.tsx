@@ -175,7 +175,7 @@ export function CustomPattern({
       <Box
         className={cn(
           classes,
-          "p-4 border border-dashed border-[var(--color-error)]/50 text-[var(--color-error)]",
+          "p-4 border border-dashed border-error/50 text-error",
         )}
       >
         Unknown component: {component}

@@ -47,12 +47,12 @@ export interface ToastProps {
 // Theme-aware variant styles
 const variantClasses: Record<ToastVariant, string> = {
   success:
-    "bg-[var(--color-card)] border-[length:var(--border-width)] border-[var(--color-success)]",
+    "bg-card border-[length:var(--border-width)] border-success",
   error:
-    "bg-[var(--color-card)] border-[length:var(--border-width)] border-[var(--color-error)]",
-  info: "bg-[var(--color-card)] border-[length:var(--border-width)] border-[var(--color-info)]",
+    "bg-card border-[length:var(--border-width)] border-error",
+  info: "bg-card border-[length:var(--border-width)] border-info",
   warning:
-    "bg-[var(--color-card)] border-[length:var(--border-width)] border-[var(--color-warning)]",
+    "bg-card border-[length:var(--border-width)] border-warning",
 };
 
 const iconMap: Record<ToastVariant, typeof Info> = {
@@ -63,10 +63,10 @@ const iconMap: Record<ToastVariant, typeof Info> = {
 };
 
 const iconColors: Record<ToastVariant, string> = {
-  success: "text-[var(--color-success)]",
-  error: "text-[var(--color-error)]",
-  info: "text-[var(--color-info)]",
-  warning: "text-[var(--color-warning)]",
+  success: "text-success",
+  error: "text-error",
+  info: "text-info",
+  warning: "text-warning",
 };
 
 export const Toast: React.FC<ToastProps> = ({
@@ -109,8 +109,8 @@ export const Toast: React.FC<ToastProps> = ({
   return (
     <div
       className={cn(
-        "border-l-4 p-4 shadow-[var(--shadow-main)] min-w-[300px] max-w-md",
-        "rounded-[var(--radius-sm)]",
+        "border-l-4 p-4 shadow min-w-[300px] max-w-md",
+        "rounded-sm",
         variantClasses[variant],
         className,
       )}
@@ -155,9 +155,9 @@ export const Toast: React.FC<ToastProps> = ({
               type="button"
               onClick={handleDismiss}
               className={cn(
-                "flex-shrink-0 p-1 transition-colors rounded-[var(--radius-sm)]",
-                "hover:bg-[var(--color-muted)]",
-                "focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)] focus:ring-offset-2",
+                "flex-shrink-0 p-1 transition-colors rounded-sm",
+                "hover:bg-muted",
+                "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
               )}
               aria-label="Dismiss toast"
             >

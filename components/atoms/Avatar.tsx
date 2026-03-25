@@ -99,10 +99,10 @@ const statusSizeClasses: Record<AvatarSize, string> = {
 };
 
 const statusClasses: Record<AvatarStatus, string> = {
-  online: "bg-[var(--color-success)]",
-  offline: "bg-[var(--color-muted-foreground)]",
-  away: "bg-[var(--color-warning)]",
-  busy: "bg-[var(--color-error)]",
+  online: "bg-success",
+  offline: "bg-muted-foreground",
+  away: "bg-warning",
+  busy: "bg-error",
 };
 
 const badgeSizeClasses: Record<AvatarSize, string> = {
@@ -149,7 +149,7 @@ export const Avatar: React.FC<AvatarProps> = ({
 
   // Generate background based on initials
   const getInitialsBackground = () =>
-    "bg-[var(--color-primary)] text-[var(--color-primary-foreground)]";
+    "bg-primary text-primary-foreground";
 
   const isClickable = action || onClick;
 
@@ -165,7 +165,7 @@ export const Avatar: React.FC<AvatarProps> = ({
       <div
         className={cn(
           "relative inline-flex items-center justify-center",
-          "bg-[var(--color-muted)] border-[length:var(--border-width)] border-[var(--color-border)]",
+          "bg-muted border-[length:var(--border-width)] border-border",
           "overflow-hidden",
           sizeClasses[size],
           isClickable &&
@@ -199,14 +199,14 @@ export const Avatar: React.FC<AvatarProps> = ({
         ) : hasIcon ? (
           <Icon
             className={cn(
-              "text-[var(--color-foreground)]",
+              "text-foreground",
               iconSizeClasses[size],
             )}
           />
         ) : (
           <User
             className={cn(
-              "text-[var(--color-foreground)]",
+              "text-foreground",
               iconSizeClasses[size],
             )}
           />
@@ -217,7 +217,7 @@ export const Avatar: React.FC<AvatarProps> = ({
       {status && (
         <div
           className={cn(
-            "absolute bottom-0 right-0 border-2 border-[var(--color-card)]",
+            "absolute bottom-0 right-0 border-2 border-card",
             statusClasses[status],
             statusSizeClasses[size],
           )}
@@ -230,8 +230,8 @@ export const Avatar: React.FC<AvatarProps> = ({
         <div
           className={cn(
             "absolute -top-1 -right-1 flex items-center justify-center",
-            "bg-[var(--color-primary)] text-[var(--color-primary-foreground)] font-bold",
-            "border-2 border-[var(--color-card)]",
+            "bg-primary text-primary-foreground font-bold",
+            "border-2 border-card",
             badgeSizeClasses[size],
           )}
           aria-label={`Badge: ${badge}`}

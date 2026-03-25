@@ -163,16 +163,16 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
     <div
       className={cn(
         "relative flex flex-col items-center justify-center",
-        "p-8 rounded-[var(--radius-sm)]",
+        "p-8 rounded-sm",
         "border-2 border-dashed",
         "transition-colors duration-150",
         "cursor-pointer",
         isDragOver
-          ? "border-[var(--color-primary)] bg-[var(--color-primary)] bg-opacity-5"
-          : "border-[var(--color-border)] bg-[var(--color-surface)]",
-        error && "border-[var(--color-error)]",
+          ? "border-primary bg-primary bg-opacity-5"
+          : "border-border bg-surface",
+        error && "border-error",
         disabled && "opacity-50 cursor-not-allowed",
-        "hover:border-[var(--color-primary)] hover:bg-[var(--color-muted)]",
+        "hover:border-primary hover:bg-muted",
         className,
       )}
       onDragOver={handleDragOver}
@@ -201,9 +201,9 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
       />
 
       {error ? (
-        <Icon icon={FileWarning} size="lg" className="text-[var(--color-error)] mb-2" />
+        <Icon icon={FileWarning} size="lg" className="text-error mb-2" />
       ) : (
-        <Icon icon={Upload} size="lg" className="text-[var(--color-muted-foreground)] mb-2" />
+        <Icon icon={Upload} size="lg" className="text-muted-foreground mb-2" />
       )}
 
       <Typography variant="body1" className="text-center font-medium mb-1">

@@ -77,9 +77,9 @@ export const WithCustomContent: Story = {
   render: (args) => (
     <SplitSection {...args}>
       <Box
-        className="flex-1 min-w-0 rounded-[var(--radius-md)] bg-[var(--color-foreground)] p-6"
+        className="flex-1 min-w-0 rounded-md bg-foreground p-6"
       >
-        <Typography variant="body2" className="font-mono text-[var(--color-background)]">
+        <Typography variant="body2" className="font-mono text-background">
           {'$ orbital compile app.orb --shell typescript'}
         </Typography>
       </Box>
