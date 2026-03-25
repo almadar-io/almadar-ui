@@ -46,7 +46,7 @@ const variantStyles = {
   ].join(" "),
   secondary: [
     "bg-transparent text-[var(--color-accent)]",
-    "border border-[var(--color-accent)]/30",
+    "border border-[var(--color-accent)]",
     "hover:bg-[var(--color-accent)] hover:text-white hover:border-[var(--color-accent)]",
     "active:scale-[var(--active-scale)]",
   ].join(" "),
