@@ -88,7 +88,7 @@ export const SplitSection: React.FC<SplitSectionProps> = ({
       )}
       padding="lg"
     >
-      <Box className={cn('max-w-7xl mx-auto flex flex-col lg:flex-row gap-10 lg:gap-16 items-center', isImageLeft && 'lg:flex-row-reverse')}>
+      <Box className={cn('max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col lg:flex-row gap-10 lg:gap-16 items-center', isImageLeft && 'lg:flex-row-reverse')}>
         <Box className="flex-1 min-w-0 lg:min-w-[45%]">
           {textContent}
         </Box>

@@ -215,7 +215,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       as="header"
       className={cn(
         'w-full min-h-[60vh] flex items-center justify-center',
-        'px-6 py-20',
+        'py-20',
         'relative overflow-hidden',
         className,
       )}
@@ -228,7 +228,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           className="absolute inset-0 w-full h-full opacity-20"
         />
       )}
-      <Box className="relative z-10 w-full flex justify-center">
+      <Box className="relative z-10 w-full flex justify-center px-4 sm:px-6 lg:px-8">
         {innerContent}
       </Box>
     </Box>

@@ -48,7 +48,7 @@ export const CTABanner: React.FC<CTABannerProps> = ({
   return (
     <Box
       className={cn(
-        'py-16 px-4',
+        'py-16',
         background === 'alt' && 'bg-[var(--color-surface)]',
         background === 'dark' && 'bg-[var(--color-surface)]',
         background === 'gradient' && 'bg-[var(--color-surface)]',
@@ -59,7 +59,7 @@ export const CTABanner: React.FC<CTABannerProps> = ({
       <VStack
         gap="lg"
         align={align === 'center' ? 'center' : 'start'}
-        className="max-w-7xl mx-auto"
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
       >
         <Typography variant="h2" align={align}>
           {title}
