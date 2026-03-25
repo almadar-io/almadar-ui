@@ -45,9 +45,9 @@ const variantStyles = {
     "active:scale-[var(--active-scale)] active:shadow-[var(--shadow-active)]",
   ].join(" "),
   secondary: [
-    "bg-[var(--color-muted)] text-[var(--color-foreground)]",
-    "border-none",
-    "hover:bg-[var(--color-muted-foreground)]/15 hover:text-[var(--color-foreground)]",
+    "bg-transparent text-[var(--color-accent)]",
+    "border border-[var(--color-accent)]/30",
+    "hover:bg-[var(--color-accent)] hover:text-white hover:border-[var(--color-accent)]",
     "active:scale-[var(--active-scale)]",
   ].join(" "),
   ghost: [
@@ -172,6 +172,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           "inline-flex items-center justify-center gap-2",
           "font-[var(--font-weight-medium)]",
           "rounded-[var(--radius-sm)]",
+          "cursor-pointer",
           "transition-all duration-[var(--transition-normal)]",
           "focus:outline-none focus:ring-[length:var(--focus-ring-width)] focus:ring-[var(--color-ring)] focus:ring-offset-[length:var(--focus-ring-offset)]",
           "disabled:opacity-50 disabled:cursor-not-allowed",
