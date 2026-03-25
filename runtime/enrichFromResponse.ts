@@ -24,8 +24,8 @@ import { isEntityAwarePattern } from '@almadar/patterns';
 export function enrichFromResponse(
   node: Record<string, unknown> | null | undefined,
   data: Record<string, unknown[]>,
-): Record<string, unknown> | null {
-  if (!node || typeof node !== 'object') return null;
+): Record<string, unknown> {
+  if (!node || typeof node !== 'object') return node ?? {};
   let enriched = node;
 
   // Recurse children first

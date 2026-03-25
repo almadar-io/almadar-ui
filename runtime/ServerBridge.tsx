@@ -140,8 +140,8 @@ export function ServerBridgeProvider({
             const effectType = arr[0] as string;
             if (effectType === 'render-ui') {
               const slot = arr[1] as string;
-              const pattern = arr[2] as Record<string, unknown> | null;
-              const enriched = pattern ? enrichFromResponse(pattern, responseData) : null;
+              const pattern = arr[2] as Record<string, unknown> | undefined;
+              const enriched = pattern ? enrichFromResponse(pattern, responseData) : undefined;
               effects.push({ type: 'render-ui', slot, pattern: enriched });
             } else if (effectType === 'navigate') {
               effects.push({ type: 'navigate', route: arr[1] as string, params: arr[2] as Record<string, unknown> });
