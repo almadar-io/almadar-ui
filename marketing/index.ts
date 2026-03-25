@@ -64,3 +64,11 @@ export { PullQuote } from '../components/molecules/PullQuote';
 export type { PullQuoteProps } from '../components/molecules/PullQuote';
 export { AnimatedCounter } from '../components/molecules/AnimatedCounter';
 export type { AnimatedCounterProps } from '../components/molecules/AnimatedCounter';
+
+// Decorative patterns (pure SVG, SSR-safe)
+export { PatternTile, getTileDimensions } from '../components/atoms/PatternTile';
+export type { PatternTileProps, PatternVariant } from '../components/atoms/PatternTile';
+export { GeometricPattern } from '../components/molecules/GeometricPattern';
+export type { GeometricPatternProps } from '../components/molecules/GeometricPattern';
+export { EdgeDecoration } from '../components/molecules/EdgeDecoration';
+export type { EdgeDecorationProps, EdgeVariant, EdgeSide } from '../components/molecules/EdgeDecoration';

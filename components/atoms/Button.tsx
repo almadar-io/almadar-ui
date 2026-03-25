@@ -45,9 +45,9 @@ const variantStyles = {
     "active:scale-[var(--active-scale)] active:shadow-[var(--shadow-active)]",
   ].join(" "),
   secondary: [
-    "bg-[var(--color-secondary)] text-[var(--color-secondary-foreground)]",
-    "border-[length:var(--border-width-thin)] border-[var(--color-border)]",
-    "hover:bg-[var(--color-secondary-hover)]",
+    "bg-transparent text-[var(--color-accent)]",
+    "border-[length:var(--border-width)] border-[var(--color-accent)]",
+    "hover:bg-[var(--color-accent)] hover:text-white",
     "active:scale-[var(--active-scale)]",
   ].join(" "),
   ghost: [

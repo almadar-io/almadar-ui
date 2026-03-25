@@ -110,3 +110,7 @@ export { TagCloud, type TagCloudProps, type TagCloudItem } from './TagCloud';
 export { CommunityLinks, type CommunityLinksProps } from './CommunityLinks';
 export { TeamCard, type TeamCardProps } from './TeamCard';
 export { ShowcaseCard, type ShowcaseCardProps } from './ShowcaseCard';
+
+// Decorative pattern molecules
+export { GeometricPattern, type GeometricPatternProps } from './GeometricPattern';
+export { EdgeDecoration, type EdgeDecorationProps, type EdgeVariant, type EdgeSide } from './EdgeDecoration';

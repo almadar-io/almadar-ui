@@ -117,5 +117,8 @@ export {
   type ContentSectionPadding,
 } from "./ContentSection";
 
+// Pattern components
+export { PatternTile, getTileDimensions, type PatternTileProps, type PatternVariant } from "./PatternTile";
+
 // Game atom components
 export * from "./game";

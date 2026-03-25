@@ -22,9 +22,10 @@ import { isEntityAwarePattern } from '@almadar/patterns';
  * @returns Enriched pattern with entity arrays injected
  */
 export function enrichFromResponse(
-  node: Record<string, unknown>,
+  node: Record<string, unknown> | null | undefined,
   data: Record<string, unknown[]>,
-): Record<string, unknown> {
+): Record<string, unknown> | null {
+  if (!node || typeof node !== 'object') return null;
   let enriched = node;
 
   // Recurse children first

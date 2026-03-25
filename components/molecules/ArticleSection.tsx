@@ -38,8 +38,7 @@ export const ArticleSection: React.FC<ArticleSectionProps> = ({
   return (
     <Box
       className={cn(
-        maxWidthMap[maxWidth],
-        'mx-auto',
+        'w-full',
         className,
       )}
       padding="md"

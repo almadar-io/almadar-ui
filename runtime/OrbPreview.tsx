@@ -126,15 +126,25 @@ function TraitInitializer({ traits, orbitalNames }: {
   const opts = orbitalNames ? { onEventProcessed } : {};
   const { sendEvent } = useTraitStateMachine(traits as Parameters<typeof useTraitStateMachine>[0], slotsActions, opts);
 
-  // Local INIT - only when no server bridge (server INIT provides enriched data)
+  const initSentRef = useRef(false);
+
+  // Local INIT - fires immediately when no server bridge,
+  // or after 5s fallback if server bridge fails to connect.
   useEffect(() => {
-    if (orbitalNames?.length) return;
-    const t = setTimeout(() => sendEvent('INIT'), 50);
-    return () => clearTimeout(t);
+    if (!orbitalNames?.length) {
+      const t = setTimeout(() => sendEvent('INIT'), 50);
+      return () => clearTimeout(t);
+    }
+    // Fallback: if server bridge doesn't connect within 5s, fire local INIT
+    const fallback = setTimeout(() => {
+      if (!initSentRef.current) {
+        sendEvent('INIT');
+      }
+    }, 5000);
+    return () => clearTimeout(fallback);
   }, [traits, orbitalNames, sendEvent]);
 
   // Server INIT when bridge connects. Apply enriched effects to slots.
-  const initSentRef = useRef(false);
   useEffect(() => {
     if (!bridge.connected || !orbitalNames?.length || initSentRef.current) return;
     initSentRef.current = true;

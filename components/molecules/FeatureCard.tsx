@@ -62,7 +62,7 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
         <Icon
           name={icon}
           size={iconSizeMap[size]}
-          className="text-[var(--color-primary)]"
+          className="text-[var(--color-accent,#06b6d4)]"
         />
       );
     }

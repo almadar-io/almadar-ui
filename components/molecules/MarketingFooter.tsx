@@ -47,7 +47,7 @@ export const MarketingFooter: React.FC<MarketingFooterProps> = ({
         className,
       )}
     >
-      <VStack gap="lg" className="max-w-6xl mx-auto">
+      <VStack gap="lg" className="w-full mx-auto">
         {/* Link columns */}
         <HStack gap="lg" align="start" className="flex-wrap w-full justify-between">
           {logo && (
@@ -76,7 +76,7 @@ export const MarketingFooter: React.FC<MarketingFooterProps> = ({
                   className={cn(
                     'text-sm no-underline',
                     'text-[var(--color-background)]/60',
-                    'hover:text-[var(--color-background)]',
+                    'hover:text-[var(--color-accent)]',
                     'transition-colors duration-150',
                   )}
                   target={item.href.startsWith('http') ? '_blank' : undefined}

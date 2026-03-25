@@ -192,19 +192,19 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       className={cn(
         imagePosition === 'right'
           ? 'flex-1 min-h-[300px]'
-          : 'w-full max-w-3xl min-h-[400px]',
+          : 'w-full min-h-[400px]',
       )}
     />
   );
 
   const innerContent =
     image && imagePosition === 'right' ? (
-      <HStack gap="xl" align="center" className="w-full max-w-6xl" responsive>
+      <HStack gap="xl" align="center" className="w-full" responsive>
         {textContent}
         {imageNode}
       </HStack>
     ) : (
-      <VStack gap="xl" align={isCenter ? 'center' : 'start'} className="w-full max-w-6xl">
+      <VStack gap="xl" align={isCenter ? 'center' : 'start'} className="w-full">
         {textContent}
         {image && imagePosition === 'below' && imageNode}
       </VStack>
