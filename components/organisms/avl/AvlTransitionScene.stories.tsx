@@ -45,7 +45,7 @@ type Story = StoryObj<typeof meta>;
 
 export const ConfirmCheckout: Story = {
   render: (args) => {
-    const data = parseTransitionLevel(CART_SCHEMA, 'ShoppingCart', 'CartManager', 5);
+    const data = parseTransitionLevel(CART_SCHEMA, 'ShoppingCart', 'CartManager', 5)!;
     return (
       <div style={{ width: 600 }}>
         <svg viewBox="0 0 600 400" style={{ width: '100%', height: '100%' }}>
@@ -58,7 +58,7 @@ export const ConfirmCheckout: Story = {
 
 export const AddItem: Story = {
   render: (args) => {
-    const data = parseTransitionLevel(CART_SCHEMA, 'ShoppingCart', 'CartManager', 1);
+    const data = parseTransitionLevel(CART_SCHEMA, 'ShoppingCart', 'CartManager', 1)!;
     return (
       <div style={{ width: 600 }}>
         <svg viewBox="0 0 600 400" style={{ width: '100%', height: '100%' }}>
@@ -71,7 +71,7 @@ export const AddItem: Story = {
 
 export const RenderUI: Story = {
   render: (args) => {
-    const data = parseTransitionLevel(CART_SCHEMA, 'ShoppingCart', 'CartManager', 0);
+    const data = parseTransitionLevel(CART_SCHEMA, 'ShoppingCart', 'CartManager', 0)!;
     return (
       <div style={{ width: 600 }}>
         <svg viewBox="0 0 600 400" style={{ width: '100%', height: '100%' }}>

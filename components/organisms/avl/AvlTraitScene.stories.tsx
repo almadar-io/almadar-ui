@@ -71,7 +71,7 @@ type Story = StoryObj<typeof meta>;
 
 export const CartManager: Story = {
   render: (args) => {
-    const data = parseTraitLevel(CART_SCHEMA, 'ShoppingCart', 'CartManager');
+    const data = parseTraitLevel(CART_SCHEMA, 'ShoppingCart', 'CartManager')!;
     return (
       <div style={{ width: 700 }}>
         <svg viewBox="0 0 600 400" style={{ width: '100%', height: '100%' }}>
@@ -84,7 +84,7 @@ export const CartManager: Story = {
 
 export const TaskCrud: Story = {
   render: (args) => {
-    const data = parseTraitLevel(TASK_SCHEMA, 'TaskOrbital', 'TaskCrud');
+    const data = parseTraitLevel(TASK_SCHEMA, 'TaskOrbital', 'TaskCrud')!;
     return (
       <div style={{ width: 700 }}>
         <svg viewBox="0 0 600 400" style={{ width: '100%', height: '100%' }}>
@@ -97,7 +97,7 @@ export const TaskCrud: Story = {
 
 export const WithEmitListen: Story = {
   render: (args) => {
-    const data = parseTraitLevel(CART_SCHEMA, 'ShoppingCart', 'CartManager');
+    const data = parseTraitLevel(CART_SCHEMA, 'ShoppingCart', 'CartManager')!;
     return (
       <div style={{ width: 700 }}>
         <svg viewBox="0 0 600 400" style={{ width: '100%', height: '100%' }}>
