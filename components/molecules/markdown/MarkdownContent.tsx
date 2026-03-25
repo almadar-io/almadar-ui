@@ -36,6 +36,7 @@ export interface MarkdownContentProps {
 export const MarkdownContent = React.memo<MarkdownContentProps>(
   ({ content, direction, className }) => {
     const { t: _t } = useTranslate();
+    const safeContent = typeof content === 'string' ? content : String(content ?? '');
     return (
       <Box
         className={cn('prose prose-slate dark:prose-invert max-w-none', className)}
@@ -126,7 +127,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
             },
           }}
         >
-          {content}
+          {safeContent}
         </ReactMarkdown>
       </Box>
     );

@@ -36,13 +36,14 @@ export interface CodeBlockProps {
 
 export const CodeBlock = React.memo<CodeBlockProps>(
   ({
-    code,
+    code: rawCode,
     language = 'text',
     showCopyButton = true,
     showLanguageBadge = true,
     maxHeight = '60vh',
     className,
   }) => {
+    const code = typeof rawCode === 'string' ? rawCode : String(rawCode ?? '');
     const eventBus = useEventBus();
     const { t: _t } = useTranslate();
     const scrollRef = useRef<HTMLDivElement | null>(null);

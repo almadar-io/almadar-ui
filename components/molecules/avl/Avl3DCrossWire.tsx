@@ -53,7 +53,8 @@ export const Avl3DCrossWire: React.FC<Avl3DCrossWireProps> = ({
     <group>
       {/* Tube geometry along curve */}
       <mesh>
-        <tubeGeometry args={[...tubeArgs]} />
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+        <tubeGeometry args={tubeArgs as any} />
         <meshStandardMaterial
           color={color}
           emissive={color}

@@ -191,7 +191,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       alt={image.alt}
       className={cn(
         imagePosition === 'right'
-          ? 'flex-1 min-h-[300px]'
+          ? 'w-full max-w-[280px] max-h-[280px]'
           : 'w-full min-h-[400px]',
       )}
     />

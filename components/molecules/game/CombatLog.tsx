@@ -98,19 +98,20 @@ export function CombatLog({
                 ) : (
                     <Box padding="xs" className="space-y-1">
                         {visibleEvents.map((event) => {
-                            const EventIcon = eventIcons[event.type];
-                            const colorClass = eventColors[event.type];
+                            const eventType = (event.type && event.type in eventIcons) ? event.type : 'attack';
+                            const EventIcon = eventIcons[eventType];
+                            const colorClass = eventColors[eventType];
                             return (
                                 <Box key={event.id} display="flex" padding="xs" rounded="sm"
-                                    className={cn('items-start gap-2 hover:bg-[var(--color-muted)] transition-colors', event.type === 'death' && 'opacity-60')}>
+                                    className={cn('items-start gap-2 hover:bg-[var(--color-muted)] transition-colors', eventType === 'death' && 'opacity-60')}>
                                     <Box className={cn('flex-shrink-0 mt-0.5', colorClass)}>
                                         <EventIcon className="h-4 w-4" />
                                     </Box>
                                     <Box className="flex-1 min-w-0">
                                         <Typography variant="caption" className="block">{event.message}</Typography>
                                         {event.value !== undefined && (
-                                            <Badge variant={eventBadgeVariants[event.type]} size="sm" className="mt-1">
-                                                {event.type === 'heal' ? '+' : event.type === 'attack' ? '-' : ''}{event.value}
+                                            <Badge variant={eventBadgeVariants[eventType]} size="sm" className="mt-1">
+                                                {eventType === 'heal' ? '+' : eventType === 'attack' ? '-' : ''}{event.value}
                                             </Badge>
                                         )}
                                     </Box>

@@ -29,6 +29,7 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
   className,
   onComplete,
 }) => {
+  const safeText = typeof text === 'string' ? text : String(text ?? '');
   const [charCount, setCharCount] = useState(0);
   const [started, setStarted] = useState(startDelay === 0);
   const onCompleteRef = useRef(onComplete);
@@ -62,7 +63,7 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
   useEffect(() => {
     if (!started) return undefined;
 
-    if (charCount >= text.length) {
+    if (charCount >= safeText.length) {
       onCompleteRef.current?.();
       return undefined;
     }
@@ -70,7 +71,7 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
     const interval = window.setInterval(() => {
       setCharCount((prev) => {
         const next = prev + 1;
-        if (next >= text.length) {
+        if (next >= safeText.length) {
           window.clearInterval(interval);
         }
         return next;
@@ -82,8 +83,8 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
     };
   }, [started, text, speed, charCount]);
 
-  const isComplete = charCount >= text.length;
-  const displayedText = text.slice(0, charCount);
+  const isComplete = charCount >= safeText.length;
+  const displayedText = safeText.slice(0, charCount);
 
   return (
     <Typography variant="body" className={cn("inline", className)}>
