@@ -14,7 +14,7 @@
  * @packageDocumentation
  */
 
-import React, { useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react';
 import { Box } from '../components/atoms/Box';
 import { Typography } from '../components/atoms/Typography';
 import { OrbitalProvider } from '../providers/OrbitalProvider';
@@ -27,6 +27,7 @@ import { useSlotsActions, useSlots, SlotsProvider } from './ui/SlotsContext';
 import { EntitySchemaProvider } from './EntitySchemaContext';
 import { ServerBridgeProvider, useServerBridge } from './ServerBridge';
 import { enrichFromResponse } from './enrichFromResponse';
+import { getAllPages } from '../renderer/navigation';
 import { recordTransition, type EffectTrace } from '../lib/verificationRegistry';
 
 // ---------------------------------------------------------------------------
@@ -189,12 +190,13 @@ function TraitInitializer({ traits, orbitalNames }: {
  * When `serverUrl` is provided, wraps with ServerBridgeProvider and
  * forwards events to the server after local processing.
  */
-function SchemaRunner({ schema, serverUrl, mockData }: {
+function SchemaRunner({ schema, serverUrl, mockData, pageName }: {
   schema: unknown;
   serverUrl?: string;
   mockData?: Record<string, unknown[]>;
+  pageName?: string;
 }) {
-  const { traits, allEntities, ir } = useResolvedSchema(schema as Parameters<typeof useResolvedSchema>[0]);
+  const { traits, allEntities, ir } = useResolvedSchema(schema as Parameters<typeof useResolvedSchema>[0], pageName);
 
   // For multi-page schemas, collect traits from ALL pages
   const allPageTraits = useMemo(() => {
@@ -297,6 +299,18 @@ export function OrbPreview({
     return schema;
   }, [schema]);
 
+  // Discover pages from schema for multi-page navigation
+  const pages = useMemo(() => {
+    if (!parsedSchema || parsedSchema.error) return [];
+    try {
+      return getAllPages(parsedSchema);
+    } catch {
+      return [];
+    }
+  }, [parsedSchema]);
+
+  const [currentPage, setCurrentPage] = useState<string | undefined>(undefined);
+
   if (parsedSchema.error) {
     return (
       <Box className={className} style={{ height }}>
@@ -309,14 +323,33 @@ export function OrbPreview({
 
   return (
     <Box
-      className={`overflow-auto border border-[var(--color-border)] rounded-[var(--radius-md)] ${className ?? ''}`}
+      className={`border border-[var(--color-border)] rounded-[var(--radius-md)] flex flex-col ${className ?? ''}`}
       style={{ height }}
     >
-      <OrbitalProvider initialData={mockData} skipTheme verification>
-        <UISlotProvider>
-          <SchemaRunner schema={parsedSchema} serverUrl={serverUrl} mockData={mockData} />
-        </UISlotProvider>
-      </OrbitalProvider>
+      {pages.length > 1 && (
+        <Box className="flex gap-1 px-2 py-1 bg-[var(--color-muted)] border-b border-[var(--color-border)] flex-shrink-0 z-10">
+          {pages.map(({ page }) => (
+            <button
+              key={page.name}
+              onClick={() => setCurrentPage(page.name)}
+              className={`px-3 py-1 text-xs rounded transition-colors ${
+                (currentPage ?? pages[0].page.name) === page.name
+                  ? 'bg-[var(--color-primary)] text-white'
+                  : 'bg-transparent text-[var(--color-foreground)] hover:bg-[var(--color-border)]'
+              }`}
+            >
+              {page.name}
+            </button>
+          ))}
+        </Box>
+      )}
+      <Box className="flex-1 overflow-auto">
+        <OrbitalProvider initialData={mockData} skipTheme verification>
+          <UISlotProvider>
+            <SchemaRunner schema={parsedSchema} serverUrl={serverUrl} mockData={mockData} pageName={currentPage} />
+          </UISlotProvider>
+        </OrbitalProvider>
+      </Box>
     </Box>
   );
 }
