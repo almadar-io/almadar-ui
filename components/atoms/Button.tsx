@@ -53,7 +53,7 @@ const variantStyles = {
   ghost: [
     "bg-transparent text-muted-foreground",
     "border border-transparent",
-    "hover:text-foreground hover:bg-muted hover:border-border",
+    "hover:text-primary-foreground hover:bg-primary hover:border-primary",
     "active:scale-[var(--active-scale)]",
   ].join(" "),
   danger: [
