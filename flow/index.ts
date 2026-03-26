@@ -27,7 +27,7 @@ export {
 
 // Flow Molecules — React Flow custom node types
 export {
-  StateNode,
+  FlowStateNode,
   type StateFlowNode,
   OrbitalNode,
   type OrbitalNodeData,

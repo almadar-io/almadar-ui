@@ -3,9 +3,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ReactFlow, ReactFlowProvider, type Node, type Edge, MarkerType } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { TransitionEdge } from './TransitionEdge';
-import { StateNode } from './StateNode';
+import { FlowStateNode } from './FlowStateNode';
 
-const nodeTypes = { stateNode: StateNode };
+const nodeTypes = { stateNode: FlowStateNode };
 const edgeTypes = { transitionEdge: TransitionEdge };
 
 const baseNodes: Node[] = [

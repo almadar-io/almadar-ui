@@ -1,5 +1,5 @@
 // Flow molecule components — React Flow custom nodes and edges
-export { StateNode, type StateFlowNode } from './StateNode';
+export { FlowStateNode, type StateFlowNode } from './FlowStateNode';
 export { OrbitalNode, type OrbitalNodeData, type OrbitalFlowNode } from './OrbitalNode';
 export { BehaviorNode, type BehaviorNodeData, type BehaviorFlowNode } from './BehaviorNode';
 export { ExprNode, type ExprNodeData, type ExprFlowNode } from './ExprNode';

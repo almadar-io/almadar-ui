@@ -3,9 +3,9 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ReactFlow, ReactFlowProvider } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import type { State } from '@almadar/core';
-import { StateNode } from './StateNode';
+import { FlowStateNode } from './FlowStateNode';
 
-const nodeTypes = { stateNode: StateNode };
+const nodeTypes = { stateNode: FlowStateNode };
 
 function Wrapper({ data }: { data: State & Record<string, unknown> }) {
   return (
@@ -23,7 +23,7 @@ function Wrapper({ data }: { data: State & Record<string, unknown> }) {
 }
 
 const meta: Meta<typeof Wrapper> = {
-  title: 'Almadar UI/Molecules/Flow/StateNode',
+  title: 'Almadar UI/Molecules/Flow/FlowStateNode',
   component: Wrapper,
   parameters: { layout: 'centered' },
   tags: ['autodocs'],

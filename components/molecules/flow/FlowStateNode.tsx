@@ -1,6 +1,6 @@
 'use client';
 /**
- * StateNode Component
+ * FlowStateNode Component
  *
  * Custom React Flow node for a state machine state.
  * Renders a FlowNodeShell with role-based header color, state name,
@@ -30,7 +30,7 @@ function resolveRole(data: State): StateRole {
  * React Flow custom node that visualises a single state machine state.
  * Uses STATE_COLORS for the header bar and shows role badges.
  */
-export const StateNode: React.FC<NodeProps<StateFlowNode>> = ({
+export const FlowStateNode: React.FC<NodeProps<StateFlowNode>> = ({
   data,
   selected = false,
 }) => {
@@ -74,4 +74,4 @@ export const StateNode: React.FC<NodeProps<StateFlowNode>> = ({
   );
 };
 
-StateNode.displayName = 'StateNode';
+FlowStateNode.displayName = 'FlowStateNode';
