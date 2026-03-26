@@ -100,6 +100,8 @@ const config: StorybookConfig = {
           "clsx",
           // Storybook addons — pre-bundle to avoid runtime re-optimization
           "@storybook/addon-links",
+          // React Flow — needed by OrbitalFlow organism
+          "@xyflow/react",
           // Include refractor for proper CommonJS -> ESM conversion
           "refractor",
           "hastscript",

@@ -5,6 +5,8 @@ import { withI18n, i18nGlobalTypes } from './decorators/withI18n';
 // Import theme CSS files
 import '../themes/index.css';
 import '../index.css';
+// React Flow CSS for OrbitalFlow stories
+import '@xyflow/react/dist/style.css';
 
 /**
  * Theme toolbar items.

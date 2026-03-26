@@ -126,3 +126,6 @@ export { AnimatedGraphic, type AnimatedGraphicProps, type GraphicAnimation } fro
 
 // Game atom components
 export * from "./game";
+
+// Flow atom components
+export * from "./flow";

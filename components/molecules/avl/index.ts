@@ -6,6 +6,7 @@ export { AvlSlotMap, type AvlSlotMapProps, type AvlSlotMapSlot } from './AvlSlot
 export { AvlExprTree, type AvlExprTreeProps, type AvlExprTreeNode } from './AvlExprTree';
 export { AvlTransitionLane, type AvlTransitionLaneProps, type AvlTransitionLaneEffect } from './AvlTransitionLane';
 export { AvlSwimLane, type AvlSwimLaneProps } from './AvlSwimLane';
+export { AvlBehaviorGlyph, type AvlBehaviorGlyphProps, type BehaviorLevel, type GlyphSize, type BehaviorGlyphChild, type BehaviorGlyphConnection, DOMAIN_COLORS } from './AvlBehaviorGlyph';
 export { ringPositions, arcPath, radialPositions, gridPositions, curveControlPoint } from './avl-layout';
 
 // 3D Molecules (Three.js dependent - import via game/three barrel for SSR safety)
