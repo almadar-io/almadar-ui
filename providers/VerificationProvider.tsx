@@ -182,7 +182,7 @@ export function VerificationProvider({
 
         recordTransition({
           traitName: parsed.traitName,
-          from: pending?.from ?? 'unknown',
+          from: pending?.from ?? (parsed.event === 'INIT' ? 'init' : 'unknown'),
           to: newState,
           event: parsed.event,
           effects,
