@@ -27,6 +27,7 @@ import { useSlotsActions, useSlots, SlotsProvider } from './ui/SlotsContext';
 import { EntitySchemaProvider } from './EntitySchemaContext';
 import { ServerBridgeProvider, useServerBridge } from './ServerBridge';
 import { enrichFromResponse } from './enrichFromResponse';
+import { recordTransition, type EffectTrace } from '../lib/verificationRegistry';
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -151,6 +152,22 @@ function TraitInitializer({ traits, orbitalNames }: {
     (async () => {
       for (const name of orbitalNames) {
         const effects = await bridge.sendEvent(name, 'INIT', {});
+        const effectTraces: EffectTrace[] = [
+          { type: 'fetch', args: [], status: 'executed' as const },
+          ...effects.map((eff) => ({
+            type: eff.type,
+            args: eff.type === 'render-ui' ? [eff.slot] : [],
+            status: 'executed' as const,
+          })),
+        ];
+        recordTransition({
+          traitName: name,
+          from: 'init',
+          to: 'init',
+          event: 'INIT',
+          effects: effectTraces,
+          timestamp: Date.now(),
+        });
         for (const eff of effects) {
           if (eff.type === 'render-ui' && eff.slot && eff.pattern) {
             slotsActions.setSlotPatterns(

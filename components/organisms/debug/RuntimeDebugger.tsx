@@ -10,6 +10,7 @@
 
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
+import type { EffectTrace } from '../../../lib/verificationRegistry';
 import { useDebugData } from './hooks/useDebugData';
 import { onDebugToggle, isDebugEnabled } from '../../../lib/debugUtils';
 import { Tabs, type TabItem } from '../../molecules/Tabs';
@@ -35,8 +36,8 @@ export interface RuntimeDebuggerProps {
     defaultCollapsed?: boolean;
     /** Additional CSS classes */
     className?: string;
-    /** Display mode: floating (fixed overlay) or inline (block element) */
-    mode?: 'floating' | 'inline';
+    /** Display mode: floating (fixed overlay), inline (block element), or verify (always-visible compact overlay for verification runs) */
+    mode?: 'floating' | 'inline' | 'verify';
     /** Default active tab id */
     defaultTab?: string;
     /** Raw schema for EventDispatcherTab payload extraction */
@@ -51,8 +52,8 @@ export function RuntimeDebugger({
     defaultTab,
     schema,
 }: RuntimeDebuggerProps) {
-    const [isCollapsed, setIsCollapsed] = React.useState(defaultCollapsed);
-    const [isVisible, setIsVisible] = React.useState(mode === 'inline' || isDebugEnabled());
+    const [isCollapsed, setIsCollapsed] = React.useState(mode === 'verify' ? true : defaultCollapsed);
+    const [isVisible, setIsVisible] = React.useState(mode === 'inline' || mode === 'verify' || isDebugEnabled());
 
     const debugData = useDebugData();
 
@@ -202,6 +203,78 @@ export function RuntimeDebugger({
                         </div>
                     )}
                 </Card>
+            </div>
+        );
+    }
+
+    // Verify mode: always-visible panel at bottom showing full transition timeline
+    if (mode === 'verify') {
+        const traitStates = debugData.traits.map((t: { name: string; currentState: string }) => `${t.name}:${t.currentState}`).join(' | ');
+
+        return (
+            <div
+                className={cn(
+                    'runtime-debugger runtime-debugger--verify',
+                    'h-[35vh] flex flex-col bg-gray-900 text-white border-t-2 border-cyan-500',
+                    className
+                )}
+                data-testid="debugger-verify"
+            >
+                {/* Status bar */}
+                <div className="px-3 py-1.5 flex items-center gap-3 text-xs font-mono border-b border-gray-700 flex-shrink-0">
+                    <Badge variant={failedChecks > 0 ? 'danger' : 'success'} size="sm">
+                        {failedChecks > 0 ? `${failedChecks} fail` : 'OK'}
+                    </Badge>
+                    <span className="text-gray-400">
+                        {verification.transitions.length} transitions
+                    </span>
+                    {traitStates && (
+                        <span className="text-cyan-400 truncate max-w-[400px]">{traitStates}</span>
+                    )}
+                </div>
+
+                {/* Always-visible timeline showing recent transitions with effects */}
+                <div className="flex-1 overflow-y-auto">
+                    <div className="px-2 py-1">
+                        {verification.transitions.length === 0 ? (
+                            <div className="text-gray-500 text-xs font-mono py-2 text-center">
+                                Waiting for transitions...
+                            </div>
+                        ) : (
+                            <div className="space-y-0.5">
+                                {verification.transitions.map((trace) => {
+                                    const hasFailedEffects = trace.effects.some((e: EffectTrace) => e.status === 'failed');
+                                    return (
+                                        <div key={trace.id} className="flex items-start gap-2 text-xs font-mono py-0.5 border-b border-gray-800 last:border-0">
+                                            {/* Status dot */}
+                                            <span className={cn(
+                                                'mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0',
+                                                hasFailedEffects ? 'bg-red-500' : 'bg-green-500'
+                                            )} />
+                                            {/* Event + transition */}
+                                            <Badge variant="info" size="sm" className="flex-shrink-0">{trace.event}</Badge>
+                                            <span className="text-gray-400 flex-shrink-0">{trace.from} {'\u2192'} {trace.to}</span>
+                                            {/* Effects inline */}
+                                            <span className="flex flex-wrap gap-1 ml-1">
+                                                {trace.effects.map((eff: EffectTrace, i: number) => (
+                                                    <span key={i} className={cn(
+                                                        'px-1 rounded text-[10px]',
+                                                        eff.status === 'executed' ? 'bg-green-900/50 text-green-400' :
+                                                        eff.status === 'failed' ? 'bg-red-900/50 text-red-400' :
+                                                        'bg-yellow-900/50 text-yellow-400'
+                                                    )}>
+                                                        {eff.status === 'executed' ? '\u2713' : eff.status === 'failed' ? '\u2717' : '-'} {eff.type}
+                                                        {eff.args.length > 0 && <span className="text-gray-500 ml-0.5">{JSON.stringify(eff.args).slice(0, 30)}</span>}
+                                                    </span>
+                                                ))}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </div>
             </div>
         );
     }

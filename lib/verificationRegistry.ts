@@ -69,20 +69,41 @@ export interface VerificationSnapshot {
 }
 
 // ============================================================================
-// State
+// State — stored on window to survive duplicate module instances (Vite dev)
 // ============================================================================
-
-const checks = new Map<string, VerificationCheck>();
-const transitions: TransitionTrace[] = [];
-let bridgeHealth: BridgeHealth | null = null;
 
 const MAX_TRANSITIONS = 500;
 
 type ChangeListener = () => void;
-const listeners = new Set<ChangeListener>();
+
+interface RegistryState {
+  checks: Map<string, VerificationCheck>;
+  transitions: TransitionTrace[];
+  bridgeHealth: BridgeHealth | null;
+  listeners: Set<ChangeListener>;
+}
+
+function getState(): RegistryState {
+  if (typeof window !== 'undefined') {
+    const w = window as unknown as { __verificationRegistryState?: RegistryState };
+    if (!w.__verificationRegistryState) {
+      w.__verificationRegistryState = {
+        checks: new Map(),
+        transitions: [],
+        bridgeHealth: null,
+        listeners: new Set(),
+      };
+    }
+    return w.__verificationRegistryState;
+  }
+  // SSR fallback
+  return { checks: new Map(), transitions: [], bridgeHealth: null, listeners: new Set() };
+}
+
+// Direct accessors — no proxies, just use getState() in every function
 
 function notifyListeners(): void {
-  listeners.forEach((l) => l());
+  getState().listeners.forEach((l) => l());
   exposeOnWindow();
 }
 
@@ -96,7 +117,7 @@ export function registerCheck(
   status: CheckStatus = "pending",
   details?: string,
 ): void {
-  checks.set(id, { id, label, status, details, updatedAt: Date.now() });
+  getState().checks.set(id, { id, label, status, details, updatedAt: Date.now() });
   notifyListeners();
 }
 
@@ -105,19 +126,19 @@ export function updateCheck(
   status: CheckStatus,
   details?: string,
 ): void {
-  const check = checks.get(id);
+  const check = getState().checks.get(id);
   if (check) {
     check.status = status;
     if (details !== undefined) check.details = details;
     check.updatedAt = Date.now();
   } else {
-    checks.set(id, { id, label: id, status, details, updatedAt: Date.now() });
+    getState().checks.set(id, { id, label: id, status, details, updatedAt: Date.now() });
   }
   notifyListeners();
 }
 
 export function getAllChecks(): VerificationCheck[] {
-  return Array.from(checks.values());
+  return Array.from(getState().checks.values());
 }
 
 // ============================================================================
@@ -129,10 +150,10 @@ export function recordTransition(trace: Omit<TransitionTrace, "id">): void {
     ...trace,
     id: `t-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
   };
-  transitions.push(entry);
+  getState().transitions.push(entry);
 
-  if (transitions.length > MAX_TRANSITIONS) {
-    transitions.shift();
+  if (getState().transitions.length > MAX_TRANSITIONS) {
+    getState().transitions.shift();
   }
 
   // Auto-validate: check INIT transitions for fetch effects
@@ -174,11 +195,11 @@ export function recordTransition(trace: Omit<TransitionTrace, "id">): void {
 }
 
 export function getTransitions(): TransitionTrace[] {
-  return [...transitions];
+  return [...getState().transitions];
 }
 
 export function getTransitionsForTrait(traitName: string): TransitionTrace[] {
-  return transitions.filter((t) => t.traitName === traitName);
+  return getState().transitions.filter((t) => t.traitName === traitName);
 }
 
 // ============================================================================
@@ -186,7 +207,7 @@ export function getTransitionsForTrait(traitName: string): TransitionTrace[] {
 // ============================================================================
 
 export function updateBridgeHealth(health: BridgeHealth): void {
-  bridgeHealth = { ...health };
+  getState().bridgeHealth = { ...health };
 
   const checkId = "server-bridge";
   if (health.connected) {
@@ -204,7 +225,8 @@ export function updateBridgeHealth(health: BridgeHealth): void {
 }
 
 export function getBridgeHealth(): BridgeHealth | null {
-  return bridgeHealth ? { ...bridgeHealth } : null;
+  const bh = getState().bridgeHealth;
+  return bh ? { ...bh } : null;
 }
 
 // ============================================================================
@@ -240,8 +262,8 @@ export function getSnapshot(): VerificationSnapshot {
 // ============================================================================
 
 export function subscribeToVerification(listener: ChangeListener): () => void {
-  listeners.add(listener);
-  return () => listeners.delete(listener);
+  getState().listeners.add(listener);
+  return () => getState().listeners.delete(listener);
 }
 
 // ============================================================================
@@ -315,7 +337,7 @@ export function waitForTransition(
 ): Promise<TransitionTrace | null> {
   return new Promise((resolve) => {
     // Check if already recorded
-    const existing = transitions.find((t) => t.event === event);
+    const existing = getState().transitions.find((t) => t.event === event);
     if (existing) {
       resolve(existing);
       return;
@@ -327,7 +349,7 @@ export function waitForTransition(
     }, timeoutMs);
 
     const unsub = subscribeToVerification(() => {
-      const found = transitions.find((t) => t.event === event);
+      const found = getState().transitions.find((t) => t.event === event);
       if (found) {
         clearTimeout(timeout);
         unsub();
@@ -436,9 +458,9 @@ export function updateAssetStatus(
 // ============================================================================
 
 export function clearVerification(): void {
-  checks.clear();
-  transitions.length = 0;
-  bridgeHealth = null;
+  getState().checks.clear();
+  getState().transitions.length = 0;
+  getState().bridgeHealth = null;
   notifyListeners();
 }
 

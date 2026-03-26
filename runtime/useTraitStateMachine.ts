@@ -43,7 +43,7 @@ import {
     updateTraitState,
     type TraitDebugInfo,
 } from '../lib/traitRegistry';
-import { recordTransition, type EffectTrace } from '../lib/verificationRegistry';
+import { recordTransition, bindTraitStateGetter, type EffectTrace } from '../lib/verificationRegistry';
 
 // ============================================================================
 // Types
@@ -202,6 +202,16 @@ export function useTraitStateMachine(
         const newManager = managerRef.current;
         newManager.resetAll();
         setTraitStates(newManager.getAllStates());
+
+        // Bind trait state getter so verification tools can query current state
+        bindTraitStateGetter((traitName) => {
+            // getAllStates() returns Map<traitName, stateName>
+            const allStates = newManager.getAllStates();
+            if (allStates instanceof Map) return allStates.get(traitName);
+            // Fallback: getState() might return a string directly
+            const state = newManager.getState(traitName);
+            return typeof state === 'string' ? state : undefined;
+        });
 
         console.log('[TraitStateMachine] Reset states for page navigation:',
             Array.from(newManager.getAllStates().keys()).join(', '));
@@ -489,6 +499,14 @@ export function useTraitStateMachine(
                 updateTraitState(traitName, result.newState);
                 const effectTraces: EffectTrace[] = result.effects.map(
                     (e: unknown) => {
+                        // Effects are s-expression arrays: ["fetch", "Entity"], ["render-ui", "slot", {...}], etc.
+                        if (Array.isArray(e)) {
+                            return {
+                                type: String(e[0] ?? 'unknown'),
+                                args: e.slice(1),
+                                status: 'executed' as const,
+                            };
+                        }
                         const eff = e as Record<string, unknown>;
                         return {
                             type: String(eff.type ?? 'unknown'),
