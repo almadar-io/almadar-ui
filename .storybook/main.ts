@@ -9,6 +9,8 @@ const __dirname = dirname(__filename);
 const config: StorybookConfig = {
   stories: [
     "../components/**/*.stories.@(js|jsx|ts|tsx)",
+    // Studio V2 builder design system organisms + templates
+    "../../../apps/builder/packages/client/design-system/**/*.stories.@(js|jsx|ts|tsx)",
   ],
   addons: [
     "@storybook/addon-links",
@@ -54,6 +56,7 @@ const config: StorybookConfig = {
       resolve: {
         // Important for pnpm monorepos with symlinks
         alias: {
+          '@design-system': path.resolve(__dirname, '../../../apps/builder/packages/client/design-system'),
         },
         // Dedupe these packages to fix version conflicts
         dedupe: [
@@ -69,6 +72,7 @@ const config: StorybookConfig = {
           allow: [
             searchForWorkspaceRoot(projectRoot),
             path.resolve(workspaceRoot, "packages"),
+            path.resolve(workspaceRoot, "apps"),
             path.resolve(workspaceRoot, "node_modules"),
           ],
         },

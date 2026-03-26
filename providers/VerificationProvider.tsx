@@ -182,7 +182,7 @@ export function VerificationProvider({
 
         recordTransition({
           traitName: parsed.traitName,
-          from: pending?.from ?? (parsed.event === 'INIT' ? 'init' : 'unknown'),
+          from: pending?.from ?? (payload['currentState'] as string | undefined) ?? newState,
           to: newState,
           event: parsed.event,
           effects,
@@ -195,10 +195,11 @@ export function VerificationProvider({
 
         const errorMsg = (payload['error'] ?? 'Unknown error') as string;
 
+        const fromState = pending?.from ?? (payload['currentState'] as string | undefined) ?? 'unknown';
         recordTransition({
           traitName: parsed.traitName,
-          from: pending?.from ?? 'unknown',
-          to: pending?.from ?? 'unknown', // state didn't change on error
+          from: fromState,
+          to: fromState, // state didn't change on error
           event: parsed.event,
           effects: [{
             type: 'server-call',
