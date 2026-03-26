@@ -9,7 +9,6 @@
 import React, { useState, useCallback } from 'react';
 import { cn } from '../../lib/cn';
 import { Box } from '../atoms/Box';
-import { HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 import { Button } from '../atoms/Button';
 
@@ -44,30 +43,28 @@ export const InstallBox: React.FC<InstallBoxProps> = ({
         </Typography>
       )}
       <Box
-        className={cn(
-          'bg-foreground',
-          'rounded-md',
-          'border-[length:var(--border-width)] border-border',
-        )}
+        className="bg-surface rounded-md border-[length:var(--border-width)] border-border"
         padding="md"
       >
-        <HStack gap="md" align="center">
+        <Box className="flex items-center gap-3">
           <Typography
             variant="body2"
-            className="font-mono flex-1 min-w-0 text-background select-all"
+            className="font-mono flex-1 min-w-0 select-all"
             truncate
           >
             {command}
           </Typography>
           <Button
             variant="ghost"
-            size="md"
+            size="sm"
+            leftIcon={copied ? 'check' : 'copy'}
             onClick={handleCopy}
-            className="flex-shrink-0 text-background hover:text-background"
+            className="flex-shrink-0"
+            aria-label={copied ? 'Copied' : 'Copy to clipboard'}
           >
-            {copied ? 'Copied!' : 'Copy'}
+            {copied ? 'Copied' : 'Copy'}
           </Button>
-        </HStack>
+        </Box>
       </Box>
     </Box>
   );
