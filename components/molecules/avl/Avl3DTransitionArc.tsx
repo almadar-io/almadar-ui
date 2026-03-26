@@ -138,8 +138,7 @@ export const Avl3DTransitionArc: React.FC<Avl3DTransitionArcProps> = ({
           document.body.style.cursor = 'auto';
         }}
       >
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        <tubeGeometry args={tubeArgs as any} />
+        <tubeGeometry args={tubeArgs as unknown as ConstructorParameters<typeof import('three').TubeGeometry>} />
         <meshStandardMaterial
           color={color}
           emissive={color}
