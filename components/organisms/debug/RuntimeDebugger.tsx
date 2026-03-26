@@ -215,7 +215,7 @@ export function RuntimeDebugger({
             <div
                 className={cn(
                     'runtime-debugger runtime-debugger--verify',
-                    'h-[35vh] flex flex-col bg-gray-900 text-white border-t-2 border-cyan-500',
+                    'fixed bottom-0 left-0 right-0 z-[9999] h-[35vh] flex flex-col bg-gray-900 text-white border-t-2 border-cyan-500',
                     className
                 )}
                 data-testid="debugger-verify"
