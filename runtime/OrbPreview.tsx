@@ -101,9 +101,10 @@ function SlotBridge({ mockData }: { mockData?: Record<string, unknown[]> }) {
  * to the server after local processing. Server response provides enriched
  * patterns with entity data injected via enrichFromResponse.
  */
-function TraitInitializer({ traits, orbitalNames }: {
+function TraitInitializer({ traits, orbitalNames, onNavigate }: {
   traits: unknown[];
   orbitalNames?: string[];
+  onNavigate?: (path: string, params?: Record<string, unknown>) => void;
 }) {
   const slotsActions = useSlotsActions();
   const bridge = useServerBridge();
@@ -120,12 +121,16 @@ function TraitInitializer({ traits, orbitalNames }: {
             [{ pattern: eff.pattern as Parameters<typeof slotsActions.setSlotPatterns>[1][0]['pattern'], props: {} }],
             { trait: 'server', state: 'server', transition: 'server-effect' },
           );
+        } else if (eff.type === 'navigate' && eff.route && onNavigate) {
+          onNavigate(eff.route, eff.params as Record<string, unknown> | undefined);
         }
       }
     }
-  }, [bridge.connected, bridge.sendEvent, orbitalNames, slotsActions]);
+  }, [bridge.connected, bridge.sendEvent, orbitalNames, slotsActions, onNavigate]);
 
-  const opts = orbitalNames ? { onEventProcessed } : {};
+  const opts = orbitalNames
+    ? { onEventProcessed, navigate: onNavigate }
+    : { navigate: onNavigate };
   const { sendEvent } = useTraitStateMachine(traits as Parameters<typeof useTraitStateMachine>[0], slotsActions, opts);
 
   const initSentRef = useRef(false);
@@ -190,11 +195,12 @@ function TraitInitializer({ traits, orbitalNames }: {
  * When `serverUrl` is provided, wraps with ServerBridgeProvider and
  * forwards events to the server after local processing.
  */
-function SchemaRunner({ schema, serverUrl, mockData, pageName }: {
+function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate }: {
   schema: unknown;
   serverUrl?: string;
   mockData?: Record<string, unknown[]>;
   pageName?: string;
+  onNavigate?: (path: string, params?: Record<string, unknown>) => void;
 }) {
   const { traits, allEntities, ir } = useResolvedSchema(schema as Parameters<typeof useResolvedSchema>[0], pageName);
 
@@ -231,7 +237,7 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName }: {
     <VerificationProvider enabled>
       <SlotsProvider>
         <EntitySchemaProvider entities={Array.from(allEntities.values())}>
-          <TraitInitializer traits={allPageTraits} orbitalNames={serverUrl ? orbitalNames : undefined} />
+          <TraitInitializer traits={allPageTraits} orbitalNames={serverUrl ? orbitalNames : undefined} onNavigate={onNavigate} />
           <SlotBridge mockData={!serverUrl ? mockData : undefined} />
           <Box className="min-h-full p-4">
             <UISlotRenderer includeHud hudMode="inline" includeFloating />
@@ -299,7 +305,7 @@ export function OrbPreview({
     return schema;
   }, [schema]);
 
-  // Discover pages from schema for multi-page navigation
+  // Discover pages from schema for effect-driven navigation
   const pages = useMemo(() => {
     if (!parsedSchema || parsedSchema.error) return [];
     try {
@@ -310,6 +316,15 @@ export function OrbPreview({
   }, [parsedSchema]);
 
   const [currentPage, setCurrentPage] = useState<string | undefined>(undefined);
+
+  // Navigate handler: when a ['navigate', '/path'] effect fires,
+  // find the matching page and switch to it.
+  const handleNavigate = useCallback((path: string) => {
+    const match = pages.find(({ page }) => page.path === path);
+    if (match) {
+      setCurrentPage(match.page.name);
+    }
+  }, [pages]);
 
   if (parsedSchema.error) {
     return (
@@ -323,33 +338,14 @@ export function OrbPreview({
 
   return (
     <Box
-      className={`border border-[var(--color-border)] rounded-[var(--radius-md)] flex flex-col ${className ?? ''}`}
+      className={`overflow-auto border border-[var(--color-border)] rounded-[var(--radius-md)] ${className ?? ''}`}
       style={{ height }}
     >
-      {pages.length > 1 && (
-        <Box className="flex gap-1 px-2 py-1 bg-[var(--color-muted)] border-b border-[var(--color-border)] flex-shrink-0 z-10">
-          {pages.map(({ page }) => (
-            <button
-              key={page.name}
-              onClick={() => setCurrentPage(page.name)}
-              className={`px-3 py-1 text-xs rounded transition-colors ${
-                (currentPage ?? pages[0].page.name) === page.name
-                  ? 'bg-[var(--color-primary)] text-white'
-                  : 'bg-transparent text-[var(--color-foreground)] hover:bg-[var(--color-border)]'
-              }`}
-            >
-              {page.name}
-            </button>
-          ))}
-        </Box>
-      )}
-      <Box className="flex-1 overflow-auto">
-        <OrbitalProvider initialData={mockData} skipTheme verification>
-          <UISlotProvider>
-            <SchemaRunner schema={parsedSchema} serverUrl={serverUrl} mockData={mockData} pageName={currentPage} />
-          </UISlotProvider>
-        </OrbitalProvider>
-      </Box>
+      <OrbitalProvider initialData={mockData} skipTheme verification>
+        <UISlotProvider>
+          <SchemaRunner schema={parsedSchema} serverUrl={serverUrl} mockData={mockData} pageName={currentPage} onNavigate={handleNavigate} />
+        </UISlotProvider>
+      </OrbitalProvider>
     </Box>
   );
 }
