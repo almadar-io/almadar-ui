@@ -205,10 +205,11 @@ export function useTraitStateMachine(
 
         // Bind trait state getter so verification tools can query current state
         bindTraitStateGetter((traitName) => {
-            // getAllStates() returns Map<traitName, stateName>
             const allStates = newManager.getAllStates();
-            if (allStates instanceof Map) return allStates.get(traitName);
-            // Fallback: getState() might return a string directly
+            if (allStates instanceof Map) {
+                const val = allStates.get(traitName);
+                return typeof val === 'string' ? val : undefined;
+            }
             const state = newManager.getState(traitName);
             return typeof state === 'string' ? state : undefined;
         });
