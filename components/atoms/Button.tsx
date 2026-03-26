@@ -52,7 +52,8 @@ const variantStyles = {
   ].join(" "),
   ghost: [
     "bg-transparent text-muted-foreground",
-    "hover:text-foreground hover:bg-muted",
+    "border border-transparent",
+    "hover:text-foreground hover:bg-muted hover:border-border",
     "active:scale-[var(--active-scale)]",
   ].join(" "),
   danger: [
