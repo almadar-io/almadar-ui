@@ -120,5 +120,9 @@ export {
 // Pattern components
 export { PatternTile, getTileDimensions, type PatternTileProps, type PatternVariant } from "./PatternTile";
 
+// Scroll/trigger animation atoms
+export { AnimatedReveal, type AnimatedRevealProps, type RevealTrigger, type RevealAnimation } from "./AnimatedReveal";
+export { AnimatedGraphic, type AnimatedGraphicProps, type GraphicAnimation } from "./AnimatedGraphic";
+
 // Game atom components
 export * from "./game";

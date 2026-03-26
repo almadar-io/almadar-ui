@@ -65,6 +65,12 @@ export type { PullQuoteProps } from '../components/molecules/PullQuote';
 export { AnimatedCounter } from '../components/molecules/AnimatedCounter';
 export type { AnimatedCounterProps } from '../components/molecules/AnimatedCounter';
 
+// Scroll/trigger animation atoms (client-side, use inside BrowserOnly for SSR)
+export { AnimatedReveal } from '../components/atoms/AnimatedReveal';
+export type { AnimatedRevealProps, RevealTrigger, RevealAnimation } from '../components/atoms/AnimatedReveal';
+export { AnimatedGraphic } from '../components/atoms/AnimatedGraphic';
+export type { AnimatedGraphicProps, GraphicAnimation } from '../components/atoms/AnimatedGraphic';
+
 // Decorative patterns (pure SVG, SSR-safe)
 export { PatternTile, getTileDimensions } from '../components/atoms/PatternTile';
 export type { PatternTileProps, PatternVariant } from '../components/atoms/PatternTile';
