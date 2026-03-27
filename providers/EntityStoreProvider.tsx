@@ -66,10 +66,11 @@ function getVersion(entityType: string): number {
   return store.get(entityType)?.version ?? 0;
 }
 
-function subscribeToStore(listener: StoreListener): () => void {
+export function subscribeToStore(listener: StoreListener): () => void {
   storeListeners.add(listener);
   return () => { storeListeners.delete(listener); };
 }
+
 
 function addWatch(entityType: string, callback: WatchCallback): () => void {
   let cbs = watchCallbacks.get(entityType);

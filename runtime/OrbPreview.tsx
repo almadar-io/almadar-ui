@@ -26,8 +26,8 @@ import { useTraitStateMachine } from './useTraitStateMachine';
 import { useSlotsActions, useSlots, SlotsProvider } from './ui/SlotsContext';
 import { EntitySchemaProvider } from './EntitySchemaContext';
 import { ServerBridgeProvider, useServerBridge } from './ServerBridge';
-import { enrichFromResponse } from './enrichFromResponse';
 import { getAllPages } from '../renderer/navigation';
+import { useEntityStore } from '../providers/EntityStoreProvider';
 import { recordTransition, recordServerResponse, type EffectTrace } from '../lib/verificationRegistry';
 
 // ---------------------------------------------------------------------------
@@ -53,7 +53,13 @@ function normalizeChild(child: Record<string, unknown>): Record<string, unknown>
  * Bridges SlotsStateContext (written by useTraitStateMachine) to
  * UISlotContext (read by UISlotRenderer). Syncs on every slot state change.
  */
-function SlotBridge({ mockData }: { mockData?: Record<string, unknown[]> }) {
+/**
+ * Bridges SlotsStateContext to UISlotContext. Simple pass-through: reads slot
+ * patterns and forwards them to the UISlot render system. Entity resolution
+ * happens reactively in SlotContentRenderer via useEntityRef (same pattern
+ * as the compiled app).
+ */
+function SlotBridge() {
   const slots = useSlots();
   const { render, clear } = useUISlots();
 
@@ -64,14 +70,7 @@ function SlotBridge({ mockData }: { mockData?: Record<string, unknown[]> }) {
         continue;
       }
       const entry = slotState.patterns[slotState.patterns.length - 1];
-      let patternRecord = entry.pattern as unknown as Record<string, unknown>;
-
-      // Offline entity enrichment: resolve entity string refs to actual data
-      // from mockData. In server mode, enrichFromResponse does this on the
-      // server response. In offline mode, we do it here.
-      if (mockData && Object.keys(mockData).length > 0) {
-        patternRecord = enrichFromResponse(patternRecord, mockData);
-      }
+      const patternRecord = entry.pattern as unknown as Record<string, unknown>;
 
       const { type: patternType, children, ...inlineProps } = patternRecord;
       const normalizedChildren = Array.isArray(children)
@@ -88,7 +87,7 @@ function SlotBridge({ mockData }: { mockData?: Record<string, unknown[]> }) {
         sourceTrait: slotState.source?.trait,
       });
     }
-  }, [slots, render, clear, mockData]);
+  }, [slots, render, clear]);
 
   return null;
 }
@@ -109,6 +108,8 @@ function TraitInitializer({ traits, orbitalNames, onNavigate }: {
   const slotsActions = useSlotsActions();
   const bridge = useServerBridge();
 
+  const entityStore = useEntityStore();
+
   // Forward events to server, apply enriched effects directly to slots
   const onEventProcessed = useCallback(async (event: string, payload?: Record<string, unknown>) => {
     if (!bridge.connected || !orbitalNames?.length) return;
@@ -118,8 +119,22 @@ function TraitInitializer({ traits, orbitalNames, onNavigate }: {
       // Record server response in verification timeline
       recordServerResponse(name, event, meta);
 
+      // Advance EntityStore from server response data (ref operator support)
+      // When persist/set/swap mutates a ref'd entity, the server includes fresh data
+      // in meta.data. Advancing the store triggers useEntityRef subscribers.
+      const responseData = (meta as Record<string, unknown> | undefined)?.data as Record<string, unknown[]> | undefined;
+      if (responseData) {
+        for (const [entityType, records] of Object.entries(responseData)) {
+          if (Array.isArray(records)) {
+            entityStore.advance(entityType, records);
+          }
+        }
+      }
+
       for (const eff of effects) {
         if (eff.type === 'render-ui' && eff.slot && eff.pattern) {
+          // Set raw pattern config. Entity resolution happens reactively in
+          // SlotContentRenderer via useEntityRef (EntityStore already advanced above).
           slotsActions.setSlotPatterns(
             eff.slot,
             [{ pattern: eff.pattern as Parameters<typeof slotsActions.setSlotPatterns>[1][0]['pattern'], props: {} }],
@@ -130,7 +145,7 @@ function TraitInitializer({ traits, orbitalNames, onNavigate }: {
         }
       }
     }
-  }, [bridge.connected, bridge.sendEvent, orbitalNames, slotsActions, onNavigate]);
+  }, [bridge.connected, bridge.sendEvent, orbitalNames, slotsActions, onNavigate, entityStore]);
 
   const opts = orbitalNames
     ? { onEventProcessed, navigate: onNavigate }
@@ -182,6 +197,18 @@ function TraitInitializer({ traits, orbitalNames, onNavigate }: {
           effects: effectTraces,
           timestamp: Date.now(),
         });
+
+        // Advance EntityStore from INIT response so useEntityRef subscribers
+        // get entity data before slot patterns render.
+        const initResponseData = (meta as Record<string, unknown>)?.data as Record<string, unknown[]> | undefined;
+        if (initResponseData) {
+          for (const [entityType, records] of Object.entries(initResponseData)) {
+            if (Array.isArray(records)) {
+              entityStore.advance(entityType, records);
+            }
+          }
+        }
+
         for (const eff of effects) {
           if (eff.type === 'render-ui' && eff.slot && eff.pattern) {
             slotsActions.setSlotPatterns(
@@ -247,12 +274,25 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate }: {
       .map((o) => o.name as string);
   }, [schema]);
 
+  // Seed EntityStore with mock data for non-server preview.
+  // useEntityRef subscribers will reactively pick up this data.
+  const entityStore = useEntityStore();
+  useEffect(() => {
+    if (!serverUrl && mockData) {
+      for (const [entityType, records] of Object.entries(mockData)) {
+        if (Array.isArray(records)) {
+          entityStore.advance(entityType, records);
+        }
+      }
+    }
+  }, [mockData, serverUrl, entityStore]);
+
   const inner = (
     <VerificationProvider enabled>
       <SlotsProvider>
         <EntitySchemaProvider entities={Array.from(allEntities.values())}>
           <TraitInitializer traits={allPageTraits} orbitalNames={serverUrl ? orbitalNames : undefined} onNavigate={onNavigate} />
-          <SlotBridge mockData={!serverUrl ? mockData : undefined} />
+          <SlotBridge />
           <Box className="min-h-full p-4">
             <UISlotRenderer includeHud hudMode="inline" includeFloating />
           </Box>

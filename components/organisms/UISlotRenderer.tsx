@@ -15,6 +15,7 @@
  */
 
 import React, { Suspense, createContext, useContext, useEffect, useState } from "react";
+import { useEntityRef } from "../../providers/EntityStoreProvider";
 import { createPortal } from "react-dom";
 import {
   useUISlots,
@@ -793,6 +794,14 @@ function SlotContentRenderer({
   content,
   onDismiss,
 }: SlotContentRendererProps): React.ReactElement {
+  // Resolve entity reference from EntityStore reactively.
+  // Same pattern as the compiled app's useEntityRef — the component subscribes
+  // directly to the store instead of relying on enrichment pipelines.
+  // When entityType is '', useEntityRef returns [] and never triggers re-renders.
+  const entityProp = content.props.entity;
+  const entityType = typeof entityProp === 'string' ? entityProp : '';
+  const storeData = useEntityRef(entityType);
+
   const PatternComponent = getComponentForPattern(content.pattern);
 
   // If we have a registered component, render it with props
@@ -818,13 +827,18 @@ function SlotContentRenderer({
     // Recursively render any named props that are pattern configs
     const renderedProps = renderPatternProps(restProps, onDismiss);
 
+    // Replace entity string with reactive store data
+    const finalProps = entityType
+      ? { ...renderedProps, entity: storeData }
+      : renderedProps;
+
     return (
       <Box
         className="slot-content"
         data-pattern={content.pattern}
         data-id={content.id}
       >
-        <PatternComponent {...renderedProps}>
+        <PatternComponent {...finalProps}>
           {renderedChildren}
         </PatternComponent>
       </Box>

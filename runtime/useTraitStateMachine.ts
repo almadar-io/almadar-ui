@@ -399,8 +399,7 @@ export function useTraitStateMachine(
                 };
 
                 // Build handlers using factory from @almadar/runtime
-                // No enrichPattern: entity data comes from server response via
-                // enrichFromResponse in ServerBridge, not from local context.
+                // Entity resolution happens in SlotContentRenderer via useEntityRef.
                 const handlers = createClientEffectHandlers({
                     eventBus,
                     slotSetter: {

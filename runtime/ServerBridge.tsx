@@ -10,10 +10,10 @@
  * 4. Propagates server-emitted events through the local EventBus
  * 5. Unregisters on unmount
  *
- * Entity data flows through props, not context. The server response contains
+ * Entity data flows through EntityStore. The server response contains
  * both `data` (entity records) and `clientEffects` (render-ui patterns).
- * enrichFromResponse injects records into entity-aware patterns from the
- * same response, eliminating any timing issues.
+ * OrbPreview advances EntityStore from response data; SlotContentRenderer
+ * subscribes via useEntityRef for reactive resolution.
  *
  * @packageDocumentation
  */
@@ -21,7 +21,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { useEventBus } from '../hooks/useEventBus';
-import { enrichFromResponse } from './enrichFromResponse';
 
 
 // ---------------------------------------------------------------------------
@@ -52,6 +51,8 @@ export interface ServerResponseMeta {
   success: boolean;
   clientEffects: number;
   dataEntities: Record<string, number>;
+  /** Raw entity data from server response (for EntityStore advancement) */
+  data?: Record<string, unknown[]>;
   emittedEvents: string[];
   error?: string;
 }
@@ -156,6 +157,7 @@ export function ServerBridgeProvider({
         success: !!result.success,
         clientEffects: result.clientEffects?.length ?? 0,
         dataEntities,
+        data: responseData,
         emittedEvents: result.emittedEvents?.map((e) => e.event) ?? [],
         error: result.error,
       };
@@ -170,8 +172,7 @@ export function ServerBridgeProvider({
             if (effectType === 'render-ui') {
               const slot = arr[1] as string;
               const pattern = arr[2] as Record<string, unknown> | undefined;
-              const enriched = pattern ? enrichFromResponse(pattern, responseData) : undefined;
-              effects.push({ type: 'render-ui', slot, pattern: enriched });
+              effects.push({ type: 'render-ui', slot, pattern: pattern ?? undefined });
             } else if (effectType === 'navigate') {
               effects.push({ type: 'navigate', route: arr[1] as string, params: arr[2] as Record<string, unknown> });
             } else if (effectType === 'notify') {

@@ -22,13 +22,12 @@ export interface CreateClientEffectHandlersOptions {
     slotSetter: SlotSetter;
     navigate?: (path: string, params?: Record<string, unknown>) => void;
     notify?: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
-    enrichPattern?: (pattern: unknown) => unknown;
 }
 
 export function createClientEffectHandlers(
     options: CreateClientEffectHandlersOptions
 ): EffectHandlers {
-    const { eventBus, slotSetter, navigate, notify, enrichPattern } = options;
+    const { eventBus, slotSetter, navigate, notify } = options;
 
     return {
         emit: (event: string, payload?: Record<string, unknown>) => {
@@ -50,8 +49,7 @@ export function createClientEffectHandlers(
                 slotSetter.clearSlot(slot);
                 return;
             }
-            const enriched = enrichPattern ? enrichPattern(pattern) : pattern;
-            slotSetter.addPattern(slot, enriched, props);
+            slotSetter.addPattern(slot, pattern, props);
         },
         navigate: navigate ?? ((path: string) => {
             console.warn('[ClientEffectHandlers] No navigate handler, ignoring:', path);
