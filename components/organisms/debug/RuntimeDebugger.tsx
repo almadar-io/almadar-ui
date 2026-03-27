@@ -10,7 +10,7 @@
 
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
-import type { EffectTrace } from '../../../lib/verificationRegistry';
+import type { EffectTrace, ServerResponseTrace, TransitionTrace } from '../../../lib/verificationRegistry';
 import { useDebugData } from './hooks/useDebugData';
 import { onDebugToggle, isDebugEnabled } from '../../../lib/debugUtils';
 import { Tabs, type TabItem } from '../../molecules/Tabs';
@@ -28,6 +28,179 @@ import { TransitionTimeline } from './tabs/TransitionTimeline';
 import { ServerBridgeTab } from './tabs/ServerBridgeTab';
 import { EventDispatcherTab } from './tabs/EventDispatcherTab';
 import './RuntimeDebugger.css';
+
+// ---------------------------------------------------------------------------
+// VerifyModePanel - extracted for auto-scroll ref handling
+// ---------------------------------------------------------------------------
+
+function ServerResponseRow({ sr }: { sr: ServerResponseTrace }) {
+    const entityEntries = Object.entries(sr.dataEntities);
+    return (
+        <div className="ml-4 pl-2 border-l border-purple-700/50 py-0.5 text-[10px] font-mono">
+            <div className="flex items-center gap-2">
+                <span className={sr.success ? 'text-green-400' : 'text-red-400'}>
+                    {sr.success ? '\u2713' : '\u2717'} server
+                </span>
+                <span className="text-purple-300">
+                    {sr.orbitalName}
+                </span>
+                {sr.clientEffects > 0 && (
+                    <span className="px-1 rounded bg-purple-900/50 text-purple-300">
+                        {sr.clientEffects} clientEffect{sr.clientEffects !== 1 ? 's' : ''}
+                    </span>
+                )}
+                {sr.emittedEvents.length > 0 && (
+                    <span className="px-1 rounded bg-blue-900/50 text-blue-300">
+                        emit: {sr.emittedEvents.join(', ')}
+                    </span>
+                )}
+                {sr.error && (
+                    <span className="px-1 rounded bg-red-900/50 text-red-400 truncate max-w-[300px]">
+                        {sr.error}
+                    </span>
+                )}
+            </div>
+            {entityEntries.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-0.5">
+                    {entityEntries.map(([name, count]) => (
+                        <span key={name} className="px-1 rounded bg-gray-800 text-gray-300">
+                            {name}: {count} row{count !== 1 ? 's' : ''}
+                        </span>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+function TransitionRow({ trace }: { trace: TransitionTrace }) {
+    const isServerEntry = !!trace.serverResponse && trace.traitName.startsWith('server:');
+    const hasFailedEffects = trace.effects.some((e: EffectTrace) => e.status === 'failed');
+
+    // Pure server response entry (no local transition)
+    if (isServerEntry && trace.serverResponse) {
+        return (
+            <div className="py-0.5 border-b border-gray-800 last:border-0">
+                <div className="flex items-start gap-2 text-xs font-mono">
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 bg-purple-500" />
+                    <Badge variant="warning" size="sm" className="flex-shrink-0">
+                        {trace.event}
+                    </Badge>
+                    <span className="text-purple-400 flex-shrink-0">server response</span>
+                </div>
+                <ServerResponseRow sr={trace.serverResponse} />
+            </div>
+        );
+    }
+
+    // Local transition (may also have a server response attached)
+    return (
+        <div className="py-0.5 border-b border-gray-800 last:border-0">
+            <div className="flex items-start gap-2 text-xs font-mono">
+                <span className={cn(
+                    'mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0',
+                    hasFailedEffects ? 'bg-red-500' : 'bg-green-500'
+                )} />
+                <Badge variant="info" size="sm" className="flex-shrink-0">{trace.event}</Badge>
+                <span className="text-gray-300 flex-shrink-0">{trace.traitName}</span>
+                <span className="text-gray-400 flex-shrink-0">{trace.from} {'\u2192'} {trace.to}</span>
+            </div>
+            {/* Effects */}
+            {trace.effects.length > 0 && (
+                <div className="flex flex-wrap gap-1 ml-6 mt-0.5">
+                    {trace.effects.map((eff: EffectTrace, i: number) => (
+                        <span key={i} className={cn(
+                            'px-1 rounded text-[10px]',
+                            eff.status === 'executed' ? 'bg-green-900/50 text-green-400' :
+                            eff.status === 'failed' ? 'bg-red-900/50 text-red-400' :
+                            'bg-yellow-900/50 text-yellow-400'
+                        )}>
+                            {eff.status === 'executed' ? '\u2713' : eff.status === 'failed' ? '\u2717' : '-'} {eff.type}
+                            {eff.args.length > 0 && (
+                                <span className="text-gray-500 ml-0.5">
+                                    {JSON.stringify(eff.args).slice(0, 40)}
+                                </span>
+                            )}
+                        </span>
+                    ))}
+                </div>
+            )}
+            {/* Attached server response (when local transition was forwarded to server) */}
+            {trace.serverResponse && <ServerResponseRow sr={trace.serverResponse} />}
+        </div>
+    );
+}
+
+function VerifyModePanel({
+    className,
+    failedChecks,
+    transitions,
+    traitStates,
+    serverCount,
+    localCount,
+}: {
+    className?: string;
+    failedChecks: number;
+    transitions: TransitionTrace[];
+    traitStates: string;
+    serverCount: number;
+    localCount: number;
+}) {
+    const scrollRef = React.useRef<HTMLDivElement>(null);
+    const prevCountRef = React.useRef(0);
+
+    // Auto-scroll to bottom when new transitions arrive
+    React.useEffect(() => {
+        if (transitions.length > prevCountRef.current && scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+        prevCountRef.current = transitions.length;
+    }, [transitions.length]);
+
+    return (
+        <div
+            className={cn(
+                'runtime-debugger runtime-debugger--verify',
+                'fixed bottom-0 left-0 right-0 z-[9999] h-[35vh] flex flex-col bg-gray-900 text-white border-t-2 border-cyan-500',
+                className
+            )}
+            data-testid="debugger-verify"
+        >
+            {/* Status bar */}
+            <div className="px-3 py-1.5 flex items-center gap-3 text-xs font-mono border-b border-gray-700 flex-shrink-0">
+                <Badge variant={failedChecks > 0 ? 'danger' : 'success'} size="sm">
+                    {failedChecks > 0 ? `${failedChecks} fail` : 'OK'}
+                </Badge>
+                <span className="text-gray-400">
+                    {localCount} local
+                </span>
+                <span className="text-purple-400">
+                    {serverCount} server
+                </span>
+                {traitStates && (
+                    <span className="text-cyan-400 truncate max-w-[400px]">{traitStates}</span>
+                )}
+            </div>
+
+            {/* Full interaction timeline */}
+            <div ref={scrollRef} className="flex-1 overflow-y-auto">
+                <div className="px-2 py-1">
+                    {transitions.length === 0 ? (
+                        <div className="text-gray-500 text-xs font-mono py-2 text-center">
+                            Waiting for transitions...
+                        </div>
+                    ) : (
+                        <div className="space-y-0.5">
+                            {transitions.map((trace) => (
+                                <TransitionRow key={trace.id} trace={trace} />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
 
 export interface RuntimeDebuggerProps {
     /** Initial position */
@@ -207,75 +380,21 @@ export function RuntimeDebugger({
         );
     }
 
-    // Verify mode: always-visible panel at bottom showing full transition timeline
+    // Verify mode: always-visible panel at bottom showing full interaction timeline
     if (mode === 'verify') {
         const traitStates = debugData.traits.map((t: { name: string; currentState: string }) => `${t.name}:${t.currentState}`).join(' | ');
+        const serverEntries = verification.transitions.filter((t) => t.serverResponse);
+        const localEntries = verification.transitions.filter((t) => !t.serverResponse);
 
         return (
-            <div
-                className={cn(
-                    'runtime-debugger runtime-debugger--verify',
-                    'fixed bottom-0 left-0 right-0 z-[9999] h-[35vh] flex flex-col bg-gray-900 text-white border-t-2 border-cyan-500',
-                    className
-                )}
-                data-testid="debugger-verify"
-            >
-                {/* Status bar */}
-                <div className="px-3 py-1.5 flex items-center gap-3 text-xs font-mono border-b border-gray-700 flex-shrink-0">
-                    <Badge variant={failedChecks > 0 ? 'danger' : 'success'} size="sm">
-                        {failedChecks > 0 ? `${failedChecks} fail` : 'OK'}
-                    </Badge>
-                    <span className="text-gray-400">
-                        {verification.transitions.length} transitions
-                    </span>
-                    {traitStates && (
-                        <span className="text-cyan-400 truncate max-w-[400px]">{traitStates}</span>
-                    )}
-                </div>
-
-                {/* Always-visible timeline showing recent transitions with effects */}
-                <div className="flex-1 overflow-y-auto">
-                    <div className="px-2 py-1">
-                        {verification.transitions.length === 0 ? (
-                            <div className="text-gray-500 text-xs font-mono py-2 text-center">
-                                Waiting for transitions...
-                            </div>
-                        ) : (
-                            <div className="space-y-0.5">
-                                {verification.transitions.map((trace) => {
-                                    const hasFailedEffects = trace.effects.some((e: EffectTrace) => e.status === 'failed');
-                                    return (
-                                        <div key={trace.id} className="flex items-start gap-2 text-xs font-mono py-0.5 border-b border-gray-800 last:border-0">
-                                            {/* Status dot */}
-                                            <span className={cn(
-                                                'mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0',
-                                                hasFailedEffects ? 'bg-red-500' : 'bg-green-500'
-                                            )} />
-                                            {/* Event + transition */}
-                                            <Badge variant="info" size="sm" className="flex-shrink-0">{trace.event}</Badge>
-                                            <span className="text-gray-400 flex-shrink-0">{trace.from} {'\u2192'} {trace.to}</span>
-                                            {/* Effects inline */}
-                                            <span className="flex flex-wrap gap-1 ml-1">
-                                                {trace.effects.map((eff: EffectTrace, i: number) => (
-                                                    <span key={i} className={cn(
-                                                        'px-1 rounded text-[10px]',
-                                                        eff.status === 'executed' ? 'bg-green-900/50 text-green-400' :
-                                                        eff.status === 'failed' ? 'bg-red-900/50 text-red-400' :
-                                                        'bg-yellow-900/50 text-yellow-400'
-                                                    )}>
-                                                        {eff.status === 'executed' ? '\u2713' : eff.status === 'failed' ? '\u2717' : '-'} {eff.type}
-                                                        {eff.args.length > 0 && <span className="text-gray-500 ml-0.5">{JSON.stringify(eff.args).slice(0, 30)}</span>}
-                                                    </span>
-                                                ))}
-                                            </span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
+            <VerifyModePanel
+                className={className}
+                failedChecks={failedChecks}
+                transitions={verification.transitions}
+                traitStates={traitStates}
+                serverCount={serverEntries.length}
+                localCount={localEntries.length}
+            />
         );
     }
 

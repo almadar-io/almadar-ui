@@ -33,6 +33,17 @@ export interface EffectTrace {
   durationMs?: number;
 }
 
+/** Captures what the server returned for a given event */
+export interface ServerResponseTrace {
+  orbitalName: string;
+  success: boolean;
+  clientEffects: number;
+  dataEntities: Record<string, number>;
+  emittedEvents: string[];
+  error?: string;
+  timestamp: number;
+}
+
 export interface TransitionTrace {
   id: string;
   traitName: string;
@@ -42,6 +53,8 @@ export interface TransitionTrace {
   guardExpression?: string;
   guardResult?: boolean;
   effects: EffectTrace[];
+  /** Server response data when event was forwarded to server bridge */
+  serverResponse?: ServerResponseTrace;
   timestamp: number;
 }
 
@@ -200,6 +213,50 @@ export function getTransitions(): TransitionTrace[] {
 
 export function getTransitionsForTrait(traitName: string): TransitionTrace[] {
   return getState().transitions.filter((t) => t.traitName === traitName);
+}
+
+/**
+ * Record a server response as a timeline entry.
+ * Creates a synthetic transition entry with type "server-response" to show
+ * what the server returned (clientEffects, data counts, emitted events).
+ */
+export function recordServerResponse(
+  orbitalName: string,
+  event: string,
+  response: Omit<ServerResponseTrace, "orbitalName" | "timestamp">,
+): void {
+  const serverResponse: ServerResponseTrace = {
+    ...response,
+    orbitalName,
+    timestamp: Date.now(),
+  };
+
+  const entry: TransitionTrace = {
+    id: `srv-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+    traitName: `server:${orbitalName}`,
+    from: "server",
+    to: "server",
+    event,
+    effects: [],
+    serverResponse,
+    timestamp: Date.now(),
+  };
+
+  getState().transitions.push(entry);
+  if (getState().transitions.length > MAX_TRANSITIONS) {
+    getState().transitions.shift();
+  }
+
+  if (!response.success && response.error) {
+    registerCheck(
+      `server-error-${entry.id}`,
+      `Server error for ${orbitalName}:${event}`,
+      "fail",
+      response.error,
+    );
+  }
+
+  notifyListeners();
 }
 
 // ============================================================================

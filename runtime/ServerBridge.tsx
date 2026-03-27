@@ -47,9 +47,23 @@ export interface ServerClientEffect {
   message?: string;
 }
 
+/** Metadata about what the server returned, for debugger logging */
+export interface ServerResponseMeta {
+  success: boolean;
+  clientEffects: number;
+  dataEntities: Record<string, number>;
+  emittedEvents: string[];
+  error?: string;
+}
+
+export interface SendEventResult {
+  effects: ServerClientEffect[];
+  meta: ServerResponseMeta;
+}
+
 export interface ServerBridgeContextValue {
   connected: boolean;
-  sendEvent: (orbitalName: string, event: string, payload?: Record<string, unknown>) => Promise<ServerClientEffect[]>;
+  sendEvent: (orbitalName: string, event: string, payload?: Record<string, unknown>) => Promise<SendEventResult>;
 }
 
 // ---------------------------------------------------------------------------
@@ -64,7 +78,8 @@ const ServerBridgeContext = createContext<ServerBridgeContextValue | null>(null)
 export function useServerBridge(): ServerBridgeContextValue {
   const ctx = useContext(ServerBridgeContext);
   if (!ctx) {
-    return { connected: false, sendEvent: async () => [] };
+    const emptyMeta: ServerResponseMeta = { success: false, clientEffects: 0, dataEntities: {}, emittedEvents: [] };
+    return { connected: false, sendEvent: async () => ({ effects: [], meta: emptyMeta }) };
   }
   return ctx;
 }
@@ -112,13 +127,14 @@ export function ServerBridgeProvider({
     }
   }, [serverUrl]);
 
-  // Send event to server orbital, returns enriched client effects
+  // Send event to server orbital, returns enriched client effects + response metadata
   const sendEvent = useCallback(async (
     orbitalName: string,
     event: string,
     payload?: Record<string, unknown>,
-  ): Promise<ServerClientEffect[]> => {
-    if (!connected) return [];
+  ): Promise<SendEventResult> => {
+    const emptyMeta: ServerResponseMeta = { success: false, clientEffects: 0, dataEntities: {}, emittedEvents: [] };
+    if (!connected) return { effects: [], meta: emptyMeta };
 
     try {
       const res = await fetch(`${serverUrl}/${orbitalName}/events`, {
@@ -129,9 +145,22 @@ export function ServerBridgeProvider({
       const result: OrbitalEventResponse = await res.json();
       const effects: ServerClientEffect[] = [];
 
-      if (result.success) {
-        const responseData = result.data || {};
+      // Build metadata from raw response
+      const responseData = result.data || {};
+      const dataEntities: Record<string, number> = {};
+      for (const [entityName, records] of Object.entries(responseData)) {
+        dataEntities[entityName] = Array.isArray(records) ? records.length : 0;
+      }
 
+      const meta: ServerResponseMeta = {
+        success: !!result.success,
+        clientEffects: result.clientEffects?.length ?? 0,
+        dataEntities,
+        emittedEvents: result.emittedEvents?.map((e) => e.event) ?? [],
+        error: result.error,
+      };
+
+      if (result.success) {
         // Parse and enrich clientEffects from server response.
         // Entity data and patterns arrive in the same response (no timing issues).
         if (result.clientEffects) {
@@ -162,10 +191,10 @@ export function ServerBridgeProvider({
         console.error('[ServerBridge] Event error:', result.error);
       }
 
-      return effects;
+      return { effects, meta };
     } catch (err) {
       console.error('[ServerBridge] Event send failed:', err);
-      return [];
+      return { effects: [], meta: { ...emptyMeta, error: err instanceof Error ? err.message : String(err) } };
     }
   }, [connected, serverUrl, eventBus]);
 

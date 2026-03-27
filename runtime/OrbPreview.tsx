@@ -28,7 +28,7 @@ import { EntitySchemaProvider } from './EntitySchemaContext';
 import { ServerBridgeProvider, useServerBridge } from './ServerBridge';
 import { enrichFromResponse } from './enrichFromResponse';
 import { getAllPages } from '../renderer/navigation';
-import { recordTransition, type EffectTrace } from '../lib/verificationRegistry';
+import { recordTransition, recordServerResponse, type EffectTrace } from '../lib/verificationRegistry';
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -113,7 +113,11 @@ function TraitInitializer({ traits, orbitalNames, onNavigate }: {
   const onEventProcessed = useCallback(async (event: string, payload?: Record<string, unknown>) => {
     if (!bridge.connected || !orbitalNames?.length) return;
     for (const name of orbitalNames) {
-      const effects = await bridge.sendEvent(name, event, payload);
+      const { effects, meta } = await bridge.sendEvent(name, event, payload);
+
+      // Record server response in verification timeline
+      recordServerResponse(name, event, meta);
+
       for (const eff of effects) {
         if (eff.type === 'render-ui' && eff.slot && eff.pattern) {
           slotsActions.setSlotPatterns(
@@ -157,7 +161,11 @@ function TraitInitializer({ traits, orbitalNames, onNavigate }: {
     initSentRef.current = true;
     (async () => {
       for (const name of orbitalNames) {
-        const effects = await bridge.sendEvent(name, 'INIT', {});
+        const { effects, meta } = await bridge.sendEvent(name, 'INIT', {});
+
+        // Record server response in verification timeline
+        recordServerResponse(name, 'INIT', meta);
+
         const effectTraces: EffectTrace[] = [
           { type: 'fetch', args: [], status: 'executed' as const },
           ...effects.map((eff) => ({
