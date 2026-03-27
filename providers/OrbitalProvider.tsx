@@ -18,6 +18,7 @@
 
 import React, { type ReactNode, useMemo } from 'react';
 import { ThemeProvider, type ThemeProviderProps, type ThemeDefinition } from '../context/ThemeContext';
+import { EntityStoreProvider } from './EntityStoreProvider';
 import { EventBusProvider } from './EventBusProvider';
 import { SelectionProvider } from './SelectionProvider';
 import { SuspenseConfigProvider, type SuspenseConfig } from '../components/organisms/UISlotRenderer';
@@ -138,15 +139,17 @@ export function OrbitalProvider({
   );
 
   const inner = (
-    <EventBusProvider debug={debug}>
-      <VerificationProvider enabled={verification}>
-        <SelectionProvider debug={debug}>
-          <SuspenseConfigProvider config={suspenseConfig}>
-            {children}
-          </SuspenseConfigProvider>
-        </SelectionProvider>
-      </VerificationProvider>
-    </EventBusProvider>
+    <EntityStoreProvider>
+      <EventBusProvider debug={debug}>
+        <VerificationProvider enabled={verification}>
+          <SelectionProvider debug={debug}>
+            <SuspenseConfigProvider config={suspenseConfig}>
+              {children}
+            </SuspenseConfigProvider>
+          </SelectionProvider>
+        </VerificationProvider>
+      </EventBusProvider>
+    </EntityStoreProvider>
   );
 
   if (skipTheme) {
