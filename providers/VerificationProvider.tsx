@@ -21,7 +21,6 @@ import React, { useEffect, useRef, type ReactNode } from 'react';
 import { useEventBus } from '../hooks/useEventBus';
 import {
   recordTransition,
-  recordServerResponse,
   bindEventBus,
   bindTraitStateGetter,
   registerCheck,
