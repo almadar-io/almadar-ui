@@ -122,7 +122,7 @@ function TraitInitializer({ traits, orbitalNames, onNavigate }: {
       // Advance EntityStore from server response data (ref operator support)
       // When persist/set/swap mutates a ref'd entity, the server includes fresh data
       // in meta.data. Advancing the store triggers useEntityRef subscribers.
-      const responseData = (meta as Record<string, unknown> | undefined)?.data as Record<string, unknown[]> | undefined;
+      const responseData = (meta as unknown as Record<string, unknown> | undefined)?.data as Record<string, unknown[]> | undefined;
       if (responseData) {
         for (const [entityType, records] of Object.entries(responseData)) {
           if (Array.isArray(records)) {
@@ -200,7 +200,7 @@ function TraitInitializer({ traits, orbitalNames, onNavigate }: {
 
         // Advance EntityStore from INIT response so useEntityRef subscribers
         // get entity data before slot patterns render.
-        const initResponseData = (meta as Record<string, unknown>)?.data as Record<string, unknown[]> | undefined;
+        const initResponseData = (meta as unknown as Record<string, unknown>)?.data as Record<string, unknown[]> | undefined;
         if (initResponseData) {
           for (const [entityType, records] of Object.entries(initResponseData)) {
             if (Array.isArray(records)) {
