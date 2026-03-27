@@ -336,8 +336,30 @@ export function OrbPreview({
     );
   }
 
+  // Intercept <a> clicks inside the preview to route through handleNavigate
+  // instead of causing real browser navigation. Capture phase ensures we
+  // run before any React handler or native navigation.
+  const containerRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || pages.length <= 1) return;
+    const handler = (e: MouseEvent) => {
+      const anchor = (e.target as HTMLElement).closest('a');
+      if (!anchor) return;
+      const href = anchor.getAttribute('href') ?? anchor.getAttribute('to') ?? '';
+      if (!href || href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('#')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+      handleNavigate(href);
+    };
+    el.addEventListener('click', handler, true);
+    return () => el.removeEventListener('click', handler, true);
+  }, [pages, handleNavigate]);
+
   return (
     <Box
+      ref={containerRef}
       className={`overflow-auto border border-[var(--color-border)] rounded-[var(--radius-md)] ${className ?? ''}`}
       style={{ height }}
     >
