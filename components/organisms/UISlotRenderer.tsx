@@ -827,10 +827,23 @@ function SlotContentRenderer({
     // Recursively render any named props that are pattern configs
     const renderedProps = renderPatternProps(restProps, onDismiss);
 
-    // Replace entity string with reactive store data
-    const finalProps = entityType
-      ? { ...renderedProps, entity: storeData }
-      : renderedProps;
+    // Replace entity string with reactive store data.
+    // Auto-generate fields from entity records when not specified — this is what
+    // the compiled app gets from the compiler, but the runtime needs to derive
+    // at render time since the schema pattern may omit field definitions.
+    let finalProps: Record<string, unknown>;
+    if (entityType) {
+      finalProps = { ...renderedProps, entity: storeData };
+      if (!finalProps.fields && !finalProps.columns && storeData.length > 0) {
+        const sample = storeData[0] as Record<string, unknown>;
+        if (sample && typeof sample === 'object') {
+          const keys = Object.keys(sample).filter((k) => k !== 'id' && k !== '_id');
+          finalProps.fields = keys.map((k, i) => ({ name: k, variant: i === 0 ? 'h4' : 'body' }));
+        }
+      }
+    } else {
+      finalProps = renderedProps;
+    }
 
     return (
       <Box

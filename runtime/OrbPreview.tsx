@@ -98,7 +98,7 @@ function SlotBridge() {
  *
  * When `orbitalNames` is provided (server bridge mode), events are forwarded
  * to the server after local processing. Server response provides enriched
- * patterns with entity data injected via enrichFromResponse.
+ * patterns with entity data resolved reactively via useEntityRef.
  */
 function TraitInitializer({ traits, orbitalNames, onNavigate }: {
   traits: unknown[];
