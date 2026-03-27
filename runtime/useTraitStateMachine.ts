@@ -91,7 +91,7 @@ function normalizeEventKey(eventKey: string): string {
 
 export interface UseTraitStateMachineOptions {
     /** Callback invoked after each event is processed (for server forwarding) */
-    onEventProcessed?: (eventKey: string, payload?: Record<string, unknown>) => void;
+    onEventProcessed?: (eventKey: string, payload?: Record<string, unknown>) => void | Promise<void>;
     /** Router navigate function for navigate effects */
     navigate?: (path: string, params?: Record<string, unknown>) => void;
     /** Notification function for notify effects */
@@ -533,9 +533,10 @@ export function useTraitStateMachine(
         }
 
         // Forward event to server (dual execution model)
+        // Await so server response (re-fetched data, re-rendered UI) is applied before continuing
         const onEventProcessed = optionsRef.current?.onEventProcessed;
         if (onEventProcessed) {
-            onEventProcessed(normalizedEvent, payload);
+            await onEventProcessed(normalizedEvent, payload);
         }
     }, [entities, eventBus]);
 
