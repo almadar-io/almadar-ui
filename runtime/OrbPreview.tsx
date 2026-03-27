@@ -277,8 +277,8 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate }: {
 // ---------------------------------------------------------------------------
 
 export interface OrbPreviewProps {
-  /** The orbital schema. Accepts a JSON string or a parsed object. */
-  schema: string | Record<string, unknown>;
+  /** The orbital schema. Accepts a JSON string or an OrbitalSchema object. */
+  schema: string | import('@almadar/core').OrbitalSchema;
   /** Mock entity data keyed by entity name. */
   mockData?: Record<string, unknown[]>;
   /** Preview container height. Default: '400px'. */
