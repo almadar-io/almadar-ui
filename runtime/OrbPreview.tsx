@@ -204,9 +204,15 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate }: {
 }) {
   const { traits, allEntities, ir } = useResolvedSchema(schema as Parameters<typeof useResolvedSchema>[0], pageName);
 
-  // For multi-page schemas, collect traits from ALL pages
+  // When a specific page is selected (via navigation), use only that page's
+  // traits. Otherwise, for single-page schemas or initial load, collect from
+  // all pages so every trait gets an INIT.
   const allPageTraits = useMemo(() => {
+    // If a specific page was navigated to, use its traits only
+    if (pageName && traits.length > 0) return traits;
+    // For single-page schemas, just use the resolved traits
     if (!ir?.pages || ir.pages.size <= 1) return traits;
+    // Initial load: collect traits from all pages
     const combined: unknown[] = [];
     const seen = new Set<string>();
     for (const page of ir.pages.values()) {
@@ -221,7 +227,7 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate }: {
       }
     }
     return combined.length > 0 ? combined : traits;
-  }, [ir, traits]);
+  }, [ir, traits, pageName]);
 
   // Extract orbital names from schema for server event forwarding
   const orbitalNames = useMemo(() => {
