@@ -52,6 +52,10 @@ export { AvlEmitListen, type AvlEmitListenProps } from '../components/molecules/
 export { AvlSlotMap, type AvlSlotMapProps, type AvlSlotMapSlot } from '../components/molecules/avl';
 export { AvlExprTree, type AvlExprTreeProps, type AvlExprTreeNode } from '../components/molecules/avl';
 
+export { AvlBehaviorGlyph, type AvlBehaviorGlyphProps, type BehaviorLevel, type GlyphSize, type BehaviorGlyphChild, type BehaviorGlyphConnection, DOMAIN_COLORS } from '../components/molecules/avl';
+export { AvlTransitionLane, type AvlTransitionLaneProps } from '../components/molecules/avl';
+export { AvlSwimLane, type AvlSwimLaneProps } from '../components/molecules/avl';
+
 // Layout utilities
 export { ringPositions, arcPath, radialPositions, gridPositions, curveControlPoint } from '../components/molecules/avl';
 
