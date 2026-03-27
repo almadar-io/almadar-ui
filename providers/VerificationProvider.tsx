@@ -21,6 +21,7 @@ import React, { useEffect, useRef, type ReactNode } from 'react';
 import { useEventBus } from '../hooks/useEventBus';
 import {
   recordTransition,
+  recordServerResponse,
   bindEventBus,
   bindTraitStateGetter,
   registerCheck,
@@ -172,13 +173,38 @@ export function VerificationProvider({
         pendingRef.current.delete(key);
 
         const newState = (payload['newState'] ?? payload['state'] ?? 'unknown') as string;
-        const effects: EffectTrace[] = Array.isArray(payload['clientEffects'])
-          ? (payload['clientEffects'] as Array<Record<string, unknown>>).map((e) => ({
-              type: String(e['type'] ?? 'unknown'),
-              args: Array.isArray(e['args']) ? e['args'] : [],
-              status: 'executed' as const,
-            }))
+
+        // Extract client effects from payload
+        const clientEffectsArr = Array.isArray(payload['clientEffects'])
+          ? payload['clientEffects'] as Array<Record<string, unknown>>
           : [];
+        const effects: EffectTrace[] = clientEffectsArr.map((e) => ({
+          type: String(e['type'] ?? 'unknown'),
+          args: Array.isArray(e['args']) ? e['args'] : [],
+          status: 'executed' as const,
+        }));
+
+        // Extract effectResults (persist, fetch, call-service results from server)
+        const effectResults = Array.isArray(payload['effectResults'])
+          ? payload['effectResults'] as Array<Record<string, unknown>>
+          : [];
+        for (const er of effectResults) {
+          effects.push({
+            type: String(er['type'] ?? er['effect'] ?? 'server-effect'),
+            args: [er['entity'] ?? er['service'] ?? ''].filter(Boolean),
+            status: er['error'] ? 'failed' as const : 'executed' as const,
+            error: er['error'] as string | undefined,
+          });
+        }
+
+        // Build data entity counts from response data
+        const dataEntities: Record<string, number> = {};
+        const responseData = payload['data'] as Record<string, unknown[]> | undefined;
+        if (responseData && typeof responseData === 'object') {
+          for (const [entityName, records] of Object.entries(responseData)) {
+            dataEntities[entityName] = Array.isArray(records) ? records.length : 0;
+          }
+        }
 
         recordTransition({
           traitName: parsed.traitName,
@@ -186,6 +212,14 @@ export function VerificationProvider({
           to: newState,
           event: parsed.event,
           effects,
+          serverResponse: {
+            orbitalName: parsed.traitName,
+            success: true,
+            clientEffects: clientEffectsArr.length,
+            dataEntities,
+            emittedEvents: [],
+            timestamp: Date.now(),
+          },
           timestamp: Date.now(),
         });
       } else if (parsed.kind === 'error' && parsed.event) {
@@ -207,6 +241,15 @@ export function VerificationProvider({
             status: 'failed',
             error: errorMsg,
           }],
+          serverResponse: {
+            orbitalName: parsed.traitName,
+            success: false,
+            clientEffects: 0,
+            dataEntities: {},
+            emittedEvents: [],
+            error: errorMsg,
+            timestamp: Date.now(),
+          },
           timestamp: Date.now(),
         });
       }
