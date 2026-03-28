@@ -68,6 +68,8 @@ export interface SlotContent {
   onDismiss?: () => void;
   /** Source trait that rendered this content */
   sourceTrait?: string;
+  /** Stable node ID from the schema pattern tree (for edit mode overlay targeting) */
+  nodeId?: string;
 }
 
 /**

@@ -708,7 +708,7 @@ interface SlotContentRendererProps {
  */
 function renderPatternChildren(
   children:
-    | Array<{ type: string; props?: Record<string, unknown> }>
+    | Array<{ type: string; props?: Record<string, unknown>; _id?: string }>
     | undefined,
   onDismiss: () => void,
   parentId = "root",
@@ -726,6 +726,7 @@ function renderPatternChildren(
       pattern: child.type,
       props: child.props ?? {},
       priority: 0,
+      nodeId: child._id,
     };
 
     return (
@@ -850,6 +851,8 @@ function SlotContentRenderer({
         className="slot-content"
         data-pattern={content.pattern}
         data-id={content.id}
+        data-node-id={content.nodeId}
+        data-source-trait={content.sourceTrait}
       >
         <PatternComponent {...finalProps}>
           {renderedChildren}
@@ -864,6 +867,8 @@ function SlotContentRenderer({
       className="slot-content"
       data-pattern={content.pattern}
       data-id={content.id}
+      data-node-id={content.nodeId}
+      data-source-trait={content.sourceTrait}
     >
       {(content.props.children as React.ReactNode) ?? (
         <Box className="p-4 text-sm text-muted-foreground border border-dashed border-border rounded">
