@@ -5,7 +5,7 @@ import { withI18n, i18nGlobalTypes } from './decorators/withI18n';
 // Import theme CSS files
 import '../themes/index.css';
 import '../index.css';
-// React Flow CSS for OrbitalFlow stories
+// React Flow CSS for AVL FlowCanvas
 import '@xyflow/react/dist/style.css';
 
 /**

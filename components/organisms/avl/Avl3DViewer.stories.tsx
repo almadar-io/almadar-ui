@@ -210,7 +210,10 @@ const meta: Meta<typeof Avl3DViewer> = {
   parameters: {
     layout: 'fullscreen',
     backgrounds: { default: 'dark' },
+    // Disable autodocs to prevent R3F hooks from running outside Canvas
+    docs: { disable: true },
   },
+  tags: [],
   argTypes: {
     animated: { control: 'boolean' },
     width: { control: 'number' },

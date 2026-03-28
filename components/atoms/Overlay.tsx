@@ -38,7 +38,7 @@ export const Overlay: React.FC<OverlayProps> = ({
   return (
     <div
       className={cn(
-        "fixed inset-0 z-40 bg-black/50",
+        "fixed inset-0 z-40 bg-black/60",
         blur && "backdrop-blur-sm",
         className,
       )}

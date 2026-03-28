@@ -38,10 +38,10 @@ export interface ModalProps {
 }
 
 const sizeClasses: Record<ModalSize, string> = {
-  sm: "max-w-md",
-  md: "max-w-lg",
-  lg: "max-w-2xl",
-  xl: "max-w-4xl",
+  sm: "max-w-md min-w-[400px]",
+  md: "max-w-2xl min-w-[520px]",
+  lg: "max-w-3xl min-w-[600px]",
+  xl: "max-w-5xl min-w-[700px]",
   full: "max-w-full mx-4",
 };
 
@@ -123,10 +123,10 @@ export const Modal: React.FC<ModalProps> = ({
         className="z-40"
       />
 
-      {/* Desktop: centered dialog. Mobile (<640px): bottom sheet */}
+      {/* Desktop: dialog positioned in upper third. Mobile (<640px): bottom sheet */}
       <div className={cn(
         "fixed inset-0 z-50 pointer-events-none",
-        "flex items-center justify-center p-4",
+        "flex items-start justify-center px-4 pb-4 pt-[10vh]",
         "max-sm:items-end max-sm:p-0",
       )}>
         <Box

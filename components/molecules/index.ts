@@ -115,5 +115,3 @@ export { ShowcaseCard, type ShowcaseCardProps } from './ShowcaseCard';
 export { GeometricPattern, type GeometricPatternProps } from './GeometricPattern';
 export { EdgeDecoration, type EdgeDecorationProps, type EdgeVariant, type EdgeSide } from './EdgeDecoration';
 
-// Flow molecules (React Flow custom nodes and edges)
-export * from './flow';

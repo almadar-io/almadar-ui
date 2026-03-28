@@ -161,7 +161,7 @@ function VerifyModePanel({
         <div
             className={cn(
                 'runtime-debugger runtime-debugger--verify',
-                'fixed bottom-0 left-0 right-0 z-[9999] h-[35vh] flex flex-col bg-gray-900 text-white border-t-2 border-cyan-500',
+                'fixed bottom-0 left-0 right-0 z-30 h-[25vh] flex flex-col bg-gray-900 text-white border-t-2 border-cyan-500',
                 className
             )}
             data-testid="debugger-verify"
@@ -403,7 +403,7 @@ export function RuntimeDebugger({
         <div
             className={cn(
                 'runtime-debugger',
-                'fixed z-[9999]',
+                'fixed z-30',
                 positionClasses[position],
                 isCollapsed ? 'runtime-debugger--collapsed' : 'runtime-debugger--expanded',
                 className

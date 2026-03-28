@@ -9,8 +9,6 @@ const __dirname = dirname(__filename);
 const config: StorybookConfig = {
   stories: [
     "../components/**/*.stories.@(js|jsx|ts|tsx)",
-    // Studio V2 builder design system organisms + templates
-    "../../../apps/builder/packages/client/design-system/**/*.stories.@(js|jsx|ts|tsx)",
   ],
   addons: [
     "@storybook/addon-links",
@@ -54,9 +52,9 @@ const config: StorybookConfig = {
         }),
       ],
       resolve: {
-        // Important for pnpm monorepos with symlinks
         alias: {
-          '@design-system': path.resolve(__dirname, '../../../apps/builder/packages/client/design-system'),
+          // Resolve workspace packages for stories that import @almadar/std
+          '@almadar/std': path.resolve(__dirname, '../../almadar-std'),
         },
         // Dedupe these packages to fix version conflicts
         dedupe: [
@@ -72,7 +70,6 @@ const config: StorybookConfig = {
           allow: [
             searchForWorkspaceRoot(projectRoot),
             path.resolve(workspaceRoot, "packages"),
-            path.resolve(workspaceRoot, "apps"),
             path.resolve(workspaceRoot, "node_modules"),
           ],
         },
@@ -100,7 +97,7 @@ const config: StorybookConfig = {
           "clsx",
           // Storybook addons — pre-bundle to avoid runtime re-optimization
           "@storybook/addon-links",
-          // React Flow — needed by OrbitalFlow organism
+          // React Flow — needed by AVL FlowCanvas
           "@xyflow/react",
           // Include refractor for proper CommonJS -> ESM conversion
           "refractor",

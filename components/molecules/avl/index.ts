@@ -9,6 +9,27 @@ export { AvlSwimLane, type AvlSwimLaneProps } from './AvlSwimLane';
 export { AvlBehaviorGlyph, type AvlBehaviorGlyphProps, type BehaviorLevel, type GlyphSize, type BehaviorGlyphChild, type BehaviorGlyphConnection, DOMAIN_COLORS } from './AvlBehaviorGlyph';
 export { ringPositions, arcPath, radialPositions, gridPositions, curveControlPoint } from './avl-layout';
 
+// V3: Canvas types + utilities
+export { type ZoomBand, type AvlNodeData, type AvlEdgeData, type AvlEdgeKind, ZOOM_BAND_THRESHOLDS } from './avl-canvas-types';
+export { computeZoomBand, zoomProgress, useZoomBand, ZoomBandContext } from './avl-zoom-band';
+export { schemaToFlowGraph } from './avl-flow-converter';
+export { computeTraitLayout, edgePath, stateWidth, STATE_H, type LayoutNode, type LayoutEdge, type ElkLayout } from './avl-elk-layout';
+
+// V3: React Flow node components
+export { SystemNode, type SystemNodeProps } from './SystemNode';
+export { MiniStateMachine, type MiniStateMachineProps } from './MiniStateMachine';
+export { ModuleCard, type ModuleCardProps } from './ModuleCard';
+export { BehaviorView, type BehaviorViewProps } from './BehaviorView';
+export { DetailView, type DetailViewProps } from './DetailView';
+export { AvlOrbitalNode } from './AvlOrbitalNode';
+
+// V3: React Flow edge components
+export { AvlTransitionEdge, type AvlTransitionEdgeData, type AvlTransitionFlowEdge } from './AvlTransitionEdge';
+export { AvlEventWireEdge, type AvlEventWireEdgeData, type AvlEventWireFlowEdge } from './AvlEventWireEdge';
+export { AvlBackwardEdge } from './AvlBackwardEdge';
+export { AvlPageEdge } from './AvlPageEdge';
+export { AvlBindingEdge } from './AvlBindingEdge';
+
 // 3D Molecules (Three.js dependent - import via game/three barrel for SSR safety)
 export { Avl3DOrbitalNode, type Avl3DOrbitalNodeProps } from './Avl3DOrbitalNode';
 export { Avl3DCrossWire, type Avl3DCrossWireProps } from './Avl3DCrossWire';

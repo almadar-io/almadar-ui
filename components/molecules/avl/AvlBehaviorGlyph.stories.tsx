@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { AvlBehaviorGlyph } from './AvlBehaviorGlyph';
 
 const meta: Meta<typeof AvlBehaviorGlyph> = {
-  title: 'AVL/BehaviorGlyph',
+  title: 'Avl/Molecules/AvlBehaviorGlyph',
   component: AvlBehaviorGlyph,
   parameters: {
     layout: 'centered',

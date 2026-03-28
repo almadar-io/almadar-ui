@@ -154,6 +154,7 @@
   },
   "devDependencies": {
     "@almadar/eslint-plugin": ">=2.3.0",
+    "@almadar/std": ">=3.6.0",
     "@react-three/postprocessing": "3.0.4",
     "@storybook/addon-docs": "^10.2.6",
     "@storybook/addon-links": "^10.2.6",

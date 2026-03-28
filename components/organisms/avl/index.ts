@@ -1,17 +1,28 @@
 /**
  * AVL Organisms - Interactive orbital visualizations.
  *
+ * V3: FlowCanvas is the primary organism. AvlCosmicZoom delegates to it.
+ *
  * @packageDocumentation
  */
 
+// Primary V3 organisms
+export { FlowCanvas, type FlowCanvasProps } from './FlowCanvas';
+export { ZoomBreadcrumb, type ZoomBreadcrumbProps } from './ZoomBreadcrumb';
+export { ZoomLegend, type ZoomLegendProps } from './ZoomLegend';
+
+// Facade (preserves V2 interface)
 export { AvlCosmicZoom, type AvlCosmicZoomProps } from './AvlCosmicZoom';
-export { AvlApplicationScene, type AvlApplicationSceneProps } from './AvlApplicationScene';
-export { AvlOrbitalScene, type AvlOrbitalSceneProps } from './AvlOrbitalScene';
+
+// Retained scene renderers (used by BehaviorView and DetailView internally)
 export { AvlTraitScene, type AvlTraitSceneProps } from './AvlTraitScene';
 export { AvlTransitionScene, type AvlTransitionSceneProps } from './AvlTransitionScene';
+
+// Utilities
 export { AvlClickTarget, type AvlClickTargetProps } from './AvlClickTarget';
 export { AvlLegend, type AvlLegendProps } from './AvlLegend';
 
+// Parser
 export {
   parseApplicationLevel,
   parseOrbitalLevel,
@@ -25,6 +36,7 @@ export {
   type ExprTreeNode,
 } from './avl-schema-parser';
 
+// Zoom state
 export {
   zoomReducer,
   initialZoomState,

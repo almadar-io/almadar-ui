@@ -1,8 +1,8 @@
 /**
  * @almadar/ui/avl
  *
- * Almadar Visual Language (AVL) - Formal visual notation for .orb constructs.
- * Atoms render <g> elements for composition. Molecules render full <svg>.
+ * Almadar Visual Language (AVL) — Formal visual notation for .orb constructs.
+ * V3: Unified with React Flow. AVL primitives render inside React Flow nodes.
  */
 
 // AVL Atoms - Tier 1: Structural Primitives
@@ -44,14 +44,13 @@ export { AVL_OPERATOR_COLORS, AVL_FIELD_TYPE_SHAPES } from '../components/atoms/
 export type { StateRole, EffectCategory } from '../components/atoms/avl';
 export { STATE_COLORS, EFFECT_CATEGORY_COLORS, EFFECT_TYPE_TO_CATEGORY, CONNECTION_COLORS, getStateRole } from '../components/atoms/avl';
 
-// AVL Molecules
+// AVL Molecules (SVG composites)
 export { AvlStateMachine, type AvlStateMachineProps, type AvlStateMachineState, type AvlStateMachineTransition } from '../components/molecules/avl';
 export { AvlOrbitalUnit, type AvlOrbitalUnitProps, type AvlOrbitalUnitTrait, type AvlOrbitalUnitPage } from '../components/molecules/avl';
 export { AvlClosedCircuit, type AvlClosedCircuitProps, type AvlClosedCircuitState, type AvlClosedCircuitTransition } from '../components/molecules/avl';
 export { AvlEmitListen, type AvlEmitListenProps } from '../components/molecules/avl';
 export { AvlSlotMap, type AvlSlotMapProps, type AvlSlotMapSlot } from '../components/molecules/avl';
 export { AvlExprTree, type AvlExprTreeProps, type AvlExprTreeNode } from '../components/molecules/avl';
-
 export { AvlBehaviorGlyph, type AvlBehaviorGlyphProps, type BehaviorLevel, type GlyphSize, type BehaviorGlyphChild, type BehaviorGlyphConnection, DOMAIN_COLORS } from '../components/molecules/avl';
 export { AvlTransitionLane, type AvlTransitionLaneProps } from '../components/molecules/avl';
 export { AvlSwimLane, type AvlSwimLaneProps } from '../components/molecules/avl';
@@ -59,14 +58,39 @@ export { AvlSwimLane, type AvlSwimLaneProps } from '../components/molecules/avl'
 // Layout utilities
 export { ringPositions, arcPath, radialPositions, gridPositions, curveControlPoint } from '../components/molecules/avl';
 
-// AVL Organisms - Interactive Cosmic Zoom
+// V3: Canvas types
+export { type ZoomBand, type AvlNodeData, type AvlEdgeData, ZOOM_BAND_THRESHOLDS } from '../components/molecules/avl/avl-canvas-types';
+export { computeZoomBand, zoomProgress, useZoomBand, ZoomBandContext } from '../components/molecules/avl/avl-zoom-band';
+export { schemaToFlowGraph } from '../components/molecules/avl/avl-flow-converter';
+
+// V3: React Flow node types
+export { SystemNode } from '../components/molecules/avl/SystemNode';
+export { ModuleCard } from '../components/molecules/avl/ModuleCard';
+export { MiniStateMachine } from '../components/molecules/avl/MiniStateMachine';
+export { BehaviorView } from '../components/molecules/avl/BehaviorView';
+export { DetailView } from '../components/molecules/avl/DetailView';
+export { AvlOrbitalNode } from '../components/molecules/avl/AvlOrbitalNode';
+
+// V3: React Flow edge types
+export { AvlTransitionEdge, type AvlTransitionEdgeData } from '../components/molecules/avl/AvlTransitionEdge';
+export { AvlEventWireEdge, type AvlEventWireEdgeData } from '../components/molecules/avl/AvlEventWireEdge';
+export { AvlBackwardEdge } from '../components/molecules/avl/AvlBackwardEdge';
+export { AvlPageEdge } from '../components/molecules/avl/AvlPageEdge';
+export { AvlBindingEdge } from '../components/molecules/avl/AvlBindingEdge';
+
+// V3: ELK layout (shared)
+export { computeTraitLayout, edgePath, type LayoutNode, type LayoutEdge, type ElkLayout } from '../components/molecules/avl/avl-elk-layout';
+
+// AVL Organisms — Interactive Cosmic Zoom
 export {
+  FlowCanvas,
+  type FlowCanvasProps,
+  ZoomBreadcrumb,
+  type ZoomBreadcrumbProps,
+  ZoomLegend,
+  type ZoomLegendProps,
   AvlCosmicZoom,
   type AvlCosmicZoomProps,
-  AvlApplicationScene,
-  type AvlApplicationSceneProps,
-  AvlOrbitalScene,
-  type AvlOrbitalSceneProps,
   AvlTraitScene,
   type AvlTraitSceneProps,
   AvlTransitionScene,

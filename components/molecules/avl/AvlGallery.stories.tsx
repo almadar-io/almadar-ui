@@ -83,7 +83,7 @@ const Gallery: React.FC<{ color?: string }> = ({ color: _color }) => {
 };
 
 const meta: Meta<typeof Gallery> = {
-  title: 'Avl/Gallery',
+  title: 'Avl/Molecules/AvlGallery',
   component: Gallery,
   parameters: { layout: 'centered', backgrounds: { default: 'dark' } },
   tags: ['autodocs'],
