@@ -198,11 +198,10 @@ function renderContainedPortal(
 
   switch (slot) {
     case "modal":
-      // Skip the Modal component (it uses fixed positioning internally).
-      // Build the dialog chrome inline with absolute positioning.
       return (
         <Box
-          className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-auto"
+          className="absolute inset-0 z-50 flex items-start justify-center overflow-auto"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)', paddingTop: '10%' }}
           onClick={onDismiss}
         >
           <Box
@@ -210,7 +209,8 @@ function renderContainedPortal(
             border
             shadow="lg"
             rounded="md"
-            className="pointer-events-auto max-w-[calc(100%-2rem)] max-h-full overflow-auto flex flex-col"
+            className="pointer-events-auto w-full overflow-auto flex flex-col"
+            style={{ minWidth: '520px', maxWidth: '700px', maxHeight: '80%' }}
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
             {content.props.title ? (
@@ -235,11 +235,10 @@ function renderContainedPortal(
       );
 
     case "drawer":
-      // Skip the Drawer component (it uses fixed positioning internally).
-      // Build drawer chrome inline with absolute positioning.
       return (
         <Box
-          className="absolute inset-0 z-50 bg-black/50 overflow-hidden"
+          className="absolute inset-0 z-50 overflow-hidden"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
           onClick={onDismiss}
         >
           <Box
@@ -288,7 +287,8 @@ function renderContainedPortal(
     case "overlay":
       return (
         <Box
-          className="absolute inset-0 z-50 bg-foreground/50 flex items-center justify-center overflow-auto"
+          className="absolute inset-0 z-50 flex items-center justify-center overflow-auto"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
           onClick={onDismiss}
         >
           <Box className="max-h-full overflow-auto" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
@@ -940,13 +940,14 @@ export function UISlotRenderer({
 
   const content = (
     <Box className={cn(
-      "ui-slot-renderer",
-      isContained && "relative",
+      "ui-slot-renderer relative min-h-full",
       className,
     )}>
-      {/* Layout slots */}
-      <UISlotComponent slot="sidebar" className="ui-slot-sidebar" />
-      <UISlotComponent slot="main" className="ui-slot-main flex-1" />
+      {/* Layout slots: sidebar + main in a flex row */}
+      <Box className="flex min-h-full">
+        <UISlotComponent slot="sidebar" className="ui-slot-sidebar min-w-0 shrink-0" />
+        <UISlotComponent slot="main" className="ui-slot-main flex-1 min-h-[200px]" />
+      </Box>
 
       {/* Portal slots */}
       <UISlotComponent slot="modal" portal />
@@ -955,29 +956,29 @@ export function UISlotRenderer({
       <UISlotComponent slot="center" portal />
       <UISlotComponent slot="toast" portal position="top-right" />
 
-      {/* HUD slots (optional, for games) */}
+      {/* HUD slots (optional, for games) - absolutely positioned over content */}
       {includeHud && (
         <>
           <UISlotComponent
             slot="hud-top"
             className={isContained
-              ? "sticky top-0 inset-x-0 z-40"
+              ? "absolute top-0 left-0 right-0 z-40"
               : "fixed top-0 inset-x-0 z-40"}
           />
           <UISlotComponent
             slot="hud-bottom"
             className={isContained
-              ? "sticky bottom-0 inset-x-0 z-40"
+              ? "absolute bottom-0 left-0 right-0 z-40"
               : "fixed bottom-0 inset-x-0 z-40"}
           />
         </>
       )}
 
-      {/* Floating slot (optional) */}
+      {/* Floating slot (optional) - absolutely positioned */}
       {includeFloating && (
         <UISlotComponent
           slot="floating"
-          className={isContained ? "absolute z-50" : "fixed z-50"}
+          className={isContained ? "absolute top-2 left-2 z-50" : "fixed z-50"}
           draggable
         />
       )}

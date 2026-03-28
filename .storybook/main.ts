@@ -9,6 +9,7 @@ const __dirname = dirname(__filename);
 const config: StorybookConfig = {
   stories: [
     "../components/**/*.stories.@(js|jsx|ts|tsx)",
+    "../runtime/**/*.stories.@(js|jsx|ts|tsx)",
   ],
   addons: [
     "@storybook/addon-links",
