@@ -165,7 +165,7 @@ function VerifyModePanel({
                 className
             )}
             data-testid="debugger-verify"
-            style={{ zIndex: 30, height: '25vh' }}
+            style={{ zIndex: 99999, height: '25vh' }}
         >
             {/* Status bar */}
             <div className="px-3 py-1.5 flex items-center gap-3 text-xs font-mono border-b border-gray-700 flex-shrink-0">
@@ -410,7 +410,7 @@ export function RuntimeDebugger({
                 className
             )}
             data-testid={isCollapsed ? 'debugger-collapsed' : 'debugger-expanded'}
-            style={{ zIndex: 30 }}
+            style={{ zIndex: 99999 }}
         >
             {isCollapsed ? (
                 <Button
