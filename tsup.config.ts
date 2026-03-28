@@ -112,18 +112,4 @@ export default defineConfig([
     noExternal: ['clsx', 'tailwind-merge'],
     banner: { js: '"use client";' },
   },
-  // Illustrations build: composable SVG visual language
-  {
-    entry: { 'illustrations/index': 'illustrations/index.ts' },
-    format: ['esm', 'cjs'],
-    dts: true,
-    outDir: 'dist',
-    clean: true,
-    sourcemap: false,
-    splitting: false,
-    treeshake: true,
-    external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react'],
-    noExternal: ['clsx', 'tailwind-merge'],
-    banner: { js: '"use client";' },
-  },
 ]);
