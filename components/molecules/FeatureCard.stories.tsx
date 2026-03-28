@@ -3,7 +3,7 @@ import { FeatureCard } from './FeatureCard';
 import { HStack } from '../atoms/Stack';
 
 const meta: Meta<typeof FeatureCard> = {
-  title: 'Molecules/FeatureCard',
+  title: 'Marketing/Molecules/FeatureCard',
   component: FeatureCard,
   parameters: {
     layout: 'centered',

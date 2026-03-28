@@ -6,7 +6,7 @@ import { Box } from '../atoms/Box';
 import { Typography } from '../atoms/Typography';
 
 const meta: Meta<typeof FormSectionHeader> = {
-  title: 'Molecules/FormSectionHeader',
+  title: 'Core/Molecules/FormSectionHeader',
   component: FormSectionHeader,
   parameters: {
     layout: 'padded',

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { BookNavBar } from './BookNavBar';
 
 const meta: Meta<typeof BookNavBar> = {
-  title: 'Organisms/Book/BookNavBar',
+  title: 'Marketing/Organisms/Book/BookNavBar',
   component: BookNavBar,
   parameters: { layout: 'fullscreen' },
 };

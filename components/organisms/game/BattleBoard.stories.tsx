@@ -156,7 +156,7 @@ const MOCK_CONTROLLED_ENTITY: BattleEntity = {
 // =============================================================================
 
 const meta: Meta<typeof UncontrolledBattleBoard> = {
-    title: 'Game/BattleBoard',
+    title: 'Game/Organisms/BattleBoard',
     component: UncontrolledBattleBoard,
     parameters: {
         layout: 'fullscreen',

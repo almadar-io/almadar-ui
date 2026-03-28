@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Toast } from './Toast';
 
 const meta: Meta<typeof Toast> = {
-    title: 'Molecules/Toast',
+    title: 'Core/Molecules/Toast',
     component: Toast,
     parameters: {
         layout: 'centered',

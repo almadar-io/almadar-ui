@@ -8,7 +8,7 @@ import { Typography } from '../atoms/Typography';
 import { VStack } from '../atoms/Stack';
 
 const meta: Meta<typeof PullToRefresh> = {
-  title: 'Molecules/PullToRefresh',
+  title: 'Core/Molecules/PullToRefresh',
   component: PullToRefresh,
   parameters: {
     layout: 'padded',

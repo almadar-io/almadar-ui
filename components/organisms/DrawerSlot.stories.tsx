@@ -7,7 +7,7 @@ import { Button } from '../atoms/Button';
 import { Input } from '../atoms/Input';
 
 const meta: Meta<typeof DrawerSlot> = {
-  title: 'Organisms/DrawerSlot',
+  title: 'Core/Organisms/DrawerSlot',
   component: DrawerSlot,
   parameters: { layout: 'fullscreen' },
   tags: ['autodocs'],

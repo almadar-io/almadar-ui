@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ProgressBar } from './ProgressBar';
 
 const meta: Meta<typeof ProgressBar> = {
-    title: 'Atoms/ProgressBar',
+    title: 'Core/Atoms/ProgressBar',
     component: ProgressBar,
     parameters: {
         layout: 'centered',

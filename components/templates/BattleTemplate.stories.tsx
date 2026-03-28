@@ -76,7 +76,7 @@ const MOCK_UNITS: BattleUnit[] = [
 // =============================================================================
 
 const meta: Meta<typeof BattleTemplate> = {
-    title: 'Templates/Game/BattleTemplate',
+    title: 'Game/Templates/BattleTemplate',
     component: BattleTemplate,
     parameters: {
         layout: 'fullscreen',

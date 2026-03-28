@@ -3,7 +3,7 @@ import { CodeExample } from './CodeExample';
 import { VStack } from '../atoms/Stack';
 
 const meta: Meta<typeof CodeExample> = {
-  title: 'Molecules/CodeExample',
+  title: 'Core/Molecules/CodeExample',
   component: CodeExample,
   parameters: {
     layout: 'centered',

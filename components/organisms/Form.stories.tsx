@@ -8,7 +8,7 @@ import { Alert } from '../molecules/Alert';
 import { useEventBus } from '../../hooks/useEventBus';
 
 const meta: Meta<typeof Form> = {
-  title: 'Organisms/Form',
+  title: 'Core/Organisms/Form',
   component: Form,
   parameters: {
     layout: 'padded',

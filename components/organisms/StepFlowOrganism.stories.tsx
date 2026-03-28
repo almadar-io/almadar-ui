@@ -54,7 +54,7 @@ const MOCK_STEPS_VERTICAL: StepEntity[] = [
 ];
 
 const meta: Meta<typeof StepFlowOrganism> = {
-  title: 'Organisms/StepFlowOrganism',
+  title: 'Marketing/Organisms/StepFlowOrganism',
   component: StepFlowOrganism,
   parameters: {
     layout: 'padded',

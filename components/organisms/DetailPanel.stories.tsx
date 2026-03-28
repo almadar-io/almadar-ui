@@ -5,7 +5,7 @@ import { DetailPanel } from './DetailPanel';
 import { Edit, Trash2, ArrowLeft } from 'lucide-react';
 
 const meta: Meta<typeof DetailPanel> = {
-  title: 'Organisms/DetailPanel',
+  title: 'Core/Organisms/DetailPanel',
   component: DetailPanel,
   parameters: { layout: 'padded' },
   tags: ['autodocs'],

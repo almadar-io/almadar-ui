@@ -5,7 +5,7 @@ import { VStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 
 const meta: Meta<typeof ViolationAlert> = {
-  title: 'Molecules/ViolationAlert',
+  title: 'Core/Molecules/ViolationAlert',
   component: ViolationAlert,
   parameters: {
     layout: 'padded',

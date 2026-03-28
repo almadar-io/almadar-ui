@@ -3,7 +3,7 @@ import { BookViewer } from './BookViewer';
 import type { BookData } from './types';
 
 const meta: Meta<typeof BookViewer> = {
-  title: 'Organisms/BookViewer',
+  title: 'Marketing/Organisms/Book/BookViewer',
   component: BookViewer,
   parameters: { layout: 'fullscreen' },
 };

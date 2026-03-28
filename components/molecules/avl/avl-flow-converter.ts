@@ -11,6 +11,7 @@ import {
   parseApplicationLevel,
   parseOrbitalLevel,
   parseTraitLevel,
+  type TraitLevelData,
 } from '../../organisms/avl/avl-schema-parser';
 import type { AvlNodeData, AvlEdgeData } from './avl-canvas-types';
 
@@ -49,7 +50,7 @@ export function schemaToFlowGraph(schema: OrbitalSchema): {
     if (!orbitalDetail) continue;
 
     // Parse trait details
-    const traitDetails: Record<string, ReturnType<typeof parseTraitLevel>> = {};
+    const traitDetails: Record<string, TraitLevelData> = {};
     for (const traitName of orb.traitNames) {
       const td = parseTraitLevel(schema, orb.name, traitName);
       if (td) traitDetails[traitName] = td;

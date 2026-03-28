@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ModalSlot } from './ModalSlot';
 
 const meta: Meta<typeof ModalSlot> = {
-  title: 'Organisms/ModalSlot',
+  title: 'Core/Organisms/ModalSlot',
   component: ModalSlot,
   tags: ['autodocs'],
 };

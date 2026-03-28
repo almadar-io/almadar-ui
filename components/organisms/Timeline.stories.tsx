@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Timeline } from './Timeline';
 
 const meta: Meta<typeof Timeline> = {
-    title: 'Organisms/Timeline',
+    title: 'Core/Organisms/Timeline',
     component: Timeline,
     parameters: {
         layout: 'centered',

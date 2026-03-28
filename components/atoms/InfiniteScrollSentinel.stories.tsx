@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { InfiniteScrollSentinel } from "./InfiniteScrollSentinel";
 
 const meta: Meta<typeof InfiniteScrollSentinel> = {
-  title: "Atoms/InfiniteScrollSentinel",
+  title: "Core/Atoms/InfiniteScrollSentinel",
   component: InfiniteScrollSentinel,
   parameters: {
     layout: "centered",

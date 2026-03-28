@@ -3,7 +3,7 @@ import { DataTable } from './DataTable';
 import { Database } from 'lucide-react';
 
 const meta: Meta<typeof DataTable> = {
-    title: 'Organisms/DataTable',
+    title: 'Core/Organisms/DataTable',
     component: DataTable,
     parameters: {
         layout: 'padded',

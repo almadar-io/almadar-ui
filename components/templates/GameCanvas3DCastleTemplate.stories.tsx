@@ -39,7 +39,7 @@ const castleEntity: Castle3DEntity = {
 };
 
 const meta: Meta<typeof GameCanvas3DCastleTemplate> = {
-    title: 'Templates/Game/GameCanvas3DCastle',
+    title: 'Game/Templates/GameCanvas3DCastle',
     component: GameCanvas3DCastleTemplate,
     parameters: {
         layout: 'fullscreen',

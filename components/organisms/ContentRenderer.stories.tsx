@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { ContentRenderer } from './ContentRenderer';
 
 const meta: Meta<typeof ContentRenderer> = {
-  title: 'Organisms/ContentRenderer',
+  title: 'Core/Organisms/ContentRenderer',
   component: ContentRenderer,
   parameters: { layout: 'padded' },
 };

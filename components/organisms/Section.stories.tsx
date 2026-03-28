@@ -3,7 +3,7 @@ import { Section } from './Section';
 import { Button } from '../atoms/Button';
 
 const meta: Meta<typeof Section> = {
-  title: 'Organisms/Section',
+  title: 'Core/Organisms/Section',
   component: Section,
   tags: ['autodocs'],
 };

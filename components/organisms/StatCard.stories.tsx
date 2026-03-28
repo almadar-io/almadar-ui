@@ -3,7 +3,7 @@ import { StatCard } from './StatCard';
 import { Users, DollarSign, ShoppingCart, TrendingUp } from 'lucide-react';
 
 const meta: Meta<typeof StatCard> = {
-    title: 'Organisms/StatCard',
+    title: 'Core/Organisms/StatCard',
     component: StatCard,
     parameters: {
         layout: 'centered',

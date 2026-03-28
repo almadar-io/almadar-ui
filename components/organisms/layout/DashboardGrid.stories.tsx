@@ -4,7 +4,7 @@ import { Box } from '../../atoms/Box';
 import { Typography } from '../../atoms/Typography';
 
 const meta: Meta<typeof DashboardGrid> = {
-    title: 'Organisms/Layout/DashboardGrid',
+    title: 'Core/Organisms/Layout/DashboardGrid',
     component: DashboardGrid,
     parameters: {
         layout: 'padded',

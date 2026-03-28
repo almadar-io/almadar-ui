@@ -6,7 +6,7 @@ import { VStack } from './Stack';
 import { Typography } from './Typography';
 
 const meta: Meta<typeof AnimatedGraphic> = {
-  title: 'Atoms/AnimatedGraphic',
+  title: 'Marketing/Atoms/AnimatedGraphic',
   component: AnimatedGraphic,
   parameters: {
     layout: 'centered',

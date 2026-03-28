@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { JazariStateMachine } from './JazariStateMachine';
 
 const meta: Meta<typeof JazariStateMachine> = {
-  title: 'Organisms/JazariStateMachine',
+  title: 'Core/Organisms/JazariStateMachine',
   component: JazariStateMachine,
   parameters: {
     layout: 'padded',

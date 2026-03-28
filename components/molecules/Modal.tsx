@@ -38,11 +38,19 @@ export interface ModalProps {
 }
 
 const sizeClasses: Record<ModalSize, string> = {
-  sm: "max-w-md min-w-[400px]",
-  md: "max-w-2xl min-w-[520px]",
-  lg: "max-w-3xl min-w-[600px]",
-  xl: "max-w-5xl min-w-[700px]",
+  sm: "max-w-md",
+  md: "max-w-2xl",
+  lg: "max-w-3xl",
+  xl: "max-w-5xl",
   full: "max-w-full mx-4",
+};
+
+const minWidths: Record<ModalSize, string> = {
+  sm: "400px",
+  md: "520px",
+  lg: "600px",
+  xl: "700px",
+  full: "0",
 };
 
 export const Modal: React.FC<ModalProps> = ({
@@ -124,11 +132,14 @@ export const Modal: React.FC<ModalProps> = ({
       />
 
       {/* Desktop: dialog positioned in upper third. Mobile (<640px): bottom sheet */}
-      <div className={cn(
-        "fixed inset-0 z-50 pointer-events-none",
-        "flex items-start justify-center px-4 pb-4 pt-[10vh]",
-        "max-sm:items-end max-sm:p-0",
-      )}>
+      <div
+        className={cn(
+          "fixed inset-0 z-50 pointer-events-none",
+          "flex items-start justify-center px-4 pb-4",
+          "max-sm:items-end max-sm:p-0",
+        )}
+        style={{ paddingTop: '10vh' }}
+      >
         <Box
           ref={modalRef}
           bg="surface"
@@ -136,15 +147,19 @@ export const Modal: React.FC<ModalProps> = ({
           shadow="lg"
           rounded="md"
           className={cn(
-            "pointer-events-auto w-full flex flex-col max-h-[90vh]",
+            "pointer-events-auto w-full flex flex-col",
             sizeClasses[size],
-            "max-sm:max-w-full max-sm:max-h-[85vh] max-sm:rounded-b-none max-sm:rounded-t-2xl",
+            "max-sm:max-w-full max-sm:rounded-b-none max-sm:rounded-t-2xl",
             className,
           )}
-          style={dragY > 0 ? {
-            transform: `translateY(${dragY}px)`,
-            transition: isDragging.current ? 'none' : 'transform 200ms ease-out',
-          } : undefined}
+          style={{
+            minWidth: minWidths[size],
+            maxHeight: '80vh',
+            ...(dragY > 0 && {
+              transform: `translateY(${dragY}px)`,
+              transition: isDragging.current ? 'none' : 'transform 200ms ease-out',
+            }),
+          }}
           role="dialog"
           aria-modal="true"
           {...(title && { "aria-labelledby": "modal-title" })}

@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "2.33.0",
+  "version": "2.33.1",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "main": "./dist/components/index.js",
@@ -78,11 +78,6 @@
       "types": "./dist/docs/index.d.ts",
       "import": "./dist/docs/index.js",
       "require": "./dist/docs/index.cjs"
-    },
-    "./illustrations": {
-      "types": "./dist/illustrations/index.d.ts",
-      "import": "./dist/illustrations/index.js",
-      "require": "./dist/illustrations/index.cjs"
     },
     "./avl": {
       "types": "./dist/avl/index.d.ts",

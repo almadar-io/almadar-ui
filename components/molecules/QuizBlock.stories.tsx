@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { QuizBlock } from './QuizBlock';
 
 const meta: Meta<typeof QuizBlock> = {
-  title: 'Molecules/QuizBlock',
+  title: 'Core/Molecules/QuizBlock',
   component: QuizBlock,
   parameters: { layout: 'padded' },
 };

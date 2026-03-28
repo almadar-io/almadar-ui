@@ -6,7 +6,7 @@ import { Box } from '../atoms/Box';
 import { Typography } from '../atoms/Typography';
 
 const meta: Meta<typeof Skeleton> = {
-  title: 'Molecules/Skeleton',
+  title: 'Core/Molecules/Skeleton',
   component: Skeleton,
   parameters: {
     layout: 'padded',

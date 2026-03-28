@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { CardGrid } from './CardGrid';
 
 const meta: Meta<typeof CardGrid> = {
-    title: 'Organisms/CardGrid',
+    title: 'Core/Organisms/CardGrid',
     component: CardGrid,
     parameters: {
         layout: 'padded',

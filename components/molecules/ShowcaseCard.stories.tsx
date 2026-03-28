@@ -3,7 +3,7 @@ import { ShowcaseCard } from './ShowcaseCard';
 import { HStack } from '../atoms/Stack';
 
 const meta: Meta<typeof ShowcaseCard> = {
-  title: 'Molecules/ShowcaseCard',
+  title: 'Marketing/Molecules/ShowcaseCard',
   component: ShowcaseCard,
   parameters: {
     layout: 'centered',

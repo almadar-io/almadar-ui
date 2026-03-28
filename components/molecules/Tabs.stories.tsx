@@ -3,7 +3,7 @@ import { Tabs } from './Tabs';
 import { Settings, User, Bell, Shield } from 'lucide-react';
 
 const meta: Meta<typeof Tabs> = {
-    title: 'Molecules/Tabs',
+    title: 'Core/Molecules/Tabs',
     component: Tabs,
     parameters: {
         layout: 'centered',

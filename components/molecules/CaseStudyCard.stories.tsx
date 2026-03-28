@@ -3,7 +3,7 @@ import { CaseStudyCard } from './CaseStudyCard';
 import { HStack } from '../atoms/Stack';
 
 const meta: Meta<typeof CaseStudyCard> = {
-  title: 'Molecules/CaseStudyCard',
+  title: 'Marketing/Molecules/CaseStudyCard',
   component: CaseStudyCard,
   parameters: {
     layout: 'centered',

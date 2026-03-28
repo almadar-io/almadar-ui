@@ -8,7 +8,7 @@ import { GameAudioProvider } from './GameAudioProvider';
 const DEMO_MANIFEST = {};
 
 const meta: Meta<typeof GameAudioToggle> = {
-    title: 'Game/GameAudioToggle',
+    title: 'Game/Organisms/GameAudioToggle',
     component: GameAudioToggle,
     parameters: {
         layout: 'centered',

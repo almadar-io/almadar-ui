@@ -3,7 +3,7 @@ import { Navigation } from './Navigation';
 import { Home, Users, Settings } from 'lucide-react';
 
 const meta: Meta<typeof Navigation> = {
-  title: 'Organisms/Navigation',
+  title: 'Core/Organisms/Navigation',
   component: Navigation,
   tags: ['autodocs'],
 };

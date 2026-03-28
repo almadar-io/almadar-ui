@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { SocialProof } from './SocialProof';
 
 const meta: Meta<typeof SocialProof> = {
-  title: 'Molecules/SocialProof',
+  title: 'Core/Molecules/SocialProof',
   component: SocialProof,
   parameters: {
     layout: 'padded',

@@ -5,7 +5,7 @@ import { Typography } from '../../atoms/Typography';
 import { useState } from 'react';
 
 const meta: Meta<typeof MasterDetail> = {
-    title: 'Organisms/Layout/MasterDetail',
+    title: 'Core/Organisms/Layout/MasterDetail',
     component: MasterDetail,
     parameters: {
         layout: 'fullscreen',

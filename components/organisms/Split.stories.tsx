@@ -3,7 +3,7 @@ import { Split } from './Split';
 import { Box } from '../atoms/Box';
 
 const meta: Meta<typeof Split> = {
-  title: 'Organisms/Split',
+  title: 'Core/Organisms/Split',
   component: Split,
   tags: ['autodocs'],
 };

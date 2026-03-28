@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Alert } from './Alert';
 
 const meta: Meta<typeof Alert> = {
-    title: 'Molecules/Alert',
+    title: 'Core/Molecules/Alert',
     component: Alert,
     parameters: {
         layout: 'centered',

@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { StateArchitectBoard, type StateArchitectPuzzleEntity } from './StateArchitectBoard';
 
 const meta: Meta<typeof StateArchitectBoard> = {
-    title: 'Organisms/Game/Puzzles/StateArchitectBoard',
+    title: 'Game/Organisms/Puzzles/StateArchitectBoard',
     component: StateArchitectBoard,
 };
 export default meta;

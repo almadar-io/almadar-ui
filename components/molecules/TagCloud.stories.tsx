@@ -3,7 +3,7 @@ import { TagCloud } from './TagCloud';
 import { Box } from '../atoms/Box';
 
 const meta: Meta<typeof TagCloud> = {
-  title: 'Molecules/TagCloud',
+  title: 'Marketing/Molecules/TagCloud',
   component: TagCloud,
   parameters: {
     layout: 'centered',

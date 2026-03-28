@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { BuilderBoard, type BuilderPuzzleEntity } from './BuilderBoard';
 
 const meta: Meta<typeof BuilderBoard> = {
-    title: 'Organisms/Game/Puzzles/BuilderBoard',
+    title: 'Game/Organisms/Puzzles/BuilderBoard',
     component: BuilderBoard,
 };
 export default meta;

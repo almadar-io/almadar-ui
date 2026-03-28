@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { LandingPageTemplate, type LandingPageEntity } from './LandingPageTemplate';
 
 const meta: Meta<typeof LandingPageTemplate> = {
-  title: 'Templates/LandingPageTemplate',
+  title: 'Marketing/Templates/LandingPageTemplate',
   component: LandingPageTemplate,
   tags: ['autodocs'],
   parameters: {

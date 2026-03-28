@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { DataGrid } from "./DataGrid";
 
 const meta: Meta<typeof DataGrid> = {
-  title: "Molecules/DataGrid",
+  title: "Core/Molecules/DataGrid",
   component: DataGrid,
   parameters: {
     layout: "padded",

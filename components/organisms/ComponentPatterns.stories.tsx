@@ -21,7 +21,7 @@ import {
 import { VStack, HStack } from '../atoms/Stack';
 
 const meta: Meta<typeof ButtonPattern> = {
-  title: 'Organisms/ComponentPatterns',
+  title: 'Core/Organisms/ComponentPatterns',
   component: ButtonPattern,
   parameters: { layout: 'padded' },
   tags: ['autodocs'],

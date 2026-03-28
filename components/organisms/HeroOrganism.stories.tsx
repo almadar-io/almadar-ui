@@ -26,7 +26,7 @@ const MOCK_HERO_WITH_IMAGE: HeroEntity = {
 };
 
 const meta: Meta<typeof HeroOrganism> = {
-  title: 'Organisms/HeroOrganism',
+  title: 'Marketing/Organisms/HeroOrganism',
   component: HeroOrganism,
   parameters: {
     layout: 'fullscreen',

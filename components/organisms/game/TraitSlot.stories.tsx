@@ -6,7 +6,7 @@ import { Typography } from '../../atoms/Typography';
 import { Box } from '../../atoms/Box';
 
 const meta: Meta<typeof TraitSlot> = {
-    title: 'Organisms/Game/TraitSlot',
+    title: 'Game/Organisms/TraitSlot',
     component: TraitSlot,
 };
 export default meta;

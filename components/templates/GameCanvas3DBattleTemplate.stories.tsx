@@ -40,7 +40,7 @@ const battleEntity: Battle3DEntity = {
 };
 
 const meta: Meta<typeof GameCanvas3DBattleTemplate> = {
-    title: 'Templates/Game/GameCanvas3DBattle',
+    title: 'Game/Templates/GameCanvas3DBattle',
     component: GameCanvas3DBattleTemplate,
     parameters: {
         layout: 'fullscreen',

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { BookChapterView } from './BookChapterView';
 
 const meta: Meta<typeof BookChapterView> = {
-  title: 'Organisms/Book/BookChapterView',
+  title: 'Marketing/Organisms/Book/BookChapterView',
   component: BookChapterView,
   parameters: { layout: 'padded' },
 };

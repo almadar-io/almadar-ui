@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { DebuggerBoard, type DebuggerPuzzleEntity } from './DebuggerBoard';
 
 const meta: Meta<typeof DebuggerBoard> = {
-    title: 'Organisms/Game/Puzzles/DebuggerBoard',
+    title: 'Game/Organisms/Puzzles/DebuggerBoard',
     component: DebuggerBoard,
 };
 export default meta;

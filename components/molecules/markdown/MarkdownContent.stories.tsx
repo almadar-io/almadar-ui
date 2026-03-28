@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { MarkdownContent } from './MarkdownContent';
 
 const meta: Meta<typeof MarkdownContent> = {
-  title: 'Molecules/Markdown/MarkdownContent',
+  title: 'Core/Molecules/Markdown/MarkdownContent',
   component: MarkdownContent,
   parameters: { layout: 'padded' },
 };

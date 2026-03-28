@@ -42,7 +42,7 @@ const CATEGORY_COLORS: Record<string, { bg: string; border: string }> = {
 // =============================================================================
 
 const meta: Meta<typeof ActionTile> = {
-    title: 'Organisms/Game/Puzzles/ActionTile',
+    title: 'Game/Organisms/Puzzles/ActionTile',
     component: ActionTile,
 };
 export default meta;

@@ -10,7 +10,7 @@ const MOCK_STATS: StatEntity[] = [
 ];
 
 const meta: Meta<typeof StatsOrganism> = {
-  title: 'Organisms/StatsOrganism',
+  title: 'Marketing/Organisms/StatsOrganism',
   component: StatsOrganism,
   parameters: {
     layout: 'padded',

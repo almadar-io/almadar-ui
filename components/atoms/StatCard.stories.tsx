@@ -3,7 +3,7 @@ import { MarketingStatCard } from './StatCard';
 import { HStack } from './Stack';
 
 const meta: Meta<typeof MarketingStatCard> = {
-  title: 'Atoms/MarketingStatCard',
+  title: 'Marketing/Atoms/MarketingStatCard',
   component: MarketingStatCard,
   parameters: {
     layout: 'centered',

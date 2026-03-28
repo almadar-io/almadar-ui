@@ -33,11 +33,10 @@ export const CLINIC_SCHEMA: OrbitalSchema = {
       ],
       persistence: 'persistent',
       steps: [
-        { name: 'personal', title: 'Personal Information', fields: ['fullName', 'email', 'dateOfBirth'] },
-        { name: 'medical', title: 'Medical History', fields: ['medicalHistory', 'insuranceProvider'] },
+        { name: 'personal', fields: ['fullName', 'email', 'dateOfBirth'] },
+        { name: 'medical', fields: ['medicalHistory', 'insuranceProvider'] },
       ],
       pagePath: '/intake',
-      pageTitle: 'Patient Intake',
     }),
     stdBrowse({
       entityName: 'QueueEntry',
@@ -93,7 +92,6 @@ export const TASK_SCHEMA: OrbitalSchema = {
       ],
       persistence: 'runtime',
       pagePath: '/timer',
-      pageTitle: 'Focus Timer',
     }),
     stdConfirmation({
       entityName: 'ArchiveAction',
@@ -105,7 +103,6 @@ export const TASK_SCHEMA: OrbitalSchema = {
       confirmLabel: 'Archive',
       cancelLabel: 'Keep',
       pagePath: '/archive',
-      pageTitle: 'Archive Task',
     }),
   ],
 };

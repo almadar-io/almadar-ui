@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Accordion } from './Accordion';
 
 const meta: Meta<typeof Accordion> = {
-    title: 'Molecules/Accordion',
+    title: 'Core/Molecules/Accordion',
     component: Accordion,
     parameters: {
         layout: 'centered',

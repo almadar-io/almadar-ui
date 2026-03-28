@@ -93,7 +93,7 @@ const garrisonUnits: IsometricUnit[] = [
 // =============================================================================
 
 const meta: Meta<typeof IsometricCanvas> = {
-    title: 'Organisms/Game/IsometricCanvas',
+    title: 'Game/Organisms/IsometricCanvas',
     component: IsometricCanvas,
     parameters: {
         layout: 'fullscreen',

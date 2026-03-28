@@ -83,7 +83,7 @@ const MOCK_ENTITY: CastleEntity = {
 // =============================================================================
 
 const meta: Meta<typeof CastleBoard> = {
-    title: 'Game/CastleBoard',
+    title: 'Game/Organisms/CastleBoard',
     component: CastleBoard,
     parameters: {
         layout: 'fullscreen',

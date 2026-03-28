@@ -42,7 +42,7 @@ AudioStatusDemo.displayName = 'AudioStatusDemo';
 const DEMO_MANIFEST = {};
 
 const meta: Meta<typeof GameAudioProvider> = {
-    title: 'Game/GameAudioProvider',
+    title: 'Game/Organisms/GameAudioProvider',
     component: GameAudioProvider,
     parameters: {
         layout: 'centered',

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Meter } from './Meter';
 
 const meta: Meta<typeof Meter> = {
-    title: 'Organisms/Meter',
+    title: 'Core/Organisms/Meter',
     component: Meter,
     parameters: {
         layout: 'centered',

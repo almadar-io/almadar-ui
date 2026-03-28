@@ -222,7 +222,7 @@ const sampleUnits: IsometricUnit[] = [
 ];
 
 const meta: Meta<typeof GameCanvas3D> = {
-    title: 'Game/GameCanvas3D/With Assets',
+    title: 'Game/Organisms/GameCanvas3D/With Assets',
     component: GameCanvas3D,
     parameters: {
         layout: 'fullscreen',

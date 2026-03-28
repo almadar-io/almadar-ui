@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { OrbitalVisualization } from './OrbitalVisualization';
 
 const meta: Meta<typeof OrbitalVisualization> = {
-    title: 'Organisms/OrbitalVisualization',
+    title: 'Core/Organisms/OrbitalVisualization',
     component: OrbitalVisualization,
     parameters: {
         layout: 'centered',

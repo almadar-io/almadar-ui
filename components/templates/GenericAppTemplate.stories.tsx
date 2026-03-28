@@ -10,7 +10,7 @@ import { HStack } from '../atoms/Stack';
 import { Plus, Settings, Download } from 'lucide-react';
 
 const meta: Meta<typeof GenericAppTemplate> = {
-    title: 'Templates/GenericAppTemplate',
+    title: 'Core/Templates/GenericAppTemplate',
     component: GenericAppTemplate,
     parameters: {
         layout: 'fullscreen',

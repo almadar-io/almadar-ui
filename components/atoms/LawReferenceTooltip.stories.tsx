@@ -5,7 +5,7 @@ import { HStack, VStack } from './Stack';
 import { Box } from './Box';
 
 const meta: Meta<typeof LawReferenceTooltip> = {
-  title: 'Atoms/LawReferenceTooltip',
+  title: 'Core/Atoms/LawReferenceTooltip',
   component: LawReferenceTooltip,
   parameters: {
     layout: 'centered',

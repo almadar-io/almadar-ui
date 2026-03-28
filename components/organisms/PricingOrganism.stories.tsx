@@ -49,7 +49,7 @@ const MOCK_PLANS: PricingPlanEntity[] = [
 ];
 
 const meta: Meta<typeof PricingOrganism> = {
-  title: 'Organisms/PricingOrganism',
+  title: 'Marketing/Organisms/PricingOrganism',
   component: PricingOrganism,
   parameters: {
     layout: 'padded',

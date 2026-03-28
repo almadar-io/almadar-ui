@@ -12,7 +12,7 @@ function BuggyComponent({ shouldThrow }: { shouldThrow: boolean }) {
 }
 
 const meta: Meta<typeof ErrorBoundary> = {
-  title: 'Molecules/ErrorBoundary',
+  title: 'Core/Molecules/ErrorBoundary',
   component: ErrorBoundary,
   parameters: {
     layout: 'centered',

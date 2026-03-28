@@ -118,7 +118,7 @@ const castleEntity: Castle3DEntity = {
 // =============================================================================
 
 const worldMapMeta: Meta<typeof GameCanvas3DWorldMapTemplate> = {
-    title: 'Templates/Game/GameCanvas3DWorldMap',
+    title: 'Game/Templates/GameCanvas3DWorldMap',
     component: GameCanvas3DWorldMapTemplate,
     parameters: {
         layout: 'fullscreen',

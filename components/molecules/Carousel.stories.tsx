@@ -33,7 +33,7 @@ function renderColorSlide(item: ColorSlide, index: number): React.ReactNode {
 }
 
 const meta: Meta<typeof Carousel<ColorSlide>> = {
-  title: 'Molecules/Carousel',
+  title: 'Core/Molecules/Carousel',
   component: Carousel,
   parameters: {
     layout: 'padded',

@@ -6,7 +6,7 @@ import { VStack } from '../atoms/Stack';
 import { useState } from 'react';
 
 const meta: Meta<typeof Modal> = {
-    title: 'Molecules/Modal',
+    title: 'Core/Molecules/Modal',
     component: Modal,
     parameters: {
         layout: 'centered',

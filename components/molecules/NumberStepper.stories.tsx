@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { NumberStepper } from "./NumberStepper";
 
 const meta: Meta<typeof NumberStepper> = {
-  title: "Molecules/NumberStepper",
+  title: "Core/Molecules/NumberStepper",
   component: NumberStepper,
   parameters: {
     layout: "centered",

@@ -4,7 +4,7 @@ import { Box } from '../atoms/Box';
 import { Typography } from '../atoms/Typography';
 
 const meta: Meta<typeof HeroSection> = {
-  title: 'Molecules/HeroSection',
+  title: 'Marketing/Molecules/HeroSection',
   component: HeroSection,
   parameters: {
     layout: 'fullscreen',

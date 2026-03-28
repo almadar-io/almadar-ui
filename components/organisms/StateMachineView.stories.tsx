@@ -3,7 +3,7 @@ import { StateMachineView } from './StateMachineView';
 import { renderStateMachineToDomData, DEFAULT_CONFIG } from '../../lib/visualizer/index.js';
 
 const meta: Meta<typeof StateMachineView> = {
-  title: 'Organisms/StateMachineView',
+  title: 'Core/Organisms/StateMachineView',
   component: StateMachineView,
   parameters: {
     layout: 'padded',

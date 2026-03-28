@@ -4,7 +4,7 @@ import type { PricingCardProps } from './PricingCard';
 import { Box } from '../atoms/Box';
 
 const meta: Meta<typeof PricingGrid> = {
-  title: 'Molecules/PricingGrid',
+  title: 'Marketing/Molecules/PricingGrid',
   component: PricingGrid,
   parameters: {
     layout: 'padded',

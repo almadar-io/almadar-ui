@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MediaGallery } from './MediaGallery';
 
 const meta: Meta<typeof MediaGallery> = {
-    title: 'Organisms/MediaGallery',
+    title: 'Core/Organisms/MediaGallery',
     component: MediaGallery,
     parameters: {
         layout: 'centered',

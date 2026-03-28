@@ -4,7 +4,7 @@ import { Typography } from './Typography';
 import { VStack } from './Stack';
 
 const meta: Meta<typeof ContentSection> = {
-  title: 'Atoms/ContentSection',
+  title: 'Marketing/Atoms/ContentSection',
   component: ContentSection,
   parameters: {
     layout: 'fullscreen',

@@ -6,7 +6,7 @@ import { Box } from '../atoms/Box';
 import React from 'react';
 
 const meta: Meta<typeof GeometricPattern> = {
-    title: 'Molecules/GeometricPattern',
+    title: 'Marketing/Molecules/GeometricPattern',
     component: GeometricPattern,
     parameters: {
         layout: 'fullscreen',

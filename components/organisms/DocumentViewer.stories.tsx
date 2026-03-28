@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { DocumentViewer } from './DocumentViewer';
 
 const meta: Meta<typeof DocumentViewer> = {
-    title: 'Organisms/DocumentViewer',
+    title: 'Core/Organisms/DocumentViewer',
     component: DocumentViewer,
     parameters: {
         layout: 'centered',

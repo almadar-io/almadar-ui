@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ConfettiEffect } from "./ConfettiEffect";
 
 const meta: Meta<typeof ConfettiEffect> = {
-  title: "Atoms/ConfettiEffect",
+  title: "Core/Atoms/ConfettiEffect",
   component: ConfettiEffect,
   parameters: {
     layout: "centered",

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ToastSlot } from './ToastSlot';
 
 const meta: Meta<typeof ToastSlot> = {
-  title: 'Organisms/ToastSlot',
+  title: 'Core/Organisms/ToastSlot',
   component: ToastSlot,
   tags: ['autodocs'],
 };

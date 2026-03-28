@@ -3,7 +3,7 @@ import { TeamCard } from './TeamCard';
 import { HStack } from '../atoms/Stack';
 
 const meta: Meta<typeof TeamCard> = {
-  title: 'Molecules/TeamCard',
+  title: 'Marketing/Molecules/TeamCard',
   component: TeamCard,
   parameters: {
     layout: 'centered',

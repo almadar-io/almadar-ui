@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { List } from './List';
 
 const meta: Meta<typeof List> = {
-    title: 'Organisms/List',
+    title: 'Core/Organisms/List',
     component: List,
     parameters: {
         layout: 'padded',

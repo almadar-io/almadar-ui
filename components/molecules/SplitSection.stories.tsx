@@ -4,7 +4,7 @@ import { Box } from '../atoms/Box';
 import { Typography } from '../atoms/Typography';
 
 const meta: Meta<typeof SplitSection> = {
-  title: 'Molecules/SplitSection',
+  title: 'Marketing/Molecules/SplitSection',
   component: SplitSection,
   parameters: {
     layout: 'fullscreen',

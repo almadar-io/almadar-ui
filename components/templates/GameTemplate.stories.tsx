@@ -7,7 +7,7 @@ import { VStack } from '../atoms/Stack';
 import { HStack } from '../atoms/Stack';
 
 const meta: Meta<typeof GameTemplate> = {
-    title: 'Templates/GameTemplate',
+    title: 'Game/Templates/GameTemplate',
     component: GameTemplate,
     parameters: {
         layout: 'fullscreen',

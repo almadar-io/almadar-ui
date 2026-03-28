@@ -34,7 +34,7 @@ const MOCK_CASE_STUDIES: CaseStudyEntity[] = [
 ];
 
 const meta: Meta<typeof CaseStudyOrganism> = {
-  title: 'Organisms/CaseStudyOrganism',
+  title: 'Marketing/Organisms/CaseStudyOrganism',
   component: CaseStudyOrganism,
   parameters: {
     layout: 'padded',

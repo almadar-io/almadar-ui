@@ -4,7 +4,7 @@ import { Box } from '../../atoms/Box';
 import { Typography } from '../../atoms/Typography';
 
 const meta: Meta<typeof TabbedContainer> = {
-    title: 'Organisms/Layout/TabbedContainer',
+    title: 'Core/Organisms/Layout/TabbedContainer',
     component: TabbedContainer,
     parameters: {
         layout: 'fullscreen',

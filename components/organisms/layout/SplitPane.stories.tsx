@@ -4,7 +4,7 @@ import { Box } from '../../atoms/Box';
 import { Typography } from '../../atoms/Typography';
 
 const meta: Meta<typeof SplitPane> = {
-    title: 'Organisms/Layout/SplitPane',
+    title: 'Core/Organisms/Layout/SplitPane',
     component: SplitPane,
     parameters: {
         layout: 'fullscreen',

@@ -4,7 +4,7 @@ import { VStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 
 const meta: Meta<typeof ArticleSection> = {
-  title: 'Molecules/ArticleSection',
+  title: 'Marketing/Molecules/ArticleSection',
   component: ArticleSection,
   parameters: {
     layout: 'padded',

@@ -38,7 +38,7 @@ function renderTaskItem(item: TaskItem, index: number) {
 }
 
 const meta: Meta = {
-  title: 'Molecules/SortableList',
+  title: 'Core/Molecules/SortableList',
   parameters: {
     layout: 'centered',
     backgrounds: { default: 'wireframe' },

@@ -28,7 +28,7 @@ const MOCK_TEAM: TeamMemberEntity[] = [
 ];
 
 const meta: Meta<typeof TeamOrganism> = {
-  title: 'Organisms/TeamOrganism',
+  title: 'Marketing/Organisms/TeamOrganism',
   component: TeamOrganism,
   parameters: {
     layout: 'padded',

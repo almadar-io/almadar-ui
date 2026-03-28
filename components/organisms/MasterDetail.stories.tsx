@@ -18,7 +18,7 @@ const sampleTasks: Task[] = [
 ];
 
 const meta: Meta<typeof MasterDetail<Task>> = {
-  title: 'Organisms/MasterDetail',
+  title: 'Core/Organisms/MasterDetail',
   component: MasterDetail,
   parameters: { layout: 'padded' },
   tags: ['autodocs'],

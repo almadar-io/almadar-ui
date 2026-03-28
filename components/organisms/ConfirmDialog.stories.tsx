@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Button } from '../atoms/Button';
 
 const meta: Meta<typeof ConfirmDialog> = {
-    title: 'Organisms/ConfirmDialog',
+    title: 'Core/Organisms/ConfirmDialog',
     component: ConfirmDialog,
     parameters: {
         layout: 'centered',

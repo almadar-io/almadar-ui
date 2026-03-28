@@ -22,7 +22,7 @@ const CATEGORY_COLORS: Record<string, { bg: string; border: string }> = {
 
 const BASE_ENTITY: SequencerPuzzleEntity = {
     id: 'puzzle-1',
-    title: 'Forest Path',
+    title: 'Game/Organisms/Puzzles/SequencerBoard',
     description: 'Help Kekec find his way through the forest!',
     availableActions: ACTIONS,
     maxSlots: 4,
@@ -37,7 +37,7 @@ const BASE_ENTITY: SequencerPuzzleEntity = {
 // =============================================================================
 
 const meta: Meta<typeof SequencerBoard> = {
-    title: 'Organisms/Game/Puzzles/SequencerBoard',
+    title: 'Game/Organisms/Puzzles/SequencerBoard',
     component: SequencerBoard,
 };
 export default meta;

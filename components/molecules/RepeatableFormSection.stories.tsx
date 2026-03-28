@@ -6,7 +6,7 @@ import { Input } from '../atoms/Input';
 import { Typography } from '../atoms/Typography';
 
 const meta: Meta<typeof RepeatableFormSection> = {
-  title: 'Molecules/RepeatableFormSection',
+  title: 'Core/Molecules/RepeatableFormSection',
   component: RepeatableFormSection,
   parameters: {
     layout: 'padded',

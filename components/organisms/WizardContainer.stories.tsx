@@ -5,7 +5,7 @@ import { Typography } from '../atoms/Typography';
 import { Input } from '../atoms/Input';
 
 const meta: Meta<typeof WizardContainer> = {
-    title: 'Organisms/WizardContainer',
+    title: 'Core/Organisms/WizardContainer',
     component: WizardContainer,
     parameters: {
         layout: 'fullscreen',

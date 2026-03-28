@@ -36,7 +36,7 @@ const sampleItems: FeatureCardProps[] = [
 ];
 
 const meta: Meta<typeof FeatureGrid> = {
-  title: 'Molecules/FeatureGrid',
+  title: 'Marketing/Molecules/FeatureGrid',
   component: FeatureGrid,
   parameters: {
     layout: 'padded',

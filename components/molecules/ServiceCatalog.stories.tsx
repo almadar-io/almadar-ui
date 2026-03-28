@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ServiceCatalog } from './ServiceCatalog';
 
 const meta: Meta<typeof ServiceCatalog> = {
-  title: 'Molecules/ServiceCatalog',
+  title: 'Marketing/Molecules/ServiceCatalog',
   component: ServiceCatalog,
   parameters: {
     layout: 'padded',

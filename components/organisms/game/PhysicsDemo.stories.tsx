@@ -267,7 +267,7 @@ function Physics3DDemo() {
 // =============================================================================
 
 const meta: Meta = {
-    title: 'Game/Physics',
+    title: 'Game/Organisms/Physics',
     parameters: {
         layout: 'centered',
         docs: {

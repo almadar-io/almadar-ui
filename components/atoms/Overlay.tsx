@@ -38,10 +38,11 @@ export const Overlay: React.FC<OverlayProps> = ({
   return (
     <div
       className={cn(
-        "fixed inset-0 z-40 bg-black/60",
+        "fixed inset-0 z-40",
         blur && "backdrop-blur-sm",
         className,
       )}
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
       onClick={(action || onClick) ? handleClick : undefined}
       aria-hidden="true"
     />

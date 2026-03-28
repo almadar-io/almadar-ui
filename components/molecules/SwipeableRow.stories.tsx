@@ -9,7 +9,7 @@ import { Box } from '../atoms/Box';
 import { Icon } from '../atoms/Icon';
 
 const meta: Meta<typeof SwipeableRow> = {
-  title: 'Molecules/SwipeableRow',
+  title: 'Core/Molecules/SwipeableRow',
   component: SwipeableRow,
   parameters: {
     layout: 'centered',

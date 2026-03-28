@@ -3,7 +3,7 @@ import { StepFlow } from './StepFlow';
 import { Box } from '../atoms/Box';
 
 const meta: Meta<typeof StepFlow> = {
-  title: 'Molecules/StepFlow',
+  title: 'Marketing/Molecules/StepFlow',
   component: StepFlow,
   parameters: {
     layout: 'centered',

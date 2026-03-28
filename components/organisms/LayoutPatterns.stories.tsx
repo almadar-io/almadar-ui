@@ -14,7 +14,7 @@ import { Card } from '../atoms/Card';
 import { Badge } from '../atoms/Badge';
 
 const meta: Meta<typeof VStackPattern> = {
-  title: 'Organisms/LayoutPatterns',
+  title: 'Core/Organisms/LayoutPatterns',
   component: VStackPattern,
   parameters: { layout: 'padded' },
   tags: ['autodocs'],

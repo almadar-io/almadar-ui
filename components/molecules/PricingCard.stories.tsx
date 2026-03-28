@@ -3,7 +3,7 @@ import { PricingCard } from './PricingCard';
 import { HStack } from '../atoms/Stack';
 
 const meta: Meta<typeof PricingCard> = {
-  title: 'Molecules/PricingCard',
+  title: 'Marketing/Molecules/PricingCard',
   component: PricingCard,
   parameters: {
     layout: 'centered',

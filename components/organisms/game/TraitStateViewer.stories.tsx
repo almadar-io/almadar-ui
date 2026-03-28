@@ -4,7 +4,7 @@ import { VStack } from '../../atoms/Stack';
 import type { TraitStateMachineDefinition } from './TraitStateViewer';
 
 const meta: Meta<typeof TraitStateViewer> = {
-    title: 'Organisms/Game/TraitStateViewer',
+    title: 'Game/Organisms/TraitStateViewer',
     component: TraitStateViewer,
 };
 export default meta;

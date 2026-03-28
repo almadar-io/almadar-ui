@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { GraphCanvas } from './GraphCanvas';
 
 const meta: Meta<typeof GraphCanvas> = {
-    title: 'Organisms/GraphCanvas',
+    title: 'Core/Organisms/GraphCanvas',
     component: GraphCanvas,
     parameters: {
         layout: 'centered',

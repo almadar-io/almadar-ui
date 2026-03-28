@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { RangeSlider } from "./RangeSlider";
 
 const meta: Meta<typeof RangeSlider> = {
-  title: "Atoms/RangeSlider",
+  title: "Core/Atoms/RangeSlider",
   component: RangeSlider,
   parameters: {
     layout: "centered",

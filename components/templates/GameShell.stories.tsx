@@ -6,7 +6,7 @@ import { Box } from '../atoms/Box';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 
 const meta: Meta<typeof GameShell> = {
-    title: 'Templates/GameShell',
+    title: 'Game/Templates/GameShell',
     component: GameShell,
     parameters: {
         layout: 'fullscreen',

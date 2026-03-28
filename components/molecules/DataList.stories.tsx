@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { DataList } from "./DataList";
 
 const meta: Meta<typeof DataList> = {
-  title: "Molecules/DataList",
+  title: "Core/Molecules/DataList",
   component: DataList,
   parameters: {
     layout: "padded",

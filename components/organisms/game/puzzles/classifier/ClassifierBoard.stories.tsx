@@ -5,7 +5,7 @@ import type { ClassifierPuzzleEntity } from './ClassifierBoard';
 
 const sampleEntity: ClassifierPuzzleEntity = {
     id: 'cls-1',
-    title: 'Animal Classification',
+    title: 'Game/Organisms/Puzzles/ClassifierBoard',
     description: 'Sort the animals into the correct categories.',
     items: [
         { id: 'eagle', label: 'Eagle', correctCategory: 'birds' },
@@ -26,7 +26,7 @@ const sampleEntity: ClassifierPuzzleEntity = {
 };
 
 const meta: Meta<typeof ClassifierBoard> = {
-    title: 'Organisms/Game/Puzzles/ClassifierBoard',
+    title: 'Game/Organisms/Puzzles/ClassifierBoard',
     component: ClassifierBoard,
 };
 

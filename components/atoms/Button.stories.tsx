@@ -3,7 +3,7 @@ import { Button } from './Button';
 import { Mail, ArrowRight, Plus, Trash2, Check } from 'lucide-react';
 
 const meta: Meta<typeof Button> = {
-    title: 'Atoms/Button',
+    title: 'Core/Atoms/Button',
     component: Button,
     parameters: {
         layout: 'centered',

@@ -7,7 +7,7 @@ import { Select } from '../atoms/Select';
 import { Button } from '../atoms/Button';
 
 const meta: Meta<typeof FormSection> = {
-  title: 'Organisms/FormSection',
+  title: 'Core/Organisms/FormSection',
   component: FormSection,
   parameters: { layout: 'padded' },
   tags: ['autodocs'],

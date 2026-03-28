@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { MapView } from './MapView';
 
 const meta: Meta<typeof MapView> = {
-  title: 'Molecules/MapView',
+  title: 'Core/Molecules/MapView',
   component: MapView,
   parameters: {
     layout: 'padded',

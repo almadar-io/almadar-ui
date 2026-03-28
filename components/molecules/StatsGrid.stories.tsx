@@ -3,7 +3,7 @@ import { StatsGrid } from './StatsGrid';
 import { Box } from '../atoms/Box';
 
 const meta: Meta<typeof StatsGrid> = {
-  title: 'Molecules/StatsGrid',
+  title: 'Marketing/Molecules/StatsGrid',
   component: StatsGrid,
   parameters: {
     layout: 'centered',

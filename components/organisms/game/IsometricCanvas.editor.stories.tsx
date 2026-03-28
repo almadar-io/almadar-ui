@@ -68,7 +68,7 @@ function makeUnitId(): string {
 // =============================================================================
 
 const meta: Meta<typeof IsometricCanvas> = {
-    title: 'Game/IsometricCanvas Editor',
+    title: 'Game/Organisms/IsometricCanvas Editor',
     component: IsometricCanvas,
     parameters: {
         layout: 'fullscreen',

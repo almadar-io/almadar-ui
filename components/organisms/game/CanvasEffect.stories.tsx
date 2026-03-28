@@ -4,7 +4,7 @@ import { CanvasEffect } from './CanvasEffect';
 import type { CombatActionType, EffectAssetManifest } from './types/effects';
 
 const meta: Meta<typeof CanvasEffect> = {
-    title: 'Organisms/Game/CanvasEffect',
+    title: 'Game/Organisms/CanvasEffect',
     component: CanvasEffect,
     parameters: {
         layout: 'centered',

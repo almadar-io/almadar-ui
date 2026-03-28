@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { BookCoverPage } from './BookCoverPage';
 
 const meta: Meta<typeof BookCoverPage> = {
-  title: 'Organisms/Book/BookCoverPage',
+  title: 'Marketing/Organisms/Book/BookCoverPage',
   component: BookCoverPage,
   parameters: { layout: 'fullscreen' },
 };

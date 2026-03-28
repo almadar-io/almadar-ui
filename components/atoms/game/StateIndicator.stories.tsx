@@ -3,7 +3,7 @@ import { StateIndicator } from './StateIndicator';
 import { HStack, VStack } from '../Stack';
 
 const meta: Meta<typeof StateIndicator> = {
-    title: 'Atoms/Game/StateIndicator',
+    title: 'Game/Atoms/StateIndicator',
     component: StateIndicator,
 };
 export default meta;

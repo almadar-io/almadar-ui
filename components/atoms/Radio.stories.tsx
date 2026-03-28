@@ -3,7 +3,7 @@ import { Radio } from './Radio';
 import { useState } from 'react';
 
 const meta: Meta<typeof Radio> = {
-    title: 'Atoms/Radio',
+    title: 'Core/Atoms/Radio',
     component: Radio,
     parameters: {
         layout: 'centered',

@@ -3,7 +3,7 @@ import { CommunityLinks } from './CommunityLinks';
 import { Box } from '../atoms/Box';
 
 const meta: Meta<typeof CommunityLinks> = {
-  title: 'Molecules/CommunityLinks',
+  title: 'Marketing/Molecules/CommunityLinks',
   component: CommunityLinks,
   parameters: {
     layout: 'centered',

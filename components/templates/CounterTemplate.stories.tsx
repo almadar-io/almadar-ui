@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { CounterTemplate } from './CounterTemplate';
 
 const meta: Meta<typeof CounterTemplate> = {
-    title: 'Templates/CounterTemplate',
+    title: 'Core/Templates/CounterTemplate',
     component: CounterTemplate,
     parameters: {
         layout: 'centered',

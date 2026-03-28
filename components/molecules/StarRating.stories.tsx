@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { StarRating } from "./StarRating";
 
 const meta: Meta<typeof StarRating> = {
-  title: "Molecules/StarRating",
+  title: "Core/Molecules/StarRating",
   component: StarRating,
   parameters: {
     layout: "centered",

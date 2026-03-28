@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { CustomPattern, renderCustomPattern, type CustomPatternConfig } from './CustomPattern';
 
 const meta: Meta<typeof CustomPattern> = {
-  title: 'Organisms/CustomPattern',
+  title: 'Core/Organisms/CustomPattern',
   component: CustomPattern,
   parameters: { layout: 'padded' },
   tags: ['autodocs'],

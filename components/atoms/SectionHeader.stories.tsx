@@ -3,7 +3,7 @@ import { SectionHeader } from './SectionHeader';
 import { HStack } from './Stack';
 
 const meta: Meta<typeof SectionHeader> = {
-  title: 'Atoms/SectionHeader',
+  title: 'Core/Atoms/SectionHeader',
   component: SectionHeader,
   parameters: {
     layout: 'centered',

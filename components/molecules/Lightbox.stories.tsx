@@ -28,7 +28,7 @@ const sampleImages: LightboxImage[] = [
 ];
 
 const meta: Meta<typeof Lightbox> = {
-  title: "Molecules/Lightbox",
+  title: "Core/Molecules/Lightbox",
   component: Lightbox,
   parameters: {
     layout: "fullscreen",

@@ -40,7 +40,7 @@ function TilePreview({
 }
 
 const meta: Meta<typeof TilePreview> = {
-    title: 'Atoms/PatternTile',
+    title: 'Marketing/Atoms/PatternTile',
     component: TilePreview,
     parameters: {
         layout: 'centered',

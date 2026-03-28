@@ -3,7 +3,7 @@ import { InstallBox } from './InstallBox';
 import { VStack } from '../atoms/Stack';
 
 const meta: Meta<typeof InstallBox> = {
-  title: 'Molecules/InstallBox',
+  title: 'Marketing/Molecules/InstallBox',
   component: InstallBox,
   parameters: {
     layout: 'centered',

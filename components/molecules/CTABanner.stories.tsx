@@ -3,7 +3,7 @@ import { CTABanner } from './CTABanner';
 import { VStack } from '../atoms/Stack';
 
 const meta: Meta<typeof CTABanner> = {
-  title: 'Molecules/CTABanner',
+  title: 'Marketing/Molecules/CTABanner',
   component: CTABanner,
   parameters: {
     layout: 'padded',

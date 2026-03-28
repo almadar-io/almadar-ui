@@ -132,7 +132,7 @@ const MOCK_ENTITY: WorldMapEntity = {
 // =============================================================================
 
 const meta: Meta<typeof WorldMapBoard> = {
-    title: 'Game/WorldMapBoard',
+    title: 'Game/Organisms/WorldMapBoard',
     component: WorldMapBoard,
     tags: ['autodocs'],
     parameters: {

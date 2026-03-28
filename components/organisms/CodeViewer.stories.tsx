@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { CodeViewer } from './CodeViewer';
 
 const meta: Meta<typeof CodeViewer> = {
-    title: 'Organisms/CodeViewer',
+    title: 'Core/Organisms/CodeViewer',
     component: CodeViewer,
     parameters: {
         layout: 'centered',

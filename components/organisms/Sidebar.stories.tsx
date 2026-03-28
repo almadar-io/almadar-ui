@@ -4,7 +4,7 @@ import { Home, Users, Settings, FileText, BarChart, Mail, Calendar } from 'lucid
 import { Box } from '../atoms/Box';
 
 const meta: Meta<typeof Sidebar> = {
-    title: 'Organisms/Sidebar',
+    title: 'Core/Organisms/Sidebar',
     component: Sidebar,
     parameters: {
         layout: 'fullscreen',

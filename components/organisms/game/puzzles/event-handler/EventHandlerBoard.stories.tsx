@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { EventHandlerBoard, type EventHandlerPuzzleEntity } from './EventHandlerBoard';
 
 const meta: Meta<typeof EventHandlerBoard> = {
-    title: 'Organisms/Game/Puzzles/EventHandlerBoard',
+    title: 'Game/Organisms/Puzzles/EventHandlerBoard',
     component: EventHandlerBoard,
 };
 export default meta;

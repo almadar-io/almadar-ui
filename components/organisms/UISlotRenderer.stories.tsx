@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { UISlotRenderer } from './UISlotRenderer';
 
 const meta: Meta<typeof UISlotRenderer> = {
-  title: 'Organisms/UISlotRenderer',
+  title: 'Core/Organisms/UISlotRenderer',
   component: UISlotRenderer,
   tags: ['autodocs'],
 };

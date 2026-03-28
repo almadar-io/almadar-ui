@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { SignaturePad } from './SignaturePad';
 
 const meta: Meta<typeof SignaturePad> = {
-    title: 'Organisms/SignaturePad',
+    title: 'Core/Organisms/SignaturePad',
     component: SignaturePad,
     parameters: {
         layout: 'centered',

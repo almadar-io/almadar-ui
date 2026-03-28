@@ -42,7 +42,7 @@ const MOCK_UNITS: IsometricUnit[] = [
 // =============================================================================
 
 const meta: Meta<typeof CastleTemplate> = {
-    title: 'Templates/Game/CastleTemplate',
+    title: 'Game/Templates/CastleTemplate',
     component: CastleTemplate,
     parameters: { layout: 'fullscreen' },
     tags: ['autodocs'],

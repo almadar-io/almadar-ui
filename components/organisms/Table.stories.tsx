@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Table } from './Table';
 
 const meta: Meta<typeof Table> = {
-    title: 'Organisms/Table',
+    title: 'Core/Organisms/Table',
     component: Table,
     parameters: {
         layout: 'padded',

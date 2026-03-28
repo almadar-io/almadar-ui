@@ -3,7 +3,7 @@ import { Input } from './Input';
 import { Mail, Lock, Search, User } from 'lucide-react';
 
 const meta: Meta<typeof Input> = {
-    title: 'Atoms/Input',
+    title: 'Core/Atoms/Input',
     component: Input,
     parameters: {
         layout: 'centered',

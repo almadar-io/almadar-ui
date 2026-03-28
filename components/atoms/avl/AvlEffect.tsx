@@ -154,7 +154,7 @@ export const AvlEffect: React.FC<AvlEffectProps> = ({
   className,
   showBackground = false,
 }) => {
-  const category = EFFECT_TYPE_TO_CATEGORY[effectType];
+  const category = EFFECT_TYPE_TO_CATEGORY[effectType] ?? 'control';
   const catColors = EFFECT_CATEGORY_COLORS[category];
   const iconColor = showBackground ? catColors.color : color;
 

@@ -161,10 +161,11 @@ function VerifyModePanel({
         <div
             className={cn(
                 'runtime-debugger runtime-debugger--verify',
-                'fixed bottom-0 left-0 right-0 z-30 h-[25vh] flex flex-col bg-gray-900 text-white border-t-2 border-cyan-500',
+                'fixed bottom-0 left-0 right-0 flex flex-col bg-gray-900 text-white border-t-2 border-cyan-500',
                 className
             )}
             data-testid="debugger-verify"
+            style={{ zIndex: 30, height: '25vh' }}
         >
             {/* Status bar */}
             <div className="px-3 py-1.5 flex items-center gap-3 text-xs font-mono border-b border-gray-700 flex-shrink-0">
@@ -403,12 +404,13 @@ export function RuntimeDebugger({
         <div
             className={cn(
                 'runtime-debugger',
-                'fixed z-30',
+                'fixed',
                 positionClasses[position],
                 isCollapsed ? 'runtime-debugger--collapsed' : 'runtime-debugger--expanded',
                 className
             )}
             data-testid={isCollapsed ? 'debugger-collapsed' : 'debugger-expanded'}
+            style={{ zIndex: 30 }}
         >
             {isCollapsed ? (
                 <Button

@@ -26,7 +26,7 @@ import {
  * text inputs, terrain palette, and status bar.
  */
 const meta: Meta = {
-    title: 'Game/Editor Utils',
+    title: 'Game/Organisms/Editor Utils',
     tags: ['autodocs'],
     parameters: {
         layout: 'centered',

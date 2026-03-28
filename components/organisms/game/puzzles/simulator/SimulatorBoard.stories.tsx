@@ -5,7 +5,7 @@ import type { SimulatorPuzzleEntity } from './SimulatorBoard';
 
 const sampleEntity: SimulatorPuzzleEntity = {
     id: 'sim-1',
-    title: 'Gravity Simulator',
+    title: 'Game/Organisms/Puzzles/SimulatorBoard',
     description: 'Adjust the parameters to make the ball land in the target zone.',
     parameters: [
         {
@@ -42,7 +42,7 @@ const sampleEntity: SimulatorPuzzleEntity = {
 };
 
 const meta: Meta<typeof SimulatorBoard> = {
-    title: 'Organisms/Game/Puzzles/SimulatorBoard',
+    title: 'Game/Organisms/Puzzles/SimulatorBoard',
     component: SimulatorBoard,
 };
 

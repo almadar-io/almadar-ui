@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { AboutPageTemplate, type AboutPageEntity } from './AboutPageTemplate';
 
 const meta: Meta<typeof AboutPageTemplate> = {
-  title: 'Templates/AboutPageTemplate',
+  title: 'Marketing/Templates/AboutPageTemplate',
   component: AboutPageTemplate,
   tags: ['autodocs'],
   parameters: {

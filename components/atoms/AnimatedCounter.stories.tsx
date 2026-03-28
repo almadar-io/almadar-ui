@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { AnimatedCounter } from "./AnimatedCounter";
 
 const meta: Meta<typeof AnimatedCounter> = {
-  title: "Atoms/AnimatedCounter",
+  title: "Marketing/Atoms/AnimatedCounter",
   component: AnimatedCounter,
   parameters: {
     layout: "centered",

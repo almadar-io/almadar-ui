@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { UploadDropZone } from "./UploadDropZone";
 
 const meta: Meta<typeof UploadDropZone> = {
-  title: "Molecules/UploadDropZone",
+  title: "Core/Molecules/UploadDropZone",
   component: UploadDropZone,
   parameters: {
     layout: "centered",

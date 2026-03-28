@@ -32,7 +32,7 @@ const MOCK_SHOWCASES: ShowcaseEntity[] = [
 ];
 
 const meta: Meta<typeof ShowcaseOrganism> = {
-  title: 'Organisms/ShowcaseOrganism',
+  title: 'Marketing/Organisms/ShowcaseOrganism',
   component: ShowcaseOrganism,
   parameters: {
     layout: 'padded',

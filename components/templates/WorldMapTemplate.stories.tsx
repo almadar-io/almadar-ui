@@ -51,7 +51,7 @@ const MOCK_FEATURES: IsometricFeature[] = [
 // =============================================================================
 
 const meta: Meta<typeof WorldMapTemplate> = {
-    title: 'Templates/Game/WorldMapTemplate',
+    title: 'Game/Templates/WorldMapTemplate',
     component: WorldMapTemplate,
     parameters: { layout: 'fullscreen' },
     tags: ['autodocs'],

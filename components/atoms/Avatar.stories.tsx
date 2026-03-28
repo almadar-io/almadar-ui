@@ -3,7 +3,7 @@ import { Avatar } from './Avatar';
 import { User, Bot, Settings } from 'lucide-react';
 
 const meta: Meta<typeof Avatar> = {
-    title: 'Atoms/Avatar',
+    title: 'Core/Atoms/Avatar',
     component: Avatar,
     parameters: {
         layout: 'centered',

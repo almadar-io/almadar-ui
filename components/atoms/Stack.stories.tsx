@@ -7,7 +7,7 @@ import { Box } from "./Box";
 import { Typography } from "./Typography";
 
 const meta: Meta<typeof Stack> = {
-  title: "Atoms/Stack",
+  title: "Core/Atoms/Stack",
   component: Stack,
   parameters: {
     layout: "padded",

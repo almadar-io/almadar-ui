@@ -44,7 +44,7 @@ const MOCK_FEATURES: FeatureEntity[] = [
 ];
 
 const meta: Meta<typeof FeatureGridOrganism> = {
-  title: 'Organisms/FeatureGridOrganism',
+  title: 'Marketing/Organisms/FeatureGridOrganism',
   component: FeatureGridOrganism,
   parameters: {
     layout: 'padded',

@@ -8,7 +8,7 @@ import { Typography } from './Typography';
 import { Box } from './Box';
 
 const meta: Meta<typeof ConditionalWrapper> = {
-  title: 'Atoms/ConditionalWrapper',
+  title: 'Core/Atoms/ConditionalWrapper',
   component: ConditionalWrapper,
   parameters: {
     layout: 'centered',

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { BookTableOfContents } from './BookTableOfContents';
 
 const meta: Meta<typeof BookTableOfContents> = {
-  title: 'Organisms/Book/BookTableOfContents',
+  title: 'Marketing/Organisms/Book/BookTableOfContents',
   component: BookTableOfContents,
   parameters: { layout: 'padded' },
 };

@@ -6,7 +6,7 @@ import { Card, CardContent } from './Card';
 import { VStack } from './Stack';
 
 const meta: Meta<typeof AnimatedReveal> = {
-  title: 'Atoms/AnimatedReveal',
+  title: 'Marketing/Atoms/AnimatedReveal',
   component: AnimatedReveal,
   parameters: {
     layout: 'padded',
