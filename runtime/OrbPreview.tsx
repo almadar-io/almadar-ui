@@ -126,7 +126,7 @@ function TraitInitializer({ traits, orbitalNames, onNavigate }: {
       if (responseData) {
         for (const [entityType, records] of Object.entries(responseData)) {
           if (Array.isArray(records)) {
-            entityStore.advance(entityType, records);
+            entityStore.setAll(entityType, records);
           }
         }
       }
@@ -204,7 +204,7 @@ function TraitInitializer({ traits, orbitalNames, onNavigate }: {
         if (initResponseData) {
           for (const [entityType, records] of Object.entries(initResponseData)) {
             if (Array.isArray(records)) {
-              entityStore.advance(entityType, records);
+              entityStore.setAll(entityType, records);
             }
           }
         }
@@ -281,7 +281,7 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate }: {
     if (!serverUrl && mockData) {
       for (const [entityType, records] of Object.entries(mockData)) {
         if (Array.isArray(records)) {
-          entityStore.advance(entityType, records);
+          entityStore.setAll(entityType, records);
         }
       }
     }

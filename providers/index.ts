@@ -35,6 +35,7 @@ export {
   EntityStoreProvider,
   EntityStoreContext,
   useEntityRef,
+  useEntityById,
   useEntityWatch,
   useEntityStore,
 } from './EntityStoreProvider';
