@@ -53,10 +53,6 @@ const config: StorybookConfig = {
         }),
       ],
       resolve: {
-        alias: {
-          // Resolve workspace packages for stories that import @almadar/std
-          '@almadar/std': path.resolve(__dirname, '../../almadar-std'),
-        },
         // Dedupe these packages to fix version conflicts
         dedupe: [
           "refractor",
