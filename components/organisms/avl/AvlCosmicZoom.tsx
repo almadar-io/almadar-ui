@@ -1,11 +1,11 @@
 'use client';
 
 /**
- * AvlCosmicZoom — Interactive Zoomable Orbital Visualization
+ * AvlCosmicZoom — Interactive Orbital Visualization
  *
- * V3: Delegates to FlowCanvas, which renders AVL primitives inside
- * React Flow nodes with continuous semantic zoom. The Props interface
- * is preserved for backward compatibility with callers.
+ * V3: Delegates to FlowCanvas. Nodes are live OrbPreview renders
+ * of each orbital/transition. Two-level navigation (overview + expanded).
+ * Props interface preserved for backward compatibility with callers.
  */
 
 import React from 'react';
@@ -51,15 +51,9 @@ export const AvlCosmicZoom: React.FC<AvlCosmicZoomProps> = (props) => {
     <FlowCanvas
       schema={props.schema}
       className={props.className}
-      color={props.color}
-      animated={props.animated}
       width={props.width}
       height={props.height ?? 400}
-      onZoomChange={props.onZoomChange}
-      focusTarget={props.focusTarget}
       initialOrbital={props.initialOrbital}
-      initialTrait={props.initialTrait}
-      stateCoverage={props.stateCoverage}
     />
   );
 };

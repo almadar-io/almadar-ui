@@ -105,7 +105,7 @@ export const Camera3D = forwardRef<Camera3DHandle, Camera3DProps>(
             }
 
             newCamera.position.copy(initialPosition.current);
-            newCamera.lookAt(initialTarget.current);
+            newCamera.lookAt(initialTarget.current.x, initialTarget.current.y, initialTarget.current.z);
 
             // Cast needed: project @types/three version differs from @react-three/fiber's bundled three types
             (set as (state: Record<string, unknown>) => void)({ camera: newCamera });
@@ -146,7 +146,7 @@ export const Camera3D = forwardRef<Camera3DHandle, Camera3DProps>(
             },
             reset: () => {
                 camera.position.copy(initialPosition.current);
-                (camera as unknown as THREE.Camera).lookAt(initialTarget.current);
+                (camera as unknown as THREE.Camera).lookAt(initialTarget.current.x, initialTarget.current.y, initialTarget.current.z);
                 if (controlsRef.current) {
                     controlsRef.current.target.copy(initialTarget.current);
                     controlsRef.current.update();
@@ -168,7 +168,7 @@ export const Camera3D = forwardRef<Camera3DHandle, Camera3DProps>(
                 ref={controlsRef}
                 camera={camera}
                 enabled={enableOrbit}
-                target={initialTarget.current}
+                target={[initialTarget.current.x, initialTarget.current.y, initialTarget.current.z]}
                 minDistance={minDistance}
                 maxDistance={maxDistance}
                 maxPolarAngle={maxPolarAngle}

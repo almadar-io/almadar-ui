@@ -138,7 +138,7 @@ export const Avl3DTransitionArc: React.FC<Avl3DTransitionArcProps> = ({
           document.body.style.cursor = 'auto';
         }}
       >
-        <tubeGeometry args={tubeArgs as unknown as ConstructorParameters<typeof import('three').TubeGeometry>} />
+        <tubeGeometry args={[tubeArgs[0], tubeArgs[1], tubeArgs[2], tubeArgs[3], tubeArgs[4]]} />
         <meshStandardMaterial
           color={color}
           emissive={color}

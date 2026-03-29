@@ -207,5 +207,11 @@
     "components",
     "hooks"
   ],
-  "homepage": "https://github.com/almadar-io/almadar#readme"
+  "homepage": "https://github.com/almadar-io/almadar#readme",
+  "pnpm": {
+    "overrides": {
+      "@types/react": "^19.0.0",
+      "@types/react-dom": "^19.0.0"
+    }
+  }
 }

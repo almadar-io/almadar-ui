@@ -81,6 +81,12 @@ export { AvlBindingEdge } from '../components/molecules/avl/AvlBindingEdge';
 // V3: ELK layout (shared)
 export { computeTraitLayout, edgePath, type LayoutNode, type LayoutEdge, type ElkLayout } from '../components/molecules/avl/avl-elk-layout';
 
+// V3 Revised: UI Projection components
+export { type ViewLevel, type PreviewNodeData, type EventEdgeData, type PatternEventSource, type RenderUIEntry } from '../components/molecules/avl/avl-preview-types';
+export { schemaToOverviewGraph, orbitalToExpandedGraph } from '../components/molecules/avl/avl-preview-converter';
+export { OrbPreviewNode } from '../components/molecules/avl/OrbPreviewNode';
+export { EventFlowEdge } from '../components/molecules/avl/EventFlowEdge';
+
 // AVL Organisms — Interactive Cosmic Zoom
 export {
   FlowCanvas,

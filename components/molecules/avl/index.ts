@@ -30,6 +30,12 @@ export { AvlBackwardEdge } from './AvlBackwardEdge';
 export { AvlPageEdge } from './AvlPageEdge';
 export { AvlBindingEdge } from './AvlBindingEdge';
 
+// V3 Revised: UI Projection components
+export { type ViewLevel, type PreviewNodeData, type EventEdgeData, type PatternEventSource, type RenderUIEntry, type ScreenSize, SCREEN_SIZE_PRESETS } from './avl-preview-types';
+export { schemaToOverviewGraph, orbitalToExpandedGraph } from './avl-preview-converter';
+export { OrbPreviewNode, ScreenSizeContext } from './OrbPreviewNode';
+export { EventFlowEdge } from './EventFlowEdge';
+
 // 3D Molecules (Three.js dependent - import via game/three barrel for SSR safety)
 export { Avl3DOrbitalNode, type Avl3DOrbitalNodeProps } from './Avl3DOrbitalNode';
 export { Avl3DCrossWire, type Avl3DCrossWireProps } from './Avl3DCrossWire';

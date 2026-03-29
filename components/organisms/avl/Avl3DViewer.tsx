@@ -98,7 +98,7 @@ function CameraController({ targetPosition, targetLookAt, animated }: CameraCont
         isAnimating.current = true;
       } else {
         camera.position.copy(targetPosVec.current);
-        camera.lookAt(targetLookVec.current);
+        camera.lookAt(targetLookVec.current.x, targetLookVec.current.y, targetLookVec.current.z);
       }
     }
   }, [targetPosition, targetLookAt, animated, camera]);
