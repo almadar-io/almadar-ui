@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "2.38.0",
+  "version": "2.39.0",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "main": "./dist/components/index.js",
@@ -139,6 +139,7 @@
     "react-leaflet": "^4.2.1",
     "react-markdown": "^9.0.0",
     "react-syntax-highlighter": "^16.1.0",
+    "refractor": "^4.8.1",
     "rehype-katex": "^7.0.0",
     "remark-gfm": "^4.0.0",
     "remark-math": "^6.0.0",
