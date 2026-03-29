@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "kflow-b3a39"
+  },
+  "targets": {
+    "kflow-b3a39": {
+      "hosting": {
+        "ui-design-system": [
+          "almadar-ui-design-system"
+        ]
+      }
+    }
+  }
+}

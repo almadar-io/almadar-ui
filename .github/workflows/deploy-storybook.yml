@@ -1,0 +1,77 @@
+name: Deploy Design System Storybook
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, v2]
+    paths:
+      - 'components/**'
+      - 'hooks/**'
+      - 'providers/**'
+      - 'context/**'
+      - 'stores/**'
+      - 'renderer/**'
+      - 'lib/**'
+      - 'types/**'
+      - 'runtime/**'
+      - '.storybook/**'
+      - '.github/workflows/deploy-storybook.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Storybook
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --no-frozen-lockfile
+        env:
+          NODE_OPTIONS: '--max-old-space-size=4096'
+
+      - name: Build Storybook
+        run: pnpm run build-storybook
+        env:
+          NODE_OPTIONS: '--max-old-space-size=4096'
+
+  deploy:
+    name: Deploy to Firebase Hosting
+    needs: build
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/v2') && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --no-frozen-lockfile
+        env:
+          NODE_OPTIONS: '--max-old-space-size=4096'
+
+      - name: Build Storybook
+        run: pnpm run build-storybook
+        env:
+          NODE_OPTIONS: '--max-old-space-size=4096'
+
+      - name: Deploy Design System to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: kflow-b3a39
+          channelId: live
+          target: ui-design-system

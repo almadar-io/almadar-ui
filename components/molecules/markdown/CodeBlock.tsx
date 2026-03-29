@@ -9,9 +9,81 @@
  */
 
 import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
-import SyntaxHighlighter from 'react-syntax-highlighter/dist/esm/prism';
+import SyntaxHighlighter from 'react-syntax-highlighter/dist/esm/prism-light';
 import dark from 'react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus';
+import { orbLanguage, ORB_COLORS } from '@almadar/syntax';
 import { Copy, Check } from 'lucide-react';
+
+// PrismLight requires explicit language registration.
+// Import common languages used in markdown code blocks.
+import langJson from 'react-syntax-highlighter/dist/esm/languages/prism/json';
+import langJavascript from 'react-syntax-highlighter/dist/esm/languages/prism/javascript';
+import langTypescript from 'react-syntax-highlighter/dist/esm/languages/prism/typescript';
+import langJsx from 'react-syntax-highlighter/dist/esm/languages/prism/jsx';
+import langTsx from 'react-syntax-highlighter/dist/esm/languages/prism/tsx';
+import langCss from 'react-syntax-highlighter/dist/esm/languages/prism/css';
+import langMarkdown from 'react-syntax-highlighter/dist/esm/languages/prism/markdown';
+import langBash from 'react-syntax-highlighter/dist/esm/languages/prism/bash';
+import langYaml from 'react-syntax-highlighter/dist/esm/languages/prism/yaml';
+import langRust from 'react-syntax-highlighter/dist/esm/languages/prism/rust';
+import langPython from 'react-syntax-highlighter/dist/esm/languages/prism/python';
+import langSql from 'react-syntax-highlighter/dist/esm/languages/prism/sql';
+import langDiff from 'react-syntax-highlighter/dist/esm/languages/prism/diff';
+import langToml from 'react-syntax-highlighter/dist/esm/languages/prism/toml';
+import langGo from 'react-syntax-highlighter/dist/esm/languages/prism/go';
+import langGraphql from 'react-syntax-highlighter/dist/esm/languages/prism/graphql';
+
+// Register built-in languages
+SyntaxHighlighter.registerLanguage('json', langJson);
+SyntaxHighlighter.registerLanguage('javascript', langJavascript);
+SyntaxHighlighter.registerLanguage('js', langJavascript);
+SyntaxHighlighter.registerLanguage('typescript', langTypescript);
+SyntaxHighlighter.registerLanguage('ts', langTypescript);
+SyntaxHighlighter.registerLanguage('jsx', langJsx);
+SyntaxHighlighter.registerLanguage('tsx', langTsx);
+SyntaxHighlighter.registerLanguage('css', langCss);
+SyntaxHighlighter.registerLanguage('markdown', langMarkdown);
+SyntaxHighlighter.registerLanguage('md', langMarkdown);
+SyntaxHighlighter.registerLanguage('bash', langBash);
+SyntaxHighlighter.registerLanguage('shell', langBash);
+SyntaxHighlighter.registerLanguage('sh', langBash);
+SyntaxHighlighter.registerLanguage('yaml', langYaml);
+SyntaxHighlighter.registerLanguage('yml', langYaml);
+SyntaxHighlighter.registerLanguage('rust', langRust);
+SyntaxHighlighter.registerLanguage('python', langPython);
+SyntaxHighlighter.registerLanguage('py', langPython);
+SyntaxHighlighter.registerLanguage('sql', langSql);
+SyntaxHighlighter.registerLanguage('diff', langDiff);
+SyntaxHighlighter.registerLanguage('toml', langToml);
+SyntaxHighlighter.registerLanguage('go', langGo);
+SyntaxHighlighter.registerLanguage('graphql', langGraphql);
+
+// Register .orb language from @almadar/syntax (refractor-compatible)
+SyntaxHighlighter.registerLanguage('orb', orbLanguage);
+
+// AVL-aligned style overrides for .orb token classes
+const orbStyleOverrides: Record<string, React.CSSProperties> = {
+  'orb-binding':     { color: ORB_COLORS.dark.binding, fontWeight: 'bold' },
+  'orb-effect':      { color: ORB_COLORS.dark.effect, fontWeight: 'bold' },
+  'orb-event':       { color: ORB_COLORS.dark.event },
+  'orb-slot':        { color: ORB_COLORS.dark.uiSlot },
+  'orb-structural':  { color: ORB_COLORS.dark.structural },
+  'orb-field-type':  { color: ORB_COLORS.dark.fieldType },
+  'orb-persistence': { color: ORB_COLORS.dark.persistence },
+  'orb-pattern':     { color: ORB_COLORS.dark.pattern },
+  'orb-behavior':    { color: ORB_COLORS.dark.behavior },
+  'orb-unknown-op':  { color: ORB_COLORS.dark.error, textDecoration: 'wavy underline' },
+  'orb-op-arithmetic': { color: ORB_COLORS.dark.arithmetic, fontWeight: 'bold' },
+  'orb-op-comparison': { color: ORB_COLORS.dark.comparison },
+  'orb-op-logic':    { color: ORB_COLORS.dark.logic },
+  'orb-op-string':   { color: ORB_COLORS.dark.string },
+  'orb-op-collection': { color: ORB_COLORS.dark.collection },
+  'orb-op-time':     { color: ORB_COLORS.dark.time },
+  'orb-op-control':  { color: ORB_COLORS.dark.control },
+  'orb-op-async':    { color: ORB_COLORS.dark.async },
+};
+
+const orbStyle: Record<string, React.CSSProperties> = { ...dark, ...orbStyleOverrides };
 import { Box } from '../../atoms/Box';
 import { Button } from '../../atoms/Button';
 import { Badge } from '../../atoms/Badge';
@@ -44,6 +116,8 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     className,
   }) => {
     const code = typeof rawCode === 'string' ? rawCode : String(rawCode ?? '');
+    const isOrb = language === 'orb';
+    const activeStyle = isOrb ? orbStyle : dark;
     const eventBus = useEventBus();
     const { t: _t } = useTranslate();
     const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -142,7 +216,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
           <SyntaxHighlighter
             PreTag="div"
             language={language}
-            style={dark}
+            style={activeStyle}
             customStyle={{
               backgroundColor: 'transparent',
               borderRadius: 0,

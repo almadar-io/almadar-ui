@@ -36,7 +36,7 @@ import { EventFlowEdge } from '../../molecules/avl/EventFlowEdge';
 import { schemaToOverviewGraph, orbitalToExpandedGraph } from '../../molecules/avl/avl-preview-converter';
 import type { ViewLevel, PreviewNodeData, ScreenSize } from '../../molecules/avl/avl-preview-types';
 import { SCREEN_SIZE_PRESETS } from '../../molecules/avl/avl-preview-types';
-import { TransitionPanel } from './TransitionPanel';
+import { OrbInspector } from './OrbInspector';
 
 // ---------------------------------------------------------------------------
 // Node & edge type registries
@@ -72,6 +72,10 @@ export interface FlowCanvasProps {
   }) => void;
   onLevelChange?: (level: ViewLevel, orbital?: string) => void;
   initialOrbital?: string;
+  /** Enable editing in the inspector. When true, fields become inputs. */
+  editable?: boolean;
+  /** Called when the user edits the schema via the inspector. */
+  onSchemaChange?: (schema: OrbitalSchema) => void;
   /** @deprecated Use onNodeClick instead. Kept for AvlCosmicZoom compat. */
   onZoomChange?: (level: string, context: Record<string, string | undefined>) => void;
   /** @deprecated Not used in V3. */
@@ -99,6 +103,8 @@ function FlowCanvasInner({
   onNodeClick,
   onLevelChange,
   initialOrbital,
+  editable,
+  onSchemaChange,
 }: FlowCanvasProps) {
   const parsedSchema = useMemo<OrbitalSchema>(() => {
     if (typeof schemaProp === 'string') return JSON.parse(schemaProp) as OrbitalSchema;
@@ -118,7 +124,7 @@ function FlowCanvasInner({
     selected: selectedPattern,
     select: (p: SelectedPattern | null) => {
       setSelectedPattern(p);
-      // When a pattern is selected, also set the node for the TransitionPanel
+      // When a pattern is selected, also set the node for OrbInspector
       if (p) setSelectedNode(p.nodeData);
     },
   }), [selectedPattern]);
@@ -333,9 +339,15 @@ function FlowCanvasInner({
         </Box>
       </Box>
 
-      {/* Transition detail panel (slides in when a node is clicked at Level 2) */}
+      {/* OrbInspector (contextual, shows when something is selected) */}
       {selectedNode && (
-        <TransitionPanel node={selectedNode} onClose={handleClosePanel} />
+        <OrbInspector
+          node={selectedNode}
+          schema={parsedSchema}
+          editable={editable}
+          onSchemaChange={onSchemaChange}
+          onClose={handleClosePanel}
+        />
       )}
       </Box>
     </PatternSelectionContext.Provider>

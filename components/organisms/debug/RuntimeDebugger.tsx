@@ -9,6 +9,7 @@
  */
 
 import * as React from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '../../../lib/cn';
 import type { EffectTrace, ServerResponseTrace, TransitionTrace } from '../../../lib/verificationRegistry';
 import { useDebugData } from './hooks/useDebugData';
@@ -149,6 +150,23 @@ function VerifyModePanel({
     const scrollRef = React.useRef<HTMLDivElement>(null);
     const prevCountRef = React.useRef(0);
 
+    // Poll for current walk step from orbital-verify engine
+    interface WalkStepInfo {
+        from: string; event: string; to: string;
+        guardCase: string | null; isRepositioning: boolean;
+        accepted: boolean; stepIndex: number; stepTotal: number;
+        traitName: string;
+    }
+    const [walkStep, setWalkStep] = React.useState<WalkStepInfo | null>(null);
+    React.useEffect(() => {
+        const interval = setInterval(() => {
+            const w = window as unknown as Record<string, unknown>;
+            const step = w.__orbitalWalkStep as WalkStepInfo | undefined;
+            if (step) setWalkStep(step);
+        }, 300);
+        return () => clearInterval(interval);
+    }, []);
+
     // Auto-scroll to bottom when new transitions arrive
     React.useEffect(() => {
         if (transitions.length > prevCountRef.current && scrollRef.current) {
@@ -157,15 +175,21 @@ function VerifyModePanel({
         prevCountRef.current = transitions.length;
     }, [transitions.length]);
 
-    return (
+    // Render into #slot-hud-bottom via portal so we sit below modals (z-40)
+    // and don't obscure any overlay slots (modal=z-1000, drawer=z-900).
+    // Falls back to inline rendering if the slot element doesn't exist.
+    const hudBottom = typeof document !== 'undefined' ? document.getElementById('slot-hud-bottom') : null;
+
+    const panel = (
         <div
             className={cn(
                 'runtime-debugger runtime-debugger--verify',
-                'fixed bottom-0 left-0 right-0 flex flex-col bg-gray-900 text-white border-t-2 border-cyan-500',
+                'flex flex-col bg-gray-900 text-white border-t-2 border-cyan-500',
+                hudBottom ? '' : 'fixed bottom-0 left-0 right-0',
                 className
             )}
             data-testid="debugger-verify"
-            style={{ zIndex: 99999, height: '25vh' }}
+            style={{ height: '25vh', zIndex: hudBottom ? undefined : 40 }}
         >
             {/* Status bar */}
             <div className="px-3 py-1.5 flex items-center gap-3 text-xs font-mono border-b border-gray-700 flex-shrink-0">
@@ -183,24 +207,57 @@ function VerifyModePanel({
                 )}
             </div>
 
-            {/* Full interaction timeline */}
-            <div ref={scrollRef} className="flex-1 overflow-y-auto">
-                <div className="px-2 py-1">
-                    {transitions.length === 0 ? (
-                        <div className="text-gray-500 text-xs font-mono py-2 text-center">
-                            Waiting for transitions...
-                        </div>
-                    ) : (
-                        <div className="space-y-0.5">
-                            {transitions.map((trace) => (
-                                <TransitionRow key={trace.id} trace={trace} />
-                            ))}
-                        </div>
-                    )}
+            {/* Timeline (left) + Walk Step (right) */}
+            <div className="flex-1 flex overflow-hidden">
+                {/* Full interaction timeline */}
+                <div ref={scrollRef} className="flex-1 overflow-y-auto">
+                    <div className="px-2 py-1">
+                        {transitions.length === 0 ? (
+                            <div className="text-gray-500 text-xs font-mono py-2 text-center">
+                                Waiting for transitions...
+                            </div>
+                        ) : (
+                            <div className="space-y-0.5">
+                                {transitions.map((trace) => (
+                                    <TransitionRow key={trace.id} trace={trace} />
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
+
+                {/* Walk step indicator (right column) */}
+                {walkStep && (
+                    <div className="w-56 flex-shrink-0 border-l border-gray-700 px-2 py-1 text-xs font-mono overflow-y-auto">
+                        <div className="text-cyan-400 font-bold mb-1">
+                            Walk Step {walkStep.stepIndex}/{walkStep.stepTotal}
+                        </div>
+                        <div className="text-gray-300 mb-1">{walkStep.traitName}</div>
+                        <div className="flex items-center gap-1 mb-1">
+                            <span className="text-yellow-300">{walkStep.from}</span>
+                            <span className="text-gray-500">--</span>
+                            <span className="text-green-300">{walkStep.event}</span>
+                            <span className="text-gray-500">--&gt;</span>
+                            <span className="text-yellow-300">{walkStep.to}</span>
+                        </div>
+                        {walkStep.guardCase && (
+                            <div className={walkStep.guardCase === 'pass' ? 'text-green-400' : 'text-red-400'}>
+                                guard: {walkStep.guardCase}
+                            </div>
+                        )}
+                        {walkStep.isRepositioning && (
+                            <div className="text-gray-500 italic">repositioning</div>
+                        )}
+                        <div className={walkStep.accepted ? 'text-green-400 mt-1' : 'text-red-400 mt-1'}>
+                            {walkStep.accepted ? '\u2713 accepted' : '\u2717 rejected'}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
+
+    return hudBottom ? createPortal(panel, hudBottom) : panel;
 }
 
 export interface RuntimeDebuggerProps {

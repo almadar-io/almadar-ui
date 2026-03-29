@@ -87,6 +87,9 @@ export { schemaToOverviewGraph, orbitalToExpandedGraph } from '../components/mol
 export { OrbPreviewNode } from '../components/molecules/avl/OrbPreviewNode';
 export { EventFlowEdge } from '../components/molecules/avl/EventFlowEdge';
 
+// OrbInspector
+export { OrbInspector, type OrbInspectorProps } from '../components/organisms/avl/OrbInspector';
+
 // AVL Organisms — Interactive Cosmic Zoom
 export {
   FlowCanvas,
