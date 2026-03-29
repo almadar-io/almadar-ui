@@ -149,7 +149,7 @@ export interface CodeBlockProps {
 }
 
 // Stable lineProps function (never changes, safe for memoized element)
-const LINE_PROPS_FN = (n: number) => ({ 'data-line': String(n - 1) });
+const LINE_PROPS_FN = (n: number): React.HTMLProps<HTMLElement> => ({ 'data-line': String(n - 1) } as React.HTMLProps<HTMLElement>);
 const HIDDEN_LINE_NUMBERS: React.CSSProperties = { display: 'none' };
 
 export const CodeBlock = React.memo<CodeBlockProps>(
