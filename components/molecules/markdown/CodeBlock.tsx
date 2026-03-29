@@ -8,7 +8,7 @@
  * - Emits: UI:COPY_CODE { language, success }
  */
 
-import React, { useState, useRef, useLayoutEffect, useEffect } from 'react';
+import React, { useState, useRef, useLayoutEffect, useEffect, useMemo, useCallback } from 'react';
 import SyntaxHighlighter from 'react-syntax-highlighter/dist/esm/prism-light';
 import dark from 'react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus';
 import { orbLanguage, ORB_COLORS } from '@almadar/syntax';
@@ -84,6 +84,46 @@ const orbStyleOverrides: Record<string, React.CSSProperties> = {
 };
 
 const orbStyle: Record<string, React.CSSProperties> = { ...dark, ...orbStyleOverrides };
+
+// ── Fold region computation ──────────────────────────────────────────
+
+interface FoldRegion {
+  start: number;
+  end: number;
+  closeBracket: string;
+}
+
+/** Find matching bracket pairs that span multiple lines (respects JSON strings). */
+function computeFoldRegions(code: string): FoldRegion[] {
+  const lines = code.split('\n');
+  const regions: FoldRegion[] = [];
+  const stack: { line: number; bracket: string }[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    let inString = false;
+    for (let j = 0; j < line.length; j++) {
+      const ch = line[j];
+      if (ch === '\\' && inString) { j++; continue; }
+      if (ch === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (ch === '{' || ch === '[') {
+        stack.push({ line: i, bracket: ch });
+      } else if (ch === '}' || ch === ']') {
+        const open = stack.pop();
+        if (open && open.line < i) {
+          regions.push({
+            start: open.line,
+            end: i,
+            closeBracket: ch,
+          });
+        }
+      }
+    }
+  }
+  return regions.sort((a, b) => a.start - b.start);
+}
+
 import { Box } from '../../atoms/Box';
 import { Button } from '../../atoms/Button';
 import { Badge } from '../../atoms/Badge';
@@ -102,9 +142,15 @@ export interface CodeBlockProps {
   showLanguageBadge?: boolean;
   /** Maximum height before scrolling */
   maxHeight?: string;
+  /** Enable JSON-style code folding (default: true for json/orb) */
+  foldable?: boolean;
   /** Additional CSS classes */
   className?: string;
 }
+
+// Stable lineProps function (never changes, safe for memoized element)
+const LINE_PROPS_FN = (n: number) => ({ 'data-line': String(n - 1) });
+const HIDDEN_LINE_NUMBERS: React.CSSProperties = { display: 'none' };
 
 export const CodeBlock = React.memo<CodeBlockProps>(
   ({
@@ -113,6 +159,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     showCopyButton = true,
     showLanguageBadge = true,
     maxHeight = '60vh',
+    foldable: foldableProp,
     className,
   }) => {
     const code = typeof rawCode === 'string' ? rawCode : String(rawCode ?? '');
@@ -121,15 +168,144 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     const eventBus = useEventBus();
     const { t: _t } = useTranslate();
     const scrollRef = useRef<HTMLDivElement | null>(null);
+    const codeRef = useRef<HTMLDivElement | null>(null);
     const savedScrollLeftRef = useRef<number>(0);
     const [copied, setCopied] = useState(false);
+
+    // ── Fold state ──
+    const isFoldable = foldableProp ?? (language === 'orb' || language === 'json');
+    const [collapsed, setCollapsed] = useState<Set<number>>(() => new Set());
+
+    const foldRegions = useMemo(
+      () => (isFoldable ? computeFoldRegions(code) : []),
+      [code, isFoldable],
+    );
+    const foldStartMap = useMemo(() => {
+      const m = new Map<number, FoldRegion>();
+      for (const r of foldRegions) m.set(r.start, r);
+      return m;
+    }, [foldRegions]);
+
+    const hiddenLines = useMemo(() => {
+      const h = new Set<number>();
+      for (const r of foldRegions) {
+        if (!collapsed.has(r.start)) continue;
+        for (let i = r.start + 1; i <= r.end; i++) h.add(i);
+      }
+      return h;
+    }, [foldRegions, collapsed]);
+
+    // Keep refs current so DOM click handlers can read latest state
+    const collapsedRef = useRef(collapsed);
+    collapsedRef.current = collapsed;
+    const foldStartMapRef = useRef(foldStartMap);
+    foldStartMapRef.current = foldStartMap;
+
+    const toggleFold = useCallback((lineNum: number) => {
+      setCollapsed((prev) => {
+        const next = new Set(prev);
+        if (next.has(lineNum)) next.delete(lineNum);
+        else next.add(lineNum);
+        return next;
+      });
+    }, []);
+    const toggleFoldRef = useRef(toggleFold);
+    toggleFoldRef.current = toggleFold;
+
+    useEffect(() => { setCollapsed(new Set()); }, [code]);
+
+    // ── Memoized highlight (never re-tokenizes on fold toggle) ──
+    // showLineNumbers + showInlineLineNumbers=false gives proper data-line
+    // without rendering inline numbers. lineNumberContainerStyle hides the gutter.
+    const highlightedElement = useMemo(
+      () => (
+        <SyntaxHighlighter
+          PreTag="div"
+          language={language}
+          style={activeStyle}
+          wrapLines
+          showLineNumbers
+          showInlineLineNumbers={false}
+          lineNumberContainerStyle={HIDDEN_LINE_NUMBERS}
+          lineProps={LINE_PROPS_FN}
+          customStyle={{
+            backgroundColor: 'transparent',
+            borderRadius: 0,
+            padding: 0,
+            margin: 0,
+            whiteSpace: 'pre',
+            minWidth: '100%',
+          }}
+        >
+          {code}
+        </SyntaxHighlighter>
+      ),
+      [code, language, activeStyle],
+    );
+
+    // ── DOM-level fold UI (no re-tokenization, just style + element injection) ──
+    useLayoutEffect(() => {
+      const container = codeRef.current;
+      if (!container) return;
+
+      // Clean previous fold UI
+      container.querySelectorAll('.fold-toggle, .fold-summary').forEach((el) => el.remove());
+
+      // Reset all line styles
+      const lineEls = container.querySelectorAll<HTMLElement>('[data-line]');
+      if (!isFoldable || foldRegions.length === 0) {
+        lineEls.forEach((el) => { el.style.display = ''; el.style.position = ''; el.style.paddingLeft = ''; });
+        return;
+      }
+
+      // Uniform left padding on ALL lines for aligned fold gutter
+      lineEls.forEach((el) => {
+        const num = parseInt(el.getAttribute('data-line') ?? '-1', 10);
+
+        if (hiddenLines.has(num)) {
+          el.style.display = 'none';
+          return;
+        }
+
+        el.style.display = '';
+        el.style.position = 'relative';
+        el.style.paddingLeft = '1.2em';
+
+        const region = foldStartMap.get(num);
+        if (!region) return;
+
+        const isCollapsed = collapsed.has(num);
+
+        // Fold toggle — positioned in the left padding area
+        const toggle = document.createElement('span');
+        toggle.className = 'fold-toggle';
+        toggle.textContent = isCollapsed ? '▶' : '▼';
+        toggle.style.cssText =
+          'position:absolute;left:0;top:0;width:1.2em;text-align:center;' +
+          'cursor:pointer;color:#858585;font-size:10px;user-select:none;' +
+          'line-height:inherit;height:100%';
+        toggle.addEventListener('click', (e) => {
+          e.stopPropagation();
+          toggleFoldRef.current(num);
+        });
+        el.insertBefore(toggle, el.firstChild);
+
+        // Fold summary for collapsed regions
+        if (isCollapsed) {
+          const summary = document.createElement('span');
+          summary.className = 'fold-summary';
+          summary.style.cssText = 'color:#858585;font-style:italic';
+          const count = region.end - region.start - 1;
+          summary.textContent = ` ... ${count} line${count !== 1 ? 's' : ''} ${region.closeBracket}`;
+          el.appendChild(summary);
+        }
+      });
+    }, [collapsed, hiddenLines, foldStartMap, foldRegions, isFoldable]);
 
     // Save scrollLeft before updates
     useLayoutEffect(() => {
       const el = scrollRef.current;
-      return () => {
-        if (el) savedScrollLeftRef.current = el.scrollLeft;
-      };
+      return () => { if (el) savedScrollLeftRef.current = el.scrollLeft; };
     }, [language, code]);
 
     // Restore scrollLeft after updates
@@ -142,14 +318,11 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     useEffect(() => {
       const el = scrollRef.current;
       if (!el) return;
-      const handle = () => {
-        savedScrollLeftRef.current = el.scrollLeft;
-      };
+      const handle = () => { savedScrollLeftRef.current = el.scrollLeft; };
       el.addEventListener('scroll', handle, { passive: true });
       return () => el.removeEventListener('scroll', handle);
     }, [language, code]);
 
-    // Copy to clipboard handler
     const handleCopy = async () => {
       try {
         await navigator.clipboard.writeText(code);
@@ -162,10 +335,11 @@ export const CodeBlock = React.memo<CodeBlockProps>(
       }
     };
 
+    const hasHeader = showLanguageBadge || showCopyButton;
+
     return (
       <Box className={`relative group ${className || ''}`}>
-        {/* Header with language badge and copy button */}
-        {(showLanguageBadge || showCopyButton) && (
+        {hasHeader && (
           <HStack
             justify="between"
             align="center"
@@ -194,7 +368,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
           </HStack>
         )}
 
-        {/* Code content — native div required for scroll ref management */}
+        {/* Code content */}
         <div
           ref={scrollRef}
           style={{
@@ -206,28 +380,12 @@ export const CodeBlock = React.memo<CodeBlockProps>(
             touchAction: 'pan-x pan-y',
             contain: 'paint',
             backgroundColor: '#1e1e1e',
-            borderRadius:
-              showLanguageBadge || showCopyButton
-                ? '0 0 0.5rem 0.5rem'
-                : '0.5rem',
-            padding: '1rem',
+            borderRadius: hasHeader ? '0 0 0.5rem 0.5rem' : '0.5rem',
           }}
         >
-          <SyntaxHighlighter
-            PreTag="div"
-            language={language}
-            style={activeStyle}
-            customStyle={{
-              backgroundColor: 'transparent',
-              borderRadius: 0,
-              padding: 0,
-              margin: 0,
-              whiteSpace: 'pre',
-              minWidth: '100%',
-            }}
-          >
-            {code}
-          </SyntaxHighlighter>
+          <div ref={codeRef} style={{ padding: '1rem' }}>
+            {highlightedElement}
+          </div>
         </div>
       </Box>
     );
@@ -236,7 +394,8 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     prev.language === next.language &&
     prev.code === next.code &&
     prev.showCopyButton === next.showCopyButton &&
-    prev.maxHeight === next.maxHeight,
+    prev.maxHeight === next.maxHeight &&
+    prev.foldable === next.foldable,
 );
 
 CodeBlock.displayName = 'CodeBlock';
