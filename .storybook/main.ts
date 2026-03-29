@@ -53,6 +53,10 @@ const config: StorybookConfig = {
         }),
       ],
       resolve: {
+        alias: {
+          // Self-referencing tsconfig path alias for lazy three.js imports
+          '@almadar/ui/components/organisms/game/three': path.resolve(__dirname, '../components/organisms/game/three/index.ts'),
+        },
         // Dedupe these packages to fix version conflicts
         dedupe: [
           "refractor",
