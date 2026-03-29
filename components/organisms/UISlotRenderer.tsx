@@ -699,12 +699,16 @@ interface SlotContentRendererProps {
   isLoading?: boolean;
   error?: Error | null;
   entity?: string;
+  /** Schema-compatible path for WYSIWYG drop targeting (e.g., "root.children.0"). */
+  patternPath?: string;
 }
 
 /**
  * Recursively render nested pattern children.
  *
  * Takes an array of child pattern configurations and renders them recursively.
+ * The `parentPath` parameter tracks the schema-compatible path for WYSIWYG drop targeting
+ * (matches `navigatePatternPath()` format: "root.children.0.children.1").
  */
 function renderPatternChildren(
   children:
@@ -712,6 +716,7 @@ function renderPatternChildren(
     | undefined,
   onDismiss: () => void,
   parentId = "root",
+  parentPath = "root",
 ): React.ReactNode {
   if (!children || !Array.isArray(children) || children.length === 0) {
     return null;
@@ -721,6 +726,9 @@ function renderPatternChildren(
     if (!child || typeof child !== "object") return null;
 
     const childId = `${parentId}-${index}`;
+    const childPath = parentPath === 'root'
+      ? `root.children.${index}`
+      : `${parentPath}.children.${index}`;
     const childContent: SlotContent = {
       id: childId,
       pattern: child.type,
@@ -734,6 +742,7 @@ function renderPatternChildren(
         key={childId}
         content={childContent}
         onDismiss={onDismiss}
+        patternPath={childPath}
       />
     );
   });
@@ -794,6 +803,7 @@ function renderPatternProps(
 function SlotContentRenderer({
   content,
   onDismiss,
+  patternPath,
 }: SlotContentRendererProps): React.ReactElement {
   // Resolve entity reference from EntityStore reactively.
   // Same pattern as the compiled app's useEntityRef — the component subscribes
@@ -817,9 +827,10 @@ function SlotContentRenderer({
     const hasChildren = PATTERNS_WITH_CHILDREN.has(content.pattern)
       || (Array.isArray(childrenConfig) && childrenConfig.length > 0);
 
-    // Render children recursively
+    // Render children recursively (pass patternPath for WYSIWYG drop targeting)
+    const myPath = patternPath ?? 'root';
     const renderedChildren = hasChildren
-      ? renderPatternChildren(childrenConfig, onDismiss, content.id)
+      ? renderPatternChildren(childrenConfig, onDismiss, content.id, myPath)
       : undefined;
 
     // Extract props without the children config (we pass rendered children instead)
@@ -846,6 +857,7 @@ function SlotContentRenderer({
       finalProps = renderedProps;
     }
 
+    const acceptsChildren = PATTERNS_WITH_CHILDREN.has(content.pattern);
     return (
       <Box
         className="slot-content"
@@ -853,6 +865,9 @@ function SlotContentRenderer({
         data-id={content.id}
         data-node-id={content.nodeId}
         data-source-trait={content.sourceTrait}
+        data-pattern-path={myPath}
+        data-pattern-type={content.pattern}
+        data-accepts-children={acceptsChildren ? 'true' : undefined}
       >
         <PatternComponent {...finalProps}>
           {renderedChildren}

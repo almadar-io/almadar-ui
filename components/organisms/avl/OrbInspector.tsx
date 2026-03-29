@@ -17,10 +17,15 @@
  */
 
 import React, { useContext, useMemo, useCallback, useState } from 'react';
-import type { OrbitalSchema, Expression, Trait, Transition } from '@almadar/core';
+import type { OrbitalSchema, OrbitalDefinition, Expression, Trait, Transition, FieldType } from '@almadar/core';
+import { FieldTypeSchema } from '@almadar/core';
 import { Box } from '../../atoms/Box';
+import { Button } from '../../atoms/Button';
 import { Typography } from '../../atoms/Typography';
 import { Input } from '../../atoms/Input';
+import { Select } from '../../atoms/Select';
+import { Icon } from '../../atoms/Icon';
+import { HStack } from '../../atoms/Stack';
 import { CodeBlock } from '../../molecules/markdown/CodeBlock';
 import { AvlState } from '../../atoms/avl/AvlState';
 import { AvlEvent } from '../../atoms/avl/AvlEvent';
@@ -34,6 +39,8 @@ import {
 import type { PreviewNodeData } from '../../molecules/avl/avl-preview-types';
 import { PatternSelectionContext } from '../../molecules/avl/OrbPreviewNode';
 import { getPatternDefinition, isEntityAwarePattern } from '@almadar/patterns';
+import { useEventBus } from '../../../hooks/useEventBus';
+import { useTranslate } from '../../../hooks/useTranslate';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -61,7 +68,7 @@ const FIELD_TYPE_MAP: Record<string, AvlFieldTypeKind> = {
 };
 
 function findEntity(schema: OrbitalSchema, orbitalName: string): { name: string; persistence: string; fields: Array<{ name: string; type: string; required?: boolean }> } | null {
-  const orbital = schema.orbitals?.find(o => o.name === orbitalName);
+  const orbital = (schema.orbitals ?? []).find((o: OrbitalDefinition) => o.name === orbitalName);
   if (!orbital || typeof orbital.entity === 'string') return null;
   const e = orbital.entity as unknown as Record<string, unknown>;
   const fields = ((e.fields ?? []) as unknown as Array<Record<string, unknown>>).map(f => ({
@@ -73,7 +80,7 @@ function findEntity(schema: OrbitalSchema, orbitalName: string): { name: string;
 }
 
 function findTransition(schema: OrbitalSchema, orbitalName: string, traitName: string, event: string): Transition | null {
-  const orbital = schema.orbitals?.find(o => o.name === orbitalName);
+  const orbital = (schema.orbitals ?? []).find((o: OrbitalDefinition) => o.name === orbitalName);
   if (!orbital) return null;
   const traits = (orbital.traits ?? []) as Trait[];
   const trait = traits.find(t => typeof t !== 'string' && t.name === traitName);
@@ -84,13 +91,42 @@ function findTransition(schema: OrbitalSchema, orbitalName: string, traitName: s
 }
 
 function findTraits(schema: OrbitalSchema, orbitalName: string): Array<{ name: string; stateCount: number }> {
-  const orbital = schema.orbitals?.find(o => o.name === orbitalName);
+  const orbital = (schema.orbitals ?? []).find((o: OrbitalDefinition) => o.name === orbitalName);
   if (!orbital) return [];
-  return ((orbital.traits ?? []) as Trait[]).filter(t => typeof t !== 'string').map(t => ({
+  return ((orbital.traits ?? []) as Trait[]).filter((t: Trait) => typeof t !== 'string').map((t: Trait) => ({
     name: t.name,
     stateCount: (t.stateMachine?.states as unknown[])?.length ?? 0,
   }));
 }
+
+/** Navigate a dot-separated path within a pattern config tree. */
+function findPatternInTree(root: Record<string, unknown>, path: string): Record<string, unknown> | null {
+  if (!path || path === 'root') return root;
+  const parts = path.split('.');
+  let current: unknown = root;
+  for (const part of parts) {
+    if (current === null || current === undefined || typeof current !== 'object') return null;
+    const record = current as Record<string, unknown>;
+    if (part === 'children' && Array.isArray(record.children)) {
+      current = record.children;
+    } else if (Array.isArray(current)) {
+      const idx = parseInt(part, 10);
+      if (isNaN(idx) || idx < 0 || idx >= (current as unknown[]).length) return null;
+      current = (current as unknown[])[idx];
+    } else {
+      current = record[part];
+    }
+  }
+  return typeof current === 'object' && current !== null ? current as Record<string, unknown> : null;
+}
+
+// Derived from @almadar/core FieldTypeSchema (canonical source)
+const FIELD_TYPE_OPTIONS: Array<{ value: string; label: string }> =
+  FieldTypeSchema.options.map((v: FieldType) => ({ value: v, label: v }));
+
+// Derived from EFFECT_TYPE_TO_CATEGORY keys (canonical source in avl/types.ts)
+const EFFECT_TYPE_OPTIONS: Array<{ value: string; label: string }> =
+  (Object.keys(EFFECT_TYPE_TO_CATEGORY) as AvlEffectType[]).map(v => ({ value: v, label: v }));
 
 // ---------------------------------------------------------------------------
 // Props
@@ -113,6 +149,8 @@ type InspectorTab = 'inspector' | 'code';
 export function OrbInspector({ node, schema, editable = false, onSchemaChange, onClose }: OrbInspectorProps): React.ReactElement {
   const { selected: selectedPattern } = useContext(PatternSelectionContext);
   const [activeTab, setActiveTab] = useState<InspectorTab>('inspector');
+  const eventBus = useEventBus();
+  const { t } = useTranslate();
 
   const orbitalName = (node.orbitalName as string) ?? '';
   const traitName = (node.traitName as string) ?? '';
@@ -135,32 +173,75 @@ export function OrbInspector({ node, schema, editable = false, onSchemaChange, o
   }, [schema, orbitalName, traitName, transitionEvent]);
   const traits = useMemo(() => findTraits(schema, orbitalName), [schema, orbitalName]);
 
+  // Resolve current pattern config values from the schema
+  const patternConfig = useMemo(() => {
+    if (!selectedPattern || !transition) return null;
+    const patternId = selectedPattern.patternId ?? 'root';
+    for (const eff of (transition.effects ?? []) as unknown[][]) {
+      if (Array.isArray(eff) && eff[0] === 'render-ui' && eff[2]) {
+        const found = findPatternInTree(eff[2] as Record<string, unknown>, patternId);
+        if (found) return found;
+      }
+    }
+    return null;
+  }, [selectedPattern, transition]);
+
   // Generate the relevant JSON slice for the code tab
   const orbCode = useMemo(() => {
-    const orbital = schema.orbitals?.find(o => o.name === orbitalName);
+    const orbital = (schema.orbitals ?? []).find((o: OrbitalDefinition) => o.name === orbitalName);
     if (!orbital) return '{}';
 
     if (isExpanded && traitName) {
-      // Show the specific transition
-      const traits = (orbital.traits ?? []) as Trait[];
-      const trait = traits.find(t => typeof t !== 'string' && t.name === traitName);
+      const traitList = (orbital.traits ?? []) as Trait[];
+      const trait = traitList.find(tr => typeof tr !== 'string' && tr.name === traitName);
       if (trait && typeof trait !== 'string' && trait.stateMachine) {
         if (transitionEvent) {
-          const t = (trait.stateMachine.transitions as Transition[])?.find(tx => tx.event === transitionEvent);
-          if (t) return JSON.stringify(t, null, 2);
+          const tx = (trait.stateMachine.transitions as Transition[])?.find(txn => txn.event === transitionEvent);
+          if (tx) return JSON.stringify(tx, null, 2);
         }
         return JSON.stringify({ name: trait.name, stateMachine: trait.stateMachine }, null, 2);
       }
     }
 
-    // Show the whole orbital
     return JSON.stringify(orbital, null, 2);
   }, [schema, orbitalName, traitName, transitionEvent, isExpanded]);
 
-  const handlePropChange = useCallback((prop: string, value: unknown) => {
-    if (!editable || !onSchemaChange) return;
-    void prop; void value;
-  }, [editable, onSchemaChange]);
+  // W1: Pattern prop editing via EventBus
+  const handlePropChange = useCallback((propName: string, value: unknown) => {
+    if (!editable) return;
+    eventBus.emit('UI:PROP_CHANGE', { propName, value });
+  }, [editable, eventBus]);
+
+  // W2: Entity field mutations via EventBus
+  const handleAddField = useCallback(() => {
+    eventBus.emit('UI:ADD_FIELD', {});
+  }, [eventBus]);
+
+  const handleUpdateField = useCallback((fieldName: string, updates: Record<string, unknown>) => {
+    eventBus.emit('UI:UPDATE_FIELD', { fieldName, updates });
+  }, [eventBus]);
+
+  const handleRemoveField = useCallback((fieldName: string) => {
+    eventBus.emit('UI:REMOVE_FIELD', { fieldName });
+  }, [eventBus]);
+
+  // W3: Guard editing via EventBus
+  const handleGuardChange = useCallback((guardExpr: string) => {
+    if (!editable) return;
+    // Pass the raw string; BuilderPage can parse if needed
+    eventBus.emit('UI:GUARD_CHANGE', { guard: guardExpr || null });
+  }, [editable, eventBus]);
+
+  // W3: Effect mutations via EventBus
+  const handleAddEffect = useCallback((effectType: string) => {
+    eventBus.emit('UI:ADD_EFFECT', { effectType });
+  }, [eventBus]);
+
+  const handleRemoveEffect = useCallback((effectIndex: number) => {
+    eventBus.emit('UI:REMOVE_EFFECT', { effectIndex });
+  }, [eventBus]);
+
+  void onSchemaChange; // Editing goes through EventBus, not direct callback
 
   const headerTitle = selectedPattern
     ? selectedPattern.patternType
@@ -236,22 +317,27 @@ export function OrbInspector({ node, schema, editable = false, onSchemaChange, o
             {/* Pattern Props */}
             {selectedPattern && patternDef?.propsSchema && (
               <Box className="px-4 py-3 border-b border-border/40">
-                <Typography variant="small" className="text-muted-foreground text-[10px] uppercase tracking-wider mb-2">Props</Typography>
+                <Typography variant="small" className="text-muted-foreground text-[10px] uppercase tracking-wider mb-2">{t('Props')}</Typography>
                 <Box className="flex flex-col gap-1.5">
-                  {Object.entries(patternDef.propsSchema).slice(0, 8).map(([propName, propSchema]) => {
+                  {Object.entries(patternDef.propsSchema).slice(0, 12).map(([propName, propSchema]) => {
                     const ps = propSchema as Record<string, unknown>;
+                    const currentValue = patternConfig ? patternConfig[propName] : undefined;
+                    const displayValue = currentValue !== undefined
+                      ? (typeof currentValue === 'object' ? JSON.stringify(currentValue) : String(currentValue))
+                      : '';
                     return (
                       <Box key={propName} className="flex items-center gap-2">
                         <Typography variant="small" className="text-muted-foreground text-[11px] w-20 shrink-0 font-mono">{propName}</Typography>
                         {editable ? (
                           <Input
+                            defaultValue={displayValue}
                             placeholder={(ps.types as string[])?.join(' | ') ?? 'string'}
                             className="flex-1 text-[11px] h-6"
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handlePropChange(propName, e.target.value)}
+                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => handlePropChange(propName, e.target.value)}
                           />
                         ) : (
                           <Typography variant="small" className="text-[11px] text-muted-foreground">
-                            {(ps.types as string[])?.join(' | ') ?? 'string'}{ps.required ? ' *' : ''}
+                            {displayValue || ((ps.types as string[])?.join(' | ') ?? 'string')}{ps.required ? ' *' : ''}
                           </Typography>
                         )}
                       </Box>
@@ -264,7 +350,7 @@ export function OrbInspector({ node, schema, editable = false, onSchemaChange, o
             {/* Entity Fields */}
             {((selectedPattern && isEntityPattern) || (!selectedPattern && !isExpanded)) && entity && (
               <Box className="px-4 py-3 border-b border-border/40">
-                <Typography variant="small" className="text-muted-foreground text-[10px] uppercase tracking-wider mb-2">Entity</Typography>
+                <Typography variant="small" className="text-muted-foreground text-[10px] uppercase tracking-wider mb-2">{t('Entity')}</Typography>
                 <Box className="flex items-center gap-2 mb-2">
                   <svg width={14} height={14}><circle cx={7} cy={7} r={5} fill="var(--color-primary)" /></svg>
                   <Typography variant="small" className="font-semibold text-[12px]">{entity.name}</Typography>
@@ -272,14 +358,55 @@ export function OrbInspector({ node, schema, editable = false, onSchemaChange, o
                 </Box>
                 <Box className="flex flex-col gap-1">
                   {entity.fields.map(f => (
-                    <Box key={f.name} className="flex items-center gap-2">
+                    <HStack key={f.name} gap="xs" className="items-center">
                       <svg width={12} height={12}><AvlFieldType x={6} y={6} kind={FIELD_TYPE_MAP[f.type] ?? 'string'} size={4} /></svg>
-                      <Typography variant="small" className="text-[11px] font-mono flex-1">{f.name}</Typography>
-                      <Typography variant="small" className="text-muted-foreground text-[10px]">{f.type}</Typography>
-                      {f.required && <Typography variant="small" className="text-primary text-[9px]">req</Typography>}
-                    </Box>
+                      {editable ? (
+                        <>
+                          <Input
+                            defaultValue={f.name}
+                            className="flex-1 text-[11px] font-mono h-6"
+                            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                              if (e.target.value !== f.name) {
+                                handleUpdateField(f.name, { name: e.target.value });
+                              }
+                            }}
+                          />
+                          <Select
+                            value={f.type}
+                            options={FIELD_TYPE_OPTIONS}
+                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleUpdateField(f.name, { type: e.target.value })}
+                            className="w-20 text-[10px] h-6"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveField(f.name)}
+                            className="shrink-0 p-0.5 h-6 w-6"
+                          >
+                            <Icon name="x" size="xs" />
+                          </Button>
+                        </>
+                      ) : (
+                        <>
+                          <Typography variant="small" className="text-[11px] font-mono flex-1">{f.name}</Typography>
+                          <Typography variant="small" className="text-muted-foreground text-[10px]">{f.type}</Typography>
+                          {f.required && <Typography variant="small" className="text-primary text-[9px]">{t('req')}</Typography>}
+                        </>
+                      )}
+                    </HStack>
                   ))}
                 </Box>
+                {editable && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleAddField}
+                    className="mt-2 text-[11px] w-full"
+                  >
+                    <Icon name="plus" size="xs" className="mr-1" />
+                    {t('Add Field')}
+                  </Button>
+                )}
               </Box>
             )}
 
@@ -331,29 +458,31 @@ export function OrbInspector({ node, schema, editable = false, onSchemaChange, o
             )}
 
             {/* Guard */}
-            {(transition?.guard ?? guard) && (
+            {(transition?.guard ?? guard ?? editable) && isExpanded && (
               <Box className="px-4 py-2 border-b border-border/40">
-                <Box className="flex items-center gap-2">
+                <HStack gap="xs" className="items-center">
                   <svg width={16} height={16}><AvlGuard x={8} y={8} size={12} /></svg>
                   {editable ? (
                     <Input
                       defaultValue={formatExpression(transition?.guard ?? guard)}
+                      placeholder={t('Guard expression')}
                       className="flex-1 text-[11px] font-mono h-6"
+                      onBlur={(e: React.FocusEvent<HTMLInputElement>) => handleGuardChange(e.target.value)}
                     />
                   ) : (
                     <Typography variant="small" className="font-mono text-[11px] text-muted-foreground">
                       {formatExpression(transition?.guard ?? guard)}
                     </Typography>
                   )}
-                </Box>
+                </HStack>
               </Box>
             )}
 
             {/* Effects */}
-            {effectTypes.length > 0 && (
+            {(effectTypes.length > 0 || editable) && isExpanded && (
               <Box className="px-4 py-3 border-b border-border/40">
                 <Typography variant="small" className="text-muted-foreground text-[10px] uppercase tracking-wider mb-2">
-                  Effects ({effectTypes.length})
+                  {t('Effects')} ({effectTypes.length})
                 </Typography>
                 <Box className="flex flex-col gap-1.5">
                   {effectTypes.map((type, i) => {
@@ -361,18 +490,31 @@ export function OrbInspector({ node, schema, editable = false, onSchemaChange, o
                     const category = EFFECT_TYPE_TO_CATEGORY[type as AvlEffectType];
                     const catColor = category ? EFFECT_CATEGORY_COLORS[category] : undefined;
                     return (
-                      <Box key={i} className="flex items-center gap-2">
+                      <HStack key={i} gap="xs" className="items-center">
                         <Typography variant="small" className="text-muted-foreground text-[11px] w-4 text-right shrink-0">{i + 1}.</Typography>
                         {isKnown && (
                           <svg width={16} height={16}><AvlEffect x={8} y={8} effectType={type as AvlEffectType} size={6} showBackground /></svg>
                         )}
-                        <Typography variant="small" className="text-[11px]" style={{ color: catColor?.color }}>
+                        <Typography variant="small" className="text-[11px] flex-1" style={{ color: catColor?.color }}>
                           {effectSummary(type)}
                         </Typography>
-                      </Box>
+                        {editable && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveEffect(i)}
+                            className="shrink-0 p-0.5 h-6 w-6"
+                          >
+                            <Icon name="x" size="xs" />
+                          </Button>
+                        )}
+                      </HStack>
                     );
                   })}
                 </Box>
+                {editable && (
+                  <AddEffectButton onAdd={handleAddEffect} />
+                )}
               </Box>
             )}
 
@@ -393,6 +535,45 @@ export function OrbInspector({ node, schema, editable = false, onSchemaChange, o
           </>
         )}
       </Box>
+    </Box>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Add Effect dropdown button
+// ---------------------------------------------------------------------------
+
+function AddEffectButton({ onAdd }: { onAdd: (type: string) => void }): React.ReactElement {
+  const [open, setOpen] = useState(false);
+  const { t } = useTranslate();
+
+  return (
+    <Box className="relative mt-2">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setOpen(prev => !prev)}
+        className="text-[11px] w-full"
+      >
+        <Icon name="plus" size="xs" className="mr-1" />
+        {t('Add Effect')}
+      </Button>
+      {open && (
+        <Box className="absolute z-20 top-full left-0 right-0 mt-1 bg-card border border-border rounded-md shadow-lg overflow-hidden">
+          {EFFECT_TYPE_OPTIONS.map(opt => (
+            <Box
+              key={opt.value}
+              className="px-3 py-1.5 text-[11px] cursor-pointer hover:bg-muted/50 flex items-center gap-2"
+              onClick={() => { onAdd(opt.value); setOpen(false); }}
+            >
+              {KNOWN_EFFECTS.has(opt.value) && (
+                <svg width={14} height={14}><AvlEffect x={7} y={7} effectType={opt.value as AvlEffectType} size={5} showBackground /></svg>
+              )}
+              <Typography variant="small" className="text-[11px]">{opt.label}</Typography>
+            </Box>
+          ))}
+        </Box>
+      )}
     </Box>
   );
 }

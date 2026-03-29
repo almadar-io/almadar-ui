@@ -198,6 +198,20 @@ export {
   type PinchZoomResult,
 } from './usePinchZoom';
 
+// Drag & Drop hooks (HTML5 DnD with structured payloads)
+export {
+  useDraggable,
+  ALMADAR_DND_MIME,
+  type DraggablePayload,
+  type UseDraggableOptions,
+  type UseDraggableResult,
+} from './useDraggable';
+export {
+  useDropZone,
+  type UseDropZoneOptions,
+  type UseDropZoneResult,
+} from './useDropZone';
+
 // GitHub integration hooks
 export {
   useGitHubStatus,

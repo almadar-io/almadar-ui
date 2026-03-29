@@ -12,7 +12,7 @@
  * passes clicks through to the pattern elements.
  */
 
-import React, { useMemo, useState, useCallback, useContext, createContext, useRef } from 'react';
+import React, { useMemo, useState, useCallback, useContext, createContext, useRef, useEffect } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import type {
   OrbitalSchema,
@@ -26,6 +26,8 @@ import { Typography } from '../../atoms/Typography';
 import { OrbPreview } from '../../../runtime/OrbPreview';
 import type { PreviewNodeData, PatternEventSource, ScreenSize } from './avl-preview-types';
 import { SCREEN_SIZE_PRESETS } from './avl-preview-types';
+import { useEventBus } from '../../../hooks/useEventBus';
+import { ALMADAR_DND_MIME, type DraggablePayload } from '../../../hooks/useDraggable';
 
 // ---------------------------------------------------------------------------
 // Contexts (provided by FlowCanvas)
@@ -94,7 +96,7 @@ function buildOrbitalSchema(
   fullSchema: OrbitalSchema,
   orbitalName: string,
 ): OrbitalSchema {
-  const orbital = fullSchema.orbitals?.find(o => o.name === orbitalName);
+  const orbital = (fullSchema.orbitals ?? []).find((o: OrbitalDefinition) => o.name === orbitalName);
   if (!orbital) return fullSchema;
   return { ...fullSchema, name: `${fullSchema.name}__${orbitalName}`, orbitals: [orbital] };
 }
@@ -107,7 +109,7 @@ function buildTransitionSchema(
   fromState?: string,
   toState?: string,
 ): OrbitalSchema {
-  const orbital = fullSchema.orbitals?.find(o => o.name === orbitalName);
+  const orbital = (fullSchema.orbitals ?? []).find((o: OrbitalDefinition) => o.name === orbitalName);
   if (!orbital) return fullSchema;
 
   const clonedOrbital: OrbitalDefinition = JSON.parse(JSON.stringify(orbital));
@@ -150,9 +152,11 @@ function buildTransitionSchema(
     break;
   }
 
-  const targetTrait = traits.find(t => {
+  const targetTrait = traits.find((t) => {
     if (typeof t === 'string') return t === traitName;
-    return (t as Trait).name === traitName;
+    if ('name' in t) return t.name === traitName;
+    if ('ref' in t) return t.ref === traitName;
+    return false;
   });
   if (targetTrait) {
     clonedOrbital.traits = [targetTrait];
@@ -174,6 +178,21 @@ const SELECTION_STYLES = `
   .orb-preview-live [data-pattern].pattern-selected {
     outline: 2px solid var(--color-primary);
     outline-offset: 1px;
+  }
+  .orb-preview-live.drag-active [data-accepts-children="true"] {
+    outline: 2px dashed var(--color-primary);
+    outline-offset: -2px;
+    transition: outline-color 0.15s, background-color 0.15s;
+  }
+  .orb-preview-live.drag-active [data-accepts-children="true"].drag-hover {
+    outline-color: var(--color-primary);
+    background-color: color-mix(in srgb, var(--color-primary) 5%, transparent);
+  }
+  .orb-preview-live .drop-indicator {
+    height: 2px;
+    background: var(--color-primary);
+    border-radius: 1px;
+    pointer-events: none;
   }
 `;
 
@@ -258,6 +277,99 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
     }
   }, [data, select]);
 
+  const eventBus = useEventBus();
+  const [dragActive, setDragActive] = useState(false);
+
+  // Listen for drag start/end from PatternPalette to toggle container highlighting
+  useEffect(() => {
+    const unsub1 = eventBus.on('UI:DRAG_START', (e) => {
+      const kind = (e.payload as Record<string, unknown>)?.kind;
+      if (kind === 'pattern') setDragActive(true);
+    });
+    const unsub2 = eventBus.on('UI:DRAG_END', () => setDragActive(false));
+    return () => { unsub1(); unsub2(); };
+  }, [eventBus]);
+
+  // Drop handler: find nearest container and calculate insertion index
+  const handlePreviewDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    // Remove all hover indicators
+    contentRef.current?.querySelectorAll('.drag-hover, .drop-indicator').forEach(el => {
+      el.classList.remove('drag-hover');
+      if (el.classList.contains('drop-indicator')) el.remove();
+    });
+
+    const raw = e.dataTransfer.getData(ALMADAR_DND_MIME);
+    if (!raw) return;
+    let payload: DraggablePayload;
+    try { payload = JSON.parse(raw) as DraggablePayload; } catch { return; }
+    if (payload.kind !== 'pattern') return;
+
+    // Walk up DOM to find nearest container with data-accepts-children
+    let el = e.target as HTMLElement;
+    while (el && el.dataset.acceptsChildren !== 'true') {
+      el = el.parentElement as HTMLElement;
+      if (!el || el === contentRef.current) break;
+    }
+    const containerPath = el?.dataset?.patternPath;
+    if (!containerPath) {
+      // Drop at root level
+      eventBus.emit('UI:PATTERN_INSERT', {
+        parentPath: 'root',
+        patternType: payload.data.type as string,
+        index: 0,
+      });
+      return;
+    }
+
+    // Calculate insertion index from cursor position among siblings
+    const pathChildren = el.querySelectorAll(':scope > [data-pattern-path]');
+    let insertIndex = pathChildren.length;
+
+    for (let i = 0; i < pathChildren.length; i++) {
+      const rect = pathChildren[i].getBoundingClientRect();
+      const style = el.firstElementChild ? getComputedStyle(el.firstElementChild) : null;
+      const isVertical = style?.flexDirection !== 'row';
+      const mid = isVertical ? rect.top + rect.height / 2 : rect.left + rect.width / 2;
+      const cursor = isVertical ? e.clientY : e.clientX;
+      if (cursor < mid) { insertIndex = i; break; }
+    }
+
+    eventBus.emit('UI:PATTERN_INSERT', {
+      parentPath: containerPath,
+      patternType: payload.data.type as string,
+      index: insertIndex,
+    });
+  }, [eventBus]);
+
+  const handlePreviewDragOver = useCallback((e: React.DragEvent) => {
+    if (!dragActive) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'copy';
+
+    // Highlight the nearest container under cursor
+    let el = e.target as HTMLElement;
+    while (el && el.dataset.acceptsChildren !== 'true') {
+      el = el.parentElement as HTMLElement;
+      if (!el || el === contentRef.current) break;
+    }
+
+    // Remove previous hover from all containers
+    contentRef.current?.querySelectorAll('.drag-hover').forEach(c => c.classList.remove('drag-hover'));
+    if (el?.dataset?.acceptsChildren === 'true') {
+      el.classList.add('drag-hover');
+    }
+  }, [dragActive]);
+
+  const handlePreviewDragLeave = useCallback((e: React.DragEvent) => {
+    void e;
+    contentRef.current?.querySelectorAll('.drag-hover').forEach(c => c.classList.remove('drag-hover'));
+  }, []);
+
   return (
     <Box
       className="rounded-lg border shadow-sm bg-card transition-all duration-200 overflow-hidden"
@@ -311,8 +423,11 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       {/* OrbPreview - always interactive, click to select patterns */}
       <Box
         ref={contentRef}
-        className="orb-preview-live nodrag"
+        className={`orb-preview-live nodrag${dragActive ? ' drag-active' : ''}`}
         onClick={handleContentClick}
+        onDrop={handlePreviewDrop}
+        onDragOver={handlePreviewDragOver}
+        onDragLeave={handlePreviewDragLeave}
       >
         {orbitalSchema ? (
           <Box style={{ minHeight: preset.minHeight }}>

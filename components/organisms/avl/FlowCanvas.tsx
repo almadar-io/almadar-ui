@@ -27,6 +27,7 @@ import {
   useReactFlow,
   type NodeTypes,
   type EdgeTypes,
+  type Connection,
 } from '@xyflow/react';
 import type { OrbitalSchema } from '@almadar/core';
 import { Box } from '../../atoms/Box';
@@ -76,6 +77,10 @@ export interface FlowCanvasProps {
   editable?: boolean;
   /** Called when the user edits the schema via the inspector. */
   onSchemaChange?: (schema: OrbitalSchema) => void;
+  /** Called when the user presses Delete/Backspace with a pattern selected. */
+  onPatternDelete?: (context: { patternId: string; nodeData: PreviewNodeData }) => void;
+  /** Called when the user drags from a source handle to a target handle (event wiring). */
+  onEventWire?: (wire: { eventName: string; sourceOrbital: string; targetOrbital: string; sourceTraitName?: string; targetTraitName?: string }) => void;
   /** @deprecated Use onNodeClick instead. Kept for AvlCosmicZoom compat. */
   onZoomChange?: (level: string, context: Record<string, string | undefined>) => void;
   /** @deprecated Not used in V3. */
@@ -105,6 +110,8 @@ function FlowCanvasInner({
   initialOrbital,
   editable,
   onSchemaChange,
+  onPatternDelete,
+  onEventWire,
 }: FlowCanvasProps) {
   const parsedSchema = useMemo<OrbitalSchema>(() => {
     if (typeof schemaProp === 'string') return JSON.parse(schemaProp) as OrbitalSchema;
@@ -196,6 +203,7 @@ function FlowCanvasInner({
   }, []);
 
   // Escape key → close panel first, then go back
+  // Delete/Backspace → delete selected pattern
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') {
       if (selectedNode) {
@@ -205,8 +213,16 @@ function FlowCanvasInner({
         setExpandedOrbital(undefined);
         onLevelChange?.('overview');
       }
+    } else if (e.key === 'Delete' || e.key === 'Backspace') {
+      // Don't intercept when user is typing in an input
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
+      if (selectedPattern && selectedPattern.nodeData) {
+        onPatternDelete?.({ patternId: selectedPattern.patternId ?? '', nodeData: selectedPattern.nodeData });
+        setSelectedPattern(null);
+      }
     }
-  }, [level, onLevelChange, selectedNode]);
+  }, [level, onLevelChange, selectedNode, selectedPattern, onPatternDelete]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
@@ -224,6 +240,25 @@ function FlowCanvasInner({
       onLevelChange?.('overview');
     }
   }, [level, onLevelChange, selectedNode]);
+
+  // Event wire drag: onConnect fires when user drags handle to handle
+  const handleConnect = useCallback((connection: Connection) => {
+    if (!connection.sourceHandle?.startsWith('event-') || !onEventWire) return;
+    const eventName = connection.sourceHandle.replace('event-', '');
+    const sourceNode = nodes.find(n => n.id === connection.source);
+    const targetNode = nodes.find(n => n.id === connection.target);
+    if (!sourceNode || !targetNode) return;
+
+    const srcData = sourceNode.data as PreviewNodeData;
+    const tgtData = targetNode.data as PreviewNodeData;
+    onEventWire({
+      eventName,
+      sourceOrbital: srcData.orbitalName ?? '',
+      targetOrbital: tgtData.orbitalName ?? '',
+      sourceTraitName: srcData.traitName,
+      targetTraitName: tgtData.traitName,
+    });
+  }, [nodes, onEventWire]);
 
   const screenSizeKeys: ScreenSize[] = ['mobile', 'tablet', 'desktop'];
 
@@ -245,6 +280,7 @@ function FlowCanvasInner({
           onEdgesChange={onEdgesChange}
           onNodeDoubleClick={handleNodeDoubleClick}
           onNodeClick={handleNodeClick}
+          onConnect={handleConnect}
           minZoom={0.1}
           maxZoom={2.0}
           fitView
