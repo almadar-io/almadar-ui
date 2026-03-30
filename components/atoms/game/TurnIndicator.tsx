@@ -36,7 +36,7 @@ export function TurnIndicator({
     <div
       className={cn(
         'inline-flex items-center rounded-lg',
-        'bg-gray-800/80 border border-gray-600 font-medium text-white',
+        'bg-[var(--color-card)]/80 border border-gray-600 font-medium text-[var(--color-foreground)]',
         sizes.wrapper,
         className
       )}

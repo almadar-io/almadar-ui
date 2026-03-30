@@ -48,9 +48,9 @@ export interface GameMenuProps {
 
 const variantMap = {
   primary:
-    "bg-blue-600 hover:bg-blue-500 text-white border-blue-400 shadow-lg shadow-blue-500/25",
-  secondary: "bg-gray-700 hover:bg-gray-600 text-white border-gray-500",
-  ghost: "bg-transparent hover:bg-white/10 text-white border-white/20",
+    "bg-[var(--color-primary)] hover:bg-blue-500 text-[var(--color-primary-foreground)] border-blue-400 shadow-lg shadow-blue-500/25",
+  secondary: "bg-[var(--color-surface,#374151)] hover:bg-gray-600 text-[var(--color-foreground)] border-gray-500",
+  ghost: "bg-transparent hover:bg-white/10 text-[var(--color-foreground)] border-white/20",
 };
 
 export function GameMenu({
@@ -118,7 +118,7 @@ export function GameMenu({
           />
         )}
         <h1
-          className="text-5xl md:text-7xl font-bold text-white tracking-tight"
+          className="text-5xl md:text-7xl font-bold text-[var(--color-foreground)] tracking-tight"
           style={{
             textShadow: "0 4px 12px rgba(0,0,0,0.5)",
           }}

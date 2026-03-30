@@ -52,7 +52,7 @@ export function HealthPanel({
   return (
     <Box
       className={cn(
-        'rounded-lg bg-gray-900/90 border border-gray-700 backdrop-blur-sm',
+        'rounded-lg bg-[var(--color-card)]/90 border border-gray-700 backdrop-blur-sm',
         sizes.padding,
         className
       )}

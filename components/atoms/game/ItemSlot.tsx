@@ -66,10 +66,10 @@ export function ItemSlot({
       title={label}
       className={cn(
         'relative flex items-center justify-center rounded-lg border-2',
-        'bg-gray-800/80 transition-all duration-150',
+        'bg-[var(--color-card)]/80 transition-all duration-150',
         sizeMap[size],
         empty
-          ? 'border-gray-700 bg-gray-900/50'
+          ? 'border-gray-700 bg-[var(--color-card)]/50'
           : rarityBorderMap[rarity],
         !empty && rarityGlowMap[rarity],
         selected && 'ring-2 ring-white ring-offset-1 ring-offset-gray-900',
@@ -89,7 +89,7 @@ export function ItemSlot({
               className={cn(
                 'absolute -bottom-1 -right-1 flex items-center justify-center',
                 'min-w-[18px] h-[18px] rounded-full px-1',
-                'bg-gray-700 border border-gray-500 text-[10px] font-bold text-white'
+                'bg-[var(--color-surface,#374151)] border border-gray-500 text-[10px] font-bold text-[var(--color-foreground)]'
               )}
             >
               {quantity}

@@ -16,6 +16,7 @@ export {
     EntitySchemaProvider,
     useEntitySchema,
     useEntityDefinition,
+    useEntitySchemaOptional,
     type EntitySchemaContextValue,
     type EntitySchemaProviderProps,
 } from './EntitySchemaContext';

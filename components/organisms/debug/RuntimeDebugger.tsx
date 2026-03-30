@@ -19,6 +19,7 @@ import { Button } from '../../atoms/Button';
 import { Card } from '../../atoms/Card';
 import { Badge } from '../../atoms/Badge';
 import { Typography } from '../../atoms/Typography';
+import { WalkMinimap } from './WalkMinimap';
 import { TraitsTab } from './tabs/TraitsTab';
 import { TicksTab } from './tabs/TicksTab';
 import { EntitiesTab } from './tabs/EntitiesTab';
@@ -37,26 +38,26 @@ import './RuntimeDebugger.css';
 function ServerResponseRow({ sr }: { sr: ServerResponseTrace }) {
     const entityEntries = Object.entries(sr.dataEntities);
     return (
-        <div className="ml-4 pl-2 border-l border-purple-700/50 py-0.5 text-[10px] font-mono">
+        <div className="ml-4 pl-2 border-l border-purple-500/30 py-0.5 text-[10px] font-mono">
             <div className="flex items-center gap-2">
-                <span className={sr.success ? 'text-green-400' : 'text-red-400'}>
+                <span className={sr.success ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
                     {sr.success ? '\u2713' : '\u2717'} server
                 </span>
-                <span className="text-purple-300">
+                <span className="text-purple-600 dark:text-purple-300">
                     {sr.orbitalName}
                 </span>
                 {sr.clientEffects > 0 && (
-                    <span className="px-1 rounded bg-purple-900/50 text-purple-300">
+                    <span className="px-1 rounded bg-purple-500/15 text-purple-600 dark:text-purple-300">
                         {sr.clientEffects} clientEffect{sr.clientEffects !== 1 ? 's' : ''}
                     </span>
                 )}
                 {sr.emittedEvents.length > 0 && (
-                    <span className="px-1 rounded bg-blue-900/50 text-blue-300">
+                    <span className="px-1 rounded bg-blue-500/15 text-blue-300">
                         emit: {sr.emittedEvents.join(', ')}
                     </span>
                 )}
                 {sr.error && (
-                    <span className="px-1 rounded bg-red-900/50 text-red-400 truncate max-w-[300px]">
+                    <span className="px-1 rounded bg-red-500/15 text-red-600 dark:text-red-400 truncate max-w-[300px]">
                         {sr.error}
                     </span>
                 )}
@@ -64,7 +65,7 @@ function ServerResponseRow({ sr }: { sr: ServerResponseTrace }) {
             {entityEntries.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-0.5">
                     {entityEntries.map(([name, count]) => (
-                        <span key={name} className="px-1 rounded bg-gray-800 text-gray-300">
+                        <span key={name} className="px-1 rounded bg-[var(--color-card)] text-foreground">
                             {name}: {count} row{count !== 1 ? 's' : ''}
                         </span>
                     ))}
@@ -81,13 +82,13 @@ function TransitionRow({ trace }: { trace: TransitionTrace }) {
     // Pure server response entry (no local transition)
     if (isServerEntry && trace.serverResponse) {
         return (
-            <div className="py-0.5 border-b border-gray-800 last:border-0">
+            <div className="py-0.5 border-b border-border last:border-0">
                 <div className="flex items-start gap-2 text-xs font-mono">
                     <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 bg-purple-500" />
                     <Badge variant="warning" size="sm" className="flex-shrink-0">
                         {trace.event}
                     </Badge>
-                    <span className="text-purple-400 flex-shrink-0">server response</span>
+                    <span className="text-purple-600 dark:text-purple-400 flex-shrink-0">server response</span>
                 </div>
                 <ServerResponseRow sr={trace.serverResponse} />
             </div>
@@ -96,15 +97,15 @@ function TransitionRow({ trace }: { trace: TransitionTrace }) {
 
     // Local transition (may also have a server response attached)
     return (
-        <div className="py-0.5 border-b border-gray-800 last:border-0">
+        <div className="py-0.5 border-b border-border last:border-0">
             <div className="flex items-start gap-2 text-xs font-mono">
                 <span className={cn(
                     'mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0',
                     hasFailedEffects ? 'bg-red-500' : 'bg-green-500'
                 )} />
                 <Badge variant="info" size="sm" className="flex-shrink-0">{trace.event}</Badge>
-                <span className="text-gray-300 flex-shrink-0">{trace.traitName}</span>
-                <span className="text-gray-400 flex-shrink-0">{trace.from} {'\u2192'} {trace.to}</span>
+                <span className="text-foreground flex-shrink-0">{trace.traitName}</span>
+                <span className="text-foreground/70 flex-shrink-0">{trace.from} {'\u2192'} {trace.to}</span>
             </div>
             {/* Effects */}
             {trace.effects.length > 0 && (
@@ -112,13 +113,13 @@ function TransitionRow({ trace }: { trace: TransitionTrace }) {
                     {trace.effects.map((eff: EffectTrace, i: number) => (
                         <span key={i} className={cn(
                             'px-1 rounded text-[10px]',
-                            eff.status === 'executed' ? 'bg-green-900/50 text-green-400' :
-                            eff.status === 'failed' ? 'bg-red-900/50 text-red-400' :
-                            'bg-yellow-900/50 text-yellow-400'
+                            eff.status === 'executed' ? 'bg-green-500/15 text-green-600 dark:text-green-400' :
+                            eff.status === 'failed' ? 'bg-red-500/15 text-red-600 dark:text-red-400' :
+                            'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400'
                         )}>
                             {eff.status === 'executed' ? '\u2713' : eff.status === 'failed' ? '\u2717' : '-'} {eff.type}
                             {eff.args.length > 0 && (
-                                <span className="text-gray-500 ml-0.5">
+                                <span className="text-foreground/50 ml-0.5">
                                     {JSON.stringify(eff.args).slice(0, 40)}
                                 </span>
                             )}
@@ -150,23 +151,6 @@ function VerifyModePanel({
     const scrollRef = React.useRef<HTMLDivElement>(null);
     const prevCountRef = React.useRef(0);
 
-    // Poll for current walk step from orbital-verify engine
-    interface WalkStepInfo {
-        from: string; event: string; to: string;
-        guardCase: string | null; isRepositioning: boolean;
-        accepted: boolean; stepIndex: number; stepTotal: number;
-        traitName: string;
-    }
-    const [walkStep, setWalkStep] = React.useState<WalkStepInfo | null>(null);
-    React.useEffect(() => {
-        const interval = setInterval(() => {
-            const w = window as unknown as Record<string, unknown>;
-            const step = w.__orbitalWalkStep as WalkStepInfo | undefined;
-            if (step) setWalkStep(step);
-        }, 300);
-        return () => clearInterval(interval);
-    }, []);
-
     // Auto-scroll to bottom when new transitions arrive
     React.useEffect(() => {
         if (transitions.length > prevCountRef.current && scrollRef.current) {
@@ -184,7 +168,7 @@ function VerifyModePanel({
         <div
             className={cn(
                 'runtime-debugger runtime-debugger--verify',
-                'flex flex-col bg-gray-900 text-white border-t-2 border-cyan-500',
+                'flex flex-col bg-[var(--color-card)] text-[var(--color-foreground)] border-t-2 border-cyan-500',
                 hudBottom ? '' : 'fixed bottom-0 left-0 right-0',
                 className
             )}
@@ -192,18 +176,18 @@ function VerifyModePanel({
             style={{ height: '25vh', zIndex: hudBottom ? undefined : 40 }}
         >
             {/* Status bar */}
-            <div className="px-3 py-1.5 flex items-center gap-3 text-xs font-mono border-b border-gray-700 flex-shrink-0">
+            <div className="px-3 py-1.5 flex items-center gap-3 text-xs font-mono border-b border-border flex-shrink-0">
                 <Badge variant={failedChecks > 0 ? 'danger' : 'success'} size="sm">
                     {failedChecks > 0 ? `${failedChecks} fail` : 'OK'}
                 </Badge>
-                <span className="text-gray-400">
+                <span className="text-foreground/70">
                     {localCount} local
                 </span>
-                <span className="text-purple-400">
+                <span className="text-purple-600 dark:text-purple-400">
                     {serverCount} server
                 </span>
                 {traitStates && (
-                    <span className="text-cyan-400 truncate max-w-[400px]">{traitStates}</span>
+                    <span className="text-cyan-600 dark:text-cyan-400 truncate max-w-[400px]">{traitStates}</span>
                 )}
             </div>
 
@@ -213,7 +197,7 @@ function VerifyModePanel({
                 <div ref={scrollRef} className="flex-1 overflow-y-auto">
                     <div className="px-2 py-1">
                         {transitions.length === 0 ? (
-                            <div className="text-gray-500 text-xs font-mono py-2 text-center">
+                            <div className="text-foreground/50 text-xs font-mono py-2 text-center">
                                 Waiting for transitions...
                             </div>
                         ) : (
@@ -226,33 +210,8 @@ function VerifyModePanel({
                     </div>
                 </div>
 
-                {/* Walk step indicator (right column) */}
-                {walkStep && (
-                    <div className="w-56 flex-shrink-0 border-l border-gray-700 px-2 py-1 text-xs font-mono overflow-y-auto">
-                        <div className="text-cyan-400 font-bold mb-1">
-                            Walk Step {walkStep.stepIndex}/{walkStep.stepTotal}
-                        </div>
-                        <div className="text-gray-300 mb-1">{walkStep.traitName}</div>
-                        <div className="flex items-center gap-1 mb-1">
-                            <span className="text-yellow-300">{walkStep.from}</span>
-                            <span className="text-gray-500">--</span>
-                            <span className="text-green-300">{walkStep.event}</span>
-                            <span className="text-gray-500">--&gt;</span>
-                            <span className="text-yellow-300">{walkStep.to}</span>
-                        </div>
-                        {walkStep.guardCase && (
-                            <div className={walkStep.guardCase === 'pass' ? 'text-green-400' : 'text-red-400'}>
-                                guard: {walkStep.guardCase}
-                            </div>
-                        )}
-                        {walkStep.isRepositioning && (
-                            <div className="text-gray-500 italic">repositioning</div>
-                        )}
-                        <div className={walkStep.accepted ? 'text-green-400 mt-1' : 'text-red-400 mt-1'}>
-                            {walkStep.accepted ? '\u2713 accepted' : '\u2717 rejected'}
-                        </div>
-                    </div>
-                )}
+                {/* Walk minimap (right column) */}
+                <WalkMinimap />
             </div>
         </div>
     );
@@ -523,7 +482,7 @@ export function RuntimeDebugger({
 
                     {/* Footer */}
                     <div className="runtime-debugger__footer">
-                        <Typography variant="small" className="text-gray-500">
+                        <Typography variant="small" className="text-foreground/50">
                             Press ` to toggle | window.__orbitalVerification for automation
                         </Typography>
                     </div>

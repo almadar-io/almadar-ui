@@ -73,6 +73,10 @@ export interface FlowCanvasProps {
   }) => void;
   onLevelChange?: (level: ViewLevel, orbital?: string) => void;
   initialOrbital?: string;
+  /** Start at Level 2 (expanded) when initialOrbital is set. Default: 'overview'. */
+  initialLevel?: ViewLevel;
+  /** Pre-select a node on mount (opens OrbInspector). */
+  initialSelectedNode?: PreviewNodeData;
   /** Enable editing in the inspector. When true, fields become inputs. */
   editable?: boolean;
   /** Called when the user edits the schema via the inspector. */
@@ -108,6 +112,8 @@ function FlowCanvasInner({
   onNodeClick,
   onLevelChange,
   initialOrbital,
+  initialLevel,
+  initialSelectedNode,
   editable,
   onSchemaChange,
   onPatternDelete,
@@ -119,12 +125,14 @@ function FlowCanvasInner({
   }, [schemaProp]);
 
   // Navigation state
-  const [level, setLevel] = useState<ViewLevel>('overview');
+  const [level, setLevel] = useState<ViewLevel>(
+    initialLevel ?? (initialOrbital ? 'expanded' : 'overview'),
+  );
   const [expandedOrbital, setExpandedOrbital] = useState<string | undefined>(
     initialOrbital,
   );
   const [screenSize, setScreenSize] = useState<ScreenSize>('tablet');
-  const [selectedNode, setSelectedNode] = useState<PreviewNodeData | null>(null);
+  const [selectedNode, setSelectedNode] = useState<PreviewNodeData | null>(initialSelectedNode ?? null);
   const [selectedPattern, setSelectedPattern] = useState<SelectedPattern | null>(null);
 
   const patternSelectionValue = useMemo(() => ({

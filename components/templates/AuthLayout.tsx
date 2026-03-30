@@ -55,10 +55,10 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           <Box className="relative z-10">
             <Link to="/" className="flex items-center gap-3">
               {logo || (
-                <Box className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur">
+                <Box className="w-10 h-10 bg-[var(--color-card)]/20 rounded-xl flex items-center justify-center backdrop-blur">
                   <Typography
                     variant="body1"
-                    className="text-white font-bold text-lg"
+                    className="text-[var(--color-foreground)] font-bold text-lg"
                   >
                     {appName.charAt(0).toUpperCase()}
                   </Typography>
@@ -66,7 +66,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
               )}
               <Typography
                 variant="body1"
-                className="text-2xl font-bold text-white"
+                className="text-2xl font-bold text-[var(--color-foreground)]"
               >
                 {appName}
               </Typography>
@@ -79,38 +79,38 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
               <VStack gap="lg">
                 <Typography
                   variant="h1"
-                  className="text-4xl font-bold text-white leading-tight"
+                  className="text-4xl font-bold text-[var(--color-foreground)] leading-tight"
                 >
                   Welcome to {appName}
                 </Typography>
                 <Typography
                   variant="body1"
-                  className="text-lg text-white/80 max-w-md"
+                  className="text-lg text-[var(--color-foreground)]/80 max-w-md"
                 >
                   Sign in to access your dashboard and manage your account.
                 </Typography>
 
                 {/* Testimonial or feature list */}
-                <Box className="mt-12 p-6 bg-white/10 rounded-xl backdrop-blur">
+                <Box className="mt-12 p-6 bg-[var(--color-card)]/10 rounded-xl backdrop-blur">
                   <Typography
                     variant="body1"
-                    className="text-white/90 italic"
+                    className="text-[var(--color-foreground)]/90 italic"
                   >
                     &quot;This platform has transformed how we work. Highly
                     recommended!&quot;
                   </Typography>
                   <HStack className="mt-4" gap="sm" align="center">
-                    <Box className="w-10 h-10 bg-white/20 rounded-full" />
+                    <Box className="w-10 h-10 bg-[var(--color-card)]/20 rounded-full" />
                     <VStack gap="none">
                       <Typography
                         variant="body1"
-                        className="text-white font-medium"
+                        className="text-[var(--color-foreground)] font-medium"
                       >
                         Jane Doe
                       </Typography>
                       <Typography
                         variant="body1"
-                        className="text-white/60 text-sm"
+                        className="text-[var(--color-foreground)]/60 text-sm"
                       >
                         CEO, Example Co.
                       </Typography>
@@ -122,8 +122,8 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           </Box>
 
           {/* Decorative elements */}
-          <Box className="absolute -bottom-32 -right-32 w-96 h-96 bg-white/5 rounded-full" />
-          <Box className="absolute -top-16 -right-16 w-64 h-64 bg-white/5 rounded-full" />
+          <Box className="absolute -bottom-32 -right-32 w-96 h-96 bg-[var(--color-card)]/5 rounded-full" />
+          <Box className="absolute -top-16 -right-16 w-64 h-64 bg-[var(--color-card)]/5 rounded-full" />
         </VStack>
       )}
 
@@ -142,7 +142,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
                 <Box className="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center">
                   <Typography
                     variant="body1"
-                    className="text-white font-bold text-xl"
+                    className="text-[var(--color-foreground)] font-bold text-xl"
                   >
                     {appName.charAt(0).toUpperCase()}
                   </Typography>

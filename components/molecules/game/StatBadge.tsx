@@ -34,7 +34,7 @@ const sizeMap = {
 };
 
 const variantMap = {
-  default: 'bg-gray-800/80 border-gray-700',
+  default: 'bg-[var(--color-card)]/80 border-gray-700',
   primary: 'bg-blue-900/80 border-blue-700',
   success: 'bg-green-900/80 border-green-700',
   warning: 'bg-yellow-900/80 border-yellow-700',
@@ -96,7 +96,7 @@ export function StatBadge({
       )}
       
       {format === 'text' && (
-        <span className="font-bold text-white">{value}</span>
+        <span className="font-bold text-[var(--color-foreground)]">{value}</span>
       )}
     </div>
   );

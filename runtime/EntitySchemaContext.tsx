@@ -96,4 +96,12 @@ export function useEntityDefinition(entityName: string): ResolvedEntity | undefi
     return entities.get(entityName);
 }
 
+/**
+ * Safe version of useEntitySchema that returns null when no provider is present.
+ * Used by UISlotRenderer which may render outside an EntitySchemaProvider (compiled mode).
+ */
+export function useEntitySchemaOptional(): EntitySchemaContextValue | null {
+    return useContext(EntitySchemaContext);
+}
+
 export default EntitySchemaProvider;

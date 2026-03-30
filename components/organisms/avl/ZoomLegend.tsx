@@ -63,14 +63,14 @@ export const ZoomLegend: React.FC<ZoomLegendProps> = ({ band }) => {
     <div className="absolute bottom-2 left-2 z-10">
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="px-2 py-1 text-[10px] rounded-md bg-[var(--color-card)]/90 border border-[var(--color-border)] text-[var(--color-muted-foreground)] backdrop-blur-sm cursor-pointer hover:bg-[var(--color-card)]"
+        className="px-2 py-1 text-[10px] rounded-md bg-card/90 border border-border text-muted-foreground backdrop-blur-sm cursor-pointer hover:bg-card"
       >
         {collapsed ? 'Legend' : 'Hide'}
       </button>
       {!collapsed && (
-        <div className="mt-1 px-2 py-1.5 rounded-md bg-[var(--color-card)]/95 border border-[var(--color-border)] backdrop-blur-sm space-y-0.5">
+        <div className="mt-1 px-2 py-1.5 rounded-md bg-card/95 border border-border backdrop-blur-sm space-y-0.5">
           {items.map((item, i) => (
-            <div key={i} className="flex items-center gap-1.5 text-[10px] text-[var(--color-muted-foreground)]">
+            <div key={i} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
               <span className="opacity-70 w-6 text-center">{item.icon}</span>
               <span>{item.label}</span>
             </div>

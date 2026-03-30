@@ -34,7 +34,7 @@ export function ChoiceButton({
         'flex items-center gap-2',
         selected
           ? 'bg-yellow-500/20 border-yellow-400 text-yellow-300'
-          : 'bg-white/5 border-white/10 text-white hover:bg-white/10 hover:border-white/30',
+          : 'bg-white/5 border-white/10 text-[var(--color-foreground)] hover:bg-white/10 hover:border-white/30',
         disabled && 'opacity-40 cursor-not-allowed hover:bg-white/5 hover:border-white/10',
         className
       )}

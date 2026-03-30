@@ -24,7 +24,7 @@ function getComboIntensity(combo: number): string {
   if (combo >= 10) return 'text-red-400 animate-pulse';
   if (combo >= 7) return 'text-orange-400';
   if (combo >= 4) return 'text-yellow-400';
-  return 'text-white';
+  return 'text-[var(--color-foreground)]';
 }
 
 function getComboScale(combo: number): string {
@@ -48,7 +48,7 @@ export function ComboCounter({
     <div
       className={cn(
         'inline-flex flex-col items-center justify-center',
-        'rounded-xl bg-gray-800/80 border border-gray-600 px-3 py-1.5',
+        'rounded-xl bg-[var(--color-card)]/80 border border-gray-600 px-3 py-1.5',
         'transition-transform duration-200',
         getComboScale(combo),
         className

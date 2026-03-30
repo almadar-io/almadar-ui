@@ -75,7 +75,7 @@ export function StatusEffect({
       {stacks !== undefined && stacks > 1 && (
         <span
           className={cn(
-            'absolute flex items-center justify-center rounded-full bg-white text-black font-bold leading-none',
+            'absolute flex items-center justify-center rounded-full bg-[var(--color-card)] text-[var(--color-foreground)] font-bold leading-none',
             sizes.badge
           )}
         >

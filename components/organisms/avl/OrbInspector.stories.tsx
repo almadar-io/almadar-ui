@@ -146,7 +146,7 @@ export const EntityAwarePattern: Story = {
   parameters: { docs: { description: { story: 'Click a form-field (entity-aware). Inspector shows field props + Patient entity fields with AVL FieldType glyphs.' } } },
 };
 
-/** Editable mode: fields become inputs. */
+/** Editable mode: fields become inputs. Pattern props, guard, effects all interactive. */
 export const EditableMode: Story = {
   args: {
     node: LEVEL2_NODE,
@@ -165,5 +165,27 @@ export const EditableMode: Story = {
       return <Wrapper><Story /></Wrapper>;
     },
   ],
-  parameters: { docs: { description: { story: 'Editable mode. Pattern props render as inputs. Guard expression is editable. Entity fields can be added/removed.' } } },
+  parameters: { docs: { description: { story: 'Editable mode. Pattern props render as inputs with current values. Guard expression is editable. Effects have delete buttons and Add Effect dropdown. All mutations emit via EventBus (UI:PROP_CHANGE, UI:GUARD_CHANGE, UI:ADD_EFFECT, UI:REMOVE_EFFECT).' } } },
+};
+
+/** Editable entity fields: add, rename, change type, delete. */
+export const EditableEntityFields: Story = {
+  args: {
+    node: LEVEL1_NODE,
+    schema: SCHEMA,
+    editable: true,
+    onClose: () => {},
+  },
+  parameters: { docs: { description: { story: 'Editable entity fields at orbital level. Each field has name Input, type Select (from @almadar/core FieldTypeSchema), and delete button. Add Field button at bottom. Mutations emit UI:UPDATE_FIELD, UI:REMOVE_FIELD, UI:ADD_FIELD via EventBus.' } } },
+};
+
+/** Editable transition guard and effects. */
+export const EditableTransitionEffects: Story = {
+  args: {
+    node: LEVEL2_NODE,
+    schema: SCHEMA,
+    editable: true,
+    onClose: () => {},
+  },
+  parameters: { docs: { description: { story: 'Editable guard expression input and effect list. Guard onBlur emits UI:GUARD_CHANGE. Each effect has delete button (UI:REMOVE_EFFECT). Add Effect dropdown with all effect types from EFFECT_TYPE_TO_CATEGORY (UI:ADD_EFFECT).' } } },
 };

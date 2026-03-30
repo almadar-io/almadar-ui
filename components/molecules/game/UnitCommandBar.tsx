@@ -47,7 +47,7 @@ export function UnitCommandBar({
   return (
     <Box
       className={cn(
-        'flex items-center gap-1.5 rounded-lg bg-gray-900/90 border border-gray-700 backdrop-blur-sm px-2 py-1.5',
+        'flex items-center gap-1.5 rounded-lg bg-[var(--color-card)]/90 border border-gray-700 backdrop-blur-sm px-2 py-1.5',
         className
       )}
     >

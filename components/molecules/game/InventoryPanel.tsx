@@ -173,7 +173,7 @@ export function InventoryPanel({
     <div className={cn('relative', className)}>
       {/* Inventory Grid */}
       <div
-        className="grid gap-1 bg-gray-900 p-2 rounded-lg border border-gray-700"
+        className="grid gap-1 bg-[var(--color-card)] p-2 rounded-lg border border-gray-700"
         style={{
           gridTemplateColumns: `repeat(${safeColumns}, ${slotSize}px)`,
           gridTemplateRows: `repeat(${rows}, ${slotSize}px)`,
@@ -185,10 +185,10 @@ export function InventoryPanel({
             type="button"
             className={cn(
               'relative flex items-center justify-center',
-              'bg-gray-800 border rounded transition-colors',
-              'hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500',
+              'bg-[var(--color-card)] border rounded transition-colors',
+              'hover:bg-[var(--color-surface,#374151)] focus:outline-none focus:ring-2 focus:ring-blue-500',
               selectedSlot === index
-                ? 'border-yellow-400 bg-gray-700'
+                ? 'border-yellow-400 bg-[var(--color-surface,#374151)]'
                 : 'border-gray-600'
             )}
             style={{ width: slotSize, height: slotSize }}
@@ -231,14 +231,14 @@ export function InventoryPanel({
       {/* Tooltip */}
       {showTooltips && hoveredItem && (
         <div
-          className="fixed z-50 bg-gray-900 border border-gray-600 rounded-lg p-2 shadow-lg pointer-events-none"
+          className="fixed z-50 bg-[var(--color-card)] border border-gray-600 rounded-lg p-2 shadow-lg pointer-events-none"
           style={{
             left: tooltipPosition.x,
             top: tooltipPosition.y,
             maxWidth: 200,
           }}
         >
-          <div className="font-semibold text-white">
+          <div className="font-semibold text-[var(--color-foreground)]">
             {hoveredItem.name || hoveredItem.type}
           </div>
           {hoveredItem.description && (

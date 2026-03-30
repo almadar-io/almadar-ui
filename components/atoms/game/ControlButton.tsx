@@ -44,9 +44,9 @@ const shapeMap = {
 };
 
 const variantMap = {
-  primary: 'bg-blue-600 text-white border-blue-400 hover:bg-blue-500',
-  secondary: 'bg-gray-700 text-white border-gray-500 hover:bg-gray-600',
-  ghost: 'bg-transparent text-white border-white/30 hover:bg-white/10',
+  primary: 'bg-blue-600 text-[var(--color-foreground)] border-blue-400 hover:bg-blue-500',
+  secondary: 'bg-[var(--color-surface,#374151)] text-[var(--color-foreground)] border-gray-500 hover:bg-gray-600',
+  ghost: 'bg-transparent text-[var(--color-foreground)] border-white/30 hover:bg-white/10',
 };
 
 export function ControlButton({

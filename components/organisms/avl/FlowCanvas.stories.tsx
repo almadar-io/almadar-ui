@@ -76,3 +76,24 @@ export const StringSchema: Story = {
     height: 600,
   },
 };
+
+/** Editable with delete key and event wiring. Select a pattern, press Delete. Drag between handles to wire events. */
+export const EditableWithWiring: Story = {
+  name: 'Clinic — Delete + Event Wiring',
+  args: {
+    schema: CLINIC_SCHEMA,
+    width: '100%',
+    height: 600,
+    editable: true,
+    onSchemaChange: (s) => console.log('Schema changed:', s.name),
+    onPatternDelete: (ctx) => console.log('Delete pattern:', ctx.patternId),
+    onEventWire: (wire) => console.log('Event wire:', wire.eventName, wire.sourceOrbital, '→', wire.targetOrbital),
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: 'Full editing capabilities. Click a pattern, press Delete to remove it (logged to console). Drag from an event source handle (right side) to another node\'s target handle (left side) to create an emit/listen event wire (logged to console).',
+      },
+    },
+  },
+};

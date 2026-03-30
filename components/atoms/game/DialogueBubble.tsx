@@ -44,7 +44,7 @@ export function DialogueBubble({
             {speaker}
           </span>
         )}
-        <span className="text-sm text-white leading-relaxed">
+        <span className="text-sm text-[var(--color-foreground)] leading-relaxed">
           {text}
         </span>
       </div>

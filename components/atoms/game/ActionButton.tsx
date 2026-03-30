@@ -56,7 +56,7 @@ export function ActionButton({
       disabled={isDisabled}
       onClick={onClick}
       className={cn(
-        'relative inline-flex items-center gap-1.5 rounded-md border font-medium text-white overflow-hidden transition-colors duration-150',
+        'relative inline-flex items-center gap-1.5 rounded-md border font-medium text-[var(--color-foreground)] overflow-hidden transition-colors duration-150',
         sizes.button,
         variantStyles[variant],
         isDisabled && 'opacity-60 cursor-not-allowed',

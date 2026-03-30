@@ -55,11 +55,11 @@ export function TimerDisplay({
     <div
       className={cn(
         'inline-flex items-center justify-center rounded-lg',
-        'bg-gray-800/80 border border-gray-600 font-mono font-bold tabular-nums',
+        'bg-[var(--color-card)]/80 border border-gray-600 font-mono font-bold tabular-nums',
         sizeMap[size],
         running && 'border-green-500/50',
         isLow && 'text-red-400 border-red-500/50 animate-pulse',
-        !isLow && 'text-white',
+        !isLow && 'text-[var(--color-foreground)]',
         className
       )}
     >

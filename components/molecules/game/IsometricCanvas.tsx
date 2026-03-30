@@ -1002,7 +1002,7 @@ export function IsometricCanvas({
                 style={{ height: viewportSize.height }}
                 data-testid="game-canvas-empty"
             >
-                <Box className="flex items-center justify-center h-full bg-slate-800 rounded-lg">
+                <Box className="flex items-center justify-center h-full bg-[var(--color-card)] rounded-lg">
                     <Stack direction="vertical" gap="md" align="center">
                         <Icon name="map" size="xl" />
                         <Typography variant="body" className="text-slate-400">

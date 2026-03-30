@@ -98,7 +98,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
               return (
                 <th
                   {...props}
-                  className="border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 px-4 py-2 text-left font-semibold"
+                  className="border border-gray-300 dark:border-gray-600 bg-[var(--color-muted)] px-4 py-2 text-left font-semibold"
                 >
                   {children}
                 </th>

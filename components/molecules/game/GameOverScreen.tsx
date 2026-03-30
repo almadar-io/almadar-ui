@@ -79,9 +79,9 @@ const variantColors = {
 };
 
 const buttonVariants = {
-  primary: "bg-blue-600 hover:bg-blue-500 text-white border-blue-400",
-  secondary: "bg-gray-700 hover:bg-gray-600 text-white border-gray-500",
-  ghost: "bg-transparent hover:bg-white/10 text-white border-white/20",
+  primary: "bg-[var(--color-primary)] hover:bg-blue-500 text-[var(--color-primary-foreground)] border-blue-400",
+  secondary: "bg-[var(--color-surface,#374151)] hover:bg-gray-600 text-[var(--color-foreground)] border-gray-500",
+  ghost: "bg-transparent hover:bg-white/10 text-[var(--color-foreground)] border-white/20",
 };
 
 function formatTime(ms: number): string {
@@ -205,7 +205,7 @@ export function GameOverScreen({
               return (
                 <div key={index} className="text-center">
                   <div className="text-gray-400 text-sm mb-1">{stat.label}</div>
-                  <div className="text-white text-2xl font-bold flex items-center justify-center gap-2">
+                  <div className="text-[var(--color-foreground)] text-2xl font-bold flex items-center justify-center gap-2">
                     {stat.icon && <span>{stat.icon}</span>}
                     <span className="tabular-nums">{displayValue}</span>
                   </div>

@@ -37,7 +37,7 @@ export function ScoreBoard({
   return (
     <Card
       className={cn(
-        'bg-gray-900/90 border-gray-700 backdrop-blur-sm',
+        'bg-[var(--color-card)]/90 border-gray-700 backdrop-blur-sm',
         className
       )}
     >

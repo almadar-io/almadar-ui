@@ -343,7 +343,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
           <HStack
             justify="between"
             align="center"
-            className="px-3 py-2 bg-gray-800 rounded-t-lg border-b border-gray-700"
+            className="px-3 py-2 bg-[var(--color-card)] rounded-t-lg border-b border-gray-700"
           >
             {showLanguageBadge && (
               <Badge variant="default" size="sm">

@@ -58,7 +58,7 @@ export const ZoomBreadcrumb: React.FC<ZoomBreadcrumbProps> = ({
   }
 
   return (
-    <div className="absolute top-2 left-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-[var(--color-card)]/90 border border-[var(--color-border)] text-[11px] text-[var(--color-muted-foreground)] backdrop-blur-sm">
+    <div className="absolute top-2 left-2 z-10 flex items-center gap-1 px-2 py-1 rounded-md bg-card/90 border border-border text-[11px] text-muted-foreground backdrop-blur-sm">
       {segments.map((seg, i) => (
         <React.Fragment key={i}>
           {i > 0 && <span className="opacity-40">{'>'}</span>}

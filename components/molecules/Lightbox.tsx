@@ -153,7 +153,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
         className={cn(
           "absolute top-4 right-4 z-10",
           "p-2 rounded-full",
-          "text-white bg-black bg-opacity-50",
+          "text-[var(--color-foreground)] bg-[var(--color-card)]",
           "hover:bg-opacity-70 transition-opacity",
           "focus:outline-none focus:ring-2 focus:ring-white",
         )}
@@ -173,7 +173,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
           className={cn(
             "absolute left-4 z-10",
             "p-2 rounded-full",
-            "text-white bg-black bg-opacity-50",
+            "text-[var(--color-foreground)] bg-[var(--color-card)]",
             "hover:bg-opacity-70 transition-opacity",
             "focus:outline-none focus:ring-2 focus:ring-white",
           )}
@@ -211,7 +211,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
           className={cn(
             "absolute right-4 z-10",
             "p-2 rounded-full",
-            "text-white bg-black bg-opacity-50",
+            "text-[var(--color-foreground)] bg-[var(--color-card)]",
             "hover:bg-opacity-70 transition-opacity",
             "focus:outline-none focus:ring-2 focus:ring-white",
           )}
@@ -224,12 +224,12 @@ export const Lightbox: React.FC<LightboxProps> = ({
       {/* Counter + caption */}
       <div className="absolute bottom-4 left-0 right-0 text-center">
         {showCounter && safeImages.length > 1 && (
-          <div className="text-white text-sm mb-1">
+          <div className="text-[var(--color-foreground)] text-sm mb-1">
             {index + 1} of {safeImages.length}
           </div>
         )}
         {currentImage?.caption && (
-          <div className="text-white text-sm opacity-80 px-8">{currentImage.caption}</div>
+          <div className="text-[var(--color-foreground)] text-sm opacity-80 px-8">{currentImage.caption}</div>
         )}
       </div>
     </div>

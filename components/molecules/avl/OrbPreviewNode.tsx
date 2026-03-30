@@ -346,10 +346,15 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   }, [eventBus]);
 
   const handlePreviewDragOver = useCallback((e: React.DragEvent) => {
-    if (!dragActive) return;
+    // Always preventDefault to allow drops (browser requirement)
+    // Check for our MIME type in the types list (getData is restricted during dragover)
+    if (!e.dataTransfer.types.includes(ALMADAR_DND_MIME)) return;
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = 'copy';
+
+    // Activate container highlighting on first dragover if not already active
+    if (!dragActive) setDragActive(true);
 
     // Highlight the nearest container under cursor
     let el = e.target as HTMLElement;

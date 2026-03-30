@@ -16,6 +16,8 @@
 
 import React, { Suspense, createContext, useContext, useEffect, useState } from "react";
 import { useEntityRef } from "../../providers/EntityStoreProvider";
+import { useEntitySchemaOptional } from "../../runtime/EntitySchemaContext";
+import type { ResolvedEntity } from "@almadar/core";
 import { createPortal } from "react-dom";
 import {
   useUISlots,
@@ -126,6 +128,81 @@ function getComponentForPattern(
     : (mapping as unknown as { component: string }).component;
   if (!name) return null;
   return COMPONENT_REGISTRY[name] ?? null;
+}
+
+// Form patterns whose `fields` should be enriched with entity field types
+const FORM_PATTERNS = new Set([
+  "form",
+  "form-section",
+  "inline-edit-form",
+  "wizard-step",
+]);
+
+/**
+ * Enrich form field definitions with entity schema type info.
+ * Mirrors what the compiler does at build time (EntityFieldInfo injection).
+ * At runtime, we read the entity schema from EntitySchemaContext.
+ */
+function enrichFormFields(
+  fields: unknown[],
+  entityDef: ResolvedEntity,
+): unknown[] {
+  const fieldMap = new Map(entityDef.fields.map((f) => [f.name, f]));
+
+  return fields.map((field) => {
+    if (typeof field === 'string') {
+      // Simple string field name — look up entity field and build SchemaField
+      const entityField = fieldMap.get(field);
+      if (entityField) {
+        const enriched: Record<string, unknown> = {
+          name: field,
+          label: field.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\b\w/g, (c) => c.toUpperCase()),
+          type: entityField.type,
+          required: entityField.required,
+        };
+        if (entityField.values && entityField.values.length > 0) {
+          enriched.values = entityField.values;
+        } else if (entityField.enumValues && entityField.enumValues.length > 0) {
+          enriched.values = entityField.enumValues;
+        }
+        if (entityField.relation) {
+          enriched.relation = entityField.relation;
+        }
+        return enriched;
+      }
+      return { name: field, label: field.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\b\w/g, (c) => c.toUpperCase()) };
+    }
+
+    if (field && typeof field === 'object' && !Array.isArray(field)) {
+      const obj = field as Record<string, unknown>;
+      const fieldName = (obj.name ?? obj.field) as string | undefined;
+      if (!fieldName) return field;
+
+      // Only enrich if type is not already specified
+      if (obj.type || obj.inputType) return field;
+
+      const entityField = fieldMap.get(fieldName);
+      if (!entityField) return field;
+
+      const enriched: Record<string, unknown> = { ...obj, type: entityField.type };
+      if (entityField.required && !('required' in obj)) {
+        enriched.required = true;
+      }
+      if (!obj.values && !obj.options) {
+        if (entityField.values && entityField.values.length > 0) {
+          enriched.values = entityField.values;
+        } else if (entityField.enumValues && entityField.enumValues.length > 0) {
+          enriched.values = entityField.enumValues;
+        }
+      }
+      if (!obj.relation && entityField.relation) {
+        enriched.relation = entityField.relation;
+      }
+      return enriched;
+    }
+
+    return field;
+  });
 }
 
 // Patterns that support nested children
@@ -813,6 +890,10 @@ function SlotContentRenderer({
   const entityType = typeof entityProp === 'string' ? entityProp : '';
   const storeData = useEntityRef(entityType);
 
+  // Entity schema for form field type enrichment (optional — only available in runtime mode)
+  const schemaCtx = useEntitySchemaOptional();
+  const entityDef = entityType && schemaCtx ? schemaCtx.entities.get(entityType) : undefined;
+
   const PatternComponent = getComponentForPattern(content.pattern);
 
   // If we have a registered component, render it with props
@@ -855,6 +936,18 @@ function SlotContentRenderer({
       }
     } else {
       finalProps = renderedProps;
+    }
+
+    // Form field type enrichment: inject entity field types into form SchemaFields.
+    // Mirrors what the compiler does at build time (EntityFieldInfo injection).
+    const isFormPattern = FORM_PATTERNS.has(content.pattern)
+      || content.pattern.includes('form');
+    if (isFormPattern && entityDef && Array.isArray(finalProps.fields)) {
+      finalProps.fields = enrichFormFields(finalProps.fields as unknown[], entityDef);
+      // For edit forms, pre-populate initialData from entity store
+      if (finalProps.mode === 'edit' && !finalProps.initialData && storeData.length > 0) {
+        finalProps.initialData = storeData[0] as Record<string, unknown>;
+      }
     }
 
     const acceptsChildren = PATTERNS_WITH_CHILDREN.has(content.pattern);

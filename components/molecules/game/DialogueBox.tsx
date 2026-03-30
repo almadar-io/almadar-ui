@@ -241,7 +241,7 @@ export function DialogueBox({
       role="dialog"
       aria-label="Dialogue"
     >
-      <div className="mx-4 my-4 bg-gray-900 bg-opacity-95 border-2 border-gray-600 rounded-lg overflow-hidden">
+      <div className="mx-4 my-4 bg-[var(--color-card)] bg-opacity-95 border-2 border-gray-600 rounded-lg overflow-hidden">
         <div className="flex">
           {/* Portrait */}
           {dialogue.portrait && (
@@ -263,7 +263,7 @@ export function DialogueBox({
             </div>
 
             {/* Dialogue text */}
-            <div className="text-white text-lg leading-relaxed min-h-[60px]">
+            <div className="text-[var(--color-foreground)] text-lg leading-relaxed min-h-[60px]">
               {displayedText}
               {isTyping && (
                 <span className="animate-pulse">▌</span>
@@ -279,10 +279,10 @@ export function DialogueBox({
                     type="button"
                     className={cn(
                       'block w-full text-left px-4 py-2 rounded transition-colors',
-                      'hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-yellow-400',
+                      'hover:bg-[var(--color-surface,#374151)] focus:outline-none focus:ring-2 focus:ring-yellow-400',
                       selectedChoice === index
-                        ? 'bg-gray-700 text-yellow-400'
-                        : 'bg-gray-800 text-white'
+                        ? 'bg-[var(--color-surface,#374151)] text-yellow-400'
+                        : 'bg-[var(--color-card)] text-[var(--color-foreground)]'
                     )}
                     onClick={(e) => {
                       e.stopPropagation();
