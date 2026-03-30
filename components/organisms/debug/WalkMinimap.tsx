@@ -239,7 +239,7 @@ export function WalkMinimap(): React.ReactElement | null {
               const toPos = posMap.get(tr.to);
               if (!fromPos || !toPos) return null;
 
-              const key = `${tr.from}+${tr.event}->${tr.to}`;
+              const key = `${tr.from}+${tr.event}->${tr.to}` as const;
               const isCurrent = key === currentEdgeKey && !walkStep.isRepositioning;
               const isCovered = activeEdgeKeys.has(key);
               const phase = activeEdgePhases.get(key);
