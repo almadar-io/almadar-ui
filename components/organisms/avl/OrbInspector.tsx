@@ -163,6 +163,8 @@ export function OrbInspector({ node, schema, editable = false, onSchemaChange, o
   const guard = node.guard as Expression | null | undefined;
   const isExpanded = Boolean(traitName);
 
+  const hasRenderUi = effectTypes.includes('render-ui');
+
   const patternType = selectedPattern?.patternType;
   const patternDef = useMemo(() => patternType ? getPatternDefinition(patternType) : null, [patternType]);
   const isEntityPattern = patternType ? isEntityAwarePattern(patternType) : false;
@@ -407,6 +409,40 @@ export function OrbInspector({ node, schema, editable = false, onSchemaChange, o
                     {t('Add Field')}
                   </Button>
                 )}
+              </Box>
+            )}
+
+            {/* Service Mode Toggle (service behaviors only) */}
+            {editable && !selectedPattern && !isExpanded && node.layer === 'Services' && (
+              <Box className="px-4 py-3 border-b border-border/40">
+                <Typography variant="small" className="text-muted-foreground text-[10px] uppercase tracking-wider mb-2">{t('Service Mode')}</Typography>
+                <HStack gap="sm" className="items-center">
+                  <Button
+                    variant={hasRenderUi ? 'primary' : 'ghost'}
+                    size="sm"
+                    className="flex-1 text-[11px]"
+                    onClick={() => {
+                      if (!hasRenderUi) eventBus.emit('UI:SERVICE_MODE_TOGGLE', { orbitalName: node.orbitalName, standalone: true });
+                    }}
+                  >
+                    <Icon name="monitor" size="xs" className="mr-1" />
+                    {t('Standalone')}
+                  </Button>
+                  <Button
+                    variant={hasRenderUi ? 'ghost' : 'primary'}
+                    size="sm"
+                    className="flex-1 text-[11px]"
+                    onClick={() => {
+                      if (hasRenderUi) eventBus.emit('UI:SERVICE_MODE_TOGGLE', { orbitalName: node.orbitalName, standalone: false });
+                    }}
+                  >
+                    <Icon name="cpu" size="xs" className="mr-1" />
+                    {t('Embedded')}
+                  </Button>
+                </HStack>
+                <Typography variant="small" className="text-muted-foreground text-[10px] mt-1">
+                  {hasRenderUi ? t('Renders its own UI') : t('Headless, wired to other behaviors')}
+                </Typography>
               </Box>
             )}
 

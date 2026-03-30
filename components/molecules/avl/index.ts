@@ -36,6 +36,11 @@ export { schemaToOverviewGraph, orbitalToExpandedGraph } from './avl-preview-con
 export { OrbPreviewNode, ScreenSizeContext } from './OrbPreviewNode';
 export { EventFlowEdge } from './EventFlowEdge';
 
+// V3 Revised: Behavior Compose components
+export { type ComposeViewLevel, type BehaviorComposeNodeData, type BehaviorWireEdgeData, type BehaviorCanvasEntry, type ConnectableEvent } from './avl-behavior-compose-types';
+export { BehaviorComposeNode } from './BehaviorComposeNode';
+export { behaviorsToComposeGraph, registryEntryToCanvasEntry, type BehaviorRegistryRecord } from './avl-behavior-compose-converter';
+
 // 3D Molecules (Three.js dependent - import via game/three barrel for SSR safety)
 export { Avl3DOrbitalNode, type Avl3DOrbitalNodeProps } from './Avl3DOrbitalNode';
 export { Avl3DCrossWire, type Avl3DCrossWireProps } from './Avl3DCrossWire';

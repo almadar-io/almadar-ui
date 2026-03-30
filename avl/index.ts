@@ -87,6 +87,11 @@ export { schemaToOverviewGraph, orbitalToExpandedGraph } from '../components/mol
 export { OrbPreviewNode } from '../components/molecules/avl/OrbPreviewNode';
 export { EventFlowEdge } from '../components/molecules/avl/EventFlowEdge';
 
+// V3 Revised: Behavior Compose
+export { type ComposeViewLevel, type BehaviorComposeNodeData, type BehaviorWireEdgeData, type BehaviorCanvasEntry, type ConnectableEvent } from '../components/molecules/avl/avl-behavior-compose-types';
+export { BehaviorComposeNode } from '../components/molecules/avl/BehaviorComposeNode';
+export { behaviorsToComposeGraph, registryEntryToCanvasEntry, type BehaviorRegistryRecord } from '../components/molecules/avl/avl-behavior-compose-converter';
+
 // OrbInspector
 export { OrbInspector, type OrbInspectorProps } from '../components/organisms/avl/OrbInspector';
 

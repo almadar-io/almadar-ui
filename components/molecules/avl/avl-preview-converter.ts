@@ -313,7 +313,12 @@ function findCrossLinks(orbitals: OrbitalDefinition[]): CrossLink[] {
  * Build a React Flow graph for the overview level.
  * Each orbital gets one node showing its INIT transition's UI.
  */
-export function schemaToOverviewGraph(schema: OrbitalSchema, mockData?: Record<string, unknown[]>): {
+export function schemaToOverviewGraph(
+  schema: OrbitalSchema,
+  mockData?: Record<string, unknown[]>,
+  behaviorMeta?: Record<string, { layer: string }>,
+  layoutHint?: 'pipeline' | 'grid',
+): {
   nodes: Node<PreviewNodeData>[];
   edges: Edge<EventEdgeData>[];
 } {
@@ -322,7 +327,7 @@ export function schemaToOverviewGraph(schema: OrbitalSchema, mockData?: Record<s
   const edges: Edge<EventEdgeData>[] = [];
 
   const count = orbitals.length;
-  const cols = Math.ceil(Math.sqrt(count));
+  const cols = layoutHint === 'pipeline' ? count : Math.ceil(Math.sqrt(count));
 
   for (let i = 0; i < orbitals.length; i++) {
     const orb = orbitals[i];
@@ -370,6 +375,24 @@ export function schemaToOverviewGraph(schema: OrbitalSchema, mockData?: Record<s
 
     const eventSources = collectEventSources(initPatterns);
 
+    // Enrich event sources with typed payload fields from state machine events
+    for (const source of eventSources) {
+      for (const trait of traits) {
+        const sm = getStateMachine(trait);
+        if (!sm) continue;
+        const smEvents = (trait.stateMachine?.events ?? []) as unknown as Array<Record<string, unknown>>;
+        const matchingEvent = smEvents.find(ev => ev.key === source.event);
+        if (matchingEvent?.payload && Array.isArray(matchingEvent.payload)) {
+          source.payloadFields = (matchingEvent.payload as Array<Record<string, unknown>>).map(p => ({
+            name: String(p.name ?? ''),
+            type: String(p.type ?? 'string'),
+            ...(p.required ? { required: true as const } : {}),
+          }));
+          break;
+        }
+      }
+    }
+
     const col = i % cols;
     const row = Math.floor(i / cols);
 
@@ -382,6 +405,7 @@ export function schemaToOverviewGraph(schema: OrbitalSchema, mockData?: Record<s
         patterns: initPatterns,
         eventSources,
         effectTypes: initEffectTypes,
+        layer: behaviorMeta?.[orb.name]?.layer,
         stateRole: 'initial',
         entityName: entityInfo.name,
         persistence: entityInfo.persistence,

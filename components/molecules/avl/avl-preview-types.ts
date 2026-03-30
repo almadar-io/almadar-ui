@@ -59,6 +59,9 @@ export interface PatternEventSource {
 
   /** Vertical position hint (0..1) for handle placement on the node. */
   positionHint: number;
+
+  /** Typed payload fields if this event carries data. */
+  payloadFields?: Array<{ name: string; type: string; required?: boolean }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -107,6 +110,9 @@ export interface PreviewNodeData extends Record<string, unknown> {
    * to connect from the specific button/link to the target screen.
    */
   eventSources: PatternEventSource[];
+
+  /** Behavior layer for visual indicator (color band). */
+  layer?: string;
 
   /** State role for visual indicator. */
   stateRole?: 'initial' | 'terminal' | 'hub' | 'error' | 'default';

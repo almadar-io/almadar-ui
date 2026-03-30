@@ -38,6 +38,11 @@ import { schemaToOverviewGraph, orbitalToExpandedGraph } from '../../molecules/a
 import type { ViewLevel, PreviewNodeData, ScreenSize } from '../../molecules/avl/avl-preview-types';
 import { SCREEN_SIZE_PRESETS } from '../../molecules/avl/avl-preview-types';
 import { OrbInspector } from './OrbInspector';
+import { validateWire } from '../../molecules/avl/wire-validation';
+import { useEventBus } from '../../../hooks/useEventBus';
+import { BehaviorComposeNode } from '../../molecules/avl/BehaviorComposeNode';
+import { behaviorsToComposeGraph } from '../../molecules/avl/avl-behavior-compose-converter';
+import type { ComposeViewLevel, BehaviorCanvasEntry, BehaviorWireEdgeData, BehaviorComposeNodeData } from '../../molecules/avl/avl-behavior-compose-types';
 
 // ---------------------------------------------------------------------------
 // Node & edge type registries
@@ -45,6 +50,7 @@ import { OrbInspector } from './OrbInspector';
 
 const NODE_TYPES: NodeTypes = {
   preview: OrbPreviewNode,
+  behaviorCompose: BehaviorComposeNode,
 } as NodeTypes;
 
 const EDGE_TYPES: EdgeTypes = {
@@ -85,6 +91,18 @@ export interface FlowCanvasProps {
   onPatternDelete?: (context: { patternId: string; nodeData: PreviewNodeData }) => void;
   /** Called when the user drags from a source handle to a target handle (event wiring). */
   onEventWire?: (wire: { eventName: string; sourceOrbital: string; targetOrbital: string; sourceTraitName?: string; targetTraitName?: string }) => void;
+  /** Behavior layer metadata for node styling (layer color bands). */
+  behaviorMeta?: Record<string, { layer: string }>;
+  /** Layout hint: 'pipeline' renders nodes left-to-right, 'grid' (default) uses sqrt-based grid. */
+  layoutHint?: 'pipeline' | 'grid';
+  /** Called when the user clicks a node in overview level (for composition hints). */
+  onNodeSelect?: (orbitalName: string) => void;
+  /** When 'behavior', shows behavior-level glyph nodes instead of orbital previews. */
+  composeLevel?: ComposeViewLevel;
+  /** Behavior entries for compose mode (only when composeLevel='behavior'). */
+  behaviorEntries?: BehaviorCanvasEntry[];
+  /** Event wires between behaviors (only when composeLevel='behavior'). */
+  behaviorWires?: BehaviorWireEdgeData[];
   /** @deprecated Use onNodeClick instead. Kept for AvlCosmicZoom compat. */
   onZoomChange?: (level: string, context: Record<string, string | undefined>) => void;
   /** @deprecated Not used in V3. */
@@ -118,6 +136,12 @@ function FlowCanvasInner({
   onSchemaChange,
   onPatternDelete,
   onEventWire,
+  behaviorMeta,
+  layoutHint,
+  onNodeSelect,
+  composeLevel,
+  behaviorEntries,
+  behaviorWires,
 }: FlowCanvasProps) {
   const parsedSchema = useMemo<OrbitalSchema>(() => {
     if (typeof schemaProp === 'string') return JSON.parse(schemaProp) as OrbitalSchema;
@@ -144,22 +168,41 @@ function FlowCanvasInner({
     },
   }), [selectedPattern]);
 
+  // Track whether we're at the behavior compose level (for drill-down/escape)
+  const [atBehaviorLevel, setAtBehaviorLevel] = useState(composeLevel === 'behavior');
+
   // Compute graph for current level
-  const { overviewNodes, overviewEdges, expandedNodes, expandedEdges } = useMemo(() => {
-    const overview = schemaToOverviewGraph(parsedSchema, mockData);
+  const { composeNodes, composeEdges, overviewNodes, overviewEdges, expandedNodes, expandedEdges } = useMemo(() => {
+    // Behavior-level compose graph
+    const compose = (composeLevel === 'behavior' && behaviorEntries?.length)
+      ? behaviorsToComposeGraph(behaviorEntries, behaviorWires ?? [], layoutHint)
+      : { nodes: [], edges: [] };
+
+    const overview = schemaToOverviewGraph(parsedSchema, mockData, behaviorMeta, layoutHint);
     const expanded = expandedOrbital
       ? orbitalToExpandedGraph(parsedSchema, expandedOrbital, mockData)
       : { nodes: [], edges: [] };
     return {
+      composeNodes: compose.nodes,
+      composeEdges: compose.edges,
       overviewNodes: overview.nodes,
       overviewEdges: overview.edges,
       expandedNodes: expanded.nodes,
       expandedEdges: expanded.edges,
     };
-  }, [parsedSchema, expandedOrbital]);
+  }, [parsedSchema, expandedOrbital, behaviorMeta, layoutHint, composeLevel, behaviorEntries, behaviorWires]);
 
-  const activeNodes = level === 'overview' ? overviewNodes : expandedNodes;
-  const activeEdges = level === 'overview' ? overviewEdges : expandedEdges;
+  // Both compose and orbital nodes flow through the same React Flow instance.
+  // Cast to Node<Record<string, unknown>> for the union.
+  type AnyNode = import('@xyflow/react').Node<Record<string, unknown>>;
+  type AnyEdge = import('@xyflow/react').Edge<Record<string, unknown>>;
+
+  const activeNodes: AnyNode[] = (atBehaviorLevel && composeNodes.length > 0)
+    ? composeNodes
+    : level === 'overview' ? overviewNodes : expandedNodes;
+  const activeEdges: AnyEdge[] = (atBehaviorLevel && composeEdges.length > 0)
+    ? composeEdges
+    : level === 'overview' ? overviewEdges : expandedEdges;
 
   const [nodes, setNodes, onNodesChange] = useNodesState(activeNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(activeEdges);
@@ -178,13 +221,26 @@ function FlowCanvasInner({
 
   // Double-click at overview → expand orbital
   const handleNodeDoubleClick = useCallback((_: React.MouseEvent, node: { id: string; data: Record<string, unknown> }) => {
+    // Drill from behavior level → orbital overview
+    if (atBehaviorLevel && composeLevel === 'behavior') {
+      const d = node.data as BehaviorComposeNodeData;
+      // Filter schema to only this behavior's orbitals and switch to overview level
+      if (d.orbitalNames?.length) {
+        setExpandedOrbital(d.orbitalNames[0]);
+      }
+      setAtBehaviorLevel(false);
+      setLevel('overview');
+      onLevelChange?.('overview', d.behaviorName);
+      return;
+    }
+    // Drill from orbital overview → expanded transitions
     if (level === 'overview') {
       const d = node.data as PreviewNodeData;
       setExpandedOrbital(d.orbitalName ?? node.id);
       setLevel('expanded');
       onLevelChange?.('expanded', d.orbitalName ?? node.id);
     }
-  }, [level, onLevelChange]);
+  }, [level, onLevelChange, atBehaviorLevel, composeLevel]);
 
   // Click at expanded → show transition panel + fire callback
   const handleNodeClick = useCallback((_: React.MouseEvent, node: { id: string; data: Record<string, unknown> }) => {
@@ -202,6 +258,7 @@ function FlowCanvasInner({
         level: 'overview',
         orbital: nodeData.orbitalName ?? node.id,
       });
+      onNodeSelect?.(nodeData.orbitalName ?? node.id);
     }
   }, [level, expandedOrbital, onNodeClick]);
 
@@ -220,6 +277,10 @@ function FlowCanvasInner({
         setLevel('overview');
         setExpandedOrbital(undefined);
         onLevelChange?.('overview');
+      } else if (level === 'overview' && composeLevel === 'behavior' && !atBehaviorLevel) {
+        // Go back to behavior compose level
+        setAtBehaviorLevel(true);
+        setExpandedOrbital(undefined);
       }
     } else if (e.key === 'Delete' || e.key === 'Backspace') {
       // Don't intercept when user is typing in an input
@@ -246,10 +307,16 @@ function FlowCanvasInner({
       setExpandedOrbital(undefined);
       setSelectedNode(null);
       onLevelChange?.('overview');
+    } else if (level === 'overview' && composeLevel === 'behavior' && !atBehaviorLevel) {
+      setAtBehaviorLevel(true);
+      setExpandedOrbital(undefined);
+      setSelectedNode(null);
     }
-  }, [level, onLevelChange, selectedNode]);
+  }, [level, onLevelChange, selectedNode, composeLevel, atBehaviorLevel]);
 
   // Event wire drag: onConnect fires when user drags handle to handle
+  const eventBus = useEventBus();
+
   const handleConnect = useCallback((connection: Connection) => {
     if (!connection.sourceHandle?.startsWith('event-') || !onEventWire) return;
     const eventName = connection.sourceHandle.replace('event-', '');
@@ -259,6 +326,23 @@ function FlowCanvasInner({
 
     const srcData = sourceNode.data as PreviewNodeData;
     const tgtData = targetNode.data as PreviewNodeData;
+
+    // Wire validation: check payload compatibility
+    const sourceEventSource = srcData.eventSources?.find(es => es.event === eventName);
+    const sourcePayload = sourceEventSource?.payloadFields;
+    // Look for a matching event on the target side for payload expectations
+    const targetEventSource = tgtData.eventSources?.find(es => es.event === eventName);
+    const targetPayload = targetEventSource?.payloadFields;
+    const validation = validateWire(sourcePayload, targetPayload);
+    if (validation.warnings.length > 0) {
+      eventBus.emit('UI:WIRE_VALIDATION_WARNING', {
+        eventName,
+        sourceOrbital: srcData.orbitalName,
+        targetOrbital: tgtData.orbitalName,
+        warnings: validation.warnings,
+      });
+    }
+
     onEventWire({
       eventName,
       sourceOrbital: srcData.orbitalName ?? '',
@@ -266,7 +350,7 @@ function FlowCanvasInner({
       sourceTraitName: srcData.traitName,
       targetTraitName: tgtData.traitName,
     });
-  }, [nodes, onEventWire]);
+  }, [nodes, onEventWire, eventBus]);
 
   const screenSizeKeys: ScreenSize[] = ['mobile', 'tablet', 'desktop'];
 

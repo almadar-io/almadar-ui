@@ -28,6 +28,7 @@ import type { PreviewNodeData, PatternEventSource, ScreenSize } from './avl-prev
 import { SCREEN_SIZE_PRESETS } from './avl-preview-types';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { ALMADAR_DND_MIME, type DraggablePayload } from '../../../hooks/useDraggable';
+import { formatPayloadTooltip } from './wire-validation';
 
 // ---------------------------------------------------------------------------
 // Contexts (provided by FlowCanvas)
@@ -64,6 +65,16 @@ const ROLE_COLORS: Record<string, { border: string; dot: string }> = {
   hub: { border: '#2563EB', dot: '#3B82F6' },
   error: { border: '#D97706', dot: '#F59E0B' },
   default: { border: 'var(--color-border)', dot: '#6B7280' },
+};
+
+const LAYER_COLORS: Record<string, string> = {
+  Infrastructure: '#3B82F6',
+  Services: '#F59E0B',
+  'UI Patterns': '#8B5CF6',
+  Game: '#22C55E',
+  ML: '#EC4899',
+  Domain: '#6366F1',
+  Community: '#6B7280',
 };
 
 // ---------------------------------------------------------------------------
@@ -213,6 +224,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   const role = data.stateRole ?? 'default';
   const colors = ROLE_COLORS[role] ?? ROLE_COLORS.default;
   const eventSources = data.eventSources ?? [];
+  const layerColor = data.layer ? LAYER_COLORS[data.layer] : undefined;
 
   const isExpanded = Boolean(data.traitName);
   const label = isExpanded
@@ -389,6 +401,14 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       {/* Inject selection highlight CSS */}
       <style>{SELECTION_STYLES}</style>
 
+      {/* Layer color band */}
+      {layerColor && (
+        <Box
+          style={{ height: 3, backgroundColor: layerColor }}
+          title={data.layer}
+        />
+      )}
+
       {/* Header - this is the drag handle */}
       <Box className="flex items-center gap-2 px-3 py-1.5 border-b border-border/40 drag-handle cursor-grab">
         <Box
@@ -416,7 +436,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
                   color: '#F97316',
                   border: '1px solid #F9731630',
                 }}
-                title={`${src.label ?? src.patternType} \u2192 ${src.event}`}
+                title={`${src.label ?? src.patternType} \u2192 ${src.event}${src.payloadFields?.length ? ` ${formatPayloadTooltip(src.payloadFields)}` : ''}`}
               >
                 {src.label ?? src.event}
               </Box>
@@ -463,7 +483,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
           type="source"
           position={Position.Right}
           style={eventHandleStyle(src)}
-          title={`${src.label ?? src.patternType}: ${src.event}`}
+          title={`${src.label ?? src.patternType}: ${src.event}${src.payloadFields?.length ? ` ${formatPayloadTooltip(src.payloadFields)}` : ''}`}
         />
       ))}
     </Box>
