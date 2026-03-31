@@ -75,6 +75,10 @@ export interface BoxProps extends React.HTMLAttributes<HTMLDivElement> {
   actionPayload?: Record<string, unknown>;
   /** Declarative hover event — emits UI:{hoverEvent} with { hovered: true/false } on mouseEnter/mouseLeave */
   hoverEvent?: string;
+  /** Maximum width (CSS value, e.g., "550px", "80rem") */
+  maxWidth?: string;
+  /** Children elements */
+  children?: React.ReactNode;
 }
 
 const paddingStyles: Record<BoxPadding, string> = {
@@ -220,6 +224,7 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
       action,
       actionPayload,
       hoverEvent,
+      maxWidth,
       onClick,
       onMouseEnter,
       onMouseLeave,
@@ -290,6 +295,7 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
         onClick={isClickable ? handleClick : undefined}
         onMouseEnter={(hoverEvent || onMouseEnter) ? handleMouseEnter : undefined}
         onMouseLeave={(hoverEvent || onMouseLeave) ? handleMouseLeave : undefined}
+        style={maxWidth ? { maxWidth, ...rest.style } : rest.style}
         {...rest}
       >
         {children}
