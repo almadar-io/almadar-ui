@@ -2,46 +2,19 @@
 /**
  * useUIEvents - UI Event to State Machine Bridge
  *
- * Listens for UI events from the event bus and dispatches
- * corresponding state machine events.
+ * Listens for UI:* events from the event bus and dispatches them
+ * to the trait state machine. The UI: prefix is stripped and the
+ * event name is passed through as-is. No translation, no mapping.
  *
- * Components emit events like `UI:VIEW`, `UI:SAVE`, `UI:CANCEL`
- * This hook translates them to state machine dispatch calls.
+ * Components emit `UI:{EVENT}` where {EVENT} matches the trait's
+ * event key exactly. The schema is the source of truth for event names.
  */
 
 import { useEffect, useState, useMemo, useContext } from "react";
 import { useEventBus, type KFlowEvent } from "./useEventBus";
 import { SelectionContext } from "../providers/SelectionProvider";
 
-/**
- * Map of UI events to state machine events.
- * UI events are prefixed with "UI:" and the suffix is the event name.
- */
-const UI_EVENT_MAP: Record<string, string> = {
-  // Form/CRUD events
-  "UI:SAVE": "SAVE",
-  "UI:CANCEL": "CANCEL",
-  "UI:CLOSE": "CLOSE",
-  "UI:VIEW": "VIEW",
-  "UI:EDIT": "EDIT",
-  "UI:DELETE": "DELETE",
-  "UI:CREATE": "CREATE",
-  "UI:SELECT": "SELECT",
-  "UI:DESELECT": "DESELECT",
-  "UI:SUBMIT": "SAVE",
-  "UI:UPDATE_STATUS": "UPDATE_STATUS",
-  "UI:SEARCH": "SEARCH",
-  "UI:CLEAR_SEARCH": "CLEAR_SEARCH",
-  "UI:ADD": "CREATE",
-  // Game events (for closed circuit with GameMenu, GamePauseOverlay, GameOverScreen)
-  "UI:PAUSE": "PAUSE",
-  "UI:RESUME": "RESUME",
-  "UI:RESTART": "RESTART",
-  "UI:GAME_OVER": "GAME_OVER",
-  "UI:START": "START",
-  "UI:QUIT": "QUIT",
-  "UI:INIT": "INIT",
-};
+const UI_PREFIX = 'UI:';
 
 /**
  * Hook to bridge UI events to state machine dispatch
@@ -70,23 +43,28 @@ export function useUIEvents<E extends string>(
   );
 
   useEffect(() => {
-    // Create handlers for all UI events
     const unsubscribes: Array<() => void> = [];
 
-    // Listen for all UI events
-    Object.entries(UI_EVENT_MAP).forEach(([uiEvent, smEvent]) => {
-      const handler = (event: KFlowEvent) => {
-        // Only dispatch if the event is valid for this state machine
-        if (!stableValidEvents || stableValidEvents.includes(smEvent as E)) {
-          dispatch(smEvent as E, event.payload);
-        }
-      };
+    // Build the set of event names to listen for.
+    // If validEvents is provided, subscribe to UI:{event} for each.
+    // Otherwise subscribe to a wildcard via onAny.
+    if (stableValidEvents) {
+      for (const smEvent of stableValidEvents) {
+        // Listen for UI:EVENT (what components and verify bridge emit)
+        const prefixedHandler = (event: KFlowEvent) => {
+          dispatch(smEvent, event.payload);
+        };
+        unsubscribes.push(eventBus.on(`${UI_PREFIX}${smEvent}`, prefixedHandler));
 
-      const unsubscribe = eventBus.on(uiEvent, handler);
-      unsubscribes.push(unsubscribe);
-    });
+        // Also listen for EVENT directly (cross-trait internal events)
+        const directHandler = (event: KFlowEvent) => {
+          dispatch(smEvent, event.payload);
+        };
+        unsubscribes.push(eventBus.on(smEvent, directHandler));
+      }
+    }
 
-    // Also listen for generic UI events that aren't in the map
+    // UI:DISPATCH carries the event name in payload.event (generic dispatch)
     const genericHandler = (event: KFlowEvent) => {
       const eventName = event.payload?.event as string | undefined;
       if (eventName) {
@@ -96,39 +74,12 @@ export function useUIEvents<E extends string>(
         }
       }
     };
-    const genericUnsubscribe = eventBus.on("UI:DISPATCH", genericHandler);
-    unsubscribes.push(genericUnsubscribe);
-
-    // Listen for custom UI events not in the static map
-    // Components emit events with UI: prefix (e.g., UI:OPEN_MODAL)
-    // We need to listen for both the prefixed and non-prefixed versions
-    if (stableValidEvents) {
-      stableValidEvents.forEach((smEvent) => {
-        // Skip events already handled by UI_EVENT_MAP
-        const uiPrefixedEvent = `UI:${smEvent}`;
-        const alreadyMapped =
-          Object.keys(UI_EVENT_MAP).includes(uiPrefixedEvent);
-        if (!alreadyMapped) {
-          const directHandler = (event: KFlowEvent) => {
-            dispatch(smEvent, event.payload);
-          };
-          // Listen for UI:EVENT (what components emit)
-          const unsubscribePrefixed = eventBus.on(
-            uiPrefixedEvent,
-            directHandler,
-          );
-          unsubscribes.push(unsubscribePrefixed);
-          // Also listen for EVENT directly (for internal trait events)
-          const unsubscribeDirect = eventBus.on(smEvent, directHandler);
-          unsubscribes.push(unsubscribeDirect);
-        }
-      });
-    }
+    unsubscribes.push(eventBus.on(`${UI_PREFIX}DISPATCH`, genericHandler));
 
     return () => {
-      unsubscribes.forEach((unsub) => {
+      for (const unsub of unsubscribes) {
         if (typeof unsub === 'function') unsub();
-      });
+      }
     };
   }, [eventBus, dispatch, stableValidEvents]);
 }
