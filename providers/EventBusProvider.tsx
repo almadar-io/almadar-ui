@@ -14,6 +14,10 @@
 import React, { createContext, useCallback, useRef, useMemo, useEffect, type ReactNode } from 'react';
 import type { KFlowEvent, EventListener, Unsubscribe, EventBusContextType } from '../hooks/event-bus-types';
 import { setGlobalEventBus } from '../hooks/useEventBus';
+import { createLogger } from '../lib/logger';
+
+const busLog = createLogger('almadar:eventbus');
+const subLog = createLogger('almadar:eventbus:subscribe');
 
 // ============================================================================
 // Context
@@ -115,7 +119,8 @@ export function EventBusProvider({ children, debug = false }: EventBusProviderPr
     };
 
     const listeners = listenersRef.current.get(type);
-    const listenerCount = listeners?.size ?? 0;
+    const listenerCount = (listeners?.size ?? 0) + anyListenersRef.current.size;
+    busLog.debug('emit', { type, payloadKeys: payload ? Object.keys(payload).length : 0, listenerCount });
 
     if (debug) {
       if (listenerCount > 0) {
@@ -159,6 +164,7 @@ export function EventBusProvider({ children, debug = false }: EventBusProviderPr
 
     const listeners = listenersRef.current.get(type)!;
     listeners.add(listener);
+    subLog.debug('subscribe', { type, totalListeners: listeners.size });
 
     if (debug) {
       console.log(`[EventBus] Subscribed to '${type}', total: ${listeners.size}`);
@@ -203,6 +209,7 @@ export function EventBusProvider({ children, debug = false }: EventBusProviderPr
    */
   const onAny = useCallback((listener: EventListener): Unsubscribe => {
     anyListenersRef.current.add(listener);
+    subLog.debug('subscribe:any', { totalAnyListeners: anyListenersRef.current.size });
 
     if (debug) {
       console.log(`[EventBus] onAny subscribed, total: ${anyListenersRef.current.size}`);

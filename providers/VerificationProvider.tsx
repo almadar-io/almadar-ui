@@ -26,6 +26,9 @@ import {
   registerCheck,
   type EffectTrace,
 } from '../lib/verificationRegistry';
+import { createLogger } from '../lib/logger';
+
+const log = createLogger('almadar:verify');
 
 // ============================================================================
 // Types
@@ -154,6 +157,7 @@ export function VerificationProvider({
     const unsub = eventBus.onAny((evt) => {
       const parsed = parseLifecycleEvent(evt.type);
       if (!parsed) return;
+      log.debug('lifecycle:event', { kind: parsed.kind, traitName: parsed.traitName, event: parsed.event, type: evt.type });
 
       const payload = evt.payload ?? {};
 
@@ -221,6 +225,7 @@ export function VerificationProvider({
           },
           timestamp: Date.now(),
         });
+        log.info('transition:success', { trait: parsed.traitName, event: parsed.event, from: pending?.from, to: newState, effectCount: effects.length });
       } else if (parsed.kind === 'error' && parsed.event) {
         const key = `${parsed.traitName}:${parsed.event}`;
         const pending = pendingRef.current.get(key);
@@ -251,6 +256,7 @@ export function VerificationProvider({
           },
           timestamp: Date.now(),
         });
+        log.warn('transition:error', { trait: parsed.traitName, event: parsed.event, from: fromState, error: errorMsg });
       }
     });
 

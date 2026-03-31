@@ -12,6 +12,10 @@
 import { useCallback, useEffect, useRef, useContext } from 'react';
 import { EventBusContext } from '../providers/EventBusProvider';
 import type { KFlowEvent, EventListener, Unsubscribe, EventBusContextType } from './event-bus-types';
+import { createLogger } from '../lib/logger';
+
+const log = createLogger('almadar:eventbus');
+const subLog = createLogger('almadar:eventbus:subscribe');
 
 // Re-export types for convenience
 export type { KFlowEvent, EventListener, Unsubscribe, EventBusContextType };
@@ -83,6 +87,7 @@ const fallbackEventBus: EventBusContextType = {
       timestamp: Date.now(),
     };
     const handlers = fallbackListeners.get(type);
+    log.debug('emit', { type, payloadKeys: payload ? Object.keys(payload).length : 0, listenerCount: (handlers?.size ?? 0) + fallbackAnyListeners.size });
     if (handlers) {
       handlers.forEach((handler) => {
         try {
@@ -106,6 +111,7 @@ const fallbackEventBus: EventBusContextType = {
       fallbackListeners.set(type, new Set());
     }
     fallbackListeners.get(type)!.add(listener);
+    subLog.debug('subscribe', { type, totalListeners: fallbackListeners.get(type)!.size });
     return () => {
       const handlers = fallbackListeners.get(type);
       if (handlers) {
@@ -129,6 +135,7 @@ const fallbackEventBus: EventBusContextType = {
   },
   onAny: (listener: EventListener): Unsubscribe => {
     fallbackAnyListeners.add(listener);
+    subLog.debug('subscribe:any', { totalAnyListeners: fallbackAnyListeners.size });
     return () => { fallbackAnyListeners.delete(listener); };
   },
 };

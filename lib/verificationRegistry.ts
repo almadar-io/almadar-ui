@@ -10,6 +10,10 @@
  * @packageDocumentation
  */
 
+import { createLogger } from './logger';
+
+const log = createLogger('almadar:bridge');
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -163,6 +167,7 @@ export function recordTransition(trace: Omit<TransitionTrace, "id">): void {
     ...trace,
     id: `t-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
   };
+  log.info('transition:recorded', { trait: trace.traitName, from: trace.from, to: trace.to, event: trace.event, effectCount: trace.effects.length });
   getState().transitions.push(entry);
 
   if (getState().transitions.length > MAX_TRANSITIONS) {
@@ -426,12 +431,15 @@ export function bindEventBus(eventBus: {
 }): void {
   if (typeof window === "undefined") return;
 
+  log.info('bindEventBus', { hasOnAny: !!eventBus.onAny });
+
   exposeOnWindow();
   if (window.__orbitalVerification) {
     window.__orbitalVerification.sendEvent = (event, payload) => {
       // Use UI: prefix — useTraitStateMachine and useOrbitalBridge
       // subscribe to UI:* events for user-initiated actions
       const prefixed = event.startsWith('UI:') ? event : `UI:${event}`;
+      log.debug('sendEvent', { event: prefixed, payloadKeys: payload ? Object.keys(payload) : [] });
       eventBus.emit(prefixed, payload);
     };
 

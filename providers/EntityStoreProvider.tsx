@@ -16,6 +16,9 @@
  */
 
 import React, { createContext, useContext, useEffect, useRef, useSyncExternalStore, type ReactNode } from 'react';
+import { createLogger } from '../lib/logger';
+
+const storeLog = createLogger('almadar:entity:store');
 
 // ---------------------------------------------------------------------------
 // Types
@@ -84,7 +87,9 @@ function setAll(entityType: string, records: unknown[]): void {
   }
   const prev = store.get(entityType);
   globalVersion++;
-  store.set(entityType, { entities, ids, version: (prev?.version ?? 0) + 1 });
+  const newVersion = (prev?.version ?? 0) + 1;
+  store.set(entityType, { entities, ids, version: newVersion });
+  storeLog.debug('setAll', { entityType, recordCount: records.length, version: newVersion });
   notifyListeners(entityType, prev);
 }
 
@@ -101,6 +106,7 @@ function upsertOne(entityType: string, record: Record<string, unknown>): void {
   globalVersion++;
   snapshot.version++;
   store.set(entityType, snapshot);
+  storeLog.debug('upsertOne', { entityType, id, version: snapshot.version });
   notifyListeners(entityType, prev);
 }
 
@@ -122,6 +128,7 @@ function updateOne(entityType: string, id: string, changes: Partial<Record<strin
   globalVersion++;
   snapshot.version++;
   store.set(entityType, snapshot);
+  storeLog.debug('updateOne', { entityType, id, changedFields: Object.keys(changes), version: snapshot.version });
   notifyListeners(entityType, prev);
 }
 
@@ -138,6 +145,7 @@ function removeOne(entityType: string, id: string): void {
   globalVersion++;
   snapshot.version++;
   store.set(entityType, snapshot);
+  storeLog.debug('removeOne', { entityType, id, remainingCount: snapshot.ids.length, version: snapshot.version });
   notifyListeners(entityType, prev);
 }
 
