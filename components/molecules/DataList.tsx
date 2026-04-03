@@ -104,6 +104,13 @@ export interface DataListProps {
   hasMore?: boolean;
   /** Render prop for custom per-item content. When provided, `fields` and `itemActions` are ignored. */
   children?: (item: Record<string, unknown>, index: number) => React.ReactNode;
+  /**
+   * Per-item render function (schema-level alias for children render prop).
+   * In .orb schemas: ["fn", "item", { pattern tree with @item.field bindings }]
+   * The compiler converts this to the children render prop.
+   * @deprecated Use children render prop in React code. This prop exists for pattern registry sync.
+   */
+  renderItem?: (item: Record<string, unknown>, index: number) => React.ReactNode;
   /** Max items to show before "Show More" button. Defaults to 5. Set to 0 to disable. */
   pageSize?: number;
 }
