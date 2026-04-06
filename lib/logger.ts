@@ -18,11 +18,13 @@ const VITE_ENV: Record<string, string | undefined> =
     ? (globalThis as Record<string, unknown>).__vite_env__ as Record<string, string | undefined>
     : {};
 
-// Try import.meta.env at call time (Vite injects it)
+// Try import.meta.env at call time (Vite injects it).
+// Use indirect eval to avoid Webpack's static parse of `import.meta`.
 function getViteEnv(key: string): string | undefined {
   try {
-    const meta = import.meta as { env?: Record<string, string | undefined> };
-    return meta?.env?.[key];
+    // eslint-disable-next-line no-eval
+    const meta = (0, eval)('typeof import.meta !== "undefined" && import.meta') as { env?: Record<string, string | undefined> } | false;
+    return meta ? meta.env?.[key] : undefined;
   } catch {
     return undefined;
   }
