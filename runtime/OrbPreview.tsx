@@ -275,20 +275,22 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate }: {
   }, [schema]);
 
   // Seed EntityStore with mock data for non-server preview.
-  // Must run synchronously (not in useEffect) so data is available before
-  // TraitInitializer fires INIT in its own effect. Without this, child
-  // components render with an empty entity store and never re-render.
+  // useLayoutEffect fires after DOM mutations but before paint, and before
+  // child useEffects. This ensures entity data is in the store before
+  // TraitInitializer fires INIT (which runs in a child useEffect).
   const entityStore = useEntityStore();
   const seededRef = useRef<string>('');
   const mockKey = mockData ? Object.keys(mockData).sort().join(',') : '';
-  if (!serverUrl && mockData && seededRef.current !== mockKey) {
-    seededRef.current = mockKey;
-    for (const [entityType, records] of Object.entries(mockData)) {
-      if (Array.isArray(records)) {
-        entityStore.setAll(entityType, records);
+  React.useLayoutEffect(() => {
+    if (!serverUrl && mockData && seededRef.current !== mockKey) {
+      seededRef.current = mockKey;
+      for (const [entityType, records] of Object.entries(mockData)) {
+        if (Array.isArray(records)) {
+          entityStore.setAll(entityType, records);
+        }
       }
     }
-  }
+  }, [mockKey, serverUrl, mockData, entityStore]);
 
   const inner = (
     <VerificationProvider enabled>
