@@ -275,17 +275,20 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate }: {
   }, [schema]);
 
   // Seed EntityStore with mock data for non-server preview.
-  // useEntityRef subscribers will reactively pick up this data.
+  // Must run synchronously (not in useEffect) so data is available before
+  // TraitInitializer fires INIT in its own effect. Without this, child
+  // components render with an empty entity store and never re-render.
   const entityStore = useEntityStore();
-  useEffect(() => {
-    if (!serverUrl && mockData) {
-      for (const [entityType, records] of Object.entries(mockData)) {
-        if (Array.isArray(records)) {
-          entityStore.setAll(entityType, records);
-        }
+  const seededRef = useRef<string>('');
+  const mockKey = mockData ? Object.keys(mockData).sort().join(',') : '';
+  if (!serverUrl && mockData && seededRef.current !== mockKey) {
+    seededRef.current = mockKey;
+    for (const [entityType, records] of Object.entries(mockData)) {
+      if (Array.isArray(records)) {
+        entityStore.setAll(entityType, records);
       }
     }
-  }, [mockData, serverUrl, entityStore]);
+  }
 
   const inner = (
     <VerificationProvider enabled>
