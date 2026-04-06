@@ -111,7 +111,7 @@ const BehaviorComposeNodeInner: React.FC<NodeProps> = (props) => {
           domain={data.domain}
           stateCount={data.stateCount}
           fieldCount={data.fieldCount}
-          persistence={data.persistence}
+          persistence={data.persistence as 'persistent' | 'runtime' | 'singleton' | undefined}
           effectTypes={data.effectTypes}
           children={data.children}
           connections={data.connections}
