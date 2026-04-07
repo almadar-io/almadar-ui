@@ -11,36 +11,30 @@ type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
 
 const LEVEL_PRIORITY: Record<LogLevel, number> = { DEBUG: 0, INFO: 1, WARN: 2, ERROR: 3 };
 
-// Environment detection (works in Node.js, Vite, and browser)
-const ENV: Record<string, string | undefined> = typeof process !== 'undefined' && process.env ? process.env : {};
-const VITE_ENV: Record<string, string | undefined> =
-  typeof globalThis !== 'undefined' && (globalThis as Record<string, unknown>).__vite_env__
-    ? (globalThis as Record<string, unknown>).__vite_env__ as Record<string, string | undefined>
-    : {};
+// Environment detection. Uses ONLY `process.env` (no `import.meta`) so that
+// the published bundle works in:
+//   * Node.js (real process.env)
+//   * Vite (process.env is polyfilled when define is configured, otherwise empty)
+//   * Webpack / Docusaurus SSG (process.env is polyfilled by DefinePlugin)
+//   * Plain browsers without bundlers (typeof process check falls through to {})
+//
+// We deliberately do NOT touch `import.meta` here because esbuild's optimizer
+// inlines indirect eval forms back to the raw `import.meta` token, which then
+// breaks Webpack's static parse with "Cannot use 'import.meta' outside a module".
+const ENV: Record<string, string | undefined> =
+  typeof process !== 'undefined' && process.env ? process.env : {};
 
-// Try import.meta.env at call time (Vite injects it).
-// Use indirect eval to avoid Webpack's static parse of `import.meta`.
-function getViteEnv(key: string): string | undefined {
-  try {
-    // eslint-disable-next-line no-eval
-    const meta = (0, eval)('typeof import.meta !== "undefined" && import.meta') as { env?: Record<string, string | undefined> } | false;
-    return meta ? meta.env?.[key] : undefined;
-  } catch {
-    return undefined;
-  }
+function envGet(key: string): string | undefined {
+  return ENV[key] ?? ENV[`VITE_${key}`];
 }
 
-function envGet(key: string, viteKey?: string): string | undefined {
-  return ENV[key] ?? (viteKey ? getViteEnv(viteKey) : undefined) ?? VITE_ENV[viteKey ?? key];
-}
-
-const NODE_ENV = envGet('NODE_ENV', 'VITE_NODE_ENV') ?? 'development';
+const NODE_ENV = envGet('NODE_ENV') ?? 'development';
 const CONFIGURED_LEVEL = (
-  envGet('LOG_LEVEL', 'VITE_LOG_LEVEL') ?? (NODE_ENV === 'production' ? 'info' : 'debug')
+  envGet('LOG_LEVEL') ?? (NODE_ENV === 'production' ? 'info' : 'debug')
 ).toUpperCase() as LogLevel;
 const MIN_PRIORITY = LEVEL_PRIORITY[CONFIGURED_LEVEL] ?? 0;
 
-const DEBUG_FILTER = (envGet('ALMADAR_DEBUG', 'VITE_ALMADAR_DEBUG') ?? '')
+const DEBUG_FILTER = (envGet('ALMADAR_DEBUG') ?? '')
   .split(',').map(s => s.trim()).filter(Boolean);
 
 function matchesNamespace(namespace: string): boolean {

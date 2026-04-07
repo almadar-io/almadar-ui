@@ -20,6 +20,7 @@ import type {
   Trait,
   Transition,
   Effect,
+  EntityData,
 } from '@almadar/core';
 import { Box } from '../../atoms/Box';
 import { Typography } from '../../atoms/Typography';
@@ -252,7 +253,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
     return buildOrbitalSchema(fullSchema, data.orbitalName);
   }, [data._fullSchema, data.orbitalName, data.traitName, data.transitionEvent, data.fromState, data.toState, isExpanded]);
 
-  const mockData = (data._mockData as Record<string, unknown[]>) ?? undefined;
+  const mockData = (data._mockData as EntityData | undefined) ?? undefined;
 
   // Click delegation: find the closest [data-pattern] ancestor of the click target
   const handleContentClick = useCallback((e: React.MouseEvent) => {

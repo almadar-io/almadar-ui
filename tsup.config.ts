@@ -44,6 +44,40 @@ const dedupeEventBusPlugin = {
   },
 };
 
+// Dedupe ALL providers/* relative imports from non-providers chunks.
+//
+// This is broader than the per-context plugins above because providers form
+// a transitive graph: runtime/OrbPreview.tsx imports `../providers/
+// OrbitalProvider`, which itself imports `./EntityStoreProvider` and others.
+// The per-file plugin only matches the literal import string, so transitive
+// providers/* imports inside providers/ files (importer = inside providersDir)
+// are still inlined into whichever chunk pulls them in. Result: the runtime/
+// chunk inlines its own copy of EntityStoreProvider with its own module-level
+// `store` Map, separate from the providers/ chunk's store. SchemaRunner
+// writes to one, data-grid reads from the other, previews stay empty.
+//
+// This plugin redirects ANY `../providers/*` (or `../../providers/*`, etc.)
+// import to `@almadar/ui/providers` (external) UNLESS the importer is the
+// providers/ entry file itself (providers/index.ts). That way the providers/
+// chunk gets the real implementation and every other chunk gets a runtime
+// reference to it.
+const providersIndexFile = resolve(__dirname, 'providers/index.ts');
+
+const dedupeProvidersPlugin = {
+  name: 'dedupe-providers',
+  setup(build: { onResolve: (opts: { filter: RegExp }, cb: (args: { importer: string; path: string }) => { path: string; external: boolean } | undefined) => void }) {
+    build.onResolve({ filter: /(^|\/)providers\// }, (args: { importer: string; path: string }) => {
+      if (!args.importer) return undefined;
+      // Don't redirect imports made by providers/index.ts itself — that's the
+      // file we're trying to bundle. Every other importer (including other
+      // files inside providers/ when bundled into a non-providers chunk) gets
+      // the external redirect.
+      if (args.importer === providersIndexFile) return undefined;
+      return { path: '@almadar/ui/providers', external: true };
+    });
+  },
+};
+
 export default defineConfig([
   // Main build: all components (ESM + CJS, no splitting)
   {
@@ -67,7 +101,7 @@ export default defineConfig([
     treeshake: true,
     external: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query', '@almadar/ui', '@almadar/runtime', '@almadar/core', '@almadar/evaluator', '@almadar/patterns'],
     banner: { js: '"use client";' },
-    esbuildPlugins: [dedupeContextPlugin, dedupeEventBusPlugin],
+    esbuildPlugins: [dedupeContextPlugin, dedupeEventBusPlugin, dedupeProvidersPlugin],
   },
   // Marketing build: SSR-safe subset for Docusaurus/webpack sites
   // No game engines, no Three.js, no browser globals at module scope

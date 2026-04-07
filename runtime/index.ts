@@ -56,6 +56,14 @@ export {
 // OrbPreview — live orbital schema renderer
 export { OrbPreview, type OrbPreviewProps } from './OrbPreview';
 
+// Preview prep — single source of truth for the doc/playground mock pipeline
+export {
+    prepareSchemaForPreview,
+    buildMockData,
+    adjustSchemaForMockData,
+    type PreparedPreviewSchema,
+} from './prepareSchemaForPreview';
+
 // ServerBridge — client-server bridge for dual execution
 export { ServerBridgeProvider, useServerBridge, type ServerBridgeContextValue, type ServerClientEffect } from './ServerBridge';
 

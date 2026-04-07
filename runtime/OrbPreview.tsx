@@ -21,6 +21,7 @@ import { OrbitalProvider } from '../providers/OrbitalProvider';
 import { VerificationProvider } from '../providers/VerificationProvider';
 import { UISlotProvider, useUISlots } from '../context/UISlotContext';
 import { UISlotRenderer } from '../components/organisms/UISlotRenderer';
+import type { OrbitalSchema, EntityData } from '@almadar/core';
 import { useResolvedSchema } from './useResolvedSchema';
 import { useTraitStateMachine } from './useTraitStateMachine';
 import { useSlotsActions, useSlots, SlotsProvider } from './ui/SlotsContext';
@@ -29,6 +30,7 @@ import { ServerBridgeProvider, useServerBridge } from './ServerBridge';
 import { getAllPages } from '../renderer/navigation';
 import { useEntityStore } from '../providers/EntityStoreProvider';
 import { recordTransition, recordServerResponse, type EffectTrace } from '../lib/verificationRegistry';
+import { prepareSchemaForPreview } from './prepareSchemaForPreview';
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -322,10 +324,28 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate }: {
 // ---------------------------------------------------------------------------
 
 export interface OrbPreviewProps {
-  /** The orbital schema. Accepts a JSON string or an OrbitalSchema object. */
-  schema: string | import('@almadar/core').OrbitalSchema;
-  /** Mock entity data keyed by entity name. */
-  mockData?: Record<string, unknown[]>;
+  /**
+   * The orbital schema. Accepts a JSON string or an `OrbitalSchema` object
+   * from `@almadar/core` (the validated `.orb` program type).
+   */
+  schema: string | OrbitalSchema;
+  /**
+   * Mock entity rows keyed by entity name. The `EntityData` type from
+   * `@almadar/core` is `Record<string, EntityRow[]>` where each row is a
+   * `{ id?: string } & Record<string, FieldValue>`. Ignored if `autoMock`
+   * is set.
+   */
+  mockData?: EntityData;
+  /**
+   * When true, run the schema through `prepareSchemaForPreview` before
+   * rendering: auto-generate mock entity rows and flip two-state INIT
+   * machines so the data state is initial. This is the same pipeline the
+   * playground uses, so consumers (docs MDX, playground) all share one path.
+   *
+   * Ignored when `serverUrl` is set — server-driven previews provide their
+   * own data.
+   */
+  autoMock?: boolean;
   /** Preview container height. Default: '400px'. */
   height?: string;
   /** CSS class for the outer container. */
@@ -343,30 +363,56 @@ export interface OrbPreviewProps {
  * @example
  * ```tsx
  * <OrbPreview schema={orbJsonString} height="300px" />
+ * <OrbPreview schema={schema} autoMock />
  * <OrbPreview schema={schema} serverUrl="/api/orbitals" />
  * ```
  */
 export function OrbPreview({
   schema,
-  mockData = {},
+  mockData,
+  autoMock = false,
   height = '400px',
   className,
   serverUrl,
 }: OrbPreviewProps): React.ReactElement {
-  const parsedSchema = useMemo(() => {
+  // Parse + (optionally) run the auto-mock pipeline. The pipeline:
+  //   1. Generates mock entity rows from field definitions (EntityData)
+  //   2. Flips two-state INIT state machines so the data state is initial
+  // It's the same logic the playground uses, so docs and playground render
+  // schemas the same way. `autoMock` is ignored when a server URL is set.
+  //
+  // Functional signature (in @almadar/core types):
+  //   string | OrbitalSchema  →  { schema: OrbitalSchema, mockData: EntityData }
+  type ParsedResult =
+    | { ok: true; schema: OrbitalSchema; mockData: EntityData }
+    | { ok: false; error: string };
+
+  const parseResult = useMemo<ParsedResult>(() => {
+    let parsed: OrbitalSchema;
     if (typeof schema === 'string') {
       try {
-        return JSON.parse(schema);
+        parsed = JSON.parse(schema) as OrbitalSchema;
       } catch (e) {
-        return { error: String(e) };
+        return { ok: false, error: String(e) };
       }
+    } else {
+      parsed = schema;
     }
-    return schema;
-  }, [schema]);
+
+    if (autoMock && !serverUrl) {
+      const prepared = prepareSchemaForPreview(parsed);
+      return { ok: true, schema: prepared.schema, mockData: prepared.mockData };
+    }
+
+    return { ok: true, schema: parsed, mockData: mockData ?? {} };
+  }, [schema, autoMock, serverUrl, mockData]);
+
+  const parsedSchema = parseResult.ok ? parseResult.schema : null;
+  const effectiveMockData: EntityData = parseResult.ok ? parseResult.mockData : {};
 
   // Discover pages from schema for effect-driven navigation
   const pages = useMemo(() => {
-    if (!parsedSchema || parsedSchema.error) return [];
+    if (!parsedSchema) return [];
     try {
       return getAllPages(parsedSchema);
     } catch {
@@ -385,11 +431,11 @@ export function OrbPreview({
     }
   }, [pages]);
 
-  if (parsedSchema.error) {
+  if (!parseResult.ok) {
     return (
       <Box className={className} style={{ height }}>
         <Typography as="pre" color="error" variant="small" className="font-mono whitespace-pre-wrap break-all m-0 p-4">
-          Parse error: {parsedSchema.error}
+          Parse error: {parseResult.error}
         </Typography>
       </Box>
     );
@@ -422,9 +468,9 @@ export function OrbPreview({
       className={`overflow-auto border border-[var(--color-border)] rounded-[var(--radius-md)] ${className ?? ''}`}
       style={{ height }}
     >
-      <OrbitalProvider initialData={mockData} skipTheme verification>
+      <OrbitalProvider initialData={effectiveMockData} skipTheme verification>
         <UISlotProvider>
-          <SchemaRunner schema={parsedSchema} serverUrl={serverUrl} mockData={mockData} pageName={currentPage} onNavigate={handleNavigate} />
+          <SchemaRunner schema={parsedSchema} serverUrl={serverUrl} mockData={effectiveMockData} pageName={currentPage} onNavigate={handleNavigate} />
         </UISlotProvider>
       </OrbitalProvider>
     </Box>
