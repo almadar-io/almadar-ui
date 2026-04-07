@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import type { OrbitalSchema } from '@almadar/core';
+import type { OrbitalSchema, EntityData } from '@almadar/core';
 import { OrbPreview } from './OrbPreview';
 import { CLINIC_SCHEMA } from '../components/molecules/avl/avl-story-schemas';
 import { stdBrowse, stdWizard } from '@almadar/std/behaviors/functions';
@@ -70,7 +70,7 @@ const HR_SCHEMA: OrbitalSchema = {
   ],
 };
 
-const CLINIC_MOCK_DATA: Record<string, unknown[]> = {
+const CLINIC_MOCK_DATA: EntityData = {
   Patient: [
     { id: '1', fullName: 'Amara Okafor', email: 'amara@example.com', dateOfBirth: '1990-03-15', medicalHistory: 'None', insuranceProvider: 'BlueCross' },
     { id: '2', fullName: 'Carlos Mendes', email: 'carlos@example.com', dateOfBirth: '1985-07-22', medicalHistory: 'Asthma', insuranceProvider: 'Aetna' },
@@ -82,7 +82,7 @@ const CLINIC_MOCK_DATA: Record<string, unknown[]> = {
   ],
 };
 
-const TASK_MOCK_DATA: Record<string, unknown[]> = {
+const TASK_MOCK_DATA: EntityData = {
   Task: [
     { id: '1', title: 'Design landing page', priority: 1, done: false, assignee: 'Alice' },
     { id: '2', title: 'Write API docs', priority: 2, done: false, assignee: 'Bob' },
@@ -91,7 +91,7 @@ const TASK_MOCK_DATA: Record<string, unknown[]> = {
   ],
 };
 
-const HR_MOCK_DATA: Record<string, unknown[]> = {
+const HR_MOCK_DATA: EntityData = {
   Employee: [
     { id: '1', fullName: 'Dana Kim', email: 'dana@company.com', department: 'Engineering', startDate: '2025-01-15', role: 'Senior Engineer' },
   ],
