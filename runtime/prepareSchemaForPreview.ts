@@ -21,6 +21,7 @@
  * @packageDocumentation
  */
 
+import { isEntityCall } from '@almadar/core';
 import type {
   OrbitalSchema,
   Orbital,
@@ -101,6 +102,7 @@ export function buildMockData(schema: OrbitalSchema): EntityData {
   for (const orbital of schema.orbitals) {
     const entity = orbital.entity;
     if (!entity || typeof entity === 'string') continue;
+    if (isEntityCall(entity)) continue; // EntityCall extends a reference; skip preview data generation
     const entityName = entity.name;
     if (!entityName) continue;
 
