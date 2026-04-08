@@ -11,7 +11,7 @@
 import React, { useState, useRef, useLayoutEffect, useEffect, useMemo, useCallback } from 'react';
 import SyntaxHighlighter from 'react-syntax-highlighter/dist/esm/prism-light';
 import dark from 'react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus';
-import { orbLanguage, ORB_COLORS } from '@almadar/syntax';
+import { orbLanguage, loloLanguage, ORB_COLORS } from '@almadar/syntax';
 import { Copy, Check } from 'lucide-react';
 
 // PrismLight requires explicit language registration.
@@ -58,8 +58,9 @@ SyntaxHighlighter.registerLanguage('toml', langToml);
 SyntaxHighlighter.registerLanguage('go', langGo);
 SyntaxHighlighter.registerLanguage('graphql', langGraphql);
 
-// Register .orb language from @almadar/syntax (refractor-compatible)
+// Register .orb and .lolo languages from @almadar/syntax (refractor-compatible)
 SyntaxHighlighter.registerLanguage('orb', orbLanguage);
+SyntaxHighlighter.registerLanguage('lolo', loloLanguage);
 
 // AVL-aligned style overrides for .orb token classes
 const orbStyleOverrides: Record<string, React.CSSProperties> = {
@@ -84,6 +85,29 @@ const orbStyleOverrides: Record<string, React.CSSProperties> = {
 };
 
 const orbStyle: Record<string, React.CSSProperties> = { ...dark, ...orbStyleOverrides };
+
+// AVL-aligned style overrides for .lolo token classes (Haskell-inspired palette)
+const loloStyleOverrides: Record<string, React.CSSProperties> = {
+  'lolo-binding':       { color: ORB_COLORS.dark.binding, fontWeight: 'bold' },
+  'lolo-event':         { color: ORB_COLORS.dark.event },
+  'lolo-effect':        { color: ORB_COLORS.dark.effect, fontWeight: 'bold' },
+  'keyword':            { color: ORB_COLORS.dark.loloKeyword },
+  'lolo-constructor':   { color: ORB_COLORS.dark.loloConstructor },
+  'lolo-arrow':         { color: ORB_COLORS.dark.loloArrow },
+  'lolo-reference':     { color: ORB_COLORS.dark.loloReference },
+  'lolo-type':          { color: ORB_COLORS.dark.fieldType },
+  'lolo-persistence':   { color: ORB_COLORS.dark.persistence },
+  'lolo-unknown-op':    { color: ORB_COLORS.dark.error },
+  'lolo-op-arithmetic': { color: ORB_COLORS.dark.arithmetic, fontWeight: 'bold' },
+  'lolo-op-comparison': { color: ORB_COLORS.dark.comparison },
+  'lolo-op-logic':      { color: ORB_COLORS.dark.logic },
+  'lolo-op-string':     { color: ORB_COLORS.dark.string },
+  'lolo-op-collection': { color: ORB_COLORS.dark.collection },
+  'lolo-op-time':       { color: ORB_COLORS.dark.time },
+  'lolo-op-control':    { color: ORB_COLORS.dark.control },
+  'lolo-op-async':      { color: ORB_COLORS.dark.async },
+};
+const loloStyle: Record<string, React.CSSProperties> = { ...dark, ...loloStyleOverrides };
 
 // ── Fold region computation ──────────────────────────────────────────
 
@@ -164,7 +188,8 @@ export const CodeBlock = React.memo<CodeBlockProps>(
   }) => {
     const code = typeof rawCode === 'string' ? rawCode : String(rawCode ?? '');
     const isOrb = language === 'orb';
-    const activeStyle = isOrb ? orbStyle : dark;
+    const isLolo = language === 'lolo';
+    const activeStyle = isOrb ? orbStyle : isLolo ? loloStyle : dark;
     const eventBus = useEventBus();
     const { t: _t } = useTranslate();
     const scrollRef = useRef<HTMLDivElement | null>(null);
