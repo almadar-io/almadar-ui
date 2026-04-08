@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "2.48.7",
+  "version": "2.48.8",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "main": "./dist/components/index.js",
@@ -125,10 +125,10 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@almadar/core": ">=2.6.3",
+    "@almadar/core": ">=4.2.0",
     "@almadar/evaluator": ">=2.5.4",
     "@almadar/patterns": ">=2.10.0",
-    "@almadar/std": ">=3.7.0",
+    "@almadar/std": ">=5.2.0",
     "@almadar/syntax": ">=1.1.0",
     "@almadar/runtime": ">=2.0.0",
     "@xyflow/react": "12.10.1",
