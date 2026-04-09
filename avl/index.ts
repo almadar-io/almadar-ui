@@ -105,6 +105,8 @@ export {
   type ZoomLegendProps,
   AvlCosmicZoom,
   type AvlCosmicZoomProps,
+  AvlOrbitalsCosmicZoom,
+  type AvlOrbitalsCosmicZoomProps,
   AvlTraitScene,
   type AvlTraitSceneProps,
   AvlTransitionScene,
