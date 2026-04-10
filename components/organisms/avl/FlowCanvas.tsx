@@ -213,7 +213,8 @@ function FlowCanvasInner({
   useEffect(() => {
     setNodes(activeNodes);
     setEdges(activeEdges);
-    // Fit view after nodes update
+    // fitView is handled by the fitView prop on <ReactFlow> for initial render,
+    // and by onNodesChange for subsequent updates. No manual timeout needed.
     requestAnimationFrame(() => {
       reactFlow.fitView({ duration: 300, padding: 0.15 });
     });
@@ -358,10 +359,10 @@ function FlowCanvasInner({
     <ScreenSizeContext.Provider value={screenSize}>
     <PatternSelectionContext.Provider value={patternSelectionValue}>
       <Box
-        className={`flex ${className ?? ''}`}
+        className={`flex h-full ${className ?? ''}`}
         style={{ width, height }}
       >
-      <Box className="relative flex-1 min-w-0">
+      <Box className="relative flex-1 min-w-0 h-full">
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -376,6 +377,7 @@ function FlowCanvasInner({
           minZoom={0.1}
           maxZoom={2.0}
           fitView
+          fitViewOptions={{ padding: 0.15 }}
           nodesDraggable
           elementsSelectable
           proOptions={{ hideAttribution: true }}
