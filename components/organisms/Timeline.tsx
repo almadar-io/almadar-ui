@@ -168,8 +168,8 @@ export const Timeline: React.FC<TimelineProps> = ({
 
                 <VStack gap="none" className="relative">
                     {items.map((item, idx) => {
-                        const status = item.status || "pending";
-                        const style = STATUS_STYLES[status];
+                        const status = (item.status as TimelineItemStatus) || "pending";
+                        const style = STATUS_STYLES[status] || STATUS_STYLES.pending;
                         const ItemIcon = item.icon || style.icon;
                         const isLast = idx === items.length - 1;
 
