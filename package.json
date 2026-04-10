@@ -129,7 +129,7 @@
     "@almadar/evaluator": ">=2.5.4",
     "@almadar/patterns": ">=2.10.0",
     "@almadar/std": ">=5.2.0",
-    "@almadar/syntax": ">=1.2.0",
+    "@almadar/syntax": ">=1.2.1",
     "@almadar/runtime": ">=2.0.0",
     "@xyflow/react": "12.10.1",
     "clsx": "^2.1.0",
