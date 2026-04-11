@@ -152,6 +152,7 @@ import { Box } from '../../atoms/Box';
 import { Button } from '../../atoms/Button';
 import { Badge } from '../../atoms/Badge';
 import { HStack } from '../../atoms/Stack';
+import { Textarea } from '../../atoms/Textarea';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 
@@ -170,6 +171,18 @@ export interface CodeBlockProps {
   foldable?: boolean;
   /** Additional CSS classes */
   className?: string;
+  /**
+   * GAP-51: when true, render an editable surface (composes the `Textarea` atom)
+   * instead of the syntax-highlighted read-only display. Folding + Prism
+   * highlighting are skipped in editable mode for the first cut. Default: false
+   * (existing read-only behavior unchanged).
+   */
+  editable?: boolean;
+  /**
+   * GAP-51: called with the new code on every keystroke when `editable === true`.
+   * Consumers should debounce + parse downstream — `CodeBlock` does not.
+   */
+  onChange?: (code: string) => void;
 }
 
 // Stable lineProps function (never changes, safe for memoized element)
@@ -185,6 +198,8 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     maxHeight = '60vh',
     foldable: foldableProp,
     className,
+    editable = false,
+    onChange,
   }) => {
     const code = typeof rawCode === 'string' ? rawCode : String(rawCode ?? '');
     const isOrb = language === 'orb';
@@ -394,24 +409,53 @@ export const CodeBlock = React.memo<CodeBlockProps>(
         )}
 
         {/* Code content */}
-        <div
-          ref={scrollRef}
-          style={{
-            overflowX: 'auto',
-            overflowY: 'auto',
-            WebkitOverflowScrolling: 'touch',
-            maxHeight,
-            overscrollBehavior: 'auto',
-            touchAction: 'pan-x pan-y',
-            contain: 'paint',
-            backgroundColor: '#1e1e1e',
-            borderRadius: hasHeader ? '0 0 0.5rem 0.5rem' : '0.5rem',
-          }}
-        >
-          <div ref={codeRef} style={{ padding: '1rem' }}>
-            {highlightedElement}
+        {editable ? (
+          /* GAP-51: editable mode — composes the Textarea atom. Plain text editing,
+             no Prism highlighting overlay (follow-up). The textarea is uncontrolled
+             on the value side: we pass `code` as the initial value and forward
+             every keystroke via onChange — the consumer is responsible for
+             debouncing and re-deriving `code` only after the user stops typing
+             so the cursor doesn't fight a re-render. */
+          <Textarea
+            defaultValue={code}
+            onChange={(e) => onChange?.(e.target.value)}
+            spellCheck={false}
+            style={{
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono", "Courier New", monospace',
+              fontSize: '13px',
+              lineHeight: '1.5',
+              backgroundColor: '#1e1e1e',
+              color: '#e6e6e6',
+              borderRadius: hasHeader ? '0 0 0.5rem 0.5rem' : '0.5rem',
+              border: 'none',
+              padding: '1rem',
+              resize: 'none',
+              minHeight: '160px',
+              maxHeight,
+              width: '100%',
+              outline: 'none',
+            }}
+          />
+        ) : (
+          <div
+            ref={scrollRef}
+            style={{
+              overflowX: 'auto',
+              overflowY: 'auto',
+              WebkitOverflowScrolling: 'touch',
+              maxHeight,
+              overscrollBehavior: 'auto',
+              touchAction: 'pan-x pan-y',
+              contain: 'paint',
+              backgroundColor: '#1e1e1e',
+              borderRadius: hasHeader ? '0 0 0.5rem 0.5rem' : '0.5rem',
+            }}
+          >
+            <div ref={codeRef} style={{ padding: '1rem' }}>
+              {highlightedElement}
+            </div>
           </div>
-        </div>
+        )}
       </Box>
     );
   },
@@ -420,7 +464,9 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     prev.code === next.code &&
     prev.showCopyButton === next.showCopyButton &&
     prev.maxHeight === next.maxHeight &&
-    prev.foldable === next.foldable,
+    prev.foldable === next.foldable &&
+    prev.editable === next.editable &&
+    prev.onChange === next.onChange,
 );
 
 CodeBlock.displayName = 'CodeBlock';
