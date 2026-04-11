@@ -79,15 +79,29 @@ export interface FlowCanvasProps {
   }) => void;
   onLevelChange?: (level: ViewLevel, orbital?: string) => void;
   /**
-   * GAP-52: fired when the user double-clicks an orbital while ALREADY at
-   * `level === 'expanded'`. Consumers (e.g. the builder workspace) use this as
-   * the trigger to enter cosmic mode (`AvlOrbitalsCosmicZoom`) for the focused
-   * orbital. This does NOT replace the existing overview→expanded drill —
-   * that path still fires `onLevelChange('expanded', ...)` as before.
-   * The callback runs unconditionally; persona / permission gating is the
+   * GAP-52: fired when the user double-clicks an orbital. Consumers (e.g. the
+   * builder workspace) use this as the trigger to enter cosmic mode
+   * (`AvlOrbitalsCosmicZoom`) for the focused orbital.
+   *
+   * The level at which this fires is controlled by `cosmicEntryLevel` (default
+   * `'expanded'`). At `'expanded'` the existing overview→expanded drill is
+   * preserved — the callback fires only on the second double-click. At
+   * `'overview'` the callback fires on the FIRST double-click and the existing
+   * drill is suppressed for that interaction. `'both'` fires at either level.
+   *
+   * The callback runs unconditionally — persona / permission gating is the
    * consumer's responsibility.
    */
   onOrbitalDoubleClick?: (orbital: string) => void;
+  /**
+   * GAP-53: which level the `onOrbitalDoubleClick` callback fires at.
+   * - `'expanded'` (default, non-breaking) — fires only at L2 expanded; the
+   *   first overview double-click still drills overview→expanded.
+   * - `'overview'` — fires at L1 overview on the FIRST double-click. The
+   *   overview→expanded drill is suppressed when the callback is provided.
+   * - `'both'` — fires at either level.
+   */
+  cosmicEntryLevel?: 'expanded' | 'overview' | 'both';
   initialOrbital?: string;
   /** Start at Level 2 (expanded) when initialOrbital is set. Default: 'overview'. */
   initialLevel?: ViewLevel;
@@ -140,6 +154,7 @@ function FlowCanvasInner({
   onNodeClick,
   onLevelChange,
   onOrbitalDoubleClick,
+  cosmicEntryLevel = 'expanded',
   initialOrbital,
   initialLevel,
   initialSelectedNode,
@@ -245,12 +260,24 @@ function FlowCanvasInner({
       onLevelChange?.('overview', d.behaviorName);
       return;
     }
-    // Drill from orbital overview → expanded transitions
+    // GAP-53: at overview, fire cosmic callback first if cosmicEntryLevel
+    // permits — and SUPPRESS the overview→expanded drill so users get one-click
+    // entry from L1. When cosmicEntryLevel is the default 'expanded', this
+    // branch is skipped and the existing drill runs.
     if (level === 'overview') {
       const d = node.data as PreviewNodeData;
-      setExpandedOrbital(d.orbitalName ?? node.id);
+      const orbitalName = d.orbitalName ?? node.id;
+      if (
+        onOrbitalDoubleClick &&
+        (cosmicEntryLevel === 'overview' || cosmicEntryLevel === 'both')
+      ) {
+        onOrbitalDoubleClick(orbitalName);
+        return;
+      }
+      // Drill from orbital overview → expanded transitions (existing behavior)
+      setExpandedOrbital(orbitalName);
       setLevel('expanded');
-      onLevelChange?.('expanded', d.orbitalName ?? node.id);
+      onLevelChange?.('expanded', orbitalName);
       return;
     }
     // GAP-52: Drill from expanded → cosmic. FlowCanvas itself stays at
@@ -259,11 +286,15 @@ function FlowCanvasInner({
     if (level === 'expanded') {
       const d = node.data as PreviewNodeData;
       const orbitalName = d.orbitalName ?? node.id;
-      if (orbitalName && onOrbitalDoubleClick) {
+      if (
+        orbitalName &&
+        onOrbitalDoubleClick &&
+        (cosmicEntryLevel === 'expanded' || cosmicEntryLevel === 'both')
+      ) {
         onOrbitalDoubleClick(orbitalName);
       }
     }
-  }, [level, onLevelChange, onOrbitalDoubleClick, atBehaviorLevel, composeLevel]);
+  }, [level, onLevelChange, onOrbitalDoubleClick, cosmicEntryLevel, atBehaviorLevel, composeLevel]);
 
   // Click at expanded → show transition panel + fire callback
   const handleNodeClick = useCallback((_: React.MouseEvent, node: { id: string; data: Record<string, unknown> }) => {
