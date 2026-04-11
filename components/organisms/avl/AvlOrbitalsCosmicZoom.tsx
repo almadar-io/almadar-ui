@@ -41,6 +41,13 @@ export interface AvlOrbitalsCosmicZoomProps {
   width?: number | string;
   /** Container height */
   height?: number | string;
+  /**
+   * GAP-52: name of the orbital to highlight with a persistent ring/glow.
+   * Independent from user-driven selection (click). Used by the builder workspace
+   * when entering cosmic mode from a focused orbital — the focused orbital is
+   * highlighted while the user can still click any other orbital to select it.
+   */
+  highlightedOrbital?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -301,6 +308,7 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
   animated = true,
   width = '100%',
   height = 450,
+  highlightedOrbital,
 }) => {
   // Parse schema
   const parsedSchema = useMemo<OrbitalSchema>(() => {
@@ -364,14 +372,16 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
       />
 
       {/* AvlOrbitalUnit molecules — one per orbital */}
-      {orbitalViews.map(view => (
+      {orbitalViews.map(view => {
+        const isHighlighted = view.name === highlightedOrbital;
+        return (
         <Box
           key={view.name}
           role="button"
           tabIndex={0}
           onClick={() => handleSelect(view.name)}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelect(view.name); }}
-          aria-label={`Orbital: ${view.name}`}
+          aria-label={`Orbital: ${view.name}${isHighlighted ? ' (highlighted)' : ''}`}
           position="absolute"
           style={{
             left: view.cx - UNIT_DISPLAY_W / 2,
@@ -379,10 +389,15 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
             width: UNIT_DISPLAY_W,
             height: UNIT_DISPLAY_H,
             cursor: 'pointer',
-            transition: 'transform 0.2s ease, filter 0.2s ease',
+            transition: 'transform 0.2s ease, filter 0.2s ease, box-shadow 0.3s ease',
             transform: selected === view.name ? 'scale(1.05)' : 'scale(1)',
             filter: selected && selected !== view.name ? 'opacity(0.5)' : 'none',
-            zIndex: selected === view.name ? 10 : 1,
+            // GAP-52: persistent highlight ring (independent from user selection)
+            boxShadow: isHighlighted
+              ? `0 0 0 3px ${color}, 0 0 24px 4px ${color}`
+              : 'none',
+            borderRadius: isHighlighted ? '12px' : undefined,
+            zIndex: isHighlighted ? 11 : selected === view.name ? 10 : 1,
           }}
         >
           <AvlOrbitalUnit
@@ -392,10 +407,11 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
             traits={view.traits}
             pages={view.pages}
             color={color}
-            animated={animated && selected === view.name}
+            animated={animated && (selected === view.name || isHighlighted)}
           />
         </Box>
-      ))}
+        );
+      })}
 
       {/* Info panel for selected orbital */}
       {selectedView && (
