@@ -78,6 +78,16 @@ export interface FlowCanvasProps {
     transition?: string;
   }) => void;
   onLevelChange?: (level: ViewLevel, orbital?: string) => void;
+  /**
+   * GAP-52: fired when the user double-clicks an orbital while ALREADY at
+   * `level === 'expanded'`. Consumers (e.g. the builder workspace) use this as
+   * the trigger to enter cosmic mode (`AvlOrbitalsCosmicZoom`) for the focused
+   * orbital. This does NOT replace the existing overview→expanded drill —
+   * that path still fires `onLevelChange('expanded', ...)` as before.
+   * The callback runs unconditionally; persona / permission gating is the
+   * consumer's responsibility.
+   */
+  onOrbitalDoubleClick?: (orbital: string) => void;
   initialOrbital?: string;
   /** Start at Level 2 (expanded) when initialOrbital is set. Default: 'overview'. */
   initialLevel?: ViewLevel;
@@ -129,6 +139,7 @@ function FlowCanvasInner({
   height = 500,
   onNodeClick,
   onLevelChange,
+  onOrbitalDoubleClick,
   initialOrbital,
   initialLevel,
   initialSelectedNode,
@@ -240,8 +251,19 @@ function FlowCanvasInner({
       setExpandedOrbital(d.orbitalName ?? node.id);
       setLevel('expanded');
       onLevelChange?.('expanded', d.orbitalName ?? node.id);
+      return;
     }
-  }, [level, onLevelChange, atBehaviorLevel, composeLevel]);
+    // GAP-52: Drill from expanded → cosmic. FlowCanvas itself stays at
+    // 'expanded' (no internal level change); the consumer decides what to
+    // render in cosmic mode (typically AvlOrbitalsCosmicZoom).
+    if (level === 'expanded') {
+      const d = node.data as PreviewNodeData;
+      const orbitalName = d.orbitalName ?? node.id;
+      if (orbitalName && onOrbitalDoubleClick) {
+        onOrbitalDoubleClick(orbitalName);
+      }
+    }
+  }, [level, onLevelChange, onOrbitalDoubleClick, atBehaviorLevel, composeLevel]);
 
   // Click at expanded → show transition panel + fire callback
   const handleNodeClick = useCallback((_: React.MouseEvent, node: { id: string; data: Record<string, unknown> }) => {
