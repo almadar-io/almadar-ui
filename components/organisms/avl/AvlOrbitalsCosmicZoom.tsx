@@ -15,7 +15,7 @@
  * @packageDocumentation
  */
 
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import type { OrbitalSchema } from '@almadar/core';
 import { parseApplicationLevel, type CrossLink } from './avl-schema-parser';
 import { AvlOrbitalUnit } from '../../molecules/avl/AvlOrbitalUnit';
@@ -23,6 +23,8 @@ import type { AvlPersistenceKind } from '../../atoms/avl/types';
 import { curveControlPoint } from '../../molecules/avl/avl-layout';
 import { Box } from '../../atoms/Box';
 import { Typography, Text } from '../../atoms/Typography';
+import { Button } from '../../atoms/Button';
+import { Icon } from '../../atoms/Icon';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -48,6 +50,22 @@ export interface AvlOrbitalsCosmicZoomProps {
    * highlighted while the user can still click any other orbital to select it.
    */
   highlightedOrbital?: string;
+  /**
+   * GAP-55: fired when the user clicks an orbital tile. Consumers (e.g. the
+   * builder workspace) use this as the trigger to drill INTO the clicked
+   * orbital — typically by switching back to the canvas tab and opening the
+   * clicked orbital at L2 expanded. Local `selected` toggle (visual highlight +
+   * info panel) still fires regardless of whether the callback is provided.
+   */
+  onOrbitalSelect?: (orbital: string) => void;
+  /**
+   * GAP-54: minimum zoom factor when scroll-wheel zooming. Default 0.4.
+   */
+  minZoom?: number;
+  /**
+   * GAP-54: maximum zoom factor when scroll-wheel zooming. Default 3.
+   */
+  maxZoom?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -309,6 +327,9 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
   width = '100%',
   height = 450,
   highlightedOrbital,
+  onOrbitalSelect,
+  minZoom = 0.4,
+  maxZoom = 3,
 }) => {
   // Parse schema
   const parsedSchema = useMemo<OrbitalSchema>(() => {
@@ -345,14 +366,103 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
     [orbitals, positions],
   );
 
-  // Selection
+  // Selection — local toggle for the visual highlight + info panel.
+  // GAP-55: also forwards to onOrbitalSelect callback so consumers can drill in.
   const [selected, setSelected] = useState<string | null>(null);
   const handleSelect = useCallback(
-    (name: string) => setSelected(prev => (prev === name ? null : name)),
-    [],
+    (name: string) => {
+      setSelected(prev => (prev === name ? null : name));
+      onOrbitalSelect?.(name);
+    },
+    [onOrbitalSelect],
   );
 
   const selectedView = orbitalViews.find(o => o.name === selected);
+
+  // GAP-54: pan + zoom + drag state. Custom implementation (no library) since
+  // there's no existing zoom/pan dep in the monorepo. Wheel = zoom around
+  // cursor. Mouse drag (or touch) = pan. Buttons = zoom in/out/reset.
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const dragStateRef = useRef<{ startX: number; startY: number; panX: number; panY: number } | null>(null);
+  const transformWrapperRef = useRef<HTMLDivElement>(null);
+
+  const clampZoom = useCallback(
+    (z: number) => Math.max(minZoom, Math.min(maxZoom, z)),
+    [minZoom, maxZoom],
+  );
+
+  // Pointer-based drag (works for mouse + touch via Pointer Events).
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    // Only start a drag from the background, not from an orbital tile.
+    if ((e.target as HTMLElement).closest('[data-orbital-tile]')) return;
+    dragStateRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      panX: pan.x,
+      panY: pan.y,
+    };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }, [pan]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    const drag = dragStateRef.current;
+    if (!drag) return;
+    setPan({
+      x: drag.panX + (e.clientX - drag.startX),
+      y: drag.panY + (e.clientY - drag.startY),
+    });
+  }, []);
+
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    if (!dragStateRef.current) return;
+    dragStateRef.current = null;
+    try { (e.target as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+  }, []);
+
+  // Wheel handler — must be attached as non-passive listener to call
+  // preventDefault. React's onWheel is passive by default, so attach manually.
+  // Reads pan/zoom via refs to avoid stale closures from state.
+  const panRef = useRef(pan);
+  const zoomRef = useRef(zoom);
+  useEffect(() => { panRef.current = pan; }, [pan]);
+  useEffect(() => { zoomRef.current = zoom; }, [zoom]);
+
+  useEffect(() => {
+    const wrapper = transformWrapperRef.current;
+    if (!wrapper) return;
+    const wheelListener = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = wrapper.getBoundingClientRect();
+      const cursorX = e.clientX - rect.left;
+      const cursorY = e.clientY - rect.top;
+      const currentZoom = zoomRef.current;
+      const currentPan = panRef.current;
+
+      // Convert cursor to "world" coordinates given current pan + zoom.
+      const worldX = (cursorX - currentPan.x) / currentZoom;
+      const worldY = (cursorY - currentPan.y) / currentZoom;
+
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      const nextZoom = clampZoom(currentZoom * (1 + delta));
+
+      // Re-pan so worldX/Y stay under the cursor at the new zoom.
+      const nextPanX = cursorX - worldX * nextZoom;
+      const nextPanY = cursorY - worldY * nextZoom;
+
+      setZoom(nextZoom);
+      setPan({ x: nextPanX, y: nextPanY });
+    };
+    wrapper.addEventListener('wheel', wheelListener, { passive: false });
+    return () => wrapper.removeEventListener('wheel', wheelListener);
+  }, [clampZoom]);
+
+  const zoomIn = useCallback(() => setZoom(z => clampZoom(z * 1.2)), [clampZoom]);
+  const zoomOut = useCallback(() => setZoom(z => clampZoom(z / 1.2)), [clampZoom]);
+  const resetZoom = useCallback(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, []);
 
   return (
     <Box
@@ -361,66 +471,119 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
       overflow="visible"
       style={{ width, height: containerH }}
     >
-      {/* Event wires SVG overlay (behind orbitals) */}
-      <EventWireOverlay
-        orbitalViews={orbitalViews}
-        crossLinks={crossLinks}
-        color={color}
-        animated={animated}
-        containerW={containerW}
-        containerH={containerH}
-      />
-
-      {/* AvlOrbitalUnit molecules — one per orbital */}
-      {orbitalViews.map(view => {
-        const isHighlighted = view.name === highlightedOrbital;
-        return (
-        <Box
-          key={view.name}
-          role="button"
-          tabIndex={0}
-          onClick={() => handleSelect(view.name)}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelect(view.name); }}
-          aria-label={`Orbital: ${view.name}${isHighlighted ? ' (highlighted)' : ''}`}
-          position="absolute"
+      {/* GAP-54: pan/zoom wrapper. Both event wires SVG and orbital tiles
+          live inside this transformed div so they stay in lockstep when
+          zooming/panning. */}
+      <div
+        ref={transformWrapperRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          overflow: 'hidden',
+          cursor: dragStateRef.current ? 'grabbing' : 'grab',
+          touchAction: 'none',
+        }}
+      >
+        <div
           style={{
-            left: view.cx - UNIT_DISPLAY_W / 2,
-            top: view.cy - UNIT_DISPLAY_H / 2,
-            width: UNIT_DISPLAY_W,
-            height: UNIT_DISPLAY_H,
-            cursor: 'pointer',
-            transition: 'transform 0.2s ease, filter 0.2s ease, box-shadow 0.3s ease',
-            transform: selected === view.name ? 'scale(1.05)' : 'scale(1)',
-            filter: selected && selected !== view.name ? 'opacity(0.5)' : 'none',
-            // GAP-52: persistent highlight ring (independent from user selection)
-            boxShadow: isHighlighted
-              ? `0 0 0 3px ${color}, 0 0 24px 4px ${color}`
-              : 'none',
-            borderRadius: isHighlighted ? '12px' : undefined,
-            zIndex: isHighlighted ? 11 : selected === view.name ? 10 : 1,
+            position: 'absolute',
+            inset: 0,
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: '0 0',
           }}
         >
-          <AvlOrbitalUnit
-            entityName={view.entityName}
-            fields={view.fieldCount}
-            persistence={view.persistence}
-            traits={view.traits}
-            pages={view.pages}
+          {/* Event wires SVG overlay (behind orbitals) */}
+          <EventWireOverlay
+            orbitalViews={orbitalViews}
+            crossLinks={crossLinks}
             color={color}
-            animated={animated && (selected === view.name || isHighlighted)}
+            animated={animated}
+            containerW={containerW}
+            containerH={containerH}
           />
-        </Box>
-        );
-      })}
 
-      {/* Info panel for selected orbital */}
-      {selectedView && (
-        <InfoPanel
-          view={selectedView}
-          crossLinks={crossLinks}
-          color={color}
-        />
-      )}
+          {/* AvlOrbitalUnit molecules — one per orbital */}
+          {orbitalViews.map(view => {
+            const isHighlighted = view.name === highlightedOrbital;
+            return (
+            <Box
+              key={view.name}
+              role="button"
+              tabIndex={0}
+              data-orbital-tile="true"
+              onClick={() => handleSelect(view.name)}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelect(view.name); }}
+              aria-label={`Orbital: ${view.name}${isHighlighted ? ' (highlighted)' : ''}`}
+              position="absolute"
+              style={{
+                left: view.cx - UNIT_DISPLAY_W / 2,
+                top: view.cy - UNIT_DISPLAY_H / 2,
+                width: UNIT_DISPLAY_W,
+                height: UNIT_DISPLAY_H,
+                cursor: 'pointer',
+                transition: 'transform 0.2s ease, filter 0.2s ease, box-shadow 0.3s ease',
+                transform: selected === view.name ? 'scale(1.05)' : 'scale(1)',
+                filter: selected && selected !== view.name ? 'opacity(0.5)' : 'none',
+                // GAP-52: persistent highlight ring (independent from user selection)
+                boxShadow: isHighlighted
+                  ? `0 0 0 3px ${color}, 0 0 24px 4px ${color}`
+                  : 'none',
+                borderRadius: isHighlighted ? '12px' : undefined,
+                zIndex: isHighlighted ? 11 : selected === view.name ? 10 : 1,
+              }}
+            >
+              <AvlOrbitalUnit
+                entityName={view.entityName}
+                fields={view.fieldCount}
+                persistence={view.persistence}
+                traits={view.traits}
+                pages={view.pages}
+                color={color}
+                animated={animated && (selected === view.name || isHighlighted)}
+              />
+            </Box>
+            );
+          })}
+
+          {/* Info panel for selected orbital — lives inside the transform so
+              it pans/zooms with the selected tile */}
+          {selectedView && (
+            <InfoPanel
+              view={selectedView}
+              crossLinks={crossLinks}
+              color={color}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* GAP-54: zoom controls (absolute, outside the transform so they stay
+          fixed regardless of pan/zoom) */}
+      <Box
+        position="absolute"
+        style={{
+          top: 12,
+          right: 12,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 4,
+          zIndex: 30,
+        }}
+      >
+        <Button variant="secondary" size="sm" onClick={zoomIn} title="Zoom in" action="COSMIC_ZOOM_IN">
+          <Icon name="plus" size="sm" />
+        </Button>
+        <Button variant="secondary" size="sm" onClick={zoomOut} title="Zoom out" action="COSMIC_ZOOM_OUT">
+          <Icon name="minus" size="sm" />
+        </Button>
+        <Button variant="secondary" size="sm" onClick={resetZoom} title="Reset" action="COSMIC_ZOOM_RESET">
+          <Icon name="maximize" size="sm" />
+        </Button>
+      </Box>
     </Box>
   );
 };
