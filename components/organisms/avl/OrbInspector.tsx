@@ -304,6 +304,11 @@ export function OrbInspector({ node, schema, editable = false, onSchemaChange, o
       <Box className="flex-1 overflow-y-auto">
         {activeTab === 'code' ? (
           /* ── Code Tab ── */
+          /* GAP-51: when editable, the CodeBlock molecule renders the existing
+             Textarea atom internally and forwards keystrokes via UI:CODE_CHANGE
+             on the EventBus. The consumer (builder workspace) listens, debounces,
+             parses via safeParseOrbitalSchema, and calls setSchema. Read-only
+             consumers (editable=false) see the existing syntax-highlighted view. */
           <Box className="p-2">
             <CodeBlock
               code={orbCode}
@@ -311,6 +316,8 @@ export function OrbInspector({ node, schema, editable = false, onSchemaChange, o
               showCopyButton
               showLanguageBadge
               maxHeight="100%"
+              editable={editable}
+              onChange={editable ? (code) => eventBus.emit('UI:CODE_CHANGE', { code }) : undefined}
             />
           </Box>
         ) : (
