@@ -21,6 +21,7 @@ import { OrbitalProvider } from '../providers/OrbitalProvider';
 import { VerificationProvider } from '../providers/VerificationProvider';
 import { UISlotProvider, useUISlots } from '../context/UISlotContext';
 import { UISlotRenderer } from '../components/organisms/UISlotRenderer';
+import { useEventBus } from '../hooks/useEventBus';
 import type { OrbitalSchema, EntityData } from '@almadar/core';
 import { useResolvedSchema } from './useResolvedSchema';
 import { useTraitStateMachine } from './useTraitStateMachine';
@@ -102,10 +103,16 @@ function SlotBridge() {
  * to the server after local processing. Server response provides enriched
  * patterns with entity data resolved reactively via useEntityRef.
  */
-function TraitInitializer({ traits, orbitalNames, onNavigate }: {
+function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback }: {
   traits: unknown[];
   orbitalNames?: string[];
   onNavigate?: (path: string, params?: Record<string, unknown>) => void;
+  /**
+   * GAP-19: Called when the 5s server-bridge fallback fires (the preview server
+   * never connected, so the preview is running locally instead). Lets the parent
+   * surface a UI indicator so the silent fallback isn't actually silent.
+   */
+  onLocalFallback?: () => void;
 }) {
   const slotsActions = useSlotsActions();
   const bridge = useServerBridge();
@@ -164,13 +171,15 @@ function TraitInitializer({ traits, orbitalNames, onNavigate }: {
       return () => clearTimeout(t);
     }
     // Fallback: if server bridge doesn't connect within 5s, fire local INIT
+    // and notify the parent so it can surface the fallback (GAP-19).
     const fallback = setTimeout(() => {
       if (!initSentRef.current) {
         sendEvent('INIT');
+        onLocalFallback?.();
       }
     }, 5000);
     return () => clearTimeout(fallback);
-  }, [traits, orbitalNames, sendEvent]);
+  }, [traits, orbitalNames, sendEvent, onLocalFallback]);
 
   // Server INIT when bridge connects. Apply enriched effects to slots.
   useEffect(() => {
@@ -232,12 +241,14 @@ function TraitInitializer({ traits, orbitalNames, onNavigate }: {
  * When `serverUrl` is provided, wraps with ServerBridgeProvider and
  * forwards events to the server after local processing.
  */
-function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate }: {
+function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate, onLocalFallback }: {
   schema: unknown;
   serverUrl?: string;
   mockData?: Record<string, unknown[]>;
   pageName?: string;
   onNavigate?: (path: string, params?: Record<string, unknown>) => void;
+  /** GAP-19: forwarded to TraitInitializer to surface server-bridge fallback. */
+  onLocalFallback?: () => void;
 }) {
   const { traits, allEntities, ir } = useResolvedSchema(schema as Parameters<typeof useResolvedSchema>[0], pageName);
 
@@ -298,7 +309,12 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate }: {
     <VerificationProvider enabled>
       <SlotsProvider>
         <EntitySchemaProvider entities={Array.from(allEntities.values())}>
-          <TraitInitializer traits={allPageTraits} orbitalNames={serverUrl ? orbitalNames : undefined} onNavigate={onNavigate} />
+          <TraitInitializer
+            traits={allPageTraits}
+            orbitalNames={serverUrl ? orbitalNames : undefined}
+            onNavigate={onNavigate}
+            onLocalFallback={onLocalFallback}
+          />
           <SlotBridge />
           <Box className="min-h-full p-4">
             <UISlotRenderer includeHud hudMode="inline" includeFloating />
@@ -375,6 +391,19 @@ export function OrbPreview({
   className,
   serverUrl,
 }: OrbPreviewProps): React.ReactElement {
+  // GAP-19: track when the server bridge falls back to local execution.
+  // The 5s timeout in TraitInitializer fires onLocalFallback if the bridge
+  // never connected. We surface a banner + emit UI:NOTIFY for any toast listener.
+  const [localFallback, setLocalFallback] = useState(false);
+  const eventBus = useEventBus();
+  const handleLocalFallback = useCallback(() => {
+    if (localFallback) return;
+    setLocalFallback(true);
+    eventBus.emit('UI:NOTIFY', {
+      message: 'Preview server unreachable — running locally without server-side state.',
+      severity: 'warning',
+    });
+  }, [localFallback, eventBus]);
   // Parse + (optionally) run the auto-mock pipeline. The pipeline:
   //   1. Generates mock entity rows from field definitions (EntityData)
   //   2. Flips two-state INIT state machines so the data state is initial
@@ -468,9 +497,27 @@ export function OrbPreview({
       className={`overflow-auto border border-[var(--color-border)] rounded-[var(--radius-md)] ${className ?? ''}`}
       style={{ height }}
     >
+      {/* GAP-19: visible banner when the preview server bridge fell back to local execution.
+          The 5s timeout in TraitInitializer fires this when serverUrl was set but the
+          ServerBridge never connected. Without this, the user couldn't tell why state
+          wasn't persisting to the server. */}
+      {localFallback && (
+        <Box className="px-3 py-2 bg-[var(--color-warning)] bg-opacity-10 border-b border-[var(--color-warning)] flex items-center gap-2">
+          <Typography variant="caption" className="text-[var(--color-warning-foreground)] flex-1">
+            Preview server unreachable — running locally. Server-side state and persistence are disabled.
+          </Typography>
+        </Box>
+      )}
       <OrbitalProvider initialData={effectiveMockData} skipTheme verification>
         <UISlotProvider>
-          <SchemaRunner schema={parsedSchema} serverUrl={serverUrl} mockData={effectiveMockData} pageName={currentPage} onNavigate={handleNavigate} />
+          <SchemaRunner
+            schema={parsedSchema}
+            serverUrl={serverUrl}
+            mockData={effectiveMockData}
+            pageName={currentPage}
+            onNavigate={handleNavigate}
+            onLocalFallback={handleLocalFallback}
+          />
         </UISlotProvider>
       </OrbitalProvider>
     </Box>
