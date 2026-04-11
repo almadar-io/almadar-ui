@@ -303,7 +303,13 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
     return () => { unsub1(); unsub2(); };
   }, [eventBus]);
 
-  // Drop handler: find nearest container and calculate insertion index
+  // Drop handler: find nearest container and calculate insertion index.
+  // GAP-61: emits `UI:PATTERN_DROP` (standardized — was `UI:PATTERN_INSERT`)
+  // with a `containerNode` field that carries the orbital/trait/transition
+  // context from the surrounding `data` (PreviewNodeData) so the page listener
+  // can resolve the SchemaLoc without consulting `activeLocRef`. The wrapper-Box
+  // drop in UIEditor still uses the old `activeLocRef` fallback path — both
+  // shapes flow through the same listener.
   const handlePreviewDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -327,13 +333,21 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       el = el.parentElement as HTMLElement;
       if (!el || el === contentRef.current) break;
     }
+
+    const containerNode = {
+      orbitalName: data.orbitalName,
+      traitName: data.traitName,
+      transitionEvent: data.transitionEvent,
+    };
+
     const containerPath = el?.dataset?.patternPath;
     if (!containerPath) {
       // Drop at root level
-      eventBus.emit('UI:PATTERN_INSERT', {
+      eventBus.emit('UI:PATTERN_DROP', {
         parentPath: 'root',
         patternType: payload.data.type as string,
         index: 0,
+        containerNode,
       });
       return;
     }
@@ -351,12 +365,13 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       if (cursor < mid) { insertIndex = i; break; }
     }
 
-    eventBus.emit('UI:PATTERN_INSERT', {
+    eventBus.emit('UI:PATTERN_DROP', {
       parentPath: containerPath,
       patternType: payload.data.type as string,
       index: insertIndex,
+      containerNode,
     });
-  }, [eventBus]);
+  }, [eventBus, data.orbitalName, data.traitName, data.transitionEvent]);
 
   const handlePreviewDragOver = useCallback((e: React.DragEvent) => {
     // Always preventDefault to allow drops (browser requirement)
