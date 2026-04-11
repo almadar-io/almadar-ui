@@ -135,6 +135,46 @@ body {
     background: var(--color-foreground);
 }
 
+/**
+ * ReactFlow (@xyflow/react) Controls — theme overrides for FlowCanvas zoom buttons
+ *
+ * Without these, the bottom-left zoom in/out/fit buttons render as plain white
+ * squares from ReactFlow's default stylesheet, ignoring the active theme.
+ * Targets: .react-flow__controls + .react-flow__controls-button
+ */
+.react-flow__controls {
+    background: var(--color-card) !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-main) !important;
+    overflow: hidden;
+}
+
+.react-flow__controls-button {
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 1px solid var(--color-border) !important;
+    color: var(--color-foreground) !important;
+    fill: var(--color-foreground) !important;
+    width: 28px;
+    height: 28px;
+    transition: background var(--transition-fast) var(--transition-timing);
+}
+
+.react-flow__controls-button:last-child {
+    border-bottom: none !important;
+}
+
+.react-flow__controls-button:hover {
+    background: var(--color-muted) !important;
+}
+
+.react-flow__controls-button svg {
+    fill: var(--color-foreground) !important;
+    width: 14px;
+    height: 14px;
+}
+
 @layer utilities {
     .shadow-theme { box-shadow: var(--shadow-main); }
     .shadow-theme-sm { box-shadow: var(--shadow-sm); }
