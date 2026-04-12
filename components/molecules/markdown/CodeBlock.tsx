@@ -473,7 +473,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     const hasHeader = showLanguageBadge || showCopyButton;
 
     return (
-      <Box className={`relative group ${className || ''}`}>
+      <Box className={`relative group ${className || ''}`} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         {hasHeader && (
           <HStack
             justify="between"
@@ -532,8 +532,8 @@ export const CodeBlock = React.memo<CodeBlockProps>(
           <Box
             style={{
               position: 'relative',
-              height: '100%',
-              minHeight: '160px',
+              flex: 1,
+              minHeight: 0,
               maxHeight,
               backgroundColor: '#1e1e1e',
               borderRadius: hasHeader ? '0 0 0.5rem 0.5rem' : '0.5rem',
@@ -619,6 +619,8 @@ export const CodeBlock = React.memo<CodeBlockProps>(
           <div
             ref={scrollRef}
             style={{
+              flex: 1,
+              minHeight: 0,
               overflowX: 'auto',
               overflowY: 'auto',
               WebkitOverflowScrolling: 'touch',
