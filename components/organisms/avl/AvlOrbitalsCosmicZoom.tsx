@@ -15,13 +15,28 @@
  * @packageDocumentation
  */
 
-import React, { useMemo, useState, useCallback, useRef, useEffect } from 'react';
+import React, { useMemo, useState, useCallback, useRef, useEffect, useReducer } from 'react';
 import type { OrbitalSchema } from '@almadar/core';
-import { parseApplicationLevel, type CrossLink } from './avl-schema-parser';
+import {
+  parseApplicationLevel,
+  parseOrbitalLevel,
+  parseTraitLevel,
+  parseTransitionLevel,
+  type CrossLink,
+} from './avl-schema-parser';
+import {
+  zoomReducer,
+  initialZoomState,
+  getBreadcrumbs,
+  type ZoomLevel,
+} from './avl-zoom-state';
+import { AvlTraitScene } from './AvlTraitScene';
+import { AvlTransitionScene } from './AvlTransitionScene';
 import { AvlOrbitalUnit } from '../../molecules/avl/AvlOrbitalUnit';
 import type { AvlPersistenceKind } from '../../atoms/avl/types';
 import { curveControlPoint } from '../../molecules/avl/avl-layout';
 import { Box } from '../../atoms/Box';
+import { HStack } from '../../atoms/Stack';
 import { Typography, Text } from '../../atoms/Typography';
 import { Button } from '../../atoms/Button';
 import { Icon } from '../../atoms/Icon';
@@ -270,52 +285,6 @@ const EventWireOverlay: React.FC<EventWireOverlayProps> = ({
 };
 
 // ---------------------------------------------------------------------------
-// Info panel (HTML, appears below selected orbital)
-// ---------------------------------------------------------------------------
-
-interface InfoPanelProps {
-  view: OrbitalView;
-  crossLinks: CrossLink[];
-  color: string;
-}
-
-const InfoPanel: React.FC<InfoPanelProps> = ({ view, crossLinks, color }) => {
-  const emitsOut = crossLinks.filter(l => l.emitterOrbital === view.name);
-  const listensIn = crossLinks.filter(l => l.listenerOrbital === view.name);
-
-  return (
-    <Box
-      position="absolute"
-      rounded="lg"
-      paddingX="md"
-      paddingY="sm"
-      bg="overlay"
-      style={{
-        left: view.cx - 120,
-        top: view.cy + UNIT_DISPLAY_H / 2 + 4,
-        width: 240,
-        border: `1px solid ${color}`,
-        zIndex: 20,
-        pointerEvents: 'none',
-      }}
-    >
-      <Typography weight="semibold" style={{ marginBottom: 4, color }}>{view.name}</Typography>
-      <Text variant="small" style={{ opacity: 0.7, color }}>Entity: {view.entityName} ({view.fieldCount} fields, {view.persistence})</Text>
-      <Text variant="small" style={{ opacity: 0.7, color }}>Traits: {view.traits.map(t => t.name).join(', ') || 'none'}</Text>
-      {view.pages.length > 0 && (
-        <Text variant="small" style={{ opacity: 0.7, color }}>Pages: {view.pages.map(p => p.name).join(', ')}</Text>
-      )}
-      {emitsOut.length > 0 && (
-        <Text variant="small" style={{ opacity: 0.7, color }}>Emits → {emitsOut.map(l => `${l.eventName} → ${l.listenerOrbital}`).join(', ')}</Text>
-      )}
-      {listensIn.length > 0 && (
-        <Text variant="small" style={{ opacity: 0.7, color }}>Listens ← {listensIn.map(l => `${l.eventName} ← ${l.emitterOrbital}`).join(', ')}</Text>
-      )}
-    </Box>
-  );
-};
-
-// ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
 
@@ -366,18 +335,92 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
     [orbitals, positions],
   );
 
-  // Selection — local toggle for the visual highlight + info panel.
-  // GAP-55: also forwards to onOrbitalSelect callback so consumers can drill in.
-  const [selected, setSelected] = useState<string | null>(null);
+  // ── GAP-75: Multi-level cosmic drill state machine ──
+  // Reuses the same `zoomReducer` that powers Avl3DViewer. Levels:
+  //   application → orbital → trait → transition (sexpr)
+  // Each level uses 2D AVL primitives (no 3D, no new components).
+  const [state, dispatch] = useReducer(zoomReducer, initialZoomState);
+
+  // Initial drill: when a consumer passes `highlightedOrbital`, jump to that
+  // orbital's L4 view on mount so the user lands inside the focused orbital
+  // (instead of starting at L3 with a faint highlight ring).
+  const drilledForHighlightRef = useRef(false);
+  useEffect(() => {
+    if (!highlightedOrbital) return;
+    if (drilledForHighlightRef.current) return;
+    drilledForHighlightRef.current = true;
+    dispatch({ type: 'ZOOM_INTO_ORBITAL', orbital: highlightedOrbital, targetPosition: { x: 0, y: 0 } });
+    // Immediately complete the animation — 2D scenes don't camera-lerp.
+    Promise.resolve().then(() => dispatch({ type: 'ANIMATION_COMPLETE' }));
+  }, [highlightedOrbital]);
+
+  const breadcrumbs = useMemo(() => getBreadcrumbs(state), [state]);
+
   const handleSelect = useCallback(
     (name: string) => {
-      setSelected(prev => (prev === name ? null : name));
+      dispatch({ type: 'ZOOM_INTO_ORBITAL', orbital: name, targetPosition: { x: 0, y: 0 } });
+      Promise.resolve().then(() => dispatch({ type: 'ANIMATION_COMPLETE' }));
       onOrbitalSelect?.(name);
     },
     [onOrbitalSelect],
   );
 
-  const selectedView = orbitalViews.find(o => o.name === selected);
+  const handleTraitSelect = useCallback((traitName: string) => {
+    dispatch({ type: 'ZOOM_INTO_TRAIT', trait: traitName, targetPosition: { x: 0, y: 0 } });
+    Promise.resolve().then(() => dispatch({ type: 'ANIMATION_COMPLETE' }));
+  }, []);
+
+  const handleTransitionSelect = useCallback((transitionIndex: number) => {
+    dispatch({ type: 'ZOOM_INTO_TRANSITION', transitionIndex, targetPosition: { x: 0, y: 0 } });
+    Promise.resolve().then(() => dispatch({ type: 'ANIMATION_COMPLETE' }));
+  }, []);
+
+  const handleZoomOut = useCallback(() => {
+    dispatch({ type: 'ZOOM_OUT' });
+    Promise.resolve().then(() => dispatch({ type: 'ANIMATION_COMPLETE' }));
+  }, []);
+
+  const handleBreadcrumbClick = useCallback((targetLevel: ZoomLevel) => {
+    const order: ZoomLevel[] = ['application', 'orbital', 'trait', 'transition'];
+    const currentIdx = order.indexOf(state.level);
+    const targetIdx = order.indexOf(targetLevel);
+    const steps = currentIdx - targetIdx;
+    for (let i = 0; i < steps; i++) {
+      dispatch({ type: 'ZOOM_OUT' });
+    }
+    Promise.resolve().then(() => dispatch({ type: 'ANIMATION_COMPLETE' }));
+  }, [state.level]);
+
+  // Esc to zoom out (only when drilled in past application level)
+  useEffect(() => {
+    if (state.level === 'application') return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleZoomOut();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [handleZoomOut, state.level]);
+
+  // Parsed data for the deeper levels (computed lazily — null at L3)
+  const orbitalLevelData = useMemo(() => {
+    if (!state.selectedOrbital) return null;
+    return parseOrbitalLevel(parsedSchema, state.selectedOrbital);
+  }, [parsedSchema, state.selectedOrbital]);
+
+  const traitLevelData = useMemo(() => {
+    if (!state.selectedOrbital || !state.selectedTrait) return null;
+    return parseTraitLevel(parsedSchema, state.selectedOrbital, state.selectedTrait);
+  }, [parsedSchema, state.selectedOrbital, state.selectedTrait]);
+
+  const transitionLevelData = useMemo(() => {
+    if (!state.selectedOrbital || !state.selectedTrait || state.selectedTransition === null) return null;
+    return parseTransitionLevel(
+      parsedSchema,
+      state.selectedOrbital,
+      state.selectedTrait,
+      state.selectedTransition,
+    );
+  }, [parsedSchema, state.selectedOrbital, state.selectedTrait, state.selectedTransition]);
 
   // GAP-54: pan + zoom + drag state. Custom implementation (no library) since
   // there's no existing zoom/pan dep in the monorepo. Wheel = zoom around
@@ -471,119 +514,290 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
       overflow="visible"
       style={{ width, height: containerH }}
     >
-      {/* GAP-54: pan/zoom wrapper. Both event wires SVG and orbital tiles
-          live inside this transformed div so they stay in lockstep when
-          zooming/panning. */}
-      <div
-        ref={transformWrapperRef}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          overflow: 'hidden',
-          cursor: dragStateRef.current ? 'grabbing' : 'grab',
-          touchAction: 'none',
-        }}
-      >
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-            transformOrigin: '0 0',
-          }}
-        >
-          {/* Event wires SVG overlay (behind orbitals) */}
-          <EventWireOverlay
-            orbitalViews={orbitalViews}
-            crossLinks={crossLinks}
-            color={color}
-            animated={animated}
-            containerW={containerW}
-            containerH={containerH}
-          />
-
-          {/* AvlOrbitalUnit molecules — one per orbital */}
-          {orbitalViews.map(view => {
-            const isHighlighted = view.name === highlightedOrbital;
-            return (
-            <Box
-              key={view.name}
-              role="button"
-              tabIndex={0}
-              data-orbital-tile="true"
-              onClick={() => handleSelect(view.name)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelect(view.name); }}
-              aria-label={`Orbital: ${view.name}${isHighlighted ? ' (highlighted)' : ''}`}
-              position="absolute"
-              style={{
-                left: view.cx - UNIT_DISPLAY_W / 2,
-                top: view.cy - UNIT_DISPLAY_H / 2,
-                width: UNIT_DISPLAY_W,
-                height: UNIT_DISPLAY_H,
-                cursor: 'pointer',
-                transition: 'transform 0.2s ease, filter 0.2s ease, box-shadow 0.3s ease',
-                transform: selected === view.name ? 'scale(1.05)' : 'scale(1)',
-                filter: selected && selected !== view.name ? 'opacity(0.5)' : 'none',
-                // GAP-52: persistent highlight ring (independent from user selection)
-                boxShadow: isHighlighted
-                  ? `0 0 0 3px ${color}, 0 0 24px 4px ${color}`
-                  : 'none',
-                borderRadius: isHighlighted ? '12px' : undefined,
-                zIndex: isHighlighted ? 11 : selected === view.name ? 10 : 1,
-              }}
-            >
-              <AvlOrbitalUnit
-                entityName={view.entityName}
-                fields={view.fieldCount}
-                persistence={view.persistence}
-                traits={view.traits}
-                pages={view.pages}
-                color={color}
-                animated={animated && (selected === view.name || isHighlighted)}
-              />
-            </Box>
-            );
-          })}
-
-          {/* Info panel for selected orbital — lives inside the transform so
-              it pans/zooms with the selected tile */}
-          {selectedView && (
-            <InfoPanel
-              view={selectedView}
-              crossLinks={crossLinks}
-              color={color}
-            />
-          )}
-        </div>
-      </div>
-
-      {/* GAP-54: zoom controls (absolute, outside the transform so they stay
-          fixed regardless of pan/zoom) */}
+      {/* GAP-75: Breadcrumb header — always visible. Lets the user navigate
+          back up the drill chain. */}
       <Box
         position="absolute"
         style={{
           top: 12,
-          right: 12,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 4,
+          left: 12,
           zIndex: 30,
+          background: 'var(--color-card, rgba(255,255,255,0.92))',
+          padding: '4px 12px',
+          borderRadius: 6,
+          border: `1px solid ${color}`,
         }}
       >
-        <Button variant="secondary" size="sm" onClick={zoomIn} title="Zoom in" action="COSMIC_ZOOM_IN">
-          <Icon name="plus" size="sm" />
-        </Button>
-        <Button variant="secondary" size="sm" onClick={zoomOut} title="Zoom out" action="COSMIC_ZOOM_OUT">
-          <Icon name="minus" size="sm" />
-        </Button>
-        <Button variant="secondary" size="sm" onClick={resetZoom} title="Reset" action="COSMIC_ZOOM_RESET">
-          <Icon name="maximize" size="sm" />
-        </Button>
+        <HStack gap="xs" align="center">
+          {breadcrumbs.map((crumb, i) => (
+            <React.Fragment key={crumb.level}>
+              {i > 0 && (
+                <Typography variant="small" style={{ opacity: 0.5, color }}>
+                  /
+                </Typography>
+              )}
+              {i < breadcrumbs.length - 1 ? (
+                <Box
+                  as="span"
+                  onClick={() => handleBreadcrumbClick(crumb.level)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <Typography
+                    variant="small"
+                    style={{ color, textDecoration: 'underline' }}
+                  >
+                    {crumb.label}
+                  </Typography>
+                </Box>
+              ) : (
+                <Typography variant="small" weight="bold" style={{ color }}>
+                  {crumb.label}
+                </Typography>
+              )}
+            </React.Fragment>
+          ))}
+        </HStack>
       </Box>
+
+      {/* Esc hint — only when drilled past L3 */}
+      {state.level !== 'application' && (
+        <Box
+          position="absolute"
+          style={{
+            bottom: 12,
+            right: 12,
+            zIndex: 30,
+            background: 'var(--color-card, rgba(255,255,255,0.85))',
+            padding: '2px 8px',
+            borderRadius: 4,
+            opacity: 0.8,
+          }}
+        >
+          <Typography variant="small" style={{ color }}>
+            Press Esc to zoom out
+          </Typography>
+        </Box>
+      )}
+
+      {/* ── L3 (application): existing pan/zoom grid of orbital tiles ── */}
+      {state.level === 'application' && (
+        <>
+          <div
+            ref={transformWrapperRef}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              overflow: 'hidden',
+              cursor: dragStateRef.current ? 'grabbing' : 'grab',
+              touchAction: 'none',
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                transformOrigin: '0 0',
+              }}
+            >
+              {/* Event wires SVG overlay (behind orbitals) */}
+              <EventWireOverlay
+                orbitalViews={orbitalViews}
+                crossLinks={crossLinks}
+                color={color}
+                animated={animated}
+                containerW={containerW}
+                containerH={containerH}
+              />
+
+              {/* AvlOrbitalUnit molecules — one per orbital. Click drills into L4. */}
+              {orbitalViews.map(view => {
+                const isHighlighted = view.name === highlightedOrbital;
+                return (
+                <Box
+                  key={view.name}
+                  role="button"
+                  tabIndex={0}
+                  data-orbital-tile="true"
+                  onClick={() => handleSelect(view.name)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelect(view.name); }}
+                  aria-label={`Orbital: ${view.name}${isHighlighted ? ' (highlighted)' : ''}`}
+                  position="absolute"
+                  style={{
+                    left: view.cx - UNIT_DISPLAY_W / 2,
+                    top: view.cy - UNIT_DISPLAY_H / 2,
+                    width: UNIT_DISPLAY_W,
+                    height: UNIT_DISPLAY_H,
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s ease, filter 0.2s ease, box-shadow 0.3s ease',
+                    // GAP-52: persistent highlight ring (independent from user selection)
+                    boxShadow: isHighlighted
+                      ? `0 0 0 3px ${color}, 0 0 24px 4px ${color}`
+                      : 'none',
+                    borderRadius: isHighlighted ? '12px' : undefined,
+                    zIndex: isHighlighted ? 11 : 1,
+                  }}
+                >
+                  <AvlOrbitalUnit
+                    entityName={view.entityName}
+                    fields={view.fieldCount}
+                    persistence={view.persistence}
+                    traits={view.traits}
+                    pages={view.pages}
+                    color={color}
+                    animated={animated && isHighlighted}
+                  />
+                </Box>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* GAP-54: pan/zoom controls — only relevant at L3 */}
+          <Box
+            position="absolute"
+            style={{
+              top: 12,
+              right: 12,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 4,
+              zIndex: 30,
+            }}
+          >
+            <Button variant="secondary" size="sm" onClick={zoomIn} title="Zoom in" action="COSMIC_ZOOM_IN">
+              <Icon name="plus" size="sm" />
+            </Button>
+            <Button variant="secondary" size="sm" onClick={zoomOut} title="Zoom out" action="COSMIC_ZOOM_OUT">
+              <Icon name="minus" size="sm" />
+            </Button>
+            <Button variant="secondary" size="sm" onClick={resetZoom} title="Reset" action="COSMIC_ZOOM_RESET">
+              <Icon name="maximize" size="sm" />
+            </Button>
+          </Box>
+        </>
+      )}
+
+      {/* ── L4 (orbital): full-size AvlOrbitalUnit + clickable trait sidebar ── */}
+      {state.level === 'orbital' && orbitalLevelData && (
+        <Box
+          position="absolute"
+          style={{
+            inset: 0,
+            paddingTop: 56,
+            paddingBottom: 24,
+            paddingLeft: 24,
+            paddingRight: 24,
+            display: 'flex',
+            alignItems: 'stretch',
+            justifyContent: 'center',
+            gap: 24,
+          }}
+        >
+          {/* Big AVL orbital diagram */}
+          <Box style={{ flex: 1, maxWidth: 720, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <AvlOrbitalUnit
+              entityName={orbitalLevelData.entity.name}
+              fields={orbitalLevelData.entity.fields.length}
+              persistence={(orbitalLevelData.entity.persistence || 'persistent') as AvlPersistenceKind}
+              traits={orbitalLevelData.traits.map(t => ({ name: t.name }))}
+              pages={orbitalLevelData.pages.map(p => ({ name: p.name }))}
+              color={color}
+              animated={animated}
+            />
+          </Box>
+
+          {/* Trait drill list — click to enter L5 */}
+          <Box
+            style={{
+              width: 220,
+              padding: 12,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+              borderLeft: `1px solid ${color}`,
+              opacity: 0.95,
+            }}
+          >
+            <Typography variant="small" weight="semibold" style={{ color, marginBottom: 4 }}>
+              Traits ({orbitalLevelData.traits.length})
+            </Typography>
+            {orbitalLevelData.traits.length === 0 && (
+              <Text variant="small" style={{ opacity: 0.6, color }}>No traits</Text>
+            )}
+            {orbitalLevelData.traits.map(trait => (
+              <Button
+                key={trait.name}
+                variant="ghost"
+                size="sm"
+                onClick={() => handleTraitSelect(trait.name)}
+                action="COSMIC_DRILL_TRAIT"
+              >
+                {trait.name}
+              </Button>
+            ))}
+            {orbitalLevelData.pages.length > 0 && (
+              <>
+                <Typography variant="small" weight="semibold" style={{ color, marginTop: 12 }}>
+                  Pages ({orbitalLevelData.pages.length})
+                </Typography>
+                {orbitalLevelData.pages.map(page => (
+                  <Text key={page.name} variant="small" style={{ opacity: 0.7, color }}>
+                    {page.name}
+                  </Text>
+                ))}
+              </>
+            )}
+          </Box>
+        </Box>
+      )}
+
+      {/* ── L5 (trait): AVL state machine — click a transition to enter L6 ── */}
+      {state.level === 'trait' && traitLevelData && (
+        <Box
+          position="absolute"
+          style={{
+            inset: 0,
+            paddingTop: 56,
+            paddingBottom: 24,
+            paddingLeft: 24,
+            paddingRight: 24,
+          }}
+        >
+          <svg viewBox="0 0 600 400" style={{ width: '100%', height: '100%' }}>
+            <AvlTraitScene
+              data={traitLevelData}
+              color={color}
+              onTransitionClick={(idx) => handleTransitionSelect(idx)}
+            />
+          </svg>
+        </Box>
+      )}
+
+      {/* ── L6 (transition): one transition with sexpr expression tree ── */}
+      {state.level === 'transition' && transitionLevelData && (
+        <Box
+          position="absolute"
+          style={{
+            inset: 0,
+            paddingTop: 56,
+            paddingBottom: 24,
+            paddingLeft: 24,
+            paddingRight: 24,
+          }}
+        >
+          <svg viewBox="0 0 600 400" style={{ width: '100%', height: '100%' }}>
+            <AvlTransitionScene
+              data={transitionLevelData}
+              color={color}
+            />
+          </svg>
+        </Box>
+      )}
     </Box>
   );
 };
