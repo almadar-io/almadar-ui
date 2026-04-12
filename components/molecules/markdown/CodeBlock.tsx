@@ -172,10 +172,15 @@ export interface CodeBlockProps {
   /** Additional CSS classes */
   className?: string;
   /**
-   * GAP-51: when true, render an editable surface (composes the `Textarea` atom)
-   * instead of the syntax-highlighted read-only display. Folding + Prism
-   * highlighting are skipped in editable mode for the first cut. Default: false
-   * (existing read-only behavior unchanged).
+   * When true, render an editable surface that composes a transparent `Textarea`
+   * over a Prism-highlighted overlay. The overlay re-tokenizes on each keystroke
+   * (driven from a local mirror of the textarea value), so users see syntax-highlighted
+   * code while still being able to type. Folding is skipped in editable mode.
+   *
+   * History: GAP-51 first-cut shipped plain (no-highlighting) editable text;
+   * GAP-77 (2026-04-12) added the Prism overlay layer.
+   *
+   * Default: false (existing read-only behavior unchanged).
    */
   editable?: boolean;
   /**
@@ -211,6 +216,35 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     const codeRef = useRef<HTMLDivElement | null>(null);
     const savedScrollLeftRef = useRef<number>(0);
     const [copied, setCopied] = useState(false);
+
+    // ── Editable mode (GAP-77): Prism overlay under transparent textarea ──
+    // `editableValue` mirrors the textarea contents so the overlay re-renders
+    // on each keystroke. Textarea stays uncontrolled (defaultValue + key) to
+    // avoid cursor jumps caused by parent debounce + re-stringify round trips.
+    // `lastPropCodeRef` distinguishes "user typed" (overlay updates only) from
+    // "parent gave us a new code prop" (re-mount textarea + reset overlay).
+    const [editableValue, setEditableValue] = useState(code);
+    const [editableTextareaKey, setEditableTextareaKey] = useState(0);
+    const lastPropCodeRef = useRef(code);
+    const editableTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const editableOverlayRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+      if (code !== lastPropCodeRef.current) {
+        lastPropCodeRef.current = code;
+        setEditableValue(code);
+        setEditableTextareaKey((k) => k + 1);
+      }
+    }, [code]);
+
+    const handleEditableScroll = useCallback(() => {
+      const ta = editableTextareaRef.current;
+      const ov = editableOverlayRef.current;
+      if (ta && ov) {
+        ov.scrollTop = ta.scrollTop;
+        ov.scrollLeft = ta.scrollLeft;
+      }
+    }, []);
 
     // ── Fold state ──
     const isFoldable = foldableProp ?? (language === 'orb' || language === 'json');
@@ -410,32 +444,97 @@ export const CodeBlock = React.memo<CodeBlockProps>(
 
         {/* Code content */}
         {editable ? (
-          /* GAP-51: editable mode — composes the Textarea atom. Plain text editing,
-             no Prism highlighting overlay (follow-up). The textarea is uncontrolled
-             on the value side: we pass `code` as the initial value and forward
-             every keystroke via onChange — the consumer is responsible for
-             debouncing and re-deriving `code` only after the user stops typing
-             so the cursor doesn't fight a re-render. */
-          <Textarea
-            defaultValue={code}
-            onChange={(e) => onChange?.(e.target.value)}
-            spellCheck={false}
+          /* GAP-77: editable mode = transparent Textarea on top + Prism-highlighted
+             overlay underneath. The textarea is uncontrolled (defaultValue + key)
+             to avoid cursor jumps; the overlay reads `editableValue` which is
+             mirrored from the textarea via onChange. Both elements share IDENTICAL
+             font / line-height / padding so the highlighted text aligns with the
+             textarea's invisible glyphs.
+
+             Scroll sync: the overlay has `pointer-events: none` and the textarea
+             scrolls; `handleEditableScroll` keeps the overlay's scroll matched. */
+          <Box
             style={{
-              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono", "Courier New", monospace',
-              fontSize: '13px',
-              lineHeight: '1.5',
+              position: 'relative',
               backgroundColor: '#1e1e1e',
-              color: '#e6e6e6',
               borderRadius: hasHeader ? '0 0 0.5rem 0.5rem' : '0.5rem',
-              border: 'none',
-              padding: '1rem',
-              resize: 'none',
               minHeight: '160px',
               maxHeight,
-              width: '100%',
-              outline: 'none',
+              overflow: 'hidden',
             }}
-          />
+          >
+            <div
+              ref={editableOverlayRef}
+              aria-hidden
+              style={{
+                position: 'absolute',
+                inset: 0,
+                overflow: 'hidden',
+                pointerEvents: 'none',
+                maxHeight,
+              }}
+            >
+              <SyntaxHighlighter
+                PreTag="div"
+                language={language}
+                style={activeStyle}
+                customStyle={{
+                  backgroundColor: 'transparent',
+                  borderRadius: 0,
+                  padding: '1rem',
+                  margin: 0,
+                  whiteSpace: 'pre',
+                  minWidth: '100%',
+                  minHeight: '160px',
+                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono", "Courier New", monospace',
+                  fontSize: '13px',
+                  lineHeight: '1.5',
+                }}
+                codeTagProps={{
+                  style: {
+                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono", "Courier New", monospace',
+                    fontSize: '13px',
+                    lineHeight: '1.5',
+                  },
+                }}
+              >
+                {editableValue || ' '}
+              </SyntaxHighlighter>
+            </div>
+            <Textarea
+              key={editableTextareaKey}
+              ref={editableTextareaRef}
+              defaultValue={code}
+              onChange={(e) => {
+                setEditableValue(e.target.value);
+                onChange?.(e.target.value);
+              }}
+              onScroll={handleEditableScroll}
+              spellCheck={false}
+              style={{
+                position: 'relative',
+                zIndex: 1,
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono", "Courier New", monospace',
+                fontSize: '13px',
+                lineHeight: '1.5',
+                backgroundColor: 'transparent',
+                color: 'transparent',
+                caretColor: '#e6e6e6',
+                borderRadius: hasHeader ? '0 0 0.5rem 0.5rem' : '0.5rem',
+                border: 'none',
+                padding: '1rem',
+                resize: 'none',
+                minHeight: '160px',
+                maxHeight,
+                width: '100%',
+                height: '100%',
+                outline: 'none',
+                whiteSpace: 'pre',
+                overflowWrap: 'normal',
+                overflow: 'auto',
+              }}
+            />
+          </Box>
         ) : (
           <div
             ref={scrollRef}

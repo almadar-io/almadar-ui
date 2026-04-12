@@ -346,7 +346,7 @@ export function OrbInspector({ node, schema, editable = false, onSchemaChange, o
                           />
                         ) : (
                           <Typography variant="small" className="text-[11px] text-muted-foreground">
-                            {displayValue || ((ps.types as string[])?.join(' | ') ?? 'string')}{ps.required ? ' *' : ''}
+                            {displayValue || '—'}{ps.required ? ' *' : ''}
                           </Typography>
                         )}
                       </Box>
