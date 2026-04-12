@@ -188,6 +188,14 @@ export interface CodeBlockProps {
    * Consumers should debounce + parse downstream — `CodeBlock` does not.
    */
   onChange?: (code: string) => void;
+  /**
+   * GAP-80: line-level error/warning highlights for editable mode.
+   * Map of 1-based line number → severity. The overlay paints a colored
+   * background on each line: error = red, warning = yellow. Pass undefined
+   * (default) to disable. The consumer is responsible for computing the
+   * path → line map from the schema + validation results.
+   */
+  errorLines?: Map<number, 'error' | 'warning'>;
 }
 
 // Stable lineProps function (never changes, safe for memoized element)
@@ -205,6 +213,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     className,
     editable = false,
     onChange,
+    errorLines,
   }) => {
     const code = typeof rawCode === 'string' ? rawCode : String(rawCode ?? '');
     const isOrb = language === 'orb';
@@ -245,6 +254,33 @@ export const CodeBlock = React.memo<CodeBlockProps>(
         ov.scrollLeft = ta.scrollLeft;
       }
     }, []);
+
+    // GAP-80: line-level error highlights. SyntaxHighlighter calls this for
+    // each line when `wrapLines` is true; we paint a colored background per
+    // severity. Memoized so its identity is stable across renders.
+    const errorLineProps = useMemo(() => {
+      if (!errorLines || errorLines.size === 0) {
+        return LINE_PROPS_FN;
+      }
+      return (lineNumber: number): React.HTMLProps<HTMLElement> => {
+        const severity = errorLines.get(lineNumber);
+        if (!severity) {
+          return { 'data-line': String(lineNumber - 1) } as React.HTMLProps<HTMLElement>;
+        }
+        return {
+          'data-line': String(lineNumber - 1),
+          style: {
+            display: 'block',
+            backgroundColor: severity === 'error'
+              ? 'rgba(248, 113, 113, 0.18)'  // red-400 @ 18%
+              : 'rgba(251, 191, 36, 0.18)',  // amber-400 @ 18%
+            borderLeft: `3px solid ${severity === 'error' ? '#ef4444' : '#f59e0b'}`,
+            paddingLeft: '0.5rem',
+            marginLeft: '-0.5rem',
+          },
+        } as React.HTMLProps<HTMLElement>;
+      };
+    }, [errorLines]);
 
     // ── Fold state ──
     const isFoldable = foldableProp ?? (language === 'orb' || language === 'json');
@@ -444,22 +480,38 @@ export const CodeBlock = React.memo<CodeBlockProps>(
 
         {/* Code content */}
         {editable ? (
-          /* GAP-77: editable mode = transparent Textarea on top + Prism-highlighted
-             overlay underneath. The textarea is uncontrolled (defaultValue + key)
-             to avoid cursor jumps; the overlay reads `editableValue` which is
-             mirrored from the textarea via onChange. Both elements share IDENTICAL
-             font / line-height / padding so the highlighted text aligns with the
-             textarea's invisible glyphs.
+          /* GAP-77 / GAP-82 / GAP-83: editable mode = transparent textarea on
+             top of a Prism-highlighted SyntaxHighlighter overlay.
 
-             Scroll sync: the overlay has `pointer-events: none` and the textarea
-             scrolls; `handleEditableScroll` keeps the overlay's scroll matched. */
+             Layout: BOTH children are `position: absolute, inset: 0` so neither
+             contributes to flow. The parent Box has `height: 100%` so it fills
+             whatever container the consumer provides (the consumer is
+             responsible for giving the parent a real height — usually via flex
+             column with `minHeight: 0`).
+
+             Stacking: the overlay is FIRST in DOM order so it paints first
+             (behind), the textarea is SECOND so it paints second (on top). No
+             explicit z-index — DOM order alone determines stacking inside the
+             parent's stacking context. The textarea has `color: transparent`
+             plus `WebkitTextFillColor: transparent` (Safari) so its glyphs
+             never paint, but the caret stays visible via `caretColor`.
+
+             Scroll sync: textarea scrolls naturally; `handleEditableScroll`
+             mirrors its scrollTop/scrollLeft onto the overlay div so the
+             highlighted spans stay aligned with the textarea content.
+
+             Error highlights (GAP-80): `errorLines` prop accepts a Map of
+             1-based line numbers → severity. The overlay's SyntaxHighlighter
+             uses `wrapLines` + `lineProps` to paint a colored background on
+             those lines. */
           <Box
             style={{
               position: 'relative',
-              backgroundColor: '#1e1e1e',
-              borderRadius: hasHeader ? '0 0 0.5rem 0.5rem' : '0.5rem',
+              height: '100%',
               minHeight: '160px',
               maxHeight,
+              backgroundColor: '#1e1e1e',
+              borderRadius: hasHeader ? '0 0 0.5rem 0.5rem' : '0.5rem',
               overflow: 'hidden',
             }}
           >
@@ -468,16 +520,20 @@ export const CodeBlock = React.memo<CodeBlockProps>(
               aria-hidden
               style={{
                 position: 'absolute',
-                inset: 0,
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
                 overflow: 'hidden',
                 pointerEvents: 'none',
-                maxHeight,
               }}
             >
               <SyntaxHighlighter
                 PreTag="div"
                 language={language}
                 style={activeStyle}
+                wrapLines={errorLines && errorLines.size > 0}
+                lineProps={errorLineProps}
                 customStyle={{
                   backgroundColor: 'transparent',
                   borderRadius: 0,
@@ -485,7 +541,6 @@ export const CodeBlock = React.memo<CodeBlockProps>(
                   margin: 0,
                   whiteSpace: 'pre',
                   minWidth: '100%',
-                  minHeight: '160px',
                   fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono", "Courier New", monospace',
                   fontSize: '13px',
                   lineHeight: '1.5',
@@ -512,23 +567,23 @@ export const CodeBlock = React.memo<CodeBlockProps>(
               onScroll={handleEditableScroll}
               spellCheck={false}
               style={{
-                position: 'relative',
-                zIndex: 1,
-                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono", "Courier New", monospace',
-                fontSize: '13px',
-                lineHeight: '1.5',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                padding: '1rem',
+                margin: 0,
+                border: 'none',
+                outline: 'none',
+                resize: 'none',
                 backgroundColor: 'transparent',
                 color: 'transparent',
                 caretColor: '#e6e6e6',
-                borderRadius: hasHeader ? '0 0 0.5rem 0.5rem' : '0.5rem',
-                border: 'none',
-                padding: '1rem',
-                resize: 'none',
-                minHeight: '160px',
-                maxHeight,
-                width: '100%',
-                height: '100%',
-                outline: 'none',
+                WebkitTextFillColor: 'transparent',
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono", "Courier New", monospace',
+                fontSize: '13px',
+                lineHeight: '1.5',
                 whiteSpace: 'pre',
                 overflowWrap: 'normal',
                 overflow: 'auto',
@@ -565,7 +620,8 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     prev.maxHeight === next.maxHeight &&
     prev.foldable === next.foldable &&
     prev.editable === next.editable &&
-    prev.onChange === next.onChange,
+    prev.onChange === next.onChange &&
+    prev.errorLines === next.errorLines,
 );
 
 CodeBlock.displayName = 'CodeBlock';
