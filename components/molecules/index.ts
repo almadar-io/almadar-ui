@@ -1,4 +1,5 @@
 export { ErrorBoundary, type ErrorBoundaryProps } from './ErrorBoundary';
+export { FileTree, type FileTreeProps, type FileTreeNode } from './FileTree';
 export { FormField, type FormFieldProps } from './FormField';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
 export { LoadingState, type LoadingStateProps } from './LoadingState';
