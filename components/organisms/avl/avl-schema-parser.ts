@@ -223,6 +223,11 @@ export function parseApplicationLevel(schema: OrbitalSchema): ApplicationLevelDa
   const orbitals: ApplicationOrbitalData[] = [];
   const crossLinks: CrossLink[] = [];
 
+  // GAP-99: guard against undefined/empty orbitals — prevents "reading 'fields' of undefined"
+  if (!schema.orbitals || schema.orbitals.length === 0) {
+    return { orbitals: [], crossLinks: [] };
+  }
+
   // Position orbitals in a centered grid within 600x400 viewBox
   const count = schema.orbitals.length;
   const cols = Math.ceil(Math.sqrt(count));
@@ -289,6 +294,7 @@ export function parseApplicationLevel(schema: OrbitalSchema): ApplicationLevelDa
  * Parse a single orbital's detail view.
  */
 export function parseOrbitalLevel(schema: OrbitalSchema, orbitalName: string): OrbitalLevelData | null {
+  if (!schema.orbitals) return null;
   const orbital = schema.orbitals.find(o => o.name === orbitalName);
   if (!orbital) return null;
 
@@ -371,6 +377,7 @@ export function parseOrbitalLevel(schema: OrbitalSchema, orbitalName: string): O
  * Parse a trait's state machine for the detail view.
  */
 export function parseTraitLevel(schema: OrbitalSchema, orbitalName: string, traitName: string): TraitLevelData | null {
+  if (!schema.orbitals) return null;
   const orbital = schema.orbitals.find(o => o.name === orbitalName);
   if (!orbital) return null;
 
