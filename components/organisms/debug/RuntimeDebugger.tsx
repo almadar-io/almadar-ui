@@ -148,16 +148,21 @@ function VerifyModePanel({
     serverCount: number;
     localCount: number;
 }) {
+    // Collapsed by default — the verify panel is useful for live debugging
+    // but obstructs the UI it's meant to help you inspect, especially in
+    // Playwright screenshots taken during verify_orbital / verify_runtime.
+    // Click the status bar to expand to the full timeline.
+    const [expanded, setExpanded] = React.useState(false);
     const scrollRef = React.useRef<HTMLDivElement>(null);
     const prevCountRef = React.useRef(0);
 
-    // Auto-scroll to bottom when new transitions arrive
+    // Auto-scroll to bottom when new transitions arrive (only when expanded)
     React.useEffect(() => {
-        if (transitions.length > prevCountRef.current && scrollRef.current) {
+        if (expanded && transitions.length > prevCountRef.current && scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
         }
         prevCountRef.current = transitions.length;
-    }, [transitions.length]);
+    }, [transitions.length, expanded]);
 
     // Render into #slot-hud-bottom via portal so we sit below modals (z-40)
     // and don't obscure any overlay slots (modal=z-1000, drawer=z-900).
@@ -173,10 +178,19 @@ function VerifyModePanel({
                 className
             )}
             data-testid="debugger-verify"
-            style={{ height: '25vh', zIndex: hudBottom ? undefined : 40 }}
+            data-expanded={expanded ? 'true' : 'false'}
+            style={{ height: expanded ? '25vh' : 'auto', zIndex: hudBottom ? undefined : 40 }}
         >
-            {/* Status bar */}
-            <div className="px-3 py-1.5 flex items-center gap-3 text-xs font-mono border-b border-border flex-shrink-0">
+            {/* Status bar — always visible, clickable to toggle */}
+            <button
+                type="button"
+                onClick={() => setExpanded((v) => !v)}
+                className="px-3 py-1.5 flex items-center gap-3 text-xs font-mono border-b border-border flex-shrink-0 w-full text-left hover:bg-[var(--color-card-hover,transparent)] cursor-pointer"
+                aria-expanded={expanded}
+                aria-label={expanded ? 'Collapse verification timeline' : 'Expand verification timeline'}
+                data-testid="debugger-verify-toggle"
+            >
+                <span className="text-foreground/50 w-3" aria-hidden>{expanded ? '▾' : '▸'}</span>
                 <Badge variant={failedChecks > 0 ? 'danger' : 'success'} size="sm">
                     {failedChecks > 0 ? `${failedChecks} fail` : 'OK'}
                 </Badge>
@@ -189,30 +203,32 @@ function VerifyModePanel({
                 {traitStates && (
                     <span className="text-cyan-600 dark:text-cyan-400 truncate max-w-[400px]">{traitStates}</span>
                 )}
-            </div>
+                {!expanded && transitions.length > 0 && (
+                    <span className="ml-auto text-foreground/50">{transitions.length} transition{transitions.length !== 1 ? 's' : ''}</span>
+                )}
+            </button>
 
-            {/* Timeline (left) + Walk Step (right) */}
-            <div className="flex-1 flex overflow-hidden">
-                {/* Full interaction timeline */}
-                <div ref={scrollRef} className="flex-1 overflow-y-auto">
-                    <div className="px-2 py-1">
-                        {transitions.length === 0 ? (
-                            <div className="text-foreground/50 text-xs font-mono py-2 text-center">
-                                Waiting for transitions...
-                            </div>
-                        ) : (
-                            <div className="space-y-0.5">
-                                {transitions.map((trace) => (
-                                    <TransitionRow key={trace.id} trace={trace} />
-                                ))}
-                            </div>
-                        )}
+            {/* Timeline (left) + Walk Step (right) — only when expanded */}
+            {expanded && (
+                <div className="flex-1 flex overflow-hidden">
+                    <div ref={scrollRef} className="flex-1 overflow-y-auto">
+                        <div className="px-2 py-1">
+                            {transitions.length === 0 ? (
+                                <div className="text-foreground/50 text-xs font-mono py-2 text-center">
+                                    Waiting for transitions...
+                                </div>
+                            ) : (
+                                <div className="space-y-0.5">
+                                    {transitions.map((trace) => (
+                                        <TransitionRow key={trace.id} trace={trace} />
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
+                    <WalkMinimap />
                 </div>
-
-                {/* Walk minimap (right column) */}
-                <WalkMinimap />
-            </div>
+            )}
         </div>
     );
 
