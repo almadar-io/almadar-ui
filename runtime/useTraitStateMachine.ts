@@ -21,7 +21,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 // Use hooks from @almadar/ui
 import { useEventBus } from '../hooks';
 import { isCircuitEvent } from '@almadar/core';
-import type { PatternConfig, ResolvedTraitTick } from '@almadar/core';
+import type { PatternConfig, ResolvedTraitTick, EventPayload, EntityRow } from '@almadar/core';
 import {
     StateMachineManager,
     EffectExecutor,
@@ -55,7 +55,7 @@ export interface TraitStateMachineResult {
     /** Current state for each trait */
     traitStates: Map<string, TraitState>;
     /** Send an event to trigger a transition */
-    sendEvent: (eventKey: string, payload?: Record<string, unknown>) => void;
+    sendEvent: (eventKey: string, payload?: EventPayload) => void;
     /** Get current state for a specific trait */
     getTraitState: (traitName: string) => TraitState | undefined;
     /** Check if a trait can handle an event from its current state */
@@ -91,7 +91,7 @@ function normalizeEventKey(eventKey: string): string {
 
 export interface UseTraitStateMachineOptions {
     /** Callback invoked after each event is processed (for server forwarding) */
-    onEventProcessed?: (eventKey: string, payload?: Record<string, unknown>) => void | Promise<void>;
+    onEventProcessed?: (eventKey: string, payload?: EventPayload) => void | Promise<void>;
     /** Router navigate function for navigate effects */
     navigate?: (path: string, params?: Record<string, unknown>) => void;
     /** Notification function for notify effects */
@@ -124,7 +124,7 @@ export function useTraitStateMachine(
 
     // Actor model queue: events are enqueued and drained one at a time,
     // awaiting all effects before processing the next event.
-    const eventQueueRef = useRef<Array<{ eventKey: string; payload?: Record<string, unknown> }>>([]);
+    const eventQueueRef = useRef<Array<{ eventKey: string; payload?: EventPayload }>>([]);
     const processingRef = useRef(false);
 
     // Keep refs for callbacks to avoid stale closures
@@ -349,7 +349,7 @@ export function useTraitStateMachine(
      */
     const processEventQueued = useCallback(async (
         eventKey: string,
-        payload?: Record<string, unknown>
+        payload?: EventPayload
     ): Promise<void> => {
         const normalizedEvent = normalizeEventKey(eventKey);
         const bindings = traitBindingsRef.current;
@@ -416,8 +416,15 @@ export function useTraitStateMachine(
                     notify: optionsRef.current?.notify,
                 });
 
+                // The payload shape is a superset of EntityRow at runtime
+                // (both are plain JSON-ish objects of primitive-ish values),
+                // but TS distinguishes them nominally. `@entity.X` lookups
+                // walk the same keys in either case — the cast acknowledges
+                // that the caller pattern of seeding entity from payload
+                // on INIT-style events is shape-compatible.
+                const entityFromPayload = (payload ?? {}) as unknown as EntityRow;
                 const bindingCtx: BindingContext = {
-                    entity: payload || {},
+                    entity: entityFromPayload,
                     payload: payload || {},
                     state: result.previousState,
                 };
@@ -569,7 +576,7 @@ export function useTraitStateMachine(
      * This replaces direct processEvent calls. Events arriving while the queue
      * is draining (e.g. from emit effects) are appended and processed in order.
      */
-    const enqueueAndDrain = useCallback((eventKey: string, payload?: Record<string, unknown>) => {
+    const enqueueAndDrain = useCallback((eventKey: string, payload?: EventPayload) => {
         eventQueueRef.current.push({ eventKey, payload });
         void drainEventQueue();
     }, [drainEventQueue]);
@@ -580,7 +587,7 @@ export function useTraitStateMachine(
      */
     const processEvent = useCallback((
         eventKey: string,
-        payload?: Record<string, unknown>
+        payload?: EventPayload
     ) => {
         enqueueAndDrain(eventKey, payload);
     }, [enqueueAndDrain]);
@@ -590,7 +597,7 @@ export function useTraitStateMachine(
      */
     const sendEvent = useCallback((
         eventKey: string,
-        payload?: Record<string, unknown>
+        payload?: EventPayload
     ) => {
         enqueueAndDrain(eventKey, payload);
     }, [enqueueAndDrain]);
@@ -634,7 +641,13 @@ export function useTraitStateMachine(
 
             const unsub = eventBus.on(`UI:${eventKey}`, (event) => {
                 console.log('[TraitStateMachine] Received event:', `UI:${eventKey}`, event);
-                enqueueAndDrain(eventKey, event.payload as Record<string, unknown>);
+                // KFlowEvent.payload is typed Record<string, unknown> for the
+                // UI's internal bus (allows arbitrary shapes like game events),
+                // but StateMachineManager.sendEvent consumes EventPayload from
+                // @almadar/core. The two are structurally compatible for the
+                // orbital-event subset we dispatch here; cast at the boundary
+                // rather than tightening every UI-side emitter.
+                enqueueAndDrain(eventKey, event.payload as unknown as EventPayload);
             });
             unsubscribes.push(unsub);
         }

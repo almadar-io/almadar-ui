@@ -122,7 +122,10 @@ type SlotContentRendererComponent = React.ComponentType<{
 let _slotContentRenderer: SlotContentRendererComponent | null = null;
 function getSlotContentRenderer(): SlotContentRendererComponent {
   if (_slotContentRenderer) return _slotContentRenderer;
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- runtime require breaks the cycle intentionally
+  // Runtime require is intentional — breaks the TraitFrame ↔ UISlotRenderer
+  // module cycle. `require` here is CommonJS-style resolution inside the
+  // bundled output; the function is only invoked after both modules have
+  // finished their top-level initialization.
   const mod = require("../organisms/UISlotRenderer") as {
     SlotContentRenderer: SlotContentRendererComponent;
   };

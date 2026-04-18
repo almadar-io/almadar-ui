@@ -20,11 +20,6 @@ const TASK_LIST_SCHEMA: OrbitalSchema = {
         { name: 'assignee', type: 'string' },
       ],
       persistence: 'persistent',
-      listFields: ['title', 'priority', 'done', 'assignee'],
-      pageTitle: 'Tasks',
-      headerIcon: 'check-square',
-      emptyTitle: 'No tasks yet',
-      emptyDescription: 'Create your first task to get started.',
     }),
   ],
 };
@@ -46,10 +41,6 @@ const HR_SCHEMA: OrbitalSchema = {
         { name: 'role', type: 'string' },
       ],
       persistence: 'persistent',
-      steps: [
-        { name: 'personal', fields: ['fullName', 'email'] },
-        { name: 'work', fields: ['department', 'startDate', 'role'] },
-      ],
       pagePath: '/onboarding',
     }),
     stdBrowse({
@@ -61,11 +52,6 @@ const HR_SCHEMA: OrbitalSchema = {
         { name: 'active', type: 'boolean' },
       ],
       persistence: 'persistent',
-      listFields: ['name', 'department', 'role'],
-      pageTitle: 'Team Directory',
-      headerIcon: 'users',
-      emptyTitle: 'No team members',
-      emptyDescription: 'Add your first team member.',
     }),
   ],
 };

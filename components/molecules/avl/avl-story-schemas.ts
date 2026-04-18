@@ -32,10 +32,6 @@ export const CLINIC_SCHEMA: OrbitalSchema = {
         { name: 'insuranceProvider', type: 'string' },
       ],
       persistence: 'persistent',
-      steps: [
-        { name: 'personal', fields: ['fullName', 'email', 'dateOfBirth'] },
-        { name: 'medical', fields: ['medicalHistory', 'insuranceProvider'] },
-      ],
       pagePath: '/intake',
     }),
     stdBrowse({
@@ -47,11 +43,6 @@ export const CLINIC_SCHEMA: OrbitalSchema = {
         { name: 'arrivalTime', type: 'string' },
       ],
       persistence: 'runtime',
-      listFields: ['patientName', 'waitMinutes', 'status'],
-      pageTitle: 'Reception Queue',
-      headerIcon: 'users',
-      emptyTitle: 'No patients waiting',
-      emptyDescription: 'The queue is empty.',
     }),
   ],
 };
@@ -77,11 +68,6 @@ export const TASK_SCHEMA: OrbitalSchema = {
         { name: 'assignee', type: 'string' },
       ],
       persistence: 'persistent',
-      listFields: ['title', 'priority', 'done'],
-      pageTitle: 'Tasks',
-      headerIcon: 'check-square',
-      emptyTitle: 'No tasks',
-      emptyDescription: 'Create your first task.',
     }),
     stdTimer({
       entityName: 'FocusTimer',
@@ -100,8 +86,6 @@ export const TASK_SCHEMA: OrbitalSchema = {
         { name: 'reason', type: 'string' },
       ],
       persistence: 'runtime',
-      confirmLabel: 'Archive',
-      cancelLabel: 'Keep',
       pagePath: '/archive',
     }),
   ],
