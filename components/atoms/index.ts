@@ -124,6 +124,9 @@ export { PatternTile, getTileDimensions, type PatternTileProps, type PatternVari
 export { AnimatedReveal, type AnimatedRevealProps, type RevealTrigger, type RevealAnimation } from "./AnimatedReveal";
 export { AnimatedGraphic, type AnimatedGraphicProps, type GraphicAnimation } from "./AnimatedGraphic";
 
+// Trait frame — per-slot composition primitive for `@trait.X` bindings
+export { TraitFrame, type TraitFrameProps } from "./TraitFrame";
+
 // Game atom components
 export * from "./game";
 

@@ -39,6 +39,19 @@ import { isKnownPattern, isPortalSlot, SLOT_DEFINITIONS } from "../../renderer";
 // Pattern registry — single source of truth for pattern → component name resolution
 import { getComponentForPattern as getComponentName } from "@almadar/patterns";
 
+// Per-trait composition primitive — `@trait.X` bindings embedded in
+// pattern children resolve to this component at render time. See
+// `docs/Almadar_Std_Gaps.md` §3.8.
+import { TraitFrame } from "../atoms/TraitFrame";
+
+/**
+ * `^@trait.<PascalName>$` — single-segment binding only. Multi-segment
+ * forms (formerly `@trait.X.slot`) are rejected by the compiler at
+ * validate time, so the runtime regex here matches the exact accepted
+ * shape.
+ */
+const TRAIT_BINDING_RE = /^@trait\.([A-Z][A-Za-z0-9]*)$/;
+
 // ============================================================================
 // Suspense Configuration Context
 // ============================================================================
@@ -789,7 +802,10 @@ interface SlotContentRendererProps {
  */
 function renderPatternChildren(
   children:
-    | Array<{ type: string; props?: Record<string, unknown>; _id?: string }>
+    | Array<
+        | { type: string; props?: Record<string, unknown>; _id?: string }
+        | string
+      >
     | undefined,
   onDismiss: () => void,
   parentId = "root",
@@ -800,6 +816,23 @@ function renderPatternChildren(
   }
 
   return children.map((child, index) => {
+    // String children are `@trait.X` bindings in the interpreted path.
+    // Substitute a `<TraitFrame>` — passive read-only lens on the
+    // referenced trait's current render output. Non-matching strings
+    // (unlikely here since pattern children are typed as objects, but
+    // defensive) render as text via the React text-child path.
+    if (typeof child === "string") {
+      const match = TRAIT_BINDING_RE.exec(child);
+      if (match) {
+        const traitName = match[1];
+        const key = `${parentId}-${index}-trait:${traitName}`;
+        return <TraitFrame key={key} traitName={traitName} />;
+      }
+      // Non-binding string — treat as plain text so authors who want
+      // literal strings inside a pattern's children (rare) still work.
+      return <React.Fragment key={`${parentId}-${index}`}>{child}</React.Fragment>;
+    }
+
     if (!child || typeof child !== "object") return null;
 
     const childId = `${parentId}-${index}`;

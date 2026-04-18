@@ -100,6 +100,17 @@ export interface RenderUIConfig {
 export type SlotChangeCallback = (slot: UISlot, content: SlotContent | null) => void;
 
 /**
+ * Fires when a specific trait's current render-ui output changes.
+ * Used by `<TraitFrame>` to subscribe only to the trait it embeds,
+ * avoiding wide re-renders when unrelated slots update.
+ *
+ * Per-trait index stores exactly one entry per trait (the most recent
+ * render), so the callback signature carries just the new content —
+ * no per-slot disambiguation needed.
+ */
+export type TraitChangeCallback = (content: SlotContent | null) => void;
+
+/**
  * UI Slot Manager interface
  */
 export interface UISlotManager {
@@ -119,6 +130,24 @@ export interface UISlotManager {
   hasContent: (slot: UISlot) => boolean;
   /** Get content for a slot */
   getContent: (slot: UISlot) => SlotContent | null;
+  /**
+   * Look up the most recent `render-ui` output a given trait produced,
+   * keyed by `SlotContent.sourceTrait`. Returns `null` when the trait
+   * hasn't rendered yet.
+   *
+   * Backs the `@trait.X` binding's client-side resolution via
+   * `<TraitFrame>`. See `docs/Almadar_Std_Gaps.md` §3.8. The binding is
+   * single-segment — there's intentionally no slot disambiguation.
+   */
+  getTraitContent: (traitName: string) => SlotContent | null;
+  /**
+   * Subscribe to changes in a specific trait's render output. Returns
+   * an unsubscribe function.
+   *
+   * Scoped per-trait so `<TraitFrame>` components only re-render when
+   * the trait they embed actually changes — not on every slot update.
+   */
+  subscribeTrait: (traitName: string, callback: TraitChangeCallback) => () => void;
 }
 
 // ============================================================================
@@ -164,6 +193,14 @@ export function useUISlotManager(): UISlotManager {
   const subscribersRef = useRef<Set<SlotChangeCallback>>(new Set());
   const timersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
+  // Reverse index: traitName → most-recent SlotContent. Built
+  // opportunistically from `SlotContent.sourceTrait` as each `render()`
+  // fires. Per-trait, not per-trait-per-slot — the `@trait.X` binding is
+  // single-segment (no `.slot` suffix), so consumers only need the
+  // trait's last-emitted frame regardless of which slot it targeted.
+  const traitIndexRef = useRef<Map<string, SlotContent>>(new Map());
+  const traitSubscribersRef = useRef<Map<string, Set<TraitChangeCallback>>>(new Map());
+
   // Clean up timers on unmount
   useEffect(() => {
     return () => {
@@ -181,6 +218,41 @@ export function useUISlotManager(): UISlotManager {
         console.error('[UISlots] Subscriber error:', error);
       }
     });
+  }, []);
+
+  // Fire trait-scoped subscriptions when a specific trait's output
+  // changes (either because it rendered something new, or its content
+  // was cleared). Safe against subscriber errors so one bad consumer
+  // doesn't silence the rest.
+  const notifyTraitSubscribers = useCallback(
+    (traitName: string, content: SlotContent | null) => {
+      const subs = traitSubscribersRef.current.get(traitName);
+      if (!subs) return;
+      subs.forEach((callback) => {
+        try {
+          callback(content);
+        } catch (error) {
+          console.error(`[UISlots] Trait subscriber error (${traitName}):`, error);
+        }
+      });
+    },
+    [],
+  );
+
+  // Single-entry per trait. A new render for a trait replaces the
+  // previous entry regardless of slot — consumers only see the most
+  // recent frame.
+  const indexTraitRender = useCallback(
+    (traitName: string, content: SlotContent) => {
+      traitIndexRef.current.set(traitName, content);
+    },
+    [],
+  );
+
+  // Drop a trait's entry entirely (called when the underlying slot
+  // content is cleared).
+  const unindexTrait = useCallback((traitName: string) => {
+    traitIndexRef.current.delete(traitName);
   }, []);
 
   // Render content to a slot
@@ -225,12 +297,22 @@ export function useUISlotManager(): UISlotManager {
         return prev;
       }
 
+      // Maintain the trait-scoped reverse index + notify per-trait
+      // subscribers. The index stores one entry per trait regardless of
+      // slot, so we don't remove the previous trait's entry just because
+      // a new trait took the slot — the old trait's last frame remains
+      // queryable until the owning trait is explicitly cleared.
+      if (content.sourceTrait) {
+        indexTraitRender(content.sourceTrait, content);
+        notifyTraitSubscribers(content.sourceTrait, content);
+      }
+
       notifySubscribers(config.target, content);
       return { ...prev, [config.target]: content };
     });
 
     return id;
-  }, [notifySubscribers]);
+  }, [notifySubscribers, notifyTraitSubscribers, indexTraitRender]);
 
   // Clear a specific slot
   const clear = useCallback((slot: UISlot) => {
@@ -245,11 +327,17 @@ export function useUISlotManager(): UISlotManager {
         }
         // Call onDismiss callback
         content.onDismiss?.();
+        // Trait-scoped cleanup: drop the trait's index entry and notify
+        // its subscribers so embedding <TraitFrame>s re-render to empty.
+        if (content.sourceTrait) {
+          unindexTrait(content.sourceTrait);
+          notifyTraitSubscribers(content.sourceTrait, null);
+        }
         notifySubscribers(slot, null);
       }
       return { ...prev, [slot]: null };
     });
-  }, [notifySubscribers]);
+  }, [notifySubscribers, notifyTraitSubscribers, unindexTrait]);
 
   // Clear content by ID
   const clearById = useCallback((id: string) => {
@@ -265,12 +353,16 @@ export function useUISlotManager(): UISlotManager {
         }
         // Call onDismiss callback
         content.onDismiss?.();
+        if (content.sourceTrait) {
+          unindexTrait(content.sourceTrait);
+          notifyTraitSubscribers(content.sourceTrait, null);
+        }
         notifySubscribers(slot, null);
         return { ...prev, [slot]: null };
       }
       return prev;
     });
-  }, [notifySubscribers]);
+  }, [notifySubscribers, notifyTraitSubscribers, unindexTrait]);
 
   // Clear all slots
   const clearAll = useCallback(() => {
@@ -283,12 +375,17 @@ export function useUISlotManager(): UISlotManager {
       Object.entries(prev).forEach(([slot, content]) => {
         if (content) {
           content.onDismiss?.();
+          if (content.sourceTrait) {
+            notifyTraitSubscribers(content.sourceTrait, null);
+          }
           notifySubscribers(slot as UISlot, null);
         }
       });
       return DEFAULT_SLOTS;
     });
-  }, [notifySubscribers]);
+    // Wipe the whole trait index after clearing.
+    traitIndexRef.current.clear();
+  }, [notifySubscribers, notifyTraitSubscribers]);
 
   // Subscribe to slot changes
   const subscribe = useCallback((callback: SlotChangeCallback): (() => void) => {
@@ -308,6 +405,36 @@ export function useUISlotManager(): UISlotManager {
     return slots[slot];
   }, [slots]);
 
+  // Look up the last-rendered content for a given trait. Single-entry
+  // per trait — no per-slot disambiguation.
+  const getTraitContent = useCallback(
+    (traitName: string): SlotContent | null => {
+      return traitIndexRef.current.get(traitName) ?? null;
+    },
+    [],
+  );
+
+  // Subscribe to a specific trait's render changes. Returns an unsubscribe.
+  const subscribeTrait = useCallback(
+    (traitName: string, callback: TraitChangeCallback): (() => void) => {
+      let set = traitSubscribersRef.current.get(traitName);
+      if (!set) {
+        set = new Set();
+        traitSubscribersRef.current.set(traitName, set);
+      }
+      set.add(callback);
+      return () => {
+        const s = traitSubscribersRef.current.get(traitName);
+        if (!s) return;
+        s.delete(callback);
+        if (s.size === 0) {
+          traitSubscribersRef.current.delete(traitName);
+        }
+      };
+    },
+    [],
+  );
+
   return {
     slots,
     render,
@@ -317,6 +444,8 @@ export function useUISlotManager(): UISlotManager {
     subscribe,
     hasContent,
     getContent,
+    getTraitContent,
+    subscribeTrait,
   };
 }
 
