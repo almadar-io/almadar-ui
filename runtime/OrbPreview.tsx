@@ -326,7 +326,13 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate, onLoc
             onLocalFallback={onLocalFallback}
           />
           <SlotBridge />
-          <Box className="min-h-full p-4">
+          {/* Content fills the available height, not hug-content. `h-full`
+              makes the slot area as tall as the preview frame; nested slot
+              patterns can still grow past it (overflow is handled by the
+              outer Box's `overflow-auto`). Previously `min-h-full` left the
+              height undefined for empty layouts, so the debug bar floated
+              up near the top instead of docking at the bottom. */}
+          <Box className="h-full p-4">
             <UISlotRenderer includeHud hudMode="inline" includeFloating />
           </Box>
         </EntitySchemaProvider>
