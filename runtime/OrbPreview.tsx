@@ -40,11 +40,21 @@ import { prepareSchemaForPreview } from './prepareSchemaForPreview';
 /**
  * Normalize a PatternConfig child from flat { type, ...props } to
  * { type, props: {...} } format expected by SlotContentRenderer.
+ *
+ * String children pass through verbatim — they're `@trait.X` binding
+ * leaves resolved by `renderPatternChildren`/`TraitFrame` downstream.
+ * Destructuring a string here would coerce it to an index-keyed object
+ * (`{0:"@",1:"t",…}`) with `type: undefined`, which then hits the
+ * "Unknown pattern" fallback in UISlotRenderer.
  */
-function normalizeChild(child: Record<string, unknown>): Record<string, unknown> {
-  const { type, children, ...rest } = child;
+function normalizeChild(child: unknown): unknown {
+  if (typeof child === "string") return child;
+  if (child === null || typeof child !== "object" || Array.isArray(child)) {
+    return child;
+  }
+  const { type, children, ...rest } = child as Record<string, unknown>;
   const normalizedChildren = Array.isArray(children)
-    ? children.map((c) => normalizeChild(c as Record<string, unknown>))
+    ? children.map((c) => normalizeChild(c))
     : children;
   return {
     type,
@@ -77,7 +87,7 @@ function SlotBridge() {
 
       const { type: patternType, children, ...inlineProps } = patternRecord;
       const normalizedChildren = Array.isArray(children)
-        ? children.map((c) => normalizeChild(c as Record<string, unknown>))
+        ? children.map((c) => normalizeChild(c))
         : children;
       render({
         target: slotName as Parameters<typeof render>[0]['target'],
