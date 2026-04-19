@@ -106,6 +106,48 @@ function SlotBridge() {
 }
 
 /**
+ * Push each server-returned effect straight into `useUISlots` so the
+ * per-trait index picks up every embedded atom (not just the last one).
+ *
+ * Going via `slotsActions.setSlotPatterns` would collapse N effects to a
+ * single slot entry, because `SlotsProvider` stores one `{patterns, source}`
+ * per slot and the next call overwrites it. The per-trait index lives on
+ * `useUISlots` (hooks/useUISlots.ts), and `render()` is the only entry
+ * point that populates it. Calling `render()` once per effect keeps each
+ * trait's latest frame queryable via `getTraitContent(traitName)`.
+ *
+ * The slot state still converges to whatever the layout-owner last
+ * rendered — its render-ui carries the `@trait.X` strings that
+ * `<TraitFrame>` uses to embed atom frames.
+ */
+function applyServerEffects(
+  effects: ReadonlyArray<import('./ServerBridge').ServerClientEffect>,
+  uiSlots: ReturnType<typeof useUISlots>,
+  onNavigate?: (path: string, params?: Record<string, unknown>) => void,
+): void {
+  for (const eff of effects) {
+    if (eff.type === 'render-ui' && eff.slot && eff.pattern) {
+      const patternRecord = eff.pattern as Record<string, unknown>;
+      const { type: patternType, children, ...inlineProps } = patternRecord;
+      const normalizedChildren = Array.isArray(children)
+        ? children.map((c) => normalizeChild(c))
+        : children;
+      uiSlots.render({
+        target: eff.slot as Parameters<typeof uiSlots.render>[0]['target'],
+        pattern: patternType as string,
+        props: {
+          ...inlineProps,
+          ...(normalizedChildren !== undefined ? { children: normalizedChildren } : {}),
+        },
+        sourceTrait: eff.traitName ?? 'server',
+      });
+    } else if (eff.type === 'navigate' && eff.route && onNavigate) {
+      onNavigate(eff.route, eff.params as Record<string, unknown> | undefined);
+    }
+  }
+}
+
+/**
  * Fires INIT event after mount so render-ui effects on the INIT
  * transition execute. Must be inside SlotsProvider + EntitySchemaProvider.
  *
@@ -126,6 +168,13 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback }:
 }) {
   const slotsActions = useSlotsActions();
   const bridge = useServerBridge();
+  // We call into useUISlots.render() directly for server-bridge effects so
+  // that EACH trait's render-ui populates the per-trait index (needed by
+  // `<TraitFrame>` to resolve `@trait.X` bindings). Going through
+  // `slotsActions.setSlotPatterns` in a loop would overwrite the slot
+  // state on each iteration — only the last trait would survive, and
+  // every embedded atom would drop out of the index.
+  const uiSlots = useUISlots();
 
   const entityStore = useEntityStore();
 
@@ -150,24 +199,9 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback }:
         }
       }
 
-      for (const eff of effects) {
-        if (eff.type === 'render-ui' && eff.slot && eff.pattern) {
-          // Set raw pattern config. Entity resolution happens reactively in
-          // SlotContentRenderer via useEntityRef (EntityStore already advanced above).
-          // `eff.traitName` (when present) lets `<TraitFrame>` resolve
-          // `@trait.X` bindings; falls back to 'server' for older runtimes
-          // that don't tag effects with their producing trait.
-          slotsActions.setSlotPatterns(
-            eff.slot,
-            [{ pattern: eff.pattern as Parameters<typeof slotsActions.setSlotPatterns>[1][0]['pattern'], props: {} }],
-            { trait: eff.traitName ?? 'server', state: 'server', transition: 'server-effect' },
-          );
-        } else if (eff.type === 'navigate' && eff.route && onNavigate) {
-          onNavigate(eff.route, eff.params as Record<string, unknown> | undefined);
-        }
-      }
+      applyServerEffects(effects, uiSlots, onNavigate);
     }
-  }, [bridge.connected, bridge.sendEvent, orbitalNames, slotsActions, onNavigate, entityStore]);
+  }, [bridge.connected, bridge.sendEvent, orbitalNames, uiSlots, onNavigate, entityStore]);
 
   const opts = orbitalNames
     ? { onEventProcessed, navigate: onNavigate }
@@ -233,18 +267,10 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback }:
           }
         }
 
-        for (const eff of effects) {
-          if (eff.type === 'render-ui' && eff.slot && eff.pattern) {
-            slotsActions.setSlotPatterns(
-              eff.slot,
-              [{ pattern: eff.pattern as Parameters<typeof slotsActions.setSlotPatterns>[1][0]['pattern'], props: {} }],
-              { trait: eff.traitName ?? 'server', state: 'server', transition: 'server-effect' },
-            );
-          }
-        }
+        applyServerEffects(effects, uiSlots, onNavigate);
       }
     })();
-  }, [bridge.connected, orbitalNames, bridge.sendEvent, slotsActions]);
+  }, [bridge.connected, orbitalNames, bridge.sendEvent, uiSlots, onNavigate]);
 
   return null;
 }
