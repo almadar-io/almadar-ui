@@ -496,7 +496,11 @@ function UISlotComponent({
     );
   }
 
-  // Inline slots — optionally wrapped in Suspense + ErrorBoundary
+  // Inline slots — always wrapped in an ErrorBoundary so a pattern
+  // component crashing (e.g. a data pattern that dereferences an
+  // unpopulated entity prop) contains the failure to that slot instead
+  // of blanking the whole preview. Optional Suspense wraps when the
+  // consumer opts in for async data.
   const slotContent = (
     <SlotContentRenderer content={content} onDismiss={handleDismiss} />
   );
@@ -507,7 +511,9 @@ function UISlotComponent({
         {slotContent}
       </Suspense>
     </ErrorBoundary>
-  ) : slotContent;
+  ) : (
+    <ErrorBoundary>{slotContent}</ErrorBoundary>
+  );
 
   return (
     <Box

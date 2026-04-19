@@ -71,7 +71,12 @@ export const Carousel = <T = Record<string, unknown>,>({
   const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const eventBus = useSafeEventBus();
 
-  const totalSlides = items.length;
+  // `items` comes from pattern binding resolution (useEntityRef / prop passthrough).
+  // In the playground/preview path data may resolve async; a crashed render here
+  // blanks the whole page, which masks upstream issues. Default to an empty list
+  // so the empty-state branch handles it cleanly.
+  const safeItems: T[] = items ?? [];
+  const totalSlides = safeItems.length;
 
   const emitSlideChange = useCallback(
     (newIndex: number) => {
@@ -202,7 +207,7 @@ export const Carousel = <T = Record<string, unknown>,>({
         onPointerUp={swipeHandlers.onPointerUp}
         onPointerCancel={swipeHandlers.onPointerCancel}
       >
-        {items.map((item, index) => (
+        {safeItems.map((item, index) => (
           <Box
             key={index}
             className={cn(
@@ -273,7 +278,7 @@ export const Carousel = <T = Record<string, unknown>,>({
           className="bottom-3 left-0 right-0 z-10"
         >
           <HStack gap="xs" align="center" justify="center">
-            {items.map((_, index) => {
+            {safeItems.map((_, index) => {
               const isActive = index === activeIndex;
               return (
                 <Box
