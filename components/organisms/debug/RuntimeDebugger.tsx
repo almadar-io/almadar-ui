@@ -148,11 +148,11 @@ function VerifyModePanel({
     serverCount: number;
     localCount: number;
 }) {
-    // Collapsed by default — the verify panel is useful for live debugging
-    // but obstructs the UI it's meant to help you inspect, especially in
-    // Playwright screenshots taken during verify_orbital / verify_runtime.
-    // Click the status bar to expand to the full timeline.
-    const [expanded, setExpanded] = React.useState(false);
+    // Expanded by default — verification screenshots otherwise reduce to a
+    // collapsed strip with no diagnostic value. The 25vh panel still leaves
+    // 75% of the viewport for the UI under inspection. Click the status bar
+    // to collapse if needed.
+    const [expanded, setExpanded] = React.useState(true);
     const scrollRef = React.useRef<HTMLDivElement>(null);
     const prevCountRef = React.useRef(0);
 

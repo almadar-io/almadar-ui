@@ -34,6 +34,12 @@ interface OrbitalEventResponse {
   emittedEvents?: Array<{ event: string; payload?: unknown }>;
   data?: Record<string, unknown[]>;
   clientEffects?: unknown[];
+  /**
+   * Same effects as `clientEffects`, paired with the trait that produced
+   * each one. When present, prefer this for trait attribution. Falls back
+   * to legacy `clientEffects` parsing on older servers.
+   */
+  clientEffectsByTrait?: Array<{ traitName: string; effect: unknown[] }>;
   error?: string;
 }
 
@@ -44,6 +50,12 @@ export interface ServerClientEffect {
   route?: string;
   params?: Record<string, unknown>;
   message?: string;
+  /**
+   * Trait that emitted this effect. Used by `<TraitFrame>` to resolve
+   * `@trait.X` bindings. Undefined when the server didn't tag the effect
+   * (older servers that pre-date the per-trait sidecar).
+   */
+  traitName?: string;
 }
 
 /** Metadata about what the server returned, for debugger logging */
@@ -165,19 +177,24 @@ export function ServerBridgeProvider({
       if (result.success) {
         // Parse and enrich clientEffects from server response.
         // Entity data and patterns arrive in the same response (no timing issues).
-        if (result.clientEffects) {
-          for (const effect of result.clientEffects) {
-            const arr = effect as unknown[];
-            const effectType = arr[0] as string;
-            if (effectType === 'render-ui') {
-              const slot = arr[1] as string;
-              const pattern = arr[2] as Record<string, unknown> | undefined;
-              effects.push({ type: 'render-ui', slot, pattern: pattern ?? undefined });
-            } else if (effectType === 'navigate') {
-              effects.push({ type: 'navigate', route: arr[1] as string, params: arr[2] as Record<string, unknown> });
-            } else if (effectType === 'notify') {
-              effects.push({ type: 'notify', message: arr[1] as string });
-            }
+        // Prefer the per-trait sidecar so `<TraitFrame>` resolves `@trait.X`
+        // bindings correctly. Fall back to the legacy flat array for older
+        // servers (effects arrive without trait attribution).
+        const tagged = result.clientEffectsByTrait;
+        const tuples: Array<{ effect: unknown[]; traitName?: string }> = tagged
+          ? tagged.map((entry) => ({ effect: entry.effect, traitName: entry.traitName }))
+          : (result.clientEffects ?? []).map((eff) => ({ effect: eff as unknown[] }));
+
+        for (const { effect, traitName } of tuples) {
+          const effectType = effect[0] as string;
+          if (effectType === 'render-ui') {
+            const slot = effect[1] as string;
+            const pattern = effect[2] as Record<string, unknown> | undefined;
+            effects.push({ type: 'render-ui', slot, pattern: pattern ?? undefined, traitName });
+          } else if (effectType === 'navigate') {
+            effects.push({ type: 'navigate', route: effect[1] as string, params: effect[2] as Record<string, unknown>, traitName });
+          } else if (effectType === 'notify') {
+            effects.push({ type: 'notify', message: effect[1] as string, traitName });
           }
         }
 

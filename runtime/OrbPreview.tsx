@@ -154,10 +154,13 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback }:
         if (eff.type === 'render-ui' && eff.slot && eff.pattern) {
           // Set raw pattern config. Entity resolution happens reactively in
           // SlotContentRenderer via useEntityRef (EntityStore already advanced above).
+          // `eff.traitName` (when present) lets `<TraitFrame>` resolve
+          // `@trait.X` bindings; falls back to 'server' for older runtimes
+          // that don't tag effects with their producing trait.
           slotsActions.setSlotPatterns(
             eff.slot,
             [{ pattern: eff.pattern as Parameters<typeof slotsActions.setSlotPatterns>[1][0]['pattern'], props: {} }],
-            { trait: 'server', state: 'server', transition: 'server-effect' },
+            { trait: eff.traitName ?? 'server', state: 'server', transition: 'server-effect' },
           );
         } else if (eff.type === 'navigate' && eff.route && onNavigate) {
           onNavigate(eff.route, eff.params as Record<string, unknown> | undefined);
@@ -235,7 +238,7 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback }:
             slotsActions.setSlotPatterns(
               eff.slot,
               [{ pattern: eff.pattern as Parameters<typeof slotsActions.setSlotPatterns>[1][0]['pattern'], props: {} }],
-              { trait: 'server', state: 'server', transition: 'server-effect' },
+              { trait: eff.traitName ?? 'server', state: 'server', transition: 'server-effect' },
             );
           }
         }
