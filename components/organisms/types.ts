@@ -49,8 +49,26 @@ export interface SelectPayload {
 // ── Base Props ────────────────────────────────────────────────────────
 
 export interface EntityDisplayProps<T = unknown> {
-  /** Entity name (string) or data injected by the runtime (array for lists, single object for detail) */
+  /**
+   * Entity data or a legacy entity-name string.
+   *
+   * V2 Phase 2 accepts three shapes here (value-first is the canonical path):
+   * - `readonly T[]`: pre-resolved array for list patterns.
+   * - `T`: pre-resolved single record for detail patterns.
+   * - `string`: legacy entity-type name resolved by the renderer via
+   *   `useEntityRef`. Emits a dev-mode deprecation warning; removal
+   *   scheduled for Phase 6 of docs/Almadar_Entity_V2_Plan.md.
+   *
+   * Prefer `items` for list shapes so organisms never depend on the
+   * renderer's string resolution at all.
+   */
   entity?: string | T | readonly T[];
+  /**
+   * Pre-resolved list of records. V2 Phase 2 addition. When set, organisms
+   * should read data from here instead of `entity`. Resolving from the
+   * calling trait's `@payload.data` is the authoring pattern.
+   */
+  items?: readonly T[];
   /** Additional CSS classes */
   className?: string;
   /** Loading state indicator */

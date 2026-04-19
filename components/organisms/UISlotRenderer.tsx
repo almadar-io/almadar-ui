@@ -52,6 +52,10 @@ import { TraitFrame } from "../atoms/TraitFrame";
  */
 const TRAIT_BINDING_RE = /^@trait\.([A-Z][A-Za-z0-9]*)$/;
 
+// V2 Phase 2: dedupe deprecation logs so the same `entity: "X"` string doesn't
+// fire once per render. Cleared on hot reload via module re-evaluation.
+const STRING_ENTITY_WARNED = new Set<string>();
+
 // ============================================================================
 // Suspense Configuration Context
 // ============================================================================
@@ -928,6 +932,20 @@ function SlotContentRenderer({
   const entityProp = content.props.entity;
   const entityType = typeof entityProp === 'string' ? entityProp : '';
   const storeData = useEntityRef(entityType);
+  // V2 Phase 2 (Almadar_Entity_V2_Plan.md): warn when a pattern still passes
+  // a string entity name. Downstream authors should pre-resolve the data via
+  // @payload.data and pass `items` as a value prop; the string path will be
+  // removed in Phase 6. Gated on NODE_ENV so prod stays quiet, and logged
+  // once per entity type per session to avoid render-loop spam.
+  React.useEffect(() => {
+    if (!entityType) return;
+    if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production') return;
+    if (STRING_ENTITY_WARNED.has(entityType)) return;
+    STRING_ENTITY_WARNED.add(entityType);
+    console.warn(
+      `[UISlotRenderer] String-entity binding '${entityType}' is deprecated. Pass 'items' or 'entity' as a value prop resolved from @payload.data. See docs/Almadar_Entity_V2_Plan.md §5.`,
+    );
+  }, [entityType]);
 
   // Entity schema for form field type enrichment (optional — only available in runtime mode)
   const schemaCtx = useEntitySchemaOptional();
@@ -959,22 +977,39 @@ function SlotContentRenderer({
     // Recursively render any named props that are pattern configs
     const renderedProps = renderPatternProps(restProps, onDismiss);
 
-    // Replace entity string with reactive store data.
-    // Auto-generate fields from entity records when not specified — this is what
-    // the compiled app gets from the compiler, but the runtime needs to derive
-    // at render time since the schema pattern may omit field definitions.
+    // Replace entity string with reactive store data, or use pre-resolved
+    // items when the caller passed a value prop (V2 Phase 2 path).
+    // Auto-generate fields from entity records when not specified — this is
+    // what the compiled app gets from the compiler, but the runtime needs to
+    // derive at render time since the schema pattern may omit field
+    // definitions.
     let finalProps: Record<string, unknown>;
+    const resolvedItems: readonly unknown[] | null =
+      Array.isArray(renderedProps.items)
+        ? (renderedProps.items as readonly unknown[])
+        : entityType
+          ? storeData
+          : null;
     if (entityType) {
       finalProps = { ...renderedProps, entity: storeData };
-      if (!finalProps.fields && !finalProps.columns && storeData.length > 0) {
-        const sample = storeData[0] as Record<string, unknown>;
-        if (sample && typeof sample === 'object') {
-          const keys = Object.keys(sample).filter((k) => k !== 'id' && k !== '_id');
-          finalProps.fields = keys.map((k, i) => ({ name: k, variant: i === 0 ? 'h4' : 'body' }));
-        }
-      }
+    } else if (Array.isArray(renderedProps.items)) {
+      // V2 Phase 2: `items` is the canonical list slot. Mirror into `entity`
+      // for organisms that still read from that prop name.
+      finalProps = { ...renderedProps, entity: renderedProps.items };
     } else {
       finalProps = renderedProps;
+    }
+    if (
+      resolvedItems &&
+      resolvedItems.length > 0 &&
+      !finalProps.fields &&
+      !finalProps.columns
+    ) {
+      const sample = resolvedItems[0] as Record<string, unknown>;
+      if (sample && typeof sample === 'object') {
+        const keys = Object.keys(sample).filter((k) => k !== 'id' && k !== '_id');
+        finalProps.fields = keys.map((k, i) => ({ name: k, variant: i === 0 ? 'h4' : 'body' }));
+      }
     }
 
     // Form field type enrichment: inject entity field types into form SchemaFields.
