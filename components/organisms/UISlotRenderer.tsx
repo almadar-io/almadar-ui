@@ -977,28 +977,26 @@ function SlotContentRenderer({
     // Recursively render any named props that are pattern configs
     const renderedProps = renderPatternProps(restProps, onDismiss);
 
-    // Replace entity string with reactive store data, or use pre-resolved
-    // items when the caller passed a value prop (V2 Phase 2 path).
-    // Auto-generate fields from entity records when not specified — this is
-    // what the compiled app gets from the compiler, but the runtime needs to
-    // derive at render time since the schema pattern may omit field
-    // definitions.
+    // Replace entity string with reactive store data. When the caller
+    // already passed a pre-resolved array or single object via `entity`,
+    // it flows through `renderedProps` untouched (no renderer action
+    // needed). The string branch is the deprecated path.
+    //
+    // Auto-generate fields from entity records when not specified — this
+    // is what the compiled app gets from the compiler, but the runtime
+    // needs to derive at render time since the schema pattern may omit
+    // field definitions.
     let finalProps: Record<string, unknown>;
-    const resolvedItems: readonly unknown[] | null =
-      Array.isArray(renderedProps.items)
-        ? (renderedProps.items as readonly unknown[])
-        : entityType
-          ? storeData
-          : null;
     if (entityType) {
       finalProps = { ...renderedProps, entity: storeData };
-    } else if (Array.isArray(renderedProps.items)) {
-      // V2 Phase 2: `items` is the canonical list slot. Mirror into `entity`
-      // for organisms that still read from that prop name.
-      finalProps = { ...renderedProps, entity: renderedProps.items };
     } else {
       finalProps = renderedProps;
     }
+    const resolvedItems: readonly unknown[] | null = Array.isArray(
+      finalProps.entity,
+    )
+      ? (finalProps.entity as readonly unknown[])
+      : null;
     if (
       resolvedItems &&
       resolvedItems.length > 0 &&
