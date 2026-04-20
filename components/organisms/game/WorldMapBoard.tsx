@@ -26,7 +26,10 @@ import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { VStack, HStack, Stack } from '../../atoms/Stack';
 import { LoadingState } from '../../molecules/LoadingState';
-import type { EntityDisplayProps } from '../types';
+// WorldMapBoard is a game-canvas visualization organism. WorldMapEntity
+// carries nested hex / hero arrays with non-primitive fields that don't
+// fit EntityRow. Takes its entity via a dedicated `entity` prop typed as
+// WorldMapEntity directly.
 import IsometricCanvas from './IsometricCanvas';
 import type {
     IsometricTile,
@@ -112,7 +115,15 @@ export interface WorldMapEntity {
  *  Emits: UI:FEATURE_ENTER
  *  Emits: UI:TILE_CLICK
  */
-export interface WorldMapBoardProps extends EntityDisplayProps<WorldMapEntity> {
+export interface WorldMapBoardProps {
+    /** Additional CSS classes */
+    className?: string;
+    /** Loading state indicator */
+    isLoading?: boolean;
+    /** Error state */
+    error?: Error | null;
+    /** World map entity data */
+    entity?: WorldMapEntity | readonly WorldMapEntity[];
 
     /** Canvas render scale */
     scale?: number;
@@ -160,8 +171,6 @@ export interface WorldMapBoardProps extends EntityDisplayProps<WorldMapEntity> {
     enableCamera?: boolean;
     effectSpriteUrls?: string[];
     resolveUnitFrame?: (unitId: string) => ResolvedFrame | null;
-
-    className?: string;
 }
 
 // =============================================================================

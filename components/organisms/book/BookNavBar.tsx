@@ -22,10 +22,15 @@ import { ProgressBar } from '../../atoms/ProgressBar';
 import { Box } from '../../atoms/Box';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';
-import type { EntityDisplayProps } from '../types';
+// Internal rendering component — takes typed content-model props directly
+// (BookData / BookPart / BookChapter), not schema entity data. Does not
+// extend EntityDisplayProps; its parent (BookViewer) owns the entity-prop
+// contract.
 import type { BookData } from './types';
 
-export interface BookNavBarProps extends EntityDisplayProps<BookData> {
+export interface BookNavBarProps {
+  /** Additional CSS classes */
+  className?: string;
   currentPage: number;
   totalPages: number;
   chapterTitle?: string;

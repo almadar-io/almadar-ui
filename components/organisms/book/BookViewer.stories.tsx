@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import type { EntityRow } from '@almadar/core';
 import { BookViewer } from './BookViewer';
 import type { BookData } from './types';
 
@@ -15,7 +16,7 @@ type Story = StoryObj<typeof BookViewer>;
 // Sample Arabic book data (canonical English fields)
 // ---------------------------------------------------------------------------
 
-const sampleBook: BookData = {
+const sampleBook = {
   title: 'الأمة الرقمية',
   subtitle: 'رحلة في عالم البرمجة والذكاء الاصطناعي',
   author: 'المداري',
@@ -175,7 +176,7 @@ export const StartAtChapter: Story = {
 // English sample
 // ---------------------------------------------------------------------------
 
-const englishBook: BookData = {
+const englishBook = {
   title: 'Introduction to Orbital',
   subtitle: 'Building apps with state machines',
   author: 'Almadar Team',
@@ -220,7 +221,7 @@ export const EnglishBook: Story = {
 // Arabic entity data with Arabic field names (simulates runtime .orb entity)
 // ---------------------------------------------------------------------------
 
-const arabicEntityData: Record<string, unknown> = {
+const arabicEntityData: EntityRow = {
   العنوان: 'الأمة الرقمية',
   العنوان_الفرعي: 'رحلة في بناء الأمم',
   المؤلف: 'المداري',
@@ -272,7 +273,7 @@ export const ArabicFieldMap: Story = {
 // Chapter with orbital diagram (chapter-level orbitalSchema)
 // ---------------------------------------------------------------------------
 
-const bookWithChapterOrbital: BookData = {
+const bookWithChapterOrbital = {
   title: 'Orbital Diagrams Test',
   subtitle: 'Testing JazariStateMachine rendering',
   author: 'Almadar Team',
@@ -299,11 +300,12 @@ const x = 42;
               {
                 entity: {
                   name: 'Order',
-                  fields: [{ name: 'total' }, { name: 'status' }],
+                  fields: [{ name: 'total', type: 'number' }, { name: 'status', type: 'string' }],
                 },
                 traits: [
                   {
                     name: 'OrderLifecycle',
+                    scope: 'instance',
                     stateMachine: {
                       states: [
                         { name: 'pending', isInitial: true },
@@ -311,6 +313,12 @@ const x = 42;
                         { name: 'shipped' },
                         { name: 'delivered', isTerminal: true },
                         { name: 'cancelled', isTerminal: true },
+                      ],
+                      events: [
+                        { key: 'CONFIRM', name: 'Confirm' },
+                        { key: 'SHIP', name: 'Ship' },
+                        { key: 'DELIVER', name: 'Deliver' },
+                        { key: 'CANCEL', name: 'Cancel' },
                       ],
                       transitions: [
                         { from: 'pending', to: 'confirmed', event: 'CONFIRM' },

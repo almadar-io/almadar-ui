@@ -42,17 +42,24 @@ export const WithOrbitalSchema: Story = {
       title: 'Chapter with Orbital Diagram',
       content: 'This chapter has an attached orbital schema rendered above.',
       orbitalSchema: {
+        name: 'TaskApp',
         orbitals: [
           {
-            entity: { name: 'Task', fields: [{ name: 'title' }] },
+            name: 'TaskOrbital',
+            entity: { name: 'Task', fields: [{ name: 'title', type: 'string' }] },
             traits: [
               {
                 name: 'Management',
+                scope: 'instance',
                 stateMachine: {
                   states: [
                     { name: 'draft', isInitial: true },
                     { name: 'active' },
                     { name: 'done', isTerminal: true },
+                  ],
+                  events: [
+                    { key: 'START', name: 'Start' },
+                    { key: 'FINISH', name: 'Finish' },
                   ],
                   transitions: [
                     { from: 'draft', to: 'active', event: 'START' },
@@ -61,6 +68,7 @@ export const WithOrbitalSchema: Story = {
                 },
               },
             ],
+            pages: [],
           },
         ],
       },

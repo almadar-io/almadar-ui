@@ -1,10 +1,16 @@
 /**
  * BookViewer shared types
  *
- * Field names are canonical English. When entity data arrives from a
- * schema with non-English field names (e.g. Arabic .orb), a field map
- * translates them before passing to BookViewer. See `mapBookData()`.
+ * `BookData` / `BookPart` / `BookChapter` are rendering-layer content-model
+ * types: they carry a typed `OrbitalSchema` (via `@almadar/core`) for the
+ * embedded orbital-diagram feature, which is richer than `FieldValue` and
+ * therefore cannot satisfy `EntityRow`'s primitive-field constraint. The
+ * BookViewer organism's prop surface IS `EntityRow` — raw schema data bound
+ * from `@payload.data`; `mapBookData()` normalises those records (English or
+ * localised) into the typed `BookData` representation at render time.
  */
+
+import type { OrbitalSchema } from '@almadar/core';
 
 export interface BookData {
   title: string;
@@ -24,7 +30,7 @@ export interface BookChapter {
   id: string;
   title: string;
   content: string;
-  orbitalSchema?: unknown;
+  orbitalSchema?: OrbitalSchema;
 }
 
 /**
@@ -140,11 +146,11 @@ export function mapBookData(
       const rawChapters = (get(part, fields.chapters) ?? []) as Record<string, unknown>[];
       return {
         title: (get(part, fields.partTitle) as string) ?? '',
-        chapters: rawChapters.map((ch) => ({
+        chapters: rawChapters.map((ch): BookChapter => ({
           id: (get(ch, fields.chapterId) as string) ?? '',
           title: (get(ch, fields.chapterTitle) as string) ?? '',
           content: (get(ch, fields.chapterContent) as string) ?? '',
-          orbitalSchema: get(ch, fields.chapterOrbitalSchema),
+          orbitalSchema: get(ch, fields.chapterOrbitalSchema) as OrbitalSchema | undefined,
         })),
       };
     }),

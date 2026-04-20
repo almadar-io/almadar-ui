@@ -38,6 +38,7 @@ const TASK_LIST_SCHEMA: OrbitalSchema = {
       traits: [
         {
           name: 'TaskBrowse',
+          scope: 'collection',
           linkedEntity: 'Task',
           stateMachine: {
             states: [
@@ -111,6 +112,7 @@ const CLINIC_SCHEMA: OrbitalSchema = {
       traits: [
         {
           name: 'PatientBrowse',
+          scope: 'collection',
           linkedEntity: 'Patient',
           stateMachine: {
             states: [
@@ -163,6 +165,7 @@ const CLINIC_SCHEMA: OrbitalSchema = {
       traits: [
         {
           name: 'QueueBrowse',
+          scope: 'collection',
           linkedEntity: 'QueueEntry',
           stateMachine: {
             states: [
@@ -253,6 +256,7 @@ const HR_SCHEMA: OrbitalSchema = {
       traits: [
         {
           name: 'TeamBrowse',
+          scope: 'collection',
           linkedEntity: 'TeamMember',
           stateMachine: {
             states: [

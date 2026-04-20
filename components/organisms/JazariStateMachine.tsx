@@ -22,51 +22,32 @@ import { gearTeethPath } from '../../lib/jazari/svg-paths';
 
 import { useTranslate } from '../../hooks/useTranslate';
 import { cn } from '../../lib/cn';
-import type { EntityDisplayProps } from './types';
+// JazariStateMachine is a state-machine visualization organism, not a
+// schema-entity display. It accepts `@almadar/core`'s canonical
+// `OrbitalSchema` / `Trait` / `StateMachine` types directly — same surface
+// the rest of the stack uses — and renders the state-machine diagram.
+//
+// Local aliases below keep the rendering code focused on the narrow subset
+// of fields the visualiser reads.
 
-// ---------------------------------------------------------------------------
-// Loose schema types (avoid hard dependency on @almadar/core)
-// ---------------------------------------------------------------------------
+import type {
+  OrbitalSchema,
+  OrbitalDefinition,
+  Trait as CoreTrait,
+  StateMachine as CoreStateMachine,
+  State as CoreState,
+  Transition as CoreTransition,
+  Entity as CoreEntity,
+} from '@almadar/core';
+import { isInlineTrait } from '@almadar/core';
 
-interface SmState {
-  name: string;
-  isInitial?: boolean;
-  isTerminal?: boolean;
-  isFinal?: boolean;
-}
-
-interface SmTransition {
-  from: string;
-  to: string;
-  event: string;
-  guard?: unknown;
-  effects?: unknown[];
-}
-
-interface SmStateMachine {
-  states: SmState[];
-  transitions: SmTransition[];
-}
-
-interface SmTrait {
-  name: string;
-  stateMachine?: SmStateMachine;
-  linkedEntity?: string;
-}
-
-interface SmEntity {
-  name: string;
-  fields?: Array<{ name: string }>;
-}
-
-interface SmOrbital {
-  entity?: SmEntity;
-  traits?: SmTrait[];
-}
-
-interface SmSchema {
-  orbitals?: SmOrbital[];
-}
+type SmState = CoreState;
+type SmTransition = CoreTransition;
+type SmStateMachine = CoreStateMachine;
+type SmTrait = CoreTrait;
+type SmEntity = CoreEntity;
+type SmOrbital = OrbitalDefinition;
+type SmSchema = OrbitalSchema;
 
 // ---------------------------------------------------------------------------
 // Jazari theme config
@@ -102,7 +83,13 @@ const JAZARI_VISUALIZER_CONFIG: VisualizerConfig = {
 // Props
 // ---------------------------------------------------------------------------
 
-export interface JazariStateMachineProps extends EntityDisplayProps<SmSchema> {
+export interface JazariStateMachineProps {
+  /** Additional CSS classes */
+  className?: string;
+  /** Loading state indicator */
+  isLoading?: boolean;
+  /** Error state */
+  error?: Error | null;
   /** Full schema — extracts first trait's state machine */
   schema?: SmSchema;
   /** Or pass a single trait directly */
@@ -129,7 +116,9 @@ function extractTrait(
   for (const orbital of schema.orbitals) {
     const traits = orbital.traits ?? [];
     if (traitIndex < traits.length) {
-      return traits[traitIndex];
+      const traitRef = traits[traitIndex];
+      if (isInlineTrait(traitRef)) return traitRef;
+      return null;
     }
   }
   return null;
@@ -138,8 +127,10 @@ function extractTrait(
 function extractEntityFields(schema: SmSchema | undefined): string[] {
   if (!schema?.orbitals?.length) return [];
   const entity = schema.orbitals[0].entity;
-  if (!entity?.fields) return [];
-  return entity.fields.map((f) => f.name);
+  if (!entity || typeof entity !== 'object' || !('fields' in entity)) return [];
+  const inlineEntity = entity as SmEntity;
+  if (!inlineEntity.fields) return [];
+  return inlineEntity.fields.map((f) => f.name);
 }
 
 function toStateMachineDefinition(sm: SmStateMachine): StateMachineDefinition {

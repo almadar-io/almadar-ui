@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import type { Trait, Effect } from '@almadar/core';
 import { JazariStateMachine } from './JazariStateMachine';
 
 const meta: Meta<typeof JazariStateMachine> = {
@@ -17,13 +18,18 @@ type Story = StoryObj<typeof JazariStateMachine>;
 // Sample data
 // ---------------------------------------------------------------------------
 
-const simpleTrait = {
+const simpleTrait: Trait = {
   name: 'TaskManagement',
+  scope: 'instance',
   stateMachine: {
     states: [
       { name: 'draft', isInitial: true },
       { name: 'active' },
       { name: 'completed', isTerminal: true },
+    ],
+    events: [
+      { key: 'ACTIVATE', name: 'Activate' },
+      { key: 'COMPLETE', name: 'Complete' },
     ],
     transitions: [
       { from: 'draft', to: 'active', event: 'ACTIVATE' },
@@ -32,8 +38,9 @@ const simpleTrait = {
   },
 };
 
-const complexTrait = {
+const complexTrait: Trait = {
   name: 'OrderProcessing',
+  scope: 'instance',
   stateMachine: {
     states: [
       { name: 'pending', isInitial: true },
@@ -42,6 +49,14 @@ const complexTrait = {
       { name: 'shipped' },
       { name: 'delivered', isTerminal: true },
       { name: 'cancelled', isTerminal: true },
+    ],
+    events: [
+      { key: 'CONFIRM', name: 'Confirm' },
+      { key: 'PROCESS', name: 'Process' },
+      { key: 'SHIP', name: 'Ship' },
+      { key: 'DELIVER', name: 'Deliver' },
+      { key: 'CANCEL', name: 'Cancel' },
+      { key: 'RETRY', name: 'Retry' },
     ],
     transitions: [
       { from: 'pending', to: 'confirmed', event: 'CONFIRM', guard: ['>', '@entity.total', 0] },
@@ -58,14 +73,20 @@ const complexTrait = {
   },
 };
 
-const arabicTrait = {
+const arabicTrait: Trait = {
   name: 'إدارة_الهجرة',
+  scope: 'instance',
   stateMachine: {
     states: [
       { name: 'تخطيط', isInitial: true },
       { name: 'تنفيذ' },
       { name: 'وصول' },
       { name: 'استقرار', isTerminal: true },
+    ],
+    events: [
+      { key: 'بدء', name: 'Begin' },
+      { key: 'وصول', name: 'Arrive' },
+      { key: 'استقرار', name: 'Settle' },
     ],
     transitions: [
       { from: 'تخطيط', to: 'تنفيذ', event: 'بدء', guard: ['>', '@entity.readiness', 0.5] },
@@ -75,13 +96,19 @@ const arabicTrait = {
   },
 };
 
-const selfLoopTrait = {
+const selfLoopTrait: Trait = {
   name: 'Retry',
+  scope: 'instance',
   stateMachine: {
     states: [
       { name: 'idle', isInitial: true },
       { name: 'running' },
       { name: 'done', isTerminal: true },
+    ],
+    events: [
+      { key: 'START', name: 'Start' },
+      { key: 'RETRY', name: 'Retry' },
+      { key: 'FINISH', name: 'Finish' },
     ],
     transitions: [
       { from: 'idle', to: 'running', event: 'START' },
@@ -127,13 +154,20 @@ export const SelfLoop: Story = {
 export const FromSchema: Story = {
   args: {
     schema: {
+      name: 'TaskApp',
       orbitals: [
         {
+          name: 'TaskOrbital',
           entity: {
             name: 'Task',
-            fields: [{ name: 'title' }, { name: 'status' }, { name: 'assignee' }],
+            fields: [
+              { name: 'title', type: 'string' },
+              { name: 'status', type: 'string' },
+              { name: 'assignee', type: 'string' },
+            ],
           },
           traits: [simpleTrait],
+          pages: [],
         },
       ],
     },
@@ -154,6 +188,6 @@ export const WithError: Story = {
 
 export const Empty: Story = {
   args: {
-    trait: { name: 'Empty' },
+    trait: { name: 'Empty', scope: 'instance' },
   },
 };

@@ -21,7 +21,10 @@ import { Typography } from '../atoms/Typography';
 import { cn } from '../../lib/cn';
 import { useEventBus } from '../../hooks/useEventBus';
 import { useTranslate } from '../../hooks/useTranslate';
-import type { EntityDisplayProps } from './types';
+// Sidebar is a pure UI navigation primitive, not a schema-entity display
+// organism. SidebarItem carries React nodes (icons) and callbacks (onClick)
+// that don't fit EntityRow's primitive-field constraint, so Sidebar does
+// not extend EntityDisplayProps.
 
 export interface SidebarItem {
   /** Item ID */
@@ -44,7 +47,13 @@ export interface SidebarItem {
   subItems?: SidebarItem[];
 }
 
-export interface SidebarProps extends EntityDisplayProps<SidebarItem> {
+export interface SidebarProps {
+  /** Additional CSS classes */
+  className?: string;
+  /** Loading state indicator */
+  isLoading?: boolean;
+  /** Error state */
+  error?: Error | null;
   /** Logo/Brand content - can be a ReactNode or logo config */
   logo?: React.ReactNode;
   /** Logo image source */

@@ -12,8 +12,13 @@
 
 /** Base props for all templates — enforces entity-only data flow. */
 export interface TemplateProps<E extends { id: string } = { id: string }> {
-    /** Entity data — single object, array from compiler, or string entity name */
-    entity?: string | E | readonly E[];
+    /**
+     * Entity data — single object or array (pre-resolved by the compiler
+     * from `@payload.data` on the calling trait). The legacy `string`
+     * entity-name branch was removed in V2 Phase 6 along with the
+     * EntityStore resolver.
+     */
+    entity?: E | readonly E[];
     /** External styling override */
     className?: string;
 }

@@ -32,7 +32,7 @@ import type { EntityDisplayProps } from '../types';
 import type { BookData, BookChapter, BookFieldMap } from './types';
 import { mapBookData, resolveFieldMap } from './types';
 
-export interface BookViewerProps extends EntityDisplayProps<BookData | Record<string, unknown>> {
+export interface BookViewerProps extends EntityDisplayProps {
   /** Initial page index (default: 0 = cover) */
   initialPage?: number;
   /** Field name translation map — a BookFieldMap object or locale key ("ar") */

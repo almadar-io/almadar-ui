@@ -1,13 +1,14 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { EntityRow } from '@almadar/core';
 import { MasterDetail } from './MasterDetail';
 
-interface Task {
+type Task = EntityRow & {
   id: string;
   title: string;
   status: string;
   assignee: string;
   priority: string;
-}
+};
 
 const sampleTasks: Task[] = [
   { id: '1', title: 'Implement authentication', status: 'Active', assignee: 'John Doe', priority: 'High' },

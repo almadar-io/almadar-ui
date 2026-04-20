@@ -20,6 +20,7 @@ import {
   LucideIcon,
 } from "lucide-react";
 import { EntityDisplayProps, EntityDisplayEvents } from "./types";
+import type { EntityRow } from "@almadar/core";
 
 export interface Column<T> {
   key: keyof T | string;
@@ -93,7 +94,7 @@ export interface RowAction<T> {
   event?: string;
 }
 
-export interface DataTableProps<T extends { id: string | number }>
+export interface DataTableProps<T extends EntityRow & { id: string | number }>
   extends EntityDisplayProps<T> {
   /** Fields to display - accepts string[] or Column[] for unified interface. Alias for columns */
   fields: readonly Column<T>[] | readonly string[];
@@ -140,7 +141,7 @@ export interface DataTableProps<T extends { id: string | number }>
   showTotal?: boolean;
 }
 
-export function DataTable<T extends { id: string | number }>({
+export function DataTable<T extends EntityRow & { id: string | number }>({
   fields,
   columns,
   entity,

@@ -24,6 +24,7 @@ import {
 import { useTranslate } from '../../hooks/useTranslate';
 import { cn } from '../../lib/cn';
 import type { EntityDisplayProps } from './types';
+import type { OrbitalSchema, StateMachine, Trait } from '@almadar/core';
 
 export interface ContentRendererProps extends EntityDisplayProps {
   /** Raw content string — auto-parsed into segments */
@@ -78,14 +79,20 @@ export const ContentRenderer: React.FC<ContentRendererProps> = ({
             // schemas ({orbitals}) into a schema object so JazariStateMachine
             // always receives the same prop shape (the `schema` prop path).
             const parsed = segment.schema as Record<string, unknown>;
-            const schema = Array.isArray(parsed.orbitals)
-              ? parsed
+            const inlineTrait: Trait = {
+              name: 'inline',
+              scope: 'instance',
+              stateMachine: parsed as unknown as StateMachine,
+            };
+            const schema: OrbitalSchema = Array.isArray(parsed.orbitals)
+              ? (parsed as unknown as OrbitalSchema)
               : {
+                  name: 'inline',
                   orbitals: [{
-                    traits: [{
-                      name: 'inline',
-                      stateMachine: parsed,
-                    }],
+                    name: 'inline',
+                    entity: { name: 'inline', fields: [] },
+                    traits: [inlineTrait],
+                    pages: [],
                   }],
                 };
             return (

@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { EntityRow } from '@almadar/core';
 import { DataTable } from './DataTable';
 import { Database } from 'lucide-react';
 
@@ -15,20 +16,20 @@ const meta: Meta<typeof DataTable> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-interface User {
-    id: number;
+type User = EntityRow & {
+    id: string;
     name: string;
     email: string;
     role: string;
     status: string;
-}
+};
 
 const sampleData: User[] = [
-    { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Admin', status: 'Active' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'User', status: 'Active' },
-    { id: 3, name: 'Bob Wilson', email: 'bob@example.com', role: 'Editor', status: 'Pending' },
-    { id: 4, name: 'Alice Brown', email: 'alice@example.com', role: 'User', status: 'Inactive' },
-    { id: 5, name: 'Charlie Davis', email: 'charlie@example.com', role: 'Admin', status: 'Active' },
+    { id: '1', name: 'John Doe', email: 'john@example.com', role: 'Admin', status: 'Active' },
+    { id: '2', name: 'Jane Smith', email: 'jane@example.com', role: 'User', status: 'Active' },
+    { id: '3', name: 'Bob Wilson', email: 'bob@example.com', role: 'Editor', status: 'Pending' },
+    { id: '4', name: 'Alice Brown', email: 'alice@example.com', role: 'User', status: 'Inactive' },
+    { id: '5', name: 'Charlie Davis', email: 'charlie@example.com', role: 'Admin', status: 'Active' },
 ];
 
 const columns = [

@@ -36,7 +36,9 @@ import { Icon } from '../atoms/Icon';
 import { useTranslate } from '../../hooks/useTranslate';
 import { useEventListener } from '../../hooks/useEventBus';
 import { cn } from '../../lib/cn';
-import type { EntityDisplayProps } from './types';
+// StateMachineView is a state-machine visualization organism; DomLayoutData
+// is a nested structural type that doesn't fit EntityRow's primitive-field
+// constraint. Takes its layout directly via the `layoutData` prop.
 import { X } from 'lucide-react';
 
 // =============================================================================
@@ -61,7 +63,13 @@ interface TooltipState {
   bundle: TransitionBundle | null;
 }
 
-export interface StateMachineViewProps extends EntityDisplayProps<DomLayoutData> {
+export interface StateMachineViewProps {
+  /** Additional CSS classes */
+  className?: string;
+  /** Loading state indicator */
+  isLoading?: boolean;
+  /** Error state */
+  error?: Error | null;
   layoutData: DomLayoutData;
   /** Custom state node renderer — when provided, replaces the default circle nodes */
   renderStateNode?: (state: DomStateNode, config: VisualizerConfig) => React.ReactNode;

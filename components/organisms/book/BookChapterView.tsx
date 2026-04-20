@@ -17,10 +17,15 @@ import { ContentRenderer } from '../ContentRenderer';
 import { JazariStateMachine } from '../JazariStateMachine';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';
-import type { EntityDisplayProps } from '../types';
+// Internal rendering component — takes typed content-model props directly
+// (BookData / BookPart / BookChapter), not schema entity data. Does not
+// extend EntityDisplayProps; its parent (BookViewer) owns the entity-prop
+// contract.
 import type { BookChapter } from './types';
 
-export interface BookChapterViewProps extends EntityDisplayProps<BookChapter> {
+export interface BookChapterViewProps {
+  /** Additional CSS classes */
+  className?: string;
   chapter: BookChapter;
   direction?: 'rtl' | 'ltr';
 }
@@ -47,7 +52,7 @@ export const BookChapterView: React.FC<BookChapterViewProps> = ({
       {!!chapter.orbitalSchema && (
         <ScaledDiagram>
           <JazariStateMachine
-            schema={chapter.orbitalSchema as Record<string, unknown>}
+            schema={chapter.orbitalSchema}
             direction={direction}
           />
         </ScaledDiagram>

@@ -25,6 +25,7 @@ import { cn } from "../../lib/cn";
 import { useTranslate } from "../../hooks/useTranslate";
 import { useEventBus } from "../../hooks/useEventBus";
 import type { EntityDisplayProps, EntityDisplayEvents } from "./types";
+import type { EntityRow } from "@almadar/core";
 
 export type SortDirection = "asc" | "desc";
 
@@ -56,7 +57,7 @@ export interface TableColumn<T = any> {
   width?: string;
 }
 
-export interface TableProps<T = Record<string, unknown>> extends EntityDisplayProps<T> {
+export interface TableProps<T extends EntityRow = EntityRow> extends EntityDisplayProps<T> {
   /**
    * Table columns
    */

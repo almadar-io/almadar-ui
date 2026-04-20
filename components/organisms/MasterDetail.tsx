@@ -14,8 +14,9 @@
 import React from 'react';
 import { DataTable, type DataTableProps } from './DataTable';
 import type { EntityDisplayProps } from './types';
+import type { EntityRow } from '@almadar/core';
 
-export interface MasterDetailProps<T extends { id: string | number } = { id: string | number }> extends EntityDisplayProps<T> {
+export interface MasterDetailProps<T extends EntityRow & { id: string | number } = EntityRow & { id: string | number }> extends EntityDisplayProps<T> {
   /** Fields to show in the master list (maps to DataTable columns) */
   masterFields: readonly string[];
   /** Fields for detail view (passed through but typically handled by separate render_ui) */
@@ -24,7 +25,7 @@ export interface MasterDetailProps<T extends { id: string | number } = { id: str
   loading?: boolean;
 }
 
-export function MasterDetail<T extends { id: string | number }>({
+export function MasterDetail<T extends EntityRow & { id: string | number }>({
   entity,
   masterFields,
   detailFields: _detailFields, // Captured but not used here - detail handled separately

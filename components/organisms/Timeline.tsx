@@ -20,7 +20,13 @@ import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
 import { useTranslate } from "../../hooks/useTranslate";
-import type { EntityDisplayProps } from "./types";
+// Timeline carries `icon?: LucideIcon` on TimelineItem (a React component)
+// which doesn't fit EntityRow's primitive-field constraint, so the organism
+// doesn't inherit EntityDisplayProps directly. Schema entity data arrives
+// via the `entity` prop typed against @almadar/core's EntityRow, and is
+// normalised into TimelineItems (icon-less) at render time; UI-shaped
+// TimelineItems come through the dedicated `items` prop.
+import type { EntityRow } from "@almadar/core";
 import type { LucideIcon } from "lucide-react";
 import { Circle, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 
@@ -50,7 +56,20 @@ export interface TimelineAction {
     variant?: "primary" | "secondary" | "ghost";
 }
 
-export interface TimelineProps extends EntityDisplayProps<TimelineItem> {
+export interface TimelineProps {
+    /** Additional CSS classes */
+    className?: string;
+    /** Loading state indicator */
+    isLoading?: boolean;
+    /** Error state */
+    error?: Error | null;
+    /**
+     * Schema entity data typed against @almadar/core's EntityRow. Items from
+     * `entity` are normalised into `items` when `items` is omitted. UI-specific
+     * TimelineItem fields (`icon`, callbacks) cannot round-trip through the
+     * event bus, so decorative stories that need them pass `items` directly.
+     */
+    entity?: EntityRow | readonly EntityRow[];
     /** Timeline title */
     title?: string;
     /** Timeline items */

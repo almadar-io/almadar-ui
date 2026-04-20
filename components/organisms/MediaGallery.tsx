@@ -22,9 +22,10 @@ import { EmptyState } from "../molecules/EmptyState";
 import { useEventBus, useEventListener } from "../../hooks/useEventBus";
 import { useTranslate } from "../../hooks/useTranslate";
 import type { EntityDisplayProps } from "./types";
+import type { EntityRow } from "@almadar/core";
 import { X, ZoomIn, Upload, Image as ImageIcon } from "lucide-react";
 
-export interface MediaItem {
+export type MediaItem = EntityRow & {
     /** Unique identifier */
     id: string;
     /** Media URL */
@@ -39,7 +40,7 @@ export interface MediaItem {
     caption?: string;
     /** File size */
     fileSize?: string;
-}
+};
 
 export interface MediaGalleryAction {
     label: string;
@@ -128,7 +129,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
         if (propItems) return propItems;
         if (entityData.length === 0) return [];
 
-        return entityData.map((record, idx) => ({
+        return entityData.map((record, idx): MediaItem => ({
             id: String(record.id ?? idx),
             src: String(record.src ?? record.url ?? record.image ?? ""),
             alt: record.alt ? String(record.alt) : undefined,
