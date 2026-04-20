@@ -8,6 +8,8 @@
  * This is the ONE allowed exception — documented here.
  */
 
+import type { EntityRow } from '@almadar/core';
+
 // ── Event Name Constants ──────────────────────────────────────────────
 
 export const EntityDisplayEvents = {
@@ -48,21 +50,32 @@ export interface SelectPayload {
 
 // ── Base Props ────────────────────────────────────────────────────────
 
-export interface EntityDisplayProps<T = unknown> {
+export interface EntityDisplayProps<T extends EntityRow = EntityRow> {
   /**
-   * Entity data or a legacy entity-name string.
+   * Pre-resolved entity data, typed against `@almadar/core`'s `EntityRow`
+   * (`{ id?: string } & Record<string, FieldValue>`) so the single source of
+   * truth for runtime entity shape lives in core. Consumers narrow via the
+   * generic parameter; the constraint guarantees every organism receives
+   * something with an optional `id` and a Record of `FieldValue` fields.
    *
-   * Accepts three shapes today; the string branch is deprecated:
-   * - `readonly T[]`: pre-resolved array for list patterns (authoring
-   *   pattern: `entity: @payload.data` from the calling trait).
-   * - `T`: pre-resolved single record for detail patterns.
-   * - `string`: legacy entity-type name resolved by the renderer via
-   *   `useEntityRef`. Emits a dev-mode deprecation warning. Removal
-   *   scheduled for Phase 6 of docs/Almadar_Entity_V2_Plan.md when the
-   *   entity store itself is deleted; the prop shape will collapse to
-   *   `readonly T[] | T | undefined`.
+   * Two shapes accepted:
+   * - `readonly T[]`: array for list patterns (authoring: `entity: @payload.data`
+   *   on the calling trait after a `fetch … { emit: { success } }` listener).
+   * - `T`: single record for detail patterns.
+   *
+   * The legacy `string` (entity-name) branch was removed in V2 Phase 6. The
+   * EntityStore resolver is gone; components now receive pre-resolved data via
+   * the event bus.
+   *
+   * NOTE: Several legacy organisms (HeroOrganism, TeamOrganism, CaseStudyOrganism,
+   * MediaGallery, PricingOrganism, ShowcaseOrganism, StatsOrganism, Sidebar,
+   * Timeline, StepFlowOrganism, FeatureGridOrganism, book/*, WorldMapBoard,
+   * StateMachineView, JazariStateMachine, MasterDetail, DataTable, Table) define
+   * local entity types (HeroEntity, TeamMemberEntity, …) that don't formally
+   * extend `EntityRow`. They surface `EntityDisplayProps<T>` constraint errors.
+   * Tracked as a Phase 7 follow-up in `docs/Almadar_Entity_V2_Plan.md` §10.
    */
-  entity?: string | T | readonly T[];
+  entity?: T | readonly T[];
   /** Additional CSS classes */
   className?: string;
   /** Loading state indicator */

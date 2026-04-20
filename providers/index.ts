@@ -30,17 +30,6 @@ export type {
   EntityRecord,
 } from './FetchedDataProvider';
 
-// Entity store (reactive refs for the ref/deref/watch operators)
-export {
-  EntityStoreProvider,
-  EntityStoreContext,
-  useEntityRef,
-  useEntityById,
-  useEntityWatch,
-  useEntityStore,
-} from './EntityStoreProvider';
-export type { EntityStoreContextValue } from './EntityStoreProvider';
-
 // Verification provider
 export { VerificationProvider } from './VerificationProvider';
 export type { VerificationProviderProps } from './VerificationProvider';

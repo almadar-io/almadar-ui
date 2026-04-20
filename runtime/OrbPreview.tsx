@@ -29,7 +29,6 @@ import { useSlotsActions, useSlots, SlotsProvider } from './ui/SlotsContext';
 import { EntitySchemaProvider } from './EntitySchemaContext';
 import { ServerBridgeProvider, useServerBridge } from './ServerBridge';
 import { getAllPages } from '../renderer/navigation';
-import { useEntityStore } from '../providers/EntityStoreProvider';
 import { recordTransition, recordServerResponse, type EffectTrace } from '../lib/verificationRegistry';
 import { prepareSchemaForPreview } from './prepareSchemaForPreview';
 
@@ -176,32 +175,19 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback }:
   // every embedded atom would drop out of the index.
   const uiSlots = useUISlots();
 
-  const entityStore = useEntityStore();
-
-  // Forward events to server, apply enriched effects directly to slots
+  // Forward events to server, apply enriched effects directly to slots.
+  // V2 Phase 6: the server response no longer carries `meta.data`; fetched
+  // entities flow through the event bus via typed emit payloads, which the
+  // state machine listeners bind into `@payload.data` and the renderer
+  // consumes as pre-resolved `entity` props. No EntityStore hydration.
   const onEventProcessed = useCallback(async (event: string, payload?: Record<string, unknown>) => {
     if (!bridge.connected || !orbitalNames?.length) return;
     for (const name of orbitalNames) {
       const { effects, meta } = await bridge.sendEvent(name, event, payload);
-
-      // Record server response in verification timeline
       recordServerResponse(name, event, meta);
-
-      // Advance EntityStore from server response data (ref operator support)
-      // When persist/set/swap mutates a ref'd entity, the server includes fresh data
-      // in meta.data. Advancing the store triggers useEntityRef subscribers.
-      const responseData = (meta as unknown as Record<string, unknown> | undefined)?.data as Record<string, unknown[]> | undefined;
-      if (responseData) {
-        for (const [entityType, records] of Object.entries(responseData)) {
-          if (Array.isArray(records)) {
-            entityStore.setAll(entityType, records);
-          }
-        }
-      }
-
       applyServerEffects(effects, uiSlots, onNavigate);
     }
-  }, [bridge.connected, bridge.sendEvent, orbitalNames, uiSlots, onNavigate, entityStore]);
+  }, [bridge.connected, bridge.sendEvent, orbitalNames, uiSlots, onNavigate]);
 
   const opts = orbitalNames
     ? { onEventProcessed, navigate: onNavigate }
@@ -256,17 +242,10 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback }:
           timestamp: Date.now(),
         });
 
-        // Advance EntityStore from INIT response so useEntityRef subscribers
-        // get entity data before slot patterns render.
-        const initResponseData = (meta as unknown as Record<string, unknown>)?.data as Record<string, unknown[]> | undefined;
-        if (initResponseData) {
-          for (const [entityType, records] of Object.entries(initResponseData)) {
-            if (Array.isArray(records)) {
-              entityStore.setAll(entityType, records);
-            }
-          }
-        }
-
+        // V2 Phase 6: `meta.data` is gone; entity data arrives through the
+        // event bus via typed emit payloads, bound into the pattern tree by
+        // the listener / render-ui pipeline. The server effects carry the
+        // resolved data; no store hydration needed.
         applyServerEffects(effects, uiSlots, onNavigate);
       }
     })();
@@ -326,23 +305,13 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate, onLoc
       .map((o) => o.name as string);
   }, [schema]);
 
-  // Seed EntityStore with mock data for non-server preview.
-  // useLayoutEffect fires after DOM mutations but before paint, and before
-  // child useEffects. This ensures entity data is in the store before
-  // TraitInitializer fires INIT (which runs in a child useEffect).
-  const entityStore = useEntityStore();
-  const seededRef = useRef<string>('');
-  const mockKey = mockData ? Object.keys(mockData).sort().join(',') : '';
-  React.useLayoutEffect(() => {
-    if (!serverUrl && mockData && seededRef.current !== mockKey) {
-      seededRef.current = mockKey;
-      for (const [entityType, records] of Object.entries(mockData)) {
-        if (Array.isArray(records)) {
-          entityStore.setAll(entityType, records);
-        }
-      }
-    }
-  }, [mockKey, serverUrl, mockData, entityStore]);
+  // V2 Phase 6: EntityStore is gone. Standalone-preview (no serverUrl) with
+  // `mockData` no longer hydrates a shared store; mock data now flows through
+  // the event bus the same way a real server response does — i.e. traits
+  // that `fetch` during INIT need a mock bridge to surface the data as
+  // `@payload.data` on the success emit. See Almadar_Entity_V2_Plan.md §13
+  // for the deferred standalone-preview mock-data wiring.
+  void mockData;
 
   const inner = (
     <VerificationProvider enabled>

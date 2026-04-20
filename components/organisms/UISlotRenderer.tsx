@@ -15,7 +15,6 @@
  */
 
 import React, { Suspense, createContext, useContext, useEffect, useState } from "react";
-import { useEntityRef } from "../../providers/EntityStoreProvider";
 import { useEntitySchemaOptional } from "../../runtime/EntitySchemaContext";
 import type { ResolvedEntity } from "@almadar/core";
 import { createPortal } from "react-dom";
@@ -51,10 +50,6 @@ import { TraitFrame } from "../atoms/TraitFrame";
  * shape.
  */
 const TRAIT_BINDING_RE = /^@trait\.([A-Z][A-Za-z0-9]*)$/;
-
-// V2 Phase 2: dedupe deprecation logs so the same `entity: "X"` string doesn't
-// fire once per render. Cleared on hot reload via module re-evaluation.
-const STRING_ENTITY_WARNED = new Set<string>();
 
 // ============================================================================
 // Suspense Configuration Context
@@ -925,31 +920,28 @@ function SlotContentRenderer({
   onDismiss,
   patternPath,
 }: SlotContentRendererProps): React.ReactElement {
-  // Resolve entity reference from EntityStore reactively.
-  // Same pattern as the compiled app's useEntityRef — the component subscribes
-  // directly to the store instead of relying on enrichment pipelines.
-  // When entityType is '', useEntityRef returns [] and never triggers re-renders.
+  // V2 (post-Phase-6): entity data arrives pre-resolved in `content.props.entity`
+  // as a value (array or record). String-entity bindings — the EntityStore
+  // fallback path — are gone; the compiler + runtime resolve bindings via
+  // @payload.data / listener flows before handing props to this renderer.
+  // If a stale `entity: "StringName"` literal is still present at render time
+  // (e.g. non-migrated project content), dev-mode throws so the author fixes
+  // the schema; prod silently renders nothing.
   const entityProp = content.props.entity;
-  const entityType = typeof entityProp === 'string' ? entityProp : '';
-  const storeData = useEntityRef(entityType);
-  // V2 Phase 2 (Almadar_Entity_V2_Plan.md): warn when a pattern still passes
-  // a string entity name. Downstream authors should pre-resolve the data via
-  // @payload.data and pass `items` as a value prop; the string path will be
-  // removed in Phase 6. Gated on NODE_ENV so prod stays quiet, and logged
-  // once per entity type per session to avoid render-loop spam.
-  React.useEffect(() => {
-    if (!entityType) return;
-    if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV === 'production') return;
-    if (STRING_ENTITY_WARNED.has(entityType)) return;
-    STRING_ENTITY_WARNED.add(entityType);
-    console.warn(
-      `[UISlotRenderer] String-entity binding '${entityType}' is deprecated. Pass 'items' or 'entity' as a value prop resolved from @payload.data. See docs/Almadar_Entity_V2_Plan.md §5.`,
-    );
-  }, [entityType]);
+  if (typeof entityProp === 'string' && entityProp.length > 0) {
+    if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production') {
+      throw new Error(
+        `[UISlotRenderer] Received string 'entity: "${entityProp}"' at render time. The V2 flow requires pre-resolved data; declare a fetch success listener and pass 'entity: @payload.data'. See docs/Almadar_Entity_V2_Plan.md §6.`,
+      );
+    }
+  }
 
   // Entity schema for form field type enrichment (optional — only available in runtime mode)
   const schemaCtx = useEntitySchemaOptional();
-  const entityDef = entityType && schemaCtx ? schemaCtx.entities.get(entityType) : undefined;
+  const entityDef =
+    typeof entityProp === 'string' && entityProp.length > 0 && schemaCtx
+      ? schemaCtx.entities.get(entityProp)
+      : undefined;
 
   const PatternComponent = getComponentForPattern(content.pattern);
 
@@ -986,12 +978,9 @@ function SlotContentRenderer({
     // is what the compiled app gets from the compiler, but the runtime
     // needs to derive at render time since the schema pattern may omit
     // field definitions.
-    let finalProps: Record<string, unknown>;
-    if (entityType) {
-      finalProps = { ...renderedProps, entity: storeData };
-    } else {
-      finalProps = renderedProps;
-    }
+    // V2: entity data flows through content.props.entity directly (pre-resolved
+    // from @payload.data or value prop). No more store hydration.
+    const finalProps: Record<string, unknown> = renderedProps;
     const resolvedItems: readonly unknown[] | null = Array.isArray(
       finalProps.entity,
     )
@@ -1016,10 +1005,8 @@ function SlotContentRenderer({
       || content.pattern.includes('form');
     if (isFormPattern && entityDef && Array.isArray(finalProps.fields)) {
       finalProps.fields = enrichFormFields(finalProps.fields as unknown[], entityDef);
-      // For edit forms, pre-populate initialData from entity store
-      if (finalProps.mode === 'edit' && !finalProps.initialData && storeData.length > 0) {
-        finalProps.initialData = storeData[0] as Record<string, unknown>;
-      }
+      // V2: edit-form initialData comes pre-bound via `initialData: @payload.data`
+      // instead of being hydrated from the entity store.
     }
 
     const acceptsChildren = PATTERNS_WITH_CHILDREN.has(content.pattern);
