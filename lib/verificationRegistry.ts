@@ -11,7 +11,7 @@
  */
 
 import { createLogger } from './logger';
-import type { BusEvent, EventPayload } from '@almadar/core';
+import type { BusEvent, BusEventSource, EntityRow, EventPayload } from '@almadar/core';
 
 const log = createLogger('almadar:bridge');
 
@@ -79,11 +79,60 @@ export interface VerificationSummary {
   pending: number;
 }
 
+/**
+ * Per-trait state snapshot exposed to the verifier so it can assert that
+ * reducer data (populated by fetch/persist transitions) and the last
+ * dispatched payload land in the DOM correctly (VG4/VG6/VG11a/b/c).
+ *
+ * Mirrors what `useTraitStateMachine` / generated trait logic hooks keep
+ * internally, without the verifier having to parse rendered text.
+ */
+export interface TraitStateSnapshot {
+  /** Trait name as declared in the schema. */
+  traitName: string;
+  /** Current state machine state. */
+  currentState: string;
+  /** Declared state names for this trait (non-empty for healthy trait refs). */
+  states: string[];
+  /** Declared event keys for this trait (non-empty for healthy trait refs). */
+  events: string[];
+  /**
+   * Entity data keyed by entity name. Same shape the trait reducer holds
+   * in `state.data`. Snapshot-on-read; mutating the returned arrays does
+   * not affect the live reducer.
+   */
+  data: Record<string, EntityRow[]>;
+  /** Payload of the last event the state machine processed, if any. */
+  lastPayload?: EventPayload;
+  /**
+   * Last event the walker (or a UI click) dispatched into this trait.
+   * Used by VG11a to resolve `@payload.X` expected values.
+   */
+  lastEventDispatched?: {
+    event: string;
+    payload?: EventPayload;
+    source?: BusEventSource;
+    timestamp: number;
+  };
+  /**
+   * Bus events received from the server's `emittedEvents` cascade since the
+   * last user dispatch. VG4 compares the length against the number of
+   * `emit: { success/failure: ... }` entries on the triggering transition.
+   */
+  cascadeReceived: Array<{
+    event: string;
+    payload?: EventPayload;
+    timestamp: number;
+  }>;
+}
+
 export interface VerificationSnapshot {
   checks: VerificationCheck[];
   transitions: TransitionTrace[];
   bridge: BridgeHealth | null;
   summary: VerificationSummary;
+  /** Per-trait reducer snapshot (populated once `bindTraitSnapshotGetter` runs). */
+  traits: TraitStateSnapshot[];
 }
 
 // ============================================================================
@@ -94,11 +143,23 @@ const MAX_TRANSITIONS = 500;
 
 type ChangeListener = () => void;
 
+/**
+ * Per-trait snapshot getter. Each generated trait logic hook (or
+ * `useTraitStateMachine` trait binding) registers one on mount so the
+ * verifier can read the live reducer state for that trait.
+ */
+export type TraitSnapshotGetter = () => TraitStateSnapshot;
+
 interface RegistryState {
   checks: Map<string, VerificationCheck>;
   transitions: TransitionTrace[];
   bridgeHealth: BridgeHealth | null;
   listeners: Set<ChangeListener>;
+  /**
+   * Per-trait snapshot providers, keyed by trait name. Readers iterate
+   * this map inside `getTraitSnapshots()`.
+   */
+  traitSnapshots: Map<string, TraitSnapshotGetter>;
 }
 
 function getState(): RegistryState {
@@ -110,12 +171,19 @@ function getState(): RegistryState {
         transitions: [],
         bridgeHealth: null,
         listeners: new Set(),
+        traitSnapshots: new Map(),
       };
     }
     return w.__verificationRegistryState;
   }
   // SSR fallback
-  return { checks: new Map(), transitions: [], bridgeHealth: null, listeners: new Set() };
+  return {
+    checks: new Map(),
+    transitions: [],
+    bridgeHealth: null,
+    listeners: new Set(),
+    traitSnapshots: new Map(),
+  };
 }
 
 // Direct accessors — no proxies, just use getState() in every function
@@ -317,7 +385,28 @@ export function getSnapshot(): VerificationSnapshot {
     transitions: getTransitions(),
     bridge: getBridgeHealth(),
     summary: getSummary(),
+    traits: getTraitSnapshots(),
   };
+}
+
+/**
+ * Per-trait snapshot for the verifier.
+ *
+ * Iterates every registered trait getter and collects the live reducer
+ * state. Empty until at least one trait hook calls `registerTraitSnapshot`.
+ * A getter that throws is logged and skipped — one broken trait must not
+ * poison the rest of the snapshot.
+ */
+export function getTraitSnapshots(): TraitStateSnapshot[] {
+  const snapshots: TraitStateSnapshot[] = [];
+  for (const [traitName, getter] of getState().traitSnapshots.entries()) {
+    try {
+      snapshots.push(getter());
+    } catch (err) {
+      log.error('traitSnapshot getter failed', { trait: traitName, err: String(err) });
+    }
+  }
+  return snapshots;
 }
 
 // ============================================================================
@@ -359,6 +448,8 @@ interface OrbitalVerificationAPI {
   sendEvent?: (event: string, payload?: Record<string, unknown>) => void;
   /** Get current trait state */
   getTraitState?: (traitName: string) => string | undefined;
+  /** Per-trait reducer snapshots (VG4/VG6/VG11a/b/c). */
+  getTraitSnapshots?: () => TraitStateSnapshot[];
   /** Capture a canvas frame as PNG data URL. Registered by game organisms. */
   captureFrame?: () => string | null;
   /** Asset load status map. Registered by game organisms. */
@@ -386,7 +477,12 @@ function exposeOnWindow(): void {
       getBridge: getBridgeHealth,
       getSummary,
       waitForTransition,
+      getTraitSnapshots,
     };
+  } else if (!window.__orbitalVerification.getTraitSnapshots) {
+    // Back-compat: if the API was exposed before getTraitSnapshots existed
+    // (older bundle loaded first), attach it on next call.
+    window.__orbitalVerification.getTraitSnapshots = getTraitSnapshots;
   }
 }
 
@@ -478,6 +574,33 @@ export function bindTraitStateGetter(
   if (window.__orbitalVerification) {
     window.__orbitalVerification.getTraitState = getter;
   }
+}
+
+/**
+ * Register a per-trait snapshot provider. The generated trait logic hook
+ * (or `useTraitStateMachine`) calls this once on mount, passing a getter
+ * that reads the current reducer state via a ref. Returns an unregister
+ * function for cleanup on unmount.
+ *
+ * Calling this twice for the same `traitName` replaces the previous
+ * getter (e.g. page navigation remounts the trait; the new registration
+ * wins).
+ */
+export function registerTraitSnapshot(
+  traitName: string,
+  getter: TraitSnapshotGetter,
+): () => void {
+  if (typeof window === "undefined") return () => {};
+  getState().traitSnapshots.set(traitName, getter);
+  exposeOnWindow();
+  notifyListeners();
+  return () => {
+    const s = getState();
+    if (s.traitSnapshots.get(traitName) === getter) {
+      s.traitSnapshots.delete(traitName);
+      notifyListeners();
+    }
+  };
 }
 
 // ============================================================================
