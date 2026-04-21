@@ -13,6 +13,7 @@
 import { useEffect, useState, useMemo, useContext } from "react";
 import { useEventBus, type BusEvent } from "./useEventBus";
 import { SelectionContext } from "../providers/SelectionProvider";
+import type { EventPayload } from "@almadar/core";
 
 const UI_PREFIX = 'UI:';
 
@@ -24,7 +25,7 @@ const UI_PREFIX = 'UI:';
  * @param eventBusInstance - Optional event bus instance (for testing, uses hook if not provided)
  */
 export function useUIEvents<E extends string>(
-  dispatch: (event: E, payload?: unknown) => void,
+  dispatch: (event: E, payload?: EventPayload) => void,
   validEvents?: readonly E[],
   eventBusInstance?: ReturnType<typeof useEventBus>,
 ): void {
