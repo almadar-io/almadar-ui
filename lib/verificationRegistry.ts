@@ -11,132 +11,43 @@
  */
 
 import { createLogger } from './logger';
-import type { BusEvent, BusEventSource, EntityRow, EventPayload } from '@almadar/core';
+import type {
+  AssetLoadStatus,
+  BridgeHealth,
+  BusEvent,
+  CheckStatus,
+  EffectTrace,
+  EventLogEntry,
+  EventPayload,
+  OrbitalVerificationAPI,
+  ServerResponseTrace,
+  TraitStateSnapshot,
+  TransitionTrace,
+  VerificationCheck,
+  VerificationSnapshot,
+  VerificationSummary,
+} from '@almadar/core';
 
 const log = createLogger('almadar:bridge');
 
-// ============================================================================
-// Types
-// ============================================================================
-
-export type CheckStatus = "pass" | "fail" | "pending" | "warn";
-
-export interface VerificationCheck {
-  id: string;
-  label: string;
-  status: CheckStatus;
-  details?: string;
-  /** Timestamp when status last changed */
-  updatedAt: number;
-}
-
-export interface EffectTrace {
-  type: string;
-  args: unknown[];
-  status: "executed" | "failed" | "skipped";
-  error?: string;
-  durationMs?: number;
-}
-
-/** Captures what the server returned for a given event */
-export interface ServerResponseTrace {
-  orbitalName: string;
-  success: boolean;
-  clientEffects: number;
-  dataEntities: Record<string, number>;
-  emittedEvents: string[];
-  error?: string;
-  timestamp: number;
-}
-
-export interface TransitionTrace {
-  id: string;
-  traitName: string;
-  from: string;
-  to: string;
-  event: string;
-  guardExpression?: string;
-  guardResult?: boolean;
-  effects: EffectTrace[];
-  /** Server response data when event was forwarded to server bridge */
-  serverResponse?: ServerResponseTrace;
-  timestamp: number;
-}
-
-export interface BridgeHealth {
-  connected: boolean;
-  eventsForwarded: number;
-  eventsReceived: number;
-  lastError?: string;
-  lastHeartbeat: number;
-}
-
-export interface VerificationSummary {
-  totalChecks: number;
-  passed: number;
-  failed: number;
-  warnings: number;
-  pending: number;
-}
-
-/**
- * Per-trait state snapshot exposed to the verifier so it can assert that
- * reducer data (populated by fetch/persist transitions) and the last
- * dispatched payload land in the DOM correctly (VG4/VG6/VG11a/b/c).
- *
- * Mirrors what `useTraitStateMachine` / generated trait logic hooks keep
- * internally, without the verifier having to parse rendered text.
- */
-export interface TraitStateSnapshot {
-  /** Trait name as declared in the schema. */
-  traitName: string;
-  /** Current state machine state. */
-  currentState: string;
-  /** Declared state names for this trait (non-empty for healthy trait refs). */
-  states: string[];
-  /** Declared event keys for this trait (non-empty for healthy trait refs). */
-  events: string[];
-  /**
-   * Entity data keyed by entity name. Uses `EntityRow` from `@almadar/core`
-   * — the canonical persisted-entity shape the server returns and the
-   * trait reducer stores. Consumers that need full field-level types can
-   * cast down to the generated entity (e.g. `data['CartItem'] as CartItem[]`).
-   * Snapshot-on-read; mutating the returned arrays does not affect the
-   * live reducer.
-   */
-  data: Record<string, EntityRow[]>;
-  /** Payload of the last event the state machine processed, if any. */
-  lastPayload?: EventPayload;
-  /**
-   * Last event the walker (or a UI click) dispatched into this trait.
-   * Used by VG11a to resolve `@payload.X` expected values.
-   */
-  lastEventDispatched?: {
-    event: string;
-    payload?: EventPayload;
-    source?: BusEventSource;
-    timestamp: number;
-  };
-  /**
-   * Bus events received from the server's `emittedEvents` cascade since the
-   * last user dispatch. VG4 compares the length against the number of
-   * `emit: { success/failure: ... }` entries on the triggering transition.
-   */
-  cascadeReceived: Array<{
-    event: string;
-    payload?: EventPayload;
-    timestamp: number;
-  }>;
-}
-
-export interface VerificationSnapshot {
-  checks: VerificationCheck[];
-  transitions: TransitionTrace[];
-  bridge: BridgeHealth | null;
-  summary: VerificationSummary;
-  /** Per-trait reducer snapshot (populated once `bindTraitSnapshotGetter` runs). */
-  traits: TraitStateSnapshot[];
-}
+// Re-export the wire types so existing `@almadar/ui/lib` consumers
+// (generated trait hooks, storybook fixtures) keep working without
+// flipping their imports. New code should import straight from
+// `@almadar/core`.
+export type {
+  AssetLoadStatus,
+  BridgeHealth,
+  CheckStatus,
+  EffectTrace,
+  EventLogEntry,
+  OrbitalVerificationAPI,
+  ServerResponseTrace,
+  TraitStateSnapshot,
+  TransitionTrace,
+  VerificationCheck,
+  VerificationSnapshot,
+  VerificationSummary,
+};
 
 // ============================================================================
 // State — stored on window to survive duplicate module instances (Vite dev)
@@ -424,44 +335,6 @@ export function subscribeToVerification(listener: ChangeListener): () => void {
 // ============================================================================
 // Window exposure for Playwright/automation
 // ============================================================================
-
-/** Asset load status for canvas verification */
-export type AssetLoadStatus = "loaded" | "failed" | "pending";
-
-/** Event bus log entry for verification */
-export interface EventLogEntry {
-  type: string;
-  payload?: EventPayload;
-  timestamp: number;
-}
-
-/** Exposed on window for Playwright to query */
-interface OrbitalVerificationAPI {
-  getSnapshot: () => VerificationSnapshot;
-  getChecks: () => VerificationCheck[];
-  getTransitions: () => TransitionTrace[];
-  getBridge: () => BridgeHealth | null;
-  getSummary: () => VerificationSummary;
-  /** Wait for a specific event to be processed */
-  waitForTransition: (
-    event: string,
-    timeoutMs?: number,
-  ) => Promise<TransitionTrace | null>;
-  /** Send an event into the runtime (requires eventBus binding) */
-  sendEvent?: (event: string, payload?: Record<string, unknown>) => void;
-  /** Get current trait state */
-  getTraitState?: (traitName: string) => string | undefined;
-  /** Per-trait reducer snapshots (VG4/VG6/VG11a/b/c). */
-  getTraitSnapshots?: () => TraitStateSnapshot[];
-  /** Capture a canvas frame as PNG data URL. Registered by game organisms. */
-  captureFrame?: () => string | null;
-  /** Asset load status map. Registered by game organisms. */
-  assetStatus?: Record<string, AssetLoadStatus>;
-  /** Event bus log. Records all emit() calls for verification. */
-  eventLog?: EventLogEntry[];
-  /** Clear the event log. */
-  clearEventLog?: () => void;
-}
 
 declare global {
   interface Window {
