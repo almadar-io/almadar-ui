@@ -21,7 +21,7 @@ import React, {
   useCallback,
   type ReactNode,
 } from 'react';
-import { useEventBus, type KFlowEvent } from '../hooks/useEventBus';
+import { useEventBus, type BusEvent } from '../hooks/useEventBus';
 
 // ============================================================================
 // Types
@@ -135,7 +135,7 @@ export function SelectionProvider({
    */
   useEffect(() => {
     // Handle selection events
-    const handleSelect = (event: KFlowEvent) => {
+    const handleSelect = (event: BusEvent) => {
       const row = event.payload?.row;
       if (row) {
         setSelected(row);
@@ -146,7 +146,7 @@ export function SelectionProvider({
     };
 
     // Handle deselection events
-    const handleDeselect = (event: KFlowEvent) => {
+    const handleDeselect = (event: BusEvent) => {
       clearSelection();
       if (debug) {
         console.log(`[SelectionProvider] ${event.type} received - clearing selection`);

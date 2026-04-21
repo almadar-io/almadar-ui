@@ -11,14 +11,21 @@
 
 import { useCallback, useEffect, useRef, useContext } from 'react';
 import { EventBusContext } from '../providers/EventBusProvider';
-import type { KFlowEvent, EventListener, Unsubscribe, EventBusContextType } from './event-bus-types';
+import type {
+  BusEvent,
+  BusEventSource,
+  EventListener,
+  Unsubscribe,
+  EventBusContextType,
+} from './event-bus-types';
+import type { EventPayload } from '@almadar/core';
 import { createLogger } from '../lib/logger';
 
 const log = createLogger('almadar:eventbus');
 const subLog = createLogger('almadar:eventbus:subscribe');
 
 // Re-export types for convenience
-export type { KFlowEvent, EventListener, Unsubscribe, EventBusContextType };
+export type { BusEvent, BusEventSource, EventListener, Unsubscribe, EventBusContextType };
 
 // ============================================================================
 // Global Event Bus Bridge (Window-Level for Cross-Package Communication)
@@ -80,11 +87,15 @@ const fallbackListeners = new Map<string, Set<EventListener>>();
 const fallbackAnyListeners = new Set<EventListener>();
 
 const fallbackEventBus: EventBusContextType = {
-  emit: (type: string, payload?: Record<string, unknown>) => {
-    const event: KFlowEvent = {
+  emit: (type: string, payload?: Record<string, unknown>, source?: BusEventSource) => {
+    const event: BusEvent = {
       type,
-      payload,
+      // Narrow at the bus boundary: public emit accepts an opaque object so
+      // generic UI emit sites don't require casts; the envelope stores the
+      // payload as EventPayload which listeners consume directly.
+      payload: payload as EventPayload | undefined,
       timestamp: Date.now(),
+      source,
     };
     const handlers = fallbackListeners.get(type);
     log.debug('emit', { type, payloadKeys: payload ? Object.keys(payload).length : 0, listenerCount: (handlers?.size ?? 0) + fallbackAnyListeners.size });
@@ -230,11 +241,11 @@ export const useEventSubscription = useEventListener;
  * };
  * ```
  */
-export function useEmitEvent(): (type: string, payload?: Record<string, unknown>) => void {
+export function useEmitEvent(): (type: string, payload?: Record<string, unknown>, source?: BusEventSource) => void {
   const eventBus = useEventBus();
   return useCallback(
-    (type: string, payload?: Record<string, unknown>) => {
-      eventBus.emit(type, payload);
+    (type: string, payload?: Record<string, unknown>, source?: BusEventSource) => {
+      eventBus.emit(type, payload, source);
     },
     [eventBus]
   );

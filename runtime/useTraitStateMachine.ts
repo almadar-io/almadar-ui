@@ -653,13 +653,7 @@ export function useTraitStateMachine(
 
             const unsub = eventBus.on(`UI:${eventKey}`, (event) => {
                 console.log('[TraitStateMachine] Received event:', `UI:${eventKey}`, event);
-                // KFlowEvent.payload is typed Record<string, unknown> for the
-                // UI's internal bus (allows arbitrary shapes like game events),
-                // but StateMachineManager.sendEvent consumes EventPayload from
-                // @almadar/core. The two are structurally compatible for the
-                // orbital-event subset we dispatch here; cast at the boundary
-                // rather than tightening every UI-side emitter.
-                enqueueAndDrain(eventKey, event.payload as unknown as EventPayload);
+                enqueueAndDrain(eventKey, event.payload);
             });
             unsubscribes.push(unsub);
         }

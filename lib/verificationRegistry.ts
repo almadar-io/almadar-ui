@@ -11,6 +11,7 @@
  */
 
 import { createLogger } from './logger';
+import type { BusEvent, EventPayload } from '@almadar/core';
 
 const log = createLogger('almadar:bridge');
 
@@ -338,7 +339,7 @@ export type AssetLoadStatus = "loaded" | "failed" | "pending";
 /** Event bus log entry for verification */
 export interface EventLogEntry {
   type: string;
-  payload?: Record<string, unknown>;
+  payload?: EventPayload;
   timestamp: number;
 }
 
@@ -427,7 +428,7 @@ export function waitForTransition(
  */
 export function bindEventBus(eventBus: {
   emit: (type: string, payload?: Record<string, unknown>) => void;
-  onAny?: (listener: (event: { type: string; payload?: Record<string, unknown> }) => void) => () => void;
+  onAny?: (listener: (event: BusEvent) => void) => () => void;
 }): void {
   if (typeof window === "undefined") return;
 
@@ -456,7 +457,7 @@ export function bindEventBus(eventBus: {
         if (eventLog.length < 200) {
           eventLog.push({
             type: event.type,
-            payload: event.payload as Record<string, unknown> | undefined,
+            payload: event.payload,
             timestamp: Date.now(),
           });
         }

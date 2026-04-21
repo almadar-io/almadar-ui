@@ -12,7 +12,14 @@
  */
 
 import React, { createContext, useCallback, useRef, useMemo, useEffect, type ReactNode } from 'react';
-import type { KFlowEvent, EventListener, Unsubscribe, EventBusContextType } from '../hooks/event-bus-types';
+import type {
+  BusEvent,
+  BusEventSource,
+  EventListener,
+  Unsubscribe,
+  EventBusContextType,
+} from '../hooks/event-bus-types';
+import type { EventPayload } from '@almadar/core';
 import { setGlobalEventBus } from '../hooks/useEventBus';
 import { createLogger } from '../lib/logger';
 
@@ -111,11 +118,15 @@ export function EventBusProvider({ children, debug = false }: EventBusProviderPr
   /**
    * Emit an event to all listeners of that type.
    */
-  const emit = useCallback((type: string, payload?: Record<string, unknown>) => {
-    const event: KFlowEvent = {
+  const emit = useCallback((type: string, payload?: Record<string, unknown>, source?: BusEventSource) => {
+    const event: BusEvent = {
       type,
-      payload,
+      // Narrow at the bus boundary: public emit takes Record for ergonomics
+      // (generic UI components pass consumer-defined rows) while the envelope
+      // stores the payload as EventPayload for listeners.
+      payload: payload as EventPayload | undefined,
       timestamp: Date.now(),
+      source,
     };
 
     const listeners = listenersRef.current.get(type);

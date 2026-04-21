@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useState, useMemo, useContext } from "react";
-import { useEventBus, type KFlowEvent } from "./useEventBus";
+import { useEventBus, type BusEvent } from "./useEventBus";
 import { SelectionContext } from "../providers/SelectionProvider";
 
 const UI_PREFIX = 'UI:';
@@ -51,13 +51,13 @@ export function useUIEvents<E extends string>(
     if (stableValidEvents) {
       for (const smEvent of stableValidEvents) {
         // Listen for UI:EVENT (what components and verify bridge emit)
-        const prefixedHandler = (event: KFlowEvent) => {
+        const prefixedHandler = (event: BusEvent) => {
           dispatch(smEvent, event.payload);
         };
         unsubscribes.push(eventBus.on(`${UI_PREFIX}${smEvent}`, prefixedHandler));
 
         // Also listen for EVENT directly (cross-trait internal events)
-        const directHandler = (event: KFlowEvent) => {
+        const directHandler = (event: BusEvent) => {
           dispatch(smEvent, event.payload);
         };
         unsubscribes.push(eventBus.on(smEvent, directHandler));
@@ -65,7 +65,7 @@ export function useUIEvents<E extends string>(
     }
 
     // UI:DISPATCH carries the event name in payload.event (generic dispatch)
-    const genericHandler = (event: KFlowEvent) => {
+    const genericHandler = (event: BusEvent) => {
       const eventName = event.payload?.event as string | undefined;
       if (eventName) {
         const smEvent = eventName as E;
@@ -130,7 +130,7 @@ export function useSelectedEntity<T>(
     // Skip event listening if we have a SelectionProvider (it handles events itself)
     if (usingContext) return;
 
-    const handleSelect = (event: KFlowEvent) => {
+    const handleSelect = (event: BusEvent) => {
       const row = event.payload?.row as T | undefined;
       if (row) {
         setLocalSelected(row);

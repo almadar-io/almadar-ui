@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "3.0.2",
+  "version": "3.1.0",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "main": "./dist/components/index.js",
@@ -125,7 +125,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@almadar/core": ">=5.1.0",
+    "@almadar/core": ">=5.3.1",
     "@almadar/evaluator": ">=2.8.1",
     "@almadar/patterns": ">=2.14.1",
     "@almadar/runtime": ">=4.0.0",

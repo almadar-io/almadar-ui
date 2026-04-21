@@ -60,7 +60,13 @@ export { useDeepAgentGeneration } from './useDeepAgentGeneration';
 
 // EventBus hooks for trait communication
 export { useEventBus, useEventListener, useEmitEvent } from './useEventBus';
-export type { KFlowEvent, EventListener, Unsubscribe, EventBusContextType } from './event-bus-types';
+export type {
+  BusEvent,
+  BusEventSource,
+  EventListener,
+  Unsubscribe,
+  EventBusContextType,
+} from './event-bus-types';
 
 // UI Slot hooks for trait-driven UI rendering
 export {
