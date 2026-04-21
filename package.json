@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "main": "./dist/components/index.js",
