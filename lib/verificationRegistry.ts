@@ -11,7 +11,7 @@
  */
 
 import { createLogger } from './logger';
-import type { BusEvent, BusEventSource, EntityRow, EventPayload } from '@almadar/core';
+import type { BusEvent, BusEventSource, EventPayload } from '@almadar/core';
 
 const log = createLogger('almadar:bridge');
 
@@ -97,11 +97,15 @@ export interface TraitStateSnapshot {
   /** Declared event keys for this trait (non-empty for healthy trait refs). */
   events: string[];
   /**
-   * Entity data keyed by entity name. Same shape the trait reducer holds
-   * in `state.data`. Snapshot-on-read; mutating the returned arrays does
-   * not affect the live reducer.
+   * Entity data keyed by entity name. Matches the wire shape that flows
+   * from `EventResponse.data` into the trait reducer: every row carries
+   * an `id` (string on the client, string-or-number across the wire).
+   * Rows may carry additional fields from the entity's declared schema;
+   * consumers that need the full shape cast down to the generated entity
+   * type (e.g. `data['CartItem'] as CartItem[]`). Snapshot-on-read;
+   * mutating the returned arrays does not affect the live reducer.
    */
-  data: Record<string, EntityRow[]>;
+  data: Record<string, Array<{ id: string | number }>>;
   /** Payload of the last event the state machine processed, if any. */
   lastPayload?: EventPayload;
   /**
