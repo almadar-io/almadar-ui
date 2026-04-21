@@ -235,6 +235,9 @@ export function useTraitStateMachine(
         if (tick.appliesTo.length > 0 && !tick.appliesTo.includes(currentState)) return;
 
         const bindingCtx: BindingContext = { entity: {}, payload: {}, state: currentState };
+        if (binding.config) {
+            bindingCtx.config = binding.config;
+        }
         const evalCtx = createContextFromBindings(bindingCtx);
 
         // Guard: use interpolateValue to evaluate the s-expression (returns truthy/falsy)
@@ -428,6 +431,15 @@ export function useTraitStateMachine(
                     payload: payload || {},
                     state: result.previousState,
                 };
+                // Surface the trait ref's call-site `config: { ... }` so
+                // `@config.X` bindings resolve in render-ui patterns (e.g.
+                // std-modal reads `@config.icon`, `@config.title`,
+                // `@config.fields` from the molecule's call-site config).
+                // Mirrors the server-side threading in
+                // `OrbitalServerRuntime.executeEffects`.
+                if (binding.config) {
+                    bindingCtx.config = binding.config;
+                }
 
                 const effectContext: EffectContext = {
                     traitName: binding.trait.name,
