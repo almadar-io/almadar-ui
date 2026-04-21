@@ -21,7 +21,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 // Use hooks from @almadar/ui
 import { useEventBus } from '../hooks';
 import { isCircuitEvent } from '@almadar/core';
-import type { PatternConfig, ResolvedTraitTick, EventPayload, EntityRow } from '@almadar/core';
+import type { PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, TraitConfig } from '@almadar/core';
 import {
     StateMachineManager,
     EffectExecutor,
@@ -236,7 +236,7 @@ export function useTraitStateMachine(
 
         const bindingCtx: BindingContext = { entity: {}, payload: {}, state: currentState };
         if (binding.config) {
-            bindingCtx.config = binding.config;
+            bindingCtx.config = binding.config as TraitConfig;
         }
         const evalCtx = createContextFromBindings(bindingCtx);
 
@@ -438,7 +438,7 @@ export function useTraitStateMachine(
                 // Mirrors the server-side threading in
                 // `OrbitalServerRuntime.executeEffects`.
                 if (binding.config) {
-                    bindingCtx.config = binding.config;
+                    bindingCtx.config = binding.config as TraitConfig;
                 }
 
                 const effectContext: EffectContext = {
