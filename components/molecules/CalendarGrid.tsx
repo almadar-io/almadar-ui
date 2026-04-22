@@ -7,6 +7,7 @@
  * Composes DayCell and TimeSlotCell atoms into a 7-day grid.
  */
 import React, { useMemo, useCallback, useRef } from "react";
+import type { EventPayload } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { Box } from "../atoms/Box";
 import { VStack } from "../atoms/Stack";
@@ -43,7 +44,7 @@ export interface CalendarGridProps {
   /** Event emitted on long-press of a time slot: UI:{longPressEvent} with { date, time } */
   longPressEvent?: string;
   /** Additional payload for long-press events */
-  longPressPayload?: Record<string, unknown>;
+  longPressPayload?: EventPayload;
   /** Event emitted on swipe left (next week): UI:{swipeLeftEvent} */
   swipeLeftEvent?: string;
   /** Event emitted on swipe right (prev week): UI:{swipeRightEvent} */

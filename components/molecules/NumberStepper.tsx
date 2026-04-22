@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef } from "react";
-import type { EventKey } from "@almadar/core";
+import type { EventKey, EventPayload } from "@almadar/core";
 import { Minus, Plus } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
@@ -34,7 +34,7 @@ export interface NumberStepperProps {
   /** Declarative event name for value changes */
   action?: EventKey;
   /** Payload to include with the action event */
-  actionPayload?: Record<string, unknown>;
+  actionPayload?: EventPayload;
   /** Additional CSS classes */
   className?: string;
   /** Accessible label */

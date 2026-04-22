@@ -1,6 +1,6 @@
 'use client';
 import React from "react";
-import type { EventKey } from "@almadar/core";
+import type { EventKey, EventPayload } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { Loader2, type LucideIcon } from "lucide-react";
 import { useEventBus } from "../../hooks/useEventBus";
@@ -31,7 +31,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   /** Declarative event name — emits UI:{action} via eventBus on click */
   action?: EventKey;
   /** Payload to include with the action event */
-  actionPayload?: Record<string, unknown>;
+  actionPayload?: EventPayload;
   /** Button label text (alternative to children for schema-driven rendering) */
   label?: string;
 }

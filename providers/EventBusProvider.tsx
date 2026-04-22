@@ -118,13 +118,10 @@ export function EventBusProvider({ children, debug = false }: EventBusProviderPr
   /**
    * Emit an event to all listeners of that type.
    */
-  const emit = useCallback((type: string, payload?: Record<string, unknown>, source?: BusEventSource) => {
+  const emit = useCallback((type: string, payload?: EventPayload, source?: BusEventSource) => {
     const event: BusEvent = {
       type,
-      // Narrow at the bus boundary: public emit takes Record for ergonomics
-      // (generic UI components pass consumer-defined rows) while the envelope
-      // stores the payload as EventPayload for listeners.
-      payload: payload as EventPayload | undefined,
+      payload,
       timestamp: Date.now(),
       source,
     };

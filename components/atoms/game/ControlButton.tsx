@@ -1,5 +1,6 @@
 'use client';
 import * as React from 'react';
+import type { EventKey } from "@almadar/core";
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 
@@ -19,9 +20,9 @@ export interface ControlButtonProps {
   /** Called when button is released */
   onRelease?: () => void;
   /** Declarative event name emitted on press via useEventBus */
-  pressEvent?: string;
+  pressEvent?: EventKey;
   /** Declarative event name emitted on release via useEventBus */
-  releaseEvent?: string;
+  releaseEvent?: EventKey;
   /** Whether the button is currently pressed */
   pressed?: boolean;
   /** Whether the button is disabled */

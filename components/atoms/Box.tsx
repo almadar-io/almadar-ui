@@ -6,7 +6,7 @@
  * Think of it as a styled div with consistent design tokens.
  */
 import React, { useCallback } from "react";
-import type { EventKey } from "@almadar/core";
+import type { EventKey, EventPayload } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
 
@@ -73,9 +73,9 @@ export interface BoxProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Declarative event name — emits UI:{action} via eventBus on click */
   action?: EventKey;
   /** Payload to include with the action event */
-  actionPayload?: Record<string, unknown>;
+  actionPayload?: EventPayload;
   /** Declarative hover event — emits UI:{hoverEvent} with { hovered: true/false } on mouseEnter/mouseLeave */
-  hoverEvent?: string;
+  hoverEvent?: EventKey;
   /** Maximum width (CSS value, e.g., "550px", "80rem") */
   maxWidth?: string;
   /** Children elements */

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useRef, useState } from "react";
-import type { EventKey } from "@almadar/core";
+import type { EventKey, EventPayload } from "@almadar/core";
 import { Upload, FileWarning } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { Icon } from "../atoms/Icon";
@@ -34,7 +34,7 @@ export interface UploadDropZoneProps {
   /** Declarative event name for file selection */
   action?: EventKey;
   /** Payload to include with the action event */
-  actionPayload?: Record<string, unknown>;
+  actionPayload?: EventPayload;
   /** Direct onFiles callback */
   onFiles?: (files: File[]) => void;
   /** Additional CSS classes */

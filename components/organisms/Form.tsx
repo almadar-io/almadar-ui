@@ -15,6 +15,7 @@
 
 import React from "react";
 import type { EventKey } from "@almadar/core";
+import type { FormSubmitPayload } from "@almadar/patterns";
 import { cn } from "../../lib/cn";
 import { Input } from "../atoms/Input";
 import { Button } from "../atoms/Button";
@@ -610,10 +611,11 @@ export const Form: React.FC<FormProps> = ({
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // Dispatch submit event for trait state machine integration
-    eventBus.emit(`UI:${submitEvent}`, { data: formData });
+    const payload: FormSubmitPayload = { data: formData as FormSubmitPayload['data'] };
+    eventBus.emit(`UI:${submitEvent}`, payload);
     // Handle onSubmit - event name string for additional trait dispatch
     if (onSubmit) {
-      eventBus.emit(`UI:${onSubmit}`, { data: formData });
+      eventBus.emit(`UI:${onSubmit}`, payload);
     }
   };
 

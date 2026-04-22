@@ -87,13 +87,10 @@ const fallbackListeners = new Map<string, Set<EventListener>>();
 const fallbackAnyListeners = new Set<EventListener>();
 
 const fallbackEventBus: EventBusContextType = {
-  emit: (type: string, payload?: Record<string, unknown>, source?: BusEventSource) => {
+  emit: (type: string, payload?: EventPayload, source?: BusEventSource) => {
     const event: BusEvent = {
       type,
-      // Narrow at the bus boundary: public emit accepts an opaque object so
-      // generic UI emit sites don't require casts; the envelope stores the
-      // payload as EventPayload which listeners consume directly.
-      payload: payload as EventPayload | undefined,
+      payload,
       timestamp: Date.now(),
       source,
     };
@@ -241,10 +238,10 @@ export const useEventSubscription = useEventListener;
  * };
  * ```
  */
-export function useEmitEvent(): (type: string, payload?: Record<string, unknown>, source?: BusEventSource) => void {
+export function useEmitEvent(): (type: string, payload?: EventPayload, source?: BusEventSource) => void {
   const eventBus = useEventBus();
   return useCallback(
-    (type: string, payload?: Record<string, unknown>, source?: BusEventSource) => {
+    (type: string, payload?: EventPayload, source?: BusEventSource) => {
       eventBus.emit(type, payload, source);
     },
     [eventBus]

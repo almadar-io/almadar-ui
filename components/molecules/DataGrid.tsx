@@ -13,6 +13,7 @@
  */
 import React, { useCallback, useState } from 'react';
 import type { EventKey } from '@almadar/core';
+import type { ItemActionPayload, SelectionChangePayload } from '@almadar/patterns';
 import { cn } from '../../lib/cn';
 import { getNestedValue } from '../../lib/getNestedValue';
 import { useEventBus } from '../../hooks/useEventBus';
@@ -82,11 +83,11 @@ export interface DataGridProps {
   /** Enable multi-select with checkboxes */
   selectable?: boolean;
   /** Selection change event name (emits UI:{selectionEvent} with { selectedIds: string[] }) */
-  selectionEvent?: string;
+  selectionEvent?: EventKey;
   /** Enable infinite scroll loading */
   infiniteScroll?: boolean;
   /** Event emitted when more items needed: UI:{loadMoreEvent} */
-  loadMoreEvent?: string;
+  loadMoreEvent?: EventKey;
   /** Whether more items are available for infinite scroll */
   hasMore?: boolean;
   /** Render prop for custom per-item content. When provided, `fields` and `itemActions` are ignored. */
@@ -185,7 +186,8 @@ export const DataGrid: React.FC<DataGridProps> = ({
       if (next.has(id)) next.delete(id);
       else next.add(id);
       if (selectionEvent) {
-        eventBus.emit(`UI:${selectionEvent}`, { selectedIds: Array.from(next) });
+        const payload: SelectionChangePayload = { selectedIds: Array.from(next) };
+        eventBus.emit(`UI:${selectionEvent}`, payload);
       }
       return next;
     });
@@ -197,7 +199,8 @@ export const DataGrid: React.FC<DataGridProps> = ({
       const allSelected = allIds.length > 0 && allIds.every((id) => prev.has(id));
       const next = allSelected ? new Set<string>() : new Set(allIds);
       if (selectionEvent) {
-        eventBus.emit(`UI:${selectionEvent}`, { selectedIds: Array.from(next) });
+        const payload: SelectionChangePayload = { selectedIds: Array.from(next) };
+        eventBus.emit(`UI:${selectionEvent}`, payload);
       }
       return next;
     });
@@ -214,7 +217,11 @@ export const DataGrid: React.FC<DataGridProps> = ({
 
   const handleActionClick = (action: DataGridItemAction, itemData: Record<string, unknown>) => (e: React.MouseEvent) => {
     e.stopPropagation();
-    eventBus.emit(`UI:${action.event}`, { id: itemData.id, row: itemData });
+    const payload: ItemActionPayload = {
+      id: itemData.id as string | number,
+      row: itemData as ItemActionPayload['row'],
+    };
+    eventBus.emit(`UI:${action.event}`, payload);
   };
 
   // Grid template

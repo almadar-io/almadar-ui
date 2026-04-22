@@ -9,7 +9,7 @@
  */
 
 import React, { useCallback } from "react";
-import type { EventKey } from "@almadar/core";
+import type { EventKey, EventPayload } from "@almadar/core";
 import { useEventBus } from "../../hooks/useEventBus";
 import { useTranslate } from "../../hooks/useTranslate";
 import { useLongPress } from "../../hooks/useLongPress";
@@ -52,7 +52,7 @@ export interface CardProps {
   /** Event emitted on long press: UI:{longPressEvent} */
   longPressEvent?: string;
   /** Additional payload for long-press events */
-  longPressPayload?: Record<string, unknown>;
+  longPressPayload?: EventPayload;
 }
 
 /**

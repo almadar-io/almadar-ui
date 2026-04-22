@@ -13,6 +13,7 @@
  */
 import React from 'react';
 import type { EventKey } from "@almadar/core";
+import type { ItemActionPayload } from '@almadar/patterns';
 import { cn } from '../../lib/cn';
 import { getNestedValue } from '../../lib/getNestedValue';
 import { useEventBus } from '../../hooks/useEventBus';
@@ -86,21 +87,21 @@ export interface DataListProps {
   /** Enable drag-to-reorder with grip handles */
   reorderable?: boolean;
   /** Event emitted on reorder: UI:{reorderEvent} with { fromIndex, toIndex } */
-  reorderEvent?: string;
+  reorderEvent?: EventKey;
   /** Event emitted on left swipe: UI:{swipeLeftEvent} with { row } */
-  swipeLeftEvent?: string;
+  swipeLeftEvent?: EventKey;
   /** Actions revealed on left swipe */
   swipeLeftActions?: readonly { label: string; icon?: string; variant?: 'primary' | 'secondary' | 'danger' | 'ghost' }[];
   /** Event emitted on right swipe: UI:{swipeRightEvent} with { row } */
-  swipeRightEvent?: string;
+  swipeRightEvent?: EventKey;
   /** Actions revealed on right swipe */
   swipeRightActions?: readonly { label: string; icon?: string; variant?: 'primary' | 'secondary' | 'danger' | 'ghost' }[];
   /** Event emitted on long press: UI:{longPressEvent} with { row } */
-  longPressEvent?: string;
+  longPressEvent?: EventKey;
   /** Enable infinite scroll loading */
   infiniteScroll?: boolean;
   /** Event emitted when more items needed: UI:{loadMoreEvent} */
-  loadMoreEvent?: string;
+  loadMoreEvent?: EventKey;
   /** Whether more items are available for infinite scroll */
   hasMore?: boolean;
   /** Render prop for custom per-item content. When provided, `fields` and `itemActions` are ignored. */
@@ -217,7 +218,11 @@ export const DataList: React.FC<DataListProps> = ({
 
   const handleActionClick = (action: DataListItemAction, itemData: Record<string, unknown>) => (e: React.MouseEvent) => {
     e.stopPropagation();
-    eventBus.emit(`UI:${action.event}`, { id: itemData.id, row: itemData });
+    const payload: ItemActionPayload = {
+      id: itemData.id as string | number,
+      row: itemData as ItemActionPayload['row'],
+    };
+    eventBus.emit(`UI:${action.event}`, payload);
   };
 
   // Loading state

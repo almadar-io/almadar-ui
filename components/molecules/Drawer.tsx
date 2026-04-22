@@ -17,6 +17,7 @@
  */
 
 import React, { useEffect, useRef } from "react";
+import type { EventKey } from "@almadar/core";
 import { X } from "lucide-react";
 import { Icon } from "../atoms/Icon";
 import { Box } from "../atoms/Box";
@@ -56,7 +57,7 @@ export interface DrawerProps {
   /** Additional class name */
   className?: string;
   /** Declarative close event — emits UI:{closeEvent} via eventBus when drawer should close */
-  closeEvent?: string;
+  closeEvent?: EventKey;
 }
 
 // ============================================================================

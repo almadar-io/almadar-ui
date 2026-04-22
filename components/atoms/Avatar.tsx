@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import type { EventKey } from "@almadar/core";
+import type { EventKey, EventPayload } from "@almadar/core";
 import { User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "../../lib/cn";
@@ -72,7 +72,7 @@ export interface AvatarProps {
   action?: EventKey;
 
   /** Payload to include with the action event */
-  actionPayload?: Record<string, unknown>;
+  actionPayload?: EventPayload;
 }
 
 const sizeClasses: Record<AvatarSize, string> = {

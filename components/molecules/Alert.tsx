@@ -7,6 +7,7 @@
  */
 
 import React from "react";
+import type { EventKey } from "@almadar/core";
 import { X, AlertCircle, CheckCircle, AlertTriangle, Info } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { Box } from "../atoms/Box";
@@ -29,7 +30,7 @@ export interface AlertProps {
   actions?: React.ReactNode;
   className?: string;
   /** Declarative dismiss event — emits UI:{dismissEvent} via eventBus when alert is dismissed */
-  dismissEvent?: string;
+  dismissEvent?: EventKey;
 }
 
 const variantBorderClasses: Record<AlertVariant, string> = {

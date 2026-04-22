@@ -61,7 +61,7 @@ export interface TextHighlightProps {
   action?: EventKey;
 
   /** Declarative hover event — emits UI:{hoverEvent} with { hovered: true/false } */
-  hoverEvent?: string;
+  hoverEvent?: EventKey;
 }
 
 /**

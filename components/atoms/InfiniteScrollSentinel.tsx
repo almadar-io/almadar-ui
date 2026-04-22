@@ -7,6 +7,7 @@
  * then fires a load-more event through the event bus.
  */
 import React, { useCallback } from "react";
+import type { EventKey, EventPayload } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { useInfiniteScroll } from "../../hooks/useInfiniteScroll";
 import { useEventBus } from "../../hooks/useEventBus";
@@ -15,9 +16,9 @@ import { Spinner } from "./Spinner";
 
 export interface InfiniteScrollSentinelProps {
   /** Event name to emit when load-more is triggered (emitted as UI:{loadMoreEvent}) */
-  loadMoreEvent: string;
+  loadMoreEvent: EventKey;
   /** Optional payload to include with the load-more event */
-  loadMorePayload?: Record<string, unknown>;
+  loadMorePayload?: EventPayload;
   /** Whether a load operation is currently in progress */
   isLoading?: boolean;
   /** Whether there are more items to load */

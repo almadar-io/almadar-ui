@@ -6,7 +6,7 @@
  * Includes convenience exports VStack and HStack for common use cases.
  */
 import React from "react";
-import type { EventKey } from "@almadar/core";
+import type { EventKey, EventPayload } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
 
@@ -55,7 +55,7 @@ export interface StackProps {
   /** Declarative event name — emits UI:{action} via eventBus on click */
   action?: EventKey;
   /** Payload to include with the action event */
-  actionPayload?: Record<string, unknown>;
+  actionPayload?: EventPayload;
   /** When true, horizontal stacks flip to vertical below the md breakpoint (768px) */
   responsive?: boolean;
 }

@@ -12,31 +12,32 @@ import type {
   BusEvent,
   BusEventSource,
   BusEventListener,
+  EventPayload,
   Unsubscribe,
 } from "@almadar/core";
 
-export type { BusEvent, BusEventSource, Unsubscribe };
+export type { BusEvent, BusEventSource, EventPayload, Unsubscribe };
 export type EventListener = BusEventListener;
 
 /**
  * Event bus context type.
  *
- * `emit` accepts `Record<string, unknown>` on its public surface so
- * generic UI components (DataGrid, SortableList, ...) can pass
- * consumer-defined row data without a cast at every emit site. The
- * envelope stored in `BusEvent.payload` is narrowed to `EventPayload`
- * inside the bus implementation — listeners always receive the typed
- * shape.
+ * `emit` accepts `EventPayload` from `@almadar/core` — the canonical
+ * object shape (index signature over `EventPayloadValue`) that the bus
+ * envelope stores and listeners consume. Pattern-specific payload types
+ * from `@almadar/patterns` (`ItemActionPayload`, `SelectionChangePayload`,
+ * `FormSubmitPayload`, ...) are structural subtypes of `EventPayload`,
+ * so components can pass them in without casts.
  */
 export interface EventBusContextType {
   /**
    * Emit an event to all listeners.
    *
    * @param type - Event type identifier
-   * @param payload - Optional payload data (object-shaped)
+   * @param payload - Optional payload data (shape matches {@link EventPayload})
    * @param source - Optional origin info (orbital/trait/...)
    */
-  emit: (type: string, payload?: Record<string, unknown>, source?: BusEventSource) => void;
+  emit: (type: string, payload?: EventPayload, source?: BusEventSource) => void;
 
   /**
    * Subscribe to an event type.
