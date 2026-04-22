@@ -284,11 +284,18 @@ function renderContainedPortal(
   onDismiss: () => void,
 ): React.ReactElement {
   const slotContent = <SlotContentRenderer content={content} onDismiss={onDismiss} />;
+  // Every mounted portal slot advertises `id="slot-{name}"` so VG1's portal
+  // probe + any external selector sees the same anchor whether the runtime
+  // drew the content inline (contained mode) or via a React portal. Before
+  // this was set, modal contents painted but the probe couldn't locate the
+  // slot — VG15 / runtime-path "modal not mounted" reports.
+  const slotId = `slot-${slot}`;
 
   switch (slot) {
     case "modal":
       return (
         <Box
+          id={slotId}
           className="absolute inset-0 z-50 flex items-start justify-center overflow-auto"
           style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)', paddingTop: '10%' }}
           onClick={onDismiss}
@@ -326,6 +333,7 @@ function renderContainedPortal(
     case "drawer":
       return (
         <Box
+          id={slotId}
           className="absolute inset-0 z-50 overflow-hidden"
           style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
           onClick={onDismiss}
@@ -361,7 +369,7 @@ function renderContainedPortal(
 
     case "toast":
       return (
-        <Box className="absolute top-4 right-4 z-50">
+        <Box id={slotId} className="absolute top-4 right-4 z-50">
           <Toast
             variant={
               (content.props.variant as "success" | "error" | "warning" | "info") ?? "info"
@@ -376,6 +384,7 @@ function renderContainedPortal(
     case "overlay":
       return (
         <Box
+          id={slotId}
           className="absolute inset-0 z-50 flex items-center justify-center overflow-auto"
           style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
           onClick={onDismiss}
@@ -388,7 +397,7 @@ function renderContainedPortal(
 
     case "center":
       return (
-        <Box className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none overflow-auto">
+        <Box id={slotId} className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none overflow-auto">
           <Box className="pointer-events-auto max-h-full overflow-auto">
             {slotContent}
           </Box>
@@ -396,7 +405,7 @@ function renderContainedPortal(
       );
 
     default:
-      return slotContent;
+      return <Box id={slotId}>{slotContent}</Box>;
   }
 }
 
@@ -592,6 +601,11 @@ function CompiledPortal({ slot, className, pattern, sourceTrait, children }: Com
 
   if (!portalRoot) return null;
 
+  // Every mounted portal slot advertises `id="slot-{name}"` on the inner
+  // content wrapper so external selectors (VG1 portal probe + any DOM
+  // lookup keyed off the slot name) resolve regardless of the portal's
+  // outer shell (Modal / Drawer / raw fixed Box). See VG15.
+  const slotId = `slot-${slot}`;
   let wrapper: React.ReactElement;
 
   switch (slot) {
@@ -599,6 +613,7 @@ function CompiledPortal({ slot, className, pattern, sourceTrait, children }: Com
       wrapper = (
         <Modal isOpen={true} onClose={handleDismiss} showCloseButton={true} size="lg">
           <Box
+            id={slotId}
             className={cn("ui-slot", `ui-slot-${slot}`, className)}
             data-pattern={pattern}
             data-source-trait={sourceTrait}
@@ -613,6 +628,7 @@ function CompiledPortal({ slot, className, pattern, sourceTrait, children }: Com
       wrapper = (
         <Drawer isOpen={true} onClose={handleDismiss} position="right">
           <Box
+            id={slotId}
             className={cn("ui-slot", `ui-slot-${slot}`, className)}
             data-pattern={pattern}
             data-source-trait={sourceTrait}
@@ -627,6 +643,7 @@ function CompiledPortal({ slot, className, pattern, sourceTrait, children }: Com
       wrapper = (
         <Box className="fixed top-4 right-4 z-50">
           <Box
+            id={slotId}
             className={cn("ui-slot", `ui-slot-${slot}`, className)}
             data-pattern={pattern}
             data-source-trait={sourceTrait}
@@ -640,6 +657,7 @@ function CompiledPortal({ slot, className, pattern, sourceTrait, children }: Com
     default:
       wrapper = (
         <Box
+          id={slotId}
           className={cn("ui-slot", `ui-slot-${slot}`, className)}
           data-pattern={pattern}
           data-source-trait={sourceTrait}
@@ -686,6 +704,13 @@ function SlotPortal({
 
   if (!portalRoot) return null;
 
+  // Every mounted portal slot advertises `id="slot-{name}"` on its wrapper
+  // so the VG1 portal probe and any external selector resolve consistently
+  // across contained mode, non-contained (this branch), and the compiled
+  // path's CompiledPortal. See VG15.
+  const slotId = `slot-${slot}`;
+  const slotContent = <SlotContentRenderer content={content} onDismiss={onDismiss} />;
+
   // Render slot-specific wrapper
   let wrapper: React.ReactElement;
 
@@ -700,7 +725,7 @@ function SlotPortal({
             content.props.size as "sm" | "md" | "lg" | "xl" | "full" | undefined
           }
         >
-          <SlotContentRenderer content={content} onDismiss={onDismiss} />
+          <Box id={slotId}>{slotContent}</Box>
         </Modal>
       );
       break;
@@ -714,14 +739,14 @@ function SlotPortal({
           position={(content.props.position as "left" | "right") ?? "right"}
           width={content.props.width as string | undefined}
         >
-          <SlotContentRenderer content={content} onDismiss={onDismiss} />
+          <Box id={slotId}>{slotContent}</Box>
         </Drawer>
       );
       break;
 
     case "toast":
       wrapper = (
-        <Box className={cn("fixed z-50", getToastPosition(position))}>
+        <Box id={slotId} className={cn("fixed z-50", getToastPosition(position))}>
           <Toast
             variant={
               (content.props.variant as
@@ -741,11 +766,12 @@ function SlotPortal({
     case "overlay":
       wrapper = (
         <Box
+          id={slotId}
           className="fixed inset-0 z-50 bg-foreground/50 flex items-center justify-center"
           onClick={onDismiss}
         >
           <Box onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-            <SlotContentRenderer content={content} onDismiss={onDismiss} />
+            {slotContent}
           </Box>
         </Box>
       );
@@ -753,16 +779,16 @@ function SlotPortal({
 
     case "center":
       wrapper = (
-        <Box className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+        <Box id={slotId} className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
           <Box className="pointer-events-auto">
-            <SlotContentRenderer content={content} onDismiss={onDismiss} />
+            {slotContent}
           </Box>
         </Box>
       );
       break;
 
     default:
-      wrapper = <SlotContentRenderer content={content} onDismiss={onDismiss} />;
+      wrapper = <Box id={slotId}>{slotContent}</Box>;
   }
 
   return createPortal(wrapper, portalRoot);
