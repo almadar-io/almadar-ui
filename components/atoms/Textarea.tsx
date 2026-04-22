@@ -1,4 +1,5 @@
 import React from "react";
+import type { EventKey } from "@almadar/core";
 import { cn } from "../../lib/cn";
 
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -7,7 +8,7 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
   /** Number of visible rows */
   rows?: number;
   /** Declarative event name for trait dispatch */
-  action?: string;
+  action?: EventKey;
   /** Error message */
   error?: string;
 }

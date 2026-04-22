@@ -10,6 +10,7 @@
  * for pagination, filtering, or search. All state is owned by the trait state machine.
  */
 import React from 'react';
+import type { EventKey } from "@almadar/core";
 import { cn } from '../../lib/cn';
 import { getNestedValue } from '../../lib/getNestedValue';
 import { useEventBus } from '../../hooks/useEventBus';
@@ -31,13 +32,13 @@ export interface CardItemAction {
   /** Action button label */
   label: string;
   /** Event to dispatch on click (schema metadata) */
-  event?: string;
+  event?: EventKey;
   /** Navigation URL - supports template interpolation like "/products/{{row.id}}" */
   navigatesTo?: string;
   /** Callback on click */
   onClick?: (item: unknown) => void;
   /** Action used by generated code - alternative to event */
-  action?: string;
+  action?: EventKey;
   /** Action placement - accepts string for compatibility with generated code */
   placement?: 'card' | 'footer' | 'row' | string;
   /** Button variant - accepts string for compatibility with generated code */

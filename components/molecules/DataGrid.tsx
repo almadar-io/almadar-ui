@@ -12,6 +12,7 @@
  * Uses atoms only internally: Box, VStack, HStack, Typography, Badge, Button, Icon.
  */
 import React, { useCallback, useState } from 'react';
+import type { EventKey } from '@almadar/core';
 import { cn } from '../../lib/cn';
 import { getNestedValue } from '../../lib/getNestedValue';
 import { useEventBus } from '../../hooks/useEventBus';
@@ -46,7 +47,7 @@ export interface DataGridItemAction {
   /** Button label */
   label: string;
   /** Event name to emit (dispatched as UI:{event} with { row: itemData }) */
-  event: string;
+  event: EventKey;
   /** Lucide icon name */
   icon?: string;
   /** Button variant */

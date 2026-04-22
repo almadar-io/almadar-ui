@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from "react";
+import type { EventKey } from "@almadar/core";
 import { Star } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
@@ -28,7 +29,7 @@ export interface StarRatingProps {
   /** Star size */
   size?: StarRatingSize;
   /** Declarative event name for rating changes */
-  action?: string;
+  action?: EventKey;
   /** Payload to include with the action event */
   actionPayload?: Record<string, unknown>;
   /** Direct onChange callback */

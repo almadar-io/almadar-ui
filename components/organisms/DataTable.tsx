@@ -1,6 +1,7 @@
  
 'use client';
 import React, { useState, useMemo, useCallback } from "react";
+import type { EventKey } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { getNestedValue } from "../../lib/getNestedValue";
 import { Button, Input, Badge, Checkbox, Spinner } from "../atoms";
@@ -105,7 +106,7 @@ export interface DataTableProps<T extends EntityRow & { id: string | number }>
     label: string;
     event?: string;
     navigatesTo?: string;
-    action?: string;
+    action?: EventKey;
     placement?: "row" | "bulk" | string;
     icon?: LucideIcon;
     variant?: "default" | "primary" | "secondary" | "ghost" | "danger" | string;

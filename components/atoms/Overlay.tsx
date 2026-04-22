@@ -5,6 +5,7 @@
  * A fixed backdrop for modals and drawers.
  */
 import React from "react";
+import type { EventKey } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
 
@@ -14,7 +15,7 @@ export interface OverlayProps {
   className?: string;
   blur?: boolean;
   /** Declarative event name — emits UI:{action} via eventBus on click */
-  action?: string;
+  action?: EventKey;
 }
 
 export const Overlay: React.FC<OverlayProps> = ({

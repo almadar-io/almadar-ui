@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useRef, useState } from "react";
+import type { EventKey } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
 
@@ -34,7 +35,7 @@ export interface RangeSliderProps extends Omit<React.HTMLAttributes<HTMLDivEleme
   /** Disabled state */
   disabled?: boolean;
   /** Declarative event name for value changes */
-  action?: string;
+  action?: EventKey;
   /** Payload to include with the action event */
   actionPayload?: Record<string, unknown>;
   /** Direct onChange callback */

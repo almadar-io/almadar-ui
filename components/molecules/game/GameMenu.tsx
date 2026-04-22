@@ -1,5 +1,6 @@
 'use client';
 import * as React from "react";
+import type { EventKey } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import {
   useEventBus,
@@ -22,7 +23,7 @@ export interface MenuOption {
   /** Sub-label or description */
   subLabel?: string;
   /** Action identifier (alternative to event) */
-  action?: string;
+  action?: EventKey;
 }
 
 export interface GameMenuProps {

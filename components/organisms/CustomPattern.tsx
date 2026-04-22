@@ -10,6 +10,7 @@
  */
 
 import React from "react";
+import type { EventKey } from "@almadar/core";
 import { useEventBus } from "../../hooks/useEventBus";
 import { cn } from "../../lib/cn";
 import { Box } from "../atoms/Box";
@@ -104,7 +105,7 @@ export interface CustomPatternProps {
   /** Text content (for leaf elements) */
   content?: string;
   /** Event to emit on click (REQUIRED for interactive elements) */
-  action?: string;
+  action?: EventKey;
   /** Event payload */
   payload?: Record<string, unknown>;
   /** Nested children patterns */
@@ -413,7 +414,7 @@ export interface CustomPatternConfig {
   className?: string;
   token?: string | string[];
   content?: string;
-  action?: string;
+  action?: EventKey;
   payload?: Record<string, unknown>;
   children?: CustomPatternConfig[];
   src?: string;

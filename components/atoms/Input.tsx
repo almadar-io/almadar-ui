@@ -1,4 +1,5 @@
 import React from "react";
+import type { EventKey } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { X, ChevronDown, type LucideIcon } from "lucide-react";
 
@@ -18,7 +19,7 @@ export interface InputProps extends Omit<
   /** Whether input is disabled */
   disabled?: boolean;
   /** Declarative event name for trait dispatch */
-  action?: string;
+  action?: EventKey;
   /** Input type - supports 'select' and 'textarea' in addition to standard types */
   inputType?:
   | "text"

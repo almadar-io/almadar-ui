@@ -6,6 +6,7 @@
  */
 
 import React, { useMemo } from 'react';
+import type { EventKey } from "@almadar/core";
 import { useEventBus } from '../../../hooks/useEventBus';
 
 export interface SpriteProps {
@@ -40,7 +41,7 @@ export interface SpriteProps {
   /** Optional onClick handler */
   onClick?: () => void;
   /** Declarative event name emitted on click via useEventBus */
-  action?: string;
+  action?: EventKey;
 }
 
 /**

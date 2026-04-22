@@ -14,6 +14,7 @@
  */
 
 import React from "react";
+import type { EventKey } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { Input } from "../atoms/Input";
 import { Button } from "../atoms/Button";
@@ -249,9 +250,9 @@ export interface FormProps extends Omit<
 
   // Event dispatch props (for trait state machine integration)
   /** Event to dispatch on successful submit (defaults to 'SAVE') */
-  submitEvent?: string;
+  submitEvent?: EventKey;
   /** Event to dispatch on cancel (defaults to 'CANCEL') */
-  cancelEvent?: string;
+  cancelEvent?: EventKey;
   /** Entity ID binding for edit mode (triggers initialData from selectedEntity in compiled code) */
   entityId?: string;
 

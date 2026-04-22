@@ -8,6 +8,7 @@
  * Uses useSwipeGesture for gesture detection and useEventBus for event emission.
  */
 import React, { useCallback, useRef, useState } from 'react';
+import type { EventKey } from "@almadar/core";
 import { cn } from '../../lib/cn';
 import { useEventBus } from '../../hooks/useEventBus';
 import { Box } from '../atoms/Box';
@@ -20,7 +21,7 @@ export interface SwipeAction {
   label: string;
   icon?: string;
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
-  event: string;
+  event: EventKey;
   eventPayload?: Record<string, unknown>;
 }
 

@@ -1,4 +1,5 @@
 import React from "react";
+import type { EventKey } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { ChevronDown } from "lucide-react";
 
@@ -19,7 +20,7 @@ export interface SelectProps extends Omit<
   /** Current value */
   value?: string;
   /** Declarative event name for trait dispatch */
-  action?: string;
+  action?: EventKey;
   /** Error message */
   error?: string;
 }

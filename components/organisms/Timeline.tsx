@@ -13,6 +13,7 @@
  */
 
 import React from "react";
+import type { EventKey } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { Card, Typography, Badge, Icon, Box } from "../atoms";
 import { VStack, HStack } from "../atoms/Stack";
@@ -51,7 +52,7 @@ export interface TimelineItem {
 
 export interface TimelineAction {
     label: string;
-    event?: string;
+    event?: EventKey;
     navigatesTo?: string;
     variant?: "primary" | "secondary" | "ghost";
 }

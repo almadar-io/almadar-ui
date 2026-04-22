@@ -9,6 +9,7 @@
  */
 
 import React, { useCallback } from "react";
+import type { EventKey } from "@almadar/core";
 import { useEventBus } from "../../hooks/useEventBus";
 import { useTranslate } from "../../hooks/useTranslate";
 import { useLongPress } from "../../hooks/useLongPress";
@@ -39,7 +40,7 @@ export interface CardProps {
   /** Additional CSS classes */
   className?: string;
   /** Declarative event name — emits UI:{action} via eventBus on card click */
-  action?: string;
+  action?: EventKey;
   /** Whether the card is selected (highlighted state) */
   isSelected?: boolean;
   /** Card name (alias for title) */

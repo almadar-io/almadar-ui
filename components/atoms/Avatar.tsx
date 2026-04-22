@@ -6,6 +6,7 @@
  */
 
 import React from "react";
+import type { EventKey } from "@almadar/core";
 import { User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "../../lib/cn";
@@ -68,7 +69,7 @@ export interface AvatarProps {
   onClick?: () => void;
 
   /** Declarative event name — emits UI:{action} via eventBus on click */
-  action?: string;
+  action?: EventKey;
 
   /** Payload to include with the action event */
   actionPayload?: Record<string, unknown>;

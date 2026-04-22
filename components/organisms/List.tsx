@@ -19,6 +19,7 @@
  */
 
 import React, { useMemo } from "react";
+import type { EventKey } from "@almadar/core";
 import type { LucideIcon } from "lucide-react";
 import {
   Calendar,
@@ -63,11 +64,12 @@ export interface ListItem {
 export interface SchemaItemAction {
   label: string;
   /** Event to dispatch on click */
-  event?: string;
+  event?: EventKey;
   navigatesTo?: string;
   /** Action placement - accepts all common placement values */
   placement?: "row" | "bulk" | "card" | "footer" | string;
-  action?: string;
+  /** Alternate event-dispatch field (same semantics as `event`) — generated code emits `UI:{action}` on click */
+  action?: EventKey;
   variant?: "primary" | "secondary" | "ghost" | "danger" | "default";
   /** Click handler from generated code */
   onClick?: (row: unknown) => void;

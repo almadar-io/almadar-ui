@@ -5,6 +5,7 @@
  */
 
 import React from "react";
+import type { EventKey } from "@almadar/core";
 import { cn } from "../../lib/cn";
 
 export interface RadioProps extends Omit<
@@ -16,7 +17,7 @@ export interface RadioProps extends Omit<
   /** Current selected value */
   value?: string;
   /** Declarative event name for trait dispatch */
-  action?: string;
+  action?: EventKey;
   /**
    * Label text displayed next to the radio button
    */
