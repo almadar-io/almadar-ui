@@ -13,10 +13,11 @@
  */
 
 import React, { useState, useCallback } from 'react';
+import type { EventPayload } from "@almadar/core";
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 
-export interface InventoryItem {
+export type InventoryItem = EventPayload & {
   id: string;
   type: string;
   quantity: number;

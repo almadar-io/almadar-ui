@@ -1,5 +1,6 @@
 'use client';
 import * as React from "react";
+import type { EventPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { StatBadge } from "./StatBadge";
 import {
@@ -24,7 +25,7 @@ export interface GameOverStat {
   icon?: React.ReactNode;
 }
 
-export interface GameOverAction {
+export type GameOverAction = EventPayload & {
   /** Display label */
   label: string;
   /** Event to emit on click */

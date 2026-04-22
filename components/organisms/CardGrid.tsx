@@ -10,7 +10,8 @@
  * for pagination, filtering, or search. All state is owned by the trait state machine.
  */
 import React from 'react';
-import type { EventKey } from "@almadar/core";
+import type { EventKey, EventPayload } from "@almadar/core";
+import type { ItemActionPayload } from '@almadar/patterns';
 import { cn } from '../../lib/cn';
 import { getNestedValue } from '../../lib/getNestedValue';
 import { useEventBus } from '../../hooks/useEventBus';
@@ -225,7 +226,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
   const dangerActions = itemActions?.filter((a) => a.variant === 'danger') ?? [];
 
   // Handle action click - navigate, dispatch event, or call callback
-  const handleActionClick = (action: CardItemAction, itemData: Record<string, unknown>) => (e: React.MouseEvent) => {
+  const handleActionClick = (action: CardItemAction, itemData: EventPayload) => (e: React.MouseEvent) => {
     e.stopPropagation();
 
     if (action.navigatesTo) {
@@ -238,7 +239,11 @@ export const CardGrid: React.FC<CardGridProps> = ({
     }
 
     if (action.event) {
-      eventBus.emit(`UI:${action.event}`, { id: itemData.id, row: itemData });
+      const payload: ItemActionPayload = {
+        id: itemData.id as string | number,
+        row: itemData as ItemActionPayload['row'],
+      };
+      eventBus.emit(`UI:${action.event}`, payload);
     }
     if (action.onClick) {
       action.onClick(itemData);
@@ -278,7 +283,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
     }
 
     return normalizedData.map((item, index) => {
-      const itemData = item as Record<string, unknown>;
+      const itemData = item as EventPayload;
       const id = (itemData.id as string) || String(index);
 
       const titleValue = titleField ? getNestedValue(itemData, titleField) : undefined;

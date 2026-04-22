@@ -8,7 +8,7 @@
  */
 
 import React, { useCallback, useEffect, useRef } from 'react';
-import type { EventKey } from "@almadar/core";
+import type { EventKey, EventPayload } from "@almadar/core";
 import { cn } from '../../lib/cn';
 import { useEventBus } from '../../hooks/useEventBus';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
@@ -31,7 +31,7 @@ export interface PullToRefreshProps {
   /** Event name to emit on refresh (emitted as UI:{refreshEvent}) */
   refreshEvent: EventKey;
   /** Payload to include with the refresh event */
-  refreshPayload?: Record<string, unknown>;
+  refreshPayload?: EventPayload;
   /** Pull distance threshold to trigger refresh in px (default: 60) */
   threshold?: number;
   /** Content to wrap */

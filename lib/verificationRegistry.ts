@@ -399,7 +399,7 @@ export function waitForTransition(
  * Call this during app initialization.
  */
 export function bindEventBus(eventBus: {
-  emit: (type: string, payload?: Record<string, unknown>) => void;
+  emit: (type: string, payload?: EventPayload) => void;
   onAny?: (listener: (event: BusEvent) => void) => () => void;
 }): void {
   if (typeof window === "undefined") return;

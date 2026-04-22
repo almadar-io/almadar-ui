@@ -27,7 +27,7 @@ import { useTranslate } from "../../hooks/useTranslate";
 // via the `entity` prop typed against @almadar/core's EntityRow, and is
 // normalised into TimelineItems (icon-less) at render time; UI-shaped
 // TimelineItems come through the dedicated `items` prop.
-import type { EntityRow } from "@almadar/core";
+import type { EntityRow, EventPayload } from "@almadar/core";
 import type { LucideIcon } from "lucide-react";
 import { Circle, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 
@@ -244,18 +244,24 @@ export const Timeline: React.FC<TimelineProps> = ({
 
                                     {itemActions && itemActions.length > 0 && (
                                         <HStack gap="xs" className="mt-1">
-                                            {itemActions.map((action, actionIdx) => (
+                                            {itemActions.map((action, actionIdx) => {
+                                                // TimelineItem.icon is a LucideIcon component ref
+                                                // (non-serializable). Project only the JSON-safe
+                                                // fields into the bus payload.
+                                                const { icon: _icon, ...rowSafe } = item;
+                                                return (
                                                 <Box
                                                     key={actionIdx}
                                                     action={action.event}
-                                                    actionPayload={{ row: item }}
+                                                    actionPayload={{ row: rowSafe satisfies EventPayload }}
                                                     className="cursor-pointer hover:opacity-80 transition-opacity"
                                                 >
                                                     <Badge variant="default">
                                                         {action.label}
                                                     </Badge>
                                                 </Box>
-                                            ))}
+                                                );
+                                            })}
                                         </HStack>
                                     )}
                                 </VStack>

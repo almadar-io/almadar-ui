@@ -14,7 +14,7 @@
  */
 
 import React from "react";
-import type { EventKey } from "@almadar/core";
+import type { EventKey, EventPayload } from "@almadar/core";
 import type { FormSubmitPayload } from "@almadar/patterns";
 import { cn } from "../../lib/cn";
 import { Input } from "../atoms/Input";
@@ -502,7 +502,7 @@ export const Form: React.FC<FormProps> = ({
           const value = evaluateFormExpression(calc.expression, context);
           eventBus.emit("UI:GLOBAL_VARIABLE_SET", {
             variable: calc.variableName,
-            value,
+            value: value as EventPayload['value'],
           });
           debug(
             "forms",
@@ -558,8 +558,8 @@ export const Form: React.FC<FormProps> = ({
     // Emit field change event
     eventBus.emit("UI:FIELD_CHANGED", {
       fieldId: name,
-      value,
-      formValues: newFormData,
+      value: value as EventPayload['value'],
+      formValues: newFormData as EventPayload,
     });
 
     // Call external handler if provided

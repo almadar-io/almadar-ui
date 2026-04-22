@@ -13,6 +13,7 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
+import type { EventPayload } from '@almadar/core';
 import { useEventBus } from './useEventBus';
 
 // ---------------------------------------------------------------------------
@@ -22,7 +23,7 @@ import { useEventBus } from './useEventBus';
 /** Discriminated payload carried by every drag operation. */
 export interface DraggablePayload {
   kind: 'pattern' | 'behavior' | 'tree-node' | 'event-wire';
-  data: Record<string, unknown>;
+  data: EventPayload;
 }
 
 export interface UseDraggableOptions {

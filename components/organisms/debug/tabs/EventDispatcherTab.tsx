@@ -8,6 +8,7 @@
 'use client';
 
 import * as React from 'react';
+import type { EventPayload } from '@almadar/core';
 import type { TraitDebugInfo, TraitTransition } from '../../../../lib/traitRegistry';
 import { Badge } from '../../../atoms/Badge';
 import { Button } from '../../../atoms/Button';
@@ -60,8 +61,8 @@ function extractPayloadFields(
 /** Build a minimal payload from field declarations */
 function buildAutoPayload(
     fields: Array<{ name: string; type: string }>,
-): Record<string, unknown> {
-    const payload: Record<string, unknown> = {};
+): EventPayload {
+    const payload: EventPayload = {};
     for (const field of fields) {
         switch (field.type) {
             case 'number':

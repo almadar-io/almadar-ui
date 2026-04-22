@@ -14,10 +14,11 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import type { EventPayload } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 
-export interface DialogueChoice {
+export type DialogueChoice = EventPayload & {
   text: string;
   action?: string;
   next?: string;

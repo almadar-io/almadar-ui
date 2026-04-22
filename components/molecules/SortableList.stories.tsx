@@ -2,13 +2,14 @@
 
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { EventPayload } from '@almadar/core';
 import { SortableList } from './SortableList';
 import { HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 import { Box } from '../atoms/Box';
 import { Icon } from '../atoms/Icon';
 
-interface TaskItem {
+type TaskItem = EventPayload & {
   id: string;
   title: string;
   icon: string;

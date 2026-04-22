@@ -13,6 +13,7 @@
  */
 
 import React, { useCallback } from "react";
+import type { EventPayload } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { Box } from "../atoms/Box";
 import { VStack, HStack } from "../atoms/Stack";
@@ -102,7 +103,7 @@ export const RepeatableFormSection: React.FC<RepeatableFormSectionProps> = ({
   const handleAdd = useCallback(() => {
     onAdd?.();
 
-    const eventPayload: Record<string, unknown> = {
+    const eventPayload: EventPayload = {
       sectionType,
       index: safeItems.length,
     };

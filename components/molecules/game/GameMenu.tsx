@@ -1,13 +1,13 @@
 'use client';
 import * as React from "react";
-import type { EventKey } from "@almadar/core";
+import type { EventKey, EventPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import {
   useEventBus,
   type EventBusContextType,
 } from "../../../hooks/useEventBus";
 
-export interface MenuOption {
+export type MenuOption = EventPayload & {
   /** Optional ID (generated from index if not provided) */
   id?: string;
   /** Display label */

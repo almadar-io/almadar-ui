@@ -13,6 +13,7 @@
  */
 
 import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
+import type { EventPayload } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { Card, Typography, Badge, Button, Box } from "../atoms";
 import { VStack, HStack } from "../atoms/Stack";
@@ -22,7 +23,7 @@ import { EmptyState } from "../molecules/EmptyState";
 import { useEventBus } from "../../hooks/useEventBus";
 import { Maximize2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 
-export interface GraphNode {
+export type GraphNode = EventPayload & {
     id: string;
     label?: string;
     group?: string;

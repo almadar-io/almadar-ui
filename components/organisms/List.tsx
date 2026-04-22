@@ -19,7 +19,7 @@
  */
 
 import React, { useMemo } from "react";
-import type { EventKey } from "@almadar/core";
+import type { EventKey, EventPayload } from "@almadar/core";
 import type { LucideIcon } from "lucide-react";
 import {
   Calendar,
@@ -86,6 +86,47 @@ export type FieldDef = string | { key?: string; header?: string; name?: string; 
 function normalizeFields(fields: readonly FieldDef[] | undefined): string[] {
   if (!fields) return [];
   return fields.map((f) => (typeof f === "string" ? f : f.key ?? f.name ?? ''));
+}
+
+/**
+ * Extract bus-safe entity fields from a ListItem.
+ *
+ * ListItem is a component prop shape: it carries UI decorators (LucideIcon
+ * refs, ReactNode metadata, onClick handler) alongside the entity fields.
+ * When we emit `{ row: item }` onto the bus, only the JSON-serializable
+ * entity data should flow — trait reducers don't consume component refs.
+ * This helper strips the UI-only keys and returns an EventPayload-safe row.
+ */
+function entityFieldsFromListItem(item: ListItem): EventPayload {
+  const {
+    icon: _icon,
+    metadata: _metadata,
+    onClick: _onClick,
+    avatar: _avatar,
+    _fields,
+    ...rest
+  } = item;
+  const result: EventPayload = {};
+  for (const [key, value] of Object.entries(rest)) {
+    // Filter out any remaining non-EventPayloadValue shapes (functions, class
+    // instances, React elements). The index signature on ListItem is `unknown`,
+    // so TS can't narrow for us; runtime typeof check keeps the emit clean.
+    if (
+      typeof value === 'function' ||
+      (value !== null && typeof value === 'object' && '$$typeof' in (value as object))
+    ) {
+      continue;
+    }
+    result[key] = value as EventPayload[string];
+  }
+  if (_fields && typeof _fields === 'object') {
+    for (const [k, v] of Object.entries(_fields)) {
+      if (typeof v !== 'function') {
+        result[k] = v as EventPayload[string];
+      }
+    }
+  }
+  return result;
 }
 
 export interface ListProps extends EntityDisplayProps {
@@ -323,19 +364,22 @@ export const List: React.FC<ListProps> = ({
         label: action.label,
         event: action.event,
         onClick: () => {
+          // ListItem carries UI-level decorators (LucideIcon, ReactNode metadata,
+          // onClick handler, ...) alongside the entity fields. The bus payload
+          // only forwards the JSON-safe entity data; we pick off the wire-safe
+          // fields and drop the UI-only ones at the boundary.
+          const row = entityFieldsFromListItem(item);
           // Handle navigation if navigatesTo is defined
           if (action.navigatesTo) {
             const url = action.navigatesTo.replace(/\{\{(\w+)\}\}/g, (_, key) =>
-              String(item[key] || item.id || ""),
+              String(row[key] ?? item.id ?? ""),
             );
-            eventBus.emit('UI:NAVIGATE', { url, row: item });
+            eventBus.emit('UI:NAVIGATE', { url, row });
             return;
           }
           // Dispatch event via event bus if defined (for trait state machine integration)
           if (action.event) {
-            eventBus.emit(`UI:${action.event}`, {
-              row: item,
-            });
+            eventBus.emit(`UI:${action.event}`, { row });
           }
         },
       }));
@@ -443,7 +487,7 @@ export const List: React.FC<ListProps> = ({
     // Row click dispatches VIEW via event bus action prop
     const hasExplicitClick = !!(viewAction?.event || item.onClick);
     const rowAction = viewAction?.event ?? "VIEW";
-    const rowActionPayload = { row: item };
+    const rowActionPayload: EventPayload = { row: entityFieldsFromListItem(item) };
 
     // Categorize fields
     const primaryField = effectiveFieldNames?.[0];

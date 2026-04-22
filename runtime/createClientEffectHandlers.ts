@@ -6,10 +6,11 @@
  * @packageDocumentation
  */
 
+import type { EventPayload } from '@almadar/core';
 import type { EffectHandlers } from '@almadar/runtime';
 
 export interface ClientEventBus {
-    emit: (type: string, payload?: Record<string, unknown>) => void;
+    emit: (type: string, payload?: EventPayload) => void;
 }
 
 export interface SlotSetter {
@@ -30,7 +31,7 @@ export function createClientEffectHandlers(
     const { eventBus, slotSetter, navigate, notify } = options;
 
     return {
-        emit: (event: string, payload?: Record<string, unknown>) => {
+        emit: (event: string, payload?: EventPayload) => {
             const prefixedEvent = event.startsWith('UI:') ? event : `UI:${event}`;
             eventBus.emit(prefixedEvent, { payload });
         },

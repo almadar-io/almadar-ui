@@ -20,6 +20,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
+import type { EventPayload } from '@almadar/core';
 import { useEventBus } from '../hooks/useEventBus';
 
 
@@ -31,7 +32,7 @@ interface OrbitalEventResponse {
   success: boolean;
   transitioned: boolean;
   states: Record<string, string>;
-  emittedEvents?: Array<{ event: string; payload?: unknown }>;
+  emittedEvents?: Array<{ event: string; payload?: EventPayload }>;
   data?: Record<string, unknown[]>;
   clientEffects?: unknown[];
   /**
@@ -201,8 +202,8 @@ export function ServerBridgeProvider({
         // Propagate server-emitted events through local bus
         if (result.emittedEvents) {
           for (const emitted of result.emittedEvents) {
-            eventBus.emit(`UI:${emitted.event}`, emitted.payload as Record<string, unknown>);
-            eventBus.emit(emitted.event, emitted.payload as Record<string, unknown>);
+            eventBus.emit(`UI:${emitted.event}`, emitted.payload);
+            eventBus.emit(emitted.event, emitted.payload);
           }
         }
       } else if (result.error) {

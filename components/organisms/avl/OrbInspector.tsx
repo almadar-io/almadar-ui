@@ -17,7 +17,16 @@
  */
 
 import React, { useContext, useMemo, useCallback, useState } from 'react';
-import type { OrbitalSchema, OrbitalDefinition, Expression, Trait, Transition, FieldType } from '@almadar/core';
+import type {
+  EventPayload,
+  EventPayloadValue,
+  Expression,
+  FieldType,
+  OrbitalDefinition,
+  OrbitalSchema,
+  Trait,
+  Transition,
+} from '@almadar/core';
 import { FieldTypeSchema } from '@almadar/core';
 import { Box } from '../../atoms/Box';
 import { Button } from '../../atoms/Button';
@@ -209,7 +218,7 @@ export function OrbInspector({ node, schema, editable = false, onSchemaChange, o
   }, [schema, orbitalName, traitName, transitionEvent, isExpanded]);
 
   // W1: Pattern prop editing via EventBus
-  const handlePropChange = useCallback((propName: string, value: unknown) => {
+  const handlePropChange = useCallback((propName: string, value: EventPayloadValue) => {
     if (!editable) return;
     eventBus.emit('UI:PROP_CHANGE', { propName, value });
   }, [editable, eventBus]);
@@ -219,7 +228,7 @@ export function OrbInspector({ node, schema, editable = false, onSchemaChange, o
     eventBus.emit('UI:ADD_FIELD', {});
   }, [eventBus]);
 
-  const handleUpdateField = useCallback((fieldName: string, updates: Record<string, unknown>) => {
+  const handleUpdateField = useCallback((fieldName: string, updates: EventPayload) => {
     eventBus.emit('UI:UPDATE_FIELD', { fieldName, updates });
   }, [eventBus]);
 

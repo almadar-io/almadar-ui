@@ -9,6 +9,8 @@
  */
 
 import React, { useCallback, Suspense, lazy } from "react";
+import type { EventPayload } from "@almadar/core";
+import type { ItemActionPayload } from "@almadar/patterns";
 import {
   Calendar,
   Tag,
@@ -354,7 +356,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
 
   // Handle action click with event bus and navigation support
   const handleActionClick = useCallback(
-    (action: DetailPanelAction, data?: Record<string, unknown>) => {
+    (action: DetailPanelAction, data?: EventPayload) => {
       if (action.navigatesTo) {
         // Replace template variables in URL
         const url = action.navigatesTo.replace(/\{\{(\w+)\}\}/g, (_, key) =>
@@ -364,7 +366,10 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         return;
       }
       if (action.event) {
-        eventBus.emit(`UI:${action.event}`, { id: data?.id, row: data });
+        const payload: ItemActionPayload | EventPayload = data
+          ? { id: data.id as string | number, row: data as ItemActionPayload['row'] }
+          : {};
+        eventBus.emit(`UI:${action.event}`, payload);
       }
       if (action.onClick) {
         action.onClick();
@@ -388,10 +393,10 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     ? [...propSections]
     : undefined;
 
-  // Normalize data to Record type for indexing
+  // Normalize data to EventPayload for indexing and payload propagation
   const normalizedData =
     data && typeof data === "object" && !Array.isArray(data)
-      ? (data as Record<string, unknown>)
+      ? (data as EventPayload)
       : undefined;
 
   // Resolve string fields in sections using entity data
