@@ -43,7 +43,8 @@ import {
     updateTraitState,
     type TraitDebugInfo,
 } from '../lib/traitRegistry';
-import { recordTransition, bindTraitStateGetter, type EffectTrace } from '../lib/verificationRegistry';
+import { recordTransition, bindTraitStateGetter, registerTraitSnapshot, type EffectTrace } from '../lib/verificationRegistry';
+import type { TraitStateSnapshot } from '@almadar/core';
 
 // ============================================================================
 // Types
@@ -214,8 +215,45 @@ export function useTraitStateMachine(
             return typeof state === 'string' ? state : undefined;
         });
 
+        // Per-trait snapshot getter: feeds `window.__orbitalVerification
+        // .getTraitSnapshots()`, which runtime-verify / orbital-verify poll via
+        // `readTraitSnapshots(page)` for the click-path state diff (VG3) and
+        // the binding / delta gates (VG11a-c, VG4). Before this registration
+        // existed the snapshot map was always empty, so every VG3 check
+        // reported "no trait state advanced" — a silent false negative that
+        // masked a working state machine. VG18.
+        //
+        // `data` / `lastPayload` / `lastEventDispatched` / `cascadeReceived`
+        // stay empty here. Filling them requires threading the per-transition
+        // payload through `enqueueAndDrain`; the VG4/VG11 gates that consume
+        // those fields will enrich this getter as a follow-up. VG3 only needs
+        // `traitName` + `currentState`.
+        const snapshotUnregs: Array<() => void> = [];
+        for (const binding of traitBindingsRef.current) {
+            const traitName = binding.trait.name;
+            const unreg = registerTraitSnapshot(traitName, (): TraitStateSnapshot => {
+                const managerState = managerRef.current.getState(traitName);
+                const currentState = managerState?.currentState
+                    ?? binding.trait.states[0]?.name
+                    ?? 'unknown';
+                return {
+                    traitName,
+                    currentState,
+                    states: binding.trait.states.map((s) => s.name),
+                    events: binding.trait.events.map((e) => e.key),
+                    data: {},
+                    cascadeReceived: [],
+                };
+            });
+            snapshotUnregs.push(unreg);
+        }
+
         console.log('[TraitStateMachine] Reset states for page navigation:',
             Array.from(newManager.getAllStates().keys()).join(', '));
+
+        return () => {
+            for (const unreg of snapshotUnregs) unreg();
+        };
     }, [traitBindings]);
 
     /**
