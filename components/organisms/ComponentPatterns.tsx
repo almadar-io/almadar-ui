@@ -11,10 +11,11 @@
  */
 
 import React from 'react';
+import type { EventKey, EventPayload } from '@almadar/core';
 import { useEventBus } from '../../hooks/useEventBus';
 
 // Shell component imports
-import { Button, type ButtonVariant, type ButtonSize } from '../atoms/Button';
+import { Button, type ButtonVariant, type ButtonSize, type ButtonProps } from '../atoms/Button';
 import { Badge, type BadgeVariant } from '../atoms/Badge';
 import { Avatar } from '../atoms/Avatar';
 import { Icon } from '../atoms/Icon';
@@ -53,96 +54,87 @@ interface ClosedCircuitProps {
 // Interactive Components (emit events via closed circuit)
 // ============================================================================
 
-export interface ButtonPatternProps extends ClosedCircuitProps {
-  label: string;
-  variant?: ButtonVariant;
-  size?: ButtonSize;
-  disabled?: boolean;
-  onClick?: string; // Event name to emit
-  event?: string; // Alias for onClick (used by all .orb schemas)
-  icon?: string;
+/**
+ * Props for {@link ButtonPattern}. A thin pass-through over the Button
+ * atom: accepts every Button prop plus wrapper-level aliases for the
+ * `.orb` schema convention (`action`/`event`/`onClick` as string
+ * event names, `iconPosition` for left/right icon placement).
+ *
+ * Anything not explicitly named is forwarded to `<Button>` via rest-spread,
+ * so a future Button prop lands automatically without needing a wrapper
+ * edit. This is the contract that fixes VG17: `action: EventKey` flows
+ * through to Button, which owns both `UI:{action}` emit AND the
+ * `data-testid="action-{NAME}"` attribute the verifier selects on.
+ */
+export interface ButtonPatternProps extends Omit<ButtonProps, 'onClick'>, ClosedCircuitProps {
+  /** Legacy alias for {@link ButtonProps.action} (string event name). */
+  onClick?: EventKey;
+  /** Legacy alias for {@link ButtonProps.action}. */
+  event?: EventKey;
+  /** Icon placement — maps to Button's `icon` (left) or `iconRight` (right). */
   iconPosition?: 'left' | 'right';
-  className?: string;
 }
 
 /**
- * Button pattern that emits events via the event bus.
+ * Button pattern — thin pass-through to the Button atom.
+ *
+ * Prior to VG17 this wrapper owned a local event-bus emit and
+ * hand-enumerated only a narrow slice of props, silently dropping
+ * every prop outside that list (including the Pre-Phase `action:
+ * EventKey`). The atom already handles emit + data-testid via its
+ * `action` prop, so the wrapper simply forwards everything.
  */
 export function ButtonPattern({
-  label,
-  variant = 'primary',
-  size = 'md',
-  disabled = false,
+  action,
   onClick,
   event,
   icon,
-  iconPosition = 'left',
-  className,
+  iconPosition,
+  ...rest
 }: ButtonPatternProps): React.ReactElement {
-  const { emit } = useEventBus();
-  const eventName = onClick ?? event;
-
-  const handleClick = () => {
-    if (eventName && !disabled) {
-      emit(`UI:${eventName}`, {});
-    }
-  };
-
-  return (
-    <Button
-      variant={variant}
-      size={size}
-      disabled={disabled}
-      onClick={handleClick}
-      className={className}
-    >
-      {icon && iconPosition === 'left' && <Icon name={icon} size="sm" />}
-      {label}
-      {icon && iconPosition === 'right' && <Icon name={icon} size="sm" />}
-    </Button>
-  );
+  const resolvedAction = action ?? onClick ?? event;
+  // `iconPosition: 'right'` slots the icon into `iconRight`; anything
+  // else (undefined or 'left') keeps it on the left via the `icon` alias.
+  const iconProps: Pick<ButtonProps, 'icon' | 'iconRight'> =
+    iconPosition === 'right' ? { iconRight: icon } : { icon };
+  return <Button {...rest} action={resolvedAction} {...iconProps} />;
 }
 
 ButtonPattern.displayName = 'ButtonPattern';
 
-export interface IconButtonPatternProps extends ClosedCircuitProps {
+export interface IconButtonPatternProps extends Omit<ButtonProps, 'onClick'>, ClosedCircuitProps {
   icon: string;
-  variant?: ButtonVariant;
-  size?: ButtonSize;
-  onClick?: string;
   ariaLabel?: string;
-  className?: string;
+  /** Legacy alias for {@link ButtonProps.action}. */
+  onClick?: EventKey;
+  /** Legacy alias for {@link ButtonProps.action}. */
+  event?: EventKey;
 }
 
 /**
- * Icon-only button pattern.
+ * Icon-only button pattern — pass-through to the Button atom with a
+ * mandatory icon and optional aria-label. Same VG17 fix as
+ * {@link ButtonPattern}: `action` forwards to the atom, which owns the
+ * emit + data-testid.
  */
 export function IconButtonPattern({
-  icon,
-  variant = 'ghost',
-  size = 'md',
+  action,
   onClick,
+  event,
+  icon,
   ariaLabel,
-  className,
+  variant = 'ghost',
+  ...rest
 }: IconButtonPatternProps): React.ReactElement {
-  const { emit } = useEventBus();
-
-  const handleClick = () => {
-    if (onClick) {
-      emit(`UI:${onClick}`, {});
-    }
-  };
-
+  const resolvedAction = action ?? onClick ?? event;
   return (
     <Button
+      {...rest}
       variant={variant}
-      size={size}
-      onClick={handleClick}
+      action={resolvedAction}
+      icon={icon}
       aria-label={ariaLabel}
-      className={className}
-    >
-      <Icon name={icon} size={size === 'sm' ? 'sm' : 'md'} />
-    </Button>
+    />
   );
 }
 
@@ -152,37 +144,52 @@ export interface LinkPatternProps extends ClosedCircuitProps {
   label: string;
   href?: string;
   external?: boolean;
-  onClick?: string;
+  /** Event key emitted on click (intercepts native navigation when set). */
+  action?: EventKey;
+  /** Legacy alias for action. */
+  onClick?: EventKey;
+  /** Legacy alias for action. */
+  event?: EventKey;
+  /** Payload for the dispatched event. */
+  actionPayload?: EventPayload;
   className?: string;
 }
 
 /**
- * Link pattern for navigation.
+ * Link pattern for navigation. When an event key is provided via
+ * `action` / `onClick` / `event`, intercepts the native `<a>`
+ * navigation and emits `UI:{action}` with the `href` in the payload.
+ * Sets `data-testid="action-{NAME}"` so the verifier's click-path
+ * gate can select it symmetrically with Button.
  */
 export function LinkPattern({
   label,
   href,
   external = false,
+  action,
   onClick,
+  event,
+  actionPayload,
   className,
 }: LinkPatternProps): React.ReactElement {
   const { emit } = useEventBus();
+  const resolvedAction = action ?? onClick ?? event;
 
   const handleClick = (e: React.MouseEvent) => {
-    if (onClick) {
+    if (resolvedAction) {
       e.preventDefault();
-      emit(`UI:${onClick}`, { href });
+      emit(`UI:${resolvedAction}`, actionPayload ?? ({ href } as EventPayload));
     }
   };
 
   return (
-     
     <a
       href={href ?? '#'}
       target={external ? '_blank' : undefined}
       rel={external ? 'noopener noreferrer' : undefined}
-      onClick={onClick ? handleClick : undefined}
+      onClick={resolvedAction ? handleClick : undefined}
       className={className}
+      data-testid={resolvedAction ? `action-${resolvedAction}` : undefined}
     >
       {label}
     </a>
