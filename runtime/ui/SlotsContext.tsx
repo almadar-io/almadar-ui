@@ -90,10 +90,22 @@ export function SlotsProvider({ children }: SlotsProviderProps): React.ReactElem
 
     const clearSlot = useCallback((slot: string) => {
         setSlots(prev => {
-            if (!(slot in prev)) return prev;
-            const next = { ...prev };
-            delete next[slot];
-            return next;
+            // Keep the key with an empty `patterns` array rather than delete it.
+            // `SlotBridge` iterates `Object.entries(slots)` and dispatches
+            // `uiSlots.clear(slotName)` when `patterns.length === 0`. Deleting
+            // the key skipped that branch entirely, so a `(render-ui modal
+            // null)` CLOSE transition updated SlotsStateContext but never
+            // propagated into UISlotContext — the modal DOM kept its stale
+            // content across open→closed. VG1's portal probe caught this as
+            // "expected to be cleared but has N child(ren)". The empty-array
+            // shape matches the already-cleared slot from `setSlotPatterns`
+            // with `patterns=[]`, so bridge + renderer handle both branches
+            // uniformly.
+            const existing = prev[slot];
+            if (existing && existing.patterns.length === 0 && !existing.source) {
+                return prev;
+            }
+            return { ...prev, [slot]: { patterns: [] } };
         });
     }, []);
 
