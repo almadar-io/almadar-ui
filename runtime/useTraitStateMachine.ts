@@ -158,6 +158,22 @@ export function useTraitStateMachine(
 
     useEffect(() => { traitStatesRef.current = traitStates; }, [traitStates]);
 
+    // Per-trait post-transition history for TraitStateSnapshot's payload/cascade
+    // fields. Keyed by trait name. `lastPayload` = the payload the trait just
+    // processed (source for `@payload.X` binding assertions — VG11a). `data`
+    // = rows the trait received via `@payload.data` in its most recent fetch
+    // cascade (source for `@entity.X` bindings + VG11b). `cascadeReceived` =
+    // events that hit this trait via `listens { Source SRC → EVENT }` since
+    // the last user-initiated event, used to validate cascade fan-out (VG4).
+    // Read by `registerTraitSnapshot`'s getter; the bindings gate doesn't
+    // need to plumb anything other than the trait name.
+    const traitSnapshotDataRef = useRef<Map<string, {
+        lastPayload?: EventPayload;
+        lastEventDispatched?: { event: string; payload?: EventPayload; timestamp: number };
+        data: Record<string, EntityRow[]>;
+        cascadeReceived: Array<{ event: string; payload?: EventPayload; timestamp: number }>;
+    }>>(new Map());
+
 
     // Register traits with debug registry and clean up on unmount/rebind
     useEffect(() => {
@@ -231,18 +247,34 @@ export function useTraitStateMachine(
         const snapshotUnregs: Array<() => void> = [];
         for (const binding of traitBindingsRef.current) {
             const traitName = binding.trait.name;
+            // Seed snapshot data per trait — the transition hook below
+            // enriches `lastPayload` / `data` / `cascadeReceived` on each
+            // processed event. Keyed on trait name so rebinding picks up a
+            // clean slate.
+            if (!traitSnapshotDataRef.current.has(traitName)) {
+                traitSnapshotDataRef.current.set(traitName, {
+                    data: {},
+                    cascadeReceived: [],
+                });
+            }
             const unreg = registerTraitSnapshot(traitName, (): TraitStateSnapshot => {
                 const managerState = managerRef.current.getState(traitName);
                 const currentState = managerState?.currentState
                     ?? binding.trait.states[0]?.name
                     ?? 'unknown';
+                const live = traitSnapshotDataRef.current.get(traitName) ?? {
+                    data: {},
+                    cascadeReceived: [],
+                };
                 return {
                     traitName,
                     currentState,
                     states: binding.trait.states.map((s) => s.name),
                     events: binding.trait.events.map((e) => e.key),
-                    data: {},
-                    cascadeReceived: [],
+                    data: live.data,
+                    ...(live.lastPayload !== undefined ? { lastPayload: live.lastPayload } : {}),
+                    ...(live.lastEventDispatched !== undefined ? { lastEventDispatched: live.lastEventDispatched } : {}),
+                    cascadeReceived: live.cascadeReceived,
                 };
             });
             snapshotUnregs.push(unreg);
@@ -411,6 +443,43 @@ export function useTraitStateMachine(
             const traitState = currentManager.getState(traitName);
 
             if (!binding || !traitState) continue;
+
+            // Enrich snapshot buffer for VG11a/b/c/VG4 gates. Record the
+            // payload this trait just processed + append to cascadeReceived
+            // if the event arrived via a `listens` subscription (i.e. not
+            // the event the user directly dispatched — we mark that below).
+            // Keeps the state-bridge snapshot close to what the reducer saw
+            // so assertions like "expected @payload.data in DOM" have the
+            // data they need to resolve.
+            const snap = traitSnapshotDataRef.current.get(traitName);
+            if (snap && result.executed) {
+                snap.lastPayload = payload;
+                snap.lastEventDispatched = {
+                    event: normalizedEvent,
+                    ...(payload !== undefined ? { payload } : {}),
+                    timestamp: Date.now(),
+                };
+                // Cache entity rows received via @payload.data so @entity.X
+                // bindings resolve after a fetch cascade. Gracefully skip
+                // when the payload doesn't carry row data.
+                const pdata = (payload as { data?: unknown } | undefined)?.data;
+                if (Array.isArray(pdata) && binding.linkedEntity) {
+                    snap.data[binding.linkedEntity] = pdata as EntityRow[];
+                }
+                // cascadeReceived: if this trait has a `listens` entry that
+                // maps the incoming event to a trigger, count it as cascade.
+                // Distinguishes user-direct from cascade-triggered for VG4.
+                const listensEntry = (binding.trait.listens ?? []).find(
+                    (l) => l.event === normalizedEvent || l.triggers === normalizedEvent,
+                );
+                if (listensEntry) {
+                    snap.cascadeReceived.push({
+                        event: normalizedEvent,
+                        ...(payload !== undefined ? { payload } : {}),
+                        timestamp: Date.now(),
+                    });
+                }
+            }
 
             if (result.executed && result.effects.length > 0) {
                 console.log(
