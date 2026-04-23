@@ -645,14 +645,8 @@ export const List: React.FC<ListProps> = ({
             </HStack>
           </Box>
 
-          {/* Actions - visible on hover */}
-          {/* Actions - visible on hover */}
-          <HStack
-            className={cn(
-              "flex items-center gap-1 flex-shrink-0 transition-opacity duration-200",
-              "opacity-0 group-hover:opacity-100",
-            )}
-          >
+          {/* Actions */}
+          <HStack className="flex items-center gap-1 flex-shrink-0">
             {/* Direct Edit Action */}
             {editAction && (
               <Button

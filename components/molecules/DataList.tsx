@@ -362,10 +362,7 @@ export const DataList: React.FC<DataListProps> = ({
             {itemActions && itemActions.length > 0 && (
               <HStack
                 gap="xs"
-                className={cn(
-                  'flex-shrink-0 transition-opacity duration-200',
-                  'opacity-0 group-hover:opacity-100',
-                )}
+                className="flex-shrink-0"
               >
                 {itemActions.map((action, idx) => (
                   <Button
@@ -484,13 +481,7 @@ export const DataList: React.FC<DataListProps> = ({
 
           {/* Actions (visible on hover) */}
           {itemActions && itemActions.length > 0 && (
-            <HStack
-              gap="xs"
-              className={cn(
-                'flex-shrink-0 transition-opacity duration-200',
-                'opacity-0 group-hover:opacity-100',
-              )}
-            >
+            <HStack gap="xs" className="flex-shrink-0">
               {itemActions.map((action, idx) => (
                 <Button
                   key={idx}
