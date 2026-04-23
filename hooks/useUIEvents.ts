@@ -57,8 +57,20 @@ export function useUIEvents<E extends string>(
         };
         unsubscribes.push(eventBus.on(`${UI_PREFIX}${smEvent}`, prefixedHandler));
 
-        // Also listen for EVENT directly (cross-trait internal events)
+        // Also listen for EVENT directly (cross-trait internal events).
+        // Skip bridge re-emits — the orbital bridge rebroadcasts the
+        // plain event name after a transition completes so cross-trait
+        // `listens { X EVENT → Y }` wiring fires on user-click flows.
+        // Without this guard, the trait that JUST dispatched E would
+        // hear its own bridge echo and dispatch E again, infinitely.
+        // The bridge marks its re-emits with `source.fromBridge: true`;
+        // cross-trait listeners don't need the flag (they filter by
+        // `source.trait !== own`), but useUIEvents has no trait name
+        // so the flag is its cleanest kill-switch.
         const directHandler = (event: BusEvent) => {
+          if (event.source && (event.source as { fromBridge?: boolean }).fromBridge) {
+            return;
+          }
           dispatch(smEvent, event.payload);
         };
         unsubscribes.push(eventBus.on(smEvent, directHandler));
