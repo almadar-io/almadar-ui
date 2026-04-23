@@ -34,7 +34,7 @@ import {
     type EffectContext,
 } from '@almadar/runtime';
 import { createClientEffectHandlers } from './createClientEffectHandlers';
-import type { ResolvedTraitBinding } from './types';
+import type { ResolvedTraitBinding, ResolvedTraitListener } from './types';
 import type { SlotsActions, SlotPatternEntry, SlotSource } from './ui/SlotsContext';
 import { useEntitySchema } from './EntitySchemaContext';
 import {
@@ -652,6 +652,31 @@ export function useTraitStateMachine(
             }
         }
 
+        // Re-broadcast each successfully-transitioned event on the bus so
+        // cross-trait `listens { SourceTrait EVENT → Trigger }` wiring
+        // fires. Without this, user-driven events drive the source trait's
+        // transition but never fan out to sibling traits (the std-cart
+        // Persistor never hears SAVE, the cart never grows).
+        //
+        // Parity with:
+        // - Compiled path's useOrbitalBridge (re-emits transition event
+        //   with fromBridge flag after HTTP success) — backend.rs:3520+
+        // - @almadar/runtime 4.9.0's OrbitalServerRuntime re-emit — for
+        //   server-bus listeners in non-playground runtime setups
+        //
+        // Skip lifecycle events (INIT / LOAD / $MOUNT / $UNMOUNT) and the
+        // client-only $FRAME machinery to avoid re-dispatching on mount.
+        const LIFECYCLE_EVENTS = new Set(['INIT', 'LOAD', '$MOUNT', '$UNMOUNT', '$FRAME']);
+        if (!LIFECYCLE_EVENTS.has(normalizedEvent)) {
+            for (const { traitName, result } of results) {
+                if (!result.executed) continue;
+                eventBus.emit(normalizedEvent, payload as EventPayload | undefined, {
+                    trait: traitName,
+                    fromBridge: true,
+                });
+            }
+        }
+
         // Sync React state from manager
         if (results.length > 0) {
             setTraitStates(currentManager.getAllStates());
@@ -763,6 +788,41 @@ export function useTraitStateMachine(
                 enqueueAndDrain(eventKey, event.payload);
             });
             unsubscribes.push(unsub);
+        }
+
+        // Cross-trait `listens { SourceTrait EVENT → Trigger }` wiring.
+        // Each listen entry subscribes to the bare event name (not the UI:
+        // prefix — this is a cross-trait bus fan-out, not a user-click).
+        // When SourceTrait emits EVENT via the post-transition re-broadcast
+        // below (or via an explicit `(emit EVENT)` effect), every trait
+        // whose `listens[i].event === EVENT` and whose source matches fires
+        // its Trigger through enqueueAndDrain.
+        //
+        // Without this, std-cart's Persistor.listens {AddItem SAVE → DO_CREATE}
+        // never fires — SAVE completes on AddItem, nothing ever enqueues
+        // DO_CREATE on Persistor, the cart never grows.
+        for (const binding of traitBindings) {
+            const listens: ResolvedTraitListener[] = (binding.trait.listens ?? []);
+            for (const listen of listens) {
+                // `source` is the scope filter the compiler emits
+                // (`{kind:'trait',trait:'Source'}`). Declared on the local
+                // ResolvedTraitListener shim in ./types.ts until core
+                // publishes it.
+                const expectedTrait = listen.source?.trait;
+                const unsub = eventBus.on(listen.event, (event) => {
+                    // Skip self-echoes: the post-transition re-broadcast stamps
+                    // source.trait = emitter. If listens.source.trait is declared,
+                    // only accept emits from that trait. If source.kind is 'any'
+                    // or no source declared, accept everything.
+                    if (expectedTrait) {
+                        const emitTrait = (event.source as { trait?: string } | undefined)?.trait;
+                        if (emitTrait !== expectedTrait) return;
+                    }
+                    console.log('[TraitStateMachine] listens', binding.trait.name, listen.event, '→', listen.triggers, 'from', (event.source as { trait?: string } | undefined)?.trait);
+                    enqueueAndDrain(listen.triggers, event.payload);
+                });
+                unsubscribes.push(unsub);
+            }
         }
 
         return () => {
