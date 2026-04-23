@@ -27,6 +27,7 @@ import {
     EffectExecutor,
     interpolateValue,
     createContextFromBindings,
+    createServerEffectHandlers,
     type TraitState,
     type TraitDefinition,
     type EffectHandlers,
@@ -97,6 +98,17 @@ export interface UseTraitStateMachineOptions {
     navigate?: (path: string, params?: Record<string, unknown>) => void;
     /** Notification function for notify effects */
     notify?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
+    /**
+     * Offline-preview persistence layer. When set, the client runtime merges
+     * `@almadar/runtime` `createServerEffectHandlers` on top of the default
+     * client handlers so `fetch` / `persist` / `set` / `ref` / `deref` /
+     * `swap!` / `atomic` / `callService` run against this adapter — matching
+     * what `OrbitalServerRuntime` would do on the server. Left unset in the
+     * server-bridge path; effects there flow to the real server.
+     */
+    persistence?: import('@almadar/runtime').PersistenceAdapter;
+    /** Optional consumer `call-service` hook forwarded to the mock server handlers. */
+    callService?: (service: string, action: string, params: unknown) => Promise<unknown>;
 }
 
 /**
@@ -508,9 +520,9 @@ export function useTraitStateMachine(
                     traitDefinition: binding.trait,
                 };
 
-                // Build handlers using factory from @almadar/runtime
+                // Build handlers using factory from @almadar/runtime.
                 // Entity resolution happens in SlotContentRenderer via useEntityRef.
-                const handlers = createClientEffectHandlers({
+                const clientHandlers = createClientEffectHandlers({
                     eventBus,
                     slotSetter: {
                         addPattern: (slot, pattern, props) => {
@@ -525,6 +537,54 @@ export function useTraitStateMachine(
                     navigate: optionsRef.current?.navigate,
                     notify: optionsRef.current?.notify,
                 });
+
+                // Offline-preview mode: when `persistence` is supplied, layer
+                // `createServerEffectHandlers` on top so `fetch` / `persist` /
+                // `set` / `ref` / `deref` / `swap!` / `atomic` / `callService`
+                // run locally with the same semantics as `OrbitalServerRuntime`.
+                // Keep the client `emit` / `renderUI` / `navigate` / `notify`
+                // (they own the slot setter + router + toaster).
+                const persistence = optionsRef.current?.persistence;
+                let handlers: EffectHandlers = clientHandlers;
+                if (persistence) {
+                    // Bindings object is mutable — ServerEffectHandlers writes
+                    // fetched rows onto it so downstream render-ui can resolve
+                    // `@entity` bindings without a second round-trip. We alloc
+                    // it BEFORE building the bindingCtx below, then reuse.
+                    const sharedBindings: BindingContext = {
+                        entity: (payload ?? {}) as unknown as EntityRow,
+                        payload: payload || {},
+                        state: result.previousState,
+                    };
+                    if (binding.config) {
+                        sharedBindings.config = binding.config as TraitConfig;
+                    }
+                    const serverHandlers = createServerEffectHandlers({
+                        persistence,
+                        eventBus,
+                        entityType: linkedEntity,
+                        entityId,
+                        bindings: sharedBindings,
+                        context: {
+                            traitName: binding.trait.name,
+                            state: result.previousState,
+                            transition: `${result.previousState}->${result.newState}`,
+                            linkedEntity,
+                            entityId,
+                        },
+                        source: { trait: binding.trait.name },
+                        callService: optionsRef.current?.callService,
+                    });
+                    handlers = {
+                        ...serverHandlers,
+                        // Client handlers own UI + emit: keep the slot setter
+                        // and pre-prefixed UI:* emit path intact.
+                        emit: clientHandlers.emit,
+                        renderUI: clientHandlers.renderUI,
+                        navigate: clientHandlers.navigate,
+                        notify: clientHandlers.notify,
+                    };
+                }
 
                 // The payload shape is a superset of EntityRow at runtime
                 // (both are plain JSON-ish objects of primitive-ish values),

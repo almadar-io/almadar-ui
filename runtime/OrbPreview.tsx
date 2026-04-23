@@ -31,6 +31,7 @@ import { ServerBridgeProvider, useServerBridge } from './ServerBridge';
 import { getAllPages } from '../renderer/navigation';
 import { recordTransition, recordServerResponse, type EffectTrace } from '../lib/verificationRegistry';
 import { prepareSchemaForPreview } from './prepareSchemaForPreview';
+import { InMemoryPersistence, type PersistenceAdapter } from '@almadar/runtime';
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -154,7 +155,7 @@ function applyServerEffects(
  * to the server after local processing. Server response provides enriched
  * patterns with entity data resolved reactively via useEntityRef.
  */
-function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback }: {
+function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, persistence }: {
   traits: unknown[];
   orbitalNames?: string[];
   onNavigate?: (path: string, params?: Record<string, unknown>) => void;
@@ -164,6 +165,13 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback }:
    * surface a UI indicator so the silent fallback isn't actually silent.
    */
   onLocalFallback?: () => void;
+  /**
+   * Offline-preview persistence layer. Forwarded to `useTraitStateMachine`
+   * so server-side effects (fetch/persist/set/ref/deref/swap!/atomic) run
+   * against an in-memory store instead of being no-oped. Set by OrbPreview
+   * when `autoMock` is active and no `serverUrl` is supplied.
+   */
+  persistence?: PersistenceAdapter;
 }) {
   const slotsActions = useSlotsActions();
   const bridge = useServerBridge();
@@ -191,7 +199,7 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback }:
 
   const opts = orbitalNames
     ? { onEventProcessed, navigate: onNavigate }
-    : { navigate: onNavigate };
+    : { navigate: onNavigate, persistence };
   const { sendEvent } = useTraitStateMachine(traits as Parameters<typeof useTraitStateMachine>[0], slotsActions, opts);
 
   const initSentRef = useRef(false);
@@ -259,7 +267,7 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback }:
  * When `serverUrl` is provided, wraps with ServerBridgeProvider and
  * forwards events to the server after local processing.
  */
-function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate, onLocalFallback }: {
+function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate, onLocalFallback, persistence }: {
   schema: unknown;
   serverUrl?: string;
   mockData?: Record<string, unknown[]>;
@@ -267,6 +275,8 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate, onLoc
   onNavigate?: (path: string, params?: Record<string, unknown>) => void;
   /** GAP-19: forwarded to TraitInitializer to surface server-bridge fallback. */
   onLocalFallback?: () => void;
+  /** Offline-preview persistence layer. */
+  persistence?: PersistenceAdapter;
 }) {
   const { traits, allEntities, ir } = useResolvedSchema(schema as Parameters<typeof useResolvedSchema>[0], pageName);
 
@@ -322,6 +332,7 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate, onLoc
             orbitalNames={serverUrl ? orbitalNames : undefined}
             onNavigate={onNavigate}
             onLocalFallback={onLocalFallback}
+            persistence={persistence}
           />
           <SlotBridge />
           {/* Content fills the available height, not hug-content. `h-full`
@@ -453,6 +464,26 @@ export function OrbPreview({
   const parsedSchema = parseResult.ok ? parseResult.schema : null;
   const effectiveMockData: EntityData = parseResult.ok ? parseResult.mockData : {};
 
+  // Offline-preview persistence. When `autoMock` is on and no `serverUrl`
+  // is set, build an `InMemoryPersistence` seeded from the generated mock
+  // rows and hand it to the state machine. The runtime's
+  // `createServerEffectHandlers` layers on top of the client handlers, so
+  // `fetch` / `persist` / `set` / `ref` / `deref` / `swap!` / `atomic` /
+  // `callService` run the same semantics `OrbitalServerRuntime` would on
+  // the server — just against in-memory storage. This is what makes
+  // 3-state `loading → browsing` schemas like `std-list` advance past the
+  // initial spinner without a real server.
+  //
+  // The adapter is built once per schema parse — re-parses (schema swap
+  // in the playground) reset the persistence to the fresh seed.
+  const persistence = useMemo<PersistenceAdapter | undefined>(() => {
+    if (!parsedSchema || serverUrl) return undefined;
+    if (!autoMock) return undefined;
+    const adapter = new InMemoryPersistence();
+    adapter.seed(effectiveMockData as Record<string, import('@almadar/core').EntityRow[]>);
+    return adapter;
+  }, [parsedSchema, serverUrl, autoMock, effectiveMockData]);
+
   // Discover pages from schema for effect-driven navigation
   const pages = useMemo(() => {
     if (!parsedSchema) return [];
@@ -531,6 +562,7 @@ export function OrbPreview({
             pageName={currentPage}
             onNavigate={handleNavigate}
             onLocalFallback={handleLocalFallback}
+            persistence={persistence}
           />
         </UISlotProvider>
       </OrbitalProvider>
