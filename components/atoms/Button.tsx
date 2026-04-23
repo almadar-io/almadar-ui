@@ -161,6 +161,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
       if (action) {
+        if (typeof console !== 'undefined') {
+          console.log('[Button.click]', action, 'actionPayload=', JSON.stringify(actionPayload));
+        }
         eventBus.emit(`UI:${action}`, actionPayload ?? {});
       }
       onClick?.(e);
