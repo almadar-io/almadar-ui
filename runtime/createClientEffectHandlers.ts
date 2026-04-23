@@ -32,8 +32,13 @@ export function createClientEffectHandlers(
 
     return {
         emit: (event: string, payload?: EventPayload) => {
+            // The event bus wraps its second arg AS the event's `payload`
+            // field (see IEventBus contract). Double-wrapping as `{ payload }`
+            // here made subscribers see `event.payload = { payload: realPayload }`,
+            // and `@payload.X` binding resolution failed (one level too deep).
+            // Pass the caller's payload through directly.
             const prefixedEvent = event.startsWith('UI:') ? event : `UI:${event}`;
-            eventBus.emit(prefixedEvent, { payload });
+            eventBus.emit(prefixedEvent, payload);
         },
         persist: async () => {
             console.warn('[ClientEffectHandlers] persist is server-side only, ignored on client');
