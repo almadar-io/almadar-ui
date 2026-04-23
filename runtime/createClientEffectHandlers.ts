@@ -50,6 +50,16 @@ export function createClientEffectHandlers(
                 slotSetter.clearSlot(slot);
                 return;
             }
+            // Diagnostic for VG31 DELETE: dump resolved render-ui config so
+            // we can see whether `@payload.id` actually interpolated.
+            if (typeof console !== 'undefined' && slot === 'modal') {
+                try {
+                    const str = JSON.stringify(pattern);
+                    if (str && str.includes('actionPayload')) {
+                        console.warn('[render-ui modal] pattern=', str.slice(0, 800));
+                    }
+                } catch { /* ignore */ }
+            }
             slotSetter.addPattern(slot, pattern, props);
         },
         navigate: navigate ?? ((path: string) => {
