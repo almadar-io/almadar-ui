@@ -870,10 +870,38 @@ function renderPatternChildren(
     const childPath = parentPath === 'root'
       ? `root.children.${index}`
       : `${parentPath}.children.${index}`;
+    // Pattern configs may arrive in two shapes:
+    // 1) Flat: `{type: "button", label, action, actionPayload, ...}` — the
+    //    authoring form the compiler and `.lolo` emit.
+    // 2) Nested: `{type: "button", props: {label, action, ...}, _id}` —
+    //    the form produced by some IR transformations that lift props
+    //    into a sidecar for node-id tracking.
+    // Reading `child.props` alone silently drops everything in the flat
+    // case — actionPayload included — which was the runtime-only VG31
+    // DELETE cascade failure: the Confirm button rendered without
+    // actionPayload, emitted `{}` on click, and Persistor's DO_DELETE
+    // ran with no id.
+    const { type: _childType, props: nestedProps, _id: _childNodeId, children: _childChildren, ...flatProps } = child as {
+      type: string;
+      props?: Record<string, unknown>;
+      _id?: string;
+      children?: unknown;
+      [key: string]: unknown;
+    };
+    const resolvedProps: Record<string, unknown> = nestedProps !== undefined
+      ? (nestedProps as Record<string, unknown>)
+      : flatProps;
+    // Preserve children — needed by pattern components that render
+    // nested trees (stack, data-grid, form-section, etc). Nested-form
+    // authors put `children` inside `props`; flat-form authors put it
+    // at the top level. Either way it has to survive unwrapping.
+    if (_childChildren !== undefined && nestedProps === undefined) {
+      resolvedProps.children = _childChildren;
+    }
     const childContent: SlotContent = {
       id: childId,
       pattern: child.type,
-      props: child.props ?? {},
+      props: resolvedProps,
       priority: 0,
       nodeId: child._id,
     };
