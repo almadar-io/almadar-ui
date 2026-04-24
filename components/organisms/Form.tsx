@@ -254,8 +254,6 @@ export interface FormProps extends Omit<
   submitEvent?: EventKey;
   /** Event to dispatch on cancel (defaults to 'CANCEL') */
   cancelEvent?: EventKey;
-  /** Entity ID binding for edit mode (triggers initialData from selectedEntity in compiled code) */
-  entityId?: string;
 
   // Relation data props
   /** Data for relation fields: { fieldName: RelationOption[] } */

@@ -27,8 +27,6 @@ export interface FormSectionProps extends EntityDisplayProps {
   card?: boolean;
   /** Grid columns for fields */
   columns?: 1 | 2 | 3;
-  /** Entity ID for fetching specific entity */
-  entityId?: string;
 }
 
 export const FormSection: React.FC<FormSectionProps> = ({

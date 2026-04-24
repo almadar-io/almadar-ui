@@ -304,8 +304,6 @@ export interface DetailPanelProps extends EntityDisplayProps {
   position?: "left" | "right";
   /** Panel width (CSS value, e.g., '400px', '50%') */
   width?: string;
-  /** Entity ID for fetching specific entity */
-  entityId?: string;
   /** Display fields (alias for fields) */
   displayFields?: readonly string[];
   /** Show actions flag */
