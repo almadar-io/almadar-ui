@@ -25,7 +25,13 @@ import { useEventBus } from '../hooks/useEventBus';
 import type { OrbitalSchema, EntityData } from '@almadar/core';
 import { useResolvedSchema } from './useResolvedSchema';
 import { useTraitStateMachine } from './useTraitStateMachine';
-import { useSlotsActions, useSlots, SlotsProvider } from './ui/SlotsContext';
+import {
+  useSlotsActions,
+  useSlots,
+  SlotsProvider,
+  slotEntriesInOrder,
+  type SlotEntry,
+} from './ui/SlotsContext';
 import { EntitySchemaProvider } from './EntitySchemaContext';
 import { ServerBridgeProvider, useServerBridge } from './ServerBridge';
 import { getAllPages } from '../renderer/navigation';
@@ -78,27 +84,70 @@ function SlotBridge() {
 
   useEffect(() => {
     for (const [slotName, slotState] of Object.entries(slots)) {
-      if (slotState.patterns.length === 0) {
+      const entries = slotEntriesInOrder(slotState);
+      if (entries.length === 0) {
         clear(slotName as Parameters<typeof clear>[0]);
         continue;
       }
-      const entry = slotState.patterns[slotState.patterns.length - 1];
-      const patternRecord = entry.pattern as unknown as Record<string, unknown>;
 
-      const { type: patternType, children, ...inlineProps } = patternRecord;
-      const normalizedChildren = Array.isArray(children)
-        ? children.map((c) => normalizeChild(c))
-        : children;
-      render({
-        target: slotName as Parameters<typeof render>[0]['target'],
-        pattern: patternType as string,
-        props: {
-          ...inlineProps,
-          ...entry.props,
-          ...(normalizedChildren !== undefined ? { children: normalizedChildren } : {}),
-        },
-        sourceTrait: slotState.source?.trait,
-      });
+      // Flatten each source's latest pattern into a child node. Parity with
+      // the compiled path's page layout: when multiple traits contribute to
+      // the same slot (`page "/x" -> TraitA, TraitB, TraitC`), they render
+      // stacked in declaration order. Prior single-entry model made every
+      // slot last-writer-wins, which hid sibling traits' frames behind
+      // whichever most-recently rendered.
+      const children = entries
+        .map(({ entry }: { entry: SlotEntry }) => entry.patterns[entry.patterns.length - 1])
+        .filter((p): p is NonNullable<typeof p> => Boolean(p))
+        .map((entry) => {
+          const record = entry.pattern as unknown as Record<string, unknown>;
+          const { type: patternType, children: nested, ...inlineProps } = record;
+          const normalizedNested = Array.isArray(nested)
+            ? nested.map((c) => normalizeChild(c))
+            : nested;
+          return {
+            type: patternType as string,
+            ...inlineProps,
+            ...entry.props,
+            ...(normalizedNested !== undefined ? { children: normalizedNested } : {}),
+          };
+        });
+
+      if (children.length === 1) {
+        // Single source: render directly, preserving prior behaviour so
+        // slots owned by one trait (modal, toast, etc.) don't get an
+        // unnecessary stack wrapper.
+        const only = children[0];
+        const { type, children: nested, ...rest } = only as {
+          type: string;
+          children?: unknown;
+          [key: string]: unknown;
+        };
+        const lastEntry = entries[entries.length - 1];
+        render({
+          target: slotName as Parameters<typeof render>[0]['target'],
+          pattern: type,
+          props: {
+            ...rest,
+            ...(nested !== undefined ? { children: nested } : {}),
+          },
+          sourceTrait: lastEntry.entry.source?.trait,
+        });
+      } else {
+        // Multi-source: wrap in a vertical stack so every trait's frame is
+        // visible simultaneously, matching the compiled page layout.
+        const lastEntry = entries[entries.length - 1];
+        render({
+          target: slotName as Parameters<typeof render>[0]['target'],
+          pattern: 'stack',
+          props: {
+            direction: 'vertical',
+            gap: 'lg',
+            children,
+          },
+          sourceTrait: lastEntry.entry.source?.trait,
+        });
+      }
     }
   }, [slots, render, clear]);
 
