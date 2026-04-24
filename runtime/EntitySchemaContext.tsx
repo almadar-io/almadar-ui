@@ -2,7 +2,9 @@
  * EntitySchemaContext
  *
  * Minimal context providing entity schema definitions (field metadata).
- * This is NOT a data store - data comes from FetchedDataContext via server.
+ * This is NOT a data store — actual entity rows flow through the state
+ * machine's `@payload.data` binding on the emitting trait's fetch-success
+ * transition and land on the rendering component's `entity` prop.
  *
  * Replaces EntityStore's schema functionality without the mock data generation.
  *
@@ -42,7 +44,8 @@ export interface EntitySchemaProviderProps {
  * Provides entity schema definitions to the component tree.
  *
  * This is a lightweight provider that only holds schema metadata (field definitions).
- * Actual entity data comes from FetchedDataContext via server responses.
+ * Actual entity rows arrive via `@payload.data` on the rendering trait's
+ * success transition — they do NOT live in this context.
  */
 export function EntitySchemaProvider({
     entities,
@@ -78,7 +81,8 @@ export function EntitySchemaProvider({
 /**
  * Access entity schema definitions.
  * Use this for field metadata (form building, filter enrichment).
- * For actual data, use useFetchedDataContext.
+ * Actual entity rows flow via `@payload.data` on the state machine's
+ * success transition — never read them from a context.
  */
 export function useEntitySchema(): EntitySchemaContextValue {
     const context = useContext(EntitySchemaContext);

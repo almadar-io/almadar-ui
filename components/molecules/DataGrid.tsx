@@ -12,7 +12,7 @@
  * Uses atoms only internally: Box, VStack, HStack, Typography, Badge, Button, Icon.
  */
 import React, { useCallback, useState } from 'react';
-import type { EventKey } from '@almadar/core';
+import type { EntityRow, EventKey } from '@almadar/core';
 import type { ItemActionPayload, SelectionChangePayload } from '@almadar/patterns';
 import { cn } from '../../lib/cn';
 import { getNestedValue } from '../../lib/getNestedValue';
@@ -57,9 +57,16 @@ export interface DataGridItemAction {
 
 // ── Props ────────────────────────────────────────────────────────────
 
-export interface DataGridProps {
-  /** Entity data array */
-  entity: unknown | readonly unknown[];
+export interface DataGridProps<T extends EntityRow = EntityRow> {
+  /**
+   * Schema entity data — single record or collection, typed against
+   * `@almadar/core`'s `EntityRow` so the narrow type declared on the
+   * emitting trait's `Event { data : [X] }` flows through to the prop
+   * without widening. The generic `T` lets consumers pass a narrower
+   * entity (e.g. `CartItem`) and have the `children` render function
+   * receive cards typed to that exact shape.
+   */
+  entity: T | readonly T[];
   /** Field definitions for rendering each card */
   fields: readonly DataGridField[];
   /** Alias for fields (compiler generates `columns` for field definitions) */
@@ -90,15 +97,16 @@ export interface DataGridProps {
   loadMoreEvent?: EventKey;
   /** Whether more items are available for infinite scroll */
   hasMore?: boolean;
-  /** Render prop for custom per-item content. When provided, `fields` and `itemActions` are ignored. */
-  children?: (item: Record<string, unknown>, index: number) => React.ReactNode;
+  /** Render prop for custom per-card content, typed to the grid's entity
+   *  shape `T`. When provided, `fields` and `itemActions` are ignored. */
+  children?: (item: T, index: number) => React.ReactNode;
   /**
    * Per-item render function (schema-level alias for children render prop).
    * In .orb schemas: ["fn", "item", { pattern tree with @item.field bindings }]
    * The compiler converts this to the children render prop.
    * @deprecated Use children render prop in React code. This prop exists for pattern registry sync.
    */
-  renderItem?: (item: Record<string, unknown>, index: number) => React.ReactNode;
+  renderItem?: (item: T, index: number) => React.ReactNode;
   /** Max items to show before "Show More" button. Defaults to 0 (disabled). */
   pageSize?: number;
 }
@@ -150,7 +158,7 @@ const gapStyles: Record<string, string> = {
 
 // ── Component ────────────────────────────────────────────────────────
 
-export const DataGrid: React.FC<DataGridProps> = ({
+export function DataGrid<T extends EntityRow = EntityRow>({
   entity,
   fields: fieldsProp,
   columns: columnsProp,
@@ -169,7 +177,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
   hasMore,
   children,
   pageSize = 0,
-}) => {
+}: DataGridProps<T>) {
   const eventBus = useEventBus();
   const { t } = useTranslate();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -321,7 +329,7 @@ export const DataGrid: React.FC<DataGridProps> = ({
                   isSelected && 'ring-2 ring-primary border-primary',
                 )}
               >
-                {children(itemData, index)}
+                {children(itemData as T, index)}
               </Box>
             );
           }

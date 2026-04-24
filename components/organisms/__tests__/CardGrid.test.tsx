@@ -13,27 +13,10 @@ import { CardGrid } from '../CardGrid';
 import { EventBusProvider } from '../../../providers/EventBusProvider';
 import { useEventBus } from '../../../hooks/useEventBus';
 
-// Mock the useEntityData hooks
-vi.mock('../../../hooks/useEntityData', () => ({
-  useEntityList: vi.fn(() => ({
-    data: [],
-    isLoading: false,
-    error: null,
-  })),
-  usePaginatedEntityList: vi.fn(() => ({
-    data: [],
-    isLoading: false,
-    error: null,
-    total: 0,
-    page: 1,
-    pageSize: 20,
-    totalPages: 0,
-    goToPage: vi.fn(),
-    nextPage: vi.fn(),
-    prevPage: vi.fn(),
-    setPageSize: vi.fn(),
-  })),
-}));
+// G13 (2026-04-24): the `useEntityData` mock block was removed — the hook
+// family is deleted. CardGrid now receives pre-resolved data via its `entity`
+// prop (bound from the state machine's `@payload.data`); no auto-fetch mock
+// is needed.
 
 // Test wrapper with providers
 const createTestWrapper = (initialRoute = '/') => {

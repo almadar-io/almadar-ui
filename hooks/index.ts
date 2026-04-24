@@ -83,22 +83,18 @@ export {
 // UI Events hook for bridging UI events to state machines
 export { useUIEvents, useSelectedEntity } from './useUIEvents';
 
-// Entity data hooks for schema-driven components
-export {
-  useEntityList,
-  useEntityDetail,
-  useEntity,
-  useEntityListSuspense,
-  useEntitySuspense,
-  entityDataKeys,
-  EntityDataProvider,
-  useEntityDataAdapter,
-  type EntityDataAdapter,
-  type EntityDataRecord,
-  type UseEntityListOptions,
-  type UseEntityListResult,
-  type UseEntityDetailResult,
-} from './useEntityData';
+// G13 (2026-04-24): the `useEntityData` family — useEntityList, useEntity,
+// useEntityDetail, useEntityListSuspense, useEntitySuspense, entityDataKeys,
+// EntityDataProvider, useEntityDataAdapter, EntityDataAdapter — has been
+// deleted. Components receive pre-resolved entity data as props (bound via
+// `@payload.data` on the emitting state-machine transition). The pluggable
+// context adapter is gone; there is no auto-fetch fallback anymore.
+//
+// Entity mutations (`useEntityMutations`, `useOrbitalMutations`) have been
+// deleted as well — they depended on `entityDataKeys` for React-Query cache
+// invalidation, which is no longer meaningful without the context. Consumers
+// that need mutation helpers (e.g., `apps/builder/client`) ship their own
+// copies keyed by their own cache layer.
 
 // Query singleton hook for filter/search state management
 export {
@@ -109,25 +105,6 @@ export {
   type QuerySingletonResult,
   type QuerySingletonState,
 } from './useQuerySingleton';
-
-// Entity mutations (legacy direct CRUD)
-export {
-  useEntityMutations,
-  useCreateEntity,
-  useUpdateEntity,
-  useDeleteEntity,
-  type EntityMutationResult,
-  type UseEntityMutationsOptions,
-} from './useEntityMutations';
-
-// Orbital mutations (event-based, recommended)
-export {
-  useOrbitalMutations,
-  useSendOrbitalEvent,
-  ENTITY_EVENTS,
-  type OrbitalEventPayload,
-  type OrbitalEventResponse,
-} from './useOrbitalMutations';
 
 // Entity store hooks (for game/runtime entities)
 export {
@@ -159,11 +136,9 @@ export {
   type I18nContextValue,
 } from './useTranslate';
 
-// Resolved entity hook for normalizing data sources
-export {
-  useResolvedEntity,
-  type ResolvedEntity,
-} from './useResolvedEntity';
+// `useResolvedEntity` removed in G13 (2026-04-24) along with the auto-fetch
+// fallback path it depended on (`useEntityList`). Components now receive a
+// pre-resolved `entity` prop directly; no normalization layer needed.
 
 // Auth context stub (applications should provide their own AuthProvider)
 export {

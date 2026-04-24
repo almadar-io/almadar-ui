@@ -12,14 +12,9 @@ import { DetailPanel } from '../DetailPanel';
 import { EventBusProvider } from '../../../providers/EventBusProvider';
 import { useEventBus } from '../../../hooks/useEventBus';
 
-// Mock the useEntityDetail hook
-vi.mock('../../../hooks/useEntityData', () => ({
-  useEntityDetail: vi.fn(() => ({
-    data: null,
-    isLoading: false,
-    error: null,
-  })),
-}));
+// G13 (2026-04-24): the `useEntityDetail` mock block was removed — the hook
+// is deleted. DetailPanel now receives pre-resolved data via its `entity`
+// prop (bound from `@payload.data` or `@payload.row` on the state machine).
 
 // Test wrapper with providers
 const createTestWrapper = (initialRoute = '/') => {

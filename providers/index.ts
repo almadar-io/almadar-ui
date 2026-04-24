@@ -16,19 +16,12 @@ export { EventBusProvider, EventBusContext } from './EventBusProvider';
 export { SelectionProvider, SelectionContext, useSelection, useSelectionOptional } from './SelectionProvider';
 export type { SelectionContextType } from './SelectionProvider';
 
-export {
-  FetchedDataProvider,
-  FetchedDataContext,
-  useFetchedDataContext,
-  useFetchedData,
-  useFetchedEntity,
-} from './FetchedDataProvider';
-export type {
-  FetchedDataProviderProps,
-  FetchedDataContextValue,
-  FetchedDataState,
-  EntityRecord,
-} from './FetchedDataProvider';
+// G13 Phase 3 (2026-04-24): the FetchedDataProvider family has been
+// removed. It was never mounted in any real provider tree, so consumers
+// that called `useFetchedDataContext()` always got `null`. Pattern
+// components now receive pre-resolved entity data via the `entity` prop
+// (bound from the state machine's `@payload.data` emission); ticks take
+// their entity map as a hook argument directly.
 
 // Verification provider
 export { VerificationProvider } from './VerificationProvider';

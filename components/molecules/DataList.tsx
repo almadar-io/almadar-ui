@@ -12,7 +12,7 @@
  * Uses atoms only internally: Box, VStack, HStack, Typography, Badge, Button, Icon.
  */
 import React from 'react';
-import type { EventKey } from "@almadar/core";
+import type { EntityRow, EventKey } from "@almadar/core";
 import type { ItemActionPayload } from '@almadar/patterns';
 import { cn } from '../../lib/cn';
 import { getNestedValue } from '../../lib/getNestedValue';
@@ -59,9 +59,16 @@ export interface DataListItemAction {
 
 // ── Props ────────────────────────────────────────────────────────────
 
-export interface DataListProps {
-  /** Entity data array */
-  entity: unknown | readonly unknown[];
+export interface DataListProps<T extends EntityRow = EntityRow> {
+  /**
+   * Schema entity data — single record or collection, typed against
+   * `@almadar/core`'s `EntityRow` so the narrow type declared on the
+   * emitting trait's `Event { data : [X] }` flows through to the prop
+   * without widening. The generic `T` lets consumers pass a narrower
+   * entity (e.g. `CartItem`) and have the `children` render function
+   * receive items of that exact shape.
+   */
+  entity: T | readonly T[];
   /** Field definitions for rendering each row */
   fields: readonly DataListField[];
   /** Alias for fields (compiler may generate `columns` for field definitions) */
@@ -105,14 +112,19 @@ export interface DataListProps {
   /** Whether more items are available for infinite scroll */
   hasMore?: boolean;
   /** Render prop for custom per-item content. When provided, `fields` and `itemActions` are ignored. */
-  children?: (item: Record<string, unknown>, index: number) => React.ReactNode;
+  /**
+   * Render function for each row's content. Receives an item of the
+   * component's entity type `T` (narrowed via the generic parameter)
+   * and the row's index in the materialised array.
+   */
+  children?: (item: T, index: number) => React.ReactNode;
   /**
    * Per-item render function (schema-level alias for children render prop).
    * In .orb schemas: ["fn", "item", { pattern tree with @item.field bindings }]
    * The compiler converts this to the children render prop.
    * @deprecated Use children render prop in React code. This prop exists for pattern registry sync.
    */
-  renderItem?: (item: Record<string, unknown>, index: number) => React.ReactNode;
+  renderItem?: (item: T, index: number) => React.ReactNode;
   /** Max items to show before "Show More" button. Defaults to 5. Set to 0 to disable. */
   pageSize?: number;
 }
@@ -170,7 +182,7 @@ function groupData(
 
 // ── Component ────────────────────────────────────────────────────────
 
-export const DataList: React.FC<DataListProps> = ({
+export function DataList<T extends EntityRow = EntityRow>({
   entity,
   fields: fieldsProp,
   columns: columnsProp,
@@ -198,7 +210,7 @@ export const DataList: React.FC<DataListProps> = ({
   hasMore,
   children,
   pageSize = 5,
-}) => {
+}: DataListProps<T>) {
   const eventBus = useEventBus();
   const { t } = useTranslate();
   const [visibleCount, setVisibleCount] = React.useState(pageSize || Infinity);
@@ -357,7 +369,7 @@ export const DataList: React.FC<DataListProps> = ({
             )}
           >
             <Box className="flex-1 min-w-0">
-              {children(itemData, index)}
+              {children(itemData as T, index)}
             </Box>
             {itemActions && itemActions.length > 0 && (
               <HStack
