@@ -174,6 +174,18 @@ function applyServerEffects(
   uiSlots: ReturnType<typeof useUISlots>,
   onNavigate?: (path: string, params?: Record<string, unknown>) => void,
 ): void {
+  // Two-pass: first call uiSlots.render() for each render-ui effect
+  // individually so the per-trait index (driven by sourceTrait) captures
+  // every trait's latest frame. Second, for slots that ended up with
+  // multiple source traits in the same batch, emit a synthetic stack
+  // wrapper so the DOM shows all of them — otherwise the last render
+  // silently wins and earlier traits' frames disappear (the runtime-path
+  // divergence from the compiled VStack-of-trait-views layout).
+  const perSlotRenders = new Map<
+    string,
+    Array<{ sourceTrait: string; pattern: Record<string, unknown> }>
+  >();
+
   for (const eff of effects) {
     if (eff.type === 'render-ui' && eff.slot && eff.pattern) {
       const patternRecord = eff.pattern as Record<string, unknown>;
@@ -181,6 +193,8 @@ function applyServerEffects(
       const normalizedChildren = Array.isArray(children)
         ? children.map((c) => normalizeChild(c))
         : children;
+      const sourceTrait = eff.traitName ?? 'server';
+      // 1) Per-effect render — keeps the per-trait index populated.
       uiSlots.render({
         target: eff.slot as Parameters<typeof uiSlots.render>[0]['target'],
         pattern: patternType as string,
@@ -188,11 +202,42 @@ function applyServerEffects(
           ...inlineProps,
           ...(normalizedChildren !== undefined ? { children: normalizedChildren } : {}),
         },
-        sourceTrait: eff.traitName ?? 'server',
+        sourceTrait,
       });
+      // 2) Also collect under slot → list so we can merge below.
+      const bucket = perSlotRenders.get(eff.slot) ?? [];
+      bucket.push({
+        sourceTrait,
+        pattern: {
+          type: patternType as string,
+          ...inlineProps,
+          ...(normalizedChildren !== undefined ? { children: normalizedChildren } : {}),
+        },
+      });
+      perSlotRenders.set(eff.slot, bucket);
     } else if (eff.type === 'navigate' && eff.route && onNavigate) {
       onNavigate(eff.route, eff.params as Record<string, unknown> | undefined);
     }
+  }
+
+  // Emit a merged stack per slot that received from multiple sources.
+  // Single-source slots are left alone — the per-effect render already
+  // put the right content in the slot state.
+  for (const [slot, bucket] of perSlotRenders) {
+    const distinctSources = new Set(bucket.map((b) => b.sourceTrait));
+    if (distinctSources.size <= 1) continue;
+    uiSlots.render({
+      target: slot as Parameters<typeof uiSlots.render>[0]['target'],
+      pattern: 'stack',
+      props: {
+        direction: 'vertical',
+        gap: 'lg',
+        children: bucket.map((b) => b.pattern),
+      },
+      // Use a synthetic wrapper source trait; individual traits' frames
+      // already live in the per-trait index from the per-effect loop.
+      sourceTrait: '__multi_source_stack__',
+    });
   }
 }
 
