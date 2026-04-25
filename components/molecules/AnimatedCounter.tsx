@@ -12,8 +12,8 @@ import { Box } from '../atoms/Box';
 import { Typography } from '../atoms/Typography';
 
 export interface AnimatedCounterProps {
-  /** Target value to count to (e.g. "500+", "99.9%", "3x") */
-  value: string;
+  /** Target value to count to. Strings allow display formats (e.g. "500+", "99.9%", "3x"); numbers are coerced. */
+  value: string | number;
   /** Label displayed below the number */
   label: string;
   /** Animation duration in ms */
@@ -29,8 +29,8 @@ export interface AnimatedCounterProps {
  * e.g. "3x" -> { num: 3, prefix: "", suffix: "x" }
  * e.g. "$1.2M" -> { num: 1.2, prefix: "$", suffix: "M" }
  */
-function parseValue(value: string): { num: number; prefix: string; suffix: string; decimals: number } {
-  if (!value) return { num: 0, prefix: '', suffix: '', decimals: 0 };
+function parseValue(value: string | number): { num: number; prefix: string; suffix: string; decimals: number } {
+  if (value === '' || value == null) return { num: 0, prefix: '', suffix: '', decimals: 0 };
   const match = String(value).match(/^([^0-9]*)([0-9]+(?:\.[0-9]+)?)(.*)$/);
   if (!match) {
     return { num: 0, prefix: '', suffix: String(value), decimals: 0 };
@@ -59,7 +59,7 @@ export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
   const animate = useCallback(() => {
     const { num, prefix, suffix, decimals } = parseValue(value);
     if (num === 0) {
-      setDisplayValue(value);
+      setDisplayValue(String(value));
       return;
     }
 
@@ -76,7 +76,7 @@ export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
       if (progress < 1) {
         requestAnimationFrame(tick);
       } else {
-        setDisplayValue(value);
+        setDisplayValue(String(value));
       }
     };
 

@@ -10,8 +10,8 @@ import { cn } from "../../lib/cn";
 import { Typography } from "./Typography";
 
 export interface AnimatedCounterProps {
-  /** The target number to animate to */
-  value: number;
+  /** The target value to animate to. Strings are parsed numerically (e.g. "500", "99.9"). */
+  value: number | string;
   /** Animation duration in milliseconds */
   duration?: number;
   /** Text to display before the number */
@@ -33,7 +33,8 @@ export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
   suffix,
   className,
 }) => {
-  const value = typeof rawValue === 'number' && !Number.isNaN(rawValue) ? rawValue : 0;
+  const numericRaw = typeof rawValue === 'number' ? rawValue : Number.parseFloat(String(rawValue ?? ''));
+  const value = !Number.isNaN(numericRaw) ? numericRaw : 0;
   const [displayValue, setDisplayValue] = useState(value);
   const previousValueRef = useRef(value);
   const animationFrameRef = useRef<number | null>(null);
