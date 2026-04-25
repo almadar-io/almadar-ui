@@ -28,6 +28,7 @@ import { Drawer } from "../molecules/Drawer";
 import { Toast } from "../molecules/Toast";
 import { Box } from "../atoms/Box";
 import { Typography } from "../atoms/Typography";
+import { useEventBus } from "../../hooks/useEventBus";
 import { cn } from "../../lib/cn";
 import { ErrorBoundary } from "../molecules/ErrorBoundary";
 import { Skeleton, type SkeletonVariant } from "../molecules/Skeleton";
@@ -309,20 +310,38 @@ function renderContainedPortal(
             style={{ minWidth: '520px', maxWidth: '700px', maxHeight: '80%' }}
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
-            {content.props.title ? (
-              <Box className="flex items-center justify-between p-4 border-b border-border">
+            {/*
+              The header (with the X close button) always renders. Previously
+              the entire header — INCLUDING the close affordance — was gated
+              on `content.props.title` being truthy, so any pattern that
+              didn't set a top-level `title` prop (e.g. a `stack` wrapper
+              around a form) painted a modal with NO way to dismiss except
+              clicking the overlay. The X also lacked `data-event` /
+              `data-testid`, so click-path verifiers and any external
+              automation couldn't find it. Now: title is optional but the
+              X is structural, with the same data attributes the Modal
+              molecule's X carries so the verifier maps clicks → CLOSE.
+            */}
+            <Box className={cn(
+              "flex items-center p-4",
+              content.props.title ? "justify-between border-b border-border" : "justify-end",
+            )}>
+              {content.props.title ? (
                 <Typography variant="h3" className="text-lg font-semibold">
                   {String(content.props.title)}
                 </Typography>
-                <Box
-                  as="button"
-                  className="text-muted-foreground hover:text-foreground cursor-pointer"
-                  onClick={onDismiss}
-                >
-                  ✕
-                </Box>
+              ) : null}
+              <Box
+                as="button"
+                className="text-muted-foreground hover:text-foreground cursor-pointer"
+                onClick={onDismiss}
+                data-event="CLOSE"
+                data-testid="action-CLOSE"
+                aria-label="Close modal"
+              >
+                ✕
               </Box>
-            ) : null}
+            </Box>
             <Box className="flex-1 overflow-auto p-4">
               {slotContent}
             </Box>
@@ -346,20 +365,30 @@ function renderContainedPortal(
             )}
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
-            {content.props.title ? (
-              <Box className="flex items-center justify-between p-4 border-b border-border">
+            {/* Same rationale as the modal header above: the X is structural,
+                title is optional, and the close button carries the
+                CLOSE event-key data attributes so verifiers and automation
+                can drive the close path. */}
+            <Box className={cn(
+              "flex items-center p-4",
+              content.props.title ? "justify-between border-b border-border" : "justify-end",
+            )}>
+              {content.props.title ? (
                 <Typography variant="h3" className="text-lg font-semibold">
                   {String(content.props.title)}
                 </Typography>
-                <Box
-                  as="button"
-                  className="text-muted-foreground hover:text-foreground cursor-pointer"
-                  onClick={onDismiss}
-                >
-                  ✕
-                </Box>
+              ) : null}
+              <Box
+                as="button"
+                className="text-muted-foreground hover:text-foreground cursor-pointer"
+                onClick={onDismiss}
+                data-event="CLOSE"
+                data-testid="action-CLOSE"
+                aria-label="Close drawer"
+              >
+                ✕
               </Box>
-            ) : null}
+            </Box>
             <Box className="p-4">
               {slotContent}
             </Box>
@@ -424,6 +453,7 @@ function UISlotComponent({
   sourceTrait,
 }: UISlotComponentProps): React.ReactElement | null {
   const { slots, clear } = useUISlots();
+  const eventBus = useEventBus();
   const suspenseConfig = useContext(SuspenseConfigContext);
   const contained = useContext(SlotContainedContext);
   const content = slots[slot];
@@ -483,8 +513,19 @@ function UISlotComponent({
     return null;
   }
 
-  // Render content based on slot type
+  // Render content based on slot type. For interactive portal slots
+  // (modal, drawer) the X / overlay click is a user dismiss, which the
+  // owning trait usually models as a CLOSE/CANCEL transition. Emit both
+  // standard close-style events on the eventBus so `useUIEvents` in the
+  // trait hook dispatches them — without this, clicking X just clears
+  // the slot DOM but the trait stays in `open` and any subsequent open
+  // attempt no-ops because the state machine thinks it's already there.
+  // Mirrors `ModalSlot.handleClose` (which has done it right all along).
   const handleDismiss = () => {
+    if (slot === 'modal' || slot === 'drawer') {
+      eventBus.emit('UI:CLOSE');
+      eventBus.emit('UI:CANCEL');
+    }
     clear(slot);
   };
 
@@ -584,7 +625,8 @@ interface CompiledPortalProps {
 
 function CompiledPortal({ slot, className, pattern, sourceTrait, children }: CompiledPortalProps): React.ReactElement | null {
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
-  const eventBus = useUISlots();
+  const slotsBus = useUISlots();
+  const eventBus = useEventBus();
 
   useEffect(() => {
     setPortalRoot(getOrCreatePortalRoot());
@@ -595,8 +637,18 @@ function CompiledPortal({ slot, className, pattern, sourceTrait, children }: Com
     if (portalRoot) getOrCreatePortalRoot();
   });
 
+  // X / overlay click on an interactive portal slot is a user dismiss.
+  // Emit UI:CLOSE + UI:CANCEL so the owning trait's `useUIEvents` hook
+  // dispatches them and the state machine actually advances, mirroring
+  // what ModalSlot does. Without this the X clears the DOM but the
+  // trait stays in `open` and the next OPEN no-ops on a same-state
+  // transition. See std-modal G27 / VG3 click-path "no state advanced".
   const handleDismiss = () => {
-    eventBus.clear(slot);
+    if (slot === 'modal' || slot === 'drawer') {
+      eventBus.emit('UI:CLOSE');
+      eventBus.emit('UI:CANCEL');
+    }
+    slotsBus.clear(slot);
   };
 
   if (!portalRoot) return null;
