@@ -4,12 +4,18 @@
  *
  * A floating action button that can expand into multiple actions vertically.
  * Uses Button atom.
+ *
+ * Props mirror Button's `action`/`actionPayload` convention so a schema can
+ * declare `{ type: "floating-action-button", action: "INIT", icon: "plus" }`
+ * and have the FAB emit `UI:INIT` via the event bus on click — same shape
+ * any other clickable surface uses.
  */
 
 import React, { useState, useRef, useEffect } from "react";
 import type { LucideIcon } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { Plus, X } from "lucide-react";
+import type { EventKey, EventPayload } from "@almadar/core";
 import { Button } from "../atoms/Button";
 import { Box } from "../atoms/Box";
 import { HStack, VStack } from "../atoms/Stack";
@@ -50,34 +56,44 @@ export interface FloatingAction {
 
 export interface FloatingActionButtonProps {
   /**
-   * Single action (if only one action, button will directly trigger onClick)
+   * Declarative event name. When set, clicking the FAB emits `UI:{action}`
+   * via the event bus and (if also provided) calls `onClick`. Mirrors the
+   * Button atom's `action` prop so schemas can write
+   * `{ type: "floating-action-button", action: "INIT" }` uniformly.
    */
-  action?: {
-    icon: LucideIcon;
-    onClick: () => void;
-    label?: string;
-    variant?: "primary" | "secondary" | "success" | "danger" | "warning";
-  };
+  action?: EventKey;
 
   /**
-   * Multiple actions (if provided, button will expand to show all actions)
+   * Payload to include with the dispatched action event.
+   */
+  actionPayload?: EventPayload;
+
+  /**
+   * Multiple actions. When provided, the button expands to show all of them.
    */
   actions?: FloatingAction[];
 
   /**
-   * Icon name (simplified API for pattern compatibility)
+   * Icon name (resolves to a Lucide icon by PascalCase / kebab-case lookup).
    */
   icon?: string;
 
   /**
-   * Click handler (simplified API for pattern compatibility)
+   * Optional direct click handler. Runs after the action emit when both are
+   * present.
    */
   onClick?: () => void;
 
   /**
-   * Variant (simplified API for pattern compatibility)
+   * Visual variant.
    */
   variant?: "primary" | "secondary" | "success" | "danger" | "warning";
+
+  /**
+   * Optional label shown via `aria-label` (visually hidden in single-action
+   * mode; rendered as a tooltip beside expanded actions in multi-action mode).
+   */
+  label?: string;
 
   /**
    * Button position
@@ -122,25 +138,31 @@ function resolveIcon(name: string): LucideIcon {
 
 export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   action,
+  actionPayload,
   actions,
   icon,
   onClick,
   variant,
+  label,
   position = "bottom-right",
   className,
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
-  // If simplified props are provided, construct action from them
-  const resolvedAction =
-    action ??
-    (icon
-      ? {
-          icon: resolveIcon(icon),
-          onClick: onClick ?? (() => {}),
-          variant: variant,
-        }
-      : undefined);
+  // Build the single-action descriptor from the simplified props. Click
+  // handler emits `UI:{action}` first (when action is set), then runs the
+  // direct onClick — same order Button uses.
+  const resolvedAction = icon
+    ? {
+        icon: resolveIcon(icon),
+        onClick: () => {
+          if (action) eventBus.emit(`UI:${action}`, actionPayload ?? {});
+          onClick?.();
+        },
+        label,
+        variant,
+      }
+    : undefined;
   const [isExpanded, setIsExpanded] = useState(false);
   const fabRef = useRef<HTMLDivElement>(null);
 
