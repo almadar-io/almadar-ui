@@ -7,7 +7,11 @@
 
 import type { OrbitalSchema } from '@almadar/core';
 import { stdBrowse } from '@almadar/std/behaviors/functions';
-import { stdWizard } from '@almadar/std/behaviors/functions';
+// stdWizard was cut in @almadar/std 8.x (audit). Use stdList instead — same
+// CRUD-shaped params (entityName/fields/persistence/pagePath) so the story
+// schemas remain valid OrbitalSchemas. Multi-step forms now author via
+// std-wizard-form (molecule) inline.
+import { stdList } from '@almadar/std/behaviors/functions';
 import { stdConfirmation } from '@almadar/std/behaviors/functions';
 import { stdTimer } from '@almadar/std/behaviors/functions';
 import { schemaToFlowGraph } from './avl-flow-converter';
@@ -22,7 +26,7 @@ export const CLINIC_SCHEMA: OrbitalSchema = {
   name: 'Dermatology Clinic',
   description: 'Patient intake and reception queue',
   orbitals: [
-    stdWizard({
+    stdList({
       entityName: 'Patient',
       fields: [
         { name: 'fullName', type: 'string' },
