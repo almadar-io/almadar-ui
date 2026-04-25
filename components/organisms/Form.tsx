@@ -230,8 +230,13 @@ export interface FormProps extends Omit<
   /** Entity type name or schema object. When OrbitalEntity, fields are auto-derived if not provided. */
    
   entity?: string | OrbitalEntity | readonly Record<string, unknown>[];
-  /** Form mode - 'create' for new records, 'edit' for updating existing */
-  mode?: "create" | "edit";
+  /**
+   * Form mode — 'create' for new records, 'edit' for updating existing.
+   * Accepts `string` so schema-driven callers (whose `config.mode` is typed
+   * as `string` per the trait's declared config block) compile cleanly. The
+   * runtime treats anything other than 'edit' as 'create'.
+   */
+  mode?: "create" | "edit" | string;
   /** Fields definition (schema format) - accepts readonly for generated const arrays */
   fields: readonly Readonly<SchemaField>[];
   /** Initial form data */
