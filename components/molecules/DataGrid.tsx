@@ -21,7 +21,7 @@ import { useTranslate } from '../../hooks/useTranslate';
 import { Box } from '../atoms/Box';
 import { VStack, HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
-import { Badge } from '../atoms/Badge';
+import { Badge, type BadgeVariant } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
 import { Icon } from '../atoms/Icon';
 import { InfiniteScrollSentinel } from '../atoms/InfiniteScrollSentinel';
@@ -40,6 +40,16 @@ export interface DataGridField {
   variant?: 'h3' | 'h4' | 'body' | 'caption' | 'badge' | 'small' | 'progress';
   /** Optional format function name: 'date', 'currency', 'number', 'boolean' */
   format?: 'date' | 'currency' | 'number' | 'boolean' | 'percent';
+  /**
+   * Per-value color mapping for `variant: 'badge'`. Keys are exact field
+   * values; values are Badge variant names. Accepts the shadcn-style
+   * `destructive` alias and normalises it to `danger` at render time. When
+   * present, takes precedence over the built-in `statusVariant` heuristic.
+   *
+   * Example:
+   *   colorMap: { active: 'success', pending: 'warning', failed: 'destructive' }
+   */
+  colorMap?: Record<string, string>;
 }
 
 // ── Item Action Definition ───────────────────────────────────────────
@@ -127,6 +137,26 @@ function statusVariant(value: string): 'success' | 'warning' | 'error' | 'info' 
   if (['inactive', 'deleted', 'rejected', 'failed', 'error', 'blocked', 'closed', 'offline'].includes(v)) return 'error';
   if (['new', 'created', 'scheduled', 'queued', 'info'].includes(v)) return 'info';
   return 'default';
+}
+
+const BADGE_VARIANTS = new Set<BadgeVariant>([
+  'default', 'primary', 'secondary', 'success', 'warning', 'danger', 'error', 'info', 'neutral',
+]);
+
+/**
+ * Resolve the badge variant for a given field value. Prefers the field's
+ * explicit `colorMap` when present; falls back to the legacy `statusVariant`
+ * heuristic. Normalises shadcn-style `destructive` to the `danger` variant.
+ */
+function resolveBadgeVariant(field: DataGridField, value: string): BadgeVariant {
+  const fromMap = field.colorMap?.[value];
+  if (fromMap) {
+    const normalised: string = fromMap === 'destructive' ? 'danger' : fromMap;
+    if (BADGE_VARIANTS.has(normalised as BadgeVariant)) {
+      return normalised as BadgeVariant;
+    }
+  }
+  return statusVariant(value);
 }
 
 function formatDate(value: unknown): string {
@@ -402,7 +432,7 @@ export function DataGrid<T extends EntityRow = EntityRow>({
                         return (
                           <HStack key={field.name} gap="xs" className="items-center">
                             {field.icon && <Icon name={field.icon} size="xs" />}
-                            <Badge variant={statusVariant(String(val))}>
+                            <Badge variant={resolveBadgeVariant(field, String(val))}>
                               {String(val)}
                             </Badge>
                           </HStack>
