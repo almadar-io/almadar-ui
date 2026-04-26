@@ -209,6 +209,18 @@ export function VerificationProvider({
           }
         }
 
+        // Extract emittedEvents — server-side cascade events fired by
+        // declared `emit.success` / `emit.failure` blocks on persist /
+        // fetch / call-service / ref effects. The compiled handler
+        // returns these as `Array<{event, payload, source}>`; verifiers
+        // consume them as `string[]` (just the event name).
+        const emittedEventsRaw = Array.isArray(payload['emittedEvents'])
+          ? (payload['emittedEvents'] as Array<{ event?: unknown }>)
+          : [];
+        const emittedEvents: string[] = emittedEventsRaw
+          .map((e) => (typeof e.event === 'string' ? e.event : null))
+          .filter((e): e is string => e !== null);
+
         recordTransition({
           traitName: parsed.traitName,
           from: pending?.from ?? (payload['currentState'] as string | undefined) ?? newState,
@@ -220,7 +232,7 @@ export function VerificationProvider({
             success: true,
             clientEffects: clientEffectsArr.length,
             dataEntities,
-            emittedEvents: [],
+            emittedEvents,
             timestamp: Date.now(),
           },
           timestamp: Date.now(),
