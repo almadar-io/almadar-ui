@@ -930,6 +930,7 @@ export const Form: React.FC<FormProps> = ({
      
     <form
       noValidate
+      data-pattern="form-section"
       className={cn(layoutStyles[layout], gapStyles[gap], className)}
       onSubmit={handleSubmit}
       {...props}
