@@ -475,6 +475,12 @@ export interface InputPatternProps extends ClosedCircuitProps {
   onChange?: string;
   onBlur?: string;
   className?: string;
+  /** Form field name. When the input is rendered inside a form-section's
+   *  `fields:` array, the runtime injects this from the field config so
+   *  the rendered DOM input carries `data-field-name="<name>"` and
+   *  `name="<name>"` — verifier-side automation (e.g. orbital-verify's
+   *  `fillFormFieldsFromMap`) selects fields by these attributes. */
+  fieldName?: string;
 }
 
 /**
@@ -489,6 +495,7 @@ export function InputPattern({
   onChange,
   onBlur,
   className,
+  fieldName,
 }: InputPatternProps): React.ReactElement {
   const { emit } = useEventBus();
   const [localValue, setLocalValue] = React.useState(value);
@@ -516,6 +523,7 @@ export function InputPattern({
       onChange={handleChange}
       onBlur={handleBlur}
       className={className}
+      {...(fieldName !== undefined && { name: fieldName, 'data-field-name': fieldName })}
     />
   );
 }
@@ -531,6 +539,8 @@ export interface TextareaPatternProps extends ClosedCircuitProps {
   fieldError?: string;
   onChange?: string;
   className?: string;
+  /** Form field name — see `InputPatternProps.fieldName`. */
+  fieldName?: string;
 }
 
 /**
@@ -544,6 +554,7 @@ export function TextareaPattern({
   fieldError,
   onChange,
   className,
+  fieldName,
 }: TextareaPatternProps): React.ReactElement {
   const { emit } = useEventBus();
   const [localValue, setLocalValue] = React.useState(value);
@@ -564,6 +575,7 @@ export function TextareaPattern({
       error={fieldError}
       onChange={handleChange}
       className={className}
+      {...(fieldName !== undefined && { name: fieldName, 'data-field-name': fieldName })}
     />
   );
 }
@@ -579,6 +591,8 @@ export interface SelectPatternProps extends ClosedCircuitProps {
   fieldError?: string;
   onChange?: string;
   className?: string;
+  /** Form field name — see `InputPatternProps.fieldName`. */
+  fieldName?: string;
 }
 
 /**
@@ -592,6 +606,7 @@ export function SelectPattern({
   fieldError,
   onChange,
   className,
+  fieldName,
 }: SelectPatternProps): React.ReactElement {
   const { emit } = useEventBus();
   const [localValue, setLocalValue] = React.useState(value);
@@ -612,6 +627,7 @@ export function SelectPattern({
       error={fieldError}
       onChange={handleChange}
       className={className}
+      {...(fieldName !== undefined && { name: fieldName, 'data-field-name': fieldName })}
     />
   );
 }
