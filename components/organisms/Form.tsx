@@ -779,6 +779,7 @@ export const Form: React.FC<FormProps> = ({
     const commonProps = {
       id: fieldName,
       name: fieldName,
+      'data-field-name': fieldName,
       required: field.required,
       disabled: isLoading,
       placeholder: field.placeholder,
