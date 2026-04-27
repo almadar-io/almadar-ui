@@ -130,7 +130,12 @@ function extractEntityFields(schema: SmSchema | undefined): string[] {
   if (!entity || typeof entity !== 'object' || !('fields' in entity)) return [];
   const inlineEntity = entity as SmEntity;
   if (!inlineEntity.fields) return [];
-  return inlineEntity.fields.map((f) => f.name);
+  // EntityField.name is optional in @almadar/core 7+ (matches Rust IR's
+  // FieldDefinition.name: Option<String> for nested item/property
+  // descriptors). Top-level fields always carry a name; filter the rest.
+  return inlineEntity.fields
+    .map((f) => f.name)
+    .filter((n): n is string => typeof n === 'string' && n.length > 0);
 }
 
 function toStateMachineDefinition(sm: SmStateMachine): StateMachineDefinition {

@@ -48,8 +48,11 @@ import type {
  */
 function generateEntityRow(entity: OrbitalEntity, idx: number): EntityRow {
   const row: EntityRow = { id: String(idx) };
+  // EntityField.name is optional in @almadar/core 7+ (matches the Rust IR);
+  // top-level entity fields always carry a name, but TS doesn't know that
+  // without a narrow.
   for (const f of entity.fields) {
-    if (f.name === 'id') continue;
+    if (f.name === undefined || f.name === 'id') continue;
     row[f.name] = generateFieldValue(entity.name, f, idx);
   }
   return row;
@@ -74,9 +77,13 @@ function generateFieldValue(
   if (field.values && field.values.length > 0) {
     return field.values[(idx - 1) % field.values.length];
   }
+  // EntityField.name is optional per @almadar/core 7+; nameless nested
+  // items don't reach this generator (filtered by the caller), but TS
+  // can't see that across the function boundary.
+  const fieldName = field.name ?? '';
   switch (field.type) {
     case 'string':
-      return `${entityName} ${field.name.charAt(0).toUpperCase() + field.name.slice(1)} ${idx}`;
+      return `${entityName} ${fieldName.charAt(0).toUpperCase() + fieldName.slice(1)} ${idx}`;
     case 'number':
       return idx * 10;
     case 'boolean':
