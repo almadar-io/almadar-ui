@@ -449,6 +449,15 @@ export function useTraitStateMachine(
         // Send event through StateMachineManager (shared runtime)
         const results = currentManager.sendEvent(normalizedEvent, payload);
 
+        // Track every event each trait's effects emit during this dispatch.
+        // Populated inside the effects loop via a wrapped emit handler;
+        // consumed in the recordTransition loop to build the per-transition
+        // ServerResponseTrace.emittedEvents — the canonical signal the
+        // verifier's data-mutation observer reads via lastServerResponseFor.
+        // Without this, the runtime path silently drops the persist's
+        // declared emit.success and serverResponse arrives as null.
+        const emittedByTrait = new Map<string, string[]>();
+
         // Execute effects for each transition that occurred
         for (const { traitName, result } of results) {
             const binding = bindingMap.get(traitName);
@@ -616,7 +625,24 @@ export function useTraitStateMachine(
                     entityId,
                 };
 
-                const executor = new EffectExecutor({ handlers, bindings: bindingCtx, context: effectContext });
+                // Capture every event this trait's effects emit during
+                // execution. The verifier's data-mutation observer reads
+                // them off the per-transition ServerResponseTrace so the
+                // declared persist `emit.success` becomes a verifiable
+                // signal on the runtime path (parity with the compiled
+                // path's recordServerResponse for server-bridge events).
+                const emittedDuringExec: string[] = [];
+                emittedByTrait.set(traitName, emittedDuringExec);
+                const baseEmit = handlers.emit;
+                const trackingHandlers: EffectHandlers = {
+                    ...handlers,
+                    emit: (event, eventPayload, source) => {
+                        emittedDuringExec.push(event);
+                        baseEmit(event, eventPayload, source);
+                    },
+                };
+
+                const executor = new EffectExecutor({ handlers: trackingHandlers, bindings: bindingCtx, context: effectContext });
 
                 // AWAIT effects: the actor model requires all effects (fetch, persist,
                 // emit) to complete before the next event is dequeued. Emitted events
@@ -701,6 +727,7 @@ export function useTraitStateMachine(
                         };
                     }
                 );
+                const emittedEvents = emittedByTrait.get(traitName) ?? [];
                 recordTransition({
                     traitName,
                     from: result.previousState,
@@ -708,6 +735,25 @@ export function useTraitStateMachine(
                     event: normalizedEvent,
                     effects: effectTraces,
                     timestamp: Date.now(),
+                    // Populate ServerResponseTrace.emittedEvents whenever this
+                    // trait's effects fired anything via handlers.emit (e.g.
+                    // a persist's declared emit.success → ITEM_CREATED).
+                    // Without this, the verifier's data-mutation observer's
+                    // `frame.serverResponse?.emittedEvents` arrives null and
+                    // the cascade-was-empty fail surfaces despite the runtime
+                    // having dispatched the event correctly.
+                    ...(emittedEvents.length > 0 && {
+                        serverResponse: {
+                            // orbitalName is metadata for the debug timeline;
+                            // the verifier reads emittedEvents only.
+                            orbitalName: '',
+                            success: true,
+                            clientEffects: effectTraces.length,
+                            dataEntities: {},
+                            emittedEvents,
+                            timestamp: Date.now(),
+                        },
+                    }),
                 });
             }
         }
