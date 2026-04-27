@@ -893,6 +893,7 @@ function renderPatternChildren(
   onDismiss: () => void,
   parentId = "root",
   parentPath = "root",
+  sourceTrait?: string,
 ): React.ReactNode {
   if (!children || !Array.isArray(children) || children.length === 0) {
     return null;
@@ -956,6 +957,10 @@ function renderPatternChildren(
       props: resolvedProps,
       priority: 0,
       nodeId: child._id,
+      // Inherit sourceTrait from the parent slot so nested patterns
+      // (e.g. form-section inside a stack) can resolve entityDef via
+      // the trait's linkedEntity for form-field enrichment.
+      ...(sourceTrait !== undefined && { sourceTrait }),
     };
 
     return (
@@ -1044,10 +1049,23 @@ function SlotContentRenderer({
 
   // Entity schema for form field type enrichment (optional — only available in runtime mode)
   const schemaCtx = useEntitySchemaOptional();
-  const entityDef =
-    typeof entityProp === 'string' && entityProp.length > 0 && schemaCtx
-      ? schemaCtx.entities.get(entityProp)
-      : undefined;
+  // Two lookup paths:
+  //   1. Legacy V1: entityProp is a string entity-name → look up directly.
+  //   2. V2: entityProp is the resolved row/array (from @payload.row /
+  //      @payload.data) → look up via the source trait's linkedEntity
+  //      (projected from ResolvedTraitBinding by EntitySchemaProvider).
+  // Without (2), form-section's `fields` enrichment never fires for
+  // entity-bound forms in the V2 flow, and enum fields render as plain
+  // text inputs instead of `<Select>`. Closes VR3.
+  let entityDef: ResolvedEntity | undefined;
+  if (typeof entityProp === 'string' && entityProp.length > 0 && schemaCtx) {
+    entityDef = schemaCtx.entities.get(entityProp);
+  } else if (schemaCtx && content.sourceTrait !== undefined) {
+    const linkedEntity = schemaCtx.traitLinkedEntities.get(content.sourceTrait);
+    if (linkedEntity !== undefined) {
+      entityDef = schemaCtx.entities.get(linkedEntity);
+    }
+  }
 
   const PatternComponent = getComponentForPattern(content.pattern);
 
@@ -1063,10 +1081,14 @@ function SlotContentRenderer({
     const hasChildren = PATTERNS_WITH_CHILDREN.has(content.pattern)
       || (Array.isArray(childrenConfig) && childrenConfig.length > 0);
 
-    // Render children recursively (pass patternPath for WYSIWYG drop targeting)
+    // Render children recursively (pass patternPath for WYSIWYG drop targeting).
+    // Inherit sourceTrait from the parent so nested patterns (e.g. a
+    // form-section inside a stack) can resolve entityDef via the trait's
+    // linkedEntity. Without this, only the top-level slot pattern carries
+    // sourceTrait and form enrichment skips for every nested form.
     const myPath = patternPath ?? 'root';
     const renderedChildren = hasChildren
-      ? renderPatternChildren(childrenConfig, onDismiss, content.id, myPath)
+      ? renderPatternChildren(childrenConfig, onDismiss, content.id, myPath, content.sourceTrait)
       : undefined;
 
     // Extract props without the children config (we pass rendered children instead)

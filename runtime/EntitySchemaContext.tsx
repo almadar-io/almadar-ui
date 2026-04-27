@@ -21,6 +21,20 @@ import type { ResolvedEntity } from '@almadar/core';
 export interface EntitySchemaContextValue {
     /** Entity definitions (schema metadata only) */
     entities: Map<string, ResolvedEntity>;
+    /**
+     * Per-trait linkedEntity name. `ResolvedTrait` itself doesn't carry
+     * linkedEntity (it lives on `ResolvedTraitBinding` at the page-binding
+     * level), so OrbPreview pre-projects every page's trait bindings into
+     * a flat `traitName → entityName` map for the slot renderer.
+     *
+     * Used by SlotContentRenderer to resolve `entityDef` via
+     * `traitLinkedEntities.get(sourceTrait) → entities.get(...)` when the
+     * rendered pattern's `entity:` prop is a resolved value (V2 path)
+     * rather than a string entity-name. Without this lookup, form-section
+     * can't enrich its fields with entity field metadata (values enum,
+     * etc.) and an enum field renders as a plain text input. Closes VR3.
+     */
+    traitLinkedEntities: ReadonlyMap<string, string>;
 }
 
 // ============================================================================
@@ -36,6 +50,13 @@ const EntitySchemaContext = createContext<EntitySchemaContextValue | null>(null)
 export interface EntitySchemaProviderProps {
     /** Entity definitions from resolved schema */
     entities: ResolvedEntity[];
+    /**
+     * Per-trait linkedEntity name, projected from every page's
+     * ResolvedTraitBinding. Optional for back-compat; when omitted,
+     * SlotContentRenderer's enrichment path can only follow the
+     * legacy V1 string-entity-name lookup.
+     */
+    traitLinkedEntities?: ReadonlyMap<string, string>;
     /** Children */
     children: React.ReactNode;
 }
@@ -49,6 +70,7 @@ export interface EntitySchemaProviderProps {
  */
 export function EntitySchemaProvider({
     entities,
+    traitLinkedEntities,
     children,
 }: EntitySchemaProviderProps): React.ReactElement {
     // Build entities map from array
@@ -60,11 +82,16 @@ export function EntitySchemaProvider({
         return map;
     }, [entities]);
 
+    const linkedMap = useMemo(() => {
+        return traitLinkedEntities ?? new Map<string, string>();
+    }, [traitLinkedEntities]);
+
     const contextValue = useMemo<EntitySchemaContextValue>(
         () => ({
             entities: entitiesMap,
+            traitLinkedEntities: linkedMap,
         }),
-        [entitiesMap]
+        [entitiesMap, linkedMap]
     );
 
     return (

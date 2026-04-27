@@ -381,7 +381,22 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate, onLoc
   const inner = (
     <VerificationProvider enabled>
       <SlotsProvider>
-        <EntitySchemaProvider entities={Array.from(allEntities.values())}>
+        <EntitySchemaProvider
+          entities={Array.from(allEntities.values())}
+          traitLinkedEntities={(() => {
+            const map = new Map<string, string>();
+            if (ir) {
+              for (const page of ir.pages.values()) {
+                for (const binding of page.traits) {
+                  if (binding.linkedEntity) {
+                    map.set(binding.trait.name, binding.linkedEntity);
+                  }
+                }
+              }
+            }
+            return map;
+          })()}
+        >
           <TraitInitializer
             traits={allPageTraits}
             orbitalNames={serverUrl ? orbitalNames : undefined}
