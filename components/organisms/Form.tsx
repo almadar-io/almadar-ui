@@ -289,6 +289,25 @@ export interface FormProps extends Omit<
   repeatable?: boolean;
 }
 
+/**
+ * Type guards for the `entity` prop's discriminated union. The prop can
+ * be a string entity-name, an OrbitalEntity schema descriptor (with a
+ * `fields` array), or a resolved EntityRow row object (V2 path:
+ * `entity: @payload.row`). The schema and row shapes are both objects
+ * but only the schema carries `fields[]`.
+ */
+function isOrbitalEntitySchema(value: unknown): value is OrbitalEntity {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+  const fields = (value as { fields?: unknown }).fields;
+  return Array.isArray(fields);
+}
+
+function isPlainEntityRow(value: unknown): value is Record<string, unknown> {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+  const fields = (value as { fields?: unknown }).fields;
+  return !Array.isArray(fields);
+}
+
 const layoutStyles = {
   vertical: "flex flex-col",
   horizontal: "flex flex-row flex-wrap items-end",
@@ -415,11 +434,33 @@ export const Form: React.FC<FormProps> = ({
   const { t } = useTranslate();
   const resolvedSubmitLabel = submitLabel ?? t('common.save');
   const resolvedCancelLabel = cancelLabel ?? t('common.cancel');
-  const normalizedInitialData = (initialData as Record<string, unknown>) ?? {};
 
-  // Resolve entity: string name, OrbitalEntity schema object, or array (ignore arrays)
-  const resolvedEntity = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as OrbitalEntity : undefined;
+  // Resolve entity: string name, OrbitalEntity schema object, or array (ignore arrays).
+  // V2 path: `entity` may be a resolved EntityRow (e.g. @payload.row) — a plain
+  // record with field values but no `fields` array. Discriminator:
+  //   - has `fields` array → OrbitalEntity schema descriptor.
+  //   - otherwise → row data (initial values for an edit form).
+  const isSchemaEntity = isOrbitalEntitySchema(entity);
+  const resolvedEntity = isSchemaEntity ? entity : undefined;
   const entityName = typeof entity === "string" ? entity : resolvedEntity?.name;
+  // Row data (V2 edit path): use `entity` as initial form values. Caller's
+  // explicit `initialData` still wins for backward compat.
+  // The predicate's `Record<string, unknown>` widening doesn't survive the
+  // entity prop's `string | OrbitalEntity | readonly Record[]` union intact,
+  // so re-narrow with an explicit annotation.
+  const entityRowAsInitial: Record<string, unknown> | undefined = isPlainEntityRow(entity)
+    ? (entity as Record<string, unknown>)
+    : undefined;
+  // Effective initial data merges row-as-entity with the caller's explicit
+  // initialData (caller wins on key collision). Caller's initialData arrives
+  // typed as `unknown` (any author payload); narrow before spreading.
+  const callerInitial: Record<string, unknown> =
+    initialData !== null && typeof initialData === 'object' && !Array.isArray(initialData)
+      ? (initialData as Record<string, unknown>)
+      : {};
+  const normalizedInitialData: Record<string, unknown> = entityRowAsInitial !== undefined
+    ? { ...entityRowAsInitial, ...callerInitial }
+    : callerInitial;
   const entityDerivedFields: readonly Readonly<SchemaField>[] | undefined =
     React.useMemo(() => {
       if (fields && fields.length > 0) return undefined;
@@ -472,13 +513,13 @@ export const Form: React.FC<FormProps> = ({
     [formData, externalContext],
   );
 
-  // Sync form data when initialData changes (e.g., when data loads from API)
+  // Sync form data when initialData changes (e.g., when data loads from
+  // API) OR when entity-as-row changes (V2 edit path: @payload.row).
   React.useEffect(() => {
-    const data = initialData as Record<string, unknown> | undefined;
-    if (data && Object.keys(data).length > 0) {
-      setFormData(data);
+    if (Object.keys(normalizedInitialData).length > 0) {
+      setFormData(normalizedInitialData);
     }
-  }, [initialData]);
+  }, [normalizedInitialData]);
 
   /**
    * Process hidden calculations when triggered fields change
