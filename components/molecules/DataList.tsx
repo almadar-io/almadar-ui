@@ -383,6 +383,7 @@ export function DataList<T extends EntityRow = EntityRow>({
                     size="sm"
                     onClick={handleActionClick(action, itemData)}
                     data-testid={`action-${action.event}`}
+                    data-row-id={String(itemData.id)}
                     className={cn(
                       action.variant === 'danger' && 'text-error hover:bg-error/10',
                     )}
@@ -501,6 +502,7 @@ export function DataList<T extends EntityRow = EntityRow>({
                   size="sm"
                   onClick={handleActionClick(action, itemData)}
                   data-testid={`action-${action.event}`}
+                  data-row-id={String(itemData.id)}
                   className={cn(
                     action.variant === 'danger' && 'text-error hover:bg-error/10',
                   )}

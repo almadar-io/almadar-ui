@@ -345,6 +345,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
                       size="sm"
                       onClick={handleActionClick(action, itemData)}
                       data-testid={action.event ? `action-${action.event}` : undefined}
+                      data-row-id={String(itemData.id)}
                       className="text-error hover:bg-error/10 px-2"
                     >
                       {action.label}
@@ -414,6 +415,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
                     size="sm"
                     onClick={handleActionClick(action, itemData)}
                     data-testid={action.event ? `action-${action.event}` : undefined}
+                    data-row-id={String(itemData.id)}
                   >
                     {action.label}
                   </Button>

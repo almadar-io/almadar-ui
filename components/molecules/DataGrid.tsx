@@ -450,6 +450,7 @@ export function DataGrid<T extends EntityRow = EntityRow>({
                         size="sm"
                         onClick={handleActionClick(action, itemData)}
                         data-testid={`action-${action.event}`}
+                        data-row-id={String(itemData.id)}
                         className="text-error hover:bg-error/10 px-2"
                       >
                         {action.icon && <Icon name={action.icon} size="xs" />}
@@ -518,6 +519,7 @@ export function DataGrid<T extends EntityRow = EntityRow>({
                       size="sm"
                       onClick={handleActionClick(action, itemData)}
                       data-testid={`action-${action.event}`}
+                      data-row-id={String(itemData.id)}
                     >
                       {action.icon && <Icon name={action.icon} size="xs" className="mr-1" />}
                       {action.label}

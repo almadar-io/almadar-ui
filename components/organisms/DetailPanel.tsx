@@ -618,6 +618,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
               actionPayload={{ row: normalizedData }}
               icon={action.icon}
               data-testid={action.event ? `action-${action.event}` : undefined}
+              data-row-id={normalizedData?.id !== undefined ? String(normalizedData.id) : undefined}
             >
               {action.label}
             </Button>
