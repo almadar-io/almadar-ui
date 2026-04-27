@@ -654,8 +654,23 @@ export const Form: React.FC<FormProps> = ({
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Dispatch submit event for trait state machine integration
-    const payload: FormSubmitPayload = { data: formData as FormSubmitPayload['data'] };
+    // Merge initialData into the submitted payload. The form renders
+    // only the user-editable fields, but downstream traits (persist
+    // update / delete) need the row's primary keys (especially `id`)
+    // to resolve the target row. Without this merge, an edit form
+    // submits `{ name, description, status }` and the persistor's
+    // `updateId = data?.id ?? entity?.id ?? ...` chain resolves to
+    // undefined, the `if (updateId) { ... }` branch is skipped, and
+    // `emit.success` never fires. Spreading `normalizedInitialData`
+    // first lets `formData` (post-edit) win on overlap, so changed
+    // fields are preserved while non-rendered keys (like `id`) carry
+    // through. This is the hidden-id pattern, applied at the form's
+    // call site per the "emit call site is the source of truth" rule.
+    const mergedData: Record<string, unknown> = {
+      ...normalizedInitialData,
+      ...formData,
+    };
+    const payload: FormSubmitPayload = { data: mergedData as FormSubmitPayload['data'] };
     eventBus.emit(`UI:${submitEvent}`, payload);
     // Handle onSubmit - event name string for additional trait dispatch
     if (onSubmit) {
