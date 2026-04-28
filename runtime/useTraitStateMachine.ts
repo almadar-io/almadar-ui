@@ -465,6 +465,23 @@ export function useTraitStateMachine(
         // Find the binding that matches each trait for linkedEntity info
         const bindingMap = new Map(bindings.map(b => [b.trait.name, b]));
 
+        // Emit `<traitName>:DISPATCH` for every registered trait before
+        // processing — matches the compiled-shell backend codegen
+        // (orbital-shell-typescript/src/backend.rs:2618). VerificationProvider
+        // listens for these to record per-trait dispatch lifecycle, and
+        // probeBindings reads them out of the eventLog as proof the cause
+        // event reached this trait. Pre-fix the runtime path produced no
+        // DISPATCH/SUCCESS/ERROR lifecycle events, so probeBindings
+        // reported "missing on frame N" for every persistor cascade frame.
+        for (const traitName of bindingMap.keys()) {
+            const traitState = currentManager.getState(traitName);
+            eventBus.emit(`${traitName}:DISPATCH`, {
+                event: normalizedEvent,
+                payload: payload as EventPayload['payload'],
+                currentState: traitState?.currentState,
+            });
+        }
+
         // Send event through StateMachineManager (shared runtime)
         const results = currentManager.sendEvent(normalizedEvent, payload);
 
@@ -722,6 +739,21 @@ export function useTraitStateMachine(
                     }
                 }
             }
+        }
+
+        // Emit `<traitName>:<event>:SUCCESS` (or `:ERROR`) per result —
+        // matches the compiled-shell backend codegen so VerificationProvider's
+        // lifecycle listener and probeBindings see the same event-log shape
+        // on both paths. Emitted before the transition recording loop below
+        // so the bus log entry orders before downstream cascade emits.
+        for (const { traitName, result } of results) {
+            const suffix = result.executed ? 'SUCCESS' : 'ERROR';
+            eventBus.emit(`${traitName}:${normalizedEvent}:${suffix}`, {
+                event: normalizedEvent,
+                payload: payload as EventPayload['payload'],
+                newState: result.newState,
+                currentState: result.previousState,
+            });
         }
 
         // Update debug registries for each transition
