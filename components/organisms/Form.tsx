@@ -14,7 +14,7 @@
  */
 
 import React from "react";
-import type { EventKey, EventPayload } from "@almadar/core";
+import type { EntityRow, EventKey, EventPayload } from "@almadar/core";
 import type { FormSubmitPayload } from "@almadar/patterns";
 import { cn } from "../../lib/cn";
 import { Input } from "../atoms/Input";
@@ -410,7 +410,14 @@ export const Form: React.FC<FormProps> = ({
   // Schema-based props
   entity,
   fields,
-  initialData = {},
+  // No `= {}` default: a fresh `{}` evaluated inline on every render
+  // would change the prop reference every tick and bust the useMemo
+  // cache below (`[entity, initialData]` deps), reigniting the
+  // setFormData useEffect on every keystroke and producing an
+  // infinite re-render loop with stuck form inputs. The memo and
+  // submit handler both handle `undefined` already via the
+  // `typeof initialData === 'object'` guard.
+  initialData,
   isLoading = false,
   error,
   submitLabel,
@@ -448,19 +455,34 @@ export const Form: React.FC<FormProps> = ({
   // The predicate's `Record<string, unknown>` widening doesn't survive the
   // entity prop's `string | OrbitalEntity | readonly Record[]` union intact,
   // so re-narrow with an explicit annotation.
-  const entityRowAsInitial: Record<string, unknown> | undefined = isPlainEntityRow(entity)
-    ? (entity as Record<string, unknown>)
-    : undefined;
-  // Effective initial data merges row-as-entity with the caller's explicit
-  // initialData (caller wins on key collision). Caller's initialData arrives
-  // typed as `unknown` (any author payload); narrow before spreading.
-  const callerInitial: Record<string, unknown> =
-    initialData !== null && typeof initialData === 'object' && !Array.isArray(initialData)
-      ? (initialData as Record<string, unknown>)
-      : {};
-  const normalizedInitialData: Record<string, unknown> = entityRowAsInitial !== undefined
-    ? { ...entityRowAsInitial, ...callerInitial }
-    : callerInitial;
+  // `normalizedInitialData` MUST be memoized on the upstream prop refs
+  // (`entity`, `initialData`) — not recomputed inline. The useEffect at
+  // line ~518 watches it as a dep and calls setFormData on every change;
+  // without a stable ref it fires on every render, replacing the user's
+  // typed value before the next keystroke and producing both an
+  // infinite re-render loop and visibly-stuck inputs. The intermediate
+  // `entityRowAsInitial` / `callerInitial` are also wrapped so the
+  // memo's deps are the actual prop refs, not the inline narrowing
+  // wrappers.
+  //
+  // Typed as `EntityRow` from @almadar/core (the canonical row shape:
+  // optional `id` plus `Record<string, FieldValue | undefined>`). This
+  // matches what `entity` carries on the V2 edit path (a row from
+  // `@payload.row`) and what the form's submit handler eventually
+  // re-emits on the bus. Replaces the prior `Record<string, unknown>`
+  // typing per the no-unknown-when-core-type-fits rule.
+  const normalizedInitialData = React.useMemo<EntityRow>(() => {
+    const entityRowAsInitial: EntityRow | undefined = isPlainEntityRow(entity)
+      ? (entity as EntityRow)
+      : undefined;
+    const callerInitial: EntityRow =
+      initialData !== null && typeof initialData === 'object' && !Array.isArray(initialData)
+        ? (initialData as EntityRow)
+        : {};
+    return entityRowAsInitial !== undefined
+      ? { ...entityRowAsInitial, ...callerInitial }
+      : callerInitial;
+  }, [entity, initialData]);
   const entityDerivedFields: readonly Readonly<SchemaField>[] | undefined =
     React.useMemo(() => {
       if (fields && fields.length > 0) return undefined;
