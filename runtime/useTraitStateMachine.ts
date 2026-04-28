@@ -465,39 +465,8 @@ export function useTraitStateMachine(
         // Find the binding that matches each trait for linkedEntity info
         const bindingMap = new Map(bindings.map(b => [b.trait.name, b]));
 
-        // Emit `<traitName>:DISPATCH` for every registered trait before
-        // processing — matches the compiled-shell backend codegen
-        // (orbital-shell-typescript/src/backend.rs:2618). VerificationProvider
-        // listens for these to record per-trait dispatch lifecycle, and
-        // probeBindings reads them out of the eventLog as proof the cause
-        // event reached this trait. Pre-fix the runtime path produced no
-        // DISPATCH/SUCCESS/ERROR lifecycle events, so probeBindings
-        // reported "missing on frame N" for every persistor cascade frame.
-        for (const traitName of bindingMap.keys()) {
-            const traitState = currentManager.getState(traitName);
-            eventBus.emit(`${traitName}:DISPATCH`, {
-                event: normalizedEvent,
-                payload: payload as EventPayload['payload'],
-                currentState: traitState?.currentState,
-            });
-        }
-
         // Send event through StateMachineManager (shared runtime)
         const results = currentManager.sendEvent(normalizedEvent, payload);
-
-        // Emit `<traitName>:<event>:SUCCESS` (or `:ERROR`) per result
-        // synchronously, BEFORE the awaited effects loop. The async
-        // effects chain can outlive the verifier's settle window —
-        // emitting after `await persist` would miss the bus log.
-        for (const { traitName, result } of results) {
-            const suffix = result.executed ? 'SUCCESS' : 'ERROR';
-            eventBus.emit(`${traitName}:${normalizedEvent}:${suffix}`, {
-                event: normalizedEvent,
-                payload: payload as EventPayload['payload'],
-                newState: result.newState,
-                currentState: result.previousState,
-            });
-        }
 
         // Track every event each trait's effects emit during this dispatch.
         // Populated inside the effects loop via a wrapped emit handler;
