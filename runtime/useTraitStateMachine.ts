@@ -124,10 +124,20 @@ export function useTraitStateMachine(
 ): TraitStateMachineResult {
     const eventBus = useEventBus();
     const { entities } = useEntitySchema();
-    // Create StateMachineManager - shared with server runtime
+    // Create StateMachineManager - shared with server runtime.
+    // Mirrors OrbitalServerRuntime's setTraitConfig loop so the client-side
+    // guard evaluator sees @config.X. Without this, OPEN guards like
+    // `["or", ["=", "@config.mode", "create"], "@payload.row"]` rejected
+    // the create flow client-side because @config.mode resolved to undefined.
     const manager = useMemo(() => {
         const traitDefs = traitBindings.map(toTraitDefinition);
-        return new StateMachineManager(traitDefs);
+        const m = new StateMachineManager(traitDefs);
+        for (const binding of traitBindings) {
+            if (binding.config !== undefined) {
+                m.setTraitConfig(binding.trait.name, binding.config);
+            }
+        }
+        return m;
     }, [traitBindings]);
 
     // Track state for React re-renders
