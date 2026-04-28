@@ -485,6 +485,20 @@ export function useTraitStateMachine(
         // Send event through StateMachineManager (shared runtime)
         const results = currentManager.sendEvent(normalizedEvent, payload);
 
+        // Emit `<traitName>:<event>:SUCCESS` (or `:ERROR`) per result
+        // synchronously, BEFORE the awaited effects loop. The async
+        // effects chain can outlive the verifier's settle window —
+        // emitting after `await persist` would miss the bus log.
+        for (const { traitName, result } of results) {
+            const suffix = result.executed ? 'SUCCESS' : 'ERROR';
+            eventBus.emit(`${traitName}:${normalizedEvent}:${suffix}`, {
+                event: normalizedEvent,
+                payload: payload as EventPayload['payload'],
+                newState: result.newState,
+                currentState: result.previousState,
+            });
+        }
+
         // Track every event each trait's effects emit during this dispatch.
         // Populated inside the effects loop via a wrapped emit handler;
         // consumed in the recordTransition loop to build the per-transition
@@ -739,21 +753,6 @@ export function useTraitStateMachine(
                     }
                 }
             }
-        }
-
-        // Emit `<traitName>:<event>:SUCCESS` (or `:ERROR`) per result —
-        // matches the compiled-shell backend codegen so VerificationProvider's
-        // lifecycle listener and probeBindings see the same event-log shape
-        // on both paths. Emitted before the transition recording loop below
-        // so the bus log entry orders before downstream cascade emits.
-        for (const { traitName, result } of results) {
-            const suffix = result.executed ? 'SUCCESS' : 'ERROR';
-            eventBus.emit(`${traitName}:${normalizedEvent}:${suffix}`, {
-                event: normalizedEvent,
-                payload: payload as EventPayload['payload'],
-                newState: result.newState,
-                currentState: result.previousState,
-            });
         }
 
         // Update debug registries for each transition
