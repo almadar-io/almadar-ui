@@ -5,54 +5,58 @@
 const DEBUG_ENABLED = typeof window !== 'undefined' &&
   (localStorage.getItem('debug') === 'true' || process.env.NODE_ENV === 'development');
 
+interface VerifyWindow { __ALMADAR_DEBUG_VERIFY__?: boolean }
+
 export function isDebugEnabled(): boolean {
-  return DEBUG_ENABLED;
+  if (DEBUG_ENABLED) return true;
+  return typeof window !== 'undefined'
+    && (window as unknown as VerifyWindow).__ALMADAR_DEBUG_VERIFY__ === true;
 }
 
 export function debug(...args: unknown[]): void {
-  if (DEBUG_ENABLED) {
+  if (isDebugEnabled()) {
     console.log('[DEBUG]', ...args);
   }
 }
 
 export function debugGroup(label: string): void {
-  if (DEBUG_ENABLED) {
+  if (isDebugEnabled()) {
     console.group(`[DEBUG] ${label}`);
   }
 }
 
 export function debugGroupEnd(): void {
-  if (DEBUG_ENABLED) {
+  if (isDebugEnabled()) {
     console.groupEnd();
   }
 }
 
 export function debugWarn(...args: unknown[]): void {
-  if (DEBUG_ENABLED) {
+  if (isDebugEnabled()) {
     console.warn('[DEBUG]', ...args);
   }
 }
 
 export function debugError(...args: unknown[]): void {
-  if (DEBUG_ENABLED) {
+  if (isDebugEnabled()) {
     console.error('[DEBUG]', ...args);
   }
 }
 
 export function debugTable(data: unknown): void {
-  if (DEBUG_ENABLED) {
+  if (isDebugEnabled()) {
     console.table(data);
   }
 }
 
 export function debugTime(label: string): void {
-  if (DEBUG_ENABLED) {
+  if (isDebugEnabled()) {
     console.time(`[DEBUG] ${label}`);
   }
 }
 
 export function debugTimeEnd(label: string): void {
-  if (DEBUG_ENABLED) {
+  if (isDebugEnabled()) {
     console.timeEnd(`[DEBUG] ${label}`);
   }
 }
@@ -67,7 +71,7 @@ export function debugTimeEnd(label: string): void {
  * @param data - Input data to log
  */
 export function debugInput(inputType: string, data: unknown): void {
-  if (DEBUG_ENABLED) {
+  if (isDebugEnabled()) {
     console.log(`[DEBUG:INPUT] ${inputType}:`, data);
   }
 }
@@ -83,7 +87,7 @@ export function debugCollision(
   entityB: { id?: string; type?: string },
   details?: unknown
 ): void {
-  if (DEBUG_ENABLED) {
+  if (isDebugEnabled()) {
     console.log(
       `[DEBUG:COLLISION] ${entityA.type || entityA.id} <-> ${entityB.type || entityB.id}`,
       details ?? ''
@@ -97,7 +101,7 @@ export function debugCollision(
  * @param physics - Physics data to log
  */
 export function debugPhysics(entityId: string, physics: unknown): void {
-  if (DEBUG_ENABLED) {
+  if (isDebugEnabled()) {
     console.log(`[DEBUG:PHYSICS] ${entityId}:`, physics);
   }
 }
@@ -108,7 +112,7 @@ export function debugPhysics(entityId: string, physics: unknown): void {
  * @param value - New state value
  */
 export function debugGameState(stateName: string, value: unknown): void {
-  if (DEBUG_ENABLED) {
+  if (isDebugEnabled()) {
     console.log(`[DEBUG:GAME_STATE] ${stateName}:`, value);
   }
 }

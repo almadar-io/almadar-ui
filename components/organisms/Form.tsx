@@ -515,6 +515,20 @@ export const Form: React.FC<FormProps> = ({
     new Set(),
   );
 
+  const formMode = (props as { mode?: string }).mode;
+  const mountedRef = React.useRef(false);
+  if (!mountedRef.current) {
+    mountedRef.current = true;
+    debug('forms', 'mount', {
+      mode: formMode,
+      submitEvent,
+      cancelEvent,
+      fieldNames: (fields ?? []).map((f) => f.name ?? f.field).filter(Boolean),
+      initialDataKeys: Object.keys(normalizedInitialData),
+      initialData: normalizedInitialData,
+    });
+  }
+
   // Default to showing cancel button for schema-based forms
   const shouldShowCancel = showCancel ?? (fields && fields.length > 0);
 
@@ -538,6 +552,12 @@ export const Form: React.FC<FormProps> = ({
   // Sync form data when initialData changes (e.g., when data loads from
   // API) OR when entity-as-row changes (V2 edit path: @payload.row).
   React.useEffect(() => {
+    debug('forms', 'initialData-sync', {
+      mode: formMode,
+      normalizedInitialData,
+      prevFormData: formData,
+      willSet: Object.keys(normalizedInitialData).length > 0,
+    });
     if (Object.keys(normalizedInitialData).length > 0) {
       setFormData(normalizedInitialData);
     }
@@ -619,6 +639,7 @@ export const Form: React.FC<FormProps> = ({
 
   const handleChange = (name: string, value: unknown) => {
     const newFormData = { ...formData, [name]: value };
+    debug('forms', 'field-change', { mode: formMode, name, value, prevFormData: formData, newFormData });
     setFormData(newFormData);
 
     // Emit field change event
@@ -676,6 +697,12 @@ export const Form: React.FC<FormProps> = ({
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    debug('forms', 'submit-enter', {
+      mode: formMode,
+      submitEvent,
+      formData,
+      normalizedInitialData,
+    });
     // Merge initialData into the submitted payload. The form renders
     // only the user-editable fields, but downstream traits (persist
     // update / delete) need the row's primary keys (especially `id`)
@@ -693,6 +720,7 @@ export const Form: React.FC<FormProps> = ({
       ...formData,
     };
     const payload: FormSubmitPayload = { data: mergedData as FormSubmitPayload['data'] };
+    debug('forms', 'submit-emit', { mode: formMode, submitEvent: `UI:${submitEvent}`, payloadData: payload.data });
     eventBus.emit(`UI:${submitEvent}`, payload);
     // Handle onSubmit - event name string for additional trait dispatch
     if (onSubmit) {
