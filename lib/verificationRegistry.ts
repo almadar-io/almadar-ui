@@ -425,7 +425,7 @@ export function bindEventBus(eventBus: {
 
     // Instrument event bus to log all emissions
     if (eventBus.onAny) {
-      eventBus.onAny((event) => {
+      const verificationRegistryEventLogger = (event: BusEvent) => {
         if (eventLog.length < 200) {
           eventLog.push({
             type: event.type,
@@ -433,7 +433,15 @@ export function bindEventBus(eventBus: {
             timestamp: Date.now(),
           });
         }
+      };
+      // See VerificationProvider for the same defineProperty pattern.
+      // Vite/Rollup minify const-binding names; a runtime name
+      // assignment is preserved through the bundle so the per-listener
+      // log can identify this subscriber.
+      Object.defineProperty(verificationRegistryEventLogger, 'name', {
+        value: 'verificationRegistry:eventLog',
       });
+      eventBus.onAny(verificationRegistryEventLogger);
     }
   }
 }

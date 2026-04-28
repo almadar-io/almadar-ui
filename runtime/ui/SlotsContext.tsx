@@ -21,6 +21,30 @@
 
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
 import type { PatternConfig, EventSource, ResolvedTrait } from '@almadar/core';
+import { createLogger } from '../../lib/logger';
+
+// `almadar:ui:slot-render` — observability for the runtime-path slot
+// rendering chain. Used to investigate why Form fields revert mid-edit
+// in the runtime path but not in the compiled path: traces every
+// setSlotPatterns / clearSlot / SlotContentRenderer render so we can
+// see whether the modal slot is being re-pushed (and Form remounted)
+// during a typing session.
+const slotLog = createLogger('almadar:ui:slot-render');
+
+// Assign stable per-object ids so the log can compare entity references
+// across renders. WeakMap so we don't pin the underlying row objects.
+const refIds = new WeakMap<object, number>();
+let nextRefId = 1;
+export function refId(obj: unknown): number | null {
+    if (obj === null || obj === undefined || typeof obj !== 'object') return null;
+    const existing = refIds.get(obj as object);
+    if (existing !== undefined) return existing;
+    const id = nextRefId++;
+    refIds.set(obj as object, id);
+    return id;
+}
+
+export { slotLog };
 
 // ============================================================================
 // Types
@@ -131,6 +155,22 @@ export function SlotsProvider({ children }: SlotsProviderProps): React.ReactElem
 
     const setSlotPatterns = useCallback((slot: string, patterns: SlotPatternEntry[], source?: SlotSource) => {
         const sourceKey = source?.trait ?? DEFAULT_SOURCE_KEY;
+        // Log the entity ref id for the first pattern carrying an
+        // `entity` prop. If the same logical row gets pushed with a
+        // different ref id every time, that's the form-reset bug
+        // smoking gun.
+        const entityProp = patterns[0]?.pattern && typeof patterns[0].pattern === 'object'
+            ? (patterns[0].pattern as { entity?: unknown }).entity
+            : undefined;
+        slotLog.debug('setSlotPatterns', {
+            slot,
+            sourceKey,
+            patternCount: patterns.length,
+            firstPatternType: patterns[0]?.pattern && typeof patterns[0].pattern === 'object'
+                ? ((patterns[0].pattern as { type?: unknown }).type as string | undefined)
+                : undefined,
+            entityRefId: refId(entityProp),
+        });
         setSlots(prev => {
             const prevSlot = prev[slot] ?? {};
             return {

@@ -30,6 +30,8 @@ import {
   useSlots,
   SlotsProvider,
   slotEntriesInOrder,
+  slotLog,
+  refId,
   type SlotEntry,
 } from './ui/SlotsContext';
 import { EntitySchemaProvider } from './EntitySchemaContext';
@@ -83,6 +85,16 @@ function SlotBridge() {
   const { render, clear } = useUISlots();
 
   useEffect(() => {
+    // SlotBridge re-runs for ANY slot-state change. It iterates ALL
+    // slots, calling render() on each — even slots whose own state is
+    // unchanged. Each render() creates a new SlotContent wrapper id,
+    // which subscribers see as a "new content" event. Logging the
+    // entity ref id surfaces whether the modal's row reference is
+    // stable across these spurious re-runs.
+    slotLog.debug('SlotBridge:effect-fired', {
+      slotCount: Object.keys(slots).length,
+      slots: Object.keys(slots),
+    });
     for (const [slotName, slotState] of Object.entries(slots)) {
       const entries = slotEntriesInOrder(slotState);
       if (entries.length === 0) {
@@ -124,6 +136,12 @@ function SlotBridge() {
           [key: string]: unknown;
         };
         const lastEntry = entries[entries.length - 1];
+        slotLog.debug('SlotBridge:render-single', {
+          slot: slotName,
+          patternType: type,
+          entityRefId: refId((rest as { entity?: unknown }).entity),
+          sourceTrait: lastEntry.entry.source?.trait,
+        });
         render({
           target: slotName as Parameters<typeof render>[0]['target'],
           pattern: type,

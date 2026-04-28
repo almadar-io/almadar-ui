@@ -76,6 +76,37 @@ interface EventBusProviderProps {
  * }
  * ```
  */
+// Per-listener identity tags. Captured at subscribe-time from the call
+// stack so we can answer "who reacted to this emit?" without renaming
+// every subscriber. Used by the per-listener emit log below.
+const listenerTags = new WeakMap<EventListener, string>();
+function captureSubscriberTag(listener: EventListener): string {
+    // Prefer the listener's function.name (preserved through bundling
+    // when the source declares a named function or assigns a name via
+    // `Object.defineProperty(fn, 'name', ...)` — much more durable
+    // than stack frames against minified code).
+    const fnName = (listener as { name?: string }).name;
+    if (typeof fnName === 'string' && fnName.length > 0 && fnName !== 'listener') {
+        return fnName;
+    }
+    // Fallback: pull out the first stack frame that lives in user code
+    // (skip the hook/provider frames). Browser stacks vary, so we keep
+    // the shortest identifying suffix and trim node_modules noise.
+    const stack = new Error().stack ?? '';
+    const lines = stack.split('\n');
+    for (const raw of lines.slice(2)) {
+        const line = raw.trim();
+        if (!line) continue;
+        if (line.includes('EventBusProvider') || line.includes('useEventBus')) continue;
+        if (line.includes('captureSubscriberTag')) continue;
+        // Drop verbose path prefixes; keep filename:line if available.
+        const match = line.match(/([^/\\)]+\.(?:tsx?|jsx?))(?::(\d+))?/);
+        if (match) return match[2] ? `${match[1]}:${match[2]}` : match[1];
+        return line.slice(0, 120);
+    }
+    return 'unknown';
+}
+
 export function EventBusProvider({ children, debug = false }: EventBusProviderProps) {
   // Store listeners by event type
   const listenersRef = useRef<Map<string, Set<EventListener>>>(new Map());
@@ -138,10 +169,24 @@ export function EventBusProvider({ children, debug = false }: EventBusProviderPr
       }
     }
 
+    // Per-listener invocation log. The summary `emit` line above only
+    // tells us how MANY listeners ran; the slot-render investigation
+    // needs to know WHICH listeners reacted to a specific event (e.g.
+    // UI:FIELD_CHANGED) to identify whether any of them indirectly
+    // re-render the slot tree mid-edit. Tagged at subscribe-time via
+    // captureSubscriberTag so anonymous arrow-function listeners are
+    // still distinguishable.
     if (listeners) {
       // Create a copy to avoid issues if listener modifies the set
       const listenersCopy = Array.from(listeners);
-      for (const listener of listenersCopy) {
+      for (let i = 0; i < listenersCopy.length; i++) {
+        const listener = listenersCopy[i];
+        busLog.debug('emit:listener', {
+          type,
+          kind: 'specific',
+          index: i,
+          tag: listenerTags.get(listener) ?? 'untagged',
+        });
         try {
           listener(event);
         } catch (error) {
@@ -152,7 +197,14 @@ export function EventBusProvider({ children, debug = false }: EventBusProviderPr
 
     // Notify wildcard (onAny) listeners
     const anyListeners = Array.from(anyListenersRef.current);
-    for (const listener of anyListeners) {
+    for (let i = 0; i < anyListeners.length; i++) {
+      const listener = anyListeners[i];
+      busLog.debug('emit:listener', {
+        type,
+        kind: 'onAny',
+        index: i,
+        tag: listenerTags.get(listener) ?? 'untagged',
+      });
       try {
         listener(event);
       } catch (error) {
@@ -172,7 +224,8 @@ export function EventBusProvider({ children, debug = false }: EventBusProviderPr
 
     const listeners = listenersRef.current.get(type)!;
     listeners.add(listener);
-    subLog.debug('subscribe', { type, totalListeners: listeners.size });
+    if (!listenerTags.has(listener)) listenerTags.set(listener, captureSubscriberTag(listener));
+    subLog.debug('subscribe', { type, totalListeners: listeners.size, tag: listenerTags.get(listener) });
 
     if (debug) {
       console.log(`[EventBus] Subscribed to '${type}', total: ${listeners.size}`);
@@ -217,7 +270,8 @@ export function EventBusProvider({ children, debug = false }: EventBusProviderPr
    */
   const onAny = useCallback((listener: EventListener): Unsubscribe => {
     anyListenersRef.current.add(listener);
-    subLog.debug('subscribe:any', { totalAnyListeners: anyListenersRef.current.size });
+    if (!listenerTags.has(listener)) listenerTags.set(listener, captureSubscriberTag(listener));
+    subLog.debug('subscribe:any', { totalAnyListeners: anyListenersRef.current.size, tag: listenerTags.get(listener) });
 
     if (debug) {
       console.log(`[EventBus] onAny subscribed, total: ${anyListenersRef.current.size}`);

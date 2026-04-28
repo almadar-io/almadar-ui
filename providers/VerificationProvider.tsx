@@ -18,6 +18,7 @@
  */
 
 import React, { useEffect, useRef, type ReactNode } from 'react';
+import type { BusEvent } from '@almadar/core';
 import { useEventBus } from '../hooks/useEventBus';
 import {
   recordTransition,
@@ -154,7 +155,7 @@ export function VerificationProvider({
     if (!isEnabled) return;
     if (!eventBus.onAny) return;
 
-    const unsub = eventBus.onAny((evt) => {
+    const verificationProviderLifecycleListener = (evt: BusEvent) => {
       const parsed = parseLifecycleEvent(evt.type);
       if (!parsed) return;
       log.debug('lifecycle:event', { kind: parsed.kind, traitName: parsed.traitName, event: parsed.event, type: evt.type });
@@ -270,7 +271,16 @@ export function VerificationProvider({
         });
         log.warn('transition:error', { trait: parsed.traitName, event: parsed.event, from: fromState, error: errorMsg });
       }
+    };
+    // Preserve the listener's name through Vite/Rollup minification so
+    // EventBusProvider's per-listener log can identify this onAny
+    // subscriber by its source-level name. Direct `const fn = (...)`
+    // names are mangled by minifiers; a runtime defineProperty assigns
+    // the name string at execution time and survives bundling.
+    Object.defineProperty(verificationProviderLifecycleListener, 'name', {
+      value: 'VerificationProvider:lifecycle',
     });
+    const unsub = eventBus.onAny(verificationProviderLifecycleListener);
 
     registerCheck(
       'verification-provider',

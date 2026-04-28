@@ -29,6 +29,7 @@ import { Toast } from "../molecules/Toast";
 import { Box } from "../atoms/Box";
 import { Typography } from "../atoms/Typography";
 import { useEventBus } from "../../hooks/useEventBus";
+import { slotLog, refId } from "../../runtime/ui/SlotsContext";
 import { cn } from "../../lib/cn";
 import { ErrorBoundary } from "../molecules/ErrorBoundary";
 import { Skeleton, type SkeletonVariant } from "../molecules/Skeleton";
@@ -1039,6 +1040,19 @@ function SlotContentRenderer({
   // (e.g. non-migrated project content), dev-mode throws so the author fixes
   // the schema; prod silently renders nothing.
   const entityProp = content.props.entity;
+  // Trace every render of every form-section so we can see whether
+  // typing in the form causes the parent SlotContentRenderer to re-
+  // render with a fresh entity reference (which would invalidate
+  // Form's normalizedInitialData memo and reset typed values). Same
+  // `almadar:ui:slot-render` namespace as the Slots/SlotBridge logs.
+  if (content.pattern === 'form-section') {
+    slotLog.debug('SlotContentRenderer:form-section-render', {
+      contentId: content.id,
+      sourceTrait: content.sourceTrait,
+      entityRefId: refId(entityProp),
+      entityIsObject: entityProp !== null && typeof entityProp === 'object' && !Array.isArray(entityProp),
+    });
+  }
   if (typeof entityProp === 'string' && entityProp.length > 0) {
     if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV !== 'production') {
       throw new Error(
