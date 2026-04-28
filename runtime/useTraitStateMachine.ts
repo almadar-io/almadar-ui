@@ -109,6 +109,14 @@ export interface UseTraitStateMachineOptions {
     persistence?: import('@almadar/runtime').PersistenceAdapter;
     /** Optional consumer `call-service` hook forwarded to the mock server handlers. */
     callService?: (service: string, action: string, params: unknown) => Promise<unknown>;
+    /**
+     * Trait configs keyed by trait name. Threaded into setTraitConfig so
+     * `@config.X` resolves inside guard expressions on the client. Page-level
+     * `ResolvedTraitBinding`s often arrive without a config (the orbital-level
+     * config doesn't propagate through `@almadar/core`'s page resolver), so the
+     * caller assembles this map from the orbital schema directly.
+     */
+    traitConfigsByName?: Record<string, import('@almadar/core').TraitConfig>;
 }
 
 /**
@@ -124,21 +132,22 @@ export function useTraitStateMachine(
 ): TraitStateMachineResult {
     const eventBus = useEventBus();
     const { entities } = useEntitySchema();
-    // Create StateMachineManager - shared with server runtime.
     // Mirrors OrbitalServerRuntime's setTraitConfig loop so the client-side
-    // guard evaluator sees @config.X. Without this, OPEN guards like
-    // `["or", ["=", "@config.mode", "create"], "@payload.row"]` rejected
-    // the create flow client-side because @config.mode resolved to undefined.
+    // guard evaluator sees @config.X. Page-level bindings often arrive with
+    // config undefined; the caller's `traitConfigsByName` map (built from the
+    // orbital schema) backfills the missing entries.
+    const traitConfigsByName = options?.traitConfigsByName;
     const manager = useMemo(() => {
         const traitDefs = traitBindings.map(toTraitDefinition);
         const m = new StateMachineManager(traitDefs);
         for (const binding of traitBindings) {
-            if (binding.config !== undefined) {
-                m.setTraitConfig(binding.trait.name, binding.config);
+            const cfg = binding.config ?? traitConfigsByName?.[binding.trait.name];
+            if (cfg !== undefined) {
+                m.setTraitConfig(binding.trait.name, cfg);
             }
         }
         return m;
-    }, [traitBindings]);
+    }, [traitBindings, traitConfigsByName]);
 
     // Track state for React re-renders
     const [traitStates, setTraitStates] = useState<Map<string, TraitState>>(() => {

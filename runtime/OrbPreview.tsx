@@ -228,9 +228,10 @@ function applyServerEffects(
  * to the server after local processing. Server response provides enriched
  * patterns with entity data resolved reactively via useEntityRef.
  */
-function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, persistence }: {
+function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, persistence, traitConfigsByName }: {
   traits: unknown[];
   orbitalNames?: string[];
+  traitConfigsByName?: Record<string, import('@almadar/core').TraitConfig>;
   onNavigate?: (path: string, params?: Record<string, unknown>) => void;
   /**
    * GAP-19: Called when the 5s server-bridge fallback fires (the preview server
@@ -271,8 +272,8 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
   }, [bridge.connected, bridge.sendEvent, orbitalNames, uiSlots, onNavigate]);
 
   const opts = orbitalNames
-    ? { onEventProcessed, navigate: onNavigate }
-    : { navigate: onNavigate, persistence };
+    ? { onEventProcessed, navigate: onNavigate, traitConfigsByName }
+    : { navigate: onNavigate, persistence, traitConfigsByName };
   const { sendEvent } = useTraitStateMachine(traits as Parameters<typeof useTraitStateMachine>[0], slotsActions, opts);
 
   const initSentRef = useRef(false);
@@ -388,6 +389,31 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate, onLoc
       .map((o) => o.name as string);
   }, [schema]);
 
+  // Map trait name → TraitConfig from the orbital-level traits[] entries.
+  // @almadar/core's page resolver doesn't propagate config from the
+  // orbital level into the page-level binding, so the client-side
+  // StateMachineManager would otherwise see no config and OPEN guards
+  // like `["or", ["=", "@config.mode", "create"], "@payload.row"]` would
+  // reject the create flow.
+  const traitConfigsByName = useMemo(() => {
+    const map: Record<string, import('@almadar/core').TraitConfig> = {};
+    const parsed = schema as Record<string, unknown>;
+    const orbitals = parsed?.orbitals as Array<Record<string, unknown>> | undefined;
+    if (!orbitals) return map;
+    for (const orb of orbitals) {
+      const traits = orb.traits as Array<Record<string, unknown>> | undefined;
+      if (!traits) continue;
+      for (const t of traits) {
+        const name = (t.name ?? t.ref) as string | undefined;
+        const config = t.config as import('@almadar/core').TraitConfig | undefined;
+        if (typeof name === 'string' && config !== undefined) {
+          map[name] = config;
+        }
+      }
+    }
+    return map;
+  }, [schema]);
+
   // V2 Phase 6: EntityStore is gone. Standalone-preview (no serverUrl) with
   // `mockData` no longer hydrates a shared store; mock data now flows through
   // the event bus the same way a real server response does — i.e. traits
@@ -418,6 +444,7 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate, onLoc
           <TraitInitializer
             traits={allPageTraits}
             orbitalNames={serverUrl ? orbitalNames : undefined}
+            traitConfigsByName={traitConfigsByName}
             onNavigate={onNavigate}
             onLocalFallback={onLocalFallback}
             persistence={persistence}
