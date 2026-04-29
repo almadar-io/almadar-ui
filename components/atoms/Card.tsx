@@ -12,6 +12,8 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   subtitle?: string;
   /** Shadow size override */
   shadow?: CardShadow;
+  /** Card content */
+  children?: React.ReactNode;
 }
 
 // Using CSS variables for theme-aware styling
