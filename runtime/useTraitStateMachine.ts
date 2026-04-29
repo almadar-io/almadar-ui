@@ -92,8 +92,22 @@ function normalizeEventKey(eventKey: string): string {
 // ============================================================================
 
 export interface UseTraitStateMachineOptions {
-    /** Callback invoked after each event is processed (for server forwarding) */
-    onEventProcessed?: (eventKey: string, payload?: EventPayload) => void | Promise<void>;
+    /**
+     * Callback invoked after each event is processed (for server forwarding).
+     *
+     * `dispatchedOrbitals` is the set of orbital names whose traits actually
+     * executed a transition for this event. The server-bridge fan-out should
+     * be scoped to this set; sending the event to other orbitals fires
+     * same-named transitions in unrelated orbitals and stacks their UI into
+     * the wrong slot (gap #11 in `docs/Almadar_Std_Verification.md`). Empty
+     * set means no local transition matched — leave the legacy fallback to
+     * the consumer.
+     */
+    onEventProcessed?: (
+        eventKey: string,
+        payload?: EventPayload,
+        dispatchedOrbitals?: Set<string>,
+    ) => void | Promise<void>;
     /** Router navigate function for navigate effects */
     navigate?: (path: string, params?: Record<string, unknown>) => void;
     /** Notification function for notify effects */
@@ -117,6 +131,15 @@ export interface UseTraitStateMachineOptions {
      * caller assembles this map from the orbital schema directly.
      */
     traitConfigsByName?: Record<string, import('@almadar/core').TraitConfig>;
+    /**
+     * Trait → orbital map built from `schema.orbitals[].traits[]` by the
+     * caller. Threaded down so bus emits (`UI:Orbital.Trait.Event`) and
+     * subscriptions can carry the qualified `Orbital.Trait` scope —
+     * gap #13 unification. Same mechanism as `traitConfigsByName`: the
+     * orbital boundary doesn't propagate through `@almadar/core`'s
+     * `ResolvedTraitBinding`, so the caller assembles the map directly.
+     */
+    orbitalsByTrait?: Record<string, string>;
 }
 
 /**
@@ -137,6 +160,7 @@ export function useTraitStateMachine(
     // config undefined; the caller's `traitConfigsByName` map (built from the
     // orbital schema) backfills the missing entries.
     const traitConfigsByName = options?.traitConfigsByName;
+    const orbitalsByTrait = options?.orbitalsByTrait;
     const manager = useMemo(() => {
         const traitDefs = traitBindings.map(toTraitDefinition);
         const m = new StateMachineManager(traitDefs);
@@ -795,7 +819,16 @@ export function useTraitStateMachine(
         if (!LIFECYCLE_EVENTS.has(normalizedEvent)) {
             for (const { traitName, result } of results) {
                 if (!result.executed) continue;
-                eventBus.emit(normalizedEvent, payload as EventPayload | undefined, {
+                // Gap #13: re-emit on the qualified `UI:Orbital.Trait.EVENT`
+                // bus key so cross-trait listens (subscribed under the
+                // qualified form) see this echo. The qualified key carries
+                // source identity directly — no `source.trait !== own`
+                // predicate needed (which is how pre-unification cross-
+                // trait fan-out worked).
+                const orbitalName = orbitalsByTrait?.[traitName];
+                if (!orbitalName) continue;
+                eventBus.emit(`UI:${orbitalName}.${traitName}.${normalizedEvent}`, payload, {
+                    orbital: orbitalName,
                     trait: traitName,
                     fromBridge: true,
                 });
@@ -811,7 +844,17 @@ export function useTraitStateMachine(
         // Await so server response (re-fetched data, re-rendered UI) is applied before continuing
         const onEventProcessed = optionsRef.current?.onEventProcessed;
         if (onEventProcessed) {
-            await onEventProcessed(normalizedEvent, payload);
+            // Gap #11: pass the set of orbitals whose traits executed this
+            // event. The TraitInitializer side uses this to scope the server
+            // fan-out so cross-orbital traits with the same event name don't
+            // pile their modals into one slot.
+            const dispatchedOrbitals = new Set<string>();
+            for (const { traitName, result } of results) {
+                if (!result.executed) continue;
+                const orbital = orbitalsByTrait?.[traitName];
+                if (orbital) dispatchedOrbitals.add(orbital);
+            }
+            await onEventProcessed(normalizedEvent, payload, dispatchedOrbitals);
         }
     }, [entities, eventBus]);
 
@@ -903,47 +946,47 @@ export function useTraitStateMachine(
 
         const unsubscribes: Array<() => void> = [];
 
-        for (const eventKey of allEvents) {
-            if (eventKey === 'INIT' || eventKey === 'LOAD' || eventKey === '$MOUNT') {
-                continue;
+        // Gap #13: subscribe to the qualified `UI:Orbital.Trait.EVENT` keys
+        // that codegen-emitted producers (button hosts, bridge re-emits)
+        // now send. Each transition trigger subscribes for every trait
+        // that has it; the trait dispatches its OWN trigger when its
+        // qualified key fires. Skip bridge echoes on the OWN key — the
+        // post-transition re-broadcast targets cross-trait listeners,
+        // not the originating trait (which would loop infinitely).
+        for (const binding of traitBindings) {
+            const traitName = binding.trait.name;
+            const orbitalName = orbitalsByTrait?.[traitName];
+            if (!orbitalName) continue;
+            for (const transition of binding.trait.transitions) {
+                const eventKey = transition.event;
+                if (eventKey === 'INIT' || eventKey === 'LOAD' || eventKey === '$MOUNT') {
+                    continue;
+                }
+                const unsub = eventBus.on(`UI:${orbitalName}.${traitName}.${eventKey}`, (event) => {
+                    if (event.source && (event.source as { fromBridge?: boolean }).fromBridge) {
+                        return;
+                    }
+                    enqueueAndDrain(eventKey, event.payload);
+                });
+                unsubscribes.push(unsub);
             }
-
-            const unsub = eventBus.on(`UI:${eventKey}`, (event) => {
-                console.log('[TraitStateMachine] Received event:', `UI:${eventKey}`, event);
-                enqueueAndDrain(eventKey, event.payload);
-            });
-            unsubscribes.push(unsub);
         }
 
         // Cross-trait `listens { SourceTrait EVENT → Trigger }` wiring.
-        // Each listen entry subscribes to the bare event name (not the UI:
-        // prefix — this is a cross-trait bus fan-out, not a user-click).
-        // When SourceTrait emits EVENT via the post-transition re-broadcast
-        // below (or via an explicit `(emit EVENT)` effect), every trait
-        // whose `listens[i].event === EVENT` and whose source matches fires
-        // its Trigger through enqueueAndDrain.
-        //
-        // Without this, std-cart's Persistor.listens {AddItem SAVE → DO_CREATE}
-        // never fires — SAVE completes on AddItem, nothing ever enqueues
-        // DO_CREATE on Persistor, the cart never grows.
+        // Subscribes to the qualified `UI:Orbital.Trait.EVENT` form. When
+        // the listen omits the orbital (intra-orbital listen), the OWN
+        // orbital is used. The qualified key carries source identity, so
+        // no `event.source.trait` predicate is needed.
         for (const binding of traitBindings) {
+            const ownOrbital = orbitalsByTrait?.[binding.trait.name];
             const listens: ResolvedTraitListener[] = (binding.trait.listens ?? []);
             for (const listen of listens) {
-                // `source` is the scope filter the compiler emits
-                // (`{kind:'trait',trait:'Source'}`). Declared on the local
-                // ResolvedTraitListener shim in ./types.ts until core
-                // publishes it.
-                const expectedTrait = listen.source?.trait;
-                const unsub = eventBus.on(listen.event, (event) => {
-                    // Skip self-echoes: the post-transition re-broadcast stamps
-                    // source.trait = emitter. If listens.source.trait is declared,
-                    // only accept emits from that trait. If source.kind is 'any'
-                    // or no source declared, accept everything.
-                    if (expectedTrait) {
-                        const emitTrait = (event.source as { trait?: string } | undefined)?.trait;
-                        if (emitTrait !== expectedTrait) return;
-                    }
-                    console.log('[TraitStateMachine] listens', binding.trait.name, listen.event, '→', listen.triggers, 'from', (event.source as { trait?: string } | undefined)?.trait);
+                const sourceTrait = listen.source?.trait;
+                if (!sourceTrait) continue; // wildcard listens are out-of-scope post-unification
+                const sourceOrbital = listen.source?.orbital ?? ownOrbital;
+                if (!sourceOrbital) continue;
+                const busKey = `UI:${sourceOrbital}.${sourceTrait}.${listen.event}`;
+                const unsub = eventBus.on(busKey, (event) => {
                     enqueueAndDrain(listen.triggers, event.payload);
                 });
                 unsubscribes.push(unsub);

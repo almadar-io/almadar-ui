@@ -81,7 +81,7 @@ export {
 } from './useUISlots';
 
 // UI Events hook for bridging UI events to state machines
-export { useUIEvents, useSelectedEntity } from './useUIEvents';
+export { useUIEvents, useTraitListens, type TraitListenSpec } from './useUIEvents';
 
 // G13 (2026-04-24): the `useEntityData` family — useEntityList, useEntity,
 // useEntityDetail, useEntityListSuspense, useEntitySuspense, entityDataKeys,

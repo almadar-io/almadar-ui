@@ -408,11 +408,19 @@ export function bindEventBus(eventBus: {
 
   exposeOnWindow();
   if (window.__orbitalVerification) {
-    window.__orbitalVerification.sendEvent = (event, payload) => {
-      // Use UI: prefix — useTraitStateMachine and useOrbitalBridge
-      // subscribe to UI:* events for user-initiated actions
-      const prefixed = event.startsWith('UI:') ? event : `UI:${event}`;
-      log.debug('sendEvent', { event: prefixed, payloadKeys: payload ? Object.keys(payload) : [] });
+    window.__orbitalVerification.sendEvent = (event, payload, traitScope) => {
+      // Gap #13: dispatch via the qualified bus key
+      // `UI:${traitScope}.${event}` so codegen-emitted subscriptions
+      // (own `useUIEvents` and cross-trait `useTraitListens`) match.
+      // Bare `UI:${event}` is retained only when no traitScope is
+      // provided — the kernel passes the dispatching trait per step,
+      // so absent scope means a legacy / system-scope dispatch.
+      const prefixed = event.startsWith('UI:')
+        ? event
+        : traitScope
+          ? `UI:${traitScope}.${event}`
+          : `UI:${event}`;
+      log.debug('sendEvent', { event: prefixed, traitScope, payloadKeys: payload ? Object.keys(payload) : [] });
       eventBus.emit(prefixed, payload);
     };
 

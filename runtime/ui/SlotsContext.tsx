@@ -31,6 +31,15 @@ import { createLogger } from '../../lib/logger';
 // during a typing session.
 const slotLog = createLogger('almadar:ui:slot-render');
 
+// Gap #11 (Almadar_Std_Verification.md): cross-orbital cascade tracing
+// at the slot mutation boundary. Logs every per-source slot write/clear
+// at info level so the runtime-verify capture shows when traits from a
+// different orbital mutate the same slot during one dispatch (e.g. modal
+// stacking ContactCreate's form on top of DealCreate's during a /deals
+// walk). Pairs with the `almadar:runtime:cross-orbital` channel in
+// OrbPreview / ServerBridge / OrbitalServerRuntime.
+const xOrbitalLog = createLogger('almadar:runtime:cross-orbital');
+
 // Assign stable per-object ids so the log can compare entity references
 // across renders. WeakMap so we don't pin the underlying row objects.
 const refIds = new WeakMap<object, number>();
@@ -162,15 +171,25 @@ export function SlotsProvider({ children }: SlotsProviderProps): React.ReactElem
         const entityProp = patterns[0]?.pattern && typeof patterns[0].pattern === 'object'
             ? (patterns[0].pattern as { entity?: unknown }).entity
             : undefined;
+        const firstPatternType = patterns[0]?.pattern && typeof patterns[0].pattern === 'object'
+            ? ((patterns[0].pattern as { type?: unknown }).type as string | undefined)
+            : undefined;
         slotLog.debug('setSlotPatterns', {
             slot,
             sourceKey,
             patternCount: patterns.length,
-            firstPatternType: patterns[0]?.pattern && typeof patterns[0].pattern === 'object'
-                ? ((patterns[0].pattern as { type?: unknown }).type as string | undefined)
-                : undefined,
+            firstPatternType,
             entityRefId: refId(entityProp),
         });
+        if (source?.trait) {
+            xOrbitalLog.info('slot-set', {
+                slot,
+                sourceTrait: source.trait,
+                patternCount: patterns.length,
+                firstPatternType,
+                state: source.state,
+            });
+        }
         setSlots(prev => {
             const prevSlot = prev[slot] ?? {};
             return {
@@ -201,6 +220,7 @@ export function SlotsProvider({ children }: SlotsProviderProps): React.ReactElem
     }, []);
 
     const clearSlotForSource = useCallback((slot: string, sourceTrait: string) => {
+        xOrbitalLog.info('slot-clear-source', { slot, sourceTrait });
         setSlots(prev => {
             const existing = prev[slot];
             if (!existing || !(sourceTrait in existing)) return prev;

@@ -20,8 +20,16 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
-import type { EventPayload } from '@almadar/core';
+import type { BusEventSource, EventPayload } from '@almadar/core';
 import { useEventBus } from '../hooks/useEventBus';
+import { createLogger } from '../lib/logger';
+
+// Gap #11 (Almadar_Std_Verification.md): cross-orbital re-broadcast
+// tracing. Each server response's `emittedEvents[]` is re-emitted on the
+// qualified `UI:Orbital.Trait.EVENT` bus key here; if the source-stamp
+// drops anywhere in the wire format, every emit is silently skipped — log
+// both branches so the runtime-verify capture surfaces the gap.
+const xOrbitalLog = createLogger('almadar:runtime:cross-orbital');
 
 
 // ---------------------------------------------------------------------------
@@ -32,7 +40,17 @@ interface OrbitalEventResponse {
   success: boolean;
   transitioned: boolean;
   states: Record<string, string>;
-  emittedEvents?: Array<{ event: string; payload?: EventPayload }>;
+  /**
+   * Server-cascade events carried back in the response. Each entry has a
+   * `source: BusEventSource` stamped by the compiled handler (`emit ...
+   * { source: __ORBITAL_SOURCE }`) so the client can re-broadcast on the
+   * qualified `UI:Orbital.Trait.EVENT` bus key (gap #13).
+   */
+  emittedEvents?: Array<{
+    event: string;
+    payload?: EventPayload;
+    source?: BusEventSource;
+  }>;
   data?: Record<string, unknown[]>;
   clientEffects?: unknown[];
   /**
@@ -199,11 +217,33 @@ export function ServerBridgeProvider({
           }
         }
 
-        // Propagate server-emitted events through local bus
+        // Gap #13: re-emit server-cascade events on the qualified bus
+        // key the codegen-emitted subscribers (own `useUIEvents`,
+        // cross-trait `eventBus.on('UI:Orbital.Trait.EVENT')`) listen to.
+        // The server response carries `source: BusEventSource` per emit
+        // when populated; absent source we don't know the trait, so the
+        // emit is dropped (preserves the unification — bare re-emits
+        // with a `source.trait` filter were the pre-fix path).
         if (result.emittedEvents) {
           for (const emitted of result.emittedEvents) {
-            eventBus.emit(`UI:${emitted.event}`, emitted.payload);
-            eventBus.emit(emitted.event, emitted.payload);
+            const evTrait = emitted.source?.trait;
+            if (!evTrait) {
+              xOrbitalLog.warn('emit:dropped-no-source', {
+                event: emitted.event,
+                dispatchOrbital: orbitalName,
+              });
+              continue;
+            }
+            const key = emitted.source?.orbital
+              ? `UI:${emitted.source.orbital}.${evTrait}.${emitted.event}`
+              : `UI:${evTrait}.${emitted.event}`;
+            xOrbitalLog.info('emit:rebroadcast', {
+              busKey: key,
+              sourceOrbital: emitted.source?.orbital,
+              sourceTrait: evTrait,
+              dispatchOrbital: orbitalName,
+            });
+            eventBus.emit(key, emitted.payload);
           }
         }
       } else if (result.error) {

@@ -22,7 +22,7 @@ import { VerificationProvider } from '../providers/VerificationProvider';
 import { UISlotProvider, useUISlots } from '../context/UISlotContext';
 import { UISlotRenderer } from '../components/organisms/UISlotRenderer';
 import { useEventBus } from '../hooks/useEventBus';
-import type { OrbitalSchema, EntityData } from '@almadar/core';
+import type { OrbitalSchema, EntityData, ResolvedTraitBinding } from '@almadar/core';
 import { useResolvedSchema } from './useResolvedSchema';
 import { useTraitStateMachine } from './useTraitStateMachine';
 import {
@@ -40,6 +40,15 @@ import { getAllPages } from '../renderer/navigation';
 import { recordTransition, recordServerResponse, type EffectTrace } from '../lib/verificationRegistry';
 import { prepareSchemaForPreview } from './prepareSchemaForPreview';
 import { InMemoryPersistence, type PersistenceAdapter } from '@almadar/runtime';
+import { createLogger } from '../lib/logger';
+
+// Gap #11 (Almadar_Std_Verification.md): cross-orbital cascade tracing on
+// the UI side. Pairs with the server-side `almadar:runtime:cross-orbital`
+// channel; logs `SchemaRunner:mount`, per-trait subscribe in
+// `TraitInitializer`, and slot writes via `applyServerEffects` so the
+// runtime-verify console capture can reconstruct which traits actually
+// rendered into a slot during a dispatch.
+const xOrbitalLog = createLogger('almadar:runtime:cross-orbital');
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -205,6 +214,11 @@ function applyServerEffects(
       const normalizedChildren = Array.isArray(children)
         ? children.map((c) => normalizeChild(c))
         : children;
+      xOrbitalLog.info('slot-write', {
+        slot: eff.slot,
+        sourceTrait: eff.traitName ?? 'server',
+        patternType: typeof patternType === 'string' ? patternType : undefined,
+      });
       uiSlots.render({
         target: eff.slot as Parameters<typeof uiSlots.render>[0]['target'],
         pattern: patternType as string,
@@ -228,10 +242,12 @@ function applyServerEffects(
  * to the server after local processing. Server response provides enriched
  * patterns with entity data resolved reactively via useEntityRef.
  */
-function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, persistence, traitConfigsByName }: {
+function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, persistence, traitConfigsByName, orbitalsByTrait }: {
   traits: unknown[];
   orbitalNames?: string[];
   traitConfigsByName?: Record<string, import('@almadar/core').TraitConfig>;
+  /** Trait → orbital map; gap #13 qualified bus key. */
+  orbitalsByTrait?: Record<string, string>;
   onNavigate?: (path: string, params?: Record<string, unknown>) => void;
   /**
    * GAP-19: Called when the 5s server-bridge fallback fires (the preview server
@@ -262,9 +278,31 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
   // entities flow through the event bus via typed emit payloads, which the
   // state machine listeners bind into `@payload.data` and the renderer
   // consumes as pre-resolved `entity` props. No EntityStore hydration.
-  const onEventProcessed = useCallback(async (event: string, payload?: Record<string, unknown>) => {
+  //
+  // Gap #11: scope the server fan-out to the orbitals whose traits actually
+  // transitioned this event. Pre-fix, the loop dispatched every event to
+  // every registered orbital, so a single click of DealCreate's CREATE button
+  // also fired ContactCreate.CREATE and NoteCompose.CREATE on the server,
+  // and their render-ui patterns landed in the same modal slot — three
+  // orbitals' UI stacked at once. `dispatchedOrbitals` (passed by
+  // useTraitStateMachine) is the set of owning orbitals for the traits that
+  // actually executed; only those need a server round-trip.
+  const onEventProcessed = useCallback(async (
+    event: string,
+    payload?: Record<string, unknown>,
+    dispatchedOrbitals?: Set<string>,
+  ) => {
     if (!bridge.connected || !orbitalNames?.length) return;
-    for (const name of orbitalNames) {
+    const targets = dispatchedOrbitals && dispatchedOrbitals.size > 0
+      ? orbitalNames.filter((n) => dispatchedOrbitals.has(n))
+      : orbitalNames;
+    xOrbitalLog.info('TraitInitializer:fanout', {
+      event,
+      sentTo: targets,
+      skipped: orbitalNames.filter((n) => !targets.includes(n)),
+      dispatchedOrbitalsSize: dispatchedOrbitals?.size ?? 0,
+    });
+    for (const name of targets) {
       const { effects, meta } = await bridge.sendEvent(name, event, payload);
       recordServerResponse(name, event, meta);
       applyServerEffects(effects, uiSlots, onNavigate);
@@ -272,8 +310,8 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
   }, [bridge.connected, bridge.sendEvent, orbitalNames, uiSlots, onNavigate]);
 
   const opts = orbitalNames
-    ? { onEventProcessed, navigate: onNavigate, traitConfigsByName }
-    : { navigate: onNavigate, persistence, traitConfigsByName };
+    ? { onEventProcessed, navigate: onNavigate, traitConfigsByName, orbitalsByTrait }
+    : { navigate: onNavigate, persistence, traitConfigsByName, orbitalsByTrait };
   const { sendEvent } = useTraitStateMachine(traits as Parameters<typeof useTraitStateMachine>[0], slotsActions, opts);
 
   const initSentRef = useRef(false);
@@ -354,29 +392,40 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate, onLoc
 }) {
   const { traits, allEntities, ir } = useResolvedSchema(schema as Parameters<typeof useResolvedSchema>[0], pageName);
 
-  // When a specific page is selected (via navigation), use only that page's
-  // traits. Otherwise, for single-page schemas or initial load, collect from
-  // all pages so every trait gets an INIT.
-  const allPageTraits = useMemo(() => {
-    // If a specific page was navigated to, use its traits only
+  // Gap #13: orbitals are bound to pages, so trait subscriptions must be
+  // route-scoped. Pre-fix, this branch collected traits from every page on
+  // initial load — so on standalone preview (where no `navigate` effect
+  // ever fires) ALL orbitals' traits mounted simultaneously. A bare CREATE
+  // dispatched on the Deals page reached ContactCreate too, opening the
+  // wrong modal (gap #13 evidence: runtime-verify and orbital-verify
+  // frames showed Contact modals on Deal walks).
+  //
+  // Fix: when no page is explicitly active, mount only the FIRST page's
+  // traits — a single orbital's worth, matching the compiled-shell
+  // route-mounted layout. Cross-orbital channels still flow via the
+  // qualified `UI:Orbital.Trait.EVENT` bus key (Phase 4 unification);
+  // orbital isolation is now enforced at both subscription and dispatch
+  // layers.
+  const allPageTraits = useMemo<ResolvedTraitBinding[]>(() => {
+    // If a specific page was navigated to, use its traits only.
     if (pageName && traits.length > 0) return traits;
-    // For single-page schemas, just use the resolved traits
+    // For single-page schemas the resolved traits are already the right set.
     if (!ir?.pages || ir.pages.size <= 1) return traits;
-    // Initial load: collect traits from all pages
-    const combined: unknown[] = [];
+    // Initial load with multiple pages: pick the first page's traits.
+    // The schema's first `page` declaration is the canonical default
+    // landing page, mirroring the compiled shell's `<Route index>`.
+    const firstPage = ir.pages.values().next().value;
+    if (!firstPage) return traits;
+    const firstPageTraits: ResolvedTraitBinding[] = [];
     const seen = new Set<string>();
-    for (const page of ir.pages.values()) {
-      for (const t of page.traits) {
-        const binding = t as unknown as Record<string, unknown>;
-        const traitObj = binding.trait as Record<string, unknown> | undefined;
-        const name = (traitObj?.name ?? binding.name ?? '') as string;
-        if (name && !seen.has(name)) {
-          seen.add(name);
-          combined.push(t);
-        }
+    for (const binding of firstPage.traits) {
+      const name = binding.trait.name;
+      if (name && !seen.has(name)) {
+        seen.add(name);
+        firstPageTraits.push(binding);
       }
     }
-    return combined.length > 0 ? combined : traits;
+    return firstPageTraits.length > 0 ? firstPageTraits : traits;
   }, [ir, traits, pageName]);
 
   // Extract orbital names from schema for server event forwarding
@@ -388,6 +437,66 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate, onLoc
       .filter((o) => typeof o.name === 'string')
       .map((o) => o.name as string);
   }, [schema]);
+
+  // Gap #13: trait-name → owning-orbital-name map. Built from
+  // `schema.orbitals[].traits[]` so `useTraitStateMachine` can construct
+  // the qualified `UI:Orbital.Trait.EVENT` bus key at both subscribe and
+  // emit sites — same scope shape the compiled codegen produces.
+  const orbitalsByTrait = useMemo<Record<string, string>>(() => {
+    const map: Record<string, string> = {};
+    const parsed = schema as OrbitalSchema | undefined;
+    if (!parsed?.orbitals) return map;
+    for (const orb of parsed.orbitals) {
+      for (const traitRef of orb.traits) {
+        let traitName: string | undefined;
+        if (typeof traitRef === 'string') {
+          const parts = traitRef.split('.');
+          traitName = parts[parts.length - 1];
+        } else if ('ref' in traitRef && typeof traitRef.ref === 'string') {
+          const parts = traitRef.ref.split('.');
+          traitName = traitRef.name ?? parts[parts.length - 1];
+        } else if ('name' in traitRef && typeof traitRef.name === 'string') {
+          traitName = traitRef.name;
+        }
+        if (traitName) map[traitName] = orb.name;
+      }
+    }
+    return map;
+  }, [schema]);
+
+  // Gap #11: orbitals whose traits are mounted on the active page. The
+  // server-bridge fan-out (both user-event and INIT) restricts to this
+  // subset so off-page orbitals don't initialize server-side and leak
+  // their `(render-ui main {...})` patterns into the active page's slot.
+  // Cross-orbital `listens` still fire because the server has every
+  // orbital registered; this only narrows the client's dispatch breadth.
+  const pageOrbitalNames = useMemo<string[]>(() => {
+    const set = new Set<string>();
+    for (const binding of allPageTraits) {
+      const orb = orbitalsByTrait[binding.trait.name];
+      if (orb) set.add(orb);
+    }
+    return Array.from(set);
+  }, [allPageTraits, orbitalsByTrait]);
+
+  // Gap #11: emit allPageTraits at mount/page-change so runtime-verify's
+  // console capture shows which traits the runtime path believes belong on
+  // the active page. Compare against the .lolo `page "X" -> ...` declaration
+  // and against compiled codegen to detect under-mount or over-mount.
+  useEffect(() => {
+    const traitNames = allPageTraits.map((b) => b.trait.name);
+    const orbitalsByTraitForPage: Record<string, string> = {};
+    for (const name of traitNames) {
+      const orb = orbitalsByTrait[name];
+      if (orb) orbitalsByTraitForPage[name] = orb;
+    }
+    xOrbitalLog.info('SchemaRunner:mount', {
+      pageName,
+      traitNames,
+      orbitalsByTraitForPage,
+      pageOrbitalNames: pageOrbitalNames.join(','),
+    });
+  }, [pageName, allPageTraits, orbitalsByTrait, pageOrbitalNames]);
 
   // Map trait name → TraitConfig from the orbital-level traits[] entries.
   // @almadar/core's page resolver doesn't propagate config from the
@@ -443,8 +552,9 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate, onLoc
         >
           <TraitInitializer
             traits={allPageTraits}
-            orbitalNames={serverUrl ? orbitalNames : undefined}
+            orbitalNames={serverUrl ? pageOrbitalNames : undefined}
             traitConfigsByName={traitConfigsByName}
+            orbitalsByTrait={orbitalsByTrait}
             onNavigate={onNavigate}
             onLocalFallback={onLocalFallback}
             persistence={persistence}
@@ -508,6 +618,14 @@ export interface OrbPreviewProps {
   className?: string;
   /** Server URL for dual execution (e.g. "/api/orbitals"). When set, events are forwarded to the server. */
   serverUrl?: string;
+  /**
+   * Initial page path to render (e.g. `/deals`). Resolves against the
+   * schema's `pages[]` to seed `currentPage` so the right orbital's traits
+   * mount on first render. Without this the playground falls back to the
+   * schema's first page binding (gap #13 Phase 5). runtime-verify uses this
+   * to walk DealCreate, NoteCompose, etc. on their owning pages.
+   */
+  initialPagePath?: string;
 }
 
 /**
@@ -530,6 +648,7 @@ export function OrbPreview({
   height = '400px',
   className,
   serverUrl,
+  initialPagePath,
 }: OrbPreviewProps): React.ReactElement {
   // GAP-19: track when the server bridge falls back to local execution.
   // The 5s timeout in TraitInitializer fires onLocalFallback if the bridge
@@ -609,7 +728,25 @@ export function OrbPreview({
     }
   }, [parsedSchema]);
 
-  const [currentPage, setCurrentPage] = useState<string | undefined>(undefined);
+  // Seed from `initialPagePath` (gap #13 / runtime-verify per-trait
+  // navigation): resolve the path against the schema's pages to get the
+  // page NAME (the keying useResolvedSchema expects). Falls back to
+  // undefined → SchemaRunner picks the schema's first page.
+  const initialPageName = useMemo(() => {
+    if (!initialPagePath) return undefined;
+    const match = pages.find(({ page }) => page.path === initialPagePath);
+    return match?.page.name;
+  }, [pages, initialPagePath]);
+  const [currentPage, setCurrentPage] = useState<string | undefined>(initialPageName);
+
+  // When the parent passes a different initialPagePath later (e.g.
+  // runtime-verify drives the playground via URL), keep currentPage
+  // in sync. Pure-mount initialization handled by useState above.
+  useEffect(() => {
+    if (initialPageName && initialPageName !== currentPage) {
+      setCurrentPage(initialPageName);
+    }
+  }, [initialPageName, currentPage]);
 
   // Navigate handler: when a ['navigate', '/path'] effect fires,
   // find the matching page and switch to it.

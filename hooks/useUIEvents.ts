@@ -2,191 +2,140 @@
 /**
  * useUIEvents - UI Event to State Machine Bridge
  *
- * Listens for UI:* events from the event bus and dispatches them
- * to the trait state machine. The UI: prefix is stripped and the
- * event name is passed through as-is. No translation, no mapping.
+ * Listens for `UI:{TraitName}.{EVENT}` events from the event bus and
+ * dispatches them to the trait state machine. The dotted form mirrors
+ * the listens-block grammar (`Trait.EVENT` / `Orbital.Trait.EVENT`),
+ * so producer and consumer share one namespace and cross-orbital
+ * trait contamination is mechanically impossible (gap #13).
  *
- * Components emit `UI:{EVENT}` where {EVENT} matches the trait's
- * event key exactly. The schema is the source of truth for event names.
+ * Components emit `eventBus.emit(\`UI:${action}\`, ...)` where `action`
+ * is the qualified `Trait.EVENT` string they receive from codegen
+ * (compile path) or the runtime interpreter (preview path). The schema
+ * is the source of truth for event names; codegen does the
+ * qualification.
  */
 
-import { useEffect, useState, useMemo, useContext } from "react";
+import { useEffect, useMemo } from "react";
 import { useEventBus, type BusEvent } from "./useEventBus";
-import { SelectionContext } from "../providers/SelectionProvider";
 import type { EventPayload } from "@almadar/core";
 
 const UI_PREFIX = 'UI:';
 
 /**
- * Hook to bridge UI events to state machine dispatch
+ * Hook to bridge UI events to state machine dispatch.
  *
  * @param dispatch - The state machine dispatch function
- * @param validEvents - Optional array of valid event names (filters which events to handle)
- * @param eventBusInstance - Optional event bus instance (for testing, uses hook if not provided)
+ * @param traitName - Owning trait name; used to construct the qualified
+ *   subscription key `UI:{traitName}.{event}`. Required — bare-key
+ *   subscriptions were removed when the bus namespace unified on the
+ *   listens grammar (gap #13, Phase 4 of the cross-orbital plan).
+ * @param validEvents - Local event names (transition triggers) the
+ *   trait reacts to. The hook subscribes to `UI:{traitName}.{event}`
+ *   for each entry.
+ * @param eventBusInstance - Optional event bus instance (for testing)
  */
 export function useUIEvents<E extends string>(
   dispatch: (event: E, payload?: EventPayload) => void,
-  validEvents?: readonly E[],
+  traitName: string,
+  validEvents: readonly E[],
   eventBusInstance?: ReturnType<typeof useEventBus>,
 ): void {
   const defaultEventBus = useEventBus();
   const eventBus = eventBusInstance ?? defaultEventBus;
 
-  // Stabilize validEvents to prevent re-subscriptions when array reference changes
-  // but contents are the same. This is critical because generated trait hooks
-  // pass inline arrays which create new references on every render.
-  const validEventsKey = validEvents
-    ? validEvents.slice().sort().join(",")
-    : "";
+  // Stabilize validEvents to prevent re-subscriptions when the array
+  // reference changes but contents are the same. Generated trait hooks
+  // pass inline arrays that create a new reference on every render.
+  const validEventsKey = validEvents.slice().sort().join(",");
   const stableValidEvents = useMemo(
     () => validEvents,
-    [validEventsKey], // intentional — validEventsKey is the stable dep, not validEvents array ref
+    [validEventsKey], // intentional — validEventsKey is the stable dep
   );
 
   useEffect(() => {
     const unsubscribes: Array<() => void> = [];
 
-    // Build the set of event names to listen for.
-    // If validEvents is provided, subscribe to UI:{event} for each.
-    // Otherwise subscribe to a wildcard via onAny.
-    if (stableValidEvents) {
-      for (const smEvent of stableValidEvents) {
-        // Listen for UI:EVENT (what components and verify bridge emit)
-        const prefixedHandler = (event: BusEvent) => {
-          dispatch(smEvent, event.payload);
-        };
-        unsubscribes.push(eventBus.on(`${UI_PREFIX}${smEvent}`, prefixedHandler));
-
-        // Also listen for EVENT directly (cross-trait internal events).
-        // Skip bridge re-emits — the orbital bridge rebroadcasts the
-        // plain event name after a transition completes so cross-trait
-        // `listens { X EVENT → Y }` wiring fires on user-click flows.
-        // Without this guard, the trait that JUST dispatched E would
-        // hear its own bridge echo and dispatch E again, infinitely.
-        // The bridge marks its re-emits with `source.fromBridge: true`;
-        // cross-trait listeners don't need the flag (they filter by
-        // `source.trait !== own`), but useUIEvents has no trait name
-        // so the flag is its cleanest kill-switch.
-        const directHandler = (event: BusEvent) => {
-          if (event.source && (event.source as { fromBridge?: boolean }).fromBridge) {
-            return;
-          }
-          dispatch(smEvent, event.payload);
-        };
-        unsubscribes.push(eventBus.on(smEvent, directHandler));
-      }
-    }
-
-    // UI:DISPATCH carries the event name in payload.event (generic dispatch)
-    const genericHandler = (event: BusEvent) => {
-      const eventName = event.payload?.event as string | undefined;
-      if (eventName) {
-        const smEvent = eventName as E;
-        if (!stableValidEvents || stableValidEvents.includes(smEvent)) {
-          dispatch(smEvent, event.payload);
+    for (const smEvent of stableValidEvents) {
+      const handler = (event: BusEvent) => {
+        // Skip bridge echoes on the OWN qualified key. The orbital
+        // bridge re-broadcasts every transition event on the qualified
+        // bus key so cross-trait `useTraitListens` subscriptions fire.
+        // Without this guard, the trait that JUST dispatched E hears
+        // its own echo and dispatches E again — infinite loop. Cross-
+        // trait listeners don't subscribe to their OWN qualified key
+        // (different trait scope), so they're unaffected.
+        if (event.source && (event.source as { fromBridge?: boolean }).fromBridge) {
+          return;
         }
-      }
-    };
-    unsubscribes.push(eventBus.on(`${UI_PREFIX}DISPATCH`, genericHandler));
+        dispatch(smEvent, event.payload);
+      };
+      unsubscribes.push(
+        eventBus.on(`${UI_PREFIX}${traitName}.${smEvent}`, handler),
+      );
+    }
 
     return () => {
       for (const unsub of unsubscribes) {
         if (typeof unsub === 'function') unsub();
       }
     };
-  }, [eventBus, dispatch, stableValidEvents]);
+  }, [eventBus, dispatch, traitName, stableValidEvents]);
 }
 
 /**
- * Hook for selected entity tracking
- * Many list UIs need to track which item is selected.
+ * Hook to subscribe to cross-trait listens (gap #13, Phase 4 codegen).
  *
- * This hook uses SelectionProvider if available (preferred),
- * otherwise falls back to listening to events directly.
+ * The schema's `listens { Source EVENT -> TRIGGER }` block resolves at
+ * lower-time to a typed `ListenSource` enum (intra-orbital `Trait` or
+ * cross-orbital `Orbital.Trait`). Codegen materializes one
+ * `useTraitListens` call per trait, listing every `(sourceTrait,
+ * sourceEvent, localTrigger)` tuple from the listens block. The hook
+ * subscribes to the qualified bus key — `UI:Trait.EVENT` (intra-orbital)
+ * or `UI:Orbital.Trait.EVENT` (cross-orbital) — and dispatches the
+ * local trigger when the source fires.
  *
- * @example Using with SelectionProvider (recommended)
- * ```tsx
- * function MyPage() {
- *   return (
- *     <EventBusProvider>
- *       <SelectionProvider>
- *         <MyComponent />
- *       </SelectionProvider>
- *     </EventBusProvider>
- *   );
- * }
- *
- * function MyComponent() {
- *   const [selected, setSelected] = useSelectedEntity<Order>();
- *   // selected is automatically updated when UI:VIEW/UI:SELECT events fire
- * }
- * ```
+ * Replaces the old bare-event cross-trait fan-out that lived inside
+ * `useUIEvents`. Pre-unification, `useUIEvents` subscribed to bare
+ * `EVENT` keys and matched on `source.trait !== own`; post-unification,
+ * the qualified bus key carries the source identity directly, no
+ * `source` filtering needed.
  */
-export function useSelectedEntity<T>(
+export interface TraitListenSpec<E extends string> {
+  /** Qualified `Trait.EVENT` or `Orbital.Trait.EVENT` source. */
+  sourceKey: string;
+  /** Local trigger event to dispatch when the source fires. */
+  trigger: E;
+}
+
+export function useTraitListens<E extends string>(
+  dispatch: (event: E, payload?: EventPayload) => void,
+  listens: readonly TraitListenSpec<E>[],
   eventBusInstance?: ReturnType<typeof useEventBus>,
-): [T | null, (entity: T | null) => void] {
+): void {
   const defaultEventBus = useEventBus();
   const eventBus = eventBusInstance ?? defaultEventBus;
 
-  // Try to use SelectionProvider context first (preferred - survives component mount/unmount)
-  // Import dynamically to avoid circular dependency
-  const selectionContext = useSelectionContext<T>();
+  const stableKey = listens
+    .map((l) => `${l.sourceKey}->${l.trigger}`)
+    .sort()
+    .join("|");
+  const stableListens = useMemo(
+    () => listens,
+    [stableKey], // intentional
+  );
 
-  // Local state for fallback mode (when SelectionProvider is not available)
-  const [localSelected, setLocalSelected] = useState<T | null>(null);
-
-  // Track if we're using context mode
-  const usingContext = selectionContext !== null;
-
-  // Listen for selection events (fallback mode only - when no SelectionProvider)
   useEffect(() => {
-    // Skip event listening if we have a SelectionProvider (it handles events itself)
-    if (usingContext) return;
-
-    const handleSelect = (event: BusEvent) => {
-      const row = event.payload?.row as T | undefined;
-      if (row) {
-        setLocalSelected(row);
+    const unsubscribes: Array<() => void> = [];
+    for (const spec of stableListens) {
+      const handler = (event: BusEvent) => {
+        dispatch(spec.trigger, event.payload);
+      };
+      unsubscribes.push(eventBus.on(`${UI_PREFIX}${spec.sourceKey}`, handler));
+    }
+    return () => {
+      for (const unsub of unsubscribes) {
+        if (typeof unsub === 'function') unsub();
       }
     };
-
-    const handleDeselect = () => {
-      setLocalSelected(null);
-    };
-
-    const unsubSelect = eventBus.on("UI:SELECT", handleSelect);
-    const unsubView = eventBus.on("UI:VIEW", handleSelect);
-    const unsubDeselect = eventBus.on("UI:DESELECT", handleDeselect);
-    const unsubClose = eventBus.on("UI:CLOSE", handleDeselect);
-    const unsubCancel = eventBus.on("UI:CANCEL", handleDeselect);
-
-    return () => {
-      [unsubSelect, unsubView, unsubDeselect, unsubClose, unsubCancel].forEach(
-        (unsub) => { if (typeof unsub === 'function') unsub(); }
-      );
-    };
-  }, [eventBus, usingContext]);
-
-  // Return context values if available, otherwise local state
-  if (selectionContext) {
-    return [selectionContext.selected, selectionContext.setSelected];
-  }
-
-  return [localSelected, setLocalSelected];
-}
-
-/**
- * Internal hook to safely access SelectionContext without throwing.
- * Returns null if SelectionProvider is not in the tree.
- */
-function useSelectionContext<T>(): {
-  selected: T | null;
-  setSelected: (entity: T | null) => void;
-} | null {
-  // useContext returns null if the context is not available (no provider in tree)
-  const context = useContext(SelectionContext);
-  return context as {
-    selected: T | null;
-    setSelected: (entity: T | null) => void;
-  } | null;
+  }, [eventBus, dispatch, stableListens]);
 }
