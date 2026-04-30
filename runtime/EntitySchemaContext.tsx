@@ -35,6 +35,14 @@ export interface EntitySchemaContextValue {
      * etc.) and an enum field renders as a plain text input. Closes VR3.
      */
     traitLinkedEntities: ReadonlyMap<string, string>;
+    /**
+     * Per-trait owning-orbital name. Same shape as `traitLinkedEntities`,
+     * built from `schema.orbitals[].traits[]`. UISlotRenderer uses this
+     * to wrap each slot's rendered subtree in `TraitScopeProvider` so
+     * descendant pure components (Button, etc.) emit qualified
+     * `UI:Orbital.Trait.EVENT` keys via the scoped useEventBus.
+     */
+    orbitalsByTrait: ReadonlyMap<string, string>;
 }
 
 // ============================================================================
@@ -57,6 +65,13 @@ export interface EntitySchemaProviderProps {
      * legacy V1 string-entity-name lookup.
      */
     traitLinkedEntities?: ReadonlyMap<string, string>;
+    /**
+     * Per-trait owning-orbital name. Required for the runtime path's
+     * trait-scoped event qualification (Button etc. emit qualified keys
+     * via TraitScopeProvider). Optional for back-compat with consumers
+     * that don't yet thread the orbital map through.
+     */
+    orbitalsByTrait?: ReadonlyMap<string, string>;
     /** Children */
     children: React.ReactNode;
 }
@@ -71,6 +86,7 @@ export interface EntitySchemaProviderProps {
 export function EntitySchemaProvider({
     entities,
     traitLinkedEntities,
+    orbitalsByTrait,
     children,
 }: EntitySchemaProviderProps): React.ReactElement {
     // Build entities map from array
@@ -86,12 +102,17 @@ export function EntitySchemaProvider({
         return traitLinkedEntities ?? new Map<string, string>();
     }, [traitLinkedEntities]);
 
+    const orbitalsMap = useMemo(() => {
+        return orbitalsByTrait ?? new Map<string, string>();
+    }, [orbitalsByTrait]);
+
     const contextValue = useMemo<EntitySchemaContextValue>(
         () => ({
             entities: entitiesMap,
             traitLinkedEntities: linkedMap,
+            orbitalsByTrait: orbitalsMap,
         }),
-        [entitiesMap, linkedMap]
+        [entitiesMap, linkedMap, orbitalsMap]
     );
 
     return (

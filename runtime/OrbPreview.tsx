@@ -464,6 +464,38 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate, onLoc
     return map;
   }, [schema]);
 
+  // Per-trait linkedEntity map for EntitySchemaProvider. Walks every
+  // page's bindings once. Wrapped in `useMemo` so the resulting `Map`
+  // reference is stable across renders — downstream provider memo
+  // depends on it.
+  const traitLinkedEntitiesMap = useMemo<ReadonlyMap<string, string>>(() => {
+    const map = new Map<string, string>();
+    if (ir) {
+      for (const page of ir.pages.values()) {
+        for (const binding of page.traits) {
+          if (binding.linkedEntity) {
+            map.set(binding.trait.name, binding.linkedEntity);
+          }
+        }
+      }
+    }
+    return map;
+  }, [ir]);
+
+  // `orbitalsByTrait` shaped as a `ReadonlyMap` for EntitySchemaProvider.
+  // Same source of truth as the Record above (`orbitalsByTrait`), just
+  // the Map shape the provider's context expects. Memoized against the
+  // Record so it only rebuilds when the schema changes.
+  const orbitalsByTraitMap = useMemo<ReadonlyMap<string, string>>(
+    () => new Map(Object.entries(orbitalsByTrait)),
+    [orbitalsByTrait],
+  );
+
+  // Stable array of resolved entities for EntitySchemaProvider. Without
+  // memoization the inline `Array.from(...)` allocation produces a new
+  // array reference per render, busting downstream `useMemo` deps.
+  const entitiesArray = useMemo(() => Array.from(allEntities.values()), [allEntities]);
+
   // Gap #11: orbitals whose traits are mounted on the active page. The
   // server-bridge fan-out (both user-event and INIT) restricts to this
   // subset so off-page orbitals don't initialize server-side and leak
@@ -535,20 +567,9 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate, onLoc
     <VerificationProvider enabled>
       <SlotsProvider>
         <EntitySchemaProvider
-          entities={Array.from(allEntities.values())}
-          traitLinkedEntities={(() => {
-            const map = new Map<string, string>();
-            if (ir) {
-              for (const page of ir.pages.values()) {
-                for (const binding of page.traits) {
-                  if (binding.linkedEntity) {
-                    map.set(binding.trait.name, binding.linkedEntity);
-                  }
-                }
-              }
-            }
-            return map;
-          })()}
+          entities={entitiesArray}
+          traitLinkedEntities={traitLinkedEntitiesMap}
+          orbitalsByTrait={orbitalsByTraitMap}
         >
           <TraitInitializer
             traits={allPageTraits}

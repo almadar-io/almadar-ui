@@ -16,6 +16,7 @@
 
 import React, { Suspense, createContext, useContext, useEffect, useState } from "react";
 import { useEntitySchemaOptional } from "../../runtime/EntitySchemaContext";
+import { TraitScopeProvider } from "../../providers/TraitScopeProvider";
 import type { ResolvedEntity } from "@almadar/core";
 import { createPortal } from "react-dom";
 import {
@@ -440,6 +441,39 @@ function renderContainedPortal(
 }
 
 /**
+ * Wrap a slot's rendered subtree in `TraitScopeProvider` when both the
+ * source trait and its owning orbital can be resolved. The wrap is what
+ * makes Button (and any pure component using `useEventBus`) emit the
+ * qualified `UI:Orbital.Trait.EVENT` form that `useTraitStateMachine`
+ * listens on. Without this wrap, runtime-path clicks dispatch bare
+ * `UI:EVENT` keys and never reach the trait's state machine — which
+ * was the runtime-side modal-not-mounting bug traced via
+ * `[gap4-button-emit]` / `[gap4-bus-emit]`.
+ *
+ * Resolves orbital via `EntitySchemaContext.orbitalsByTrait`. When the
+ * trait isn't in the map (e.g. compiled mode without the schema
+ * context, or storybook), children render unwrapped — those callers
+ * either don't need scope (storybook) or already get it from codegen.
+ */
+function MaybeTraitScope({
+  sourceTrait,
+  children,
+}: { sourceTrait: string | undefined; children: React.ReactNode }): React.ReactElement {
+  const schemaCtx = useEntitySchemaOptional();
+  const orbital = sourceTrait !== undefined && schemaCtx !== null
+    ? schemaCtx.orbitalsByTrait.get(sourceTrait)
+    : undefined;
+  if (sourceTrait !== undefined && orbital !== undefined) {
+    return (
+      <TraitScopeProvider orbital={orbital} trait={sourceTrait}>
+        {children}
+      </TraitScopeProvider>
+    );
+  }
+  return <>{children}</>;
+}
+
+/**
  * Individual slot renderer.
  *
  * Handles different slot types with appropriate wrappers.
@@ -477,13 +511,13 @@ function UISlotComponent({
             data-pattern={pattern}
             data-source-trait={sourceTrait}
           >
-            {children}
+            <MaybeTraitScope sourceTrait={sourceTrait}>{children}</MaybeTraitScope>
           </Box>
         );
       }
       return (
         <CompiledPortal slot={slot} className={className} pattern={pattern} sourceTrait={sourceTrait}>
-          {children}
+          <MaybeTraitScope sourceTrait={sourceTrait}>{children}</MaybeTraitScope>
         </CompiledPortal>
       );
     }
@@ -495,7 +529,7 @@ function UISlotComponent({
         data-pattern={pattern}
         data-source-trait={sourceTrait}
       >
-        {children}
+        <MaybeTraitScope sourceTrait={sourceTrait}>{children}</MaybeTraitScope>
       </Box>
     );
   }
@@ -572,7 +606,7 @@ function UISlotComponent({
       data-pattern={content.pattern}
       data-source-trait={content.sourceTrait}
     >
-      {wrappedContent}
+      <MaybeTraitScope sourceTrait={content.sourceTrait}>{wrappedContent}</MaybeTraitScope>
     </Box>
   );
 }
@@ -762,7 +796,11 @@ function SlotPortal({
   // across contained mode, non-contained (this branch), and the compiled
   // path's CompiledPortal. See VG15.
   const slotId = `slot-${slot}`;
-  const slotContent = <SlotContentRenderer content={content} onDismiss={onDismiss} />;
+  const slotContent = (
+    <MaybeTraitScope sourceTrait={content.sourceTrait}>
+      <SlotContentRenderer content={content} onDismiss={onDismiss} />
+    </MaybeTraitScope>
+  );
 
   // Render slot-specific wrapper
   let wrapper: React.ReactElement;

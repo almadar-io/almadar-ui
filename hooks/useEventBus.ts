@@ -9,8 +9,9 @@
  * @packageDocumentation
  */
 
-import { useCallback, useEffect, useRef, useContext } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useContext } from 'react';
 import { EventBusContext } from '../providers/EventBusProvider';
+import { useTraitScope } from '../providers/TraitScopeProvider';
 import type {
   BusEvent,
   BusEventSource,
@@ -180,7 +181,52 @@ export function useEventBus(): EventBusContextType {
   // Priority: 1) React context, 2) Window global bridge, 3) Fallback
   // SSR-safe: getGlobalEventBus() guards with typeof window !== 'undefined'
   // React Compiler-safe: all three references are stable (no render side effects)
-  return context ?? getGlobalEventBus() ?? fallbackEventBus;
+  const baseBus = context ?? getGlobalEventBus() ?? fallbackEventBus;
+
+  // Trait-scope qualification (Phase 4 producer-side fix).
+  //
+  // Pre-fix, pure components like `<Button action="X" />` emitted bare
+  // `UI:X` keys via this hook. Subscribers (`useTraitStateMachine`) had
+  // moved to the qualified `UI:Orbital.Trait.X` form, so the click went
+  // to four unrelated bare-key listeners and never reached the trait's
+  // state machine. The runtime-path modal-not-mounting symptom traced
+  // back to exactly this gap (`/tmp/rv-bus-trace.log`:
+  // `[gap4-button-emit] UI:CREATE` → `[gap4-bus-emit] listenerCount=4`,
+  // none of them the trait subscriber).
+  //
+  // Fix: when the calling component lives under a `TraitScopeProvider`
+  // (mounted by `UISlotRenderer` at the slot-content boundary in
+  // runtime mode, and by codegen at each trait view's root in compiled
+  // mode), this hook returns a thin wrapper that prepends the scope to
+  // every bare `UI:X` emit before delegating. Subscribe / on-any /
+  // hasListeners / etc. pass through unchanged so the receiver side is
+  // untouched. Already-qualified keys (`UI:Orbital.Trait.X`,
+  // `SERVER:X`, `BRIDGE:X`, anything without a leading `UI:` and no
+  // dots) flow through verbatim.
+  const scope = useTraitScope();
+
+  return useMemo(() => {
+    if (!scope) return baseBus;
+    return {
+      ...baseBus,
+      emit: (type: string, payload?: EventPayload, source?: BusEventSource) => {
+        if (typeof type === 'string' && type.startsWith('UI:')) {
+          const tail = type.slice(3);
+          // Already-qualified key (`UI:Orbital.Trait.X`) leaves untouched.
+          // We detect "qualified" by the presence of a `.` in the tail —
+          // bare event names are uppercase-snake (`CREATE`, `SAVE`,
+          // `LOAD_MORE`), so a dot is a reliable marker for the
+          // `Orbital.Trait.EVENT` shape.
+          const qualified = tail.includes('.')
+            ? type
+            : `UI:${scope.orbital}.${scope.trait}.${tail}`;
+          baseBus.emit(qualified, payload, source);
+          return;
+        }
+        baseBus.emit(type, payload, source);
+      },
+    };
+  }, [baseBus, scope]);
 }
 
 // ============================================================================
