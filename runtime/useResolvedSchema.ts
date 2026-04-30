@@ -88,13 +88,26 @@ export function useResolvedSchema(
             // Build call-site listens map. TraitRef union underspecifies the
             // ref-object variant (no `listens` field declared), so cast to the
             // common shape after the string-ref guard.
+            //
+            // For inline traits, listens live at the wrapper level. For
+            // ref-based traits preprocessed by @almadar/runtime, the call-site
+            // override gets applied to `_resolved.listens` (runtime ≥ 5.6.1)
+            // and the wrapper has no top-level `listens`. Read both paths.
             const callSiteListensByTrait = new Map<string, TraitEventListener[]>();
             for (const orb of (schema.orbitals as Orbital[])) {
                 for (const traitRef of (orb.traits ?? [])) {
                     if (typeof traitRef === 'string') continue;
-                    const t = traitRef as { name?: string; listens?: TraitEventListener[] };
-                    if (typeof t.name !== 'string' || !t.listens?.length) continue;
-                    callSiteListensByTrait.set(t.name, t.listens);
+                    const t = traitRef as {
+                        name?: string;
+                        listens?: TraitEventListener[];
+                        _resolved?: { name?: string; listens?: TraitEventListener[] };
+                    };
+                    const inlineListens = t.listens?.length ? t.listens : undefined;
+                    const resolvedListens = t._resolved?.listens?.length ? t._resolved.listens : undefined;
+                    const listens = inlineListens ?? resolvedListens;
+                    const traitName = t.name ?? t._resolved?.name;
+                    if (typeof traitName !== 'string' || !listens) continue;
+                    callSiteListensByTrait.set(traitName, listens);
                 }
             }
             for (const [traitName, trait] of resolved.traits) {
