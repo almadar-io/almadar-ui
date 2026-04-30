@@ -847,39 +847,6 @@ export function useTraitStateMachine(
                     fromBridge: true,
                 });
             }
-            // StateMachineManager.sendEvent() only pushes executed results, so traits
-            // with no transition for this event (emit-without-transition pattern) are
-            // absent from the loop above. Do a second pass over all bindings for those.
-            // A trait qualifies if: event is in its events[] AND no transition exists
-            // for it (i.e. the button publishes the signal but the trait has no self-loop).
-            // Guard-blocked transitions are excluded correctly: they still have a transition entry.
-            // See gap #14 in Almadar_Std_Verification.md.
-            const executedTraits = new Set(results.map((r) => r.traitName));
-            for (const binding of bindings) {
-                const traitName = binding.trait.name;
-                if (executedTraits.has(traitName)) continue;
-                const { events: traitEvents, transitions: traitTransitions } = binding.trait;
-                const eventDeclared = traitEvents.some((e) => e.key === normalizedEvent);
-                const hasTransition = traitTransitions.some((t) => t.event === normalizedEvent);
-                crossTraitLog.debug('rebroadcast:second-pass:candidate', {
-                    event: normalizedEvent,
-                    traitName,
-                    eventDeclared,
-                    hasTransition,
-                    orbitalName: orbitalsByTrait?.[traitName],
-                    traitEventKeys: traitEvents.map((e) => e.key).join(','),
-                });
-                if (!eventDeclared || hasTransition) continue;
-                const orbitalName = orbitalsByTrait?.[traitName];
-                if (!orbitalName) continue;
-                const busKey = `UI:${orbitalName}.${traitName}.${normalizedEvent}`;
-                crossTraitLog.info('rebroadcast:emit', { busKey, traitName, event: normalizedEvent });
-                eventBus.emit(busKey, payload, {
-                    orbital: orbitalName,
-                    trait: traitName,
-                    fromBridge: true,
-                });
-            }
         }
 
         // Sync React state from manager
