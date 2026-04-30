@@ -63,11 +63,51 @@ export function useResolvedSchema(
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Resolve schema synchronously using shared resolver
+    // Resolve schema synchronously using shared resolver, then enrich each
+    // trait's listens entries with the `source` field that
+    // @almadar/core's `schemaToIR` doesn't propagate (its
+    // `ResolvedTraitListener` type predates the Phase-4 qualified-key
+    // listen wiring). Without this enrichment, useTraitStateMachine's
+    // `listen.source?.trait` lookup is always undefined and every
+    // cross-trait `Source EVENT -> Trigger` declaration becomes a no-op.
+    //
+    // Match input → output by (event, triggers) position so two listens
+    // on the same event name (e.g. ContactBrowse EDIT vs ContactView
+    // EDIT) keep their distinct sources. Resolution preserves order and
+    // count, so a per-trait sequential walk is enough; the
+    // (event, triggers, occurrence) tuple disambiguates duplicates.
     const ir = useMemo<ResolvedIR | null>(() => {
         if (!schema) return null;
         try {
-            return sharedSchemaToIR(schema);
+            const resolved = sharedSchemaToIR(schema);
+            const sourceListsByTrait = new Map<string, Array<{ kind?: string; trait?: string; orbital?: string } | undefined>>();
+            const orbitals = (schema as { orbitals?: Array<{ traits?: unknown[] }> }).orbitals;
+            if (Array.isArray(orbitals)) {
+                for (const orb of orbitals) {
+                    const traits = (orb as { traits?: unknown[] }).traits;
+                    if (!Array.isArray(traits)) continue;
+                    for (const trait of traits) {
+                        const t = trait as { name?: string; listens?: unknown };
+                        if (typeof t.name !== 'string' || !Array.isArray(t.listens)) continue;
+                        const sources = t.listens.map((listen) => {
+                            const l = listen as { source?: { kind?: string; trait?: string; orbital?: string } };
+                            return l.source;
+                        });
+                        sourceListsByTrait.set(t.name, sources);
+                    }
+                }
+            }
+            for (const [traitName, trait] of resolved.traits) {
+                const sources = sourceListsByTrait.get(traitName);
+                if (!sources) continue;
+                trait.listens.forEach((listen, i) => {
+                    const src = sources[i];
+                    if (src !== undefined) {
+                        (listen as { source?: { kind?: string; trait?: string; orbital?: string } }).source = src;
+                    }
+                });
+            }
+            return resolved;
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Schema resolution failed');
             return null;
