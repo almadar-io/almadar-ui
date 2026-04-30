@@ -289,7 +289,17 @@ function renderContainedPortal(
   content: SlotContent,
   onDismiss: () => void,
 ): React.ReactElement {
-  const slotContent = <SlotContentRenderer content={content} onDismiss={onDismiss} />;
+  // Wrap with MaybeTraitScope so bare `UI:X` emits inside the slot (e.g.
+  // form submit dispatching `UI:SAVE`) get qualified to
+  // `UI:Orbital.Trait.X` via TraitScopeProvider — same contract as
+  // SlotPortal's wrapping for the non-contained path. Without this wrap,
+  // every cross-trait listener (subscribed under the qualified key) misses
+  // the form-submit event in playground/builder previews (contained mode).
+  const slotContent = (
+    <MaybeTraitScope sourceTrait={content.sourceTrait}>
+      <SlotContentRenderer content={content} onDismiss={onDismiss} />
+    </MaybeTraitScope>
+  );
   // Every mounted portal slot advertises `id="slot-{name}"` so VG1's portal
   // probe + any external selector sees the same anchor whether the runtime
   // drew the content inline (contained mode) or via a React portal. Before
