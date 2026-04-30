@@ -33,6 +33,9 @@ import { useEventBus } from "../../hooks/useEventBus";
 import { slotLog, refId } from "../../runtime/ui/SlotsContext";
 import { cn } from "../../lib/cn";
 import { ErrorBoundary } from "../molecules/ErrorBoundary";
+import { createLogger } from "../../lib/logger";
+
+const scopeWrapLog = createLogger("almadar:ui:scope-wrap");
 import { Skeleton, type SkeletonVariant } from "../molecules/Skeleton";
 
 // Shared renderer imports (synced from orbital-shared/design-system/renderer)
@@ -463,9 +466,17 @@ function MaybeTraitScope({
   const orbital = sourceTrait !== undefined && schemaCtx !== null
     ? schemaCtx.orbitalsByTrait.get(sourceTrait)
     : undefined;
-  if (sourceTrait !== undefined && orbital !== undefined) {
+  const wrap = sourceTrait !== undefined && orbital !== undefined;
+  scopeWrapLog.info('decide', {
+    sourceTrait,
+    schemaCtxPresent: schemaCtx !== null,
+    orbitalsByTraitSize: schemaCtx?.orbitalsByTrait.size ?? 0,
+    orbital,
+    wrap,
+  });
+  if (wrap) {
     return (
-      <TraitScopeProvider orbital={orbital} trait={sourceTrait}>
+      <TraitScopeProvider orbital={orbital!} trait={sourceTrait!}>
         {children}
       </TraitScopeProvider>
     );
