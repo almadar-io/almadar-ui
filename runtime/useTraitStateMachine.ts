@@ -20,6 +20,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 // Use hooks from @almadar/ui
 import { useEventBus } from '../hooks';
+import { createLogger } from '../lib/logger';
 import { isCircuitEvent } from '@almadar/core';
 import type { PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, TraitConfig } from '@almadar/core';
 import {
@@ -63,6 +64,8 @@ export interface TraitStateMachineResult {
     /** Check if a trait can handle an event from its current state */
     canHandleEvent: (traitName: string, eventKey: string) => boolean;
 }
+
+const crossTraitLog = createLogger('almadar:ui:cross-trait');
 
 // ============================================================================
 // Helper Functions
@@ -485,12 +488,23 @@ export function useTraitStateMachine(
         const actions = slotsActionsRef.current;
 
         console.log('[TraitStateMachine] Processing event:', normalizedEvent, 'payload:', payload);
+        crossTraitLog.debug('processEvent:enter', {
+            event: normalizedEvent,
+            traitCount: bindings.length,
+            traitNames: bindings.map((b) => b.trait.name).join(','),
+            orbitalsByTrait: JSON.stringify(orbitalsByTrait ?? null),
+        });
 
         // Find the binding that matches each trait for linkedEntity info
         const bindingMap = new Map(bindings.map(b => [b.trait.name, b]));
 
         // Send event through StateMachineManager (shared runtime)
         const results = currentManager.sendEvent(normalizedEvent, payload);
+        crossTraitLog.debug('processEvent:results', {
+            event: normalizedEvent,
+            executedCount: results.length,
+            executedTraits: results.map((r) => r.traitName).join(','),
+        });
 
         // Track every event each trait's effects emit during this dispatch.
         // Populated inside the effects loop via a wrapped emit handler;
@@ -833,6 +847,39 @@ export function useTraitStateMachine(
                     fromBridge: true,
                 });
             }
+            // StateMachineManager.sendEvent() only pushes executed results, so traits
+            // with no transition for this event (emit-without-transition pattern) are
+            // absent from the loop above. Do a second pass over all bindings for those.
+            // A trait qualifies if: event is in its events[] AND no transition exists
+            // for it (i.e. the button publishes the signal but the trait has no self-loop).
+            // Guard-blocked transitions are excluded correctly: they still have a transition entry.
+            // See gap #14 in Almadar_Std_Verification.md.
+            const executedTraits = new Set(results.map((r) => r.traitName));
+            for (const binding of bindings) {
+                const traitName = binding.trait.name;
+                if (executedTraits.has(traitName)) continue;
+                const { events: traitEvents, transitions: traitTransitions } = binding.trait;
+                const eventDeclared = traitEvents.some((e) => e.key === normalizedEvent);
+                const hasTransition = traitTransitions.some((t) => t.event === normalizedEvent);
+                crossTraitLog.debug('rebroadcast:second-pass:candidate', {
+                    event: normalizedEvent,
+                    traitName,
+                    eventDeclared,
+                    hasTransition,
+                    orbitalName: orbitalsByTrait?.[traitName],
+                    traitEventKeys: traitEvents.map((e) => e.key).join(','),
+                });
+                if (!eventDeclared || hasTransition) continue;
+                const orbitalName = orbitalsByTrait?.[traitName];
+                if (!orbitalName) continue;
+                const busKey = `UI:${orbitalName}.${traitName}.${normalizedEvent}`;
+                crossTraitLog.info('rebroadcast:emit', { busKey, traitName, event: normalizedEvent });
+                eventBus.emit(busKey, payload, {
+                    orbital: orbitalName,
+                    trait: traitName,
+                    fromBridge: true,
+                });
+            }
         }
 
         // Sync React state from manager
@@ -980,13 +1027,21 @@ export function useTraitStateMachine(
         for (const binding of traitBindings) {
             const ownOrbital = orbitalsByTrait?.[binding.trait.name];
             const listens: ResolvedTraitListener[] = (binding.trait.listens ?? []);
+            crossTraitLog.debug('listen:subscribe', {
+                trait: binding.trait.name,
+                ownOrbital,
+                listenCount: listens.length,
+                listens: listens.map((l) => `${l.source?.trait ?? '?'}.${l.event}->${l.triggers}`).join(','),
+            });
             for (const listen of listens) {
                 const sourceTrait = listen.source?.trait;
                 if (!sourceTrait) continue; // wildcard listens are out-of-scope post-unification
                 const sourceOrbital = listen.source?.orbital ?? ownOrbital;
                 if (!sourceOrbital) continue;
                 const busKey = `UI:${sourceOrbital}.${sourceTrait}.${listen.event}`;
+                crossTraitLog.debug('listen:subscribed', { busKey, targetTrait: binding.trait.name, triggers: listen.triggers });
                 const unsub = eventBus.on(busKey, (event) => {
+                    crossTraitLog.info('listen:fired', { busKey, targetTrait: binding.trait.name, triggers: listen.triggers });
                     enqueueAndDrain(listen.triggers, event.payload);
                 });
                 unsubscribes.push(unsub);

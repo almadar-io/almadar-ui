@@ -13,7 +13,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import type { OrbitalSchema } from '@almadar/core';
+import type { OrbitalSchema, Orbital, TraitEventListener } from '@almadar/core';
 
 // Import shared resolver and types from main orbital export
 import {
@@ -28,7 +28,12 @@ import type {
     ResolvedTrait,
     ResolvedEntity,
     ResolvedTraitBinding,
+    ResolvedTraitListener,
 } from './types';
+
+import { createLogger } from '../lib/logger';
+
+const resolvedSchemaLog = createLogger('almadar:ui:resolved-schema');
 
 export interface ResolvedSchemaResult {
     /** The resolved page (or undefined if not found) */
@@ -63,48 +68,57 @@ export function useResolvedSchema(
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Resolve schema synchronously using shared resolver, then enrich each
-    // trait's listens entries with the `source` field that
-    // @almadar/core's `schemaToIR` doesn't propagate (its
-    // `ResolvedTraitListener` type predates the Phase-4 qualified-key
-    // listen wiring). Without this enrichment, useTraitStateMachine's
-    // `listen.source?.trait` lookup is always undefined and every
-    // cross-trait `Source EVENT -> Trigger` declaration becomes a no-op.
+    // Resolve schema synchronously using shared resolver, then restore each
+    // trait's `listens` array from the call-site schema.
     //
-    // Match input → output by (event, triggers) position so two listens
-    // on the same event name (e.g. ContactBrowse EDIT vs ContactView
-    // EDIT) keep their distinct sources. Resolution preserves order and
-    // count, so a per-trait sequential walk is enough; the
-    // (event, triggers, occurrence) tuple disambiguates duplicates.
+    // Two problems the resolver leaves behind:
+    // 1. `ResolvedTraitListener` predates Phase-4: `source` is stripped.
+    // 2. For ref-based traits the resolver picks up the atom's `listens`
+    //    (e.g. ModalRecordModal has 0 listens) instead of the call-site
+    //    override, so the cross-trait subscription is never set up.
+    //
+    // Fix: after resolution, replace every resolved trait's `listens` with
+    // the call-site listens verbatim (source included). Call-site listens are
+    // authoritative — they "replace the trait's listens array entirely" per
+    // the override spec.
     const ir = useMemo<ResolvedIR | null>(() => {
         if (!schema) return null;
         try {
             const resolved = sharedSchemaToIR(schema);
-            const sourceListsByTrait = new Map<string, Array<{ kind?: string; trait?: string; orbital?: string } | undefined>>();
-            const orbitals = (schema as { orbitals?: Array<{ traits?: unknown[] }> }).orbitals;
-            if (Array.isArray(orbitals)) {
-                for (const orb of orbitals) {
-                    const traits = (orb as { traits?: unknown[] }).traits;
-                    if (!Array.isArray(traits)) continue;
-                    for (const trait of traits) {
-                        const t = trait as { name?: string; listens?: unknown };
-                        if (typeof t.name !== 'string' || !Array.isArray(t.listens)) continue;
-                        const sources = t.listens.map((listen) => {
-                            const l = listen as { source?: { kind?: string; trait?: string; orbital?: string } };
-                            return l.source;
-                        });
-                        sourceListsByTrait.set(t.name, sources);
-                    }
+            // Build call-site listens map. TraitRef union underspecifies the
+            // ref-object variant (no `listens` field declared), so cast to the
+            // common shape after the string-ref guard.
+            const callSiteListensByTrait = new Map<string, TraitEventListener[]>();
+            for (const orb of (schema.orbitals as Orbital[])) {
+                for (const traitRef of (orb.traits ?? [])) {
+                    if (typeof traitRef === 'string') continue;
+                    const t = traitRef as { name?: string; listens?: TraitEventListener[] };
+                    if (typeof t.name !== 'string' || !t.listens?.length) continue;
+                    callSiteListensByTrait.set(t.name, t.listens);
                 }
             }
             for (const [traitName, trait] of resolved.traits) {
-                const sources = sourceListsByTrait.get(traitName);
-                if (!sources) continue;
-                trait.listens.forEach((listen, i) => {
-                    const src = sources[i];
-                    if (src !== undefined) {
-                        (listen as { source?: { kind?: string; trait?: string; orbital?: string } }).source = src;
-                    }
+                const callSiteListens = callSiteListensByTrait.get(traitName);
+                if (!callSiteListens) continue;
+                const beforeCount = trait.listens.length;
+                trait.listens = callSiteListens.map((l): ResolvedTraitListener => ({
+                    event: l.event,
+                    triggers: l.triggers,
+                    source: l.source,
+                }));
+                resolvedSchemaLog.info('listens:restored', {
+                    trait: traitName,
+                    beforeCount,
+                    afterCount: trait.listens.length,
+                    listens: callSiteListens.map((l) => {
+                        const src = l.source;
+                        const label = !src
+                            ? '(no-source)'
+                            : src.kind === 'any'
+                                ? '*'
+                                : src.trait;
+                        return `${label}.${l.event}->${l.triggers}`;
+                    }).join(','),
                 });
             }
             return resolved;
