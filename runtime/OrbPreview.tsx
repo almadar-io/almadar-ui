@@ -35,7 +35,7 @@ import {
   type SlotEntry,
 } from './ui/SlotsContext';
 import { EntitySchemaProvider } from './EntitySchemaContext';
-import { ServerBridgeProvider, useServerBridge } from './ServerBridge';
+import { ServerBridgeProvider, useServerBridge, type ServerBridgeTransport } from './ServerBridge';
 import { getAllPages } from '../renderer/navigation';
 import { recordTransition, recordServerResponse, type EffectTrace } from '../lib/verificationRegistry';
 import { prepareSchemaForPreview } from './prepareSchemaForPreview';
@@ -379,9 +379,10 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
  * When `serverUrl` is provided, wraps with ServerBridgeProvider and
  * forwards events to the server after local processing.
  */
-function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate, onLocalFallback, persistence }: {
+function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavigate, onLocalFallback, persistence }: {
   schema: unknown;
   serverUrl?: string;
+  transport?: ServerBridgeTransport;
   mockData?: Record<string, unknown[]>;
   pageName?: string;
   onNavigate?: (path: string, params?: Record<string, unknown>) => void;
@@ -573,7 +574,7 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate, onLoc
         >
           <TraitInitializer
             traits={allPageTraits}
-            orbitalNames={serverUrl ? pageOrbitalNames : undefined}
+            orbitalNames={(serverUrl || transport) ? pageOrbitalNames : undefined}
             traitConfigsByName={traitConfigsByName}
             orbitalsByTrait={orbitalsByTrait}
             onNavigate={onNavigate}
@@ -595,9 +596,9 @@ function SchemaRunner({ schema, serverUrl, mockData, pageName, onNavigate, onLoc
     </VerificationProvider>
   );
 
-  if (serverUrl) {
+  if (serverUrl || transport) {
     return (
-      <ServerBridgeProvider schema={schema} serverUrl={serverUrl}>
+      <ServerBridgeProvider schema={schema} serverUrl={serverUrl} transport={transport}>
         {inner}
       </ServerBridgeProvider>
     );
@@ -640,6 +641,12 @@ export interface OrbPreviewProps {
   /** Server URL for dual execution (e.g. "/api/orbitals"). When set, events are forwarded to the server. */
   serverUrl?: string;
   /**
+   * Custom transport for in-process execution. Mutually exclusive with
+   * `serverUrl`. Used by `<BrowserPlayground>` to invoke
+   * `OrbitalServerRuntime.processOrbitalEvent` directly without HTTP.
+   */
+  transport?: ServerBridgeTransport;
+  /**
    * Initial page path to render (e.g. `/deals`). Resolves against the
    * schema's `pages[]` to seed `currentPage` so the right orbital's traits
    * mount on first render. Without this the playground falls back to the
@@ -669,8 +676,12 @@ export function OrbPreview({
   height = '400px',
   className,
   serverUrl,
+  transport,
   initialPagePath,
 }: OrbPreviewProps): React.ReactElement {
+  if (serverUrl && transport) {
+    throw new Error('OrbPreview accepts serverUrl OR transport, not both');
+  }
   // GAP-19: track when the server bridge falls back to local execution.
   // The 5s timeout in TraitInitializer fires onLocalFallback if the bridge
   // never connected. We surface a banner + emit UI:NOTIFY for any toast listener.
@@ -708,13 +719,16 @@ export function OrbPreview({
       parsed = schema;
     }
 
-    if (autoMock && !serverUrl) {
+    // Skip the legacy autoMock prep pipeline when a runtime transport is
+    // wired (`<BrowserPlayground>` runs `OrbitalServerRuntime` with
+    // MockPersistenceAdapter — that's the single mock source).
+    if (autoMock && !serverUrl && !transport) {
       const prepared = prepareSchemaForPreview(parsed);
       return { ok: true, schema: prepared.schema, mockData: prepared.mockData };
     }
 
     return { ok: true, schema: parsed, mockData: mockData ?? {} };
-  }, [schema, autoMock, serverUrl, mockData]);
+  }, [schema, autoMock, serverUrl, transport, mockData]);
 
   const parsedSchema = parseResult.ok ? parseResult.schema : null;
   const effectiveMockData: EntityData = parseResult.ok ? parseResult.mockData : {};
@@ -732,12 +746,12 @@ export function OrbPreview({
   // The adapter is built once per schema parse — re-parses (schema swap
   // in the playground) reset the persistence to the fresh seed.
   const persistence = useMemo<PersistenceAdapter | undefined>(() => {
-    if (!parsedSchema || serverUrl) return undefined;
+    if (!parsedSchema || serverUrl || transport) return undefined;
     if (!autoMock) return undefined;
     const adapter = new InMemoryPersistence();
     adapter.seed(effectiveMockData as Record<string, import('@almadar/core').EntityRow[]>);
     return adapter;
-  }, [parsedSchema, serverUrl, autoMock, effectiveMockData]);
+  }, [parsedSchema, serverUrl, transport, autoMock, effectiveMockData]);
 
   // Discover pages from schema for effect-driven navigation
   const pages = useMemo(() => {
@@ -831,6 +845,7 @@ export function OrbPreview({
           <SchemaRunner
             schema={parsedSchema}
             serverUrl={serverUrl}
+            transport={transport}
             mockData={effectiveMockData}
             pageName={currentPage}
             onNavigate={handleNavigate}

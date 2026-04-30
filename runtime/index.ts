@@ -56,6 +56,9 @@ export {
 // OrbPreview — live orbital schema renderer
 export { OrbPreview, type OrbPreviewProps } from './OrbPreview';
 
+// BrowserPlayground — in-browser OrbitalServerRuntime mount (mock mode)
+export { BrowserPlayground, type BrowserPlaygroundProps } from './BrowserPlayground';
+
 // Preview prep — single source of truth for the doc/playground mock pipeline
 export {
     prepareSchemaForPreview,
@@ -65,7 +68,7 @@ export {
 } from './prepareSchemaForPreview';
 
 // ServerBridge — client-server bridge for dual execution
-export { ServerBridgeProvider, useServerBridge, type ServerBridgeContextValue, type ServerClientEffect } from './ServerBridge';
+export { ServerBridgeProvider, useServerBridge, type ServerBridgeContextValue, type ServerBridgeTransport, type ServerClientEffect } from './ServerBridge';
 
 // Types
 export type {

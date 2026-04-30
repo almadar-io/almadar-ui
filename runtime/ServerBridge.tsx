@@ -18,7 +18,7 @@
  * @packageDocumentation
  */
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import type { BusEventSource, EventPayload } from '@almadar/core';
 import { useEventBus } from '../hooks/useEventBus';
@@ -98,6 +98,61 @@ export interface ServerBridgeContextValue {
   sendEvent: (orbitalName: string, event: string, payload?: Record<string, unknown>) => Promise<SendEventResult>;
 }
 
+/**
+ * Transport adapter for ServerBridgeProvider. Decouples the bridge's
+ * cascade-rebroadcast / effect-parsing logic from its wire format.
+ *
+ * - The `serverUrl` mode (default) uses an HTTP transport that POSTs to
+ *   `/register`, `/unregister`, `/:orbital/events`. This is what canonical
+ *   playground-runtime (`tools/runtime-verify`) and apps/builder-server
+ *   speak.
+ * - The `transport` mode lets a consumer plug in a direct function-call
+ *   adapter — used by `<BrowserPlayground>` to invoke
+ *   `OrbitalServerRuntime.processOrbitalEvent` in-process, no HTTP, no
+ *   server. Both modes return the same `OrbitalEventResponse` shape so the
+ *   cascade-rebroadcast logic is identical downstream.
+ */
+export interface ServerBridgeTransport {
+  register: (schema: unknown) => Promise<boolean>;
+  unregister: () => Promise<void>;
+  sendEvent: (orbitalName: string, event: string, payload?: Record<string, unknown>) => Promise<OrbitalEventResponse>;
+}
+
+/** HTTP transport — POSTs to a server speaking the canonical playground-runtime contract. */
+function createHttpTransport(serverUrl: string): ServerBridgeTransport {
+  return {
+    register: async (schema) => {
+      try {
+        const res = await fetch(`${serverUrl}/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ schema }),
+        });
+        const result = await res.json();
+        return !!result.success;
+      } catch (err) {
+        console.error('[ServerBridge] Registration failed:', err);
+        return false;
+      }
+    },
+    unregister: async () => {
+      try {
+        await fetch(`${serverUrl}/unregister`, { method: 'DELETE' });
+      } catch {
+        // Ignore cleanup errors
+      }
+    },
+    sendEvent: async (orbitalName, event, payload) => {
+      const res = await fetch(`${serverUrl}/${orbitalName}/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event, payload }),
+      });
+      return res.json() as Promise<OrbitalEventResponse>;
+    },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Context
 // ---------------------------------------------------------------------------
@@ -122,44 +177,53 @@ export function useServerBridge(): ServerBridgeContextValue {
 
 export interface ServerBridgeProviderProps {
   schema: unknown;
-  serverUrl: string;
+  /** HTTP server URL (canonical playground-runtime / apps/builder-server). */
+  serverUrl?: string;
+  /**
+   * Custom transport adapter. Use this for in-process execution (e.g.
+   * `<BrowserPlayground>` invokes `OrbitalServerRuntime.processOrbitalEvent`
+   * directly). Mutually exclusive with `serverUrl`.
+   */
+  transport?: ServerBridgeTransport;
   children: ReactNode;
 }
 
 export function ServerBridgeProvider({
   schema,
   serverUrl,
+  transport: customTransport,
   children,
 }: ServerBridgeProviderProps) {
+  if (!serverUrl && !customTransport) {
+    throw new Error('ServerBridgeProvider requires either serverUrl or transport');
+  }
+  if (serverUrl && customTransport) {
+    throw new Error('ServerBridgeProvider accepts serverUrl OR transport, not both');
+  }
+
   const eventBus = useEventBus();
   const [connected, setConnected] = useState(false);
 
-  // Register schema with server
-  const registerSchema = useCallback(async (): Promise<boolean> => {
-    try {
-      const res = await fetch(`${serverUrl}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ schema }),
-      });
-      const result = await res.json();
-      return !!result.success;
-    } catch (err) {
-      console.error('[ServerBridge] Registration failed:', err);
-      return false;
-    }
-  }, [schema, serverUrl]);
+  // Resolve the transport: custom takes precedence (only one is set per the
+  // mutual-exclusion check above). Memo on `serverUrl`/`customTransport` so
+  // useCallback deps don't churn every render.
+  const transport = useMemo<ServerBridgeTransport>(
+    () => customTransport ?? createHttpTransport(serverUrl!),
+    [serverUrl, customTransport],
+  );
 
-  // Unregister on unmount
-  const unregisterSchema = useCallback(async () => {
-    try {
-      await fetch(`${serverUrl}/unregister`, { method: 'DELETE' });
-    } catch {
-      // Ignore cleanup errors
-    }
-  }, [serverUrl]);
+  const registerSchema = useCallback(
+    async (): Promise<boolean> => transport.register(schema),
+    [schema, transport],
+  );
 
-  // Send event to server orbital, returns enriched client effects + response metadata
+  const unregisterSchema = useCallback(
+    async () => transport.unregister(),
+    [transport],
+  );
+
+  // Send event to orbital, returns enriched client effects + response metadata.
+  // Cascade-rebroadcast logic is identical for HTTP and in-process transports.
   const sendEvent = useCallback(async (
     orbitalName: string,
     event: string,
@@ -169,12 +233,7 @@ export function ServerBridgeProvider({
     if (!connected) return { effects: [], meta: emptyMeta };
 
     try {
-      const res = await fetch(`${serverUrl}/${orbitalName}/events`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ event, payload }),
-      });
-      const result: OrbitalEventResponse = await res.json();
+      const result: OrbitalEventResponse = await transport.sendEvent(orbitalName, event, payload);
       const effects: ServerClientEffect[] = [];
 
       // Build metadata from raw response
@@ -255,7 +314,7 @@ export function ServerBridgeProvider({
       console.error('[ServerBridge] Event send failed:', err);
       return { effects: [], meta: { ...emptyMeta, error: err instanceof Error ? err.message : String(err) } };
     }
-  }, [connected, serverUrl, eventBus]);
+  }, [connected, transport, eventBus]);
 
   // Register on mount, unregister on unmount
   useEffect(() => {
