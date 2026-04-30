@@ -71,8 +71,6 @@ export interface DataListProps<T extends EntityRow = EntityRow> {
   entity: T | readonly T[];
   /** Field definitions for rendering each row */
   fields: readonly DataListField[];
-  /** Alias for fields (compiler may generate `columns` for field definitions) */
-  columns?: readonly DataListField[];
   /** Per-item action buttons */
   itemActions?: readonly DataListItemAction[];
   /** Gap between rows */
@@ -184,8 +182,7 @@ function groupData(
 
 export function DataList<T extends EntityRow = EntityRow>({
   entity,
-  fields: fieldsProp,
-  columns: columnsProp,
+  fields,
   itemActions,
   gap = 'none',
   variant = 'default',
@@ -215,7 +212,6 @@ export function DataList<T extends EntityRow = EntityRow>({
   const { t } = useTranslate();
   const [visibleCount, setVisibleCount] = React.useState(pageSize || Infinity);
 
-  const fields = fieldsProp ?? columnsProp ?? [];
   const allData = Array.isArray(entity) ? entity : entity ? [entity] : [];
   const data = pageSize > 0 ? allData.slice(0, visibleCount) : allData;
   const hasMoreLocal = pageSize > 0 && visibleCount < allData.length;

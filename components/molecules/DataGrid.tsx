@@ -79,8 +79,6 @@ export interface DataGridProps<T extends EntityRow = EntityRow> {
   entity: T | readonly T[];
   /** Field definitions for rendering each card */
   fields: readonly DataGridField[];
-  /** Alias for fields (compiler generates `columns` for field definitions) */
-  columns?: readonly DataGridField[];
   /** Per-item action buttons */
   itemActions?: readonly DataGridItemAction[];
   /** Number of columns (uses auto-fit if omitted) */
@@ -190,8 +188,7 @@ const gapStyles: Record<string, string> = {
 
 export function DataGrid<T extends EntityRow = EntityRow>({
   entity,
-  fields: fieldsProp,
-  columns: columnsProp,
+  fields,
   itemActions,
   cols,
   gap = 'md',
@@ -213,7 +210,6 @@ export function DataGrid<T extends EntityRow = EntityRow>({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [visibleCount, setVisibleCount] = useState(pageSize || Infinity);
 
-  const fields = fieldsProp ?? columnsProp ?? [];
   const allData = Array.isArray(entity) ? entity : entity ? [entity] : [];
   const data = pageSize > 0 ? allData.slice(0, visibleCount) : allData;
   const hasMoreLocal = pageSize > 0 && visibleCount < allData.length;
