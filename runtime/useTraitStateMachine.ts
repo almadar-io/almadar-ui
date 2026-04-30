@@ -815,39 +815,12 @@ export function useTraitStateMachine(
             }
         }
 
-        // Re-broadcast each successfully-transitioned event on the bus so
-        // cross-trait `listens { SourceTrait EVENT → Trigger }` wiring
-        // fires. Without this, user-driven events drive the source trait's
-        // transition but never fan out to sibling traits (the std-cart
-        // Persistor never hears SAVE, the cart never grows).
-        //
-        // Parity with:
-        // - Compiled path's useOrbitalBridge (re-emits transition event
-        //   with fromBridge flag after HTTP success) — backend.rs:3520+
-        // - @almadar/runtime 4.9.0's OrbitalServerRuntime re-emit — for
-        //   server-bus listeners in non-playground runtime setups
-        //
-        // Skip lifecycle events (INIT / LOAD / $MOUNT / $UNMOUNT) and the
-        // client-only $FRAME machinery to avoid re-dispatching on mount.
-        const LIFECYCLE_EVENTS = new Set(['INIT', 'LOAD', '$MOUNT', '$UNMOUNT', '$FRAME']);
-        if (!LIFECYCLE_EVENTS.has(normalizedEvent)) {
-            for (const { traitName, result } of results) {
-                if (!result.executed) continue;
-                // Gap #13: re-emit on the qualified `UI:Orbital.Trait.EVENT`
-                // bus key so cross-trait listens (subscribed under the
-                // qualified form) see this echo. The qualified key carries
-                // source identity directly — no `source.trait !== own`
-                // predicate needed (which is how pre-unification cross-
-                // trait fan-out worked).
-                const orbitalName = orbitalsByTrait?.[traitName];
-                if (!orbitalName) continue;
-                eventBus.emit(`UI:${orbitalName}.${traitName}.${normalizedEvent}`, payload, {
-                    orbital: orbitalName,
-                    trait: traitName,
-                    fromBridge: true,
-                });
-            }
-        }
+        // No post-transition re-broadcast: the originating event already
+        // arrived via the qualified bus key (Form / Button via TraitScopeProvider
+        // emit `UI:Orbital.Trait.X` directly), so every cross-trait listener
+        // subscribed to that key has already fired once. Re-broadcasting on
+        // the same key would fire each cross-trait listener a second time —
+        // root cause of the std-cart "two entities created on Save" bug.
 
         // Sync React state from manager
         if (results.length > 0) {
