@@ -24,6 +24,7 @@ import { createLogger } from '../lib/logger';
 
 const log = createLogger('almadar:eventbus');
 const subLog = createLogger('almadar:eventbus:subscribe');
+const scopeLog = createLogger('almadar:ui:trait-scope');
 
 // Re-export types for convenience
 export type { BusEvent, BusEventSource, EventListener, Unsubscribe, EventBusContextType };
@@ -206,7 +207,17 @@ export function useEventBus(): EventBusContextType {
   const scope = useTraitScope();
 
   return useMemo(() => {
-    if (!scope) return baseBus;
+    if (!scope) {
+      return {
+        ...baseBus,
+        emit: (type: string, payload?: EventPayload, source?: BusEventSource) => {
+          if (typeof type === 'string' && type.startsWith('UI:') && !type.slice(3).includes('.')) {
+            scopeLog.warn('emit:bare-key-no-scope', { type });
+          }
+          baseBus.emit(type, payload, source);
+        },
+      };
+    }
     return {
       ...baseBus,
       emit: (type: string, payload?: EventPayload, source?: BusEventSource) => {
@@ -220,6 +231,9 @@ export function useEventBus(): EventBusContextType {
           const qualified = tail.includes('.')
             ? type
             : `UI:${scope.orbital}.${scope.trait}.${tail}`;
+          if (qualified !== type) {
+            scopeLog.info('emit:qualified', { from: type, to: qualified, scope });
+          }
           baseBus.emit(qualified, payload, source);
           return;
         }
