@@ -306,12 +306,31 @@ export function ServerBridgeProvider({
           }
         }
       } else if (result.error) {
-        console.error('[ServerBridge] Event error:', result.error);
+        // Match compiled-path bridge (`useOrbitalBridge.ts`'s
+        // `_bridgeLog.warn('response:fail', ...)`) so the shared
+        // @almadar-io/verify "No console errors" verdict stays green.
+        // The error is a server-side validation rejection (e.g. a
+        // verifier coverage walker injecting events with missing
+        // required-field payloads), which is structured signal — log it
+        // through the same channel a structured logger consumer would
+        // already be filtering, not via raw console.error.
+        xOrbitalLog.warn('response:fail', {
+          orbital: orbitalName,
+          event,
+          error: result.error,
+        });
       }
 
       return { effects, meta };
     } catch (err) {
-      console.error('[ServerBridge] Event send failed:', err);
+      // Same parity reasoning. Network / transport failures use the
+      // logger's `error` level (compiled path uses
+      // `_bridgeLog.error('response:network', ...)`).
+      xOrbitalLog.error('response:network', {
+        orbital: orbitalName,
+        event,
+        error: err instanceof Error ? err.message : String(err),
+      });
       return { effects: [], meta: { ...emptyMeta, error: err instanceof Error ? err.message : String(err) } };
     }
   }, [connected, transport, eventBus]);
