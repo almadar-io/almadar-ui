@@ -260,36 +260,14 @@ export function useTraitStateMachine(
             const last = patterns[patterns.length - 1];
             const record = (last.pattern ?? {}) as Record<string, unknown>;
             const { type: patternType, children: nested, ...inlineProps } = record;
-            // Convert any `["fn", argName, body]` lambda values
-            // (RenderItemLambda) into actual React render-prop functions
-            // BEFORE the props land in `useUISlots`. By the time
-            // `<SlotContentRenderer>` and DataGrid receive these props,
-            // the converted function is already at `children` (per the
-            // renderItem→children alias on the consumer components),
-            // so the consumer's `typeof children === 'function'` branch
-            // fires and rows render. See `runtime/fn-form-lambda.ts`.
+            // Convert `["fn", argName, body]` lambdas into render-prop
+            // functions before they land in `useUISlots` (mirrors
+            // OrbPreview.applyServerEffects).
             const rawProps: Record<string, unknown> = {
                 ...inlineProps,
                 ...last.props,
                 ...(nested !== undefined ? { children: nested } : {}),
             };
-            // Diagnostic: probe the rawProps shape at the local-state-machine
-            // dispatch boundary. Mirror of the OrbPreview probe so both
-            // entry-points are visible in the verifier console.
-            if (typeof patternType === 'string'
-                && (patternType === 'data-grid' || patternType === 'data-list')) {
-                const r = rawProps.renderItem;
-                flushLog.info('flush:data-grid', {
-                    traitName,
-                    slot,
-                    patternType,
-                    rawKeys: Object.keys(rawProps).slice(0, 10),
-                    renderItemTypeOf: typeof r,
-                    renderItemIsArray: Array.isArray(r),
-                    renderItemHead: Array.isArray(r) && r.length >= 1 ? String(r[0]) : '',
-                    renderItemLen: Array.isArray(r) ? r.length : -1,
-                });
-            }
             const props = convertFnFormLambdasInProps(rawProps);
             const isEmbedded = embedded?.has(traitName) ?? false;
             if (isEmbedded) {

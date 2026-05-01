@@ -313,36 +313,23 @@ export function DataGrid<T extends EntityRow = EntityRow>({
 
   const hasRenderProp = typeof children === 'function';
 
-  // Diagnostic: when we have data + a `renderItem` prop but it's not a
-  // function (e.g. it arrived as an unconverted `["fn","item",{...}]`
-  // sExpression lambda from the schema), DataGrid silently falls back
-  // to the fields-based path. With `fields: []`, that produces a row
-  // of empty pill cards — exactly the std-filtered-list Filter-atom
-  // symptom. Surface it once per (entity, field-count) shape so the
-  // verifier transcript shows the gap without flooding.
+  // Warn only when there's no way to render: data exists but neither a
+  // children render-prop nor any fields to drive the field-based path.
+  // The fields-only path is legitimate (std-browse, std-pagination), so
+  // gating on `!fields?.length` avoids false positives there.
   useEffect(() => {
-    const renderItemTypeOf = typeof schemaRenderItem;
-    const childrenTypeOf = typeof children;
-    if (data.length > 0 && !hasRenderProp) {
-      const firstRow = data[0] as Record<string, unknown> | undefined;
-      const sampleKeys = firstRow ? Object.keys(firstRow).slice(0, 6) : [];
-      const renderItemRaw = schemaRenderItem as unknown;
+    if (data.length > 0 && !hasRenderProp && (!fields || fields.length === 0)) {
+      const renderItemRaw: unknown = schemaRenderItem;
       const isFnLambda =
         Array.isArray(renderItemRaw) &&
         renderItemRaw.length >= 3 &&
         (renderItemRaw[0] === 'fn' || renderItemRaw[0] === 'lambda');
       dataGridLog.warn('renderItem-unresolved', {
         rowCount: data.length,
-        fieldsCount: fields?.length ?? 0,
-        renderItemTypeOf,
-        renderItemIsArray: Array.isArray(renderItemRaw),
         renderItemIsFnLambda: isFnLambda,
-        renderItemHead: Array.isArray(renderItemRaw) ? String(renderItemRaw[0]) : undefined,
-        childrenTypeOf,
-        sampleRowKeys: sampleKeys,
       });
     }
-  }, [data, hasRenderProp, schemaRenderItem, children, fields]);
+  }, [data, hasRenderProp, schemaRenderItem, fields]);
 
   const allIds = data.map((item, i) => ((item as Record<string, unknown>).id as string) || String(i));
   const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));

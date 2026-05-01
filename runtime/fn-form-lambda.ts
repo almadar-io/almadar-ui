@@ -1,22 +1,11 @@
 /**
  * fn-form lambda → React render-prop conversion at the render-ui
- * dispatch site.
+ * dispatch site, before the pattern lands in `useUISlots`.
  *
  * `.lolo` authors per-row render functions for DataGrid/DataList/Carousel
- * as the sExpression lambda `["fn", argName, body]`. The compiled path's
- * codegen converts these into real `(item: T) => <JSX>` functions at
- * build time. The runtime path needs an equivalent conversion that
- * happens BEFORE the pattern lands in `useUISlots` SlotContent, so by
- * the time `<SlotContentRenderer>` mounts the consumer (DataGrid, etc.)
- * the prop is already a callable React render function.
- *
- * Why upstream — earlier attempts to detect-and-convert inside
- * `renderPatternProps` proved unreliable: the converted function's
- * return value didn't reach the DOM in some flows we couldn't fully
- * trace. Moving the conversion to the dispatch boundary makes the
- * SlotContent's props shape match what consumer components have always
- * expected (children = real function), so they behave identically to
- * the compiled path.
+ * as `["fn", argName, body]`. By converting them to functions here,
+ * SlotContent's props match what consumer components expect (children =
+ * real function) without depending on a render-time conversion pass.
  *
  * @packageDocumentation
  */
@@ -28,12 +17,6 @@ import { createLogger } from "../lib/logger";
 
 const lambdaLog = createLogger("almadar:ui:fn-form-lambda");
 
-/**
- * Detect the canonical `RenderItemLambda` shape from `@almadar/core`:
- * head is the literal `"fn"`, second slot is the per-item argument name,
- * third slot is an `AnyPatternConfig` body. Strict by design — typed
- * forms outside this exact shape pass through unchanged.
- */
 export function isFnFormLambda(value: unknown): value is RenderItemLambda {
   return (
     Array.isArray(value) &&
@@ -46,9 +29,9 @@ export function isFnFormLambda(value: unknown): value is RenderItemLambda {
 }
 
 /**
- * Walk a pattern body, replacing every `@<argName>.path.to.field` string
- * with the value at `path.to.field` of `arg`. Mirrors the compiler's
- * inline substitution for `renderItem` lambda bodies.
+ * Walk a pattern body replacing every `@<argName>.path` string with the
+ * value at `path` of `arg`. Mirrors the compiler's inline substitution
+ * for `renderItem` lambda bodies.
  */
 export function resolveLambdaBindings(
   body: unknown,
@@ -86,12 +69,8 @@ export function resolveLambdaBindings(
   return body;
 }
 
-/**
- * Lazy module accessor for `<SlotContentRenderer>` so this file doesn't
- * close the cycle `runtime → UISlotRenderer → renderer/* → runtime`.
- * The consumer of the converted function is React render-time, well
- * after both modules have finished initialising.
- */
+// Lazy import keeps `fn-form-lambda → UISlotRenderer → fn-form-lambda`
+// from forming a module cycle at evaluation time.
 type SlotContentRendererComponent = React.ComponentType<{
   content: {
     id: string;
@@ -112,9 +91,6 @@ function getSlotContentRenderer(): SlotContentRendererComponent {
   return _slotContentRenderer;
 }
 
-/**
- * Build the per-item render-prop function from a `RenderItemLambda` body.
- */
 function makeLambdaFn(
   argName: string,
   lambdaBody: AnyPatternConfig,
@@ -142,56 +118,20 @@ function makeLambdaFn(
       ),
       priority: 0,
     };
-    const itemName =
-      item && typeof item === "object"
-        ? String((item as Record<string, unknown>).name ?? "")
-        : "";
-    lambdaLog.info(
-      `fn-lambda:invoke key=${callerKey} idx=${index} type=${record.type} name=${itemName}`,
-    );
-    // Wrap SlotContentRenderer in a marker div so we can confirm via
-    // page.evaluate whether React mounts our return value into the DOM.
-    return React.createElement(
-      "div",
-      {
-        "data-fn-marker": "true",
-        "data-fn-key": callerKey,
-        "data-fn-idx": String(index),
-        style: { width: "100%" },
-      },
-      React.createElement(SlotContentRenderer, { content: childContent }),
-    );
+    return React.createElement(SlotContentRenderer, { content: childContent });
   };
 }
 
-/**
- * Recursively walk a pattern node — props object, child array, or any
- * deeper SExpression body — converting every `["fn", argName, body]`
- * lambda into a React render-prop function.
- *
- * Why recursion is required: render-ui dispatches a TOP-LEVEL pattern
- * whose children array contains nested pattern configs (e.g. a
- * `stack > data-grid > renderItem: ["fn", ...]`). The lambda lives
- * inside `children[i].renderItem`, not at the dispatched pattern's
- * top-level props. A shallow scan misses it. We walk every nested
- * pattern config the same way (substituting renderItem with `children`
- * key per the consumer-side aliasing rule).
- *
- * Identity-preserving: returns the input unchanged by reference if no
- * lambdas were found anywhere in the subtree, so memoised consumers
- * downstream don't re-render needlessly.
- */
+// Recursively walks pattern trees so nested `renderItem` lambdas (e.g.
+// `stack > data-grid > renderItem`) get converted, not just top-level
+// props. Identity-preserving when nothing converts so memoised consumers
+// downstream don't re-render needlessly.
 function convertNode(node: unknown, callerKey: string): unknown {
   if (node === null || node === undefined) return node;
   if (Array.isArray(node)) {
-    // SExpression lambda? — at this position the array IS the value
-    // (e.g. inside a `renderItem` prop slot). Convert to a function.
     if (isFnFormLambda(node)) {
       const [, argName, body] = node;
-      lambdaLog.info(
-        `fn-lambda:upstream-convert key=${callerKey} targetKey=${callerKey === "renderItem" ? "children" : callerKey} argName=${argName}`,
-      );
-      return makeLambdaFn(argName, body as AnyPatternConfig, callerKey);
+      return makeLambdaFn(argName, body, callerKey);
     }
     let anyChanged = false;
     const mapped = node.map((item, i) => {
@@ -216,12 +156,11 @@ function convertObjectProps(
     if (isFnFormLambda(value)) {
       convertedAny = true;
       const [, argName, body] = value;
-      const lambdaBody: AnyPatternConfig = body;
+      // `renderItem` is the schema-level alias; consumers (DataGrid,
+      // DataList, Carousel) read the per-row render via React `children`.
       const targetKey = key === "renderItem" ? "children" : key;
-      out[targetKey] = makeLambdaFn(argName, lambdaBody, key);
-      lambdaLog.info(
-        `fn-lambda:upstream-convert key=${key} targetKey=${targetKey} argName=${argName}`,
-      );
+      out[targetKey] = makeLambdaFn(argName, body, key);
+      lambdaLog.debug(`convert key=${key} → ${targetKey}`);
       continue;
     }
     const next = convertNode(value, key);
@@ -232,16 +171,10 @@ function convertObjectProps(
 }
 
 /**
- * Public entry point: walk a pattern's props (and recursively their
- * nested children) once, converting every fn-form lambda value into a
- * React render-prop function. The `renderItem` prop alias lands the
- * function at `children` (DataGrid/DataList/Carousel consume their
- * per-item render via the React children slot — `renderItem` is a
- * documented deprecated alias the compiler would have already
- * rewritten). Lambdas under any other key keep that key.
- *
- * Pure on inputs without lambdas: returns the props object unchanged
- * by reference, so React's prop-equality memoisation isn't disturbed.
+ * Walk a pattern's props (and recursively their nested children),
+ * converting every fn-form lambda value into a React render-prop
+ * function. Pure on inputs without lambdas: returns the props object
+ * unchanged by reference.
  */
 export function convertFnFormLambdasInProps(
   props: Record<string, unknown>,

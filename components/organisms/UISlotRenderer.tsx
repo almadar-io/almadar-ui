@@ -1170,14 +1170,10 @@ function SlotContentRenderer({
       ? renderPatternChildren(childrenConfig, onDismiss, content.id, myPath, content.sourceTrait)
       : undefined;
 
-    // Extract props without the pattern-array children config (we pass
-    // rendered children below). Function-typed children — produced by
-    // the upstream fn-form lambda conversion at the render-ui dispatch
-    // site (see `runtime/fn-form-lambda.ts`) — are render-prop callbacks
-    // for DataGrid/DataList/Carousel, NOT a pattern array. Those have
-    // to flow through to the consumer; if we strip them here, the
-    // consumer falls back to its empty fields path. Keep function
-    // children intact in `restProps`.
+    // Function-typed children come from the upstream fn-form lambda
+    // conversion (`runtime/fn-form-lambda.ts`) and are render-prop
+    // callbacks for DataGrid/DataList/Carousel — keep them in restProps
+    // instead of treating them as a pattern array.
     const incomingChildren = content.props.children;
     const childrenIsRenderFn = typeof incomingChildren === "function";
     const { children: _childrenConfig, ...restPropsNoChildren } = content.props;
@@ -1229,19 +1225,10 @@ function SlotContentRenderer({
     }
 
     const acceptsChildren = PATTERNS_WITH_CHILDREN.has(content.pattern);
-    // JSX prop-precedence note: writing
-    //   <PatternComponent {...finalProps}>{renderedChildren}</PatternComponent>
-    // desugars to <PatternComponent {...finalProps} children={renderedChildren} />,
-    // so when `renderedChildren` is `undefined` the explicit assignment
-    // wins over `finalProps.children`. That collapses the renderItem
-    // fn-form-lambda → children render-prop work into `children:
-    // undefined`, which is exactly the regression the diagnostic
-    // (`almadar:ui:data-grid renderItem-unresolved`) caught: DataGrid
-    // saw `typeof children !== "function"` and fell back to its empty
-    // fields path. Pass children only when we actually computed
-    // recursive child JSX; otherwise let the spread's `children` (a
-    // render function for data-grid-style consumers, or just absent
-    // for everyone else) flow through.
+    // JSX `<X {...props}>{c}</X>` desugars to `children={c}`, so passing
+    // an explicit `undefined` overwrites a render-prop function flowing
+    // in via the spread. Branch on `renderedChildren` so render-prop
+    // callbacks survive when we have no recursive child JSX of our own.
     return (
       <Box
         className="slot-content"
