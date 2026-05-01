@@ -1143,14 +1143,23 @@ function renderPatternProps(
       );
     } else if (isFnFormLambda(value)) {
       // sExpression lambda — convert to a per-item render-prop function.
-      // DataGrid/DataList/Carousel call `props.renderItem(item, index)`
-      // expecting a ReactNode; we resolve `@<argName>.X` bindings inside
-      // the lambda body against `item` and feed the resulting pattern
-      // tree back through SlotContentRenderer. Body shape is
-      // `AnyPatternConfig` per `RenderItemLambda` in `@almadar/core`.
+      // DataGrid/DataList/Carousel consume the render prop via the React
+      // `children` slot (their `renderItem` interface is deprecated and
+      // documented as "compiler converts this to the children render
+      // prop"). We resolve `@<argName>.X` bindings in the body against
+      // `item` and feed the resolved pattern tree through
+      // SlotContentRenderer. Body shape is `AnyPatternConfig` per
+      // `RenderItemLambda` in `@almadar/core`.
+      //
+      // Aliasing rule: when the schema places the lambda under
+      // `renderItem` (the pattern-registry name), the converted
+      // function lands at `children` so the consumer's
+      // `typeof children === 'function'` check fires. Lambda values
+      // under any other key keep that key — they're consumer-defined
+      // render slots that the consumer addresses by name.
       const [, argName, body] = value;
       const lambdaBody: AnyPatternConfig = body;
-      rendered[key] = (item: EntityRow, index: number): React.ReactNode => {
+      const fn = (item: EntityRow, index: number): React.ReactNode => {
         const resolvedBody = resolveLambdaBindings(lambdaBody, argName, item);
         if (!isPatternConfig(resolvedBody)) {
           return null;
@@ -1167,6 +1176,8 @@ function renderPatternProps(
           <SlotContentRenderer content={childContent} onDismiss={onDismiss} />
         );
       };
+      const targetKey = key === "renderItem" ? "children" : key;
+      rendered[targetKey] = fn;
     } else {
       rendered[key] = value;
     }
