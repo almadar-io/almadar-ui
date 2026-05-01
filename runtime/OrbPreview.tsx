@@ -25,6 +25,7 @@ import { useEventBus } from '../hooks/useEventBus';
 import type { OrbitalSchema, EntityData, ResolvedTraitBinding } from '@almadar/core';
 import { useResolvedSchema } from './useResolvedSchema';
 import { collectEmbeddedTraits } from './embedded-traits';
+import { convertFnFormLambdasInProps } from './fn-form-lambda';
 import { useTraitStateMachine } from './useTraitStateMachine';
 import { EntitySchemaProvider } from './EntitySchemaContext';
 import { ServerBridgeProvider, useServerBridge, type ServerBridgeTransport } from './ServerBridge';
@@ -113,10 +114,39 @@ function applyServerEffects(
         : children;
       const sourceTrait = eff.traitName ?? 'server';
       const isEmbedded = embeddedTraits?.has(sourceTrait) ?? false;
-      const props = {
+      // Convert any `["fn", argName, body]` lambda values (RenderItemLambda)
+      // into actual React render-prop functions before the props land in
+      // `useUISlots`. By the time `<SlotContentRenderer>` and DataGrid
+      // receive these props, the converted function is already at
+      // `children` (per the renderItem→children alias documented on the
+      // consumer components), so the consumer's
+      // `typeof children === 'function'` branch fires and the rows render.
+      // See `runtime/fn-form-lambda.ts` for the helper. xOrbitalLog
+      // emits `fn-lambda:upstream-convert` per converted prop so the
+      // verifier transcript can confirm the conversion at the dispatch
+      // boundary.
+      const rawProps: Record<string, unknown> = {
         ...inlineProps,
         ...(normalizedChildren !== undefined ? { children: normalizedChildren } : {}),
       };
+      // Diagnostic: log the rawProps' renderItem shape at the dispatch
+      // boundary so we can trace whether BindingResolver preserved or
+      // stripped the fn-form lambda en-route from .orb → server bridge
+      // → here. If renderItemHead is "fn", my BindingResolver patch is
+      // working and the upstream conversion will fire next.
+      if (typeof patternType === 'string' && (patternType === 'data-grid' || patternType === 'data-list')) {
+        const r = rawProps.renderItem;
+        xOrbitalLog.info('apply-server:data-grid', {
+          sourceTrait,
+          patternType,
+          rawKeys: Object.keys(rawProps).slice(0, 10),
+          renderItemTypeOf: typeof r,
+          renderItemIsArray: Array.isArray(r),
+          renderItemHead: Array.isArray(r) && r.length >= 1 ? String(r[0]) : '',
+          renderItemLen: Array.isArray(r) ? r.length : -1,
+        });
+      }
+      const props = convertFnFormLambdasInProps(rawProps);
 
       if (isEmbedded) {
         xOrbitalLog.info('slot:embed-routed', {
