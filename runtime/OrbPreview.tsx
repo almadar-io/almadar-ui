@@ -24,6 +24,7 @@ import { UISlotRenderer } from '../components/organisms/UISlotRenderer';
 import { useEventBus } from '../hooks/useEventBus';
 import type { OrbitalSchema, EntityData, ResolvedTraitBinding } from '@almadar/core';
 import { useResolvedSchema } from './useResolvedSchema';
+import { collectEmbeddedTraits } from './embedded-traits';
 import { useTraitStateMachine } from './useTraitStateMachine';
 import {
   useSlotsActions,
@@ -200,13 +201,20 @@ function applyServerEffects(
   effects: ReadonlyArray<import('./ServerBridge').ServerClientEffect>,
   uiSlots: ReturnType<typeof useUISlots>,
   onNavigate?: (path: string, params?: Record<string, unknown>) => void,
+  embeddedTraits?: ReadonlySet<string>,
 ): void {
   // Call uiSlots.render() once per effect. useUISlots is multi-source
   // internally: each call merges into `slots[target][sourceTrait]`, and
   // `getContent(slot)` aggregates into a synthetic `stack` wrapper when
-  // 2+ sources are active. No batch-level aggregation needed here — the
-  // aggregation is stable across independent batches too, which fixes
-  // the walk-step stomping that a per-batch stack couldn't cover.
+  // 2+ sources are active.
+  //
+  // Embed-aware routing: when an effect's `traitName` is in
+  // `embeddedTraits` (i.e. the trait is referenced via `@trait.X` by a
+  // sibling layout's render-ui), bypass the slot write and update only
+  // the per-trait sidecar. The sibling layout owns the slot; its
+  // `<TraitFrame traitName="X"/>` reads the sidecar at render time.
+  // This mirrors what compiled-path codegen does (atoms inlined as JSX
+  // inside the layout's pattern, never writing a shared slot).
   for (const eff of effects) {
     if (eff.type === 'render-ui' && eff.slot && eff.pattern) {
       const patternRecord = eff.pattern as Record<string, unknown>;
@@ -214,20 +222,38 @@ function applyServerEffects(
       const normalizedChildren = Array.isArray(children)
         ? children.map((c) => normalizeChild(c))
         : children;
-      xOrbitalLog.info('slot-write', {
-        slot: eff.slot,
-        sourceTrait: eff.traitName ?? 'server',
-        patternType: typeof patternType === 'string' ? patternType : undefined,
-      });
-      uiSlots.render({
-        target: eff.slot as Parameters<typeof uiSlots.render>[0]['target'],
-        pattern: patternType as string,
-        props: {
-          ...inlineProps,
-          ...(normalizedChildren !== undefined ? { children: normalizedChildren } : {}),
-        },
-        sourceTrait: eff.traitName ?? 'server',
-      });
+      const sourceTrait = eff.traitName ?? 'server';
+      const isEmbedded = embeddedTraits?.has(sourceTrait) ?? false;
+      const props = {
+        ...inlineProps,
+        ...(normalizedChildren !== undefined ? { children: normalizedChildren } : {}),
+      };
+
+      if (isEmbedded) {
+        xOrbitalLog.info('slot:embed-routed', {
+          sourceTrait,
+          slot: eff.slot,
+          patternType: typeof patternType === 'string' ? patternType : undefined,
+        });
+        uiSlots.updateTraitContent(sourceTrait, {
+          pattern: patternType as string,
+          props,
+          priority: 0,
+          animation: 'fade',
+        });
+      } else {
+        xOrbitalLog.info('slot-write', {
+          slot: eff.slot,
+          sourceTrait,
+          patternType: typeof patternType === 'string' ? patternType : undefined,
+        });
+        uiSlots.render({
+          target: eff.slot as Parameters<typeof uiSlots.render>[0]['target'],
+          pattern: patternType as string,
+          props,
+          sourceTrait,
+        });
+      }
     } else if (eff.type === 'navigate' && eff.route && onNavigate) {
       onNavigate(eff.route, eff.params as Record<string, unknown> | undefined);
     }
@@ -242,7 +268,7 @@ function applyServerEffects(
  * to the server after local processing. Server response provides enriched
  * patterns with entity data resolved reactively via useEntityRef.
  */
-function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, persistence, traitConfigsByName, orbitalsByTrait }: {
+function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits }: {
   traits: unknown[];
   orbitalNames?: string[];
   traitConfigsByName?: Record<string, import('@almadar/core').TraitConfig>;
@@ -262,6 +288,14 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
    * when `autoMock` is active and no `serverUrl` is supplied.
    */
   persistence?: PersistenceAdapter;
+  /**
+   * Set of trait names referenced via `@trait.X` by some sibling layout
+   * in the resolved schema. When an effect's `traitName` is in this set,
+   * `applyServerEffects` updates only the per-trait sidecar and skips
+   * the slot write — the layout owns the slot and embeds via TraitFrame.
+   * Mirrors compiled-path codegen semantics.
+   */
+  embeddedTraits?: ReadonlySet<string>;
 }) {
   const slotsActions = useSlotsActions();
   const bridge = useServerBridge();
@@ -305,9 +339,9 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
     for (const name of targets) {
       const { effects, meta } = await bridge.sendEvent(name, event, payload);
       recordServerResponse(name, event, meta);
-      applyServerEffects(effects, uiSlots, onNavigate);
+      applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits);
     }
-  }, [bridge.connected, bridge.sendEvent, orbitalNames, uiSlots, onNavigate]);
+  }, [bridge.connected, bridge.sendEvent, orbitalNames, uiSlots, onNavigate, embeddedTraits]);
 
   const opts = orbitalNames
     ? { onEventProcessed, navigate: onNavigate, traitConfigsByName, orbitalsByTrait }
@@ -366,10 +400,10 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
         // event bus via typed emit payloads, bound into the pattern tree by
         // the listener / render-ui pipeline. The server effects carry the
         // resolved data; no store hydration needed.
-        applyServerEffects(effects, uiSlots, onNavigate);
+        applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits);
       }
     })();
-  }, [bridge.connected, orbitalNames, bridge.sendEvent, uiSlots, onNavigate]);
+  }, [bridge.connected, orbitalNames, bridge.sendEvent, uiSlots, onNavigate, embeddedTraits]);
 
   return null;
 }
@@ -564,6 +598,16 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavi
   // for the deferred standalone-preview mock-data wiring.
   void mockData;
 
+  // Embed-aware slot routing: walk the resolved schema once, collect
+  // every trait name referenced via `@trait.X` by some sibling layout's
+  // render-ui. `applyServerEffects` uses this to route those traits'
+  // render outputs to per-trait sidecars instead of the global slot.
+  // Mirrors compiled-path codegen which inlines atom views as JSX
+  // inside the layout's pattern rather than writing a shared slot.
+  const embeddedTraits = useMemo(() => {
+    return collectEmbeddedTraits(schema as OrbitalSchema | undefined);
+  }, [schema]);
+
   const inner = (
     <VerificationProvider enabled>
       <SlotsProvider>
@@ -577,6 +621,7 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavi
             orbitalNames={(serverUrl || transport) ? pageOrbitalNames : undefined}
             traitConfigsByName={traitConfigsByName}
             orbitalsByTrait={orbitalsByTrait}
+            embeddedTraits={embeddedTraits}
             onNavigate={onNavigate}
             onLocalFallback={onLocalFallback}
             persistence={persistence}

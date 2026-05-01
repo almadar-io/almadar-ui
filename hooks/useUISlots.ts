@@ -177,6 +177,20 @@ export interface UISlotManager {
    * the trait they embed actually changes — not on every slot update.
    */
   subscribeTrait: (traitName: string, callback: TraitChangeCallback) => () => void;
+  /**
+   * Update only the per-trait sidecar without writing to any slot.
+   *
+   * Used for embed-aware slot routing: when a trait is referenced via
+   * `@trait.X` by a sibling layout's render-ui, its render output should
+   * not stack into the same slot the layout writes — the layout owns the
+   * slot and embeds the trait's frame via `<TraitFrame>`. This method
+   * keeps the per-trait sidecar (`traitIndexRef`) up-to-date so
+   * `<TraitFrame>` re-renders, while leaving `slots[target]` untouched.
+   *
+   * Mirrors what the compiled-path codegen does structurally — atoms
+   * inlined as JSX inside the layout's pattern, not writing slots.
+   */
+  updateTraitContent: (traitName: string, content: Omit<SlotContent, 'id' | 'sourceTrait'>) => string;
 }
 
 /** Per-source slot entry map: key = sourceTrait (or sentinel when none). */
@@ -600,6 +614,20 @@ export function useUISlotManager(): UISlotManager {
     [],
   );
 
+  // Sidecar-only update: write to the per-trait index and notify trait
+  // subscribers, but do NOT touch any slot's source map. Used for
+  // embed-aware slot routing — see the JSDoc on UISlotManager.
+  const updateTraitContent = useCallback(
+    (traitName: string, content: Omit<SlotContent, 'id' | 'sourceTrait'>): string => {
+      const id = generateId();
+      const fullContent: SlotContent = { ...content, id, sourceTrait: traitName };
+      indexTraitRender(traitName, fullContent);
+      notifyTraitSubscribers(traitName, fullContent);
+      return id;
+    },
+    [indexTraitRender, notifyTraitSubscribers],
+  );
+
   return {
     slots,
     render,
@@ -612,6 +640,7 @@ export function useUISlotManager(): UISlotManager {
     getContent,
     getTraitContent,
     subscribeTrait,
+    updateTraitContent,
   };
 }
 
