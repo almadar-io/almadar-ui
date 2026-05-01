@@ -1317,6 +1317,19 @@ function SlotContentRenderer({
     }
 
     const acceptsChildren = PATTERNS_WITH_CHILDREN.has(content.pattern);
+    // JSX prop-precedence note: writing
+    //   <PatternComponent {...finalProps}>{renderedChildren}</PatternComponent>
+    // desugars to <PatternComponent {...finalProps} children={renderedChildren} />,
+    // so when `renderedChildren` is `undefined` the explicit assignment
+    // wins over `finalProps.children`. That collapses the renderItem
+    // fn-form-lambda → children render-prop work into `children:
+    // undefined`, which is exactly the regression the diagnostic
+    // (`almadar:ui:data-grid renderItem-unresolved`) caught: DataGrid
+    // saw `typeof children !== "function"` and fell back to its empty
+    // fields path. Pass children only when we actually computed
+    // recursive child JSX; otherwise let the spread's `children` (a
+    // render function for data-grid-style consumers, or just absent
+    // for everyone else) flow through.
     return (
       <Box
         className="slot-content"
@@ -1328,9 +1341,11 @@ function SlotContentRenderer({
         data-pattern-type={content.pattern}
         data-accepts-children={acceptsChildren ? 'true' : undefined}
       >
-        <PatternComponent {...finalProps}>
-          {renderedChildren}
-        </PatternComponent>
+        {renderedChildren !== undefined ? (
+          <PatternComponent {...finalProps}>{renderedChildren}</PatternComponent>
+        ) : (
+          <PatternComponent {...finalProps} />
+        )}
       </Box>
     );
   }
