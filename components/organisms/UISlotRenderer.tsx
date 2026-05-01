@@ -17,7 +17,8 @@
 import React, { Suspense, createContext, useContext, useEffect, useState } from "react";
 import { useEntitySchemaOptional } from "../../runtime/EntitySchemaContext";
 import { TraitScopeProvider } from "../../providers/TraitScopeProvider";
-import type { ResolvedEntity } from "@almadar/core";
+import type { EntityRow, RenderItemLambda, ResolvedEntity } from "@almadar/core";
+import type { AnyPatternConfig } from "@almadar/patterns";
 import { createPortal } from "react-dom";
 import {
   useUISlots,
@@ -1048,6 +1049,74 @@ function isPatternConfig(value: unknown): value is { type: string; [key: string]
 }
 
 /**
+ * Detect the sExpression lambda form `["fn", argName, body]` that .lolo
+ * authors use for per-row render props (DataGrid/DataList/Carousel
+ * `renderItem`). Shape matches `RenderItemLambda` from `@almadar/core`:
+ * head is the literal `"fn"`, second slot is the per-item argument name,
+ * third slot is the pattern config to substitute and render. The
+ * compiled path's codegen rewrites these into
+ * `(item: T) => <JSX with @item.X substituted>` at build time; the
+ * runtime path needs the same conversion or the component falls
+ * through to its fields-based path with empty cards.
+ */
+function isFnFormLambda(value: unknown): value is RenderItemLambda {
+  return (
+    Array.isArray(value) &&
+    value.length === 3 &&
+    value[0] === "fn" &&
+    typeof value[1] === "string" &&
+    value[2] !== null &&
+    typeof value[2] === "object"
+  );
+}
+
+/**
+ * Walk a pattern body, replacing every `@<argName>.path.to.field` string
+ * with the value at `path.to.field` of `arg`. Mirrors the compiler's
+ * inline substitution for `renderItem` lambda bodies. Path lookup uses
+ * dot-traversal; missing intermediate values resolve to `undefined`,
+ * which is then stringified as `""` so consumers (Typography, Button
+ * label, etc.) don't render the literal "undefined". Per `@almadar/core`'s
+ * `RenderItemLambda` doc comment, the row arg is shaped as an
+ * `EntityRow` (i.e. `Record<string, FieldValue>` with optional `id`).
+ */
+function resolveLambdaBindings(
+  body: unknown,
+  argName: string,
+  arg: EntityRow,
+): unknown {
+  const prefix = `@${argName}.`;
+  const lookup = (path: string): unknown => {
+    let cur: unknown = arg;
+    for (const seg of path.split(".")) {
+      if (cur === null || cur === undefined) return undefined;
+      if (typeof cur !== "object") return undefined;
+      cur = (cur as Record<string, unknown>)[seg];
+    }
+    return cur;
+  };
+  if (typeof body === "string") {
+    if (body === `@${argName}`) return arg;
+    if (body.startsWith(prefix)) {
+      const v = lookup(body.slice(prefix.length));
+      return v === undefined || v === null ? "" : v;
+    }
+    return body;
+  }
+  if (Array.isArray(body)) {
+    return body.map((b) => resolveLambdaBindings(b, argName, arg));
+  }
+  if (body !== null && typeof body === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(body as Record<string, unknown>)) {
+      out[k] = resolveLambdaBindings(v, argName, arg);
+    }
+    return out;
+  }
+  return body;
+}
+
+/**
  * Recursively render any named props that contain pattern config objects.
  * E.g., flip-card's `front` and `back` props are pattern configs that need
  * to be converted to React elements before being passed to the component.
@@ -1072,6 +1141,32 @@ function renderPatternProps(
       rendered[key] = (
         <SlotContentRenderer content={childContent} onDismiss={onDismiss} />
       );
+    } else if (isFnFormLambda(value)) {
+      // sExpression lambda — convert to a per-item render-prop function.
+      // DataGrid/DataList/Carousel call `props.renderItem(item, index)`
+      // expecting a ReactNode; we resolve `@<argName>.X` bindings inside
+      // the lambda body against `item` and feed the resulting pattern
+      // tree back through SlotContentRenderer. Body shape is
+      // `AnyPatternConfig` per `RenderItemLambda` in `@almadar/core`.
+      const [, argName, body] = value;
+      const lambdaBody: AnyPatternConfig = body;
+      rendered[key] = (item: EntityRow, index: number): React.ReactNode => {
+        const resolvedBody = resolveLambdaBindings(lambdaBody, argName, item);
+        if (!isPatternConfig(resolvedBody)) {
+          return null;
+        }
+        const childContent: SlotContent = {
+          id: `lambda-${key}-${index}`,
+          pattern: resolvedBody.type,
+          props: Object.fromEntries(
+            Object.entries(resolvedBody).filter(([k]) => k !== "type"),
+          ),
+          priority: 0,
+        };
+        return (
+          <SlotContentRenderer content={childContent} onDismiss={onDismiss} />
+        );
+      };
     } else {
       rendered[key] = value;
     }
