@@ -27,6 +27,8 @@
 import React, { useEffect, useState } from "react";
 import { useUISlots } from "../../context/UISlotContext";
 import type { SlotContent } from "../../hooks/useUISlots";
+import { TraitScopeProvider } from "../../providers/TraitScopeProvider";
+import { useEntitySchemaOptional } from "../../runtime/EntitySchemaContext";
 
 export interface TraitFrameProps {
   /**
@@ -86,6 +88,17 @@ export function TraitFrame({
   fallback = null,
 }: TraitFrameProps): React.ReactElement | null {
   const content = useTraitContent(traitName);
+  // Look up the embedded trait's owning orbital so we can wrap its
+  // rendered subtree in a `<TraitScopeProvider>` scoped to that
+  // (orbital, trait) pair. Without this wrap, bare `UI:CLEAR`-style
+  // emits from buttons inside the embedded content qualify against
+  // whatever scope is at the embedding site (the parent layout's
+  // scope), so an atom's button click ends up dispatched as
+  // `UI:Orbital.Layout.CLEAR` instead of `UI:Orbital.Atom.CLEAR` —
+  // which the atom's state machine never sees, breaking the
+  // composition contract.
+  const entitySchema = useEntitySchemaOptional();
+  const orbital = entitySchema?.orbitalsByTrait.get(traitName);
 
   if (!content) {
     return <>{fallback}</>;
@@ -98,7 +111,7 @@ export function TraitFrame({
   // from the renderer, and importing it up-front would close the loop.
   const SlotContentRenderer = getSlotContentRenderer();
 
-  return (
+  const rendered = (
     <SlotContentRenderer
       content={content}
       onDismiss={() => {
@@ -107,6 +120,16 @@ export function TraitFrame({
         // the shared event bus), not through this component.
       }}
     />
+  );
+
+  if (!orbital) {
+    return rendered;
+  }
+
+  return (
+    <TraitScopeProvider orbital={orbital} trait={traitName}>
+      {rendered}
+    </TraitScopeProvider>
   );
 }
 TraitFrame.displayName = "TraitFrame";
