@@ -31,19 +31,10 @@ export {
     type TraitProviderProps,
 } from './TraitProvider';
 
-// Slot management
-export {
-    SlotsProvider,
-    useSlots,
-    useSlotContent,
-    useSlotsActions,
-    type SlotsState,
-    type SlotState,
-    type SlotPatternEntry,
-    type SlotSource,
-    type SlotsActions,
-    type SlotsProviderProps,
-} from './ui/SlotsContext';
+// Slot pattern types — the runtime now writes directly to `useUISlots`
+// (re-exported from `../context/UISlotContext`); the previous
+// SlotsContext / SlotsProvider / SlotBridge mirror layer was removed.
+export type { SlotPatternEntry, SlotSource } from './ui/slot-types';
 
 // Effect handlers
 export {

@@ -26,15 +26,6 @@ import type { OrbitalSchema, EntityData, ResolvedTraitBinding } from '@almadar/c
 import { useResolvedSchema } from './useResolvedSchema';
 import { collectEmbeddedTraits } from './embedded-traits';
 import { useTraitStateMachine } from './useTraitStateMachine';
-import {
-  useSlotsActions,
-  useSlots,
-  SlotsProvider,
-  slotEntriesInOrder,
-  slotLog,
-  refId,
-  type SlotEntry,
-} from './ui/SlotsContext';
 import { EntitySchemaProvider } from './EntitySchemaContext';
 import { ServerBridgeProvider, useServerBridge, type ServerBridgeTransport } from './ServerBridge';
 import { getAllPages } from '../renderer/navigation';
@@ -78,160 +69,6 @@ function normalizeChild(child: unknown): unknown {
     type,
     props: { ...rest, ...(normalizedChildren !== undefined ? { children: normalizedChildren } : {}) },
   };
-}
-
-/**
- * Bridges SlotsStateContext (written by useTraitStateMachine) to
- * UISlotContext (read by UISlotRenderer). Syncs on every slot state change.
- */
-/**
- * Bridges SlotsStateContext to UISlotContext. Simple pass-through: reads slot
- * patterns and forwards them to the UISlot render system. Entity resolution
- * happens reactively in SlotContentRenderer via useEntityRef (same pattern
- * as the compiled app).
- */
-function SlotBridge({ embeddedTraits }: { embeddedTraits?: ReadonlySet<string> }) {
-  const slots = useSlots();
-  const { render, clear, updateTraitContent } = useUISlots();
-
-  useEffect(() => {
-    // SlotBridge re-runs for ANY slot-state change. It iterates ALL
-    // slots, calling render() on each — even slots whose own state is
-    // unchanged. Each render() creates a new SlotContent wrapper id,
-    // which subscribers see as a "new content" event. Logging the
-    // entity ref id surfaces whether the modal's row reference is
-    // stable across these spurious re-runs.
-    slotLog.debug('SlotBridge:effect-fired', {
-      slotCount: Object.keys(slots).length,
-      slots: Object.keys(slots),
-    });
-    for (const [slotName, slotState] of Object.entries(slots)) {
-      const allEntries = slotEntriesInOrder(slotState);
-
-      // Embed-aware split: every entry whose source.trait is in
-      // `embeddedTraits` (i.e. the trait is referenced via `@trait.X`
-      // by a sibling layout) bypasses the slot write and updates only
-      // its per-trait sidecar. The sibling layout owns the slot; its
-      // `<TraitFrame traitName="X"/>` reads the sidecar at render time.
-      // Mirrors compiled-path codegen where atom views are inlined as
-      // JSX inside the layout's pattern rather than writing a shared
-      // slot. Without this split, every atom's local state-machine
-      // render-ui lands as a separate slot source and `aggregateSlot`
-      // wraps the layout + atoms in a synthetic vertical stack — the
-      // shape the user sees as "FilterTargets / BrowseItems / PagedItems"
-      // duplicated below the layout.
-      const entries: typeof allEntries = [];
-      for (const e of allEntries) {
-        const traitName = e.entry.source?.trait;
-        if (traitName && embeddedTraits?.has(traitName)) {
-          const last = e.entry.patterns[e.entry.patterns.length - 1];
-          if (last?.pattern && typeof last.pattern === 'object') {
-            const record = last.pattern as Record<string, unknown>;
-            const { type: patternType, children: nested, ...inlineProps } = record;
-            const normalizedNested = Array.isArray(nested)
-              ? nested.map((c) => normalizeChild(c))
-              : nested;
-            updateTraitContent(traitName, {
-              pattern: patternType as string,
-              props: {
-                ...inlineProps,
-                ...last.props,
-                ...(normalizedNested !== undefined ? { children: normalizedNested } : {}),
-              },
-              priority: 0,
-              animation: 'fade',
-            });
-          }
-          continue;
-        }
-        entries.push(e);
-      }
-
-      if (entries.length === 0) {
-        // Only clear when the slot was genuinely empty. If all original
-        // entries were filtered out as embedded, the slot's actual
-        // content (driven by `applyServerEffects` via `uiSlots.render`,
-        // a different store than `SlotsContext.slots`) is independent —
-        // wiping it here erases the layout the server bridge just wrote.
-        if (allEntries.length === 0) {
-          clear(slotName as Parameters<typeof clear>[0]);
-        } else {
-          slotLog.debug('SlotBridge:embed-only-skip', {
-            slot: slotName,
-            embeddedCount: allEntries.length,
-          });
-        }
-        continue;
-      }
-
-      // Flatten each source's latest pattern into a child node. Parity with
-      // the compiled path's page layout: when multiple traits contribute to
-      // the same slot (`page "/x" -> TraitA, TraitB, TraitC`), they render
-      // stacked in declaration order. Prior single-entry model made every
-      // slot last-writer-wins, which hid sibling traits' frames behind
-      // whichever most-recently rendered.
-      const children = entries
-        .map(({ entry }: { entry: SlotEntry }) => entry.patterns[entry.patterns.length - 1])
-        .filter((p): p is NonNullable<typeof p> => Boolean(p))
-        .map((entry) => {
-          const record = entry.pattern as unknown as Record<string, unknown>;
-          const { type: patternType, children: nested, ...inlineProps } = record;
-          const normalizedNested = Array.isArray(nested)
-            ? nested.map((c) => normalizeChild(c))
-            : nested;
-          return {
-            type: patternType as string,
-            ...inlineProps,
-            ...entry.props,
-            ...(normalizedNested !== undefined ? { children: normalizedNested } : {}),
-          };
-        });
-
-      if (children.length === 1) {
-        // Single source: render directly, preserving prior behaviour so
-        // slots owned by one trait (modal, toast, etc.) don't get an
-        // unnecessary stack wrapper.
-        const only = children[0];
-        const { type, children: nested, ...rest } = only as {
-          type: string;
-          children?: unknown;
-          [key: string]: unknown;
-        };
-        const lastEntry = entries[entries.length - 1];
-        slotLog.debug('SlotBridge:render-single', {
-          slot: slotName,
-          patternType: type,
-          entityRefId: refId((rest as { entity?: unknown }).entity),
-          sourceTrait: lastEntry.entry.source?.trait,
-        });
-        render({
-          target: slotName as Parameters<typeof render>[0]['target'],
-          pattern: type,
-          props: {
-            ...rest,
-            ...(nested !== undefined ? { children: nested } : {}),
-          },
-          sourceTrait: lastEntry.entry.source?.trait,
-        });
-      } else {
-        // Multi-source: wrap in a vertical stack so every trait's frame is
-        // visible simultaneously, matching the compiled page layout.
-        const lastEntry = entries[entries.length - 1];
-        render({
-          target: slotName as Parameters<typeof render>[0]['target'],
-          pattern: 'stack',
-          props: {
-            direction: 'vertical',
-            gap: 'lg',
-            children,
-          },
-          sourceTrait: lastEntry.entry.source?.trait,
-        });
-      }
-    }
-  }, [slots, render, clear, updateTraitContent, embeddedTraits]);
-
-  return null;
 }
 
 /**
@@ -349,14 +186,14 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
    */
   embeddedTraits?: ReadonlySet<string>;
 }) {
-  const slotsActions = useSlotsActions();
   const bridge = useServerBridge();
-  // We call into useUISlots.render() directly for server-bridge effects so
-  // that EACH trait's render-ui populates the per-trait index (needed by
-  // `<TraitFrame>` to resolve `@trait.X` bindings). Going through
-  // `slotsActions.setSlotPatterns` in a loop would overwrite the slot
-  // state on each iteration — only the last trait would survive, and
-  // every embedded atom would drop out of the index.
+  // Single slot store: `useUISlots`. Both the server-bridge path
+  // (`applyServerEffects`) and the local trait state-machine path
+  // (`useTraitStateMachine`) write here directly. Pre-consolidation
+  // there were two stores (`SlotsContext.slots` mirrored into
+  // `useUISlots` by a SlotBridge effect) — those races caused the
+  // SlotBridge to clear the layout that `applyServerEffects` had
+  // just written. Removed entirely; this is the single source of truth.
   const uiSlots = useUISlots();
 
   // Forward events to server, apply enriched effects directly to slots.
@@ -396,9 +233,9 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
   }, [bridge.connected, bridge.sendEvent, orbitalNames, uiSlots, onNavigate, embeddedTraits]);
 
   const opts = orbitalNames
-    ? { onEventProcessed, navigate: onNavigate, traitConfigsByName, orbitalsByTrait }
-    : { navigate: onNavigate, persistence, traitConfigsByName, orbitalsByTrait };
-  const { sendEvent } = useTraitStateMachine(traits as Parameters<typeof useTraitStateMachine>[0], slotsActions, opts);
+    ? { onEventProcessed, navigate: onNavigate, traitConfigsByName, orbitalsByTrait, embeddedTraits }
+    : { navigate: onNavigate, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits };
+  const { sendEvent } = useTraitStateMachine(traits as Parameters<typeof useTraitStateMachine>[0], uiSlots, opts);
 
   const initSentRef = useRef(false);
 
@@ -657,39 +494,42 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavi
   // Mirrors compiled-path codegen which inlines atom views as JSX
   // inside the layout's pattern rather than writing a shared slot.
   const embeddedTraits = useMemo(() => {
-    return collectEmbeddedTraits(schema as OrbitalSchema | undefined);
-  }, [schema]);
+    const set = collectEmbeddedTraits(schema as OrbitalSchema | undefined);
+    xOrbitalLog.info('SchemaRunner:embeddedTraits', {
+      pageName,
+      embedded: Array.from(set),
+      embeddedCount: set.size,
+    });
+    return set;
+  }, [schema, pageName]);
 
   const inner = (
     <VerificationProvider enabled>
-      <SlotsProvider>
-        <EntitySchemaProvider
-          entities={entitiesArray}
-          traitLinkedEntities={traitLinkedEntitiesMap}
-          orbitalsByTrait={orbitalsByTraitMap}
-        >
-          <TraitInitializer
-            traits={allPageTraits}
-            orbitalNames={(serverUrl || transport) ? pageOrbitalNames : undefined}
-            traitConfigsByName={traitConfigsByName}
-            orbitalsByTrait={orbitalsByTrait}
-            embeddedTraits={embeddedTraits}
-            onNavigate={onNavigate}
-            onLocalFallback={onLocalFallback}
-            persistence={persistence}
-          />
-          <SlotBridge embeddedTraits={embeddedTraits} />
-          {/* Content fills the available height, not hug-content. `h-full`
-              makes the slot area as tall as the preview frame; nested slot
-              patterns can still grow past it (overflow is handled by the
-              outer Box's `overflow-auto`). Previously `min-h-full` left the
-              height undefined for empty layouts, so the debug bar floated
-              up near the top instead of docking at the bottom. */}
-          <Box className="h-full p-4">
-            <UISlotRenderer includeHud hudMode="inline" includeFloating />
-          </Box>
-        </EntitySchemaProvider>
-      </SlotsProvider>
+      <EntitySchemaProvider
+        entities={entitiesArray}
+        traitLinkedEntities={traitLinkedEntitiesMap}
+        orbitalsByTrait={orbitalsByTraitMap}
+      >
+        <TraitInitializer
+          traits={allPageTraits}
+          orbitalNames={(serverUrl || transport) ? pageOrbitalNames : undefined}
+          traitConfigsByName={traitConfigsByName}
+          orbitalsByTrait={orbitalsByTrait}
+          embeddedTraits={embeddedTraits}
+          onNavigate={onNavigate}
+          onLocalFallback={onLocalFallback}
+          persistence={persistence}
+        />
+        {/* Content fills the available height, not hug-content. `h-full`
+            makes the slot area as tall as the preview frame; nested slot
+            patterns can still grow past it (overflow is handled by the
+            outer Box's `overflow-auto`). Previously `min-h-full` left the
+            height undefined for empty layouts, so the debug bar floated
+            up near the top instead of docking at the bottom. */}
+        <Box className="h-full p-4">
+          <UISlotRenderer includeHud hudMode="inline" includeFloating />
+        </Box>
+      </EntitySchemaProvider>
     </VerificationProvider>
   );
 

@@ -30,7 +30,7 @@ import { Toast } from "../molecules/Toast";
 import { Box } from "../atoms/Box";
 import { Typography } from "../atoms/Typography";
 import { useEventBus } from "../../hooks/useEventBus";
-import { slotLog, refId } from "../../runtime/ui/SlotsContext";
+import { slotLog, refId } from "../../runtime/ui/slot-types";
 import { cn } from "../../lib/cn";
 import { ErrorBoundary } from "../molecules/ErrorBoundary";
 import { createLogger } from "../../lib/logger";

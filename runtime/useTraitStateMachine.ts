@@ -37,7 +37,8 @@ import {
 } from '@almadar/runtime';
 import { createClientEffectHandlers } from './createClientEffectHandlers';
 import type { ResolvedTraitBinding, ResolvedTraitListener } from './types';
-import type { SlotsActions, SlotPatternEntry, SlotSource } from './ui/SlotsContext';
+import type { SlotPatternEntry, SlotSource } from './ui/slot-types';
+import type { useUISlots } from '../context/UISlotContext';
 import { useEntitySchema } from './EntitySchemaContext';
 import {
     registerTrait,
@@ -66,6 +67,14 @@ export interface TraitStateMachineResult {
 }
 
 const crossTraitLog = createLogger('almadar:ui:cross-trait');
+
+// `almadar:ui:slot-flush` — diagnostic for the consolidated slot store.
+// Every flushSlot decision (clear / embed-route / slot-render) is
+// recorded here at info level. With both halves of the runtime now
+// going through this single helper, a missing log means the flush
+// didn't run; otherwise the log shows whether we landed in the
+// per-trait sidecar (embedded) or the global slot.
+const flushLog = createLogger('almadar:ui:slot-flush');
 
 // ============================================================================
 // Helper Functions
@@ -143,6 +152,14 @@ export interface UseTraitStateMachineOptions {
      * `ResolvedTraitBinding`, so the caller assembles the map directly.
      */
     orbitalsByTrait?: Record<string, string>;
+    /**
+     * Set of trait names referenced via `@trait.X` by some sibling
+     * layout in the resolved schema. Slot writes from these traits go
+     * to the per-trait sidecar via `uiSlots.updateTraitContent`; the
+     * layout owns the slot and embeds via `<TraitFrame>`. Mirrors
+     * compiled-path codegen semantics.
+     */
+    embeddedTraits?: ReadonlySet<string>;
 }
 
 /**
@@ -150,10 +167,20 @@ export interface UseTraitStateMachineOptions {
  *
  * Uses the shared StateMachineManager for consistent behavior with server runtime.
  * Collects render-ui effects per transition and sets slot content atomically.
+ *
+ * Slot writes go directly to `useUISlots` (the canonical store the DOM
+ * reads from) instead of routing through the now-removed `SlotsContext`
+ * + `SlotBridge` mirror. Trait names listed in `embeddedTraits` are
+ * referenced via `@trait.X` by some sibling layout's render-ui — for
+ * those, slot writes update the per-trait sidecar (via
+ * `updateTraitContent`) so `<TraitFrame>` can pick them up without the
+ * atom landing as a separate slot source. Mirrors compiled-path
+ * codegen, where atom views are inlined as JSX inside the layout's
+ * pattern rather than each writing a shared slot.
  */
 export function useTraitStateMachine(
     traitBindings: ResolvedTraitBinding[],
-    slotsActions: SlotsActions,
+    uiSlots: ReturnType<typeof useUISlots>,
     options?: UseTraitStateMachineOptions
 ): TraitStateMachineResult {
     const eventBus = useEventBus();
@@ -189,7 +216,8 @@ export function useTraitStateMachine(
     // Keep refs for callbacks to avoid stale closures
     const traitBindingsRef = useRef(traitBindings);
     const managerRef = useRef(manager);
-    const slotsActionsRef = useRef(slotsActions);
+    const uiSlotsRef = useRef(uiSlots);
+    const embeddedTraitsRef = useRef(options?.embeddedTraits);
     const optionsRef = useRef(options);
 
     useEffect(() => {
@@ -202,8 +230,71 @@ export function useTraitStateMachine(
     }, [manager]);
 
     useEffect(() => {
-        slotsActionsRef.current = slotsActions;
-    }, [slotsActions]);
+        uiSlotsRef.current = uiSlots;
+    }, [uiSlots]);
+
+    useEffect(() => {
+        embeddedTraitsRef.current = options?.embeddedTraits;
+    }, [options?.embeddedTraits]);
+
+    /**
+     * Flush this trait's accumulated render-ui patterns for a slot to the
+     * shared `useUISlots` store. Empty patterns clear this trait's
+     * contribution to the slot. Non-empty patterns take the LAST entry,
+     * unwrap `{ type, children, ...inlineProps }`, and either land in
+     * the slot via `render` (layout traits) or in the per-trait sidecar
+     * via `updateTraitContent` (atom traits referenced via `@trait.X`
+     * by some sibling layout). Mirrors the compiled-path codegen which
+     * inlines atom views as JSX inside the layout's pattern.
+     */
+    const flushSlot = useCallback(
+        (traitName: string, slot: string, patterns: SlotPatternEntry[]): void => {
+            const slots = uiSlotsRef.current;
+            const embedded = embeddedTraitsRef.current;
+            if (patterns.length === 0) {
+                flushLog.info('clear', { traitName, slot });
+                slots.clearBySource(slot as Parameters<typeof slots.clearBySource>[0], traitName);
+                return;
+            }
+            const last = patterns[patterns.length - 1];
+            const record = (last.pattern ?? {}) as Record<string, unknown>;
+            const { type: patternType, children: nested, ...inlineProps } = record;
+            const props = {
+                ...inlineProps,
+                ...last.props,
+                ...(nested !== undefined ? { children: nested } : {}),
+            };
+            const isEmbedded = embedded?.has(traitName) ?? false;
+            if (isEmbedded) {
+                flushLog.info('embed-route', {
+                    traitName,
+                    slot,
+                    patternType: typeof patternType === 'string' ? patternType : undefined,
+                    embeddedSize: embedded?.size ?? 0,
+                });
+                slots.updateTraitContent(traitName, {
+                    pattern: patternType as string,
+                    props,
+                    priority: 0,
+                    animation: 'fade',
+                });
+                return;
+            }
+            flushLog.info('slot-render', {
+                traitName,
+                slot,
+                patternType: typeof patternType === 'string' ? patternType : undefined,
+                embedded: Array.from(embedded ?? []),
+            });
+            slots.render({
+                target: slot as Parameters<typeof slots.render>[0]['target'],
+                pattern: patternType as string,
+                props,
+                sourceTrait: traitName,
+            });
+        },
+        [],
+    );
 
     useEffect(() => {
         optionsRef.current = options;
@@ -356,7 +447,6 @@ export function useTraitStateMachine(
      * - `@payload` is empty (invalid in tick context per the Rust validator)
      */
     const runTickEffects = useCallback((tick: ResolvedTraitTick, binding: ResolvedTraitBinding) => {
-        const actions = slotsActionsRef.current;
         const currentState = traitStatesRef.current.get(binding.trait.name)?.currentState ?? '';
 
         // appliesTo: empty array means fire in all states (same as Rust OirTick default)
@@ -404,15 +494,15 @@ export function useTraitStateMachine(
             }
         }
 
-        // Flush slots atomically
+        // Flush slots atomically — write directly to useUISlots, with
+        // embed-aware routing applied per trait. `slotSource` carries
+        // the originating-trait metadata; only the trait NAME affects
+        // routing, so it's the only thing we forward.
+        void slotSource;
         for (const [slot, patterns] of pendingSlots) {
-            if (patterns.length === 0) {
-                actions.clearSlot(slot);
-            } else {
-                actions.setSlotPatterns(slot, patterns, slotSource);
-            }
+            flushSlot(binding.trait.name, slot, patterns);
         }
-    }, []);
+    }, [flushSlot]);
 
     /**
      * RAF loop for frame-interval ticks (interval: "frame").
@@ -485,7 +575,6 @@ export function useTraitStateMachine(
         const normalizedEvent = normalizeEventKey(eventKey);
         const bindings = traitBindingsRef.current;
         const currentManager = managerRef.current;
-        const actions = slotsActionsRef.current;
 
         console.log('[TraitStateMachine] Processing event:', normalizedEvent, 'payload:', payload);
         crossTraitLog.debug('processEvent:enter', {
@@ -714,13 +803,14 @@ export function useTraitStateMachine(
                         Object.fromEntries(pendingSlots.entries()),
                     );
 
-                    // Flush accumulated slot content atomically
+                    // Flush accumulated slot content atomically — write
+                    // directly to useUISlots with embed-aware routing.
+                    // `slotSource` carries the originating-trait metadata;
+                    // only the trait NAME affects routing, so the rest is
+                    // implicit in `flushSlot`.
+                    void slotSource;
                     for (const [slot, patterns] of pendingSlots) {
-                        if (patterns.length === 0) {
-                            actions.clearSlot(slot);
-                        } else {
-                            actions.setSlotPatterns(slot, patterns, slotSource);
-                        }
+                        flushSlot(traitName, slot, patterns);
                     }
                 } catch (error: unknown) {
                     console.error(
