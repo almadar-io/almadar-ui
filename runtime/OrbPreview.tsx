@@ -90,9 +90,9 @@ function normalizeChild(child: unknown): unknown {
  * happens reactively in SlotContentRenderer via useEntityRef (same pattern
  * as the compiled app).
  */
-function SlotBridge() {
+function SlotBridge({ embeddedTraits }: { embeddedTraits?: ReadonlySet<string> }) {
   const slots = useSlots();
-  const { render, clear } = useUISlots();
+  const { render, clear, updateTraitContent } = useUISlots();
 
   useEffect(() => {
     // SlotBridge re-runs for ANY slot-state change. It iterates ALL
@@ -106,7 +106,47 @@ function SlotBridge() {
       slots: Object.keys(slots),
     });
     for (const [slotName, slotState] of Object.entries(slots)) {
-      const entries = slotEntriesInOrder(slotState);
+      const allEntries = slotEntriesInOrder(slotState);
+
+      // Embed-aware split: every entry whose source.trait is in
+      // `embeddedTraits` (i.e. the trait is referenced via `@trait.X`
+      // by a sibling layout) bypasses the slot write and updates only
+      // its per-trait sidecar. The sibling layout owns the slot; its
+      // `<TraitFrame traitName="X"/>` reads the sidecar at render time.
+      // Mirrors compiled-path codegen where atom views are inlined as
+      // JSX inside the layout's pattern rather than writing a shared
+      // slot. Without this split, every atom's local state-machine
+      // render-ui lands as a separate slot source and `aggregateSlot`
+      // wraps the layout + atoms in a synthetic vertical stack — the
+      // shape the user sees as "FilterTargets / BrowseItems / PagedItems"
+      // duplicated below the layout.
+      const entries: typeof allEntries = [];
+      for (const e of allEntries) {
+        const traitName = e.entry.source?.trait;
+        if (traitName && embeddedTraits?.has(traitName)) {
+          const last = e.entry.patterns[e.entry.patterns.length - 1];
+          if (last?.pattern && typeof last.pattern === 'object') {
+            const record = last.pattern as Record<string, unknown>;
+            const { type: patternType, children: nested, ...inlineProps } = record;
+            const normalizedNested = Array.isArray(nested)
+              ? nested.map((c) => normalizeChild(c))
+              : nested;
+            updateTraitContent(traitName, {
+              pattern: patternType as string,
+              props: {
+                ...inlineProps,
+                ...last.props,
+                ...(normalizedNested !== undefined ? { children: normalizedNested } : {}),
+              },
+              priority: 0,
+              animation: 'fade',
+            });
+          }
+          continue;
+        }
+        entries.push(e);
+      }
+
       if (entries.length === 0) {
         clear(slotName as Parameters<typeof clear>[0]);
         continue;
@@ -177,7 +217,7 @@ function SlotBridge() {
         });
       }
     }
-  }, [slots, render, clear]);
+  }, [slots, render, clear, updateTraitContent, embeddedTraits]);
 
   return null;
 }
@@ -626,7 +666,7 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavi
             onLocalFallback={onLocalFallback}
             persistence={persistence}
           />
-          <SlotBridge />
+          <SlotBridge embeddedTraits={embeddedTraits} />
           {/* Content fills the available height, not hug-content. `h-full`
               makes the slot area as tall as the preview frame; nested slot
               patterns can still grow past it (overflow is handled by the

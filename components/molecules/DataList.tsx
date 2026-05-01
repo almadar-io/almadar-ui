@@ -15,6 +15,9 @@ import React from 'react';
 import type { EntityRow, EventKey } from "@almadar/core";
 import type { ItemActionPayload } from '@almadar/patterns';
 import { cn } from '../../lib/cn';
+import { createLogger } from '../../lib/logger';
+
+const dataListLog = createLogger('almadar:ui:data-list');
 import { getNestedValue } from '../../lib/getNestedValue';
 import { useEventBus } from '../../hooks/useEventBus';
 import { useTranslate } from '../../hooks/useTranslate';
@@ -207,6 +210,7 @@ export function DataList<T extends EntityRow = EntityRow>({
   hasMore,
   children,
   pageSize = 5,
+  renderItem: schemaRenderItem,
 }: DataListProps<T>) {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -345,6 +349,35 @@ export function DataList<T extends EntityRow = EntityRow>({
 
   // ── Render-prop children (custom per-item content) ───────────────
   const hasRenderProp = typeof children === 'function';
+
+  // Diagnostic: when we have data + a `renderItem` prop but it's not a
+  // function (e.g. it arrived as an unconverted `["fn","item",{...}]`
+  // sExpression lambda from the schema), DataList silently falls back
+  // to the fields-based path. With `fields: []`, the rendered row is
+  // an empty pill — exactly the std-filtered-list Filter-atom symptom.
+  React.useEffect(() => {
+    const renderItemTypeOf = typeof schemaRenderItem;
+    const childrenTypeOf = typeof children;
+    if (data.length > 0 && !hasRenderProp) {
+      const firstRow = data[0] as Record<string, unknown> | undefined;
+      const sampleKeys = firstRow ? Object.keys(firstRow).slice(0, 6) : [];
+      const renderItemRaw = schemaRenderItem as unknown;
+      const isFnLambda =
+        Array.isArray(renderItemRaw) &&
+        renderItemRaw.length >= 3 &&
+        (renderItemRaw[0] === 'fn' || renderItemRaw[0] === 'lambda');
+      dataListLog.warn('renderItem-unresolved', {
+        rowCount: data.length,
+        fieldsCount: fields?.length ?? 0,
+        renderItemTypeOf,
+        renderItemIsArray: Array.isArray(renderItemRaw),
+        renderItemIsFnLambda: isFnLambda,
+        renderItemHead: Array.isArray(renderItemRaw) ? String(renderItemRaw[0]) : undefined,
+        childrenTypeOf,
+        sampleRowKeys: sampleKeys,
+      });
+    }
+  }, [data, hasRenderProp, schemaRenderItem, children, fields]);
 
   // ── Grouped rendering (non-message variants) ─────────────────────
   const items = data.map((item) => item as Record<string, unknown>);
