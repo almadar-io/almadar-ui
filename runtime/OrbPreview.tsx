@@ -148,7 +148,19 @@ function SlotBridge({ embeddedTraits }: { embeddedTraits?: ReadonlySet<string> }
       }
 
       if (entries.length === 0) {
-        clear(slotName as Parameters<typeof clear>[0]);
+        // Only clear when the slot was genuinely empty. If all original
+        // entries were filtered out as embedded, the slot's actual
+        // content (driven by `applyServerEffects` via `uiSlots.render`,
+        // a different store than `SlotsContext.slots`) is independent —
+        // wiping it here erases the layout the server bridge just wrote.
+        if (allEntries.length === 0) {
+          clear(slotName as Parameters<typeof clear>[0]);
+        } else {
+          slotLog.debug('SlotBridge:embed-only-skip', {
+            slot: slotName,
+            embeddedCount: allEntries.length,
+          });
+        }
         continue;
       }
 
