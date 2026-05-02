@@ -136,11 +136,14 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
       // Call callback if provided (for backward compat)
       onFilterChange?.(field, value === "all" ? null : value);
 
-      // Emit UI:FILTER event for closed circuit
+      // Emit UI:FILTER event for closed circuit. 'all' is encoded as empty
+      // string so the bus payload matches std-filter's `value : string!`
+      // contract; std-browse REFETCH_FILTER short-circuits on '' to mean
+      // 'no filter applied'.
       eventBus.emit("UI:FILTER", {
         entity,
         field,
-        value: value === "all" ? null : value,
+        value: value === "all" || value === null ? "" : value,
         query,
       });
     },

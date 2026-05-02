@@ -177,7 +177,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
   return (
     <Box className={cn('relative', className)}>
       <Input
-        type="search"
+        type="text"
         value={searchValue}
         onChange={handleChange}
         placeholder={resolvedPlaceholder}

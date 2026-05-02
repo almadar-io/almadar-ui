@@ -262,6 +262,26 @@ export function DataGrid<T extends EntityRow = EntityRow>({
     eventBus.emit(`UI:${action.event}`, payload);
   };
 
+  const hasRenderProp = typeof children === 'function';
+
+  // Hook order rule: all hooks must run on every render. Keeping this
+  // useEffect above the early returns below prevents the "rendered fewer
+  // hooks than expected" crash when `data` flips between empty and
+  // populated across renders (e.g. search-as-you-type refetches).
+  useEffect(() => {
+    if (data.length > 0 && !hasRenderProp && (!fields || fields.length === 0)) {
+      const renderItemRaw: unknown = schemaRenderItem;
+      const isFnLambda =
+        Array.isArray(renderItemRaw) &&
+        renderItemRaw.length >= 3 &&
+        (renderItemRaw[0] === 'fn' || renderItemRaw[0] === 'lambda');
+      dataGridLog.warn('renderItem-unresolved', {
+        rowCount: data.length,
+        renderItemIsFnLambda: isFnLambda,
+      });
+    }
+  }, [data, hasRenderProp, schemaRenderItem, fields]);
+
   // Grid template
   const gridTemplateColumns = cols
     ? undefined
@@ -310,26 +330,6 @@ export function DataGrid<T extends EntityRow = EntityRow>({
       </Box>
     );
   }
-
-  const hasRenderProp = typeof children === 'function';
-
-  // Warn only when there's no way to render: data exists but neither a
-  // children render-prop nor any fields to drive the field-based path.
-  // The fields-only path is legitimate (std-browse, std-pagination), so
-  // gating on `!fields?.length` avoids false positives there.
-  useEffect(() => {
-    if (data.length > 0 && !hasRenderProp && (!fields || fields.length === 0)) {
-      const renderItemRaw: unknown = schemaRenderItem;
-      const isFnLambda =
-        Array.isArray(renderItemRaw) &&
-        renderItemRaw.length >= 3 &&
-        (renderItemRaw[0] === 'fn' || renderItemRaw[0] === 'lambda');
-      dataGridLog.warn('renderItem-unresolved', {
-        rowCount: data.length,
-        renderItemIsFnLambda: isFnLambda,
-      });
-    }
-  }, [data, hasRenderProp, schemaRenderItem, fields]);
 
   const allIds = data.map((item, i) => ((item as Record<string, unknown>).id as string) || String(i));
   const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
