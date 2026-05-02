@@ -29,6 +29,7 @@ import {
     interpolateValue,
     createContextFromBindings,
     createServerEffectHandlers,
+    collectDeclaredConfigDefaults,
     type TraitState,
     type TraitDefinition,
     type EffectHandlers,
@@ -716,8 +717,15 @@ export function useTraitStateMachine(
                         payload: payload || {},
                         state: result.previousState,
                     };
-                    if (binding.config) {
-                        sharedBindings.config = binding.config as TraitConfig;
+                    const sharedDeclared = collectDeclaredConfigDefaults(
+                        binding.trait,
+                    );
+                    const sharedCallSite = binding.config as TraitConfig | undefined;
+                    if (sharedDeclared || sharedCallSite) {
+                        sharedBindings.config = {
+                            ...(sharedDeclared ?? {}),
+                            ...(sharedCallSite ?? {}),
+                        } as TraitConfig;
                     }
                     const serverHandlers = createServerEffectHandlers({
                         persistence,
@@ -758,14 +766,18 @@ export function useTraitStateMachine(
                     payload: payload || {},
                     state: result.previousState,
                 };
-                // Surface the trait ref's call-site `config: { ... }` so
-                // `@config.X` bindings resolve in render-ui patterns (e.g.
-                // std-modal reads `@config.icon`, `@config.title`,
-                // `@config.fields` from the molecule's call-site config).
-                // Mirrors the server-side threading in
-                // `OrbitalServerRuntime.executeEffects`.
-                if (binding.config) {
-                    bindingCtx.config = binding.config as TraitConfig;
+                // Declared atom defaults sit behind any call-site override
+                // so unspecified `@config.X` keys resolve to the atom's own
+                // defaults instead of leaking the literal "@config.X" string.
+                const declaredDefaults = collectDeclaredConfigDefaults(
+                    binding.trait,
+                );
+                const callSiteConfig = binding.config as TraitConfig | undefined;
+                if (declaredDefaults || callSiteConfig) {
+                    bindingCtx.config = {
+                        ...(declaredDefaults ?? {}),
+                        ...(callSiteConfig ?? {}),
+                    } as TraitConfig;
                 }
 
                 const effectContext: EffectContext = {
