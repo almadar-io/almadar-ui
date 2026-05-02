@@ -78,6 +78,13 @@ const crossTraitLog = createLogger('almadar:ui:cross-trait');
 // per-trait sidecar (embedded) or the global slot.
 const flushLog = createLogger('almadar:ui:slot-flush');
 
+// State-transition + effect-dispatch diagnostic. Records every
+// `(trait, fromState -> toState, slotsTouched)` triple so verifier
+// transition logs can answer "did trait X actually transition to
+// state Y and dispatch the expected render-ui spec?" without reading
+// the React DOM.
+const stateLog = createLogger('almadar:ui:state-transitions');
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -815,10 +822,16 @@ export function useTraitStateMachine(
                 try {
                     await executor.executeAll(result.effects);
 
-                    console.log(
-                        '[TraitStateMachine] After executeAll, pendingSlots:',
-                        Object.fromEntries(pendingSlots.entries()),
-                    );
+                    stateLog.info('transition:render-ui-dispatched', {
+                        traitName,
+                        fromState: result.previousState,
+                        toState: result.newState,
+                        event: eventKey,
+                        slotsTouched: Array.from(pendingSlots.keys()).join(','),
+                        patternTypes: Array.from(pendingSlots.entries()).map(
+                            ([slot, patterns]) => `${slot}:[${patterns.map((p) => p.pattern?.type ?? 'null').join(',')}]`,
+                        ).join(';'),
+                    });
 
                     // Flush accumulated slot content atomically — write
                     // directly to useUISlots with embed-aware routing.
@@ -830,12 +843,14 @@ export function useTraitStateMachine(
                         flushSlot(traitName, slot, patterns);
                     }
                 } catch (error: unknown) {
-                    console.error(
-                        '[TraitStateMachine] Effect execution error:',
-                        error,
-                        '| effects:',
-                        JSON.stringify(result.effects)
-                    );
+                    stateLog.error('transition:effect-error', {
+                        traitName,
+                        fromState: result.previousState,
+                        toState: result.newState,
+                        event: eventKey,
+                        error: error instanceof Error ? error.message : String(error),
+                        effectCount: result.effects.length,
+                    });
                 }
             } else if (!result.executed) {
                 // Log guard failures and missing transitions
@@ -1056,13 +1071,20 @@ export function useTraitStateMachine(
                 if (eventKey === 'INIT' || eventKey === 'LOAD' || eventKey === '$MOUNT') {
                     continue;
                 }
-                const unsub = eventBus.on(`UI:${orbitalName}.${traitName}.${eventKey}`, (event) => {
+                const selfBusKey = `UI:${orbitalName}.${traitName}.${eventKey}`;
+                crossTraitLog.debug('self:subscribe', { traitName, busKey: selfBusKey, eventKey });
+                const unsub = eventBus.on(selfBusKey, (event) => {
                     if (event.source && (event.source as { fromBridge?: boolean }).fromBridge) {
+                        crossTraitLog.debug('self:fire-skipped-bridge-echo', { traitName, busKey: selfBusKey, eventKey });
                         return;
                     }
+                    crossTraitLog.info('self:fire', { traitName, busKey: selfBusKey, eventKey });
                     enqueueAndDrain(eventKey, event.payload);
                 });
-                unsubscribes.push(unsub);
+                unsubscribes.push(() => {
+                    crossTraitLog.debug('self:unsubscribe', { traitName, busKey: selfBusKey, eventKey });
+                    unsub();
+                });
             }
         }
 
@@ -1086,19 +1108,24 @@ export function useTraitStateMachine(
                 const sourceOrbital = listen.source?.orbital ?? ownOrbital;
                 if (!sourceOrbital) continue;
                 const busKey = `UI:${sourceOrbital}.${sourceTrait}.${listen.event}`;
-                crossTraitLog.debug('listen:subscribed', { busKey, targetTrait: binding.trait.name, triggers: listen.triggers });
+                crossTraitLog.debug('listen:subscribed', { busKey, targetTrait: binding.trait.name, sourceOrbital, sourceTrait, listenEvent: listen.event, triggers: listen.triggers });
                 const unsub = eventBus.on(busKey, (event) => {
                     crossTraitLog.info('listen:fired', { busKey, targetTrait: binding.trait.name, triggers: listen.triggers });
                     enqueueAndDrain(listen.triggers, event.payload);
                 });
-                unsubscribes.push(unsub);
+                unsubscribes.push(() => {
+                    crossTraitLog.debug('listen:unsubscribe', { busKey, targetTrait: binding.trait.name, triggers: listen.triggers });
+                    unsub();
+                });
             }
         }
 
         return () => {
+            crossTraitLog.debug('cleanup:start', { unsubscribeCount: unsubscribes.length });
             for (const unsub of unsubscribes) {
                 unsub();
             }
+            crossTraitLog.debug('cleanup:done', {});
         };
     }, [traitBindings, eventBus, enqueueAndDrain]);
 

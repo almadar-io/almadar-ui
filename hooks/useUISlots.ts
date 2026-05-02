@@ -33,6 +33,13 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import type { EventPayload } from '@almadar/core';
+import { createLogger } from '../lib/logger';
+
+// Slot lifecycle diagnostic. Records every render-write + clear so a
+// missing log means the slot manager never saw the call (the bug is
+// upstream); a present log means the bug is downstream of the slot
+// store (DOM / React reconciliation / TraitFrame subscriber).
+const slotLog = createLogger('almadar:ui:useUISlots');
 
 // ============================================================================
 // Types
@@ -443,6 +450,14 @@ export function useUISlotManager(): UISlotManager {
           notifyTraitSubscribers(content.sourceTrait, content);
         }
 
+        slotLog.info('slot:written', {
+          slot: config.target,
+          sourceKey,
+          sourceTrait: content.sourceTrait,
+          patternType: content.pattern,
+          priority: content.priority,
+        });
+
         notifySubscribers(config.target, aggregateSlot(nextSources));
         return nextAll;
       });
@@ -486,7 +501,10 @@ export function useUISlotManager(): UISlotManager {
       const sourceKey = sourceTrait;
       setSources((prev) => {
         const slotSources = prev[slot];
-        if (!slotSources || !(sourceKey in slotSources)) return prev;
+        if (!slotSources || !(sourceKey in slotSources)) {
+          slotLog.debug('slot:clear-noop', { slot, sourceTrait, reason: !slotSources ? 'no-slot' : 'no-source' });
+          return prev;
+        }
         const content = slotSources[sourceKey];
         const timer = timersRef.current.get(content.id);
         if (timer) {
@@ -500,6 +518,7 @@ export function useUISlotManager(): UISlotManager {
         }
         const nextSources: SlotSources = { ...slotSources };
         delete nextSources[sourceKey];
+        slotLog.info('slot:cleared', { slot, sourceTrait, lastPatternType: content.pattern });
         notifySubscribers(slot, aggregateSlot(nextSources));
         return { ...prev, [slot]: nextSources };
       });
