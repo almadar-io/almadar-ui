@@ -22,7 +22,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useEventBus } from '../hooks';
 import { createLogger } from '../lib/logger';
 import { isCircuitEvent } from '@almadar/core';
-import type { PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, TraitConfig } from '@almadar/core';
+import type { PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, FetchResult, TraitConfig } from '@almadar/core';
 import {
     StateMachineManager,
     EffectExecutor,
@@ -639,13 +639,15 @@ export function useTraitStateMachine(
                     ...(payload !== undefined ? { payload } : {}),
                     timestamp: Date.now(),
                 };
-                // Cache entity rows received via @payload.data so @entity.X
-                // bindings resolve after a fetch cascade. Gracefully skip
-                // when the payload doesn't carry row data.
-                const pdata = (payload as { data?: unknown } | undefined)?.data;
-                if (Array.isArray(pdata) && binding.linkedEntity) {
-                    snap.data[binding.linkedEntity] = pdata as EntityRow[];
-                }
+                // Per-trait reducer mirror is populated by the local fetch
+                // handler hook below (wraps `handlers.fetch` so each
+                // success writes `snap.data[<fetchEntityType>] = rows`),
+                // matching the compiled path's per-trait reducer
+                // `state.data[<EntityName>]: EntityRow[]`. Cross-trait
+                // payload-data was written here previously but keyed on
+                // the LISTENER's linkedEntity — for Pagination listening
+                // to BrowseItemLoaded that stored BrowseItem rows under
+                // PagedItem, corrupting `@entity.currentPage` reads.
                 // cascadeReceived: if this trait has a `listens` entry that
                 // maps the incoming event to a trigger, count it as cascade.
                 // Distinguishes user-direct from cascade-triggered for VG4.
@@ -761,15 +763,83 @@ export function useTraitStateMachine(
                     };
                 }
 
-                // The payload shape is a superset of EntityRow at runtime
-                // (both are plain JSON-ish objects of primitive-ish values),
-                // but TS distinguishes them nominally. `@entity.X` lookups
-                // walk the same keys in either case — the cast acknowledges
-                // that the caller pattern of seeding entity from payload
-                // on INIT-style events is shape-compatible.
+                // Wrap fetch / ref / deref so each success writes the
+                // returned rows to the trait's reducer-mirror state at
+                // `snap.data[<fetchEntityType>]`. Mirrors the compiled
+                // path's per-trait reducer that updates
+                // `state.data[<EntityName>]: EntityRow[]` on every fetch
+                // success, so `@entity.X` reads keep working across
+                // events without depending on the cross-trait payload
+                // shape. snap is created above in the registerTrait
+                // effect; tolerate its absence (`?.`).
+                const writeFetchResultToSnap = (
+                    fetchedEntityType: string,
+                    fetchResult: FetchResult | null,
+                ): void => {
+                    if (!fetchResult) return;
+                    const snapNow = traitSnapshotDataRef.current.get(traitName);
+                    if (!snapNow) return;
+                    const rows: EntityRow[] = Array.isArray(fetchResult.rows)
+                        ? fetchResult.rows
+                        : [fetchResult.rows];
+                    snapNow.data[fetchedEntityType] = rows;
+                };
+                const baseFetch = handlers.fetch;
+                const baseRef = handlers.ref;
+                const baseDeref = handlers.deref;
+                handlers = {
+                    ...handlers,
+                    ...(baseFetch ? {
+                        fetch: async (entityType, options) => {
+                            const r = await baseFetch(entityType, options);
+                            writeFetchResultToSnap(entityType, r);
+                            return r;
+                        },
+                    } : {}),
+                    ...(baseRef ? {
+                        ref: async (entityType, options) => {
+                            const r = await baseRef(entityType, options);
+                            writeFetchResultToSnap(entityType, r);
+                            return r;
+                        },
+                    } : {}),
+                    ...(baseDeref ? {
+                        deref: async (entityType, options) => {
+                            const r = await baseDeref(entityType, options);
+                            writeFetchResultToSnap(entityType, r);
+                            return r;
+                        },
+                    } : {}),
+                };
+
+                // `@entity.X` resolves against the trait's reducer-mirror
+                // when present (compiled-path parity:
+                // `state.data[<EntityName>]`), falling back to the event
+                // payload only when no fetch has populated the mirror
+                // yet. Without this, every event creates a fresh
+                // `bindings.entity = payload` and instance-scope atoms
+                // (e.g. Pagination's PagedItem) lose their `currentPage`
+                // / `totalPages` state across events.
                 const entityFromPayload = (payload ?? {}) as unknown as EntityRow;
+                const reducerSnap = traitSnapshotDataRef.current.get(traitName);
+                const persistedRows = linkedEntity
+                    ? reducerSnap?.data[linkedEntity]
+                    : undefined;
+                let entityForBinding: EntityRow = entityFromPayload;
+                if (persistedRows && persistedRows.length > 0) {
+                    // Compiled path's `data['<Entity>'] ?? []` collapses
+                    // to the array directly; for `@entity.X` field
+                    // lookups we expose the array+object hybrid so a
+                    // single-instance entity (instance scope) reads as
+                    // `rows[0]` while a collection iterates as `[...]`.
+                    const hybrid: EntityRow[] & EntityRow = Object.assign(
+                        [...persistedRows],
+                        persistedRows[0],
+                    );
+                    entityForBinding = hybrid;
+                }
                 const bindingCtx: BindingContext = {
-                    entity: entityFromPayload,
+                    entity: entityForBinding,
                     payload: payload || {},
                     state: result.previousState,
                 };
