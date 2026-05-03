@@ -91,6 +91,23 @@ const stateLog = createLogger('almadar:ui:state-transitions');
 // ============================================================================
 
 /**
+ * Read the canonical `payload.data: EntityRow[]` shape that fetch /
+ * persist emit-success events produce. Returns the rows as
+ * `EntityRow[]` or `null` if the payload doesn't carry an array under
+ * `data`. Element-level shape is the `{id?, ...fields}` contract every
+ * EntityRow follows; this filters to plain object entries (skips
+ * primitives that EventPayloadValue's union admits) without an
+ * `unknown` widening.
+ */
+function readPayloadRows(payload: EventPayload | undefined): EntityRow[] | null {
+    const data = payload?.['data'];
+    if (!Array.isArray(data)) return null;
+    return data.filter((v): v is EntityRow =>
+        v !== null && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date),
+    );
+}
+
+/**
  * Convert ResolvedTraitBinding to TraitDefinition for StateMachineManager
  */
 function toTraitDefinition(binding: ResolvedTraitBinding): TraitDefinition {
@@ -1170,10 +1187,33 @@ export function useTraitStateMachine(
                 }
                 const selfBusKey = `UI:${orbitalName}.${traitName}.${eventKey}`;
                 crossTraitLog.debug('self:subscribe', { traitName, busKey: selfBusKey, eventKey });
+                const selfLinkedEntity = binding.linkedEntity;
                 const unsub = eventBus.on(selfBusKey, (event) => {
                     if (event.source && (event.source as { fromBridge?: boolean }).fromBridge) {
                         crossTraitLog.debug('self:fire-skipped-bridge-echo', { traitName, busKey: selfBusKey, eventKey });
                         return;
+                    }
+                    // Populate this trait's reducer-mirror from its OWN
+                    // emit's payload.data. Mirrors the compiled path's
+                    // per-trait `state.data[<linkedEntity>] = action.data`
+                    // dispatch on EVENT_SUCCESS — payload.data carries
+                    // the trait's just-fetched rows when the emitter is
+                    // the trait itself (e.g. PagedItemLoaded from
+                    // Pagination's INIT fetch).
+                    if (selfLinkedEntity) {
+                        const rowsFromPayload = readPayloadRows(event.payload);
+                        if (rowsFromPayload !== null) {
+                            const snapNow = traitSnapshotDataRef.current.get(traitName);
+                            if (snapNow) {
+                                snapNow.data[selfLinkedEntity] = rowsFromPayload;
+                                reducerMirrorLog.info('write:self-emit', {
+                                    traitName,
+                                    eventKey,
+                                    linkedEntity: selfLinkedEntity,
+                                    rowCount: rowsFromPayload.length,
+                                });
+                            }
+                        }
                     }
                     crossTraitLog.info('self:fire', { traitName, busKey: selfBusKey, eventKey });
                     enqueueAndDrain(eventKey, event.payload);
