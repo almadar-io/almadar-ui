@@ -102,15 +102,8 @@ function makeLambdaFn(
     // upstream entity prop. If `item` arrives as a primitive, EntityRow
     // shape, or some DataList wrapper, we'll see it here BEFORE
     // substitution erases the disconnect into `undefined` props.
-    lambdaLog.info("invoke", {
-      argName,
-      callerKey,
-      index,
-      itemType: typeof item,
-      itemIsArray: Array.isArray(item),
-      itemKeys: item && typeof item === "object" ? Object.keys(item).slice(0, 12) : null,
-      itemSample: JSON.stringify(item).slice(0, 400),
-    });
+    // eslint-disable-next-line no-console
+    console.log(`[lambda-triage:${callerKey}#${index}]`, JSON.stringify(item));
     const resolvedBody = resolveLambdaBindings(lambdaBody, argName, item);
     if (
       resolvedBody === null ||
