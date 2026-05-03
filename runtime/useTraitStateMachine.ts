@@ -69,6 +69,7 @@ export interface TraitStateMachineResult {
 }
 
 const crossTraitLog = createLogger('almadar:ui:cross-trait');
+const reducerMirrorLog = createLogger('almadar:ui:reducer-mirror');
 
 // `almadar:ui:slot-flush` — diagnostic for the consolidated slot store.
 // Every flushSlot decision (clear / embed-route / slot-render) is
@@ -776,13 +777,30 @@ export function useTraitStateMachine(
                     fetchedEntityType: string,
                     fetchResult: FetchResult | null,
                 ): void => {
-                    if (!fetchResult) return;
+                    if (!fetchResult) {
+                        reducerMirrorLog.info('write:skip-null', { traitName, fetchedEntityType });
+                        return;
+                    }
                     const snapNow = traitSnapshotDataRef.current.get(traitName);
-                    if (!snapNow) return;
+                    if (!snapNow) {
+                        reducerMirrorLog.info('write:skip-no-snap', { traitName, fetchedEntityType });
+                        return;
+                    }
                     const rows: EntityRow[] = Array.isArray(fetchResult.rows)
                         ? fetchResult.rows
                         : [fetchResult.rows];
                     snapNow.data[fetchedEntityType] = rows;
+                    reducerMirrorLog.info('write:ok', {
+                        traitName,
+                        fetchedEntityType,
+                        rowCount: rows.length,
+                        firstRowKeys: rows.length > 0
+                            ? Object.keys(rows[0]).join(',')
+                            : '',
+                        firstRowJson: rows.length > 0
+                            ? JSON.stringify(rows[0]).slice(0, 200)
+                            : '',
+                    });
                 };
                 const baseFetch = handlers.fetch;
                 const baseRef = handlers.ref;
@@ -838,6 +856,15 @@ export function useTraitStateMachine(
                     );
                     entityForBinding = hybrid;
                 }
+                reducerMirrorLog.info('read:bindingCtx', {
+                    traitName,
+                    linkedEntity,
+                    eventKey: normalizedEvent,
+                    snapDataKeys: reducerSnap ? Object.keys(reducerSnap.data).join(',') : '<no-snap>',
+                    persistedRowCount: persistedRows?.length ?? 0,
+                    source: persistedRows && persistedRows.length > 0 ? 'reducer-mirror' : 'payload',
+                    entityJson: JSON.stringify(entityForBinding).slice(0, 200),
+                });
                 const bindingCtx: BindingContext = {
                     entity: entityForBinding,
                     payload: payload || {},
