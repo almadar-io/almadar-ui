@@ -97,6 +97,20 @@ function makeLambdaFn(
   callerKey: string,
 ): (item: EntityRow, index: number) => React.ReactNode {
   return (item, index) => {
+    // Triage log for the std-stats / std-graphs "1/0" symptom: the
+    // renderItem lambda ought to receive the per-card row from the
+    // upstream entity prop. If `item` arrives as a primitive, EntityRow
+    // shape, or some DataList wrapper, we'll see it here BEFORE
+    // substitution erases the disconnect into `undefined` props.
+    lambdaLog.info("invoke", {
+      argName,
+      callerKey,
+      index,
+      itemType: typeof item,
+      itemIsArray: Array.isArray(item),
+      itemKeys: item && typeof item === "object" ? Object.keys(item).slice(0, 12) : null,
+      itemSample: JSON.stringify(item).slice(0, 400),
+    });
     const resolvedBody = resolveLambdaBindings(lambdaBody, argName, item);
     if (
       resolvedBody === null ||
