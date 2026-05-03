@@ -1163,6 +1163,12 @@ export function useTraitStateMachine(
             for (const transition of binding.trait.transitions) {
                 allEvents.add(transition.event);
             }
+            reducerMirrorLog.info('binding:transitions', {
+                traitName: binding.trait.name,
+                linkedEntity: binding.linkedEntity,
+                transitions: binding.trait.transitions.map((t) => `${t.from}->${t.to}/${t.event}`).join(','),
+                events: binding.trait.events.map((e) => e.key).join(','),
+            });
         }
 
         console.log('[TraitStateMachine] Subscribing to events:', Array.from(allEvents));
