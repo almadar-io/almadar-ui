@@ -219,6 +219,36 @@ export function DataList<T extends EntityRow = EntityRow>({
   const allData = Array.isArray(entity) ? entity : entity ? [entity] : [];
   const data = pageSize > 0 ? allData.slice(0, visibleCount) : allData;
   const hasMoreLocal = pageSize > 0 && visibleCount < allData.length;
+  const hasRenderProp = typeof children === 'function';
+
+  // Diagnostic: when we have data + a `renderItem` prop but it's not a
+  // function (e.g. it arrived as an unconverted `["fn","item",{...}]`
+  // sExpression lambda from the schema), DataList silently falls back
+  // to the fields-based path. Hook MUST stay above early returns —
+  // entity arriving empty-then-populated otherwise tripped Rules-of-Hooks.
+  React.useEffect(() => {
+    const renderItemTypeOf = typeof schemaRenderItem;
+    const childrenTypeOf = typeof children;
+    if (data.length > 0 && !hasRenderProp) {
+      const firstRow = data[0] as Record<string, unknown> | undefined;
+      const sampleKeys = firstRow ? Object.keys(firstRow).slice(0, 6) : [];
+      const renderItemRaw = schemaRenderItem as unknown;
+      const isFnLambda =
+        Array.isArray(renderItemRaw) &&
+        renderItemRaw.length >= 3 &&
+        (renderItemRaw[0] === 'fn' || renderItemRaw[0] === 'lambda');
+      dataListLog.warn('renderItem-unresolved', {
+        rowCount: data.length,
+        fieldsCount: fields?.length ?? 0,
+        renderItemTypeOf,
+        renderItemIsArray: Array.isArray(renderItemRaw),
+        renderItemIsFnLambda: isFnLambda,
+        renderItemHead: Array.isArray(renderItemRaw) ? String(renderItemRaw[0]) : undefined,
+        childrenTypeOf,
+        sampleRowKeys: sampleKeys,
+      });
+    }
+  }, [data, hasRenderProp, schemaRenderItem, children, fields]);
 
   // Separate fields by role
   const titleField = fields.find((f) => f.variant === 'h3' || f.variant === 'h4') ?? fields[0];
@@ -346,38 +376,6 @@ export function DataList<T extends EntityRow = EntityRow>({
       </VStack>
     );
   }
-
-  // ── Render-prop children (custom per-item content) ───────────────
-  const hasRenderProp = typeof children === 'function';
-
-  // Diagnostic: when we have data + a `renderItem` prop but it's not a
-  // function (e.g. it arrived as an unconverted `["fn","item",{...}]`
-  // sExpression lambda from the schema), DataList silently falls back
-  // to the fields-based path. With `fields: []`, the rendered row is
-  // an empty pill — exactly the std-filtered-list Filter-atom symptom.
-  React.useEffect(() => {
-    const renderItemTypeOf = typeof schemaRenderItem;
-    const childrenTypeOf = typeof children;
-    if (data.length > 0 && !hasRenderProp) {
-      const firstRow = data[0] as Record<string, unknown> | undefined;
-      const sampleKeys = firstRow ? Object.keys(firstRow).slice(0, 6) : [];
-      const renderItemRaw = schemaRenderItem as unknown;
-      const isFnLambda =
-        Array.isArray(renderItemRaw) &&
-        renderItemRaw.length >= 3 &&
-        (renderItemRaw[0] === 'fn' || renderItemRaw[0] === 'lambda');
-      dataListLog.warn('renderItem-unresolved', {
-        rowCount: data.length,
-        fieldsCount: fields?.length ?? 0,
-        renderItemTypeOf,
-        renderItemIsArray: Array.isArray(renderItemRaw),
-        renderItemIsFnLambda: isFnLambda,
-        renderItemHead: Array.isArray(renderItemRaw) ? String(renderItemRaw[0]) : undefined,
-        childrenTypeOf,
-        sampleRowKeys: sampleKeys,
-      });
-    }
-  }, [data, hasRenderProp, schemaRenderItem, children, fields]);
 
   // ── Grouped rendering (non-message variants) ─────────────────────
   const items = data.map((item) => item as Record<string, unknown>);

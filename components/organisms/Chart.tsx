@@ -53,6 +53,7 @@ export interface ChartProps {
     /** Data series */
     series?: readonly ChartSeries[];
     /** Simple data (single series shorthand) */
+    /** Simple data (single series shorthand) */
     data?: readonly ChartDataPoint[];
     /** Chart height in px */
     height?: number;
