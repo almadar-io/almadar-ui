@@ -19,8 +19,16 @@ export interface StatDisplayProps {
   label: string;
   /** Primary value (number or formatted string) */
   value: number | string;
-  /** Maximum value (renders as "value / max") */
+  /** Optional denominator. >0 renders "value / max"; 0 or omitted hides the divider. */
   max?: number;
+  /** Optional progress target. >0 renders a progress bar at value/target. */
+  target?: number;
+  /** Signed delta vs previous period. >0 renders ↑ green, <0 renders ↓ red, 0 hides. */
+  trend?: number;
+  /** Prefix prepended to the formatted value (e.g. "≈ "). */
+  prefix?: string;
+  /** Suffix appended to the formatted value (e.g. " /mo", " ms"). */
+  suffix?: string;
   /** Lucide icon name or React node */
   icon?: React.ReactNode;
   /** Icon background color class */
@@ -43,25 +51,34 @@ export interface StatDisplayProps {
   error?: Error | null;
 }
 
-function formatValue(value: unknown, format?: string, max?: number): string {
+function formatNumber(value: unknown, format?: string): string {
   if (value == null) return '0';
   const v = typeof value === 'number' ? value : value;
-  let formatted: string;
   switch (format) {
     case 'currency':
-      formatted = typeof v === 'number' ? `$${v.toFixed(2)}` : String(v);
-      break;
+      return typeof v === 'number' ? `$${v.toFixed(2)}` : String(v);
     case 'percent':
-      formatted = typeof v === 'number' ? `${Math.round(v)}%` : String(v);
-      break;
+      return typeof v === 'number' ? `${Math.round(v)}%` : String(v);
     case 'number':
-      formatted = typeof v === 'number' ? v.toLocaleString() : String(v);
-      break;
+      return typeof v === 'number' ? v.toLocaleString() : String(v);
     default:
-      formatted = String(v);
+      return String(v);
   }
-  if (max != null) return `${formatted} / ${max}`;
-  return formatted;
+}
+
+// Compose `prefix + formattedValue + (" / " + max if max>0) + suffix`. max:0
+// is the lolo default for std-stats's optional denominator and means "no max"
+// — we hide the divider so plain count cards don't render "10 / 0".
+function composeDisplayValue(
+  value: unknown,
+  format?: string,
+  max?: number,
+  prefix?: string,
+  suffix?: string,
+): string {
+  const formatted = formatNumber(value, format);
+  const withMax = max != null && max > 0 ? `${formatted} / ${max}` : formatted;
+  return `${prefix ?? ''}${withMax}${suffix ?? ''}`;
 }
 
 const variantColor: Record<string, string> = {
@@ -77,6 +94,10 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
   label,
   value,
   max,
+  target,
+  trend,
+  prefix,
+  suffix,
   icon: iconProp,
   iconBg = 'bg-muted',
   iconColor = 'text-foreground',
@@ -96,7 +117,13 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
   const valueSizes = { sm: 'text-lg', md: 'text-2xl', lg: 'text-3xl' };
   const padSizes = { sm: 'p-3', md: 'p-4', lg: 'p-6' };
 
-  const displayValue = formatValue(value, format, max);
+  const displayValue = composeDisplayValue(value, format, max, prefix, suffix);
+  const numericValue = typeof value === 'number' ? value : Number(value);
+  const showTarget = typeof target === 'number' && target > 0 && Number.isFinite(numericValue);
+  const targetPct = showTarget ? Math.max(0, Math.min(100, (numericValue / (target as number)) * 100)) : 0;
+  const showTrend = typeof trend === 'number' && trend !== 0 && Number.isFinite(trend);
+  const trendUp = showTrend && (trend as number) > 0;
+  const trendLabel = showTrend ? `${trendUp ? '↑' : '↓'} ${Math.abs(trend as number)}` : '';
 
   if (error) {
     return (
@@ -127,6 +154,11 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
         <Typography variant="h4" className={cn('font-bold', valueSizes[size], variantColor[variant])}>
           {displayValue}
         </Typography>
+        {showTrend && (
+          <Typography variant="caption" className={cn('font-semibold', trendUp ? 'text-success' : 'text-error')}>
+            {trendLabel}
+          </Typography>
+        )}
       </HStack>
     );
   }
@@ -135,11 +167,29 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
   return (
     <Card className={cn(padSizes[size], className)}>
       <HStack align="start" justify="between">
-        <VStack gap="none" className="space-y-1">
+        <VStack gap="none" className="space-y-1 flex-1">
           <Typography variant="overline" color="secondary">{label}</Typography>
-          <Typography variant="h4" className={cn('font-bold', valueSizes[size], variantColor[variant])}>
-            {displayValue}
-          </Typography>
+          <HStack gap="sm" align="end">
+            <Typography variant="h4" className={cn('font-bold', valueSizes[size], variantColor[variant])}>
+              {displayValue}
+            </Typography>
+            {showTrend && (
+              <Typography
+                variant="caption"
+                className={cn('font-semibold pb-1', trendUp ? 'text-success' : 'text-error')}
+              >
+                {trendLabel}
+              </Typography>
+            )}
+          </HStack>
+          {showTarget && (
+            <Box className="mt-2 h-1.5 w-full bg-muted rounded-full overflow-hidden">
+              <Box
+                className={cn('h-full rounded-full transition-all', `bg-${variant === 'default' ? 'primary' : variant}`)}
+                style={{ width: `${targetPct}%` }}
+              />
+            </Box>
+          )}
         </VStack>
         {(ResolvedIcon || (typeof iconProp !== 'string' && iconProp)) && (
           <Box className={cn('p-3 rounded-md', iconBg)}>
