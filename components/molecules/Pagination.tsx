@@ -109,18 +109,6 @@ export const Pagination: React.FC<PaginationProps> = ({
   const { t } = useTranslate();
   const [jumpToPage, setJumpToPage] = useState("");
 
-  // Diagnostic: log every render's incoming currentPage / totalPages so
-  // the schema-rendered case can be inspected when the active page
-  // doesn't highlight. Type / value mismatches (e.g. `currentPage` as a
-  // string from a binding that didn't coerce) surface here.
-  console.log('[Pagination] render', {
-    currentPage,
-    currentPageType: typeof currentPage,
-    totalPages,
-    totalPagesType: typeof totalPages,
-    pageChangeEvent,
-  });
-
   const handlePageChange = (page: number) => {
     if (pageChangeEvent) eventBus.emit(`UI:${pageChangeEvent}`, { page });
     onPageChange(page);

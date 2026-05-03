@@ -22,7 +22,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useEventBus } from '../hooks';
 import { createLogger } from '../lib/logger';
 import { isCircuitEvent } from '@almadar/core';
-import type { PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, FetchResult, TraitConfig } from '@almadar/core';
+import type { PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, TraitConfig } from '@almadar/core';
 import {
     StateMachineManager,
     EffectExecutor,
@@ -69,7 +69,6 @@ export interface TraitStateMachineResult {
 }
 
 const crossTraitLog = createLogger('almadar:ui:cross-trait');
-const reducerMirrorLog = createLogger('almadar:ui:reducer-mirror');
 
 // `almadar:ui:slot-flush` — diagnostic for the consolidated slot store.
 // Every flushSlot decision (clear / embed-route / slot-render) is
@@ -89,23 +88,6 @@ const stateLog = createLogger('almadar:ui:state-transitions');
 // ============================================================================
 // Helper Functions
 // ============================================================================
-
-/**
- * Read the canonical `payload.data: EntityRow[]` shape that fetch /
- * persist emit-success events produce. Returns the rows as
- * `EntityRow[]` or `null` if the payload doesn't carry an array under
- * `data`. Element-level shape is the `{id?, ...fields}` contract every
- * EntityRow follows; this filters to plain object entries (skips
- * primitives that EventPayloadValue's union admits) without an
- * `unknown` widening.
- */
-function readPayloadRows(payload: EventPayload | undefined): EntityRow[] | null {
-    const data = payload?.['data'];
-    if (!Array.isArray(data)) return null;
-    return data.filter((v): v is EntityRow =>
-        v !== null && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date),
-    );
-}
 
 /**
  * Convert ResolvedTraitBinding to TraitDefinition for StateMachineManager
@@ -339,20 +321,22 @@ export function useTraitStateMachine(
     useEffect(() => { traitStatesRef.current = traitStates; }, [traitStates]);
 
     // Per-trait post-transition history for TraitStateSnapshot's payload/cascade
-    // fields. Keyed by trait name. `lastPayload` = the payload the trait just
-    // processed (source for `@payload.X` binding assertions — VG11a). `data`
-    // = rows the trait received via `@payload.data` in its most recent fetch
-    // cascade (source for `@entity.X` bindings + VG11b). `cascadeReceived` =
-    // events that hit this trait via `listens { Source SRC → EVENT }` since
-    // the last user-initiated event, used to validate cascade fan-out (VG4).
-    // Read by `registerTraitSnapshot`'s getter; the bindings gate doesn't
-    // need to plumb anything other than the trait name.
+    // fields. Verifier-only debug snapshot (VG3, VG4, VG11a-c). Not a binding
+    // source. `data` is left empty: `@entity.X` resolves from
+    // `traitFieldStatesRef` (explicit `(set @entity.X Y)` writes), not from
+    // any reducer-mirror.
     const traitSnapshotDataRef = useRef<Map<string, {
         lastPayload?: EventPayload;
         lastEventDispatched?: { event: string; payload?: EventPayload; timestamp: number };
         data: Record<string, EntityRow[]>;
         cascadeReceived: Array<{ event: string; payload?: EventPayload; timestamp: number }>;
     }>>(new Map());
+
+    // Per-trait scalar entity state populated EXCLUSIVELY by `(set @entity.X Y)`
+    // effects. Mirrors compiled's `state.fields` reducer. `bindingCtx.entity`
+    // resolves from this map — no implicit seeding from persistence, no
+    // post-fetch write-through, no payload mirror. Initial empty per trait.
+    const traitFieldStatesRef = useRef<Map<string, EntityRow>>(new Map());
 
 
     // Register traits with debug registry and clean up on unmount/rebind
@@ -781,107 +765,28 @@ export function useTraitStateMachine(
                     };
                 }
 
-                // Wrap fetch / ref / deref so each success writes the
-                // returned rows to the trait's reducer-mirror state at
-                // `snap.data[<fetchEntityType>]`. Mirrors the compiled
-                // path's per-trait reducer that updates
-                // `state.data[<EntityName>]: EntityRow[]` on every fetch
-                // success, so `@entity.X` reads keep working across
-                // events without depending on the cross-trait payload
-                // shape. snap is created above in the registerTrait
-                // effect; tolerate its absence (`?.`).
-                const writeFetchResultToSnap = (
-                    fetchedEntityType: string,
-                    fetchResult: FetchResult | null,
-                ): void => {
-                    if (!fetchResult) {
-                        reducerMirrorLog.info('write:skip-null', { traitName, fetchedEntityType });
-                        return;
-                    }
-                    const snapNow = traitSnapshotDataRef.current.get(traitName);
-                    if (!snapNow) {
-                        reducerMirrorLog.info('write:skip-no-snap', { traitName, fetchedEntityType });
-                        return;
-                    }
-                    const rows: EntityRow[] = Array.isArray(fetchResult.rows)
-                        ? fetchResult.rows
-                        : [fetchResult.rows];
-                    snapNow.data[fetchedEntityType] = rows;
-                    reducerMirrorLog.info('write:ok', {
-                        traitName,
-                        fetchedEntityType,
-                        rowCount: rows.length,
-                        firstRowKeys: rows.length > 0
-                            ? Object.keys(rows[0]).join(',')
-                            : '',
-                        firstRowJson: rows.length > 0
-                            ? JSON.stringify(rows[0]).slice(0, 200)
-                            : '',
-                    });
-                };
-                const baseFetch = handlers.fetch;
-                const baseRef = handlers.ref;
-                const baseDeref = handlers.deref;
+                // Wrap `set` so `(set @entity.X Y)` writes to the per-trait
+                // scalar state map. Mirrors compiled's `state.fields[X]`.
+                // `bindingCtx.entity` reads from this map below.
+                const baseSet = handlers.set;
                 handlers = {
                     ...handlers,
-                    ...(baseFetch ? {
-                        fetch: async (entityType, options) => {
-                            const r = await baseFetch(entityType, options);
-                            writeFetchResultToSnap(entityType, r);
-                            return r;
-                        },
-                    } : {}),
-                    ...(baseRef ? {
-                        ref: async (entityType, options) => {
-                            const r = await baseRef(entityType, options);
-                            writeFetchResultToSnap(entityType, r);
-                            return r;
-                        },
-                    } : {}),
-                    ...(baseDeref ? {
-                        deref: async (entityType, options) => {
-                            const r = await baseDeref(entityType, options);
-                            writeFetchResultToSnap(entityType, r);
-                            return r;
-                        },
-                    } : {}),
+                    set: async (targetId, field, value) => {
+                        let fieldState = traitFieldStatesRef.current.get(traitName);
+                        if (!fieldState) {
+                            fieldState = {} as EntityRow;
+                            traitFieldStatesRef.current.set(traitName, fieldState);
+                        }
+                        fieldState[field] = value as EntityRow[string];
+                        if (baseSet) await baseSet(targetId, field, value);
+                    },
                 };
 
-                // `@entity.X` resolves against the trait's reducer-mirror
-                // when present (compiled-path parity:
-                // `state.data[<EntityName>]`), falling back to the event
-                // payload only when no fetch has populated the mirror
-                // yet. Without this, every event creates a fresh
-                // `bindings.entity = payload` and instance-scope atoms
-                // (e.g. Pagination's PagedItem) lose their `currentPage`
-                // / `totalPages` state across events.
-                const entityFromPayload = (payload ?? {}) as unknown as EntityRow;
-                const reducerSnap = traitSnapshotDataRef.current.get(traitName);
-                const persistedRows = linkedEntity
-                    ? reducerSnap?.data[linkedEntity]
-                    : undefined;
-                let entityForBinding: EntityRow = entityFromPayload;
-                if (persistedRows && persistedRows.length > 0) {
-                    // Compiled path's `data['<Entity>'] ?? []` collapses
-                    // to the array directly; for `@entity.X` field
-                    // lookups we expose the array+object hybrid so a
-                    // single-instance entity (instance scope) reads as
-                    // `rows[0]` while a collection iterates as `[...]`.
-                    const hybrid: EntityRow[] & EntityRow = Object.assign(
-                        [...persistedRows],
-                        persistedRows[0],
-                    );
-                    entityForBinding = hybrid;
-                }
-                reducerMirrorLog.info('read:bindingCtx', {
-                    traitName,
-                    linkedEntity,
-                    eventKey: normalizedEvent,
-                    snapDataKeys: reducerSnap ? Object.keys(reducerSnap.data).join(',') : '<no-snap>',
-                    persistedRowCount: persistedRows?.length ?? 0,
-                    source: persistedRows && persistedRows.length > 0 ? 'reducer-mirror' : 'payload',
-                    entityJson: JSON.stringify(entityForBinding).slice(0, 200),
-                });
+                // `@entity.X` resolves against the per-trait scalar state
+                // populated by explicit `(set @entity.X Y)` effects.
+                // No implicit seeding from payload, no reducer-mirror.
+                const entityForBinding: EntityRow =
+                    traitFieldStatesRef.current.get(traitName) ?? ({} as EntityRow);
                 const bindingCtx: BindingContext = {
                     entity: entityForBinding,
                     payload: payload || {},
@@ -1163,12 +1068,6 @@ export function useTraitStateMachine(
             for (const transition of binding.trait.transitions) {
                 allEvents.add(transition.event);
             }
-            reducerMirrorLog.info('binding:transitions', {
-                traitName: binding.trait.name,
-                linkedEntity: binding.linkedEntity,
-                transitions: binding.trait.transitions.map((t) => `${t.from}->${t.to}/${t.event}`).join(','),
-                events: binding.trait.events.map((e) => e.key).join(','),
-            });
         }
 
         console.log('[TraitStateMachine] Subscribing to events:', Array.from(allEvents));
@@ -1193,33 +1092,10 @@ export function useTraitStateMachine(
                 }
                 const selfBusKey = `UI:${orbitalName}.${traitName}.${eventKey}`;
                 crossTraitLog.debug('self:subscribe', { traitName, busKey: selfBusKey, eventKey });
-                const selfLinkedEntity = binding.linkedEntity;
                 const unsub = eventBus.on(selfBusKey, (event) => {
                     if (event.source && (event.source as { fromBridge?: boolean }).fromBridge) {
                         crossTraitLog.debug('self:fire-skipped-bridge-echo', { traitName, busKey: selfBusKey, eventKey });
                         return;
-                    }
-                    // Populate this trait's reducer-mirror from its OWN
-                    // emit's payload.data. Mirrors the compiled path's
-                    // per-trait `state.data[<linkedEntity>] = action.data`
-                    // dispatch on EVENT_SUCCESS — payload.data carries
-                    // the trait's just-fetched rows when the emitter is
-                    // the trait itself (e.g. PagedItemLoaded from
-                    // Pagination's INIT fetch).
-                    if (selfLinkedEntity) {
-                        const rowsFromPayload = readPayloadRows(event.payload);
-                        if (rowsFromPayload !== null) {
-                            const snapNow = traitSnapshotDataRef.current.get(traitName);
-                            if (snapNow) {
-                                snapNow.data[selfLinkedEntity] = rowsFromPayload;
-                                reducerMirrorLog.info('write:self-emit', {
-                                    traitName,
-                                    eventKey,
-                                    linkedEntity: selfLinkedEntity,
-                                    rowCount: rowsFromPayload.length,
-                                });
-                            }
-                        }
                     }
                     crossTraitLog.info('self:fire', { traitName, busKey: selfBusKey, eventKey });
                     enqueueAndDrain(eventKey, event.payload);
