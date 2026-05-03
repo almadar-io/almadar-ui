@@ -57,14 +57,18 @@ export function useUIEvents<E extends string>(
 
     for (const smEvent of stableValidEvents) {
       const handler = (event: BusEvent) => {
-        // Skip bridge echoes on the OWN qualified key. The orbital
-        // bridge re-broadcasts every transition event on the qualified
-        // bus key so cross-trait `useTraitListens` subscriptions fire.
-        // Without this guard, the trait that JUST dispatched E hears
-        // its own echo and dispatches E again — infinite loop. Cross-
-        // trait listeners don't subscribe to their OWN qualified key
-        // (different trait scope), so they're unaffected.
-        if (event.source && (event.source as { fromBridge?: boolean }).fromBridge) {
+        // Skip bridge echoes of the event THIS trait just dispatched.
+        // The bridge re-broadcasts every dispatched event on the same
+        // qualified key so cross-trait listeners fire; without this
+        // guard, the trait would re-dispatch its own echo in an
+        // infinite loop. We narrow on `source.dispatched` (set by
+        // path 1 of useOrbitalBridge) instead of `fromBridge` so
+        // server-side emit cascades (path 2: fetch.emit.success,
+        // (emit X) effects) — which carry `fromBridge: true` but NOT
+        // `dispatched` — still reach the source trait's transition
+        // handler. That's how a fetch's success cascades into the
+        // trait's own success-state transition (loading → browsing).
+        if (event.source && (event.source as { dispatched?: boolean }).dispatched) {
           return;
         }
         dispatch(smEvent, event.payload);

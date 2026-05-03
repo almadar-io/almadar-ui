@@ -1093,7 +1093,13 @@ export function useTraitStateMachine(
                 const selfBusKey = `UI:${orbitalName}.${traitName}.${eventKey}`;
                 crossTraitLog.debug('self:subscribe', { traitName, busKey: selfBusKey, eventKey });
                 const unsub = eventBus.on(selfBusKey, (event) => {
-                    if (event.source && (event.source as { fromBridge?: boolean }).fromBridge) {
+                    // Skip bridge echoes of THIS event's own dispatch
+                    // (`dispatched: true` flag). Server-side emits via
+                    // (emit) / fetch.emit.success carry `fromBridge: true`
+                    // but NOT `dispatched`, so they reach the trait's
+                    // transition handler — that's how in-trait cascades
+                    // (e.g. loading → browsing on BrowseItemLoaded) work.
+                    if (event.source && (event.source as { dispatched?: boolean }).dispatched) {
                         crossTraitLog.debug('self:fire-skipped-bridge-echo', { traitName, busKey: selfBusKey, eventKey });
                         return;
                     }
