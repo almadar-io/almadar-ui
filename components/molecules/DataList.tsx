@@ -72,8 +72,14 @@ export interface DataListProps<T extends EntityRow = EntityRow> {
    * receive items of that exact shape.
    */
   entity: T | readonly T[];
-  /** Field definitions for rendering each row */
-  fields: readonly DataListField[];
+  /**
+   * Field definitions for rendering each row. The pattern contract in
+   * `@almadar/patterns` documents `columns` as the wire-format alias the
+   * compiler emits — both names resolve to the same shape here. Pass either.
+   */
+  fields?: readonly DataListField[];
+  /** Alias for `fields` — the compiler emits `columns` for field defs. */
+  columns?: readonly DataListField[];
   /** Per-item action buttons */
   itemActions?: readonly DataListItemAction[];
   /** Gap between rows */
@@ -186,6 +192,7 @@ function groupData(
 export function DataList<T extends EntityRow = EntityRow>({
   entity,
   fields,
+  columns,
   itemActions,
   gap = 'none',
   variant = 'default',
@@ -216,6 +223,11 @@ export function DataList<T extends EntityRow = EntityRow>({
   const { t } = useTranslate();
   const [visibleCount, setVisibleCount] = React.useState(pageSize || Infinity);
 
+  // Honor the pattern-types alias: compiler emits `columns`, the React API
+  // accepts `fields`. Either resolves to the same shape; missing both yields
+  // an empty list rather than a TypeError on `.find`.
+  const fieldDefs: readonly DataListField[] = fields ?? columns ?? [];
+
   const allData = Array.isArray(entity) ? entity : entity ? [entity] : [];
   const data = pageSize > 0 ? allData.slice(0, visibleCount) : allData;
   const hasMoreLocal = pageSize > 0 && visibleCount < allData.length;
@@ -239,7 +251,7 @@ export function DataList<T extends EntityRow = EntityRow>({
         (renderItemRaw[0] === 'fn' || renderItemRaw[0] === 'lambda');
       dataListLog.warn('renderItem-unresolved', {
         rowCount: data.length,
-        fieldsCount: fields?.length ?? 0,
+        fieldsCount: fieldDefs.length,
         renderItemTypeOf,
         renderItemIsArray: Array.isArray(renderItemRaw),
         renderItemIsFnLambda: isFnLambda,
@@ -248,13 +260,13 @@ export function DataList<T extends EntityRow = EntityRow>({
         sampleRowKeys: sampleKeys,
       });
     }
-  }, [data, hasRenderProp, schemaRenderItem, children, fields]);
+  }, [data, hasRenderProp, schemaRenderItem, children, fieldDefs]);
 
   // Separate fields by role
-  const titleField = fields.find((f) => f.variant === 'h3' || f.variant === 'h4') ?? fields[0];
-  const badgeFields = fields.filter((f) => f.variant === 'badge' && f !== titleField);
-  const progressFields = fields.filter((f) => f.variant === 'progress');
-  const bodyFields = fields.filter(
+  const titleField = fieldDefs.find((f) => f.variant === 'h3' || f.variant === 'h4') ?? fieldDefs[0];
+  const badgeFields = fieldDefs.filter((f) => f.variant === 'badge' && f !== titleField);
+  const progressFields = fieldDefs.filter((f) => f.variant === 'progress');
+  const bodyFields = fieldDefs.filter(
     (f) => f !== titleField && !badgeFields.includes(f) && !progressFields.includes(f)
   );
 
@@ -315,7 +327,7 @@ export function DataList<T extends EntityRow = EntityRow>({
   if (isMessage) {
     const items = data.map((item) => item as Record<string, unknown>);
     const groups = groupBy ? groupData(items, groupBy) : [{ label: '', items }];
-    const contentField = titleField?.name ?? fields[0]?.name ?? '';
+    const contentField = titleField?.name ?? fieldDefs[0]?.name ?? '';
 
     return (
       <VStack gap="sm" className={cn('py-2', className)}>
@@ -329,7 +341,7 @@ export function DataList<T extends EntityRow = EntityRow>({
               const sender = senderField ? String(getNestedValue(itemData, senderField) ?? '') : '';
               const isSent = Boolean(currentUser && sender === currentUser);
               const content = getNestedValue(itemData, contentField);
-              const timestampField = fields.find((f) => f.format === 'date');
+              const timestampField = fieldDefs.find((f) => f.format === 'date');
               const timestamp = timestampField ? getNestedValue(itemData, timestampField.name) : null;
 
               return (

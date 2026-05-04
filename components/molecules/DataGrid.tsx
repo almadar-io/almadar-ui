@@ -80,8 +80,14 @@ export interface DataGridProps<T extends EntityRow = EntityRow> {
    * receive cards typed to that exact shape.
    */
   entity: T | readonly T[];
-  /** Field definitions for rendering each card */
-  fields: readonly DataGridField[];
+  /**
+   * Field definitions for rendering each card. The pattern contract in
+   * `@almadar/patterns` documents `columns` as the wire-format alias the
+   * compiler emits — both names resolve to the same shape here. Pass either.
+   */
+  fields?: readonly DataGridField[];
+  /** Alias for `fields` — the compiler emits `columns` for field defs. */
+  columns?: readonly DataGridField[];
   /** Per-item action buttons */
   itemActions?: readonly DataGridItemAction[];
   /** Number of columns (uses auto-fit if omitted) */
@@ -192,6 +198,7 @@ const gapStyles: Record<string, string> = {
 export function DataGrid<T extends EntityRow = EntityRow>({
   entity,
   fields,
+  columns,
   itemActions,
   cols,
   gap = 'md',
@@ -213,6 +220,11 @@ export function DataGrid<T extends EntityRow = EntityRow>({
   const { t } = useTranslate();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [visibleCount, setVisibleCount] = useState(pageSize || Infinity);
+
+  // Honor the pattern-types alias: compiler emits `columns`, the React API
+  // accepts `fields`. Either resolves to the same shape; missing both yields
+  // an empty list rather than a TypeError on `.find`.
+  const fieldDefs: readonly DataGridField[] = fields ?? columns ?? [];
 
   const allData = Array.isArray(entity) ? entity : entity ? [entity] : [];
   const data = pageSize > 0 ? allData.slice(0, visibleCount) : allData;
@@ -245,9 +257,9 @@ export function DataGrid<T extends EntityRow = EntityRow>({
   }, [data, selectionEvent, eventBus]);
 
   // Separate fields by variant for smart card layout
-  const titleField = fields.find((f) => f.variant === 'h3' || f.variant === 'h4') ?? fields[0];
-  const badgeFields = fields.filter((f) => f.variant === 'badge' && f !== titleField);
-  const bodyFields = fields.filter((f) => f !== titleField && !badgeFields.includes(f));
+  const titleField = fieldDefs.find((f) => f.variant === 'h3' || f.variant === 'h4') ?? fieldDefs[0];
+  const badgeFields = fieldDefs.filter((f) => f.variant === 'badge' && f !== titleField);
+  const bodyFields = fieldDefs.filter((f) => f !== titleField && !badgeFields.includes(f));
 
   // Separate actions by variant
   const primaryActions = itemActions?.filter((a) => a.variant !== 'danger') ?? [];
@@ -269,7 +281,7 @@ export function DataGrid<T extends EntityRow = EntityRow>({
   // hooks than expected" crash when `data` flips between empty and
   // populated across renders (e.g. search-as-you-type refetches).
   useEffect(() => {
-    if (data.length > 0 && !hasRenderProp && (!fields || fields.length === 0)) {
+    if (data.length > 0 && !hasRenderProp && fieldDefs.length === 0) {
       const renderItemRaw: unknown = schemaRenderItem;
       const isFnLambda =
         Array.isArray(renderItemRaw) &&
@@ -280,7 +292,7 @@ export function DataGrid<T extends EntityRow = EntityRow>({
         renderItemIsFnLambda: isFnLambda,
       });
     }
-  }, [data, hasRenderProp, schemaRenderItem, fields]);
+  }, [data, hasRenderProp, schemaRenderItem, fieldDefs]);
 
   // Grid template
   const gridTemplateColumns = cols
