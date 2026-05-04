@@ -19,8 +19,10 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   size?: BadgeSize;
   /** Numeric count or amount to display in badge */
   amount?: number;
-  /** Badge label text (alternative to children for schema-driven rendering) */
-  label?: string;
+  /** Badge label text (alternative to children for schema-driven rendering).
+   *  Numeric values are auto-coerced to string for rendering — common case
+   *  is unread counts, error counts, status codes, etc. */
+  label?: string | number;
   /** Icon name (Lucide icon string) or React node */
   icon?: React.ReactNode;
 }
