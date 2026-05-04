@@ -59,7 +59,7 @@ const TASK_LIST_SCHEMA: OrbitalSchema = {
                     {
                       type: 'entity-table',
                       entity: 'Task',
-                      columns: ['title', 'priority', 'done', 'assignee'],
+                      fields: ['title', 'priority', 'done', 'assignee'],
                     },
                   ],
                 ],
@@ -133,7 +133,7 @@ const CLINIC_SCHEMA: OrbitalSchema = {
                     {
                       type: 'entity-table',
                       entity: 'Patient',
-                      columns: ['fullName', 'email', 'insuranceProvider'],
+                      fields: ['fullName', 'email', 'insuranceProvider'],
                     },
                   ],
                 ],
@@ -186,7 +186,7 @@ const CLINIC_SCHEMA: OrbitalSchema = {
                     {
                       type: 'entity-table',
                       entity: 'QueueEntry',
-                      columns: ['patientName', 'waitMinutes', 'status'],
+                      fields: ['patientName', 'waitMinutes', 'status'],
                     },
                   ],
                 ],
@@ -277,7 +277,7 @@ const HR_SCHEMA: OrbitalSchema = {
                     {
                       type: 'entity-table',
                       entity: 'TeamMember',
-                      columns: ['name', 'department', 'role', 'active'],
+                      fields: ['name', 'department', 'role', 'active'],
                     },
                   ],
                 ],

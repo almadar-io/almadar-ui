@@ -41,6 +41,8 @@ import { Skeleton, type SkeletonVariant } from "../molecules/Skeleton";
 
 // Shared renderer imports (synced from orbital-shared/design-system/renderer)
 import { isKnownPattern, isPortalSlot, SLOT_DEFINITIONS } from "../../renderer";
+import { getPatternDefinition } from "@almadar/patterns";
+import { wrapCallbackForEvent } from "../../runtime/wrapCallbackForEvent";
 
 // Pattern registry — single source of truth for pattern → component name resolution
 import { getComponentForPattern as getComponentName } from "@almadar/patterns";
@@ -1126,6 +1128,11 @@ function SlotContentRenderer({
     }
   }
 
+  // Event bus used for the C2 callback-prop wrap below; the surrounding
+  // `MaybeTraitScope` qualifies bare `UI:X` keys to `UI:Orbital.Trait.X`
+  // so the trait state machine receives the dispatch.
+  const eventBus = useEventBus();
+
   // Entity schema for form field type enrichment (optional — only available in runtime mode)
   const schemaCtx = useEntitySchemaOptional();
   // Two lookup paths:
@@ -1183,6 +1190,29 @@ function SlotContentRenderer({
 
     // Recursively render any named props that are pattern configs
     const renderedProps = renderPatternProps(restProps, onDismiss);
+
+    // C2 runtime path: any callback-kind prop whose schema value is still a
+    // string (e.g. `onTabChange: "TAB_CHANGED"`) is a declarative event
+    // binding the schema author wired at the call site. Wrap it into a
+    // function the component can invoke; the wrapper builds an OBJECT
+    // payload `{ argName: value }` from the registry's `callbackArgs` so
+    // the bus carries the trait's declared event payload, not a raw
+    // positional spread. Mirrors the codegen wrapper at
+    // `orbital-shell-typescript/src/codegen/pattern.rs` (compiled path).
+    const patternDef = getPatternDefinition(content.pattern);
+    const propsSchema = patternDef?.propsSchema;
+    if (propsSchema) {
+      for (const [propKey, propValue] of Object.entries(renderedProps)) {
+        if (typeof propValue !== 'string') continue;
+        const propDef = propsSchema[propKey];
+        if (!propDef || propDef.kind !== 'callback') continue;
+        renderedProps[propKey] = wrapCallbackForEvent(
+          `UI:${propValue}`,
+          propDef.callbackArgs,
+          (eventKey, payload) => eventBus.emit(eventKey, payload),
+        );
+      }
+    }
 
     // Replace entity string with reactive store data. When the caller
     // already passed a pre-resolved array or single object via `entity`,

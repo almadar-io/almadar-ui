@@ -36,6 +36,11 @@ export {
 // SlotsContext / SlotsProvider / SlotBridge mirror layer was removed.
 export type { SlotPatternEntry, SlotSource } from './ui/slot-types';
 
+// C2 callback-prop wrap helper — single-source the named-arg → object-payload
+// shape across the runtime path here and the codegen path in
+// orbital-shell-typescript.
+export { wrapCallbackForEvent } from './wrapCallbackForEvent';
+
 // Effect handlers
 export {
     createClientEffectHandlers,
