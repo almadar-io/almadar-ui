@@ -304,7 +304,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         </Box>
 
         {/* Page content */}
-        <Box as="main" className="p-4 sm:p-6 pb-20 sm:pb-6">
+        <Box as="main" className="p-4 sm:p-6">
           {children}
         </Box>
       </Box>
