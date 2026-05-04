@@ -23,8 +23,8 @@ export interface TabItem {
   label: string;
   /** Tab content - optional for event-driven tabs */
   content?: React.ReactNode;
-  /** Tab icon */
-  icon?: LucideIcon;
+  /** Tab icon — pass either a Lucide component or its registry name (e.g. "file-text") */
+  icon?: LucideIcon | string;
   /** Tab badge */
   badge?: string | number;
   /** Disable tab */
@@ -46,6 +46,8 @@ export interface TabsProps {
   activeTab?: string;
   /** Callback when tab changes */
   onTabChange?: (tabId: string) => void;
+  /** Declarative tab change event — emits UI:{tabChangeEvent} with { tabId } */
+  tabChangeEvent?: string;
   /** Tab variant */
   variant?: 'default' | 'pills' | 'underline';
   /** Tab orientation */
@@ -60,6 +62,7 @@ export const Tabs: React.FC<TabsProps> = ({
   defaultActiveTab,
   activeTab: controlledActiveTab,
   onTabChange,
+  tabChangeEvent,
   variant = 'default',
   orientation = 'horizontal',
   className,
@@ -89,7 +92,9 @@ export const Tabs: React.FC<TabsProps> = ({
     }
     onTabChange?.(tabId);
 
-    // Emit event if tab has event configured (for trait state machine integration)
+    if (tabChangeEvent) {
+      eventBus.emit(`UI:${tabChangeEvent}`, { tabId });
+    }
     if (tabEvent) {
       eventBus.emit(`UI:${tabEvent}`, { tabId });
     }
@@ -190,7 +195,10 @@ export const Tabs: React.FC<TabsProps> = ({
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              {item.icon && <Icon icon={item.icon} size="sm" />}
+              {item.icon && (typeof item.icon === 'string'
+                ? <Icon name={item.icon} size="sm" />
+                : <Icon icon={item.icon} size="sm" />
+              )}
               <Typography variant="small" weight={isActive ? 'semibold' : 'normal'} className="!text-inherit">
                 {item.label}
               </Typography>
