@@ -1,5 +1,6 @@
 'use client';
 import React from "react";
+import type { EventEmit } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { Button } from "../atoms";
 import { Box } from "../atoms/Box";
@@ -18,7 +19,7 @@ export interface ErrorStateProps {
   onRetry?: () => void;
   className?: string;
   /** Declarative retry event — emits UI:{retryEvent} via eventBus when retry button is clicked */
-  retryEvent?: string;
+  retryEvent?: EventEmit<Record<string, never>>;
 }
 
 export const ErrorState: React.FC<ErrorStateProps> = ({

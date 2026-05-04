@@ -22,6 +22,7 @@
 
  
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import type { EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { VStack, HStack, Stack } from '../../atoms/Stack';
@@ -136,15 +137,15 @@ export interface WorldMapBoardProps {
 
     // -- Declarative event props --
     /** Emits UI:{heroSelectEvent} with { heroId } */
-    heroSelectEvent?: string;
+    heroSelectEvent?: EventEmit<{ heroId: string }>;
     /** Emits UI:{heroMoveEvent} with { heroId, toX, toY } */
-    heroMoveEvent?: string;
+    heroMoveEvent?: EventEmit<{ heroId: string; toX: number; toY: number }>;
     /** Emits UI:{battleEncounterEvent} with { attackerId, defenderId } */
-    battleEncounterEvent?: string;
+    battleEncounterEvent?: EventEmit<{ attackerId: string; defenderId: string }>;
     /** Emits UI:{featureEnterEvent} with { heroId, feature, hex } */
-    featureEnterEvent?: string;
+    featureEnterEvent?: EventEmit<{ heroId: string; feature: string; hex: MapHex }>;
     /** Emits UI:{tileClickEvent} with { x, y } */
-    tileClickEvent?: string;
+    tileClickEvent?: EventEmit<{ x: number; y: number }>;
 
     // -- Slots --
     /** Header / top bar */

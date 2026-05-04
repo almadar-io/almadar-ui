@@ -12,6 +12,7 @@
  
 
 import React, { useState, useCallback } from 'react';
+import type { EventEmit } from '@almadar/core';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
@@ -52,7 +53,7 @@ export interface BuilderPuzzleEntity {
 
 export interface BuilderBoardProps extends Omit<EntityDisplayProps, 'entity'> {
   entity: BuilderPuzzleEntity;
-  completeEvent?: string;
+  completeEvent?: EventEmit<{ success: boolean; attempts: number }>;
 }
 
 export function BuilderBoard({

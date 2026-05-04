@@ -27,6 +27,7 @@
 
 import * as React from 'react';
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import type { EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { Box } from '../../atoms/Box';
@@ -60,7 +61,7 @@ export interface CanvasEffectProps {
     /** Callback when the effect animation completes */
     onComplete?: () => void;
     /** Declarative event: emits UI:{completeEvent} when the effect animation completes */
-    completeEvent?: string;
+    completeEvent?: EventEmit<Record<string, never>>;
     /** Additional CSS classes */
     className?: string;
     /** Loading state indicator */

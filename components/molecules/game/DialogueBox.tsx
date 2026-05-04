@@ -14,7 +14,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import type { EventPayload } from '@almadar/core';
+import type { EventEmit, EventPayload } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 
@@ -53,11 +53,11 @@ export interface DialogueBoxProps {
   /** Called when dialogue is advanced (no choices) */
   onAdvance?: () => void;
   /** Declarative event: emits UI:{completeEvent} when text animation completes */
-  completeEvent?: string;
-  /** Declarative event: emits UI:{choiceEvent} with { choice } when a choice is selected */
-  choiceEvent?: string;
+  completeEvent?: EventEmit<Record<string, never>>;
+  /** Declarative event: emits UI:{choiceEvent} with { choice: DialogueChoice } when a choice is selected */
+  choiceEvent?: EventEmit<{ choice: DialogueChoice }>;
   /** Declarative event: emits UI:{advanceEvent} when dialogue is advanced */
-  advanceEvent?: string;
+  advanceEvent?: EventEmit<Record<string, never>>;
   /** Optional className */
   className?: string;
 }

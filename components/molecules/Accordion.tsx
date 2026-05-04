@@ -7,6 +7,7 @@
  */
 
 import React, { useState } from "react";
+import type { EventEmit } from "@almadar/core";
 import { ChevronDown } from "lucide-react";
 
 import { Icon } from "../atoms/Icon";
@@ -85,7 +86,7 @@ export interface AccordionProps {
   className?: string;
 
   /** Declarative toggle event — emits UI:{toggleEvent} with { itemId, isOpen } */
-  toggleEvent?: string;
+  toggleEvent?: EventEmit<{ itemId: string; isOpen: boolean }>;
 }
 
 // Helper to generate ID from header/title content

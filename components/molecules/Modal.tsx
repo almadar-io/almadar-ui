@@ -7,6 +7,7 @@
  */
 
 import React, { useEffect, useRef, useState } from "react";
+import type { EventEmit } from "@almadar/core";
 import { X } from "lucide-react";
 import { Icon } from "../atoms/Icon";
 import { Box } from "../atoms/Box";
@@ -32,7 +33,7 @@ export interface ModalProps {
   closeOnEscape?: boolean;
   className?: string;
   /** Declarative close event — emits UI:{closeEvent} via eventBus when modal should close */
-  closeEvent?: string;
+  closeEvent?: EventEmit<Record<string, never>>;
   /** Enable swipe-down-to-close on mobile bottom sheet (default: true) */
   swipeDownToClose?: boolean;
 }

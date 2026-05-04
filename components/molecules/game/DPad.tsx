@@ -1,5 +1,6 @@
 'use client';
 import * as React from 'react';
+import type { EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { ControlButton } from '../../atoms/game/ControlButton';
@@ -13,7 +14,7 @@ export interface DPadProps {
   /** Called when a direction is pressed/released */
   onDirection?: (direction: DPadDirection, pressed: boolean) => void;
   /** Declarative event name emitted on direction press/release via useEventBus */
-  directionEvent?: string;
+  directionEvent?: EventEmit<{ direction: DPadDirection; pressed: boolean }>;
   /** Size variant */
   size?: 'sm' | 'md' | 'lg';
   /** Whether to include diagonal buttons */

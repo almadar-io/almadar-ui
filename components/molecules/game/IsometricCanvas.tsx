@@ -27,6 +27,7 @@
 
 import * as React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -100,13 +101,13 @@ export interface IsometricCanvasProps {
 
     // --- Declarative event props ---
     /** Declarative event: emits UI:{tileClickEvent} with { x, y } on tile click */
-    tileClickEvent?: string;
+    tileClickEvent?: EventEmit<{ x: number; y: number }>;
     /** Declarative event: emits UI:{unitClickEvent} with { unitId } on unit click */
-    unitClickEvent?: string;
+    unitClickEvent?: EventEmit<{ unitId: string }>;
     /** Declarative event: emits UI:{tileHoverEvent} with { x, y } on tile hover */
-    tileHoverEvent?: string;
+    tileHoverEvent?: EventEmit<{ x: number; y: number }>;
     /** Declarative event: emits UI:{tileLeaveEvent} with {} on tile leave */
-    tileLeaveEvent?: string;
+    tileLeaveEvent?: EventEmit<Record<string, never>>;
 
     // --- Rendering options ---
     /** Render scale (0.4 = 40% zoom) */

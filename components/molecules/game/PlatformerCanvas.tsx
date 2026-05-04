@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useRef, useEffect, useCallback } from 'react';
+import type { EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { bindCanvasCapture, updateAssetStatus } from '../../../lib/verificationRegistry';
@@ -49,10 +50,10 @@ export interface PlatformerCanvasProps {
   /** Base URL prefix for asset URLs */
   assetBaseUrl?: string;
   /** Event names for keyboard controls */
-  leftEvent?: string;
-  rightEvent?: string;
-  jumpEvent?: string;
-  stopEvent?: string;
+  leftEvent?: EventEmit<{ direction: number }>;
+  rightEvent?: EventEmit<{ direction: number }>;
+  jumpEvent?: EventEmit<Record<string, never>>;
+  stopEvent?: EventEmit<Record<string, never>>;
   /** Additional CSS classes */
   className?: string;
 }

@@ -1,5 +1,6 @@
 'use client';
 import * as React from 'react';
+import type { EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { ItemSlot } from '../../atoms/game/ItemSlot';
@@ -25,7 +26,7 @@ export interface InventoryGridProps {
   /** Callback when an item is selected */
   onSelect?: (id: string) => void;
   /** Event bus event name for selection */
-  selectEvent?: string;
+  selectEvent?: EventEmit<{ id: string }>;
   /** Size variant for all item slots */
   size?: 'sm' | 'md' | 'lg';
   /** Additional CSS classes */

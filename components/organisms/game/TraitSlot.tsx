@@ -20,6 +20,7 @@
  */
 
 import React, { useState, useRef, useCallback } from 'react';
+import type { EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { Box } from '../../atoms/Box';
@@ -95,9 +96,9 @@ export interface TraitSlotProps {
 
     // -- Declarative events --
     /** Emits UI:{clickEvent} with { slotNumber } */
-    clickEvent?: string;
+    clickEvent?: EventEmit<{ slotNumber: number }>;
     /** Emits UI:{removeEvent} with { slotNumber } */
-    removeEvent?: string;
+    removeEvent?: EventEmit<{ slotNumber: number }>;
 }
 
 // =============================================================================

@@ -13,7 +13,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import type { EventPayload } from "@almadar/core";
+import type { EventEmit, EventPayload } from "@almadar/core";
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 
@@ -42,11 +42,11 @@ export interface InventoryPanelProps {
   /** Called when an item is dropped */
   onDropItem?: (item: InventoryItem) => void;
   /** Declarative event: emits UI:{selectSlotEvent} with { index } when a slot is selected */
-  selectSlotEvent?: string;
-  /** Declarative event: emits UI:{useItemEvent} with { item } when an item is used */
-  useItemEvent?: string;
-  /** Declarative event: emits UI:{dropItemEvent} with { item } when an item is dropped */
-  dropItemEvent?: string;
+  selectSlotEvent?: EventEmit<{ index: number }>;
+  /** Declarative event: emits UI:{useItemEvent} with { item: InventoryItem } when an item is used */
+  useItemEvent?: EventEmit<{ item: InventoryItem }>;
+  /** Declarative event: emits UI:{dropItemEvent} with { item: InventoryItem } when an item is dropped */
+  dropItemEvent?: EventEmit<{ item: InventoryItem }>;
   /** Show item tooltips on hover */
   showTooltips?: boolean;
   /** Optional className */

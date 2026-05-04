@@ -13,6 +13,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
+import type { EventEmit } from '@almadar/core';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
@@ -53,7 +54,7 @@ export interface NegotiatorPuzzleEntity {
 
 export interface NegotiatorBoardProps extends Omit<EntityDisplayProps, 'entity'> {
   entity: NegotiatorPuzzleEntity;
-  completeEvent?: string;
+  completeEvent?: EventEmit<{ success: boolean; score: number }>;
 }
 
 interface RoundResult {

@@ -1,5 +1,6 @@
 'use client';
 import React from "react";
+import type { EventEmit } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { Button } from "../atoms";
 import { Box } from "../atoms/Box";
@@ -37,7 +38,7 @@ export interface PageHeaderProps {
   /** Show back button */
   showBack?: boolean;
   /** Event to emit when back is clicked (default: BACK) */
-  backEvent?: string;
+  backEvent?: EventEmit<Record<string, never>>;
   /** Breadcrumbs */
   breadcrumbs?: readonly PageBreadcrumb[];
   /** Status badge */

@@ -7,6 +7,7 @@
  */
 
 import React, { useState } from "react";
+import type { EventEmit } from "@almadar/core";
 // Icons resolved by string name via Button's resolveIconProp
 import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
@@ -83,10 +84,10 @@ export interface PaginationProps {
   className?: string;
 
   /** Declarative page change event — emits UI:{pageChangeEvent} with { page } */
-  pageChangeEvent?: string;
+  pageChangeEvent?: EventEmit<{ page: number }>;
 
   /** Declarative page size change event — emits UI:{pageSizeChangeEvent} with { pageSize } */
-  pageSizeChangeEvent?: string;
+  pageSizeChangeEvent?: EventEmit<{ pageSize: number }>;
 }
 
 export const Pagination: React.FC<PaginationProps> = ({

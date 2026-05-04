@@ -24,6 +24,7 @@ import React, {
     forwardRef,
     useImperativeHandle,
 } from 'react';
+import type { EventEmit } from '@almadar/core';
 import { Canvas, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { OrbitControls, Grid } from '@react-three/drei';
@@ -123,21 +124,21 @@ export interface GameCanvas3DProps {
     /** URLs to preload */
     preloadAssets?: string[];
     /** Declarative event: tile click */
-    tileClickEvent?: string;
+    tileClickEvent?: EventEmit<{ tileId: string; x: number; z: number; type?: string; terrain?: string; elevation?: number }>;
     /** Declarative event: unit click */
-    unitClickEvent?: string;
+    unitClickEvent?: EventEmit<{ unitId: string; x: number; z: number; unitType?: string; name?: string; team?: string; faction?: string; health?: number; maxHealth?: number }>;
     /** Declarative event: feature click */
-    featureClickEvent?: string;
+    featureClickEvent?: EventEmit<{ featureId: string; x: number; z: number; type?: string; elevation?: number }>;
     /** Declarative event: canvas click */
-    canvasClickEvent?: string;
+    canvasClickEvent?: EventEmit<{ clientX: number; clientY: number; button: number }>;
     /** Declarative event: tile hover */
-    tileHoverEvent?: string;
+    tileHoverEvent?: EventEmit<{ tileId: string; x: number; z: number; type?: string }>;
     /** Declarative event: tile leave */
-    tileLeaveEvent?: string;
+    tileLeaveEvent?: EventEmit<Record<string, never>>;
     /** Declarative event: unit animation */
-    unitAnimationEvent?: string;
+    unitAnimationEvent?: EventEmit<{ unitId: string; state: string; timestamp: number }>;
     /** Declarative event: camera change */
-    cameraChangeEvent?: string;
+    cameraChangeEvent?: EventEmit<{ position: { x: number; y: number; z: number }; timestamp: number }>;
     /** Loading message */
     loadingMessage?: string;
     /** Whether to use instancing for tiles */

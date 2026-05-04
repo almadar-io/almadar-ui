@@ -9,7 +9,7 @@
  */
 
 import React, { useCallback } from "react";
-import type { EventKey, EventPayload } from "@almadar/core";
+import type { EventEmit, EventKey, EventPayload } from "@almadar/core";
 import { useEventBus } from "../../hooks/useEventBus";
 import { useTranslate } from "../../hooks/useTranslate";
 import { useLongPress } from "../../hooks/useLongPress";
@@ -49,8 +49,8 @@ export interface CardProps {
   level?: number;
   /** Maximum level */
   maxLevel?: number;
-  /** Event emitted on long press: UI:{longPressEvent} */
-  longPressEvent?: string;
+  /** Event emitted on long press: UI:{longPressEvent} (payload: longPressPayload spread — variable) */
+  longPressEvent?: EventEmit<EventPayload>;
   /** Additional payload for long-press events */
   longPressPayload?: EventPayload;
 }

@@ -7,6 +7,7 @@
  */
 
 import React, { useEffect } from "react";
+import type { EventEmit } from "@almadar/core";
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from "lucide-react";
 import { Icon } from "../atoms/Icon";
 import { Typography } from "../atoms/Typography";
@@ -39,9 +40,9 @@ export interface ToastProps {
   /** Additional CSS classes */
   className?: string;
   /** Declarative dismiss event — emits UI:{dismissEvent} via eventBus when toast is dismissed */
-  dismissEvent?: string;
+  dismissEvent?: EventEmit<Record<string, never>>;
   /** Declarative action event — emits UI:{actionEvent} via eventBus when action button is clicked */
-  actionEvent?: string;
+  actionEvent?: EventEmit<Record<string, never>>;
 }
 
 // Theme-aware variant styles

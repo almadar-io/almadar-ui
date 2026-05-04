@@ -13,7 +13,7 @@
  */
 
 import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
-import type { EventPayload } from "@almadar/core";
+import type { EventEmit, EventPayload } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { Card, Typography, Badge, Button, Box } from "../atoms";
 import { VStack, HStack } from "../atoms/Stack";
@@ -69,7 +69,7 @@ export interface GraphCanvasProps {
     /** On node click */
     onNodeClick?: (node: GraphNode) => void;
     /** Node click event */
-    nodeClickEvent?: string;
+    nodeClickEvent?: EventEmit<{ id: string }>;
     /** Layout algorithm */
     layout?: "force" | "circular" | "grid";
     /** Entity name for schema-driven auto-fetch */

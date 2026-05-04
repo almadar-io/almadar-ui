@@ -7,6 +7,7 @@
  */
 
 import React from "react";
+import type { EventEmit } from "@almadar/core";
 import { X } from "lucide-react";
 import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
@@ -58,7 +59,7 @@ export interface SidePanelProps {
   className?: string;
 
   /** Declarative close event — emits UI:{closeEvent} via eventBus when panel should close */
-  closeEvent?: string;
+  closeEvent?: EventEmit<Record<string, never>>;
 }
 
 export const SidePanel: React.FC<SidePanelProps> = ({

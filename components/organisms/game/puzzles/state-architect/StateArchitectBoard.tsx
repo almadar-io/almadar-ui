@@ -10,6 +10,7 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import type { EventEmit } from '@almadar/core';
 import { VStack, HStack, Box, Typography, Button } from '../../../../atoms';
 import { cn } from '../../../../../lib/cn';
 import { useEventBus } from '../../../../../hooks/useEventBus';
@@ -81,9 +82,9 @@ export interface StateArchitectBoardProps extends Omit<EntityDisplayProps, 'enti
     /** Playback speed */
     stepDurationMs?: number;
     /** Emits UI:{testEvent} */
-    testEvent?: string;
+    testEvent?: EventEmit<Record<string, never>>;
     /** Emits UI:{completeEvent} with { success, passedTests } */
-    completeEvent?: string;
+    completeEvent?: EventEmit<{ success: boolean; passedTests: number }>;
 }
 
 type PlayState = 'editing' | 'testing' | 'success' | 'fail';

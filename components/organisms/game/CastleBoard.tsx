@@ -15,6 +15,7 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
+import type { EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import IsometricCanvas from './IsometricCanvas';
@@ -88,11 +89,11 @@ export interface CastleBoardProps {
 
     // -- Declarative event props --
     /** Event name to emit via event bus when a feature is clicked (emits UI:{featureClickEvent}) */
-    featureClickEvent?: string;
+    featureClickEvent?: EventEmit<{ featureId: string; featureType: string; x: number; y: number }>;
     /** Event name to emit via event bus when a unit is clicked (emits UI:{unitClickEvent}) */
-    unitClickEvent?: string;
+    unitClickEvent?: EventEmit<{ unitId: string }>;
     /** Event name to emit via event bus when a tile is clicked (emits UI:{tileClickEvent}) */
-    tileClickEvent?: string;
+    tileClickEvent?: EventEmit<{ x: number; y: number }>;
 
     className?: string;
 }

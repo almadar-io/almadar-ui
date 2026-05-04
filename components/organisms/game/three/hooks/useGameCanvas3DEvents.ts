@@ -9,26 +9,27 @@
  */
 
 import { useCallback, useRef } from 'react';
+import type { EventEmit } from '@almadar/core';
 import { useEventBus, useEmitEvent } from '../../../../../hooks/useEventBus';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from '../../types/isometric';
 
 export interface GameCanvas3DEventConfig {
     /** Event name for tile clicks */
-    tileClickEvent?: string;
+    tileClickEvent?: EventEmit<{ tileId: string; x: number; z: number; type?: string; terrain?: string; elevation?: number }>;
     /** Event name for unit clicks */
-    unitClickEvent?: string;
+    unitClickEvent?: EventEmit<{ unitId: string; x: number; z: number; unitType?: string; name?: string; team?: string; faction?: string; health?: number; maxHealth?: number }>;
     /** Event name for feature clicks */
-    featureClickEvent?: string;
+    featureClickEvent?: EventEmit<{ featureId: string; x: number; z: number; type?: string; elevation?: number }>;
     /** Event name for canvas clicks */
-    canvasClickEvent?: string;
+    canvasClickEvent?: EventEmit<{ clientX: number; clientY: number; button: number }>;
     /** Event name for tile hover */
-    tileHoverEvent?: string;
+    tileHoverEvent?: EventEmit<{ tileId: string; x: number; z: number; type?: string }>;
     /** Event name for tile leave */
-    tileLeaveEvent?: string;
+    tileLeaveEvent?: EventEmit<Record<string, never>>;
     /** Event name for unit animation changes */
-    unitAnimationEvent?: string;
+    unitAnimationEvent?: EventEmit<{ unitId: string; state: string; timestamp: number }>;
     /** Event name for camera changes */
-    cameraChangeEvent?: string;
+    cameraChangeEvent?: EventEmit<{ position: { x: number; y: number; z: number }; timestamp: number }>;
 }
 
 /** Minimal mouse event interface — satisfied by both React.MouseEvent and ThreeEvent<MouseEvent> */

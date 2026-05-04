@@ -20,6 +20,7 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import type { EventEmit } from '@almadar/core';
 import { VStack, HStack, Box, Typography, Button } from '../../../../atoms';
 import { cn } from '../../../../../lib/cn';
 import { useEventBus } from '../../../../../hooks/useEventBus';
@@ -68,9 +69,9 @@ export interface SequencerBoardProps extends Omit<EntityDisplayProps, 'entity'> 
     /** Playback speed in ms per step */
     stepDurationMs?: number;
     /** Emits UI:{playEvent} with { sequence: string[] } */
-    playEvent?: string;
+    playEvent?: EventEmit<{ sequence: string[] }>;
     /** Emits UI:{completeEvent} with { success: boolean } */
-    completeEvent?: string;
+    completeEvent?: EventEmit<{ success: boolean; sequence: string[] }>;
 }
 
 type PlayState = 'idle' | 'playing' | 'success';

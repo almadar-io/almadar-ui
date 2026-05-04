@@ -17,6 +17,7 @@
  */
 
 import React, { lazy, Suspense } from 'react';
+import type { EventEmit } from '@almadar/core';
 import { Box } from '../atoms/Box';
 import { cn } from '../../lib/cn';
 
@@ -52,9 +53,9 @@ export interface MapViewProps {
   /** Callback when the map is clicked (programmatic use) */
   onMapClick?: (lat: number, lng: number) => void;
   /** Event name dispatched via event bus when the map is clicked. Payload: { latitude, longitude } */
-  mapClickEvent?: string;
-  /** Event name dispatched via event bus when a marker is clicked. Payload: marker data */
-  markerClickEvent?: string;
+  mapClickEvent?: EventEmit<{ latitude: number; longitude: number }>;
+  /** Event name dispatched via event bus when a marker is clicked. Payload: full MapMarkerData spread. */
+  markerClickEvent?: EventEmit<MapMarkerData>;
   /** Whether to show a pin at the clicked location */
   showClickedPin?: boolean;
   /** Additional CSS classes */

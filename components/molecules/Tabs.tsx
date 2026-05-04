@@ -8,6 +8,7 @@
 
 import React, { useState, useRef } from 'react';
 import type { LucideIcon } from 'lucide-react';
+import type { EventEmit } from '@almadar/core';
 import { Icon } from '../atoms/Icon';
 import { Badge } from '../atoms/Badge';
 import { Typography } from '../atoms/Typography';
@@ -47,7 +48,7 @@ export interface TabsProps {
   /** Callback when tab changes */
   onTabChange?: (tabId: string) => void;
   /** Declarative tab change event — emits UI:{tabChangeEvent} with { tabId } */
-  tabChangeEvent?: string;
+  tabChangeEvent?: EventEmit<{ tabId: string }>;
   /** Tab variant */
   variant?: 'default' | 'pills' | 'underline';
   /** Tab orientation */

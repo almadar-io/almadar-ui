@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
+import type { EventEmit } from '@almadar/core';
 import type { LucideIcon } from 'lucide-react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Badge } from '../atoms/Badge';
@@ -71,15 +72,15 @@ export interface SidebarProps {
   /** Default collapsed state */
   defaultCollapsed?: boolean;
   /** Event emitted when collapse state changes, payload: { collapsed: boolean } */
-  collapseChangeEvent?: string;
+  collapseChangeEvent?: EventEmit<{ collapsed: boolean }>;
   /** Hide the collapse/expand button */
   hideCollapseButton?: boolean;
   /** Show a close button (for mobile) */
   showCloseButton?: boolean;
   /** Event emitted when close button is clicked */
-  closeEvent?: string;
+  closeEvent?: EventEmit<Record<string, never>>;
   /** Event emitted when logo/brand is clicked */
-  logoClickEvent?: string;
+  logoClickEvent?: EventEmit<Record<string, never>>;
 }
 
 /**

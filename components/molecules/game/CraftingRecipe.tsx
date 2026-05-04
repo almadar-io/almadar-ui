@@ -1,5 +1,6 @@
 'use client';
 import * as React from 'react';
+import type { EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { ItemSlot } from '../../atoms/game/ItemSlot';
@@ -29,7 +30,7 @@ export interface CraftingRecipeProps {
   /** Callback when the craft button is clicked */
   onCraft?: () => void;
   /** Event bus event name for crafting */
-  craftEvent?: string;
+  craftEvent?: EventEmit<{ output: string }>;
   /** Additional CSS classes */
   className?: string;
 }

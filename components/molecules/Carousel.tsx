@@ -8,6 +8,7 @@
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import type { EventEmit } from '@almadar/core';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { useEventBus } from '../../hooks/useEventBus';
@@ -46,7 +47,7 @@ export interface CarouselProps<T = Record<string, unknown>> {
   /** Enable infinite loop */
   loop?: boolean;
   /** Declarative event name for slide change */
-  slideChangeEvent?: string;
+  slideChangeEvent?: EventEmit<{ index: number }>;
   /** Payload to include with the slide change event */
   slideChangePayload?: Record<string, unknown>;
   /** Additional CSS classes */

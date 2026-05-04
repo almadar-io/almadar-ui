@@ -1,5 +1,6 @@
 'use client';
 import * as React from 'react';
+import type { EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { ControlButton } from '../../atoms/game/ControlButton';
@@ -24,7 +25,7 @@ export interface ActionButtonsProps {
   /** Called when a button is pressed/released */
   onAction?: (id: string, pressed: boolean) => void;
   /** Declarative event name emitted on action via useEventBus */
-  actionEvent?: string;
+  actionEvent?: EventEmit<{ id: string; pressed: boolean }>;
   /** Layout variant */
   layout?: 'horizontal' | 'vertical' | 'diamond';
   /** Size variant */

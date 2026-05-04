@@ -7,7 +7,7 @@
  * Composes DayCell and TimeSlotCell atoms into a 7-day grid.
  */
 import React, { useMemo, useCallback, useRef } from "react";
-import type { EventPayload } from "@almadar/core";
+import type { EventEmit, EventPayload } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { Box } from "../atoms/Box";
 import { VStack } from "../atoms/Stack";
@@ -41,14 +41,14 @@ export interface CalendarGridProps {
   onEventClick?: (event: CalendarEvent) => void;
   /** Additional CSS classes */
   className?: string;
-  /** Event emitted on long-press of a time slot: UI:{longPressEvent} with { date, time } */
-  longPressEvent?: string;
+  /** Event emitted on long-press of a time slot: UI:{longPressEvent} with { date, time, ...longPressPayload } */
+  longPressEvent?: EventEmit<{ date: string; time?: string }>;
   /** Additional payload for long-press events */
   longPressPayload?: EventPayload;
   /** Event emitted on swipe left (next week): UI:{swipeLeftEvent} */
-  swipeLeftEvent?: string;
+  swipeLeftEvent?: EventEmit<Record<string, never>>;
   /** Event emitted on swipe right (prev week): UI:{swipeRightEvent} */
-  swipeRightEvent?: string;
+  swipeRightEvent?: EventEmit<Record<string, never>>;
 }
 
 /** Get the Monday of the week containing the given date */

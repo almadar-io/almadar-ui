@@ -1,5 +1,6 @@
 'use client';
 import React from "react";
+import type { EventEmit } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { Button } from "../atoms";
 import { Box } from "../atoms/Box";
@@ -55,7 +56,7 @@ export interface EmptyStateProps {
   /** Variant for color styling */
   variant?: "default" | "success" | "error" | "warning" | "info";
   /** Declarative action event — emits UI:{actionEvent} via eventBus when action button is clicked */
-  actionEvent?: string;
+  actionEvent?: EventEmit<Record<string, never>>;
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({

@@ -8,6 +8,7 @@
  * Uses wireframe theme styling (high contrast, sharp edges).
  */
 import React from "react";
+import type { EventEmit } from "@almadar/core";
 import { Check } from "lucide-react";
 import { Typography } from "../atoms/Typography";
 import { Box } from "../atoms/Box";
@@ -42,7 +43,7 @@ export interface WizardProgressProps {
   /** Additional CSS classes */
   className?: string;
   /** Declarative step click event — emits UI:{stepClickEvent} with { stepIndex } */
-  stepClickEvent?: string;
+  stepClickEvent?: EventEmit<{ stepIndex: number }>;
 }
 
 /**

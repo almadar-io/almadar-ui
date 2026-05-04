@@ -21,6 +21,7 @@
  */
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import type { EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -184,19 +185,19 @@ export interface BattleBoardProps extends Omit<EntityDisplayProps, 'entity'> {
 
     // -- Declarative event props --
     /** Emits UI:{tileClickEvent} with { x, y } on tile click */
-    tileClickEvent?: string;
+    tileClickEvent?: EventEmit<{ x: number; y: number }>;
     /** Emits UI:{unitClickEvent} with { unitId } on unit click */
-    unitClickEvent?: string;
+    unitClickEvent?: EventEmit<{ unitId: string }>;
     /** Emits UI:{endTurnEvent} with {} on end turn */
-    endTurnEvent?: string;
+    endTurnEvent?: EventEmit<Record<string, never>>;
     /** Emits UI:{cancelEvent} with {} on cancel */
-    cancelEvent?: string;
-    /** Emits UI:{gameEndEvent} with { result } on game end */
-    gameEndEvent?: string;
+    cancelEvent?: EventEmit<Record<string, never>>;
+    /** Emits UI:{gameEndEvent} with { result: 'victory' | 'defeat' } on game end */
+    gameEndEvent?: EventEmit<{ result: 'victory' | 'defeat' }>;
     /** Emits UI:{playAgainEvent} with {} on play again / reset */
-    playAgainEvent?: string;
+    playAgainEvent?: EventEmit<Record<string, never>>;
     /** Emits UI:{attackEvent} with { attackerId, targetId, damage } on attack */
-    attackEvent?: string;
+    attackEvent?: EventEmit<{ attackerId: string; targetId: string; damage: number }>;
 
     className?: string;
 }

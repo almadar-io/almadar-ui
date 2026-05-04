@@ -17,6 +17,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import type { EventEmit } from '@almadar/core';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import type { BattleUnit, BattlePhase } from '../BattleBoard';
 
@@ -25,13 +26,13 @@ import type { BattleUnit, BattlePhase } from '../BattleBoard';
 // =============================================================================
 
 export interface BattleStateEventConfig {
-    tileClickEvent?: string;
-    unitClickEvent?: string;
-    endTurnEvent?: string;
-    cancelEvent?: string;
-    gameEndEvent?: string;
-    playAgainEvent?: string;
-    attackEvent?: string;
+    tileClickEvent?: EventEmit<{ x: number; y: number }>;
+    unitClickEvent?: EventEmit<{ unitId: string }>;
+    endTurnEvent?: EventEmit<Record<string, never>>;
+    cancelEvent?: EventEmit<Record<string, never>>;
+    gameEndEvent?: EventEmit<{ result: 'victory' | 'defeat' }>;
+    playAgainEvent?: EventEmit<Record<string, never>>;
+    attackEvent?: EventEmit<{ attackerId: string; targetId: string; damage: number }>;
 }
 
 export interface BattleStateCallbacks {

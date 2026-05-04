@@ -13,6 +13,7 @@
  */
 
 import React, { useState, useCallback } from "react";
+import type { EventEmit } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { Card, Typography, Badge, Button, Icon, Box } from "../atoms";
 import { VStack, HStack } from "../atoms/Stack";
@@ -61,7 +62,7 @@ export interface MediaGalleryProps extends EntityDisplayProps<MediaItem> {
     /** Selected item IDs */
     selectedItems?: readonly string[];
     /** Event name emitted when selection changes (emitted as UI:{selectionEvent}) */
-    selectionEvent?: string;
+    selectionEvent?: EventEmit<{ selection: string[] }>;
     /** Show upload button */
     showUpload?: boolean;
     /** Actions */

@@ -12,6 +12,7 @@
  
 
 import React, { useState, useCallback } from 'react';
+import type { EventEmit } from '@almadar/core';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
@@ -44,7 +45,7 @@ export interface DebuggerPuzzleEntity {
 
 export interface DebuggerBoardProps extends Omit<EntityDisplayProps, 'entity'> {
   entity: DebuggerPuzzleEntity;
-  completeEvent?: string;
+  completeEvent?: EventEmit<{ success: boolean; attempts: number }>;
 }
 
 export function DebuggerBoard({
