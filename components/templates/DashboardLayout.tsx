@@ -5,7 +5,6 @@ import { cn } from "../../lib/cn";
 import {
   Menu,
   X,
-  Settings,
   Bell,
   Search,
   ChevronDown,
@@ -18,7 +17,9 @@ import { HStack, VStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { Icon as AlmadarIcon } from "../atoms/Icon";
 import { useAuthContext } from "../../hooks/useAuthContext";
+import { useEventBus } from "../../hooks/useEventBus";
 import { useTranslate } from "../../hooks/useTranslate";
+import type { EventEmit } from "@almadar/core";
 
 export interface NavItem {
   label: string;
@@ -29,12 +30,25 @@ export interface NavItem {
   children?: NavItem[];
 }
 
+export interface NotificationItem {
+  id: string;
+  /** Short label shown in the dropdown row. */
+  message: string;
+  /** Optional secondary text. */
+  description?: string;
+  /** Optional ISO timestamp string. */
+  createdAt?: string;
+  /** Optional flag — bell badge counts items where read !== true. */
+  read?: boolean;
+}
+
 export interface DashboardLayoutProps {
   /** App name shown in sidebar */
   appName?: string;
   /** Logo component or URL */
   logo?: React.ReactNode;
-  /** Navigation items */
+  /** Navigation items. Apps that need a Settings page should add it
+   *  as a navItems entry, not depend on baked-in chrome. */
   navItems?: NavItem[];
   /** Current user info (optional - auto-populated from auth context if not provided) */
   user?: {
@@ -42,11 +56,32 @@ export interface DashboardLayoutProps {
     email: string;
     avatar?: string;
   };
-  /** Header actions (notifications, etc.) */
+  /** Header actions (extra slots beyond bell/search/theme). */
   headerActions?: React.ReactNode;
-  /** Show search in header */
+  /** Show the top-bar search box. Default `false` — opt in by setting
+   *  `searchEvent` (any truthy value implies showSearch) or this flag. */
   showSearch?: boolean;
-  /** Custom sidebar footer */
+  /** Declarative search event — fires `UI:{searchEvent}` on the bus
+   *  when the user submits the search box (Enter key). Setting this
+   *  implies `showSearch=true`. Use `onSearchSubmit` for direct React
+   *  usage instead. */
+  searchEvent?: EventEmit<{ value: string }>;
+  /** React-side search submit callback. Used when the host wires the
+   *  layout directly (not via render-ui pattern resolution). */
+  onSearchSubmit?: (value: string) => void;
+  /** Notification list. Pass an empty array to show the bell with no
+   *  badge; omit / pass null to hide the bell entirely. */
+  notifications?: NotificationItem[] | null;
+  /** Declarative bell click event — fires `UI:{notificationClickEvent}`
+   *  on the bus with an empty payload when the user clicks the bell. */
+  notificationClickEvent?: EventEmit<Record<string, never>>;
+  /** React-side bell click callback. */
+  onNotificationClick?: () => void;
+  /** Show the theme toggle button in the header. Default `true` —
+   *  universally useful for a11y / dark mode. */
+  showThemeToggle?: boolean;
+  /** Custom sidebar footer (optional). When omitted, the sidebar has
+   *  no footer — apps that need Settings/etc. add them via navItems. */
   sidebarFooter?: React.ReactNode;
   /** Callback when user clicks sign out (optional - uses auth context signOut if not provided) */
   onSignOut?: () => void;
@@ -60,11 +95,34 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   navItems = [],
   user: userProp,
   headerActions,
-  showSearch = true,
+  showSearch = false,
+  searchEvent,
+  onSearchSubmit,
+  notifications,
+  notificationClickEvent,
+  onNotificationClick,
+  showThemeToggle = true,
   sidebarFooter,
   onSignOut: onSignOutProp,
   children,
 }) => {
+  const eventBus = useEventBus();
+  // Search is shown when explicitly toggled OR a searchEvent is wired.
+  const searchEnabled = showSearch || Boolean(searchEvent) || Boolean(onSearchSubmit);
+  // Bell is shown when notifications array is provided (even empty []).
+  // null / undefined hides the bell entirely.
+  const notificationsEnabled = Array.isArray(notifications);
+  const unreadCount = notificationsEnabled
+    ? notifications!.filter((n) => n.read !== true).length
+    : 0;
+  const handleSearchSubmit = (value: string) => {
+    if (searchEvent) eventBus.emit(`UI:${searchEvent}`, { value });
+    if (onSearchSubmit) onSearchSubmit(value);
+  };
+  const handleNotificationClick = () => {
+    if (notificationClickEvent) eventBus.emit(`UI:${notificationClickEvent}`, {});
+    if (onNotificationClick) onNotificationClick();
+  };
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const location = useLocation();
@@ -156,16 +214,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           ))}
         </VStack>
 
-        {/* Sidebar footer */}
-        {sidebarFooter || (
+        {/* Sidebar footer — opt-in only. Apps that need Settings or
+         *  similar surfaces add them as navItems entries; baked-in
+         *  chrome links would be dead weight when the host app has no
+         *  matching route. */}
+        {sidebarFooter && (
           <Box className="p-4 border-t border-border dark:border-border">
-            <Link
-              to="/settings"
-              className="flex items-center gap-3 px-3 py-2 text-sm text-muted-foreground dark:text-muted-foreground rounded-lg hover:bg-muted dark:hover:bg-muted"
-            >
-              <Settings className="h-5 w-5" />
-              {t('common.settings')}
-            </Link>
+            {sidebarFooter}
           </Box>
         )}
       </Box>
@@ -192,8 +247,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <Menu className="h-5 w-5" />
             </Button>
 
-            {/* Search */}
-            {showSearch && (
+            {/* Search — opt-in via showSearch / searchEvent / onSearchSubmit. */}
+            {searchEnabled && (
               <Box className="hidden sm:block flex-1 max-w-md">
                 <Box className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-muted-foreground" />
@@ -201,6 +256,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     type="search"
                     placeholder={t('common.search')}
                     className="pl-10 w-full"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSearchSubmit((e.target as HTMLInputElement).value);
+                      }
+                    }}
                   />
                 </Box>
               </Box>
@@ -210,20 +270,31 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             <HStack align="center" gap="xs">
               {headerActions}
 
-              {/* Theme Toggle */}
-              <ThemeToggle />
+              {/* Theme Toggle — opt-out via showThemeToggle={false}. */}
+              {showThemeToggle && <ThemeToggle />}
 
-              {/* Notifications */}
-              <Button
-                variant="ghost"
-                className="relative p-2 rounded-full hover:bg-muted dark:hover:bg-muted"
-              >
-                <Bell className="h-5 w-5 text-muted-foreground dark:text-muted-foreground" />
-                <Box
-                  as="span"
-                  className="absolute top-1 right-1 w-2 h-2 bg-error rounded-full"
-                />
-              </Button>
+              {/* Notifications — opt-in by passing the `notifications`
+               *  array (even []). Badge shows unread count; click
+               *  dispatches via onNotificationClick. Omit / pass null
+               *  to hide the bell entirely. */}
+              {notificationsEnabled && (
+                <Button
+                  variant="ghost"
+                  className="relative p-2 rounded-full hover:bg-muted dark:hover:bg-muted"
+                  onClick={handleNotificationClick}
+                  aria-label={t('common.notifications')}
+                >
+                  <Bell className="h-5 w-5 text-muted-foreground dark:text-muted-foreground" />
+                  {unreadCount > 0 && (
+                    <Box
+                      as="span"
+                      className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-error rounded-full text-[10px] font-semibold text-white flex items-center justify-center"
+                    >
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </Box>
+                  )}
+                </Button>
+              )}
 
               {/* User menu */}
               {user && (
@@ -276,13 +347,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                             {user.email}
                           </Typography>
                         </Box>
-                        <Link
-                          to="/settings"
-                          className="flex items-center gap-2 px-4 py-2 text-sm text-foreground dark:text-foreground hover:bg-muted dark:hover:bg-muted"
-                        >
-                          <Settings className="h-4 w-4" />
-                          {t('common.settings')}
-                        </Link>
                         <Button
                           variant="ghost"
                           onClick={() => {
