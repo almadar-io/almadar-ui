@@ -1081,6 +1081,15 @@ export function useTraitStateMachine(
         // qualified key fires. Skip bridge echoes on the OWN key — the
         // post-transition re-broadcast targets cross-trait listeners,
         // not the originating trait (which would loop infinitely).
+        //
+        // Dedupe by (orbital, trait, eventKey) so a trait with multiple
+        // transitions on the same event (e.g. wizard with `NEXT -> step2`
+        // in step1 AND `NEXT -> step3` in step2) registers ONE bus
+        // listener — not one-per-transition. Without this dedupe, one
+        // form submit produced two listener invocations and the state
+        // machine processed `step1 -> step2 -> step3` in a single tick,
+        // skipping the intermediate state's render entirely.
+        const subscribedBusKeys = new Set<string>();
         for (const binding of traitBindings) {
             const traitName = binding.trait.name;
             const orbitalName = orbitalsByTrait?.[traitName];
@@ -1091,6 +1100,8 @@ export function useTraitStateMachine(
                     continue;
                 }
                 const selfBusKey = `UI:${orbitalName}.${traitName}.${eventKey}`;
+                if (subscribedBusKeys.has(selfBusKey)) continue;
+                subscribedBusKeys.add(selfBusKey);
                 crossTraitLog.debug('self:subscribe', { traitName, busKey: selfBusKey, eventKey });
                 const unsub = eventBus.on(selfBusKey, (event) => {
                     // Skip bridge echoes of THIS event's own dispatch

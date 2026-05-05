@@ -20,7 +20,21 @@ import type {
   Trait,
   Transition,
   Effect,
+  EntityData,
+  EntityRow,
+  EventPayloadField,
+  TraitEventContract,
+  EventPayload,
+  EventPayloadValue,
 } from '@almadar/core';
+import { isInlineTrait } from '@almadar/core';
+import type { EntityRef } from '@almadar/core';
+
+function entityNameOf(ref: EntityRef | undefined): string | undefined {
+  if (!ref) return undefined;
+  if (typeof ref === 'string') return ref;
+  return 'name' in ref ? ref.name : undefined;
+}
 import { Box } from '../../atoms/Box';
 import { Typography } from '../../atoms/Typography';
 import { BrowserPlayground } from '../../../runtime/BrowserPlayground';
@@ -112,13 +126,151 @@ function buildOrbitalSchema(
   return { ...fullSchema, name: `${fullSchema.name}__${orbitalName}`, orbitals: [orbital] };
 }
 
+/**
+ * The L2 transition card synthesizes a one-state state machine that fires INIT
+ * with the target transition's render-ui effects. But render-ui props bind
+ * `@payload.<X>` — values normally carried by the triggering event. With an
+ * auto-INIT and no payload, those bindings resolve to undefined and the
+ * preview is empty. We rebuild a representative payload from the trait's
+ * declared `emits[<event>].payloadSchema` (every std-14 emit has one), then
+ * substitute every `@payload.<path>` reference in the cloned effects.
+ */
+
+function generateMockPayload(
+  payloadSchema: EventPayloadField[] | undefined,
+  schema: OrbitalSchema,
+  linkedEntity: string | undefined,
+  mockData: EntityData | undefined,
+): EventPayload {
+  const payload: EventPayload = {};
+  if (!payloadSchema || payloadSchema.length === 0) return payload;
+
+  const entityNames = new Set<string>();
+  for (const orb of schema.orbitals ?? []) {
+    const name = entityNameOf(orb.entity);
+    if (name) entityNames.add(name);
+  }
+  const linkedRows: EntityRow[] = linkedEntity
+    ? mockData?.[linkedEntity] ?? []
+    : [];
+  const linkedFirstRow: EntityRow | undefined = linkedRows[0];
+
+  const valueForType = (rawType: string, entityType?: string): EventPayloadValue => {
+    const type = rawType.replace(/!$/, '').trim();
+    const arrayMatch = /^\[\s*(\w+)\s*\]$/.exec(type);
+    if (arrayMatch) {
+      // [X] → rows for X. Fall back to linkedEntity rows when the resolver
+      // hasn't rewritten the atom's original entity name (e.g. `[BrowseItem]`
+      // surviving on a Channel-bound trait).
+      return mockData?.[arrayMatch[1]] ?? linkedRows;
+    }
+    if (type === 'array') return linkedRows;
+    if (type === 'entity') {
+      const target = entityType && mockData?.[entityType] ? entityType : linkedEntity;
+      return (target && mockData?.[target]?.[0]) ?? linkedFirstRow ?? {};
+    }
+    if (entityNames.has(type)) {
+      return mockData?.[type]?.[0] ?? linkedFirstRow ?? {};
+    }
+    switch (type) {
+      case 'string': return 'Sample';
+      case 'number': return 1;
+      case 'boolean': return false;
+      case 'object': return {};
+      case 'date':
+      case 'datetime':
+      case 'timestamp': return new Date().toISOString();
+      default: return undefined;
+    }
+  };
+
+  const setByPath = (target: EventPayload, path: string, value: EventPayloadValue): void => {
+    const parts = path.split('.');
+    let cur: EventPayload = target;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const k = parts[i];
+      const next = cur[k];
+      if (next === null || typeof next !== 'object' || Array.isArray(next)) {
+        cur[k] = {};
+      }
+      // After the assignment above, cur[k] is an EventPayload object.
+      cur = cur[k] as EventPayload;
+    }
+    cur[parts[parts.length - 1]] = value;
+  };
+
+  for (const field of payloadSchema) {
+    let value = valueForType(field.type, field.entityType);
+    // For path-style fields (e.g. `row.id`) whose declared type is a
+    // primitive, prefer the matching value off the linked entity's first row
+    // so the preview shows real, consistent data instead of "Sample".
+    if (
+      linkedFirstRow !== undefined &&
+      field.name.includes('.') &&
+      (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')
+    ) {
+      const tail = field.name.split('.').pop()!;
+      const fromRow = linkedFirstRow[tail];
+      if (fromRow !== undefined) value = fromRow;
+    }
+    setByPath(payload, field.name, value);
+  }
+  return payload;
+}
+
+function substitutePayloadBindings(
+  effects: Effect[],
+  payload: EventPayload,
+): Effect[] {
+  const isPayloadObject = (v: EventPayloadValue): v is EventPayload =>
+    v !== null && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date);
+  const getByPath = (path: string): EventPayloadValue => {
+    let cur: EventPayloadValue = payload;
+    for (const k of path.split('.')) {
+      if (!isPayloadObject(cur)) return undefined;
+      cur = cur[k];
+    }
+    return cur;
+  };
+  const replaceValue = (v: EventPayloadValue): EventPayloadValue => {
+    if (typeof v === 'string' && v.startsWith('@payload.')) {
+      const resolved = getByPath(v.slice('@payload.'.length));
+      // Leave the literal in place when a field is missing from the schema —
+      // the runtime's existing resolver will treat it as undefined like
+      // before, so we never fabricate values for un-declared paths.
+      return resolved === undefined ? v : resolved;
+    }
+    if (Array.isArray(v)) return v.map(replaceValue);
+    if (v && typeof v === 'object' && !(v instanceof Date)) {
+      const out: EventPayload = {};
+      for (const [k, inner] of Object.entries(v)) {
+        out[k] = replaceValue(inner);
+      }
+      return out;
+    }
+    return v;
+  };
+  // Effects are JSON-serialisable trees of strings, numbers, booleans, arrays
+  // and objects — structurally a subset of EventPayloadValue, the canonical
+  // recursive JSON shape from @almadar/core. Round-trip via JSON to obtain a
+  // typed view, substitute, then narrow back to Effect on the way out.
+  const tree: EventPayloadValue = JSON.parse(JSON.stringify(effects)) as EventPayloadValue;
+  const substituted = replaceValue(tree);
+  return substituted as Effect[];
+}
+
+function findEmitContract(trait: Trait, event: string): TraitEventContract | undefined {
+  return trait.emits?.find((e) => e.event === event);
+}
+
 function buildTransitionSchema(
   fullSchema: OrbitalSchema,
   orbitalName: string,
   traitName: string,
   transitionEvent: string,
-  fromState?: string,
-  toState?: string,
+  fromState: string | undefined,
+  toState: string | undefined,
+  mockData: EntityData | undefined,
 ): OrbitalSchema {
   const orbital = (fullSchema.orbitals ?? []).find((o: OrbitalDefinition) => o.name === orbitalName);
   if (!orbital) return fullSchema;
@@ -128,14 +280,14 @@ function buildTransitionSchema(
   const traits = clonedOrbital.traits ?? [];
   for (let ti = 0; ti < traits.length; ti++) {
     const trait = traits[ti];
-    if (typeof trait === 'string' || !('stateMachine' in (trait as Record<string, unknown>))) continue;
-    const traitObj = trait as Trait;
+    if (!isInlineTrait(trait)) continue;
+    const traitObj: Trait = trait;
     if (traitObj.name !== traitName) continue;
 
     const sm = traitObj.stateMachine;
     if (!sm) continue;
 
-    const allTransitions = sm.transitions as Transition[];
+    const allTransitions: Transition[] = sm.transitions ?? [];
     const targetTransition = fromState && toState
       ? allTransitions.find(t => t.event === transitionEvent && t.from === fromState && t.to === toState)
         ?? allTransitions.find(t => t.event === transitionEvent)
@@ -145,21 +297,29 @@ function buildTransitionSchema(
     const renderUIEffects: Effect[] = [];
     for (const eff of targetTransition.effects) {
       if (Array.isArray(eff) && eff[0] === 'render-ui') {
-        renderUIEffects.push(eff as Effect);
+        renderUIEffects.push(eff);
       }
     }
 
     if (renderUIEffects.length === 0) continue;
 
-    const rewrittenSm = {
+    const linkedEntity = traitObj.linkedEntity ?? entityNameOf(clonedOrbital.entity);
+    const emitContract = findEmitContract(traitObj, transitionEvent);
+    const mockPayload = generateMockPayload(
+      emitContract?.payloadSchema,
+      fullSchema,
+      linkedEntity,
+      mockData,
+    );
+    const seededEffects = substitutePayloadBindings(renderUIEffects, mockPayload);
+
+    traitObj.stateMachine = {
       states: [{ name: 'preview', isInitial: true }],
       events: [{ key: 'INIT', name: 'INIT' }],
-      transitions: [{ from: 'preview', to: 'preview', event: 'INIT', effects: renderUIEffects }],
+      transitions: [{ from: 'preview', to: 'preview', event: 'INIT', effects: seededEffects }],
     };
-
-    (traits[ti] as Record<string, unknown>).stateMachine = rewrittenSm;
-    (traits[ti] as Record<string, unknown>).emits = [];
-    (traits[ti] as Record<string, unknown>).listens = [];
+    traitObj.emits = [];
+    traitObj.listens = [];
     break;
   }
 
@@ -246,11 +406,12 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
         data.transitionEvent,
         data.fromState as string | undefined,
         data.toState as string | undefined,
+        data._mockData as EntityData | undefined,
       );
     }
 
     return buildOrbitalSchema(fullSchema, data.orbitalName);
-  }, [data._fullSchema, data.orbitalName, data.traitName, data.transitionEvent, data.fromState, data.toState, isExpanded]);
+  }, [data._fullSchema, data._mockData, data.orbitalName, data.traitName, data.transitionEvent, data.fromState, data.toState, isExpanded]);
 
   // Click delegation: find the closest [data-pattern] ancestor of the click target
   const handleContentClick = useCallback((e: React.MouseEvent) => {

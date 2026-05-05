@@ -514,6 +514,8 @@ export const Form: React.FC<FormProps> = ({
   const [collapsedSections, setCollapsedSections] = React.useState<Set<string>>(
     new Set(),
   );
+  const [submitError, setSubmitError] = React.useState<string | null>(null);
+  const formRef = React.useRef<HTMLFormElement | null>(null);
 
   const formMode = (props as { mode?: string }).mode;
   const mountedRef = React.useRef(false);
@@ -695,8 +697,15 @@ export const Form: React.FC<FormProps> = ({
     });
   };
 
+  // HTML5 validation drives all field-level rules (required / min / max /
+  // minLength / maxLength / pattern / type). The browser blocks `submit`
+  // when any field is invalid and fires an `invalid` event per offender;
+  // see `handleInvalid` below for our capture + surfacing. By the time
+  // `handleSubmit` runs, the browser has already accepted the form as
+  // valid, so this function only handles the happy path.
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setSubmitError(null);
     debug('forms', 'submit-enter', {
       mode: formMode,
       submitEvent,
@@ -726,6 +735,51 @@ export const Form: React.FC<FormProps> = ({
     if (onSubmit) {
       eventBus.emit(`UI:${onSubmit}`, payload);
     }
+  };
+
+  // Capture HTML5 invalid events as the browser detects them. Surfaces
+  // to React state (Alert), debug logs, and the bus so verifiers see a
+  // real `UI:VALIDATION_FAILED` event instead of ephemeral browser-native
+  // tooltips. Also collects the full set of invalid fields after the
+  // current event loop tick so a single Alert can list every offender,
+  // not just the first one the browser reaches.
+  const handleInvalid = (e: React.FormEvent<HTMLFormElement>) => {
+    const target = e.target as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+    const fieldName =
+      target.getAttribute('data-field-name') ?? target.name ?? '';
+    const fieldMessage = target.validationMessage || 'Invalid value';
+    debug('forms', 'invalid', { mode: formMode, fieldName, fieldMessage });
+    // Defer one tick so we collect every invalid field, not just the
+    // first one the browser fires for. The browser walks all elements
+    // synchronously when the form fails to validate.
+    queueMicrotask(() => {
+      const form = formRef.current;
+      if (!form) return;
+      const invalidEls = Array.from(
+        form.querySelectorAll<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
+          ':invalid',
+        ),
+      );
+      if (invalidEls.length === 0) return;
+      const missing = invalidEls.map(
+        (el) => el.getAttribute('data-field-name') ?? el.name ?? '',
+      );
+      const messages = invalidEls.map((el) => ({
+        field: el.getAttribute('data-field-name') ?? el.name ?? '',
+        message: el.validationMessage,
+      }));
+      const summary =
+        missing.length === 1
+          ? `${missing[0]}: ${messages[0]?.message}`
+          : `Please fix ${missing.length} fields: ${missing.join(', ')}`;
+      setSubmitError(summary);
+      eventBus.emit('UI:VALIDATION_FAILED', {
+        submitEvent,
+        missing,
+        messages,
+        summary,
+      });
+    });
   };
 
   const handleCancel = () => {
@@ -882,6 +936,10 @@ export const Form: React.FC<FormProps> = ({
     currentValue: unknown,
     label: string,
   ): React.ReactNode {
+    // Thread every HTML5 validation attribute the schema declares so the
+    // browser can enforce them natively. `min` / `max` apply to numeric
+    // and date inputs; for string-type inputs they're surfaced as
+    // `minLength` / `maxLength` further down per input case.
     const commonProps = {
       id: fieldName,
       name: fieldName,
@@ -889,6 +947,7 @@ export const Form: React.FC<FormProps> = ({
       required: field.required,
       disabled: isLoading,
       placeholder: field.placeholder,
+      pattern: field.pattern,
     };
 
     switch (inputType) {
@@ -993,6 +1052,8 @@ export const Form: React.FC<FormProps> = ({
             type="email"
             value={String(currentValue)}
             onChange={(e) => handleChange(fieldName, e.target.value)}
+            minLength={field.min}
+            maxLength={field.max}
           />
         );
 
@@ -1003,6 +1064,8 @@ export const Form: React.FC<FormProps> = ({
             type="url"
             value={String(currentValue)}
             onChange={(e) => handleChange(fieldName, e.target.value)}
+            minLength={field.min}
+            maxLength={field.max}
           />
         );
 
@@ -1013,6 +1076,8 @@ export const Form: React.FC<FormProps> = ({
             type="password"
             value={String(currentValue)}
             onChange={(e) => handleChange(fieldName, e.target.value)}
+            minLength={field.min}
+            maxLength={field.max}
           />
         );
 
@@ -1026,7 +1091,6 @@ export const Form: React.FC<FormProps> = ({
             onChange={(e) => handleChange(fieldName, e.target.value)}
             minLength={field.min}
             maxLength={field.max}
-            pattern={field.pattern}
           />
         );
     }
@@ -1035,12 +1099,19 @@ export const Form: React.FC<FormProps> = ({
   return (
      
     <form
-      noValidate
+      ref={formRef}
       data-pattern="form-section"
       className={cn(layoutStyles[layout], gapStyles[gap], className)}
       onSubmit={handleSubmit}
+      onInvalid={handleInvalid}
       {...props}
     >
+      {/* Required-field validation error from handleSubmit */}
+      {submitError && (
+        <Alert variant="error" className="mb-4">
+          {submitError}
+        </Alert>
+      )}
       {/* Error state */}
       {error && (
         <Alert variant="error" className="mb-4">
