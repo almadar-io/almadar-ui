@@ -602,8 +602,26 @@ export function useTraitStateMachine(
         // Find the binding that matches each trait for linkedEntity info
         const bindingMap = new Map(bindings.map(b => [b.trait.name, b]));
 
+        // Build per-trait entity overrides from `traitFieldStatesRef` so guards
+        // reading `@entity.X` see scalar values written by prior `(set @entity.X)`
+        // effects. Required for [runtime] entities that have no persistence row
+        // to reload — otherwise guard ctx.entity is `{}` and any `@entity.X`
+        // reference resolves undefined, blocking step-skip protection guards
+        // (e.g. wizard step3 requiring step1 + step2 to have committed values).
+        const entityByTrait: Record<string, EntityRow> = {};
+        for (const [name, fields] of traitFieldStatesRef.current) {
+            if (fields && Object.keys(fields).length > 0) {
+                entityByTrait[name] = fields;
+            }
+        }
+
         // Send event through StateMachineManager (shared runtime)
-        const results = currentManager.sendEvent(normalizedEvent, payload);
+        const results = currentManager.sendEvent(
+            normalizedEvent,
+            payload,
+            undefined,
+            entityByTrait
+        );
         crossTraitLog.debug('processEvent:results', {
             event: normalizedEvent,
             executedCount: results.length,
