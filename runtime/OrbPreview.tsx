@@ -19,7 +19,7 @@ import { Box } from '../components/atoms/Box';
 import { Typography } from '../components/atoms/Typography';
 import { OrbitalProvider } from '../providers/OrbitalProvider';
 import { VerificationProvider } from '../providers/VerificationProvider';
-import { UISlotProvider, useUISlots } from '../context/UISlotContext';
+import { UISlotProvider, useUISlots, type SlotProps } from '../context/UISlotContext';
 import { UISlotRenderer } from '../components/organisms/UISlotRenderer';
 import { useEventBus } from '../hooks/useEventBus';
 import type { OrbitalSchema, EntityData, ResolvedTraitBinding } from '@almadar/core';
@@ -118,9 +118,9 @@ function applyServerEffects(
       // Convert `["fn", argName, body]` lambdas into render-prop
       // functions before they land in `useUISlots`, so consumers
       // (DataGrid/DataList/Carousel) see `children` as a callable.
-      const rawProps: Record<string, unknown> = {
-        ...inlineProps,
-        ...(normalizedChildren !== undefined ? { children: normalizedChildren } : {}),
+      const rawProps: SlotProps = {
+        ...(inlineProps as SlotProps),
+        ...(normalizedChildren !== undefined ? { children: normalizedChildren as SlotProps['children'] } : {}),
       };
       const props = convertFnFormLambdasInProps(rawProps);
 

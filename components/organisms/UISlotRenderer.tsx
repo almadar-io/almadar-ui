@@ -17,13 +17,15 @@
 import React, { Suspense, createContext, useContext, useEffect, useState } from "react";
 import { useEntitySchemaOptional } from "../../runtime/EntitySchemaContext";
 import { TraitScopeProvider } from "../../providers/TraitScopeProvider";
-import type { EntityRow, RenderItemLambda, ResolvedEntity } from "@almadar/core";
+import type { EntityRow, EventPayload, EventPayloadValue, RenderItemLambda, ResolvedEntity } from "@almadar/core";
 import type { AnyPatternConfig } from "@almadar/patterns";
 import { createPortal } from "react-dom";
 import {
   useUISlots,
   type UISlot,
   type SlotContent,
+  type SlotProps,
+  type SlotPropValue,
 } from "../../context/UISlotContext";
 import { Modal } from "../molecules/Modal";
 import { Drawer } from "../molecules/Drawer";
@@ -949,7 +951,7 @@ interface SlotContentRendererProps {
 function renderPatternChildren(
   children:
     | Array<
-        | { type: string; props?: Record<string, unknown>; _id?: string }
+        | { type: string; props?: SlotProps; _id?: string }
         | string
       >
     | undefined,
@@ -997,16 +999,11 @@ function renderPatternChildren(
     // DELETE cascade failure: the Confirm button rendered without
     // actionPayload, emitted `{}` on click, and Persistor's DO_DELETE
     // ran with no id.
-    const { type: _childType, props: nestedProps, _id: _childNodeId, children: _childChildren, ...flatProps } = child as {
-      type: string;
-      props?: Record<string, unknown>;
-      _id?: string;
-      children?: unknown;
-      [key: string]: unknown;
-    };
-    const resolvedProps: Record<string, unknown> = nestedProps !== undefined
-      ? (nestedProps as Record<string, unknown>)
-      : flatProps;
+    const childAsRecord = child as { type: string; props?: SlotProps; _id?: string; children?: SlotPropValue } & SlotProps;
+    const { type: _childType, props: nestedProps, _id: _childNodeId, children: _childChildren, ...flatProps } = childAsRecord;
+    const resolvedProps: SlotProps = nestedProps !== undefined
+      ? nestedProps
+      : (flatProps as SlotProps);
     // Preserve children — needed by pattern components that render
     // nested trees (stack, data-grid, form-section, etc). Nested-form
     // authors put `children` inside `props`; flat-form authors put it
@@ -1038,38 +1035,115 @@ function renderPatternChildren(
 }
 
 /**
- * Check if a value looks like a pattern config object (has a `type` string field).
+ * Check if a value looks like a pattern config object (has a `type` string
+ * field). Predicate narrows to the `EventPayload`-shaped JSON object form
+ * (subset of SlotPropValue) so callers can iterate its entries with the
+ * recursive `EventPayloadValue` type from `@almadar/core`.
  */
-function isPatternConfig(value: unknown): value is { type: string; [key: string]: unknown } {
-  return (
-    value !== null &&
-    typeof value === "object" &&
-    !Array.isArray(value) &&
-    "type" in value &&
-    typeof (value as Record<string, unknown>).type === "string"
-  );
+function isPatternConfig(
+  value: SlotPropValue,
+): value is EventPayload & { type: string } {
+  if (value === null || value === undefined) return false;
+  if (typeof value !== "object") return false;
+  if (Array.isArray(value)) return false;
+  if (React.isValidElement(value)) return false;
+  if (value instanceof Date) return false;
+  if (typeof value === "function") return false;
+  const record = value as Record<string, EventPayloadValue>;
+  return "type" in record && typeof record.type === "string";
+}
+
+/**
+ * Plain-object guard — distinguishes a JSON-shape map from a React element,
+ * Date, or class instance. Used to narrow the deep-scan walker so it only
+ * recurses into config-data objects, never into renderable nodes or dates.
+ */
+function isPlainConfigObject(value: object): boolean {
+  if (React.isValidElement(value)) return false;
+  if (value instanceof Date) return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
+/**
+ * Walk a render-ui prop value recursively, replacing every `@trait.X`
+ * string match with a `<TraitFrame>` React element. Arrays and plain
+ * config-data objects recurse; non-JSON values (functions, React elements,
+ * Dates) pass through untouched. Mirrors the children-array scan in
+ * `renderPatternChildren()` for the deep-prop case (e.g. tabs's
+ * `items[].content` field where `@trait.X` lives inside an array of
+ * objects).
+ *
+ * Input/output type is `SlotPropValue` — the union of every value shape
+ * a render-ui prop can carry (JSON via `EventPayloadValue`, lambdas,
+ * React nodes). The output stays in the same union; substituted strings
+ * become `React.ReactNode` which is already a member.
+ */
+function substituteTraitRefsDeep(
+  value: SlotPropValue,
+  pathKey: string,
+): SlotPropValue {
+  if (typeof value === "string") {
+    const match = TRAIT_BINDING_RE.exec(value);
+    if (match) {
+      const traitName = match[1];
+      return <TraitFrame key={`${pathKey}:${traitName}`} traitName={traitName} />;
+    }
+    return value;
+  }
+  if (
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    value === null ||
+    value === undefined ||
+    typeof value === "function"
+  ) {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map((item, i) =>
+      substituteTraitRefsDeep(item as SlotPropValue, `${pathKey}[${i}]`),
+    ) as SlotPropValue;
+  }
+  if (typeof value === "object" && isPlainConfigObject(value)) {
+    const out: Record<string, SlotPropValue> = {};
+    for (const [k, v] of Object.entries(value as Record<string, SlotPropValue>)) {
+      out[k] = substituteTraitRefsDeep(v, `${pathKey}.${k}`);
+    }
+    return out as SlotPropValue;
+  }
+  // React element, Date, class instance — pass through unchanged.
+  return value;
 }
 
 /**
  * Recursively render any named props that contain pattern config objects.
  * E.g., flip-card's `front` and `back` props are pattern configs that need
  * to be converted to React elements before being passed to the component.
+ *
+ * Also deep-scans every non-`children` prop value for `@trait.X` strings
+ * (substituted with `<TraitFrame>`). The children-array scan in
+ * `renderPatternChildren()` covers literal `children` entries; this
+ * deep-scan picks up references buried in config-shaped props like
+ * `tabs[].content` whose schema marks the field as `trait`-typed.
  */
 function renderPatternProps(
-  props: Record<string, unknown>,
+  props: SlotProps,
   onDismiss: () => void,
-): Record<string, unknown> {
-  const rendered: Record<string, unknown> = {};
+): SlotProps {
+  const rendered: Record<string, SlotPropValue> = {};
   for (const [key, value] of Object.entries(props)) {
     if (key === "children") {
       rendered[key] = value;
     } else if (isPatternConfig(value)) {
+      const nestedProps: SlotProps = {};
+      for (const [k, v] of Object.entries(value)) {
+        if (k !== "type") nestedProps[k] = v;
+      }
       const childContent: SlotContent = {
         id: `prop-${key}`,
         pattern: value.type,
-        props: Object.fromEntries(
-          Object.entries(value).filter(([k]) => k !== "type"),
-        ),
+        props: nestedProps,
         priority: 0,
       };
       rendered[key] = (
@@ -1081,7 +1155,7 @@ function renderPatternProps(
       // By the time props reach this renderer, lambdas are already React
       // render functions routed under the consumer's expected key
       // (`children` for `renderItem`); they pass through unchanged.
-      rendered[key] = value;
+      rendered[key] = substituteTraitRefsDeep(value, `prop:${key}`);
     }
   }
   return rendered;
@@ -1162,7 +1236,7 @@ function SlotContentRenderer({
     // The PATTERNS_WITH_CHILDREN set is kept as a fast-path hint but
     // we also check for actual children presence to avoid missing any.
     const childrenConfig = content.props.children as
-      | Array<{ type: string; props?: Record<string, unknown> }>
+      | Array<string | { type: string; props?: SlotProps; _id?: string }>
       | undefined;
     const hasChildren = PATTERNS_WITH_CHILDREN.has(content.pattern)
       || (Array.isArray(childrenConfig) && childrenConfig.length > 0);
@@ -1184,7 +1258,7 @@ function SlotContentRenderer({
     const incomingChildren = content.props.children;
     const childrenIsRenderFn = typeof incomingChildren === "function";
     const { children: _childrenConfig, ...restPropsNoChildren } = content.props;
-    const restProps: Record<string, unknown> = childrenIsRenderFn
+    const restProps: SlotProps = childrenIsRenderFn
       ? { ...restPropsNoChildren, children: incomingChildren }
       : restPropsNoChildren;
 

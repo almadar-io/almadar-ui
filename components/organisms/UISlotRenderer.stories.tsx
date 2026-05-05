@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { UISlotRenderer } from './UISlotRenderer';
-import { UISlotProvider, useUISlots, type UISlot } from '../../context/UISlotContext';
+import { UISlotProvider, useUISlots, type UISlot, type SlotProps } from '../../context/UISlotContext';
 import { Box } from '../atoms/Box';
 import { Typography } from '../atoms/Typography';
 import { VStack } from '../atoms/Stack';
@@ -9,7 +9,7 @@ import { VStack } from '../atoms/Stack';
 /**
  * Helper that populates slots on mount using the UISlot manager.
  */
-function SlotPopulator({ slots }: { slots: Array<{ target: UISlot; pattern: string; props: Record<string, unknown> }> }) {
+function SlotPopulator({ slots }: { slots: Array<{ target: UISlot; pattern: string; props: SlotProps }> }) {
   const { render } = useUISlots();
   useEffect(() => {
     for (const slot of slots) {

@@ -39,7 +39,7 @@ import {
 import { createClientEffectHandlers } from './createClientEffectHandlers';
 import type { ResolvedTraitBinding, ResolvedTraitListener } from './types';
 import type { SlotPatternEntry, SlotSource } from './ui/slot-types';
-import type { useUISlots } from '../context/UISlotContext';
+import type { useUISlots, SlotProps } from '../context/UISlotContext';
 import { convertFnFormLambdasInProps } from './fn-form-lambda';
 import { useEntitySchema } from './EntitySchemaContext';
 import {
@@ -266,14 +266,14 @@ export function useTraitStateMachine(
                 return;
             }
             const last = patterns[patterns.length - 1];
-            const record = (last.pattern ?? {}) as Record<string, unknown>;
+            const record = (last.pattern ?? {}) as SlotProps;
             const { type: patternType, children: nested, ...inlineProps } = record;
             // Convert `["fn", argName, body]` lambdas into render-prop
             // functions before they land in `useUISlots` (mirrors
             // OrbPreview.applyServerEffects).
-            const rawProps: Record<string, unknown> = {
+            const rawProps: SlotProps = {
                 ...inlineProps,
-                ...last.props,
+                ...(last.props as SlotProps),
                 ...(nested !== undefined ? { children: nested } : {}),
             };
             const props = convertFnFormLambdasInProps(rawProps);
@@ -480,7 +480,7 @@ export function useTraitStateMachine(
         }
 
         // Process effects synchronously
-        const pendingSlots = new Map<string, Array<{ pattern: PatternConfig; props: Record<string, unknown> }>>();
+        const pendingSlots = new Map<string, Array<{ pattern: PatternConfig; props: SlotProps }>>();
 
         const slotSource: SlotSource = {
             trait: binding.trait.name,

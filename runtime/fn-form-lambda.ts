@@ -11,13 +11,14 @@
  */
 
 import React from "react";
-import type { EntityRow, RenderItemLambda } from "@almadar/core";
+import type { EntityRow, EventPayloadValue, RenderItemLambda } from "@almadar/core";
 import type { AnyPatternConfig } from "@almadar/patterns";
+import type { SlotProps, SlotPropValue } from "../hooks/useUISlots";
 import { createLogger } from "../lib/logger";
 
 const lambdaLog = createLogger("almadar:ui:fn-form-lambda");
 
-export function isFnFormLambda(value: unknown): value is RenderItemLambda {
+export function isFnFormLambda(value: SlotPropValue): value is RenderItemLambda {
   return (
     Array.isArray(value) &&
     value.length === 3 &&
@@ -34,22 +35,22 @@ export function isFnFormLambda(value: unknown): value is RenderItemLambda {
  * for `renderItem` lambda bodies.
  */
 export function resolveLambdaBindings(
-  body: unknown,
+  body: SlotPropValue,
   argName: string,
   arg: EntityRow,
-): unknown {
+): SlotPropValue {
   const prefix = `@${argName}.`;
-  const lookup = (path: string): unknown => {
-    let cur: unknown = arg;
+  const lookup = (path: string): EventPayloadValue => {
+    let cur: EventPayloadValue = arg as EventPayloadValue;
     for (const seg of path.split(".")) {
       if (cur === null || cur === undefined) return undefined;
-      if (typeof cur !== "object") return undefined;
-      cur = (cur as Record<string, unknown>)[seg];
+      if (typeof cur !== "object" || Array.isArray(cur)) return undefined;
+      cur = (cur as Record<string, EventPayloadValue>)[seg];
     }
     return cur;
   };
   if (typeof body === "string") {
-    if (body === `@${argName}`) return arg;
+    if (body === `@${argName}`) return arg as EventPayloadValue;
     if (body.startsWith(prefix)) {
       const v = lookup(body.slice(prefix.length));
       return v === undefined || v === null ? "" : v;
@@ -57,14 +58,14 @@ export function resolveLambdaBindings(
     return body;
   }
   if (Array.isArray(body)) {
-    return body.map((b) => resolveLambdaBindings(b, argName, arg));
+    return body.map((b) => resolveLambdaBindings(b as SlotPropValue, argName, arg)) as SlotPropValue;
   }
-  if (body !== null && typeof body === "object") {
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(body as Record<string, unknown>)) {
+  if (body !== null && typeof body === "object" && !React.isValidElement(body) && !(body instanceof Date) && typeof body !== "function") {
+    const out: Record<string, SlotPropValue> = {};
+    for (const [k, v] of Object.entries(body as Record<string, SlotPropValue>)) {
       out[k] = resolveLambdaBindings(v, argName, arg);
     }
-    return out;
+    return out as SlotPropValue;
   }
   return body;
 }
@@ -75,7 +76,7 @@ type SlotContentRendererComponent = React.ComponentType<{
   content: {
     id: string;
     pattern: string;
-    props: Record<string, unknown>;
+    props: SlotProps;
     priority: number;
   };
   onDismiss?: () => void;
@@ -97,25 +98,30 @@ function makeLambdaFn(
   callerKey: string,
 ): (item: EntityRow, index: number) => React.ReactNode {
   return (item, index) => {
-    const resolvedBody = resolveLambdaBindings(lambdaBody, argName, item);
+    const resolvedBody = resolveLambdaBindings(lambdaBody as SlotPropValue, argName, item);
     if (
       resolvedBody === null ||
       typeof resolvedBody !== "object" ||
-      Array.isArray(resolvedBody)
+      Array.isArray(resolvedBody) ||
+      typeof resolvedBody === "function" ||
+      React.isValidElement(resolvedBody) ||
+      resolvedBody instanceof Date
     ) {
       return null;
     }
-    const record = resolvedBody as Record<string, unknown>;
+    const record = resolvedBody as Record<string, SlotPropValue>;
     if (typeof record.type !== "string") {
       return null;
     }
     const SlotContentRenderer = getSlotContentRenderer();
+    const childProps: SlotProps = {};
+    for (const [k, v] of Object.entries(record)) {
+      if (k !== "type") childProps[k] = v;
+    }
     const childContent = {
       id: `lambda-${callerKey}-${index}`,
       pattern: record.type,
-      props: Object.fromEntries(
-        Object.entries(record).filter(([k]) => k !== "type"),
-      ),
+      props: childProps,
       priority: 0,
     };
     return React.createElement(SlotContentRenderer, { content: childContent });
@@ -126,32 +132,31 @@ function makeLambdaFn(
 // `stack > data-grid > renderItem`) get converted, not just top-level
 // props. Identity-preserving when nothing converts so memoised consumers
 // downstream don't re-render needlessly.
-function convertNode(node: unknown, callerKey: string): unknown {
+function convertNode(node: SlotPropValue, callerKey: string): SlotPropValue {
   if (node === null || node === undefined) return node;
   if (Array.isArray(node)) {
     if (isFnFormLambda(node)) {
       const [, argName, body] = node;
       return makeLambdaFn(argName, body, callerKey);
     }
+    const arr = node as ReadonlyArray<SlotPropValue>;
     let anyChanged = false;
-    const mapped = node.map((item, i) => {
+    const mapped: SlotPropValue[] = arr.map((item, i) => {
       const next = convertNode(item, `${callerKey}[${i}]`);
       if (next !== item) anyChanged = true;
       return next;
     });
     return anyChanged ? mapped : node;
   }
-  if (typeof node === "object") {
-    return convertObjectProps(node as Record<string, unknown>);
+  if (typeof node === "object" && !React.isValidElement(node) && !(node instanceof Date)) {
+    return convertObjectProps(node as SlotProps);
   }
   return node;
 }
 
-function convertObjectProps(
-  props: Record<string, unknown>,
-): Record<string, unknown> {
+function convertObjectProps(props: SlotProps): SlotProps {
   let convertedAny = false;
-  const out: Record<string, unknown> = {};
+  const out: Record<string, SlotPropValue> = {};
   for (const [key, value] of Object.entries(props)) {
     if (isFnFormLambda(value)) {
       convertedAny = true;
@@ -176,8 +181,6 @@ function convertObjectProps(
  * function. Pure on inputs without lambdas: returns the props object
  * unchanged by reference.
  */
-export function convertFnFormLambdasInProps(
-  props: Record<string, unknown>,
-): Record<string, unknown> {
+export function convertFnFormLambdasInProps(props: SlotProps): SlotProps {
   return convertObjectProps(props);
 }

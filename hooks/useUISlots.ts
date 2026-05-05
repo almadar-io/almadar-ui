@@ -31,8 +31,9 @@
  * @packageDocumentation
  */
 
+import type React from 'react';
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import type { EventPayload } from '@almadar/core';
+import type { EventPayloadValue, RenderItemLambda } from '@almadar/core';
 import { createLogger } from '../lib/logger';
 
 // Slot lifecycle diagnostic. Records every render-write + clear so a
@@ -68,13 +69,50 @@ export type UISlot =
 export type SlotAnimation = 'fade' | 'slide' | 'scale' | 'none';
 
 /**
- * Pattern-specific props carried by a rendered slot. Pattern authors decide
- * the concrete shape; the slot manager treats this as an opaque record of
- * field-like values sourced from the event-bus payload vocabulary so the
- * same types round-trip through render-ui → useUISlots → UISlotRenderer
- * without a private re-coercion boundary.
+ * Render-prop callback after fn-form-lambda conversion or
+ * `wrapCallbackForEvent` wrapping. Pattern components consume these as
+ * `renderItem` / `onTabChange` / `onClick` / etc. The arg list is
+ * contravariant (`never[]` accepts any caller shape — event handlers,
+ * 2-arg `(item, index)` render-props, etc.); the return is the union of
+ * shapes seen at this layer. Pattern-level prop types narrow the
+ * signature for each consumer downstream.
  */
-export type SlotProps = Record<string, EventPayload[string] | unknown>;
+export type SlotCallback = (...args: never[]) => void | React.ReactNode | EventPayloadValue;
+
+/**
+ * Render-ui prop value: any leaf flowing from a `(render-ui slot {...})`
+ * effect into a React pattern component. The union enumerates every
+ * shape the renderer can receive — no `unknown` escape hatch.
+ *
+ * - JSON primitives (`string`, `number`, `boolean`, `Date`, `null`,
+ *   `undefined`) come through `BindingResolver`.
+ * - `RenderItemLambda` is the unconverted tuple form `["fn", arg, body]`;
+ *   `SlotCallback` is the post-conversion callable form.
+ * - `React.ReactNode` covers substituted `<TraitFrame>` elements.
+ * - The recursive array + object branches mirror the `EventPayloadValue`
+ *   shape but with `SlotPropValue` leaves so functions and React nodes
+ *   can appear at any depth (e.g. `tabs[].content: "@trait.X"` surviving
+ *   substitution into a `ReactElement`).
+ */
+export type SlotPropValue =
+  | string
+  | number
+  | boolean
+  | Date
+  | null
+  | undefined
+  | RenderItemLambda
+  | SlotCallback
+  | React.ReactElement
+  | ReadonlyArray<SlotPropValue>
+  | { readonly [key: string]: SlotPropValue };
+
+/**
+ * Pattern-specific props carried by a rendered slot. The slot manager
+ * routes these from `(render-ui slot {...})` effects to React pattern
+ * components without coercion.
+ */
+export type SlotProps = Record<string, SlotPropValue>;
 
 /**
  * Content rendered in a slot
