@@ -42,6 +42,7 @@ import { createLogger } from '../lib/logger';
 // runtime-verify console capture can reconstruct which traits actually
 // rendered into a slot during a dispatch.
 const xOrbitalLog = createLogger('almadar:runtime:cross-orbital');
+const navLog = createLogger('almadar:runtime:navigation');
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -242,6 +243,31 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
     : { navigate: onNavigate, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits };
   const { sendEvent } = useTraitStateMachine(traits as Parameters<typeof useTraitStateMachine>[0], uiSlots, opts);
 
+  // Page-navigation hygiene: when the trait set changes (sidebar
+  // navigation swaps `pageName` → useResolvedSchema returns a different
+  // trait list), clear all slots so the previous page's render output
+  // doesn't linger and mask the new page's INIT renders. Without this,
+  // ArticleBrowse's last `data-list` slot write stays visible while
+  // CategoryBrowse re-fetches its own data, so the user perceives the
+  // navigation as broken even though page-state did swap.
+  const prevTraitNamesRef = useRef<string>('');
+  useEffect(() => {
+    const traitNames = (traits as Array<{ trait?: { name?: string } }>)
+      .map((b) => b.trait?.name ?? '')
+      .filter(Boolean)
+      .sort()
+      .join(',');
+    if (prevTraitNamesRef.current && prevTraitNamesRef.current !== traitNames) {
+      navLog.info('page:trait-set-changed', {
+        from: prevTraitNamesRef.current,
+        to: traitNames,
+        action: 'clearAll-slots',
+      });
+      uiSlots.clearAll();
+    }
+    prevTraitNamesRef.current = traitNames;
+  }, [traits, uiSlots]);
+
   const initSentRef = useRef(false);
 
   // Local INIT - fires immediately when no server bridge,
@@ -261,6 +287,19 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
     }, 5000);
     return () => clearTimeout(fallback);
   }, [traits, orbitalNames, sendEvent, onLocalFallback]);
+
+  // Reset the "INIT already fired" guard when the active orbital set
+  // changes (sidebar navigation swaps to a different page → new
+  // pageOrbitalNames). Without this reset the server INIT useEffect
+  // below would short-circuit on every subsequent page mount because
+  // `initSentRef.current` was set to `true` on the first page's INIT.
+  // Result: navigating from /articles to /media cleared the slots
+  // (good) but never fired INIT for MediaAsset orbital, so the page
+  // stayed blank until a full reload.
+  const orbitalsKey = (orbitalNames ?? []).slice().sort().join(',');
+  useEffect(() => {
+    initSentRef.current = false;
+  }, [orbitalsKey]);
 
   // Server INIT when bridge connects. Apply enriched effects to slots.
   useEffect(() => {
@@ -725,12 +764,32 @@ export function OrbPreview({
     }
   }, [initialPageName, currentPage]);
 
-  // Navigate handler: when a ['navigate', '/path'] effect fires,
-  // find the matching page and switch to it.
+  // Navigate handler: when a ['navigate', '/path'] effect fires OR a
+  // sidebar `<Link>` click is intercepted, find the matching page and
+  // switch to it. Also pushes `?page=/path` into the host URL so a
+  // page refresh lands on the same orbital page (the playground reads
+  // `?page=...` on mount as `initialPagePath`). MemoryRouter doesn't
+  // sync to the URL on its own — we drive that explicitly here.
   const handleNavigate = useCallback((path: string) => {
     const match = pages.find(({ page }) => page.path === path);
+    navLog.info('handleNavigate', {
+      path,
+      matched: match?.page.name ?? null,
+      availablePaths: pages.map((p) => p.page.path),
+    });
     if (match) {
       setCurrentPage(match.page.name);
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.set('page', path);
+        window.history.pushState({}, '', url.toString());
+        // Notify the host's popstate listener (main.tsx App) so its
+        // `initialPagePath` state reflects the new URL. Without this,
+        // OrbPreview's "sync from initialPageName" useEffect would see
+        // a stale initialPageName and force currentPage back to the
+        // mount-time page right after the user-driven swap.
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      }
     }
   }, [pages]);
 
@@ -750,18 +809,30 @@ export function OrbPreview({
   const containerRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = containerRef.current;
-    if (!el || pages.length <= 1) return;
+    if (!el) return;
+    if (pages.length <= 1) {
+      navLog.info('interceptor:skipped', { reason: 'single-page schema', pageCount: pages.length });
+      return;
+    }
     const handler = (e: MouseEvent) => {
       const anchor = (e.target as HTMLElement).closest('a');
       if (!anchor) return;
       const href = anchor.getAttribute('href') ?? anchor.getAttribute('to') ?? '';
-      if (!href || href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('#')) return;
+      navLog.info('click:intercepted', {
+        href,
+        anchorText: anchor.textContent?.trim().slice(0, 40),
+      });
+      if (!href || href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('#')) {
+        navLog.info('click:skipped', { href, reason: 'external/empty/hash' });
+        return;
+      }
       e.preventDefault();
       e.stopPropagation();
       e.stopImmediatePropagation();
       handleNavigate(href);
     };
     el.addEventListener('click', handler, true);
+    navLog.info('interceptor:installed', { pageCount: pages.length, paths: pages.map((p) => p.page.path) });
     return () => el.removeEventListener('click', handler, true);
   }, [pages, handleNavigate]);
 
