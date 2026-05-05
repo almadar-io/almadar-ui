@@ -20,11 +20,10 @@ import type {
   Trait,
   Transition,
   Effect,
-  EntityData,
 } from '@almadar/core';
 import { Box } from '../../atoms/Box';
 import { Typography } from '../../atoms/Typography';
-import { OrbPreview } from '../../../runtime/OrbPreview';
+import { BrowserPlayground } from '../../../runtime/BrowserPlayground';
 import type { PreviewNodeData, PatternEventSource, ScreenSize } from './avl-preview-types';
 import { SCREEN_SIZE_PRESETS } from './avl-preview-types';
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -253,8 +252,6 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
     return buildOrbitalSchema(fullSchema, data.orbitalName);
   }, [data._fullSchema, data.orbitalName, data.traitName, data.transitionEvent, data.fromState, data.toState, isExpanded]);
 
-  const mockData = (data._mockData as EntityData | undefined) ?? undefined;
-
   // Click delegation: find the closest [data-pattern] ancestor of the click target
   const handleContentClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent React Flow from interpreting as node click
@@ -472,9 +469,9 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       >
         {orbitalSchema ? (
           <Box style={{ minHeight: preset.minHeight }}>
-            <OrbPreview
+            <BrowserPlayground
               schema={orbitalSchema}
-              mockData={mockData}
+              mode="mock"
               height="auto"
             />
           </Box>

@@ -19,7 +19,7 @@ import { Icon as AlmadarIcon } from "../atoms/Icon";
 import { useAuthContext } from "../../hooks/useAuthContext";
 import { useEventBus } from "../../hooks/useEventBus";
 import { useTranslate } from "../../hooks/useTranslate";
-import type { EventEmit } from "@almadar/core";
+import type { EventEmit, EventKey } from "@almadar/core";
 
 export interface NavItem {
   label: string;
@@ -40,6 +40,26 @@ export interface NotificationItem {
   createdAt?: string;
   /** Optional flag — bell badge counts items where read !== true. */
   read?: boolean;
+}
+
+/** A generic top-bar action button. Domain-agnostic — consumers wire any
+ *  combination (cart icon, profile, help, custom). Each entry renders as
+ *  an icon button between the search bar and the notifications bell;
+ *  click dispatches the configured event onto the bus. */
+export interface TopBarAction {
+  /** Lucide icon name (e.g. "shopping-cart", "user", "help-circle"). */
+  icon: string;
+  /** Optional aria-label / tooltip. Falls back to `icon`. */
+  label?: string;
+  /** Bus event fired on click. Dispatched as `UI:{event}` with empty payload.
+   *  Typed as `EventKey` so the pattern-sync detector marks `topBarActions`
+   *  as `event-list` and the validator checks references against trait
+   *  emit/listen sets. */
+  event: EventKey;
+  /** Optional badge — number or string rendered in the corner of the icon. */
+  badge?: number | string;
+  /** Visual variant. Default `"default"`. */
+  variant?: "default" | "primary" | "danger";
 }
 
 export interface DashboardLayoutProps {
@@ -69,6 +89,12 @@ export interface DashboardLayoutProps {
   /** React-side search submit callback. Used when the host wires the
    *  layout directly (not via render-ui pattern resolution). */
   onSearchSubmit?: (value: string) => void;
+  /** Generic top-bar action buttons rendered between the search bar and
+   *  the notifications bell. Each entry: `{icon, label?, event, badge?, variant?}`.
+   *  Domain-agnostic — consumers add a cart icon, profile button, help-bubble,
+   *  or any other top-bar action by appending entries. Empty array (default)
+   *  renders nothing. */
+  topBarActions?: TopBarAction[];
   /** Notification list. Pass an empty array to show the bell with no
    *  badge; omit / pass null to hide the bell entirely. */
   notifications?: NotificationItem[] | null;
@@ -98,6 +124,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   showSearch = false,
   searchEvent,
   onSearchSubmit,
+  topBarActions = [],
   notifications,
   notificationClickEvent,
   onNotificationClick,
@@ -122,6 +149,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const handleNotificationClick = () => {
     if (notificationClickEvent) eventBus.emit(`UI:${notificationClickEvent}`, {});
     if (onNotificationClick) onNotificationClick();
+  };
+  const handleTopBarActionClick = (event: string) => {
+    eventBus.emit(`UI:${event}`, {});
   };
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -272,6 +302,33 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
               {/* Theme Toggle — opt-out via showThemeToggle={false}. */}
               {showThemeToggle && <ThemeToggle />}
+
+              {/* Generic top-bar actions — consumer-supplied. Each entry
+               *  becomes an icon button with optional badge; click fires
+               *  the configured bus event. Rendered between theme toggle
+               *  and notifications bell. */}
+              {topBarActions.map((action, idx) => (
+                <Button
+                  key={`${action.event}-${idx}`}
+                  variant="ghost"
+                  className="relative p-2 rounded-full hover:bg-muted dark:hover:bg-muted"
+                  onClick={() => handleTopBarActionClick(action.event)}
+                  aria-label={action.label ?? action.icon}
+                >
+                  <AlmadarIcon name={action.icon} className="h-5 w-5 text-muted-foreground dark:text-muted-foreground" />
+                  {action.badge !== undefined && action.badge !== null && action.badge !== 0 && action.badge !== '' && (
+                    <Box
+                      as="span"
+                      className={cn(
+                        "absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-semibold text-white flex items-center justify-center",
+                        action.variant === "danger" ? "bg-error" : action.variant === "primary" ? "bg-primary" : "bg-foreground"
+                      )}
+                    >
+                      {action.badge}
+                    </Box>
+                  )}
+                </Button>
+              ))}
 
               {/* Notifications — opt-in by passing the `notifications`
                *  array (even []). Badge shows unread count; click
