@@ -726,6 +726,7 @@ export function useTraitStateMachine(
                     },
                     navigate: optionsRef.current?.navigate,
                     notify: optionsRef.current?.notify,
+                    callService: optionsRef.current?.callService,
                 });
 
                 // Offline-preview mode: when `persistence` is supplied, layer
