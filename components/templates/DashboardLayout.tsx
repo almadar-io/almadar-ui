@@ -176,8 +176,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const handleSignOut = onSignOutProp || authSignOut;
 
   return (
-    <Box className="min-h-screen bg-background dark:bg-background">
-      {/* Mobile sidebar backdrop */}
+    <HStack
+      gap="none"
+      className="min-h-screen w-full bg-background dark:bg-background items-stretch"
+    >
       {sidebarOpen && (
         <Box
           className="fixed inset-0 bg-foreground/50 dark:bg-foreground/70 z-20 lg:hidden"
@@ -185,12 +187,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         />
       )}
 
-      {/* Sidebar */}
+      {/* Off-canvas drawer < lg, real flex child >= lg via `lg:static`. */}
       <Box
         as="aside"
         className={cn(
-          "fixed inset-y-0 left-0 z-30 w-64 bg-card dark:bg-card border-r border-border dark:border-border",
-          "transform transition-transform duration-200 ease-in-out lg:translate-x-0",
+          "z-30 w-64 flex-shrink-0 bg-card dark:bg-card border-r border-border dark:border-border",
+          "fixed inset-y-0 left-0 lg:static lg:translate-x-0 lg:h-auto",
+          "transform transition-transform duration-200 ease-in-out",
+          "flex flex-col",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
@@ -255,8 +259,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         )}
       </Box>
 
-      {/* Main content */}
-      <Box className="lg:pl-64">
+      {/* `min-w-0` so the column shrinks below its intrinsic content width. */}
+      <VStack gap="none" className="flex-1 min-w-0 min-h-screen">
         {/* Header */}
         <Box
           as="header"
@@ -265,7 +269,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <HStack
             align="center"
             justify="between"
-            className="h-full px-4 gap-4"
+            className="h-full px-3 sm:px-4 gap-2 sm:gap-4"
           >
             {/* Mobile menu button */}
             <Button
@@ -277,9 +281,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               <Menu className="h-5 w-5" />
             </Button>
 
-            {/* Search — opt-in via showSearch / searchEvent / onSearchSubmit. */}
+            {/* Search hidden on phones; capped width on `xl+` to avoid runway stretch. */}
             {searchEnabled && (
-              <Box className="hidden sm:block flex-1 max-w-md">
+              <Box className="hidden sm:block flex-1 min-w-0 xl:max-w-md">
                 <Box className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-muted-foreground" />
                   <Input
@@ -295,6 +299,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 </Box>
               </Box>
             )}
+            {!searchEnabled && <Box className="flex-1" />}
 
             {/* Right side */}
             <HStack align="center" gap="xs">
@@ -424,12 +429,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </HStack>
         </Box>
 
-        {/* Page content */}
-        <Box as="main" className="p-4 sm:p-6">
+        <Box as="main" className="flex-1 p-3 sm:p-4 md:p-6">
           {children}
         </Box>
-      </Box>
-    </Box>
+      </VStack>
+    </HStack>
   );
 };
 
