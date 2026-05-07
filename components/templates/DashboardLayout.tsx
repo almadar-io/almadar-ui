@@ -19,6 +19,7 @@ import { Icon as AlmadarIcon } from "../atoms/Icon";
 import { useAuthContext } from "../../hooks/useAuthContext";
 import { useEventBus } from "../../hooks/useEventBus";
 import { useTranslate } from "../../hooks/useTranslate";
+import { useCurrentPagePath } from "../../context/CurrentPagePathContext";
 import type { EventEmit, EventKey } from "@almadar/core";
 
 export interface NavItem {
@@ -109,6 +110,13 @@ export interface DashboardLayoutProps {
   /** Custom sidebar footer (optional). When omitted, the sidebar has
    *  no footer — apps that need Settings/etc. add them via navItems. */
   sidebarFooter?: React.ReactNode;
+  /** Active path used to highlight the matching nav item. Falls back
+   *  to `useCurrentPagePath()` (set by `CurrentPagePathProvider`), then
+   *  to `useLocation().pathname`. Production deploys can omit it; the
+   *  studio preview passes the in-frame `?page=` value so highlighting
+   *  works inside the embedded playground where `pathname` would be
+   *  the studio route. */
+  currentPath?: string;
   /** Callback when user clicks sign out (optional - uses auth context signOut if not provided) */
   onSignOut?: () => void;
   /** Page content rendered inside the main area */
@@ -131,6 +139,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   showThemeToggle = true,
   sidebarFooter,
   onSignOut: onSignOutProp,
+  currentPath,
   children,
 }) => {
   const eventBus = useEventBus();
@@ -156,6 +165,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const location = useLocation();
+  // Resolution order: explicit prop > runtime context > router pathname.
+  // The studio preview wraps the playground with `CurrentPagePathProvider`
+  // so the in-frame page is what NavLink matches against.
+  const ctxPagePath = useCurrentPagePath();
+  const activePath = currentPath ?? ctxPagePath ?? location.pathname;
 
   // Get user and signOut from auth context (with prop overrides)
   const { user: authUser, signOut: authSignOut } = useAuthContext();
@@ -243,7 +257,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             <NavLink
               key={item.href}
               item={item}
-              currentPath={location.pathname}
+              currentPath={activePath}
             />
           ))}
         </VStack>

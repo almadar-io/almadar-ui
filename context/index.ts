@@ -31,6 +31,13 @@ export { default as ThemeContext } from "./ThemeContext";
 export { DesignThemeProvider, useDesignTheme } from "./DesignThemeContext";
 
 export {
+  CurrentPagePathProvider,
+  CurrentPagePathContext,
+  useCurrentPagePath,
+  type CurrentPagePathProviderProps,
+} from "./CurrentPagePathContext";
+
+export {
   UserProvider,
   UserContext,
   useUser,
