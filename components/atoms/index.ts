@@ -14,6 +14,12 @@ export {
   type CardProps,
 } from "./Card";
 export { Badge, type BadgeProps, type BadgeVariant } from "./Badge";
+export {
+  FilterPill,
+  type FilterPillProps,
+  type FilterPillVariant,
+  type FilterPillSize,
+} from "./FilterPill";
 export { Spinner, type SpinnerProps } from "./Spinner";
 
 // Migrated atoms

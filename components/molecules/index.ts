@@ -116,3 +116,17 @@ export { ShowcaseCard, type ShowcaseCardProps } from './ShowcaseCard';
 export { GeometricPattern, type GeometricPatternProps } from './GeometricPattern';
 export { EdgeDecoration, type EdgeDecorationProps, type EdgeVariant, type EdgeSide } from './EdgeDecoration';
 
+// Phase 10 molecules — community/forum, survey, event-ticketing, restaurant-pos, field-service, subscription, marketplace
+export { VoteStack, type VoteStackProps } from './VoteStack';
+export { LikertScale, type LikertScaleProps, type LikertOption, DEFAULT_LIKERT_OPTIONS } from './LikertScale';
+export { MatrixQuestion, type MatrixQuestionProps, type MatrixRow, type MatrixColumn, DEFAULT_MATRIX_COLUMNS } from './MatrixQuestion';
+export { QrScanner, type QrScannerProps, type QrScanResult } from './QrScanner';
+export { TicketStub, type TicketStubProps, type TicketStubVariant, type TicketStubSize } from './TicketStub';
+export { KitchenDisplayStrip, type KitchenDisplayStripProps, type KdsStatus, type KdsAging, type KdsItem } from './KitchenDisplayStrip';
+export { ModifierGroup, type ModifierGroupProps, type ModifierOption, type ModifierConstraint } from './ModifierGroup';
+export { WorkOrderCard, type WorkOrderCardProps, type WorkOrderStatus, type WorkOrderPriority } from './WorkOrderCard';
+export { Invoice, type InvoiceProps, type InvoiceLineItem, type InvoiceParty, type InvoiceStatus } from './Invoice';
+export { DunningBanner, type DunningBannerProps, type DunningSeverity } from './DunningBanner';
+export { ListingCard, type ListingCardProps, type ListingFact, type ListingBadgeVariant } from './ListingCard';
+export { ModerationQueueRow, type ModerationQueueRowProps, type FlagReason } from './ModerationQueueRow';
+

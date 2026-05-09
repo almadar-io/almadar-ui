@@ -211,3 +211,47 @@ export {
   CaseStudyOrganism,
   type CaseStudyOrganismProps,
 } from "./CaseStudyOrganism";
+
+// Phase 10 organisms — wiki/cms authoring, forum, survey, restaurant-pos, field-service, marketplace onboarding
+export {
+  RichBlockEditor,
+  type RichBlockEditorProps,
+  type RichBlock,
+  type BlockType,
+} from "./RichBlockEditor";
+export {
+  ReplyTree,
+  type ReplyTreeProps,
+  type ReplyNode,
+} from "./ReplyTree";
+export {
+  BranchingLogicBuilder,
+  type BranchingLogicBuilderProps,
+  type BranchingQuestion,
+  type BranchingRule,
+} from "./BranchingLogicBuilder";
+export {
+  TableFloorPlan,
+  type TableFloorPlanProps,
+  type TableNode,
+  type TableStatus,
+  type TableShape,
+} from "./TableFloorPlan";
+export {
+  VersionDiff,
+  type VersionDiffProps,
+  type DiffRevision,
+  type DiffLine,
+  type DiffLineType,
+} from "./VersionDiff";
+export {
+  RouteMap,
+  type RouteMapProps,
+  type RouteStop,
+} from "./RouteMap";
+export {
+  VendorOnboardingStepper,
+  type VendorOnboardingStepperProps,
+  type OnboardingStep,
+  type OnboardingState,
+} from "./VendorOnboardingStepper";
