@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useCallback } from "react";
+import type { EventEmit } from "@almadar/core";
 import { cn } from "../../lib/cn";
+import { useEventBus } from "../../hooks/useEventBus";
 import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
 import { Label } from "../atoms/Label";
@@ -26,6 +28,8 @@ export interface LikertScaleProps {
   value?: number | string | null;
   /** Change callback */
   onChange?: (value: number | string) => void;
+  /** Event name dispatched via event bus on change. Payload: { value: number | string } */
+  changeEvent?: EventEmit<{ value: number | string }>;
   /** Disabled state */
   disabled?: boolean;
   /** Size variant */
@@ -69,6 +73,7 @@ export const LikertScale = React.forwardRef<HTMLDivElement, LikertScaleProps>(
       options = DEFAULT_LIKERT_OPTIONS,
       value = null,
       onChange,
+      changeEvent,
       disabled = false,
       size = "md",
       variant = "radios",
@@ -77,13 +82,17 @@ export const LikertScale = React.forwardRef<HTMLDivElement, LikertScaleProps>(
     ref,
   ) => {
     const groupId = React.useId();
+    const eventBus = useEventBus();
 
     const handleSelect = useCallback(
       (next: number | string) => {
         if (disabled) return;
         onChange?.(next);
+        if (changeEvent) {
+          eventBus.emit(`UI:${changeEvent}`, { value: next });
+        }
       },
-      [disabled, onChange],
+      [disabled, onChange, changeEvent, eventBus],
     );
 
     return (

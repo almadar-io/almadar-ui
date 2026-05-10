@@ -248,7 +248,7 @@ const interactiveSeed: ReplyNode[] = [
 function updateVote(
     nodes: ReplyNode[],
     targetId: string,
-    next: 'up' | 'down' | null,
+    next: 'up' | 'down' | 'none' | null,
 ): ReplyNode[] {
     return nodes.map((n) => {
         if (n.id === targetId) {
@@ -273,7 +273,7 @@ const InteractiveStory: React.FC = () => {
     const [nodes, setNodes] = useState<ReplyNode[]>(interactiveSeed);
 
     const handleVote = useCallback(
-        (id: string, next: 'up' | 'down' | null) => {
+        (id: string, next: 'up' | 'down' | 'none' | null) => {
             setNodes((prev) => updateVote(prev, id, next));
         },
         [],

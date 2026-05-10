@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useCallback, useRef, useState } from "react";
-import type { EventPayloadValue } from "@almadar/core";
+import type { EventEmit, EventPayloadValue } from "@almadar/core";
 import { cn } from "../../lib/cn";
+import { useEventBus } from "../../hooks/useEventBus";
 import { Typography, Badge, Box } from "../atoms";
 import { Users, Coffee, AlertCircle } from "lucide-react";
 
@@ -35,6 +36,8 @@ export interface PositionedCanvasProps {
     editable?: boolean;
     onSelect?: (id: string | null) => void;
     onMove?: (id: string, x: number, y: number) => void;
+    selectEvent?: EventEmit<{ id: string | null }>;
+    moveEvent?: EventEmit<{ id: string; x: number; y: number }>;
     className?: string;
 }
 
@@ -94,11 +97,14 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
     editable = false,
     onSelect,
     onMove,
+    selectEvent,
+    moveEvent,
     className,
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const dragRef = useRef<DragState | null>(null);
     const [draggingId, setDraggingId] = useState<string | null>(null);
+    const eventBus = useEventBus();
 
     const items: readonly CanvasItem[] = Array.isArray(itemsProp)
         ? (itemsProp as readonly CanvasItem[])
@@ -141,8 +147,11 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
 
             drag.moved = true;
             onMove?.(drag.id, clampedX, clampedY);
+            if (moveEvent) {
+                eventBus.emit(`UI:${moveEvent}`, { id: drag.id, x: clampedX, y: clampedY });
+            }
         },
-        [width, height, onMove],
+        [width, height, onMove, moveEvent, eventBus],
     );
 
     const handlePointerUp = useCallback(
@@ -162,18 +171,24 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
             if (!wasDrag) {
                 const next = selectedId === item.id ? null : item.id;
                 onSelect?.(next);
+                if (selectEvent) {
+                    eventBus.emit(`UI:${selectEvent}`, { id: next });
+                }
             }
         },
-        [selectedId, onSelect],
+        [selectedId, onSelect, selectEvent, eventBus],
     );
 
     const handleContainerClick = useCallback(
         (e: React.MouseEvent<HTMLDivElement>) => {
             if (e.target === e.currentTarget) {
                 onSelect?.(null);
+                if (selectEvent) {
+                    eventBus.emit(`UI:${selectEvent}`, { id: null });
+                }
             }
         },
-        [onSelect],
+        [onSelect, selectEvent, eventBus],
     );
 
     return (

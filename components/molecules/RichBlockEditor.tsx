@@ -25,6 +25,7 @@ import {
   Trash,
   Type as TypeIcon,
 } from "lucide-react";
+import type { EventEmit, EventPayloadValue } from '@almadar/core';
 import { cn } from "../../lib/cn";
 import { Card } from "../atoms/Card";
 import { Typography } from "../atoms/Typography";
@@ -32,6 +33,7 @@ import { Button } from "../atoms/Button";
 import { Box } from "../atoms/Box";
 import { Divider } from "../atoms/Divider";
 import { Input } from "../atoms/Input";
+import { useEventBus } from "../../hooks/useEventBus";
 
 export type BlockType =
   | "paragraph"
@@ -51,11 +53,13 @@ export interface RichBlock {
   content?: string;
   metadata?: Record<string, string | number | boolean>;
   children?: RichBlock[];
+  [key: string]: EventPayloadValue;
 }
 
 export interface RichBlockEditorProps {
   initialBlocks?: RichBlock[];
   onChange?: (blocks: RichBlock[]) => void;
+  changeEvent?: EventEmit<{ blocks: RichBlock[] }>;
   readOnly?: boolean;
   placeholder?: string;
   showToolbar?: boolean;
@@ -714,6 +718,7 @@ function BlockRow({
 export const RichBlockEditor: React.FC<RichBlockEditorProps> = ({
   initialBlocks,
   onChange,
+  changeEvent,
   readOnly = false,
   placeholder,
   showToolbar = true,
@@ -726,11 +731,18 @@ export const RichBlockEditor: React.FC<RichBlockEditorProps> = ({
   useEffect(() => {
     onChangeRef.current = onChange;
   }, [onChange]);
+  const eventBus = useEventBus();
+  const changeEventRef = useRef(changeEvent);
+  useEffect(() => {
+    changeEventRef.current = changeEvent;
+  }, [changeEvent]);
 
   const commit = useCallback((next: RichBlock[]) => {
     setBlocks(next);
     onChangeRef.current?.(next);
-  }, []);
+    const evt = changeEventRef.current;
+    if (evt) eventBus.emit(`UI:${evt}`, { blocks: next });
+  }, [eventBus]);
 
   const handleAppend = useCallback(
     (type: BlockType) => {

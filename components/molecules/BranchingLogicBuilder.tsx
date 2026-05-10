@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import type { EventEmit, EventPayload, EventPayloadValue } from '@almadar/core';
 import { Plus, Trash, ArrowRight, GitBranch, Eye, Pencil } from 'lucide-react';
 import { Select } from '../atoms/Select';
 import type { SelectOption } from '../atoms/Select';
@@ -11,6 +12,7 @@ import { Badge } from '../atoms/Badge';
 import { Card } from '../atoms/Card';
 import { FilterPill } from '../atoms/FilterPill';
 import { Box } from '../atoms/Box';
+import { useEventBus } from '../../hooks/useEventBus';
 import { cn } from '../../lib/cn';
 
 export interface BranchingQuestion {
@@ -23,7 +25,7 @@ export type BranchingOperator = 'equals' | 'not-equals' | 'contains' | 'in';
 
 export const END_OF_SURVEY = 'end-of-survey';
 
-export interface BranchingRule {
+export interface BranchingRule extends EventPayload {
   id: string;
   sourceQuestionId: string;
   operator: BranchingOperator;
@@ -32,9 +34,16 @@ export interface BranchingRule {
 }
 
 export interface BranchingLogicBuilderProps {
-  questions: BranchingQuestion[];
-  rules: BranchingRule[];
+  questions: readonly BranchingQuestion[] | EventPayloadValue;
+  /**
+   * Rules. Accepts either a typed array (direct consumers) or the runtime
+   * payload shape from a render-ui binding (`@payload.data`). Narrowed to
+   * `[]` internally when the value isn't an array.
+   */
+  rules: readonly BranchingRule[] | EventPayloadValue;
   onRulesChange?: (rules: BranchingRule[]) => void;
+  /** Event name dispatched via event bus when rules change. Payload: `{ rules }`. */
+  rulesChangeEvent?: EventEmit<{ rules: BranchingRule[] }>;
   readOnly?: boolean;
   className?: string;
 }
@@ -53,7 +62,7 @@ function generateRuleId(): string {
 }
 
 function questionsToOptions(
-  questions: BranchingQuestion[],
+  questions: readonly BranchingQuestion[],
   includeEndOfSurvey: boolean,
 ): SelectOption[] {
   const opts: SelectOption[] = questions.map((q) => ({
@@ -66,7 +75,7 @@ function questionsToOptions(
   return opts;
 }
 
-function isRuleBroken(rule: BranchingRule, questions: BranchingQuestion[]): boolean {
+function isRuleBroken(rule: BranchingRule, questions: readonly BranchingQuestion[]): boolean {
   const sourceExists = questions.some((q) => q.id === rule.sourceQuestionId);
   const targetExists =
     rule.targetQuestionId === END_OF_SURVEY ||
@@ -76,7 +85,7 @@ function isRuleBroken(rule: BranchingRule, questions: BranchingQuestion[]): bool
 
 interface RuleRowProps {
   rule: BranchingRule;
-  questions: BranchingQuestion[];
+  questions: readonly BranchingQuestion[];
   readOnly: boolean;
   broken: boolean;
   onChange: (next: BranchingRule) => void;
@@ -278,7 +287,7 @@ const RuleRow: React.FC<RuleRowProps> = ({
 };
 
 interface LogicGraphProps {
-  questions: BranchingQuestion[];
+  questions: readonly BranchingQuestion[];
   rules: BranchingRule[];
 }
 
@@ -409,25 +418,36 @@ const LogicGraph: React.FC<LogicGraphProps> = ({ questions, rules }) => {
 };
 
 export const BranchingLogicBuilder: React.FC<BranchingLogicBuilderProps> = ({
-  questions,
+  questions: questionsProp,
   rules: rulesProp,
   onRulesChange,
+  rulesChangeEvent,
   readOnly = false,
   className,
 }) => {
-  const [rules, setRules] = useState<BranchingRule[]>(rulesProp);
+  const eventBus = useEventBus();
+  const questions: readonly BranchingQuestion[] = Array.isArray(questionsProp)
+    ? (questionsProp as readonly BranchingQuestion[])
+    : [];
+  const rulesInitial: readonly BranchingRule[] = Array.isArray(rulesProp)
+    ? (rulesProp as readonly BranchingRule[])
+    : [];
+  const [rules, setRules] = useState<BranchingRule[]>([...rulesInitial]);
   const [view, setView] = useState<ViewMode>('edit');
 
   useEffect(() => {
-    setRules(rulesProp);
+    setRules(Array.isArray(rulesProp) ? [...(rulesProp as readonly BranchingRule[])] : []);
   }, [rulesProp]);
 
   const updateRules = useCallback(
     (next: BranchingRule[]) => {
       setRules(next);
       onRulesChange?.(next);
+      if (rulesChangeEvent) {
+        eventBus.emit(`UI:${rulesChangeEvent}`, { rules: next });
+      }
     },
-    [onRulesChange],
+    [onRulesChange, rulesChangeEvent, eventBus],
   );
 
   const handleAddRule = useCallback(() => {

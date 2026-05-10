@@ -1,5 +1,7 @@
-import React from "react";
+import React, { useCallback } from "react";
+import type { EventEmit } from "@almadar/core";
 import { cn } from "../../lib/cn";
+import { useEventBus } from "../../hooks/useEventBus";
 import { resolveIcon } from "./Icon";
 
 export type FilterPillVariant =
@@ -26,6 +28,10 @@ export interface FilterPillProps extends Omit<React.HTMLAttributes<HTMLSpanEleme
   removable?: boolean;
   /** Click handler for the body of the pill (filter toggle) */
   onClick?: () => void;
+  /** Event name dispatched via event bus when the pill body is clicked. Payload: { label } */
+  clickEvent?: EventEmit<{ label: string | number | undefined }>;
+  /** Event name dispatched via event bus when the remove (×) button is clicked. Payload: { label } */
+  removeEvent?: EventEmit<{ label: string | number | undefined }>;
 }
 
 const variantStyles: Record<FilterPillVariant, string> = {
@@ -80,11 +86,27 @@ export const FilterPill = React.forwardRef<HTMLSpanElement, FilterPillProps>(
       onRemove,
       removable = true,
       onClick,
+      clickEvent,
+      removeEvent,
       children,
       ...props
     },
     ref,
   ) => {
+    const eventBus = useEventBus();
+    const payloadLabel =
+      typeof children === "string" || typeof children === "number" ? children : label;
+
+    const handleClick = useCallback(() => {
+      onClick?.();
+      if (clickEvent) eventBus.emit(`UI:${clickEvent}`, { label: payloadLabel });
+    }, [onClick, clickEvent, eventBus, payloadLabel]);
+
+    const handleRemove = useCallback(() => {
+      onRemove?.();
+      if (removeEvent) eventBus.emit(`UI:${removeEvent}`, { label: payloadLabel });
+    }, [onRemove, removeEvent, eventBus, payloadLabel]);
+
     const XIcon = resolveIcon("x");
     const resolvedIcon =
       typeof icon === "string"
@@ -101,20 +123,20 @@ export const FilterPill = React.forwardRef<HTMLSpanElement, FilterPillProps>(
           "inline-flex items-center gap-1 font-bold rounded-full",
           variantStyles[variant],
           sizeStyles[size],
-          onClick && "cursor-pointer",
+          (onClick || clickEvent) && "cursor-pointer",
           className,
         )}
-        onClick={onClick}
+        onClick={onClick || clickEvent ? handleClick : undefined}
         {...props}
       >
         {resolvedIcon}
         <span>{children ?? label}</span>
-        {removable && onRemove && (
+        {removable && (onRemove || removeEvent) && (
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              onRemove();
+              handleRemove();
             }}
             aria-label="Remove filter"
             className={cn(

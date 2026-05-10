@@ -1,11 +1,18 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import type { EventEmit, EventPayload } from "@almadar/core";
 import { Camera, RefreshCw, Pause, Play } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { Box, Typography, Button } from "../atoms";
+import { useEventBus } from "../../hooks/useEventBus";
 
-export interface QrScanResult {
+/**
+ * QR scan callback payload. Extends `EventPayload` (string-indexed
+ * `EventPayloadValue` map) so the result is directly assignable to a
+ * render-ui dispatched event payload without re-shaping.
+ */
+export interface QrScanResult extends EventPayload {
   text: string;
   format: string;
   timestamp: number;
@@ -13,6 +20,7 @@ export interface QrScanResult {
 
 export interface QrScannerProps {
   onScan?: (result: QrScanResult) => void;
+  scanEvent?: EventEmit<QrScanResult>;
   onError?: (error: Error) => void;
   facingMode?: 'environment' | 'user';
   paused?: boolean;
@@ -24,6 +32,7 @@ export interface QrScannerProps {
 
 export const QrScanner: React.FC<QrScannerProps> = ({
   onScan,
+  scanEvent,
   onError,
   facingMode = 'environment',
   paused = false,
@@ -32,6 +41,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({
   fallback,
   className,
 }) => {
+  const eventBus = useEventBus();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scanIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -120,12 +130,16 @@ export const QrScanner: React.FC<QrScannerProps> = ({
   }, []);
 
   const handleMockScan = useCallback(() => {
-    onScan?.({
+    const result: QrScanResult = {
       text: "https://example.com/mock-qr",
       format: "QR_CODE",
       timestamp: Date.now(),
-    });
-  }, [onScan]);
+    };
+    onScan?.(result);
+    if (scanEvent) {
+      eventBus.emit(`UI:${scanEvent}`, { ...result });
+    }
+  }, [onScan, scanEvent, eventBus]);
 
   const videoExtraProps: React.VideoHTMLAttributes<HTMLVideoElement> = {
     playsInline: true,

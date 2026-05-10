@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useCallback } from "react";
+import type { EventEmit } from '@almadar/core';
 import { cn } from "../../lib/cn";
 import { Typography } from "../atoms/Typography";
 import { Box } from "../atoms/Box";
 import { Radio } from "../atoms/Radio";
+import { useEventBus } from "../../hooks/useEventBus";
 
 export interface MatrixRow {
   id: string;
@@ -27,6 +29,8 @@ export interface MatrixQuestionProps {
   values?: Record<string, number | string>;
   /** Change handler invoked with rowId and selected column value */
   onChange?: (rowId: string, value: number | string) => void;
+  /** Event name dispatched via event bus when a row's value changes. Payload: { rowId, value } */
+  changeEvent?: EventEmit<{ rowId: string; value: number | string }>;
   /** Disable all inputs */
   disabled?: boolean;
   /** Visual size */
@@ -62,6 +66,7 @@ export const MatrixQuestion: React.FC<MatrixQuestionProps> = ({
   columns = DEFAULT_MATRIX_COLUMNS,
   values,
   onChange,
+  changeEvent,
   disabled = false,
   size = "md",
   className,
@@ -69,13 +74,17 @@ export const MatrixQuestion: React.FC<MatrixQuestionProps> = ({
   const styles = sizeStyles[size];
   const safeRows = rows ?? [];
   const safeValues = values ?? {};
+  const eventBus = useEventBus();
 
   const handleChange = useCallback(
     (rowId: string, value: number | string) => {
       if (disabled) return;
       onChange?.(rowId, value);
+      if (changeEvent) {
+        eventBus.emit(`UI:${changeEvent}`, { rowId, value });
+      }
     },
-    [onChange, disabled],
+    [onChange, changeEvent, eventBus, disabled],
   );
 
   return (

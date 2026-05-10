@@ -2,11 +2,20 @@
 
 import React, { useCallback } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import type { EventEmit } from "@almadar/core";
 import { cn } from "../../lib/cn";
+import { useEventBus } from "../../hooks/useEventBus";
 
 export type VoteStackSize = "sm" | "md" | "lg";
 export type VoteStackVariant = "vertical" | "horizontal";
-export type VoteValue = "up" | "down" | null;
+/**
+ * Current vote state. Both `null` (typical "cleared" sentinel for direct
+ * consumers) and the string `"none"` (the .lolo enum spelling — `direction:
+ * "up" | "down" | "none"`) are accepted; the component treats them
+ * identically. Keeping both accommodates render-ui bindings without forcing
+ * std atoms to drop their string sentinel.
+ */
+export type VoteValue = "up" | "down" | "none" | null;
 
 export interface VoteStackProps {
   /** Current tally */
@@ -15,6 +24,8 @@ export interface VoteStackProps {
   userVote?: VoteValue;
   /** Toggle handler. Clicking the same arrow clears (emits null). */
   onVote?: (next: VoteValue) => void;
+  /** Event name dispatched on the bus when a vote is cast. Payload: { next: VoteValue }. */
+  voteEvent?: EventEmit<{ next: VoteValue }>;
   /** Disabled state */
   disabled?: boolean;
   /** Size variant */
@@ -49,6 +60,7 @@ export const VoteStack: React.FC<VoteStackProps> = ({
   count,
   userVote = null,
   onVote,
+  voteEvent,
   disabled = false,
   size = "md",
   variant = "vertical",
@@ -58,14 +70,23 @@ export const VoteStack: React.FC<VoteStackProps> = ({
   const styles = sizeStyles[size];
   const isUp = userVote === "up";
   const isDown = userVote === "down";
+  const eventBus = useEventBus();
 
   const handleUp = useCallback(() => {
-    onVote?.(isUp ? null : "up");
-  }, [isUp, onVote]);
+    const next: VoteValue = isUp ? null : "up";
+    onVote?.(next);
+    if (voteEvent) {
+      eventBus.emit(`UI:${voteEvent}`, { next });
+    }
+  }, [isUp, onVote, voteEvent, eventBus]);
 
   const handleDown = useCallback(() => {
-    onVote?.(isDown ? null : "down");
-  }, [isDown, onVote]);
+    const next: VoteValue = isDown ? null : "down";
+    onVote?.(next);
+    if (voteEvent) {
+      eventBus.emit(`UI:${voteEvent}`, { next });
+    }
+  }, [isDown, onVote, voteEvent, eventBus]);
 
   return (
     <div

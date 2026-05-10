@@ -8,7 +8,9 @@
  */
 
 import React, { useState, useMemo, useCallback } from "react";
+import type { EventPayloadValue, EventEmit } from "@almadar/core";
 import { cn } from "../../lib/cn";
+import { useEventBus } from "../../hooks/useEventBus";
 import { Card, Typography, Button, Badge, Icon, Box, Select } from "../atoms";
 import { VStack, HStack } from "../atoms/Stack";
 import { Columns, AlignLeft, RotateCcw, GitCommit } from "lucide-react";
@@ -33,8 +35,13 @@ export interface DiffLine {
 export type VersionDiffView = "side-by-side" | "inline";
 
 export interface VersionDiffProps {
-    /** All available revisions (at least 2). */
-    revisions: DiffRevision[];
+    /**
+     * All available revisions (at least 2). Accepts either a typed array (direct
+     * consumers) or the runtime payload shape from a render-ui binding
+     * (`@payload.revisions`). Narrowed to `[]` internally when the value isn't
+     * an array.
+     */
+    revisions: readonly DiffRevision[] | EventPayloadValue;
     /** Currently selected "before" revision id. */
     beforeId?: string;
     /** Currently selected "after" revision id. */
@@ -47,6 +54,12 @@ export interface VersionDiffProps {
     onSelectAfter?: (id: string) => void;
     /** Called when the user clicks the revert button (passes the "before" id). */
     onRevert?: (id: string) => void;
+    /** Event name dispatched via event bus when the "before" revision changes. Payload: { id }. */
+    selectBeforeEvent?: EventEmit<{ id: string }>;
+    /** Event name dispatched via event bus when the "after" revision changes. Payload: { id }. */
+    selectAfterEvent?: EventEmit<{ id: string }>;
+    /** Event name dispatched via event bus when the user clicks revert. Payload: { id }. */
+    revertEvent?: EventEmit<{ id: string }>;
     /** Language label (informational). */
     language?: string;
     /** Additional CSS classes. */
@@ -111,16 +124,23 @@ const INLINE_STYLES: Record<DiffLineType, { bg: string; prefix: string; text: st
 };
 
 export const VersionDiff: React.FC<VersionDiffProps> = ({
-    revisions,
+    revisions: revisionsProp,
     beforeId,
     afterId,
     view = "side-by-side",
     onSelectBefore,
     onSelectAfter,
     onRevert,
+    selectBeforeEvent,
+    selectAfterEvent,
+    revertEvent,
     language,
     className,
 }) => {
+    const eventBus = useEventBus();
+    const revisions: readonly DiffRevision[] = Array.isArray(revisionsProp)
+        ? (revisionsProp as readonly DiffRevision[])
+        : [];
     const fallbackBefore = revisions[0]?.id ?? "";
     const fallbackAfter = revisions[1]?.id ?? revisions[0]?.id ?? "";
 
@@ -161,8 +181,9 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
             const id = e.target.value;
             setInternalBefore(id);
             onSelectBefore?.(id);
+            if (selectBeforeEvent) eventBus.emit(`UI:${selectBeforeEvent}`, { id });
         },
-        [onSelectBefore],
+        [onSelectBefore, selectBeforeEvent, eventBus],
     );
 
     const handleAfterChange = useCallback(
@@ -170,8 +191,9 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
             const id = e.target.value;
             setInternalAfter(id);
             onSelectAfter?.(id);
+            if (selectAfterEvent) eventBus.emit(`UI:${selectAfterEvent}`, { id });
         },
-        [onSelectAfter],
+        [onSelectAfter, selectAfterEvent, eventBus],
     );
 
     const handleViewToggle = useCallback(() => {
@@ -179,8 +201,11 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
     }, []);
 
     const handleRevert = useCallback(() => {
-        if (beforeRev) onRevert?.(beforeRev.id);
-    }, [beforeRev, onRevert]);
+        if (beforeRev) {
+            onRevert?.(beforeRev.id);
+            if (revertEvent) eventBus.emit(`UI:${revertEvent}`, { id: beforeRev.id });
+        }
+    }, [beforeRev, onRevert, revertEvent, eventBus]);
 
     const options = useMemo(
         () => revisions.map((r) => ({ value: r.id, label: r.label })),
@@ -249,7 +274,7 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
                                     : "Switch to side-by-side view"
                             }
                         />
-                        {onRevert && (
+                        {(onRevert || revertEvent) && (
                             <Button
                                 variant="ghost"
                                 size="sm"

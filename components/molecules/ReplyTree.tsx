@@ -8,9 +8,11 @@
 
 import React, { useCallback, useState } from "react";
 import { ChevronRight, ChevronDown, MessageSquare, Flag } from "lucide-react";
+import type { EventEmit } from "@almadar/core";
 import { cn } from "../../lib/cn";
+import { useEventBus } from "../../hooks/useEventBus";
 import { Avatar, Typography, Button, Box } from "../atoms";
-import { VoteStack } from "../molecules/VoteStack";
+import { VoteStack, type VoteValue } from "../molecules/VoteStack";
 
 export interface ReplyNode {
     id: string;
@@ -19,7 +21,7 @@ export interface ReplyNode {
     content: string;
     postedAt: string;
     voteCount?: number;
-    userVote?: 'up' | 'down' | null;
+    userVote?: VoteValue;
     replies?: ReplyNode[];
     collapsed?: boolean;
 }
@@ -27,10 +29,14 @@ export interface ReplyNode {
 export interface ReplyTreeProps {
     nodes: ReplyNode[];
     maxDepth?: number;
-    onVote?: (nodeId: string, vote: 'up' | 'down' | null) => void;
+    onVote?: (nodeId: string, vote: VoteValue) => void;
     onReply?: (parentNodeId: string) => void;
     onFlag?: (nodeId: string) => void;
     onContinueThread?: (nodeId: string) => void;
+    voteEvent?: EventEmit<{ nodeId: string; vote: VoteValue }>;
+    replyEvent?: EventEmit<{ parentNodeId: string }>;
+    flagEvent?: EventEmit<{ nodeId: string }>;
+    continueThreadEvent?: EventEmit<{ nodeId: string }>;
     showActions?: boolean;
     className?: string;
 }
@@ -41,10 +47,14 @@ interface ReplyTreeNodeProps {
     maxDepth: number;
     collapsedSet: Set<string>;
     toggleCollapse: (id: string) => void;
-    onVote?: (nodeId: string, vote: 'up' | 'down' | null) => void;
+    onVote?: (nodeId: string, vote: VoteValue) => void;
     onReply?: (parentNodeId: string) => void;
     onFlag?: (nodeId: string) => void;
     onContinueThread?: (nodeId: string) => void;
+    voteEvent?: EventEmit<{ nodeId: string; vote: VoteValue }>;
+    replyEvent?: EventEmit<{ parentNodeId: string }>;
+    flagEvent?: EventEmit<{ nodeId: string }>;
+    continueThreadEvent?: EventEmit<{ nodeId: string }>;
     showActions: boolean;
 }
 
@@ -58,30 +68,39 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
     onReply,
     onFlag,
     onContinueThread,
+    voteEvent,
+    replyEvent,
+    flagEvent,
+    continueThreadEvent,
     showActions,
 }) => {
+    const eventBus = useEventBus();
     const hasReplies = !!node.replies && node.replies.length > 0;
     const isCollapsed = collapsedSet.has(node.id);
     const atMaxDepth = depth >= maxDepth;
 
     const handleVote = useCallback(
-        (next: 'up' | 'down' | null) => {
+        (next: VoteValue) => {
             onVote?.(node.id, next);
+            if (voteEvent) eventBus.emit(`UI:${voteEvent}`, { nodeId: node.id, vote: next });
         },
-        [node.id, onVote],
+        [node.id, onVote, voteEvent, eventBus],
     );
 
     const handleReply = useCallback(() => {
         onReply?.(node.id);
-    }, [node.id, onReply]);
+        if (replyEvent) eventBus.emit(`UI:${replyEvent}`, { parentNodeId: node.id });
+    }, [node.id, onReply, replyEvent, eventBus]);
 
     const handleFlag = useCallback(() => {
         onFlag?.(node.id);
-    }, [node.id, onFlag]);
+        if (flagEvent) eventBus.emit(`UI:${flagEvent}`, { nodeId: node.id });
+    }, [node.id, onFlag, flagEvent, eventBus]);
 
     const handleContinue = useCallback(() => {
         onContinueThread?.(node.id);
-    }, [node.id, onContinueThread]);
+        if (continueThreadEvent) eventBus.emit(`UI:${continueThreadEvent}`, { nodeId: node.id });
+    }, [node.id, onContinueThread, continueThreadEvent, eventBus]);
 
     const handleToggle = useCallback(() => {
         toggleCollapse(node.id);
@@ -193,6 +212,10 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
                                     onReply={onReply}
                                     onFlag={onFlag}
                                     onContinueThread={onContinueThread}
+                                    voteEvent={voteEvent}
+                                    replyEvent={replyEvent}
+                                    flagEvent={flagEvent}
+                                    continueThreadEvent={continueThreadEvent}
                                     showActions={showActions}
                                 />
                             ))}
@@ -220,6 +243,10 @@ export const ReplyTree: React.FC<ReplyTreeProps> = ({
     onReply,
     onFlag,
     onContinueThread,
+    voteEvent,
+    replyEvent,
+    flagEvent,
+    continueThreadEvent,
     showActions = true,
     className,
 }) => {
@@ -263,6 +290,10 @@ export const ReplyTree: React.FC<ReplyTreeProps> = ({
                     onReply={onReply}
                     onFlag={onFlag}
                     onContinueThread={onContinueThread}
+                    voteEvent={voteEvent}
+                    replyEvent={replyEvent}
+                    flagEvent={flagEvent}
+                    continueThreadEvent={continueThreadEvent}
                     showActions={showActions}
                 />
             ))}

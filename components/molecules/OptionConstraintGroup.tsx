@@ -9,8 +9,10 @@
  * **Atomic Design**: Composed using Typography atom and native form controls.
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
+import type { EventEmit } from '@almadar/core';
 import { cn } from '../../lib/cn';
+import { useEventBus } from '../../hooks/useEventBus';
 import { Typography } from '../atoms/Typography';
 import { Box } from '../atoms/Box';
 import { Label } from '../atoms/Label';
@@ -37,6 +39,7 @@ export interface OptionConstraintGroupProps {
   constraint: OptionConstraint;
   selected?: string[];
   onChange?: (selected: string[]) => void;
+  changeEvent?: EventEmit<{ selected: string[] }>;
   size?: 'sm' | 'md';
   className?: string;
 }
@@ -92,26 +95,34 @@ export const OptionConstraintGroup: React.FC<OptionConstraintGroupProps> = ({
   constraint,
   selected = [],
   onChange,
+  changeEvent,
   size = 'md',
   className,
 }) => {
+  const eventBus = useEventBus();
   const hint = constraintHint(constraint);
   const error = validateSelection(selected, constraint);
   const inputName = `option-${groupId}`;
   const labelTextSize = size === 'sm' ? 'text-sm' : 'text-base';
   const optionGap = size === 'sm' ? 'gap-2' : 'gap-2.5';
 
+  const emitChange = useCallback((next: string[]): void => {
+    onChange?.(next);
+    if (changeEvent) {
+      eventBus.emit(`UI:${changeEvent}`, { selected: next });
+    }
+  }, [onChange, changeEvent, eventBus]);
+
   const toggle = (optionId: string, checked: boolean): void => {
-    if (!onChange) return;
     if (constraint.type === 'single') {
-      onChange(checked ? [optionId] : []);
+      emitChange(checked ? [optionId] : []);
       return;
     }
     if (checked) {
       if (selected.includes(optionId)) return;
-      onChange([...selected, optionId]);
+      emitChange([...selected, optionId]);
     } else {
-      onChange(selected.filter((id) => id !== optionId));
+      emitChange(selected.filter((id) => id !== optionId));
     }
   };
 
