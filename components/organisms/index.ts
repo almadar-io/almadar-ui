@@ -241,7 +241,7 @@ export {
   VersionDiff,
   type VersionDiffProps,
   type DiffRevision,
-  type DiffLine,
+  type DiffLine as VersionDiffLine,
   type DiffLineType,
 } from "./VersionDiff";
 export {

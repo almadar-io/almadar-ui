@@ -29,6 +29,7 @@ import { cn } from "../../lib/cn";
 import { Card } from "../atoms/Card";
 import { Typography } from "../atoms/Typography";
 import { Button } from "../atoms/Button";
+import { Box } from "../atoms/Box";
 
 export type BlockType =
   | "paragraph"
@@ -357,10 +358,10 @@ function Editable({
     [onValueChange],
   );
 
-  const Tag = tag as React.ElementType;
   return (
-    <Tag
-      ref={ref as React.Ref<HTMLElement>}
+    <Box
+      as={tag}
+      ref={ref as React.Ref<HTMLDivElement>}
       contentEditable={!readOnly}
       suppressContentEditableWarning
       role={readOnly ? undefined : "textbox"}
@@ -594,10 +595,10 @@ function BlockRow({
       }
       case "bullet-list":
       case "numbered-list": {
-        const ListTag = (block.type === "bullet-list" ? "ul" : "ol") as React.ElementType;
         const items = block.children ?? [];
         return (
-          <ListTag
+          <Box
+            as={block.type === "bullet-list" ? "ul" : "ol"}
             className={cn(
               "space-y-1 pl-6",
               block.type === "bullet-list" ? "list-disc" : "list-decimal",
@@ -643,7 +644,7 @@ function BlockRow({
                 </button>
               </li>
             )}
-          </ListTag>
+          </Box>
         );
       }
       case "paragraph":

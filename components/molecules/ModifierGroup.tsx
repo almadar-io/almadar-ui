@@ -12,6 +12,7 @@
 import React from 'react';
 import { cn } from '../../lib/cn';
 import { Typography } from '../atoms/Typography';
+import { Box } from '../atoms/Box';
 
 export interface ModifierOption {
   id: string;
@@ -190,9 +191,11 @@ export const ModifierGroup: React.FC<ModifierGroupProps> = ({
       </div>
 
       {error && (
-        <Typography variant="caption" color="error" role="alert">
-          {error}
-        </Typography>
+        <Box role="alert">
+          <Typography variant="caption" color="error">
+            {error}
+          </Typography>
+        </Box>
       )}
     </fieldset>
   );

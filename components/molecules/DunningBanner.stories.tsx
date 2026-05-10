@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { DunningBanner } from './DunningBanner';
 
@@ -20,7 +21,7 @@ const meta: Meta<typeof DunningBanner> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const wide = (Story: () => JSX.Element) => (
+const wide = (Story: () => ReactElement) => (
     <div className="w-[520px]">
         <Story />
     </div>
