@@ -16,32 +16,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: pnpm
+          cache: npm
 
-      - run: pnpm install --no-frozen-lockfile
+      - run: npm ci
 
       - name: Typecheck
-        run: pnpm typecheck
+        run: npm run typecheck --if-present
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
 
       - name: Build
-        run: pnpm build
+        run: npm run build --if-present
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
 
       - name: Test
-        run: pnpm test --if-present
+        run: npm test --if-present
 
       - name: Lint
-        run: pnpm exec eslint --no-warn-ignored --max-warnings 0 components/ hooks/ providers/ context/ stores/ renderer/ lib/ types/
+        run: npx eslint --no-warn-ignored --max-warnings 0 components/ hooks/ providers/ context/ stores/ renderer/ lib/ types/
 
   # validate-service disabled (service .orb schemas need fixing)
   # validate-service:

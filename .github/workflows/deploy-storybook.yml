@@ -26,20 +26,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
+          cache: npm
 
-      - run: pnpm install --no-frozen-lockfile
+      - run: npm ci
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
 
       - name: Build Storybook
-        run: pnpm run build-storybook
+        run: npm run build-storybook
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
 
@@ -50,20 +47,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 10
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
+          cache: npm
 
-      - run: pnpm install --no-frozen-lockfile
+      - run: npm ci
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
 
       - name: Build Storybook
-        run: pnpm run build-storybook
+        run: npm run build-storybook
         env:
           NODE_OPTIONS: '--max-old-space-size=4096'
 
