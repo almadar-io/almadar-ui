@@ -50,7 +50,7 @@ export interface MediaGalleryAction {
     variant?: "primary" | "secondary" | "ghost";
 }
 
-export interface MediaGalleryProps extends EntityDisplayProps<MediaItem> {
+export interface MediaGalleryProps extends EntityDisplayProps<EntityRow> {
     /** Gallery title */
     title?: string;
     /** Media items */
