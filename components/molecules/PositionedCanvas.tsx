@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useRef, useState } from "react";
+import type { EventPayloadValue } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { Typography, Badge, Box } from "../atoms";
 import { Users, Coffee, AlertCircle } from "lucide-react";
@@ -21,7 +22,13 @@ export interface CanvasItem {
 }
 
 export interface PositionedCanvasProps {
-    items: CanvasItem[];
+    /**
+     * Items to render. Accepts either a typed array (direct consumers) or the
+     * runtime payload shape from a render-ui binding (`@payload.data`). The
+     * molecule narrows non-array values to `[]` and validates element shape at
+     * render time via the `id` / `x` / `y` guards.
+     */
+    items: readonly CanvasItem[] | EventPayloadValue;
     width?: number;
     height?: number;
     selectedId?: string | null;
@@ -80,7 +87,7 @@ function getStatusIcon(status: CanvasItemStatus): React.ReactNode {
 }
 
 export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
-    items,
+    items: itemsProp,
     width = 800,
     height = 600,
     selectedId = null,
@@ -92,6 +99,10 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
     const containerRef = useRef<HTMLDivElement>(null);
     const dragRef = useRef<DragState | null>(null);
     const [draggingId, setDraggingId] = useState<string | null>(null);
+
+    const items: readonly CanvasItem[] = Array.isArray(itemsProp)
+        ? (itemsProp as readonly CanvasItem[])
+        : [];
 
     const handlePointerDown = useCallback(
         (e: React.PointerEvent<HTMLDivElement>, item: CanvasItem) => {
