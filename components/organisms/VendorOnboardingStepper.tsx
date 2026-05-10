@@ -23,6 +23,7 @@ import { Button } from "../atoms/Button";
 import { Checkbox } from "../atoms/Checkbox";
 import { Icon } from "../atoms/Icon";
 import { Box } from "../atoms/Box";
+import { Label } from "../atoms/Label";
 import { HStack, VStack } from "../atoms/Stack";
 import { WizardProgress } from "../molecules/WizardProgress";
 import { WizardNavigation } from "../molecules/WizardNavigation";
@@ -180,20 +181,20 @@ interface FieldProps {
 }
 
 const Field: React.FC<FieldProps> = ({ label, htmlFor, error, hint, children }) => (
-  <div className="space-y-1">
-    <label htmlFor={htmlFor} className="flex items-center gap-1">
+  <Box className="space-y-1">
+    <Label htmlFor={htmlFor} className="flex items-center gap-1">
       <Typography variant="small" weight="semibold">
         {label}
       </Typography>
       {hint}
-    </label>
+    </Label>
     {children}
     {error && (
       <Typography variant="caption" color="error">
         {error}
       </Typography>
     )}
-  </div>
+  </Box>
 );
 
 export const VendorOnboardingStepper: React.FC<VendorOnboardingStepperProps> = ({
@@ -340,9 +341,9 @@ export const VendorOnboardingStepper: React.FC<VendorOnboardingStepperProps> = (
             error={err.ein}
             hint={
               <Tooltip content="Your 9-digit Employer Identification Number, formatted xx-xxxxxxx. Found on IRS Form SS-4.">
-                <span className="inline-flex">
+                <Box as="span" className="inline-flex">
                   <Icon icon={HelpCircle} size="sm" className="text-muted-foreground" />
-                </span>
+                </Box>
               </Tooltip>
             }
           >

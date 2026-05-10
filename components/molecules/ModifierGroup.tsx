@@ -13,6 +13,9 @@ import React from 'react';
 import { cn } from '../../lib/cn';
 import { Typography } from '../atoms/Typography';
 import { Box } from '../atoms/Box';
+import { Label } from '../atoms/Label';
+import { Radio } from '../atoms/Radio';
+import { Checkbox } from '../atoms/Checkbox';
 
 export interface ModifierOption {
   id: string;
@@ -113,11 +116,12 @@ export const ModifierGroup: React.FC<ModifierGroupProps> = ({
   };
 
   return (
-    <fieldset
+    <Box
+      as="fieldset"
       className={cn('space-y-2', className)}
       aria-describedby={`${groupId}-hint`}
     >
-      <div className="flex items-baseline justify-between gap-2">
+      <Box className="flex items-baseline justify-between gap-2">
         <Typography as="legend" variant="label" weight="semibold">
           {title}
         </Typography>
@@ -128,7 +132,7 @@ export const ModifierGroup: React.FC<ModifierGroupProps> = ({
         >
           {hint}
         </Typography>
-      </div>
+      </Box>
 
       {description && (
         <Typography variant="caption" color="muted">
@@ -136,32 +140,45 @@ export const ModifierGroup: React.FC<ModifierGroupProps> = ({
         </Typography>
       )}
 
-      <div className={cn('flex flex-col', optionGap)}>
+      <Box className={cn('flex flex-col', optionGap)}>
         {options.map((option) => {
           const isChecked = selected.includes(option.id);
           const isDisabled = option.disabled || option.outOfStock;
           const optionId = `${inputName}-${option.id}`;
           return (
-            <label
+            <Label
               key={option.id}
               htmlFor={optionId}
               className={cn(
-                'flex items-center gap-2.5 cursor-pointer select-none',
+                'flex items-center gap-2.5 cursor-pointer select-none font-normal',
                 isDisabled && 'cursor-not-allowed opacity-60',
               )}
             >
-              <input
-                id={optionId}
-                type={constraint.type === 'single' ? 'radio' : 'checkbox'}
-                name={inputName}
-                value={option.id}
-                checked={isChecked}
-                disabled={isDisabled}
-                onChange={(e) => toggle(option.id, e.target.checked)}
-                className="h-4 w-4 accent-primary"
-                aria-invalid={!!error}
-              />
-              <span
+              {constraint.type === 'single' ? (
+                <Radio
+                  id={optionId}
+                  name={inputName}
+                  value={option.id}
+                  checked={isChecked}
+                  disabled={isDisabled}
+                  onChange={(e) => toggle(option.id, e.target.checked)}
+                  className="h-4 w-4 accent-primary"
+                  aria-invalid={!!error}
+                />
+              ) : (
+                <Checkbox
+                  id={optionId}
+                  name={inputName}
+                  value={option.id}
+                  checked={isChecked}
+                  disabled={isDisabled}
+                  onChange={(e) => toggle(option.id, e.target.checked)}
+                  className="h-4 w-4 accent-primary"
+                  aria-invalid={!!error}
+                />
+              )}
+              <Typography
+                as="span"
                 className={cn(
                   'flex-1',
                   labelTextSize,
@@ -170,7 +187,7 @@ export const ModifierGroup: React.FC<ModifierGroupProps> = ({
                 )}
               >
                 {option.label}
-              </span>
+              </Typography>
               {option.priceDelta !== undefined && option.priceDelta !== 0 && (
                 <Typography variant="caption" color="muted">
                   {formatPriceDelta(option.priceDelta)}
@@ -185,10 +202,10 @@ export const ModifierGroup: React.FC<ModifierGroupProps> = ({
                   Out of stock
                 </Typography>
               )}
-            </label>
+            </Label>
           );
         })}
-      </div>
+      </Box>
 
       {error && (
         <Box role="alert">
@@ -197,7 +214,7 @@ export const ModifierGroup: React.FC<ModifierGroupProps> = ({
           </Typography>
         </Box>
       )}
-    </fieldset>
+    </Box>
   );
 };
 

@@ -11,6 +11,8 @@ import { Clock, Utensils } from 'lucide-react';
 import { Typography } from '../atoms/Typography';
 import { Badge } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
+import { Box } from '../atoms/Box';
+import { Divider } from '../atoms/Divider';
 import { cn } from '../../lib/cn';
 
 export type KdsStatus = 'pending' | 'preparing' | 'ready' | 'served';
@@ -98,7 +100,8 @@ export const KitchenDisplayStrip: React.FC<KitchenDisplayStripProps> = ({
   const aging = computeAging(ageMinutes);
 
   return (
-    <div
+    <Box
+      as="article"
       className={cn(
         'flex flex-col bg-card border-l-4 rounded-sm shadow',
         'border-[length:var(--border-width)]',
@@ -109,9 +112,9 @@ export const KitchenDisplayStrip: React.FC<KitchenDisplayStripProps> = ({
       role="article"
       aria-label={`Order ${orderId}`}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex flex-col min-w-0">
-          <div className="flex items-center gap-2">
+      <Box className="flex items-start justify-between gap-2">
+        <Box className="flex flex-col min-w-0">
+          <Box className="flex items-center gap-2">
             <Utensils className="w-4 h-4 flex-shrink-0 text-muted-foreground" aria-hidden />
             <Typography variant="h6" className="truncate">
               #{orderId}
@@ -119,7 +122,7 @@ export const KitchenDisplayStrip: React.FC<KitchenDisplayStripProps> = ({
             <Badge variant={statusVariant[status]} size="sm">
               {status}
             </Badge>
-          </div>
+          </Box>
           {(tableLabel || serverName) && (
             <Typography variant="small" color="muted" className="text-xs mt-0.5">
               {tableLabel}
@@ -127,37 +130,37 @@ export const KitchenDisplayStrip: React.FC<KitchenDisplayStripProps> = ({
               {serverName}
             </Typography>
           )}
-        </div>
+        </Box>
 
-        <div className={cn('flex items-center gap-1 flex-shrink-0', agingTextClasses[aging])}>
+        <Box className={cn('flex items-center gap-1 flex-shrink-0', agingTextClasses[aging])}>
           <Clock className="w-4 h-4" aria-hidden />
           <Typography variant="small" className="text-sm font-mono">
             {formatAge(ageMinutes)}
           </Typography>
-        </div>
-      </div>
+        </Box>
+      </Box>
 
-      <div className="border-t border-border" />
+      <Divider />
 
-      <ul className="flex flex-col gap-2">
+      <Box as="ul" className="flex flex-col gap-2">
         {items.map((item) => (
-          <li key={item.id} className="flex flex-col gap-1">
-            <div className="flex items-baseline gap-2">
+          <Box as="li" key={item.id} className="flex flex-col gap-1">
+            <Box className="flex items-baseline gap-2">
               <Typography variant="body2" className="font-semibold tabular-nums">
                 {item.quantity}×
               </Typography>
               <Typography variant="body2" className="flex-1">
                 {item.name}
               </Typography>
-            </div>
+            </Box>
             {item.modifiers && item.modifiers.length > 0 && (
-              <div className="flex flex-wrap gap-1 pl-6">
+              <Box className="flex flex-wrap gap-1 pl-6">
                 {item.modifiers.map((mod) => (
                   <Badge key={mod} variant="neutral" size="sm">
                     {mod}
                   </Badge>
                 ))}
-              </div>
+              </Box>
             )}
             {item.notes && (
               <Typography
@@ -168,14 +171,14 @@ export const KitchenDisplayStrip: React.FC<KitchenDisplayStripProps> = ({
                 {item.notes}
               </Typography>
             )}
-          </li>
+          </Box>
         ))}
-      </ul>
+      </Box>
 
       {(status === 'pending' || status === 'preparing' || status === 'ready') && (
         <>
-          <div className="border-t border-border" />
-          <div className="flex items-center gap-2">
+          <Divider />
+          <Box className="flex items-center gap-2">
             {(status === 'pending' || status === 'preparing') && onMarkReady && (
               <Button variant="success" size="sm" onClick={onMarkReady} className="flex-1">
                 Mark Ready
@@ -186,10 +189,10 @@ export const KitchenDisplayStrip: React.FC<KitchenDisplayStripProps> = ({
                 Mark Served
               </Button>
             )}
-          </div>
+          </Box>
         </>
       )}
-    </div>
+    </Box>
   );
 };
 

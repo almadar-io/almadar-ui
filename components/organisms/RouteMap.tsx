@@ -3,6 +3,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { MapPin, GripVertical, ArrowRight, X, Clock, Route } from 'lucide-react';
 import { MapView, type MapMarkerData } from '../molecules/MapView';
+import { Box } from '../atoms/Box';
 import { Card } from '../atoms/Card';
 import { Typography } from '../atoms/Typography';
 import { Badge, type BadgeVariant } from '../atoms/Badge';
@@ -161,43 +162,44 @@ export function RouteMap({
       className={cn('flex flex-col overflow-hidden', className)}
       data-testid="route-map"
     >
-      <div className="flex flex-col md:flex-row min-h-[400px]">
-        <div className="w-full md:w-[30%] border-b md:border-b-0 md:border-r border-border flex flex-col">
-          <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+      <Box className="flex flex-col md:flex-row min-h-[400px]">
+        <Box className="w-full md:w-[30%] border-b md:border-b-0 md:border-r border-border flex flex-col">
+          <Box className="px-4 py-3 border-b border-border flex items-center gap-2">
             <Route className="w-4 h-4 text-muted-foreground" />
             <Typography variant="subheading">Route</Typography>
             <Badge variant="neutral" size="sm" label={`${stops.length} stops`} />
-          </div>
-          <div className="flex-1 overflow-y-auto" data-testid="route-map-stop-list">
+          </Box>
+          <Box className="flex-1 overflow-y-auto" data-testid="route-map-stop-list">
             {origin ? (
-              <div className="px-4 py-3 border-b border-border bg-muted/30">
-                <div className="flex items-center gap-2">
+              <Box className="px-4 py-3 border-b border-border bg-muted/30">
+                <Box className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-success flex-shrink-0" />
-                  <div className="min-w-0 flex-1">
+                  <Box className="min-w-0 flex-1">
                     <Typography variant="caption" className="uppercase tracking-wide">Origin</Typography>
                     <Typography variant="body2" truncate>{origin.label}</Typography>
-                  </div>
-                </div>
-              </div>
+                  </Box>
+                </Box>
+              </Box>
             ) : null}
             {stops.length === 0 ? (
-              <div className="px-4 py-8 text-center">
+              <Box className="px-4 py-8 text-center">
                 <Typography variant="body2" color="muted">No stops on this route.</Typography>
-              </div>
+              </Box>
             ) : (
-              <ul className="divide-y divide-border">
+              <Box as="ul" className="divide-y divide-border">
                 {stops.map((stop, index) => {
                   const isSelected = stop.id === selectedStopId;
                   const isDragOver = stop.id === dragOverId && dragId != null && dragId !== stop.id;
                   const status = stop.status ?? 'pending';
                   return (
-                    <li
+                    <Box
+                      as="li"
                       key={stop.id}
                       data-testid={`route-map-stop-${stop.id}`}
                       data-stop-id={stop.id}
                       draggable={editable}
                       onDragStart={() => handleDragStart(stop.id)}
-                      onDragOver={(e) => handleDragOver(e, stop.id)}
+                      onDragOver={(e: React.DragEvent) => handleDragOver(e, stop.id)}
                       onDrop={() => handleDrop(stop.id)}
                       onDragEnd={handleDragEnd}
                       onClick={() => onSelectStop?.(stop.id === selectedStopId ? null : stop.id)}
@@ -209,15 +211,17 @@ export function RouteMap({
                       )}
                     >
                       {editable ? (
-                        <span
+                        <Box
+                          as="span"
                           className="flex-shrink-0 mt-1 cursor-grab text-muted-foreground hover:text-foreground"
                           aria-label="Drag to reorder"
                           data-testid={`route-map-drag-${stop.id}`}
                         >
                           <GripVertical className="w-4 h-4" />
-                        </span>
+                        </Box>
                       ) : null}
-                      <span
+                      <Box
+                        as="span"
                         className={cn(
                           'flex-shrink-0 w-6 h-6 rounded-full text-xs font-bold inline-flex items-center justify-center',
                           'bg-primary text-primary-foreground',
@@ -225,23 +229,23 @@ export function RouteMap({
                         aria-label={`Stop ${index + 1}`}
                       >
                         {index + 1}
-                      </span>
-                      <div className="min-w-0 flex-1">
+                      </Box>
+                      <Box className="min-w-0 flex-1">
                         <Typography variant="body2" weight="semibold" truncate>{stop.label}</Typography>
                         <Typography variant="caption" truncate>{stop.address}</Typography>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                        <Box className="flex items-center gap-2 mt-1 flex-wrap">
                           <Badge variant={statusVariant[status]} size="sm" label={statusLabel[status]} />
                           {stop.estimatedArrival ? (
-                            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                            <Box as="span" className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                               <Clock className="w-3 h-3" />
                               {stop.estimatedArrival}
-                            </span>
+                            </Box>
                           ) : null}
                           {stop.durationMinutes != null ? (
                             <Typography variant="caption">{formatDuration(stop.durationMinutes)}</Typography>
                           ) : null}
-                        </div>
-                      </div>
+                        </Box>
+                      </Box>
                       {editable && onSkipStop && status !== 'skipped' && status !== 'completed' ? (
                         <Button
                           variant="ghost"
@@ -255,14 +259,14 @@ export function RouteMap({
                           leftIcon={<X className="w-3.5 h-3.5" />}
                         />
                       ) : null}
-                    </li>
+                    </Box>
                   );
                 })}
-              </ul>
+              </Box>
             )}
-          </div>
-        </div>
-        <div className="w-full md:w-[70%] relative" data-testid="route-map-map-container">
+          </Box>
+        </Box>
+        <Box className="w-full md:w-[70%] relative" data-testid="route-map-map-container">
           {markers.length > 0 ? (
             <MapView
               markers={markers}
@@ -273,40 +277,38 @@ export function RouteMap({
               className="h-full min-h-[400px]"
             />
           ) : (
-            <div className="h-full min-h-[400px] flex items-center justify-center bg-muted/20">
-              <div className="text-center px-6">
+            <Box className="h-full min-h-[400px] flex items-center justify-center bg-muted/20">
+              <Box className="text-center px-6">
                 <MapPin className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
                 <Typography variant="body2" color="muted">
                   Add stops with coordinates to see them on the map.
                 </Typography>
-              </div>
-            </div>
+              </Box>
+            </Box>
           )}
-          {/* TODO: project stop lat/lng to SVG pixel space and draw an ordered polyline overlay
-              connecting stops; current rendering relies on MapView's own marker layer. */}
-        </div>
-      </div>
-      <div className="border-t border-border px-4 py-3 flex items-center gap-4 flex-wrap bg-muted/20">
-        <div className="flex items-center gap-2">
+        </Box>
+      </Box>
+      <Box className="border-t border-border px-4 py-3 flex items-center gap-4 flex-wrap bg-muted/20">
+        <Box className="flex items-center gap-2">
           <Route className="w-4 h-4 text-muted-foreground" />
           <Typography variant="caption" className="uppercase tracking-wide">Total</Typography>
-        </div>
+        </Box>
         <Typography variant="body2">
           {stops.length} {stops.length === 1 ? 'stop' : 'stops'}
         </Typography>
         {totalDistanceKm != null ? (
-          <span className="inline-flex items-center gap-1">
+          <Box as="span" className="inline-flex items-center gap-1">
             <ArrowRight className="w-3.5 h-3.5 text-muted-foreground" />
             <Typography variant="body2">{totalDistanceKm.toFixed(1)} km</Typography>
-          </span>
+          </Box>
         ) : null}
         {totalDurationMinutes != null ? (
-          <span className="inline-flex items-center gap-1">
+          <Box as="span" className="inline-flex items-center gap-1">
             <Clock className="w-3.5 h-3.5 text-muted-foreground" />
             <Typography variant="body2">{formatDuration(totalDurationMinutes)}</Typography>
-          </span>
+          </Box>
         ) : null}
-      </div>
+      </Box>
     </Card>
   );
 }

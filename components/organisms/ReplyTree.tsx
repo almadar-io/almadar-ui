@@ -9,7 +9,7 @@
 import React, { useCallback, useState } from "react";
 import { ChevronRight, ChevronDown, MessageSquare, Flag } from "lucide-react";
 import { cn } from "../../lib/cn";
-import { Avatar, Typography, Button } from "../atoms";
+import { Avatar, Typography, Button, Box } from "../atoms";
 import { VoteStack } from "../molecules/VoteStack";
 
 export interface ReplyNode {
@@ -88,41 +88,35 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
     }, [node.id, toggleCollapse]);
 
     return (
-        <div className="flex flex-row gap-2 items-stretch min-w-0">
-            <div className="flex flex-col items-center flex-shrink-0 w-6">
+        <Box className="flex flex-row gap-2 items-stretch min-w-0">
+            <Box className="flex flex-col items-center flex-shrink-0 w-6">
                 {hasReplies ? (
-                    <button
-                        type="button"
+                    <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={handleToggle}
                         aria-label={isCollapsed ? "Expand replies" : "Collapse replies"}
                         aria-expanded={!isCollapsed}
+                        leftIcon={isCollapsed ? ChevronRight : ChevronDown}
                         className={cn(
-                            "inline-flex items-center justify-center w-6 h-6",
+                            "w-6 h-6 p-0 min-w-0",
                             "rounded-sm text-muted-foreground",
                             "hover:bg-muted hover:text-foreground",
-                            "focus:outline-none focus:ring-[length:var(--focus-ring-width)] focus:ring-ring",
-                            "transition-colors",
                         )}
-                    >
-                        {isCollapsed ? (
-                            <ChevronRight className="w-4 h-4" />
-                        ) : (
-                            <ChevronDown className="w-4 h-4" />
-                        )}
-                    </button>
+                    />
                 ) : (
-                    <div className="w-6 h-6" aria-hidden="true" />
+                    <Box className="w-6 h-6" aria-hidden="true" />
                 )}
                 {hasReplies && !isCollapsed && (
-                    <div
+                    <Box
                         className="flex-1 w-px bg-border mt-1"
                         aria-hidden="true"
                     />
                 )}
-            </div>
+            </Box>
 
-            <div className="flex flex-col gap-2 flex-1 min-w-0 pb-3">
-                <div className="flex flex-row gap-2 items-center min-w-0">
+            <Box className="flex flex-col gap-2 flex-1 min-w-0 pb-3">
+                <Box className="flex flex-row gap-2 items-center min-w-0">
                     <Avatar
                         src={node.authorAvatarUrl}
                         name={node.authorName}
@@ -134,14 +128,14 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
                     <Typography variant="caption" color="secondary">
                         {node.postedAt}
                     </Typography>
-                </div>
+                </Box>
 
                 <Typography variant="body" className="whitespace-pre-wrap break-words">
                     {node.content}
                 </Typography>
 
                 {showActions && (
-                    <div className="flex flex-row gap-2 items-center">
+                    <Box className="flex flex-row gap-2 items-center">
                         <VoteStack
                             count={node.voteCount ?? 0}
                             userVote={node.userVote ?? null}
@@ -168,25 +162,25 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
                         >
                             Flag
                         </Button>
-                    </div>
+                    </Box>
                 )}
 
                 {hasReplies && !isCollapsed && (
                     atMaxDepth ? (
-                        <button
-                            type="button"
+                        <Button
+                            variant="ghost"
+                            size="sm"
                             onClick={handleContinue}
+                            rightIcon={ChevronRight}
                             className={cn(
-                                "inline-flex items-center self-start gap-1",
-                                "text-sm text-primary hover:underline",
-                                "focus:outline-none focus:ring-[length:var(--focus-ring-width)] focus:ring-ring rounded-sm",
+                                "self-start gap-1 px-0 h-auto",
+                                "text-sm text-primary hover:underline hover:bg-transparent",
                             )}
                         >
                             Continue thread
-                            <ChevronRight className="w-3 h-3" />
-                        </button>
+                        </Button>
                     ) : (
-                        <div className="flex flex-col gap-2 mt-1">
+                        <Box className="flex flex-col gap-2 mt-1">
                             {node.replies!.map((child) => (
                                 <ReplyTreeNode
                                     key={child.id}
@@ -202,11 +196,11 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
                                     showActions={showActions}
                                 />
                             ))}
-                        </div>
+                        </Box>
                     )
                 )}
-            </div>
-        </div>
+            </Box>
+        </Box>
     );
 };
 
@@ -249,14 +243,14 @@ export const ReplyTree: React.FC<ReplyTreeProps> = ({
 
     if (nodes.length === 0) {
         return (
-            <div className={cn("text-sm text-muted-foreground", className)}>
+            <Box className={cn("text-sm text-muted-foreground", className)}>
                 No replies yet.
-            </div>
+            </Box>
         );
     }
 
     return (
-        <div className={cn("flex flex-col gap-2 min-w-0", className)}>
+        <Box className={cn("flex flex-col gap-2 min-w-0", className)}>
             {nodes.map((node) => (
                 <ReplyTreeNode
                     key={node.id}
@@ -272,7 +266,7 @@ export const ReplyTree: React.FC<ReplyTreeProps> = ({
                     showActions={showActions}
                 />
             ))}
-        </div>
+        </Box>
     );
 };
 

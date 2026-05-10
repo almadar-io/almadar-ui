@@ -2,6 +2,10 @@
 
 import React, { useCallback } from "react";
 import { cn } from "../../lib/cn";
+import { Box } from "../atoms/Box";
+import { Button } from "../atoms/Button";
+import { Label } from "../atoms/Label";
+import { Radio } from "../atoms/Radio";
 
 export type LikertScaleSize = "sm" | "md" | "lg";
 export type LikertScaleVariant = "radios" | "buttons";
@@ -40,10 +44,10 @@ export const DEFAULT_LIKERT_OPTIONS: LikertOption[] = [
   { value: 5, label: "Strongly Agree" },
 ];
 
-const radioSizes: Record<LikertScaleSize, { control: string; dot: string; label: string; gap: string }> = {
-  sm: { control: "w-4 h-4", dot: "w-2 h-2", label: "text-xs", gap: "gap-1.5" },
-  md: { control: "w-5 h-5", dot: "w-2.5 h-2.5", label: "text-sm", gap: "gap-2" },
-  lg: { control: "w-6 h-6", dot: "w-3 h-3", label: "text-base", gap: "gap-2.5" },
+const radioSizes: Record<LikertScaleSize, { label: string; gap: string }> = {
+  sm: { label: "text-xs", gap: "gap-1.5" },
+  md: { label: "text-sm", gap: "gap-2" },
+  lg: { label: "text-base", gap: "gap-2.5" },
 };
 
 const buttonSizes: Record<LikertScaleSize, string> = {
@@ -83,7 +87,7 @@ export const LikertScale = React.forwardRef<HTMLDivElement, LikertScaleProps>(
     );
 
     return (
-      <div
+      <Box
         ref={ref}
         className={cn(
           "w-full",
@@ -94,18 +98,18 @@ export const LikertScale = React.forwardRef<HTMLDivElement, LikertScaleProps>(
         aria-label={question ?? "Likert scale"}
       >
         {question && (
-          <div
+          <Box
             className={cn(
               "mb-3 font-medium text-foreground",
               questionSizes[size],
             )}
           >
             {question}
-          </div>
+          </Box>
         )}
 
         {variant === "buttons" ? (
-          <div
+          <Box
             className={cn(
               "inline-flex w-full items-stretch rounded-sm overflow-hidden",
               "border-[length:var(--border-width)] border-border",
@@ -115,7 +119,7 @@ export const LikertScale = React.forwardRef<HTMLDivElement, LikertScaleProps>(
             {options.map((opt, idx) => {
               const selected = value !== null && value !== undefined && value === opt.value;
               return (
-                <button
+                <Button
                   key={String(opt.value)}
                   type="button"
                   role="radio"
@@ -126,6 +130,7 @@ export const LikertScale = React.forwardRef<HTMLDivElement, LikertScaleProps>(
                     "flex-1 text-center font-medium transition-colors duration-100",
                     "focus:outline-none focus:ring-[length:var(--focus-ring-width)] focus:ring-ring focus:ring-inset",
                     "disabled:cursor-not-allowed",
+                    "rounded-none gap-0 shadow-none border-none",
                     idx > 0 && "border-l-[length:var(--border-width)] border-border",
                     buttonSizes[size],
                     selected
@@ -134,12 +139,12 @@ export const LikertScale = React.forwardRef<HTMLDivElement, LikertScaleProps>(
                   )}
                 >
                   {opt.label}
-                </button>
+                </Button>
               );
             })}
-          </div>
+          </Box>
         ) : (
-          <div
+          <Box
             className={cn(
               "flex w-full items-start justify-between",
               radioSizes[size].gap,
@@ -149,49 +154,22 @@ export const LikertScale = React.forwardRef<HTMLDivElement, LikertScaleProps>(
               const selected = value !== null && value !== undefined && value === opt.value;
               const inputId = `${groupId}-${String(opt.value)}`;
               return (
-                <div
+                <Box
                   key={String(opt.value)}
                   className={cn(
                     "flex flex-1 flex-col items-center",
                     radioSizes[size].gap,
                   )}
                 >
-                  <div className="relative flex-shrink-0">
-                    <input
-                      type="radio"
-                      id={inputId}
-                      name={groupId}
-                      checked={selected}
-                      disabled={disabled}
-                      onChange={() => handleSelect(opt.value)}
-                      className="sr-only peer"
-                    />
-                    <label
-                      htmlFor={inputId}
-                      className={cn(
-                        "flex items-center justify-center rounded-full",
-                        "border-[length:var(--border-width)] transition-colors duration-100",
-                        "peer-focus:outline-none peer-focus:ring-[length:var(--focus-ring-width)] peer-focus:ring-ring peer-focus:ring-offset-2",
-                        radioSizes[size].control,
-                        selected
-                          ? "border-primary bg-primary"
-                          : "border-border bg-surface",
-                        disabled
-                          ? "cursor-not-allowed"
-                          : "cursor-pointer hover:border-[var(--color-border-hover)]",
-                      )}
-                    >
-                      {selected && (
-                        <div
-                          className={cn(
-                            "rounded-full bg-primary-foreground",
-                            radioSizes[size].dot,
-                          )}
-                        />
-                      )}
-                    </label>
-                  </div>
-                  <label
+                  <Radio
+                    id={inputId}
+                    name={groupId}
+                    size={size}
+                    checked={selected}
+                    disabled={disabled}
+                    onChange={() => handleSelect(opt.value)}
+                  />
+                  <Label
                     htmlFor={inputId}
                     className={cn(
                       "text-center select-none",
@@ -203,13 +181,13 @@ export const LikertScale = React.forwardRef<HTMLDivElement, LikertScaleProps>(
                     )}
                   >
                     {opt.label}
-                  </label>
-                </div>
+                  </Label>
+                </Box>
               );
             })}
-          </div>
+          </Box>
         )}
-      </div>
+      </Box>
     );
   },
 );

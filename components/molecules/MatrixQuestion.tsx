@@ -3,6 +3,8 @@
 import React, { useCallback } from "react";
 import { cn } from "../../lib/cn";
 import { Typography } from "../atoms/Typography";
+import { Box } from "../atoms/Box";
+import { Radio } from "../atoms/Radio";
 
 export interface MatrixRow {
   id: string;
@@ -44,12 +46,12 @@ export const DEFAULT_MATRIX_COLUMNS: MatrixColumn[] = [
 const sizeStyles = {
   sm: {
     cell: "px-2 py-1.5 text-xs",
-    radio: "h-3.5 w-3.5",
+    radio: "sm" as const,
     label: "text-xs",
   },
   md: {
     cell: "px-3 py-2 text-sm",
-    radio: "h-4 w-4",
+    radio: "md" as const,
     label: "text-sm",
   },
 } as const;
@@ -77,45 +79,52 @@ export const MatrixQuestion: React.FC<MatrixQuestionProps> = ({
   );
 
   return (
-    <div className={cn("w-full", className)}>
+    <Box className={cn("w-full", className)}>
       {title && (
         <Typography variant="h4" className="mb-3">
           {title}
         </Typography>
       )}
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="border-b border-border">
-              <th className={cn("text-left font-medium text-muted-foreground", styles.cell)} />
+      <Box overflow="auto" className="overflow-x-auto">
+        <Box as="table" className="w-full border-collapse">
+          <Box as="thead">
+            <Box as="tr" className="border-b border-border">
+              <Box
+                as="th"
+                role="columnheader"
+                className={cn("text-left font-medium text-muted-foreground", styles.cell)}
+              />
               {columns.map((col) => (
-                <th
+                <Box
+                  as="th"
                   key={String(col.value)}
-                  scope="col"
+                  role="columnheader"
                   className={cn(
                     "text-center font-medium text-muted-foreground",
                     styles.cell,
                   )}
                 >
                   {col.label}
-                </th>
+                </Box>
               ))}
-            </tr>
-          </thead>
-          <tbody>
+            </Box>
+          </Box>
+          <Box as="tbody">
             {safeRows.map((row, idx) => {
               const groupName = `matrix-${row.id}`;
               const selected = safeValues[row.id];
               return (
-                <tr
+                <Box
+                  as="tr"
                   key={row.id}
                   className={cn(
                     "border-b border-border",
                     idx % 2 === 1 && "bg-muted/30",
                   )}
                 >
-                  <th
-                    scope="row"
+                  <Box
+                    as="th"
+                    role="rowheader"
                     className={cn(
                       "text-left font-normal text-foreground",
                       styles.cell,
@@ -123,44 +132,44 @@ export const MatrixQuestion: React.FC<MatrixQuestionProps> = ({
                     )}
                   >
                     {row.label}
-                  </th>
+                  </Box>
                   {columns.map((col) => {
                     const isChecked = selected !== undefined && selected === col.value;
                     const inputId = `${groupName}-${String(col.value)}`;
                     return (
-                      <td key={String(col.value)} className={cn("text-center", styles.cell)}>
-                        <label
-                          htmlFor={inputId}
+                      <Box
+                        as="td"
+                        key={String(col.value)}
+                        className={cn("text-center", styles.cell)}
+                      >
+                        <Box
+                          display="inline-flex"
                           className={cn(
-                            "inline-flex items-center justify-center cursor-pointer",
-                            disabled && "cursor-not-allowed opacity-60",
+                            "items-center justify-center",
+                            disabled && "opacity-60",
                           )}
                         >
-                          <input
+                          <Radio
                             id={inputId}
-                            type="radio"
                             name={groupName}
                             value={String(col.value)}
                             checked={isChecked}
                             disabled={disabled}
+                            size={styles.radio}
                             onChange={() => handleChange(row.id, col.value)}
-                            className={cn(
-                              "accent-primary border-border",
-                              styles.radio,
-                            )}
                             aria-label={`${row.label}: ${col.label}`}
                           />
-                        </label>
-                      </td>
+                        </Box>
+                      </Box>
                     );
                   })}
-                </tr>
+                </Box>
               );
             })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

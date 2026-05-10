@@ -10,6 +10,7 @@
 import React from 'react';
 import { Heart, Star, MapPin } from 'lucide-react';
 import { cn } from '../../lib/cn';
+import { Box } from '../atoms/Box';
 import { Card } from '../atoms/Card';
 import { VStack, HStack } from '../atoms/Stack';
 import { Badge } from '../atoms/Badge';
@@ -106,7 +107,7 @@ export const ListingCard: React.FC<ListingCardProps> = ({
   layout = 'vertical',
   className,
 }) => {
-  const handleFavoriteClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     onFavoriteToggle?.();
@@ -134,23 +135,27 @@ export const ListingCard: React.FC<ListingCardProps> = ({
       )}
       onClick={onClick}
     >
-      <div className={imageWrapperClasses}>
-        <img
-          src={imageUrl}
-          alt={imageAlt ?? title}
+      <Box className={imageWrapperClasses}>
+        <Box
+          as="img"
+          {...({
+            src: imageUrl,
+            alt: imageAlt ?? title,
+            loading: 'lazy',
+          } as React.ImgHTMLAttributes<HTMLImageElement>)}
           className="w-full h-full object-cover"
-          loading="lazy"
         />
         {badgeInfo && (
-          <div className="absolute top-2 left-2">
+          <Box className="absolute top-2 left-2">
             <Badge variant={badgeInfo.variant} size="sm">
               {badgeInfo.label}
             </Badge>
-          </div>
+          </Box>
         )}
         {onFavoriteToggle && (
-          <button
-            type="button"
+          <Box
+            as="button"
+            {...{ type: 'button' as const }}
             onClick={handleFavoriteClick}
             aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
             aria-pressed={favorite}
@@ -172,9 +177,9 @@ export const ListingCard: React.FC<ListingCardProps> = ({
               fill={favorite ? 'currentColor' : 'none'}
               strokeWidth={2}
             />
-          </button>
+          </Box>
         )}
-      </div>
+      </Box>
 
       <VStack
         gap="xs"
@@ -254,12 +259,13 @@ export const ListingCard: React.FC<ListingCardProps> = ({
 
   if (href) {
     return (
-      <a
-        href={href}
+      <Box
+        as="a"
+        {...{ href }}
         className={cn('block no-underline text-inherit')}
       >
         {cardContent}
-      </a>
+      </Box>
     );
   }
 

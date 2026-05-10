@@ -14,6 +14,7 @@ import { VStack, HStack } from '../atoms/Stack';
 import { Badge, type BadgeVariant } from '../atoms/Badge';
 import { Typography } from '../atoms/Typography';
 import { Button } from '../atoms/Button';
+import { Box } from '../atoms/Box';
 
 export interface InvoiceLineItem {
   id: string;
@@ -180,44 +181,44 @@ export const Invoice: React.FC<InvoiceProps> = ({
           </VStack>
         </HStack>
 
-        <div className="w-full overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="py-2 pr-4 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+        <Box className="w-full overflow-x-auto">
+          <Box as="table" className="w-full text-left border-collapse">
+            <Box as="thead">
+              <Box as="tr" className="border-b border-border">
+                <Box as="th" className="py-2 pr-4 text-xs font-bold uppercase tracking-wide text-muted-foreground">
                   Description
-                </th>
-                <th className="py-2 px-4 text-xs font-bold uppercase tracking-wide text-muted-foreground text-right">
+                </Box>
+                <Box as="th" className="py-2 px-4 text-xs font-bold uppercase tracking-wide text-muted-foreground text-right">
                   Qty
-                </th>
-                <th className="py-2 px-4 text-xs font-bold uppercase tracking-wide text-muted-foreground text-right">
+                </Box>
+                <Box as="th" className="py-2 px-4 text-xs font-bold uppercase tracking-wide text-muted-foreground text-right">
                   Unit
-                </th>
-                <th className="py-2 pl-4 text-xs font-bold uppercase tracking-wide text-muted-foreground text-right">
+                </Box>
+                <Box as="th" className="py-2 pl-4 text-xs font-bold uppercase tracking-wide text-muted-foreground text-right">
                   Line Total
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </Box>
+              </Box>
+            </Box>
+            <Box as="tbody">
               {computed.map((item) => (
-                <tr key={item.id} className="border-b border-border">
-                  <td className="py-3 pr-4 text-sm text-foreground">
+                <Box as="tr" key={item.id} className="border-b border-border">
+                  <Box as="td" className="py-3 pr-4 text-sm text-foreground">
                     {item.description}
-                  </td>
-                  <td className="py-3 px-4 text-sm text-foreground text-right">
+                  </Box>
+                  <Box as="td" className="py-3 px-4 text-sm text-foreground text-right">
                     {item.quantity}
-                  </td>
-                  <td className="py-3 px-4 text-sm text-foreground text-right">
+                  </Box>
+                  <Box as="td" className="py-3 px-4 text-sm text-foreground text-right">
                     {fmt(item.unitPrice)}
-                  </td>
-                  <td className="py-3 pl-4 text-sm text-foreground text-right font-medium">
+                  </Box>
+                  <Box as="td" className="py-3 pl-4 text-sm text-foreground text-right font-medium">
                     {fmt(item.lineTotal)}
-                  </td>
-                </tr>
+                  </Box>
+                </Box>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </Box>
+          </Box>
+        </Box>
 
         <VStack gap="xs" align="end" className="w-full">
           <HStack gap="lg" justify="end" className="w-full md:w-1/2">

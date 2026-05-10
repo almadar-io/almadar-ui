@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { cn } from '../../lib/cn';
+import { Box } from '../atoms/Box';
 import { Card } from '../atoms/Card';
 import { VStack, HStack } from '../atoms/Stack';
 import { Badge, type BadgeVariant } from '../atoms/Badge';
@@ -114,7 +115,7 @@ export const TicketStub: React.FC<TicketStubProps> = ({
         className,
       )}
     >
-      <div className={cn('flex-[7] basis-0', sizePaddingClass[size])}>
+      <Box className={cn('flex-[7] basis-0', sizePaddingClass[size])}>
         <VStack gap="sm" className="h-full">
           <Typography variant="h3" truncate>
             {eventName}
@@ -153,14 +154,14 @@ export const TicketStub: React.FC<TicketStubProps> = ({
             {formatPrice(price, currency)}
           </Typography>
         </VStack>
-      </div>
+      </Box>
 
-      <div
+      <Box
         aria-hidden="true"
         className="border-l-[length:2px] border-dashed border-border self-stretch"
       />
 
-      <div className={cn('flex-[3] basis-0 bg-muted/40', sizePaddingClass[size])}>
+      <Box className={cn('flex-[3] basis-0 bg-muted/40', sizePaddingClass[size])}>
         <VStack gap="sm" align="center" className="h-full justify-between">
           {attendeeName && (
             <Typography variant="small" color="muted" align="center" truncate className="w-full">
@@ -168,7 +169,7 @@ export const TicketStub: React.FC<TicketStubProps> = ({
             </Typography>
           )}
 
-          <div
+          <Box
             role="img"
             aria-label={`QR code for ticket ${ticketCode}`}
             className={cn(
@@ -181,13 +182,13 @@ export const TicketStub: React.FC<TicketStubProps> = ({
             )}
           >
             {qrPayload}
-          </div>
+          </Box>
 
           <Typography variant="caption" align="center" className="font-mono">
             {ticketCode}
           </Typography>
         </VStack>
-      </div>
+      </Box>
     </Card>
   );
 };

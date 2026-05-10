@@ -2,7 +2,7 @@
 
 import React, { useCallback, useRef, useState } from "react";
 import { cn } from "../../lib/cn";
-import { Typography, Badge } from "../atoms";
+import { Typography, Badge, Box } from "../atoms";
 import { Users, Coffee, AlertCircle } from "lucide-react";
 
 export type TableStatus = 'empty' | 'seated' | 'ordered' | 'awaiting-bill' | 'cleaning';
@@ -166,7 +166,7 @@ export const TableFloorPlan: React.FC<TableFloorPlanProps> = ({
     );
 
     return (
-        <div
+        <Box
             ref={containerRef}
             data-testid="table-floor-plan"
             className={cn(
@@ -184,7 +184,7 @@ export const TableFloorPlan: React.FC<TableFloorPlanProps> = ({
                 const statusBadge = STATUS_BADGE[status];
 
                 return (
-                    <div
+                    <Box
                         key={table.id}
                         data-testid={`table-node-${table.id}`}
                         data-status={status}
@@ -203,12 +203,12 @@ export const TableFloorPlan: React.FC<TableFloorPlanProps> = ({
                         onPointerUp={(e) => handlePointerUp(e, table)}
                         onPointerCancel={(e) => handlePointerUp(e, table)}
                     >
-                        <div className="flex items-center gap-1">
+                        <Box className="flex items-center gap-1">
                             {getStatusIcon(status)}
                             <Typography variant="body2" weight="semibold">
                                 {table.label}
                             </Typography>
-                        </div>
+                        </Box>
                         <Typography variant="caption" color="secondary">
                             {table.partySize !== undefined && status === 'seated'
                                 ? `${table.partySize}/${table.capacity}`
@@ -228,10 +228,10 @@ export const TableFloorPlan: React.FC<TableFloorPlanProps> = ({
                                 {statusBadge.label}
                             </Badge>
                         )}
-                    </div>
+                    </Box>
                 );
             })}
-        </div>
+        </Box>
     );
 };
 

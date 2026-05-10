@@ -16,7 +16,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "../../lib/cn";
+import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
+import { Icon } from "../atoms/Icon";
 import { Typography } from "../atoms/Typography";
 
 export type DunningSeverity = "soft" | "urgent" | "final";
@@ -93,19 +95,23 @@ export const DunningBanner: React.FC<DunningBannerProps> = ({
   if (nextRetryAt) bodyParts.push(`Next retry: ${nextRetryAt}.`);
 
   return (
-    <div
+    <Box
       role="alert"
+      display="flex"
+      border
+      rounded="sm"
+      shadow="sm"
       className={cn(
-        "flex items-start gap-3 border rounded-sm p-4 shadow-sm",
+        "items-start gap-3 p-4",
         severityContainerClasses[severity],
         className,
       )}
     >
-      <div className="flex-shrink-0 mt-0.5">
-        <SeverityIcon className="w-5 h-5" aria-hidden="true" />
-      </div>
+      <Box className="flex-shrink-0 mt-0.5">
+        <Icon icon={SeverityIcon} size="md" aria-hidden="true" />
+      </Box>
 
-      <div className="flex-1 min-w-0">
+      <Box display="flex" className="flex-1 min-w-0 flex-col">
         <Typography variant="h6" color="inherit" className="mb-1">
           {title}
         </Typography>
@@ -127,7 +133,7 @@ export const DunningBanner: React.FC<DunningBannerProps> = ({
         )}
 
         {(onUpdatePayment || onContactSupport) && (
-          <div className="mt-3 flex gap-2 flex-wrap">
+          <Box display="flex" className="mt-3 gap-2 flex-wrap">
             {onUpdatePayment && (
               <Button
                 variant="primary"
@@ -148,24 +154,24 @@ export const DunningBanner: React.FC<DunningBannerProps> = ({
                 Contact Support
               </Button>
             )}
-          </div>
+          </Box>
         )}
-      </div>
+      </Box>
 
       {isDismissible && onDismiss && (
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={onDismiss}
+          aria-label="Dismiss payment notice"
+          leftIcon={X}
           className={cn(
-            "flex-shrink-0 p-1 rounded-sm transition-colors",
+            "flex-shrink-0 p-1",
             "hover:bg-black/10",
           )}
-          aria-label="Dismiss payment notice"
-        >
-          <X className="w-4 h-4" aria-hidden="true" />
-        </button>
+        />
       )}
-    </div>
+    </Box>
   );
 };
 

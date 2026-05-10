@@ -10,6 +10,7 @@ import { Input } from '../atoms/Input';
 import { Badge } from '../atoms/Badge';
 import { Card } from '../atoms/Card';
 import { FilterPill } from '../atoms/FilterPill';
+import { Box } from '../atoms/Box';
 import { cn } from '../../lib/cn';
 
 export interface BranchingQuestion {
@@ -150,12 +151,12 @@ const RuleRow: React.FC<RuleRowProps> = ({
         broken && 'border-error',
       )}
     >
-      <div className="flex flex-wrap items-center gap-2">
+      <Box className="flex flex-wrap items-center gap-2">
         <Typography variant="label" weight="semibold" className="shrink-0">
           If
         </Typography>
 
-        <div className="min-w-[10rem] grow basis-40">
+        <Box className="min-w-[10rem] grow basis-40">
           <Select
             options={sourceOptions}
             value={rule.sourceQuestionId}
@@ -164,19 +165,19 @@ const RuleRow: React.FC<RuleRowProps> = ({
             disabled={readOnly}
             error={broken ? 'Broken reference' : undefined}
           />
-        </div>
+        </Box>
 
-        <div className="min-w-[8rem] basis-32">
+        <Box className="min-w-[8rem] basis-32">
           <Select
             options={OPERATOR_OPTIONS}
             value={rule.operator}
             onChange={handleOperator}
             disabled={readOnly}
           />
-        </div>
+        </Box>
 
         {isMulti ? (
-          <div className="flex min-w-[10rem] grow basis-40 flex-wrap items-center gap-1">
+          <Box className="flex min-w-[10rem] grow basis-40 flex-wrap items-center gap-1">
             {chips.map((chip) => (
               <FilterPill
                 key={chip}
@@ -188,7 +189,7 @@ const RuleRow: React.FC<RuleRowProps> = ({
               />
             ))}
             {valueOptions.length > 0 ? (
-              <div className="min-w-[8rem]">
+              <Box className="min-w-[8rem]">
                 <Select
                   options={valueOptions.filter((o) => !chips.includes(o.value))}
                   value=""
@@ -196,7 +197,7 @@ const RuleRow: React.FC<RuleRowProps> = ({
                   onChange={handleAddChip}
                   disabled={readOnly}
                 />
-              </div>
+              </Box>
             ) : (
               <Input
                 inputType="text"
@@ -213,9 +214,9 @@ const RuleRow: React.FC<RuleRowProps> = ({
                 disabled={readOnly}
               />
             )}
-          </div>
+          </Box>
         ) : (
-          <div className="min-w-[8rem] grow basis-32">
+          <Box className="min-w-[8rem] grow basis-32">
             {valueOptions.length > 0 ? (
               <Select
                 options={valueOptions}
@@ -235,7 +236,7 @@ const RuleRow: React.FC<RuleRowProps> = ({
                 disabled={readOnly}
               />
             )}
-          </div>
+          </Box>
         )}
 
         <Typography variant="label" weight="semibold" className="shrink-0 inline-flex items-center gap-1">
@@ -243,7 +244,7 @@ const RuleRow: React.FC<RuleRowProps> = ({
           go to
         </Typography>
 
-        <div className="min-w-[10rem] grow basis-40">
+        <Box className="min-w-[10rem] grow basis-40">
           <Select
             options={targetOptions}
             value={rule.targetQuestionId}
@@ -254,7 +255,7 @@ const RuleRow: React.FC<RuleRowProps> = ({
               broken && rule.targetQuestionId !== END_OF_SURVEY ? 'Broken reference' : undefined
             }
           />
-        </div>
+        </Box>
 
         {!readOnly && (
           <Button
@@ -267,7 +268,7 @@ const RuleRow: React.FC<RuleRowProps> = ({
             aria-label="Delete rule"
           />
         )}
-      </div>
+      </Box>
 
       {broken && (
         <Badge variant="error" size="sm" label="Broken reference" />
@@ -305,7 +306,7 @@ const LogicGraph: React.FC<LogicGraphProps> = ({ questions, rules }) => {
   }, [questions]);
 
   return (
-    <div className="overflow-auto rounded-md border border-border bg-card p-2">
+    <Box className="overflow-auto rounded-md border border-border bg-card p-2">
       <svg
         width={layout.width}
         height={layout.height}
@@ -403,7 +404,7 @@ const LogicGraph: React.FC<LogicGraphProps> = ({ questions, rules }) => {
           );
         })}
       </svg>
-    </div>
+    </Box>
   );
 };
 
@@ -465,9 +466,9 @@ export const BranchingLogicBuilder: React.FC<BranchingLogicBuilderProps> = ({
   const noQuestions = questions.length === 0;
 
   return (
-    <div className={cn('flex flex-col gap-3', className)}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
+    <Box className={cn('flex flex-col gap-3', className)}>
+      <Box className="flex flex-wrap items-center justify-between gap-2">
+        <Box className="flex items-center gap-2">
           <GitBranch className="h-5 w-5 text-foreground" />
           <Typography variant="subheading" weight="semibold">
             Branching logic
@@ -480,9 +481,9 @@ export const BranchingLogicBuilder: React.FC<BranchingLogicBuilderProps> = ({
           {brokenCount > 0 && (
             <Badge variant="error" size="sm" label={`${brokenCount} broken`} />
           )}
-        </div>
+        </Box>
 
-        <div className="flex items-center gap-1 rounded-sm border border-border bg-card p-0.5">
+        <Box className="flex items-center gap-1 rounded-sm border border-border bg-card p-0.5">
           <Button
             variant={view === 'edit' ? 'primary' : 'ghost'}
             size="sm"
@@ -501,11 +502,11 @@ export const BranchingLogicBuilder: React.FC<BranchingLogicBuilderProps> = ({
           >
             Logic graph
           </Button>
-        </div>
-      </div>
+        </Box>
+      </Box>
 
       {view === 'edit' ? (
-        <div className="flex flex-col gap-2">
+        <Box className="flex flex-col gap-2">
           {rules.length === 0 ? (
             <Card variant="bordered" padding="lg" className="text-center">
               <Typography variant="body" color="muted">
@@ -529,7 +530,7 @@ export const BranchingLogicBuilder: React.FC<BranchingLogicBuilderProps> = ({
           )}
 
           {!readOnly && (
-            <div>
+            <Box>
               <Button
                 variant="secondary"
                 size="sm"
@@ -540,13 +541,13 @@ export const BranchingLogicBuilder: React.FC<BranchingLogicBuilderProps> = ({
               >
                 Add rule
               </Button>
-            </div>
+            </Box>
           )}
-        </div>
+        </Box>
       ) : (
         <LogicGraph questions={questions} rules={rules} />
       )}
-    </div>
+    </Box>
   );
 };
 

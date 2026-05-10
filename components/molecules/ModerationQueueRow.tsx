@@ -13,6 +13,7 @@ import { CheckCircle, XCircle, AlertTriangle, ExternalLink } from 'lucide-react'
 import { cn } from '../../lib/cn';
 import { Avatar } from '../atoms/Avatar';
 import { Badge } from '../atoms/Badge';
+import { Box } from '../atoms/Box';
 import { Button } from '../atoms/Button';
 import { Typography } from '../atoms/Typography';
 import type { BadgeVariant } from '../atoms/Badge';
@@ -79,35 +80,35 @@ export const ModerationQueueRow: React.FC<ModerationQueueRowProps> = ({
   const showFlagCountBadge = typeof flagCount === 'number' && flagCount > 1;
 
   return (
-    <div
+    <Box
       data-content-id={contentId}
       className={cn(
         'flex items-start gap-4 p-4 border-b border-border bg-surface',
         className,
       )}
     >
-      <div className="flex items-start gap-3 min-w-0 w-44 shrink-0">
+      <Box className="flex items-start gap-3 min-w-0 w-44 shrink-0">
         <Avatar
           src={authorAvatarUrl}
           name={authorName}
           alt={authorName}
           size="md"
         />
-        <div className="min-w-0">
+        <Box className="min-w-0">
           <Typography variant="body2" weight="semibold" truncate>
             {authorName}
           </Typography>
           <Typography variant="caption" color="muted" overflow="clamp-2">
             {contentType} flagged at {flaggedAt}
           </Typography>
-        </div>
-      </div>
+        </Box>
+      </Box>
 
-      <div className="flex-1 min-w-0 flex flex-col gap-2">
+      <Box className="flex-1 min-w-0 flex flex-col gap-2">
         <Typography variant="body2" overflow="clamp-2">
           {contentPreview}
         </Typography>
-        <div className="flex flex-wrap items-center gap-2">
+        <Box className="flex flex-wrap items-center gap-2">
           {flagReason ? (
             <Badge variant={reasonVariant[flagReason]} size="sm">
               {reasonLabel[flagReason]}
@@ -118,15 +119,15 @@ export const ModerationQueueRow: React.FC<ModerationQueueRowProps> = ({
               {flagCount} reports
             </Badge>
           ) : null}
-        </div>
+        </Box>
         {reportedBy ? (
           <Typography variant="caption" color="muted">
             Reported by {reportedBy}
           </Typography>
         ) : null}
-      </div>
+      </Box>
 
-      <div className="flex items-center gap-2 shrink-0">
+      <Box className="flex items-center gap-2 shrink-0">
         {onView ? (
           <Button
             variant="ghost"
@@ -167,8 +168,8 @@ export const ModerationQueueRow: React.FC<ModerationQueueRowProps> = ({
             Reject
           </Button>
         ) : null}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 };
 

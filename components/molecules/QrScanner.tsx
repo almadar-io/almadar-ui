@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Camera, RefreshCw, Pause, Play } from "lucide-react";
 import { cn } from "../../lib/cn";
+import { Box, Typography, Button } from "../atoms";
 
 export interface QrScanResult {
   text: string;
@@ -126,14 +127,22 @@ export const QrScanner: React.FC<QrScannerProps> = ({
     });
   }, [onScan]);
 
+  const videoExtraProps: React.VideoHTMLAttributes<HTMLVideoElement> = {
+    playsInline: true,
+    muted: true,
+  };
+
   if (cameraError && fallback) {
-    return <div className={cn("relative", className)}>{fallback}</div>;
+    return <Box position="relative" className={className}>{fallback}</Box>;
   }
 
   return (
-    <div
+    <Box
+      position="relative"
+      overflow="hidden"
+      rounded="sm"
       className={cn(
-        "relative overflow-hidden rounded-sm bg-black",
+        "bg-black",
         "aspect-square w-full max-w-md",
         className,
       )}
@@ -141,41 +150,57 @@ export const QrScanner: React.FC<QrScannerProps> = ({
       role="region"
       aria-label="QR scanner"
     >
-      <video
-        ref={videoRef}
-        className="absolute inset-0 h-full w-full object-cover"
-        playsInline
-        muted
+      <Box
+        as="video"
+        ref={videoRef as React.Ref<HTMLDivElement>}
+        position="absolute"
+        fullWidth
+        fullHeight
+        className="inset-0 object-cover"
         aria-hidden="true"
+        {...(videoExtraProps as React.HTMLAttributes<HTMLDivElement>)}
       />
 
       {showOverlay && isReady && !isPaused && (
-        <div className="pointer-events-none absolute inset-0">
-          <div className="absolute left-[15%] top-[15%] h-8 w-8 border-l-2 border-t-2 border-white" />
-          <div className="absolute right-[15%] top-[15%] h-8 w-8 border-r-2 border-t-2 border-white" />
-          <div className="absolute bottom-[15%] left-[15%] h-8 w-8 border-b-2 border-l-2 border-white" />
-          <div className="absolute bottom-[15%] right-[15%] h-8 w-8 border-b-2 border-r-2 border-white" />
-          <div className="absolute left-[15%] right-[15%] top-1/2 h-px bg-white opacity-60" />
-        </div>
+        <Box position="absolute" className="pointer-events-none inset-0">
+          <Box position="absolute" className="left-[15%] top-[15%] h-8 w-8 border-l-2 border-t-2 border-white" />
+          <Box position="absolute" className="right-[15%] top-[15%] h-8 w-8 border-r-2 border-t-2 border-white" />
+          <Box position="absolute" className="bottom-[15%] left-[15%] h-8 w-8 border-b-2 border-l-2 border-white" />
+          <Box position="absolute" className="bottom-[15%] right-[15%] h-8 w-8 border-b-2 border-r-2 border-white" />
+          <Box position="absolute" className="left-[15%] right-[15%] top-1/2 h-px bg-white opacity-60" />
+        </Box>
       )}
 
       {cameraError && !fallback && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black bg-opacity-80 p-6 text-center">
+        <Box
+          position="absolute"
+          display="flex"
+          padding="lg"
+          className="inset-0 flex-col items-center justify-center gap-2 bg-black bg-opacity-80 text-center"
+        >
           <Camera className="h-8 w-8 text-white" aria-hidden="true" />
-          <p className="text-sm text-white">Camera unavailable</p>
-          <p className="text-xs text-white opacity-70">{cameraError.message}</p>
-        </div>
+          <Typography variant="body2" className="text-white">Camera unavailable</Typography>
+          <Typography variant="caption" className="text-white opacity-70">{cameraError.message}</Typography>
+        </Box>
       )}
 
       {isPaused && !cameraError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-60">
-          <p className="text-sm text-white">Paused</p>
-        </div>
+        <Box
+          position="absolute"
+          display="flex"
+          className="inset-0 items-center justify-center bg-black bg-opacity-60"
+        >
+          <Typography variant="body2" className="text-white">Paused</Typography>
+        </Box>
       )}
 
       {showCameraControls && (
-        <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-2">
-          <button
+        <Box
+          position="absolute"
+          display="flex"
+          className="bottom-3 left-1/2 -translate-x-1/2 gap-2"
+        >
+          <Button
             type="button"
             onClick={togglePause}
             className={cn(
@@ -185,8 +210,8 @@ export const QrScanner: React.FC<QrScannerProps> = ({
             aria-label={isPaused ? "Resume scanning" : "Pause scanning"}
           >
             {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={toggleFacing}
             className={cn(
@@ -196,8 +221,8 @@ export const QrScanner: React.FC<QrScannerProps> = ({
             aria-label={`Switch to ${currentFacing === 'environment' ? 'front' : 'rear'} camera`}
           >
             <RefreshCw className="h-4 w-4" />
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={handleMockScan}
             className={cn(
@@ -207,10 +232,10 @@ export const QrScanner: React.FC<QrScannerProps> = ({
             aria-label="Mock scan (dev)"
           >
             Mock Scan
-          </button>
-        </div>
+          </Button>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 };
 

@@ -30,6 +30,8 @@ import { Card } from "../atoms/Card";
 import { Typography } from "../atoms/Typography";
 import { Button } from "../atoms/Button";
 import { Box } from "../atoms/Box";
+import { Divider } from "../atoms/Divider";
+import { Input } from "../atoms/Input";
 
 export type BlockType =
   | "paragraph"
@@ -243,13 +245,14 @@ function BlockMenu({ block, readOnly, onDelete, onDuplicate, onChangeType }: Blo
   if (readOnly) return null;
 
   return (
-    <div ref={ref} className="relative">
-      <button
+    <Box ref={ref} className="relative">
+      <Button
         type="button"
+        variant="ghost"
         aria-label="Block actions"
         className={cn(
           "inline-flex items-center justify-center",
-          "h-6 w-6 rounded-sm",
+          "h-6 w-6 rounded-sm p-0 gap-0",
           "text-muted-foreground hover:bg-muted hover:text-foreground",
           "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
           "transition-opacity",
@@ -257,9 +260,9 @@ function BlockMenu({ block, readOnly, onDelete, onDuplicate, onChangeType }: Blo
         onClick={() => setOpen((v) => !v)}
       >
         <MoreHorizontal size={14} />
-      </button>
+      </Button>
       {open && (
-        <div
+        <Box
           role="menu"
           className={cn(
             "absolute right-0 z-10 mt-1 w-44",
@@ -267,56 +270,59 @@ function BlockMenu({ block, readOnly, onDelete, onDuplicate, onChangeType }: Blo
             "py-1 text-sm",
           )}
         >
-          <div className="px-2 py-1 text-xs uppercase tracking-wide text-muted-foreground">
+          <Box className="px-2 py-1 text-xs uppercase tracking-wide text-muted-foreground">
             {BLOCK_TYPE_LABEL[block.type]}
-          </div>
-          <button
+          </Box>
+          <Button
             type="button"
+            variant="ghost"
             role="menuitem"
-            className="flex w-full items-center gap-2 px-2 py-1.5 text-left hover:bg-muted"
+            className="flex w-full items-center gap-2 px-2 py-1.5 text-left justify-start rounded-none"
             onClick={() => {
               onDuplicate();
               setOpen(false);
             }}
           >
             <Plus size={14} /> Duplicate
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
             role="menuitem"
-            className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-destructive hover:bg-muted"
+            className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-destructive hover:bg-muted justify-start rounded-none"
             onClick={() => {
               onDelete();
               setOpen(false);
             }}
           >
             <Trash size={14} /> Delete
-          </button>
+          </Button>
           {CHANGEABLE_TYPES.includes(block.type) && (
             <>
-              <div className="my-1 border-t border-border" />
-              <div className="px-2 py-1 text-xs uppercase tracking-wide text-muted-foreground">
+              <Box className="my-1 border-t border-border" />
+              <Box className="px-2 py-1 text-xs uppercase tracking-wide text-muted-foreground">
                 Turn into
-              </div>
+              </Box>
               {CHANGEABLE_TYPES.filter((t) => t !== block.type).map((t) => (
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   role="menuitem"
                   key={t}
-                  className="flex w-full items-center gap-2 px-2 py-1.5 text-left hover:bg-muted"
+                  className="flex w-full items-center gap-2 px-2 py-1.5 text-left justify-start rounded-none"
                   onClick={() => {
                     onChangeType(t);
                     setOpen(false);
                   }}
                 >
                   {BLOCK_TYPE_LABEL[t]}
-                </button>
+                </Button>
               ))}
             </>
           )}
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }
 
@@ -503,12 +509,12 @@ function BlockRow({
         );
       case "code":
         return (
-          <div className="rounded-md border border-border bg-muted/40">
-            <div className="flex items-center justify-between border-b border-border px-3 py-1 text-xs text-muted-foreground">
-              <span className="uppercase tracking-wide">Code</span>
+          <Box className="rounded-md border border-border bg-muted/40">
+            <Box className="flex items-center justify-between border-b border-border px-3 py-1 text-xs text-muted-foreground">
+              <Typography as="span" variant="caption" className="uppercase tracking-wide">Code</Typography>
               {!readOnly && (
-                <input
-                  type="text"
+                <Input
+                  inputType="text"
                   value={String(block.metadata?.language ?? "plaintext")}
                   aria-label="Code language"
                   className={cn(
@@ -519,11 +525,11 @@ function BlockRow({
                 />
               )}
               {readOnly && (
-                <span className="text-xs">
+                <Typography as="span" variant="caption" className="text-xs">
                   {String(block.metadata?.language ?? "plaintext")}
-                </span>
+                </Typography>
               )}
-            </div>
+            </Box>
             <Editable
               tag="pre"
               value={block.content ?? ""}
@@ -533,23 +539,24 @@ function BlockRow({
               className="block whitespace-pre-wrap p-3 font-mono text-sm leading-relaxed"
               onValueChange={setContent}
             />
-          </div>
+          </Box>
         );
       case "divider":
-        return <hr className="my-2 border-border" />;
+        return <Divider className="my-2" />;
       case "image": {
         const url = String(block.metadata?.url ?? "");
         const caption = String(block.metadata?.caption ?? "");
+        const imgProps: React.ImgHTMLAttributes<HTMLImageElement> = {
+          src: url,
+          alt: caption || "Embedded image",
+          className: "max-h-96 w-full rounded-md border border-border object-contain",
+        };
         return (
-          <div className="space-y-2">
+          <Box className="space-y-2">
             {url ? (
-              <img
-                src={url}
-                alt={caption || "Embedded image"}
-                className="max-h-96 w-full rounded-md border border-border object-contain"
-              />
+              <Box as="img" {...imgProps} />
             ) : (
-              <div
+              <Box
                 className={cn(
                   "flex h-32 items-center justify-center",
                   "rounded-md border border-dashed border-border",
@@ -557,12 +564,12 @@ function BlockRow({
                 )}
               >
                 <ImageIcon className="mr-2" size={16} /> No image URL set
-              </div>
+              </Box>
             )}
             {!readOnly && (
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <input
-                  type="url"
+              <Box className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  inputType="url"
                   value={url}
                   placeholder="https://example.com/image.png"
                   aria-label="Image URL"
@@ -572,8 +579,8 @@ function BlockRow({
                   )}
                   onChange={(e) => setMetadata("url", e.target.value)}
                 />
-                <input
-                  type="text"
+                <Input
+                  inputType="text"
                   value={caption}
                   placeholder="Caption (optional)"
                   aria-label="Image caption"
@@ -583,14 +590,14 @@ function BlockRow({
                   )}
                   onChange={(e) => setMetadata("caption", e.target.value)}
                 />
-              </div>
+              </Box>
             )}
             {readOnly && caption && (
               <Typography variant="caption" className="text-center text-muted-foreground">
                 {caption}
               </Typography>
             )}
-          </div>
+          </Box>
         );
       }
       case "bullet-list":
@@ -605,7 +612,7 @@ function BlockRow({
             )}
           >
             {items.map((child) => (
-              <li key={child.id} className="group/item flex items-start gap-2">
+              <Box as="li" key={child.id} className="group/item flex items-start gap-2">
                 <Editable
                   tag="span"
                   value={child.content ?? ""}
@@ -616,33 +623,35 @@ function BlockRow({
                   onValueChange={(next) => setChildContent(child.id, next)}
                 />
                 {!readOnly && (
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     aria-label="Remove list item"
                     className={cn(
-                      "h-5 w-5 shrink-0 rounded-sm text-muted-foreground",
+                      "h-5 w-5 shrink-0 rounded-sm text-muted-foreground p-0 gap-0",
                       "opacity-0 group-hover/item:opacity-100 hover:bg-muted hover:text-foreground",
                     )}
                     onClick={() => removeListItem(child.id)}
                   >
                     <Trash size={12} />
-                  </button>
+                  </Button>
                 )}
-              </li>
+              </Box>
             ))}
             {!readOnly && (
-              <li className="list-none pl-0">
-                <button
+              <Box as="li" className="list-none pl-0">
+                <Button
                   type="button"
+                  variant="ghost"
                   className={cn(
                     "inline-flex items-center gap-1 text-xs text-muted-foreground",
-                    "hover:text-foreground",
+                    "hover:text-foreground p-0 h-auto",
                   )}
                   onClick={addListItem}
                 >
                   <Plus size={12} /> Add item
-                </button>
-              </li>
+                </Button>
+              </Box>
             )}
           </Box>
         );
@@ -664,7 +673,7 @@ function BlockRow({
   };
 
   return (
-    <div
+    <Box
       className={cn(
         "group relative flex items-start gap-2 rounded-sm",
         "px-2 py-1 hover:bg-muted/30",
@@ -673,12 +682,13 @@ function BlockRow({
       data-block-type={block.type}
     >
       {!readOnly && (
-        <div className="flex w-12 shrink-0 items-center gap-0.5 pt-1">
-          <button
+        <Box className="flex w-12 shrink-0 items-center gap-0.5 pt-1">
+          <Button
             type="button"
+            variant="ghost"
             aria-label="Insert paragraph below"
             className={cn(
-              "inline-flex h-6 w-6 items-center justify-center rounded-sm",
+              "inline-flex h-6 w-6 items-center justify-center rounded-sm p-0 gap-0",
               "text-muted-foreground hover:bg-muted hover:text-foreground",
               "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
               "transition-opacity",
@@ -686,7 +696,7 @@ function BlockRow({
             onClick={() => onInsertAfter("paragraph")}
           >
             <Plus size={14} />
-          </button>
+          </Button>
           <BlockMenu
             block={block}
             readOnly={readOnly}
@@ -694,10 +704,10 @@ function BlockRow({
             onDuplicate={onDuplicate}
             onChangeType={onChangeType}
           />
-        </div>
+        </Box>
       )}
-      <div className="min-w-0 flex-1">{renderBody()}</div>
-    </div>
+      <Box className="min-w-0 flex-1">{renderBody()}</Box>
+    </Box>
   );
 }
 
@@ -777,7 +787,7 @@ export const RichBlockEditor: React.FC<RichBlockEditorProps> = ({
       className={cn("flex flex-col", className)}
     >
       {showToolbar && !readOnly && (
-        <div
+        <Box
           role="toolbar"
           aria-label="Block editor toolbar"
           className={cn(
@@ -798,13 +808,13 @@ export const RichBlockEditor: React.FC<RichBlockEditorProps> = ({
                 onClick={() => handleAppend(entry.type)}
               >
                 <Icon size={14} />
-                <span className="ml-1 hidden text-xs sm:inline">{entry.label}</span>
+                <Typography as="span" variant="caption" className="ml-1 hidden text-xs sm:inline">{entry.label}</Typography>
               </Button>
             );
           })}
-        </div>
+        </Box>
       )}
-      <div className="flex flex-col gap-1 px-3 py-3">
+      <Box className="flex flex-col gap-1 px-3 py-3">
         {blocks.map((block) => (
           <BlockRow
             key={block.id}
@@ -818,7 +828,7 @@ export const RichBlockEditor: React.FC<RichBlockEditorProps> = ({
             onChangeType={(type) => handleChangeType(block.id, type)}
           />
         ))}
-      </div>
+      </Box>
     </Card>
   );
 };
