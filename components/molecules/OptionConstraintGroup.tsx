@@ -1,7 +1,7 @@
 /**
- * ModifierGroup Molecule Component
+ * OptionConstraintGroup Molecule Component
  *
- * Restaurant POS item-customization selector with required/optional/multi
+ * Generic constrained option selector (radio for "single", checkbox for "multi") with required/optional/multi
  * constraints. Renders radio inputs for `single` constraint and checkboxes for
  * `multi`. Reports validation errors inline when the current selection
  * violates the constraint.
@@ -17,7 +17,7 @@ import { Label } from '../atoms/Label';
 import { Radio } from '../atoms/Radio';
 import { Checkbox } from '../atoms/Checkbox';
 
-export interface ModifierOption {
+export interface OptionConstraintOption {
   id: string;
   label: string;
   priceDelta?: number;
@@ -25,16 +25,16 @@ export interface ModifierOption {
   outOfStock?: boolean;
 }
 
-export type ModifierConstraint =
+export type OptionConstraint =
   | { type: 'single'; required?: boolean }
   | { type: 'multi'; min?: number; max?: number };
 
-export interface ModifierGroupProps {
+export interface OptionConstraintGroupProps {
   groupId: string;
   title: string;
   description?: string;
-  options: ModifierOption[];
-  constraint: ModifierConstraint;
+  options: OptionConstraintOption[];
+  constraint: OptionConstraint;
   selected?: string[];
   onChange?: (selected: string[]) => void;
   size?: 'sm' | 'md';
@@ -46,7 +46,7 @@ const formatPriceDelta = (delta: number): string => {
   return `${sign}$${Math.abs(delta).toFixed(2)}`;
 };
 
-const constraintHint = (constraint: ModifierConstraint): string => {
+const constraintHint = (constraint: OptionConstraint): string => {
   if (constraint.type === 'single') {
     return constraint.required ? 'Required, pick 1' : 'Optional, pick up to 1';
   }
@@ -61,7 +61,7 @@ const constraintHint = (constraint: ModifierConstraint): string => {
 
 const validateSelection = (
   selected: string[],
-  constraint: ModifierConstraint,
+  constraint: OptionConstraint,
 ): string | undefined => {
   if (constraint.type === 'single') {
     if (constraint.required && selected.length === 0) {
@@ -84,7 +84,7 @@ const validateSelection = (
   return undefined;
 };
 
-export const ModifierGroup: React.FC<ModifierGroupProps> = ({
+export const OptionConstraintGroup: React.FC<OptionConstraintGroupProps> = ({
   groupId,
   title,
   description,
@@ -97,7 +97,7 @@ export const ModifierGroup: React.FC<ModifierGroupProps> = ({
 }) => {
   const hint = constraintHint(constraint);
   const error = validateSelection(selected, constraint);
-  const inputName = `modifier-${groupId}`;
+  const inputName = `option-${groupId}`;
   const labelTextSize = size === 'sm' ? 'text-sm' : 'text-base';
   const optionGap = size === 'sm' ? 'gap-2' : 'gap-2.5';
 
@@ -218,4 +218,4 @@ export const ModifierGroup: React.FC<ModifierGroupProps> = ({
   );
 };
 
-ModifierGroup.displayName = 'ModifierGroup';
+OptionConstraintGroup.displayName = 'OptionConstraintGroup';

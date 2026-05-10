@@ -65,7 +65,7 @@ export * from './game';
 export { GraphView, type GraphViewProps, type GraphViewNode, type GraphViewEdge } from './GraphView';
 
 // Map visualization
-export { MapView, type MapViewProps, type MapMarkerData } from './MapView';
+export { MapView, type MapViewProps, type MapMarkerData, type MapRouteData, type MapRouteWaypoint } from './MapView';
 
 // UX Phase 1 molecules
 export { NumberStepper, type NumberStepperProps, type NumberStepperSize } from './NumberStepper';
@@ -116,17 +116,16 @@ export { ShowcaseCard, type ShowcaseCardProps } from './ShowcaseCard';
 export { GeometricPattern, type GeometricPatternProps } from './GeometricPattern';
 export { EdgeDecoration, type EdgeDecorationProps, type EdgeVariant, type EdgeSide } from './EdgeDecoration';
 
-// Phase 10 molecules — community/forum, survey, event-ticketing, restaurant-pos, field-service, subscription, marketplace
+// Phase 10 molecules — generic primitives (community/forum, survey, content authoring, layout)
 export { VoteStack, type VoteStackProps } from './VoteStack';
 export { LikertScale, type LikertScaleProps, type LikertOption, DEFAULT_LIKERT_OPTIONS } from './LikertScale';
 export { MatrixQuestion, type MatrixQuestionProps, type MatrixRow, type MatrixColumn, DEFAULT_MATRIX_COLUMNS } from './MatrixQuestion';
 export { QrScanner, type QrScannerProps, type QrScanResult } from './QrScanner';
-export { TicketStub, type TicketStubProps, type TicketStubVariant, type TicketStubSize } from './TicketStub';
-export { KitchenDisplayStrip, type KitchenDisplayStripProps, type KdsStatus, type KdsAging, type KdsItem } from './KitchenDisplayStrip';
-export { ModifierGroup, type ModifierGroupProps, type ModifierOption, type ModifierConstraint } from './ModifierGroup';
-export { WorkOrderCard, type WorkOrderCardProps, type WorkOrderStatus, type WorkOrderPriority } from './WorkOrderCard';
-export { Invoice, type InvoiceProps, type InvoiceLineItem, type InvoiceParty, type InvoiceStatus } from './Invoice';
-export { DunningBanner, type DunningBannerProps, type DunningSeverity } from './DunningBanner';
-export { ListingCard, type ListingCardProps, type ListingFact, type ListingBadgeVariant } from './ListingCard';
-export { ModerationQueueRow, type ModerationQueueRowProps, type FlagReason } from './ModerationQueueRow';
+export { OptionConstraintGroup, type OptionConstraintGroupProps, type OptionConstraintOption, type OptionConstraint } from './OptionConstraintGroup';
+export { PositionedCanvas, type PositionedCanvasProps, type CanvasItem, type CanvasItemStatus, type CanvasItemShape } from './PositionedCanvas';
+// Demoted from organisms — no entity binding
+export { RichBlockEditor, type RichBlockEditorProps, type RichBlock, type BlockType } from './RichBlockEditor';
+export { ReplyTree, type ReplyTreeProps, type ReplyNode } from './ReplyTree';
+export { BranchingLogicBuilder, type BranchingLogicBuilderProps, type BranchingQuestion, type BranchingRule } from './BranchingLogicBuilder';
+export { VersionDiff, type VersionDiffProps, type DiffRevision, type DiffLine as VersionDiffLine, type DiffLineType } from './VersionDiff';
 

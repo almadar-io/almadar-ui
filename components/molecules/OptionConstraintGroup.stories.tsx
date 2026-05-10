@@ -2,11 +2,11 @@
 
 import React, { useState } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ModifierGroup, type ModifierOption } from './ModifierGroup';
+import { OptionConstraintGroup, type OptionConstraintOption } from './OptionConstraintGroup';
 
-const meta: Meta<typeof ModifierGroup> = {
-  title: 'Core/Molecules/ModifierGroup',
-  component: ModifierGroup,
+const meta: Meta<typeof OptionConstraintGroup> = {
+  title: 'Core/Molecules/OptionConstraintGroup',
+  component: OptionConstraintGroup,
   parameters: {
     layout: 'centered',
     backgrounds: { default: 'wireframe' },
@@ -17,14 +17,14 @@ const meta: Meta<typeof ModifierGroup> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const sizeOptions: ModifierOption[] = [
+const sizeOptions: OptionConstraintOption[] = [
   { id: 'small', label: 'Small (10")' },
   { id: 'medium', label: 'Medium (12")' },
   { id: 'large', label: 'Large (14")' },
   { id: 'xlarge', label: 'Extra Large (16")' },
 ];
 
-const toppingOptions: ModifierOption[] = [
+const toppingOptions: OptionConstraintOption[] = [
   { id: 'pepperoni', label: 'Pepperoni', priceDelta: 1.5 },
   { id: 'mushrooms', label: 'Mushrooms', priceDelta: 1.0 },
   { id: 'olives', label: 'Black Olives', priceDelta: 1.0 },
@@ -32,7 +32,7 @@ const toppingOptions: ModifierOption[] = [
   { id: 'peppers', label: 'Bell Peppers', priceDelta: 0.75 },
 ];
 
-const addOnOptions: ModifierOption[] = [
+const addOnOptions: OptionConstraintOption[] = [
   { id: 'extra-cheese', label: 'Extra Cheese' },
   { id: 'extra-sauce', label: 'Extra Sauce' },
   { id: 'gluten-free', label: 'Gluten-free Crust' },
@@ -129,7 +129,7 @@ export const Interactive: Story = {
 
     return (
       <div className="w-96 space-y-6">
-        <ModifierGroup
+        <OptionConstraintGroup
           groupId="size-interactive"
           title="Size"
           options={sizeOptions}
@@ -137,7 +137,7 @@ export const Interactive: Story = {
           selected={size}
           onChange={setSize}
         />
-        <ModifierGroup
+        <OptionConstraintGroup
           groupId="toppings-interactive"
           title="Toppings"
           description="Pick 1 to 3 toppings"
@@ -146,7 +146,7 @@ export const Interactive: Story = {
           selected={toppings}
           onChange={setToppings}
         />
-        <ModifierGroup
+        <OptionConstraintGroup
           groupId="addons-interactive"
           title="Add-ons"
           options={addOnOptions}

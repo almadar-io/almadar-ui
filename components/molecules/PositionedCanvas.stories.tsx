@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { TableFloorPlan, type TableNode } from './TableFloorPlan';
+import { PositionedCanvas, type CanvasItem } from './PositionedCanvas';
 
-const meta: Meta<typeof TableFloorPlan> = {
-    title: 'Core/Organisms/TableFloorPlan',
-    component: TableFloorPlan,
+const meta: Meta<typeof PositionedCanvas> = {
+    title: 'Core/Organisms/PositionedCanvas',
+    component: PositionedCanvas,
     parameters: {
         layout: 'centered',
     },
@@ -13,7 +13,7 @@ const meta: Meta<typeof TableFloorPlan> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const mixedTables: TableNode[] = [
+const mixedTables: CanvasItem[] = [
     { id: 't1', label: 'T1', x: 60, y: 60, shape: 'round', capacity: 4, status: 'empty' },
     { id: 't2', label: 'T2', x: 220, y: 60, shape: 'round', capacity: 2, status: 'seated', partySize: 2, serverName: 'Maya' },
     { id: 't3', label: 'T3', x: 380, y: 60, shape: 'square', capacity: 4, status: 'ordered', partySize: 3, serverName: 'Jon' },
@@ -27,7 +27,7 @@ const mixedTables: TableNode[] = [
 
 export const Default: Story = {
     args: {
-        tables: mixedTables,
+        items: mixedTables,
         width: 800,
         height: 600,
     },
@@ -35,7 +35,7 @@ export const Default: Story = {
 
 export const AllEmpty: Story = {
     args: {
-        tables: [
+        items: [
             { id: 't1', label: 'T1', x: 60, y: 60, shape: 'round', capacity: 4 },
             { id: 't2', label: 'T2', x: 220, y: 60, shape: 'round', capacity: 4 },
             { id: 't3', label: 'T3', x: 380, y: 60, shape: 'square', capacity: 4 },
@@ -50,7 +50,7 @@ export const AllEmpty: Story = {
 
 export const BusyEvening: Story = {
     args: {
-        tables: [
+        items: [
             { id: 't1', label: 'T1', x: 60, y: 60, shape: 'round', capacity: 4, status: 'seated', partySize: 4, serverName: 'Maya' },
             { id: 't2', label: 'T2', x: 220, y: 60, shape: 'round', capacity: 2, status: 'ordered', partySize: 2, serverName: 'Jon' },
             { id: 't3', label: 'T3', x: 380, y: 60, shape: 'square', capacity: 4, status: 'ordered', partySize: 3, serverName: 'Jon' },
@@ -69,14 +69,14 @@ export const BusyEvening: Story = {
 
 export const Editable: Story = {
     render: (args) => {
-        const [tables, setTables] = useState<TableNode[]>(mixedTables);
+        const [items, setItems] = useState<CanvasItem[]>(mixedTables);
         return (
-            <TableFloorPlan
+            <PositionedCanvas
                 {...args}
-                tables={tables}
+                items={items}
                 editable
                 onMove={(id, x, y) => {
-                    setTables((prev) => prev.map((t) => (t.id === id ? { ...t, x, y } : t)));
+                    setItems((prev) => prev.map((t) => (t.id === id ? { ...t, x, y } : t)));
                 }}
             />
         );
@@ -89,7 +89,7 @@ export const Editable: Story = {
 
 export const Selected: Story = {
     args: {
-        tables: mixedTables,
+        items: mixedTables,
         selectedId: 't3',
         width: 800,
         height: 600,
@@ -98,7 +98,7 @@ export const Selected: Story = {
 
 export const DenseLayout: Story = {
     args: {
-        tables: [
+        items: [
             { id: 't1', label: 'T1', x: 30, y: 30, shape: 'round', capacity: 2, status: 'seated', partySize: 2, serverName: 'Maya' },
             { id: 't2', label: 'T2', x: 170, y: 30, shape: 'round', capacity: 2, status: 'empty' },
             { id: 't3', label: 'T3', x: 310, y: 30, shape: 'round', capacity: 2, status: 'ordered', partySize: 2, serverName: 'Jon' },

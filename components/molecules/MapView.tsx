@@ -37,9 +37,33 @@ export interface MapMarkerData {
   category?: string;
 }
 
+export interface MapRouteWaypoint {
+  lat: number;
+  lng: number;
+}
+
+export interface MapRouteData {
+  /** Unique route identifier */
+  id: string | number;
+  /** Ordered waypoints rendered as a polyline */
+  waypoints: MapRouteWaypoint[];
+  /** Stroke color (CSS color). Defaults to a theme-aware accent. */
+  color?: string;
+  /** Stroke weight in pixels (default 4) */
+  weight?: number;
+  /** Stroke opacity 0..1 (default 0.8) */
+  opacity?: number;
+  /** Optional dashed pattern (e.g. "8 4") */
+  dashArray?: string;
+  /** Label shown in a popup at the midpoint */
+  label?: string;
+}
+
 export interface MapViewProps {
   /** Array of markers to display */
   markers?: MapMarkerData[];
+  /** Routes (polylines with optional popups) drawn over the tile layer */
+  routes?: MapRouteData[];
   /** Map center latitude */
   centerLat?: number;
   /** Map center longitude */
@@ -82,7 +106,7 @@ const MapViewImpl = lazy(async () => {
   // no-op anyway, but cleaner to keep the dependency client-side).
   await import('leaflet/dist/leaflet.css');
 
-  const { MapContainer, TileLayer, Marker, Popup, useMap } = reactLeaflet;
+  const { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } = reactLeaflet;
   const L = leafletMod.default;
 
   // Fix default marker icon (Leaflet CSS/webpack issue). Done once per
@@ -137,6 +161,7 @@ const MapViewImpl = lazy(async () => {
 
   function MapViewInner({
     markers = [],
+    routes = [],
     centerLat = 51.505,
     centerLng = -0.09,
     zoom = 13,
@@ -212,6 +237,24 @@ const MapViewImpl = lazy(async () => {
                 </Popup>
               ) : null}
             </Marker>
+          ))}
+          {routes.map((route) => (
+            <Polyline
+              key={route.id}
+              positions={route.waypoints.map((wp) => [wp.lat, wp.lng])}
+              pathOptions={{
+                color: route.color ?? 'var(--primary, #2563eb)',
+                weight: route.weight ?? 4,
+                opacity: route.opacity ?? 0.8,
+                dashArray: route.dashArray,
+              }}
+            >
+              {route.label ? (
+                <Popup>
+                  <Typography variant="body2">{route.label}</Typography>
+                </Popup>
+              ) : null}
+            </Polyline>
           ))}
         </MapContainer>
       </Box>

@@ -5,23 +5,23 @@ import { cn } from "../../lib/cn";
 import { Typography, Badge, Box } from "../atoms";
 import { Users, Coffee, AlertCircle } from "lucide-react";
 
-export type TableStatus = 'empty' | 'seated' | 'ordered' | 'awaiting-bill' | 'cleaning';
-export type TableShape = 'round' | 'rectangle' | 'square';
+export type CanvasItemStatus = 'empty' | 'seated' | 'ordered' | 'awaiting-bill' | 'cleaning';
+export type CanvasItemShape = 'round' | 'rectangle' | 'square';
 
-export interface TableNode {
+export interface CanvasItem {
     id: string;
     label: string;
     x: number;
     y: number;
-    shape?: TableShape;
+    shape?: CanvasItemShape;
     capacity: number;
-    status?: TableStatus;
+    status?: CanvasItemStatus;
     partySize?: number;
     serverName?: string;
 }
 
-export interface TableFloorPlanProps {
-    tables: TableNode[];
+export interface PositionedCanvasProps {
+    items: CanvasItem[];
     width?: number;
     height?: number;
     selectedId?: string | null;
@@ -39,7 +39,7 @@ interface DragState {
     moved: boolean;
 }
 
-const STATUS_CLASSES: Record<TableStatus, string> = {
+const STATUS_CLASSES: Record<CanvasItemStatus, string> = {
     empty: "bg-surface border-border text-foreground",
     seated: "bg-surface border-success text-success",
     ordered: "bg-surface border-warning text-warning",
@@ -47,7 +47,7 @@ const STATUS_CLASSES: Record<TableStatus, string> = {
     cleaning: "bg-muted border-border text-muted-foreground",
 };
 
-const STATUS_BADGE: Record<TableStatus, { variant: "default" | "success" | "warning" | "info" | "neutral"; label: string }> = {
+const STATUS_BADGE: Record<CanvasItemStatus, { variant: "default" | "success" | "warning" | "info" | "neutral"; label: string }> = {
     empty: { variant: "default", label: "Empty" },
     seated: { variant: "success", label: "Seated" },
     ordered: { variant: "warning", label: "Ordered" },
@@ -55,7 +55,7 @@ const STATUS_BADGE: Record<TableStatus, { variant: "default" | "success" | "warn
     cleaning: { variant: "neutral", label: "Cleaning" },
 };
 
-function getShapeClasses(shape: TableShape): string {
+function getShapeClasses(shape: CanvasItemShape): string {
     switch (shape) {
         case 'round':
             return "rounded-full w-24 h-24";
@@ -66,7 +66,7 @@ function getShapeClasses(shape: TableShape): string {
     }
 }
 
-function getStatusIcon(status: TableStatus): React.ReactNode {
+function getStatusIcon(status: CanvasItemStatus): React.ReactNode {
     switch (status) {
         case 'seated':
             return <Users className="w-4 h-4" />;
@@ -79,8 +79,8 @@ function getStatusIcon(status: TableStatus): React.ReactNode {
     }
 }
 
-export const TableFloorPlan: React.FC<TableFloorPlanProps> = ({
-    tables,
+export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
+    items,
     width = 800,
     height = 600,
     selectedId = null,
@@ -94,19 +94,19 @@ export const TableFloorPlan: React.FC<TableFloorPlanProps> = ({
     const [draggingId, setDraggingId] = useState<string | null>(null);
 
     const handlePointerDown = useCallback(
-        (e: React.PointerEvent<HTMLDivElement>, table: TableNode) => {
+        (e: React.PointerEvent<HTMLDivElement>, item: CanvasItem) => {
             if (!editable) return;
             const target = e.currentTarget;
             const rect = target.getBoundingClientRect();
             dragRef.current = {
-                id: table.id,
+                id: item.id,
                 pointerId: e.pointerId,
                 offsetX: e.clientX - rect.left,
                 offsetY: e.clientY - rect.top,
                 moved: false,
             };
             target.setPointerCapture(e.pointerId);
-            setDraggingId(table.id);
+            setDraggingId(item.id);
         },
         [editable],
     );
@@ -119,14 +119,14 @@ export const TableFloorPlan: React.FC<TableFloorPlanProps> = ({
 
             const containerRect = container.getBoundingClientRect();
             const target = e.currentTarget;
-            const tableWidth = target.offsetWidth;
-            const tableHeight = target.offsetHeight;
+            const itemWidth = target.offsetWidth;
+            const itemHeight = target.offsetHeight;
 
             const newX = e.clientX - containerRect.left - drag.offsetX;
             const newY = e.clientY - containerRect.top - drag.offsetY;
 
-            const clampedX = Math.max(0, Math.min(width - tableWidth, newX));
-            const clampedY = Math.max(0, Math.min(height - tableHeight, newY));
+            const clampedX = Math.max(0, Math.min(width - itemWidth, newX));
+            const clampedY = Math.max(0, Math.min(height - itemHeight, newY));
 
             drag.moved = true;
             onMove?.(drag.id, clampedX, clampedY);
@@ -135,7 +135,7 @@ export const TableFloorPlan: React.FC<TableFloorPlanProps> = ({
     );
 
     const handlePointerUp = useCallback(
-        (e: React.PointerEvent<HTMLDivElement>, table: TableNode) => {
+        (e: React.PointerEvent<HTMLDivElement>, item: CanvasItem) => {
             const drag = dragRef.current;
             if (!drag || drag.pointerId !== e.pointerId) return;
 
@@ -149,7 +149,7 @@ export const TableFloorPlan: React.FC<TableFloorPlanProps> = ({
             setDraggingId(null);
 
             if (!wasDrag) {
-                const next = selectedId === table.id ? null : table.id;
+                const next = selectedId === item.id ? null : item.id;
                 onSelect?.(next);
             }
         },
@@ -168,7 +168,7 @@ export const TableFloorPlan: React.FC<TableFloorPlanProps> = ({
     return (
         <Box
             ref={containerRef}
-            data-testid="table-floor-plan"
+            data-testid="positioned-canvas"
             className={cn(
                 "relative bg-background border border-border rounded-md overflow-hidden",
                 className,
@@ -176,17 +176,17 @@ export const TableFloorPlan: React.FC<TableFloorPlanProps> = ({
             style={{ width, height }}
             onClick={handleContainerClick}
         >
-            {tables.map((table) => {
-                const status = table.status ?? 'empty';
-                const shape = table.shape ?? 'round';
-                const isSelected = selectedId === table.id;
-                const isDragging = draggingId === table.id;
+            {items.map((item) => {
+                const status = item.status ?? 'empty';
+                const shape = item.shape ?? 'round';
+                const isSelected = selectedId === item.id;
+                const isDragging = draggingId === item.id;
                 const statusBadge = STATUS_BADGE[status];
 
                 return (
                     <Box
-                        key={table.id}
-                        data-testid={`table-node-${table.id}`}
+                        key={item.id}
+                        data-testid={`item-node-${item.id}`}
                         data-status={status}
                         className={cn(
                             "absolute flex flex-col items-center justify-center gap-1 border-2 select-none",
@@ -197,26 +197,26 @@ export const TableFloorPlan: React.FC<TableFloorPlanProps> = ({
                             isSelected && "outline outline-2 outline-offset-2 outline-primary shadow-md",
                             isDragging && "shadow-lg z-10",
                         )}
-                        style={{ left: table.x, top: table.y, touchAction: 'none' }}
-                        onPointerDown={(e) => handlePointerDown(e, table)}
+                        style={{ left: item.x, top: item.y, touchAction: 'none' }}
+                        onPointerDown={(e) => handlePointerDown(e, item)}
                         onPointerMove={handlePointerMove}
-                        onPointerUp={(e) => handlePointerUp(e, table)}
-                        onPointerCancel={(e) => handlePointerUp(e, table)}
+                        onPointerUp={(e) => handlePointerUp(e, item)}
+                        onPointerCancel={(e) => handlePointerUp(e, item)}
                     >
                         <Box className="flex items-center gap-1">
                             {getStatusIcon(status)}
                             <Typography variant="body2" weight="semibold">
-                                {table.label}
+                                {item.label}
                             </Typography>
                         </Box>
                         <Typography variant="caption" color="secondary">
-                            {table.partySize !== undefined && status === 'seated'
-                                ? `${table.partySize}/${table.capacity}`
-                                : `Cap ${table.capacity}`}
+                            {item.partySize !== undefined && status === 'seated'
+                                ? `${item.partySize}/${item.capacity}`
+                                : `Cap ${item.capacity}`}
                         </Typography>
-                        {status === 'seated' && table.serverName && (
+                        {status === 'seated' && item.serverName && (
                             <Typography variant="caption" color="secondary" className="truncate max-w-[80%]">
-                                {table.serverName}
+                                {item.serverName}
                             </Typography>
                         )}
                         {isSelected && (
@@ -235,4 +235,4 @@ export const TableFloorPlan: React.FC<TableFloorPlanProps> = ({
     );
 };
 
-TableFloorPlan.displayName = "TableFloorPlan";
+PositionedCanvas.displayName = "PositionedCanvas";
