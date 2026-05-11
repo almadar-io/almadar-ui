@@ -273,17 +273,24 @@ export function parseApplicationLevel(schema: OrbitalSchema): ApplicationLevelDa
     }
   }
 
+  // Dedupe by (emitter, listener, event). Cosmic-zoom renders one wire per
+  // CrossLink and downstream xyflow edges key on the same triple, so multiple
+  // trait pairs sharing it would stack overlapping wires / collide as duplicate
+  // React keys.
+  const seenLinks = new Set<string>();
   for (const emit of emitMap) {
     for (const listen of listenMap) {
-      if (emit.event === listen.event && emit.orbital !== listen.orbital) {
-        crossLinks.push({
-          emitterOrbital: emit.orbital,
-          listenerOrbital: listen.orbital,
-          eventName: emit.event,
-          emitterTrait: emit.trait,
-          listenerTrait: listen.trait,
-        });
-      }
+      if (emit.event !== listen.event || emit.orbital === listen.orbital) continue;
+      const key = `${emit.orbital}␟${listen.orbital}␟${emit.event}`;
+      if (seenLinks.has(key)) continue;
+      seenLinks.add(key);
+      crossLinks.push({
+        emitterOrbital: emit.orbital,
+        listenerOrbital: listen.orbital,
+        eventName: emit.event,
+        emitterTrait: emit.trait,
+        listenerTrait: listen.trait,
+      });
     }
   }
 

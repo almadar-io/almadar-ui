@@ -287,18 +287,24 @@ function findCrossLinks(orbitals: OrbitalDefinition[]): CrossLink[] {
     }
   }
 
-  // Match emitters to listeners across different orbitals
+  // Match emitters to listeners across different orbitals.
+  // Dedupe by (emitter, listener, event): downstream edge ids are keyed on
+  // that triple, so multiple trait pairs producing the same triple would
+  // collide as duplicate React keys and corrupt xyflow's edge state.
+  const seen = new Set<string>();
   for (const em of emitters) {
     for (const li of listeners) {
-      if (em.event === li.event && em.orbital !== li.orbital) {
-        links.push({
-          emitterOrbital: em.orbital,
-          listenerOrbital: li.orbital,
-          event: em.event,
-          emitterTrait: em.trait,
-          listenerTrait: li.trait,
-        });
-      }
+      if (em.event !== li.event || em.orbital === li.orbital) continue;
+      const key = `${em.orbital}␟${li.orbital}␟${em.event}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      links.push({
+        emitterOrbital: em.orbital,
+        listenerOrbital: li.orbital,
+        event: em.event,
+        emitterTrait: em.trait,
+        listenerTrait: li.trait,
+      });
     }
   }
 
