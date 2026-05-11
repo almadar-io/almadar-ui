@@ -21,7 +21,7 @@ import type { BehaviorComposeNodeData, ConnectableEvent } from './avl-behavior-c
 import { formatPayloadTooltip } from './wire-validation';
 import { createLogger } from '../../../lib/logger';
 
-const behaviorHandleLog = createLogger('almadar:ui:behavior-compose-handle');
+const behaviorHandleLog = createLogger('almadar:ui:nan-coord');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -49,7 +49,7 @@ const TARGET_HANDLE_STYLE: React.CSSProperties = {
 function eventHandleStyle(source: ConnectableEvent): React.CSSProperties {
   const hint = Number.isFinite(source.positionHint) ? source.positionHint : 0.5;
   if (hint !== source.positionHint) {
-    behaviorHandleLog.warn('non-finite positionHint on ConnectableEvent', {
+    behaviorHandleLog.warn('behavior-compose-handle: non-finite positionHint on ConnectableEvent', {
       event: source.event,
       positionHint: source.positionHint,
     });

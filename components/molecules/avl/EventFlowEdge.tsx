@@ -20,7 +20,7 @@ import {
 import type { EventEdgeData } from './avl-preview-types';
 import { createLogger } from '../../../lib/logger';
 
-const edgeLog = createLogger('almadar:ui:event-flow-edge');
+const edgeLog = createLogger('almadar:ui:nan-coord');
 
 const EventFlowEdgeInner: React.FC<EdgeProps> = (props) => {
   const {
@@ -47,7 +47,7 @@ const EventFlowEdgeInner: React.FC<EdgeProps> = (props) => {
     !Number.isFinite(targetX) ||
     !Number.isFinite(targetY)
   ) {
-    edgeLog.warn('non-finite edge coordinates', {
+    edgeLog.warn('event-flow-edge: non-finite edge coordinates', {
       edgeId: id,
       source,
       target,

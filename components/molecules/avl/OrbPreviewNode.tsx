@@ -45,7 +45,7 @@ import { ALMADAR_DND_MIME, type DraggablePayload } from '../../../hooks/useDragg
 import { formatPayloadTooltip } from './wire-validation';
 import { createLogger } from '../../../lib/logger';
 
-const eventHandleLog = createLogger('almadar:ui:orb-preview-handle');
+const eventHandleLog = createLogger('almadar:ui:nan-coord');
 
 // ---------------------------------------------------------------------------
 // Contexts (provided by FlowCanvas)
@@ -108,7 +108,7 @@ const TARGET_HANDLE_STYLE: React.CSSProperties = {
 function eventHandleStyle(source: PatternEventSource): React.CSSProperties {
   const hint = Number.isFinite(source.positionHint) ? source.positionHint : 0.5;
   if (hint !== source.positionHint) {
-    eventHandleLog.warn('non-finite positionHint on PatternEventSource', {
+    eventHandleLog.warn('orb-preview-handle: non-finite positionHint on PatternEventSource', {
       event: source.event,
       patternType: source.patternType,
       label: source.label,

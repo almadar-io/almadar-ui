@@ -145,7 +145,7 @@ interface EventWireOverlayProps {
 
 let avlOczWireId = 0;
 
-const cosmicWireLog = createLogger('almadar:ui:cosmic-zoom-wire');
+const cosmicWireLog = createLogger('almadar:ui:nan-coord');
 
 const EventWireOverlay: React.FC<EventWireOverlayProps> = ({
   orbitalViews,
@@ -243,7 +243,7 @@ const EventWireOverlay: React.FC<EventWireOverlayProps> = ({
             !Number.isFinite(x2) || !Number.isFinite(y2) ||
             !Number.isFinite(cpx) || !Number.isFinite(cpy)
           ) {
-            cosmicWireLog.warn('non-finite cosmic wire coordinates', {
+            cosmicWireLog.warn('cosmic-zoom-wire: non-finite wire coordinates', {
               eventName: link.eventName,
               emitterOrbital: link.emitterOrbital,
               listenerOrbital: link.listenerOrbital,
