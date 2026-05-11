@@ -119,14 +119,22 @@ function layoutOrbitals(
 
   const cols = Math.min(count, Math.ceil(Math.sqrt(count)));
   const rows = Math.ceil(count / cols);
-  const cellW = containerW / (cols + 0.3);
-  const cellH = containerH / (rows + 0.3);
-  const originX = (containerW - cols * cellW) / 2 + cellW / 2;
-  const originY = (containerH - rows * cellH) / 2 + cellH / 2;
+
+  // Place orbital centers from edge-pad to (container - edge-pad) so the
+  // orbital sprite (UNIT_DISPLAY_W × UNIT_DISPLAY_H) plus a 24px breathing
+  // gap always fits inside the container, and the grid spreads edge-to-edge
+  // instead of clustering in the middle.
+  const edgePad = 24;
+  const minCx = UNIT_DISPLAY_W / 2 + edgePad;
+  const minCy = UNIT_DISPLAY_H / 2 + edgePad;
+  const maxCx = Math.max(minCx, containerW - UNIT_DISPLAY_W / 2 - edgePad);
+  const maxCy = Math.max(minCy, containerH - UNIT_DISPLAY_H / 2 - edgePad);
+  const stepX = cols > 1 ? (maxCx - minCx) / (cols - 1) : 0;
+  const stepY = rows > 1 ? (maxCy - minCy) / (rows - 1) : 0;
 
   return Array.from({ length: count }, (_, i) => ({
-    cx: originX + (i % cols) * cellW,
-    cy: originY + Math.floor(i / cols) * cellH,
+    cx: minCx + (i % cols) * stepX,
+    cy: minCy + Math.floor(i / cols) * stepY,
   }));
 }
 
