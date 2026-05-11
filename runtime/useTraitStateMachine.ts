@@ -659,15 +659,28 @@ export function useTraitStateMachine(
                     ...(payload !== undefined ? { payload } : {}),
                     timestamp: Date.now(),
                 };
-                // Per-trait reducer mirror is populated by the local fetch
-                // handler hook below (wraps `handlers.fetch` so each
-                // success writes `snap.data[<fetchEntityType>] = rows`),
-                // matching the compiled path's per-trait reducer
-                // `state.data[<EntityName>]: EntityRow[]`. Cross-trait
-                // payload-data was written here previously but keyed on
-                // the LISTENER's linkedEntity — for Pagination listening
-                // to BrowseItemLoaded that stored BrowseItem rows under
-                // PagedItem, corrupting `@entity.currentPage` reads.
+                // Per-trait reducer mirror. When THIS trait owns the event
+                // being processed (declared in `events`, not just listened
+                // to via `listens`), and the payload carries `data: Array`,
+                // write the array into `snap.data[<linkedEntity>]`. Fetch
+                // emits land here (`XLoaded` from `(fetch X {emit:{success}})`),
+                // so the verifier's `mergeEntityData` reads up-to-date rows
+                // for `entityChanges` diffing. Restricted to declared events
+                // to avoid the prior cross-trait bug: a listener trait
+                // (e.g. Pagination listening to BrowseItemLoaded) would
+                // otherwise store the source trait's rows under its own
+                // `linkedEntity`, corrupting `@entity.X` reads.
+                if (binding.linkedEntity) {
+                    const ownsEvent = binding.trait.events?.some(
+                        (e) => e.key === normalizedEvent,
+                    ) ?? false;
+                    if (ownsEvent) {
+                        const payloadData = (payload as { data?: unknown } | undefined)?.data;
+                        if (Array.isArray(payloadData)) {
+                            snap.data[binding.linkedEntity] = payloadData as EntityRow[];
+                        }
+                    }
+                }
                 // cascadeReceived: if this trait has a `listens` entry that
                 // maps the incoming event to a trigger, count it as cascade.
                 // Distinguishes user-direct from cascade-triggered for VG4.
