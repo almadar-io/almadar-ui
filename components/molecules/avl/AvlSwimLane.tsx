@@ -130,18 +130,22 @@ export const AvlSwimLane: React.FC<AvlSwimLaneProps> = ({
             const ey = EVENT_START_Y + i * EVENT_SPACING;
             return (
               <g key={evt + i}>
+                {/* Right-anchored text so the right-pointing triangle stays
+                    at the outer edge and long event names grow leftward
+                    instead of plowing through the arrow. Mirrors LISTENS. */}
                 <text
-                  x={rightX + 8}
+                  x={totalWidth - 18}
                   y={ey + 4}
                   fontSize={11}
                   fontWeight={500}
                   fill={color}
                   opacity={0.6}
                   fontFamily="inherit"
+                  textAnchor="end"
                 >
                   {evt}
                 </text>
-                {/* Right-pointing triangle */}
+                {/* Right-pointing triangle (outbound emit) */}
                 <polygon
                   points={`${totalWidth - 4},${ey} ${totalWidth - 12},${ey - 5} ${totalWidth - 12},${ey + 5}`}
                   fill={emitColor}

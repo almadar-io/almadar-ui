@@ -467,6 +467,7 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
     return () => window.removeEventListener('keydown', onKey);
   }, [handleZoomOut, state.level]);
 
+
   // Parsed data for the deeper levels (computed lazily — null at L3)
   const orbitalLevelData = useMemo(() => {
     if (!state.selectedOrbital) return null;
@@ -495,6 +496,14 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const dragStateRef = useRef<{ startX: number; startY: number; panX: number; panY: number } | null>(null);
   const transformWrapperRef = useRef<HTMLDivElement>(null);
+
+  // Reset pan/zoom when the drill level changes so each level starts at 1×
+  // and (0,0). Without this, drilling from application (zoomed/panned) into
+  // trait would inherit the previous transform and show a partial view.
+  useEffect(() => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, [state.level]);
 
   const clampZoom = useCallback(
     (z: number) => Math.max(minZoom, Math.min(maxZoom, z)),
@@ -564,7 +573,7 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
     };
     wrapper.addEventListener('wheel', wheelListener, { passive: false });
     return () => wrapper.removeEventListener('wheel', wheelListener);
-  }, [clampZoom]);
+  }, [clampZoom, state.level]);
 
   const zoomIn = useCallback(() => setZoom(z => clampZoom(z * 1.2)), [clampZoom]);
   const zoomOut = useCallback(() => setZoom(z => clampZoom(z / 1.2)), [clampZoom]);
@@ -825,7 +834,8 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
         </Box>
       )}
 
-      {/* ── L5 (trait): AVL state machine — click a transition to enter L6 ── */}
+      {/* ── L5 (trait): AVL state machine — click a transition to enter L6.
+            Wrapped in the same pan/zoom shell as L3 so wheel-zoom + drag work. */}
       {state.level === 'trait' && traitLevelData && (
         <Box
           position="absolute"
@@ -837,17 +847,42 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
             paddingRight: 24,
           }}
         >
-          <svg viewBox="0 0 600 400" style={{ width: '100%', height: '100%' }}>
-            <AvlTraitScene
-              data={traitLevelData}
-              color={color}
-              onTransitionClick={(idx) => handleTransitionSelect(idx)}
-            />
-          </svg>
+          <div
+            ref={transformWrapperRef}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            style={{
+              position: 'relative',
+              width: '100%',
+              height: '100%',
+              cursor: dragStateRef.current ? 'grabbing' : 'grab',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                transformOrigin: '0 0',
+              }}
+            >
+              <svg viewBox="0 0 600 400" style={{ width: '100%', height: '100%' }}>
+                <AvlTraitScene
+                  data={traitLevelData}
+                  color={color}
+                  onTransitionClick={(idx) => handleTransitionSelect(idx)}
+                />
+              </svg>
+            </div>
+          </div>
         </Box>
       )}
 
-      {/* ── L6 (transition): one transition with sexpr expression tree ── */}
+      {/* ── L6 (transition): one transition with sexpr expression tree.
+            Pan/zoom wrapper mirrors L5. */}
       {state.level === 'transition' && transitionLevelData && (
         <Box
           position="absolute"
@@ -859,12 +894,62 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
             paddingRight: 24,
           }}
         >
-          <svg viewBox="0 0 600 400" style={{ width: '100%', height: '100%' }}>
-            <AvlTransitionScene
-              data={transitionLevelData}
-              color={color}
-            />
-          </svg>
+          <div
+            ref={transformWrapperRef}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerUp}
+            style={{
+              position: 'relative',
+              width: '100%',
+              height: '100%',
+              cursor: dragStateRef.current ? 'grabbing' : 'grab',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                transformOrigin: '0 0',
+              }}
+            >
+              <svg viewBox="0 0 600 400" style={{ width: '100%', height: '100%' }}>
+                <AvlTransitionScene
+                  data={transitionLevelData}
+                  color={color}
+                />
+              </svg>
+            </div>
+          </div>
+        </Box>
+      )}
+
+      {/* Pan/zoom controls — shared by all pan-zoomable levels (application,
+          trait, transition). The orbital level is a static layout. */}
+      {(state.level === 'trait' || state.level === 'transition') && (
+        <Box
+          position="absolute"
+          style={{
+            top: 12,
+            right: 12,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4,
+            zIndex: 30,
+          }}
+        >
+          <Button variant="secondary" size="sm" onClick={zoomIn} title="Zoom in" action="COSMIC_ZOOM_IN">
+            <Icon name="plus" size="sm" />
+          </Button>
+          <Button variant="secondary" size="sm" onClick={zoomOut} title="Zoom out" action="COSMIC_ZOOM_OUT">
+            <Icon name="minus" size="sm" />
+          </Button>
+          <Button variant="secondary" size="sm" onClick={resetZoom} title="Reset" action="COSMIC_ZOOM_RESET">
+            <Icon name="maximize" size="sm" />
+          </Button>
         </Box>
       )}
     </Box>
