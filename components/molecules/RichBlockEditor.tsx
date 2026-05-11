@@ -25,7 +25,7 @@ import {
   Trash,
   Type as TypeIcon,
 } from "lucide-react";
-import type { EventEmit, EventPayloadValue } from '@almadar/core';
+import type { EntityRow, EventEmit, EventPayloadValue } from '@almadar/core';
 import { cn } from "../../lib/cn";
 import { Card } from "../atoms/Card";
 import { Typography } from "../atoms/Typography";
@@ -57,7 +57,14 @@ export interface RichBlock {
 }
 
 export interface RichBlockEditorProps {
-  initialBlocks?: RichBlock[];
+  /**
+   * Initial block payload. Accepts strongly-typed RichBlock[] from native
+   * callers and the wider EntityRow[] shape that orb-bound traits emit
+   * (orb `[object]` lowers to `Record<string, FieldValue | undefined>[]`,
+   * which is structurally EntityRow[]). Items missing id/type are normalized
+   * into paragraph blocks at mount.
+   */
+  initialBlocks?: readonly RichBlock[] | readonly EntityRow[];
   onChange?: (blocks: RichBlock[]) => void;
   changeEvent?: EventEmit<{ blocks: RichBlock[] }>;
   readOnly?: boolean;
@@ -114,6 +121,35 @@ function nextBlockId(prefix = "blk"): string {
   _idSeq += 1;
   const random = Math.random().toString(36).slice(2, 8);
   return `${prefix}-${Date.now().toString(36)}-${_idSeq}-${random}`;
+}
+
+const BLOCK_TYPES = new Set<BlockType>([
+  "paragraph",
+  "heading-1",
+  "heading-2",
+  "heading-3",
+  "bullet-list",
+  "numbered-list",
+  "quote",
+  "code",
+  "divider",
+  "image",
+]);
+
+function normalizeBlocks(
+  raw: readonly RichBlock[] | readonly EntityRow[] | undefined,
+): RichBlock[] {
+  if (!raw || raw.length === 0) return [createBlock("paragraph")];
+  return raw.map((row): RichBlock => {
+    const r = row as Record<string, unknown>;
+    const rawType = r.type;
+    const type: BlockType =
+      typeof rawType === "string" && BLOCK_TYPES.has(rawType as BlockType)
+        ? (rawType as BlockType)
+        : "paragraph";
+    const id = typeof r.id === "string" && r.id ? r.id : nextBlockId(type);
+    return { ...(r as Record<string, EventPayloadValue>), id, type };
+  });
 }
 
 function createBlock(type: BlockType): RichBlock {
@@ -725,7 +761,7 @@ export const RichBlockEditor: React.FC<RichBlockEditorProps> = ({
   className,
 }) => {
   const [blocks, setBlocks] = useState<RichBlock[]>(
-    () => initialBlocks ?? [createBlock("paragraph")],
+    () => normalizeBlocks(initialBlocks),
   );
   const onChangeRef = useRef(onChange);
   useEffect(() => {
