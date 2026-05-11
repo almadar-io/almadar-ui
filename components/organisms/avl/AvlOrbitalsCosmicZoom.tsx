@@ -658,23 +658,23 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
       {/* ── L3 (application): existing pan/zoom grid of orbital tiles ── */}
       {state.level === 'application' && (
         <>
-          <div
+          <Box
             ref={transformWrapperRef}
+            position="absolute"
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerUp}
             style={{
-              position: 'absolute',
               inset: 0,
               overflow: 'hidden',
               cursor: dragStateRef.current ? 'grabbing' : 'grab',
               touchAction: 'none',
             }}
           >
-            <div
+            <Box
+              position="absolute"
               style={{
-                position: 'absolute',
                 inset: 0,
                 transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
                 transformOrigin: '0 0',
@@ -730,8 +730,8 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
                 </Box>
                 );
               })}
-            </div>
-          </div>
+            </Box>
+          </Box>
 
           {/* GAP-54: pan/zoom controls — only relevant at L3 */}
           <Box
@@ -847,23 +847,23 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
             paddingRight: 24,
           }}
         >
-          <div
+          <Box
             ref={transformWrapperRef}
+            position="relative"
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerUp}
             style={{
-              position: 'relative',
               width: '100%',
               height: '100%',
               cursor: dragStateRef.current ? 'grabbing' : 'grab',
               overflow: 'hidden',
             }}
           >
-            <div
+            <Box
+              position="absolute"
               style={{
-                position: 'absolute',
                 inset: 0,
                 transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
                 transformOrigin: '0 0',
@@ -876,8 +876,8 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
                   onTransitionClick={(idx) => handleTransitionSelect(idx)}
                 />
               </svg>
-            </div>
-          </div>
+            </Box>
+          </Box>
         </Box>
       )}
 
@@ -894,23 +894,23 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
             paddingRight: 24,
           }}
         >
-          <div
+          <Box
             ref={transformWrapperRef}
+            position="relative"
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerUp}
             style={{
-              position: 'relative',
               width: '100%',
               height: '100%',
               cursor: dragStateRef.current ? 'grabbing' : 'grab',
               overflow: 'hidden',
             }}
           >
-            <div
+            <Box
+              position="absolute"
               style={{
-                position: 'absolute',
                 inset: 0,
                 transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
                 transformOrigin: '0 0',
@@ -922,8 +922,8 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
                   color={color}
                 />
               </svg>
-            </div>
-          </div>
+            </Box>
+          </Box>
         </Box>
       )}
 
