@@ -15,7 +15,7 @@
  * @packageDocumentation
  */
 
-import React, { useMemo, useState, useCallback, useRef, useEffect, useReducer } from 'react';
+import React, { useMemo, useState, useCallback, useRef, useEffect, useLayoutEffect, useReducer } from 'react';
 import type { OrbitalSchema } from '@almadar/core';
 import {
   parseApplicationLevel,
@@ -338,9 +338,31 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
     [parsedSchema],
   );
 
-  // Container dimensions (numeric for layout math)
-  const containerW = typeof width === 'number' ? width : 800;
-  const containerH = typeof height === 'number' ? height : 450;
+  // Container dimensions: orbital DIVs are positioned in raw CSS pixels, but
+  // the SVG wire overlay uses viewBox + inset:0 (stretches to container). If
+  // the two coord systems don't match, wire endpoints drift away from the
+  // DIVs they should attach to. The width/height props are typically '100%'
+  // strings from the workspace, so we must measure the actual rendered
+  // container and use those pixel values for BOTH the layout math and the
+  // SVG viewBox so both spaces map 1:1.
+  const outerRef = useRef<HTMLDivElement>(null);
+  const [measured, setMeasured] = useState<{ w: number; h: number } | null>(null);
+  useLayoutEffect(() => {
+    const el = outerRef.current;
+    if (!el) return;
+    const update = () => {
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) setMeasured({ w: r.width, h: r.height });
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const fallbackW = typeof width === 'number' ? width : 800;
+  const fallbackH = typeof height === 'number' ? height : 450;
+  const containerW = measured?.w ?? fallbackW;
+  const containerH = measured?.h ?? fallbackH;
 
   const positions = useMemo(
     () => layoutOrbitals(orbitals.length, containerW, containerH),
@@ -536,10 +558,11 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
 
   return (
     <Box
+      ref={outerRef}
       className={className}
       position="relative"
       overflow="visible"
-      style={{ width, height: containerH }}
+      style={{ width, height }}
     >
       {/* GAP-75: Breadcrumb header — always visible. Lets the user navigate
           back up the drill chain. */}
