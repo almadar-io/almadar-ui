@@ -18,10 +18,17 @@ import {
   type EdgeProps,
 } from '@xyflow/react';
 import type { EventEdgeData } from './avl-preview-types';
+import { createLogger } from '../../../lib/logger';
+
+const edgeLog = createLogger('almadar:ui:event-flow-edge');
 
 const EventFlowEdgeInner: React.FC<EdgeProps> = (props) => {
   const {
     id,
+    source,
+    target,
+    sourceHandleId,
+    targetHandleId,
     sourceX,
     sourceY,
     targetX,
@@ -33,6 +40,30 @@ const EventFlowEdgeInner: React.FC<EdgeProps> = (props) => {
   const data = props.data as EventEdgeData | undefined;
   const isBackward = data?.isBackward ?? false;
   const isCrossOrbital = data?.isCrossOrbital ?? false;
+
+  if (
+    !Number.isFinite(sourceX) ||
+    !Number.isFinite(sourceY) ||
+    !Number.isFinite(targetX) ||
+    !Number.isFinite(targetY)
+  ) {
+    edgeLog.warn('non-finite edge coordinates', {
+      edgeId: id,
+      source,
+      target,
+      sourceHandleId,
+      targetHandleId,
+      sourceX,
+      sourceY,
+      targetX,
+      targetY,
+      sourcePosition,
+      targetPosition,
+      eventName: data?.event,
+      fromState: data?.fromState,
+      toState: data?.toState,
+    });
+  }
 
   const [edgePath, labelX, labelY] = getBezierPath({
     sourceX,

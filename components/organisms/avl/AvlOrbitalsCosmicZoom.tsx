@@ -35,6 +35,7 @@ import { AvlTransitionScene } from './AvlTransitionScene';
 import { AvlOrbitalUnit } from '../../molecules/avl/AvlOrbitalUnit';
 import type { AvlPersistenceKind } from '../../atoms/avl/types';
 import { curveControlPoint } from '../../molecules/avl/avl-layout';
+import { createLogger } from '../../../lib/logger';
 import { Box } from '../../atoms/Box';
 import { HStack } from '../../atoms/Stack';
 import { Typography, Text } from '../../atoms/Typography';
@@ -144,6 +145,8 @@ interface EventWireOverlayProps {
 
 let avlOczWireId = 0;
 
+const cosmicWireLog = createLogger('almadar:ui:cosmic-zoom-wire');
+
 const EventWireOverlay: React.FC<EventWireOverlayProps> = ({
   orbitalViews,
   crossLinks,
@@ -234,6 +237,23 @@ const EventWireOverlay: React.FC<EventWireOverlayProps> = ({
           const offset = 25 + wireIdx * 18;
           const { cpx, cpy } = curveControlPoint(x1, y1, x2, y2, offset);
           const pathD = `M${x1},${y1} Q${cpx},${cpy} ${x2},${y2}`;
+
+          if (
+            !Number.isFinite(x1) || !Number.isFinite(y1) ||
+            !Number.isFinite(x2) || !Number.isFinite(y2) ||
+            !Number.isFinite(cpx) || !Number.isFinite(cpy)
+          ) {
+            cosmicWireLog.warn('non-finite cosmic wire coordinates', {
+              eventName: link.eventName,
+              emitterOrbital: link.emitterOrbital,
+              listenerOrbital: link.listenerOrbital,
+              fromPos,
+              toPos,
+              orbitalR,
+              wireIdx,
+              x1, y1, x2, y2, cpx, cpy,
+            });
+          }
 
           // Label at curve midpoint
           const t = 0.5;

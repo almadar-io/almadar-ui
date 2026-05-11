@@ -19,6 +19,9 @@ import { Badge } from '../../atoms/Badge';
 import { AvlBehaviorGlyph } from './AvlBehaviorGlyph';
 import type { BehaviorComposeNodeData, ConnectableEvent } from './avl-behavior-compose-types';
 import { formatPayloadTooltip } from './wire-validation';
+import { createLogger } from '../../../lib/logger';
+
+const behaviorHandleLog = createLogger('almadar:ui:behavior-compose-handle');
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -44,12 +47,19 @@ const TARGET_HANDLE_STYLE: React.CSSProperties = {
 };
 
 function eventHandleStyle(source: ConnectableEvent): React.CSSProperties {
+  const hint = Number.isFinite(source.positionHint) ? source.positionHint : 0.5;
+  if (hint !== source.positionHint) {
+    behaviorHandleLog.warn('non-finite positionHint on ConnectableEvent', {
+      event: source.event,
+      positionHint: source.positionHint,
+    });
+  }
   return {
     background: '#F97316',
     width: 10,
     height: 10,
     border: '2px solid var(--color-card)',
-    top: `${source.positionHint * 100}%`,
+    top: `${hint * 100}%`,
     right: -5,
   };
 }

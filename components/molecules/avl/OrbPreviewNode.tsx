@@ -43,6 +43,9 @@ import { SCREEN_SIZE_PRESETS } from './avl-preview-types';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { ALMADAR_DND_MIME, type DraggablePayload } from '../../../hooks/useDraggable';
 import { formatPayloadTooltip } from './wire-validation';
+import { createLogger } from '../../../lib/logger';
+
+const eventHandleLog = createLogger('almadar:ui:orb-preview-handle');
 
 // ---------------------------------------------------------------------------
 // Contexts (provided by FlowCanvas)
@@ -103,12 +106,21 @@ const TARGET_HANDLE_STYLE: React.CSSProperties = {
 };
 
 function eventHandleStyle(source: PatternEventSource): React.CSSProperties {
+  const hint = Number.isFinite(source.positionHint) ? source.positionHint : 0.5;
+  if (hint !== source.positionHint) {
+    eventHandleLog.warn('non-finite positionHint on PatternEventSource', {
+      event: source.event,
+      patternType: source.patternType,
+      label: source.label,
+      positionHint: source.positionHint,
+    });
+  }
   return {
     background: '#F97316',
     width: 10,
     height: 10,
     border: '2px solid var(--color-card)',
-    top: `${source.positionHint * 100}%`,
+    top: `${hint * 100}%`,
     right: -5,
   };
 }
