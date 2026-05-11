@@ -46,6 +46,13 @@ import { formatPayloadTooltip } from './wire-validation';
 import { createLogger } from '../../../lib/logger';
 
 const eventHandleLog = createLogger('almadar:ui:nan-coord');
+const orbPreviewLog = createLogger('almadar:ui:orb-preview-node');
+
+// AVL canvas wire check: log module-init so we can confirm OrbPreviewNode
+// actually finished defining before FlowCanvas's NODE_TYPES picks it up.
+// If this never fires but FlowCanvas's `node-type-registry` log does, the
+// import order is wrong and `preview` lands `undefined` in the registry.
+orbPreviewLog.info('module-init', { browserPlayground: typeof BrowserPlayground });
 
 // ---------------------------------------------------------------------------
 // Contexts (provided by FlowCanvas)
@@ -678,3 +685,9 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
 
 export const OrbPreviewNode = React.memo(OrbPreviewNodeInner);
 OrbPreviewNode.displayName = 'OrbPreviewNode';
+
+orbPreviewLog.info('export-resolved', {
+  type: typeof OrbPreviewNode,
+  displayName: OrbPreviewNode.displayName,
+  innerDefined: typeof OrbPreviewNodeInner === 'function',
+});

@@ -43,15 +43,30 @@ import { useEventBus } from '../../../hooks/useEventBus';
 import { BehaviorComposeNode } from '../../molecules/avl/BehaviorComposeNode';
 import { behaviorsToComposeGraph } from '../../molecules/avl/avl-behavior-compose-converter';
 import type { ComposeViewLevel, BehaviorCanvasEntry, BehaviorWireEdgeData, BehaviorComposeNodeData } from '../../molecules/avl/avl-behavior-compose-types';
+import { createLogger } from '../../../lib/logger';
 
 // ---------------------------------------------------------------------------
 // Node & edge type registries
 // ---------------------------------------------------------------------------
 
+const flowCanvasLog = createLogger('almadar:ui:flow-canvas');
+
 const NODE_TYPES: NodeTypes = {
   preview: OrbPreviewNode,
   behaviorCompose: BehaviorComposeNode,
 } as NodeTypes;
+
+// AVL canvas wire check: if OrbPreviewNode / BehaviorComposeNode resolve to
+// `undefined` at module init (broken upstream import, circular dependency,
+// stale bundle), ReactFlow falls back to the default node renderer and the
+// canvas shows empty white strips instead of orbital previews. Log the
+// registry shape so the regression is visible in the browser console.
+flowCanvasLog.info('node-type-registry', {
+  registered: Object.keys(NODE_TYPES),
+  preview: typeof OrbPreviewNode,
+  previewIsValid: typeof OrbPreviewNode === 'function' || (typeof OrbPreviewNode === 'object' && OrbPreviewNode !== null),
+  behaviorCompose: typeof BehaviorComposeNode,
+});
 
 const EDGE_TYPES: EdgeTypes = {
   eventFlow: EventFlowEdge,
