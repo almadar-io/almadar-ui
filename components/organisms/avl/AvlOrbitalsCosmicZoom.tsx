@@ -779,6 +779,8 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
               gap: 8,
               borderLeft: `1px solid ${color}`,
               opacity: 0.95,
+              overflowY: 'auto',
+              minHeight: 0,
             }}
           >
             <Typography variant="small" weight="semibold" style={{ color, marginBottom: 4 }}>
