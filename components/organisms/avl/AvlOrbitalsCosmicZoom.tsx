@@ -120,21 +120,30 @@ function layoutOrbitals(
   const cols = Math.min(count, Math.ceil(Math.sqrt(count)));
   const rows = Math.ceil(count / cols);
 
-  // Place orbital centers from edge-pad to (container - edge-pad) so the
-  // orbital sprite (UNIT_DISPLAY_W × UNIT_DISPLAY_H) plus a 24px breathing
-  // gap always fits inside the container, and the grid spreads edge-to-edge
-  // instead of clustering in the middle.
+  // Distribute orbital centers across the container with a per-axis edge
+  // pad so the orbital sprite never clips, AND cap the step between
+  // neighbors so very wide containers don't spread the grid too thin.
+  // The cap (3.5× orbital size) keeps the grid visually cohesive while
+  // still scaling down for narrow containers.
   const edgePad = 24;
-  const minCx = UNIT_DISPLAY_W / 2 + edgePad;
-  const minCy = UNIT_DISPLAY_H / 2 + edgePad;
-  const maxCx = Math.max(minCx, containerW - UNIT_DISPLAY_W / 2 - edgePad);
-  const maxCy = Math.max(minCy, containerH - UNIT_DISPLAY_H / 2 - edgePad);
-  const stepX = cols > 1 ? (maxCx - minCx) / (cols - 1) : 0;
-  const stepY = rows > 1 ? (maxCy - minCy) / (rows - 1) : 0;
+  const fitMinCx = UNIT_DISPLAY_W / 2 + edgePad;
+  const fitMinCy = UNIT_DISPLAY_H / 2 + edgePad;
+  const fitMaxCx = Math.max(fitMinCx, containerW - UNIT_DISPLAY_W / 2 - edgePad);
+  const fitMaxCy = Math.max(fitMinCy, containerH - UNIT_DISPLAY_H / 2 - edgePad);
+  const fitStepX = cols > 1 ? (fitMaxCx - fitMinCx) / (cols - 1) : 0;
+  const fitStepY = rows > 1 ? (fitMaxCy - fitMinCy) / (rows - 1) : 0;
+  const stepX = Math.min(fitStepX, UNIT_DISPLAY_W * 3.5);
+  const stepY = Math.min(fitStepY, UNIT_DISPLAY_H * 3.5);
+
+  // Center the (possibly-narrower) grid within the container.
+  const gridW = (cols - 1) * stepX;
+  const gridH = (rows - 1) * stepY;
+  const originX = (containerW - gridW) / 2;
+  const originY = (containerH - gridH) / 2;
 
   return Array.from({ length: count }, (_, i) => ({
-    cx: minCx + (i % cols) * stepX,
-    cy: minCy + Math.floor(i / cols) * stepY,
+    cx: originX + (i % cols) * stepX,
+    cy: originY + Math.floor(i / cols) * stepY,
   }));
 }
 
