@@ -235,16 +235,28 @@ function FlowCanvasInner({
 
   const reactFlow = useReactFlow();
 
-  // Sync nodes/edges when level or schema changes
+  // Sync nodes/edges when level or schema changes. setNodes/setEdges write
+  // to separate zustand stores; between them xyflow can briefly see new
+  // nodes paired with old edges (or vice versa) when switching levels.
+  // Clear edges FIRST so no edge ever references a node id that's about to
+  // disappear, then set the new nodes, then the new edges.
   useEffect(() => {
+    setEdges([]);
     setNodes(activeNodes);
     setEdges(activeEdges);
-    // fitView is handled by the fitView prop on <ReactFlow> for initial render,
-    // and by onNodesChange for subsequent updates. No manual timeout needed.
     requestAnimationFrame(() => {
       reactFlow.fitView({ duration: 300, padding: 0.15 });
     });
   }, [activeNodes, activeEdges, setNodes, setEdges, reactFlow]);
+
+  // Defense in depth: never render an edge whose source/target isn't in the
+  // current node set. Stops orphaned overview edges from leaking into the
+  // expanded view (their orbital-name source/target ids don't exist among
+  // the screen-name expanded nodes) and flying off-screen.
+  const visibleEdges = useMemo(() => {
+    const nodeIds = new Set(nodes.map(n => n.id));
+    return edges.filter(e => nodeIds.has(e.source) && nodeIds.has(e.target));
+  }, [nodes, edges]);
 
   // Double-click at overview → expand orbital
   const handleNodeDoubleClick = useCallback((_: React.MouseEvent, node: { id: string; data: Record<string, unknown> }) => {
@@ -418,7 +430,7 @@ function FlowCanvasInner({
       <Box className="relative flex-1 min-w-0 h-full">
         <ReactFlow
           nodes={nodes}
-          edges={edges}
+          edges={visibleEdges}
           nodeTypes={NODE_TYPES}
           edgeTypes={EDGE_TYPES}
           defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}

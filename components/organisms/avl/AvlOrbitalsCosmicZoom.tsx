@@ -234,7 +234,14 @@ const EventWireOverlay: React.FC<EventWireOverlayProps> = ({
           const x2 = toPos.cx - nx * (orbitalR + 6);
           const y2 = toPos.cy - ny * (orbitalR + 6);
 
-          const offset = 25 + wireIdx * 18;
+          // Fan wires symmetrically around the line midpoint, capped to a
+          // 90px total perpendicular span so high-fan-out pairs (e.g. 7
+          // events between OrderRecord ↔ Product in std-ecommerce) don't
+          // bulge labels off-canvas. Single wires keep a 25px curve.
+          const total = links.length;
+          const span = Math.min(90, Math.max(0, total - 1) * 14);
+          const step = total > 1 ? span / (total - 1) : 0;
+          const offset = 25 + (wireIdx - (total - 1) / 2) * step;
           const { cpx, cpy } = curveControlPoint(x1, y1, x2, y2, offset);
           const pathD = `M${x1},${y1} Q${cpx},${cpy} ${x2},${y2}`;
 
