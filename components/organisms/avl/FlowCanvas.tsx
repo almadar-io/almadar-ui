@@ -184,6 +184,30 @@ function FlowCanvasInner({
   behaviorEntries,
   behaviorWires,
 }: FlowCanvasProps) {
+  // Render-time NODE_TYPES / EDGE_TYPES — not module-level. When vite's
+  // dep-optimizer splits @almadar/ui/avl across multiple pre-bundle
+  // chunks (apps/builder triggers this), FlowCanvas and OrbPreviewNode
+  // can land in different chunks. A module-level
+  // `const NODE_TYPES = { preview: OrbPreviewNode }` then runs while the
+  // cross-chunk `OrbPreviewNode` binding is still `undefined`, ReactFlow
+  // falls back to the default node type, and the canvas renders empty
+  // white strips (apps/builder regression, observed 2026-05-11 via
+  // `[almadar:ui:flow-canvas] node-type-registry preview: 'undefined'`).
+  // useMemo at render time captures the fully-resolved import.
+  const NODE_TYPES = useMemo<NodeTypes>(() => ({
+    preview: OrbPreviewNode,
+    behaviorCompose: BehaviorComposeNode,
+  } as NodeTypes), []);
+  const EDGE_TYPES_LOCAL = useMemo<EdgeTypes>(() => ({
+    eventFlow: EventFlowEdge,
+  } as EdgeTypes), []);
+
+  flowCanvasLog.info('node-type-registry:render', {
+    registered: Object.keys(NODE_TYPES),
+    preview: typeof OrbPreviewNode,
+    previewIsValid: typeof OrbPreviewNode === 'function' || (typeof OrbPreviewNode === 'object' && OrbPreviewNode !== null),
+  });
+
   const parsedSchema = useMemo<OrbitalSchema>(() => {
     if (typeof schemaProp === 'string') return JSON.parse(schemaProp) as OrbitalSchema;
     return schemaProp;
@@ -447,7 +471,7 @@ function FlowCanvasInner({
           nodes={nodes}
           edges={visibleEdges}
           nodeTypes={NODE_TYPES}
-          edgeTypes={EDGE_TYPES}
+          edgeTypes={EDGE_TYPES_LOCAL}
           defaultEdgeOptions={DEFAULT_EDGE_OPTIONS}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
