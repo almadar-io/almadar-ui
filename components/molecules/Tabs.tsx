@@ -213,14 +213,16 @@ export const Tabs: React.FC<TabsProps> = ({
         })}
       </Box>
 
-      <Box
-        role="tabpanel"
-        id={`tabpanel-${activeTab}`}
-        aria-labelledby={`tab-${activeTab}`}
-        className="mt-4"
-      >
-        {activeTabContent}
-      </Box>
+      {activeTabContent !== undefined && activeTabContent !== null && (
+        <Box
+          role="tabpanel"
+          id={`tabpanel-${activeTab}`}
+          aria-labelledby={`tab-${activeTab}`}
+          className="mt-4"
+        >
+          {activeTabContent}
+        </Box>
+      )}
     </Box>
   );
 };
