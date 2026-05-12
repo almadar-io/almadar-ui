@@ -180,6 +180,9 @@ import { HStack } from '../../atoms/Stack';
 import { Textarea } from '../../atoms/Textarea';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:markdown-code');
 
 export interface CodeBlockProps {
   /** The code content to display */
@@ -465,7 +468,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
         eventBus.emit('UI:COPY_CODE', { language, success: true });
         setTimeout(() => setCopied(false), 2000);
       } catch (err) {
-        console.error('Failed to copy code:', err);
+        log.error('Failed to copy code', { error: err instanceof Error ? err : String(err) });
         eventBus.emit('UI:COPY_CODE', { language, success: false });
       }
     };

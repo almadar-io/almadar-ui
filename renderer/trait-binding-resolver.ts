@@ -25,6 +25,9 @@
 
 import React from "react";
 import { TraitFrame } from "../components/atoms/TraitFrame";
+import { createLogger } from "@almadar/logger";
+
+const log = createLogger("almadar:ui:trait-binding-resolver");
 
 /**
  * Matches exactly `@trait.<PascalName>` — single-segment binding.
@@ -65,9 +68,7 @@ export function resolveTraitBindingsInPattern(
 ): unknown {
   const depth = ctx.depth ?? DEFAULT_DEPTH;
   if (depth <= 0) {
-    console.warn(
-      "[trait-binding-resolver] Depth cap hit; truncating pattern tree walk.",
-    );
+    log.warn("Depth cap hit; truncating pattern tree walk.");
     return value;
   }
 

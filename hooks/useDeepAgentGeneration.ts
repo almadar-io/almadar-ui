@@ -7,6 +7,9 @@
 
 import { useState, useCallback } from 'react';
 import type { OrbitalSchema } from '@almadar/core';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:deep-agent');
 
 // =============================================================================
 // Types
@@ -93,7 +96,7 @@ export function useDeepAgentGeneration(): UseDeepAgentGenerationResult {
 
     try {
       // TODO: Implement actual deep agent generation API call
-      console.log('[useDeepAgentGeneration] Generating from prompt:', prompt);
+      log.debug('Generating from prompt', { prompt });
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
@@ -116,7 +119,7 @@ export function useDeepAgentGeneration(): UseDeepAgentGenerationResult {
   }, []);
 
   const startGeneration = useCallback(async (skill: string, prompt: string, _options?: Record<string, unknown>): Promise<void> => {
-    console.log('[useDeepAgentGeneration] Starting generation with skill:', skill);
+    log.debug('Starting generation with skill', { skill });
     await generate(prompt);
   }, [generate]);
 
@@ -141,7 +144,7 @@ export function useDeepAgentGeneration(): UseDeepAgentGenerationResult {
   }, []);
 
   const submitInterruptDecisions = useCallback((decisions: unknown[]) => {
-    console.log('[useDeepAgentGeneration] Submitting interrupt decisions:', decisions);
+    log.debug('Submitting interrupt decisions', () => ({ decisions: JSON.stringify(decisions), count: decisions.length }));
     setInterrupt(null);
   }, []);
 

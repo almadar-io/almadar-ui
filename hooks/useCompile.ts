@@ -6,6 +6,9 @@
  */
 
 import { useState, useCallback } from 'react';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:compile');
 
 // =============================================================================
 // Types
@@ -52,7 +55,7 @@ export function useCompile(): UseCompileResult {
 
     try {
       // TODO: Implement actual compilation via API
-      console.log('[useCompile] Compiling schema:', schema.name);
+      log.debug('Compiling schema', { name: schema.name });
 
       // Mock result for now
       const result: CompileResult = {

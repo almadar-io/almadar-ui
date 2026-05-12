@@ -11,6 +11,9 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:game:model-loader');
 
 export interface ModelLoaderProps {
     /** URL to the GLB/GLTF model */
@@ -81,7 +84,7 @@ function useGLTFModel(url: string, resourceBasePath?: string): ModelLoadState {
             return;
         }
 
-        console.log('[ModelLoader] Loading:', url);
+        log.debug('Loading', { url });
         setState(prev => ({ ...prev, isLoading: true, error: null }));
 
         // Where shared resources like Textures/ live
@@ -97,7 +100,7 @@ function useGLTFModel(url: string, resourceBasePath?: string): ModelLoadState {
         loader.load(
             url,
             (gltf) => {
-                console.log('[ModelLoader] Loaded:', url);
+                log.debug('Loaded', { url });
                 setState({
                     model: gltf.scene,
                     isLoading: false,
@@ -106,8 +109,7 @@ function useGLTFModel(url: string, resourceBasePath?: string): ModelLoadState {
             },
             undefined,
             (err) => {
-                const errorMsg = err instanceof Error ? err.message : String(err);
-                console.warn('[ModelLoader] Failed:', url, errorMsg);
+                log.warn('Failed', { url, error: err instanceof Error ? err : String(err) });
                 setState({
                     model: null,
                     isLoading: false,

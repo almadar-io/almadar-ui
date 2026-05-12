@@ -12,7 +12,10 @@ import React, { useRef, useMemo, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { createLogger } from '@almadar/logger';
 import type { IsometricFeature } from '../../types/isometric';
+
+const log = createLogger('almadar:ui:game:feature-renderer');
 
 // Extend IsometricFeature to support rotation
 type FeatureWithRotation = IsometricFeature & { rotation?: number };
@@ -265,7 +268,7 @@ export function preloadFeatures(urls: string[]) {
             const loader = new GLTFLoader();
             loader.setResourcePath(detectAssetRoot(url));
             loader.load(url, () => {
-                console.log('[FeatureRenderer3D] Preloaded:', url);
+                log.debug('Preloaded', { url });
             });
         }
     });

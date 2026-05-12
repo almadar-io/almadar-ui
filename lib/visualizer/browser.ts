@@ -22,6 +22,9 @@ import {
   type DomStateNode,
   type DomTransitionLabel,
 } from './index.js';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:visualizer');
 
 // =============================================================================
 // Human-readable S-expression formatting
@@ -570,7 +573,7 @@ function init(): void {
         render(container as HTMLElement, data, { title });
       }
     } catch (e) {
-      console.error('Failed to parse orbital diagram:', e);
+      log.error('Failed to parse orbital diagram', { error: e instanceof Error ? e : String(e) });
       (container as HTMLElement).innerHTML = '<p style="color: #f85149;">Failed to render diagram</p>';
     }
   });

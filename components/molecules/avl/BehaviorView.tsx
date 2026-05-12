@@ -14,6 +14,9 @@ import { AvlSwimLane } from './AvlSwimLane';
 import { CONNECTION_COLORS, type AvlEffectType } from '../../atoms/avl/types';
 import { computeTraitLayout, edgePath, type ElkLayout } from './avl-elk-layout';
 import type { AvlNodeData } from './avl-canvas-types';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:avl:behavior-view');
 
 export interface BehaviorViewProps {
   data: AvlNodeData;
@@ -33,7 +36,7 @@ export const BehaviorView: React.FC<BehaviorViewProps> = ({ data }) => {
 
   useEffect(() => {
     if (!traitData) return;
-    computeTraitLayout(traitData).then(setLayout).catch(console.error);
+    computeTraitLayout(traitData).then(setLayout).catch((err) => log.error('compute-trait-layout-failed', { error: err instanceof Error ? err : String(err) }));
   }, [dataKey]);
 
   if (!traitData) {

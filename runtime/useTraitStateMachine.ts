@@ -444,8 +444,9 @@ export function useTraitStateMachine(
             snapshotUnregs.push(unreg);
         }
 
-        console.log('[TraitStateMachine] Reset states for page navigation:',
-            Array.from(newManager.getAllStates().keys()).join(', '));
+        stateLog.debug('reset-states-for-nav', () => ({
+            traits: Array.from(newManager.getAllStates().keys()).join(', '),
+        }));
 
         return () => {
             for (const unreg of snapshotUnregs) unreg();
@@ -591,9 +592,9 @@ export function useTraitStateMachine(
         const bindings = traitBindingsRef.current;
         const currentManager = managerRef.current;
 
-        console.log('[TraitStateMachine] Processing event:', normalizedEvent, 'payload:', payload);
         crossTraitLog.debug('processEvent:enter', () => ({
             event: normalizedEvent,
+            payload: JSON.stringify(payload ?? null),
             traitCount: bindings.length,
             traitNames: bindings.map((b) => b.trait.name).join(','),
             orbitalsByTrait: JSON.stringify(orbitalsByTrait ?? null),
@@ -697,18 +698,13 @@ export function useTraitStateMachine(
             }
 
             if (result.executed && result.effects.length > 0) {
-                console.log(
-                    '[TraitStateMachine] Executing',
-                    result.effects.length,
-                    'effects for',
+                stateLog.debug('executing-effects', () => ({
+                    effectCount: result.effects.length,
                     traitName,
-                    '| linkedEntity:',
-                    binding.linkedEntity,
-                    '| transition:',
-                    `${result.previousState} -> ${result.newState}`,
-                    '| effects:',
-                    JSON.stringify(result.effects),
-                );
+                    linkedEntity: binding.linkedEntity,
+                    transition: `${result.previousState} -> ${result.newState}`,
+                    effects: JSON.stringify(result.effects),
+                }));
 
                 const linkedEntity = binding.linkedEntity || '';
                 const entityId = payload?.entityId as string | undefined;
@@ -904,32 +900,26 @@ export function useTraitStateMachine(
                     });
                 }
             } else if (!result.executed) {
-                // Log guard failures and missing transitions
                 if (result.guardResult === false) {
-                    console.log(
-                        '[TraitStateMachine] Guard blocked transition:',
+                    stateLog.debug('guard-blocked-transition', {
                         traitName,
-                        result.previousState,
-                        '->',
-                        result.transition?.to
-                    );
+                        from: result.previousState,
+                        to: result.transition?.to,
+                    });
                 } else if (!result.transition) {
                     if (isCircuitEvent(normalizedEvent)) {
-                        console.warn(
-                            `[CLOSED CIRCUIT VIOLATION] Trait "${traitName}" in state "${traitState.currentState}" received event "${normalizedEvent}" but has no transition to handle it.\n` +
-                            `   This is likely a schema issue. To fix, add a transition:\n` +
-                            `   { from: "${traitState.currentState}", to: "<target_state>", event: "${normalizedEvent}", effects: [...] }\n` +
-                            `   Or ensure the previous action (that opened this UI) properly transitions back before emitting this event.`
-                        );
-                    } else {
-                        console.log(
-                            '[TraitStateMachine] No transition for',
+                        stateLog.warn('closed-circuit-violation', {
                             traitName,
-                            'from state:',
-                            traitState.currentState,
-                            'on event:',
-                            normalizedEvent
-                        );
+                            currentState: traitState.currentState,
+                            event: normalizedEvent,
+                            remediation: `Add transition { from: "${traitState.currentState}", to: "<target_state>", event: "${normalizedEvent}", effects: [...] } — or ensure the previous action (that opened this UI) transitions back before emitting.`,
+                        });
+                    } else {
+                        stateLog.debug('no-transition', {
+                            traitName,
+                            from: traitState.currentState,
+                            event: normalizedEvent,
+                        });
                     }
                 }
             }
@@ -1102,7 +1092,7 @@ export function useTraitStateMachine(
             }
         }
 
-        console.log('[TraitStateMachine] Subscribing to events:', Array.from(allEvents));
+        stateLog.debug('subscribing-to-events', () => ({ events: Array.from(allEvents) }));
 
         const unsubscribes: Array<() => void> = [];
 

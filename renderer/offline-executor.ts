@@ -20,6 +20,9 @@ import type {
   EventResponse,
 } from './types';
 import { executeClientEffects } from './client-effect-executor';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:effects:offline');
 
 // ============================================================================
 // Types
@@ -200,7 +203,7 @@ export class OfflineExecutor {
         this.state.syncQueue = JSON.parse(stored);
       }
     } catch (error) {
-      console.warn('[OfflineExecutor] Failed to load sync queue:', error);
+      log.warn('Failed to load sync queue', { error: error instanceof Error ? error : String(error) });
     }
   }
 
@@ -213,7 +216,7 @@ export class OfflineExecutor {
     try {
       this.storage.setItem('orbital-offline-queue', JSON.stringify(this.state.syncQueue));
     } catch (error) {
-      console.warn('[OfflineExecutor] Failed to save sync queue:', error);
+      log.warn('Failed to save sync queue', { error: error instanceof Error ? error : String(error) });
     }
   }
 
@@ -304,7 +307,7 @@ export class OfflineExecutor {
             break;
 
           default:
-            console.warn(`[OfflineExecutor] Unknown effect type: ${type}`);
+            log.warn('Unknown effect type', { type });
         }
       }
     }

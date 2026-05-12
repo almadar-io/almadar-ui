@@ -8,6 +8,9 @@
 
 import type { EventPayload, EntityRow, ServiceParams } from '@almadar/core';
 import type { EffectHandlers } from '@almadar/runtime';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:effects:client-handlers');
 
 export interface ClientEventBus {
     emit: (type: string, payload?: EventPayload) => void;
@@ -53,10 +56,10 @@ export function createClientEffectHandlers(
             eventBus.emit(prefixedEvent, payload);
         },
         persist: async () => {
-            console.warn('[ClientEffectHandlers] persist is server-side only, ignored on client');
+            log.warn('persist is server-side only, ignored on client');
         },
         set: () => {
-            console.warn('[ClientEffectHandlers] set is server-side only, ignored on client');
+            log.warn('set is server-side only, ignored on client');
         },
         callService: async (service: string, action: string, params?: ServiceParams) => {
             // Consumer-supplied handler wins — playgrounds wire real backends here.
@@ -94,10 +97,10 @@ export function createClientEffectHandlers(
             slotSetter.addPattern(slot, pattern, props);
         },
         navigate: navigate ?? ((path: string) => {
-            console.warn('[ClientEffectHandlers] No navigate handler, ignoring:', path);
+            log.warn('No navigate handler, ignoring', { path });
         }),
         notify: notify ?? ((msg: string, type?: string) => {
-            console.log(`[ClientEffectHandlers] notify (${type}):`, msg);
+            log.debug('notify', { type, message: msg });
         }),
     };
 }

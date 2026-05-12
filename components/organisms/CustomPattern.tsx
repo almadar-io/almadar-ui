@@ -17,6 +17,9 @@ import { Box } from "../atoms/Box";
 import { Typography } from "../atoms/Typography";
 import { Button } from "../atoms/Button";
 import { Input } from "../atoms/Input";
+import { createLogger } from "@almadar/logger";
+
+const log = createLogger("almadar:ui:custom-pattern");
 
 // ============================================================================
 // Types
@@ -169,9 +172,7 @@ export function CustomPattern({
 
   // Validate component
   if (!isAllowedComponent(component)) {
-    console.warn(
-      `CustomPattern: Unknown component "${component}", falling back to Box`,
-    );
+    log.warn("Unknown component, falling back to Box", { component });
     return (
       <Box
         className={cn(

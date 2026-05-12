@@ -8,6 +8,9 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import type { OrbitalSchema } from '@almadar/core';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:preview');
 
 export interface PreviewApp {
   id: string;
@@ -110,20 +113,20 @@ export function usePreview(options?: UsePreviewOptions): UsePreviewResult {
     }
 
     // Stub implementation - just set up preview URL without actual API call
-    console.log('[usePreview] Setting up preview for app:', appId);
+    log.debug('Setting up preview for app', { appId });
     setPreviewUrl(`/api/orbitals/${appId}`);
     setIsLoading(false);
   }, [options?.appId]);
 
   const startPreview = useCallback(async () => {
     // Preview is started automatically when app loads
-    console.log('[usePreview] startPreview called');
+    log.debug('startPreview called');
   }, []);
 
   const stopPreview = useCallback(async () => {
     setIsLoading(true);
     try {
-      console.log('[usePreview] Stopping preview server...');
+      log.debug('Stopping preview server');
       setPreviewUrl(null);
       setApp(null);
     } finally {
@@ -133,18 +136,18 @@ export function usePreview(options?: UsePreviewOptions): UsePreviewResult {
 
   const refresh = useCallback(async () => {
     if (!previewUrl) return;
-    console.log('[usePreview] Refreshing preview...');
+    log.debug('Refreshing preview');
     // Trigger iframe refresh by appending timestamp
     setPreviewUrl(`${previewUrl.split('?')[0]}?t=${Date.now()}`);
   }, [previewUrl]);
 
   const handleRefresh = useCallback(async () => {
-    console.log('[usePreview] Handle refresh...');
+    log.debug('Handle refresh');
     await refresh();
   }, [refresh]);
 
   const handleReset = useCallback(async () => {
-    console.log('[usePreview] Resetting preview...');
+    log.debug('Resetting preview');
     setError(null);
     setLoadError(null);
     setErrorToast(null);

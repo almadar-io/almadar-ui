@@ -7,6 +7,9 @@
  */
 
 import { useState, useCallback } from 'react';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:filesystem');
 
 // =============================================================================
 // FileNode Type (defined locally to avoid dependency on FileTree component)
@@ -78,7 +81,7 @@ export function useFileSystem(): UseFileSystemResult {
 
     try {
       // TODO: Implement WebContainer boot
-      console.log('[useFileSystem] Booting WebContainer...');
+      log.debug('Booting WebContainer');
       await new Promise(resolve => setTimeout(resolve, 100));
       setStatus('ready');
     } catch (err) {
@@ -152,7 +155,7 @@ export function useFileSystem(): UseFileSystemResult {
       setFiles(newTree);
       setStatus('running');
     } catch (err) {
-      console.error('[useFileSystem] Failed to mount files:', err);
+      log.error('Failed to mount files', { error: err instanceof Error ? err : String(err) });
     } finally {
       setIsLoading(false);
     }
@@ -201,7 +204,7 @@ export function useFileSystem(): UseFileSystemResult {
     const content = contentArg !== undefined ? contentArg : pathOrContent;
 
     if (!path) {
-      console.warn('[useFileSystem] updateContent called without path and no file selected');
+      log.warn('updateContent called without path and no file selected');
       return;
     }
 
@@ -220,16 +223,16 @@ export function useFileSystem(): UseFileSystemResult {
   }, []);
 
   const refreshTree = useCallback(async () => {
-    console.log('[useFileSystem] Refreshing tree');
+    log.debug('Refreshing tree');
   }, []);
 
   const runCommand = useCallback(async (command: string) => {
-    console.log('[useFileSystem] Running command:', command);
+    log.debug('Running command', { command });
     return { exitCode: 0, output: '' };
   }, []);
 
   const startDevServer = useCallback(async () => {
-    console.log('[useFileSystem] Starting dev server');
+    log.debug('Starting dev server');
     // TODO: Implement dev server start
     setPreviewUrl('http://localhost:5173');
   }, []);

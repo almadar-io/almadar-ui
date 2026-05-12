@@ -40,7 +40,7 @@ import { createLogger } from '@almadar/logger';
 // missing log means the slot manager never saw the call (the bug is
 // upstream); a present log means the bug is downstream of the slot
 // store (DOM / React reconciliation / TraitFrame subscriber).
-const slotLog = createLogger('almadar:ui:useUISlots');
+const log = createLogger('almadar:ui:ui-slots');
 
 // ============================================================================
 // Types
@@ -382,7 +382,7 @@ export function useUISlotManager(): UISlotManager {
       try {
         callback(slot, content);
       } catch (error) {
-        console.error('[UISlots] Subscriber error:', error);
+        log.error('Subscriber error', { error: error instanceof Error ? error : String(error) });
       }
     });
   }, []);
@@ -399,7 +399,7 @@ export function useUISlotManager(): UISlotManager {
         try {
           callback(content);
         } catch (error) {
-          console.error(`[UISlots] Trait subscriber error (${traitName}):`, error);
+          log.error('Trait subscriber error', { traitName, error: error instanceof Error ? error : String(error) });
         }
       });
     },
@@ -466,9 +466,12 @@ export function useUISlotManager(): UISlotManager {
         // Cross-source renders coexist; within a single source, a higher-
         // priority content wins over a newer lower-priority content.
         if (existing && existing.priority > content.priority) {
-          console.warn(
-            `[UISlots] Slot "${config.target}" source "${sourceKey}" already has higher priority content (${existing.priority} > ${content.priority})`,
-          );
+          log.warn('Slot already has higher priority content', {
+            slot: config.target,
+            sourceKey,
+            existingPriority: existing.priority,
+            newPriority: content.priority,
+          });
           return prev;
         }
 
@@ -488,7 +491,7 @@ export function useUISlotManager(): UISlotManager {
           notifyTraitSubscribers(content.sourceTrait, content);
         }
 
-        slotLog.info('slot:written', {
+        log.info('slot:written', {
           slot: config.target,
           sourceKey,
           sourceTrait: content.sourceTrait,
@@ -540,7 +543,7 @@ export function useUISlotManager(): UISlotManager {
       setSources((prev) => {
         const slotSources = prev[slot];
         if (!slotSources || !(sourceKey in slotSources)) {
-          slotLog.debug('slot:clear-noop', { slot, sourceTrait, reason: !slotSources ? 'no-slot' : 'no-source' });
+          log.debug('slot:clear-noop', { slot, sourceTrait, reason: !slotSources ? 'no-slot' : 'no-source' });
           return prev;
         }
         const content = slotSources[sourceKey];
@@ -556,7 +559,7 @@ export function useUISlotManager(): UISlotManager {
         }
         const nextSources: SlotSources = { ...slotSources };
         delete nextSources[sourceKey];
-        slotLog.info('slot:cleared', { slot, sourceTrait, lastPatternType: content.pattern });
+        log.info('slot:cleared', { slot, sourceTrait, lastPatternType: content.pattern });
         notifySubscribers(slot, aggregateSlot(nextSources));
         return { ...prev, [slot]: nextSources };
       });

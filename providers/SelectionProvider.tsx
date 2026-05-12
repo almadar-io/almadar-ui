@@ -22,6 +22,9 @@ import React, {
   type ReactNode,
 } from 'react';
 import { useEventBus, type BusEvent } from '../hooks/useEventBus';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:selection');
 
 // ============================================================================
 // Types
@@ -104,7 +107,12 @@ export function SelectionProvider({
     (entity: unknown | null) => {
       setSelectedState(entity);
       if (debug) {
-        console.log('[SelectionProvider] Selection set:', entity);
+        log.debug('Selection set', () => ({
+          hasEntity: entity !== null && entity !== undefined,
+          entityId: entity && typeof entity === 'object'
+            ? String((entity as Record<string, unknown>).id ?? '')
+            : '',
+        }));
       }
     },
     [debug]
@@ -116,7 +124,7 @@ export function SelectionProvider({
   const clearSelection = useCallback(() => {
     setSelectedState(null);
     if (debug) {
-      console.log('[SelectionProvider] Selection cleared');
+      log.debug('Selection cleared');
     }
   }, [debug]);
 
@@ -140,7 +148,12 @@ export function SelectionProvider({
       if (row) {
         setSelected(row);
         if (debug) {
-          console.log(`[SelectionProvider] ${event.type} received:`, row);
+          log.debug('event received', () => ({
+            type: event.type,
+            rowId: row && typeof row === 'object'
+              ? String((row as Record<string, unknown>).id ?? '')
+              : '',
+          }));
         }
       }
     };
@@ -149,7 +162,7 @@ export function SelectionProvider({
     const handleDeselect = (event: BusEvent) => {
       clearSelection();
       if (debug) {
-        console.log(`[SelectionProvider] ${event.type} received - clearing selection`);
+        log.debug('event received - clearing selection', { type: event.type });
       }
     };
 

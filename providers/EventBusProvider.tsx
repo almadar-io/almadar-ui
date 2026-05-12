@@ -51,7 +51,11 @@ export const EventBusContext = createContext<EventBusContextTypeExtended | null>
 
 interface EventBusProviderProps {
   children: ReactNode;
-  /** Enable debug logging in development */
+  /**
+   * @deprecated No-op. Logging is now gated by `@almadar/logger` —
+   * use `setLogLevel('DEBUG')` or `setNamespaceLevel('almadar:eventbus', 'DEBUG')`
+   * from `@almadar/logger` to control verbosity. Kept for API compatibility.
+   */
   debug?: boolean;
 }
 
@@ -107,7 +111,7 @@ function captureSubscriberTag(listener: EventListener): string {
     return 'unknown';
 }
 
-export function EventBusProvider({ children, debug = false }: EventBusProviderProps) {
+export function EventBusProvider({ children }: EventBusProviderProps) {
   // Store listeners by event type
   const listenersRef = useRef<Map<string, Set<EventListener>>>(new Map());
 
@@ -122,11 +126,9 @@ export function EventBusProvider({ children, debug = false }: EventBusProviderPr
    */
   const getSelectedEntity = useCallback(() => {
     if (!deprecationWarningShown.current) {
-      console.warn(
-        '[EventBus] getSelectedEntity is deprecated. ' +
-        'Use SelectionProvider and useSelection hook instead. ' +
-        'See SelectionProvider.tsx for migration guide.'
-      );
+      busLog.warn('deprecated:getSelectedEntity', {
+        migration: 'Use SelectionProvider and useSelection hook instead. See SelectionProvider.tsx for migration guide.',
+      });
       deprecationWarningShown.current = true;
     }
     return null;
@@ -137,11 +139,9 @@ export function EventBusProvider({ children, debug = false }: EventBusProviderPr
    */
   const clearSelectedEntity = useCallback(() => {
     if (!deprecationWarningShown.current) {
-      console.warn(
-        '[EventBus] clearSelectedEntity is deprecated. ' +
-        'Use SelectionProvider and useSelection hook instead. ' +
-        'See SelectionProvider.tsx for migration guide.'
-      );
+      busLog.warn('deprecated:clearSelectedEntity', {
+        migration: 'Use SelectionProvider and useSelection hook instead. See SelectionProvider.tsx for migration guide.',
+      });
       deprecationWarningShown.current = true;
     }
   }, []);
@@ -160,13 +160,8 @@ export function EventBusProvider({ children, debug = false }: EventBusProviderPr
     const listeners = listenersRef.current.get(type);
     const listenerCount = (listeners?.size ?? 0) + anyListenersRef.current.size;
     busLog.debug('emit', { type, payloadKeys: payload ? Object.keys(payload).length : 0, listenerCount });
-
-    if (debug) {
-      if (listenerCount > 0) {
-        console.log(`[EventBus] Emit: ${type} → ${listenerCount} listener(s)`, payload);
-      } else {
-        console.warn(`[EventBus] Emit: ${type} (NO LISTENERS - event may be lost!)`, payload);
-      }
+    if (listenerCount === 0) {
+      busLog.warn('emit:no-listeners', { type });
     }
 
     // Per-listener invocation log. The summary `emit` line above only
@@ -190,7 +185,7 @@ export function EventBusProvider({ children, debug = false }: EventBusProviderPr
         try {
           listener(event);
         } catch (error) {
-          console.error(`[EventBus] Error in listener for '${type}':`, error);
+          busLog.error('listener-threw', { type, error: error instanceof Error ? error : String(error) });
         }
       }
     }
@@ -208,10 +203,10 @@ export function EventBusProvider({ children, debug = false }: EventBusProviderPr
       try {
         listener(event);
       } catch (error) {
-        console.error(`[EventBus] Error in onAny listener for '${type}':`, error);
+        busLog.error('onAny-listener-threw', { type, error: error instanceof Error ? error : String(error) });
       }
     }
-  }, [debug]);
+  }, []);
 
   /**
    * Subscribe to an event type.
@@ -227,22 +222,14 @@ export function EventBusProvider({ children, debug = false }: EventBusProviderPr
     if (!listenerTags.has(listener)) listenerTags.set(listener, captureSubscriberTag(listener));
     subLog.debug('subscribe', { type, totalListeners: listeners.size, tag: listenerTags.get(listener) });
 
-    if (debug) {
-      console.log(`[EventBus] Subscribed to '${type}', total: ${listeners.size}`);
-    }
-
-    // Return unsubscribe function
     return () => {
       listeners.delete(listener);
-      if (debug) {
-        console.log(`[EventBus] Unsubscribed from '${type}', remaining: ${listeners.size}`);
-      }
-      // Clean up empty sets
+      subLog.debug('unsubscribe', { type, remaining: listeners.size });
       if (listeners.size === 0) {
         listenersRef.current.delete(type);
       }
     };
-  }, [debug]);
+  }, []);
 
   /**
    * Subscribe to an event type, but only fire once.
@@ -273,17 +260,11 @@ export function EventBusProvider({ children, debug = false }: EventBusProviderPr
     if (!listenerTags.has(listener)) listenerTags.set(listener, captureSubscriberTag(listener));
     subLog.debug('subscribe:any', { totalAnyListeners: anyListenersRef.current.size, tag: listenerTags.get(listener) });
 
-    if (debug) {
-      console.log(`[EventBus] onAny subscribed, total: ${anyListenersRef.current.size}`);
-    }
-
     return () => {
       anyListenersRef.current.delete(listener);
-      if (debug) {
-        console.log(`[EventBus] onAny unsubscribed, remaining: ${anyListenersRef.current.size}`);
-      }
+      subLog.debug('unsubscribe:any', { remaining: anyListenersRef.current.size });
     };
-  }, [debug]);
+  }, []);
 
   // Memoize context value
   const contextValue = useMemo(

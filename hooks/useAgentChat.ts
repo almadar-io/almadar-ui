@@ -7,6 +7,9 @@
 
 import { useState, useCallback } from 'react';
 import type { DeepAgentInterrupt } from './useDeepAgentGeneration';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:agent-chat');
 
 export interface ChatMessage {
   id: string;
@@ -120,7 +123,7 @@ export function useAgentChat(options?: UseAgentChatOptions): UseAgentChatResult 
       setMessages((prev) => [...prev, userMessage]);
 
       // TODO: Implement actual agent chat API call
-      console.log('[useAgentChat] Sending message:', content);
+      log.debug('Sending message', { content });
 
       // Stub response
       const assistantMessage: ChatMessage = {
@@ -148,7 +151,7 @@ export function useAgentChat(options?: UseAgentChatOptions): UseAgentChatResult 
 
     const skillName = Array.isArray(skill) ? skill[0] : skill;
     try {
-      console.log('[useAgentChat] Starting generation:', skillName, prompt, genOptions);
+      log.debug('Starting generation', () => ({ skillName, prompt, genOptions: JSON.stringify(genOptions) }));
       // TODO: Implement actual generation
       await new Promise((resolve) => setTimeout(resolve, 100));
       setStatus('complete');
@@ -162,12 +165,12 @@ export function useAgentChat(options?: UseAgentChatOptions): UseAgentChatResult 
   }, [options]);
 
   const continueConversation = useCallback(async (message: string | string[]) => {
-    console.log('[useAgentChat] Continue conversation', message);
+    log.debug('Continue conversation', { message: Array.isArray(message) ? message : [message] });
     // TODO: Implement actual continue conversation
   }, []);
 
   const resumeWithDecision = useCallback(async (decisions: unknown[]) => {
-    console.log('[useAgentChat] Resume with decision:', decisions);
+    log.debug('Resume with decision', () => ({ decisions: JSON.stringify(decisions), count: decisions.length }));
     setInterrupt(null);
     // TODO: Implement actual resume with decision
   }, []);

@@ -8,6 +8,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { OrbitalSchema } from '@almadar/core';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:orbital-history');
 
 // =============================================================================
 // Types
@@ -149,7 +152,7 @@ export function useOrbitalHistory(options: UseOrbitalHistoryOptions): UseOrbital
         setCurrentVersion(mergedTimeline[0].version);
       }
     } catch (err) {
-      console.error('[useOrbitalHistory] Failed to load history:', err);
+      log.error('Failed to load history', { error: err instanceof Error ? err : String(err) });
       setError(err instanceof Error ? err.message : 'Failed to load history');
     } finally {
       setIsLoading(false);
@@ -192,7 +195,7 @@ export function useOrbitalHistory(options: UseOrbitalHistoryOptions): UseOrbital
         error: data.error || 'Unknown error during revert',
       };
     } catch (err) {
-      console.error('[useOrbitalHistory] Failed to revert:', err);
+      log.error('Failed to revert', { error: err instanceof Error ? err : String(err) });
       return {
         success: false,
         error: err instanceof Error ? err.message : 'Failed to revert',

@@ -18,6 +18,9 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
+import { createLogger } from "@almadar/logger";
+
+const log = createLogger("almadar:ui:theme");
 
 /** Color mode preference */
 export type ColorMode = "light" | "dark" | "system";
@@ -316,9 +319,10 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
           localStorage.setItem(THEME_STORAGE_KEY, newTheme);
         }
       } else {
-        console.warn(
-          `Theme "${newTheme}" not found. Available: ${availableThemes.map((t) => t.name).join(", ")}`,
-        );
+        log.warn("Theme not found", {
+          theme: newTheme,
+          available: availableThemes.map((t) => t.name),
+        });
       }
     },
     [availableThemes],

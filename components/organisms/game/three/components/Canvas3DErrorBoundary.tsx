@@ -8,7 +8,10 @@
  */
 
 import React, { Component, type ReactNode, type ErrorInfo } from 'react';
+import { createLogger } from '@almadar/logger';
 import './Canvas3DErrorBoundary.css';
+
+const log = createLogger('almadar:ui:game:canvas3d:error-boundary');
 
 export interface Canvas3DErrorBoundaryProps {
     /** Child components */
@@ -70,9 +73,8 @@ export class Canvas3DErrorBoundary extends Component<
         this.setState({ errorInfo });
         this.props.onError?.(error, errorInfo);
 
-        // Log to console for debugging
-        console.error('[Canvas3DErrorBoundary] Error caught:', error);
-        console.error('[Canvas3DErrorBoundary] Component stack:', errorInfo.componentStack);
+        log.error('Error caught', { error });
+        log.error('Component stack', { componentStack: errorInfo.componentStack ?? '<none>' });
     }
 
     handleReset = (): void => {

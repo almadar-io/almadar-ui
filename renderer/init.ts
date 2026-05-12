@@ -8,9 +8,12 @@
  */
 
 import { initializePatternResolver } from './pattern-resolver';
+import { createLogger } from '@almadar/logger';
 
 // Import patterns data from @almadar/patterns (JSON is inlined in the package bundle)
 import { componentMapping as componentMappingJson, patternsRegistry as registryJson } from '@almadar/patterns';
+
+const log = createLogger('almadar:ui:pattern-resolver');
 
 // Type definitions for the JSON structures
 interface ComponentMappingJson {
@@ -44,22 +47,22 @@ interface RegistryJson {
  * @returns The number of patterns initialized
  */
 export function initializePatterns(): number {
-  console.log('[PatternResolver] initializePatterns called');
-  console.log('[PatternResolver] componentMappingJson:', componentMappingJson);
-  console.log('[PatternResolver] registryJson keys:', Object.keys(registryJson));
+  log.debug('initializePatterns called');
+  log.debug('componentMappingJson loaded', () => ({ json: JSON.stringify(componentMappingJson) }));
+  log.debug('registryJson keys', { keys: Object.keys(registryJson) });
 
   // Extract mappings from component-mapping.json (has { mappings: {...} })
   const componentMappingData = componentMappingJson as ComponentMappingJson;
   const componentMapping = componentMappingData.mappings || {};
 
-  console.log('[PatternResolver] Extracted mappings count:', Object.keys(componentMapping).length);
-  console.log('[PatternResolver] Sample mappings:', Object.keys(componentMapping).slice(0, 5));
+  log.debug('Extracted mappings count', { count: Object.keys(componentMapping).length });
+  log.debug('Sample mappings', { samples: Object.keys(componentMapping).slice(0, 5) });
 
   // Extract patterns from registry.json (has { patterns: {...} })
   const registryData = registryJson as RegistryJson;
   const patternRegistry = registryData.patterns || {};
 
-  console.log('[PatternResolver] Extracted patterns count:', Object.keys(patternRegistry).length);
+  log.debug('Extracted patterns count', { count: Object.keys(patternRegistry).length });
 
   // Initialize the pattern resolver with the data
   // Use type assertion since JSON types are compatible at runtime
@@ -68,7 +71,10 @@ export function initializePatterns(): number {
     patternRegistry,
   });
 
-  console.log(`[PatternResolver] Initialized with ${Object.keys(componentMapping).length} component mappings and ${Object.keys(patternRegistry).length} pattern definitions`);
+  log.info('Initialized', {
+    componentMappings: Object.keys(componentMapping).length,
+    patternDefinitions: Object.keys(patternRegistry).length,
+  });
 
   return Object.keys(componentMapping).length;
 }

@@ -11,6 +11,9 @@
  */
 
 import type { PatternConfig, ResolvedPattern } from './types';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:pattern-resolver');
 
 // ============================================================================
 // Component Mapping (imported from orbital-shared/patterns/)
@@ -105,20 +108,17 @@ export function resolvePattern(config: PatternConfig): ResolvedPattern {
   if (!mapping) {
     // Check if we have any mappings loaded
     if (Object.keys(componentMapping).length === 0) {
-      console.warn(
-        '[PatternResolver] Component mapping not initialized. ' +
-        'Call initializePatternResolver() at app startup.'
-      );
+      log.warn('Component mapping not initialized. Call initializePatternResolver() at app startup.');
     }
     throw new Error(`Unknown pattern type: ${type}`);
   }
 
   // Check for deprecated patterns
   if (mapping.deprecated) {
-    console.warn(
-      `[PatternResolver] Pattern "${type}" is deprecated.` +
-      (mapping.replacedBy ? ` Use "${mapping.replacedBy}" instead.` : '')
-    );
+    log.warn('Pattern is deprecated', {
+      type,
+      replacedBy: mapping.replacedBy,
+    });
   }
 
   // Validate props against registry schema
@@ -154,9 +154,7 @@ function validatePatternProps(
   for (const [propName, propDef] of Object.entries(schema)) {
     if (propDef.required && !(propName in validated)) {
       // Don't throw, just warn - allows for flexibility
-      console.warn(
-        `[PatternResolver] Missing required prop "${propName}" for pattern "${patternType}"`
-      );
+      log.warn('Missing required prop', { propName, patternType });
     }
   }
 

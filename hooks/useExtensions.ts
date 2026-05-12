@@ -6,6 +6,9 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:extensions');
 
 // =============================================================================
 // Types
@@ -69,7 +72,7 @@ export function useExtensions(options: UseExtensionsOptions): UseExtensionsResul
   const [error, setError] = useState<string | null>(null);
 
   const loadExtension = useCallback(async (extensionId: string) => {
-    console.log('[useExtensions] Loading extension:', extensionId);
+    log.debug('Loading extension', { extensionId });
   }, []);
 
   const loadExtensions = useCallback(async () => {

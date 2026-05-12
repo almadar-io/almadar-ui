@@ -103,7 +103,7 @@ const fallbackEventBus: EventBusContextType = {
         try {
           handler(event);
         } catch (error) {
-          console.error(`[EventBus] Error in listener for '${type}':`, error);
+          log.error('Error in listener', { type, error: error instanceof Error ? error : String(error) });
         }
       });
     }
@@ -112,7 +112,7 @@ const fallbackEventBus: EventBusContextType = {
       try {
         handler(event);
       } catch (error) {
-        console.error(`[EventBus] Error in onAny listener for '${type}':`, error);
+        log.error('Error in onAny listener', { type, error: error instanceof Error ? error : String(error) });
       }
     });
   },

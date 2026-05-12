@@ -16,6 +16,9 @@ import type {
   PatternConfig,
   NotifyOptions,
 } from './types';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:effects:client');
 
 // ============================================================================
 // Effect Execution
@@ -58,11 +61,10 @@ export function executeClientEffects(
     try {
       executeEffect(effect, config);
     } catch (error) {
-      console.error(
-        `[ClientEffectExecutor] Error executing effect:`,
-        effect,
-        error
-      );
+      log.error('Error executing effect', () => ({
+        effect: JSON.stringify(effect),
+        error: error instanceof Error ? error : String(error),
+      }));
     }
   }
 
@@ -105,7 +107,7 @@ function executeEffect(
     }
 
     default:
-      console.warn(`[ClientEffectExecutor] Unknown effect type: ${effectType}`);
+      log.warn('Unknown effect type', { effectType: String(effectType) });
   }
 }
 
@@ -171,14 +173,14 @@ export function parseClientEffect(
   raw: unknown[]
 ): ClientEffect | null {
   if (!Array.isArray(raw) || raw.length < 1) {
-    console.warn('[ClientEffectExecutor] Invalid effect format:', raw);
+    log.warn('Invalid effect format', () => ({ raw: JSON.stringify(raw) }));
     return null;
   }
 
   const [type, ...args] = raw;
 
   if (typeof type !== 'string') {
-    console.warn('[ClientEffectExecutor] Effect type must be string:', raw);
+    log.warn('Effect type must be string', () => ({ raw: JSON.stringify(raw) }));
     return null;
   }
 
@@ -192,7 +194,7 @@ export function parseClientEffect(
     case 'emit':
       return ['emit', args[0] as string, args[1]];
     default:
-      console.warn(`[ClientEffectExecutor] Unknown effect type: ${type}`);
+      log.warn('Unknown effect type', { type });
       return null;
   }
 }

@@ -6,6 +6,9 @@
  */
 
 import { useState, useCallback } from 'react';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:validation');
 
 export interface LLMErrorContext {
   rawValuePreview?: string;
@@ -73,7 +76,7 @@ export function useValidation(): UseValidationResult {
 
     try {
       // TODO: Implement actual validation API call
-      console.log('[useValidation] Validating app:', appId);
+      log.debug('Validating app', { appId });
 
       const validationResult: ValidationResult = {
         valid: true,

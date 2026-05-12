@@ -9,6 +9,9 @@ import { useState, useCallback } from 'react';
 import type { UseExtensionsResult } from './useExtensions';
 import type { UseFileSystemResult } from './useFileSystem';
 import type { OrbitalSchema } from '@almadar/core';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:file-editor');
 
 // =============================================================================
 // Types
@@ -81,7 +84,7 @@ export function useFileEditor(options: UseFileEditorOptions): UseFileEditorResul
       setOpenFiles(prev => [...prev, newFile]);
       setActiveFilePath(path);
     } catch (err) {
-      console.error('[useFileEditor] Failed to open file:', err);
+      log.error('Failed to open file', { error: err instanceof Error ? err : String(err) });
     }
   }, [openFiles, fileSystem, extensions]);
 
@@ -159,7 +162,7 @@ export function useFileEditor(options: UseFileEditorOptions): UseFileEditorResul
         }
       }
     } catch (err) {
-      console.error('[useFileEditor] Failed to save file:', err);
+      log.error('Failed to save file', { error: err instanceof Error ? err : String(err) });
     } finally {
       setIsSaving(false);
     }

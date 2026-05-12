@@ -8,7 +8,10 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { createLogger } from '@almadar/logger';
 import { AvlState } from '../../atoms/avl/AvlState';
+
+const log = createLogger('almadar:ui:avl:trait-scene');
 import { AvlTransitionLane } from '../../molecules/avl/AvlTransitionLane';
 import { AvlSwimLane } from '../../molecules/avl/AvlSwimLane';
 import { AvlClickTarget } from './AvlClickTarget';
@@ -38,7 +41,9 @@ export const AvlTraitScene: React.FC<AvlTraitSceneProps> = ({
   const dataKey = useMemo(() => JSON.stringify(data), [data]);
 
   useEffect(() => {
-    computeTraitLayout(data).then(setLayout).catch(console.error);
+    computeTraitLayout(data).then(setLayout).catch((error: unknown) => {
+      log.error('computeTraitLayout failed', { error: error instanceof Error ? error : String(error) });
+    });
   }, [dataKey]);
 
   if (!layout) {

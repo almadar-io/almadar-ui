@@ -21,7 +21,10 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { createLogger } from '@almadar/logger';
 import { ModelLoader } from './ModelLoader';
+
+const log = createLogger('almadar:ui:game:physics');
 
 export interface Physics3DState {
     id: string;
@@ -201,17 +204,15 @@ export function PhysicsObject3D({
  */
 export function usePhysics3DController(entityId: string) {
     const applyForce = (fx: number, fy: number, fz: number) => {
-        // This would need to be connected to the physics state
-        // Implementation depends on your state management approach
-        console.log(`Apply force to ${entityId}:`, { fx, fy, fz });
+        log.debug('apply force', { entityId, fx, fy, fz });
     };
 
     const setVelocity = (vx: number, vy: number, vz: number) => {
-        console.log(`Set velocity for ${entityId}:`, { vx, vy, vz });
+        log.debug('set velocity', { entityId, vx, vy, vz });
     };
 
     const setPosition = (x: number, y: number, z: number) => {
-        console.log(`Set position for ${entityId}:`, { x, y, z });
+        log.debug('set position', { entityId, x, y, z });
     };
 
     const jump = (force: number = 10) => {

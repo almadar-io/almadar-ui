@@ -163,7 +163,11 @@ export function useResolvedSchema(
         // Find the requested page using shared helper
         const page = getPage(ir, pageName);
 
-        console.log('[useResolvedSchema] Resolved page:', page?.name, '| path:', page?.path, '| traits:', page?.traits.length);
+        resolvedSchemaLog.debug('Resolved page', () => ({
+            name: page?.name,
+            path: page?.path,
+            traits: page?.traits.length,
+        }));
 
         // Get trait bindings for this page
         const traits = page?.traits || [];

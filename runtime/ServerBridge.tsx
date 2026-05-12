@@ -30,6 +30,7 @@ import { createLogger } from '@almadar/logger';
 // drops anywhere in the wire format, every emit is silently skipped — log
 // both branches so the runtime-verify capture surfaces the gap.
 const xOrbitalLog = createLogger('almadar:runtime:cross-orbital');
+const serverBridgeLog = createLogger('almadar:ui:server-bridge');
 
 
 // ---------------------------------------------------------------------------
@@ -131,7 +132,7 @@ function createHttpTransport(serverUrl: string): ServerBridgeTransport {
         const result = await res.json();
         return !!result.success;
       } catch (err) {
-        console.error('[ServerBridge] Registration failed:', err);
+        serverBridgeLog.error('Registration failed', { error: err instanceof Error ? err : String(err) });
         return false;
       }
     },

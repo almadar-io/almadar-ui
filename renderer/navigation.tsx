@@ -20,6 +20,9 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import type { OrbitalSchema, OrbitalPage, Orbital } from '@almadar/core';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:navigation');
 
 // ============================================================================
 // Path Matching Utilities
@@ -328,7 +331,7 @@ export function NavigationProvider({
         const result = findPageByPath(schema, path);
 
         if (!result) {
-            console.error(`[Navigation] No page found for path: ${path}`);
+            log.error('No page found for path', { path });
             return;
         }
 
@@ -337,13 +340,13 @@ export function NavigationProvider({
         // Merge route params with explicit payload (explicit wins)
         const finalPayload = { ...params, ...payload };
 
-        console.log('[Navigation] Navigating to:', {
+        log.debug('Navigating to', () => ({
             path,
             page: page.name,
             params,
-            payload,
-            finalPayload,
-        });
+            payload: JSON.stringify(payload),
+            finalPayload: JSON.stringify(finalPayload),
+        }));
 
         // Update state - increment navigationId to trigger INIT
         setState(prev => ({
@@ -359,7 +362,7 @@ export function NavigationProvider({
                 window.history.pushState(finalPayload, '', path);
             } catch (e) {
                 // Ignore errors (e.g., in embedded contexts)
-                console.warn('[Navigation] Could not update URL:', e);
+                log.warn('Could not update URL', { error: e instanceof Error ? e : String(e) });
             }
         }
 
@@ -379,18 +382,18 @@ export function NavigationProvider({
         const result = findPageByName(schema, pageName);
 
         if (!result) {
-            console.error(`[Navigation] No page found with name: ${pageName}`);
+            log.error('No page found with name', { pageName });
             return;
         }
 
         const { page } = result;
         const path = page.path || `/${pageName.toLowerCase()}`;
 
-        console.log('[Navigation] Navigating to page:', {
+        log.debug('Navigating to page', () => ({
             pageName,
             path,
-            payload,
-        });
+            payload: JSON.stringify(payload),
+        }));
 
         setState(prev => ({
             activePage: page.name,
@@ -403,7 +406,7 @@ export function NavigationProvider({
             try {
                 window.history.pushState(payload || {}, '', path);
             } catch (e) {
-                console.warn('[Navigation] Could not update URL:', e);
+                log.warn('Could not update URL', { error: e instanceof Error ? e : String(e) });
             }
         }
 
@@ -447,7 +450,7 @@ export function useNavigateTo(): (path: string, payload?: Record<string, unknown
     const context = useContext(NavigationContext);
 
     const noOp = useCallback((path: string, _payload?: Record<string, unknown>) => {
-        console.warn(`[Navigation] navigateTo called outside NavigationProvider. Path: ${path}`);
+        log.warn('navigateTo called outside NavigationProvider', { path });
     }, []);
 
     return context?.navigateTo || noOp;

@@ -13,6 +13,9 @@
  */
 
 import type { DataContext, DataResolution } from './types';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:data-resolver');
 
 // ============================================================================
 // Data Resolution
@@ -60,10 +63,10 @@ export function resolveEntityData(
         loading: false,
       };
     } catch (error) {
-      console.warn(
-        `[DataResolver] Error getting records from entity store for "${entityName}":`,
-        error
-      );
+      log.warn('Error getting records from entity store', {
+        entityName,
+        error: error instanceof Error ? error : String(error),
+      });
     }
   }
 
@@ -108,10 +111,10 @@ export function resolveEntityDataWithQuery(
       data: filteredData,
     };
   } catch (error) {
-    console.warn(
-      `[DataResolver] Error applying query filters for "${queryRef}":`,
-      error
-    );
+    log.warn('Error applying query filters', {
+      queryRef,
+      error: error instanceof Error ? error : String(error),
+    });
     return resolution;
   }
 }

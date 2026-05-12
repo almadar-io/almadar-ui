@@ -7,11 +7,14 @@
  */
 
 import React, { createContext, useContext, useMemo } from 'react';
+import { createLogger } from '@almadar/logger';
 import type {
     ResolvedTrait,
     ResolvedTraitBinding,
     ResolvedEntity,
 } from './types';
+
+const log = createLogger('almadar:ui:trait-provider');
 
 // ============================================================================
 // Types
@@ -82,7 +85,11 @@ export function TraitProvider({
                     .filter((t) => t.from === stateName)
                     .map((t) => t.event),
                 dispatch: (eventKey, payload) => {
-                    console.log(`[TraitProvider] Dispatch to ${trait.name}: ${eventKey}`, payload);
+                    log.debug('Dispatch', () => ({
+                        trait: trait.name,
+                        event: eventKey,
+                        payloadKeys: payload ? Object.keys(payload) : [],
+                    }));
                 },
                 canDispatch: (eventKey) => {
                     return trait.transitions.some(

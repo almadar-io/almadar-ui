@@ -11,6 +11,9 @@ import React from 'react';
 import { cn } from '../../lib/cn';
 import { Button } from '../atoms';
 import { useEventBus } from '../../hooks/useEventBus';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:button-group');
 
 export type ButtonGroupVariant = 'default' | 'segmented' | 'toggle';
 
@@ -181,7 +184,7 @@ export const ButtonGroup: React.FC<ButtonGroupProps> = ({
         variant="ghost"
         onClick={() => {
           // Filter click handling would be connected to state management
-          console.log(`Filter clicked: ${filter.field}`);
+          log.debug('Filter clicked', { field: filter.field });
         }}
       >
         {filter.label}

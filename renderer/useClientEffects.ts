@@ -14,6 +14,9 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { executeClientEffects } from './client-effect-executor';
 import type { ClientEffect, ClientEffectExecutorConfig } from './types';
+import { createLogger } from '@almadar/logger';
+
+const log = createLogger('almadar:ui:effects:client-hook');
 
 // ============================================================================
 // Hook Types
@@ -119,7 +122,7 @@ export function useClientEffects(
       const key = getEffectKey(effect);
       if (executedRef.current.has(key)) {
         if (debug) {
-          console.log('[useClientEffects] Skipping duplicate effect:', effect);
+          log.debug('Skipping duplicate effect', () => ({ effect: JSON.stringify(effect) }));
         }
         return false;
       }
@@ -132,7 +135,7 @@ export function useClientEffects(
     }
 
     if (debug) {
-      console.log('[useClientEffects] Executing effects:', newEffects);
+      log.debug('Executing effects', () => ({ effects: JSON.stringify(newEffects), count: newEffects.length }));
     }
 
     // Mark effects as executed
