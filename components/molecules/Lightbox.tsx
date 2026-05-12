@@ -14,7 +14,7 @@ function useSafeEventBus() {
 }
 
 export interface LightboxImage {
-  src: string;
+  src?: string;
   alt?: string;
   caption?: string;
 }
