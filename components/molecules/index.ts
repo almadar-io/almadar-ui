@@ -129,3 +129,22 @@ export { ReplyTree, type ReplyTreeProps, type ReplyNode } from './ReplyTree';
 export { BranchingLogicBuilder, type BranchingLogicBuilderProps, type BranchingQuestion, type BranchingRule } from './BranchingLogicBuilder';
 export { VersionDiff, type VersionDiffProps, type DiffRevision, type DiffLine as VersionDiffLine, type DiffLineType } from './VersionDiff';
 
+// Documentation molecules — public surface for std behaviors that render
+// help-center / docs-style content (std-public-help-center,
+// std-document-mgmt). Promoted alongside the G7 pattern-sync export filter.
+export { DocBreadcrumb, type DocBreadcrumbProps, type DocBreadcrumbItem } from './DocBreadcrumb';
+export { DocCodeBlock, type DocCodeBlockProps } from './DocCodeBlock';
+export { DocPagination, type DocPaginationProps, type DocPaginationLink } from './DocPagination';
+export { DocSearch, type DocSearchProps, type DocSearchResult } from './DocSearch';
+export { DocSidebar, type DocSidebarProps, type DocSidebarItem } from './DocSidebar';
+export { DocTOC, type DocTOCProps, type DocTOCItem } from './DocTOC';
+
+// Marketing-page molecules — used by std-marketing-campaign render-ui.
+export { GradientDivider, type GradientDividerProps } from './GradientDivider';
+export { PullQuote, type PullQuoteProps } from './PullQuote';
+
+// AVL (Almadar Visual Language) molecules surfaced for std behaviors
+// (behavior-view, module-card).
+export { BehaviorView, type BehaviorViewProps } from './avl/BehaviorView';
+export { ModuleCard, type ModuleCardProps } from './avl/ModuleCard';
+

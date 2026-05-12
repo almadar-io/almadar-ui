@@ -213,3 +213,9 @@ export {
 } from "./CaseStudyOrganism";
 
 // Phase 10: organisms moved to molecules (no entity binding) or expressed in std render-ui (domain-shaped).
+
+// FeatureRenderer — surfaced from organisms/game/three/renderers so the
+// `feature-renderer` pattern resolves through the top-level
+// `@almadar/ui/components` barrel. The deeper three.js modules remain
+// import-on-demand via `@almadar/ui/components/organisms/game/three`.
+export { FeatureRenderer, type FeatureRendererProps } from './game/three/renderers/FeatureRenderer';
