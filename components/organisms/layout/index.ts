@@ -5,6 +5,6 @@
  */
 
 export { SplitPane, type SplitPaneProps } from './SplitPane';
-export { MasterDetail, type MasterDetailProps } from './MasterDetail';
+export { MasterDetailLayout, type MasterDetailLayoutProps } from './MasterDetailLayout';
 export { DashboardGrid, type DashboardGridProps, type DashboardGridCell } from './DashboardGrid';
 export { TabbedContainer, type TabbedContainerProps, type TabDefinition } from './TabbedContainer';

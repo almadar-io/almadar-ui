@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
+import { resolveIcon } from '../Icon';
 
 export interface ActionButtonProps {
   /** Button label text */
@@ -29,9 +30,9 @@ const sizeMap = {
 };
 
 const variantStyles = {
-  primary: 'bg-blue-600 hover:bg-blue-500 border-blue-400/40',
-  secondary: 'bg-gray-700 hover:bg-gray-600 border-gray-500/40',
-  danger: 'bg-red-700 hover:bg-red-600 border-red-400/40',
+  primary: 'bg-primary text-primary-foreground hover:bg-primary-hover border-primary',
+  secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary-hover border-border',
+  danger: 'bg-error text-error-foreground hover:bg-error/90 border-error',
 };
 
 export function ActionButton({
@@ -56,7 +57,7 @@ export function ActionButton({
       disabled={isDisabled}
       onClick={onClick}
       className={cn(
-        'relative inline-flex items-center gap-1.5 rounded-md border font-medium text-[var(--color-foreground)] overflow-hidden transition-colors duration-150',
+        'relative inline-flex items-center gap-1.5 rounded-md border font-medium overflow-hidden transition-colors duration-150',
         sizes.button,
         variantStyles[variant],
         isDisabled && 'opacity-60 cursor-not-allowed',
@@ -65,7 +66,7 @@ export function ActionButton({
     >
       {onCooldown && (
         <div
-          className="absolute inset-0 bg-black/60 pointer-events-none"
+          className="absolute inset-0 bg-foreground/40 pointer-events-none"
           style={{
             clipPath: `conic-gradient(from 0deg, transparent ${360 - cooldownDeg}deg, black ${360 - cooldownDeg}deg)`,
             WebkitClipPath: `conic-gradient(from 0deg, transparent ${360 - cooldownDeg}deg, black ${360 - cooldownDeg}deg)`,
@@ -73,12 +74,18 @@ export function ActionButton({
           }}
         />
       )}
-      {icon && <span className={cn('flex-shrink-0', sizes.icon)}>{icon}</span>}
+      {icon && (
+        <span className={cn('flex-shrink-0', sizes.icon)}>
+          {typeof icon === 'string'
+            ? (() => { const I = resolveIcon(icon); return I ? <I className="w-4 h-4" /> : null; })()
+            : icon}
+        </span>
+      )}
       <span className="relative z-10">{label}</span>
       {hotkey && (
         <span
           className={cn(
-            'absolute top-0.5 right-0.5 bg-black/50 text-gray-300 rounded font-mono leading-tight',
+            'absolute top-0.5 right-0.5 bg-foreground/30 text-primary-foreground rounded font-mono leading-tight',
             sizes.hotkey
           )}
         >

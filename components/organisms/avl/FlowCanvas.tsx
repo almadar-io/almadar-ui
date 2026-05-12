@@ -61,12 +61,12 @@ const NODE_TYPES: NodeTypes = {
 // stale bundle), ReactFlow falls back to the default node renderer and the
 // canvas shows empty white strips instead of orbital previews. Log the
 // registry shape so the regression is visible in the browser console.
-flowCanvasLog.info('node-type-registry', {
+flowCanvasLog.debug('node-type-registry', () => ({
   registered: Object.keys(NODE_TYPES),
   preview: typeof OrbPreviewNode,
   previewIsValid: typeof OrbPreviewNode === 'function' || (typeof OrbPreviewNode === 'object' && OrbPreviewNode !== null),
   behaviorCompose: typeof BehaviorComposeNode,
-});
+}));
 
 const EDGE_TYPES: EdgeTypes = {
   eventFlow: EventFlowEdge,

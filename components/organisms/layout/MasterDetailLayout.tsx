@@ -11,7 +11,7 @@ import { cn } from "../../../lib/cn";
 import { Typography } from "../../atoms/Typography";
 import { SplitPane } from "./SplitPane";
 
-export interface MasterDetailProps {
+export interface MasterDetailLayoutProps {
   /** Master panel content (usually a list) */
   master: React.ReactNode;
   /** Detail panel content */
@@ -47,7 +47,7 @@ const DefaultEmptyDetail: React.FC = () => (
 /**
  * MasterDetail - List + detail split layout
  */
-export const MasterDetail: React.FC<MasterDetailProps> = ({
+export const MasterDetailLayout: React.FC<MasterDetailLayoutProps> = ({
   master,
   detail,
   emptyDetail,
@@ -88,6 +88,6 @@ export const MasterDetail: React.FC<MasterDetailProps> = ({
   );
 };
 
-MasterDetail.displayName = "MasterDetail";
+MasterDetailLayout.displayName = "MasterDetailLayout";
 
-export default MasterDetail;
+export default MasterDetailLayout;

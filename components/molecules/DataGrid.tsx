@@ -482,7 +482,7 @@ export function DataGrid<T extends EntityRow = EntityRow>({
                         onClick={handleActionClick(action, itemData)}
                         data-testid={`action-${action.event}`}
                         data-row-id={String(itemData.id)}
-                        className="text-error hover:bg-error/10 px-2"
+                        className="text-error hover:text-error hover:bg-error/10 px-2"
                       >
                         {action.icon && <Icon name={action.icon} size="xs" />}
                         {action.label}

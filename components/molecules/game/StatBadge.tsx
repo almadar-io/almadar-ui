@@ -34,11 +34,11 @@ const sizeMap = {
 };
 
 const variantMap = {
-  default: 'bg-[var(--color-card)]/80 border-gray-700',
-  primary: 'bg-blue-900/80 border-blue-700',
-  success: 'bg-green-900/80 border-green-700',
-  warning: 'bg-yellow-900/80 border-yellow-700',
-  danger: 'bg-red-900/80 border-red-700',
+  default: 'bg-card/80 border-border text-foreground',
+  primary: 'bg-primary/15 border-primary/40 text-foreground',
+  success: 'bg-success/15 border-success/40 text-foreground',
+  warning: 'bg-warning/15 border-warning/40 text-foreground',
+  danger: 'bg-error/15 border-error/40 text-foreground',
 };
 
 export function StatBadge({
@@ -67,7 +67,7 @@ export function StatBadge({
     >
       {icon && <span className="flex-shrink-0 text-lg">{typeof icon === 'string' ? (() => { const I = resolveIcon(icon); return I ? <I className="w-4 h-4" /> : icon; })() : icon}</span>}
       
-      <span className="text-gray-400 font-medium">{label}</span>
+      <span className="text-muted-foreground font-medium">{label}</span>
       
       {format === 'hearts' && max && (
         <HealthBar
@@ -96,7 +96,7 @@ export function StatBadge({
       )}
       
       {format === 'text' && (
-        <span className="font-bold text-[var(--color-foreground)]">{value}</span>
+        <span className="font-bold text-foreground">{value}</span>
       )}
     </div>
   );

@@ -10,7 +10,7 @@ export interface ResourceBarResource {
   /** Resource name */
   label: string;
   /** Current amount */
-  value: number;
+  value?: number;
   /** Maximum amount (displays as bar if provided) */
   max?: number;
 }

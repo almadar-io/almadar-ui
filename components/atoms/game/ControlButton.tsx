@@ -3,6 +3,7 @@ import * as React from 'react';
 import type { EventKey } from "@almadar/core";
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { resolveIcon } from '../Icon';
 
 export interface ControlButtonProps {
   /** Button label text */
@@ -45,9 +46,9 @@ const shapeMap = {
 };
 
 const variantMap = {
-  primary: 'bg-blue-600 text-[var(--color-foreground)] border-blue-400 hover:bg-blue-500',
-  secondary: 'bg-[var(--color-surface,#374151)] text-[var(--color-foreground)] border-gray-500 hover:bg-gray-600',
-  ghost: 'bg-transparent text-[var(--color-foreground)] border-white/30 hover:bg-white/10',
+  primary: 'bg-primary text-primary-foreground border-primary hover:bg-primary-hover',
+  secondary: 'bg-secondary text-secondary-foreground border-border hover:bg-secondary-hover',
+  ghost: 'bg-transparent text-foreground border-border hover:bg-muted',
 };
 
 export function ControlButton({
@@ -117,12 +118,18 @@ export function ControlButton({
         sizeMap[size as keyof typeof sizeMap] ?? sizeMap.md,
         shapeMap[shape as keyof typeof shapeMap] ?? shapeMap.circle,
         variantMap[variant as keyof typeof variantMap] ?? variantMap.secondary,
-        actualPressed && 'scale-95 brightness-110 border-white',
+        actualPressed && 'scale-95 brightness-110 border-foreground',
         disabled && 'opacity-50 cursor-not-allowed',
         className
       )}
     >
-      {icon && <span className="text-2xl">{icon}</span>}
+      {icon && (
+        <span className="text-2xl">
+          {typeof icon === 'string'
+            ? (() => { const I = resolveIcon(icon); return I ? <I className="w-6 h-6" /> : null; })()
+            : icon}
+        </span>
+      )}
       {label && !icon && <span>{label}</span>}
     </button>
   );

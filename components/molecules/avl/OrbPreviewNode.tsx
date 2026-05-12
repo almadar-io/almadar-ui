@@ -52,7 +52,7 @@ const orbPreviewLog = createLogger('almadar:ui:orb-preview-node');
 // actually finished defining before FlowCanvas's NODE_TYPES picks it up.
 // If this never fires but FlowCanvas's `node-type-registry` log does, the
 // import order is wrong and `preview` lands `undefined` in the registry.
-orbPreviewLog.info('module-init', { browserPlayground: typeof BrowserPlayground });
+orbPreviewLog.debug('module-init', () => ({ browserPlayground: typeof BrowserPlayground }));
 
 // ---------------------------------------------------------------------------
 // Contexts (provided by FlowCanvas)
@@ -686,8 +686,8 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
 export const OrbPreviewNode = React.memo(OrbPreviewNodeInner);
 OrbPreviewNode.displayName = 'OrbPreviewNode';
 
-orbPreviewLog.info('export-resolved', {
+orbPreviewLog.debug('export-resolved', () => ({
   type: typeof OrbPreviewNode,
-  displayName: OrbPreviewNode.displayName,
+  displayName: OrbPreviewNode.displayName ?? null,
   innerDefined: typeof OrbPreviewNodeInner === 'function',
-});
+}));

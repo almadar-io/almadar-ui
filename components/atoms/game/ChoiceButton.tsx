@@ -33,9 +33,9 @@ export function ChoiceButton({
         'w-full text-left px-4 py-2.5 rounded-md border transition-all duration-150',
         'flex items-center gap-2',
         selected
-          ? 'bg-yellow-500/20 border-yellow-400 text-yellow-300'
-          : 'bg-white/5 border-white/10 text-[var(--color-foreground)] hover:bg-white/10 hover:border-white/30',
-        disabled && 'opacity-40 cursor-not-allowed hover:bg-white/5 hover:border-white/10',
+          ? 'bg-accent/15 border-accent text-foreground'
+          : 'bg-muted/40 border-border text-foreground hover:bg-muted hover:border-border',
+        disabled && 'opacity-40 cursor-not-allowed hover:bg-muted/40 hover:border-border',
         className
       )}
     >
@@ -43,7 +43,7 @@ export function ChoiceButton({
         <span
           className={cn(
             'flex-shrink-0 font-mono font-bold text-sm',
-            selected ? 'text-yellow-400' : 'text-gray-500'
+            selected ? 'text-accent' : 'text-muted-foreground'
           )}
         >
           {index}.
