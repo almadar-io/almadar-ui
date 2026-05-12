@@ -221,7 +221,7 @@ function FlowCanvasInner({
   const [expandedOrbital, setExpandedOrbital] = useState<string | undefined>(
     initialOrbital,
   );
-  const [screenSize, setScreenSize] = useState<ScreenSize>('tablet');
+  const [screenSize, setScreenSize] = useState<ScreenSize>('desktop');
   const [selectedNode, setSelectedNode] = useState<PreviewNodeData | null>(initialSelectedNode ?? null);
   const [selectedPattern, setSelectedPattern] = useState<SelectedPattern | null>(null);
 
