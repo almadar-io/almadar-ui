@@ -35,7 +35,7 @@ import { AvlTransitionScene } from './AvlTransitionScene';
 import { AvlOrbitalUnit } from '../../molecules/avl/AvlOrbitalUnit';
 import type { AvlPersistenceKind } from '../../atoms/avl/types';
 import { curveControlPoint } from '../../molecules/avl/avl-layout';
-import { createLogger } from '../../../lib/logger';
+import { createLogger } from '@almadar/logger';
 import { Box } from '../../atoms/Box';
 import { HStack } from '../../atoms/Stack';
 import { Typography, Text } from '../../atoms/Typography';

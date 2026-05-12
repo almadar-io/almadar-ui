@@ -14,7 +14,7 @@ import React from "react";
 import type { EntityRow, EventPayloadValue, RenderItemLambda } from "@almadar/core";
 import type { AnyPatternConfig } from "@almadar/patterns";
 import type { SlotProps, SlotPropValue } from "../hooks/useUISlots";
-import { createLogger } from "../lib/logger";
+import { createLogger } from '@almadar/logger';
 
 const lambdaLog = createLogger("almadar:ui:fn-form-lambda");
 

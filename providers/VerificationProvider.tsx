@@ -27,7 +27,7 @@ import {
   registerCheck,
   type EffectTrace,
 } from '../lib/verificationRegistry';
-import { createLogger } from '../lib/logger';
+import { createLogger } from '@almadar/logger';
 
 const log = createLogger('almadar:verify');
 

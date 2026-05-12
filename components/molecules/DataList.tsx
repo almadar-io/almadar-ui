@@ -15,7 +15,7 @@ import React from 'react';
 import type { EntityRow, EventKey } from "@almadar/core";
 import type { ItemActionPayload } from '@almadar/patterns';
 import { cn } from '../../lib/cn';
-import { createLogger } from '../../lib/logger';
+import { createLogger } from '@almadar/logger';
 
 const dataListLog = createLogger('almadar:ui:data-list');
 import { getNestedValue } from '../../lib/getNestedValue';

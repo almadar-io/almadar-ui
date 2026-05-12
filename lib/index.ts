@@ -40,6 +40,3 @@ export * from './visualizer';
 
 // Content parsing
 export * from './parseContentSegments';
-
-// Logger
-export * from './logger';

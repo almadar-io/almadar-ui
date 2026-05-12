@@ -12,7 +12,7 @@
  */
 
 import type { PatternConfig, EventSource, ResolvedTrait } from '@almadar/core';
-import { createLogger } from '../../lib/logger';
+import { createLogger } from '@almadar/logger';
 
 /**
  * Slot-render observability channel. Used by `useTraitStateMachine`,

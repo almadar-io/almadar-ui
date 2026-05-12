@@ -31,7 +31,7 @@ import type {
     ResolvedTraitListener,
 } from './types';
 
-import { createLogger } from '../lib/logger';
+import { createLogger } from '@almadar/logger';
 
 const resolvedSchemaLog = createLogger('almadar:ui:resolved-schema');
 

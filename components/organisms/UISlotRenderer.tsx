@@ -36,7 +36,7 @@ import { useEventBus } from "../../hooks/useEventBus";
 import { slotLog, refId } from "../../runtime/ui/slot-types";
 import { cn } from "../../lib/cn";
 import { ErrorBoundary } from "../molecules/ErrorBoundary";
-import { createLogger } from "../../lib/logger";
+import { createLogger } from '@almadar/logger';
 
 const scopeWrapLog = createLogger("almadar:ui:scope-wrap");
 import { Skeleton, type SkeletonVariant } from "../molecules/Skeleton";

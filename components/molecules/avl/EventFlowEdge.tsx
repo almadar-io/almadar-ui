@@ -18,7 +18,7 @@ import {
   type EdgeProps,
 } from '@xyflow/react';
 import type { EventEdgeData } from './avl-preview-types';
-import { createLogger } from '../../../lib/logger';
+import { createLogger } from '@almadar/logger';
 
 const edgeLog = createLogger('almadar:ui:nan-coord');
 

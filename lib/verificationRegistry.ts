@@ -10,7 +10,7 @@
  * @packageDocumentation
  */
 
-import { createLogger } from './logger';
+import { createLogger } from '@almadar/logger';
 import type {
   AssetLoadStatus,
   BridgeHealth,

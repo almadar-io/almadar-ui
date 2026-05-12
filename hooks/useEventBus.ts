@@ -20,7 +20,7 @@ import type {
   EventBusContextType,
 } from './event-bus-types';
 import type { EventPayload } from '@almadar/core';
-import { createLogger } from '../lib/logger';
+import { createLogger } from '@almadar/logger';
 
 const log = createLogger('almadar:eventbus');
 const subLog = createLogger('almadar:eventbus:subscribe');
@@ -232,7 +232,12 @@ export function useEventBus(): EventBusContextType {
             ? type
             : `UI:${scope.orbital}.${scope.trait}.${tail}`;
           if (qualified !== type) {
-            scopeLog.info('emit:qualified', { from: type, to: qualified, scope });
+            scopeLog.info('emit:qualified', {
+              from: type,
+              to: qualified,
+              scopeOrbital: scope.orbital,
+              scopeTrait: scope.trait,
+            });
           }
           baseBus.emit(qualified, payload, source);
           return;

@@ -21,7 +21,7 @@ import type {
 } from '../hooks/event-bus-types';
 import type { EventPayload } from '@almadar/core';
 import { setGlobalEventBus } from '../hooks/useEventBus';
-import { createLogger } from '../lib/logger';
+import { createLogger } from '@almadar/logger';
 
 const busLog = createLogger('almadar:eventbus');
 const subLog = createLogger('almadar:eventbus:subscribe');

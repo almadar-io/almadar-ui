@@ -20,7 +20,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 // Use hooks from @almadar/ui
 import { useEventBus } from '../hooks';
-import { createLogger } from '../lib/logger';
+import { createLogger } from '@almadar/logger';
 import { isCircuitEvent } from '@almadar/core';
 import type { PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, TraitConfig } from '@almadar/core';
 import {

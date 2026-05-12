@@ -34,7 +34,7 @@
 import type React from 'react';
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import type { EventPayloadValue, RenderItemLambda } from '@almadar/core';
-import { createLogger } from '../lib/logger';
+import { createLogger } from '@almadar/logger';
 
 // Slot lifecycle diagnostic. Records every render-write + clear so a
 // missing log means the slot manager never saw the call (the bug is

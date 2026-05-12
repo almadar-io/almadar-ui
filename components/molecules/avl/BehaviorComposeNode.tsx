@@ -19,7 +19,7 @@ import { Badge } from '../../atoms/Badge';
 import { AvlBehaviorGlyph } from './AvlBehaviorGlyph';
 import type { BehaviorComposeNodeData, ConnectableEvent } from './avl-behavior-compose-types';
 import { formatPayloadTooltip } from './wire-validation';
-import { createLogger } from '../../../lib/logger';
+import { createLogger } from '@almadar/logger';
 
 const behaviorHandleLog = createLogger('almadar:ui:nan-coord');
 

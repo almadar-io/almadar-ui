@@ -33,7 +33,7 @@ import { getAllPages } from '../renderer/navigation';
 import { recordTransition, recordServerResponse, type EffectTrace } from '../lib/verificationRegistry';
 import { prepareSchemaForPreview } from './prepareSchemaForPreview';
 import { InMemoryPersistence, type PersistenceAdapter } from '@almadar/runtime';
-import { createLogger } from '../lib/logger';
+import { createLogger } from '@almadar/logger';
 
 // Gap #11 (Almadar_Std_Verification.md): cross-orbital cascade tracing on
 // the UI side. Pairs with the server-side `almadar:runtime:cross-orbital`

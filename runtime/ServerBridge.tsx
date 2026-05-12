@@ -22,7 +22,7 @@ import { createContext, useContext, useEffect, useState, useCallback, useMemo } 
 import type { ReactNode } from 'react';
 import type { BusEventSource, EventPayload } from '@almadar/core';
 import { useEventBus } from '../hooks/useEventBus';
-import { createLogger } from '../lib/logger';
+import { createLogger } from '@almadar/logger';
 
 // Gap #11 (Almadar_Std_Verification.md): cross-orbital re-broadcast
 // tracing. Each server response's `emittedEvents[]` is re-emitted on the

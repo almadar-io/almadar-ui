@@ -43,7 +43,7 @@ import { SCREEN_SIZE_PRESETS } from './avl-preview-types';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { ALMADAR_DND_MIME, type DraggablePayload } from '../../../hooks/useDraggable';
 import { formatPayloadTooltip } from './wire-validation';
-import { createLogger } from '../../../lib/logger';
+import { createLogger } from '@almadar/logger';
 
 const eventHandleLog = createLogger('almadar:ui:nan-coord');
 const orbPreviewLog = createLogger('almadar:ui:orb-preview-node');

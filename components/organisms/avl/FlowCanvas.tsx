@@ -43,7 +43,7 @@ import { useEventBus } from '../../../hooks/useEventBus';
 import { BehaviorComposeNode } from '../../molecules/avl/BehaviorComposeNode';
 import { behaviorsToComposeGraph } from '../../molecules/avl/avl-behavior-compose-converter';
 import type { ComposeViewLevel, BehaviorCanvasEntry, BehaviorWireEdgeData, BehaviorComposeNodeData } from '../../molecules/avl/avl-behavior-compose-types';
-import { createLogger } from '../../../lib/logger';
+import { createLogger } from '@almadar/logger';
 
 // ---------------------------------------------------------------------------
 // Node & edge type registries

@@ -15,7 +15,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import type { EntityRow, EventKey } from '@almadar/core';
 import type { ItemActionPayload, SelectionChangePayload } from '@almadar/patterns';
 import { cn } from '../../lib/cn';
-import { createLogger } from '../../lib/logger';
+import { createLogger } from '@almadar/logger';
 
 const dataGridLog = createLogger('almadar:ui:data-grid');
 import { getNestedValue } from '../../lib/getNestedValue';
