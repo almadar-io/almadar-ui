@@ -324,6 +324,7 @@ export function schemaToOverviewGraph(
   mockData?: Record<string, unknown[]>,
   behaviorMeta?: Record<string, { layer: string }>,
   layoutHint?: 'pipeline' | 'grid',
+  orbitalStatus?: Record<string, PreviewNodeData['status']>,
 ): {
   nodes: Node<PreviewNodeData>[];
   edges: Edge<EventEdgeData>[];
@@ -418,6 +419,7 @@ export function schemaToOverviewGraph(
         fieldCount: entityInfo.fieldCount,
         traitCount: traits.length,
         pageRoutes,
+        status: orbitalStatus?.[orb.name] ?? 'idle',
         _fullSchema: schema,
         _mockData: mockData,
       },

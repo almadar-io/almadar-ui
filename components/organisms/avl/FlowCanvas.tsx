@@ -133,6 +133,20 @@ export interface FlowCanvasProps {
   onEventWire?: (wire: { eventName: string; sourceOrbital: string; targetOrbital: string; sourceTraitName?: string; targetTraitName?: string }) => void;
   /** Behavior layer metadata for node styling (layer color bands). */
   behaviorMeta?: Record<string, { layer: string }>;
+  /**
+   * Per-orbital generation status. Keyed by orbital name. Drives the spinner
+   * + accent border treatment on the overview node and (future) the hover
+   * trace surface. Defaults to `'idle'` for missing entries. Consumers
+   * derive this from agent subagent_start/complete SSE events.
+   */
+  orbitalStatus?: Record<string, PreviewNodeData['status']>;
+  /**
+   * Hover handler for overview-level orbital nodes. Fires with the orbital
+   * name on enter and `null` on leave. Reserved for the upcoming trace
+   * tooltip: consumers will use it to anchor a popover that shows the
+   * subagent's live trace + reasoning for the hovered orbital.
+   */
+  onOrbitalHover?: (orbitalName: string | null) => void;
   /** Layout hint: 'pipeline' renders nodes left-to-right, 'grid' (default) uses sqrt-based grid. */
   layoutHint?: 'pipeline' | 'grid';
   /** Called when the user clicks a node in overview level (for composition hints). */
@@ -179,6 +193,8 @@ function FlowCanvasInner({
   onPatternDelete,
   onEventWire,
   behaviorMeta,
+  orbitalStatus,
+  onOrbitalHover,
   layoutHint,
   onNodeSelect,
   composeLevel,
@@ -245,7 +261,7 @@ function FlowCanvasInner({
       ? behaviorsToComposeGraph(behaviorEntries, behaviorWires ?? [], layoutHint)
       : { nodes: [], edges: [] };
 
-    const overview = schemaToOverviewGraph(parsedSchema, mockData, behaviorMeta, layoutHint);
+    const overview = schemaToOverviewGraph(parsedSchema, mockData, behaviorMeta, layoutHint, orbitalStatus);
     const expanded = expandedOrbital
       ? orbitalToExpandedGraph(parsedSchema, expandedOrbital, mockData)
       : { nodes: [], edges: [] };
@@ -263,7 +279,7 @@ function FlowCanvasInner({
       expandedNodes: expanded.nodes,
       expandedEdges: expanded.edges,
     };
-  }, [parsedSchema, expandedOrbital, behaviorMeta, layoutHint, composeLevel, behaviorEntries, behaviorWires, mockData]);
+  }, [parsedSchema, expandedOrbital, behaviorMeta, layoutHint, composeLevel, behaviorEntries, behaviorWires, mockData, orbitalStatus]);
 
   // Both compose and orbital nodes flow through the same React Flow instance.
   // Cast to Node<Record<string, unknown>> for the union.

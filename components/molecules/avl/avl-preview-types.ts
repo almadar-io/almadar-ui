@@ -129,6 +129,19 @@ export interface PreviewNodeData extends Record<string, unknown> {
   fieldCount?: number;
   traitCount?: number;
   pageRoutes?: string[];
+
+  /**
+   * Generation status for this orbital. When `'running'`, the overview node
+   * renders a spinner overlay + accent border so the user can see which
+   * orbital the coordinator is currently dispatching to. Other states are
+   * available so consumers can also paint success/error treatments
+   * (e.g. green border on completion, red on failure). Default is `'idle'`.
+   *
+   * Set by FlowCanvasProps.orbitalStatus and threaded through the converter.
+   * Future expansion: hover over a `'running'` node to surface the subagent
+   * trace inline.
+   */
+  status?: 'idle' | 'running' | 'success' | 'error';
 }
 
 // ---------------------------------------------------------------------------

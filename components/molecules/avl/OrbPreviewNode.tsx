@@ -406,6 +406,10 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   const layerColor = data.layer ? LAYER_COLORS[data.layer] : undefined;
 
   const isExpanded = Boolean(data.traitName);
+  const status = data.status ?? 'idle';
+  const isRunning = status === 'running';
+  const isSuccess = status === 'success';
+  const isError = status === 'error';
   const label = isExpanded
     ? `${data.transitionEvent ?? ''}`
     : data.orbitalName;
@@ -580,12 +584,23 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
     contentRef.current?.querySelectorAll('.drag-hover').forEach(c => c.classList.remove('drag-hover'));
   }, []);
 
+  // Status-driven outline color. Running > error > success > hover > default.
+  const statusBorder = isRunning
+    ? 'var(--color-primary)'
+    : isError
+      ? 'var(--color-danger)'
+      : isSuccess
+        ? 'var(--color-success)'
+        : null;
+  const borderWidth = isRunning || isError || isSuccess ? '2px' : '1.5px';
+  const borderColor = statusBorder ?? (hovered ? 'var(--color-primary)' : colors.border);
+
   return (
     <Box
-      className="rounded-lg border shadow-sm bg-card transition-all duration-200 overflow-hidden"
+      className={`rounded-lg border shadow-sm bg-card transition-all duration-200 overflow-hidden relative${isRunning ? ' orb-preview-running' : ''}`}
       style={{
-        borderColor: hovered ? 'var(--color-primary)' : colors.border,
-        borderWidth: '1.5px',
+        borderColor,
+        borderWidth,
         width: preset.width,
       }}
       onMouseEnter={handleMouseEnter}
@@ -593,6 +608,39 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
     >
       {/* Inject selection highlight CSS */}
       <style>{SELECTION_STYLES}</style>
+      {/* Running-state pulse — subtle inner glow + corner spinner. Inert to
+          pointer events so the existing canvas interactions stay intact. */}
+      {isRunning && (
+        <>
+          <style>{`
+            @keyframes orb-preview-running-pulse {
+              0%, 100% { box-shadow: 0 0 0 0 var(--color-primary); opacity: 0.6; }
+              50%      { box-shadow: 0 0 0 4px var(--color-primary); opacity: 0.15; }
+            }
+            .orb-preview-running {
+              animation: orb-preview-running-pulse 1.8s ease-in-out infinite;
+            }
+            @keyframes orb-preview-spinner {
+              from { transform: rotate(0deg); }
+              to   { transform: rotate(360deg); }
+            }
+            .orb-preview-spinner {
+              animation: orb-preview-spinner 0.9s linear infinite;
+            }
+          `}</style>
+          <Box
+            className="orb-preview-spinner absolute top-2 right-2 rounded-full pointer-events-none"
+            style={{
+              width: 14,
+              height: 14,
+              border: '2px solid var(--color-primary)',
+              borderTopColor: 'transparent',
+              zIndex: 2,
+            }}
+            title="Coordinator is dispatching to this orbital"
+          />
+        </>
+      )}
 
       {/* Layer color band */}
       {layerColor && (
