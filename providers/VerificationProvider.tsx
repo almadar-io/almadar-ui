@@ -238,7 +238,7 @@ export function VerificationProvider({
           },
           timestamp: Date.now(),
         });
-        log.info('transition:success', { trait: parsed.traitName, event: parsed.event, from: pending?.from, to: newState, effectCount: effects.length });
+        log.debug('transition:success', { trait: parsed.traitName, event: parsed.event, from: pending?.from, to: newState, effectCount: effects.length });
       } else if (parsed.kind === 'error' && parsed.event) {
         const key = `${parsed.traitName}:${parsed.event}`;
         const pending = pendingRef.current.get(key);

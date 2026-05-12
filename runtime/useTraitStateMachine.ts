@@ -261,7 +261,7 @@ export function useTraitStateMachine(
             const slots = uiSlotsRef.current;
             const embedded = embeddedTraitsRef.current;
             if (patterns.length === 0) {
-                flushLog.info('clear', { traitName, slot });
+                flushLog.debug('clear', { traitName, slot });
                 slots.clearBySource(slot as Parameters<typeof slots.clearBySource>[0], traitName);
                 return;
             }
@@ -279,7 +279,7 @@ export function useTraitStateMachine(
             const props = convertFnFormLambdasInProps(rawProps);
             const isEmbedded = embedded?.has(traitName) ?? false;
             if (isEmbedded) {
-                flushLog.info('embed-route', {
+                flushLog.debug('embed-route', {
                     traitName,
                     slot,
                     patternType: typeof patternType === 'string' ? patternType : undefined,
@@ -293,12 +293,12 @@ export function useTraitStateMachine(
                 });
                 return;
             }
-            flushLog.info('slot-render', {
+            flushLog.debug('slot-render', () => ({
                 traitName,
                 slot,
                 patternType: typeof patternType === 'string' ? patternType : undefined,
                 embedded: Array.from(embedded ?? []),
-            });
+            }));
             slots.render({
                 target: slot as Parameters<typeof slots.render>[0]['target'],
                 pattern: patternType as string,
@@ -592,12 +592,12 @@ export function useTraitStateMachine(
         const currentManager = managerRef.current;
 
         console.log('[TraitStateMachine] Processing event:', normalizedEvent, 'payload:', payload);
-        crossTraitLog.debug('processEvent:enter', {
+        crossTraitLog.debug('processEvent:enter', () => ({
             event: normalizedEvent,
             traitCount: bindings.length,
             traitNames: bindings.map((b) => b.trait.name).join(','),
             orbitalsByTrait: JSON.stringify(orbitalsByTrait ?? null),
-        });
+        }));
 
         // Find the binding that matches each trait for linkedEntity info
         const bindingMap = new Map(bindings.map(b => [b.trait.name, b]));
@@ -873,7 +873,7 @@ export function useTraitStateMachine(
                 try {
                     await executor.executeAll(result.effects);
 
-                    stateLog.info('transition:render-ui-dispatched', {
+                    stateLog.debug('transition:render-ui-dispatched', () => ({
                         traitName,
                         fromState: result.previousState,
                         toState: result.newState,
@@ -882,7 +882,7 @@ export function useTraitStateMachine(
                         patternTypes: Array.from(pendingSlots.entries()).map(
                             ([slot, patterns]) => `${slot}:[${patterns.map((p) => p.pattern?.type ?? 'null').join(',')}]`,
                         ).join(';'),
-                    });
+                    }));
 
                     // Flush accumulated slot content atomically — write
                     // directly to useUISlots with embed-aware routing.
@@ -1146,7 +1146,7 @@ export function useTraitStateMachine(
                         crossTraitLog.debug('self:fire-skipped-bridge-echo', { traitName, busKey: selfBusKey, eventKey });
                         return;
                     }
-                    crossTraitLog.info('self:fire', { traitName, busKey: selfBusKey, eventKey });
+                    crossTraitLog.debug('self:fire', { traitName, busKey: selfBusKey, eventKey });
                     enqueueAndDrain(eventKey, event.payload);
                 });
                 unsubscribes.push(() => {
@@ -1178,7 +1178,7 @@ export function useTraitStateMachine(
                 const busKey = `UI:${sourceOrbital}.${sourceTrait}.${listen.event}`;
                 crossTraitLog.debug('listen:subscribed', { busKey, targetTrait: binding.trait.name, sourceOrbital, sourceTrait, listenEvent: listen.event, triggers: listen.triggers });
                 const unsub = eventBus.on(busKey, (event) => {
-                    crossTraitLog.info('listen:fired', { busKey, targetTrait: binding.trait.name, triggers: listen.triggers });
+                    crossTraitLog.debug('listen:fired', { busKey, targetTrait: binding.trait.name, triggers: listen.triggers });
                     enqueueAndDrain(listen.triggers, event.payload);
                 });
                 unsubscribes.push(() => {

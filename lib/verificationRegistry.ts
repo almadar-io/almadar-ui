@@ -150,7 +150,7 @@ export function recordTransition(trace: Omit<TransitionTrace, "id">): void {
     ...trace,
     id: `t-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
   };
-  log.info('transition:recorded', { trait: trace.traitName, from: trace.from, to: trace.to, event: trace.event, effectCount: trace.effects.length });
+  log.debug('transition:recorded', { trait: trace.traitName, from: trace.from, to: trace.to, event: trace.event, effectCount: trace.effects.length });
   getState().transitions.push(entry);
 
   if (getState().transitions.length > MAX_TRANSITIONS) {

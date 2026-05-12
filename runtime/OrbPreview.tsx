@@ -125,7 +125,7 @@ function applyServerEffects(
       const props = convertFnFormLambdasInProps(rawProps);
 
       if (isEmbedded) {
-        xOrbitalLog.info('slot:embed-routed', {
+        xOrbitalLog.debug('slot:embed-routed', {
           sourceTrait,
           slot: eff.slot,
           patternType: typeof patternType === 'string' ? patternType : undefined,
@@ -137,7 +137,7 @@ function applyServerEffects(
           animation: 'fade',
         });
       } else {
-        xOrbitalLog.info('slot-write', {
+        xOrbitalLog.debug('slot-write', {
           slot: eff.slot,
           sourceTrait,
           patternType: typeof patternType === 'string' ? patternType : undefined,
@@ -225,12 +225,12 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
     const targets = dispatchedOrbitals && dispatchedOrbitals.size > 0
       ? orbitalNames.filter((n) => dispatchedOrbitals.has(n))
       : orbitalNames;
-    xOrbitalLog.info('TraitInitializer:fanout', {
+    xOrbitalLog.debug('TraitInitializer:fanout', () => ({
       event,
       sentTo: targets,
       skipped: orbitalNames.filter((n) => !targets.includes(n)),
       dispatchedOrbitalsSize: dispatchedOrbitals?.size ?? 0,
-    });
+    }));
     for (const name of targets) {
       const { effects, meta } = await bridge.sendEvent(name, event, payload);
       recordServerResponse(name, event, meta);
@@ -258,7 +258,7 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
       .sort()
       .join(',');
     if (prevTraitNamesRef.current && prevTraitNamesRef.current !== traitNames) {
-      navLog.info('page:trait-set-changed', {
+      navLog.debug('page:trait-set-changed', {
         from: prevTraitNamesRef.current,
         to: traitNames,
         action: 'clearAll-slots',
@@ -772,11 +772,11 @@ export function OrbPreview({
   // sync to the URL on its own — we drive that explicitly here.
   const handleNavigate = useCallback((path: string) => {
     const match = pages.find(({ page }) => page.path === path);
-    navLog.info('handleNavigate', {
+    navLog.debug('handleNavigate', () => ({
       path,
       matched: match?.page.name ?? null,
       availablePaths: pages.map((p) => p.page.path),
-    });
+    }));
     if (match) {
       setCurrentPage(match.page.name);
       if (typeof window !== 'undefined') {
@@ -811,19 +811,19 @@ export function OrbPreview({
     const el = containerRef.current;
     if (!el) return;
     if (pages.length <= 1) {
-      navLog.info('interceptor:skipped', { reason: 'single-page schema', pageCount: pages.length });
+      navLog.debug('interceptor:skipped', { reason: 'single-page schema', pageCount: pages.length });
       return;
     }
     const handler = (e: MouseEvent) => {
       const anchor = (e.target as HTMLElement).closest('a');
       if (!anchor) return;
       const href = anchor.getAttribute('href') ?? anchor.getAttribute('to') ?? '';
-      navLog.info('click:intercepted', {
+      navLog.debug('click:intercepted', {
         href,
         anchorText: anchor.textContent?.trim().slice(0, 40),
       });
       if (!href || href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('#')) {
-        navLog.info('click:skipped', { href, reason: 'external/empty/hash' });
+        navLog.debug('click:skipped', { href, reason: 'external/empty/hash' });
         return;
       }
       e.preventDefault();

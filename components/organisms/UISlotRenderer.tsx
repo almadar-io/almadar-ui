@@ -482,7 +482,7 @@ function MaybeTraitScope({
     ? schemaCtx.orbitalsByTrait.get(sourceTrait)
     : undefined;
   const wrap = sourceTrait !== undefined && orbital !== undefined;
-  scopeWrapLog.info('decide', {
+  scopeWrapLog.debug('decide', {
     sourceTrait,
     schemaCtxPresent: schemaCtx !== null,
     orbitalsByTraitSize: schemaCtx?.orbitalsByTrait.size ?? 0,

@@ -202,11 +202,11 @@ function FlowCanvasInner({
     eventFlow: EventFlowEdge,
   } as EdgeTypes), []);
 
-  flowCanvasLog.info('node-type-registry:render', {
+  flowCanvasLog.debug('node-type-registry:render', () => ({
     registered: Object.keys(NODE_TYPES),
     preview: typeof OrbPreviewNode,
     previewIsValid: typeof OrbPreviewNode === 'function' || (typeof OrbPreviewNode === 'object' && OrbPreviewNode !== null),
-  });
+  }));
 
   const parsedSchema = useMemo<OrbitalSchema>(() => {
     if (typeof schemaProp === 'string') return JSON.parse(schemaProp) as OrbitalSchema;
