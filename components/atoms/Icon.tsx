@@ -134,8 +134,7 @@ export const Icon: React.FC<IconProps> = ({
       className={cn(
         sizeClasses[size],
         animationClasses[animation],
-        // Use theme's icon color or provided color
-        color ? color : 'text-[var(--icon-color,currentColor)]',
+        color ? color : 'text-current',
         className
       )}
       strokeWidth={effectiveStrokeWidth}
