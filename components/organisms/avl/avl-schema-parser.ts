@@ -209,6 +209,9 @@ function exprToTree(expr: unknown): ExprTreeNode {
     }
     return { label: expr, type: 'literal' };
   }
+  if (expr !== null && typeof expr === 'object') {
+    return { label: JSON.stringify(expr), type: 'literal' };
+  }
   return { label: String(expr), type: 'literal' };
 }
 
