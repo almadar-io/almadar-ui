@@ -27,6 +27,26 @@ const ring: PerfEntry[] = [];
 let writeIdx = 0;
 
 const subscribers = new Set<() => void>();
+let notifyScheduled = false;
+let revision = 0;
+let cachedSnapshot: readonly PerfEntry[] = [];
+let cachedRevision = -1;
+
+function scheduleNotify(): void {
+  // Deferred: pushes happen synchronously during render (compose-graph
+  // useMemo, buildMockData on the render path). Notifying subscribers
+  // synchronously would trigger setState in PerfHUD while the parent
+  // ProjectWorkspacePage is still rendering. queueMicrotask hops out of
+  // the current task so React can finish the in-flight render first; it
+  // also coalesces a burst of pushes into one notify.
+  if (notifyScheduled) return;
+  notifyScheduled = true;
+  queueMicrotask(() => {
+    notifyScheduled = false;
+    revision++;
+    for (const fn of subscribers) fn();
+  });
+}
 
 function push(entry: PerfEntry): void {
   if (ring.length < RING_SIZE) {
@@ -35,7 +55,7 @@ function push(entry: PerfEntry): void {
     ring[writeIdx] = entry;
   }
   writeIdx = (writeIdx + 1) % RING_SIZE;
-  for (const fn of subscribers) fn();
+  scheduleNotify();
 }
 
 function isEnabled(): boolean {
@@ -112,16 +132,6 @@ export function getPerfSnapshot(): readonly PerfEntry[] {
   return [...ring.slice(writeIdx), ...ring.slice(0, writeIdx)];
 }
 
-let cachedSnapshot: readonly PerfEntry[] = [];
-let cachedRevision = -1;
-let revision = 0;
-
-function bumpRevision(): void {
-  revision++;
-}
-
-subscribers.add(bumpRevision);
-
 function getSnapshot(): readonly PerfEntry[] {
   if (cachedRevision !== revision) {
     cachedSnapshot = getPerfSnapshot();
@@ -143,5 +153,5 @@ export function usePerfBuffer(): readonly PerfEntry[] {
 export function clearPerf(): void {
   ring.length = 0;
   writeIdx = 0;
-  for (const fn of subscribers) fn();
+  scheduleNotify();
 }
