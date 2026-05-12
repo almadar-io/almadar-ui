@@ -221,7 +221,15 @@ export const AvlTransitionScene: React.FC<AvlTransitionSceneProps> = ({
             {effects.map((eff, i) => {
               const rowY = secY + 22 + i * effectRowH;
               const effectType = mapEffectType(eff.type);
-              const argsText = eff.args.length > 0 ? eff.args.join(' · ') : '';
+              // args may be strings, numbers, or full render-ui pattern objects.
+              // Array.join coerces each via String() — which on an object returns
+              // '[object Object]'. JSON-stringify non-strings so the actual
+              // SExpr / pattern shape is readable.
+              const argsText = eff.args.length > 0
+                ? eff.args
+                    .map((a) => typeof a === 'string' ? a : JSON.stringify(a))
+                    .join(' · ')
+                : '';
               return (
                 <g key={`eff-${i}`}>
                   <AvlEffect
