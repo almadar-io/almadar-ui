@@ -568,17 +568,6 @@ function FlowCanvasInner({
           </Box>
         </Box>
 
-        {/* Status bar */}
-        <Box
-          className="absolute bottom-3 left-3 px-3 py-1 rounded-md bg-card/80 border border-border/40 backdrop-blur-sm"
-          style={{ zIndex: 10 }}
-        >
-          <Typography variant="small" className="text-muted-foreground text-[11px]">
-            {level === 'overview'
-              ? 'Double-click a module to explore its screens'
-              : 'Click a screen to view code \u00b7 Esc to go back'}
-          </Typography>
-        </Box>
       </Box>
 
       {/* OrbInspector (contextual, shows when something is selected) */}
