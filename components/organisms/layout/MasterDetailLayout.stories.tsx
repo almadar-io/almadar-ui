@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { MasterDetail } from './MasterDetail';
+import { MasterDetailLayout } from './MasterDetailLayout';
 import { Box } from '../../atoms/Box';
 import { Typography } from '../../atoms/Typography';
 import { useState } from 'react';
 
-const meta: Meta<typeof MasterDetail> = {
-    title: 'Core/Organisms/Layout/MasterDetail',
-    component: MasterDetail,
+const meta: Meta<typeof MasterDetailLayout> = {
+    title: 'Core/Organisms/Layout/MasterDetailLayout',
+    component: MasterDetailLayout,
     parameters: {
         layout: 'fullscreen',
         backgrounds: { default: 'wireframe' },
@@ -64,7 +64,7 @@ const InteractiveExample = () => {
     const selectedItem = sampleItems.find(item => item.id === selectedId);
 
     return (
-        <MasterDetail
+        <MasterDetailLayout
             master={<MasterList selectedId={selectedId} onSelect={setSelectedId} />}
             detail={selectedItem && <DetailView item={selectedItem} />}
             hasSelection={!!selectedItem}

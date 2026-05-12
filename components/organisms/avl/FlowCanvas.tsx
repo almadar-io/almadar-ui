@@ -14,7 +14,7 @@
  * Escape to go back. AVL overlays on hover (future).
  */
 
-import React, { useMemo, useState, useCallback, useEffect } from 'react';
+import React, { useMemo, useState, useCallback, useEffect, Profiler } from 'react';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -44,6 +44,7 @@ import { BehaviorComposeNode } from '../../molecules/avl/BehaviorComposeNode';
 import { behaviorsToComposeGraph } from '../../molecules/avl/avl-behavior-compose-converter';
 import type { ComposeViewLevel, BehaviorCanvasEntry, BehaviorWireEdgeData, BehaviorComposeNodeData } from '../../molecules/avl/avl-behavior-compose-types';
 import { createLogger } from '@almadar/logger';
+import { perfStart, perfEnd, profilerOnRender } from '../../../runtime/perf';
 
 // ---------------------------------------------------------------------------
 // Node & edge type registries
@@ -238,6 +239,7 @@ function FlowCanvasInner({
 
   // Compute graph for current level
   const { composeNodes, composeEdges, overviewNodes, overviewEdges, expandedNodes, expandedEdges } = useMemo(() => {
+    const t = perfStart('compose-graph');
     // Behavior-level compose graph
     const compose = (composeLevel === 'behavior' && behaviorEntries?.length)
       ? behaviorsToComposeGraph(behaviorEntries, behaviorWires ?? [], layoutHint)
@@ -247,6 +249,12 @@ function FlowCanvasInner({
     const expanded = expandedOrbital
       ? orbitalToExpandedGraph(parsedSchema, expandedOrbital, mockData)
       : { nodes: [], edges: [] };
+    perfEnd('compose-graph', t, {
+      composeNodes: compose.nodes.length,
+      overviewNodes: overview.nodes.length,
+      expandedNodes: expanded.nodes.length,
+      orbitalCount: parsedSchema.orbitals?.length ?? 0,
+    });
     return {
       composeNodes: compose.nodes,
       composeEdges: compose.edges,
@@ -255,7 +263,7 @@ function FlowCanvasInner({
       expandedNodes: expanded.nodes,
       expandedEdges: expanded.edges,
     };
-  }, [parsedSchema, expandedOrbital, behaviorMeta, layoutHint, composeLevel, behaviorEntries, behaviorWires]);
+  }, [parsedSchema, expandedOrbital, behaviorMeta, layoutHint, composeLevel, behaviorEntries, behaviorWires, mockData]);
 
   // Both compose and orbital nodes flow through the same React Flow instance.
   // Cast to Node<Record<string, unknown>> for the union.
@@ -595,9 +603,11 @@ function FlowCanvasInner({
 
 export const FlowCanvas: React.FC<FlowCanvasProps> = (props) => {
   return (
-    <ReactFlowProvider>
-      <FlowCanvasInner {...props} />
-    </ReactFlowProvider>
+    <Profiler id="flow-canvas" onRender={profilerOnRender}>
+      <ReactFlowProvider>
+        <FlowCanvasInner {...props} />
+      </ReactFlowProvider>
+    </Profiler>
   );
 };
 

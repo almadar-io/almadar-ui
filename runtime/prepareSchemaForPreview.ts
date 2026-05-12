@@ -22,6 +22,7 @@
  */
 
 import { isEntityCall } from '@almadar/core';
+import { perfStart, perfEnd } from './perf';
 import type {
   OrbitalSchema,
   Orbital,
@@ -105,6 +106,7 @@ function generateFieldValue(
  * @public
  */
 export function buildMockData(schema: OrbitalSchema): EntityData {
+  const t = perfStart('build-mock-data');
   const result: EntityData = {};
   for (const orbital of schema.orbitals) {
     const entity = orbital.entity;
@@ -123,6 +125,7 @@ export function buildMockData(schema: OrbitalSchema): EntityData {
     );
     result[entityName] = rows;
   }
+  perfEnd('build-mock-data', t, { orbitalCount: schema.orbitals.length, entityCount: Object.keys(result).length });
   return result;
 }
 

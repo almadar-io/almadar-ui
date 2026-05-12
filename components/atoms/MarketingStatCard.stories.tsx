@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { MarketingStatCard } from './StatCard';
+import { MarketingStatCard } from './MarketingStatCard';
 import { HStack } from './Stack';
 
 const meta: Meta<typeof MarketingStatCard> = {

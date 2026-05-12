@@ -74,3 +74,17 @@ export type {
     ResolvedPage,
     ResolvedIR,
 } from './types';
+
+// Perf instrumentation (workstream 2 of Almadar_Studio_Performance.md).
+// Gated behind createLogger('almadar:perf:canvas'); production strips the work.
+export {
+    PERF_NAMESPACE,
+    perfStart,
+    perfEnd,
+    perfTime,
+    profilerOnRender,
+    getPerfSnapshot,
+    usePerfBuffer,
+    clearPerf,
+    type PerfEntry,
+} from './perf';
