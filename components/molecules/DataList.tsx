@@ -399,14 +399,7 @@ export function DataList<T extends EntityRow = EntityRow>({
       const id = (itemData.id as string) || String(index);
       return (
         <Box key={id} data-entity-row data-entity-id={id}>
-          <Box
-            className={cn(
-              'group flex items-center gap-4 transition-all duration-200',
-              isCompact ? 'px-4 py-2' : 'px-6 py-4',
-              'hover:bg-muted/80',
-              !isCard && !isCompact && 'rounded-lg border border-transparent hover:border-border',
-            )}
-          >
+          <Box className="group flex items-stretch gap-2">
             <Box className="flex-1 min-w-0">
               {children(itemData as T, index)}
             </Box>

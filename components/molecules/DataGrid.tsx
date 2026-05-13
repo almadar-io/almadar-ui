@@ -381,14 +381,7 @@ export function DataGrid<T extends EntityRow = EntityRow>({
                 key={id}
                 data-entity-row
                 data-entity-id={id}
-                className={cn(
-                  'bg-card rounded-lg',
-                  'border border-border',
-                  'shadow-sm hover:shadow-lg',
-                  'hover:border-primary transition-all',
-                  'p-4',
-                  isSelected && 'ring-2 ring-primary border-primary',
-                )}
+                className={cn(isSelected && 'ring-2 ring-primary rounded-lg')}
               >
                 {children(itemData as T, index)}
               </Box>
