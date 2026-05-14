@@ -42,6 +42,7 @@ import type { PreviewNodeData, PatternEventSource, ScreenSize } from './avl-prev
 import { SCREEN_SIZE_PRESETS } from './avl-preview-types';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { ALMADAR_DND_MIME, type DraggablePayload } from '../../../hooks/useDraggable';
+import { useDropZone } from '../../../hooks/useDropZone';
 import { formatPayloadTooltip } from './wire-validation';
 import { createLogger } from '@almadar/logger';
 
@@ -600,19 +601,106 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   const borderWidth = isRunning || isError || isSuccess ? '2px' : '1.5px';
   const borderColor = statusBorder ?? (hovered ? 'var(--color-primary)' : colors.border);
 
+  // L1 outer drop zone — fires when a palette-pattern is dropped on the
+  // orbital's frame (header / padding) outside the inner render-ui preview.
+  // Emits UI:PATTERN_DROP with a partial containerNode (orbital only) so the
+  // page-level handler can resolve to the orbital's first render-ui transition
+  // and drill into L2 to show the result. L2 nodes don't need this — their
+  // contentRef drop handler already provides precise (trait, transition,
+  // path, index) placement.
+  const handleL1Drop = useCallback(
+    (payload: DraggablePayload) => {
+      if (payload.kind !== 'pattern') return;
+      if (typeof payload.data.type !== 'string') return;
+      eventBus.emit('UI:PATTERN_DROP', {
+        patternType: payload.data.type,
+        containerNode: { orbitalName: data.orbitalName },
+      });
+    },
+    [eventBus, data.orbitalName],
+  );
+  const { dropProps: l1DropProps, isOver: l1IsOver } = useDropZone({
+    accepts: ['pattern'],
+    onDrop: handleL1Drop,
+    disabled: isExpanded,
+  });
+
   return (
     <Box
+      {...(isExpanded ? {} : l1DropProps)}
       className={`rounded-lg border shadow-sm bg-card transition-all duration-200 overflow-hidden relative${isRunning ? ' orb-preview-running' : ''}`}
       style={{
-        borderColor,
-        borderWidth,
+        borderColor: l1IsOver ? 'var(--color-primary)' : borderColor,
+        borderWidth: l1IsOver ? '2px' : borderWidth,
         width: preset.width,
+        boxShadow: l1IsOver ? '0 0 0 3px var(--color-primary), 0 0 12px var(--color-primary)' : undefined,
       }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {/* Inject selection highlight CSS */}
       <style>{SELECTION_STYLES}</style>
+
+      {/* L1 affordances — only render at overview level (no traitName).
+          Preview badge is always visible so the user knows the embedded
+          render is sample data. Click-to-open overlay surfaces on hover.
+          Drop-to-place overlay surfaces when a palette pattern is being
+          dragged anywhere on the canvas. */}
+      {!isExpanded && (
+        <>
+          <Box
+            className="absolute top-1.5 left-1.5 rounded px-1 py-[1px] text-[8px] font-mono uppercase tracking-wider pointer-events-none"
+            style={{
+              backgroundColor: 'var(--color-muted)',
+              color: 'var(--color-muted-foreground)',
+              zIndex: 3,
+            }}
+          >
+            Preview
+          </Box>
+          {hovered && !dragActive && !l1IsOver && (
+            <Box
+              className="absolute inset-0 flex items-center justify-center pointer-events-none"
+              style={{
+                backgroundColor: 'rgba(0,0,0,0.04)',
+                zIndex: 2,
+              }}
+            >
+              <Box
+                className="rounded-md px-2 py-1 text-[11px] font-medium flex items-center gap-1"
+                style={{
+                  backgroundColor: 'var(--color-card)',
+                  color: 'var(--color-foreground)',
+                  boxShadow: 'var(--shadow-main)',
+                }}
+              >
+                <span style={{ fontSize: 12 }}>{'➞'}</span>
+                Click to open
+              </Box>
+            </Box>
+          )}
+          {(dragActive || l1IsOver) && (
+            <Box
+              className="absolute inset-0 flex items-center justify-center pointer-events-none"
+              style={{
+                backgroundColor: l1IsOver ? 'rgba(20,184,166,0.15)' : 'rgba(20,184,166,0.06)',
+                zIndex: 2,
+              }}
+            >
+              <Box
+                className="rounded-md px-2 py-1 text-[11px] font-semibold"
+                style={{
+                  backgroundColor: 'var(--color-primary)',
+                  color: 'var(--color-primary-foreground)',
+                  boxShadow: 'var(--shadow-lg)',
+                }}
+              >
+                Drop to add and open
+              </Box>
+            </Box>
+          )}
+        </>
+      )}
       {/* Running-state pulse — subtle inner glow + corner spinner. Inert to
           pointer events so the existing canvas interactions stay intact. */}
       {isRunning && (

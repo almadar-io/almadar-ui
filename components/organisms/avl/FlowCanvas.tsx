@@ -379,7 +379,9 @@ function FlowCanvasInner({
     }
   }, [level, onLevelChange, onOrbitalDoubleClick, cosmicEntryLevel, atBehaviorLevel, composeLevel]);
 
-  // Click at expanded → show transition panel + fire callback
+  // Click at expanded → show transition panel + fire callback.
+  // Click at overview → drill into the orbital (Phase 4: lowered from
+  // double-click). Double-click stays reserved for cosmic at L1.
   const handleNodeClick = useCallback((_: React.MouseEvent, node: { id: string; data: Record<string, unknown> }) => {
     const nodeData = node.data as PreviewNodeData;
     if (level === 'expanded') {
@@ -391,13 +393,14 @@ function FlowCanvasInner({
         transition: nodeData.transitionEvent,
       });
     } else {
-      onNodeClick?.({
-        level: 'overview',
-        orbital: nodeData.orbitalName ?? node.id,
-      });
-      onNodeSelect?.(nodeData.orbitalName ?? node.id);
+      const orbitalName = nodeData.orbitalName ?? node.id;
+      onNodeClick?.({ level: 'overview', orbital: orbitalName });
+      onNodeSelect?.(orbitalName);
+      setExpandedOrbital(orbitalName);
+      setLevel('expanded');
+      onLevelChange?.('expanded', orbitalName);
     }
-  }, [level, expandedOrbital, onNodeClick]);
+  }, [level, expandedOrbital, onNodeClick, onNodeSelect, onLevelChange]);
 
   // Close transition panel
   const handleClosePanel = useCallback(() => {
