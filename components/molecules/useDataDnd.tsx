@@ -76,9 +76,18 @@ interface ZoneMeta {
   itemIds: UniqueIdentifier[];
 }
 
+interface ActiveDrag {
+  /** Source zone's group key — used by other zones to decide whether to show a Trello-style placeholder slot when hovering. */
+  sourceGroup: string;
+  /** Measured pixel height of the source item — placeholder slot uses this to reserve the right visual space. */
+  height: number;
+}
+
 interface RootContext {
   registerZone: (zoneId: string, meta: ZoneMeta) => void;
   unregisterZone: (zoneId: string) => void;
+  /** Currently-active drag info; null when nothing is being dragged. Exposed so DropZoneShell can show a placeholder slot for cross-zone drops. */
+  activeDrag: ActiveDrag | null;
 }
 
 const RootCtx = React.createContext<RootContext | null>(null);
@@ -156,6 +165,11 @@ export function useDataDnd<T extends EntityRow>(
   const unregisterZone = React.useCallback((zoneId: string) => {
     zonesRef.current.delete(zoneId);
   }, []);
+
+  // Root tracks the currently-dragging item's source group + measured height
+  // so foreign zones can render a Trello-style placeholder slot of the right
+  // size while the user hovers over them.
+  const [activeDrag, setActiveDrag] = React.useState<ActiveDrag | null>(null);
 
   const zoneId = React.useId();
   const ownGroup = dragGroup ?? accepts ?? zoneId;
@@ -363,9 +377,17 @@ export function useDataDnd<T extends EntityRow>(
       id: droppableId,
       data: sortableData,
     });
+    // Read the root's activeDrag so we know when to show a Trello-style
+    // placeholder slot. The slot only appears when a card from a DIFFERENT
+    // zone is hovering over this zone — in-zone reorder already gets the
+    // SortableContext's built-in shift animation.
+    const ctx = React.useContext(RootCtx);
+    const activeDrag = ctx?.activeDrag ?? null;
+    const showForeignPlaceholder =
+      isOver && activeDrag != null && activeDrag.sourceGroup !== ownGroup;
     React.useEffect(() => {
-      dndLog.debug('dropzone:isOver:change', { droppableId, group: ownGroup, isOver });
-    }, [droppableId, isOver]);
+      dndLog.debug('dropzone:isOver:change', { droppableId, group: ownGroup, isOver, showForeignPlaceholder });
+    }, [droppableId, isOver, showForeignPlaceholder]);
     return (
       <Box
         ref={setNodeRef as React.Ref<HTMLDivElement>}
@@ -378,21 +400,37 @@ export function useDataDnd<T extends EntityRow>(
         }
       >
         {children}
+        {showForeignPlaceholder ? (
+          <Box
+            data-dnd-placeholder
+            style={{ height: activeDrag.height }}
+            className="border-2 border-dashed border-primary/60 bg-primary/5 rounded-md my-1 transition-all"
+          />
+        ) : null}
       </Box>
     );
   };
 
   const rootContextValue: RootContext = React.useMemo(
-    () => ({ registerZone, unregisterZone }),
-    [registerZone, unregisterZone],
+    () => ({ registerZone, unregisterZone, activeDrag }),
+    [registerZone, unregisterZone, activeDrag],
   );
 
   const handleDragStart = React.useCallback((event: DragStartEvent) => {
     const sourceZone = findZoneByItem(event.active.id);
+    // Measure the actual source DOM height so the placeholder slot matches
+    // visually. activatorNode is the [data-dnd-item] wrapper; fall back to
+    // a sensible default if dnd-kit hasn't measured it yet.
+    const rect = event.active.rect.current.initial;
+    const height = rect?.height && rect.height > 0 ? rect.height : 64;
+    if (sourceZone) {
+      setActiveDrag({ sourceGroup: sourceZone.group, height });
+    }
     dndLog.info('dragStart', {
       activeId: event.active.id,
       activeData: event.active.data?.current,
       sourceGroup: sourceZone?.group,
+      height,
       zoneCount: zonesRef.current.size,
     });
   }, [findZoneByItem]);
@@ -406,11 +444,18 @@ export function useDataDnd<T extends EntityRow>(
   }, []);
 
   const handleDragCancel = React.useCallback((event: DragCancelEvent) => {
+    setActiveDrag(null);
     dndLog.warn('dragCancel', {
       activeId: event.active.id,
       reason: 'dnd-kit cancelled the drag (escape key, pointer interrupted, or external)',
     });
   }, []);
+
+  // Wrap handleDragEnd to also clear activeDrag so the placeholder disappears.
+  const handleDragEndWithCleanup = React.useCallback((event: DragEndEvent) => {
+    handleDragEnd(event);
+    setActiveDrag(null);
+  }, [handleDragEnd]);
 
   const wrapContainer = React.useCallback(
     (children: React.ReactNode): React.ReactNode => {
@@ -427,7 +472,7 @@ export function useDataDnd<T extends EntityRow>(
               collisionDetection={collisionDetection}
               onDragStart={handleDragStart}
               onDragOver={handleDragOver}
-              onDragEnd={handleDragEnd}
+              onDragEnd={handleDragEndWithCleanup}
               onDragCancel={handleDragCancel}
             >
               {children}
@@ -450,7 +495,7 @@ export function useDataDnd<T extends EntityRow>(
               collisionDetection={collisionDetection}
               onDragStart={handleDragStart}
               onDragOver={handleDragOver}
-              onDragEnd={handleDragEnd}
+              onDragEnd={handleDragEndWithCleanup}
               onDragCancel={handleDragCancel}
             >
               {inner}
@@ -460,7 +505,7 @@ export function useDataDnd<T extends EntityRow>(
       }
       return inner;
     },
-    [enabled, isZone, layout, sensors, collisionDetection, handleDragStart, handleDragOver, handleDragEnd, handleDragCancel, itemIds, isRoot, rootContextValue],
+    [enabled, isZone, layout, sensors, collisionDetection, handleDragStart, handleDragOver, handleDragEndWithCleanup, handleDragCancel, itemIds, isRoot, rootContextValue],
   );
 
   return {
