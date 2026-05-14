@@ -263,17 +263,21 @@ export function useDataDnd<T extends EntityRow>(
       }
 
       if (sourceZone.group !== targetZone.group) {
-        // Cross-container drop — fire dropEvent on the TARGET zone
+        // Cross-container drop — fire dropEvent on the TARGET zone.
+        // Use the UI: prefix so the bus auto-qualifies to UI:<Orbital>.<Trait>.<X>,
+        // matching the contract that action buttons (UI:${action.event}) use and
+        // that the trait's useUIEvents subscriber listens for.
         if (targetZone.dropEvent) {
           const newIndex = targetZone.itemIds.indexOf(over.id);
+          const evt = `UI:${targetZone.dropEvent}`;
           dndLog.info('dragEnd:cross-container:emit', {
-            event: targetZone.dropEvent,
+            event: evt,
             id: String(active.id),
             sourceGroup: sourceZone.group,
             targetGroup: targetZone.group,
             newIndex: newIndex === -1 ? targetZone.itemIds.length : newIndex,
           });
-          eventBus.emit(targetZone.dropEvent, {
+          eventBus.emit(evt, {
             id: String(active.id),
             sourceGroup: sourceZone.group,
             targetGroup: targetZone.group,
@@ -296,13 +300,16 @@ export function useDataDnd<T extends EntityRow>(
         setLocalOrder(reordered);
       }
       if (sourceZone.reorderEvent) {
+        // See cross-container branch: emit through `UI:` so the bus auto-
+        // qualifies and the trait's useUIEvents subscriber receives it.
+        const evt = `UI:${sourceZone.reorderEvent}`;
         dndLog.info('dragEnd:reorder:emit', {
-          event: sourceZone.reorderEvent,
+          event: evt,
           id: String(active.id),
           oldIndex,
           newIndex,
         });
-        eventBus.emit(sourceZone.reorderEvent, {
+        eventBus.emit(evt, {
           id: String(active.id),
           oldIndex,
           newIndex,
