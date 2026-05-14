@@ -74,6 +74,12 @@ interface ZoneMeta {
   dropEvent?: EventKey;
   reorderEvent?: EventKey;
   itemIds: UniqueIdentifier[];
+  /** Raw items as provided by the consumer's `items` prop. The root reads this
+   *  during cross-zone splice to find the dragged item's data when moving it
+   *  out of its source zone and into the target zone's optimistic order. */
+  rawItems: readonly EntityRow[];
+  /** Field name to use for item id lookups (same as dndItemIdField on the consumer). */
+  idField: string;
 }
 
 interface ActiveDrag {
@@ -90,6 +96,13 @@ interface RootContext {
   activeDrag: ActiveDrag | null;
   /** Group of the zone currently being hovered, derived from over.data.dndGroup in onDragOver. Used by DropZoneShell because @dnd-kit's `isOver` returns false on the zone shell when the pointer is over an inner SortableItem (the item is its own droppable). */
   overZoneGroup: string | null;
+  /** Per-zone optimistic items, keyed by group. Each zone's hook reads its
+   *  own group's entry as the rendered order. Root mutates on onDragOver
+   *  (same-zone arrayMove or cross-zone splice). */
+  optimisticOrders: ReadonlyMap<string, readonly EntityRow[]>;
+  /** Inner zones call this when their `items` prop signature changes so the
+   *  optimistic order is cleared (server refetched fresh data). */
+  clearOptimisticOrder: (group: string) => void;
 }
 
 const RootCtx = React.createContext<RootContext | null>(null);
@@ -129,14 +142,33 @@ export function useDataDnd<T extends EntityRow>(
   const parentRoot = React.useContext(RootCtx);
   const isRoot = enabled && parentRoot === null;
 
-  // Visual reorder state — applied immediately so the user sees the drop land,
-  // cleared when fresh items arrive from the trait's persist round-trip.
-  const [localOrder, setLocalOrder] = React.useState<readonly T[] | null>(null);
-  const orderedItems = localOrder ?? items;
+  const zoneId = React.useId();
+  const ownGroup = dragGroup ?? accepts ?? zoneId;
 
-  React.useEffect(() => {
-    setLocalOrder(null);
-  }, [items]);
+  // Root-owned optimistic order state, keyed by zone group. Each zone reads
+  // its own group's entry as the rendered order. The root mutates on
+  // onDragOver (arrayMove for same-zone reorder; cross-zone splice for moves).
+  // A ref tracks the latest map so onDragOver/onDragEnd callbacks read fresh
+  // state without stale closures.
+  const [optimisticOrders, setOptimisticOrders] = React.useState<Map<string, readonly EntityRow[]>>(() => new Map());
+  const optimisticOrdersRef = React.useRef(optimisticOrders);
+  optimisticOrdersRef.current = optimisticOrders;
+  const clearOptimisticOrder = React.useCallback((group: string) => {
+    setOptimisticOrders((prev) => {
+      if (!prev.has(group)) return prev;
+      const next = new Map(prev);
+      next.delete(group);
+      return next;
+    });
+  }, []);
+
+  // The orderedItems shown by this hook's consumer come from the SHARED root
+  // map (local if this hook is root, parentRoot's otherwise). Fall back to the
+  // raw `items` prop when nothing optimistic is stored.
+  const sharedOptimistic: ReadonlyMap<string, readonly EntityRow[]> = isRoot
+    ? optimisticOrders
+    : parentRoot?.optimisticOrders ?? new Map();
+  const orderedItems = (sharedOptimistic.get(ownGroup) ?? items) as readonly T[];
 
   // Memoize itemIds by content signature so the array reference is stable
   // across renders when IDs don't change. dnd-kit's SortableContext keeps
@@ -158,6 +190,24 @@ export function useDataDnd<T extends EntityRow>(
     [itemIdsSignature],
   );
 
+  // When the consumer's `items` prop changes content (server refetched fresh
+  // data), drop this zone's optimistic order so we fall back to the new items.
+  // Watch the underlying items' signature, NOT the items reference (which
+  // changes every render in DataList/DataGrid).
+  const itemsContentSig = (items as readonly EntityRow[])
+    .map((it, idx) => String((it as Record<string, unknown>)[dndItemIdField] ?? `__${idx}`))
+    .join('|');
+  React.useEffect(() => {
+    const root = isRoot ? null : parentRoot;
+    if (root) {
+      root.clearOptimisticOrder(ownGroup);
+    } else {
+      // We ARE the root — clear our own entry for this group.
+      clearOptimisticOrder(ownGroup);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemsContentSig, ownGroup]);
+
   // Root maintains a registry of zones so onDragEnd can resolve source/target
   // groups + event names. Inner zones populate it via the registerZone callback.
   const zonesRef = React.useRef<Map<string, ZoneMeta>>(new Map());
@@ -174,11 +224,9 @@ export function useDataDnd<T extends EntityRow>(
   const [activeDrag, setActiveDrag] = React.useState<ActiveDrag | null>(null);
   const [overZoneGroup, setOverZoneGroup] = React.useState<string | null>(null);
 
-  const zoneId = React.useId();
-  const ownGroup = dragGroup ?? accepts ?? zoneId;
   const meta: ZoneMeta = React.useMemo(
-    () => ({ group: ownGroup, dropEvent, reorderEvent, itemIds }),
-    [ownGroup, dropEvent, reorderEvent, itemIds],
+    () => ({ group: ownGroup, dropEvent, reorderEvent, itemIds, rawItems: items as readonly EntityRow[], idField: dndItemIdField }),
+    [ownGroup, dropEvent, reorderEvent, itemIds, items, dndItemIdField],
   );
 
   React.useEffect(() => {
@@ -248,94 +296,85 @@ export function useDataDnd<T extends EntityRow>(
   const handleDragEnd = React.useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event;
-      const allZones = Array.from(zonesRef.current.entries()).map(([id, m]) => ({ id, group: m.group, items: m.itemIds.length }));
+      const activeIdStr = String(active.id);
       dndLog.debug('dragEnd:received', {
         activeId: active.id,
         overId: over?.id,
         overData: over?.data?.current,
-        zones: allZones,
       });
-      if (!over) {
-        dndLog.warn('dragEnd:abort:no-over', { activeId: active.id, reason: 'no droppable under pointer at drop time → item snaps back' });
+
+      // The optimistic state already reflects the final positions because
+      // onDragOver mutated it on every move. Read it to compute oldIndex/
+      // newIndex/sourceGroup/targetGroup.
+      // Source = the zone that ORIGINALLY contained the item (find in rawItems).
+      // Target = the zone that CURRENTLY contains the item in optimistic state.
+      let sourceMeta: ZoneMeta | undefined;
+      let oldIndex = -1;
+      let targetMeta: ZoneMeta | undefined;
+      let newIndex = -1;
+      for (const m of zonesRef.current.values()) {
+        const rawIdx = m.rawItems.findIndex((it) => String((it as Record<string, unknown>)[m.idField]) === activeIdStr);
+        if (rawIdx >= 0) {
+          sourceMeta = m;
+          oldIndex = rawIdx;
+        }
+        const currentItems = optimisticOrdersRef.current.get(m.group) ?? m.rawItems;
+        const curIdx = currentItems.findIndex((it) => String((it as Record<string, unknown>)[m.idField]) === activeIdStr);
+        if (curIdx >= 0) {
+          targetMeta = m;
+          newIndex = curIdx;
+        }
+      }
+      if (!sourceMeta || !targetMeta) {
+        dndLog.warn('dragEnd:abort:no-zone-resolved', { activeId: active.id, hasSource: !!sourceMeta, hasTarget: !!targetMeta });
         return;
       }
 
-      const sourceZone = findZoneByItem(active.id);
-      // The drop target's group is announced by the SortableItem / DropZone wrappers
-      const overData = over.data?.current as { dndGroup?: string } | undefined;
-      const targetGroup = overData?.dndGroup;
-      dndLog.debug('dragEnd:resolved', { sourceGroup: sourceZone?.group, targetGroup, overDataKeys: overData ? Object.keys(overData) : null });
-      if (!sourceZone) {
-        dndLog.warn('dragEnd:abort:no-source-zone', { activeId: active.id });
-        return;
-      }
-      if (!targetGroup) {
-        dndLog.warn('dragEnd:abort:no-target-group', { overId: over.id, overData });
-        return;
-      }
-      const targetZone = findZoneByGroup(targetGroup);
-      if (!targetZone) {
-        dndLog.warn('dragEnd:abort:target-zone-not-registered', { targetGroup });
-        return;
-      }
-
-      if (sourceZone.group !== targetZone.group) {
-        // Cross-container drop — fire dropEvent on the TARGET zone.
-        // Use the UI: prefix so the bus auto-qualifies to UI:<Orbital>.<Trait>.<X>,
-        // matching the contract that action buttons (UI:${action.event}) use and
-        // that the trait's useUIEvents subscriber listens for.
-        if (targetZone.dropEvent) {
-          const newIndex = targetZone.itemIds.indexOf(over.id);
-          const evt = `UI:${targetZone.dropEvent}`;
+      if (sourceMeta.group !== targetMeta.group) {
+        if (targetMeta.dropEvent) {
+          const evt = `UI:${targetMeta.dropEvent}`;
           dndLog.info('dragEnd:cross-container:emit', {
             event: evt,
-            id: String(active.id),
-            sourceGroup: sourceZone.group,
-            targetGroup: targetZone.group,
-            newIndex: newIndex === -1 ? targetZone.itemIds.length : newIndex,
+            id: activeIdStr,
+            sourceGroup: sourceMeta.group,
+            targetGroup: targetMeta.group,
+            newIndex,
           });
           eventBus.emit(evt, {
-            id: String(active.id),
-            sourceGroup: sourceZone.group,
-            targetGroup: targetZone.group,
-            newIndex: newIndex === -1 ? targetZone.itemIds.length : newIndex,
+            id: activeIdStr,
+            sourceGroup: sourceMeta.group,
+            targetGroup: targetMeta.group,
+            newIndex,
           });
         } else {
-          dndLog.warn('dragEnd:cross-container:no-dropEvent-on-target', { targetGroup: targetZone.group });
+          dndLog.warn('dragEnd:cross-container:no-dropEvent-on-target', { targetGroup: targetMeta.group });
         }
         return;
       }
 
-      // In-container reorder
-      const oldIndex = sourceZone.itemIds.indexOf(active.id);
-      const newIndex = sourceZone.itemIds.indexOf(over.id);
-      if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return;
-
-      // Apply visual reorder if this is the same zone we own
-      if (sourceZone.group === ownGroup) {
-        const reordered = arrayMove(orderedItems as T[], oldIndex, newIndex);
-        setLocalOrder(reordered);
+      // Same-zone reorder
+      if (oldIndex === newIndex) {
+        dndLog.debug('dragEnd:reorder:no-op', { sourceGroup: sourceMeta.group, oldIndex });
+        return;
       }
-      if (sourceZone.reorderEvent) {
-        // See cross-container branch: emit through `UI:` so the bus auto-
-        // qualifies and the trait's useUIEvents subscriber receives it.
-        const evt = `UI:${sourceZone.reorderEvent}`;
+      if (sourceMeta.reorderEvent) {
+        const evt = `UI:${sourceMeta.reorderEvent}`;
         dndLog.info('dragEnd:reorder:emit', {
           event: evt,
-          id: String(active.id),
+          id: activeIdStr,
           oldIndex,
           newIndex,
         });
         eventBus.emit(evt, {
-          id: String(active.id),
+          id: activeIdStr,
           oldIndex,
           newIndex,
         });
       } else {
-        dndLog.debug('dragEnd:reorder:no-reorderEvent', { sourceGroup: sourceZone.group });
+        dndLog.debug('dragEnd:reorder:no-reorderEvent', { sourceGroup: sourceMeta.group });
       }
     },
-    [orderedItems, ownGroup, findZoneByItem, findZoneByGroup, eventBus],
+    [eventBus],
   );
 
   const sortableData = React.useMemo(() => ({ dndGroup: ownGroup }), [ownGroup]);
@@ -415,25 +454,18 @@ export function useDataDnd<T extends EntityRow>(
         data-dnd-is-over={isThisZoneOver ? 'true' : 'false'}
         className={
           isThisZoneOver
-            ? 'ring-2 ring-primary ring-offset-2 rounded-lg transition-all min-h-[3rem]'
+            ? 'ring-2 ring-primary/40 ring-offset-2 rounded-lg transition-all min-h-[3rem]'
             : 'min-h-[3rem] rounded-lg transition-all'
         }
       >
         {children}
-        {showForeignPlaceholder ? (
-          <Box
-            data-dnd-placeholder
-            style={{ height: activeDrag.height }}
-            className="border-2 border-dashed border-primary/60 bg-primary/5 rounded-md my-1 transition-all"
-          />
-        ) : null}
       </Box>
     );
   };
 
   const rootContextValue: RootContext = React.useMemo(
-    () => ({ registerZone, unregisterZone, activeDrag, overZoneGroup }),
-    [registerZone, unregisterZone, activeDrag, overZoneGroup],
+    () => ({ registerZone, unregisterZone, activeDrag, overZoneGroup, optimisticOrders, clearOptimisticOrder }),
+    [registerZone, unregisterZone, activeDrag, overZoneGroup, optimisticOrders, clearOptimisticOrder],
   );
 
   const handleDragStart = React.useCallback((event: DragStartEvent) => {
@@ -460,13 +492,84 @@ export function useDataDnd<T extends EntityRow>(
   }, [findZoneByItem, isRoot, zoneId]);
 
   const handleDragOver = React.useCallback((event: DragOverEvent) => {
-    const overData = event.over?.data?.current as { dndGroup?: string } | undefined;
-    const group = overData?.dndGroup ?? null;
-    setOverZoneGroup(group);
-    dndLog.debug('dragOver', {
-      activeId: event.active.id,
-      overId: event.over?.id,
-      overGroup: group,
+    const { active, over } = event;
+    const overData = over?.data?.current as { dndGroup?: string } | undefined;
+    const overGroup = overData?.dndGroup ?? null;
+    setOverZoneGroup(overGroup);
+
+    if (!over || !overGroup) return;
+    // Find the source zone by searching the optimistic + raw items for active.id.
+    // We must walk via zonesRef because optimisticOrders may not yet contain
+    // every zone (only zones that have been mutated have entries).
+    const activeIdStr = String(active.id);
+    let sourceMeta: ZoneMeta | undefined;
+    let sourceGroup: string | undefined;
+    for (const m of zonesRef.current.values()) {
+      const currentItems = optimisticOrdersRef.current.get(m.group) ?? m.rawItems;
+      const found = currentItems.find((it) => String((it as Record<string, unknown>)[m.idField]) === activeIdStr);
+      if (found) {
+        sourceMeta = m;
+        sourceGroup = m.group;
+        break;
+      }
+    }
+    if (!sourceMeta || !sourceGroup) {
+      dndLog.debug('dragOver:no-source-zone', { activeId: active.id });
+      return;
+    }
+    // Find the target zone meta by group
+    let targetMeta: ZoneMeta | undefined;
+    for (const m of zonesRef.current.values()) {
+      if (m.group === overGroup) {
+        targetMeta = m;
+        break;
+      }
+    }
+    if (!targetMeta) {
+      dndLog.debug('dragOver:no-target-zone', { overGroup });
+      return;
+    }
+
+    if (sourceGroup === overGroup) {
+      // Same-zone reorder: arrayMove items at indices [activeIdx, overIdx].
+      setOptimisticOrders((prev) => {
+        const currentItems = prev.get(sourceGroup!) ?? sourceMeta!.rawItems;
+        const oldIndex = currentItems.findIndex((it) => String((it as Record<string, unknown>)[sourceMeta!.idField]) === activeIdStr);
+        const newIndex = currentItems.findIndex((it) => String((it as Record<string, unknown>)[sourceMeta!.idField]) === String(over.id));
+        if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return prev;
+        const reordered = arrayMove([...currentItems] as EntityRow[], oldIndex, newIndex);
+        const next = new Map(prev);
+        next.set(sourceGroup!, reordered);
+        return next;
+      });
+      return;
+    }
+
+    // Cross-zone splice: remove active from source, insert into target at the
+    // over-id's index (or at the end when over is the zone shell itself).
+    setOptimisticOrders((prev) => {
+      const currentSource = prev.get(sourceGroup!) ?? sourceMeta!.rawItems;
+      const currentTarget = prev.get(overGroup) ?? targetMeta!.rawItems;
+      const activeItem = currentSource.find((it) => String((it as Record<string, unknown>)[sourceMeta!.idField]) === activeIdStr);
+      if (!activeItem) return prev;
+      // Already in target? (multi-fire onDragOver) — skip if active already in target.
+      if (currentTarget.some((it) => String((it as Record<string, unknown>)[targetMeta!.idField]) === activeIdStr)) {
+        return prev;
+      }
+      const newSource = currentSource.filter((it) => String((it as Record<string, unknown>)[sourceMeta!.idField]) !== activeIdStr);
+      const overIdStr = String(over.id);
+      const overIndex = currentTarget.findIndex((it) => String((it as Record<string, unknown>)[targetMeta!.idField]) === overIdStr);
+      const insertAt = overIndex >= 0 ? overIndex : currentTarget.length;
+      const newTarget: EntityRow[] = [
+        ...(currentTarget.slice(0, insertAt) as EntityRow[]),
+        activeItem as EntityRow,
+        ...(currentTarget.slice(insertAt) as EntityRow[]),
+      ];
+      const next = new Map(prev);
+      next.set(sourceGroup!, newSource);
+      next.set(overGroup, newTarget);
+      dndLog.debug('dragOver:cross-zone:splice', { sourceGroup, overGroup, sourceLen: newSource.length, targetLen: newTarget.length, insertAt });
+      return next;
     });
   }, []);
 
