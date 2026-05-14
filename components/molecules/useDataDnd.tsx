@@ -385,8 +385,19 @@ export function useDataDnd<T extends EntityRow>(
     const activeDrag = ctx?.activeDrag ?? null;
     const showForeignPlaceholder =
       isOver && activeDrag != null && activeDrag.sourceGroup !== ownGroup;
+    // Per-render log so we can see EVERY frame's view of the world, not just
+    // the edge transitions. While debugging the placeholder slot, this is
+    // the only reliable signal showing "did this zone see activeDrag get set?".
+    dndLog.debug('dropzone:render', {
+      group: ownGroup,
+      isOver,
+      activeDragSourceGroup: activeDrag?.sourceGroup ?? null,
+      activeDragHeight: activeDrag?.height ?? null,
+      showForeignPlaceholder,
+      ctxAvailable: ctx != null,
+    });
     React.useEffect(() => {
-      dndLog.debug('dropzone:isOver:change', { droppableId, group: ownGroup, isOver, showForeignPlaceholder });
+      dndLog.info('dropzone:isOver:change', { droppableId, group: ownGroup, isOver, showForeignPlaceholder, activeDragSourceGroup: activeDrag?.sourceGroup ?? null });
     }, [droppableId, isOver, showForeignPlaceholder]);
     return (
       <Box
@@ -425,6 +436,9 @@ export function useDataDnd<T extends EntityRow>(
     const height = rect?.height && rect.height > 0 ? rect.height : 64;
     if (sourceZone) {
       setActiveDrag({ sourceGroup: sourceZone.group, height });
+      dndLog.info('dragStart:activeDrag:set', { sourceGroup: sourceZone.group, height, isRoot, hookZoneId: zoneId });
+    } else {
+      dndLog.warn('dragStart:no-source-zone', { activeId: event.active.id, zoneCount: zonesRef.current.size, isRoot });
     }
     dndLog.info('dragStart', {
       activeId: event.active.id,
@@ -432,8 +446,9 @@ export function useDataDnd<T extends EntityRow>(
       sourceGroup: sourceZone?.group,
       height,
       zoneCount: zonesRef.current.size,
+      isRoot,
     });
-  }, [findZoneByItem]);
+  }, [findZoneByItem, isRoot, zoneId]);
 
   const handleDragOver = React.useCallback((event: DragOverEvent) => {
     dndLog.debug('dragOver', {
