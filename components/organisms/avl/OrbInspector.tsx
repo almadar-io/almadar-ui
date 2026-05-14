@@ -241,11 +241,24 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
     return JSON.stringify(orbital, null, 2);
   }, [schema, orbitalName, traitName, transitionEvent, isExpanded]);
 
-  // W1: Pattern prop editing via EventBus
+  // W1: Pattern prop editing via EventBus. Selection context goes with the
+  // payload so the page-level dispatcher can fork between the project schema
+  // (schemaEditor.updatePatternProp) and the synthesized Design System schema
+  // (themeManifest.setToken) without consulting any global ref.
   const handlePropChange = useCallback((propName: string, value: EventPayloadValue) => {
     if (!editable) return;
-    eventBus.emit('UI:PROP_CHANGE', { propName, value });
-  }, [editable, eventBus]);
+    eventBus.emit('UI:PROP_CHANGE', {
+      propName,
+      value,
+      selection: {
+        sourceSchemaName: selectedPattern?.nodeData.sourceSchemaName,
+        patternPath: selectedPattern?.patternId,
+        orbitalName,
+        traitName,
+        transitionEvent,
+      },
+    });
+  }, [editable, eventBus, selectedPattern, orbitalName, traitName, transitionEvent]);
 
   // W2: Entity field mutations via EventBus
   const handleAddField = useCallback(() => {
@@ -349,16 +362,17 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
             />
           </Box>
         ) : activeTab === 'styles' ? (
-          /* ── Styles Tab (read-only in Phase 2) ──
-             Phase 2 ships a token-only viewer with no editing. The proper
-             tokenContract on PatternDefinition lands in Phase 6; until then
-             we fall back to a static map of well-known atoms keyed by
-             pattern type. Patterns missing from the map render a placeholder
-             so the gap is visible rather than silently empty. */
-          <StylesTabReadOnly
+          /* ── Styles Tab ──
+             Variant + size pills are clickable when `editable` and emit
+             `UI:PROP_CHANGE` with the selection context. The page-level
+             dispatcher routes those events to the project schemaEditor or
+             to the theme manifest based on `selection.sourceSchemaName`. */
+          <StylesTab
             patternType={patternType}
             patternDef={patternDef}
             patternConfig={patternConfig}
+            editable={editable}
+            onPropChange={handlePropChange}
           />
         ) : (
           /* ── Inspector Tab ── */
@@ -698,15 +712,16 @@ function OrbPatternTree({ config, depth }: { config: Record<string, unknown>; de
 OrbInspector.displayName = 'OrbInspector';
 
 // ---------------------------------------------------------------------------
-// Styles tab (Phase 2 — read-only viewer)
+// Styles tab — variant/size editor
 // ---------------------------------------------------------------------------
 
 /**
- * Phase-2 stopgap token contract. Maps well-known atoms to the CSS variables
- * their default rendering consumes. Replaced in Phase 6 by a real
- * `tokenContract` field on @almadar/patterns PatternEntry, sourced from
- * @almadar/ui component analysis. Patterns missing here render an empty list
- * with a "no contract declared" placeholder so the gap is visible.
+ * Stopgap token contract per pattern. Phase-2 leftover until each
+ * `@almadar/patterns` PatternEntry grows a real `tokenContract` field
+ * sourced from @almadar/ui component analysis. Patterns missing here
+ * render an empty list with a "no contract declared" note so the gap is
+ * visible. Read by the Styles tab to show which CSS variables a pattern
+ * consumes.
  */
 const PHASE_2_TOKEN_FALLBACK: Record<string, string[]> = {
   button: ['--color-primary', '--color-primary-foreground', '--radius-md', '--shadow-sm'],
@@ -721,13 +736,15 @@ const PHASE_2_TOKEN_FALLBACK: Record<string, string[]> = {
   toast: ['--color-card', '--shadow-lg', '--radius-md'],
 };
 
-interface StylesTabReadOnlyProps {
+interface StylesTabProps {
   patternType: string | undefined;
   patternDef: ReturnType<typeof getPatternDefinition>;
   patternConfig: Record<string, unknown> | null;
+  editable: boolean;
+  onPropChange: (propName: string, value: EventPayloadValue) => void;
 }
 
-function StylesTabReadOnly({ patternType, patternDef, patternConfig }: StylesTabReadOnlyProps): React.ReactElement {
+function StylesTab({ patternType, patternDef, patternConfig, editable, onPropChange }: StylesTabProps): React.ReactElement {
   const { t } = useTranslate();
 
   if (!patternType) {
@@ -781,7 +798,7 @@ function StylesTabReadOnly({ patternType, patternDef, patternConfig }: StylesTab
         )}
       </Box>
 
-      {/* Variant (read-only Phase 2) */}
+      {/* Variant */}
       {variantEnum && variantEnum.length > 0 && (
         <Box>
           <Typography variant="small" className="text-muted-foreground text-[10px] uppercase tracking-wider mb-2">
@@ -793,7 +810,9 @@ function StylesTabReadOnly({ patternType, patternDef, patternConfig }: StylesTab
               return (
                 <Box
                   key={variant}
-                  className="rounded px-2 py-0.5 text-[11px] font-mono"
+                  as={editable ? 'button' : 'div'}
+                  onClick={editable ? () => onPropChange('variant', variant) : undefined}
+                  className={`rounded px-2 py-0.5 text-[11px] font-mono ${editable ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
                   style={{
                     backgroundColor: isActive ? 'var(--color-primary)' : 'var(--color-muted)',
                     color: isActive ? 'var(--color-primary-foreground)' : 'var(--color-muted-foreground)',
@@ -807,7 +826,7 @@ function StylesTabReadOnly({ patternType, patternDef, patternConfig }: StylesTab
         </Box>
       )}
 
-      {/* Size (read-only Phase 2) */}
+      {/* Size */}
       {sizeEnum && sizeEnum.length > 0 && (
         <Box>
           <Typography variant="small" className="text-muted-foreground text-[10px] uppercase tracking-wider mb-2">
@@ -819,7 +838,9 @@ function StylesTabReadOnly({ patternType, patternDef, patternConfig }: StylesTab
               return (
                 <Box
                   key={size}
-                  className="rounded px-2 py-0.5 text-[11px] font-mono"
+                  as={editable ? 'button' : 'div'}
+                  onClick={editable ? () => onPropChange('size', size) : undefined}
+                  className={`rounded px-2 py-0.5 text-[11px] font-mono ${editable ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
                   style={{
                     backgroundColor: isActive ? 'var(--color-primary)' : 'var(--color-muted)',
                     color: isActive ? 'var(--color-primary-foreground)' : 'var(--color-muted-foreground)',
