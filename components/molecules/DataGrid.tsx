@@ -396,7 +396,7 @@ export function DataGrid<T extends EntityRow = EntityRow>({
           const isSelected = selectedIds.has(id);
           const dndId = (itemData[idFieldName] as string | number | undefined) ?? `__idx_${index}`;
           const wrapDnd = (node: React.ReactNode): React.ReactNode =>
-            dnd.enabled ? <dnd.SortableItem id={dndId}>{node}</dnd.SortableItem> : node;
+            dnd.isZone ? <dnd.SortableItem id={dndId}>{node}</dnd.SortableItem> : node;
 
           // Custom render-prop path: delegate card content to children
           if (hasRenderProp) {

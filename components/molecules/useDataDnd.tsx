@@ -24,8 +24,11 @@ import {
   KeyboardSensor,
   useSensor,
   useSensors,
-  closestCenter,
+  closestCorners,
+  pointerWithin,
+  rectIntersection,
   useDroppable,
+  type CollisionDetection,
   type DragEndEvent,
   type UniqueIdentifier,
 } from '@dnd-kit/core';
@@ -81,6 +84,8 @@ interface UseDataDndArgs<T extends EntityRow> extends DataDndProps {
 
 interface UseDataDndResult<T extends EntityRow> {
   enabled: boolean;
+  /** True when this container is a sortable zone (own items are draggable). False in dndRoot-only mode. */
+  isZone: boolean;
   wrapContainer: (children: React.ReactNode) => React.ReactNode;
   SortableItem: React.FC<{ id: UniqueIdentifier; children: React.ReactNode }>;
   orderedItems: readonly T[];
@@ -158,6 +163,17 @@ export function useDataDnd<T extends EntityRow>(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
+
+  // Multi-container collision: prefer pointer-within (catches empty zones and
+  // zone hovering), fall back to rect-intersection, then closest-corners over
+  // the items in whichever zone the pointer found.
+  const collisionDetection: CollisionDetection = React.useCallback((args) => {
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length > 0) return pointerCollisions;
+    const rectCollisions = rectIntersection(args);
+    if (rectCollisions.length > 0) return rectCollisions;
+    return closestCorners(args);
+  }, []);
 
   const findZoneByItem = React.useCallback(
     (id: UniqueIdentifier): ZoneMeta | undefined => {
@@ -293,7 +309,7 @@ export function useDataDnd<T extends EntityRow>(
         if (!isRoot) return children;
         return (
           <RootCtx.Provider value={rootContextValue}>
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragEnd={handleDragEnd}>
               {children}
             </DndContext>
           </RootCtx.Provider>
@@ -309,7 +325,7 @@ export function useDataDnd<T extends EntityRow>(
       if (isRoot) {
         return (
           <RootCtx.Provider value={rootContextValue}>
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragEnd={handleDragEnd}>
               {inner}
             </DndContext>
           </RootCtx.Provider>
@@ -317,11 +333,12 @@ export function useDataDnd<T extends EntityRow>(
       }
       return inner;
     },
-    [enabled, isZone, layout, sensors, handleDragEnd, itemIds, isRoot, rootContextValue],
+    [enabled, isZone, layout, sensors, collisionDetection, handleDragEnd, itemIds, isRoot, rootContextValue],
   );
 
   return {
     enabled,
+    isZone,
     wrapContainer,
     SortableItem,
     orderedItems,
