@@ -34,6 +34,8 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   actionPayload?: EventPayload;
   /** Button label text (alternative to children for schema-driven rendering) */
   label?: string;
+  /** Disable the button (greys out, blocks click events) */
+  disabled?: boolean;
 }
 
 // Using CSS variables for theme-aware styling with hover/active effects

@@ -31,7 +31,7 @@ export interface WizardProgressStep {
 
 export interface WizardProgressProps {
   /** Step definitions (compatible with WizardContainer's WizardStep). A string is shorthand for `{ id: str, title: str }`. */
-  steps: (WizardProgressStep | string)[];
+  steps?: (WizardProgressStep | string)[];
   /** Current step index (0-based) */
   currentStep: number;
   /** Callback when a completed step is clicked */
@@ -59,7 +59,7 @@ export const WizardProgress: React.FC<WizardProgressProps> = ({
   stepClickEvent,
 }) => {
   const eventBus = useEventBus();
-  const normalizedSteps: WizardProgressStep[] = steps.map((s, i) =>
+  const normalizedSteps: WizardProgressStep[] = (steps ?? []).map((s, i) =>
     typeof s === "string" ? { id: `step-${i}`, title: s } : s,
   );
   const totalSteps = normalizedSteps.length;

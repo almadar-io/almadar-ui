@@ -9,6 +9,7 @@
  * Uses wireframe theme styling (high contrast, sharp edges).
  */
 import React from "react";
+import type { EventEmit } from "@almadar/core";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
@@ -51,12 +52,12 @@ export interface WizardNavigationProps {
   nextLabel?: string;
   /** Custom label for Complete button */
   completeLabel?: string;
-  /** Event to emit on Back click */
-  onBack?: string;
-  /** Event to emit on Next click */
-  onNext?: string;
-  /** Event to emit on Complete click */
-  onComplete?: string;
+  /** Event to emit on Back click — emits UI:{onBack} with { currentStep, totalSteps } */
+  onBack?: EventEmit<{ currentStep: number; totalSteps: number }>;
+  /** Event to emit on Next click — emits UI:{onNext} with { currentStep, totalSteps } */
+  onNext?: EventEmit<{ currentStep: number; totalSteps: number }>;
+  /** Event to emit on Complete click — emits UI:{onComplete} with { currentStep, totalSteps } */
+  onComplete?: EventEmit<{ currentStep: number; totalSteps: number }>;
   /** Direct callback for Back (alternative to event) */
   onBackClick?: () => void;
   /** Direct callback for Next (alternative to event) */
