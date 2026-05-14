@@ -29,9 +29,15 @@ import {
   rectIntersection,
   useDroppable,
   type CollisionDetection,
+  type DragCancelEvent,
   type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
   type UniqueIdentifier,
 } from '@dnd-kit/core';
+import { createLogger } from '@almadar/logger';
+
+const dndLog = createLogger('almadar:ui:dnd');
 import {
   SortableContext,
   sortableKeyboardCoordinates,
@@ -164,10 +170,18 @@ export function useDataDnd<T extends EntityRow>(
       // Self-register so the root's onDragEnd can find this zone by group.
       // (Only meaningful when this zone IS the root and has its own items.)
       zonesRef.current.set(zoneId, meta);
-      return () => zonesRef.current.delete(zoneId);
+      dndLog.debug('zone:register:self', { zoneId, group: meta.group, itemCount: meta.itemIds.length, isRoot });
+      return () => {
+        zonesRef.current.delete(zoneId);
+        dndLog.debug('zone:unregister:self', { zoneId, group: meta.group });
+      };
     }
     target.registerZone(zoneId, meta);
-    return () => target.unregisterZone(zoneId);
+    dndLog.debug('zone:register', { zoneId, group: meta.group, itemCount: meta.itemIds.length, dropEvent: meta.dropEvent, reorderEvent: meta.reorderEvent });
+    return () => {
+      target.unregisterZone(zoneId);
+      dndLog.debug('zone:unregister', { zoneId, group: meta.group });
+    };
   }, [parentRoot, isRoot, zoneId, meta]);
 
   const sensors = useSensors(
@@ -180,10 +194,18 @@ export function useDataDnd<T extends EntityRow>(
   // the items in whichever zone the pointer found.
   const collisionDetection: CollisionDetection = React.useCallback((args) => {
     const pointerCollisions = pointerWithin(args);
-    if (pointerCollisions.length > 0) return pointerCollisions;
+    if (pointerCollisions.length > 0) {
+      dndLog.debug('collision:pointerWithin', { count: pointerCollisions.length, ids: pointerCollisions.map((c) => c.id) });
+      return pointerCollisions;
+    }
     const rectCollisions = rectIntersection(args);
-    if (rectCollisions.length > 0) return rectCollisions;
-    return closestCorners(args);
+    if (rectCollisions.length > 0) {
+      dndLog.debug('collision:rectIntersection', { count: rectCollisions.length, ids: rectCollisions.map((c) => c.id) });
+      return rectCollisions;
+    }
+    const cornerCollisions = closestCorners(args);
+    dndLog.debug('collision:closestCorners', { count: cornerCollisions.length, ids: cornerCollisions.map((c) => c.id) });
+    return cornerCollisions;
   }, []);
 
   const findZoneByItem = React.useCallback(
@@ -209,26 +231,56 @@ export function useDataDnd<T extends EntityRow>(
   const handleDragEnd = React.useCallback(
     (event: DragEndEvent) => {
       const { active, over } = event;
-      if (!over) return;
+      const allZones = Array.from(zonesRef.current.entries()).map(([id, m]) => ({ id, group: m.group, items: m.itemIds.length }));
+      dndLog.debug('dragEnd:received', {
+        activeId: active.id,
+        overId: over?.id,
+        overData: over?.data?.current,
+        zones: allZones,
+      });
+      if (!over) {
+        dndLog.warn('dragEnd:abort:no-over', { activeId: active.id, reason: 'no droppable under pointer at drop time → item snaps back' });
+        return;
+      }
 
       const sourceZone = findZoneByItem(active.id);
       // The drop target's group is announced by the SortableItem / DropZone wrappers
       const overData = over.data?.current as { dndGroup?: string } | undefined;
       const targetGroup = overData?.dndGroup;
-      if (!sourceZone || !targetGroup) return;
+      dndLog.debug('dragEnd:resolved', { sourceGroup: sourceZone?.group, targetGroup, overDataKeys: overData ? Object.keys(overData) : null });
+      if (!sourceZone) {
+        dndLog.warn('dragEnd:abort:no-source-zone', { activeId: active.id });
+        return;
+      }
+      if (!targetGroup) {
+        dndLog.warn('dragEnd:abort:no-target-group', { overId: over.id, overData });
+        return;
+      }
       const targetZone = findZoneByGroup(targetGroup);
-      if (!targetZone) return;
+      if (!targetZone) {
+        dndLog.warn('dragEnd:abort:target-zone-not-registered', { targetGroup });
+        return;
+      }
 
       if (sourceZone.group !== targetZone.group) {
         // Cross-container drop — fire dropEvent on the TARGET zone
         if (targetZone.dropEvent) {
           const newIndex = targetZone.itemIds.indexOf(over.id);
+          dndLog.info('dragEnd:cross-container:emit', {
+            event: targetZone.dropEvent,
+            id: String(active.id),
+            sourceGroup: sourceZone.group,
+            targetGroup: targetZone.group,
+            newIndex: newIndex === -1 ? targetZone.itemIds.length : newIndex,
+          });
           eventBus.emit(targetZone.dropEvent, {
             id: String(active.id),
             sourceGroup: sourceZone.group,
             targetGroup: targetZone.group,
             newIndex: newIndex === -1 ? targetZone.itemIds.length : newIndex,
           });
+        } else {
+          dndLog.warn('dragEnd:cross-container:no-dropEvent-on-target', { targetGroup: targetZone.group });
         }
         return;
       }
@@ -244,11 +296,19 @@ export function useDataDnd<T extends EntityRow>(
         setLocalOrder(reordered);
       }
       if (sourceZone.reorderEvent) {
+        dndLog.info('dragEnd:reorder:emit', {
+          event: sourceZone.reorderEvent,
+          id: String(active.id),
+          oldIndex,
+          newIndex,
+        });
         eventBus.emit(sourceZone.reorderEvent, {
           id: String(active.id),
           oldIndex,
           newIndex,
         });
+      } else {
+        dndLog.debug('dragEnd:reorder:no-reorderEvent', { sourceGroup: sourceZone.group });
       }
     },
     [orderedItems, ownGroup, findZoneByItem, findZoneByGroup, eventBus],
@@ -291,14 +351,19 @@ export function useDataDnd<T extends EntityRow>(
   );
 
   const DropZoneShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const droppableId = `dnd-zone-${zoneId}`;
     const { setNodeRef, isOver } = useDroppable({
-      id: `dnd-zone-${zoneId}`,
+      id: droppableId,
       data: sortableData,
     });
+    React.useEffect(() => {
+      dndLog.debug('dropzone:isOver:change', { droppableId, group: ownGroup, isOver });
+    }, [droppableId, isOver]);
     return (
       <Box
         ref={setNodeRef as React.Ref<HTMLDivElement>}
         data-dnd-zone={ownGroup}
+        data-dnd-is-over={isOver ? 'true' : 'false'}
         className={
           isOver
             ? 'ring-2 ring-primary ring-offset-2 rounded-lg transition-all min-h-[3rem]'
@@ -315,6 +380,31 @@ export function useDataDnd<T extends EntityRow>(
     [registerZone, unregisterZone],
   );
 
+  const handleDragStart = React.useCallback((event: DragStartEvent) => {
+    const sourceZone = findZoneByItem(event.active.id);
+    dndLog.info('dragStart', {
+      activeId: event.active.id,
+      activeData: event.active.data?.current,
+      sourceGroup: sourceZone?.group,
+      zoneCount: zonesRef.current.size,
+    });
+  }, [findZoneByItem]);
+
+  const handleDragOver = React.useCallback((event: DragOverEvent) => {
+    dndLog.debug('dragOver', {
+      activeId: event.active.id,
+      overId: event.over?.id,
+      overData: event.over?.data?.current,
+    });
+  }, []);
+
+  const handleDragCancel = React.useCallback((event: DragCancelEvent) => {
+    dndLog.warn('dragCancel', {
+      activeId: event.active.id,
+      reason: 'dnd-kit cancelled the drag (escape key, pointer interrupted, or external)',
+    });
+  }, []);
+
   const wrapContainer = React.useCallback(
     (children: React.ReactNode): React.ReactNode => {
       if (!enabled) return children;
@@ -325,7 +415,14 @@ export function useDataDnd<T extends EntityRow>(
         if (!isRoot) return children;
         return (
           <RootCtx.Provider value={rootContextValue}>
-            <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragEnd={handleDragEnd}>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={collisionDetection}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDragEnd={handleDragEnd}
+              onDragCancel={handleDragCancel}
+            >
               {children}
             </DndContext>
           </RootCtx.Provider>
@@ -341,7 +438,14 @@ export function useDataDnd<T extends EntityRow>(
       if (isRoot) {
         return (
           <RootCtx.Provider value={rootContextValue}>
-            <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragEnd={handleDragEnd}>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={collisionDetection}
+              onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
+              onDragEnd={handleDragEnd}
+              onDragCancel={handleDragCancel}
+            >
               {inner}
             </DndContext>
           </RootCtx.Provider>
@@ -349,7 +453,7 @@ export function useDataDnd<T extends EntityRow>(
       }
       return inner;
     },
-    [enabled, isZone, layout, sensors, collisionDetection, handleDragEnd, itemIds, isRoot, rootContextValue],
+    [enabled, isZone, layout, sensors, collisionDetection, handleDragStart, handleDragOver, handleDragEnd, handleDragCancel, itemIds, isRoot, rootContextValue],
   );
 
   return {
