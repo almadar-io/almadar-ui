@@ -29,7 +29,7 @@ import {
   type EdgeTypes,
   type Connection,
 } from '@xyflow/react';
-import type { OrbitalSchema } from '@almadar/core';
+import type { OrbitalSchema, ThemeDefinition } from '@almadar/core';
 import { Box } from '../../atoms/Box';
 import { Typography } from '../../atoms/Typography';
 import { OrbPreviewNode, ScreenSizeContext, PatternSelectionContext, type SelectedPattern } from '../../molecules/avl/OrbPreviewNode';
@@ -176,6 +176,12 @@ export interface FlowCanvasProps {
    * everything. Default `'builder'` preserves pre-Phase-2 behavior.
    */
   userType?: 'builder' | 'designer' | 'architect';
+  /**
+   * Project theme tokens (Design System tab only). Forwarded to `OrbInspector`
+   * so the Styles tab can render an editable token list when the selection
+   * originates from the synthesized `__design_system__` schema.
+   */
+  themeManifest?: ThemeDefinition;
 }
 
 // ---------------------------------------------------------------------------
@@ -208,6 +214,7 @@ function FlowCanvasInner({
   behaviorEntries,
   behaviorWires,
   userType = 'builder',
+  themeManifest,
 }: FlowCanvasProps) {
   // Render-time NODE_TYPES / EDGE_TYPES — not module-level. When vite's
   // dep-optimizer splits @almadar/ui/avl across multiple pre-bundle
@@ -604,6 +611,7 @@ function FlowCanvasInner({
           schema={parsedSchema}
           editable={editable}
           userType={userType}
+          themeManifest={themeManifest}
           onSchemaChange={onSchemaChange}
           onClose={handleClosePanel}
         />

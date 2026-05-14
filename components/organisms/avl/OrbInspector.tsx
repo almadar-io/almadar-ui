@@ -24,6 +24,7 @@ import type {
   FieldType,
   OrbitalDefinition,
   OrbitalSchema,
+  ThemeDefinition,
   Trait,
   Transition,
 } from '@almadar/core';
@@ -156,6 +157,14 @@ export interface OrbInspectorProps {
    * gets.
    */
   userType?: 'builder' | 'designer' | 'architect';
+  /**
+   * Project theme tokens (Design System tab only). When provided AND the
+   * selection originates from the synthesized `__design_system__` schema,
+   * the Styles tab renders an editable token-row list; edits emit
+   * `UI:PROP_CHANGE` with `propName: '__token__.<group>.<key>'` and the
+   * page-level dispatcher routes them to `themeManifest.setToken`.
+   */
+  themeManifest?: ThemeDefinition;
   onSchemaChange?: (schema: OrbitalSchema) => void;
   onClose: () => void;
 }
@@ -166,7 +175,7 @@ export interface OrbInspectorProps {
 
 type InspectorTab = 'inspector' | 'styles' | 'code';
 
-export function OrbInspector({ node, schema, editable = false, userType = 'builder', onSchemaChange, onClose }: OrbInspectorProps): React.ReactElement {
+export function OrbInspector({ node, schema, editable = false, userType = 'builder', themeManifest, onSchemaChange, onClose }: OrbInspectorProps): React.ReactElement {
   const { selected: selectedPattern } = useContext(PatternSelectionContext);
   const [activeTab, setActiveTab] = useState<InspectorTab>('inspector');
   const eventBus = useEventBus();
@@ -373,6 +382,8 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
             patternConfig={patternConfig}
             editable={editable}
             onPropChange={handlePropChange}
+            themeManifest={themeManifest}
+            isDesignSystem={selectedPattern?.nodeData.sourceSchemaName === '__design_system__'}
           />
         ) : (
           /* ── Inspector Tab ── */
@@ -742,9 +753,12 @@ interface StylesTabProps {
   patternConfig: Record<string, unknown> | null;
   editable: boolean;
   onPropChange: (propName: string, value: EventPayloadValue) => void;
+  themeManifest?: ThemeDefinition;
+  /** Selection originates from the synthesized `__design_system__` schema. */
+  isDesignSystem: boolean;
 }
 
-function StylesTab({ patternType, patternDef, patternConfig, editable, onPropChange }: StylesTabProps): React.ReactElement {
+function StylesTab({ patternType, patternDef, patternConfig, editable, onPropChange, themeManifest, isDesignSystem }: StylesTabProps): React.ReactElement {
   const { t } = useTranslate();
 
   if (!patternType) {
@@ -853,6 +867,89 @@ function StylesTab({ patternType, patternDef, patternConfig, editable, onPropCha
           </Box>
         </Box>
       )}
+
+      {/* Project theme tokens (Design System tab only). Edits emit
+          UI:PROP_CHANGE with propName `__token__.<group>.<key>` — the
+          page-level dispatcher routes those to themeManifest.setToken. */}
+      {isDesignSystem && themeManifest && editable && (
+        <TokenEditorSection themeManifest={themeManifest} onPropChange={onPropChange} />
+      )}
+    </Box>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Token editor (Design System tab only)
+// ---------------------------------------------------------------------------
+
+interface TokenEditorSectionProps {
+  themeManifest: ThemeDefinition;
+  onPropChange: (propName: string, value: EventPayloadValue) => void;
+}
+
+/** Theme-token categories the inspector exposes for editing. */
+const TOKEN_GROUPS: readonly { group: 'colors' | 'radii' | 'spacing' | 'shadows'; label: string }[] = [
+  { group: 'colors', label: 'Colors' },
+  { group: 'radii', label: 'Radii' },
+  { group: 'spacing', label: 'Spacing' },
+  { group: 'shadows', label: 'Shadows' },
+] as const;
+
+function TokenEditorSection({ themeManifest, onPropChange }: TokenEditorSectionProps): React.ReactElement {
+  const tokens = themeManifest.tokens ?? {};
+  return (
+    <Box className="flex flex-col gap-3 pt-2 border-t border-border/40">
+      <Typography variant="small" className="text-[10px] uppercase tracking-wider text-muted-foreground">
+        Project theme tokens
+      </Typography>
+      {TOKEN_GROUPS.map(({ group, label }) => {
+        const entries = Object.entries(tokens[group] ?? {});
+        if (entries.length === 0) return null;
+        return (
+          <Box key={group} className="flex flex-col gap-1.5">
+            <Typography variant="small" className="text-[10px] font-mono text-muted-foreground">{label}</Typography>
+            {entries.map(([key, value]) => (
+              <TokenRow
+                key={key}
+                group={group}
+                tokenKey={key}
+                value={String(value)}
+                isColor={group === 'colors'}
+                onPropChange={onPropChange}
+              />
+            ))}
+          </Box>
+        );
+      })}
+    </Box>
+  );
+}
+
+interface TokenRowProps {
+  group: 'colors' | 'radii' | 'spacing' | 'shadows';
+  tokenKey: string;
+  value: string;
+  isColor: boolean;
+  onPropChange: (propName: string, value: EventPayloadValue) => void;
+}
+
+function TokenRow({ group, tokenKey, value, isColor, onPropChange }: TokenRowProps): React.ReactElement {
+  return (
+    <Box className="flex items-center gap-2">
+      {isColor && (
+        <Box
+          className="w-4 h-4 rounded border border-border/40 shrink-0"
+          style={{ backgroundColor: value }}
+        />
+      )}
+      <Typography variant="small" className="font-mono text-[11px] text-muted-foreground w-24 shrink-0 truncate">
+        {tokenKey}
+      </Typography>
+      <Input
+        value={value}
+        onChange={(e) => onPropChange(`__token__.${group}.${tokenKey}`, e.target.value)}
+        className="flex-1 text-[11px] font-mono"
+      />
     </Box>
   );
 }
