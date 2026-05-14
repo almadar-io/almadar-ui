@@ -148,6 +148,14 @@ export interface OrbInspectorProps {
   node: PreviewNodeData;
   schema: OrbitalSchema;
   editable?: boolean;
+  /**
+   * Studio persona viewing the inspector. Controls tab visibility (Code is
+   * architect-only, Styles is universal) and section visibility (Entity,
+   * raw guard, raw effects are architect-only). Default `'builder'` matches
+   * pre-Phase-2 behavior except for the new Styles tab, which every persona
+   * gets.
+   */
+  userType?: 'builder' | 'designer' | 'architect';
   onSchemaChange?: (schema: OrbitalSchema) => void;
   onClose: () => void;
 }
@@ -156,9 +164,9 @@ export interface OrbInspectorProps {
 // Component
 // ---------------------------------------------------------------------------
 
-type InspectorTab = 'inspector' | 'code';
+type InspectorTab = 'inspector' | 'styles' | 'code';
 
-export function OrbInspector({ node, schema, editable = false, onSchemaChange, onClose }: OrbInspectorProps): React.ReactElement {
+export function OrbInspector({ node, schema, editable = false, userType = 'builder', onSchemaChange, onClose }: OrbInspectorProps): React.ReactElement {
   const { selected: selectedPattern } = useContext(PatternSelectionContext);
   const [activeTab, setActiveTab] = useState<InspectorTab>('inspector');
   const eventBus = useEventBus();
@@ -300,35 +308,30 @@ export function OrbInspector({ node, schema, editable = false, onSchemaChange, o
           </button>
         </Box>
 
-        {/* Tab bar */}
+        {/* Tab bar. Persona gating: Code is architect-only; Styles is universal. */}
         <Box className="flex px-4 gap-4">
-          <button
-            onClick={() => setActiveTab('inspector')}
-            className={`pb-2 text-[12px] font-medium border-b-2 cursor-pointer bg-transparent border-x-0 border-t-0 px-0 ${
-              activeTab === 'inspector'
-                ? 'border-[var(--color-primary)] text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Inspector
-          </button>
-          <button
-            onClick={() => setActiveTab('code')}
-            className={`pb-2 text-[12px] font-medium border-b-2 cursor-pointer bg-transparent border-x-0 border-t-0 px-0 ${
-              activeTab === 'code'
-                ? 'border-[var(--color-primary)] text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Code
-          </button>
+          {(['inspector', 'styles', 'code'] as const)
+            .filter((tab) => tab !== 'code' || userType === 'architect')
+            .map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`pb-2 text-[12px] font-medium border-b-2 cursor-pointer bg-transparent border-x-0 border-t-0 px-0 capitalize ${
+                  activeTab === tab
+                    ? 'border-[var(--color-primary)] text-foreground'
+                    : 'border-transparent text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
         </Box>
       </Box>
 
       {/* Scrollable content */}
       <Box className="flex-1 overflow-y-auto">
-        {activeTab === 'code' ? (
-          /* ── Code Tab ── */
+        {activeTab === 'code' && userType === 'architect' ? (
+          /* ── Code Tab (architect only) ── */
           /* GAP-51: when editable, the CodeBlock molecule renders the existing
              Textarea atom internally and forwards keystrokes via UI:CODE_CHANGE
              on the EventBus. The consumer (builder workspace) listens, debounces,
@@ -345,6 +348,18 @@ export function OrbInspector({ node, schema, editable = false, onSchemaChange, o
               onChange={editable ? (code) => eventBus.emit('UI:CODE_CHANGE', { code }) : undefined}
             />
           </Box>
+        ) : activeTab === 'styles' ? (
+          /* ── Styles Tab (read-only in Phase 2) ──
+             Phase 2 ships a token-only viewer with no editing. The proper
+             tokenContract on PatternDefinition lands in Phase 6; until then
+             we fall back to a static map of well-known atoms keyed by
+             pattern type. Patterns missing from the map render a placeholder
+             so the gap is visible rather than silently empty. */
+          <StylesTabReadOnly
+            patternType={patternType}
+            patternDef={patternDef}
+            patternConfig={patternConfig}
+          />
         ) : (
           /* ── Inspector Tab ── */
           <>
@@ -381,8 +396,8 @@ export function OrbInspector({ node, schema, editable = false, onSchemaChange, o
               </Box>
             )}
 
-            {/* Entity Fields */}
-            {((selectedPattern && isEntityPattern) || (!selectedPattern && !isExpanded)) && entity && (
+            {/* Entity Fields (architect only — designer/builder hide entity persistence + field types) */}
+            {userType === 'architect' && ((selectedPattern && isEntityPattern) || (!selectedPattern && !isExpanded)) && entity && (
               <Box className="px-4 py-3 border-b border-border/40">
                 <Typography variant="small" className="text-muted-foreground text-[10px] uppercase tracking-wider mb-2">{t('Entity')}</Typography>
                 <Box className="flex items-center gap-2 mb-2">
@@ -525,8 +540,8 @@ export function OrbInspector({ node, schema, editable = false, onSchemaChange, o
               </Box>
             )}
 
-            {/* Guard */}
-            {(transition?.guard ?? guard ?? editable) && isExpanded && (
+            {/* Guard (architect only — raw SExpression / boolean expression isn't designer-facing) */}
+            {userType === 'architect' && (transition?.guard ?? guard ?? editable) && isExpanded && (
               <Box className="px-4 py-2 border-b border-border/40">
                 <HStack gap="xs" className="items-center">
                   <svg width={16} height={16}><AvlGuard x={8} y={8} size={12} /></svg>
@@ -546,8 +561,8 @@ export function OrbInspector({ node, schema, editable = false, onSchemaChange, o
               </Box>
             )}
 
-            {/* Effects */}
-            {(effectTypes.length > 0 || editable) && isExpanded && (
+            {/* Effects (architect only — raw effect list maps directly to the IR) */}
+            {userType === 'architect' && (effectTypes.length > 0 || editable) && isExpanded && (
               <Box className="px-4 py-3 border-b border-border/40">
                 <Typography variant="small" className="text-muted-foreground text-[10px] uppercase tracking-wider mb-2">
                   {t('Effects')} ({effectTypes.length})
@@ -586,8 +601,8 @@ export function OrbInspector({ node, schema, editable = false, onSchemaChange, o
               </Box>
             )}
 
-            {/* Render-UI Source */}
-            {patterns.length > 0 && !selectedPattern && (
+            {/* Render-UI Source (architect only — raw SExpression tree) */}
+            {userType === 'architect' && patterns.length > 0 && !selectedPattern && (
               <Box className="px-4 py-3">
                 <Typography variant="small" className="text-muted-foreground text-[10px] uppercase tracking-wider mb-2">render-ui</Typography>
                 <Box className="bg-muted/20 rounded-md p-3 font-mono text-[11px] leading-relaxed overflow-x-auto">
@@ -681,3 +696,142 @@ function OrbPatternTree({ config, depth }: { config: Record<string, unknown>; de
 }
 
 OrbInspector.displayName = 'OrbInspector';
+
+// ---------------------------------------------------------------------------
+// Styles tab (Phase 2 — read-only viewer)
+// ---------------------------------------------------------------------------
+
+/**
+ * Phase-2 stopgap token contract. Maps well-known atoms to the CSS variables
+ * their default rendering consumes. Replaced in Phase 6 by a real
+ * `tokenContract` field on @almadar/patterns PatternEntry, sourced from
+ * @almadar/ui component analysis. Patterns missing here render an empty list
+ * with a "no contract declared" placeholder so the gap is visible.
+ */
+const PHASE_2_TOKEN_FALLBACK: Record<string, string[]> = {
+  button: ['--color-primary', '--color-primary-foreground', '--radius-md', '--shadow-sm'],
+  badge: ['--color-primary', '--radius-full'],
+  card: ['--color-card', '--color-border', '--radius-lg', '--shadow-main'],
+  input: ['--color-input', '--color-border', '--radius-md'],
+  typography: ['--color-foreground', '--color-muted-foreground'],
+  divider: ['--color-border'],
+  avatar: ['--radius-full', '--color-muted'],
+  alert: ['--color-warning', '--color-success', '--color-danger', '--radius-md'],
+  modal: ['--color-card', '--shadow-lg', '--radius-lg'],
+  toast: ['--color-card', '--shadow-lg', '--radius-md'],
+};
+
+interface StylesTabReadOnlyProps {
+  patternType: string | undefined;
+  patternDef: ReturnType<typeof getPatternDefinition>;
+  patternConfig: Record<string, unknown> | null;
+}
+
+function StylesTabReadOnly({ patternType, patternDef, patternConfig }: StylesTabReadOnlyProps): React.ReactElement {
+  const { t } = useTranslate();
+
+  if (!patternType) {
+    return (
+      <Box className="p-4">
+        <Typography variant="small" className="text-muted-foreground text-[11px]">
+          {t('Select a pattern to view its style tokens.')}
+        </Typography>
+      </Box>
+    );
+  }
+
+  const tier = patternDef?.category ?? 'Pattern';
+  const tokens = PHASE_2_TOKEN_FALLBACK[patternType] ?? [];
+
+  const variantEnum = patternDef?.propsSchema?.variant?.enumValues;
+  const sizeEnum = patternDef?.propsSchema?.size?.enumValues;
+  const currentVariant = patternConfig && typeof patternConfig.variant === 'string' ? patternConfig.variant : undefined;
+  const currentSize = patternConfig && typeof patternConfig.size === 'string' ? patternConfig.size : undefined;
+
+  return (
+    <Box className="px-4 py-3 flex flex-col gap-4">
+      {/* Header: pattern type + tier badge */}
+      <Box className="flex items-center gap-2">
+        <Typography variant="small" className="font-semibold text-[12px]">{patternType}</Typography>
+        <Box
+          className="rounded px-1.5 py-0.5 text-[9px] font-mono uppercase tracking-wider"
+          style={{ backgroundColor: 'var(--color-muted)', color: 'var(--color-muted-foreground)' }}
+        >
+          {tier}
+        </Box>
+      </Box>
+
+      {/* Tokens this pattern consumes */}
+      <Box>
+        <Typography variant="small" className="text-muted-foreground text-[10px] uppercase tracking-wider mb-2">
+          {t('Tokens')}
+        </Typography>
+        {tokens.length === 0 ? (
+          <Typography variant="small" className="text-muted-foreground text-[11px] italic">
+            {t('No token contract declared for this pattern.')}
+          </Typography>
+        ) : (
+          <Box className="flex flex-col gap-1">
+            {tokens.map((token) => (
+              <Box key={token} className="flex items-center gap-2">
+                <Typography variant="small" className="font-mono text-[11px]">{token}</Typography>
+              </Box>
+            ))}
+          </Box>
+        )}
+      </Box>
+
+      {/* Variant (read-only Phase 2) */}
+      {variantEnum && variantEnum.length > 0 && (
+        <Box>
+          <Typography variant="small" className="text-muted-foreground text-[10px] uppercase tracking-wider mb-2">
+            {t('Variant')}
+          </Typography>
+          <Box className="flex flex-wrap gap-1">
+            {variantEnum.map((variant) => {
+              const isActive = variant === currentVariant || (!currentVariant && variant === 'default');
+              return (
+                <Box
+                  key={variant}
+                  className="rounded px-2 py-0.5 text-[11px] font-mono"
+                  style={{
+                    backgroundColor: isActive ? 'var(--color-primary)' : 'var(--color-muted)',
+                    color: isActive ? 'var(--color-primary-foreground)' : 'var(--color-muted-foreground)',
+                  }}
+                >
+                  {variant}
+                </Box>
+              );
+            })}
+          </Box>
+        </Box>
+      )}
+
+      {/* Size (read-only Phase 2) */}
+      {sizeEnum && sizeEnum.length > 0 && (
+        <Box>
+          <Typography variant="small" className="text-muted-foreground text-[10px] uppercase tracking-wider mb-2">
+            {t('Size')}
+          </Typography>
+          <Box className="flex flex-wrap gap-1">
+            {sizeEnum.map((size) => {
+              const isActive = size === currentSize || (!currentSize && size === 'md');
+              return (
+                <Box
+                  key={size}
+                  className="rounded px-2 py-0.5 text-[11px] font-mono"
+                  style={{
+                    backgroundColor: isActive ? 'var(--color-primary)' : 'var(--color-muted)',
+                    color: isActive ? 'var(--color-primary-foreground)' : 'var(--color-muted-foreground)',
+                  }}
+                >
+                  {size}
+                </Box>
+              );
+            })}
+          </Box>
+        </Box>
+      )}
+    </Box>
+  );
+}

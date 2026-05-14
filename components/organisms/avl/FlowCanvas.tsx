@@ -169,6 +169,13 @@ export interface FlowCanvasProps {
   initialTrait?: string;
   /** @deprecated Not used in V3. */
   stateCoverage?: Record<string, string>;
+  /**
+   * Studio persona viewing the canvas. Drives `OrbInspector` tab/section
+   * visibility — designers and builders hide the raw `code` tab and the
+   * architect-only Entity / raw-guard / raw-effects sections; architects see
+   * everything. Default `'builder'` preserves pre-Phase-2 behavior.
+   */
+  userType?: 'builder' | 'designer' | 'architect';
 }
 
 // ---------------------------------------------------------------------------
@@ -200,6 +207,7 @@ function FlowCanvasInner({
   composeLevel,
   behaviorEntries,
   behaviorWires,
+  userType = 'builder',
 }: FlowCanvasProps) {
   // Render-time NODE_TYPES / EDGE_TYPES — not module-level. When vite's
   // dep-optimizer splits @almadar/ui/avl across multiple pre-bundle
@@ -592,6 +600,7 @@ function FlowCanvasInner({
           node={selectedNode}
           schema={parsedSchema}
           editable={editable}
+          userType={userType}
           onSchemaChange={onSchemaChange}
           onClose={handleClosePanel}
         />
