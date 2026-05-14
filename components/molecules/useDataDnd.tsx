@@ -88,6 +88,8 @@ interface RootContext {
   unregisterZone: (zoneId: string) => void;
   /** Currently-active drag info; null when nothing is being dragged. Exposed so DropZoneShell can show a placeholder slot for cross-zone drops. */
   activeDrag: ActiveDrag | null;
+  /** Group of the zone currently being hovered, derived from over.data.dndGroup in onDragOver. Used by DropZoneShell because @dnd-kit's `isOver` returns false on the zone shell when the pointer is over an inner SortableItem (the item is its own droppable). */
+  overZoneGroup: string | null;
 }
 
 const RootCtx = React.createContext<RootContext | null>(null);
@@ -170,6 +172,7 @@ export function useDataDnd<T extends EntityRow>(
   // so foreign zones can render a Trello-style placeholder slot of the right
   // size while the user hovers over them.
   const [activeDrag, setActiveDrag] = React.useState<ActiveDrag | null>(null);
+  const [overZoneGroup, setOverZoneGroup] = React.useState<string | null>(null);
 
   const zoneId = React.useId();
   const ownGroup = dragGroup ?? accepts ?? zoneId;
@@ -383,29 +386,35 @@ export function useDataDnd<T extends EntityRow>(
     // SortableContext's built-in shift animation.
     const ctx = React.useContext(RootCtx);
     const activeDrag = ctx?.activeDrag ?? null;
+    const overZoneGroup = ctx?.overZoneGroup ?? null;
+    // Use the root-tracked overZoneGroup instead of the local useDroppable
+    // `isOver` — when the pointer is over an inner SortableItem, dnd-kit
+    // resolves `over` to that item (not the wrapper droppable), so the
+    // shell's local isOver stays false. The root's onDragOver sees
+    // over.data.dndGroup directly, which works in either case.
+    const isThisZoneOver = overZoneGroup === ownGroup;
     const showForeignPlaceholder =
-      isOver && activeDrag != null && activeDrag.sourceGroup !== ownGroup;
-    // Per-render log so we can see EVERY frame's view of the world, not just
-    // the edge transitions. While debugging the placeholder slot, this is
-    // the only reliable signal showing "did this zone see activeDrag get set?".
+      isThisZoneOver && activeDrag != null && activeDrag.sourceGroup !== ownGroup;
     dndLog.debug('dropzone:render', {
       group: ownGroup,
       isOver,
+      isThisZoneOver,
+      overZoneGroup,
       activeDragSourceGroup: activeDrag?.sourceGroup ?? null,
       activeDragHeight: activeDrag?.height ?? null,
       showForeignPlaceholder,
       ctxAvailable: ctx != null,
     });
     React.useEffect(() => {
-      dndLog.info('dropzone:isOver:change', { droppableId, group: ownGroup, isOver, showForeignPlaceholder, activeDragSourceGroup: activeDrag?.sourceGroup ?? null });
-    }, [droppableId, isOver, showForeignPlaceholder]);
+      dndLog.info('dropzone:isOver:change', { droppableId, group: ownGroup, isOver, isThisZoneOver, showForeignPlaceholder, activeDragSourceGroup: activeDrag?.sourceGroup ?? null });
+    }, [droppableId, isOver, isThisZoneOver, showForeignPlaceholder]);
     return (
       <Box
         ref={setNodeRef as React.Ref<HTMLDivElement>}
         data-dnd-zone={ownGroup}
-        data-dnd-is-over={isOver ? 'true' : 'false'}
+        data-dnd-is-over={isThisZoneOver ? 'true' : 'false'}
         className={
-          isOver
+          isThisZoneOver
             ? 'ring-2 ring-primary ring-offset-2 rounded-lg transition-all min-h-[3rem]'
             : 'min-h-[3rem] rounded-lg transition-all'
         }
@@ -423,8 +432,8 @@ export function useDataDnd<T extends EntityRow>(
   };
 
   const rootContextValue: RootContext = React.useMemo(
-    () => ({ registerZone, unregisterZone, activeDrag }),
-    [registerZone, unregisterZone, activeDrag],
+    () => ({ registerZone, unregisterZone, activeDrag, overZoneGroup }),
+    [registerZone, unregisterZone, activeDrag, overZoneGroup],
   );
 
   const handleDragStart = React.useCallback((event: DragStartEvent) => {
@@ -451,25 +460,30 @@ export function useDataDnd<T extends EntityRow>(
   }, [findZoneByItem, isRoot, zoneId]);
 
   const handleDragOver = React.useCallback((event: DragOverEvent) => {
+    const overData = event.over?.data?.current as { dndGroup?: string } | undefined;
+    const group = overData?.dndGroup ?? null;
+    setOverZoneGroup(group);
     dndLog.debug('dragOver', {
       activeId: event.active.id,
       overId: event.over?.id,
-      overData: event.over?.data?.current,
+      overGroup: group,
     });
   }, []);
 
   const handleDragCancel = React.useCallback((event: DragCancelEvent) => {
     setActiveDrag(null);
+    setOverZoneGroup(null);
     dndLog.warn('dragCancel', {
       activeId: event.active.id,
       reason: 'dnd-kit cancelled the drag (escape key, pointer interrupted, or external)',
     });
   }, []);
 
-  // Wrap handleDragEnd to also clear activeDrag so the placeholder disappears.
+  // Wrap handleDragEnd to also clear placeholder state so the slot disappears.
   const handleDragEndWithCleanup = React.useCallback((event: DragEndEvent) => {
     handleDragEnd(event);
     setActiveDrag(null);
+    setOverZoneGroup(null);
   }, [handleDragEnd]);
 
   const wrapContainer = React.useCallback(
