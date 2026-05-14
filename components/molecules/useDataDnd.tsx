@@ -168,7 +168,20 @@ export function useDataDnd<T extends EntityRow>(
   const sharedOptimistic: ReadonlyMap<string, readonly EntityRow[]> = isRoot
     ? optimisticOrders
     : parentRoot?.optimisticOrders ?? new Map();
-  const orderedItems = (sharedOptimistic.get(ownGroup) ?? items) as readonly T[];
+  const optimisticEntry = sharedOptimistic.get(ownGroup);
+  const orderedItems = (optimisticEntry ?? items) as readonly T[];
+  // Per-render log so we can correlate splice timing with what each zone
+  // actually renders. Only logs when we're in a zone (skip the root-only mode).
+  if (isZone && enabled) {
+    dndLog.debug('hook:render', {
+      group: ownGroup,
+      isRoot,
+      itemsLen: (items as readonly EntityRow[]).length,
+      optimisticEntryLen: optimisticEntry ? optimisticEntry.length : null,
+      orderedLen: orderedItems.length,
+      sharedKeys: Array.from(sharedOptimistic.keys()),
+    });
+  }
 
   // Memoize itemIds by content signature so the array reference is stable
   // across renders when IDs don't change. dnd-kit's SortableContext keeps
