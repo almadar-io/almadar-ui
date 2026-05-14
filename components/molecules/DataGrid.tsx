@@ -28,6 +28,7 @@ import { Badge, type BadgeVariant } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
 import { Icon } from '../atoms/Icon';
 import { InfiniteScrollSentinel } from '../atoms/InfiniteScrollSentinel';
+import { useDataDnd, type DataDndProps } from './useDataDnd';
 
 // ── Field Definition ─────────────────────────────────────────────────
 
@@ -70,7 +71,7 @@ export interface DataGridItemAction {
 
 // ── Props ────────────────────────────────────────────────────────────
 
-export interface DataGridProps<T extends EntityRow = EntityRow> {
+export interface DataGridProps<T extends EntityRow = EntityRow> extends DataDndProps {
   /**
    * Schema entity data — single record or collection, typed against
    * `@almadar/core`'s `EntityRow` so the narrow type declared on the
@@ -215,6 +216,12 @@ export function DataGrid<T extends EntityRow = EntityRow>({
   children,
   pageSize = 0,
   renderItem: schemaRenderItem,
+  dragGroup,
+  accepts,
+  sortable,
+  dropEvent,
+  reorderEvent,
+  dndItemIdField,
 }: DataGridProps<T>) {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -226,7 +233,18 @@ export function DataGrid<T extends EntityRow = EntityRow>({
   // an empty list rather than a TypeError on `.find`.
   const fieldDefs: readonly DataGridField[] = fields ?? columns ?? [];
 
-  const allData = Array.isArray(entity) ? entity : entity ? [entity] : [];
+  const allDataRaw = Array.isArray(entity) ? entity : entity ? [entity] : [];
+  const dnd = useDataDnd({
+    items: allDataRaw as readonly T[],
+    layout: 'grid',
+    dragGroup,
+    accepts,
+    sortable,
+    dropEvent,
+    reorderEvent,
+    dndItemIdField,
+  });
+  const allData = dnd.orderedItems as readonly Record<string, unknown>[];
   const data = pageSize > 0 ? allData.slice(0, visibleCount) : allData;
   const hasMoreLocal = pageSize > 0 && visibleCount < allData.length;
 
@@ -347,7 +365,8 @@ export function DataGrid<T extends EntityRow = EntityRow>({
   const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
   const someSelected = selectedIds.size > 0;
 
-  return (
+  const idFieldName = dndItemIdField ?? 'id';
+  return dnd.wrapContainer(
     <VStack gap="sm">
       {/* Selection toolbar */}
       {selectable && someSelected && (
@@ -373,10 +392,13 @@ export function DataGrid<T extends EntityRow = EntityRow>({
           const itemData = item as Record<string, unknown>;
           const id = (itemData.id as string) || String(index);
           const isSelected = selectedIds.has(id);
+          const dndId = (itemData[idFieldName] as string | number | undefined) ?? `__idx_${index}`;
+          const wrapDnd = (node: React.ReactNode): React.ReactNode =>
+            dnd.enabled ? <dnd.SortableItem id={dndId}>{node}</dnd.SortableItem> : node;
 
           // Custom render-prop path: delegate card content to children
           if (hasRenderProp) {
-            return (
+            return wrapDnd(
               <Box
                 key={id}
                 data-entity-row
@@ -391,7 +413,7 @@ export function DataGrid<T extends EntityRow = EntityRow>({
           // Default fields-based path
           const titleValue = getNestedValue(itemData, titleField?.name ?? '');
 
-          return (
+          return wrapDnd(
             <Box
               key={id}
               data-entity-row

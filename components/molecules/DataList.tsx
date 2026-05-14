@@ -30,6 +30,7 @@ import { Icon } from '../atoms/Icon';
 import { ProgressBar } from '../atoms/ProgressBar';
 import { Divider } from '../atoms/Divider';
 import { InfiniteScrollSentinel } from '../atoms/InfiniteScrollSentinel';
+import { useDataDnd, type DataDndProps } from './useDataDnd';
 
 // ── Field Definition ─────────────────────────────────────────────────
 
@@ -62,7 +63,7 @@ export interface DataListItemAction {
 
 // ── Props ────────────────────────────────────────────────────────────
 
-export interface DataListProps<T extends EntityRow = EntityRow> {
+export interface DataListProps<T extends EntityRow = EntityRow> extends DataDndProps {
   /**
    * Schema entity data — single record or collection, typed against
    * `@almadar/core`'s `EntityRow` so the narrow type declared on the
@@ -218,6 +219,12 @@ export function DataList<T extends EntityRow = EntityRow>({
   children,
   pageSize = 5,
   renderItem: schemaRenderItem,
+  dragGroup,
+  accepts,
+  sortable: sortableProp,
+  dropEvent,
+  reorderEvent: dndReorderEvent,
+  dndItemIdField,
 }: DataListProps<T>) {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -228,7 +235,18 @@ export function DataList<T extends EntityRow = EntityRow>({
   // an empty list rather than a TypeError on `.find`.
   const fieldDefs: readonly DataListField[] = fields ?? columns ?? [];
 
-  const allData = Array.isArray(entity) ? entity : entity ? [entity] : [];
+  const allDataRaw = Array.isArray(entity) ? entity : entity ? [entity] : [];
+  const dnd = useDataDnd({
+    items: allDataRaw as readonly T[],
+    layout: 'list',
+    dragGroup,
+    accepts,
+    sortable: sortableProp,
+    dropEvent,
+    reorderEvent: dndReorderEvent,
+    dndItemIdField,
+  });
+  const allData = dnd.orderedItems as readonly Record<string, unknown>[];
   const data = pageSize > 0 ? allData.slice(0, visibleCount) : allData;
   const hasMoreLocal = pageSize > 0 && visibleCount < allData.length;
   const hasRenderProp = typeof children === 'function';
@@ -393,11 +411,15 @@ export function DataList<T extends EntityRow = EntityRow>({
   const items = data.map((item) => item as Record<string, unknown>);
   const groups = groupBy ? groupData(items, groupBy) : [{ label: '', items }];
 
+  const idFieldName = dndItemIdField ?? 'id';
   const renderItem = (itemData: Record<string, unknown>, index: number, isLast: boolean) => {
+    const dndId = (itemData[idFieldName] as string | number | undefined) ?? `__idx_${index}`;
+    const wrapDnd = (node: React.ReactNode): React.ReactNode =>
+      dnd.enabled ? <dnd.SortableItem id={dndId}>{node}</dnd.SortableItem> : node;
     // Custom render-prop path: delegate item content to children, keep itemActions
     if (hasRenderProp) {
       const id = (itemData.id as string) || String(index);
-      return (
+      return wrapDnd(
         <Box key={id} data-entity-row data-entity-id={id}>
           <Box className="group flex items-stretch gap-2">
             <Box className="flex-1 min-w-0">
@@ -438,7 +460,7 @@ export function DataList<T extends EntityRow = EntityRow>({
     const id = (itemData.id as string) || String(index);
     const titleValue = getNestedValue(itemData, titleField?.name ?? '');
 
-    return (
+    return wrapDnd(
       <Box key={id} data-entity-row data-entity-id={id}>
         <Box
           className={cn(
@@ -555,7 +577,7 @@ export function DataList<T extends EntityRow = EntityRow>({
     );
   };
 
-  return (
+  return dnd.wrapContainer(
     <Box
       className={cn(
         isCard && 'bg-card rounded-xl border border-border shadow-lg overflow-hidden',
