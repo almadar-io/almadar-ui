@@ -28,6 +28,17 @@ export {
 } from "./ThemeContext";
 export { default as ThemeContext } from "./ThemeContext";
 
+export {
+  themeTokensToCssVars,
+  resolveThemeForRuntime,
+  type ThemeMode,
+} from "./themeTokens";
+
+export {
+  OrbitalThemeProvider,
+  type OrbitalThemeProviderProps,
+} from "./OrbitalThemeProvider";
+
 export { DesignThemeProvider, useDesignTheme } from "./DesignThemeContext";
 
 export {

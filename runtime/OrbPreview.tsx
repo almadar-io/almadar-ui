@@ -29,6 +29,7 @@ import { convertFnFormLambdasInProps } from './fn-form-lambda';
 import { useTraitStateMachine } from './useTraitStateMachine';
 import { EntitySchemaProvider } from './EntitySchemaContext';
 import { ServerBridgeProvider, useServerBridge, type ServerBridgeTransport } from './ServerBridge';
+import { OrbitalThemeProvider } from '../context/OrbitalThemeProvider';
 import { getAllPages } from '../renderer/navigation';
 import { recordTransition, recordServerResponse, type EffectTrace } from '../lib/verificationRegistry';
 import { prepareSchemaForPreview } from './prepareSchemaForPreview';
@@ -547,6 +548,29 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavi
     return set;
   }, [schema, pageName]);
 
+  // Per-orbital theme: find the orbital whose pages[] contains the active
+  // page and surface its `theme` to OrbitalThemeProvider. When pageName is
+  // unset (initial mount before SchemaRunner picks the first page), fall back
+  // to the first orbital's theme. Falling back keeps the wrapper a no-op
+  // when no orbital declares a theme — `OrbitalThemeProvider` passes through
+  // for undefined themes. Mirrors compile-time scoping: each orbital's pages
+  // resolve against THAT orbital's `theme` in the generated CSS.
+  const activeOrbitalTheme = useMemo(() => {
+    const parsed = schema as OrbitalSchema | undefined;
+    if (!parsed?.orbitals?.length) return undefined;
+    if (pageName) {
+      for (const orb of parsed.orbitals) {
+        for (const pageRef of orb.pages ?? []) {
+          const name = typeof pageRef === 'object' && pageRef !== null
+            ? (pageRef as { name?: string }).name
+            : undefined;
+          if (name === pageName) return orb.theme;
+        }
+      }
+    }
+    return parsed.orbitals[0]?.theme;
+  }, [schema, pageName]);
+
   const inner = (
     <VerificationProvider enabled>
       <EntitySchemaProvider
@@ -569,10 +593,22 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavi
             patterns can still grow past it (overflow is handled by the
             outer Box's `overflow-auto`). Previously `min-h-full` left the
             height undefined for empty layouts, so the debug bar floated
-            up near the top instead of docking at the bottom. */}
-        <Box className="h-full p-4">
-          <UISlotRenderer includeHud hudMode="inline" includeFloating />
-        </Box>
+            up near the top instead of docking at the bottom.
+
+            OrbitalThemeProvider scopes per-orbital CSS variable overrides
+            (from `orbital.theme.tokens`) to this render subtree. The
+            provider is a no-op when the active orbital has no theme; when
+            it does, the inline style emitted on a `display: contents`
+            wrapper supplies CSS variables that override the document-level
+            `[data-theme]` rule for the same variables, while unset
+            variables cascade from the parent. Mirrors compile-time codegen
+            (orbital-rust/.../codegen/theme.rs) byte-for-byte at the
+            variable level. */}
+        <OrbitalThemeProvider theme={activeOrbitalTheme}>
+          <Box className="h-full p-4">
+            <UISlotRenderer includeHud hudMode="inline" includeFloating />
+          </Box>
+        </OrbitalThemeProvider>
       </EntitySchemaProvider>
     </VerificationProvider>
   );
