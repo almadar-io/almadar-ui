@@ -20,7 +20,6 @@
 import React from 'react';
 import {
   DndContext,
-  DragOverlay,
   PointerSensor,
   KeyboardSensor,
   useSensor,
@@ -74,13 +73,6 @@ interface ZoneMeta {
 interface RootContext {
   registerZone: (zoneId: string, meta: ZoneMeta) => void;
   unregisterZone: (zoneId: string) => void;
-  /**
-   * SortableItems call this when they become the active drag, supplying their
-   * rendered children. The root portals them into a DragOverlay so the drag
-   * preview escapes any overflow:hidden / SortableContext clipping. Pass null
-   * to clear (drag end / cancel).
-   */
-  setOverlay: (node: React.ReactNode | null) => void;
 }
 
 const RootCtx = React.createContext<RootContext | null>(null);
@@ -129,13 +121,24 @@ export function useDataDnd<T extends EntityRow>(
     setLocalOrder(null);
   }, [items]);
 
+  // Memoize itemIds by content signature so the array reference is stable
+  // across renders when IDs don't change. dnd-kit's SortableContext keeps
+  // measuring the rect of each item on every items-prop change — a fresh
+  // array each render means infinite measure loops on multi-list pages.
+  const itemIdsSignature = orderedItems
+    .map((it, idx) => {
+      const raw = (it as Record<string, unknown>)[dndItemIdField];
+      return String((raw as string | number | undefined) ?? `__idx_${idx}`);
+    })
+    .join('|');
   const itemIds = React.useMemo<UniqueIdentifier[]>(
     () =>
       orderedItems.map((it, idx) => {
         const raw = (it as Record<string, unknown>)[dndItemIdField];
         return (raw as string | number | undefined) ?? `__idx_${idx}`;
       }),
-    [orderedItems, dndItemIdField],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [itemIdsSignature],
   );
 
   // Root maintains a registry of zones so onDragEnd can resolve source/target
@@ -146,14 +149,6 @@ export function useDataDnd<T extends EntityRow>(
   }, []);
   const unregisterZone = React.useCallback((zoneId: string) => {
     zonesRef.current.delete(zoneId);
-  }, []);
-
-  // Overlay state lives at the root so the DragOverlay portal renders just
-  // once per DndContext. Inner SortableItems push their rendered children
-  // through RootCtx while they are the active drag.
-  const [overlayNode, setOverlayNode] = React.useState<React.ReactNode>(null);
-  const setOverlay = React.useCallback((node: React.ReactNode | null) => {
-    setOverlayNode(node);
   }, []);
 
   const zoneId = React.useId();
@@ -259,10 +254,7 @@ export function useDataDnd<T extends EntityRow>(
     [orderedItems, ownGroup, findZoneByItem, findZoneByGroup, eventBus],
   );
 
-  // The overlay sink is the FIRST DndContext ancestor — that may be this hook
-  // instance (when isRoot) or an ancestor reachable via RootCtx.
-  const overlaySink = isRoot ? setOverlay : parentRoot?.setOverlay;
-
+  const sortableData = React.useMemo(() => ({ dndGroup: ownGroup }), [ownGroup]);
   const SortableItem: React.FC<{ id: UniqueIdentifier; children: React.ReactNode }> = React.useCallback(
     ({ id, children }) => {
       const {
@@ -272,26 +264,16 @@ export function useDataDnd<T extends EntityRow>(
         transform,
         transition,
         isDragging,
-      } = useSortable({ id, data: { dndGroup: ownGroup } });
-      // Push the rendered children up to the root's DragOverlay while this
-      // item is the active drag. The original DOM node stays in place with
-      // opacity 0.4 so the column doesn't visibly shrink during drag.
-      // Keep `children` in a ref so the overlay-portal effect only re-fires
-      // when isDragging toggles — using `children` directly as a dep would
-      // re-render every parent render (children is a fresh node each time)
-      // and trip @dnd-kit's measureRect setState into an infinite loop.
-      const childrenRef = React.useRef(children);
-      childrenRef.current = children;
-      React.useEffect(() => {
-        if (!isDragging || !overlaySink) return;
-        overlaySink(childrenRef.current);
-        return () => overlaySink(null);
-      }, [isDragging]);
+      } = useSortable({ id, data: sortableData });
       const style: React.CSSProperties = {
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.4 : 1,
         cursor: enabled ? 'grab' : undefined,
+        // Lift the dragged element above siblings so its visual movement
+        // isn't hidden behind other cards / column boundaries.
+        zIndex: isDragging ? 50 : undefined,
+        position: isDragging ? 'relative' : undefined,
       };
       return (
         <Box
@@ -305,13 +287,13 @@ export function useDataDnd<T extends EntityRow>(
         </Box>
       );
     },
-    [ownGroup, enabled, overlaySink],
+    [sortableData, enabled],
   );
 
   const DropZoneShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const { setNodeRef, isOver } = useDroppable({
       id: `dnd-zone-${zoneId}`,
-      data: { dndGroup: ownGroup },
+      data: sortableData,
     });
     return (
       <Box
@@ -329,8 +311,8 @@ export function useDataDnd<T extends EntityRow>(
   };
 
   const rootContextValue: RootContext = React.useMemo(
-    () => ({ registerZone, unregisterZone, setOverlay }),
-    [registerZone, unregisterZone, setOverlay],
+    () => ({ registerZone, unregisterZone }),
+    [registerZone, unregisterZone],
   );
 
   const wrapContainer = React.useCallback(
@@ -339,22 +321,12 @@ export function useDataDnd<T extends EntityRow>(
       const strategy = layout === 'grid' ? rectSortingStrategy : verticalListSortingStrategy;
       // Root-only mode: container hosts DndContext for descendant zones but is
       // not itself a sortable or drop target.
-      const clearOverlay = () => setOverlay(null);
       if (!isZone) {
         if (!isRoot) return children;
         return (
           <RootCtx.Provider value={rootContextValue}>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={collisionDetection}
-              onDragEnd={(e) => {
-                handleDragEnd(e);
-                clearOverlay();
-              }}
-              onDragCancel={clearOverlay}
-            >
+            <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragEnd={handleDragEnd}>
               {children}
-              <DragOverlay>{overlayNode}</DragOverlay>
             </DndContext>
           </RootCtx.Provider>
         );
@@ -369,24 +341,15 @@ export function useDataDnd<T extends EntityRow>(
       if (isRoot) {
         return (
           <RootCtx.Provider value={rootContextValue}>
-            <DndContext
-              sensors={sensors}
-              collisionDetection={collisionDetection}
-              onDragEnd={(e) => {
-                handleDragEnd(e);
-                clearOverlay();
-              }}
-              onDragCancel={clearOverlay}
-            >
+            <DndContext sensors={sensors} collisionDetection={collisionDetection} onDragEnd={handleDragEnd}>
               {inner}
-              <DragOverlay>{overlayNode}</DragOverlay>
             </DndContext>
           </RootCtx.Provider>
         );
       }
       return inner;
     },
-    [enabled, isZone, layout, sensors, collisionDetection, handleDragEnd, itemIds, isRoot, rootContextValue, overlayNode, setOverlay],
+    [enabled, isZone, layout, sensors, collisionDetection, handleDragEnd, itemIds, isRoot, rootContextValue],
   );
 
   return {
