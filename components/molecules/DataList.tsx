@@ -417,7 +417,7 @@ export function DataList<T extends EntityRow = EntityRow>({
   const renderItem = (itemData: Record<string, unknown>, index: number, isLast: boolean) => {
     const dndId = (itemData[idFieldName] as string | number | undefined) ?? `__idx_${index}`;
     const wrapDnd = (node: React.ReactNode): React.ReactNode =>
-      dnd.isZone ? <dnd.SortableItem id={dndId}>{node}</dnd.SortableItem> : node;
+      dnd.isZone ? <dnd.SortableItem key={dndId} id={dndId}>{node}</dnd.SortableItem> : node;
     // Custom render-prop path: delegate item content to children, keep itemActions
     if (hasRenderProp) {
       const id = (itemData.id as string) || String(index);

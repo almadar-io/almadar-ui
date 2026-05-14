@@ -276,11 +276,17 @@ export function useDataDnd<T extends EntityRow>(
       // Push the rendered children up to the root's DragOverlay while this
       // item is the active drag. The original DOM node stays in place with
       // opacity 0.4 so the column doesn't visibly shrink during drag.
+      // Keep `children` in a ref so the overlay-portal effect only re-fires
+      // when isDragging toggles — using `children` directly as a dep would
+      // re-render every parent render (children is a fresh node each time)
+      // and trip @dnd-kit's measureRect setState into an infinite loop.
+      const childrenRef = React.useRef(children);
+      childrenRef.current = children;
       React.useEffect(() => {
         if (!isDragging || !overlaySink) return;
-        overlaySink(children);
+        overlaySink(childrenRef.current);
         return () => overlaySink(null);
-      }, [isDragging, children]);
+      }, [isDragging]);
       const style: React.CSSProperties = {
         transform: CSS.Transform.toString(transform),
         transition,
