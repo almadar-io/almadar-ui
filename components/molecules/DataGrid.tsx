@@ -352,15 +352,17 @@ export function DataGrid<T extends EntityRow = EntityRow>({
     );
   }
 
-  // Empty state
+  // Empty state — when DnD is enabled, keep the DropZoneShell mounted so
+  // a kanban column with zero cards still accepts drops.
   if (data.length === 0) {
-    return (
+    const emptyNode = (
       <Box className="text-center py-12">
         <Typography variant="body" color="secondary">
           {t('empty.noItems') || 'No items found'}
         </Typography>
       </Box>
     );
+    return dnd.enabled ? <>{dnd.wrapContainer(emptyNode)}</> : emptyNode;
   }
 
   const allIds = data.map((item, i) => ((item as Record<string, unknown>).id as string) || String(i));
