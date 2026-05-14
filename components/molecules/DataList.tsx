@@ -225,6 +225,7 @@ export function DataList<T extends EntityRow = EntityRow>({
   dropEvent,
   reorderEvent: dndReorderEvent,
   dndItemIdField,
+  dndRoot,
 }: DataListProps<T>) {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -245,6 +246,7 @@ export function DataList<T extends EntityRow = EntityRow>({
     dropEvent,
     reorderEvent: dndReorderEvent,
     dndItemIdField,
+    dndRoot,
   });
   const allData = dnd.orderedItems as readonly Record<string, unknown>[];
   const data = pageSize > 0 ? allData.slice(0, visibleCount) : allData;

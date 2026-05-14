@@ -49,6 +49,15 @@ export interface DataDndProps {
   dropEvent?: EventKey;
   reorderEvent?: EventKey;
   dndItemIdField?: string;
+  /**
+   * Mark this container as the DnD root for its subtree. Use on an outer
+   * container (e.g. a data-grid hosting inner data-lists) when the container
+   * itself is NOT a drop target or sortable, but descendant zones need to
+   * share one DndContext so items can be dragged between them. Inner zones
+   * with `accepts` / `dragGroup` / `sortable` detect this root and skip
+   * creating their own DndContext.
+   */
+  dndRoot?: boolean;
 }
 
 interface ZoneMeta {
@@ -87,11 +96,13 @@ export function useDataDnd<T extends EntityRow>(
     dropEvent,
     reorderEvent,
     dndItemIdField = 'id',
+    dndRoot,
     items,
     layout,
   } = args;
 
-  const enabled = Boolean(dragGroup || accepts || sortable);
+  const isZone = Boolean(dragGroup || accepts || sortable);
+  const enabled = isZone || Boolean(dndRoot);
   const eventBus = useEventBus();
   const parentRoot = React.useContext(RootCtx);
   const isRoot = enabled && parentRoot === null;
@@ -255,7 +266,12 @@ export function useDataDnd<T extends EntityRow>(
     return (
       <Box
         ref={setNodeRef as React.Ref<HTMLDivElement>}
-        className={isOver ? 'ring-2 ring-primary ring-offset-2 rounded-lg' : undefined}
+        data-dnd-zone={ownGroup}
+        className={
+          isOver
+            ? 'ring-2 ring-primary ring-offset-2 rounded-lg transition-all min-h-[3rem]'
+            : 'min-h-[3rem] rounded-lg transition-all'
+        }
       >
         {children}
       </Box>
@@ -271,6 +287,18 @@ export function useDataDnd<T extends EntityRow>(
     (children: React.ReactNode): React.ReactNode => {
       if (!enabled) return children;
       const strategy = layout === 'grid' ? rectSortingStrategy : verticalListSortingStrategy;
+      // Root-only mode: container hosts DndContext for descendant zones but is
+      // not itself a sortable or drop target.
+      if (!isZone) {
+        if (!isRoot) return children;
+        return (
+          <RootCtx.Provider value={rootContextValue}>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              {children}
+            </DndContext>
+          </RootCtx.Provider>
+        );
+      }
       const inner = (
         <DropZoneShell>
           <SortableContext items={itemIds} strategy={strategy}>
@@ -289,7 +317,7 @@ export function useDataDnd<T extends EntityRow>(
       }
       return inner;
     },
-    [enabled, layout, sensors, handleDragEnd, itemIds, isRoot, rootContextValue],
+    [enabled, isZone, layout, sensors, handleDragEnd, itemIds, isRoot, rootContextValue],
   );
 
   return {
