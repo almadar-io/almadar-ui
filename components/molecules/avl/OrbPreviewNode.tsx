@@ -456,7 +456,12 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
 
       select({
         patternType: patternEl.getAttribute('data-pattern') ?? 'unknown',
-        patternId: patternEl.getAttribute('data-id') ?? undefined,
+        // `data-pattern-path` is the SExpr tree path (`children.0.…`) emitted by
+        // UISlotRenderer; `data-id` is the runtime content id. `OrbInspector`
+        // resolves pattern config by walking the render-ui SExpr tree, so the
+        // path is the correct key — reading `data-id` silently broke prop
+        // resolution and rendered every value as '—'.
+        patternId: patternEl.getAttribute('data-pattern-path') ?? undefined,
         sourceTrait: patternEl.getAttribute('data-source-trait') ?? undefined,
         nodeData: data,
         rect: nodeRect ? {

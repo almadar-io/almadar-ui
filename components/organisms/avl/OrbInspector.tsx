@@ -48,8 +48,11 @@ import {
 import type { PreviewNodeData } from '../../molecules/avl/avl-preview-types';
 import { PatternSelectionContext } from '../../molecules/avl/OrbPreviewNode';
 import { getPatternDefinition, isEntityAwarePattern } from '@almadar/patterns';
+import { createLogger } from '@almadar/logger';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
+
+const inspectorLog = createLogger('almadar:ui:inspector');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -194,8 +197,21 @@ export function OrbInspector({ node, schema, editable = false, onSchemaChange, o
         if (found) return found;
       }
     }
+    // Selection has a patternId but no render-ui slot resolves it — usually
+    // a path/key mismatch between the click target's data-attribute and the
+    // SExpr tree shape. Surface it so future divergences don't quietly
+    // render every prop as '—'.
+    if (selectedPattern.patternId) {
+      inspectorLog.warn('pattern-config-unresolved', () => ({
+        patternId: selectedPattern.patternId,
+        patternType: selectedPattern.patternType,
+        orbitalName,
+        traitName,
+        transitionEvent,
+      }));
+    }
     return null;
-  }, [selectedPattern, transition]);
+  }, [selectedPattern, transition, orbitalName, traitName, transitionEvent]);
 
   // Generate the relevant JSON slice for the code tab
   const orbCode = useMemo(() => {

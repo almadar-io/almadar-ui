@@ -142,6 +142,16 @@ export interface PreviewNodeData extends Record<string, unknown> {
    * trace inline.
    */
   status?: 'idle' | 'running' | 'success' | 'error';
+
+  /**
+   * The `OrbitalSchema.name` this node was derived from. The reserved value
+   * `'__design_system__'` identifies nodes belonging to the Design System
+   * tab's synthesized catalog schema, so downstream event handlers can route
+   * mutation events to the project theme manifest instead of the project's
+   * orbital schema. Unset for project orbitals — handlers treat absence as
+   * "project schema".
+   */
+  sourceSchemaName?: string;
 }
 
 // ---------------------------------------------------------------------------
