@@ -251,6 +251,8 @@ export interface FormProps extends Omit<
   cancelLabel?: string;
   /** Show cancel button (defaults to true for schema forms) */
   showCancel?: boolean;
+  /** Show submit button (defaults to true for schema forms). Set false when a parent atom owns the submit action externally (e.g. wizard footers). */
+  showSubmit?: boolean;
   /** Form title (used by ModalSlot to extract title) */
   title?: string;
 
@@ -423,6 +425,7 @@ export const Form: React.FC<FormProps> = ({
   submitLabel,
   cancelLabel,
   showCancel,
+  showSubmit = true,
   title,
   submitEvent = "SAVE",
   cancelEvent = "CANCEL",
@@ -1134,17 +1137,19 @@ export const Form: React.FC<FormProps> = ({
 
       {/* Action buttons for schema-based forms */}
       {((schemaFields && schemaFields.length > 0) ||
-        (sectionElements && sectionElements.length > 0)) && (
+        (sectionElements && sectionElements.length > 0)) && (showSubmit || shouldShowCancel) && (
         <HStack gap="sm" className="pt-4">
-          <Button
-            type="submit"
-            variant="primary"
-            disabled={isLoading}
-            data-event={submitEvent}
-            data-testid={`action-${submitEvent}`}
-          >
-            {isLoading ? t('form.saving') : resolvedSubmitLabel}
-          </Button>
+          {showSubmit && (
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={isLoading}
+              data-event={submitEvent}
+              data-testid={`action-${submitEvent}`}
+            >
+              {isLoading ? t('form.saving') : resolvedSubmitLabel}
+            </Button>
+          )}
           {shouldShowCancel && (
             <Button
               type="button"
