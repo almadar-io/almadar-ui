@@ -224,6 +224,7 @@ export function DataList<T extends EntityRow = EntityRow>({
   sortable: sortableProp,
   dropEvent,
   reorderEvent: dndReorderEvent,
+  positionEvent,
   dndItemIdField,
   dndRoot,
 }: DataListProps<T>) {
@@ -245,6 +246,7 @@ export function DataList<T extends EntityRow = EntityRow>({
     sortable: sortableProp,
     dropEvent,
     reorderEvent: dndReorderEvent,
+    positionEvent,
     dndItemIdField,
     dndRoot,
   });

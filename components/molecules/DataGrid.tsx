@@ -221,6 +221,7 @@ export function DataGrid<T extends EntityRow = EntityRow>({
   sortable,
   dropEvent,
   reorderEvent,
+  positionEvent,
   dndItemIdField,
   dndRoot,
 }: DataGridProps<T>) {
@@ -243,6 +244,7 @@ export function DataGrid<T extends EntityRow = EntityRow>({
     sortable,
     dropEvent,
     reorderEvent,
+    positionEvent,
     dndItemIdField,
     dndRoot,
   });

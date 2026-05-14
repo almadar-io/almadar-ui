@@ -52,6 +52,14 @@ import { useEventBus } from '../../hooks/useEventBus';
 import { Box } from '../atoms/Box';
 
 export interface DataDndProps {
+  /**
+   * Event emitted N times per drop (one per item in each affected zone) so
+   * the trait can persist new positions for every item — not just the moved
+   * one. Required for stable sort-by-position because setting only the
+   * dragged item's position creates collisions with the (unchanged) others.
+   * Payload: { id : string, position : number }.
+   */
+  positionEvent?: EventKey;
   dragGroup?: string;
   accepts?: string;
   sortable?: boolean;
@@ -73,6 +81,9 @@ interface ZoneMeta {
   group: string;
   dropEvent?: EventKey;
   reorderEvent?: EventKey;
+  /** Per-item position-update event. Emitted once per item in this zone after
+   *  every drop so the trait can persist new positions for the WHOLE zone. */
+  positionEvent?: EventKey;
   itemIds: UniqueIdentifier[];
   /** Raw items as provided by the consumer's `items` prop. The root reads this
    *  during cross-zone splice to find the dragged item's data when moving it
@@ -130,6 +141,7 @@ export function useDataDnd<T extends EntityRow>(
     sortable,
     dropEvent,
     reorderEvent,
+    positionEvent,
     dndItemIdField = 'id',
     dndRoot,
     items,
@@ -238,8 +250,8 @@ export function useDataDnd<T extends EntityRow>(
   const [overZoneGroup, setOverZoneGroup] = React.useState<string | null>(null);
 
   const meta: ZoneMeta = React.useMemo(
-    () => ({ group: ownGroup, dropEvent, reorderEvent, itemIds, rawItems: items as readonly EntityRow[], idField: dndItemIdField }),
-    [ownGroup, dropEvent, reorderEvent, itemIds, items, dndItemIdField],
+    () => ({ group: ownGroup, dropEvent, reorderEvent, positionEvent, itemIds, rawItems: items as readonly EntityRow[], idField: dndItemIdField }),
+    [ownGroup, dropEvent, reorderEvent, positionEvent, itemIds, items, dndItemIdField],
   );
 
   React.useEffect(() => {
@@ -343,6 +355,25 @@ export function useDataDnd<T extends EntityRow>(
         return;
       }
 
+      // Helper: emit positionEvent for each item in a zone's optimistic order
+      // so the trait can persist a fully-renumbered position for the WHOLE
+      // zone. Without this, setting only the dragged item's position causes
+      // ties with the unchanged ones and sort-by-position becomes unstable.
+      const emitPositions = (zoneMeta: ZoneMeta) => {
+        if (!zoneMeta.positionEvent) {
+          dndLog.debug('dragEnd:positions:no-event', { group: zoneMeta.group });
+          return;
+        }
+        const evt = `UI:${zoneMeta.positionEvent}`;
+        const order = optimisticOrdersRef.current.get(zoneMeta.group) ?? zoneMeta.rawItems;
+        order.forEach((it, idx) => {
+          const id = String((it as Record<string, unknown>)[zoneMeta.idField]);
+          const position = idx * 1000;
+          eventBus.emit(evt, { id, position });
+        });
+        dndLog.info('dragEnd:positions:emitted', { event: evt, group: zoneMeta.group, count: order.length });
+      };
+
       if (sourceMeta.group !== targetMeta.group) {
         if (targetMeta.dropEvent) {
           const evt = `UI:${targetMeta.dropEvent}`;
@@ -362,6 +393,10 @@ export function useDataDnd<T extends EntityRow>(
         } else {
           dndLog.warn('dragEnd:cross-container:no-dropEvent-on-target', { targetGroup: targetMeta.group });
         }
+        // Renumber positions for BOTH zones — source items shifted up to fill
+        // the gap, target items shifted down to make room.
+        emitPositions(sourceMeta);
+        emitPositions(targetMeta);
         return;
       }
 
@@ -386,6 +421,7 @@ export function useDataDnd<T extends EntityRow>(
       } else {
         dndLog.debug('dragEnd:reorder:no-reorderEvent', { sourceGroup: sourceMeta.group });
       }
+      emitPositions(sourceMeta);
     },
     [eventBus],
   );
