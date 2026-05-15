@@ -20,15 +20,7 @@
 import React from 'react';
 import {
   DndContext,
-  PointerSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-  closestCorners,
-  pointerWithin,
-  rectIntersection,
   useDroppable,
-  type CollisionDetection,
   type DragCancelEvent,
   type DragEndEvent,
   type DragOverEvent,
@@ -40,7 +32,6 @@ import { createLogger } from '@almadar/logger';
 const dndLog = createLogger('almadar:ui:dnd');
 import {
   SortableContext,
-  sortableKeyboardCoordinates,
   useSortable,
   arrayMove,
   verticalListSortingStrategy,
@@ -49,6 +40,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import type { EntityRow, EventKey } from '@almadar/core';
 import { useEventBus } from '../../hooks/useEventBus';
+import { useAlmadarDndSensors, almadarDndCollisionDetection } from '../../hooks/useAlmadarDndCollision';
 import { Box } from '../atoms/Box';
 
 export interface DataDndProps {
@@ -274,29 +266,8 @@ export function useDataDnd<T extends EntityRow>(
     };
   }, [parentRoot, isRoot, zoneId, meta]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
-  );
-
-  // Multi-container collision: prefer pointer-within (catches empty zones and
-  // zone hovering), fall back to rect-intersection, then closest-corners over
-  // the items in whichever zone the pointer found.
-  const collisionDetection: CollisionDetection = React.useCallback((args) => {
-    const pointerCollisions = pointerWithin(args);
-    if (pointerCollisions.length > 0) {
-      dndLog.debug('collision:pointerWithin', { count: pointerCollisions.length, ids: pointerCollisions.map((c) => c.id) });
-      return pointerCollisions;
-    }
-    const rectCollisions = rectIntersection(args);
-    if (rectCollisions.length > 0) {
-      dndLog.debug('collision:rectIntersection', { count: rectCollisions.length, ids: rectCollisions.map((c) => c.id) });
-      return rectCollisions;
-    }
-    const cornerCollisions = closestCorners(args);
-    dndLog.debug('collision:closestCorners', { count: cornerCollisions.length, ids: cornerCollisions.map((c) => c.id) });
-    return cornerCollisions;
-  }, []);
+  const sensors = useAlmadarDndSensors(true);
+  const collisionDetection = almadarDndCollisionDetection;
 
   const findZoneByItem = React.useCallback(
     (id: UniqueIdentifier): ZoneMeta | undefined => {

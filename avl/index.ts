@@ -87,6 +87,24 @@ export { schemaToOverviewGraph, orbitalToExpandedGraph } from '../components/mol
 export { OrbPreviewNode } from '../components/molecules/avl/OrbPreviewNode';
 export { EventFlowEdge } from '../components/molecules/avl/EventFlowEdge';
 
+// Canvas DnD (mirrors useDataDnd; pointer-sensor based so it works inside
+// React Flow nodes — the HTML5 DnD path was swallowed by RF's pan/zoom).
+export {
+  CanvasDndProvider,
+  useCanvasDraggable,
+  useCanvasDroppable,
+  type CanvasDragKind,
+  type CanvasDragPayload,
+  type CanvasContainerNode,
+  type CanvasDropTarget,
+  type CanvasDropEvent,
+  type CanvasDndProviderProps,
+  type UseCanvasDraggableArgs,
+  type UseCanvasDraggableResult,
+  type UseCanvasDroppableArgs,
+  type UseCanvasDroppableResult,
+} from '../components/molecules/avl/useCanvasDnd';
+
 // V3 Revised: Behavior Compose
 export { type ComposeViewLevel, type BehaviorComposeNodeData, type BehaviorWireEdgeData, type BehaviorCanvasEntry, type ConnectableEvent } from '../components/molecules/avl/avl-behavior-compose-types';
 export { BehaviorComposeNode } from '../components/molecules/avl/BehaviorComposeNode';

@@ -41,8 +41,7 @@ import { BrowserPlayground } from '../../../runtime/BrowserPlayground';
 import type { PreviewNodeData, PatternEventSource, ScreenSize } from './avl-preview-types';
 import { SCREEN_SIZE_PRESETS } from './avl-preview-types';
 import { useEventBus } from '../../../hooks/useEventBus';
-import { ALMADAR_DND_MIME, type DraggablePayload } from '../../../hooks/useDraggable';
-import { useDropZone } from '../../../hooks/useDropZone';
+import { useCanvasDroppable, type CanvasDropTarget } from './useCanvasDnd';
 import { formatPayloadTooltip } from './wire-validation';
 import { createLogger } from '@almadar/logger';
 
@@ -490,105 +489,68 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
     return () => { unsub1(); unsub2(); };
   }, [eventBus]);
 
-  // Drop handler: find nearest container and calculate insertion index.
-  // GAP-61: emits `UI:PATTERN_DROP` (standardized — was `UI:PATTERN_INSERT`)
-  // with a `containerNode` field that carries the orbital/trait/transition
-  // context from the surrounding `data` (PreviewNodeData) so the page listener
-  // can resolve the SchemaLoc without consulting `activeLocRef`. The wrapper-Box
-  // drop in UIEditor still uses the old `activeLocRef` fallback path — both
-  // shapes flow through the same listener.
-  const handlePreviewDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    // Remove all hover indicators
-    contentRef.current?.querySelectorAll('.drag-hover, .drop-indicator').forEach(el => {
-      el.classList.remove('drag-hover');
-      if (el.classList.contains('drop-indicator')) el.remove();
-    });
-
-    const raw = e.dataTransfer.getData(ALMADAR_DND_MIME);
-    if (!raw) return;
-    let payload: DraggablePayload;
-    try { payload = JSON.parse(raw) as DraggablePayload; } catch { return; }
-    if (payload.kind !== 'pattern') return;
-
-    // Walk up DOM to find nearest container with data-accepts-children
-    let el = e.target as HTMLElement;
-    while (el && el.dataset.acceptsChildren !== 'true') {
-      el = el.parentElement as HTMLElement;
-      if (!el || el === contentRef.current) break;
-    }
-
-    const containerNode = {
-      orbitalName: data.orbitalName,
-      traitName: data.traitName,
-      transitionEvent: data.transitionEvent,
-    };
-
-    const containerPath = el?.dataset?.patternPath;
-    if (!containerPath) {
-      // Drop at root level
-      eventBus.emit('UI:PATTERN_DROP', {
-        parentPath: 'root',
-        patternType: payload.data.type as string,
-        index: 0,
-        containerNode,
-      });
-      return;
-    }
-
-    // Calculate insertion index from cursor position among siblings
-    const pathChildren = el.querySelectorAll(':scope > [data-pattern-path]');
-    let insertIndex = pathChildren.length;
-
-    for (let i = 0; i < pathChildren.length; i++) {
-      const rect = pathChildren[i].getBoundingClientRect();
+  // L2 cursor-to-path resolver. Walks from the cursor's DOM element up to the
+  // nearest `[data-accepts-children="true"]` container, then computes the
+  // insertion index from the cursor's relative position among the container's
+  // direct `[data-pattern-path]` children. Runs at drop time via @dnd-kit's
+  // resolvePath callback — same logic the legacy `onDrop` ran inline.
+  const resolveL2Path = useCallback(
+    (cursor: { x: number; y: number }): { parentPath: string; index: number } | null => {
+      const hit = document.elementFromPoint(cursor.x, cursor.y) as HTMLElement | null;
+      if (!hit) return null;
+      let el: HTMLElement | null = hit;
+      while (el && el.dataset.acceptsChildren !== 'true') {
+        if (el === contentRef.current) break;
+        el = el.parentElement;
+      }
+      if (!el) return null;
+      const containerPath = el.dataset?.patternPath;
+      if (!containerPath) return { parentPath: 'root', index: 0 };
+      const pathChildren = el.querySelectorAll(':scope > [data-pattern-path]');
+      let insertIndex = pathChildren.length;
       const style = el.firstElementChild ? getComputedStyle(el.firstElementChild) : null;
       const isVertical = style?.flexDirection !== 'row';
-      const mid = isVertical ? rect.top + rect.height / 2 : rect.left + rect.width / 2;
-      const cursor = isVertical ? e.clientY : e.clientX;
-      if (cursor < mid) { insertIndex = i; break; }
-    }
+      for (let i = 0; i < pathChildren.length; i++) {
+        const rect = pathChildren[i].getBoundingClientRect();
+        const mid = isVertical ? rect.top + rect.height / 2 : rect.left + rect.width / 2;
+        const pos = isVertical ? cursor.y : cursor.x;
+        if (pos < mid) { insertIndex = i; break; }
+      }
+      return { parentPath: containerPath, index: insertIndex };
+    },
+    [],
+  );
 
-    eventBus.emit('UI:PATTERN_DROP', {
-      parentPath: containerPath,
-      patternType: payload.data.type as string,
-      index: insertIndex,
-      containerNode,
-    });
-  }, [eventBus, data.orbitalName, data.traitName, data.transitionEvent]);
+  // L2 inner zone — the render-ui slot inside the expanded orbital. Each
+  // OrbPreviewNode owns one. @dnd-kit's useCanvasDroppable manages the
+  // pointer-driven over/drop lifecycle; `resolvePath` extracts the precise
+  // (parentPath, index) at drop time.
+  const l2Target = useMemo<CanvasDropTarget>(
+    () => ({
+      level: 'l2',
+      containerNode: {
+        orbitalName: data.orbitalName,
+        traitName: data.traitName,
+        transitionEvent: data.transitionEvent,
+      },
+      resolvePath: resolveL2Path,
+    }),
+    [data.orbitalName, data.traitName, data.transitionEvent, resolveL2Path],
+  );
+  const { setNodeRef: l2SetNodeRef, isOver: l2IsOver } = useCanvasDroppable({
+    id: `orb-l2-${data.orbitalName}-${data.traitName ?? ''}-${data.transitionEvent ?? ''}`,
+    target: l2Target,
+    accepts: ['pattern'],
+    disabled: !isExpanded,
+  });
 
-  const handlePreviewDragOver = useCallback((e: React.DragEvent) => {
-    // Always preventDefault to allow drops (browser requirement)
-    // Check for our MIME type in the types list (getData is restricted during dragover)
-    if (!e.dataTransfer.types.includes(ALMADAR_DND_MIME)) return;
-    e.preventDefault();
-    e.stopPropagation();
-    e.dataTransfer.dropEffect = 'copy';
-
-    // Activate container highlighting on first dragover if not already active
-    if (!dragActive) setDragActive(true);
-
-    // Highlight the nearest container under cursor
-    let el = e.target as HTMLElement;
-    while (el && el.dataset.acceptsChildren !== 'true') {
-      el = el.parentElement as HTMLElement;
-      if (!el || el === contentRef.current) break;
-    }
-
-    // Remove previous hover from all containers
-    contentRef.current?.querySelectorAll('.drag-hover').forEach(c => c.classList.remove('drag-hover'));
-    if (el?.dataset?.acceptsChildren === 'true') {
-      el.classList.add('drag-hover');
-    }
-  }, [dragActive]);
-
-  const handlePreviewDragLeave = useCallback((e: React.DragEvent) => {
-    void e;
-    contentRef.current?.querySelectorAll('.drag-hover').forEach(c => c.classList.remove('drag-hover'));
-  }, []);
+  // Callback ref that fans the same DOM node to both useRef + dnd-kit.
+  // contentRef stays read-only for the click-to-select walker; l2SetNodeRef
+  // registers the node as a droppable.
+  const setContentRef = useCallback((el: HTMLDivElement | null) => {
+    contentRef.current = el;
+    l2SetNodeRef(el);
+  }, [l2SetNodeRef]);
 
   // Status-driven outline color. Running > error > success > hover > default.
   const statusBorder = isRunning
@@ -602,32 +564,24 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   const borderColor = statusBorder ?? (hovered ? 'var(--color-primary)' : colors.border);
 
   // L1 outer drop zone — fires when a palette-pattern is dropped on the
-  // orbital's frame (header / padding) outside the inner render-ui preview.
-  // Emits UI:PATTERN_DROP with a partial containerNode (orbital only) so the
-  // page-level handler can resolve to the orbital's first render-ui transition
-  // and drill into L2 to show the result. L2 nodes don't need this — their
-  // contentRef drop handler already provides precise (trait, transition,
-  // path, index) placement.
-  const handleL1Drop = useCallback(
-    (payload: DraggablePayload) => {
-      if (payload.kind !== 'pattern') return;
-      if (typeof payload.data.type !== 'string') return;
-      eventBus.emit('UI:PATTERN_DROP', {
-        patternType: payload.data.type,
-        containerNode: { orbitalName: data.orbitalName },
-      });
-    },
-    [eventBus, data.orbitalName],
+  // orbital's frame outside the inner render-ui preview. Emits the default
+  // UI:PATTERN_DROP with a partial containerNode (orbital only) so the
+  // page-level handler can resolve to the orbital's first render-ui
+  // transition and drill into L2.
+  const l1Target = useMemo<CanvasDropTarget>(
+    () => ({ level: 'l1', containerNode: { orbitalName: data.orbitalName } }),
+    [data.orbitalName],
   );
-  const { dropProps: l1DropProps, isOver: l1IsOver } = useDropZone({
+  const { setNodeRef: l1SetNodeRef, isOver: l1IsOver } = useCanvasDroppable({
+    id: `orb-l1-${data.orbitalName}`,
+    target: l1Target,
     accepts: ['pattern'],
-    onDrop: handleL1Drop,
     disabled: isExpanded,
   });
 
   return (
     <Box
-      {...(isExpanded ? {} : l1DropProps)}
+      ref={isExpanded ? undefined : l1SetNodeRef}
       className={`rounded-lg border shadow-sm bg-card transition-all duration-200 overflow-hidden relative${isRunning ? ' orb-preview-running' : ''}`}
       style={{
         borderColor: l1IsOver ? 'var(--color-primary)' : borderColor,
@@ -779,14 +733,14 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
         )}
       </Box>
 
-      {/* OrbPreview - always interactive, click to select patterns */}
+      {/* OrbPreview - always interactive, click to select patterns. The
+          ref is set by `setContentRef`, which fans the node to both
+          contentRef (read by handleContentClick) AND @dnd-kit's L2
+          droppable. */}
       <Box
-        ref={contentRef}
-        className={`orb-preview-live nodrag${dragActive ? ' drag-active' : ''}`}
+        ref={setContentRef}
+        className={`orb-preview-live nodrag${dragActive || l2IsOver ? ' drag-active' : ''}`}
         onClick={handleContentClick}
-        onDrop={handlePreviewDrop}
-        onDragOver={handlePreviewDragOver}
-        onDragLeave={handlePreviewDragLeave}
       >
         {orbitalSchema ? (
           <Box style={{ minHeight: preset.minHeight }}>
