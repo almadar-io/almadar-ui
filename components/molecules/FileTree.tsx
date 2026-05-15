@@ -103,8 +103,8 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
       <Box
         className={`flex items-center gap-1.5 py-0.5 px-2 cursor-pointer rounded-sm transition-colors ${
           isSelected
-            ? 'bg-[var(--color-primary)] bg-opacity-15 text-[var(--color-primary)]'
-            : 'hover:bg-[var(--color-muted)] hover:bg-opacity-30'
+            ? 'bg-primary text-primary-foreground'
+            : 'hover:bg-muted'
         }`}
         style={{ paddingLeft: depth * indent + 8 }}
         onClick={handleClick}
@@ -124,16 +124,21 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
         <Icon
           name={isDir ? (expanded ? 'folder-open' : 'folder') : fileIcon(node.name)}
           size="xs"
-          className={isDir ? 'text-[var(--color-warning)]' : 'text-[var(--color-muted-foreground)]'}
+          className={isSelected
+            ? 'text-inherit'
+            : isDir ? 'text-[var(--color-warning)]' : 'text-[var(--color-muted-foreground)]'}
         />
         <Typography
           variant="caption"
-          className={`truncate font-mono text-[11px] ${isSelected ? 'font-semibold' : ''}`}
+          className={`truncate font-mono text-[11px] !text-inherit ${isSelected ? 'font-semibold' : ''}`}
         >
           {node.name}
         </Typography>
         {!isDir && node.size !== undefined && (
-          <Typography variant="caption" className="text-[var(--color-muted-foreground)] text-[9px] ml-auto flex-shrink-0">
+          <Typography
+            variant="caption"
+            className={`text-[9px] ml-auto flex-shrink-0 ${isSelected ? '!text-inherit opacity-80' : 'text-[var(--color-muted-foreground)]'}`}
+          >
             {node.size < 1024 ? `${node.size}B` : `${Math.round(node.size / 1024)}KB`}
           </Typography>
         )}
