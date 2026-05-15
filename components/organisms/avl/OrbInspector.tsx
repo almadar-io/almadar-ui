@@ -112,7 +112,17 @@ function findTraits(schema: OrbitalSchema, orbitalName: string): Array<{ name: s
   }));
 }
 
-/** Navigate a dot-separated path within a pattern config tree. */
+/**
+ * Navigate a dot-separated path within a pattern config tree.
+ *
+ * Pattern nodes may carry children at either `node.children` (flat
+ * authoring form) or `node.props.children` (nested form some IR
+ * transformations emit). UISlotRenderer's path emission uses
+ * `<parentPath>.children.<index>` regardless of source form (it
+ * normalizes before assigning the `data-pattern-path` attribute), so
+ * this walker has to look in both places to keep path → node lookup
+ * symmetric with the renderer's emission.
+ */
 function findPatternInTree(root: Record<string, unknown>, path: string): Record<string, unknown> | null {
   if (!path || path === 'root') return root;
   const parts = path.split('.');
@@ -120,8 +130,20 @@ function findPatternInTree(root: Record<string, unknown>, path: string): Record<
   for (const part of parts) {
     if (current === null || current === undefined || typeof current !== 'object') return null;
     const record = current as Record<string, unknown>;
-    if (part === 'children' && Array.isArray(record.children)) {
-      current = record.children;
+    if (part === 'children') {
+      // Prefer flat `.children`; fall back to `.props.children` for nested
+      // pattern nodes.
+      if (Array.isArray(record.children)) {
+        current = record.children;
+      } else {
+        const nestedProps = record.props;
+        if (nestedProps && typeof nestedProps === 'object' && !Array.isArray(nestedProps)
+            && Array.isArray((nestedProps as Record<string, unknown>).children)) {
+          current = (nestedProps as Record<string, unknown>).children;
+        } else {
+          return null;
+        }
+      }
     } else if (Array.isArray(current)) {
       const idx = parseInt(part, 10);
       if (isNaN(idx) || idx < 0 || idx >= (current as unknown[]).length) return null;
@@ -204,14 +226,34 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
   }, [schema, orbitalName, traitName, transitionEvent]);
   const traits = useMemo(() => findTraits(schema, orbitalName), [schema, orbitalName]);
 
-  // Resolve current pattern config values from the schema
+  // Resolve current pattern config values from the schema.
+  //
+  // Pattern configs arrive in two shapes (see UISlotRenderer.tsx:1003 —
+  // the runtime normalizes both):
+  //  1. Flat:   `{type: 'icon', name: 'home', size: 'md'}`
+  //  2. Nested: `{type: 'icon', props: {name: 'home', size: 'md'}, _id}`
+  // The std behaviors emit flat; agent runs sometimes emit nested. Without
+  // unwrapping, a nested-shape pattern shows every prop as '—' because
+  // `patternConfig.name` is undefined and the actual value lives at
+  // `patternConfig.props.name`. Same VG31 cascade the renderer's comment
+  // calls out, surfaced one layer down.
   const patternConfig = useMemo(() => {
     if (!selectedPattern || !transition) return null;
     const patternId = selectedPattern.patternId ?? 'root';
     for (const eff of (transition.effects ?? []) as unknown[][]) {
       if (Array.isArray(eff) && eff[0] === 'render-ui' && eff[2]) {
         const found = findPatternInTree(eff[2] as Record<string, unknown>, patternId);
-        if (found) return found;
+        if (!found) continue;
+        // Normalize nested → flat so downstream prop reads work for both
+        // authoring forms. Merge top-level keys (type, _id, children) over
+        // `props` so the type discriminator survives.
+        const nested = found.props;
+        if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+          const { props: _stripped, ...rest } = found;
+          void _stripped;
+          return { ...(nested as Record<string, unknown>), ...rest };
+        }
+        return found;
       }
     }
     // Selection has a patternId but no render-ui slot resolves it — usually
