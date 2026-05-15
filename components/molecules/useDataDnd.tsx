@@ -203,7 +203,6 @@ export function useDataDnd<T extends EntityRow>(
         const raw = (it as Record<string, unknown>)[dndItemIdField];
         return (raw as string | number | undefined) ?? `__idx_${idx}`;
       }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [itemIdsSignature],
   );
 
@@ -222,7 +221,6 @@ export function useDataDnd<T extends EntityRow>(
       // We ARE the root — clear our own entry for this group.
       clearOptimisticOrder(ownGroup);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [itemsContentSig, ownGroup]);
 
   // Root maintains a registry of zones so onDragEnd can resolve source/target

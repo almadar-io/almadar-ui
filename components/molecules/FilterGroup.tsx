@@ -290,6 +290,16 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
                   onClear={() => handleFilterSelect(`${filter.field}_to`, null)}
                 />
               </div>
+            ) : resolveFilterType(filter) === "text" ? (
+              <Input
+                value={selectedValues[filter.field] || ""}
+                onChange={(e) =>
+                  handleFilterSelect(filter.field, e.target.value || null)
+                }
+                placeholder={filter.label}
+                clearable
+                onClear={() => handleFilterSelect(filter.field, null)}
+              />
             ) : (
               <Select
                 value={selectedValues[filter.field] || "all"}
@@ -369,6 +379,17 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
                   className="text-sm min-w-[100px]"
                 />
               </HStack>
+            ) : resolveFilterType(filter) === "text" ? (
+              <Input
+                value={selectedValues[filter.field] || ""}
+                onChange={(e) =>
+                  handleFilterSelect(filter.field, e.target.value || null)
+                }
+                placeholder={filter.label}
+                clearable
+                onClear={() => handleFilterSelect(filter.field, null)}
+                className="text-sm"
+              />
             ) : (
               <Select
                 value={selectedValues[filter.field] || "all"}
@@ -491,6 +512,17 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
                   className="min-w-[130px]"
                 />
               </HStack>
+            ) : resolveFilterType(filter) === "text" ? (
+              <Input
+                value={selectedValues[filter.field] || ""}
+                onChange={(e) =>
+                  handleFilterSelect(filter.field, e.target.value || null)
+                }
+                placeholder={filter.label}
+                clearable
+                onClear={() => handleFilterSelect(filter.field, null)}
+                className="min-w-[160px]"
+              />
             ) : (
               <Select
                 value={selectedValues[filter.field] || "all"}
