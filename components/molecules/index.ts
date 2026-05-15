@@ -53,6 +53,7 @@ export { FormSectionHeader, type FormSectionHeaderProps } from './FormSectionHea
 export { FlipCard, type FlipCardProps } from './FlipCard';
 
 // Chart molecules
+export { DateRangePicker, type DateRangePickerProps, type DateRangePickerPreset } from './DateRangePicker';
 export { DateRangeSelector, type DateRangeSelectorProps, type DateRangeSelectorOption } from './DateRangeSelector';
 export { ChartLegend, type ChartLegendProps, type ChartLegendItem } from './ChartLegend';
 export { LineChart, type LineChartProps, type ChartDataPoint } from './LineChart';

@@ -500,10 +500,21 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
                 <Box className="flex flex-col gap-1.5">
                   {Object.entries(patternDef.propsSchema).slice(0, 12).map(([propName, propSchema]) => {
                     const ps = propSchema as Record<string, unknown>;
-                    const currentValue = patternConfig ? patternConfig[propName] : undefined;
+                    const explicitValue = patternConfig ? patternConfig[propName] : undefined;
+                    const defaultValue = ps.default;
+                    const isImplicit = explicitValue === undefined && defaultValue !== undefined;
+                    const currentValue = explicitValue !== undefined ? explicitValue : defaultValue;
                     const displayValue = currentValue !== undefined
                       ? (typeof currentValue === 'object' ? JSON.stringify(currentValue) : String(currentValue))
                       : '';
+                    inspectorLog.debug('prop-row', () => ({
+                      patternType: patternDef.type,
+                      patternId: selectedPattern?.patternId ?? '',
+                      propName,
+                      explicitValue: explicitValue === undefined ? '<unset>' : JSON.stringify(explicitValue),
+                      defaultValue: defaultValue === undefined ? '<unset>' : JSON.stringify(defaultValue),
+                      isImplicit: String(isImplicit),
+                    }));
                     return (
                       <Box key={propName} className="flex items-center gap-2">
                         <Typography variant="small" className="text-muted-foreground text-[11px] w-20 shrink-0 font-mono">{propName}</Typography>

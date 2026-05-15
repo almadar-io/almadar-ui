@@ -6,13 +6,15 @@
  * Molecule-level replacement for the stats (StatCard) organism in behavior schemas.
  * No entity prop, no data fetching, no hooks beyond icon resolution.
  */
-import React from 'react';
+import React, { useCallback } from 'react';
 import { cn } from '../../lib/cn';
 import { Card } from '../atoms/Card';
 import { Typography } from '../atoms/Typography';
 import { Box } from '../atoms/Box';
 import { HStack, VStack } from '../atoms/Stack';
+import { Sparkline } from '../atoms/Sparkline';
 import { resolveIcon } from '../atoms/Icon';
+import { useEventBus } from '../../hooks/useEventBus';
 
 export interface StatDisplayProps {
   /** Display label (e.g., "Total", "Remaining") */
@@ -23,8 +25,16 @@ export interface StatDisplayProps {
   max?: number;
   /** Optional progress target. >0 renders a progress bar at value/target. */
   target?: number;
-  /** Signed delta vs previous period. >0 renders ↑ green, <0 renders ↓ red, 0 hides. */
+  /** Signed delta vs previous period. >0 renders ↑ green, <0 renders ↓ red, 0 hides. Polarity reversal via `trendPolarity`. */
   trend?: number;
+  /** Controls whether `trend > 0` is "good" (default) or "bad". `lower-is-better` inverts the color logic. */
+  trendPolarity?: 'higher-is-better' | 'lower-is-better';
+  /** When `'percent'`, renders trend with a `%` suffix (e.g. `↓ 3.3%`); default is `'absolute'`. */
+  trendFormat?: 'absolute' | 'percent';
+  /** Optional inline sparkline data appended to the trend row. Length < 2 renders nothing. */
+  sparklineData?: readonly number[];
+  /** Event name emitted as `UI:{clickEvent}` with `{ metricLabel }` when the card is clicked. */
+  clickEvent?: string;
   /** Prefix prepended to the formatted value (e.g. "≈ "). */
   prefix?: string;
   /** Suffix appended to the formatted value (e.g. " /mo", " ms"). */
@@ -96,6 +106,10 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
   max,
   target,
   trend,
+  trendPolarity = 'higher-is-better',
+  trendFormat = 'absolute',
+  sparklineData,
+  clickEvent,
   prefix,
   suffix,
   icon: iconProp,
@@ -109,6 +123,10 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
   isLoading = false,
   error = null,
 }) => {
+  const eventBus = useEventBus();
+  const handleClick = useCallback(() => {
+    if (clickEvent) eventBus.emit(`UI:${clickEvent}`, { metricLabel: label });
+  }, [clickEvent, eventBus, label]);
   const ResolvedIcon = typeof iconProp === 'string'
     ? resolveIcon(iconProp)
     : null;
@@ -123,7 +141,10 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
   const targetPct = showTarget ? Math.max(0, Math.min(100, (numericValue / (target as number)) * 100)) : 0;
   const showTrend = typeof trend === 'number' && trend !== 0 && Number.isFinite(trend);
   const trendUp = showTrend && (trend as number) > 0;
-  const trendLabel = showTrend ? `${trendUp ? '↑' : '↓'} ${Math.abs(trend as number)}` : '';
+  const trendIsGood = trendPolarity === 'lower-is-better' ? !trendUp : trendUp;
+  const trendMagnitude = Math.abs(trend as number);
+  const trendSuffix = trendFormat === 'percent' ? '%' : '';
+  const trendLabel = showTrend ? `${trendUp ? '↑' : '↓'} ${trendMagnitude}${trendSuffix}` : '';
 
   if (error) {
     return (
@@ -147,7 +168,11 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
   // Compact mode: inline badge style
   if (compact) {
     return (
-      <HStack gap="sm" className={cn('items-center', className)}>
+      <HStack
+        gap="sm"
+        className={cn('items-center', clickEvent && 'cursor-pointer hover:opacity-80', className)}
+        onClick={clickEvent ? handleClick : undefined}
+      >
         {ResolvedIcon && <ResolvedIcon className={cn(iconSizes[size], iconColor)} />}
         {typeof iconProp !== 'string' && iconProp}
         <Typography variant="caption" color="secondary">{label}</Typography>
@@ -155,9 +180,12 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
           {displayValue}
         </Typography>
         {showTrend && (
-          <Typography variant="caption" className={cn('font-semibold', trendUp ? 'text-success' : 'text-error')}>
+          <Typography variant="caption" className={cn('font-semibold', trendIsGood ? 'text-success' : 'text-error')}>
             {trendLabel}
           </Typography>
+        )}
+        {sparklineData && sparklineData.length > 1 && (
+          <Sparkline data={sparklineData} color="auto" width={60} height={20} />
         )}
       </HStack>
     );
@@ -165,7 +193,10 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
 
   // Card mode (default)
   return (
-    <Card className={cn(padSizes[size], className)}>
+    <Card
+      className={cn(padSizes[size], clickEvent && 'cursor-pointer hover:shadow-md transition-shadow', className)}
+      onClick={clickEvent ? handleClick : undefined}
+    >
       <HStack align="start" justify="between">
         <VStack gap="none" className="space-y-1 flex-1">
           <Typography variant="overline" color="secondary">{label}</Typography>
@@ -176,7 +207,7 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
             {showTrend && (
               <Typography
                 variant="caption"
-                className={cn('font-semibold pb-1', trendUp ? 'text-success' : 'text-error')}
+                className={cn('font-semibold pb-1', trendIsGood ? 'text-success' : 'text-error')}
               >
                 {trendLabel}
               </Typography>
@@ -191,13 +222,18 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
             </Box>
           )}
         </VStack>
-        {(ResolvedIcon || (typeof iconProp !== 'string' && iconProp)) && (
-          <Box className={cn('p-3 rounded-md', iconBg)}>
-            {ResolvedIcon
-              ? <ResolvedIcon className={cn(iconSizes[size], iconColor)} />
-              : iconProp}
-          </Box>
-        )}
+        <VStack gap="xs" align="end">
+          {(ResolvedIcon || (typeof iconProp !== 'string' && iconProp)) && (
+            <Box className={cn('p-3 rounded-md', iconBg)}>
+              {ResolvedIcon
+                ? <ResolvedIcon className={cn(iconSizes[size], iconColor)} />
+                : iconProp}
+            </Box>
+          )}
+          {sparklineData && sparklineData.length > 1 && (
+            <Sparkline data={sparklineData} color="auto" />
+          )}
+        </VStack>
       </HStack>
     </Card>
   );

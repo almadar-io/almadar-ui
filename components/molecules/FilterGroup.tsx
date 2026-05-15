@@ -28,8 +28,9 @@ import { useQuerySingleton } from "../../hooks/useQuerySingleton";
 export interface FilterDefinition {
   field: string;
   label: string;
-  /** Filter type - 'date' renders a date picker, 'date-range'/'daterange' renders two date pickers */
+  /** Filter type - 'text' free-text input, 'date' renders a date picker, 'date-range'/'daterange' renders two date pickers */
   filterType?:
+    | "text"
     | "select"
     | "toggle"
     | "checkbox"
@@ -37,7 +38,7 @@ export interface FilterDefinition {
     | "daterange"
     | "date-range";
   /** Alias for filterType (schema compatibility) */
-  type?: "select" | "toggle" | "checkbox" | "date" | "daterange" | "date-range";
+  type?: "text" | "select" | "toggle" | "checkbox" | "date" | "daterange" | "date-range";
   /** Options for select/toggle filters */
   options?: readonly string[];
 }

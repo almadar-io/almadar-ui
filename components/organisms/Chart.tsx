@@ -2,14 +2,18 @@
 /**
  * Chart Organism Component
  *
- * A data visualization component supporting bar, line, pie, and area chart types.
- * Composes atoms and molecules for layout, uses CSS variables for theming.
+ * Data visualization. Supports bar / line / pie / area / donut / scatter /
+ * histogram chart types. Renders multi-series natively for bar / line / area
+ * via the `series` prop. Pie / donut consume the first series only. Scatter
+ * plots raw {x,y} points; histogram renders pre-binned data as gap-less bars.
  *
- * Orbital Component Interface Compliance:
- * - Entity binding with auto-fetch when entity is a string
- * - Event emission via useEventBus (UI:* events)
- * - isLoading and error state props
- * - className for external styling
+ * Bus integration:
+ *  - top-level `actions[].event` → `UI:{event}` on click (existing behavior)
+ *  - per-data-point `drillEvent` → `UI:{drillEvent}` with `{ label, value, seriesLabel? }`
+ *
+ * Time axis: when `timeAxis: true`, ISO date labels are formatted via Intl
+ * (e.g. "Mar 2026"). Positioning remains evenly spaced (real time-scale
+ * alignment is deliberately deferred).
  */
 
 import React, { useMemo, useCallback } from "react";
@@ -22,7 +26,16 @@ import { EmptyState } from "../molecules/EmptyState";
 import { useEventBus } from "../../hooks/useEventBus";
 import { useTranslate } from "../../hooks/useTranslate";
 
-export type ChartType = "bar" | "line" | "pie" | "area" | "donut";
+export type ChartType =
+    | "bar"
+    | "line"
+    | "pie"
+    | "area"
+    | "donut"
+    | "scatter"
+    | "histogram";
+
+export type ChartStackMode = "none" | "stack" | "normalize";
 
 export interface ChartDataPoint {
     label: string;
@@ -30,10 +43,19 @@ export interface ChartDataPoint {
     color?: string;
 }
 
+export interface ChartScatterPoint {
+    x: number;
+    y: number;
+    label?: string;
+    size?: number;
+    color?: string;
+}
+
 export interface ChartSeries {
     name: string;
     data: readonly ChartDataPoint[];
     color?: string;
+    dashed?: boolean;
 }
 
 export interface ChartAction {
@@ -50,18 +72,25 @@ export interface ChartProps {
     subtitle?: string;
     /** Chart type */
     chartType?: ChartType;
-    /** Data series */
+    /** Multi-series data */
     series?: readonly ChartSeries[];
-    /** Simple data (single series shorthand) */
-    /** Simple data (single series shorthand) */
+    /** Simple single-series shorthand (bar/line/pie/area/donut/histogram) */
     data?: readonly ChartDataPoint[];
+    /** Raw {x,y} points for scatter */
+    scatterData?: readonly ChartScatterPoint[];
     /** Chart height in px */
     height?: number;
     /** Show legend */
     showLegend?: boolean;
     /** Show values on chart */
     showValues?: boolean;
-    /** Actions for chart interactions */
+    /** Stack mode for bar / area */
+    stack?: ChartStackMode;
+    /** Format X-axis labels as time (ISO date in → "Mar 2026"-style label out) */
+    timeAxis?: boolean;
+    /** Event name emitted as `UI:{drillEvent}` with `{ label, value, seriesLabel? }` on data-point click */
+    drillEvent?: string;
+    /** Top-level chart actions (export, refresh, etc.) */
     actions?: readonly ChartAction[];
     /** Entity name for schema-driven auto-fetch */
     entity?: string;
@@ -73,7 +102,6 @@ export interface ChartProps {
     className?: string;
 }
 
-/** Default color palette using CSS variables */
 const CHART_COLORS = [
     "var(--color-primary)",
     "var(--color-success)",
@@ -83,41 +111,176 @@ const CHART_COLORS = [
     "var(--color-accent)",
 ];
 
-/** Bar chart renderer */
+const seriesColor = (series: ChartSeries, idx: number): string =>
+    series.color ?? CHART_COLORS[idx % CHART_COLORS.length];
+
+const monthFormatter = new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    year: "2-digit",
+});
+
+const formatTimeLabel = (raw: string): string => {
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) return raw;
+    return monthFormatter.format(parsed);
+};
+
+/** Bar chart renderer — multi-series + stack modes */
 const BarChart: React.FC<{
-    data: readonly ChartDataPoint[];
+    series: readonly ChartSeries[];
     height: number;
     showValues: boolean;
-}> = ({ data, height, showValues }) => {
-    const maxValue = Math.max(...data.map((d) => d.value), 1);
+    stack: ChartStackMode;
+    timeAxis: boolean;
+    histogram?: boolean;
+    onPointClick?: (point: ChartDataPoint, seriesName: string) => void;
+}> = ({ series, height, showValues, stack, timeAxis, histogram = false, onPointClick }) => {
+    const categories = useMemo(() => {
+        const set: string[] = [];
+        const seen = new Set<string>();
+        for (const s of series) {
+            for (const p of s.data) {
+                if (!seen.has(p.label)) {
+                    seen.add(p.label);
+                    set.push(p.label);
+                }
+            }
+        }
+        return set;
+    }, [series]);
+
+    const valueAt = useCallback(
+        (s: ChartSeries, label: string): number => {
+            const p = s.data.find((d) => d.label === label);
+            return p ? p.value : 0;
+        },
+        [],
+    );
+
+    const columnTotals = useMemo(() => {
+        if (stack === "none") return null;
+        return categories.map((label) =>
+            series.reduce((sum, s) => sum + valueAt(s, label), 0),
+        );
+    }, [categories, series, stack, valueAt]);
+
+    const maxValue = useMemo(() => {
+        if (stack === "normalize") return 100;
+        if (stack === "stack" && columnTotals) {
+            return Math.max(...columnTotals, 1);
+        }
+        let m = 1;
+        for (const s of series) {
+            for (const p of s.data) if (p.value > m) m = p.value;
+        }
+        return m;
+    }, [series, stack, columnTotals]);
 
     return (
-        <HStack gap="xs" align="end" className="w-full" style={{ height }}>
-            {data.map((point, idx) => {
-                const barHeight = (point.value / maxValue) * 100;
-                const color = point.color || CHART_COLORS[idx % CHART_COLORS.length];
-                return (
-                    <VStack key={point.label} gap="xs" align="center" flex className="min-w-0">
-                        {showValues && (
-                            <Typography variant="caption" color="secondary" className="tabular-nums">
-                                {point.value}
-                            </Typography>
-                        )}
-                        <Box
-                            className={cn(
-                                "w-full rounded-t-sm transition-all duration-500 ease-out min-h-[4px]",
+        <HStack
+            gap={histogram ? "none" : "xs"}
+            align="end"
+            className="w-full"
+            style={{ height }}
+        >
+            {categories.map((label, catIdx) => {
+                const displayLabel = timeAxis ? formatTimeLabel(label) : label;
+                if (stack === "none") {
+                    return (
+                        <VStack
+                            key={label}
+                            gap="xs"
+                            align="center"
+                            flex
+                            className="min-w-0"
+                        >
+                            <HStack gap={histogram ? "none" : "xs"} align="end" className="w-full" style={{ height: "100%" }}>
+                                {series.map((s, sIdx) => {
+                                    const value = valueAt(s, label);
+                                    const barHeight = (value / maxValue) * 100;
+                                    const color = seriesColor(s, sIdx);
+                                    return (
+                                        <Box
+                                            key={s.name}
+                                            className={cn(
+                                                "rounded-t-sm transition-all duration-500 ease-out min-h-[4px] cursor-pointer hover:opacity-80",
+                                                histogram ? "flex-1 mx-0" : "flex-1",
+                                            )}
+                                            style={{
+                                                height: `${barHeight}%`,
+                                                backgroundColor: color,
+                                            }}
+                                            onClick={() =>
+                                                onPointClick?.(
+                                                    { label, value, color },
+                                                    s.name,
+                                                )
+                                            }
+                                            title={`${s.name}: ${value}`}
+                                        />
+                                    );
+                                })}
+                            </HStack>
+                            {showValues && series.length === 1 && (
+                                <Typography variant="caption" color="secondary" className="tabular-nums">
+                                    {valueAt(series[0], label)}
+                                </Typography>
                             )}
-                            style={{
-                                height: `${barHeight}%`,
-                                backgroundColor: color,
-                            }}
-                        />
+                            <Typography
+                                variant="caption"
+                                color="secondary"
+                                className="truncate w-full text-center"
+                            >
+                                {displayLabel}
+                            </Typography>
+                        </VStack>
+                    );
+                }
+
+                const total = columnTotals?.[catIdx] ?? 1;
+                return (
+                    <VStack
+                        key={label}
+                        gap="xs"
+                        align="center"
+                        flex
+                        className="min-w-0"
+                    >
+                        <VStack gap="none" className="w-full" style={{ height: "100%" }} justify="end">
+                            {series.map((s, sIdx) => {
+                                const value = valueAt(s, label);
+                                const ratio =
+                                    stack === "normalize"
+                                        ? total === 0
+                                            ? 0
+                                            : (value / total) * 100
+                                        : (value / maxValue) * 100;
+                                const color = seriesColor(s, sIdx);
+                                return (
+                                    <Box
+                                        key={s.name}
+                                        className="w-full transition-all duration-500 ease-out cursor-pointer hover:opacity-80"
+                                        style={{
+                                            height: `${ratio}%`,
+                                            backgroundColor: color,
+                                        }}
+                                        onClick={() =>
+                                            onPointClick?.(
+                                                { label, value, color },
+                                                s.name,
+                                            )
+                                        }
+                                        title={`${s.name}: ${value}`}
+                                    />
+                                );
+                            })}
+                        </VStack>
                         <Typography
                             variant="caption"
                             color="secondary"
                             className="truncate w-full text-center"
                         >
-                            {point.label}
+                            {displayLabel}
                         </Typography>
                     </VStack>
                 );
@@ -126,13 +289,14 @@ const BarChart: React.FC<{
     );
 };
 
-/** Pie/Donut chart renderer using SVG */
+/** Pie / Donut renderer (single-series). */
 const PieChart: React.FC<{
     data: readonly ChartDataPoint[];
     height: number;
     showValues: boolean;
     donut?: boolean;
-}> = ({ data, height, showValues, donut = false }) => {
+    onPointClick?: (point: ChartDataPoint, seriesName: string) => void;
+}> = ({ data, height, showValues, donut = false, onPointClick }) => {
     const total = data.reduce((sum, d) => sum + d.value, 0);
     const size = Math.min(height, 200);
     const radius = size / 2 - 8;
@@ -184,7 +348,13 @@ const PieChart: React.FC<{
                         fill={seg.color}
                         stroke="var(--color-card)"
                         strokeWidth="2"
-                        className="transition-opacity duration-200 hover:opacity-80"
+                        className="transition-opacity duration-200 hover:opacity-80 cursor-pointer"
+                        onClick={() =>
+                            onPointClick?.(
+                                { label: seg.label, value: seg.value, color: seg.color },
+                                "default",
+                            )
+                        }
                     />
                 ))}
                 {donut && (
@@ -220,33 +390,61 @@ const PieChart: React.FC<{
     );
 };
 
-/** Line/Area chart renderer using SVG */
+/** Line / Area renderer — multi-series. Time-axis is positional. */
 const LineChart: React.FC<{
-    data: readonly ChartDataPoint[];
+    series: readonly ChartSeries[];
     height: number;
     showValues: boolean;
     fill?: boolean;
-}> = ({ data, height, showValues, fill = false }) => {
-    const maxValue = Math.max(...data.map((d) => d.value), 1);
+    timeAxis: boolean;
+    onPointClick?: (point: ChartDataPoint, seriesName: string) => void;
+}> = ({ series, height, showValues, fill = false, timeAxis, onPointClick }) => {
     const width = 400;
     const padding = { top: 20, right: 20, bottom: 30, left: 40 };
     const chartWidth = width - padding.left - padding.right;
     const chartHeight = height - padding.top - padding.bottom;
 
-    const points = useMemo(() => {
-        return data.map((point, idx) => ({
-            x: padding.left + (idx / Math.max(data.length - 1, 1)) * chartWidth,
-            y: padding.top + chartHeight - (point.value / maxValue) * chartHeight,
-            ...point,
-        }));
-    }, [data, maxValue, chartWidth, chartHeight, padding]);
+    const labels = useMemo(() => {
+        const seen = new Set<string>();
+        const out: string[] = [];
+        for (const s of series) {
+            for (const p of s.data) {
+                if (!seen.has(p.label)) {
+                    seen.add(p.label);
+                    out.push(p.label);
+                }
+            }
+        }
+        return out;
+    }, [series]);
 
-    const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
-    const areaPath = `${linePath} L ${points[points.length - 1]?.x ?? 0} ${padding.top + chartHeight} L ${padding.left} ${padding.top + chartHeight} Z`;
+    const maxValue = useMemo(() => {
+        let m = 1;
+        for (const s of series) {
+            for (const p of s.data) if (p.value > m) m = p.value;
+        }
+        return m;
+    }, [series]);
+
+    const xFor = useCallback(
+        (idx: number) =>
+            padding.left + (idx / Math.max(labels.length - 1, 1)) * chartWidth,
+        [labels.length, chartWidth, padding.left],
+    );
+
+    const yFor = useCallback(
+        (value: number) =>
+            padding.top + chartHeight - (value / maxValue) * chartHeight,
+        [maxValue, chartHeight, padding.top],
+    );
 
     return (
-        <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="xMidYMid meet">
-            {/* Grid lines */}
+        <svg
+            width="100%"
+            height={height}
+            viewBox={`0 0 ${width} ${height}`}
+            preserveAspectRatio="xMidYMid meet"
+        >
             {[0, 0.25, 0.5, 0.75, 1].map((frac) => {
                 const y = padding.top + chartHeight * (1 - frac);
                 return (
@@ -262,33 +460,189 @@ const LineChart: React.FC<{
                     />
                 );
             })}
-            {/* Area fill */}
-            {fill && (
-                <path d={areaPath} fill="var(--color-primary)" opacity={0.1} />
-            )}
-            {/* Line */}
-            <path d={linePath} fill="none" stroke="var(--color-primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            {/* Data points */}
-            {points.map((p, idx) => (
-                <g key={idx}>
-                    <circle cx={p.x} cy={p.y} r="4" fill="var(--color-card)" stroke="var(--color-primary)" strokeWidth="2" />
-                    {showValues && (
-                        <text x={p.x} y={p.y - 10} textAnchor="middle" fill="var(--color-foreground)" fontSize="10" fontWeight="500">
-                            {p.value}
-                        </text>
-                    )}
-                    {/* X-axis labels */}
-                    <text
-                        x={p.x}
-                        y={height - 8}
-                        textAnchor="middle"
-                        fill="var(--color-muted-foreground)"
-                        fontSize="9"
-                    >
-                        {p.label}
-                    </text>
-                </g>
+            {series.map((s, sIdx) => {
+                const color = seriesColor(s, sIdx);
+                const points = labels.map((label, idx) => {
+                    const point = s.data.find((d) => d.label === label);
+                    return {
+                        x: xFor(idx),
+                        y: yFor(point ? point.value : 0),
+                        value: point ? point.value : 0,
+                        label,
+                    };
+                });
+                const linePath = points
+                    .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`)
+                    .join(" ");
+                const areaPath = `${linePath} L ${points[points.length - 1]?.x ?? 0} ${padding.top + chartHeight} L ${padding.left} ${padding.top + chartHeight} Z`;
+                return (
+                    <g key={s.name}>
+                        {fill && (
+                            <path
+                                d={areaPath}
+                                fill={color}
+                                opacity={series.length > 1 ? 0.08 : 0.1}
+                            />
+                        )}
+                        <path
+                            d={linePath}
+                            fill="none"
+                            stroke={color}
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeDasharray={s.dashed ? "6 4" : undefined}
+                        />
+                        {points.map((p, idx) => (
+                            <g key={idx}>
+                                <circle
+                                    cx={p.x}
+                                    cy={p.y}
+                                    r="4"
+                                    fill="var(--color-card)"
+                                    stroke={color}
+                                    strokeWidth="2"
+                                    className="cursor-pointer"
+                                    onClick={() =>
+                                        onPointClick?.(
+                                            { label: p.label, value: p.value, color },
+                                            s.name,
+                                        )
+                                    }
+                                />
+                                {showValues && series.length === 1 && (
+                                    <text
+                                        x={p.x}
+                                        y={p.y - 10}
+                                        textAnchor="middle"
+                                        fill="var(--color-foreground)"
+                                        fontSize="10"
+                                        fontWeight="500"
+                                    >
+                                        {p.value}
+                                    </text>
+                                )}
+                            </g>
+                        ))}
+                    </g>
+                );
+            })}
+            {labels.map((label, idx) => (
+                <text
+                    key={label}
+                    x={xFor(idx)}
+                    y={height - 8}
+                    textAnchor="middle"
+                    fill="var(--color-muted-foreground)"
+                    fontSize="9"
+                >
+                    {timeAxis ? formatTimeLabel(label) : label}
+                </text>
             ))}
+        </svg>
+    );
+};
+
+/** Scatter renderer — raw X/Y points, optional size. */
+const ScatterChart: React.FC<{
+    data: readonly ChartScatterPoint[];
+    height: number;
+    onPointClick?: (point: ChartDataPoint, seriesName: string) => void;
+}> = ({ data, height, onPointClick }) => {
+    const width = 400;
+    const padding = { top: 20, right: 20, bottom: 30, left: 40 };
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+
+    const { minX, maxX, minY, maxY } = useMemo(() => {
+        if (data.length === 0) {
+            return { minX: 0, maxX: 1, minY: 0, maxY: 1 };
+        }
+        let mnX = data[0].x;
+        let mxX = data[0].x;
+        let mnY = data[0].y;
+        let mxY = data[0].y;
+        for (const p of data) {
+            if (p.x < mnX) mnX = p.x;
+            if (p.x > mxX) mxX = p.x;
+            if (p.y < mnY) mnY = p.y;
+            if (p.y > mxY) mxY = p.y;
+        }
+        return { minX: mnX, maxX: mxX, minY: mnY, maxY: mxY };
+    }, [data]);
+
+    const rangeX = maxX - minX || 1;
+    const rangeY = maxY - minY || 1;
+
+    return (
+        <svg
+            width="100%"
+            height={height}
+            viewBox={`0 0 ${width} ${height}`}
+            preserveAspectRatio="xMidYMid meet"
+        >
+            {[0, 0.25, 0.5, 0.75, 1].map((frac) => {
+                const y = padding.top + chartHeight * (1 - frac);
+                return (
+                    <line
+                        key={frac}
+                        x1={padding.left}
+                        y1={y}
+                        x2={width - padding.right}
+                        y2={y}
+                        stroke="var(--color-border)"
+                        strokeDasharray="4 4"
+                        opacity={0.5}
+                    />
+                );
+            })}
+            {data.map((p, idx) => {
+                const cx = padding.left + ((p.x - minX) / rangeX) * chartWidth;
+                const cy =
+                    padding.top + chartHeight - ((p.y - minY) / rangeY) * chartHeight;
+                const r = p.size ?? 5;
+                const color = p.color ?? CHART_COLORS[idx % CHART_COLORS.length];
+                return (
+                    <circle
+                        key={idx}
+                        cx={cx}
+                        cy={cy}
+                        r={r}
+                        fill={color}
+                        opacity={0.7}
+                        className="cursor-pointer hover:opacity-100"
+                        onClick={() =>
+                            onPointClick?.(
+                                {
+                                    label: p.label ?? `(${p.x}, ${p.y})`,
+                                    value: p.y,
+                                    color,
+                                },
+                                "default",
+                            )
+                        }
+                    >
+                        <title>{p.label ?? `(${p.x}, ${p.y})`}</title>
+                    </circle>
+                );
+            })}
+            <text
+                x={padding.left}
+                y={height - 8}
+                fill="var(--color-muted-foreground)"
+                fontSize="9"
+            >
+                {minX.toFixed(1)}
+            </text>
+            <text
+                x={width - padding.right}
+                y={height - 8}
+                textAnchor="end"
+                fill="var(--color-muted-foreground)"
+                fontSize="9"
+            >
+                {maxX.toFixed(1)}
+            </text>
         </svg>
     );
 };
@@ -299,9 +653,13 @@ export const Chart: React.FC<ChartProps> = ({
     chartType = "bar",
     series,
     data: simpleData,
+    scatterData,
     height = 200,
     showLegend = true,
     showValues = false,
+    stack = "none",
+    timeAxis = false,
+    drillEvent,
     actions,
     entity,
     isLoading = false,
@@ -320,12 +678,30 @@ export const Chart: React.FC<ChartProps> = ({
         [eventBus],
     );
 
-    // Normalize data: simple data → single series
-    const normalizedData = useMemo(() => {
-        if (simpleData) return simpleData;
-        if (series && series.length > 0) return series[0].data;
+    const handlePointClick = useCallback(
+        (point: ChartDataPoint, seriesName: string) => {
+            if (drillEvent) {
+                eventBus.emit(`UI:${drillEvent}`, {
+                    label: point.label,
+                    value: point.value,
+                    seriesLabel: seriesName === "default" ? undefined : seriesName,
+                });
+            }
+        },
+        [drillEvent, eventBus],
+    );
+
+    const normalizedSeries = useMemo<readonly ChartSeries[]>(() => {
+        if (series && series.length > 0) return series;
+        if (simpleData) return [{ name: "default", data: simpleData }];
         return [];
     }, [simpleData, series]);
+
+    const firstSeriesData = normalizedSeries[0]?.data ?? [];
+    const hasContent =
+        chartType === "scatter"
+            ? (scatterData?.length ?? 0) > 0
+            : normalizedSeries.some((s) => s.data.length > 0);
 
     if (isLoading) {
         return <LoadingState message="Loading chart..." className={className} />;
@@ -341,14 +717,13 @@ export const Chart: React.FC<ChartProps> = ({
         );
     }
 
-    if (normalizedData.length === 0) {
+    if (!hasContent) {
         return <EmptyState title={t('empty.noData')} description={t('empty.noData')} className={className} />;
     }
 
     return (
         <Card className={cn("p-6", className)}>
             <VStack gap="md">
-                {/* Header */}
                 {(title || subtitle || (actions && actions.length > 0)) && (
                     <HStack justify="between" align="start">
                         <VStack gap="xs">
@@ -380,33 +755,80 @@ export const Chart: React.FC<ChartProps> = ({
                     </HStack>
                 )}
 
-                {/* Chart */}
                 <Box className="w-full">
                     {chartType === "bar" && (
-                        <BarChart data={normalizedData} height={height} showValues={showValues} />
+                        <BarChart
+                            series={normalizedSeries}
+                            height={height}
+                            showValues={showValues}
+                            stack={stack}
+                            timeAxis={timeAxis}
+                            onPointClick={handlePointClick}
+                        />
+                    )}
+                    {chartType === "histogram" && (
+                        <BarChart
+                            series={normalizedSeries}
+                            height={height}
+                            showValues={showValues}
+                            stack="none"
+                            timeAxis={false}
+                            histogram
+                            onPointClick={handlePointClick}
+                        />
                     )}
                     {chartType === "line" && (
-                        <LineChart data={normalizedData} height={height} showValues={showValues} />
+                        <LineChart
+                            series={normalizedSeries}
+                            height={height}
+                            showValues={showValues}
+                            timeAxis={timeAxis}
+                            onPointClick={handlePointClick}
+                        />
                     )}
                     {chartType === "area" && (
-                        <LineChart data={normalizedData} height={height} showValues={showValues} fill />
+                        <LineChart
+                            series={normalizedSeries}
+                            height={height}
+                            showValues={showValues}
+                            timeAxis={timeAxis}
+                            fill
+                            onPointClick={handlePointClick}
+                        />
                     )}
                     {chartType === "pie" && (
-                        <PieChart data={normalizedData} height={height} showValues={showLegend} />
+                        <PieChart
+                            data={firstSeriesData}
+                            height={height}
+                            showValues={showLegend}
+                            onPointClick={handlePointClick}
+                        />
                     )}
                     {chartType === "donut" && (
-                        <PieChart data={normalizedData} height={height} showValues={showLegend} donut />
+                        <PieChart
+                            data={firstSeriesData}
+                            height={height}
+                            showValues={showLegend}
+                            donut
+                            onPointClick={handlePointClick}
+                        />
+                    )}
+                    {chartType === "scatter" && (
+                        <ScatterChart
+                            data={scatterData ?? []}
+                            height={height}
+                            onPointClick={handlePointClick}
+                        />
                     )}
                 </Box>
 
-                {/* Legend for bar/line/area */}
-                {showLegend && series && series.length > 1 && (
+                {showLegend && normalizedSeries.length > 1 && (
                     <HStack gap="md" justify="center" wrap>
-                        {series.map((s, idx) => (
+                        {normalizedSeries.map((s, idx) => (
                             <HStack key={idx} gap="xs" align="center">
                                 <Box
                                     className="w-3 h-3 rounded-full flex-shrink-0"
-                                    style={{ backgroundColor: s.color || CHART_COLORS[idx % CHART_COLORS.length] }}
+                                    style={{ backgroundColor: seriesColor(s, idx) }}
                                 />
                                 <Typography variant="caption" color="secondary">
                                     {s.name}

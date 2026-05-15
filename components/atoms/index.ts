@@ -54,6 +54,7 @@ export {
   type ProgressBarColor,
 } from "./ProgressBar";
 export { Radio, type RadioProps } from "./Radio";
+export { Sparkline, type SparklineProps, type SparklineColor } from "./Sparkline";
 export { Switch, type SwitchProps } from "./Switch";
 export { Spacer, type SpacerProps, type SpacerSize } from "./Spacer";
 export {

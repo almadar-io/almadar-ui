@@ -5,6 +5,7 @@ import { Card, Typography } from "../atoms";
 import { Box } from "../atoms/Box";
 import { HStack, VStack } from "../atoms/Stack";
 import { Button } from "../atoms/Button";
+import { Sparkline } from "../atoms/Sparkline";
 import { TrendingUp, TrendingDown, Minus, LucideIcon } from "lucide-react";
 import { useEventBus } from "../../hooks/useEventBus";
 import { useTranslate } from "../../hooks/useTranslate";
@@ -343,36 +344,9 @@ export const StatCard: React.FC<StatCardProps> = ({
             </Box>
           )}
 
-          {/* Sparkline chart */}
-          {sparklineData && sparklineData.length > 1 && (() => {
-            const w = 80;
-            const h = 32;
-            const pad = 2;
-            const min = Math.min(...sparklineData);
-            const max = Math.max(...sparklineData);
-            const range = max - min || 1;
-            const points = sparklineData
-              .map((v, i) => {
-                const x = pad + (i / (sparklineData.length - 1)) * (w - pad * 2);
-                const y = pad + (1 - (v - min) / range) * (h - pad * 2);
-                return `${x},${y}`;
-              })
-              .join(' ');
-            const trending = sparklineData[sparklineData.length - 1] >= sparklineData[0];
-            const strokeColor = trending ? 'var(--color-success)' : 'var(--color-error)';
-            return (
-              <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="flex-shrink-0">
-                <polyline
-                  fill="none"
-                  stroke={strokeColor}
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  points={points}
-                />
-              </svg>
-            );
-          })()}
+          {sparklineData && sparklineData.length > 1 && (
+            <Sparkline data={sparklineData} color="auto" />
+          )}
         </VStack>
       </HStack>
 
