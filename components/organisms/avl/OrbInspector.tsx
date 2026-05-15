@@ -237,16 +237,31 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
   // `patternConfig.name` is undefined and the actual value lives at
   // `patternConfig.props.name`. Same VG31 cascade the renderer's comment
   // calls out, surfaced one layer down.
+  //
+  // Selection scoping: at L2 the click context carries (orbital, trait,
+  // transition) so we resolve against that one transition's render-ui. At
+  // L1 the click context only carries (orbital), so `transition` is null —
+  // we widen to "any render-ui in the source trait, or any in the orbital
+  // if the source trait is also unknown." The patternId path is unique to
+  // one tree; the wrong tree returns null and we move on.
   const patternConfig = useMemo(() => {
-    if (!selectedPattern || !transition) return null;
+    if (!selectedPattern) return null;
     const patternId = selectedPattern.patternId ?? 'root';
-    for (const eff of (transition.effects ?? []) as unknown[][]) {
-      if (Array.isArray(eff) && eff[0] === 'render-ui' && eff[2]) {
+
+    const tryEffects = (effects: unknown[]): Record<string, unknown> | null => {
+      for (const eff of effects as unknown[][]) {
+        if (!Array.isArray(eff) || eff[0] !== 'render-ui' || !eff[2]) continue;
         const found = findPatternInTree(eff[2] as Record<string, unknown>, patternId);
         if (!found) continue;
-        // Normalize nested → flat so downstream prop reads work for both
-        // authoring forms. Merge top-level keys (type, _id, children) over
-        // `props` so the type discriminator survives.
+        // Type-discriminate so two transitions whose render-ui trees share
+        // a path but differ in the node at that path don't silently swap.
+        if (selectedPattern.patternType
+            && typeof found.type === 'string'
+            && found.type !== selectedPattern.patternType) {
+          continue;
+        }
+        // Normalize nested → flat. Merge top-level keys over `props` so
+        // `type` / `_id` / `children` survive the unwrap.
         const nested = found.props;
         if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
           const { props: _stripped, ...rest } = found;
@@ -255,22 +270,63 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
         }
         return found;
       }
+      return null;
+    };
+
+    // L2 fast path: the click came with a specific transition.
+    if (transition) {
+      const direct = tryEffects(transition.effects ?? []);
+      if (direct) return direct;
     }
-    // Selection has a patternId but no render-ui slot resolves it — usually
-    // a path/key mismatch between the click target's data-attribute and the
-    // SExpr tree shape. Surface it so future divergences don't quietly
-    // render every prop as '—'.
+
+    // L1 fallback: widen to every transition in the orbital's traits.
+    // Prefer the trait the click reported via `data-source-trait` so we
+    // don't accidentally collide with another trait's identical render-ui
+    // path (atoms reused across traits → same `root.children.0.…` path).
+    const orbital = schema.orbitals.find((o) => o.name === orbitalName);
+    if (orbital) {
+      const orderedTraits = [...(orbital.traits ?? [])].sort((a, b) => {
+        const aName = typeof a === 'string' ? a : a.name;
+        const bName = typeof b === 'string' ? b : b.name;
+        const src = selectedPattern.sourceTrait;
+        if (src && aName === src) return -1;
+        if (src && bName === src) return 1;
+        return 0;
+      });
+      for (const traitRef of orderedTraits) {
+        if (typeof traitRef === 'string') continue;
+        // Inline traits carry `stateMachine` directly; preprocessed ref
+        // traits (`{ref, _resolved}`) carry it on `_resolved`. Read both.
+        const inline = 'stateMachine' in traitRef ? traitRef.stateMachine : undefined;
+        const resolved = '_resolved' in traitRef
+          ? (traitRef as { _resolved?: Trait })._resolved?.stateMachine
+          : undefined;
+        const sm = inline ?? resolved;
+        const traitTransitions = sm?.transitions;
+        if (!Array.isArray(traitTransitions)) continue;
+        for (const tx of traitTransitions) {
+          const hit = tryEffects((tx as { effects?: unknown[] }).effects ?? []);
+          if (hit) return hit;
+        }
+      }
+    }
+
+    // Selection has a patternId but nothing matched anywhere — usually a
+    // path/key mismatch between the click target's `data-pattern-path`
+    // and the SExpr tree shape. Surface it so future divergences don't
+    // quietly render every prop as '—'.
     if (selectedPattern.patternId) {
       inspectorLog.warn('pattern-config-unresolved', () => ({
         patternId: selectedPattern.patternId,
         patternType: selectedPattern.patternType,
+        sourceTrait: selectedPattern.sourceTrait,
         orbitalName,
         traitName,
         transitionEvent,
       }));
     }
     return null;
-  }, [selectedPattern, transition, orbitalName, traitName, transitionEvent]);
+  }, [selectedPattern, transition, schema, orbitalName, traitName, transitionEvent]);
 
   // Generate the relevant JSON slice for the code tab
   const orbCode = useMemo(() => {
