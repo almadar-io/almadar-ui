@@ -257,8 +257,16 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
   // cleared and the embedded preview kept showing the pre-drop render.
   const prevTraitsRef = useRef<unknown>(undefined);
   useEffect(() => {
-    if (prevTraitsRef.current !== undefined && prevTraitsRef.current !== traits) {
-      navLog.debug('page:traits-ref-changed', { action: 'clearAll-slots+reset-init' });
+    const refChanged = prevTraitsRef.current !== undefined && prevTraitsRef.current !== traits;
+    // `.warn` so the log is visible without enabling `?trace=1` — the symptom
+    // we're chasing (stale L1 preview) is rare enough that a one-line WARN is
+    // worth the noise. Demote back to `.debug` once the contract is verified.
+    navLog.warn('page:traits-effect', {
+      refChanged,
+      traitsCount: Array.isArray(traits) ? traits.length : -1,
+      hadPrev: prevTraitsRef.current !== undefined,
+    });
+    if (refChanged) {
       uiSlots.clearAll();
       initSentRef.current = false;
     }
