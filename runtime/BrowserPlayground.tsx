@@ -52,19 +52,37 @@ export function BrowserPlayground({
     () => new OrbitalServerRuntime({ mode, debug: false }),
   );
 
+  // Kick registration off DURING RENDER via useMemo — not in a useEffect.
+  // React fires child effects before parent effects on mount, so a parent
+  // effect that calls `runtime.register(schema)` runs AFTER `TraitInitializer`'s
+  // INIT useEffect (the child). INIT lands in an empty runtime and the
+  // server-bridge fan-out replies `Orbital not found`, blanking the canvas
+  // on every drop or page swap. useMemo's body executes inline during the
+  // render pass, before any child effect commits, so registration is always
+  // in-flight (or done) by the time INIT fires.
+  //
+  // `runtime.register` is idempotent (`this.orbitals.set(name, ...)`
+  // overwrites). React StrictMode in dev calls render twice — both kicks
+  // hit the same map keys, no harm.
+  const registrationReady = useMemo(() => {
+    const orbitalNames = schema.orbitals.map((o) => o.name);
+    playgroundLog.debug('register:start', { schema: schema.name, orbitalNames });
+    return runtime.register(schema).then(() => {
+      playgroundLog.debug('register:done', { schema: schema.name, orbitalNames });
+    });
+  }, [runtime, schema]);
+
   // Deferred unmount cleanup. React StrictMode in dev runs every effect's
   // setup → cleanup → setup at mount to surface effect bugs. A naive
   // `useEffect(() => () => runtime.unregisterAll(), [])` would fire the
-  // cleanup during that simulated unmount, drop every orbital, and then
-  // the schema-keyed effect below would re-register asynchronously —
-  // INIT dispatches from the SchemaRunner land in the gap and the
-  // runtime replies `Orbital not found`, blanking the canvas.
+  // cleanup during that simulated unmount, drop every orbital, and the
+  // re-registered orbital wouldn't catch up before INIT.
   //
   // Defer the cleanup via setTimeout(0). When StrictMode immediately
   // re-mounts the component, the next setup cancels the pending teardown
   // before it fires. Real unmount lets the timer fire and `unregisterAll`
-  // runs (we need that — `unregisterAll` clears ticks, event listeners,
-  // and mock persistence, which leak otherwise).
+  // runs (we need that — it clears ticks, event listeners, and the mock
+  // persistence store, all of which leak otherwise).
   const teardownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (teardownTimerRef.current !== null) {
@@ -80,19 +98,6 @@ export function BrowserPlayground({
     };
   }, [runtime]);
 
-  // Re-register orbitals on schema ref change. `registerOrbitalAsync` is
-  // idempotent (`this.orbitals.set(name, ...)` overwrites), so back-to-back
-  // registers are safe. Stale orbitals removed from the new schema linger
-  // until full unmount; for the live-editing flow that's fine (mutations
-  // add/modify, rarely remove).
-  useEffect(() => {
-    const orbitalNames = schema.orbitals.map((o) => o.name);
-    playgroundLog.debug('register:start', { schema: schema.name, orbitalNames });
-    void runtime.register(schema).then(() => {
-      playgroundLog.debug('register:done', { schema: schema.name, orbitalNames });
-    });
-  }, [runtime, schema]);
-
   const transport = useMemo<ServerBridgeTransport>(() => ({
     register: async (s) => {
       await runtime.register(s as OrbitalSchema);
@@ -102,6 +107,12 @@ export function BrowserPlayground({
       runtime.unregisterAll();
     },
     sendEvent: async (orbitalName, event, payload) => {
+      // Gate every dispatch on registration completing. TraitInitializer's
+      // INIT useEffect runs before our parent register useMemo's promise
+      // resolves; without this await, INIT lands in an empty runtime and
+      // gets `Orbital not found`. The await is a no-op once registration
+      // has resolved.
+      await registrationReady;
       // OrbitalServerRuntime.processOrbitalEvent returns the same
       // OrbitalEventResponse shape ServerBridge consumes from HTTP, so the
       // cascade-rebroadcast logic in ServerBridge runs identically against
@@ -116,7 +127,7 @@ export function BrowserPlayground({
         payload: payload as EventPayload | undefined,
       });
     },
-  }), [runtime]);
+  }), [runtime, registrationReady]);
 
   return (
     <OrbPreview
