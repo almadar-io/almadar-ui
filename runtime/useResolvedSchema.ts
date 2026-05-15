@@ -84,7 +84,18 @@ export function useResolvedSchema(
     const ir = useMemo<ResolvedIR | null>(() => {
         if (!schema) return null;
         try {
-            const resolved = sharedSchemaToIR(schema);
+            // `useCache: false` — @almadar/core's `schemaToIR` caches by
+            // `${schema.name}-${schema.version}`, which is stable across
+            // mutation (palette drop, styles edit, agent rewrite all keep
+            // the same name+version but change render-ui SExpr inside
+            // traits). With the cache on, mutating the schema returns the
+            // OLD ResolvedIR — `traits` array identity stays stable and
+            // downstream slot-reset comparators never trip. The surrounding
+            // `useMemo([schema])` already amortizes work per render, so the
+            // shared cache only added a footgun. Proper fix is to make the
+            // @almadar/core cache key content-aware (WeakMap on ref); until
+            // that ships, opt out here.
+            const resolved = sharedSchemaToIR(schema, false);
             // Build call-site listens map. TraitRef union underspecifies the
             // ref-object variant (no `listens` field declared), so cast to the
             // common shape after the string-ref guard.

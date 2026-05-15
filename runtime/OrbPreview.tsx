@@ -248,24 +248,19 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
 
   // Reset cached UI + INIT guard whenever the resolved trait set itself
   // changes reference. `useResolvedSchema` returns a new `traits` array
-  // iff `schema` or `pageName` actually changed — so a single ref check
-  // covers BOTH page navigation (different page → different traits) AND
-  // live schema edits (palette drop / styles tab / agent mutation → same
-  // page, same trait names, but new render-ui content). The previous
-  // name-based detector missed the second case: dropping a pattern into
-  // an existing trait kept the name signature stable, so slots never
-  // cleared and the embedded preview kept showing the pre-drop render.
+  // iff `schema` or `pageName` actually changed — covers BOTH page nav
+  // and live schema edits (palette drop / styles tab / agent mutation).
+  // Requires `schemaToIR` to be called with `useCache: false` upstream;
+  // the @almadar/core cache keys on name+version and would otherwise
+  // return the same IR (and same traits array) across mutations.
   const prevTraitsRef = useRef<unknown>(undefined);
   useEffect(() => {
     const refChanged = prevTraitsRef.current !== undefined && prevTraitsRef.current !== traits;
-    // `.warn` so the log is visible without enabling `?trace=1` — the symptom
-    // we're chasing (stale L1 preview) is rare enough that a one-line WARN is
-    // worth the noise. Demote back to `.debug` once the contract is verified.
-    navLog.warn('page:traits-effect', {
+    navLog.debug('page:traits-effect', () => ({
       refChanged,
       traitsCount: Array.isArray(traits) ? traits.length : -1,
       hadPrev: prevTraitsRef.current !== undefined,
-    });
+    }));
     if (refChanged) {
       uiSlots.clearAll();
       initSentRef.current = false;
