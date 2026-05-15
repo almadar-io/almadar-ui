@@ -26,6 +26,7 @@
 import React from 'react';
 import {
   DndContext,
+  DragOverlay,
   useDraggable as dndKitUseDraggable,
   useDroppable as dndKitUseDroppable,
   type DragEndEvent,
@@ -200,6 +201,17 @@ export interface CanvasDndProviderProps {
    * `false`/`undefined` to fall through to defaults after running your code.
    */
   onDrop?: (drop: CanvasDropEvent) => boolean | void;
+  /**
+   * Renders the floating preview that follows the cursor during a drag.
+   * @dnd-kit moves the source DOM node via CSS transform, which gets clipped
+   * by any ancestor with `overflow: hidden|auto|scroll` (e.g. a scrollable
+   * palette column). Returning a node here mounts a portal-attached overlay
+   * outside the clip so the user always sees what they're dragging.
+   *
+   * Receives the active payload (or null between drags) and returns the
+   * preview element — typically the same JSX the tile renders inline.
+   */
+  renderOverlay?: (payload: CanvasDragPayload | null) => React.ReactNode;
 }
 
 function defaultEmit(eventBus: ReturnType<typeof useEventBus>, drop: CanvasDropEvent): void {
@@ -240,16 +252,25 @@ function defaultEmit(eventBus: ReturnType<typeof useEventBus>, drop: CanvasDropE
  * Every `useCanvasDraggable` / `useCanvasDroppable` inside this provider
  * participates in the same drag session.
  */
-export function CanvasDndProvider({ children, onDrop }: CanvasDndProviderProps): React.ReactElement {
+export function CanvasDndProvider({
+  children,
+  onDrop,
+  renderOverlay,
+}: CanvasDndProviderProps): React.ReactElement {
   const eventBus = useEventBus();
   // Canvas DnD has no sortable rows — skip the sortable keyboard coordinate
   // getter so arrow-key nav doesn't try to compute neighbor cells.
   const sensors = useAlmadarDndSensors(false);
 
+  // Active payload drives the DragOverlay so the floating preview can render
+  // exactly what's being dragged. Cleared on drag end / cancel.
+  const [activePayload, setActivePayload] = React.useState<CanvasDragPayload | null>(null);
+
   const handleDragStart = React.useCallback((e: DragStartEvent) => {
     const data = e.active.data.current as { payload?: CanvasDragPayload } | undefined;
     const payload = data?.payload;
     if (payload) {
+      setActivePayload(payload);
       eventBus.emit('UI:DRAG_START', { kind: payload.kind, data: payload.data });
       log.info('dragStart', { id: e.active.id, kind: payload.kind });
     } else {
@@ -258,6 +279,7 @@ export function CanvasDndProvider({ children, onDrop }: CanvasDndProviderProps):
   }, [eventBus]);
 
   const handleDragEnd = React.useCallback((e: DragEndEvent) => {
+    setActivePayload(null);
     const activeData = e.active.data.current as { payload?: CanvasDragPayload } | undefined;
     const payload = activeData?.payload;
     const overData = e.over?.data.current as
@@ -298,14 +320,28 @@ export function CanvasDndProvider({ children, onDrop }: CanvasDndProviderProps):
     if (!suppressed) defaultEmit(eventBus, drop);
   }, [eventBus, onDrop]);
 
+  const handleDragCancel = React.useCallback(() => {
+    setActivePayload(null);
+    log.info('dragCancel');
+  }, []);
+
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={almadarDndCollisionDetection}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
+      onDragCancel={handleDragCancel}
     >
       {children}
+      {/* Floating preview portal — renders outside any overflow:hidden|auto
+          ancestor so the dragged tile stays visible as the cursor leaves the
+          palette column. Only mounts when the consumer provided a renderer. */}
+      {renderOverlay ? (
+        <DragOverlay dropAnimation={null}>
+          {activePayload ? renderOverlay(activePayload) : null}
+        </DragOverlay>
+      ) : null}
     </DndContext>
   );
 }
