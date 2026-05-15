@@ -164,10 +164,17 @@ function VerifyModePanel({
         prevCountRef.current = transitions.length;
     }, [transitions.length, expanded]);
 
-    // Render into #slot-hud-bottom via portal so we sit below modals (z-40)
-    // and don't obscure any overlay slots (modal=z-1000, drawer=z-900).
-    // Falls back to inline rendering if the slot element doesn't exist.
-    const hudBottom = typeof document !== 'undefined' ? document.getElementById('slot-hud-bottom') : null;
+    // Render into a dedicated host portal so we sit below modals (z-40) and
+    // don't obscure any overlay slots (modal=z-1000, drawer=z-900). Prefer
+    // `#runtime-debugger-portal` (a host-provided container OUTSIDE the slot
+    // system); fall back to the legacy `#slot-hud-bottom` slot for older
+    // hosts, and finally to inline rendering. The two-id split avoids
+    // colliding with UISlotRenderer's own `#slot-hud-bottom` element, which
+    // sits inside the scrollable preview area and would otherwise cover
+    // page content when the host page scrolls.
+    const hudBottom = typeof document !== 'undefined'
+      ? (document.getElementById('runtime-debugger-portal') ?? document.getElementById('slot-hud-bottom'))
+      : null;
 
     const panel = (
         <div
