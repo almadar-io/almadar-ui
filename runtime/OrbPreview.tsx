@@ -244,32 +244,26 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
     : { navigate: onNavigate, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits };
   const { sendEvent } = useTraitStateMachine(traits as Parameters<typeof useTraitStateMachine>[0], uiSlots, opts);
 
-  // Page-navigation hygiene: when the trait set changes (sidebar
-  // navigation swaps `pageName` → useResolvedSchema returns a different
-  // trait list), clear all slots so the previous page's render output
-  // doesn't linger and mask the new page's INIT renders. Without this,
-  // ArticleBrowse's last `data-list` slot write stays visible while
-  // CategoryBrowse re-fetches its own data, so the user perceives the
-  // navigation as broken even though page-state did swap.
-  const prevTraitNamesRef = useRef<string>('');
-  useEffect(() => {
-    const traitNames = (traits as Array<{ trait?: { name?: string } }>)
-      .map((b) => b.trait?.name ?? '')
-      .filter(Boolean)
-      .sort()
-      .join(',');
-    if (prevTraitNamesRef.current && prevTraitNamesRef.current !== traitNames) {
-      navLog.debug('page:trait-set-changed', {
-        from: prevTraitNamesRef.current,
-        to: traitNames,
-        action: 'clearAll-slots',
-      });
-      uiSlots.clearAll();
-    }
-    prevTraitNamesRef.current = traitNames;
-  }, [traits, uiSlots]);
-
   const initSentRef = useRef(false);
+
+  // Reset cached UI + INIT guard whenever the resolved trait set itself
+  // changes reference. `useResolvedSchema` returns a new `traits` array
+  // iff `schema` or `pageName` actually changed — so a single ref check
+  // covers BOTH page navigation (different page → different traits) AND
+  // live schema edits (palette drop / styles tab / agent mutation → same
+  // page, same trait names, but new render-ui content). The previous
+  // name-based detector missed the second case: dropping a pattern into
+  // an existing trait kept the name signature stable, so slots never
+  // cleared and the embedded preview kept showing the pre-drop render.
+  const prevTraitsRef = useRef<unknown>(undefined);
+  useEffect(() => {
+    if (prevTraitsRef.current !== undefined && prevTraitsRef.current !== traits) {
+      navLog.debug('page:traits-ref-changed', { action: 'clearAll-slots+reset-init' });
+      uiSlots.clearAll();
+      initSentRef.current = false;
+    }
+    prevTraitsRef.current = traits;
+  }, [traits, uiSlots]);
 
   // Local INIT - fires immediately when no server bridge,
   // or after 5s fallback if server bridge fails to connect.
@@ -288,19 +282,6 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
     }, 5000);
     return () => clearTimeout(fallback);
   }, [traits, orbitalNames, sendEvent, onLocalFallback]);
-
-  // Reset the "INIT already fired" guard when the active orbital set
-  // changes (sidebar navigation swaps to a different page → new
-  // pageOrbitalNames). Without this reset the server INIT useEffect
-  // below would short-circuit on every subsequent page mount because
-  // `initSentRef.current` was set to `true` on the first page's INIT.
-  // Result: navigating from /articles to /media cleared the slots
-  // (good) but never fired INIT for MediaAsset orbital, so the page
-  // stayed blank until a full reload.
-  const orbitalsKey = (orbitalNames ?? []).slice().sort().join(',');
-  useEffect(() => {
-    initSentRef.current = false;
-  }, [orbitalsKey]);
 
   // Server INIT when bridge connects. Apply enriched effects to slots.
   useEffect(() => {
