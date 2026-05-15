@@ -588,24 +588,17 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavi
           onLocalFallback={onLocalFallback}
           persistence={persistence}
         />
-        {/* Content fills the available height, not hug-content. `h-full`
-            makes the slot area as tall as the preview frame; nested slot
-            patterns can still grow past it (overflow is handled by the
-            outer Box's `overflow-auto`). Previously `min-h-full` left the
-            height undefined for empty layouts, so the debug bar floated
-            up near the top instead of docking at the bottom.
-
-            OrbitalThemeProvider scopes per-orbital CSS variable overrides
-            (from `orbital.theme.tokens`) to this render subtree. The
-            provider is a no-op when the active orbital has no theme; when
-            it does, the inline style emitted on a `display: contents`
-            wrapper supplies CSS variables that override the document-level
-            `[data-theme]` rule for the same variables, while unset
-            variables cascade from the parent. Mirrors compile-time codegen
-            (orbital-rust/.../codegen/theme.rs) byte-for-byte at the
-            variable level. */}
+        {/* `min-h-full` — at least the preview frame's height, but can
+            grow past it. With `h-full` the inner box was locked to 100%
+            and content overflowing it did NOT contribute to the outer
+            scroll container's height, so tall layouts couldn't scroll.
+            `min-h-full` lets the inner box grow with its content; the
+            outer Box's `overflow-auto` then engages naturally. The HUD
+            docks via `absolute bottom-0` inside UISlotRenderer's own
+            `relative min-h-full` container, so empty layouts still
+            anchor the bar at the bottom of the viewport. */}
         <OrbitalThemeProvider theme={activeOrbitalTheme}>
-          <Box className="h-full p-4">
+          <Box className="min-h-full p-4">
             <UISlotRenderer includeHud hudMode="inline" includeFloating />
           </Box>
         </OrbitalThemeProvider>
