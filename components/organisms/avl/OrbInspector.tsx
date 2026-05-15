@@ -125,7 +125,14 @@ function findTraits(schema: OrbitalSchema, orbitalName: string): Array<{ name: s
  */
 function findPatternInTree(root: Record<string, unknown>, path: string): Record<string, unknown> | null {
   if (!path || path === 'root') return root;
-  const parts = path.split('.');
+  // UISlotRenderer emits paths starting with 'root' as the entry-point
+  // name (UISlotRenderer.tsx:1249). `root.children.0.children.0` means
+  // "from root, go children[0] → children[0]" — the leading 'root.' is
+  // a label, not a key to traverse. Without stripping, the first walk
+  // step tries `root['root']`, gets undefined, and every nested lookup
+  // returns null → inspector renders every prop as '—'.
+  const cleanPath = path.startsWith('root.') ? path.slice('root.'.length) : path;
+  const parts = cleanPath.split('.');
   let current: unknown = root;
   for (const part of parts) {
     if (current === null || current === undefined || typeof current !== 'object') return null;
