@@ -19,7 +19,7 @@
  * @packageDocumentation
  */
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { OrbitalServerRuntime } from '@almadar/runtime/OrbitalServerRuntime';
 import type { EventPayload, OrbitalSchema } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
@@ -52,19 +52,39 @@ export function BrowserPlayground({
     () => new OrbitalServerRuntime({ mode, debug: false }),
   );
 
-  // Re-register orbitals on schema ref change. The previous shape cleared
-  // the runtime via `unregisterAll()` in the effect's cleanup, then kicked
-  // off an async `register(schema)` in the new effect body — leaving a
-  // window where the runtime had zero orbitals registered. Trait state
-  // machines that re-mounted on the same schema change dispatched INIT
-  // into that window and got `Orbital not found`, blanking the canvas.
+  // Deferred unmount cleanup. React StrictMode in dev runs every effect's
+  // setup → cleanup → setup at mount to surface effect bugs. A naive
+  // `useEffect(() => () => runtime.unregisterAll(), [])` would fire the
+  // cleanup during that simulated unmount, drop every orbital, and then
+  // the schema-keyed effect below would re-register asynchronously —
+  // INIT dispatches from the SchemaRunner land in the gap and the
+  // runtime replies `Orbital not found`, blanking the canvas.
   //
-  // `registerOrbitalAsync` is idempotent (`this.orbitals.set(name, ...)`
-  // overwrites), so we can re-register without an unregister step. Stale
-  // orbitals removed from the new schema linger until full unmount; for
-  // the live-editing flow that's fine (mutations add/modify, rarely
-  // remove). Full teardown still drops everything via the unmount-only
-  // effect below.
+  // Defer the cleanup via setTimeout(0). When StrictMode immediately
+  // re-mounts the component, the next setup cancels the pending teardown
+  // before it fires. Real unmount lets the timer fire and `unregisterAll`
+  // runs (we need that — `unregisterAll` clears ticks, event listeners,
+  // and mock persistence, which leak otherwise).
+  const teardownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (teardownTimerRef.current !== null) {
+      clearTimeout(teardownTimerRef.current);
+      teardownTimerRef.current = null;
+    }
+    return () => {
+      teardownTimerRef.current = setTimeout(() => {
+        teardownTimerRef.current = null;
+        playgroundLog.debug('unregisterAll:unmount');
+        runtime.unregisterAll();
+      }, 0);
+    };
+  }, [runtime]);
+
+  // Re-register orbitals on schema ref change. `registerOrbitalAsync` is
+  // idempotent (`this.orbitals.set(name, ...)` overwrites), so back-to-back
+  // registers are safe. Stale orbitals removed from the new schema linger
+  // until full unmount; for the live-editing flow that's fine (mutations
+  // add/modify, rarely remove).
   useEffect(() => {
     const orbitalNames = schema.orbitals.map((o) => o.name);
     playgroundLog.debug('register:start', { schema: schema.name, orbitalNames });
@@ -72,15 +92,6 @@ export function BrowserPlayground({
       playgroundLog.debug('register:done', { schema: schema.name, orbitalNames });
     });
   }, [runtime, schema]);
-
-  // Full-unmount cleanup. Mounted once per `<BrowserPlayground>` lifetime;
-  // never tears down on a schema swap.
-  useEffect(() => {
-    return () => {
-      playgroundLog.debug('unregisterAll:unmount');
-      runtime.unregisterAll();
-    };
-  }, [runtime]);
 
   const transport = useMemo<ServerBridgeTransport>(() => ({
     register: async (s) => {
