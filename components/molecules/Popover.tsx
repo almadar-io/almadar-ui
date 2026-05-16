@@ -6,7 +6,7 @@
  * Uses Button, Typography, and Icon atoms.
  */
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../lib/cn";
 
@@ -49,10 +49,10 @@ export interface PopoverProps {
 }
 
 const positionClasses: Record<PopoverPosition, string> = {
-  top: "bottom-full left-1/2 -translate-x-1/2 mb-2",
-  bottom: "top-full left-1/2 -translate-x-1/2 mt-2",
-  left: "right-full top-1/2 -translate-y-1/2 mr-2",
-  right: "left-full top-1/2 -translate-y-1/2 ml-2",
+  top: "mb-2",
+  bottom: "mt-2",
+  left: "mr-2 -translate-y-1/2",
+  right: "ml-2 -translate-y-1/2",
 };
 
 const arrowClasses: Record<PopoverPosition, string> = {
@@ -64,6 +64,38 @@ const arrowClasses: Record<PopoverPosition, string> = {
     "right-full top-1/2 -translate-y-1/2 border-r-white border-t-transparent border-b-transparent border-l-transparent",
 };
 
+const VIEWPORT_EDGE_PADDING = 8;
+
+function computePopoverStyle(
+  position: PopoverPosition,
+  triggerRect: DOMRect,
+  popoverWidth: number,
+): React.CSSProperties {
+  if (position === "left" || position === "right") {
+    return {
+      left:
+        triggerRect.left +
+        (position === "left" ? 0 : triggerRect.width),
+      top: triggerRect.top + triggerRect.height / 2,
+    };
+  }
+  const viewportWidth =
+    typeof window !== "undefined" ? window.innerWidth : 1024;
+  const centered =
+    triggerRect.left + triggerRect.width / 2 - popoverWidth / 2;
+  const maxLeft = viewportWidth - popoverWidth - VIEWPORT_EDGE_PADDING;
+  const clamped = Math.max(
+    VIEWPORT_EDGE_PADDING,
+    Math.min(centered, Math.max(VIEWPORT_EDGE_PADDING, maxLeft)),
+  );
+  return {
+    left: clamped,
+    top:
+      triggerRect.top +
+      (position === "top" ? 0 : triggerRect.height),
+  };
+}
+
 export const Popover: React.FC<PopoverProps> = ({
   content,
   children,
@@ -74,12 +106,16 @@ export const Popover: React.FC<PopoverProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null);
+  const [popoverWidth, setPopoverWidth] = useState(0);
   const triggerRef = useRef<HTMLElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
   const updatePosition = () => {
     if (triggerRef.current) {
       setTriggerRect(triggerRef.current.getBoundingClientRect());
+    }
+    if (popoverRef.current) {
+      setPopoverWidth(popoverRef.current.offsetWidth);
     }
   };
 
@@ -103,8 +139,19 @@ export const Popover: React.FC<PopoverProps> = ({
   useEffect(() => {
     if (isOpen) {
       updatePosition();
+    } else {
+      setPopoverWidth(0);
     }
   }, [isOpen]);
+
+  useLayoutEffect(() => {
+    if (isOpen && popoverRef.current) {
+      const measured = popoverRef.current.offsetWidth;
+      if (measured !== popoverWidth) {
+        setPopoverWidth(measured);
+      }
+    }
+  });
 
   useEffect(() => {
     if (trigger !== "click") {
@@ -164,18 +211,7 @@ export const Popover: React.FC<PopoverProps> = ({
             positionClasses[position],
             className,
           )}
-          style={{
-            left:
-              position === "left" || position === "right"
-                ? triggerRect.left +
-                  (position === "left" ? 0 : triggerRect.width)
-                : triggerRect.left + triggerRect.width / 2,
-            top:
-              position === "top" || position === "bottom"
-                ? triggerRect.top +
-                  (position === "top" ? 0 : triggerRect.height)
-                : triggerRect.top + triggerRect.height / 2,
-          }}
+          style={computePopoverStyle(position, triggerRect, popoverWidth)}
           role="dialog"
           onMouseEnter={trigger === "hover" ? handleOpen : undefined}
           onMouseLeave={trigger === "hover" ? handleClose : undefined}
