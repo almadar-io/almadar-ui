@@ -130,7 +130,9 @@ export const WizardNavigation: React.FC<WizardNavigationProps> = ({
     <Box
       border
       className={cn(
-        "border-t-2 border-x-0 border-b-0 border-border flex justify-between items-center",
+        // `flex-wrap gap-2` lets the Back / Step / Next trio reflow on
+        // narrow viewports rather than crushing the step counter.
+        "border-t-2 border-x-0 border-b-0 border-border flex flex-wrap gap-2 justify-between items-center",
         compact ? "px-4 py-2" : "px-6 py-4",
         className,
       )}

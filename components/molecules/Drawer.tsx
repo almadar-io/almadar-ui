@@ -19,8 +19,8 @@
 import React, { useEffect, useRef } from "react";
 import type { EventKey } from "@almadar/core";
 import { X } from "lucide-react";
-import { Icon } from "../atoms/Icon";
 import { Box } from "../atoms/Box";
+import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
 import { Overlay } from "../atoms/Overlay";
 import { cn } from "../../lib/cn";
@@ -64,11 +64,15 @@ export interface DrawerProps {
 // Size Presets
 // ============================================================================
 
+// Width presets: fill the viewport on mobile (w-full); revert to the
+// preset at `sm:` and above so the drawer behaves like a bottom-sheet-
+// adjacent panel on phones and a true side-drawer on tablet+. Matches
+// the responsiveness-audit's mobile-fill expectation.
 const sizeWidths: Record<DrawerSize, string> = {
-  sm: "w-80", // 320px
-  md: "w-96", // 384px
-  lg: "w-[480px]", // 480px
-  xl: "w-[640px]", // 640px
+  sm: "w-full sm:w-80", // 320px
+  md: "w-full sm:w-96", // 384px
+  lg: "w-full sm:w-[480px]",
+  xl: "w-full sm:w-[640px]",
   full: "w-screen",
 };
 
@@ -191,7 +195,7 @@ export const Drawer: React.FC<DrawerProps> = ({
       >
         {/* Header */}
         {(title || showCloseButton) && (
-          <div
+          <Box
             className={cn(
               "px-6 py-4 flex items-center justify-between shrink-0",
               "border-b-[length:var(--border-width)] border-border",
@@ -203,35 +207,31 @@ export const Drawer: React.FC<DrawerProps> = ({
               </Typography>
             )}
             {showCloseButton && (
-              <button
-                type="button"
+              <Button
+                variant="ghost"
+                size="sm"
+                icon={X}
                 onClick={handleClose}
-                className={cn(
-                  "p-1 transition-colors rounded-sm",
-                  "hover:bg-muted",
-                  !title && "ml-auto",
-                )}
                 aria-label="Close drawer"
-              >
-                <Icon icon={X} size="md" />
-              </button>
+                className={cn(!title && "ml-auto")}
+              />
             )}
-          </div>
+          </Box>
         )}
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">{children}</div>
+        <Box className="flex-1 overflow-y-auto p-6">{children}</Box>
 
         {/* Footer */}
         {footer && (
-          <div
+          <Box
             className={cn(
               "px-6 py-4 shrink-0 bg-muted",
               "border-t-[length:var(--border-width)] border-border",
             )}
           >
             {footer}
-          </div>
+          </Box>
         )}
       </Box>
 

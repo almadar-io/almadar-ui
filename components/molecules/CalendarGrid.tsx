@@ -6,11 +6,13 @@
  * No entity binding, no event bus, no translations.
  * Composes DayCell and TimeSlotCell atoms into a 7-day grid.
  */
-import React, { useMemo, useCallback, useRef } from "react";
+import React, { useMemo, useCallback, useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { EventEmit, EventPayload } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { Box } from "../atoms/Box";
-import { VStack } from "../atoms/Stack";
+import { Button } from "../atoms/Button";
+import { HStack, VStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { Badge } from "../atoms/Badge";
 import { DayCell } from "../atoms/DayCell";
@@ -25,6 +27,13 @@ export interface CalendarEvent {
   endTime?: string | Date;
   color?: string;
 }
+
+/**
+ * Number of day columns rendered at once. Matches the responsiveness-
+ * audit tiers exactly: 1 day on mobile (≤640), 3 on tablet (641–1024),
+ * 7 on laptop+ (≥1025).
+ */
+export type CalendarDayWindow = 1 | 3 | 7;
 
 export interface CalendarGridProps {
   /** Start of the week (defaults to current week's Monday) */
@@ -49,6 +58,56 @@ export interface CalendarGridProps {
   swipeLeftEvent?: EventEmit<Record<string, never>>;
   /** Event emitted on swipe right (prev week): UI:{swipeRightEvent} */
   swipeRightEvent?: EventEmit<Record<string, never>>;
+  /**
+   * Override the viewport-driven day window. `'auto'` (default) tracks
+   * `window.innerWidth` — 1 day on mobile, 3 on tablet, 7 on laptop+.
+   * Pass an explicit number to force a fixed window (useful for print
+   * layouts or screenshot tests).
+   */
+  dayWindow?: CalendarDayWindow | 'auto';
+}
+
+/**
+ * Map a viewport width to a `CalendarDayWindow`. Edges match the
+ * responsiveness-audit breakpoints (640 / 1024).
+ */
+function dayWindowForViewport(width: number): CalendarDayWindow {
+  if (width <= 640) return 1;
+  if (width <= 1024) return 3;
+  return 7;
+}
+
+/**
+ * React hook that returns the currently-applicable day window. Tracks
+ * window resize until the consumer passes an explicit `dayWindow` prop
+ * (in which case the hook is skipped and the prop value is used
+ * verbatim).
+ */
+function useDayWindow(override: CalendarDayWindow | 'auto'): CalendarDayWindow {
+  const [w, setW] = useState<CalendarDayWindow>(() => {
+    if (override !== 'auto') return override;
+    if (typeof window === 'undefined') return 7;
+    return dayWindowForViewport(window.innerWidth);
+  });
+  useEffect(() => {
+    if (override !== 'auto') {
+      setW(override);
+      return undefined;
+    }
+    if (typeof window === 'undefined') return undefined;
+    const onResize = () => setW(dayWindowForViewport(window.innerWidth));
+    onResize();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [override]);
+  return w;
+}
+
+const SHORT_DATE: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+function formatDateRange(start: Date, end: Date): string {
+  const startStr = start.toLocaleDateString(undefined, SHORT_DATE);
+  const endStr = end.toLocaleDateString(undefined, SHORT_DATE);
+  return start.toDateString() === end.toDateString() ? startStr : `${startStr} – ${endStr}`;
 }
 
 /** Get the Monday of the week containing the given date */
@@ -109,6 +168,7 @@ export function CalendarGrid({
   longPressPayload,
   swipeLeftEvent,
   swipeRightEvent,
+  dayWindow = 'auto',
 }: CalendarGridProps): React.JSX.Element {
   const eventBus = useEventBus();
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -126,6 +186,42 @@ export function CalendarGrid({
     () => timeSlots ?? generateDefaultTimeSlots(),
     [timeSlots],
   );
+
+  // Viewport-driven number of day columns shown at once. Mobile shows 1
+  // day with a pager, tablet 3, laptop+ the full 7-day week.
+  const visibleCount = useDayWindow(dayWindow);
+  const [dayOffset, setDayOffset] = useState(0);
+
+  // Clamp `dayOffset` when the visibleCount grows past the available
+  // remaining days (e.g. user resized from mobile @offset=5 → laptop;
+  // offset=5 + 7 = 12 > 7 so snap back to 0 so the whole week fits).
+  useEffect(() => {
+    if (dayOffset + visibleCount > 7) {
+      setDayOffset(Math.max(0, 7 - visibleCount));
+    }
+  }, [visibleCount, dayOffset]);
+
+  const visibleDays = useMemo(
+    () => weekDays.slice(dayOffset, dayOffset + visibleCount),
+    [weekDays, dayOffset, visibleCount],
+  );
+
+  const canPrev = dayOffset > 0;
+  const canNext = dayOffset + visibleCount < 7;
+  const stepPrev = useCallback(() => {
+    setDayOffset((d) => Math.max(0, d - visibleCount));
+  }, [visibleCount]);
+  const stepNext = useCallback(() => {
+    setDayOffset((d) => Math.min(7 - visibleCount, d + visibleCount));
+  }, [visibleCount]);
+
+  // The grid has `visibleCount + 1` columns (one time-label column +
+  // one column per visible day). Tailwind needs the class as a literal
+  // string so its JIT can see it.
+  const gridColsClass =
+    visibleCount === 1 ? 'grid-cols-2'
+    : visibleCount === 3 ? 'grid-cols-4'
+    : 'grid-cols-8';
 
   const handleSlotClick = useCallback(
     (day: Date, time: string) => {
@@ -193,7 +289,7 @@ export function CalendarGrid({
 
   return (
     <Box
-      className={cn("overflow-x-auto", className)}
+      className={className}
       {...(swipeLeftEvent || swipeRightEvent ? {
         onPointerDown: swipe.onPointerDown,
         onPointerMove: swipe.onPointerMove,
@@ -201,12 +297,43 @@ export function CalendarGrid({
         onPointerCancel: swipe.onPointerCancel,
       } : {})}
     >
-      <Box className="min-w-[800px]">
+      {/* Day-pager nav. Hidden when the full week fits (laptop+), shown
+          on mobile + tablet so users can scan all 7 days without the
+          grid ever needing a horizontal scrollbar. */}
+      {visibleCount < 7 && (
+        <HStack align="center" justify="between" className="mb-2 px-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={ChevronLeft}
+            onClick={stepPrev}
+            aria-disabled={!canPrev || undefined}
+            aria-label="Previous days"
+          >
+            Prev
+          </Button>
+          <Typography variant="small" className="text-muted-foreground">
+            {formatDateRange(visibleDays[0], visibleDays[visibleDays.length - 1])}
+          </Typography>
+          <Button
+            variant="ghost"
+            size="sm"
+            iconRight={ChevronRight}
+            onClick={stepNext}
+            aria-disabled={!canNext || undefined}
+            aria-label="Next days"
+          >
+            Next
+          </Button>
+        </HStack>
+      )}
+
+      <Box>
         {/* Day Headers */}
-        <Box className="grid grid-cols-8 border-b border-border">
+        <Box className={cn('grid border-b border-border', gridColsClass)}>
           {/* Empty top-left corner for time column */}
           <Box className="p-2" />
-          {weekDays.map((day) => {
+          {visibleDays.map((day) => {
             const isToday = day.toDateString() === new Date().toDateString();
             const count = eventsForDayCount(day);
 
@@ -237,7 +364,7 @@ export function CalendarGrid({
           {resolvedTimeSlots.map((time) => (
             <Box
               key={time}
-              className="grid grid-cols-8 border-b border-border"
+              className={cn('grid border-b border-border', gridColsClass)}
             >
               {/* Time label */}
               <Box className="p-2 text-right pr-3">
@@ -250,7 +377,7 @@ export function CalendarGrid({
               </Box>
 
               {/* Day cells */}
-              {weekDays.map((day) => {
+              {visibleDays.map((day) => {
                 const slotEvents = events.filter((ev) =>
                   eventInSlot(ev, day, time),
                 );

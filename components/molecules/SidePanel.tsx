@@ -9,6 +9,8 @@
 import React from "react";
 import type { EventEmit } from "@almadar/core";
 import { X } from "lucide-react";
+import { Aside } from "../atoms/Aside";
+import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../lib/cn";
@@ -36,8 +38,13 @@ export interface SidePanelProps {
   onClose: () => void;
 
   /**
-   * Panel width
-   * @default 'w-96'
+   * Panel width as Tailwind class string. Default fills the viewport on
+   * mobile and snaps to `w-96` (384 px) at `sm:` and above so phones
+   * don't lose content to a fixed 384 px column. Consumers passing a
+   * custom value should include a `w-full` mobile fallback in the same
+   * string (e.g. `"w-full sm:w-[480px]"`) — Tailwind's JIT can't see
+   * dynamically-concatenated class names.
+   * @default 'w-full sm:w-96'
    */
   width?: string;
 
@@ -67,7 +74,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   children,
   isOpen,
   onClose,
-  width = "w-96",
+  width = "w-full sm:w-96",
   position = "right",
   showOverlay = true,
   className,
@@ -86,14 +93,16 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     <>
       {/* Overlay */}
       {showOverlay && (
-        <div
+        <Box
           className="fixed inset-0 bg-white/80 backdrop-blur-sm z-40 lg:hidden"
           onClick={handleClose}
         />
       )}
 
-      {/* Side Panel */}
-      <aside
+      {/* Side Panel — fills the viewport on mobile, uses the `width` prop
+          (default `w-96`) at `sm:` and above so phones don't lose content
+          to a fixed 384 px column. */}
+      <Aside
         className={cn(
           "fixed top-16 lg:top-0 bottom-0 z-[60]",
           "bg-card",
@@ -107,7 +116,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b-2 border-border sticky top-0 bg-card z-10">
+        <Box className="flex items-center justify-between p-4 border-b-2 border-border sticky top-0 bg-card z-10">
           <Typography variant="h6">{title}</Typography>
           <Button
             variant="ghost"
@@ -116,13 +125,13 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             onClick={handleClose}
             aria-label="Close panel"
           >
-            <span className="sr-only">Close</span>
+            <Typography variant="small" as="span" className="sr-only">Close</Typography>
           </Button>
-        </div>
+        </Box>
 
         {/* Content */}
-        <div className="p-4 flex-1 overflow-y-auto">{children}</div>
-      </aside>
+        <Box className="p-4 flex-1 overflow-y-auto">{children}</Box>
+      </Aside>
     </>
   );
 };

@@ -258,49 +258,41 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
     }, [hoverEvent, eventBus, onMouseLeave]);
 
     const isClickable = action || onClick;
-    const Comp = Component as React.FC<Record<string, unknown>>;
-    return (
-      <Comp
-        ref={ref}
-        className={cn(
-          // Padding
+    // Polymorphic render via React.createElement — `as: React.ElementType`
+    // collapses prop inference to `never` inside JSX, so the prior code
+    // hid the issue with `as React.FC<Record<string, unknown>>`.
+    // createElement's generic signature accepts the merged props verbatim
+    // without that type lie.
+    return React.createElement(
+      Component,
+      {
+        ref,
+        className: cn(
           padding && paddingStyles[padding],
           paddingX && paddingXStyles[paddingX],
           paddingY && paddingYStyles[paddingY],
-          // Margin
           margin && marginStyles[margin],
           marginX && marginXStyles[marginX],
           marginY && marginYStyles[marginY],
-          // Background
           bgStyles[bg],
-          // Border - uses theme variables
-          border &&
-            "border-[length:var(--border-width)] border-border",
-          // Rounded
+          border && "border-[length:var(--border-width)] border-border",
           roundedStyles[rounded],
-          // Shadow
           shadowStyles[shadow],
-          // Display
           display && displayStyles[display],
-          // Dimensions
           fullWidth && "w-full",
           fullHeight && "h-full",
-          // Overflow
           overflow && overflowStyles[overflow],
-          // Position
           position && positionStyles[position],
-          // Cursor for clickable
           isClickable && "cursor-pointer",
           className,
-        )}
-        onClick={isClickable ? handleClick : undefined}
-        onMouseEnter={(hoverEvent || onMouseEnter) ? handleMouseEnter : undefined}
-        onMouseLeave={(hoverEvent || onMouseLeave) ? handleMouseLeave : undefined}
-        style={maxWidth ? { maxWidth, ...rest.style } : rest.style}
-        {...rest}
-      >
-        {children}
-      </Comp>
+        ),
+        onClick: isClickable ? handleClick : undefined,
+        onMouseEnter: (hoverEvent || onMouseEnter) ? handleMouseEnter : undefined,
+        onMouseLeave: (hoverEvent || onMouseLeave) ? handleMouseLeave : undefined,
+        style: maxWidth ? { maxWidth, ...rest.style } : rest.style,
+        ...rest,
+      },
+      children,
     );
   },
 );

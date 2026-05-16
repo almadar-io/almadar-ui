@@ -9,8 +9,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import type { EventEmit } from "@almadar/core";
 import { X } from "lucide-react";
-import { Icon } from "../atoms/Icon";
 import { Box } from "../atoms/Box";
+import { Button } from "../atoms/Button";
+import { Dialog } from "../atoms/Dialog";
 import { Typography } from "../atoms/Typography";
 import { Overlay } from "../atoms/Overlay";
 import { cn } from "../../lib/cn";
@@ -46,6 +47,9 @@ const sizeClasses: Record<ModalSize, string> = {
   full: "max-w-full mx-4",
 };
 
+// `minWidths` only floors the dialog above mobile. On phones we override
+// with `max-sm:min-w-0` so the bottom-sheet variant can shrink to viewport
+// width without the hardcoded 400/520/600/700 fighting it.
 const minWidths: Record<ModalSize, string> = {
   sm: "400px",
   md: "520px",
@@ -69,7 +73,7 @@ export const Modal: React.FC<ModalProps> = ({
   swipeDownToClose = true,
 }) => {
   const eventBus = useEventBus();
-  const modalRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDialogElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
   const [dragY, setDragY] = useState(0);
   const dragStartY = useRef(0);
@@ -133,7 +137,7 @@ export const Modal: React.FC<ModalProps> = ({
       />
 
       {/* Desktop: dialog positioned in upper third. Mobile (<640px): bottom sheet */}
-      <div
+      <Box
         className={cn(
           "fixed inset-0 z-50 pointer-events-none",
           "flex items-start justify-center px-4 pb-4",
@@ -141,16 +145,16 @@ export const Modal: React.FC<ModalProps> = ({
         )}
         style={{ paddingTop: '10vh' }}
       >
-        <Box
+        <Dialog
           ref={modalRef}
-          bg="surface"
-          border
-          shadow="lg"
-          rounded="md"
+          open
           className={cn(
-            "pointer-events-auto w-full flex flex-col",
+            // Reset browser-default dialog chrome — we own styling.
+            "m-0 p-0 border-0 bg-transparent",
+            // Pre-existing dialog frame
+            "pointer-events-auto w-full flex flex-col bg-surface border shadow-lg rounded-md",
             sizeClasses[size],
-            "max-sm:max-w-full max-sm:rounded-b-none max-sm:rounded-t-2xl",
+            "max-sm:max-w-full max-sm:min-w-0 max-sm:rounded-b-none max-sm:rounded-t-2xl",
             className,
           )}
           style={{
@@ -161,12 +165,10 @@ export const Modal: React.FC<ModalProps> = ({
               transition: isDragging.current ? 'none' : 'transform 200ms ease-out',
             }),
           }}
-          role="dialog"
-          aria-modal="true"
           {...(title && { "aria-labelledby": "modal-title" })}
         >
           {/* Drag handle (mobile bottom sheet) */}
-          <div
+          <Box
             className="hidden max-sm:flex justify-center py-2 cursor-grab active:cursor-grabbing touch-none"
             onPointerDown={(e) => {
               if (!swipeDownToClose) return;
@@ -192,12 +194,12 @@ export const Modal: React.FC<ModalProps> = ({
               setDragY(0);
             }}
           >
-            <div className="w-10 h-1 rounded-full bg-border" />
-          </div>
+            <Box className="w-10 h-1 rounded-full bg-border" />
+          </Box>
 
           {/* Header */}
           {(title || showCloseButton) && (
-            <div
+            <Box
               className={cn(
                 "px-6 py-4 flex items-center justify-between",
                 "border-b-[length:var(--border-width)] border-border",
@@ -209,38 +211,34 @@ export const Modal: React.FC<ModalProps> = ({
                 </Typography>
               )}
               {showCloseButton && (
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={X}
                   onClick={handleClose}
                   data-event="CLOSE"
-                  className={cn(
-                    "p-1 transition-colors rounded-sm",
-                    "hover:bg-muted",
-                  )}
                   aria-label="Close modal"
-                >
-                  <Icon icon={X} size="md" />
-                </button>
+                />
               )}
-            </div>
+            </Box>
           )}
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-6">{children}</div>
+          <Box className="flex-1 overflow-y-auto p-6">{children}</Box>
 
           {/* Footer */}
           {footer && (
-            <div
+            <Box
               className={cn(
                 "px-6 py-4 bg-muted",
                 "border-t-[length:var(--border-width)] border-border",
               )}
             >
               {footer}
-            </div>
+            </Box>
           )}
-        </Box>
-      </div>
+        </Dialog>
+      </Box>
     </>
   );
 };

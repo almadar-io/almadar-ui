@@ -5,6 +5,7 @@
  * Perfect for card layouts and item collections.
  */
 import React from 'react';
+import { Box } from '../atoms/Box';
 import { cn } from '../../lib/cn';
 
 export type SimpleGridGap = 'none' | 'xs' | 'sm' | 'md' | 'lg' | 'xl';
@@ -33,13 +34,17 @@ const gapStyles: Record<SimpleGridGap, string> = {
   xl: 'gap-8',
 };
 
+// Responsive column ladders. Every multi-column entry climbs through
+// every Tailwind breakpoint (sm → md → lg → xl) so a 3-col grid at
+// laptop becomes 2-col at tablet and 1-col at mobile, instead of the
+// previous "1 → 2 → 3" jump that skipped tablet entirely.
 const colStyles = {
   1: 'grid-cols-1',
   2: 'grid-cols-1 sm:grid-cols-2',
-  3: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3',
-  4: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4',
-  5: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
-  6: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
+  3: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3',
+  4: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4',
+  5: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
+  6: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6',
 };
 
 /**
@@ -56,15 +61,15 @@ export const SimpleGrid: React.FC<SimpleGridProps> = ({
   // If exact cols specified, use fixed grid
   if (cols) {
     return (
-      <div className={cn('grid', colStyles[cols], gapStyles[gap], className)}>
+      <Box className={cn('grid', colStyles[cols], gapStyles[gap], className)}>
         {children}
-      </div>
+      </Box>
     );
   }
 
   // Otherwise use auto-fit with minChildWidth
-  const minWidth = typeof minChildWidth === 'number' 
-    ? `${minChildWidth}px` 
+  const minWidth = typeof minChildWidth === 'number'
+    ? `${minChildWidth}px`
     : minChildWidth;
 
   // Calculate max column constraint if provided
@@ -73,16 +78,16 @@ export const SimpleGrid: React.FC<SimpleGridProps> = ({
     : `repeat(auto-fit, minmax(${minWidth}, 1fr))`;
 
   return (
-    <div
+    <Box
       className={cn('grid', gapStyles[gap], className)}
-      style={{ 
+      style={{
         gridTemplateColumns: templateColumns,
         // Limit max columns if specified
         ...(maxCols && { maxWidth: `calc(${maxCols} * (${minWidth} + var(--gap, 1rem)))` }),
       }}
     >
       {children}
-    </div>
+    </Box>
   );
 };
 

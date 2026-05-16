@@ -9,6 +9,7 @@
 import React, { useEffect } from "react";
 import type { EventEmit } from "@almadar/core";
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from "lucide-react";
+import { Box } from "../atoms/Box";
 import { Icon } from "../atoms/Icon";
 import { Typography } from "../atoms/Typography";
 import { Button } from "../atoms/Button";
@@ -108,25 +109,28 @@ export const Toast: React.FC<ToastProps> = ({
   }, [duration, onDismiss, dismissEvent]); // handleDismiss is stable across renders
 
   return (
-    <div
+    <Box
       className={cn(
-        "border-l-4 p-4 shadow min-w-[300px] max-w-md",
+        // `min-w-[300px]` only kicks in at `sm:` and above so a phone
+        // viewport doesn't get a toast wider than the screen near the
+        // edge. `max-w-[calc(100vw-2rem)]` clamps to viewport too.
+        "border-l-4 p-4 shadow min-w-0 sm:min-w-[300px] max-w-md max-w-[calc(100vw-2rem)]",
         "rounded-sm",
         variantClasses[variant],
         className,
       )}
       role="alert"
     >
-      <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 mt-0.5">
+      <Box className="flex items-start gap-3">
+        <Box className="flex-shrink-0 mt-0.5">
           <Icon
             icon={iconMap[variant]}
             size="md"
             className={iconColors[variant]}
           />
-        </div>
+        </Box>
 
-        <div className="flex-1 min-w-0">
+        <Box className="flex-1 min-w-0">
           {title && (
             <Typography variant="h6" className="mb-1">
               {title}
@@ -137,37 +141,33 @@ export const Toast: React.FC<ToastProps> = ({
           </Typography>
 
           {actionLabel && (onAction || actionEvent) && (
-            <div className="mt-3">
+            <Box className="mt-3">
               <Button variant="ghost" size="sm" onClick={handleAction}>
                 {actionLabel}
               </Button>
-            </div>
+            </Box>
           )}
-        </div>
+        </Box>
 
-        <div className="flex items-start gap-2 flex-shrink-0">
+        <Box className="flex items-start gap-2 flex-shrink-0">
           {badge !== undefined && (
             <Badge variant="default" size="sm">
               {badge}
             </Badge>
           )}
           {dismissible && (
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              size="sm"
+              icon={X}
               onClick={handleDismiss}
-              className={cn(
-                "flex-shrink-0 p-1 transition-colors rounded-sm",
-                "hover:bg-muted",
-                "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-              )}
               aria-label="Dismiss toast"
-            >
-              <Icon icon={X} size="sm" />
-            </button>
+              className="flex-shrink-0"
+            />
           )}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

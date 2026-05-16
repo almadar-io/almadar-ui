@@ -18,8 +18,16 @@ import { useEventBus } from '../../hooks/useEventBus';
 import { useTranslate } from '../../hooks/useTranslate';
 
 export interface TabItem {
-  /** Tab ID */
-  id: string;
+  /**
+   * Tab ID. Optional — schema-driven callers may pass `value` instead;
+   * it gets normalized to `id` at the call boundary.
+   */
+  id?: string;
+  /**
+   * Alternative key when `id` isn't set. Used by `.orb` schema-driven
+   * call sites that emit `{ value, label }` for tab items.
+   */
+  value?: string;
   /** Tab label */
   label: string;
   /** Tab content - optional for event-driven tabs */
@@ -34,6 +42,15 @@ export interface TabItem {
   event?: string;
   /** Whether this tab is currently active (for controlled tabs) */
   active?: boolean;
+}
+
+/**
+ * `TabItem` after `id`/`value` normalization. `id` is guaranteed
+ * present so downstream rendering + keyboard nav don't have to defend
+ * against `undefined`.
+ */
+interface NormalizedTabItem extends Omit<TabItem, 'id' | 'value'> {
+  id: string;
 }
 
 export interface TabsProps {
@@ -68,12 +85,13 @@ export const Tabs: React.FC<TabsProps> = ({
   orientation = 'horizontal',
   className,
 }) => {
-  // Guard against undefined or empty items - support both 'items' and 'tabs' props
-  // Also normalize {value, label} format from schema to {id, label} format for component
+  // Guard against undefined or empty items - support both 'items' and 'tabs' props.
+  // Normalize {value, label} format from schema to {id, label}; result carries a
+  // guaranteed `id: string` so downstream code (keyboard nav, refs) is total.
   const rawItems = items ?? tabs ?? [];
-  const safeItems = rawItems.map(item => ({
-    ...item,
-    id: item.id || (item as unknown as Record<string, string>).value || '',
+  const safeItems: NormalizedTabItem[] = rawItems.map(({ id, value, ...rest }) => ({
+    ...rest,
+    id: id || value || '',
   }));
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -159,8 +177,13 @@ export const Tabs: React.FC<TabsProps> = ({
         role="tablist"
         className={cn(
           'flex',
+          // Horizontal tab strip becomes a horizontally-scrollable lane
+          // below its container width — phones with many tabs scroll
+          // instead of clipping. `snap-x` snaps to each tab; the
+          // scrollbar is hidden for a cleaner affordance (the swipe
+          // gesture is the discoverability cue).
           orientation === 'horizontal'
-            ? 'flex-row border-b-[length:var(--border-width)] border-border'
+            ? 'flex-row border-b-[length:var(--border-width)] border-border overflow-x-auto snap-x snap-mandatory [&::-webkit-scrollbar]:hidden'
             : 'flex-col border-r-[length:var(--border-width)] border-border',
           variant === 'pills' && 'gap-1 p-1 bg-muted border-0 rounded-md',
           variant === 'underline' && orientation === 'vertical' && 'border-b-0'
@@ -185,7 +208,8 @@ export const Tabs: React.FC<TabsProps> = ({
               onKeyDown={(e: React.KeyboardEvent) => handleKeyDown(e, index)}
               data-active={isActive}
               className={cn(
-                'flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all',
+                'flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all whitespace-nowrap',
+                orientation === 'horizontal' && 'snap-start shrink-0',
                 'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
                 isDisabled && 'opacity-50 cursor-not-allowed',
                 variantClasses[variant],

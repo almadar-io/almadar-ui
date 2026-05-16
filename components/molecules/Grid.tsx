@@ -166,27 +166,27 @@ export const Grid: React.FC<GridProps> = ({
   const mergedStyle = rows
     ? { gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`, ...style }
     : style;
-  const Comp = Component as React.FC<Record<string, unknown>>;
-  return (
-    <Comp
-      className={cn(
+  // Polymorphic render via React.createElement. JSX with `<Comp />` where
+  // Comp is a bare React.ElementType collapses prop inference to `never`
+  // and forces a cast; createElement's generic signature accepts the
+  // props verbatim without a type lie.
+  return React.createElement(
+    Component,
+    {
+      className: cn(
         'grid',
         getColsClass(cols),
-        // Gap (rowGap/colGap override gap)
         rowGap ? rowGapStyles[rowGap] : colGap ? undefined : gapStyles[gap],
         colGap ? colGapStyles[colGap] : rowGap ? undefined : undefined,
         rowGap && colGap ? `${rowGapStyles[rowGap]} ${colGapStyles[colGap]}` : undefined,
-        // Alignment
         alignItems && alignStyles[alignItems],
         justifyItems && justifyStyles[justifyItems],
-        // Flow
         flow && flowStyles[flow],
-        className
-      )}
-      style={mergedStyle}
-    >
-      {children}
-    </Comp>
+        className,
+      ),
+      style: mergedStyle,
+    },
+    children,
   );
 };
 

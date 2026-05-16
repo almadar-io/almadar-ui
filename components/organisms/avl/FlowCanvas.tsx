@@ -36,7 +36,7 @@ import { OrbPreviewNode, ScreenSizeContext, PatternSelectionContext, type Select
 import { EventFlowEdge } from '../../molecules/avl/EventFlowEdge';
 import { schemaToOverviewGraph, orbitalToExpandedGraph } from '../../molecules/avl/avl-preview-converter';
 import type { ViewLevel, PreviewNodeData, ScreenSize } from '../../molecules/avl/avl-preview-types';
-import { SCREEN_SIZE_PRESETS } from '../../molecules/avl/avl-preview-types';
+import { SCREEN_SIZE_PRESETS, detectScreenSize } from '../../molecules/avl/avl-preview-types';
 import { OrbInspector } from './OrbInspector';
 import { validateWire } from '../../molecules/avl/wire-validation';
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -252,7 +252,27 @@ function FlowCanvasInner({
   const [expandedOrbital, setExpandedOrbital] = useState<string | undefined>(
     initialOrbital,
   );
-  const [screenSize, setScreenSize] = useState<ScreenSize>('desktop');
+  // Screen size driving OrbPreviewNode width. Default is auto-detected from
+  // the user's viewport on mount (SSR-safe fallback to 'laptop'), and tracks
+  // window resize until the user manually picks a preset — after which their
+  // choice is sticky for the session. Matches the responsiveness-audit tiers.
+  const screenSizeUserOverrideRef = React.useRef(false);
+  const [screenSize, setScreenSize] = useState<ScreenSize>(() =>
+    typeof window === 'undefined' ? 'laptop' : detectScreenSize(window.innerWidth),
+  );
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const onResize = () => {
+      if (screenSizeUserOverrideRef.current) return;
+      setScreenSize(detectScreenSize(window.innerWidth));
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  const pickScreenSize = useCallback((size: ScreenSize) => {
+    screenSizeUserOverrideRef.current = true;
+    setScreenSize(size);
+  }, []);
   const [selectedNode, setSelectedNode] = useState<PreviewNodeData | null>(initialSelectedNode ?? null);
   const [selectedPattern, setSelectedPattern] = useState<SelectedPattern | null>(null);
 
@@ -499,7 +519,7 @@ function FlowCanvasInner({
     });
   }, [nodes, onEventWire, eventBus]);
 
-  const screenSizeKeys: ScreenSize[] = ['mobile', 'tablet', 'desktop'];
+  const screenSizeKeys: ScreenSize[] = ['mobile', 'tablet', 'laptop', 'wide'];
 
   return (
     <ScreenSizeContext.Provider value={screenSize}>
@@ -582,7 +602,7 @@ function FlowCanvasInner({
                 <button
                   key={size}
                   onClick={() => {
-                    setScreenSize(size);
+                    pickScreenSize(size);
                     requestAnimationFrame(() => {
                       reactFlow.fitView({ duration: 300, padding: 0.15 });
                     });

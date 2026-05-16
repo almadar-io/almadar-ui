@@ -21,15 +21,43 @@ export type ViewLevel = 'overview' | 'expanded';
 // Screen size presets for preview nodes
 // ---------------------------------------------------------------------------
 
-/** Screen size preset for OrbPreview rendering inside nodes. */
-export type ScreenSize = 'mobile' | 'tablet' | 'desktop';
+/**
+ * Screen size preset for OrbPreview rendering inside nodes.
+ *
+ * Aligned with the four-breakpoint responsiveness audit:
+ *   mobile  — phone portrait  (≤640px)
+ *   tablet  — iPad / small landscape (641–1024px)
+ *   laptop  — 13–15" notebook (1025–1440px)
+ *   wide    — desktop / monitor (≥1441px)
+ *
+ * Preset widths are representative viewport widths within each range; the
+ * preview renders at exactly this width so the embedded UI experiences
+ * the same media-query / container-query behavior it would at the real
+ * viewport. `minHeight` only floors the preview frame; vertical sizing is
+ * content-driven (BrowserPlayground height="auto").
+ */
+export type ScreenSize = 'mobile' | 'tablet' | 'laptop' | 'wide';
 
-/** Width for each screen size preset. Height is auto (expands to fit content). */
 export const SCREEN_SIZE_PRESETS: Record<ScreenSize, { width: number; minHeight: number; label: string; icon: string }> = {
-  mobile:  { width: 375,  minHeight: 300, label: 'Mobile',  icon: 'smartphone' },
-  tablet:  { width: 560,  minHeight: 280, label: 'Tablet',  icon: 'tablet' },
-  desktop: { width: 780,  minHeight: 260, label: 'Desktop', icon: 'monitor' },
+  mobile: { width: 375,  minHeight: 320, label: 'Mobile', icon: 'smartphone' },
+  tablet: { width: 768,  minHeight: 320, label: 'Tablet', icon: 'tablet' },
+  laptop: { width: 1280, minHeight: 360, label: 'Laptop', icon: 'monitor' },
+  wide:   { width: 1600, minHeight: 360, label: 'Wide',   icon: 'monitor-up' },
 };
+
+/**
+ * Map a raw viewport width (px) to the nearest preset. Used by FlowCanvas
+ * to auto-pick the default ScreenSize based on the user's actual canvas
+ * pane width on mount + on window resize. The breakpoint edges match the
+ * responsiveness-audit tiers exactly (640 / 1024 / 1440) so what the
+ * preview renders matches the tier the audit graded against.
+ */
+export function detectScreenSize(viewportWidth: number): ScreenSize {
+  if (viewportWidth <= 640) return 'mobile';
+  if (viewportWidth <= 1024) return 'tablet';
+  if (viewportWidth <= 1440) return 'laptop';
+  return 'wide';
+}
 
 // ---------------------------------------------------------------------------
 // Event sources — UI elements that trigger transitions

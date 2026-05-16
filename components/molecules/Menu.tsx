@@ -9,6 +9,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import type { LucideIcon } from "lucide-react";
 import { ChevronRight } from "lucide-react";
+import { Box } from "../atoms/Box";
+import { Button } from "../atoms/Button";
 import { Icon } from "../atoms/Icon";
 import { Divider } from "../atoms/Divider";
 import { Typography } from "../atoms/Typography";
@@ -47,6 +49,17 @@ export type MenuPosition =
   | "top-end"
   | "bottom-start"
   | "bottom-end"; // Aliases for pattern compatibility
+
+/**
+ * Subset of props Menu's `React.cloneElement` injects into the trigger
+ * child. Typing the clone target as `React.ReactElement<MenuTriggerProps>`
+ * keeps the call totally — no `any`, no `unknown` — while letting
+ * arbitrary additional props on the underlying element pass through.
+ */
+interface MenuTriggerProps {
+  ref?: React.Ref<HTMLElement>;
+  onClick?: React.MouseEventHandler<HTMLElement>;
+}
 
 export interface MenuProps {
   /** Menu trigger element */
@@ -135,28 +148,31 @@ export const Menu: React.FC<MenuProps> = ({
     "bottom-end": "top-full right-0 mt-2",
   };
 
-  // Wrap non-element trigger in a span
+  // Wrap non-element trigger in a Typography inline span — atoms only.
   const triggerChild = React.isValidElement(trigger) ? (
     trigger
   ) : (
-    <span>{trigger}</span>
+    <Typography variant="small" as="span">{trigger}</Typography>
   );
 
   const triggerElement = React.cloneElement(
-    triggerChild as React.ReactElement<any>,
+    triggerChild as React.ReactElement<MenuTriggerProps>,
     {
       ref: triggerRef,
       onClick: handleToggle,
     },
   );
 
-  // Theme-aware menu container styles
+  // Theme-aware menu container styles. Drops the min-width on mobile —
+  // 200px exceeds usable space when the menu is anchored near a viewport
+  // edge on phones. `max-w-[calc(100vw-1rem)]` clamps the popover to the
+  // viewport regardless of anchor position.
   const menuContainerStyles = cn(
     "bg-card",
     "border-[length:var(--border-width)] border-border",
     "shadow",
     "rounded-sm",
-    "min-w-[200px] py-1",
+    "min-w-0 sm:min-w-[200px] max-w-[calc(100vw-1rem)] py-1",
   );
 
   const renderMenuItem = (
@@ -171,11 +187,11 @@ export const Menu: React.FC<MenuProps> = ({
     const isDanger = item.variant === "danger";
 
     return (
-      <button
+      <Box
         key={itemId}
-        type="button"
-        onClick={() => handleItemClick({ ...item, id: itemId })}
-        disabled={item.disabled}
+        as="button"
+        onClick={() => !item.disabled && handleItemClick({ ...item, id: itemId })}
+        aria-disabled={item.disabled || undefined}
         onMouseEnter={() => hasSubMenu && setActiveSubMenu(itemId)}
         data-testid={item.event ? `action-${item.event}` : undefined}
         className={cn(
@@ -185,11 +201,10 @@ export const Menu: React.FC<MenuProps> = ({
           "focus:outline-none focus:bg-muted",
           "disabled:opacity-50 disabled:cursor-not-allowed",
           item.disabled && "cursor-not-allowed",
-          isDanger &&
-            "text-error hover:bg-error/10",
+          isDanger && "text-error hover:bg-error/10",
         )}
       >
-        <div className="flex items-center gap-3 flex-1 min-w-0">
+        <Box className="flex items-center gap-3 flex-1 min-w-0">
           {item.icon &&
             (typeof item.icon === "string" ? (
               <Icon name={item.icon} size="sm" className="flex-shrink-0" />
@@ -210,8 +225,8 @@ export const Menu: React.FC<MenuProps> = ({
           {hasSubMenu && (
             <Icon icon={ChevronRight} size="sm" className="flex-shrink-0" />
           )}
-        </div>
-      </button>
+        </Box>
+      </Box>
     );
   };
 
@@ -228,28 +243,28 @@ export const Menu: React.FC<MenuProps> = ({
       }
 
       return (
-        <div key={itemId}>
+        <Box key={itemId}>
           {renderMenuItem(item, !!hasSubMenu, index)}
           {hasSubMenu && activeSubMenu === itemId && item.subMenu && (
-            <div
+            <Box
               className={cn(
                 "absolute left-full top-0 ml-2 z-50",
                 menuContainerStyles,
               )}
             >
               {renderMenuItems(item.subMenu)}
-            </div>
+            </Box>
           )}
-        </div>
+        </Box>
       );
     });
   };
 
   return (
-    <div className="relative">
+    <Box className="relative">
       {triggerElement}
       {isOpen && triggerRect && (
-        <div
+        <Box
           ref={menuRef}
           className={cn(
             "absolute z-50",
@@ -264,9 +279,9 @@ export const Menu: React.FC<MenuProps> = ({
           role="menu"
         >
           {renderMenuItems(items)}
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 };
 

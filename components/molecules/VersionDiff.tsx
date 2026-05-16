@@ -238,7 +238,7 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
                         <Typography variant="small" weight="medium" className="whitespace-nowrap">
                             Compare
                         </Typography>
-                        <Box className="min-w-[160px]">
+                        <Box className="min-w-0 md:min-w-[160px]">
                             <Select
                                 options={options}
                                 value={activeBeforeId}
@@ -249,7 +249,7 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
                         <Typography variant="caption" color="secondary">
                             to
                         </Typography>
-                        <Box className="min-w-[160px]">
+                        <Box className="min-w-0 md:min-w-[160px]">
                             <Select
                                 options={options}
                                 value={activeAfterId}
@@ -311,9 +311,10 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
                 {/* Body */}
                 <Box className="overflow-auto bg-muted/20" style={{ maxHeight: 600 }}>
                     {activeView === "side-by-side" ? (
-                        <Box className="grid grid-cols-2">
-                            {/* Before column */}
-                            <Box className="border-r border-border">
+                        <Box className="grid grid-cols-1 md:grid-cols-2">
+                            {/* Before column. Below md the columns stack vertically so the
+                                separator flips from right-edge to bottom-edge. */}
+                            <Box className="border-b md:border-b-0 md:border-r border-border">
                                 <VStack gap="none" className="font-mono text-xs">
                                     {beforeLines.map((line, idx) => {
                                         const isRemoved = line.type === "removed";

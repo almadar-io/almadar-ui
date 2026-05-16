@@ -87,6 +87,8 @@ export { ThemeToggle, type ThemeToggleProps } from "./ThemeToggle";
 export { ThemeSelector } from "./ThemeSelector";
 export { Overlay, type OverlayProps } from "./Overlay";
 export { FlipContainer, type FlipContainerProps } from "./FlipContainer";
+export { Dialog, type DialogProps } from "./Dialog";
+export { Aside, type AsideProps } from "./Aside";
 
 // Inspection form components
 export {
