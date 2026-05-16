@@ -321,14 +321,23 @@ export function DataGrid<T extends EntityRow = EntityRow>({
     ? undefined
     : `repeat(auto-fit, minmax(min(${minCardWidth}px, 100%), 1fr))`;
 
+  // Viewport queries (`sm:` / `lg:` / `xl:`) drive the grid in real-world
+  // app usage where the host viewport equals the rendered viewport. The
+  // `@max-*` container-query overrides only fire when DataGrid renders
+  // inside an `@container` ancestor (e.g. OrbPreviewNode's `@container/preview`)
+  // whose own width is narrower than the host viewport — that's the
+  // OrbPreview "Mobile/Tablet/Laptop/Wide" simulation case where the host
+  // viewport stays wide but the simulated card is mobile-sized. The `!`
+  // keeps them winning over the matching viewport rule when both fire.
+  // Ordered largest-to-smallest so the smallest matching tier wins.
   const colsClass = cols
     ? {
         1: 'grid-cols-1',
-        2: 'sm:grid-cols-2',
-        3: 'sm:grid-cols-2 lg:grid-cols-3',
-        4: 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
-        5: 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5',
-        6: 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6',
+        2: 'sm:grid-cols-2 @max-sm:!grid-cols-1',
+        3: 'sm:grid-cols-2 lg:grid-cols-3 @max-lg:!grid-cols-2 @max-sm:!grid-cols-1',
+        4: 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 @max-xl:!grid-cols-3 @max-lg:!grid-cols-2 @max-sm:!grid-cols-1',
+        5: 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 @max-xl:!grid-cols-3 @max-lg:!grid-cols-2 @max-sm:!grid-cols-1',
+        6: 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 @max-xl:!grid-cols-3 @max-lg:!grid-cols-2 @max-sm:!grid-cols-1',
       }[cols]
     : undefined;
 

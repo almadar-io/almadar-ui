@@ -582,7 +582,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   return (
     <Box
       ref={isExpanded ? undefined : l1SetNodeRef}
-      className={`rounded-lg border shadow-sm bg-card transition-all duration-200 overflow-hidden relative${isRunning ? ' orb-preview-running' : ''}`}
+      className={`@container/preview rounded-lg border shadow-sm bg-card transition-all duration-200 overflow-hidden relative${isRunning ? ' orb-preview-running' : ''}`}
       style={{
         borderColor: l1IsOver ? 'var(--color-primary)' : borderColor,
         borderWidth: l1IsOver ? '2px' : borderWidth,

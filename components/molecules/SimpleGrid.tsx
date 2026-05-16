@@ -38,13 +38,21 @@ const gapStyles: Record<SimpleGridGap, string> = {
 // every Tailwind breakpoint (sm → md → lg → xl) so a 3-col grid at
 // laptop becomes 2-col at tablet and 1-col at mobile, instead of the
 // previous "1 → 2 → 3" jump that skipped tablet entirely.
+// Viewport queries drive the grid in real-world app usage where the host
+// viewport equals the rendered viewport. `@max-*` container-query
+// overrides only fire when SimpleGrid renders inside an `@container`
+// ancestor (e.g. OrbPreviewNode's `@container/preview`) whose own width
+// is narrower than the host viewport — that's the OrbPreview
+// "Mobile/Tablet/Laptop/Wide" simulation case. The `!` keeps them
+// winning over the matching viewport rule when both fire. Ordered
+// largest-to-smallest so the smallest matching tier wins via source order.
 const colStyles = {
   1: 'grid-cols-1',
-  2: 'grid-cols-1 sm:grid-cols-2',
-  3: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3',
-  4: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4',
-  5: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5',
-  6: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6',
+  2: 'grid-cols-1 sm:grid-cols-2 @max-sm:!grid-cols-1',
+  3: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 @max-md:!grid-cols-2 @max-sm:!grid-cols-1',
+  4: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 @max-lg:!grid-cols-3 @max-md:!grid-cols-2 @max-sm:!grid-cols-1',
+  5: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 @max-xl:!grid-cols-4 @max-lg:!grid-cols-3 @max-md:!grid-cols-2 @max-sm:!grid-cols-1',
+  6: 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 @max-xl:!grid-cols-4 @max-lg:!grid-cols-3 @max-md:!grid-cols-2 @max-sm:!grid-cols-1',
 };
 
 /**
