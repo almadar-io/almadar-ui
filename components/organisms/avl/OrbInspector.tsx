@@ -410,7 +410,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
     : isExpanded ? transitionEvent || 'Transition' : orbitalName;
 
   return (
-    <Box className="flex flex-col bg-card border-l border-border h-full" style={{ width: 340 }}>
+    <Box className="flex flex-col bg-card border-l border-border h-full w-full sm:w-[340px]">
       {/* Header + Tabs */}
       <Box className="shrink-0 border-b border-border">
         <Box className="flex items-center justify-between px-4 py-2">

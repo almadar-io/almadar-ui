@@ -624,17 +624,28 @@ function FlowCanvasInner({
 
       </Box>
 
-      {/* OrbInspector (contextual, shows when something is selected) */}
+      {/* OrbInspector (contextual, shows when something is selected).
+          On mobile/tablet (<lg) it overlays the canvas from the right with a
+          backdrop, so the canvas isn't crushed to 35px next to a fixed
+          340px sibling. At lg+ it returns to the inline flex-sibling layout. */}
       {selectedNode && (
-        <OrbInspector
-          node={selectedNode}
-          schema={parsedSchema}
-          editable={editable}
-          userType={userType}
-          themeManifest={themeManifest}
-          onSchemaChange={onSchemaChange}
-          onClose={handleClosePanel}
-        />
+        <>
+          <Box
+            className="fixed inset-0 bg-foreground/40 z-40 lg:hidden"
+            onClick={handleClosePanel}
+          />
+          <Box className="fixed inset-y-0 right-0 z-50 max-w-full lg:static lg:z-auto lg:max-w-none lg:flex-shrink-0">
+            <OrbInspector
+              node={selectedNode}
+              schema={parsedSchema}
+              editable={editable}
+              userType={userType}
+              themeManifest={themeManifest}
+              onSchemaChange={onSchemaChange}
+              onClose={handleClosePanel}
+            />
+          </Box>
+        </>
       )}
       </Box>
     </PatternSelectionContext.Provider>
