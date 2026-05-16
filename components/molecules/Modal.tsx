@@ -47,15 +47,16 @@ const sizeClasses: Record<ModalSize, string> = {
   full: "max-w-full mx-4",
 };
 
-// `minWidths` only floors the dialog above mobile. On phones we override
-// with `max-sm:min-w-0` so the bottom-sheet variant can shrink to viewport
-// width without the hardcoded 400/520/600/700 fighting it.
-const minWidths: Record<ModalSize, string> = {
-  sm: "400px",
-  md: "520px",
-  lg: "600px",
-  xl: "700px",
-  full: "0",
+// `minWidthClasses` floors the dialog above mobile. On phones (`max-sm:`)
+// the floor drops to 0 so the full-screen variant shrinks to viewport
+// width without the hardcoded 400/520/600/700 fighting it. Kept as
+// Tailwind classes (not inline style) so media-query overrides can win.
+const minWidthClasses: Record<ModalSize, string> = {
+  sm: "min-w-[400px] max-sm:min-w-0",
+  md: "min-w-[520px] max-sm:min-w-0",
+  lg: "min-w-[600px] max-sm:min-w-0",
+  xl: "min-w-[700px] max-sm:min-w-0",
+  full: "min-w-0",
 };
 
 export const Modal: React.FC<ModalProps> = ({
@@ -136,14 +137,15 @@ export const Modal: React.FC<ModalProps> = ({
         className="z-40"
       />
 
-      {/* Desktop: dialog positioned in upper third. Mobile (<640px): bottom sheet */}
+      {/* Desktop: dialog positioned in upper third. Mobile (<640px):
+          classic full-screen modal — fills the viewport, no rounding, no
+          top inset. */}
       <Box
         className={cn(
           "fixed inset-0 z-50 pointer-events-none",
-          "flex items-start justify-center px-4 pb-4",
-          "max-sm:items-end max-sm:p-0",
+          "flex items-start justify-center px-4 pb-4 pt-[10vh]",
+          "max-sm:items-stretch max-sm:p-0 max-sm:pt-0",
         )}
-        style={{ paddingTop: '10vh' }}
       >
         <Dialog
           ref={modalRef}
@@ -153,18 +155,19 @@ export const Modal: React.FC<ModalProps> = ({
             "m-0 p-0 border-0 bg-transparent",
             // Pre-existing dialog frame
             "pointer-events-auto w-full flex flex-col bg-surface border shadow-lg rounded-md",
+            // Desktop sizing + viewport-aware floor.
             sizeClasses[size],
-            "max-sm:max-w-full max-sm:min-w-0 max-sm:rounded-b-none max-sm:rounded-t-2xl",
+            minWidthClasses[size],
+            "max-h-[80vh]",
+            // Mobile: take the entire screen. Override desktop max-w cap,
+            // full height, no rounded corners, no min-width.
+            "max-sm:max-w-none max-sm:max-h-none max-sm:w-full max-sm:h-full max-sm:rounded-none",
             className,
           )}
-          style={{
-            minWidth: minWidths[size],
-            maxHeight: '80vh',
-            ...(dragY > 0 && {
-              transform: `translateY(${dragY}px)`,
-              transition: isDragging.current ? 'none' : 'transform 200ms ease-out',
-            }),
-          }}
+          style={dragY > 0 ? {
+            transform: `translateY(${dragY}px)`,
+            transition: isDragging.current ? 'none' : 'transform 200ms ease-out',
+          } : undefined}
           {...(title && { "aria-labelledby": "modal-title" })}
         >
           {/* Drag handle (mobile bottom sheet) */}
