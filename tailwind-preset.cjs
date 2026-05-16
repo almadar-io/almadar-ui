@@ -13,12 +13,9 @@
  *   presets: [require('@almadar/ui/tailwind-preset')]
  */
 
-const containerQueries = require('@tailwindcss/container-queries');
-
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: 'class',
-  plugins: [containerQueries],
   safelist: [
   // Standard utilities used via dynamic className from .orb schemas
   'p-4', 'p-6', 'p-8',

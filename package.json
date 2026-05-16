@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "4.53.1",
+  "version": "4.53.2",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "sideEffects": [
@@ -130,7 +130,6 @@
   },
   "dependencies": {
     "@almadar/core": ">=7.13.0",
-    "@tailwindcss/container-queries": "^0.1.1",
     "@almadar/evaluator": ">=2.9.2",
     "@almadar/logger": "^1.3.0",
     "@almadar/patterns": "^2.26.0",
@@ -168,6 +167,7 @@
   },
   "devDependencies": {
     "@almadar/eslint-plugin": ">=2.3.0",
+    "@tailwindcss/container-queries": "^0.1.1",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.0",
     "@react-three/postprocessing": "3.0.4",
