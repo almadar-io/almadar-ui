@@ -1,3 +1,5 @@
+import containerQueries from '@tailwindcss/container-queries';
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
@@ -63,7 +65,19 @@ export default {
         normal: 'var(--transition-normal)',
         slow: 'var(--transition-slow)',
       },
+      // Container-query breakpoints aligned 1:1 with Tailwind's default
+      // viewport breakpoints (sm 640 / md 768 / lg 1024 / xl 1280 /
+      // 2xl 1536). This lets us swap `lg:hidden` → `@lg/foo:hidden`
+      // without changing the visual breakpoint.
+      // Override the plugin's default `@xs`–`@7xl` ladder.
+      containers: {
+        sm: '40rem',  // 640px
+        md: '48rem',  // 768px
+        lg: '64rem',  // 1024px
+        xl: '80rem',  // 1280px
+        '2xl': '96rem', // 1536px
+      },
     },
   },
-  plugins: [],
+  plugins: [containerQueries],
 };

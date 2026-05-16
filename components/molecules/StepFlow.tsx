@@ -52,9 +52,14 @@ const StepCircle: React.FC<{ step: StepItemProps; index: number }> = ({ step, in
         'bg-primary text-primary-foreground',
       )}
     >
-      <span className="font-semibold text-sm text-primary-foreground leading-none">
+      <Typography
+        as="span"
+        variant="small"
+        weight="semibold"
+        className="text-primary-foreground leading-none"
+      >
         {step.number ?? index + 1}
-      </span>
+      </Typography>
     </Center>
   );
 };

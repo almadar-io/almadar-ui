@@ -192,13 +192,16 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
     );
 
     return (
+        // Outer scroll viewport: caps the visual footprint to the parent's
+        // available width on small screens. The inner plane keeps its fixed
+        // {width × height} coordinate system (items are positioned by
+        // absolute item.x/item.y), so a phone-sized viewport pans inside
+        // the larger logical canvas rather than busting the layout.
+        <Box className={cn("max-w-full overflow-auto rounded-md", className)}>
         <Box
             ref={containerRef}
             data-testid="positioned-canvas"
-            className={cn(
-                "relative bg-background border border-border rounded-md overflow-hidden",
-                className,
-            )}
+            className="relative bg-background border border-border rounded-md overflow-hidden"
             style={{ width, height }}
             onClick={handleContainerClick}
         >
@@ -257,6 +260,7 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
                     </Box>
                 );
             })}
+        </Box>
         </Box>
     );
 };

@@ -13,9 +13,12 @@
  *   presets: [require('@almadar/ui/tailwind-preset')]
  */
 
+const containerQueries = require('@tailwindcss/container-queries');
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   darkMode: 'class',
+  plugins: [containerQueries],
   safelist: [
   // Standard utilities used via dynamic className from .orb schemas
   'p-4', 'p-6', 'p-8',
@@ -329,6 +332,19 @@ module.exports = {
         fast: 'var(--transition-fast, 150ms)',
         normal: 'var(--transition-normal, 250ms)',
         slow: 'var(--transition-slow, 400ms)',
+      },
+      // Container-query breakpoints aligned 1:1 with Tailwind's default
+      // viewport breakpoints (sm 640 / md 768 / lg 1024 / xl 1280 /
+      // 2xl 1536). Lets components use `@lg/foo:hidden` as a drop-in
+      // replacement for `lg:hidden` when they're rendered inside a
+      // CSS Container (the Studio preview, embedded iframes, etc.) so
+      // the layout responds to the container's width, not the viewport.
+      containers: {
+        sm: '40rem',
+        md: '48rem',
+        lg: '64rem',
+        xl: '80rem',
+        '2xl': '96rem',
       },
     },
   },

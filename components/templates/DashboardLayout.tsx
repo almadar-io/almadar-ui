@@ -192,21 +192,27 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   return (
     <HStack
       gap="none"
-      className="min-h-screen w-full bg-background dark:bg-background items-stretch"
+      // `@container/dashboard` makes the layout root a CSS Container so
+      // descendants can use `@lg:` / `@md:` / `@sm:` prefixes that
+      // measure THIS container's width, not the viewport's. This is
+      // what makes the Studio's "mobile" / "tablet" preview toggle
+      // actually change the layout (otherwise media queries see the
+      // full browser viewport and stay in desktop mode).
+      className="@container/dashboard min-h-screen w-full bg-background dark:bg-background items-stretch"
     >
       {sidebarOpen && (
         <Box
-          className="fixed inset-0 bg-foreground/50 dark:bg-foreground/70 z-20 lg:hidden"
+          className="fixed inset-0 bg-foreground/50 dark:bg-foreground/70 z-20 @lg/dashboard:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Off-canvas drawer < lg, real flex child >= lg via `lg:static`. */}
+      {/* Off-canvas drawer < @lg, real flex child >= @lg via `@lg/dashboard:static`. */}
       <Box
         as="aside"
         className={cn(
           "z-30 w-64 flex-shrink-0 bg-card dark:bg-card border-r border-border dark:border-border",
-          "fixed inset-y-0 left-0 lg:static lg:translate-x-0 lg:h-auto",
+          "fixed inset-y-0 left-0 @lg/dashboard:static @lg/dashboard:translate-x-0 @lg/dashboard:h-auto",
           "transform transition-transform duration-200 ease-in-out",
           "flex flex-col",
           sidebarOpen ? "translate-x-0" : "-translate-x-full",
@@ -240,7 +246,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </Link>
           <Button
             variant="ghost"
-            className="lg:hidden p-2 rounded-md hover:bg-muted dark:hover:bg-muted text-muted-foreground dark:text-muted-foreground"
+            className="@lg/dashboard:hidden p-2 rounded-md hover:bg-muted dark:hover:bg-muted text-muted-foreground dark:text-muted-foreground"
             onClick={() => setSidebarOpen(false)}
           >
             <X className="h-5 w-5" />
@@ -283,12 +289,13 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <HStack
             align="center"
             justify="between"
-            className="h-full px-3 sm:px-4 gap-2 sm:gap-4"
+            className="h-full px-3 @sm/dashboard:px-4 gap-2 @sm/dashboard:gap-4"
           >
-            {/* Mobile menu button */}
+            {/* Mobile menu button — visible whenever the layout's container
+                is narrower than `lg` (≈ 1024px), regardless of viewport. */}
             <Button
               variant="ghost"
-              className="lg:hidden p-2 rounded-md hover:bg-muted dark:hover:bg-muted text-muted-foreground dark:text-muted-foreground touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="@lg/dashboard:hidden p-2 rounded-md hover:bg-muted dark:hover:bg-muted text-muted-foreground dark:text-muted-foreground touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open sidebar"
             >
@@ -297,7 +304,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
             {/* Search hidden on phones; capped width on `xl+` to avoid runway stretch. */}
             {searchEnabled && (
-              <Box className="hidden sm:block flex-1 min-w-0 xl:max-w-md">
+              <Box className="hidden @sm/dashboard:block flex-1 min-w-0 @xl/dashboard:max-w-md">
                 <Box className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-muted-foreground" />
                   <Input
@@ -392,12 +399,12 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     />
                     <Typography
                       variant="small"
-                      className="hidden sm:block text-sm font-medium text-foreground dark:text-foreground"
+                      className="hidden @sm/dashboard:block text-sm font-medium text-foreground dark:text-foreground"
                       as="span"
                     >
                       {user.name}
                     </Typography>
-                    <ChevronDown className="hidden sm:block h-4 w-4 text-muted-foreground dark:text-muted-foreground" />
+                    <ChevronDown className="hidden @sm/dashboard:block h-4 w-4 text-muted-foreground dark:text-muted-foreground" />
                   </Button>
 
                   {userMenuOpen && (
@@ -443,7 +450,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </HStack>
         </Box>
 
-        <Box as="main" className="flex-1 p-3 sm:p-4 md:p-6">
+        <Box as="main" className="flex-1 p-3 @sm/dashboard:p-4 @md/dashboard:p-6">
           {children}
         </Box>
       </VStack>
