@@ -572,17 +572,28 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavi
           onLocalFallback={onLocalFallback}
           persistence={persistence}
         />
-        {/* `min-h-full` — at least the preview frame's height, but can
-            grow past it. With `h-full` the inner box was locked to 100%
-            and content overflowing it did NOT contribute to the outer
-            scroll container's height, so tall layouts couldn't scroll.
-            `min-h-full` lets the inner box grow with its content; the
-            outer Box's `overflow-auto` then engages naturally. The HUD
-            docks via `absolute bottom-0` inside UISlotRenderer's own
-            `relative min-h-full` container, so empty layouts still
+        {/* Sizing model:
+            - `h-full` resolves to 100% of the parent's `style.height`. When
+              consumers pass an explicit pixel height (e.g. canvas L2's
+              transition card frame), this gives the chain a real number,
+              which `UISlotRenderer`'s `min-h-full` then uses so the
+              contained-portal modal/drawer (`absolute inset-0`) fills the
+              card. With only `min-h-full` here, the percentage on the
+              child resolved against an unspecified parent height per CSS
+              spec — collapsing to 0 — and modals painted as tiny rects.
+            - `min-h-full` keeps the "grow past frame" behavior when the
+              parent's height is `auto` (consumers like docs MDX that pass
+              `height="auto"`). With auto parent, `h-full` is also auto so
+              both clauses fall through and content drives the height.
+            - `overflow-auto` keeps tall layouts scrollable within the
+              frame instead of overflowing past it when the parent has an
+              explicit pixel height. The outer OrbPreview Box already has
+              `overflow-auto`; this is defense-in-depth.
+            The HUD docks via `absolute bottom-0` inside UISlotRenderer's
+            own `relative min-h-full` container, so empty layouts still
             anchor the bar at the bottom of the viewport. */}
         <OrbitalThemeProvider theme={activeOrbitalTheme}>
-          <Box className="min-h-full p-4">
+          <Box className="h-full min-h-full overflow-auto p-4">
             <UISlotRenderer includeHud hudMode="inline" includeFloating />
           </Box>
         </OrbitalThemeProvider>
