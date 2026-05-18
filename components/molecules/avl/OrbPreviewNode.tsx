@@ -313,14 +313,37 @@ function buildTransitionSchema(
       : allTransitions.find(t => t.event === transitionEvent);
     if (!targetTransition?.effects) continue;
 
-    const renderUIEffects: Effect[] = [];
+    // STUDIO-2: keep `["set", "@entity.X", ...]` effects so render-ui
+    // expressions reading those bindings resolve against the trait's
+    // own authored data (e.g. std-stats' DefaultKpiStats sets
+    // `@entity.cards` to a literal array of stat objects before its
+    // render-ui consumes them). Without this the L2 grouped cards
+    // render their `render-ui` against undefined bindings and show
+    // empty placeholders ("No items" / "No data available").
+    //
+    // Side effects that mutate external state (persist, call-service,
+    // fetch, emit) are still stripped — the L2 card is a sandbox.
+    const previewEffects: Effect[] = [];
+    let hasRenderUI = false;
     for (const eff of targetTransition.effects) {
-      if (Array.isArray(eff) && eff[0] === 'render-ui') {
-        renderUIEffects.push(eff);
+      if (!Array.isArray(eff)) continue;
+      const op = eff[0];
+      if (op === 'render-ui') {
+        previewEffects.push(eff);
+        hasRenderUI = true;
+        continue;
+      }
+      if (op === 'set') {
+        // Only preserve `set @entity.*` writes. `set @memory.*` etc.
+        // are global state we shouldn't pollute from a preview.
+        const target = eff[1];
+        if (typeof target === 'string' && target.startsWith('@entity.')) {
+          previewEffects.push(eff);
+        }
       }
     }
 
-    if (renderUIEffects.length === 0) continue;
+    if (!hasRenderUI) continue;
 
     const linkedEntity = traitObj.linkedEntity ?? entityNameOf(clonedOrbital.entity);
     const emitContract = findEmitContract(traitObj, transitionEvent);
@@ -330,7 +353,7 @@ function buildTransitionSchema(
       linkedEntity,
       mockData,
     );
-    const seededEffects = substitutePayloadBindings(renderUIEffects, mockPayload);
+    const seededEffects = substitutePayloadBindings(previewEffects, mockPayload);
 
     traitObj.stateMachine = {
       states: [{ name: 'preview', isInitial: true }],
