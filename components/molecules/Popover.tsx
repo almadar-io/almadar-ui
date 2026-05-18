@@ -7,6 +7,7 @@
  */
 
 import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { createPortal } from "react-dom";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../lib/cn";
 
@@ -199,38 +200,47 @@ export const Popover: React.FC<PopoverProps> = ({
     },
   );
 
+  // Portal the panel to document.body so `position: fixed` resolves
+  // against the viewport. Without this, any ancestor with a non-`none`
+  // `transform` (ReactFlow's `.react-flow__viewport`, PreviewFrame's
+  // `translate3d(0,0,0)` chrome-scoping trick, etc.) becomes the
+  // containing block for the fixed panel and shifts it off the trigger.
+  const panel = isOpen && triggerRect ? (
+    <div
+      ref={popoverRef}
+      className={cn(
+        "fixed z-50 p-4",
+        "bg-card border-2 border-border shadow-lg",
+        positionClasses[position],
+        className,
+      )}
+      style={computePopoverStyle(position, triggerRect, popoverWidth)}
+      role="dialog"
+      onMouseEnter={trigger === "hover" ? handleOpen : undefined}
+      onMouseLeave={trigger === "hover" ? handleClose : undefined}
+    >
+      {typeof content === "string" ? (
+        <Typography variant="body">{content}</Typography>
+      ) : (
+        content
+      )}
+      {showArrow && (
+        <div
+          className={cn(
+            "absolute w-0 h-0 border-4",
+            arrowClasses[position],
+          )}
+        />
+      )}
+    </div>
+  ) : null;
+
   return (
     <>
       {triggerElement}
-      {isOpen && triggerRect && (
-        <div
-          ref={popoverRef}
-          className={cn(
-            "fixed z-50 p-4",
-            "bg-card border-2 border-border shadow-lg",
-            positionClasses[position],
-            className,
-          )}
-          style={computePopoverStyle(position, triggerRect, popoverWidth)}
-          role="dialog"
-          onMouseEnter={trigger === "hover" ? handleOpen : undefined}
-          onMouseLeave={trigger === "hover" ? handleClose : undefined}
-        >
-          {typeof content === "string" ? (
-            <Typography variant="body">{content}</Typography>
-          ) : (
-            content
-          )}
-          {showArrow && (
-            <div
-              className={cn(
-                "absolute w-0 h-0 border-4",
-                arrowClasses[position],
-              )}
-            />
-          )}
-        </div>
-      )}
+      {panel && typeof document !== "undefined"
+        ? createPortal(panel, document.body)
+        : panel}
     </>
   );
 };
