@@ -330,7 +330,24 @@ function buildTransitionSchema(
       if (!Array.isArray(eff)) continue;
       const op = eff[0];
       if (op === 'render-ui') {
-        previewEffects.push(eff);
+        // L2 transition cards preview the screen the user will see when
+        // this transition fires. The runtime's portal slots (modal,
+        // drawer, overlay, center) render with `absolute inset-0` chrome
+        // that's tied to the host page's viewport — useful in a real
+        // app, useless in a card preview where there's no "page" to
+        // overlay. Worse, absolute children don't contribute to their
+        // parent's height, so the card can't auto-fit content the way
+        // L1 orbital cards do; it stays whatever fixed height we
+        // pinned it to, with empty space under tiny modals and
+        // overflow scroll on tall ones. Rewrite portal slots to
+        // `main` so the rendered pattern lands inline in the L2 card's
+        // main slot — content drives card height, just like L1.
+        const slotTarget = eff[1];
+        const PORTAL_SLOTS = new Set(['modal', 'drawer', 'overlay', 'center']);
+        const rewritten: Effect = (typeof slotTarget === 'string' && PORTAL_SLOTS.has(slotTarget))
+          ? (['render-ui', 'main', ...eff.slice(2)] as Effect)
+          : eff;
+        previewEffects.push(rewritten);
         hasRenderUI = true;
         continue;
       }
@@ -705,7 +722,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
                 }}
               >
                 <span style={{ fontSize: 12 }}>{'➞'}</span>
-                Click to open
+                Double-click to open
               </Box>
             </Box>
           )}
@@ -819,31 +836,17 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
         onClick={handleContentClick}
       >
         {orbitalSchema ? (
-          isExpanded ? (
-            // L2 transition card: OrbPreview's `<Box style={{height}}>` is the
-            // only positioned ancestor with a resolved height inside the
-            // runtime tree. When the synthesized transition's render-ui
-            // targets `modal`/`drawer`/`overlay`, UISlotRenderer paints them
-            // via `renderContainedPortal` as `absolute inset-0` — which
-            // collapses to 0 when the parent chain is `height: auto` →
-            // `min-h-full` (no resolved height to inherit). Forcing a real
-            // pixel height here gives the contained modal a real card to
-            // fill, so the L2 preview shows the modal panel sized to the
-            // card instead of a tiny floating rectangle.
+          // L1 and L2 both auto-grow with content. L2's `buildTransitionSchema`
+          // rewrites portal slots (modal/drawer/overlay/center) to `main`, so
+          // the rendered pattern lands inline in the main slot and contributes
+          // to the card's height — same height model as L1 orbital cards.
+          <Box style={{ minHeight: preset.minHeight }}>
             <BrowserPlayground
               schema={orbitalSchema}
               mode="mock"
-              height={`${preset.minHeight}px`}
+              height="auto"
             />
-          ) : (
-            <Box style={{ minHeight: preset.minHeight }}>
-              <BrowserPlayground
-                schema={orbitalSchema}
-                mode="mock"
-                height="auto"
-              />
-            </Box>
-          )
+          </Box>
         ) : (
           <Box className="flex items-center justify-center" style={{ minHeight: preset.minHeight }}>
             <Typography variant="small" className="text-muted-foreground">

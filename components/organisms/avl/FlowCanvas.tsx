@@ -454,8 +454,12 @@ function FlowCanvasInner({
   }, [level, onLevelChange, onOrbitalDoubleClick, cosmicEntryLevel, atBehaviorLevel, composeLevel]);
 
   // Click at expanded → show transition panel + fire callback.
-  // Click at overview → drill into the orbital (Phase 4: lowered from
-  // double-click). Double-click stays reserved for cosmic at L1.
+  // Click at overview → select/highlight the orbital only. Drill to L2 is
+  // the double-click gesture (see handleNodeDoubleClick). Pre-fix, a
+  // single click at L1 drilled straight into expanded mode; users couldn't
+  // select an orbital on the canvas without losing the overview, and any
+  // stray click toggled the level. Mirror standard desktop semantics:
+  // single-click selects, double-click opens.
   const handleNodeClick = useCallback((_: React.MouseEvent, node: { id: string; data: Record<string, unknown> }) => {
     const nodeData = node.data as PreviewNodeData;
     if (level === 'expanded') {
@@ -481,10 +485,7 @@ function FlowCanvasInner({
     const orbitalName = nodeData.orbitalName ?? node.id;
     onNodeClick?.({ level: 'overview', orbital: orbitalName });
     onNodeSelect?.(orbitalName);
-    setExpandedOrbital(orbitalName);
-    setLevel('expanded');
-    onLevelChange?.('expanded', orbitalName);
-  }, [level, expandedOrbital, onNodeClick, onNodeSelect, onLevelChange]);
+  }, [level, expandedOrbital, onNodeClick, onNodeSelect]);
 
   // Close transition panel
   const handleClosePanel = useCallback(() => {
