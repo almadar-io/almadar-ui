@@ -112,8 +112,15 @@ const TraitCardNodeInner: React.FC<NodeProps> = (props) => {
         </HStack>
 
         {traitLevelData ? (
+          // `nodrag` + `nowheel` tell xyflow to skip its drag/wheel
+          // handlers on this element, so transition-arc clicks inside
+          // the SVG actually reach React's onClick handlers instead of
+          // being swallowed by the node-drag behavior. `nopan` keeps the
+          // ReactFlow canvas from panning when the user scrolls or
+          // pans within the trait card.
           <svg
             viewBox={`0 0 ${SCENE_WIDTH} ${SCENE_HEIGHT}`}
+            className="nodrag nopan nowheel"
             style={{ width: '100%', height: 'auto', display: 'block' }}
           >
             <AvlTraitScene
