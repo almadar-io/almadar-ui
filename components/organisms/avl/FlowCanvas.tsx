@@ -466,14 +466,24 @@ function FlowCanvasInner({
         trait: nodeData.traitName,
         transition: nodeData.transitionEvent,
       });
-    } else {
-      const orbitalName = nodeData.orbitalName ?? node.id;
-      onNodeClick?.({ level: 'overview', orbital: orbitalName });
-      onNodeSelect?.(orbitalName);
-      setExpandedOrbital(orbitalName);
-      setLevel('expanded');
-      onLevelChange?.('expanded', orbitalName);
+      return;
     }
+    // COSMIC-1: at `trait-expanded`, the meaningful interaction is the
+    // transition-arc click inside the trait card's embedded
+    // `AvlTraitScene` (routed through `TraitCardSelectionContext`).
+    // ReactFlow's whole-node click bubbles up alongside the SVG click —
+    // if we fell through to the overview→expanded drill below, that
+    // would switch FlowCanvas to `'expanded'` and clobber the cosmic
+    // trait circuit with the L2 transition-cards view. Stay put.
+    if (level === 'trait-expanded') {
+      return;
+    }
+    const orbitalName = nodeData.orbitalName ?? node.id;
+    onNodeClick?.({ level: 'overview', orbital: orbitalName });
+    onNodeSelect?.(orbitalName);
+    setExpandedOrbital(orbitalName);
+    setLevel('expanded');
+    onLevelChange?.('expanded', orbitalName);
   }, [level, expandedOrbital, onNodeClick, onNodeSelect, onLevelChange]);
 
   // Close transition panel
