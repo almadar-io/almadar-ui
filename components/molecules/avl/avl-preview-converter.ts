@@ -260,10 +260,12 @@ function isBackwardTransition(from: string, to: string, states: State[]): boolea
 }
 
 // ---------------------------------------------------------------------------
-// Cross-link detection (emit/listen matching between orbitals)
+// Emit/listen matching — shared by overview (cross-orbital) and trait-graph
+// (intra-orbital). `scope` decides whether emitter and listener must be in
+// the SAME orbital or in DIFFERENT orbitals.
 // ---------------------------------------------------------------------------
 
-interface CrossLink {
+interface TraitWire {
   emitterOrbital: string;
   listenerOrbital: string;
   event: string;
@@ -271,8 +273,11 @@ interface CrossLink {
   listenerTrait: string;
 }
 
-function findCrossLinks(orbitals: OrbitalDefinition[]): CrossLink[] {
-  const links: CrossLink[] = [];
+function extractTraitWires(
+  orbitals: OrbitalDefinition[],
+  scope: 'intra-orbital' | 'cross-orbital',
+): TraitWire[] {
+  const wires: TraitWire[] = [];
   const emitters: Array<{ orbital: string; trait: string; event: string }> = [];
   const listeners: Array<{ orbital: string; trait: string; event: string }> = [];
 
@@ -287,18 +292,24 @@ function findCrossLinks(orbitals: OrbitalDefinition[]): CrossLink[] {
     }
   }
 
-  // Match emitters to listeners across different orbitals.
-  // Dedupe by (emitter, listener, event): downstream edge ids are keyed on
-  // that triple, so multiple trait pairs producing the same triple would
-  // collide as duplicate React keys and corrupt xyflow's edge state.
+  // Dedupe by (emitter-key, listener-key, event). Cross-orbital wires key
+  // on orbital pairs (one edge per orbital-orbital-event triple). Intra-
+  // orbital wires key on trait pairs (one edge per trait-trait-event
+  // triple) since multiple traits inside the same orbital may emit/listen
+  // the same event independently.
   const seen = new Set<string>();
   for (const em of emitters) {
     for (const li of listeners) {
-      if (em.event !== li.event || em.orbital === li.orbital) continue;
-      const key = `${em.orbital}␟${li.orbital}␟${em.event}`;
+      if (em.event !== li.event) continue;
+      if (scope === 'cross-orbital' && em.orbital === li.orbital) continue;
+      if (scope === 'intra-orbital' && em.orbital !== li.orbital) continue;
+      if (scope === 'intra-orbital' && em.trait === li.trait) continue;
+      const key = scope === 'cross-orbital'
+        ? `${em.orbital}␟${li.orbital}␟${em.event}`
+        : `${em.orbital}␟${em.trait}␟${li.trait}␟${em.event}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      links.push({
+      wires.push({
         emitterOrbital: em.orbital,
         listenerOrbital: li.orbital,
         event: em.event,
@@ -308,7 +319,12 @@ function findCrossLinks(orbitals: OrbitalDefinition[]): CrossLink[] {
     }
   }
 
-  return links;
+  return wires;
+}
+
+// Back-compat alias: the overview path always wanted cross-orbital wires.
+function findCrossLinks(orbitals: OrbitalDefinition[]): TraitWire[] {
+  return extractTraitWires(orbitals, 'cross-orbital');
 }
 
 // ---------------------------------------------------------------------------
@@ -752,4 +768,103 @@ export function orbitalAliasToExpandedGraph(
     [],
     mockData,
   );
+}
+
+// ---------------------------------------------------------------------------
+// Trait-expanded graph: one card per trait of one orbital
+// ---------------------------------------------------------------------------
+
+const TRAIT_CARD_SPACING_X = 480;
+const TRAIT_CARD_SPACING_Y = 380;
+
+/**
+ * Build a React Flow graph for the `trait-expanded` level: one node per
+ * trait of `orbitalName`, with intra-orbital `emits → listens` edges
+ * between trait cards (an emit on trait A connects to a listen for the
+ * same event on trait B in the same orbital).
+ *
+ * Used by the cosmic tab at L3 (after the user drills into an orbital
+ * from the L1 grid). The canvas tab does not call this today; the new
+ * level is opt-in via `initialLevel="trait-expanded"`.
+ *
+ * Layout: grid (`ceil(sqrt(N))` cols). Nodes are `type: 'traitCard'`
+ * with `data.kind === 'trait-card'` so `FlowCanvas`'s NODE_TYPES routes
+ * them to `TraitCardNode`.
+ */
+export function orbitalToTraitGraph(
+  schema: OrbitalSchema,
+  orbitalName: string,
+  // mockData is reserved for parity with the other converters — the trait
+  // card currently doesn't render mock rows but accepting the same prop
+  // keeps consumer call sites uniform.
+  _mockData?: Record<string, unknown[]>,
+): {
+  nodes: Node<PreviewNodeData>[];
+  edges: Edge<EventEdgeData>[];
+} {
+  const orbital = getOrbitals(schema).find(o => o.name === orbitalName);
+  if (!orbital) return { nodes: [], edges: [] };
+
+  const traits = getTraits(orbital);
+  const nodes: Node<PreviewNodeData>[] = [];
+
+  const count = traits.length;
+  const cols = Math.max(1, Math.ceil(Math.sqrt(count)));
+
+  for (let i = 0; i < traits.length; i++) {
+    const trait = traits[i];
+    const sm = getStateMachine(trait);
+    const transitions = (sm?.transitions ?? []).map(t => ({
+      event: t.event,
+      fromState: Array.isArray(t.from) ? t.from.join('|') : t.from,
+      toState: t.to,
+    }));
+    const emits = getEmits(trait);
+    const listens = getListens(trait);
+    const linkedEntity = trait.linkedEntity ?? '';
+
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+
+    nodes.push({
+      id: `trait-${orbitalName}-${trait.name}`,
+      type: 'traitCard',
+      position: {
+        x: col * TRAIT_CARD_SPACING_X,
+        y: row * TRAIT_CARD_SPACING_Y,
+      },
+      data: {
+        kind: 'trait-card',
+        orbitalName,
+        traitName: trait.name,
+        linkedEntity,
+        transitions,
+        emits,
+        listens,
+        // Required fields on PreviewNodeData — keep empty for trait cards.
+        patterns: [],
+        eventSources: [],
+      },
+    });
+  }
+
+  // Intra-orbital edges: emitter trait → listener trait, one edge per
+  // (emitTrait, listenTrait, event) triple. Scoped to `orbitalName` only.
+  const wires = extractTraitWires([orbital], 'intra-orbital');
+  const edges: Edge<EventEdgeData>[] = wires.map(w => ({
+    id: `wire-${orbitalName}-${w.emitterTrait}-${w.listenerTrait}-${w.event}`,
+    source: `trait-${orbitalName}-${w.emitterTrait}`,
+    target: `trait-${orbitalName}-${w.listenerTrait}`,
+    sourceHandle: `emit-${w.event}`,
+    targetHandle: `listen-${w.event}`,
+    type: 'eventFlow',
+    data: {
+      event: w.event,
+      isCrossOrbital: false,
+      fromTrait: w.emitterTrait,
+      toTrait: w.listenerTrait,
+    },
+  }));
+
+  return { nodes, edges };
 }

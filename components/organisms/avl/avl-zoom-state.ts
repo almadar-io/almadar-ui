@@ -4,6 +4,12 @@
  * useReducer-based state machine managing which zoom level is displayed,
  * what is selected, and animation state.
  *
+ * Shared by AvlOrbitalsCosmicZoom (2D) and Avl3DViewer (3D). The 3D
+ * viewer drills through every level (`application → orbital → trait →
+ * transition`); the 2D cosmic view skips the `'orbital'` level after
+ * COSMIC-1 (no Orbital-View screen) by dispatching `JUMP_TO_TRAIT_CIRCUIT`
+ * to land directly at `'trait'`.
+ *
  * @packageDocumentation
  */
 
@@ -30,7 +36,17 @@ export type ZoomAction =
   | { type: 'ZOOM_OUT' }
   | { type: 'ANIMATION_COMPLETE' }
   | { type: 'RESET' }
-  | { type: 'SWITCH_TRAIT'; trait: string };
+  | { type: 'SWITCH_TRAIT'; trait: string }
+  // COSMIC-1: 2D cosmic skips the `'orbital'` level entirely. This
+  // action sets `selectedOrbital` and jumps `level` straight to `'trait'`
+  // so the trait-circuit (embedded FlowCanvas at `trait-expanded`)
+  // renders immediately after the user clicks an orbital at L1.
+  | { type: 'JUMP_TO_TRAIT_CIRCUIT'; orbital: string }
+  // COSMIC-1: records which trait the user is drilling into without
+  // changing level. Fired by FlowCanvas's `onNodeClick` when a
+  // transition row is clicked at `trait-expanded`, so the breadcrumb
+  // at the subsequent transition level has a trait name to show.
+  | { type: 'SELECT_TRAIT'; trait: string };
 
 // ---------------------------------------------------------------------------
 // Initial state
@@ -85,6 +101,29 @@ export function zoomReducer(state: ZoomState, action: ZoomAction): ZoomState {
       };
     }
 
+    case 'JUMP_TO_TRAIT_CIRCUIT': {
+      // 2D cosmic only — skip the `'orbital'` level entirely. Lands at
+      // `'trait'` so the trait-circuit renders immediately.
+      if (state.level !== 'application' || state.animating) return state;
+      return {
+        ...state,
+        level: 'trait',
+        selectedOrbital: action.orbital,
+        selectedTrait: null,
+        selectedTransition: null,
+        animating: false,
+        animationDirection: 'in',
+        animationTarget: null,
+      };
+    }
+
+    case 'SELECT_TRAIT': {
+      // Label-only update; does not advance level. Used by 2D cosmic so
+      // a subsequent `ZOOM_INTO_TRANSITION` has a trait name in the
+      // breadcrumb. Allowed at any level so the L3 → L4 sequence works.
+      return { ...state, selectedTrait: action.trait };
+    }
+
     case 'ZOOM_OUT': {
       if (state.level === 'application' || state.animating) return state;
       return {
@@ -112,7 +151,11 @@ export function zoomReducer(state: ZoomState, action: ZoomAction): ZoomState {
         };
       }
 
-      // Zoom out: go back one level and clear that level's selection
+      // Zoom out: go back one level and clear that level's selection.
+      // 2D cosmic skips the `'orbital'` level on the way back too: from
+      // `'trait'` we jump straight to `'application'` instead of
+      // `'orbital'`. 3D consumers don't enter `'trait'` directly so
+      // they still walk through `'orbital'` on the way down.
       if (state.level === 'transition') {
         return {
           ...state,
@@ -125,7 +168,8 @@ export function zoomReducer(state: ZoomState, action: ZoomAction): ZoomState {
       if (state.level === 'trait') {
         return {
           ...state,
-          level: 'orbital',
+          level: 'application',
+          selectedOrbital: null,
           selectedTrait: null,
           animating: false,
           animationTarget: null,

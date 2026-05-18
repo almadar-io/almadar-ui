@@ -17,10 +17,9 @@
 
 import React, { useMemo, useState, useCallback, useRef, useEffect, useLayoutEffect, useReducer } from 'react';
 import type { OrbitalSchema } from '@almadar/core';
+import { isInlineTrait } from '@almadar/core';
 import {
   parseApplicationLevel,
-  parseOrbitalLevel,
-  parseTraitLevel,
   parseTransitionLevel,
   type CrossLink,
 } from './avl-schema-parser';
@@ -30,7 +29,6 @@ import {
   getBreadcrumbs,
   type ZoomLevel,
 } from './avl-zoom-state';
-import { AvlTraitScene } from './AvlTraitScene';
 import { AvlTransitionScene } from './AvlTransitionScene';
 import { AvlOrbitalUnit } from '../../molecules/avl/AvlOrbitalUnit';
 import type { AvlPersistenceKind } from '../../atoms/avl/types';
@@ -38,9 +36,11 @@ import { curveControlPoint } from '../../molecules/avl/avl-layout';
 import { createLogger } from '@almadar/logger';
 import { Box } from '../../atoms/Box';
 import { HStack } from '../../atoms/Stack';
-import { Typography, Text } from '../../atoms/Typography';
+import { Typography } from '../../atoms/Typography';
 import { Button } from '../../atoms/Button';
 import { Icon } from '../../atoms/Icon';
+import { FlowCanvas } from './FlowCanvas';
+import type { ViewLevel } from '../../molecules/avl/avl-preview-types';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -407,39 +407,57 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
   // Each level uses 2D AVL primitives (no 3D, no new components).
   const [state, dispatch] = useReducer(zoomReducer, initialZoomState);
 
-  // Initial drill: when a consumer passes `highlightedOrbital`, jump to that
-  // orbital's L4 view on mount so the user lands inside the focused orbital
-  // (instead of starting at L3 with a faint highlight ring).
+  // Initial drill: when a consumer passes `highlightedOrbital`, jump to
+  // the trait-circuit on mount so the user lands inside the focused
+  // orbital's traits instead of starting at L1 with a highlight ring.
+  // COSMIC-1: was a two-step drill through the retired 'orbital' level;
+  // now a single `JUMP_TO_TRAIT_CIRCUIT` action lands at 'trait'.
   const drilledForHighlightRef = useRef(false);
   useEffect(() => {
     if (!highlightedOrbital) return;
     if (drilledForHighlightRef.current) return;
     drilledForHighlightRef.current = true;
-    dispatch({ type: 'ZOOM_INTO_ORBITAL', orbital: highlightedOrbital, targetPosition: { x: 0, y: 0 } });
-    // Immediately complete the animation — 2D scenes don't camera-lerp.
-    Promise.resolve().then(() => dispatch({ type: 'ANIMATION_COMPLETE' }));
+    dispatch({ type: 'JUMP_TO_TRAIT_CIRCUIT', orbital: highlightedOrbital });
   }, [highlightedOrbital]);
 
   const breadcrumbs = useMemo(() => getBreadcrumbs(state), [state]);
 
   const handleSelect = useCallback(
     (name: string) => {
-      dispatch({ type: 'ZOOM_INTO_ORBITAL', orbital: name, targetPosition: { x: 0, y: 0 } });
-      Promise.resolve().then(() => dispatch({ type: 'ANIMATION_COMPLETE' }));
+      // COSMIC-1: skip the retired Orbital-View; land directly on the
+      // trait circuit (embedded FlowCanvas at `trait-expanded`).
+      dispatch({ type: 'JUMP_TO_TRAIT_CIRCUIT', orbital: name });
       onOrbitalSelect?.(name);
     },
     [onOrbitalSelect],
   );
 
-  const handleTraitSelect = useCallback((traitName: string) => {
-    dispatch({ type: 'ZOOM_INTO_TRAIT', trait: traitName, targetPosition: { x: 0, y: 0 } });
-    Promise.resolve().then(() => dispatch({ type: 'ANIMATION_COMPLETE' }));
-  }, []);
-
   const handleTransitionSelect = useCallback((transitionIndex: number) => {
     dispatch({ type: 'ZOOM_INTO_TRANSITION', transitionIndex, targetPosition: { x: 0, y: 0 } });
     Promise.resolve().then(() => dispatch({ type: 'ANIMATION_COMPLETE' }));
   }, []);
+
+  // COSMIC-1: FlowCanvas's `onNodeClick` fires with `level: 'transition'`
+  // when the user clicks a transition row inside a trait card. Translate
+  // that into the cosmic dispatch sequence: record the trait name so the
+  // breadcrumb has a label at L4, then drill to the transition scene.
+  const handleCanvasNodeClick = useCallback(
+    (ctx: { level: ViewLevel | 'code' | 'transition'; orbital: string; trait?: string; transition?: string }) => {
+      if (ctx.level !== 'transition' || !ctx.trait || !ctx.transition) return;
+      // Resolve the transition's index in the cosmic schema. The index
+      // keys `parseTransitionLevel` for the L4 detail scene — without
+      // it the L4 useMemo returns null and L4 renders blank.
+      const orbital = parsedSchema.orbitals?.find(o => o.name === ctx.orbital);
+      const traitRef = orbital?.traits?.find(t => isInlineTrait(t) && t.name === ctx.trait);
+      if (!traitRef || !isInlineTrait(traitRef)) return;
+      const idx = traitRef.stateMachine?.transitions?.findIndex(t => t.event === ctx.transition) ?? -1;
+      if (idx < 0) return;
+      dispatch({ type: 'SELECT_TRAIT', trait: ctx.trait });
+      dispatch({ type: 'ZOOM_INTO_TRANSITION', transitionIndex: idx, targetPosition: { x: 0, y: 0 } });
+      Promise.resolve().then(() => dispatch({ type: 'ANIMATION_COMPLETE' }));
+    },
+    [parsedSchema],
+  );
 
   const handleZoomOut = useCallback(() => {
     dispatch({ type: 'ZOOM_OUT' });
@@ -468,17 +486,10 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
   }, [handleZoomOut, state.level]);
 
 
-  // Parsed data for the deeper levels (computed lazily — null at L3)
-  const orbitalLevelData = useMemo(() => {
-    if (!state.selectedOrbital) return null;
-    return parseOrbitalLevel(parsedSchema, state.selectedOrbital);
-  }, [parsedSchema, state.selectedOrbital]);
-
-  const traitLevelData = useMemo(() => {
-    if (!state.selectedOrbital || !state.selectedTrait) return null;
-    return parseTraitLevel(parsedSchema, state.selectedOrbital, state.selectedTrait);
-  }, [parsedSchema, state.selectedOrbital, state.selectedTrait]);
-
+  // COSMIC-1: only L4 (transition) is rendered from parsed cosmic data
+  // now — L3 (trait) renders an embedded FlowCanvas instead, which
+  // builds its own graph internally. Drops the orbitalLevelData /
+  // traitLevelData memos that drove the retired L2 + AvlTraitScene.
   const transitionLevelData = useMemo(() => {
     if (!state.selectedOrbital || !state.selectedTrait || state.selectedTransition === null) return null;
     return parseTransitionLevel(
@@ -488,6 +499,16 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
       state.selectedTransition,
     );
   }, [parsedSchema, state.selectedOrbital, state.selectedTrait, state.selectedTransition]);
+
+  // Schema scoped to the selected orbital, fed to the embedded FlowCanvas
+  // at the trait-expanded level. Stripping siblings keeps xyflow's node
+  // count minimal and prevents cross-orbital edges from leaking in.
+  const scopedSchema = useMemo<OrbitalSchema | null>(() => {
+    if (!state.selectedOrbital) return null;
+    const orbital = parsedSchema.orbitals?.find(o => o.name === state.selectedOrbital);
+    if (!orbital) return null;
+    return { ...parsedSchema, orbitals: [orbital] };
+  }, [parsedSchema, state.selectedOrbital]);
 
   // GAP-54: pan + zoom + drag state. Custom implementation (no library) since
   // there's no existing zoom/pan dep in the monorepo. Wheel = zoom around
@@ -547,6 +568,11 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
   useEffect(() => { zoomRef.current = zoom; }, [zoom]);
 
   useEffect(() => {
+    // COSMIC-1: pan/zoom only at L1. At L3 the embedded FlowCanvas
+    // owns wheel + drag via xyflow; attaching a cosmic wheel listener
+    // there would fight xyflow for the gesture and prevent zooming
+    // inside the trait circuit.
+    if (state.level !== 'application') return;
     const wrapper = transformWrapperRef.current;
     if (!wrapper) return;
     const wheelListener = (e: WheelEvent) => {
@@ -758,85 +784,16 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
         </>
       )}
 
-      {/* ── L4 (orbital): full-size AvlOrbitalUnit + clickable trait sidebar ── */}
-      {state.level === 'orbital' && orbitalLevelData && (
-        <Box
-          position="absolute"
-          style={{
-            inset: 0,
-            paddingTop: 56,
-            paddingBottom: 24,
-            paddingLeft: 24,
-            paddingRight: 24,
-            display: 'flex',
-            alignItems: 'stretch',
-            justifyContent: 'center',
-            gap: 24,
-          }}
-        >
-          {/* Big AVL orbital diagram */}
-          <Box style={{ flex: 1, maxWidth: 720, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <AvlOrbitalUnit
-              entityName={orbitalLevelData.entity.name}
-              fields={orbitalLevelData.entity.fields.length}
-              persistence={(orbitalLevelData.entity.persistence || 'persistent') as AvlPersistenceKind}
-              traits={orbitalLevelData.traits.map(t => ({ name: t.name }))}
-              pages={orbitalLevelData.pages.map(p => ({ name: p.name }))}
-              color={color}
-              animated={animated}
-            />
-          </Box>
+      {/* COSMIC-1: L2 (orbital info screen) retired. Clicking an orbital
+          at L1 now dispatches `JUMP_TO_TRAIT_CIRCUIT`, landing directly
+          at the trait-circuit (L3 below) and skipping the static
+          AvlOrbitalUnit + trait-sidebar view that used to live here. */}
 
-          {/* Trait drill list — click to enter L5 */}
-          <Box
-            style={{
-              width: 220,
-              padding: 12,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
-              borderLeft: `1px solid ${color}`,
-              opacity: 0.95,
-              overflowY: 'auto',
-              minHeight: 0,
-            }}
-          >
-            <Typography variant="small" weight="semibold" style={{ color, marginBottom: 4 }}>
-              Traits ({orbitalLevelData.traits.length})
-            </Typography>
-            {orbitalLevelData.traits.length === 0 && (
-              <Text variant="small" style={{ opacity: 0.6, color }}>No traits</Text>
-            )}
-            {orbitalLevelData.traits.map(trait => (
-              <Button
-                key={trait.name}
-                variant="ghost"
-                size="sm"
-                onClick={() => handleTraitSelect(trait.name)}
-                action="COSMIC_DRILL_TRAIT"
-              >
-                {trait.name}
-              </Button>
-            ))}
-            {orbitalLevelData.pages.length > 0 && (
-              <>
-                <Typography variant="small" weight="semibold" style={{ color, marginTop: 12 }}>
-                  Pages ({orbitalLevelData.pages.length})
-                </Typography>
-                {orbitalLevelData.pages.map(page => (
-                  <Text key={page.name} variant="small" style={{ opacity: 0.7, color }}>
-                    {page.name}
-                  </Text>
-                ))}
-              </>
-            )}
-          </Box>
-        </Box>
-      )}
-
-      {/* ── L5 (trait): AVL state machine — click a transition to enter L6.
-            Wrapped in the same pan/zoom shell as L3 so wheel-zoom + drag work. */}
-      {state.level === 'trait' && traitLevelData && (
+      {/* ── L3 (trait circuit): embedded FlowCanvas at `trait-expanded`.
+            One card per trait of the selected orbital, connected by
+            intra-orbital emit→listen edges. Click a transition row
+            inside a card to drill into L4 transition detail. */}
+      {state.level === 'trait' && scopedSchema && state.selectedOrbital && (
         <Box
           position="absolute"
           style={{
@@ -847,37 +804,14 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
             paddingRight: 24,
           }}
         >
-          <Box
-            ref={transformWrapperRef}
-            position="relative"
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerUp}
-            style={{
-              width: '100%',
-              height: '100%',
-              cursor: dragStateRef.current ? 'grabbing' : 'grab',
-              overflow: 'hidden',
-            }}
-          >
-            <Box
-              position="absolute"
-              style={{
-                inset: 0,
-                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-                transformOrigin: '0 0',
-              }}
-            >
-              <svg viewBox="0 0 600 400" style={{ width: '100%', height: '100%' }}>
-                <AvlTraitScene
-                  data={traitLevelData}
-                  color={color}
-                  onTransitionClick={(idx) => handleTransitionSelect(idx)}
-                />
-              </svg>
-            </Box>
-          </Box>
+          <FlowCanvas
+            schema={scopedSchema}
+            initialLevel="trait-expanded"
+            initialOrbital={state.selectedOrbital}
+            onNodeClick={handleCanvasNodeClick}
+            width="100%"
+            height="100%"
+          />
         </Box>
       )}
 
@@ -927,9 +861,10 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
         </Box>
       )}
 
-      {/* Pan/zoom controls — shared by all pan-zoomable levels (application,
-          trait, transition). The orbital level is a static layout. */}
-      {(state.level === 'trait' || state.level === 'transition') && (
+      {/* Pan/zoom controls — only at the transition (L4) level now.
+          L3 (trait circuit) is owned by the embedded FlowCanvas which
+          has its own xyflow pan/zoom; L1 has its own controls block. */}
+      {state.level === 'transition' && (
         <Box
           position="absolute"
           style={{

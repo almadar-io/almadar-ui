@@ -24,8 +24,12 @@ import type { Expression, UISlot } from '@almadar/core';
  * - `behavior-expanded` (L3) — drilled into a single imported behavior at
  *   L2: one card per transition of THAT behavior. Used to inspect what an
  *   import contributes without leaving the canvas.
+ * - `trait-expanded` — one card per trait of a single orbital, connected
+ *   by intra-orbital `emits → listens` edges. Used by the cosmic tab to
+ *   render the trait-level circuit when the user drills into an orbital
+ *   from the L1 grid. Not used by the canvas tab today.
  */
-export type ViewLevel = 'overview' | 'expanded' | 'behavior-expanded';
+export type ViewLevel = 'overview' | 'expanded' | 'behavior-expanded' | 'trait-expanded';
 
 // ---------------------------------------------------------------------------
 // Screen size presets for preview nodes
@@ -214,6 +218,43 @@ export interface PreviewNodeData extends Record<string, unknown> {
    * card. Renderer can surface it as a "+N screens" badge.
    */
   transitionCount?: number;
+
+  /**
+   * Discriminator for the node variant. Absent on overview/expanded/
+   * behavior-expanded cards (those use field-presence-based discrimination
+   * via `behaviorAlias`/`transitionEvent`). Set to `'trait-card'` for nodes
+   * produced by `orbitalToTraitGraph` so renderers can branch cleanly.
+   */
+  kind?: 'trait-card';
+
+  /**
+   * Trait-card transitions (`kind === 'trait-card'` only). One row per
+   * transition; each row is clickable and drills to L4 transition detail
+   * in cosmic. `event` is the trigger; `fromState` / `toState` mirror the
+   * underlying state-machine edge.
+   */
+  transitions?: Array<{ event: string; fromState: string; toState: string }>;
+
+  /**
+   * Trait-card `emits` event names (`kind === 'trait-card'` only). One
+   * source handle per entry on the right edge of the card. Drives the
+   * outgoing wire endpoints in `orbitalToTraitGraph`.
+   */
+  emits?: string[];
+
+  /**
+   * Trait-card `listens` event names (`kind === 'trait-card'` only). One
+   * target handle per entry on the left edge of the card. Drives the
+   * incoming wire endpoints in `orbitalToTraitGraph`.
+   */
+  listens?: string[];
+
+  /**
+   * Trait-card `linkedEntity` (`kind === 'trait-card'` only). Surfaced as a
+   * subtitle/badge next to the trait name so users can see what entity the
+   * trait operates on. Mirrors `Trait.linkedEntity` from the resolved schema.
+   */
+  linkedEntity?: string;
 }
 
 // ---------------------------------------------------------------------------

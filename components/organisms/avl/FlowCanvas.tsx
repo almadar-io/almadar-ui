@@ -33,8 +33,9 @@ import type { OrbitalSchema, ThemeDefinition } from '@almadar/core';
 import { Box } from '../../atoms/Box';
 import { Typography } from '../../atoms/Typography';
 import { OrbPreviewNode, ScreenSizeContext, PatternSelectionContext, type SelectedPattern } from '../../molecules/avl/OrbPreviewNode';
+import { TraitCardNode, TraitCardSelectionContext, type TraitCardTransitionClick } from '../../molecules/avl/TraitCardNode';
 import { EventFlowEdge } from '../../molecules/avl/EventFlowEdge';
-import { schemaToOverviewGraph, orbitalToExpandedGraph, orbitalAliasToExpandedGraph } from '../../molecules/avl/avl-preview-converter';
+import { schemaToOverviewGraph, orbitalToExpandedGraph, orbitalAliasToExpandedGraph, orbitalToTraitGraph } from '../../molecules/avl/avl-preview-converter';
 import type { ViewLevel, PreviewNodeData, ScreenSize } from '../../molecules/avl/avl-preview-types';
 import { SCREEN_SIZE_PRESETS, detectScreenSize } from '../../molecules/avl/avl-preview-types';
 import { OrbInspector } from './OrbInspector';
@@ -55,6 +56,7 @@ const flowCanvasLog = createLogger('almadar:ui:flow-canvas');
 const NODE_TYPES: NodeTypes = {
   preview: OrbPreviewNode,
   behaviorCompose: BehaviorComposeNode,
+  traitCard: TraitCardNode,
 } as NodeTypes;
 
 // AVL canvas wire check: if OrbPreviewNode / BehaviorComposeNode resolve to
@@ -88,7 +90,11 @@ export interface FlowCanvasProps {
   width?: number | string;
   height?: number | string;
   onNodeClick?: (context: {
-    level: ViewLevel | 'code';
+    // 'transition' is fired when a TraitCardNode transition row is
+    // clicked at `trait-expanded` level. It's not a FlowCanvas view
+    // level — consumers (cosmic) use it as a signal to drill into
+    // their own transition-detail view.
+    level: ViewLevel | 'code' | 'transition';
     orbital: string;
     trait?: string;
     transition?: string;
@@ -229,6 +235,7 @@ function FlowCanvasInner({
   const NODE_TYPES = useMemo<NodeTypes>(() => ({
     preview: OrbPreviewNode,
     behaviorCompose: BehaviorComposeNode,
+    traitCard: TraitCardNode,
   } as NodeTypes), []);
   const EDGE_TYPES_LOCAL = useMemo<EdgeTypes>(() => ({
     eventFlow: EventFlowEdge,
@@ -293,7 +300,7 @@ function FlowCanvasInner({
   const [atBehaviorLevel, setAtBehaviorLevel] = useState(composeLevel === 'behavior');
 
   // Compute graph for current level
-  const { composeNodes, composeEdges, overviewNodes, overviewEdges, expandedNodes, expandedEdges, behaviorExpandedNodes, behaviorExpandedEdges } = useMemo(() => {
+  const { composeNodes, composeEdges, overviewNodes, overviewEdges, expandedNodes, expandedEdges, behaviorExpandedNodes, behaviorExpandedEdges, traitExpandedNodes, traitExpandedEdges } = useMemo(() => {
     const t = perfStart('compose-graph');
     // Behavior-level compose graph
     const compose = (composeLevel === 'behavior' && behaviorEntries?.length)
@@ -310,11 +317,17 @@ function FlowCanvasInner({
     const behaviorExpanded = (expandedOrbital && expandedBehaviorAlias)
       ? orbitalAliasToExpandedGraph(parsedSchema, expandedOrbital, expandedBehaviorAlias, mockData)
       : { nodes: [], edges: [] };
+    // COSMIC-1: trait-expanded — one card per trait of `expandedOrbital`
+    // with intra-orbital `emit→listen` edges. Used by the cosmic tab L3.
+    const traitExpanded = expandedOrbital
+      ? orbitalToTraitGraph(parsedSchema, expandedOrbital, mockData)
+      : { nodes: [], edges: [] };
     perfEnd('compose-graph', t, {
       composeNodes: compose.nodes.length,
       overviewNodes: overview.nodes.length,
       expandedNodes: expanded.nodes.length,
       behaviorExpandedNodes: behaviorExpanded.nodes.length,
+      traitExpandedNodes: traitExpanded.nodes.length,
       orbitalCount: parsedSchema.orbitals?.length ?? 0,
     });
     return {
@@ -326,6 +339,8 @@ function FlowCanvasInner({
       expandedEdges: expanded.edges,
       behaviorExpandedNodes: behaviorExpanded.nodes,
       behaviorExpandedEdges: behaviorExpanded.edges,
+      traitExpandedNodes: traitExpanded.nodes,
+      traitExpandedEdges: traitExpanded.edges,
     };
   }, [parsedSchema, expandedOrbital, expandedBehaviorAlias, behaviorMeta, layoutHint, composeLevel, behaviorEntries, behaviorWires, mockData, orbitalStatus]);
 
@@ -338,11 +353,13 @@ function FlowCanvasInner({
     ? composeNodes
     : level === 'overview' ? overviewNodes
     : level === 'behavior-expanded' ? behaviorExpandedNodes
+    : level === 'trait-expanded' ? traitExpandedNodes
     : expandedNodes;
   const activeEdges: AnyEdge[] = (atBehaviorLevel && composeEdges.length > 0)
     ? composeEdges
     : level === 'overview' ? overviewEdges
     : level === 'behavior-expanded' ? behaviorExpandedEdges
+    : level === 'trait-expanded' ? traitExpandedEdges
     : expandedEdges;
 
   const [nodes, setNodes, onNodesChange] = useNodesState(activeNodes);
@@ -562,9 +579,25 @@ function FlowCanvasInner({
 
   const screenSizeKeys: ScreenSize[] = ['mobile', 'tablet', 'laptop', 'wide'];
 
+  // COSMIC-1: TraitCardNode (used at `trait-expanded`) bubbles row clicks
+  // through this context. Translate them into the existing `onNodeClick`
+  // surface with `level: 'transition'` so consumers (cosmic) can drill
+  // into the transition detail scene without learning a new callback.
+  const traitCardSelectionValue = useMemo(() => ({
+    selectTransition: (sel: TraitCardTransitionClick) => {
+      onNodeClick?.({
+        level: 'transition',
+        orbital: sel.orbitalName,
+        trait: sel.traitName,
+        transition: sel.transitionEvent,
+      });
+    },
+  }), [onNodeClick]);
+
   return (
     <ScreenSizeContext.Provider value={screenSize}>
     <PatternSelectionContext.Provider value={patternSelectionValue}>
+    <TraitCardSelectionContext.Provider value={traitCardSelectionValue}>
       <Box
         className={`flex h-full ${className ?? ''}`}
         style={{ width, height }}
@@ -689,6 +722,7 @@ function FlowCanvasInner({
         </>
       )}
       </Box>
+    </TraitCardSelectionContext.Provider>
     </PatternSelectionContext.Provider>
     </ScreenSizeContext.Provider>
   );
