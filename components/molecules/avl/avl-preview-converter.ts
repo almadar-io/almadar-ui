@@ -841,6 +841,11 @@ export function orbitalToTraitGraph(
         transitions,
         emits,
         listens,
+        // `_fullSchema` carries the parsed schema to `TraitCardNode` so it
+        // can run `parseTraitLevel(...)` and render the ELK-laid-out
+        // state-machine flow chart inside the card. Mirrors the same
+        // convention `OrbPreviewNode` uses for its embedded UI preview.
+        _fullSchema: schema,
         // Required fields on PreviewNodeData — keep empty for trait cards.
         patterns: [],
         eventSources: [],

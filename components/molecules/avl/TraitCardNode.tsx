@@ -3,28 +3,32 @@
 /**
  * TraitCardNode — React Flow node for the `trait-expanded` view level.
  *
- * Renders one card per trait of a single orbital. Header shows the trait
- * name + linked entity badge; body lists the trait's transitions as
- * clickable rows that drill into L4 transition detail; left edge has
- * one target handle per `listens[]` event; right edge has one source
- * handle per `emits[]` event. The edges produced by
- * `orbitalToTraitGraph` connect emit handles to listen handles where
- * the event names match.
+ * Renders one card per trait of a single orbital. The card body shows
+ * the trait's state-machine flow chart (states + transitions, laid out
+ * by ELK) via the existing `AvlTraitScene` organism. Clicking a
+ * transition arc drills into L4 transition detail.
  *
- * Transition-row clicks bubble through `TraitCardSelectionContext`
+ * Left edge has one target handle per `listens[]` event; right edge
+ * has one source handle per `emits[]` event. Edges produced by
+ * `orbitalToTraitGraph` connect emit handles to listen handles where
+ * the event names match within the same orbital.
+ *
+ * Transition clicks bubble through `TraitCardSelectionContext`
  * (mirrors `PatternSelectionContext` in `OrbPreviewNode`). FlowCanvas
  * wraps the canvas in a provider that translates the context callback
  * into its `onNodeClick({ level: 'transition', ... })` prop.
  */
 
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
+import type { OrbitalSchema } from '@almadar/core';
 import type { PreviewNodeData } from './avl-preview-types';
 import { Box } from '../../atoms/Box';
 import { HStack, VStack } from '../../atoms/Stack';
 import { Typography } from '../../atoms/Typography';
-import { Button } from '../../atoms/Button';
 import { Badge } from '../../atoms/Badge';
+import { AvlTraitScene } from '../../organisms/avl/AvlTraitScene';
+import { parseTraitLevel } from '../../organisms/avl/avl-schema-parser';
 
 // ---------------------------------------------------------------------------
 // Selection context
@@ -51,8 +55,9 @@ export const TraitCardSelectionContext = createContext<TraitCardSelectionContext
 // Node component
 // ---------------------------------------------------------------------------
 
-const CARD_WIDTH = 360;
-const CARD_MIN_HEIGHT = 200;
+const CARD_WIDTH = 540;
+const SCENE_WIDTH = 600;
+const SCENE_HEIGHT = 400;
 
 const TraitCardNodeInner: React.FC<NodeProps> = (props) => {
   const data = props.data as PreviewNodeData;
@@ -64,11 +69,20 @@ const TraitCardNodeInner: React.FC<NodeProps> = (props) => {
   const transitions = data.transitions ?? [];
   const emits = data.emits ?? [];
   const listens = data.listens ?? [];
+  const fullSchema = data._fullSchema as OrbitalSchema | undefined;
+
+  // Parse the trait-level data the same way the old cosmic L3 did, so
+  // the embedded `AvlTraitScene` gets the ELK-laid-out states +
+  // transitions + emit/listen swim lanes it expects.
+  const traitLevelData = useMemo(() => {
+    if (!fullSchema) return null;
+    return parseTraitLevel(fullSchema, orbitalName, traitName);
+  }, [fullSchema, orbitalName, traitName]);
 
   return (
     <Box
       className="bg-card border-2 border-border rounded-lg shadow-md p-4"
-      style={{ width: CARD_WIDTH, minHeight: CARD_MIN_HEIGHT, position: 'relative' }}
+      style={{ width: CARD_WIDTH, position: 'relative' }}
     >
       {listens.map((event, i) => (
         <Handle
@@ -96,35 +110,31 @@ const TraitCardNodeInner: React.FC<NodeProps> = (props) => {
           <Typography variant="h6" weight="semibold">{traitName}</Typography>
           {linkedEntity ? <Badge variant="secondary">{linkedEntity}</Badge> : null}
         </HStack>
-        <VStack gap="xs">
-          {transitions.length === 0 ? (
-            <Typography variant="small" color="muted">No transitions</Typography>
-          ) : (
-            transitions.map((t, idx) => (
-              <Button
-                key={`${t.event}-${t.fromState}-${t.toState}-${idx}`}
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  selectTransition({
-                    orbitalName,
-                    traitName,
-                    transitionEvent: t.event,
-                    fromState: t.fromState,
-                    toState: t.toState,
-                    index: idx,
-                  });
-                }}
-              >
-                <Typography variant="small" weight="semibold">{t.event}</Typography>
-                <Typography variant="small" color="muted">
-                  {' · '}{t.fromState} → {t.toState}
-                </Typography>
-              </Button>
-            ))
-          )}
-        </VStack>
+
+        {traitLevelData ? (
+          <svg
+            viewBox={`0 0 ${SCENE_WIDTH} ${SCENE_HEIGHT}`}
+            style={{ width: '100%', height: 'auto', display: 'block' }}
+          >
+            <AvlTraitScene
+              data={traitLevelData}
+              onTransitionClick={(idx) => {
+                const t = transitions[idx];
+                if (!t) return;
+                selectTransition({
+                  orbitalName,
+                  traitName,
+                  transitionEvent: t.event,
+                  fromState: t.fromState,
+                  toState: t.toState,
+                  index: idx,
+                });
+              }}
+            />
+          </svg>
+        ) : (
+          <Typography variant="small" color="muted">No state machine</Typography>
+        )}
       </VStack>
     </Box>
   );
