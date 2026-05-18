@@ -544,17 +544,26 @@ function buildScreenGraph(
   const nodes: Node<PreviewNodeData>[] = [];
   const edges: Edge<EventEdgeData>[] = [];
 
-  // Dedup organism-owned transitions by target state (keep most informative)
-  const stateNodeMap = new Map<string, UITransitionEntry>();
+  // Edge-resolution helper: pick the most-informative transition per
+  // (trait, to-state) so edges have a single canonical anchor per state.
+  // We DON'T dedup the cards themselves — every render-ui-bearing
+  // transition becomes a card so users see the loading/loaded/failed
+  // frames of a single state (e.g. OrderRecordBrowse:browsing has
+  // INIT/LOADED/LOAD_FAILED, all → browsing — three distinct screens).
+  // Pre-fix, dedup-by-to-state collapsed those into a single card
+  // (usually the spinner), silently hiding the dashboard view. Cosmic
+  // L3 shows every transition arc inside the trait state-machine SVG;
+  // canvas L2 now matches by showing every transition as its own card.
+  const stateRepresentativeMap = new Map<string, UITransitionEntry>();
   for (const entry of transitions) {
     const key = `${entry.traitName}:${entry.transition.to}`;
-    const existing = stateNodeMap.get(key);
+    const existing = stateRepresentativeMap.get(key);
     if (!existing || entry.patterns.length > existing.patterns.length) {
-      stateNodeMap.set(key, entry);
+      stateRepresentativeMap.set(key, entry);
     }
   }
 
-  const transitionEntries = Array.from(stateNodeMap.values());
+  const transitionEntries = transitions;
   const totalCards = transitionEntries.length + groupedBehaviors.length;
   if (totalCards === 0) return { nodes, edges };
 
@@ -564,9 +573,15 @@ function buildScreenGraph(
   // Per-transition cards
   transitionEntries.forEach((entry, i) => {
     const t = entry.transition;
-    const nodeId = `${orbitalName}-${entry.traitName}-${t.event}-${t.to}`;
+    const nodeId = `${orbitalName}-${entry.traitName}-${t.event}-${t.from}-${t.to}`;
     const stateKey = `${entry.traitName}:${t.to}`;
-    nodeIdMap.set(stateKey, nodeId);
+    // Only the representative card for each (trait, to-state) anchors
+    // incoming edges. The other cards for the same state still render —
+    // they just don't sit on the trait's transition graph as edge
+    // targets, since edges are state-keyed.
+    if (stateRepresentativeMap.get(stateKey) === entry) {
+      nodeIdMap.set(stateKey, nodeId);
+    }
     const col = i % cols;
     const row = Math.floor(i / cols);
     nodes.push({
@@ -640,7 +655,7 @@ function buildScreenGraph(
     if (!sourceNodeId || !targetNodeId) continue;
     if (sourceNodeId === targetNodeId) continue;
     const backward = isBackwardTransition(t.from, t.to, entry.states);
-    const sourceEntry = stateNodeMap.get(sourceKey);
+    const sourceEntry = stateRepresentativeMap.get(sourceKey);
     const triggerSource = sourceEntry?.eventSources.find(s => s.event === t.event);
     edges.push({
       id: `ef-${entry.traitName}-${t.event}-${t.from}-${t.to}`,
