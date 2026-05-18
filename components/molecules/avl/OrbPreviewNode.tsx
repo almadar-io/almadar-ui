@@ -776,13 +776,31 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
         onClick={handleContentClick}
       >
         {orbitalSchema ? (
-          <Box style={{ minHeight: preset.minHeight }}>
+          isExpanded ? (
+            // L2 transition card: OrbPreview's `<Box style={{height}}>` is the
+            // only positioned ancestor with a resolved height inside the
+            // runtime tree. When the synthesized transition's render-ui
+            // targets `modal`/`drawer`/`overlay`, UISlotRenderer paints them
+            // via `renderContainedPortal` as `absolute inset-0` — which
+            // collapses to 0 when the parent chain is `height: auto` →
+            // `min-h-full` (no resolved height to inherit). Forcing a real
+            // pixel height here gives the contained modal a real card to
+            // fill, so the L2 preview shows the modal panel sized to the
+            // card instead of a tiny floating rectangle.
             <BrowserPlayground
               schema={orbitalSchema}
               mode="mock"
-              height="auto"
+              height={`${preset.minHeight}px`}
             />
-          </Box>
+          ) : (
+            <Box style={{ minHeight: preset.minHeight }}>
+              <BrowserPlayground
+                schema={orbitalSchema}
+                mode="mock"
+                height="auto"
+              />
+            </Box>
+          )
         ) : (
           <Box className="flex items-center justify-center" style={{ minHeight: preset.minHeight }}>
             <Typography variant="small" className="text-muted-foreground">
