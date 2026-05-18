@@ -954,17 +954,34 @@ function renderPatternChildren(
         | { type: string; props?: SlotProps; _id?: string }
         | string
       >
+    | { type: string; props?: SlotProps; _id?: string }
+    | string
     | undefined,
   onDismiss: () => void,
   parentId = "root",
   parentPath = "root",
   sourceTrait?: string,
 ): React.ReactNode {
-  if (!children || !Array.isArray(children) || children.length === 0) {
-    return null;
-  }
+  if (children === undefined || children === null) return null;
 
-  return children.map((child, index) => {
+  // Pattern authors can write `children: { type: "button", ... }` for
+  // single-child patterns (popover trigger, tooltip target, card content)
+  // instead of `children: [{ type: "button", ... }]`. Codegen emits both
+  // forms as identical JSX so the compiled path doesn't notice; the
+  // runtime path historically required an array and silently rendered
+  // nothing for popover/tooltip triggers, leaving filter rows in
+  // std-embedded-dashboard with invisible Date Range / Export buttons.
+  // Normalize to an array before walking — per
+  // `[feedback_compiled_vs_runtime_paths]`, both paths must agree.
+  const childrenArray: Array<{ type: string; props?: SlotProps; _id?: string } | string> = Array.isArray(children)
+    ? children
+    : typeof children === 'string' || (typeof children === 'object' && 'type' in children)
+      ? [children]
+      : [];
+
+  if (childrenArray.length === 0) return null;
+
+  return childrenArray.map((child, index) => {
     // String children are `@trait.X` bindings in the interpreted path.
     // Substitute a `<TraitFrame>` — passive read-only lens on the
     // referenced trait's current render output. Non-matching strings
@@ -1235,11 +1252,20 @@ function SlotContentRenderer({
     // Any pattern with children array in props gets recursive rendering.
     // The PATTERNS_WITH_CHILDREN set is kept as a fast-path hint but
     // we also check for actual children presence to avoid missing any.
+    // `children` can be an array (stack/grid/etc) or a single pattern
+    // config (popover trigger, tooltip target). renderPatternChildren
+    // accepts both shapes — see its normalization branch.
     const childrenConfig = content.props.children as
       | Array<string | { type: string; props?: SlotProps; _id?: string }>
+      | { type: string; props?: SlotProps; _id?: string }
+      | string
       | undefined;
+    const isSingleChild =
+      typeof childrenConfig === 'string'
+      || (typeof childrenConfig === 'object' && childrenConfig !== null && !Array.isArray(childrenConfig) && 'type' in childrenConfig);
     const hasChildren = PATTERNS_WITH_CHILDREN.has(content.pattern)
-      || (Array.isArray(childrenConfig) && childrenConfig.length > 0);
+      || (Array.isArray(childrenConfig) && childrenConfig.length > 0)
+      || isSingleChild;
 
     // Render children recursively (pass patternPath for WYSIWYG drop targeting).
     // Inherit sourceTrait from the parent so nested patterns (e.g. a
