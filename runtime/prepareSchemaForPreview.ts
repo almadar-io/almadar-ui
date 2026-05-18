@@ -126,13 +126,19 @@ export function buildMockData(schema: OrbitalSchema): EntityData {
     result[entityName] = rows;
   }
 
-  // STUDIO-2: imported traits carry the resolved entity definition of
-  // their source orbital on `Trait.sourceEntityDefinition` (set by the
-  // inline phase). For each such trait, populate mock rows under the
-  // imported entity's name so any render-ui SExpr that reads its fields
-  // resolves against real data instead of empty INIT. Without this the
-  // L2 cards for imports show empty states even when the trait clearly
-  // has a populated state to flip to.
+  // STUDIO-2: imported traits' `linkedEntity` is rebound by the organism
+  // to the orbital's own entity (e.g. `Stats` trait rebound from
+  // `StatsItem` to `Dashboard`), but the trait's render-ui SExpr still
+  // reads field names that belong to the SOURCE entity (`StatsItem.value`,
+  // `StatsItem.label`, etc.). The rebound `Dashboard` mock rows don't
+  // have those fields, so cards render their empty INIT state.
+  //
+  // Fix: walk every inline trait carrying `sourceEntityDefinition` (set
+  // by the inline phase) and merge its fields into the rebound entity's
+  // mock rows. We never overwrite a value the orbital's own entity
+  // already provided — the organism wins on field collisions. Generated
+  // values are also keyed under the source entity's name so any
+  // un-rebound consumers still find data there.
   for (const orbital of schema.orbitals) {
     for (const traitRef of orbital.traits ?? []) {
       if (typeof traitRef === 'string') continue;
@@ -141,14 +147,34 @@ export function buildMockData(schema: OrbitalSchema): EntityData {
       const sourceEntity = trait.sourceEntityDefinition;
       if (!sourceEntity || isEntityCall(sourceEntity)) continue;
       const sourceName = sourceEntity.name;
-      if (!sourceName || result[sourceName]) continue;
-      if (sourceEntity.instances && sourceEntity.instances.length > 0) {
-        result[sourceName] = sourceEntity.instances;
-        continue;
+      if (!sourceName) continue;
+
+      // 1) Generate (or reuse) rows under the imported entity's own name
+      //    for any code path that bypasses rebinding.
+      if (!result[sourceName]) {
+        result[sourceName] =
+          sourceEntity.instances && sourceEntity.instances.length > 0
+            ? sourceEntity.instances
+            : Array.from({ length: 10 }, (_, i) =>
+                generateEntityRow(sourceEntity, i + 1),
+              );
       }
-      result[sourceName] = Array.from({ length: 10 }, (_, i) =>
-        generateEntityRow(sourceEntity, i + 1),
-      );
+
+      // 2) Merge the source entity's fields into the rebound entity's
+      //    rows so render-ui SExpr reading `@entity.<importedField>`
+      //    resolves against synthesized data. Skip if no rebind.
+      const reboundName = trait.linkedEntity;
+      if (!reboundName || reboundName === sourceName) continue;
+      const reboundRows = result[reboundName];
+      if (!reboundRows || reboundRows.length === 0) continue;
+
+      reboundRows.forEach((row, i) => {
+        for (const f of sourceEntity.fields) {
+          if (f.name === undefined || f.name === 'id') continue;
+          if (row[f.name] !== undefined) continue; // organism wins
+          row[f.name] = generateFieldValue(sourceName, f, i + 1);
+        }
+      });
     }
   }
 
