@@ -26,8 +26,9 @@ import type {
   TraitEventContract,
   EventPayload,
   EventPayloadValue,
+  PageRef,
 } from '@almadar/core';
-import { isInlineTrait } from '@almadar/core';
+import { isInlineTrait, isPageReference } from '@almadar/core';
 import type { EntityRef } from '@almadar/core';
 
 function entityNameOf(ref: EntityRef | undefined): string | undefined {
@@ -373,6 +374,48 @@ function buildTransitionSchema(
   });
   if (targetTrait) {
     clonedOrbital.traits = [targetTrait];
+  }
+
+  // Filter pages to reference ONLY the target trait. Without this the
+  // synthesized schema's pages still list the original 7+ trait names
+  // (ProductAppLayout, ProductCatalog, …) but `clonedOrbital.traits` was
+  // just narrowed to the target — `useResolvedSchema`'s page-binding
+  // resolution then drops or fails on the missing refs, and the
+  // `traitLinkedEntitiesMap` SchemaRunner builds from page bindings ends
+  // up empty (or missing our target). UISlotRenderer's form-section
+  // enrichment is gated on `entityDef` resolved via that map, so
+  // `fields: ["name", "price", …]` stays as raw strings and Form renders
+  // no inputs. Restricting pages.traits[] to the target restores the
+  // page → trait → entity chain the form needs.
+  //
+  // Each surviving binding gets an explicit `linkedEntity` so the chain
+  // resolves cleanly even when the original page binding relied on the
+  // trait's own `linkedEntity` declaration.
+  if (Array.isArray(clonedOrbital.pages)) {
+    const linkedEntityForTrait =
+      isInlineTrait(targetTrait as Trait)
+        ? (targetTrait as Trait).linkedEntity ?? entityNameOf(clonedOrbital.entity)
+        : entityNameOf(clonedOrbital.entity);
+    clonedOrbital.pages = clonedOrbital.pages
+      .map((page: PageRef): PageRef => {
+        // String refs and PageRefObject refs point to imported pages
+        // we can't introspect here — leave them as-is so the resolver
+        // either follows the import or skips them gracefully.
+        if (isPageReference(page)) return page;
+        const inline = page;
+        if (!Array.isArray(inline.traits)) return inline;
+        const filteredTraits = inline.traits
+          .filter((t) => t.ref === traitName)
+          .map((t) => ({
+            ...t,
+            linkedEntity: t.linkedEntity ?? linkedEntityForTrait,
+          }));
+        return { ...inline, traits: filteredTraits };
+      })
+      .filter((page: PageRef): boolean => {
+        if (isPageReference(page)) return true;
+        return Array.isArray(page.traits) && page.traits.length > 0;
+      });
   }
 
   return { ...fullSchema, name: `${fullSchema.name}__${orbitalName}__${traitName}__${transitionEvent}`, orbitals: [clonedOrbital] };
