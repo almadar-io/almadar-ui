@@ -406,16 +406,26 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   const layerColor = data.layer ? LAYER_COLORS[data.layer] : undefined;
 
   const isExpanded = Boolean(data.traitName);
+  // STUDIO-1: a grouped imported-behavior card at L2 carries an alias.
+  // Display the alias as the primary label so the user can tell e.g.
+  // `Stats` apart from `Graphs` instead of seeing seven peers all labelled
+  // `INIT`. Double-clicking such a card drills into L3 to see that
+  // behavior's transitions individually.
+  const isImportedGroup = Boolean(data.behaviorAlias);
   const status = data.status ?? 'idle';
   const isRunning = status === 'running';
   const isSuccess = status === 'success';
   const isError = status === 'error';
-  const label = isExpanded
-    ? `${data.transitionEvent ?? ''}`
-    : data.orbitalName;
-  const sublabel = isExpanded
-    ? `${data.fromState ?? ''} \u2192 ${data.toState ?? ''}`
-    : data.entityName ?? '';
+  const label = isImportedGroup
+    ? (data.behaviorAlias ?? '')
+    : isExpanded
+      ? `${data.transitionEvent ?? ''}`
+      : data.orbitalName;
+  const sublabel = isImportedGroup
+    ? `${data.behaviorName ?? ''}${typeof data.transitionCount === 'number' && data.transitionCount > 1 ? ` \u00b7 ${data.transitionCount} screens` : ''}`
+    : isExpanded
+      ? `${data.fromState ?? ''} \u2192 ${data.toState ?? ''}`
+      : data.entityName ?? '';
 
   const orbitalSchema = useMemo(() => {
     const fullSchema = data._fullSchema as OrbitalSchema | undefined;
