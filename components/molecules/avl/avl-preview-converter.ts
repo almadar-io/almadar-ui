@@ -457,64 +457,80 @@ export function schemaToOverviewGraph(
 // Level 2: Expanded graph (one node per UI state within an orbital)
 // ---------------------------------------------------------------------------
 
+/** Internal: a transition + its trait context, ready for node assembly. */
+interface UITransitionEntry {
+  trait: Trait;
+  traitName: string;
+  transition: Transition;
+  patterns: RenderUIEntry[];
+  eventSources: PatternEventSource[];
+  states: State[];
+  allTransitions: Transition[];
+}
+
 /**
- * Build a React Flow graph for the expanded level.
- * Each transition with a render-ui effect gets a node.
- * Edges connect from the specific button/pattern that fires the event
- * to the target screen node.
+ * Walk an orbital's traits and collect every transition that has at least
+ * one `render-ui` effect. Used by `orbitalToExpandedGraph` (L2 view, all
+ * traits) and `orbitalAliasToExpandedGraph` (L3 view, single alias bucket
+ * filtered by `sourceBehavior.alias`).
  */
-export function orbitalToExpandedGraph(
-  schema: OrbitalSchema,
-  orbitalName: string,
-  mockData?: Record<string, unknown[]>,
-): {
-  nodes: Node<PreviewNodeData>[];
-  edges: Edge<EventEdgeData>[];
-} {
-  const nodes: Node<PreviewNodeData>[] = [];
-  const edges: Edge<EventEdgeData>[] = [];
-
-  const orbital = getOrbitals(schema).find(o => o.name === orbitalName);
-  if (!orbital) return { nodes, edges };
-
-  const entityInfo = getEntityInfo(orbital);
-  const traits = getTraits(orbital);
-
-  // Collect all transitions with render-ui across traits
-  const uiTransitions: Array<{
-    traitName: string;
-    transition: Transition;
-    patterns: RenderUIEntry[];
-    eventSources: PatternEventSource[];
-    states: State[];
-    allTransitions: Transition[];
-  }> = [];
-
-  for (const trait of traits) {
+function collectUITransitions(
+  orbital: OrbitalDefinition,
+  filter: (trait: Trait) => boolean,
+): UITransitionEntry[] {
+  const out: UITransitionEntry[] = [];
+  for (const trait of getTraits(orbital)) {
+    if (!filter(trait)) continue;
     const sm = getStateMachine(trait);
     if (!sm) continue;
-
     for (const t of sm.transitions) {
       if (!t.effects) continue;
       const patterns = extractRenderUI(t.effects);
-      if (patterns.length > 0) {
-        uiTransitions.push({
-          traitName: trait.name,
-          transition: t,
-          patterns,
-          eventSources: collectEventSources(patterns),
-          states: sm.states,
-          allTransitions: sm.transitions,
-        });
-      }
+      if (patterns.length === 0) continue;
+      out.push({
+        trait,
+        traitName: trait.name,
+        transition: t,
+        patterns,
+        eventSources: collectEventSources(patterns),
+        states: sm.states,
+        allTransitions: sm.transitions,
+      });
     }
   }
+  return out;
+}
 
-  if (uiTransitions.length === 0) return { nodes, edges };
+/**
+ * Shared assembler: given pre-collected UI transitions + a list of grouped
+ * imported-behavior cards, build the React Flow nodes + edges. Factored
+ * out so L2 (`orbitalToExpandedGraph`) and L3
+ * (`orbitalAliasToExpandedGraph`) don't copy-paste the dedup + positioning
+ * + edge-building logic.
+ *
+ * `transitions` populate the per-transition cards.
+ * `groupedBehaviors` populate the one-per-alias collapsed cards (L2 only;
+ * L3 passes an empty array since it's already scoped to a single alias).
+ */
+function buildScreenGraph(
+  schema: OrbitalSchema,
+  orbitalName: string,
+  entityName: string,
+  transitions: UITransitionEntry[],
+  groupedBehaviors: Array<{
+    alias: string;
+    behaviorName: string;
+    representative: UITransitionEntry;
+    transitionCount: number;
+  }>,
+  mockData?: Record<string, unknown[]>,
+): { nodes: Node<PreviewNodeData>[]; edges: Edge<EventEdgeData>[] } {
+  const nodes: Node<PreviewNodeData>[] = [];
+  const edges: Edge<EventEdgeData>[] = [];
 
-  // Deduplicate by target state (keep the most informative per state)
-  const stateNodeMap = new Map<string, typeof uiTransitions[0]>();
-  for (const entry of uiTransitions) {
+  // Dedup organism-owned transitions by target state (keep most informative)
+  const stateNodeMap = new Map<string, UITransitionEntry>();
+  for (const entry of transitions) {
     const key = `${entry.traitName}:${entry.transition.to}`;
     const existing = stateNodeMap.get(key);
     if (!existing || entry.patterns.length > existing.patterns.length) {
@@ -522,22 +538,21 @@ export function orbitalToExpandedGraph(
     }
   }
 
-  // Position nodes
-  const entries = Array.from(stateNodeMap.values());
-  const cols = Math.min(entries.length, 3);
+  const transitionEntries = Array.from(stateNodeMap.values());
+  const totalCards = transitionEntries.length + groupedBehaviors.length;
+  if (totalCards === 0) return { nodes, edges };
 
-  // Create nodes
-  const nodeIdMap = new Map<string, string>(); // stateKey → nodeId
-  for (let i = 0; i < entries.length; i++) {
-    const entry = entries[i];
+  const cols = Math.min(totalCards, 3);
+  const nodeIdMap = new Map<string, string>();
+
+  // Per-transition cards
+  transitionEntries.forEach((entry, i) => {
     const t = entry.transition;
     const nodeId = `${orbitalName}-${entry.traitName}-${t.event}-${t.to}`;
     const stateKey = `${entry.traitName}:${t.to}`;
     nodeIdMap.set(stateKey, nodeId);
-
     const col = i % cols;
     const row = Math.floor(i / cols);
-
     nodes.push({
       id: nodeId,
       type: 'preview',
@@ -554,30 +569,63 @@ export function orbitalToExpandedGraph(
         stateRole: detectStateRole(t.to, entry.states, entry.allTransitions),
         effectTypes: t.effects ? extractEffectTypes(t.effects) : [],
         guard: t.guard,
-        entityName: entityInfo.name,
+        entityName,
         _fullSchema: schema,
         _mockData: mockData,
       },
     });
-  }
+  });
 
-  // Create edges: connect from event-source handles to target nodes
-  for (const entry of uiTransitions) {
+  // Grouped imported-behavior cards (one per alias)
+  groupedBehaviors.forEach((group, i) => {
+    const t = group.representative.transition;
+    const nodeId = `${orbitalName}-behavior-${group.alias}`;
+    const idx = transitionEntries.length + i;
+    const col = idx % cols;
+    const row = Math.floor(idx / cols);
+    nodes.push({
+      id: nodeId,
+      type: 'preview',
+      position: { x: col * EXPANDED_SPACING_X, y: row * EXPANDED_SPACING_Y },
+      data: {
+        orbitalName,
+        traitName: group.representative.traitName,
+        stateName: t.to,
+        transitionEvent: t.event,
+        fromState: t.from,
+        toState: t.to,
+        patterns: group.representative.patterns,
+        eventSources: group.representative.eventSources,
+        stateRole: detectStateRole(
+          t.to,
+          group.representative.states,
+          group.representative.allTransitions,
+        ),
+        effectTypes: t.effects ? extractEffectTypes(t.effects) : [],
+        guard: t.guard,
+        entityName,
+        _fullSchema: schema,
+        _mockData: mockData,
+        behaviorAlias: group.alias,
+        behaviorName: group.behaviorName,
+        transitionCount: group.transitionCount,
+      },
+    });
+  });
+
+  // Edges between organism-owned transition cards (imported aliases get
+  // their own intra-bucket edges at L3, not at L2)
+  for (const entry of transitions) {
     const t = entry.transition;
     const sourceKey = `${entry.traitName}:${t.from}`;
     const targetKey = `${entry.traitName}:${t.to}`;
     const sourceNodeId = nodeIdMap.get(sourceKey);
     const targetNodeId = nodeIdMap.get(targetKey);
-
     if (!sourceNodeId || !targetNodeId) continue;
     if (sourceNodeId === targetNodeId) continue;
-
     const backward = isBackwardTransition(t.from, t.to, entry.states);
-
-    // Find the trigger element in the SOURCE node's patterns
     const sourceEntry = stateNodeMap.get(sourceKey);
     const triggerSource = sourceEntry?.eventSources.find(s => s.event === t.event);
-
     edges.push({
       id: `ef-${entry.traitName}-${t.event}-${t.from}-${t.to}`,
       source: sourceNodeId,
@@ -596,4 +644,112 @@ export function orbitalToExpandedGraph(
   }
 
   return { nodes, edges };
+}
+
+/**
+ * Build a React Flow graph for the L2 (expanded) level.
+ *
+ * Organism-authored traits (no `sourceBehavior` metadata) emit one
+ * transition card per render-ui-bearing transition (the historical
+ * behavior). Imported traits (cloned by the inline phase from `uses[]`)
+ * collapse into one grouped card per `sourceBehavior.alias`, so the user
+ * sees `Stats`, `Graphs`, `Layout`, etc. as single cards rather than 9
+ * anonymous `INIT` peers (STUDIO-1). Drill into a grouped card to reach
+ * L3 (`orbitalAliasToExpandedGraph`).
+ */
+export function orbitalToExpandedGraph(
+  schema: OrbitalSchema,
+  orbitalName: string,
+  mockData?: Record<string, unknown[]>,
+): {
+  nodes: Node<PreviewNodeData>[];
+  edges: Edge<EventEdgeData>[];
+} {
+  const orbital = getOrbitals(schema).find(o => o.name === orbitalName);
+  if (!orbital) return { nodes: [], edges: [] };
+
+  const entityInfo = getEntityInfo(orbital);
+
+  // Organism-authored = no sourceBehavior metadata
+  const organismTransitions = collectUITransitions(
+    orbital,
+    (trait) => trait.sourceBehavior === undefined,
+  );
+
+  // Bucket imported transitions by alias; pick the first render-ui-bearing
+  // transition per alias as the visual representative.
+  const aliasBuckets = new Map<
+    string,
+    { behaviorName: string; transitions: UITransitionEntry[] }
+  >();
+  const importedTransitions = collectUITransitions(
+    orbital,
+    (trait) => trait.sourceBehavior !== undefined,
+  );
+  for (const entry of importedTransitions) {
+    const sb = entry.trait.sourceBehavior;
+    if (!sb) continue;
+    const bucket = aliasBuckets.get(sb.alias);
+    if (bucket) {
+      bucket.transitions.push(entry);
+    } else {
+      aliasBuckets.set(sb.alias, {
+        behaviorName: sb.behavior,
+        transitions: [entry],
+      });
+    }
+  }
+
+  const groupedBehaviors = Array.from(aliasBuckets.entries()).map(
+    ([alias, bucket]) => ({
+      alias,
+      behaviorName: bucket.behaviorName,
+      representative: bucket.transitions[0],
+      transitionCount: bucket.transitions.length,
+    }),
+  );
+
+  return buildScreenGraph(
+    schema,
+    orbitalName,
+    entityInfo.name,
+    organismTransitions,
+    groupedBehaviors,
+    mockData,
+  );
+}
+
+/**
+ * Build a React Flow graph for the L3 (`behavior-expanded`) level: drill
+ * into one imported-behavior alias on an orbital and show ITS render-ui
+ * transitions as individual cards. Same converter logic as
+ * `orbitalToExpandedGraph` but scoped to traits where
+ * `sourceBehavior.alias === alias`. STUDIO-1.
+ */
+export function orbitalAliasToExpandedGraph(
+  schema: OrbitalSchema,
+  orbitalName: string,
+  alias: string,
+  mockData?: Record<string, unknown[]>,
+): {
+  nodes: Node<PreviewNodeData>[];
+  edges: Edge<EventEdgeData>[];
+} {
+  const orbital = getOrbitals(schema).find(o => o.name === orbitalName);
+  if (!orbital) return { nodes: [], edges: [] };
+
+  const entityInfo = getEntityInfo(orbital);
+  const transitions = collectUITransitions(
+    orbital,
+    (trait) => trait.sourceBehavior?.alias === alias,
+  );
+
+  return buildScreenGraph(
+    schema,
+    orbitalName,
+    entityInfo.name,
+    transitions,
+    [],
+    mockData,
+  );
 }

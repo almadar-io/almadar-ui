@@ -125,6 +125,33 @@ export function buildMockData(schema: OrbitalSchema): EntityData {
     );
     result[entityName] = rows;
   }
+
+  // STUDIO-2: imported traits carry the resolved entity definition of
+  // their source orbital on `Trait.sourceEntityDefinition` (set by the
+  // inline phase). For each such trait, populate mock rows under the
+  // imported entity's name so any render-ui SExpr that reads its fields
+  // resolves against real data instead of empty INIT. Without this the
+  // L2 cards for imports show empty states even when the trait clearly
+  // has a populated state to flip to.
+  for (const orbital of schema.orbitals) {
+    for (const traitRef of orbital.traits ?? []) {
+      if (typeof traitRef === 'string') continue;
+      if (!('stateMachine' in (traitRef as Record<string, unknown>))) continue;
+      const trait = traitRef as Trait;
+      const sourceEntity = trait.sourceEntityDefinition;
+      if (!sourceEntity || isEntityCall(sourceEntity)) continue;
+      const sourceName = sourceEntity.name;
+      if (!sourceName || result[sourceName]) continue;
+      if (sourceEntity.instances && sourceEntity.instances.length > 0) {
+        result[sourceName] = sourceEntity.instances;
+        continue;
+      }
+      result[sourceName] = Array.from({ length: 10 }, (_, i) =>
+        generateEntityRow(sourceEntity, i + 1),
+      );
+    }
+  }
+
   perfEnd('build-mock-data', t, { orbitalCount: schema.orbitals.length, entityCount: Object.keys(result).length });
   return result;
 }

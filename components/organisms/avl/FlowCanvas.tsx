@@ -34,7 +34,7 @@ import { Box } from '../../atoms/Box';
 import { Typography } from '../../atoms/Typography';
 import { OrbPreviewNode, ScreenSizeContext, PatternSelectionContext, type SelectedPattern } from '../../molecules/avl/OrbPreviewNode';
 import { EventFlowEdge } from '../../molecules/avl/EventFlowEdge';
-import { schemaToOverviewGraph, orbitalToExpandedGraph } from '../../molecules/avl/avl-preview-converter';
+import { schemaToOverviewGraph, orbitalToExpandedGraph, orbitalAliasToExpandedGraph } from '../../molecules/avl/avl-preview-converter';
 import type { ViewLevel, PreviewNodeData, ScreenSize } from '../../molecules/avl/avl-preview-types';
 import { SCREEN_SIZE_PRESETS, detectScreenSize } from '../../molecules/avl/avl-preview-types';
 import { OrbInspector } from './OrbInspector';
@@ -252,6 +252,10 @@ function FlowCanvasInner({
   const [expandedOrbital, setExpandedOrbital] = useState<string | undefined>(
     initialOrbital,
   );
+  // STUDIO-1: alias currently drilled into at L3 (`behavior-expanded`).
+  // Cleared when leaving L3. Always paired with a non-undefined
+  // `expandedOrbital` since L3 lives inside one orbital's L2.
+  const [expandedBehaviorAlias, setExpandedBehaviorAlias] = useState<string | undefined>(undefined);
   // Screen size driving OrbPreviewNode width. Default is auto-detected from
   // the user's viewport on mount (SSR-safe fallback to 'laptop'), and tracks
   // window resize until the user manually picks a preset — after which their
@@ -289,7 +293,7 @@ function FlowCanvasInner({
   const [atBehaviorLevel, setAtBehaviorLevel] = useState(composeLevel === 'behavior');
 
   // Compute graph for current level
-  const { composeNodes, composeEdges, overviewNodes, overviewEdges, expandedNodes, expandedEdges } = useMemo(() => {
+  const { composeNodes, composeEdges, overviewNodes, overviewEdges, expandedNodes, expandedEdges, behaviorExpandedNodes, behaviorExpandedEdges } = useMemo(() => {
     const t = perfStart('compose-graph');
     // Behavior-level compose graph
     const compose = (composeLevel === 'behavior' && behaviorEntries?.length)
@@ -300,10 +304,17 @@ function FlowCanvasInner({
     const expanded = expandedOrbital
       ? orbitalToExpandedGraph(parsedSchema, expandedOrbital, mockData)
       : { nodes: [], edges: [] };
+    // STUDIO-1: L3 (`behavior-expanded`) — only one alias bucket's
+    // transitions. Computed lazily; empty unless both `expandedOrbital`
+    // and `expandedBehaviorAlias` are set.
+    const behaviorExpanded = (expandedOrbital && expandedBehaviorAlias)
+      ? orbitalAliasToExpandedGraph(parsedSchema, expandedOrbital, expandedBehaviorAlias, mockData)
+      : { nodes: [], edges: [] };
     perfEnd('compose-graph', t, {
       composeNodes: compose.nodes.length,
       overviewNodes: overview.nodes.length,
       expandedNodes: expanded.nodes.length,
+      behaviorExpandedNodes: behaviorExpanded.nodes.length,
       orbitalCount: parsedSchema.orbitals?.length ?? 0,
     });
     return {
@@ -313,8 +324,10 @@ function FlowCanvasInner({
       overviewEdges: overview.edges,
       expandedNodes: expanded.nodes,
       expandedEdges: expanded.edges,
+      behaviorExpandedNodes: behaviorExpanded.nodes,
+      behaviorExpandedEdges: behaviorExpanded.edges,
     };
-  }, [parsedSchema, expandedOrbital, behaviorMeta, layoutHint, composeLevel, behaviorEntries, behaviorWires, mockData, orbitalStatus]);
+  }, [parsedSchema, expandedOrbital, expandedBehaviorAlias, behaviorMeta, layoutHint, composeLevel, behaviorEntries, behaviorWires, mockData, orbitalStatus]);
 
   // Both compose and orbital nodes flow through the same React Flow instance.
   // Cast to Node<Record<string, unknown>> for the union.
@@ -323,10 +336,14 @@ function FlowCanvasInner({
 
   const activeNodes: AnyNode[] = (atBehaviorLevel && composeNodes.length > 0)
     ? composeNodes
-    : level === 'overview' ? overviewNodes : expandedNodes;
+    : level === 'overview' ? overviewNodes
+    : level === 'behavior-expanded' ? behaviorExpandedNodes
+    : expandedNodes;
   const activeEdges: AnyEdge[] = (atBehaviorLevel && composeEdges.length > 0)
     ? composeEdges
-    : level === 'overview' ? overviewEdges : expandedEdges;
+    : level === 'overview' ? overviewEdges
+    : level === 'behavior-expanded' ? behaviorExpandedEdges
+    : expandedEdges;
 
   const [nodes, setNodes, onNodesChange] = useNodesState(activeNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(activeEdges);
@@ -390,6 +407,19 @@ function FlowCanvasInner({
       onLevelChange?.('expanded', orbitalName);
       return;
     }
+    // STUDIO-1: Drill from L2 expanded → L3 behavior-expanded when the
+    // double-clicked node is a grouped imported-behavior card (carries
+    // `behaviorAlias`). Runs BEFORE the cosmic drill so a click on a
+    // grouped card opens the alias's transitions instead of cosmic mode.
+    if (level === 'expanded') {
+      const d = node.data as PreviewNodeData;
+      if (d.behaviorAlias && d.orbitalName) {
+        setExpandedBehaviorAlias(d.behaviorAlias);
+        setLevel('behavior-expanded');
+        onLevelChange?.('behavior-expanded', d.orbitalName);
+        return;
+      }
+    }
     // GAP-52: Drill from expanded → cosmic. FlowCanvas itself stays at
     // 'expanded' (no internal level change); the consumer decides what to
     // render in cosmic mode (typically AvlOrbitalsCosmicZoom).
@@ -440,6 +470,11 @@ function FlowCanvasInner({
     if (e.key === 'Escape') {
       if (selectedNode) {
         setSelectedNode(null);
+      } else if (level === 'behavior-expanded') {
+        // STUDIO-1: L3 → L2 (keep the orbital expansion, drop the alias)
+        setLevel('expanded');
+        setExpandedBehaviorAlias(undefined);
+        onLevelChange?.('expanded', expandedOrbital);
       } else if (level === 'expanded') {
         setLevel('overview');
         setExpandedOrbital(undefined);
@@ -458,7 +493,7 @@ function FlowCanvasInner({
         setSelectedPattern(null);
       }
     }
-  }, [level, onLevelChange, selectedNode, selectedPattern, onPatternDelete]);
+  }, [level, onLevelChange, selectedNode, selectedPattern, onPatternDelete, atBehaviorLevel, composeLevel, expandedOrbital]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
@@ -469,6 +504,12 @@ function FlowCanvasInner({
   const handleGoBack = useCallback(() => {
     if (selectedNode) {
       setSelectedNode(null);
+    } else if (level === 'behavior-expanded') {
+      // STUDIO-1: L3 → L2
+      setLevel('expanded');
+      setExpandedBehaviorAlias(undefined);
+      setSelectedNode(null);
+      onLevelChange?.('expanded', expandedOrbital);
     } else if (level === 'expanded') {
       setLevel('overview');
       setExpandedOrbital(undefined);
@@ -479,7 +520,7 @@ function FlowCanvasInner({
       setExpandedOrbital(undefined);
       setSelectedNode(null);
     }
-  }, [level, onLevelChange, selectedNode, composeLevel, atBehaviorLevel]);
+  }, [level, onLevelChange, selectedNode, composeLevel, atBehaviorLevel, expandedOrbital]);
 
   // Event wire drag: onConnect fires when user drags handle to handle
   const eventBus = useEventBus();
