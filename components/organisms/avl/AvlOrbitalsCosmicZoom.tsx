@@ -29,7 +29,7 @@ import {
   getBreadcrumbs,
   type ZoomLevel,
 } from './avl-zoom-state';
-import { AvlTransitionScene } from './AvlTransitionScene';
+import { AvlTransitionDetail } from './AvlTransitionDetail';
 import { AvlOrbitalUnit } from '../../molecules/avl/AvlOrbitalUnit';
 import type { AvlPersistenceKind } from '../../atoms/avl/types';
 import { curveControlPoint } from '../../molecules/avl/avl-layout';
@@ -815,8 +815,11 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
         </Box>
       )}
 
-      {/* ── L6 (transition): one transition with sexpr expression tree.
-            Pan/zoom wrapper mirrors L5. */}
+      {/* ── L4 (transition): HTML detail card with accordion-collapsed
+            effects. Long render-ui args wrap inside each accordion's
+            CodeBlock instead of being truncated. SVG variant
+            (`AvlTransitionScene`) is preserved for `Avl3DTransitionScene`
+            but no longer used by 2D cosmic. */}
       {state.level === 'transition' && transitionLevelData && (
         <Box
           position="absolute"
@@ -826,67 +829,17 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
             paddingBottom: 24,
             paddingLeft: 24,
             paddingRight: 24,
+            overflowY: 'auto',
           }}
         >
-          <Box
-            ref={transformWrapperRef}
-            position="relative"
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerUp}
-            style={{
-              width: '100%',
-              height: '100%',
-              cursor: dragStateRef.current ? 'grabbing' : 'grab',
-              overflow: 'hidden',
-            }}
-          >
-            <Box
-              position="absolute"
-              style={{
-                inset: 0,
-                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-                transformOrigin: '0 0',
-              }}
-            >
-              <svg viewBox="0 0 600 400" style={{ width: '100%', height: '100%' }}>
-                <AvlTransitionScene
-                  data={transitionLevelData}
-                  color={color}
-                />
-              </svg>
-            </Box>
-          </Box>
+          <AvlTransitionDetail data={transitionLevelData} />
         </Box>
       )}
 
-      {/* Pan/zoom controls — only at the transition (L4) level now.
-          L3 (trait circuit) is owned by the embedded FlowCanvas which
-          has its own xyflow pan/zoom; L1 has its own controls block. */}
-      {state.level === 'transition' && (
-        <Box
-          position="absolute"
-          style={{
-            top: 12,
-            right: 12,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 4,
-            zIndex: 30,
-          }}
-        >
-          <Button variant="secondary" size="sm" onClick={zoomIn} title="Zoom in" action="COSMIC_ZOOM_IN">
-            <Icon name="plus" size="sm" />
-          </Button>
-          <Button variant="secondary" size="sm" onClick={zoomOut} title="Zoom out" action="COSMIC_ZOOM_OUT">
-            <Icon name="minus" size="sm" />
-          </Button>
-          <Button variant="secondary" size="sm" onClick={resetZoom} title="Reset" action="COSMIC_ZOOM_RESET">
-            <Icon name="maximize" size="sm" />
-          </Button>
-        </Box>
-      )}
+      {/* L4 (transition) renders HTML via `AvlTransitionDetail`, which
+          scrolls natively via overflow: auto — no pan/zoom controls
+          needed. L3 (trait circuit) is owned by the embedded FlowCanvas
+          with its own xyflow controls; L1 has its own controls block. */}
     </Box>
   );
 };
