@@ -496,18 +496,27 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </Box>
         )}
 
-        <Box as="main" className="flex-1 p-3 @sm/dashboard:p-4 @md/dashboard:p-6">
+        <Box
+          as="main"
+          className={cn(
+            "flex-1 p-3 @sm/dashboard:p-4 @md/dashboard:p-6",
+            // Reserve space for the fixed bottom nav so content isn't
+            // hidden under the tab bar.
+            showBottomNav && "pb-20",
+          )}
+        >
           {children}
         </Box>
 
-        {/* Bottom nav — only in bottomnav mode. */}
+        {/* Bottom nav — only in bottomnav mode. Fixed to viewport bottom
+            so the tab bar stays anchored regardless of content scroll
+            position (canonical mobile tab-bar pattern). Sidebar and
+            bottomnav layoutModes are mutually exclusive, so `inset-x-0`
+            is safe — it cannot collide with the sidebar's left rail. */}
         {showBottomNav && (
           <Box
             as="nav"
-            className={cn(
-              "sticky bottom-0 z-20 h-16 bg-card dark:bg-card border-t border-border dark:border-border",
-              layoutMode !== "bottomnav" && "@md/dashboard:hidden"
-            )}
+            className="fixed bottom-0 inset-x-0 z-20 h-16 bg-card dark:bg-card border-t border-border dark:border-border"
           >
             <HStack align="center" justify="around" className="h-full px-2">
               {navItems.map((item) => (
