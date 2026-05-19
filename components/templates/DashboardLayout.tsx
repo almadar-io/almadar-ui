@@ -504,7 +504,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         {showBottomNav && (
           <Box
             as="nav"
-            className="sticky bottom-0 z-20 h-16 bg-card dark:bg-card border-t border-border dark:border-border @md/dashboard:hidden"
+            className={cn(
+              "sticky bottom-0 z-20 h-16 bg-card dark:bg-card border-t border-border dark:border-border",
+              layoutMode !== "bottomnav" && "@md/dashboard:hidden"
+            )}
           >
             <HStack align="center" justify="around" className="h-full px-2">
               {navItems.map((item) => (
