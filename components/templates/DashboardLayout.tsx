@@ -119,6 +119,12 @@ export interface DashboardLayoutProps {
   currentPath?: string;
   /** Callback when user clicks sign out (optional - uses auth context signOut if not provided) */
   onSignOut?: () => void;
+  /** Layout mode. Default `"sidebar"`.
+   *  - `sidebar`: Left sidebar nav + top header (classic dashboard)
+   *  - `topnav`: Horizontal nav in header, no sidebar
+   *  - `bottomnav`: Bottom tab bar, no sidebar
+   *  - `minimal`: No nav chrome, content only */
+  layoutMode?: "sidebar" | "topnav" | "bottomnav" | "minimal";
   /** Page content rendered inside the main area */
   children?: React.ReactNode;
 }
@@ -140,6 +146,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   sidebarFooter,
   onSignOut: onSignOutProp,
   currentPath,
+  layoutMode = "sidebar",
   children,
 }) => {
   const eventBus = useEventBus();
@@ -189,6 +196,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   const handleSignOut = onSignOutProp || authSignOut;
 
+  const showSidebar = layoutMode === "sidebar";
+  const showHeader = layoutMode !== "minimal";
+  const showBottomNav = layoutMode === "bottomnav";
+  const isTopNav = layoutMode === "topnav";
+
   return (
     <HStack
       gap="none"
@@ -200,259 +212,311 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
       // full browser viewport and stay in desktop mode).
       className="@container/dashboard min-h-screen w-full bg-background dark:bg-background items-stretch"
     >
-      {sidebarOpen && (
+      {showSidebar && sidebarOpen && (
         <Box
           className="fixed inset-0 bg-foreground/50 dark:bg-foreground/70 z-20 @lg/dashboard:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Off-canvas drawer < @lg, real flex child >= @lg via `@lg/dashboard:static`. */}
-      <Box
-        as="aside"
-        className={cn(
-          "z-30 w-64 flex-shrink-0 bg-card dark:bg-card border-r border-border dark:border-border",
-          "fixed inset-y-0 left-0 @lg/dashboard:static @lg/dashboard:translate-x-0 @lg/dashboard:h-auto",
-          "transform transition-transform duration-200 ease-in-out",
-          "flex flex-col",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full",
-        )}
-      >
-        {/* Sidebar header */}
-        <HStack
-          align="center"
-          justify="between"
-          className="h-16 px-4 border-b border-border dark:border-border"
-        >
-          <Link to="/" className="flex items-center gap-2">
-            {logo || (
-              <Box className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-                <Typography
-                  variant="small"
-                  className="text-white font-bold text-sm"
-                  as="span"
-                >
-                  {appName.charAt(0).toUpperCase()}
-                </Typography>
-              </Box>
-            )}
-            <Typography
-              variant="label"
-              className="font-semibold text-foreground dark:text-foreground"
-              as="span"
-            >
-              {appName}
-            </Typography>
-          </Link>
-          <Button
-            variant="ghost"
-            className="@lg/dashboard:hidden p-2 rounded-md hover:bg-muted dark:hover:bg-muted text-muted-foreground dark:text-muted-foreground"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <X className="h-5 w-5" />
-          </Button>
-        </HStack>
-
-        {/* Navigation */}
-        <VStack
-          as="nav"
-          gap="none"
-          className="flex-1 px-3 py-4 space-y-1 overflow-y-auto"
-        >
-          {navItems.map((item) => (
-            <NavLink
-              key={item.href}
-              item={item}
-              currentPath={activePath}
-            />
-          ))}
-        </VStack>
-
-        {/* Sidebar footer — opt-in only. Apps that need Settings or
-         *  similar surfaces add them as navItems entries; baked-in
-         *  chrome links would be dead weight when the host app has no
-         *  matching route. */}
-        {sidebarFooter && (
-          <Box className="p-4 border-t border-border dark:border-border">
-            {sidebarFooter}
-          </Box>
-        )}
-      </Box>
-
-      {/* `min-w-0` so the column shrinks below its intrinsic content width. */}
-      <VStack gap="none" className="flex-1 min-w-0 min-h-screen">
-        {/* Header */}
+      {/* Sidebar — only in sidebar mode. */}
+      {showSidebar && (
         <Box
-          as="header"
-          className="sticky top-0 z-20 h-16 bg-card dark:bg-card border-b border-border dark:border-border"
+          as="aside"
+          className={cn(
+            "z-30 w-64 flex-shrink-0 bg-card dark:bg-card border-r border-border dark:border-border",
+            "fixed inset-y-0 left-0 @lg/dashboard:static @lg/dashboard:translate-x-0 @lg/dashboard:h-auto",
+            "transform transition-transform duration-200 ease-in-out",
+            "flex flex-col",
+            sidebarOpen ? "translate-x-0" : "-translate-x-full",
+          )}
         >
+          {/* Sidebar header */}
           <HStack
             align="center"
             justify="between"
-            className="h-full px-3 @sm/dashboard:px-4 gap-2 @sm/dashboard:gap-4"
+            className="h-16 px-4 border-b border-border dark:border-border"
           >
-            {/* Mobile menu button — visible whenever the layout's container
-                is narrower than `lg` (≈ 1024px), regardless of viewport. */}
+            <Link to="/" className="flex items-center gap-2">
+              {logo || (
+                <Box className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+                  <Typography
+                    variant="small"
+                    className="text-white font-bold text-sm"
+                    as="span"
+                  >
+                    {appName.charAt(0).toUpperCase()}
+                  </Typography>
+                </Box>
+              )}
+              <Typography
+                variant="label"
+                className="font-semibold text-foreground dark:text-foreground"
+                as="span"
+              >
+                {appName}
+              </Typography>
+            </Link>
             <Button
               variant="ghost"
-              className="@lg/dashboard:hidden p-2 rounded-md hover:bg-muted dark:hover:bg-muted text-muted-foreground dark:text-muted-foreground touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Open sidebar"
+              className="@lg/dashboard:hidden p-2 rounded-md hover:bg-muted dark:hover:bg-muted text-muted-foreground dark:text-muted-foreground"
+              onClick={() => setSidebarOpen(false)}
             >
-              <Menu className="h-5 w-5" />
+              <X className="h-5 w-5" />
             </Button>
+          </HStack>
 
-            {/* Search hidden on phones; capped width on `xl+` to avoid runway stretch. */}
-            {searchEnabled && (
-              <Box className="hidden @sm/dashboard:block flex-1 min-w-0 @xl/dashboard:max-w-md">
-                <Box className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-muted-foreground" />
-                  <Input
-                    type="search"
-                    placeholder={t('common.search')}
-                    className="pl-10 w-full"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleSearchSubmit((e.target as HTMLInputElement).value);
-                      }
-                    }}
-                  />
-                </Box>
-              </Box>
-            )}
-            {!searchEnabled && <Box className="flex-1" />}
+          {/* Navigation */}
+          <VStack
+            as="nav"
+            gap="none"
+            className="flex-1 px-3 py-4 space-y-1 overflow-y-auto"
+          >
+            {navItems.map((item) => (
+              <NavLink
+                key={item.href}
+                item={item}
+                currentPath={activePath}
+              />
+            ))}
+          </VStack>
 
-            {/* Right side */}
-            <HStack align="center" gap="xs">
-              {headerActions}
+          {/* Sidebar footer — opt-in only. */}
+          {sidebarFooter && (
+            <Box className="p-4 border-t border-border dark:border-border">
+              {sidebarFooter}
+            </Box>
+          )}
+        </Box>
+      )}
 
-              {/* Theme Toggle — opt-out via showThemeToggle={false}. */}
-              {showThemeToggle && <ThemeToggle />}
-
-              {/* Generic top-bar actions — consumer-supplied. Each entry
-               *  becomes an icon button with optional badge; click fires
-               *  the configured bus event. Rendered between theme toggle
-               *  and notifications bell. */}
-              {topBarActions.map((action, idx) => (
-                <Button
-                  key={`${action.event}-${idx}`}
-                  variant="ghost"
-                  className="relative p-2 rounded-full hover:bg-muted dark:hover:bg-muted"
-                  onClick={() => handleTopBarActionClick(action.event)}
-                  aria-label={action.label ?? action.icon}
-                >
-                  <AlmadarIcon name={action.icon} className="h-5 w-5 text-muted-foreground dark:text-muted-foreground" />
-                  {action.badge !== undefined && action.badge !== null && action.badge !== 0 && action.badge !== '' && (
-                    <Box
-                      as="span"
-                      className={cn(
-                        "absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-semibold text-white flex items-center justify-center",
-                        action.variant === "danger" ? "bg-error" : action.variant === "primary" ? "bg-primary" : "bg-foreground"
-                      )}
-                    >
-                      {action.badge}
-                    </Box>
-                  )}
-                </Button>
-              ))}
-
-              {/* Notifications — opt-in by passing the `notifications`
-               *  array (even []). Badge shows unread count; click
-               *  dispatches via onNotificationClick. Omit / pass null
-               *  to hide the bell entirely. */}
-              {notificationsEnabled && (
+      {/* `min-w-0` so the column shrinks below its intrinsic content width. */}
+      <VStack gap="none" className="flex-1 min-w-0 min-h-screen">
+        {/* Header — hidden only in minimal mode. */}
+        {showHeader && (
+          <Box
+            as="header"
+            className="sticky top-0 z-20 h-16 bg-card dark:bg-card border-b border-border dark:border-border"
+          >
+            <HStack
+              align="center"
+              justify="between"
+              className="h-full px-3 @sm/dashboard:px-4 gap-2 @sm/dashboard:gap-4"
+            >
+              {/* Mobile menu button — only in sidebar mode. */}
+              {showSidebar && (
                 <Button
                   variant="ghost"
-                  className="relative p-2 rounded-full hover:bg-muted dark:hover:bg-muted"
-                  onClick={handleNotificationClick}
-                  aria-label={t('common.notifications')}
+                  className="@lg/dashboard:hidden p-2 rounded-md hover:bg-muted dark:hover:bg-muted text-muted-foreground dark:text-muted-foreground touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  onClick={() => setSidebarOpen(true)}
+                  aria-label="Open sidebar"
                 >
-                  <Bell className="h-5 w-5 text-muted-foreground dark:text-muted-foreground" />
-                  {unreadCount > 0 && (
-                    <Box
-                      as="span"
-                      className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-error rounded-full text-[10px] font-semibold text-white flex items-center justify-center"
-                    >
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </Box>
-                  )}
+                  <Menu className="h-5 w-5" />
                 </Button>
               )}
 
-              {/* User menu */}
-              {user && (
-                <Box className="relative">
+              {/* Topnav horizontal nav — replaces sidebar. */}
+              {isTopNav && (
+                <HStack
+                  as="nav"
+                  align="center"
+                  gap="none"
+                  className="hidden @md/dashboard:flex items-center gap-1 overflow-x-auto"
+                >
+                  <Link to="/" className="flex items-center gap-2 mr-3 shrink-0">
+                    {logo || (
+                      <Box className="w-7 h-7 bg-primary-600 rounded-lg flex items-center justify-center">
+                        <Typography
+                          variant="small"
+                          className="text-white font-bold text-xs"
+                          as="span"
+                        >
+                          {appName.charAt(0).toUpperCase()}
+                        </Typography>
+                      </Box>
+                    )}
+                    <Typography
+                      variant="label"
+                      className="font-semibold text-foreground dark:text-foreground"
+                      as="span"
+                    >
+                      {appName}
+                    </Typography>
+                  </Link>
+                  {navItems.map((item) => (
+                    <NavLinkTopnav
+                      key={item.href}
+                      item={item}
+                      currentPath={activePath}
+                    />
+                  ))}
+                </HStack>
+              )}
+
+              {/* Search hidden on phones; capped width on `xl+`. */}
+              {searchEnabled && (
+                <Box className="hidden @sm/dashboard:block flex-1 min-w-0 @xl/dashboard:max-w-md">
+                  <Box className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-muted-foreground" />
+                    <Input
+                      type="search"
+                      placeholder={t('common.search')}
+                      className="pl-10 w-full"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSearchSubmit((e.target as HTMLInputElement).value);
+                        }
+                      }}
+                    />
+                  </Box>
+                </Box>
+              )}
+              {!searchEnabled && <Box className="flex-1" />}
+
+              {/* Right side */}
+              <HStack align="center" gap="xs">
+                {headerActions}
+
+                {/* Theme Toggle — opt-out via showThemeToggle={false}. */}
+                {showThemeToggle && <ThemeToggle />}
+
+                {/* Generic top-bar actions — consumer-supplied. */}
+                {topBarActions.map((action, idx) => (
+                  <Button
+                    key={`${action.event}-${idx}`}
+                    variant="ghost"
+                    className="relative p-2 rounded-full hover:bg-muted dark:hover:bg-muted"
+                    onClick={() => handleTopBarActionClick(action.event)}
+                    aria-label={action.label ?? action.icon}
+                  >
+                    <AlmadarIcon name={action.icon} className="h-5 w-5 text-muted-foreground dark:text-muted-foreground" />
+                    {action.badge !== undefined && action.badge !== null && action.badge !== 0 && action.badge !== '' && (
+                      <Box
+                        as="span"
+                        className={cn(
+                          "absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-semibold text-white flex items-center justify-center",
+                          action.variant === "danger" ? "bg-error" : action.variant === "primary" ? "bg-primary" : "bg-foreground"
+                        )}
+                      >
+                        {action.badge}
+                      </Box>
+                    )}
+                  </Button>
+                ))}
+
+                {/* Notifications */}
+                {notificationsEnabled && (
                   <Button
                     variant="ghost"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted dark:hover:bg-muted"
-                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="relative p-2 rounded-full hover:bg-muted dark:hover:bg-muted"
+                    onClick={handleNotificationClick}
+                    aria-label={t('common.notifications')}
                   >
-                    <Avatar
-                      src={user.avatar}
-                      alt={user.name}
-                      initials={user.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                        .substring(0, 2)}
-                      size="sm"
-                    />
-                    <Typography
-                      variant="small"
-                      className="hidden @sm/dashboard:block text-sm font-medium text-foreground dark:text-foreground"
-                      as="span"
-                    >
-                      {user.name}
-                    </Typography>
-                    <ChevronDown className="hidden @sm/dashboard:block h-4 w-4 text-muted-foreground dark:text-muted-foreground" />
-                  </Button>
-
-                  {userMenuOpen && (
-                    <>
+                    <Bell className="h-5 w-5 text-muted-foreground dark:text-muted-foreground" />
+                    {unreadCount > 0 && (
                       <Box
-                        className="fixed inset-0 z-20"
-                        onClick={() => setUserMenuOpen(false)}
-                      />
-                      <Box className="absolute right-0 mt-2 w-48 bg-card dark:bg-card rounded-lg shadow-lg border border-border dark:border-border py-1 z-30">
-                        <Box className="px-4 py-2 border-b border-border dark:border-border">
-                          <Typography
-                            variant="small"
-                            className="text-sm font-medium text-foreground dark:text-foreground"
-                            as="p"
-                          >
-                            {user.name}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            className="text-xs text-muted-foreground dark:text-muted-foreground"
-                            as="p"
-                          >
-                            {user.email}
-                          </Typography>
-                        </Box>
-                        <Button
-                          variant="ghost"
-                          onClick={() => {
-                            setUserMenuOpen(false);
-                            handleSignOut?.();
-                          }}
-                          className="w-full flex items-center gap-2 px-4 py-2 text-sm text-error dark:text-error hover:bg-error/10 dark:hover:bg-error/20"
-                        >
-                          <LogOut className="h-4 w-4" />
-                          {t('auth.signOut')}
-                        </Button>
+                        as="span"
+                        className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-error rounded-full text-[10px] font-semibold text-white flex items-center justify-center"
+                      >
+                        {unreadCount > 99 ? '99+' : unreadCount}
                       </Box>
-                    </>
-                  )}
-                </Box>
-              )}
+                    )}
+                  </Button>
+                )}
+
+                {/* User menu */}
+                {user && (
+                  <Box className="relative">
+                    <Button
+                      variant="ghost"
+                      className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted dark:hover:bg-muted"
+                      onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    >
+                      <Avatar
+                        src={user.avatar}
+                        alt={user.name}
+                        initials={user.name
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .substring(0, 2)}
+                        size="sm"
+                      />
+                      <Typography
+                        variant="small"
+                        className="hidden @sm/dashboard:block text-sm font-medium text-foreground dark:text-foreground"
+                        as="span"
+                      >
+                        {user.name}
+                      </Typography>
+                      <ChevronDown className="hidden @sm/dashboard:block h-4 w-4 text-muted-foreground dark:text-muted-foreground" />
+                    </Button>
+
+                    {userMenuOpen && (
+                      <>
+                        <Box
+                          className="fixed inset-0 z-20"
+                          onClick={() => setUserMenuOpen(false)}
+                        />
+                        <Box className="absolute right-0 mt-2 w-48 bg-card dark:bg-card rounded-lg shadow-lg border border-border dark:border-border py-1 z-30">
+                          <Box className="px-4 py-2 border-b border-border dark:border-border">
+                            <Typography
+                              variant="small"
+                              className="text-sm font-medium text-foreground dark:text-foreground"
+                              as="p"
+                            >
+                              {user.name}
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              className="text-xs text-muted-foreground dark:text-muted-foreground"
+                              as="p"
+                            >
+                              {user.email}
+                            </Typography>
+                          </Box>
+                          <Button
+                            variant="ghost"
+                            onClick={() => {
+                              setUserMenuOpen(false);
+                              handleSignOut?.();
+                            }}
+                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-error dark:text-error hover:bg-error/10 dark:hover:bg-error/20"
+                          >
+                            <LogOut className="h-4 w-4" />
+                            {t('auth.signOut')}
+                          </Button>
+                        </Box>
+                      </>
+                    )}
+                  </Box>
+                )}
+              </HStack>
             </HStack>
-          </HStack>
-        </Box>
+          </Box>
+        )}
 
         <Box as="main" className="flex-1 p-3 @sm/dashboard:p-4 @md/dashboard:p-6">
           {children}
         </Box>
+
+        {/* Bottom nav — only in bottomnav mode. */}
+        {showBottomNav && (
+          <Box
+            as="nav"
+            className="sticky bottom-0 z-20 h-16 bg-card dark:bg-card border-t border-border dark:border-border @md/dashboard:hidden"
+          >
+            <HStack align="center" justify="around" className="h-full px-2">
+              {navItems.map((item) => (
+                <NavLinkBottom
+                  key={item.href}
+                  item={item}
+                  currentPath={activePath}
+                />
+              ))}
+            </HStack>
+          </Box>
+        )}
       </VStack>
     </HStack>
   );
@@ -508,3 +572,86 @@ const NavLink: React.FC<{ item: NavItem; currentPath: string }> = ({
 };
 
 NavLink.displayName = "NavLink";
+
+// Topnav nav link — compact horizontal style
+const NavLinkTopnav: React.FC<{ item: NavItem; currentPath: string }> = ({
+  item,
+  currentPath,
+}) => {
+  const isActive =
+    currentPath === item.href || currentPath.startsWith(item.href + "/");
+
+  return (
+    <Link
+      to={item.href}
+      className={cn(
+        "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap",
+        isActive
+          ? "bg-primary text-primary-foreground shadow-sm"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground",
+      )}
+    >
+      {item.icon && (
+        typeof item.icon === 'string'
+          ? <AlmadarIcon name={item.icon} className="h-4 w-4" />
+          : <item.icon className="h-4 w-4" />
+      )}
+      <Typography variant="small" className="flex-1" as="span">
+        {item.label}
+      </Typography>
+      {item.badge && (
+        <Badge variant={isActive ? "primary" : "default"} size="sm">
+          {item.badge}
+        </Badge>
+      )}
+    </Link>
+  );
+};
+
+NavLinkTopnav.displayName = "NavLinkTopnav";
+
+// Bottom nav link — icon-only with label below (mobile tab bar style)
+const NavLinkBottom: React.FC<{ item: NavItem; currentPath: string }> = ({
+  item,
+  currentPath,
+}) => {
+  const isActive =
+    currentPath === item.href || currentPath.startsWith(item.href + "/");
+
+  const iconClassName = cn(
+    "h-5 w-5",
+    isActive
+      ? "text-primary"
+      : "text-muted-foreground",
+  );
+
+  return (
+    <Link
+      to={item.href}
+      className="flex flex-col items-center justify-center gap-0.5 px-2 py-1 rounded-lg transition-colors flex-1 min-w-0"
+    >
+      {item.icon && (
+        typeof item.icon === 'string'
+          ? <AlmadarIcon name={item.icon} className={iconClassName} />
+          : <item.icon className={iconClassName} />
+      )}
+      <Typography
+        variant="caption"
+        className={cn(
+          "text-[10px] leading-tight truncate max-w-full",
+          isActive ? "text-primary font-medium" : "text-muted-foreground",
+        )}
+        as="span"
+      >
+        {item.label}
+      </Typography>
+      {item.badge && (
+        <Badge variant={isActive ? "primary" : "default"} size="sm" className="text-[8px] px-1 py-0 min-w-0">
+          {item.badge}
+        </Badge>
+      )}
+    </Link>
+  );
+};
+
+NavLinkBottom.displayName = "NavLinkBottom";
