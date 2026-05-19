@@ -599,7 +599,7 @@ const NavLinkTopnav: React.FC<{ item: NavItem; currentPath: string }> = ({
           ? <AlmadarIcon name={item.icon} className="h-4 w-4" />
           : <item.icon className="h-4 w-4" />
       )}
-      <Typography variant="small" className="flex-1" as="span">
+      <Typography variant="small" color="inherit" className="flex-1" as="span">
         {item.label}
       </Typography>
       {item.badge && (
