@@ -696,7 +696,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       {!isExpanded && (
         <>
           <Box
-            className="absolute top-1.5 left-1.5 rounded px-1 py-[1px] text-[8px] font-mono uppercase tracking-wider pointer-events-none"
+            className="absolute top-1.5 right-1.5 rounded px-1 py-[1px] text-[8px] font-mono uppercase tracking-wider pointer-events-none"
             style={{
               backgroundColor: 'var(--color-muted)',
               color: 'var(--color-muted-foreground)',
