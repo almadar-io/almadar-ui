@@ -1,4 +1,5 @@
 import React from "react";
+import { X } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { resolveIcon } from "./Icon";
 
@@ -25,6 +26,13 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   label?: string | number;
   /** Icon name (Lucide icon string) or React node */
   icon?: React.ReactNode;
+  /** When set, renders a small X button on the right of the badge that
+   *  invokes this handler — turns the badge into a removable chip.
+   *  Used by the TagInput molecule and other "list of removable values"
+   *  surfaces. */
+  onRemove?: () => void;
+  /** Accessible label for the remove button. Defaults to "Remove". */
+  removeLabel?: string;
 }
 
 // Using CSS variables for theme-aware styling
@@ -69,7 +77,7 @@ const sizeStyles: Record<BadgeSize, string> = {
 };
 
 export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
-  ({ className, variant = "default", size = "sm", amount, label, icon, children, ...props }, ref) => {
+  ({ className, variant = "default", size = "sm", amount, label, icon, children, onRemove, removeLabel, ...props }, ref) => {
     const iconSizes: Record<BadgeSize, string> = { sm: "w-3 h-3", md: "w-3.5 h-3.5", lg: "w-4 h-4" };
     const resolvedIcon = typeof icon === "string"
       ? (() => { const I = resolveIcon(icon); return I ? <I className={iconSizes[size]} /> : null; })()
@@ -81,12 +89,31 @@ export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
           "inline-flex items-center gap-1 font-bold rounded-sm",
           variantStyles[variant],
           sizeStyles[size],
+          onRemove && "pr-1",
           className,
         )}
         {...props}
       >
         {resolvedIcon}
         {children || (amount != null ? `${label ? `${label} ` : ''}${amount}` : label)}
+        {onRemove ? (
+          <button
+            type="button"
+            aria-label={removeLabel ?? "Remove"}
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove();
+            }}
+            className={cn(
+              "inline-flex items-center justify-center rounded-sm",
+              "hover:bg-foreground/10 focus:outline-none focus:ring-1 focus:ring-ring",
+              "transition-colors",
+              size === "sm" ? "w-4 h-4 ml-0.5" : size === "md" ? "w-5 h-5 ml-1" : "w-6 h-6 ml-1",
+            )}
+          >
+            <X className={iconSizes[size]} />
+          </button>
+        ) : null}
       </span>
     );
   },

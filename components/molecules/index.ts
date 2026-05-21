@@ -109,6 +109,7 @@ export { SocialProof, type SocialProofProps, type SocialProofItem } from './Soci
 export { StepFlow, type StepFlowProps, type StepItemProps } from './StepFlow';
 export { SplitSection, type SplitSectionProps } from './SplitSection';
 export { TagCloud, type TagCloudProps, type TagCloudItem } from './TagCloud';
+export { TagInput, type TagInputProps } from './TagInput';
 export { CommunityLinks, type CommunityLinksProps } from './CommunityLinks';
 export { TeamCard, type TeamCardProps } from './TeamCard';
 export { ShowcaseCard, type ShowcaseCardProps } from './ShowcaseCard';
