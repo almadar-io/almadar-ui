@@ -143,6 +143,7 @@ export { DocTOC, type DocTOCProps, type DocTOCItem } from './DocTOC';
 
 // Marketing-page molecules — used by std-marketing-campaign render-ui.
 export { GradientDivider, type GradientDividerProps } from './GradientDivider';
+export { MarketingFooter, type MarketingFooterProps, type FooterLinkColumn, type FooterLinkItem } from './MarketingFooter';
 export { PullQuote, type PullQuoteProps } from './PullQuote';
 
 // AVL (Almadar Visual Language) molecules surfaced for std behaviors
