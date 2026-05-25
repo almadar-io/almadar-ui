@@ -324,7 +324,11 @@ function resolveTabler(name: string): React.ComponentType<RenderedIconProps> | n
 // ---------------------------------------------------------------------------
 
 const faAliases: Record<string, string> = {
-  // lucide name → fa-solid suffix (after the `Fa` prefix)
+  // lucide name → fa-solid suffix (after the `Fa` prefix).
+  // react-icons/fa ships FontAwesome 5 — names like `FaFileText` don't exist
+  // (FA renamed to `FaFileAlt`). When you see a console.warn from
+  // [iconFamily] about an unmapped lucide name in this family, add the
+  // closest FA5 sibling here so the fallback stays in-family.
   search: 'Search',
   close: 'Times',
   x: 'Times',
@@ -377,6 +381,103 @@ const faAliases: Record<string, string> = {
   'more-vertical': 'EllipsisV',
   info: 'InfoCircle',
   warning: 'ExclamationTriangle',
+
+  // Files (FA renamed FileText → FileAlt)
+  file: 'File',
+  'file-text': 'FileAlt',
+  'file-plus': 'FileMedical',
+  'file-minus': 'FileExcel',
+  'file-check': 'FileSignature',
+  document: 'FileAlt',
+
+  // Charts (lucide BarChart2 / BarChart3 → FA ChartBar)
+  'bar-chart': 'ChartBar',
+  'bar-chart-2': 'ChartBar',
+  'bar-chart-3': 'ChartBar',
+  'line-chart': 'ChartLine',
+  'pie-chart': 'ChartPie',
+  activity: 'ChartLine',
+  'trending-up': 'ChartLine',
+  'trending-down': 'ChartLine',
+
+  // Messages (lucide MessageCircle/MessageSquare → FA CommentDots/CommentAlt)
+  message: 'Comment',
+  'message-circle': 'CommentDots',
+  'message-square': 'CommentAlt',
+  'messages-square': 'Comments',
+  comment: 'Comment',
+  comments: 'Comments',
+  inbox: 'Inbox',
+
+  // Support / help
+  'life-buoy': 'LifeRing',
+  lifebuoy: 'LifeRing',
+
+  // Project / kanban (FA has no kanban; closest semantic is Tasks/Columns)
+  kanban: 'Tasks',
+  columns: 'Columns',
+  rows: 'Bars',
+  layout: 'ThLarge',
+  grid: 'Th',
+  list: 'List',
+  table: 'Table',
+
+  // Storage / folders
+  folder: 'Folder',
+  'folder-open': 'FolderOpen',
+  archive: 'Archive',
+  bookmark: 'Bookmark',
+  briefcase: 'Briefcase',
+  package: 'Box',
+  box: 'Box',
+
+  // Map / location
+  map: 'Map',
+  'map-pin': 'MapMarkerAlt',
+  navigation: 'LocationArrow',
+  compass: 'Compass',
+  globe: 'Globe',
+  target: 'Bullseye',
+
+  // Media
+  image: 'Image',
+  video: 'Video',
+  film: 'Film',
+  camera: 'Camera',
+  music: 'Music',
+  play: 'Play',
+  pause: 'Pause',
+  'skip-forward': 'Forward',
+  'skip-back': 'Backward',
+  volume: 'VolumeUp',
+  'volume-2': 'VolumeUp',
+  'volume-x': 'VolumeMute',
+  mic: 'Microphone',
+  'mic-off': 'MicrophoneSlash',
+  phone: 'Phone',
+
+  // Code / data
+  code: 'Code',
+  terminal: 'Terminal',
+  database: 'Database',
+  server: 'Server',
+  cloud: 'Cloud',
+  wifi: 'Wifi',
+
+  // Security
+  shield: 'ShieldAlt',
+  key: 'Key',
+
+  // Misc actions
+  printer: 'Print',
+  save: 'Save',
+  link: 'Link',
+  unlink: 'Unlink',
+  paperclip: 'Paperclip',
+  flag: 'Flag',
+  tag: 'Tag',
+  tags: 'Tags',
+  zap: 'Bolt',
 };
 
 function resolveFa(name: string): React.ComponentType<RenderedIconProps> | null {
