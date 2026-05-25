@@ -165,10 +165,11 @@
     --dialog-padding: 40px;
     --section-gap: 64px;
 
-    /* Icon styling - Phosphor fill, larger default */
-    --icon-family: phosphor-fill;
+    /* Icon styling - Tabler outline, larger default. Architectural strokes
+       distinct from lucide's friendly outline — fits atelier's editorial-display drama. */
+    --icon-family: tabler;
     --icon-default-size: 22px;
-    --icon-stroke-width: 0;
+    --icon-stroke-width: 1.25;
     --icon-color: currentColor;
 
     /* Elevation - All none, hairlines do the work */

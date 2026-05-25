@@ -190,8 +190,9 @@
     --easing-standard: cubic-bezier(0.16, 1, 0.3, 1);
     --easing-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
     --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-    /* Iconography axis - filled phosphor, large */
-    --icon-family: phosphor-fill;
+    /* Iconography axis - FontAwesome solid, large. Chunky filled silhouettes
+       distinct from phosphor-fill's refined geometric forms — fits kiosk's touch-first energy. */
+    --icon-family: fa-solid;
     --icon-default-size: 26px;
     /* Elevation axis - lifted, prominent */
     --elevation-card: var(--shadow-lg);
@@ -393,8 +394,9 @@
     --easing-standard: cubic-bezier(0.16, 1, 0.3, 1);
     --easing-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
     --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-    /* Iconography axis - filled phosphor, large */
-    --icon-family: phosphor-fill;
+    /* Iconography axis - FontAwesome solid, large. Chunky filled silhouettes
+       distinct from phosphor-fill's refined geometric forms — fits kiosk's touch-first energy. */
+    --icon-family: fa-solid;
     --icon-default-size: 26px;
     /* Elevation axis - lifted, prominent */
     --elevation-card: var(--shadow-lg);
