@@ -376,10 +376,10 @@
     --dialog-padding: 40px;
     --section-gap: 64px;
 
-    /* Icon styling */
-    --icon-family: phosphor-fill;
+    /* Icon styling — tabler outline, architectural strokes */
+    --icon-family: tabler;
     --icon-default-size: 22px;
-    --icon-stroke-width: 0;
+    --icon-stroke-width: 1.25;
     --icon-color: currentColor;
 
     /* Elevation */
