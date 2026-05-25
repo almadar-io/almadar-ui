@@ -422,18 +422,36 @@ function warnFallback(name: string, family: IconFamily): void {
 /**
  * Adapter that renders a lucide icon under the universal RenderedIconProps.
  * Used both as the lucide path AND as the cross-family fallback.
+ *
+ * When `isFallback` is true, the active theme targets a fill-based family
+ * (phosphor-fill / fa-solid / phosphor-duotone) and likely sets
+ * `--icon-stroke-width: 0` — that's correct for fill-based icons but makes
+ * stroke-based lucide icons invisible. Override the inline stroke-width and
+ * pass an explicit strokeWidth=2 so the lucide fallback renders visibly.
  */
-function makeLucideAdapter(name: string): React.ComponentType<RenderedIconProps> {
+function makeLucideAdapter(
+  name: string,
+  isFallback: boolean = false,
+): React.ComponentType<RenderedIconProps> {
   const LucideComp = resolveLucide(name);
-  const Adapter: React.FC<RenderedIconProps> = (props) => (
-    <LucideComp
-      className={props.className}
-      strokeWidth={props.strokeWidth}
-      style={props.style}
-      size={props.size}
-    />
-  );
-  Adapter.displayName = `Lucide.${name}`;
+  const Adapter: React.FC<RenderedIconProps> = (props) => {
+    const stroke = props.strokeWidth ?? (isFallback ? 2 : undefined);
+    // For the fallback case we also clobber the inline strokeWidth so the
+    // theme's --icon-stroke-width: 0 (set for fill-based families) doesn't
+    // win the cascade and zero out the stroke.
+    const style = isFallback
+      ? { ...(props.style ?? {}), strokeWidth: stroke ?? 2 }
+      : props.style;
+    return (
+      <LucideComp
+        className={props.className}
+        strokeWidth={stroke}
+        style={style}
+        size={props.size}
+      />
+    );
+  };
+  Adapter.displayName = `Lucide.${name}${isFallback ? '.fallback' : ''}`;
   return Adapter;
 }
 
@@ -447,36 +465,36 @@ export function resolveIconForFamily(
 ): React.ComponentType<RenderedIconProps> {
   switch (family) {
     case 'lucide':
-      return makeLucideAdapter(name);
+      return makeLucideAdapter(name, false);
     case 'phosphor-outline': {
       const p = resolvePhosphor(name, 'regular');
       if (p) return p;
       warnFallback(name, family);
-      return makeLucideAdapter(name);
+      return makeLucideAdapter(name, true);
     }
     case 'phosphor-fill': {
       const p = resolvePhosphor(name, 'fill');
       if (p) return p;
       warnFallback(name, family);
-      return makeLucideAdapter(name);
+      return makeLucideAdapter(name, true);
     }
     case 'phosphor-duotone': {
       const p = resolvePhosphor(name, 'duotone');
       if (p) return p;
       warnFallback(name, family);
-      return makeLucideAdapter(name);
+      return makeLucideAdapter(name, true);
     }
     case 'tabler': {
       const t = resolveTabler(name);
       if (t) return t;
       warnFallback(name, family);
-      return makeLucideAdapter(name);
+      return makeLucideAdapter(name, true);
     }
     case 'fa-solid': {
       const f = resolveFa(name);
       if (f) return f;
       warnFallback(name, family);
-      return makeLucideAdapter(name);
+      return makeLucideAdapter(name, true);
     }
   }
 }
