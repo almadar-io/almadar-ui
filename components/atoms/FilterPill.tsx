@@ -2,7 +2,7 @@ import React, { useCallback } from "react";
 import type { EventEmit } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
-import { resolveIcon } from "./Icon";
+import { Icon } from "./Icon";
 
 export type FilterPillVariant =
   | "default"
@@ -107,13 +107,9 @@ export const FilterPill = React.forwardRef<HTMLSpanElement, FilterPillProps>(
       if (removeEvent) eventBus.emit(`UI:${removeEvent}`, { label: payloadLabel });
     }, [onRemove, removeEvent, eventBus, payloadLabel]);
 
-    const XIcon = resolveIcon("x");
     const resolvedIcon =
       typeof icon === "string"
-        ? (() => {
-            const I = resolveIcon(icon);
-            return I ? <I className={iconSizes[size]} /> : null;
-          })()
+        ? <Icon name={icon} className={iconSizes[size]} />
         : icon;
 
     return (
@@ -143,7 +139,7 @@ export const FilterPill = React.forwardRef<HTMLSpanElement, FilterPillProps>(
               "ml-0.5 rounded-full hover:bg-foreground/10 transition-colors flex items-center justify-center",
             )}
           >
-            {XIcon ? <XIcon className={iconSizes[size]} /> : <span aria-hidden>×</span>}
+            <Icon name="x" className={iconSizes[size]} />
           </button>
         )}
       </span>

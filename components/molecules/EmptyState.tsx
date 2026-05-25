@@ -4,36 +4,22 @@ import type { EventEmit } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { Button } from "../atoms";
 import { Box } from "../atoms/Box";
+import { Icon as IconAtom } from "../atoms/Icon";
 import { VStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { useEventBus } from "../../hooks/useEventBus";
 import { useTranslate } from "../../hooks/useTranslate";
-import {
-  LucideIcon,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  Info,
-  Search,
-  Inbox,
-  FileQuestion,
-} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 /**
- * Common icon name to Lucide component mapping.
- * Supports schema-style string icon names (e.g., "check-circle").
+ * String aliases for canonical kebab-case icon names.
+ * The Icon atom resolves canonical names directly; this map only handles
+ * non-canonical aliases used in schema patterns.
  */
-const ICON_MAP: Record<string, LucideIcon> = {
-  "check-circle": CheckCircle,
-  check: CheckCircle,
-  "x-circle": XCircle,
-  error: XCircle,
-  "alert-circle": AlertCircle,
-  warning: AlertCircle,
-  info: Info,
-  search: Search,
-  inbox: Inbox,
-  "file-question": FileQuestion,
+const ICON_NAME_ALIASES: Record<string, string> = {
+  check: "check-circle",
+  error: "x-circle",
+  warning: "alert-circle",
 };
 
 export interface EmptyStateProps {
@@ -78,9 +64,15 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     if (actionEvent) eventBus.emit(`UI:${actionEvent}`, {});
     onAction?.();
   };
-  // Resolve icon - supports both LucideIcon component and string name
-  const Icon: LucideIcon | undefined =
-    typeof icon === "string" ? ICON_MAP[icon] : icon;
+  // Resolve icon - supports both LucideIcon component and string name.
+  // Strings go through the Icon atom's family-aware resolver via `name`;
+  // component refs bypass via `icon` (intentional — locks the icon to
+  // the family the caller chose).
+  const iconName: string | undefined =
+    typeof icon === "string" ? (ICON_NAME_ALIASES[icon] ?? icon) : undefined;
+  const iconComponent: LucideIcon | undefined =
+    typeof icon === "function" ? icon : undefined;
+  const hasIcon = Boolean(iconName || iconComponent);
 
   // Determine color scheme based on variant or destructive flag
   const isDestructive = destructive || variant === "error";
@@ -96,7 +88,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         className,
       )}
     >
-      {Icon && (
+      {hasIcon && (
         <Box
           className={cn(
             "mb-4 rounded-full p-3",
@@ -107,7 +99,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
                 : "bg-muted",
           )}
         >
-          <Icon
+          <IconAtom
+            {...(iconName ? { name: iconName } : { icon: iconComponent })}
             className={cn(
               "h-8 w-8",
               isDestructive

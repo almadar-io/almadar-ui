@@ -11,7 +11,6 @@ import { Container } from "../molecules/Container";
 import { VStack, HStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { Button } from "../atoms/Button";
-import { Minus, Plus, RotateCcw } from "lucide-react";
 import type { TemplateProps } from "./types";
 
 export type CounterSize = "sm" | "md" | "lg";
@@ -76,7 +75,7 @@ function CounterMinimal({
         size={sizeStyles[size].button}
         onClick={onDecrement}
         disabled={resolved.decrementDisabled}
-        icon={Minus}
+        icon="minus"
       >
         {resolved.decrementLabel}
       </Button>
@@ -94,7 +93,7 @@ function CounterMinimal({
         size={sizeStyles[size].button}
         onClick={onIncrement}
         disabled={resolved.incrementDisabled}
-        icon={Plus}
+        icon="plus"
       >
         {resolved.incrementLabel}
       </Button>
@@ -139,14 +138,14 @@ function CounterStandard({
             size={sizeStyles[size].button}
             onClick={onDecrement}
             disabled={resolved.decrementDisabled}
-            icon={Minus}
+            icon="minus"
           />
           <Button
             variant="primary"
             size={sizeStyles[size].button}
             onClick={onIncrement}
             disabled={resolved.incrementDisabled}
-            icon={Plus}
+            icon="plus"
           />
         </HStack>
         {showReset && (
@@ -154,7 +153,7 @@ function CounterStandard({
             variant="ghost"
             size="sm"
             onClick={onReset}
-            icon={RotateCcw}
+            icon="rotate-ccw"
           >
             Reset
           </Button>
@@ -208,7 +207,7 @@ function CounterFull({
             size={sizeStyles[size].button}
             onClick={onDecrement}
             disabled={resolved.decrementDisabled}
-            icon={Minus}
+            icon="minus"
           >
             {resolved.decrementLabel}
           </Button>
@@ -217,7 +216,7 @@ function CounterFull({
             size={sizeStyles[size].button}
             onClick={onIncrement}
             disabled={resolved.incrementDisabled}
-            icon={Plus}
+            icon="plus"
           >
             {resolved.incrementLabel}
           </Button>
@@ -227,7 +226,7 @@ function CounterFull({
             variant="ghost"
             size="sm"
             onClick={onReset}
-            icon={RotateCcw}
+            icon="rotate-ccw"
           >
             Reset to 0
           </Button>

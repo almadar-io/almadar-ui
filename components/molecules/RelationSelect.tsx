@@ -15,9 +15,10 @@ import React, {
   useRef,
   useEffect,
 } from "react";
-import { Search, ChevronDown, X } from "lucide-react";
+import { Search } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { Box } from "../atoms/Box";
+import { Icon } from "../atoms/Icon";
 import { HStack, VStack } from "../atoms/Stack";
 import { Input } from "../atoms/Input";
 import { Button } from "../atoms/Button";
@@ -236,10 +237,11 @@ export const RelationSelect: React.FC<RelationSelectProps> = ({
               className="p-0.5 hover:bg-muted rounded cursor-pointer"
               onClick={handleClear}
             >
-              <X className="h-4 w-4 text-muted-foreground" />
+              <Icon name="x" className="h-4 w-4 text-muted-foreground" />
             </Box>
           )}
-          <ChevronDown
+          <Icon
+            name="chevron-down"
             className={cn(
               "h-4 w-4 text-muted-foreground transition-transform",
               isOpen && "transform rotate-180",

@@ -9,7 +9,7 @@
  */
 
 import React from "react";
-import { Sun, Moon } from "lucide-react";
+import { Icon } from "./Icon";
 import { cn } from "../../lib/cn";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -74,11 +74,13 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
       title={isDark ? "Switch to light mode" : "Switch to dark mode"}
     >
       {isDark ? (
-        <Sun
+        <Icon
+          name="sun"
           className={cn(iconSizes[size], "text-foreground")}
         />
       ) : (
-        <Moon
+        <Icon
+          name="moon"
           className={cn(iconSizes[size], "text-foreground")}
         />
       )}

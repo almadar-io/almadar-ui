@@ -8,6 +8,11 @@
  * IMPORTANT: @import must precede all other statements (Vite requirement).
  */
 
+/* Layer 1 skin axes — font families consumed by prism / gazette / terminal / atelier / kiosk.
+ * Combined into a single Google Fonts request for fewer round-trips. font-display: swap
+ * means body text renders immediately with the fallback chain while the web fonts load. */
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;700;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@400;500;600;700;800&display=swap");
+
 /* Core themes */
 @import "./wireframe.css";
 @import "./minimalist.css";

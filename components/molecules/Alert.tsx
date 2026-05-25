@@ -8,7 +8,6 @@
 
 import React from "react";
 import type { EventKey } from "@almadar/core";
-import { X, AlertCircle, CheckCircle, AlertTriangle, Info } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { Box } from "../atoms/Box";
 import { Icon } from "../atoms/Icon";
@@ -47,11 +46,11 @@ const variantIconColors: Record<AlertVariant, string> = {
   error: "text-error",
 };
 
-const iconMap: Record<AlertVariant, typeof Info> = {
-  info: Info,
-  success: CheckCircle,
-  warning: AlertTriangle,
-  error: AlertCircle,
+const iconMap: Record<AlertVariant, string> = {
+  info: "info",
+  success: "check-circle",
+  warning: "alert-triangle",
+  error: "alert-circle",
 };
 
 export const Alert: React.FC<AlertProps> = ({
@@ -90,7 +89,7 @@ export const Alert: React.FC<AlertProps> = ({
         {/* Icon */}
         <div className="flex-shrink-0 mt-0.5">
           <Icon
-            icon={iconMap[variant]}
+            name={iconMap[variant]}
             size="md"
             className={variantIconColors[variant]}
           />
@@ -118,7 +117,7 @@ export const Alert: React.FC<AlertProps> = ({
             )}
             aria-label="Dismiss alert"
           >
-            <Icon icon={X} size="sm" />
+            <Icon name="x" size="sm" />
           </button>
         )}
       </div>

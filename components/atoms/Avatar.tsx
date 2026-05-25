@@ -7,8 +7,8 @@
 
 import React from "react";
 import type { EventKey, EventPayload } from "@almadar/core";
-import { User } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { Icon } from "./Icon";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
 
@@ -130,7 +130,7 @@ export const Avatar: React.FC<AvatarProps> = ({
   alt,
   name,
   initials: providedInitials,
-  icon: Icon,
+  icon: IconComponent,
   size = "md",
   status,
   badge,
@@ -146,7 +146,7 @@ export const Avatar: React.FC<AvatarProps> = ({
 
   const hasImage = !!src;
   const hasInitials = !!initials;
-  const hasIcon = !!Icon;
+  const hasIcon = !!IconComponent;
 
   // Generate background based on initials
   const getInitialsBackground = () =>
@@ -197,15 +197,16 @@ export const Avatar: React.FC<AvatarProps> = ({
           >
             {initials.substring(0, 2).toUpperCase()}
           </div>
-        ) : hasIcon ? (
-          <Icon
+        ) : hasIcon && IconComponent ? (
+          <IconComponent
             className={cn(
               "text-foreground",
               iconSizeClasses[size],
             )}
           />
         ) : (
-          <User
+          <Icon
+            name="user"
             className={cn(
               "text-foreground",
               iconSizeClasses[size],

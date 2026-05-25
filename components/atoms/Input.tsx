@@ -1,7 +1,8 @@
 import React from "react";
 import type { EventKey } from "@almadar/core";
 import { cn } from "../../lib/cn";
-import { X, ChevronDown, type LucideIcon } from "lucide-react";
+import { type LucideIcon } from "lucide-react";
+import { Icon } from "./Icon";
 
 export interface SelectOption {
   value: string;
@@ -124,7 +125,7 @@ export const Input = React.forwardRef<
             ))}
           </select>
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-muted-foreground">
-            <ChevronDown className="h-icon-default w-icon-default" />
+            <Icon name="chevron-down" className="h-icon-default w-icon-default" />
           </div>
         </div>
       );
@@ -188,7 +189,7 @@ export const Input = React.forwardRef<
             onClick={onClear}
             className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
           >
-            <X className="h-icon-default w-icon-default" />
+            <Icon name="x" className="h-icon-default w-icon-default" />
           </button>
         )}
         {rightIcon && !showClearButton && (

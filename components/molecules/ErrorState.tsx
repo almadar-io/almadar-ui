@@ -6,7 +6,7 @@ import { Button } from "../atoms";
 import { Box } from "../atoms/Box";
 import { VStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
-import { AlertCircle } from "lucide-react";
+import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../hooks/useEventBus";
 import { useTranslate } from "../../hooks/useTranslate";
 
@@ -49,7 +49,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
       )}
     >
       <Box className="mb-4 rounded-full bg-error/10 p-3">
-        <AlertCircle className="h-8 w-8 text-error" />
+        <Icon name="alert-circle" className="h-8 w-8 text-error" />
       </Box>
       <Typography variant="h3" className="text-lg font-medium text-foreground">
         {resolvedTitle}

@@ -12,7 +12,6 @@ import { Box } from "../atoms/Box";
 import { HStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { Button } from "../atoms/Button";
-import { LucideIcon, Play, Pause, RotateCcw } from "lucide-react";
 import type { TemplateProps } from "./types";
 
 interface GameEntity {
@@ -74,7 +73,7 @@ export const GameTemplate: React.FC<GameTemplateProps> = ({
                 <Button
                   variant="secondary"
                   size="sm"
-                  icon={Pause}
+                  icon="pause"
                   onClick={controls.onPause}
                 >
                   Pause
@@ -83,7 +82,7 @@ export const GameTemplate: React.FC<GameTemplateProps> = ({
                 <Button
                   variant="primary"
                   size="sm"
-                  icon={Play}
+                  icon="play"
                   onClick={controls.onPlay}
                 >
                   Play
@@ -92,7 +91,7 @@ export const GameTemplate: React.FC<GameTemplateProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                icon={RotateCcw}
+                icon="rotate-ccw"
                 onClick={controls.onReset}
               >
                 Reset

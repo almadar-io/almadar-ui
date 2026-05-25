@@ -1,18 +1,23 @@
 /**
  * Icon Atom Component
  *
- * A wrapper component for Lucide icons with consistent sizing and styling.
- * Uses theme-aware CSS variables for stroke width and color.
+ * Renders an icon from the active icon family (Layer 1 Iconography axis —
+ * see lib/iconFamily.ts). Canonical names are lucide kebab-case; the resolver
+ * dispatches to phosphor / tabler / fa-solid when `--icon-family` selects them,
+ * re-rendering automatically on theme switch.
  *
  * Supports two APIs:
- * - `icon` prop: Pass a LucideIcon component directly
- * - `name` prop: Pass a string icon name (resolved from iconMap)
+ * - `icon` prop: Pass a LucideIcon component directly (bypasses family resolver
+ *   — used for direct lucide component refs, stays in lucide regardless of theme)
+ * - `name` prop: Pass a canonical kebab-case name (family-aware, swaps on theme)
  */
 
+'use client';
 import React from 'react';
 import type { LucideIcon } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { cn } from '../../lib/cn';
+import { resolveIconForFamily, useIconFamily } from '../../lib/iconFamily';
 
 export type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 export type IconAnimation = 'spin' | 'pulse' | 'none';
@@ -123,27 +128,55 @@ export const Icon: React.FC<IconProps> = ({
   strokeWidth,
   style,
 }) => {
-  // Resolve icon: use provided icon component, or resolve from name
-  const IconComponent = icon ?? (name ? resolveIcon(name) : LucideIcons.HelpCircle);
+  // The `icon` prop bypasses the family resolver (caller already chose a specific
+  // component reference, usually a direct lucide import). The `name` prop dispatches
+  // through useIconFamily so the icon swaps families when the user changes theme.
+  const family = useIconFamily();
+  const RenderedComponent = React.useMemo(() => {
+    if (icon) return null;
+    return name ? resolveIconForFamily(name, family) : null;
+  }, [icon, name, family]);
 
-  // Use theme's icon stroke width if not explicitly set
   const effectiveStrokeWidth = strokeWidth ?? undefined;
+  const inlineStyle: React.CSSProperties = {
+    ...(effectiveStrokeWidth === undefined
+      ? { strokeWidth: 'var(--icon-stroke-width, 2)' }
+      : {}),
+    ...style,
+  };
+  const composedClassName = cn(
+    sizeClasses[size],
+    animationClasses[animation],
+    color ? color : 'text-current',
+    className,
+  );
 
+  if (icon) {
+    const Direct = icon;
+    return (
+      <Direct
+        className={composedClassName}
+        strokeWidth={effectiveStrokeWidth}
+        style={inlineStyle}
+      />
+    );
+  }
+  if (RenderedComponent) {
+    return (
+      <RenderedComponent
+        className={composedClassName}
+        strokeWidth={effectiveStrokeWidth}
+        style={inlineStyle}
+      />
+    );
+  }
+  // Last-resort fallback if neither icon nor name was passed.
+  const Fallback = LucideIcons.HelpCircle;
   return (
-    <IconComponent
-      className={cn(
-        sizeClasses[size],
-        animationClasses[animation],
-        color ? color : 'text-current',
-        className
-      )}
+    <Fallback
+      className={composedClassName}
       strokeWidth={effectiveStrokeWidth}
-      style={{
-        ...(effectiveStrokeWidth === undefined
-          ? { strokeWidth: 'var(--icon-stroke-width, 2)' }
-          : {}),
-        ...style,
-      }}
+      style={inlineStyle}
     />
   );
 };

@@ -10,7 +10,6 @@
  */
 import React from "react";
 import type { EventEmit } from "@almadar/core";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
 import { Box } from "../atoms/Box";
@@ -140,7 +139,7 @@ export const WizardNavigation: React.FC<WizardNavigationProps> = ({
       {/* Back button */}
       {showBack ? (
         <Button variant="secondary" onClick={handleBack} disabled={isFirstStep}>
-          <Icon icon={ChevronLeft} size="sm" />
+          <Icon name="chevron-left" size="sm" />
           {resolvedBackLabel}
         </Button>
       ) : (
@@ -162,7 +161,7 @@ export const WizardNavigation: React.FC<WizardNavigationProps> = ({
       ) : showNext ? (
         <Button variant="primary" onClick={handleNext} disabled={!isValid}>
           {resolvedNextLabel}
-          <Icon icon={ChevronRight} size="sm" />
+          <Icon name="chevron-right" size="sm" />
         </Button>
       ) : (
         <Box />

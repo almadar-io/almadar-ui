@@ -21,7 +21,6 @@ import SyntaxHighlighter from 'react-syntax-highlighter/dist/esm/prism-light.js'
 // @ts-expect-error — same as above for the styles module.
 import dark from 'react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus.js';
 import { orbLanguage, loloLanguage, ORB_COLORS } from '@almadar/syntax';
-import { Copy, Check } from 'lucide-react';
 
 // PrismLight requires explicit language registration.
 // Import common languages used in markdown code blocks.
@@ -178,6 +177,7 @@ import { Button } from '../../atoms/Button';
 import { Badge } from '../../atoms/Badge';
 import { HStack } from '../../atoms/Stack';
 import { Textarea } from '../../atoms/Textarea';
+import { Icon } from '../../atoms/Icon';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { createLogger } from '@almadar/logger';
@@ -497,9 +497,9 @@ export const CodeBlock = React.memo<CodeBlockProps>(
                 aria-label="Copy code"
               >
                 {copied ? (
-                  <Check size={16} className="text-green-400" />
+                  <Icon name="check" className="w-4 h-4 text-green-400" />
                 ) : (
-                  <Copy size={16} />
+                  <Icon name="copy" className="w-4 h-4" />
                 )}
               </Button>
             )}

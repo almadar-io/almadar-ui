@@ -7,7 +7,6 @@
  */
 
 import React from "react";
-import { ChevronRight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { Icon } from "../atoms/Icon";
@@ -32,9 +31,9 @@ export interface BreadcrumbItem {
   path?: string;
 
   /**
-   * Item icon
+   * Item icon (canonical kebab-case name or LucideIcon component)
    */
-  icon?: LucideIcon;
+  icon?: LucideIcon | string;
 
   /**
    * Click handler (if href not provided)
@@ -57,9 +56,9 @@ export interface BreadcrumbProps {
   items: BreadcrumbItem[];
 
   /**
-   * Separator icon
+   * Separator icon (canonical kebab-case name or LucideIcon component)
    */
-  separator?: LucideIcon;
+  separator?: LucideIcon | string;
 
   /**
    * Maximum items to show (truncates with ellipsis)
@@ -74,7 +73,7 @@ export interface BreadcrumbProps {
 
 export const Breadcrumb: React.FC<BreadcrumbProps> = ({
   items,
-  separator = ChevronRight,
+  separator = "chevron-right",
   maxItems,
   className,
 }) => {
@@ -115,7 +114,10 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
                   )}
                   aria-current={isLast ? "page" : undefined}
                 >
-                  {item.icon && <Icon icon={item.icon} size="sm" />}
+                  {item.icon && (typeof item.icon === "string"
+                    ? <Icon name={item.icon} size="sm" />
+                    : <Icon icon={item.icon} size="sm" />
+                  )}
                   <Typography
                     variant="small"
                     weight={isLast ? "medium" : "normal"}
@@ -140,7 +142,10 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
                   aria-current={isLast ? "page" : undefined}
                   disabled={isLast}
                 >
-                  {item.icon && <Icon icon={item.icon} size="sm" />}
+                  {item.icon && (typeof item.icon === "string"
+                    ? <Icon name={item.icon} size="sm" />
+                    : <Icon icon={item.icon} size="sm" />
+                  )}
                   <Typography
                     variant="small"
                     weight={isLast ? "medium" : "normal"}
@@ -151,11 +156,9 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
               )}
 
               {!isLast && (
-                <Icon
-                  icon={separator}
-                  size="sm"
-                  className="text-muted-foreground"
-                />
+                typeof separator === "string"
+                  ? <Icon name={separator} size="sm" className="text-muted-foreground" />
+                  : <Icon icon={separator} size="sm" className="text-muted-foreground" />
               )}
             </li>
           );

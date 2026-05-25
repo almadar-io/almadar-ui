@@ -7,7 +7,6 @@
  * Composes DayCell and TimeSlotCell atoms into a 7-day grid.
  */
 import React, { useMemo, useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { EventEmit, EventPayload } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { Box } from "../atoms/Box";
@@ -305,7 +304,7 @@ export function CalendarGrid({
           <Button
             variant="ghost"
             size="sm"
-            icon={ChevronLeft}
+            icon="chevron-left"
             onClick={stepPrev}
             aria-disabled={!canPrev || undefined}
             aria-label="Previous days"
@@ -318,7 +317,7 @@ export function CalendarGrid({
           <Button
             variant="ghost"
             size="sm"
-            iconRight={ChevronRight}
+            iconRight="chevron-right"
             onClick={stepNext}
             aria-disabled={!canNext || undefined}
             aria-label="Next days"

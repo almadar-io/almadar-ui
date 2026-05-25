@@ -7,7 +7,6 @@
  */
 
 import React, { useCallback, useState } from "react";
-import { ChevronRight, ChevronDown, MessageSquare, Flag } from "lucide-react";
 import type { EventEmit } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
@@ -116,7 +115,7 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
                         onClick={handleToggle}
                         aria-label={isCollapsed ? "Expand replies" : "Collapse replies"}
                         aria-expanded={!isCollapsed}
-                        leftIcon={isCollapsed ? ChevronRight : ChevronDown}
+                        leftIcon={isCollapsed ? "chevron-right" : "chevron-down"}
                         className={cn(
                             "w-6 h-6 p-0 min-w-0",
                             "rounded-sm text-muted-foreground",
@@ -166,7 +165,7 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
                         <Button
                             variant="ghost"
                             size="sm"
-                            leftIcon={MessageSquare}
+                            leftIcon="message-square"
                             onClick={handleReply}
                             aria-label={`Reply to ${node.authorName}`}
                         >
@@ -175,7 +174,7 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
                         <Button
                             variant="ghost"
                             size="sm"
-                            leftIcon={Flag}
+                            leftIcon="flag"
                             onClick={handleFlag}
                             aria-label={`Flag reply by ${node.authorName}`}
                         >
@@ -190,7 +189,7 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
                             variant="ghost"
                             size="sm"
                             onClick={handleContinue}
-                            rightIcon={ChevronRight}
+                            rightIcon="chevron-right"
                             className={cn(
                                 "self-start gap-1 px-0 h-auto",
                                 "text-sm text-primary hover:underline hover:bg-transparent",

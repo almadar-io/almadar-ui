@@ -13,7 +13,6 @@ import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
 import { Card, Typography, Button, Badge, Icon, Box, Select } from "../atoms";
 import { VStack, HStack } from "../atoms/Stack";
-import { Columns, AlignLeft, RotateCcw, GitCommit } from "lucide-react";
 
 export interface DiffRevision {
     id: string;
@@ -234,7 +233,7 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
                     className="px-4 py-2 border-b border-border bg-muted/30 flex-wrap"
                 >
                     <HStack gap="sm" align="center" className="flex-wrap">
-                        <Icon icon={GitCommit} size="sm" className="text-muted-foreground" />
+                        <Icon name="git-commit" size="sm" className="text-muted-foreground" />
                         <Typography variant="small" weight="medium" className="whitespace-nowrap">
                             Compare
                         </Typography>
@@ -266,7 +265,7 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
                         <Button
                             variant="ghost"
                             size="sm"
-                            icon={activeView === "side-by-side" ? AlignLeft : Columns}
+                            icon={activeView === "side-by-side" ? "align-left" : "columns"}
                             onClick={handleViewToggle}
                             aria-label={
                                 activeView === "side-by-side"
@@ -278,7 +277,7 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                icon={RotateCcw}
+                                icon="rotate-ccw"
                                 onClick={handleRevert}
                             >
                                 Revert

@@ -9,7 +9,6 @@
  */
 import React from "react";
 import type { EventEmit } from "@almadar/core";
-import { Check } from "lucide-react";
 import { Typography } from "../atoms/Typography";
 import { Box } from "../atoms/Box";
 import { Icon } from "../atoms/Icon";
@@ -105,7 +104,7 @@ export const WizardProgress: React.FC<WizardProgressProps> = ({
                     "bg-card text-foreground",
                 )}
               >
-                {isCompleted ? <Icon icon={Check} size="sm" /> : index + 1}
+                {isCompleted ? <Icon name="check" size="sm" /> : index + 1}
               </button>
 
               {/* Step title (on desktop, not in compact mode) */}

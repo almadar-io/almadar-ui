@@ -8,7 +8,6 @@
 
 import React, { useEffect } from "react";
 import type { EventEmit } from "@almadar/core";
-import { X, CheckCircle, AlertCircle, AlertTriangle, Info } from "lucide-react";
 import { Box } from "../atoms/Box";
 import { Icon } from "../atoms/Icon";
 import { Typography } from "../atoms/Typography";
@@ -57,11 +56,11 @@ const variantClasses: Record<ToastVariant, string> = {
     "bg-card border-[length:var(--border-width)] border-warning",
 };
 
-const iconMap: Record<ToastVariant, typeof Info> = {
-  success: CheckCircle,
-  error: AlertCircle,
-  info: Info,
-  warning: AlertTriangle,
+const iconMap: Record<ToastVariant, string> = {
+  success: "check-circle",
+  error: "alert-circle",
+  info: "info",
+  warning: "alert-triangle",
 };
 
 const iconColors: Record<ToastVariant, string> = {
@@ -124,7 +123,7 @@ export const Toast: React.FC<ToastProps> = ({
       <Box className="flex items-start gap-3">
         <Box className="flex-shrink-0 mt-0.5">
           <Icon
-            icon={iconMap[variant]}
+            name={iconMap[variant]}
             size="md"
             className={iconColors[variant]}
           />
@@ -159,7 +158,7 @@ export const Toast: React.FC<ToastProps> = ({
             <Button
               variant="ghost"
               size="sm"
-              icon={X}
+              icon="x"
               onClick={handleDismiss}
               aria-label="Dismiss toast"
               className="flex-shrink-0"

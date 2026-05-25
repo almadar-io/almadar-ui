@@ -8,7 +8,6 @@
 
 import React from "react";
 import type { EventEmit } from "@almadar/core";
-import { X } from "lucide-react";
 import { Aside } from "../atoms/Aside";
 import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
@@ -121,7 +120,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           <Button
             variant="ghost"
             size="sm"
-            icon={X}
+            icon="x"
             onClick={handleClose}
             aria-label="Close panel"
           >

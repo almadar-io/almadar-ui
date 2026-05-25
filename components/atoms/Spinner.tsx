@@ -1,6 +1,6 @@
 import React from "react";
 import { cn } from "../../lib/cn";
-import { Loader2 } from "lucide-react";
+import { Icon } from "./Icon";
 
 export type SpinnerSize = "xs" | "sm" | "md" | "lg";
 
@@ -23,7 +23,7 @@ export const Spinner = React.forwardRef<HTMLDivElement, SpinnerProps>(
         className={cn("text-foreground", className)}
         {...props}
       >
-        <Loader2 className={cn("animate-spin", sizeStyles[size])} />
+        <Icon name="loader" className={cn("animate-spin", sizeStyles[size])} />
       </div>
     );
   },

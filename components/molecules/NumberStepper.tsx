@@ -2,8 +2,8 @@
 
 import React, { useCallback, useEffect, useRef } from "react";
 import type { EventKey, EventPayload } from "@almadar/core";
-import { Minus, Plus } from "lucide-react";
 import { cn } from "../../lib/cn";
+import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../hooks/useEventBus";
 
 function useSafeEventBus() {
@@ -170,7 +170,7 @@ export const NumberStepper: React.FC<NumberStepperProps> = ({
         )}
         aria-label="Decrease"
       >
-        <Minus className={styles.icon} />
+        <Icon name="minus" className={styles.icon} />
       </button>
 
       {/* Value display */}
@@ -211,7 +211,7 @@ export const NumberStepper: React.FC<NumberStepperProps> = ({
         )}
         aria-label="Increase"
       >
-        <Plus className={styles.icon} />
+        <Icon name="plus" className={styles.icon} />
       </button>
     </div>
   );

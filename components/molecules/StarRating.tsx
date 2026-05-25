@@ -2,8 +2,8 @@
 
 import React, { useState, useCallback } from "react";
 import type { EventKey, EventPayload } from "@almadar/core";
-import { Star } from "lucide-react";
 import { cn } from "../../lib/cn";
+import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../hooks/useEventBus";
 
 function useSafeEventBus() {
@@ -134,7 +134,8 @@ export const StarRating: React.FC<StarRatingProps> = ({
             }}
           >
             {/* Background star (empty) */}
-            <Star
+            <Icon
+              name="star"
               className={cn(
                 styles.star,
                 "text-muted",
@@ -145,7 +146,8 @@ export const StarRating: React.FC<StarRatingProps> = ({
 
             {/* Filled star overlay */}
             {(isFull || isHalf) && (
-              <Star
+              <Icon
+                name="star"
                 className={cn(
                   styles.star,
                   "absolute inset-0",

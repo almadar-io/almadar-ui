@@ -18,7 +18,6 @@
 
 import React, { useEffect, useRef } from "react";
 import type { EventKey } from "@almadar/core";
-import { X } from "lucide-react";
 import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
@@ -210,7 +209,7 @@ export const Drawer: React.FC<DrawerProps> = ({
               <Button
                 variant="ghost"
                 size="sm"
-                icon={X}
+                icon="x"
                 onClick={handleClose}
                 aria-label="Close drawer"
                 className={cn(!title && "ml-auto")}

@@ -2,9 +2,9 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { EventEmit, EventPayload } from "@almadar/core";
-import { Camera, RefreshCw, Pause, Play } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { Box, Typography, Button } from "../atoms";
+import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../hooks/useEventBus";
 
 /**
@@ -192,7 +192,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({
           padding="lg"
           className="inset-0 flex-col items-center justify-center gap-2 bg-black bg-opacity-80 text-center"
         >
-          <Camera className="h-8 w-8 text-white" aria-hidden="true" />
+          <Icon name="camera" className="h-8 w-8 text-white" aria-hidden="true" />
           <Typography variant="body2" className="text-white">Camera unavailable</Typography>
           <Typography variant="caption" className="text-white opacity-70">{cameraError.message}</Typography>
         </Box>
@@ -223,7 +223,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({
             )}
             aria-label={isPaused ? "Resume scanning" : "Pause scanning"}
           >
-            {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+            {isPaused ? <Icon name="play" className="h-4 w-4" /> : <Icon name="pause" className="h-4 w-4" />}
           </Button>
           <Button
             type="button"
@@ -234,7 +234,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({
             )}
             aria-label={`Switch to ${currentFacing === 'environment' ? 'front' : 'rear'} camera`}
           >
-            <RefreshCw className="h-4 w-4" />
+            <Icon name="refresh-cw" className="h-4 w-4" />
           </Button>
           <Button
             type="button"

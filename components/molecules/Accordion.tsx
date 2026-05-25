@@ -8,7 +8,6 @@
 
 import React, { useState } from "react";
 import type { EventEmit } from "@almadar/core";
-import { ChevronDown } from "lucide-react";
 
 import { Icon } from "../atoms/Icon";
 import { Typography } from "../atoms/Typography";
@@ -204,7 +203,7 @@ export const Accordion: React.FC<AccordionProps> = ({
                   )}
                 </div>
                 <Icon
-                  icon={ChevronDown}
+                  name="chevron-down"
                   size="sm"
                   className={cn(
                     "transition-transform duration-fast",

@@ -8,7 +8,6 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import type { LucideIcon } from "lucide-react";
-import { ChevronRight } from "lucide-react";
 import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
 import { Icon } from "../atoms/Icon";
@@ -223,7 +222,7 @@ export const Menu: React.FC<MenuProps> = ({
             </Badge>
           )}
           {hasSubMenu && (
-            <Icon icon={ChevronRight} size="sm" className="flex-shrink-0" />
+            <Icon name="chevron-right" size="sm" className="flex-shrink-0" />
           )}
         </Box>
       </Box>

@@ -10,7 +10,7 @@
  */
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
+import { HelpCircle } from 'lucide-react';
 import { Card } from './Card';
 import { VStack, HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
@@ -65,7 +65,7 @@ export const QuizBlock: React.FC<QuizBlockProps> = ({
             <Typography variant="caption">
               {revealed ? t('quiz.hideAnswer') : t('quiz.showAnswer')}
             </Typography>
-            {revealed ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            {revealed ? <Icon name="chevron-up" className="w-3.5 h-3.5" /> : <Icon name="chevron-down" className="w-3.5 h-3.5" />}
           </HStack>
         </Button>
       </VStack>

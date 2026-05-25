@@ -5,7 +5,7 @@ import type { EventEmit, EventPayloadValue } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
 import { Typography, Badge, Box } from "../atoms";
-import { Users, Coffee, AlertCircle } from "lucide-react";
+import { Icon } from "../atoms/Icon";
 
 export type CanvasItemStatus = 'empty' | 'seated' | 'ordered' | 'awaiting-bill' | 'cleaning';
 export type CanvasItemShape = 'round' | 'rectangle' | 'square';
@@ -79,11 +79,11 @@ function getShapeClasses(shape: CanvasItemShape): string {
 function getStatusIcon(status: CanvasItemStatus): React.ReactNode {
     switch (status) {
         case 'seated':
-            return <Users className="w-4 h-4" />;
+            return <Icon name="users" className="w-4 h-4" />;
         case 'ordered':
-            return <Coffee className="w-4 h-4" />;
+            return <Icon name="coffee" className="w-4 h-4" />;
         case 'awaiting-bill':
-            return <AlertCircle className="w-4 h-4" />;
+            return <Icon name="alert-circle" className="w-4 h-4" />;
         default:
             return null;
     }

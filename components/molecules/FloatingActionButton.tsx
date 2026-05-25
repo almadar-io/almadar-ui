@@ -13,8 +13,6 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import type { LucideIcon } from "lucide-react";
-import * as LucideIcons from "lucide-react";
-import { Plus, X } from "lucide-react";
 import type { EventKey, EventPayload } from "@almadar/core";
 import { Button } from "../atoms/Button";
 import { Box } from "../atoms/Box";
@@ -114,28 +112,6 @@ export interface FloatingActionButtonProps {
   className?: string;
 }
 
-// Resolve icon name to LucideIcon component
-function resolveIcon(name: string): LucideIcon {
-  // Convert kebab-case or snake_case to PascalCase
-  const pascalName = name
-    .split(/[-_]/)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
-    .join("");
-
-  // Try direct lookup - use unknown intermediate for safe casting
-  const icons = LucideIcons as unknown as Record<
-    string,
-    LucideIcon | undefined
-  >;
-  const icon = icons[pascalName];
-  if (icon) {
-    return icon;
-  }
-
-  // Fallback to Plus icon
-  return Plus;
-}
-
 export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   action,
   actionPayload,
@@ -152,9 +128,9 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   // Build the single-action descriptor from the simplified props. Click
   // handler emits `UI:{action}` first (when action is set), then runs the
   // direct onClick — same order Button uses.
-  const resolvedAction = icon
+  const resolvedAction: { icon: string; onClick: () => void; label?: string; variant?: FloatingActionButtonProps["variant"] } | undefined = icon
     ? {
-        icon: resolveIcon(icon),
+        icon,
         onClick: () => {
           if (action) eventBus.emit(`UI:${action}`, actionPayload ?? {});
           onClick?.();
@@ -283,7 +259,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
         <Button
           variant={isExpanded ? "secondary" : "primary"}
           size="lg"
-          icon={isExpanded ? X : Plus}
+          icon={isExpanded ? "x" : "plus"}
           onClick={handleMainClick}
           className="rounded-full shadow-lg transition-all duration-normal"
           aria-label={isExpanded ? "Close actions" : "Open actions"}

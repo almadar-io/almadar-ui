@@ -1,7 +1,7 @@
 import React from "react";
 import type { EventKey } from "@almadar/core";
 import { cn } from "../../lib/cn";
-import { ChevronDown } from "lucide-react";
+import { Icon } from "./Icon";
 
 export interface SelectOption {
   value: string;
@@ -60,7 +60,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           ))}
         </select>
         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-          <ChevronDown className="h-icon-default w-icon-default text-foreground" />
+          <Icon name="chevron-down" className="h-icon-default w-icon-default text-foreground" />
         </div>
       </div>
     );

@@ -20,7 +20,7 @@ import { Input } from "../atoms/Input";
 import { Select } from "../atoms/Select";
 import { Badge } from "../atoms/Badge";
 import { HStack } from "../atoms/Stack";
-import { X, Filter } from "lucide-react";
+import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../hooks/useEventBus";
 import { useQuerySingleton } from "../../hooks/useQuerySingleton";
 
@@ -173,7 +173,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
     return (
       <HStack gap="md" align="center" className={cn("flex-wrap", className)}>
         {showIcon && (
-          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Icon name="filter" className="h-4 w-4 text-muted-foreground" />
         )}
         {filters.map((filter) => (
           <HStack key={filter.field} gap="xs" align="center">
@@ -222,7 +222,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
             variant="ghost"
             size="sm"
             onClick={handleClearAll}
-            leftIcon={<X className="h-3.5 w-3.5" />}
+            leftIcon={<Icon name="x" className="h-3.5 w-3.5" />}
           >
             Clear
           </Button>
@@ -237,7 +237,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
       <div className={cn("flex flex-col gap-4", className)}>
         {showIcon && (
           <div className="flex items-center gap-2 text-muted-foreground">
-            <Filter className="h-4 w-4" />
+            <Icon name="filter" className="h-4 w-4" />
             <span className="text-sm font-[var(--font-weight-bold)] uppercase tracking-wide">
               Filters
             </span>
@@ -322,7 +322,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
             variant="ghost"
             size="sm"
             onClick={handleClearAll}
-            leftIcon={<X className="h-3.5 w-3.5" />}
+            leftIcon={<Icon name="x" className="h-3.5 w-3.5" />}
             className="self-start"
           >
             Clear all
@@ -337,7 +337,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
     return (
       <HStack gap="sm" align="center" className={cn("flex-wrap", className)}>
         {showIcon && (
-          <Filter className="h-4 w-4 text-muted-foreground" />
+          <Icon name="filter" className="h-4 w-4 text-muted-foreground" />
         )}
         {filters.map((filter) => (
           <div key={filter.field} className="min-w-[120px]">
@@ -423,7 +423,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
                   onClick={() => handleFilterSelect(field, null)}
                 >
                   {filterDef?.label}: {value}
-                  <X className="ml-1 h-3 w-3" />
+                  <Icon name="x" className="ml-1 h-3 w-3" />
                 </Badge>
               );
             })}
@@ -453,7 +453,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
             align="center"
             className="text-muted-foreground"
           >
-            <Filter className="h-4 w-4" />
+            <Icon name="filter" className="h-4 w-4" />
             <span className="text-sm font-[var(--font-weight-bold)] uppercase tracking-wide">
               Filters
             </span>
@@ -552,7 +552,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
               variant="ghost"
               size="sm"
               onClick={handleClearAll}
-              leftIcon={<X className="h-3.5 w-3.5" />}
+              leftIcon={<Icon name="x" className="h-3.5 w-3.5" />}
             >
               Clear all
             </Button>

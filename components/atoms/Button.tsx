@@ -4,7 +4,7 @@ import type { EventKey, EventPayload } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { Loader2, type LucideIcon } from "lucide-react";
 import { useEventBus } from "../../hooks/useEventBus";
-import { resolveIcon } from "./Icon";
+import { Icon } from "./Icon";
 
 export type ButtonVariant =
   | "primary"
@@ -111,8 +111,8 @@ function resolveIconProp(
 ): React.ReactNode | null {
   if (!value) return null;
   if (typeof value === 'string') {
-    const Resolved = resolveIcon(value);
-    return Resolved ? <Resolved className={sizeClass} /> : null;
+    // String name routes through <Icon> so it picks up the active icon family.
+    return <Icon name={value} className={sizeClass} />;
   }
   if (typeof value === 'function') {
     const IconComp = value as LucideIcon;

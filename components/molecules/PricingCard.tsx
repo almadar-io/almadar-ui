@@ -7,7 +7,6 @@
  */
 
 import React from 'react';
-import { Check } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { Card } from '../atoms/Card';
 import { VStack, HStack } from '../atoms/Stack';
@@ -83,7 +82,7 @@ export const PricingCard: React.FC<PricingCardProps> = ({
           {features.map((feature) => (
             <HStack key={feature} gap="sm" align="center">
               <Icon
-                icon={Check}
+                name="check"
                 size="sm"
                 className="flex-shrink-0 text-success"
               />

@@ -1,7 +1,7 @@
 import React from "react";
 import { X } from "lucide-react";
 import { cn } from "../../lib/cn";
-import { resolveIcon } from "./Icon";
+import { Icon } from "./Icon";
 
 export type BadgeVariant =
   | "default"
@@ -80,7 +80,7 @@ export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
   ({ className, variant = "default", size = "sm", amount, label, icon, children, onRemove, removeLabel, ...props }, ref) => {
     const iconSizes: Record<BadgeSize, string> = { sm: "w-3 h-3", md: "w-3.5 h-3.5", lg: "w-4 h-4" };
     const resolvedIcon = typeof icon === "string"
-      ? (() => { const I = resolveIcon(icon); return I ? <I className={iconSizes[size]} /> : null; })()
+      ? <Icon name={icon} className={iconSizes[size]} />
       : icon;
     return (
       <span

@@ -2,7 +2,6 @@
 
 import React, { useCallback, useRef, useState } from "react";
 import type { EventKey, EventPayload } from "@almadar/core";
-import { Upload, FileWarning } from "lucide-react";
 import { cn } from "../../lib/cn";
 import { Icon } from "../atoms/Icon";
 import { Typography } from "../atoms/Typography";
@@ -202,9 +201,9 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
       />
 
       {error ? (
-        <Icon icon={FileWarning} size="lg" className="text-error mb-2" />
+        <Icon name="file-warning" size="lg" className="text-error mb-2" />
       ) : (
-        <Icon icon={Upload} size="lg" className="text-muted-foreground mb-2" />
+        <Icon name="upload" size="lg" className="text-muted-foreground mb-2" />
       )}
 
       <Typography variant="body1" className="text-center font-medium mb-1">

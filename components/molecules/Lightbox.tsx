@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from "react";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Icon } from "../atoms/Icon";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
 
@@ -159,7 +159,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
         )}
         aria-label="Close"
       >
-        <X className="w-6 h-6" />
+        <Icon name="x" className="w-6 h-6" />
       </button>
 
       {/* Previous button */}
@@ -179,7 +179,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
           )}
           aria-label="Previous image"
         >
-          <ChevronLeft className="w-8 h-8" />
+          <Icon name="chevron-left" className="w-8 h-8" />
         </button>
       )}
 
@@ -217,7 +217,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
           )}
           aria-label="Next image"
         >
-          <ChevronRight className="w-8 h-8" />
+          <Icon name="chevron-right" className="w-8 h-8" />
         </button>
       )}
 

@@ -19,10 +19,7 @@ import {
   List,
   ListOrdered,
   Minus,
-  MoreHorizontal,
-  Plus,
   Quote,
-  Trash,
   Type as TypeIcon,
 } from "lucide-react";
 import type { EntityRow, EventEmit, EventPayloadValue } from '@almadar/core';
@@ -33,6 +30,7 @@ import { Button } from "../atoms/Button";
 import { Box } from "../atoms/Box";
 import { Divider } from "../atoms/Divider";
 import { Input } from "../atoms/Input";
+import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../hooks/useEventBus";
 
 export type BlockType =
@@ -299,7 +297,7 @@ function BlockMenu({ block, readOnly, onDelete, onDuplicate, onChangeType }: Blo
         )}
         onClick={() => setOpen((v) => !v)}
       >
-        <MoreHorizontal size={14} />
+        <Icon name="more-horizontal" className="w-3.5 h-3.5" />
       </Button>
       {open && (
         <Box
@@ -323,7 +321,7 @@ function BlockMenu({ block, readOnly, onDelete, onDuplicate, onChangeType }: Blo
               setOpen(false);
             }}
           >
-            <Plus size={14} /> Duplicate
+            <Icon name="plus" className="w-3.5 h-3.5" /> Duplicate
           </Button>
           <Button
             type="button"
@@ -335,7 +333,7 @@ function BlockMenu({ block, readOnly, onDelete, onDuplicate, onChangeType }: Blo
               setOpen(false);
             }}
           >
-            <Trash size={14} /> Delete
+            <Icon name="trash" className="w-3.5 h-3.5" /> Delete
           </Button>
           {CHANGEABLE_TYPES.includes(block.type) && (
             <>
@@ -603,7 +601,7 @@ function BlockRow({
                   "text-sm text-muted-foreground",
                 )}
               >
-                <ImageIcon className="mr-2" size={16} /> No image URL set
+                <Icon name="image" className="mr-2 w-4 h-4" /> No image URL set
               </Box>
             )}
             {!readOnly && (
@@ -673,7 +671,7 @@ function BlockRow({
                     )}
                     onClick={() => removeListItem(child.id)}
                   >
-                    <Trash size={12} />
+                    <Icon name="trash" className="w-3 h-3" />
                   </Button>
                 )}
               </Box>
@@ -689,7 +687,7 @@ function BlockRow({
                   )}
                   onClick={addListItem}
                 >
-                  <Plus size={12} /> Add item
+                  <Icon name="plus" className="w-3 h-3" /> Add item
                 </Button>
               </Box>
             )}
@@ -735,7 +733,7 @@ function BlockRow({
             )}
             onClick={() => onInsertAfter("paragraph")}
           >
-            <Plus size={14} />
+            <Icon name="plus" className="w-3.5 h-3.5" />
           </Button>
           <BlockMenu
             block={block}

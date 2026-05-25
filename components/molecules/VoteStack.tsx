@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useCallback } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
 import type { EventEmit } from "@almadar/core";
 import { cn } from "../../lib/cn";
+import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../hooks/useEventBus";
 
 export type VoteStackSize = "sm" | "md" | "lg";
@@ -120,7 +120,7 @@ export const VoteStack: React.FC<VoteStackProps> = ({
           styles.button,
         )}
       >
-        <ChevronUp className={styles.icon} />
+        <Icon name="chevron-up" className={styles.icon} />
       </button>
 
       <span
@@ -157,7 +157,7 @@ export const VoteStack: React.FC<VoteStackProps> = ({
           styles.button,
         )}
       >
-        <ChevronDown className={styles.icon} />
+        <Icon name="chevron-down" className={styles.icon} />
       </button>
     </div>
   );

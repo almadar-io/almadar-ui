@@ -2,15 +2,7 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "../../lib/cn";
-import {
-  Menu,
-  X,
-  Bell,
-  Search,
-  ChevronDown,
-  LogOut,
-  LucideIcon,
-} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Button, Input, Badge, ThemeToggle, Avatar } from "../atoms";
 import { Box } from "../atoms/Box";
 import { HStack, VStack } from "../atoms/Stack";
@@ -262,7 +254,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               className="@lg/dashboard:hidden p-2 rounded-md hover:bg-muted dark:hover:bg-muted text-muted-foreground dark:text-muted-foreground"
               onClick={() => setSidebarOpen(false)}
             >
-              <X className="h-5 w-5" />
+              <AlmadarIcon name="x" className="h-5 w-5" />
             </Button>
           </HStack>
 
@@ -311,7 +303,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   onClick={() => setSidebarOpen(true)}
                   aria-label="Open sidebar"
                 >
-                  <Menu className="h-5 w-5" />
+                  <AlmadarIcon name="menu" className="h-5 w-5" />
                 </Button>
               )}
 
@@ -357,7 +349,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               {searchEnabled && (
                 <Box className="hidden @sm/dashboard:block flex-1 min-w-0 @xl/dashboard:max-w-md">
                   <Box className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-muted-foreground" />
+                    <AlmadarIcon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground dark:text-muted-foreground" />
                     <Input
                       type="search"
                       placeholder={t('common.search')}
@@ -412,7 +404,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     onClick={handleNotificationClick}
                     aria-label={t('common.notifications')}
                   >
-                    <Bell className="h-5 w-5 text-muted-foreground dark:text-muted-foreground" />
+                    <AlmadarIcon name="bell" className="h-5 w-5 text-muted-foreground dark:text-muted-foreground" />
                     {unreadCount > 0 && (
                       <Box
                         as="span"
@@ -449,7 +441,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       >
                         {user.name}
                       </Typography>
-                      <ChevronDown className="hidden @sm/dashboard:block h-4 w-4 text-muted-foreground dark:text-muted-foreground" />
+                      <AlmadarIcon name="chevron-down" className="hidden @sm/dashboard:block h-4 w-4 text-muted-foreground dark:text-muted-foreground" />
                     </Button>
 
                     {userMenuOpen && (
@@ -483,7 +475,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                             }}
                             className="w-full flex items-center gap-2 px-4 py-2 text-sm text-error dark:text-error hover:bg-error/10 dark:hover:bg-error/20"
                           >
-                            <LogOut className="h-4 w-4" />
+                            <AlmadarIcon name="log-out" className="h-4 w-4" />
                             {t('auth.signOut')}
                           </Button>
                         </Box>

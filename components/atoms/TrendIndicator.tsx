@@ -1,5 +1,5 @@
 import React from "react";
-import { TrendingUp, TrendingDown, ArrowRight } from "lucide-react";
+import { Icon } from "./Icon";
 import { cn } from "../../lib/cn";
 
 export type TrendDirection = "up" | "down" | "flat";
@@ -39,10 +39,10 @@ function resolveColor(dir: TrendDirection, invert: boolean): string {
   return isGood ? "text-success" : "text-error";
 }
 
-const iconMap = {
-  up: TrendingUp,
-  down: TrendingDown,
-  flat: ArrowRight,
+const iconNameMap: Record<TrendDirection, string> = {
+  up: "trending-up",
+  down: "trending-down",
+  flat: "arrow-right",
 };
 
 export const TrendIndicator = React.forwardRef<HTMLSpanElement, TrendIndicatorProps>(
@@ -61,7 +61,7 @@ export const TrendIndicator = React.forwardRef<HTMLSpanElement, TrendIndicatorPr
   ) => {
     const dir = resolveDirection(value, direction);
     const colorClass = resolveColor(dir, invert);
-    const IconComponent = iconMap[dir];
+    const iconName = iconNameMap[dir];
     const styles = sizeStyles[size];
 
     const formattedValue = value !== undefined
@@ -83,7 +83,7 @@ export const TrendIndicator = React.forwardRef<HTMLSpanElement, TrendIndicatorPr
         aria-label={ariaLabel}
         {...props}
       >
-        <IconComponent className={styles.icon} />
+        <Icon name={iconName} className={styles.icon} />
         {showValue && formattedValue && (
           <span>{formattedValue}</span>
         )}
