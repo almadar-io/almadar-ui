@@ -120,7 +120,7 @@ export const FilterPill = React.forwardRef<HTMLSpanElement, FilterPillProps>(
       <span
         ref={ref}
         className={cn(
-          "inline-flex items-center gap-1 font-bold rounded-full",
+          "inline-flex items-center gap-1 font-bold rounded-pill",
           variantStyles[variant],
           sizeStyles[size],
           (onClick || clickEvent) && "cursor-pointer",

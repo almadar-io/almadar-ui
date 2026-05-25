@@ -285,7 +285,7 @@ export const Carousel = <T = Record<string, unknown>,>({
                 <Box
                   key={index}
                   className={cn(
-                    'rounded-full cursor-pointer transition-all duration-200',
+                    'rounded-full cursor-pointer transition-all duration-fast',
                   )}
                   style={{
                     width: isActive ? 10 : 8,

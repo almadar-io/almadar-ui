@@ -43,7 +43,7 @@ export const InstallBox: React.FC<InstallBoxProps> = ({
         </Typography>
       )}
       <Box
-        className="bg-surface rounded-md border-[length:var(--border-width)] border-border"
+        className="bg-surface rounded-container border-[length:var(--border-width)] border-border"
         padding="md"
       >
         <Box className="flex items-center gap-3">

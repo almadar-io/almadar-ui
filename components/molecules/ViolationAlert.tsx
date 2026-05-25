@@ -110,7 +110,7 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
     return (
       <Box
         className={cn(
-          "px-3 py-2 rounded-md border",
+          "px-3 py-2 rounded-container border",
           bgColor,
           className,
         )}

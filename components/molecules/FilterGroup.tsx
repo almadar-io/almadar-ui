@@ -440,7 +440,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
   return (
     <div
       className={cn(
-        "p-4 rounded-md",
+        "p-4 rounded-container",
         "bg-card",
         "border-[length:var(--border-width)] border-border",
         className,

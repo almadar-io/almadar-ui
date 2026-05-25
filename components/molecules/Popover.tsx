@@ -210,7 +210,7 @@ export const Popover: React.FC<PopoverProps> = ({
       ref={popoverRef}
       className={cn(
         "fixed z-50 p-4",
-        "bg-card border-2 border-border shadow-lg",
+        "bg-card border-2 border-border shadow-elevation-popover",
         positionClasses[position],
         className,
       )}

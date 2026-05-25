@@ -66,7 +66,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
         "text-foreground",
         "hover:bg-muted border-[length:var(--border-width)] border-transparent hover:border-border",
         "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
-        "transition-colors duration-200",
+        "transition-colors duration-fast",
         sizeClasses[size],
         className,
       )}

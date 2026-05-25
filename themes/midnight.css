@@ -99,6 +99,111 @@
     --focus-ring-offset: 2px;
     --focus-ring-color: #6366f1;
 
+    /* Layer 1 — backfill (preserves current visual output, see themes/_contract.md) */
+    /* Density axis — spacing scale */
+    --space-0: 0px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 28px;
+    --space-8: 32px;
+    --space-9: 36px;
+    --space-10: 40px;
+    --space-11: 44px;
+    --space-12: 48px;
+    /* Density axis — per-element heights */
+    --button-height-sm: 28px;
+    --button-height-md: 36px;
+    --button-height-lg: 44px;
+    --input-height-sm: 28px;
+    --input-height-md: 36px;
+    --input-height-lg: 44px;
+    --row-height-compact: 32px;
+    --row-height-normal: 40px;
+    --row-height-spacious: 48px;
+    /* Density axis — per-element padding */
+    --card-padding-sm: 12px;
+    --card-padding-md: 16px;
+    --card-padding-lg: 24px;
+    --dialog-padding: 24px;
+    --section-gap: 32px;
+    /* Type axis — family triplet (aliases existing --font-family for backward compat) */
+    --font-family-display: var(--font-family);
+    --font-family-body: var(--font-family);
+    --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    /* Type axis — size scale */
+    --text-xs: 12px;
+    --leading-xs: 16px;
+    --text-sm: 14px;
+    --leading-sm: 20px;
+    --text-base: 16px;
+    --leading-base: 24px;
+    --text-lg: 18px;
+    --leading-lg: 28px;
+    --text-xl: 20px;
+    --leading-xl: 28px;
+    --text-2xl: 24px;
+    --leading-2xl: 32px;
+    --text-3xl: 30px;
+    --leading-3xl: 36px;
+    --text-4xl: 36px;
+    --leading-4xl: 40px;
+    --text-display-1: 48px;
+    --leading-display-1: 52px;
+    --text-display-2: 60px;
+    --leading-display-2: 64px;
+    /* Type axis — intent mapping */
+    --intent-heading-major-size: var(--text-2xl);
+    --intent-heading-major-weight: var(--font-weight-bold);
+    --intent-heading-major-leading: var(--leading-2xl);
+    --intent-heading-minor-size: var(--text-lg);
+    --intent-heading-minor-weight: var(--font-weight-bold);
+    --intent-heading-minor-leading: var(--leading-lg);
+    --intent-body-emphasis-size: var(--text-base);
+    --intent-body-emphasis-weight: var(--font-weight-medium);
+    --intent-body-emphasis-leading: var(--leading-base);
+    --intent-body-default-size: var(--text-sm);
+    --intent-body-default-weight: var(--font-weight-normal);
+    --intent-body-default-leading: var(--leading-sm);
+    --intent-body-quiet-size: var(--text-sm);
+    --intent-body-quiet-weight: var(--font-weight-normal);
+    --intent-body-quiet-leading: var(--leading-sm);
+    --intent-caption-size: var(--text-xs);
+    --intent-caption-weight: var(--font-weight-normal);
+    --intent-caption-leading: var(--leading-xs);
+    --intent-numeric-size: var(--text-sm);
+    --intent-numeric-weight: var(--font-weight-medium);
+    --intent-numeric-leading: var(--leading-sm);
+    /* Motion axis — duration palette */
+    --duration-instant: 0ms;
+    --duration-fast: var(--transition-fast);
+    --duration-normal: var(--transition-normal);
+    --duration-slow: var(--transition-slow);
+    --duration-dramatic: 600ms;
+    /* Motion axis — easing palette */
+    --easing-linear: linear;
+    --easing-standard: var(--transition-timing);
+    --easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+    --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    /* Iconography axis */
+    --icon-family: lucide;
+    --icon-default-size: 16px;
+    /* Elevation axis — per-layer mapping */
+    --elevation-card: var(--shadow-sm);
+    --elevation-popover: var(--shadow-main);
+    --elevation-dialog: var(--shadow-lg);
+    --elevation-toast: var(--shadow-main);
+    /* Geometry axis — radius rhythm with intent */
+    --radius-container: var(--radius-md);
+    --radius-interactive: var(--radius-md);
+    --radius-pill: var(--radius-full);
+    /* Geometry axis — border-width rhythm */
+    --border-hairline: 1px;
+    --border-standard: var(--border-width);
+    --border-heavy: var(--border-width-thick);
 }
 
 /* ==========================================================================
@@ -193,4 +298,109 @@
     --focus-ring-offset: 2px;
     --focus-ring-color: #818cf8;
 
+    /* Layer 1 — backfill (preserves current visual output, see themes/_contract.md) */
+    /* Density axis — spacing scale */
+    --space-0: 0px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 28px;
+    --space-8: 32px;
+    --space-9: 36px;
+    --space-10: 40px;
+    --space-11: 44px;
+    --space-12: 48px;
+    /* Density axis — per-element heights */
+    --button-height-sm: 28px;
+    --button-height-md: 36px;
+    --button-height-lg: 44px;
+    --input-height-sm: 28px;
+    --input-height-md: 36px;
+    --input-height-lg: 44px;
+    --row-height-compact: 32px;
+    --row-height-normal: 40px;
+    --row-height-spacious: 48px;
+    /* Density axis — per-element padding */
+    --card-padding-sm: 12px;
+    --card-padding-md: 16px;
+    --card-padding-lg: 24px;
+    --dialog-padding: 24px;
+    --section-gap: 32px;
+    /* Type axis — family triplet (aliases existing --font-family for backward compat) */
+    --font-family-display: var(--font-family);
+    --font-family-body: var(--font-family);
+    --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    /* Type axis — size scale */
+    --text-xs: 12px;
+    --leading-xs: 16px;
+    --text-sm: 14px;
+    --leading-sm: 20px;
+    --text-base: 16px;
+    --leading-base: 24px;
+    --text-lg: 18px;
+    --leading-lg: 28px;
+    --text-xl: 20px;
+    --leading-xl: 28px;
+    --text-2xl: 24px;
+    --leading-2xl: 32px;
+    --text-3xl: 30px;
+    --leading-3xl: 36px;
+    --text-4xl: 36px;
+    --leading-4xl: 40px;
+    --text-display-1: 48px;
+    --leading-display-1: 52px;
+    --text-display-2: 60px;
+    --leading-display-2: 64px;
+    /* Type axis — intent mapping */
+    --intent-heading-major-size: var(--text-2xl);
+    --intent-heading-major-weight: var(--font-weight-bold);
+    --intent-heading-major-leading: var(--leading-2xl);
+    --intent-heading-minor-size: var(--text-lg);
+    --intent-heading-minor-weight: var(--font-weight-bold);
+    --intent-heading-minor-leading: var(--leading-lg);
+    --intent-body-emphasis-size: var(--text-base);
+    --intent-body-emphasis-weight: var(--font-weight-medium);
+    --intent-body-emphasis-leading: var(--leading-base);
+    --intent-body-default-size: var(--text-sm);
+    --intent-body-default-weight: var(--font-weight-normal);
+    --intent-body-default-leading: var(--leading-sm);
+    --intent-body-quiet-size: var(--text-sm);
+    --intent-body-quiet-weight: var(--font-weight-normal);
+    --intent-body-quiet-leading: var(--leading-sm);
+    --intent-caption-size: var(--text-xs);
+    --intent-caption-weight: var(--font-weight-normal);
+    --intent-caption-leading: var(--leading-xs);
+    --intent-numeric-size: var(--text-sm);
+    --intent-numeric-weight: var(--font-weight-medium);
+    --intent-numeric-leading: var(--leading-sm);
+    /* Motion axis — duration palette */
+    --duration-instant: 0ms;
+    --duration-fast: var(--transition-fast);
+    --duration-normal: var(--transition-normal);
+    --duration-slow: var(--transition-slow);
+    --duration-dramatic: 600ms;
+    /* Motion axis — easing palette */
+    --easing-linear: linear;
+    --easing-standard: var(--transition-timing);
+    --easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+    --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    /* Iconography axis */
+    --icon-family: lucide;
+    --icon-default-size: 16px;
+    /* Elevation axis — per-layer mapping */
+    --elevation-card: var(--shadow-sm);
+    --elevation-popover: var(--shadow-main);
+    --elevation-dialog: var(--shadow-lg);
+    --elevation-toast: var(--shadow-main);
+    /* Geometry axis — radius rhythm with intent */
+    --radius-container: var(--radius-md);
+    --radius-interactive: var(--radius-md);
+    --radius-pill: var(--radius-full);
+    /* Geometry axis — border-width rhythm */
+    --border-hairline: 1px;
+    --border-standard: var(--border-width);
+    --border-heavy: var(--border-width-thick);
 }

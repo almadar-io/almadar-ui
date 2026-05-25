@@ -1,0 +1,406 @@
+/**
+ * Prism Theme
+ *
+ * Compact tech aesthetic — Linear-influenced but louder. Tight 4pt rhythm,
+ * mono-heavy numerics, electric violet + lime accents, mechanical linear motion.
+ */
+
+/* ==========================================================================
+ * LIGHT MODE
+ * ========================================================================== */
+[data-theme="prism-light"] {
+    /* Shadows - Flat-ish, hairline-led */
+    --shadow-none: none;
+    --shadow-sm: 0 1px 0 rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.04);
+    --shadow-main: 0 1px 2px rgba(15, 23, 42, 0.06), 0 2px 6px rgba(15, 23, 42, 0.04);
+    --shadow-lg: 0 4px 12px rgba(15, 23, 42, 0.08), 0 2px 4px rgba(15, 23, 42, 0.04);
+    --shadow-inner: inset 0 1px 1px rgba(15, 23, 42, 0.04);
+    --shadow-hover: 0 2px 6px rgba(124, 58, 237, 0.12);
+    --shadow-active: 0 1px 2px rgba(124, 58, 237, 0.08);
+
+    /* Border radius - Mixed: containers sharp-ish, interactive softer */
+    --radius-none: 0px;
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 10px;
+    --radius-xl: 12px;
+    --radius-full: 9999px;
+
+    /* Border width - Hairline */
+    --border-width: 1px;
+    --border-width-thin: 1px;
+    --border-width-thick: 2px;
+
+    /* Colors - Electric violet primary, lime accent, clean off-white */
+    --color-primary: #7c3aed;
+    --color-primary-hover: #6d28d9;
+    --color-primary-foreground: #ffffff;
+
+    --color-secondary: #f1f5f9;
+    --color-secondary-hover: #e2e8f0;
+    --color-secondary-foreground: #0f172a;
+
+    --color-accent: #84cc16;
+    --color-accent-foreground: #1a2e05;
+
+    --color-muted: #f1f5f9;
+    --color-muted-foreground: #64748b;
+
+    --color-background: #fafafa;
+    --color-foreground: #0f172a;
+    --color-card: #ffffff;
+    --color-card-foreground: #0f172a;
+    --color-surface: #f5f5f7;
+    --color-border: #e2e8f0;
+    --color-input: #cbd5e1;
+    --color-ring: #7c3aed;
+
+    /* Semantic colors */
+    --color-error: #dc2626;
+    --color-error-foreground: #ffffff;
+    --color-success: #16a34a;
+    --color-success-foreground: #ffffff;
+    --color-warning: #d97706;
+    --color-warning-foreground: #ffffff;
+    --color-info: #2563eb;
+    --color-info-foreground: #ffffff;
+
+    /* Typography - Tech: Inter body, JetBrains Mono for numerics */
+    --font-family:
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-bold: 600;
+    --letter-spacing: -0.01em;
+    --line-height: 1.4;
+
+    /* Icon styling - Thin */
+    --icon-stroke-width: 1.5;
+    --icon-color: currentColor;
+
+    /* Transitions - Snappy, mechanical linear */
+    --transition-fast: 80ms;
+    --transition-normal: 120ms;
+    --transition-slow: 180ms;
+    --transition-timing: linear;
+
+    /* Hover/Active transforms - Subtle */
+    --hover-scale: 1.0;
+    --hover-translate-y: -1px;
+    --hover-translate-x: 0;
+    --active-scale: 0.99;
+    --active-translate-y: 0;
+
+    /* Focus ring - Electric violet */
+    --focus-ring-width: 2px;
+    --focus-ring-offset: 2px;
+    --focus-ring-color: #7c3aed;
+
+    /* Density axis - COMPACT 4pt rhythm */
+    --space-0: 0px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 28px;
+    --space-8: 32px;
+    --space-9: 36px;
+    --space-10: 40px;
+    --space-11: 44px;
+    --space-12: 48px;
+    /* Density axis - tight heights */
+    --button-height-sm: 24px;
+    --button-height-md: 28px;
+    --button-height-lg: 36px;
+    --input-height-sm: 24px;
+    --input-height-md: 28px;
+    --input-height-lg: 36px;
+    --row-height-compact: 28px;
+    --row-height-normal: 32px;
+    --row-height-spacious: 40px;
+    /* Density axis - tight padding 8/12/16 */
+    --card-padding-sm: 8px;
+    --card-padding-md: 12px;
+    --card-padding-lg: 16px;
+    --dialog-padding: 20px;
+    --section-gap: 24px;
+    /* Type axis - Inter body, JetBrains Mono numerics */
+    --font-family-display:
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-family-body:
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-family-mono:
+        "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    /* Type axis - tighter scale (body 13/18, heading-major 22/26) */
+    --text-xs: 11px;
+    --leading-xs: 14px;
+    --text-sm: 13px;
+    --leading-sm: 18px;
+    --text-base: 14px;
+    --leading-base: 20px;
+    --text-lg: 16px;
+    --leading-lg: 22px;
+    --text-xl: 18px;
+    --leading-xl: 24px;
+    --text-2xl: 22px;
+    --leading-2xl: 26px;
+    --text-3xl: 28px;
+    --leading-3xl: 32px;
+    --text-4xl: 34px;
+    --leading-4xl: 38px;
+    --text-display-1: 44px;
+    --leading-display-1: 48px;
+    --text-display-2: 56px;
+    --leading-display-2: 60px;
+    /* Type axis - intent mapping (numeric/caption forced to mono) */
+    --intent-heading-major-size: var(--text-2xl);
+    --intent-heading-major-weight: var(--font-weight-bold);
+    --intent-heading-major-leading: var(--leading-2xl);
+    --intent-heading-minor-size: var(--text-lg);
+    --intent-heading-minor-weight: var(--font-weight-bold);
+    --intent-heading-minor-leading: var(--leading-lg);
+    --intent-body-emphasis-size: var(--text-sm);
+    --intent-body-emphasis-weight: var(--font-weight-medium);
+    --intent-body-emphasis-leading: var(--leading-sm);
+    --intent-body-default-size: var(--text-sm);
+    --intent-body-default-weight: var(--font-weight-normal);
+    --intent-body-default-leading: var(--leading-sm);
+    --intent-body-quiet-size: var(--text-sm);
+    --intent-body-quiet-weight: var(--font-weight-normal);
+    --intent-body-quiet-leading: var(--leading-sm);
+    --intent-caption-size: var(--text-xs);
+    --intent-caption-weight: var(--font-weight-normal);
+    --intent-caption-leading: var(--leading-xs);
+    --intent-numeric-size: var(--text-sm);
+    --intent-numeric-weight: var(--font-weight-medium);
+    --intent-numeric-leading: var(--leading-sm);
+    /* Motion axis - snappy, mechanical linear */
+    --duration-instant: 0ms;
+    --duration-fast: 80ms;
+    --duration-normal: 120ms;
+    --duration-slow: 180ms;
+    --duration-dramatic: 240ms;
+    /* Motion axis - everything linear, mechanical */
+    --easing-linear: linear;
+    --easing-standard: linear;
+    --easing-emphasized: linear;
+    --easing-spring: linear;
+    /* Iconography axis - thin lucide */
+    --icon-family: lucide;
+    --icon-default-size: 14px;
+    /* Elevation axis - flat-ish */
+    --elevation-card: var(--shadow-sm);
+    --elevation-popover: var(--shadow-main);
+    --elevation-dialog: var(--shadow-main);
+    --elevation-toast: var(--shadow-sm);
+    /* Geometry axis - containers sharp-ish, interactive softer, pill full */
+    --radius-container: 6px;
+    --radius-interactive: 10px;
+    --radius-pill: 9999px;
+    /* Geometry axis - hairline borders */
+    --border-hairline: 1px;
+    --border-standard: 1px;
+    --border-heavy: 2px;
+}
+
+/* ==========================================================================
+ * DARK MODE
+ * ========================================================================== */
+[data-theme="prism-dark"] {
+    /* Shadows - Flat, deep shadows */
+    --shadow-none: none;
+    --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-main: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 6px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-inner: inset 0 1px 1px rgba(0, 0, 0, 0.3);
+    --shadow-hover: 0 2px 8px rgba(167, 139, 250, 0.2);
+    --shadow-active: 0 1px 2px rgba(167, 139, 250, 0.15);
+
+    /* Border radius - Mixed: containers sharp-ish, interactive softer */
+    --radius-none: 0px;
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 10px;
+    --radius-xl: 12px;
+    --radius-full: 9999px;
+
+    /* Border width - Hairline */
+    --border-width: 1px;
+    --border-width-thin: 1px;
+    --border-width-thick: 2px;
+
+    /* Colors - Brighter violet on very dark slate */
+    --color-primary: #a78bfa;
+    --color-primary-hover: #c4b5fd;
+    --color-primary-foreground: #1e1b4b;
+
+    --color-secondary: #1f1d3a;
+    --color-secondary-hover: #2a2748;
+    --color-secondary-foreground: #e2e8f0;
+
+    --color-accent: #bef264;
+    --color-accent-foreground: #1a2e05;
+
+    --color-muted: #1f1d3a;
+    --color-muted-foreground: #94a3b8;
+
+    --color-background: #0c0a1a;
+    --color-foreground: #e2e8f0;
+    --color-card: #14122a;
+    --color-card-foreground: #e2e8f0;
+    --color-surface: #1f1d3a;
+    --color-border: #2a2748;
+    --color-input: #3a3658;
+    --color-ring: #a78bfa;
+
+    /* Semantic colors - Brighter for dark */
+    --color-error: #f87171;
+    --color-error-foreground: #000000;
+    --color-success: #4ade80;
+    --color-success-foreground: #000000;
+    --color-warning: #fbbf24;
+    --color-warning-foreground: #000000;
+    --color-info: #60a5fa;
+    --color-info-foreground: #000000;
+
+    /* Typography - Tech */
+    --font-family:
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-bold: 600;
+    --letter-spacing: -0.01em;
+    --line-height: 1.4;
+
+    /* Icon styling - Thin */
+    --icon-stroke-width: 1.5;
+    --icon-color: currentColor;
+
+    /* Transitions - Snappy linear */
+    --transition-fast: 80ms;
+    --transition-normal: 120ms;
+    --transition-slow: 180ms;
+    --transition-timing: linear;
+
+    /* Hover/Active transforms - Subtle */
+    --hover-scale: 1.0;
+    --hover-translate-y: -1px;
+    --hover-translate-x: 0;
+    --active-scale: 0.99;
+    --active-translate-y: 0;
+
+    /* Focus ring - Bright violet */
+    --focus-ring-width: 2px;
+    --focus-ring-offset: 2px;
+    --focus-ring-color: #a78bfa;
+
+    /* Density axis - COMPACT 4pt rhythm */
+    --space-0: 0px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 28px;
+    --space-8: 32px;
+    --space-9: 36px;
+    --space-10: 40px;
+    --space-11: 44px;
+    --space-12: 48px;
+    /* Density axis - tight heights */
+    --button-height-sm: 24px;
+    --button-height-md: 28px;
+    --button-height-lg: 36px;
+    --input-height-sm: 24px;
+    --input-height-md: 28px;
+    --input-height-lg: 36px;
+    --row-height-compact: 28px;
+    --row-height-normal: 32px;
+    --row-height-spacious: 40px;
+    /* Density axis - tight padding 8/12/16 */
+    --card-padding-sm: 8px;
+    --card-padding-md: 12px;
+    --card-padding-lg: 16px;
+    --dialog-padding: 20px;
+    --section-gap: 24px;
+    /* Type axis - Inter body, JetBrains Mono numerics */
+    --font-family-display:
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-family-body:
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-family-mono:
+        "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    /* Type axis - tighter scale (body 13/18, heading-major 22/26) */
+    --text-xs: 11px;
+    --leading-xs: 14px;
+    --text-sm: 13px;
+    --leading-sm: 18px;
+    --text-base: 14px;
+    --leading-base: 20px;
+    --text-lg: 16px;
+    --leading-lg: 22px;
+    --text-xl: 18px;
+    --leading-xl: 24px;
+    --text-2xl: 22px;
+    --leading-2xl: 26px;
+    --text-3xl: 28px;
+    --leading-3xl: 32px;
+    --text-4xl: 34px;
+    --leading-4xl: 38px;
+    --text-display-1: 44px;
+    --leading-display-1: 48px;
+    --text-display-2: 56px;
+    --leading-display-2: 60px;
+    /* Type axis - intent mapping */
+    --intent-heading-major-size: var(--text-2xl);
+    --intent-heading-major-weight: var(--font-weight-bold);
+    --intent-heading-major-leading: var(--leading-2xl);
+    --intent-heading-minor-size: var(--text-lg);
+    --intent-heading-minor-weight: var(--font-weight-bold);
+    --intent-heading-minor-leading: var(--leading-lg);
+    --intent-body-emphasis-size: var(--text-sm);
+    --intent-body-emphasis-weight: var(--font-weight-medium);
+    --intent-body-emphasis-leading: var(--leading-sm);
+    --intent-body-default-size: var(--text-sm);
+    --intent-body-default-weight: var(--font-weight-normal);
+    --intent-body-default-leading: var(--leading-sm);
+    --intent-body-quiet-size: var(--text-sm);
+    --intent-body-quiet-weight: var(--font-weight-normal);
+    --intent-body-quiet-leading: var(--leading-sm);
+    --intent-caption-size: var(--text-xs);
+    --intent-caption-weight: var(--font-weight-normal);
+    --intent-caption-leading: var(--leading-xs);
+    --intent-numeric-size: var(--text-sm);
+    --intent-numeric-weight: var(--font-weight-medium);
+    --intent-numeric-leading: var(--leading-sm);
+    /* Motion axis - snappy, mechanical linear */
+    --duration-instant: 0ms;
+    --duration-fast: 80ms;
+    --duration-normal: 120ms;
+    --duration-slow: 180ms;
+    --duration-dramatic: 240ms;
+    /* Motion axis - everything linear, mechanical */
+    --easing-linear: linear;
+    --easing-standard: linear;
+    --easing-emphasized: linear;
+    --easing-spring: linear;
+    /* Iconography axis - thin lucide */
+    --icon-family: lucide;
+    --icon-default-size: 14px;
+    /* Elevation axis - flat-ish */
+    --elevation-card: var(--shadow-sm);
+    --elevation-popover: var(--shadow-main);
+    --elevation-dialog: var(--shadow-main);
+    --elevation-toast: var(--shadow-sm);
+    /* Geometry axis - containers sharp-ish, interactive softer, pill full */
+    --radius-container: 6px;
+    --radius-interactive: 10px;
+    --radius-pill: 9999px;
+    /* Geometry axis - hairline borders */
+    --border-hairline: 1px;
+    --border-standard: 1px;
+    --border-heavy: 2px;
+}

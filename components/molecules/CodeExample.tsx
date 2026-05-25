@@ -53,7 +53,7 @@ export const CodeExample: React.FC<CodeExampleProps> = ({
     <Box
       className={cn(
         'bg-foreground',
-        'rounded-md',
+        'rounded-container',
         'border-[length:var(--border-width)] border-border',
         'overflow-hidden',
         className,

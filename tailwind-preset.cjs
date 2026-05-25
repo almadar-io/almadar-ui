@@ -256,8 +256,13 @@ module.exports = {
 ],
   theme: {
     fontFamily: {
+      // `sans` continues to read --font-family for backward compat.
       sans: ['var(--font-family)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       mono: ['var(--font-family-mono, ui-monospace)', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+      // Layer 1 Type axis: display + body family slots fall back to --font-family
+      // so existing themes that don't define them keep their current look.
+      display: ['var(--font-family-display, var(--font-family))', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+      body: ['var(--font-family-body, var(--font-family))', 'ui-sans-serif', 'system-ui', 'sans-serif'],
     },
     extend: {
       colors: {
@@ -313,12 +318,34 @@ module.exports = {
         lg: 'var(--radius-lg)',
         xl: 'var(--radius-xl)',
         full: 'var(--radius-full)',
+        // Geometry-axis intent overlay. Codemod targets these for `rounded-*` by component intent:
+        //   Card / containers   → rounded-container
+        //   Button / interactive → rounded-interactive
+        //   Avatar / Badge      → rounded-pill
+        container: 'var(--radius-container, var(--radius-md))',
+        interactive: 'var(--radius-interactive, var(--radius-md))',
+        pill: 'var(--radius-pill, var(--radius-full))',
+      },
+      borderWidth: {
+        // Geometry-axis border rhythm with intent. Existing literal `border` / `border-2` keep working.
+        hairline: 'var(--border-hairline, 1px)',
+        standard: 'var(--border-standard, var(--border-width, 1px))',
+        heavy: 'var(--border-heavy, var(--border-width-thick, 2px))',
       },
       boxShadow: {
         sm: 'var(--shadow-sm)',
         DEFAULT: 'var(--shadow-main)',
         lg: 'var(--shadow-lg)',
         inner: 'var(--shadow-inner)',
+        // Elevation-axis per-layer intent. Codemod targets:
+        //   Card                → shadow-elevation-card
+        //   Popover / Tooltip   → shadow-elevation-popover
+        //   Dialog              → shadow-elevation-dialog
+        //   Toast               → shadow-elevation-toast
+        'elevation-card': 'var(--elevation-card, var(--shadow-sm))',
+        'elevation-popover': 'var(--elevation-popover, var(--shadow-main))',
+        'elevation-dialog': 'var(--elevation-dialog, var(--shadow-lg))',
+        'elevation-toast': 'var(--elevation-toast, var(--shadow-main))',
       },
       fontWeight: {
         normal: 'var(--font-weight-normal, 400)',
@@ -326,10 +353,98 @@ module.exports = {
         bold: 'var(--font-weight-bold, 600)',
       },
       transitionDuration: {
-        fast: 'var(--transition-fast, 150ms)',
-        normal: 'var(--transition-normal, 250ms)',
-        slow: 'var(--transition-slow, 400ms)',
+        // Existing aliases retained; resolve through the Motion-axis tokens
+        // with the previous `--transition-*` values as fallback so themes that
+        // don't define `--duration-*` keep their pre-Layer-1 motion.
+        fast: 'var(--duration-fast, var(--transition-fast, 150ms))',
+        normal: 'var(--duration-normal, var(--transition-normal, 250ms))',
+        slow: 'var(--duration-slow, var(--transition-slow, 400ms))',
+        instant: 'var(--duration-instant, 0ms)',
+        dramatic: 'var(--duration-dramatic, 600ms)',
       },
+      transitionTimingFunction: {
+        // Motion-axis easing palette. `standard` falls back to the existing
+        // `--transition-timing` so backward compat is preserved.
+        linear: 'var(--easing-linear, linear)',
+        standard: 'var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
+        emphasized: 'var(--easing-emphasized, cubic-bezier(0.2, 0, 0, 1))',
+        spring: 'var(--easing-spring, cubic-bezier(0.34, 1.56, 0.64, 1))',
+      },
+      // Density-axis spacing scale. Tailwind's default `p-3` / `gap-4` resolve
+      // here so existing classes keep working — but now read from tokens.
+      // Defaults match Tailwind's default (12px / 16px / 24px for 3 / 4 / 6),
+      // so post-migration visual output is identical until a theme overrides.
+      spacing: {
+        0: 'var(--space-0, 0px)',
+        1: 'var(--space-1, 4px)',
+        2: 'var(--space-2, 8px)',
+        3: 'var(--space-3, 12px)',
+        4: 'var(--space-4, 16px)',
+        5: 'var(--space-5, 20px)',
+        6: 'var(--space-6, 24px)',
+        7: 'var(--space-7, 28px)',
+        8: 'var(--space-8, 32px)',
+        9: 'var(--space-9, 36px)',
+        10: 'var(--space-10, 40px)',
+        11: 'var(--space-11, 44px)',
+        12: 'var(--space-12, 48px)',
+        // Component-intent spacing (codemod targets for padding-by-intent)
+        'card-sm': 'var(--card-padding-sm, 12px)',
+        'card-md': 'var(--card-padding-md, 16px)',
+        'card-lg': 'var(--card-padding-lg, 24px)',
+        'dialog': 'var(--dialog-padding, 24px)',
+        'section': 'var(--section-gap, 32px)',
+      },
+      // Type-axis size scale. Each step pairs a size with a line-height,
+      // both read from tokens with Tailwind-default fallbacks so existing
+      // `text-sm` resolves to the same 14px/20px until a theme overrides.
+      fontSize: {
+        xs: ['var(--text-xs, 12px)', { lineHeight: 'var(--leading-xs, 16px)' }],
+        sm: ['var(--text-sm, 14px)', { lineHeight: 'var(--leading-sm, 20px)' }],
+        base: ['var(--text-base, 16px)', { lineHeight: 'var(--leading-base, 24px)' }],
+        lg: ['var(--text-lg, 18px)', { lineHeight: 'var(--leading-lg, 28px)' }],
+        xl: ['var(--text-xl, 20px)', { lineHeight: 'var(--leading-xl, 28px)' }],
+        '2xl': ['var(--text-2xl, 24px)', { lineHeight: 'var(--leading-2xl, 32px)' }],
+        '3xl': ['var(--text-3xl, 30px)', { lineHeight: 'var(--leading-3xl, 36px)' }],
+        '4xl': ['var(--text-4xl, 36px)', { lineHeight: 'var(--leading-4xl, 40px)' }],
+        'display-1': ['var(--text-display-1, 48px)', { lineHeight: 'var(--leading-display-1, 52px)' }],
+        'display-2': ['var(--text-display-2, 60px)', { lineHeight: 'var(--leading-display-2, 64px)' }],
+      },
+      // Density-axis per-element heights (codemod targets for `h-{px}` on
+      // buttons / inputs / rows / icons).
+      height: {
+        'button-sm': 'var(--button-height-sm, 28px)',
+        'button-md': 'var(--button-height-md, 36px)',
+        'button-lg': 'var(--button-height-lg, 44px)',
+        'input-sm': 'var(--input-height-sm, 28px)',
+        'input-md': 'var(--input-height-md, 36px)',
+        'input-lg': 'var(--input-height-lg, 44px)',
+        'row-compact': 'var(--row-height-compact, 32px)',
+        'row-normal': 'var(--row-height-normal, 40px)',
+        'row-spacious': 'var(--row-height-spacious, 48px)',
+        'icon-default': 'var(--icon-default-size, 16px)',
+      },
+      minHeight: {
+        'button-sm': 'var(--button-height-sm, 28px)',
+        'button-md': 'var(--button-height-md, 36px)',
+        'button-lg': 'var(--button-height-lg, 44px)',
+        'input-sm': 'var(--input-height-sm, 28px)',
+        'input-md': 'var(--input-height-md, 36px)',
+        'input-lg': 'var(--input-height-lg, 44px)',
+        'row-compact': 'var(--row-height-compact, 32px)',
+        'row-normal': 'var(--row-height-normal, 40px)',
+        'row-spacious': 'var(--row-height-spacious, 48px)',
+      },
+      width: {
+        'icon-default': 'var(--icon-default-size, 16px)',
+      },
+      // Geometry-axis radius rhythm (codemod targets for `rounded-*` by intent).
+      // The existing sm/md/lg/xl/full keys above continue to work as-is.
+      // Codemod converts `rounded-md` on Card → `rounded-container`, on Button → `rounded-interactive`, on Avatar/Badge → `rounded-pill`.
+      // borderRadius is extended below alongside the existing radius tokens.
+      // Elevation-axis per-layer shadow mapping.
+      // Codemod converts `shadow-sm` on Card → `shadow-elevation-card`, etc.
+      // boxShadow is extended below.
       // Container-query breakpoints aligned 1:1 with Tailwind's default
       // viewport breakpoints (sm 640 / md 768 / lg 1024 / xl 1280 /
       // 2xl 1536). Lets components use `@lg/foo:hidden` as a drop-in

@@ -315,7 +315,7 @@ const LogicGraph: React.FC<LogicGraphProps> = ({ questions, rules }) => {
   }, [questions]);
 
   return (
-    <Box className="overflow-auto rounded-md border border-border bg-card p-2">
+    <Box className="overflow-auto rounded-container border border-border bg-card p-2">
       <svg
         width={layout.width}
         height={layout.height}

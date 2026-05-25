@@ -100,7 +100,7 @@ const sizeStyles = {
 
 const iconSizeStyles = {
   sm: "h-3.5 w-3.5",
-  md: "h-4 w-4",
+  md: "h-icon-default w-icon-default",
   lg: "h-5 w-5",
 };
 
@@ -189,7 +189,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         data-testid={(props as Record<string, unknown>)['data-testid'] as string ?? (action ? `action-${action}` : undefined)}
       >
         {isLoading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader2 className="h-icon-default w-icon-default animate-spin" />
         ) : (
           resolvedLeftIcon && (
             <span className="flex-shrink-0">{resolvedLeftIcon}</span>

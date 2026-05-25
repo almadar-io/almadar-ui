@@ -306,7 +306,7 @@ function BlockMenu({ block, readOnly, onDelete, onDuplicate, onChangeType }: Blo
           role="menu"
           className={cn(
             "absolute right-0 z-10 mt-1 w-44",
-            "rounded-md border border-border bg-popover shadow-md",
+            "rounded-container border border-border bg-popover shadow-elevation-popover",
             "py-1 text-sm",
           )}
         >

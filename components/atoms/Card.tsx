@@ -21,23 +21,23 @@ const variantStyles = {
   default: [
     "bg-card",
     "border-[length:var(--border-width)] border-border",
-    "shadow-sm",
+    "shadow-elevation-card",
     "transition-all duration-[var(--transition-normal)]",
-    "hover:shadow-lg hover:-translate-y-0.5",
+    "hover:shadow-elevation-dialog hover:-translate-y-0.5",
   ].join(" "),
   bordered: [
     "bg-card",
     "border-[length:var(--border-width)] border-border",
-    "shadow-sm",
+    "shadow-elevation-card",
     "transition-all duration-[var(--transition-normal)]",
-    "hover:shadow-lg hover:-translate-y-0.5",
+    "hover:shadow-elevation-dialog hover:-translate-y-0.5",
   ].join(" "),
   elevated: [
     "bg-card",
     "border-[length:var(--border-width)] border-border",
     "shadow",
     "transition-all duration-[var(--transition-normal)]",
-    "hover:shadow-lg hover:-translate-y-0.5",
+    "hover:shadow-elevation-dialog hover:-translate-y-0.5",
   ].join(" "),
   // Interactive variant with theme-specific hover effects
   interactive: [
@@ -46,22 +46,22 @@ const variantStyles = {
     "shadow",
     "cursor-pointer",
     "transition-all duration-[var(--transition-normal)]",
-    "hover:shadow-lg",
+    "hover:shadow-elevation-dialog",
   ].join(" "),
 };
 
 const paddingStyles = {
   none: "",
-  sm: "p-3",
-  md: "p-4",
-  lg: "p-6",
+  sm: "p-card-sm",
+  md: "p-card-md",
+  lg: "p-card-lg",
 };
 
 const shadowStyles: Record<CardShadow, string> = {
   none: "shadow-none",
-  sm: "shadow-sm",
+  sm: "shadow-elevation-card",
   md: "shadow",
-  lg: "shadow-lg",
+  lg: "shadow-elevation-dialog",
 };
 
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
@@ -82,7 +82,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={cn(
-          "rounded-md",
+          "rounded-container",
           "transition-all duration-[var(--transition-normal)]",
           variantStyles[variant],
           paddingStyles[padding],

@@ -243,7 +243,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
                 key={actionItem.id}
                 align="center"
                 gap="sm"
-                className="transition-all duration-200"
+                className="transition-all duration-fast"
                 style={{
                   opacity: isExpanded ? 1 : 0,
                   transform: isExpanded ? "translateY(0)" : "translateY(10px)",
@@ -285,7 +285,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
           size="lg"
           icon={isExpanded ? X : Plus}
           onClick={handleMainClick}
-          className="rounded-full shadow-lg transition-all duration-300"
+          className="rounded-full shadow-lg transition-all duration-normal"
           aria-label={isExpanded ? "Close actions" : "Open actions"}
           aria-expanded={isExpanded}
         >

@@ -33,7 +33,7 @@ export const FlipContainer = ({
       onClick={onClick}
     >
       <Box
-        className="relative w-full h-full transition-transform duration-500"
+        className="relative w-full h-full transition-transform duration-slow"
         style={{
           transformStyle: 'preserve-3d',
           transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',

@@ -75,7 +75,8 @@ function generateFieldValue(
   field: EntityField,
   idx: number,
 ): FieldValue {
-  if (field.values && field.values.length > 0) {
+  // EntityField is a discriminated union — `values` lives on Scalar/Enum variants only.
+  if ('values' in field && field.values && field.values.length > 0) {
     return field.values[(idx - 1) % field.values.length];
   }
   // EntityField.name is optional per @almadar/core 7+; nameless nested

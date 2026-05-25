@@ -123,7 +123,7 @@ export const ConditionalWrapper: React.FC<ConditionalWrapperProps> = ({
     return (
       <Box
         overflow="hidden"
-        className={`transition-all duration-200 ${
+        className={`transition-all duration-fast ${
           isVisible ? 'opacity-100 max-h-[1000px]' : 'opacity-0 max-h-0'
         }`}
       >

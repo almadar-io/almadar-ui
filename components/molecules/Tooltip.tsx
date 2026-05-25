@@ -116,7 +116,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
       className={cn(
         'fixed z-50 px-3 py-2 max-w-xs',
         'bg-primary text-primary-foreground',
-        'shadow-sm rounded-sm',
+        'shadow-elevation-popover rounded-sm',
         'text-sm pointer-events-none',
         'break-words whitespace-normal',
         'h-auto min-h-fit',

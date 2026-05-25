@@ -1,0 +1,422 @@
+/**
+ * Terminal Theme
+ *
+ * Hyper-compact brutalist CRT/Bloomberg terminal aesthetic — pure mono, 3pt rhythm, sharp 0px corners, zero shadows.
+ * Light = white paper with phosphor-green primary; dark = black CRT with phosphor-green glow body text.
+ */
+
+/* ==========================================================================
+ * LIGHT MODE
+ * ========================================================================== */
+[data-theme="terminal-light"] {
+    /* Shadows - NONE. Hierarchy is borders + color, never elevation. */
+    --shadow-none: none;
+    --shadow-sm: none;
+    --shadow-main: none;
+    --shadow-lg: none;
+    --shadow-inner: none;
+    --shadow-hover: none;
+    --shadow-active: none;
+
+    /* Border radius - SHARP. 0px everywhere except --radius-full (avatars/dots). */
+    --radius-none: 0px;
+    --radius-sm: 0px;
+    --radius-md: 0px;
+    --radius-lg: 0px;
+    --radius-xl: 0px;
+    --radius-full: 9999px;
+
+    /* Border width - Heavy mechanical rules */
+    --border-width: 2px;
+    --border-width-thin: 1px;
+    --border-width-thick: 3px;
+
+    /* Colors - White paper, pure black ink, phosphor green primary, single amber accent */
+    --color-primary: #00ff66;
+    --color-primary-hover: #00cc52;
+    --color-primary-foreground: #000000;
+
+    --color-secondary: #000000;
+    --color-secondary-hover: #1a1a1a;
+    --color-secondary-foreground: #ffffff;
+
+    --color-accent: #ffb300;
+    --color-accent-foreground: #000000;
+
+    --color-muted: #f2f2f2;
+    --color-muted-foreground: #555555;
+
+    --color-background: #ffffff;
+    --color-foreground: #000000;
+    --color-card: #ffffff;
+    --color-card-foreground: #000000;
+    --color-surface: #f2f2f2;
+    --color-border: #000000;
+    --color-input: #000000;
+    --color-ring: #00ff66;
+
+    /* Optional table tokens */
+    --color-table-header: #000000;
+    --color-table-border: #000000;
+    --color-table-row-hover: #f2f2f2;
+    --color-surface-hover: #e8e8e8;
+    --color-border-hover: #000000;
+    --color-placeholder: #777777;
+
+    /* Semantic colors - flat CRT signal palette */
+    --color-error: #ff0033;
+    --color-error-foreground: #ffffff;
+    --color-success: #00cc52;
+    --color-success-foreground: #000000;
+    --color-warning: #ffb300;
+    --color-warning-foreground: #000000;
+    --color-info: #00aaff;
+    --color-info-foreground: #000000;
+
+    /* Typography - DENSE MONO. Every family slot is mono. */
+    --font-family: "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace;
+    --font-family-display: "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace;
+    --font-family-body: "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace;
+    --font-family-mono: "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-bold: 700;
+    --letter-spacing: 0;
+    --line-height: 1.35;
+
+    /* Icon styling - phosphor-fill, no stroke (filled glyphs) */
+    --icon-stroke-width: 0;
+    --icon-color: currentColor;
+
+    /* Transitions - MECHANICAL. Linear easings, sub-150ms only. */
+    --transition-fast: 60ms;
+    --transition-normal: 100ms;
+    --transition-slow: 140ms;
+    --transition-timing: linear;
+
+    /* Hover/Active transforms - color shift only, no motion */
+    --hover-scale: 1;
+    --hover-translate-y: 0;
+    --hover-translate-x: 0;
+    --active-scale: 1;
+    --active-translate-y: 0;
+
+    /* Focus ring */
+    --focus-ring-width: 2px;
+    --focus-ring-offset: 0px;
+    --focus-ring-color: #00ff66;
+
+    /* --- Layer 1: Density axis --- */
+    --space-0: 0px;
+    --space-1: 3px;
+    --space-2: 6px;
+    --space-3: 9px;
+    --space-4: 12px;
+    --space-5: 15px;
+    --space-6: 18px;
+    --space-7: 21px;
+    --space-8: 24px;
+    --space-9: 27px;
+    --space-10: 30px;
+    --space-11: 33px;
+    --space-12: 36px;
+
+    --button-height-sm: 20px;
+    --button-height-md: 24px;
+    --button-height-lg: 30px;
+    --input-height-sm: 20px;
+    --input-height-md: 24px;
+    --input-height-lg: 30px;
+    --row-height-compact: 22px;
+    --row-height-normal: 28px;
+    --row-height-spacious: 34px;
+
+    --card-padding-sm: 6px;
+    --card-padding-md: 8px;
+    --card-padding-lg: 12px;
+    --dialog-padding: 12px;
+    --section-gap: 16px;
+
+    /* --- Layer 1: Type axis --- */
+    --text-xs: 11px;
+    --text-sm: 12px;
+    --text-base: 13px;
+    --text-lg: 14px;
+    --text-xl: 15px;
+    --text-2xl: 16px;
+    --text-3xl: 18px;
+    --text-4xl: 20px;
+    --text-display-1: 24px;
+    --text-display-2: 28px;
+
+    --leading-xs: 14px;
+    --leading-sm: 16px;
+    --leading-base: 17px;
+    --leading-lg: 18px;
+    --leading-xl: 20px;
+    --leading-2xl: 20px;
+    --leading-3xl: 22px;
+    --leading-4xl: 24px;
+    --leading-display-1: 28px;
+    --leading-display-2: 32px;
+
+    --intent-heading-major-size: var(--text-2xl);
+    --intent-heading-major-weight: var(--font-weight-bold);
+    --intent-heading-major-leading: var(--leading-2xl);
+    --intent-heading-minor-size: var(--text-lg);
+    --intent-heading-minor-weight: var(--font-weight-bold);
+    --intent-heading-minor-leading: var(--leading-lg);
+    --intent-body-emphasis-size: var(--text-sm);
+    --intent-body-emphasis-weight: var(--font-weight-medium);
+    --intent-body-emphasis-leading: var(--leading-sm);
+    --intent-body-default-size: var(--text-sm);
+    --intent-body-default-weight: var(--font-weight-normal);
+    --intent-body-default-leading: var(--leading-sm);
+    --intent-body-quiet-size: var(--text-sm);
+    --intent-body-quiet-weight: var(--font-weight-normal);
+    --intent-body-quiet-leading: var(--leading-sm);
+    --intent-caption-size: var(--text-xs);
+    --intent-caption-weight: var(--font-weight-normal);
+    --intent-caption-leading: var(--leading-xs);
+    --intent-numeric-size: var(--text-sm);
+    --intent-numeric-weight: var(--font-weight-medium);
+    --intent-numeric-leading: var(--leading-sm);
+
+    /* --- Layer 1: Motion axis - all linear --- */
+    --duration-instant: 0ms;
+    --duration-fast: var(--transition-fast);
+    --duration-normal: var(--transition-normal);
+    --duration-slow: var(--transition-slow);
+    --duration-dramatic: 200ms;
+
+    --easing-linear: linear;
+    --easing-standard: linear;
+    --easing-emphasized: linear;
+    --easing-spring: linear;
+
+    /* --- Layer 1: Iconography axis --- */
+    --icon-family: phosphor-fill;
+    --icon-default-size: 14px;
+
+    /* --- Layer 1: Elevation axis - all none --- */
+    --elevation-card: none;
+    --elevation-popover: none;
+    --elevation-dialog: none;
+    --elevation-toast: none;
+
+    /* --- Layer 1: Geometry axis - sharp pill enforced --- */
+    --radius-container: 0px;
+    --radius-interactive: 0px;
+    --radius-pill: 0px;
+    --border-hairline: 1px;
+    --border-standard: var(--border-width);
+    --border-heavy: var(--border-width-thick);
+}
+
+/* ==========================================================================
+ * DARK MODE
+ * ========================================================================== */
+[data-theme="terminal-dark"] {
+    /* Shadows - NONE. CRT screens don't cast shadows. */
+    --shadow-none: none;
+    --shadow-sm: none;
+    --shadow-main: none;
+    --shadow-lg: none;
+    --shadow-inner: none;
+    --shadow-hover: none;
+    --shadow-active: none;
+
+    /* Border radius - SHARP. */
+    --radius-none: 0px;
+    --radius-sm: 0px;
+    --radius-md: 0px;
+    --radius-lg: 0px;
+    --radius-xl: 0px;
+    --radius-full: 9999px;
+
+    /* Border width */
+    --border-width: 2px;
+    --border-width-thin: 1px;
+    --border-width-thick: 3px;
+
+    /* Colors - Pure black CRT, phosphor green glow, amber accent */
+    --color-primary: #00ff66;
+    --color-primary-hover: #33ff85;
+    --color-primary-foreground: #000000;
+
+    --color-secondary: #1a1a1a;
+    --color-secondary-hover: #262626;
+    --color-secondary-foreground: #00ff66;
+
+    --color-accent: #ffb300;
+    --color-accent-foreground: #000000;
+
+    --color-muted: #0d0d0d;
+    --color-muted-foreground: #888888;
+
+    --color-background: #000000;
+    --color-foreground: #aaffaa;
+    --color-card: #050505;
+    --color-card-foreground: #00ff66;
+    --color-surface: #0d0d0d;
+    --color-border: #00ff66;
+    --color-input: #00ff66;
+    --color-ring: #00ff66;
+
+    /* Optional table tokens */
+    --color-table-header: #00ff66;
+    --color-table-border: #00ff66;
+    --color-table-row-hover: #0d0d0d;
+    --color-surface-hover: #1a1a1a;
+    --color-border-hover: #33ff85;
+    --color-placeholder: #557755;
+
+    /* Semantic colors - bright CRT signal palette */
+    --color-error: #ff3355;
+    --color-error-foreground: #000000;
+    --color-success: #00ff66;
+    --color-success-foreground: #000000;
+    --color-warning: #ffb300;
+    --color-warning-foreground: #000000;
+    --color-info: #00ccff;
+    --color-info-foreground: #000000;
+
+    /* Typography */
+    --font-family: "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace;
+    --font-family-display: "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace;
+    --font-family-body: "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace;
+    --font-family-mono: "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-bold: 700;
+    --letter-spacing: 0;
+    --line-height: 1.35;
+
+    /* Icon styling - phosphor-fill */
+    --icon-stroke-width: 0;
+    --icon-color: currentColor;
+
+    /* Transitions */
+    --transition-fast: 60ms;
+    --transition-normal: 100ms;
+    --transition-slow: 140ms;
+    --transition-timing: linear;
+
+    /* Hover/Active transforms - color shift only */
+    --hover-scale: 1;
+    --hover-translate-y: 0;
+    --hover-translate-x: 0;
+    --active-scale: 1;
+    --active-translate-y: 0;
+
+    /* Focus ring */
+    --focus-ring-width: 2px;
+    --focus-ring-offset: 0px;
+    --focus-ring-color: #00ff66;
+
+    /* --- Layer 1: Density axis --- */
+    --space-0: 0px;
+    --space-1: 3px;
+    --space-2: 6px;
+    --space-3: 9px;
+    --space-4: 12px;
+    --space-5: 15px;
+    --space-6: 18px;
+    --space-7: 21px;
+    --space-8: 24px;
+    --space-9: 27px;
+    --space-10: 30px;
+    --space-11: 33px;
+    --space-12: 36px;
+
+    --button-height-sm: 20px;
+    --button-height-md: 24px;
+    --button-height-lg: 30px;
+    --input-height-sm: 20px;
+    --input-height-md: 24px;
+    --input-height-lg: 30px;
+    --row-height-compact: 22px;
+    --row-height-normal: 28px;
+    --row-height-spacious: 34px;
+
+    --card-padding-sm: 6px;
+    --card-padding-md: 8px;
+    --card-padding-lg: 12px;
+    --dialog-padding: 12px;
+    --section-gap: 16px;
+
+    /* --- Layer 1: Type axis --- */
+    --text-xs: 11px;
+    --text-sm: 12px;
+    --text-base: 13px;
+    --text-lg: 14px;
+    --text-xl: 15px;
+    --text-2xl: 16px;
+    --text-3xl: 18px;
+    --text-4xl: 20px;
+    --text-display-1: 24px;
+    --text-display-2: 28px;
+
+    --leading-xs: 14px;
+    --leading-sm: 16px;
+    --leading-base: 17px;
+    --leading-lg: 18px;
+    --leading-xl: 20px;
+    --leading-2xl: 20px;
+    --leading-3xl: 22px;
+    --leading-4xl: 24px;
+    --leading-display-1: 28px;
+    --leading-display-2: 32px;
+
+    --intent-heading-major-size: var(--text-2xl);
+    --intent-heading-major-weight: var(--font-weight-bold);
+    --intent-heading-major-leading: var(--leading-2xl);
+    --intent-heading-minor-size: var(--text-lg);
+    --intent-heading-minor-weight: var(--font-weight-bold);
+    --intent-heading-minor-leading: var(--leading-lg);
+    --intent-body-emphasis-size: var(--text-sm);
+    --intent-body-emphasis-weight: var(--font-weight-medium);
+    --intent-body-emphasis-leading: var(--leading-sm);
+    --intent-body-default-size: var(--text-sm);
+    --intent-body-default-weight: var(--font-weight-normal);
+    --intent-body-default-leading: var(--leading-sm);
+    --intent-body-quiet-size: var(--text-sm);
+    --intent-body-quiet-weight: var(--font-weight-normal);
+    --intent-body-quiet-leading: var(--leading-sm);
+    --intent-caption-size: var(--text-xs);
+    --intent-caption-weight: var(--font-weight-normal);
+    --intent-caption-leading: var(--leading-xs);
+    --intent-numeric-size: var(--text-sm);
+    --intent-numeric-weight: var(--font-weight-medium);
+    --intent-numeric-leading: var(--leading-sm);
+
+    /* --- Layer 1: Motion axis - all linear --- */
+    --duration-instant: 0ms;
+    --duration-fast: var(--transition-fast);
+    --duration-normal: var(--transition-normal);
+    --duration-slow: var(--transition-slow);
+    --duration-dramatic: 200ms;
+
+    --easing-linear: linear;
+    --easing-standard: linear;
+    --easing-emphasized: linear;
+    --easing-spring: linear;
+
+    /* --- Layer 1: Iconography axis --- */
+    --icon-family: phosphor-fill;
+    --icon-default-size: 14px;
+
+    /* --- Layer 1: Elevation axis - all none --- */
+    --elevation-card: none;
+    --elevation-popover: none;
+    --elevation-dialog: none;
+    --elevation-toast: none;
+
+    /* --- Layer 1: Geometry axis - sharp pill enforced --- */
+    --radius-container: 0px;
+    --radius-interactive: 0px;
+    --radius-pill: 0px;
+    --border-hairline: 1px;
+    --border-standard: var(--border-width);
+    --border-heavy: var(--border-width-thick);
+}

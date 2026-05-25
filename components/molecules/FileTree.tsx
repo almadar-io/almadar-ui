@@ -130,7 +130,7 @@ const TreeNodeItem: React.FC<TreeNodeItemProps> = ({
         />
         <Typography
           variant="caption"
-          className={`truncate font-mono text-[11px] !text-inherit ${isSelected ? 'font-semibold' : ''}`}
+          className={`truncate font-mono text-xs !text-inherit ${isSelected ? 'font-semibold' : ''}`}
         >
           {node.name}
         </Typography>

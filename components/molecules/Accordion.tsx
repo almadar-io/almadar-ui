@@ -186,7 +186,7 @@ export const Accordion: React.FC<AccordionProps> = ({
                   "w-full flex items-center justify-between px-4 py-3",
                   "bg-card",
                   "hover:bg-muted",
-                  "transition-colors duration-200",
+                  "transition-colors duration-fast",
                   "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-inset",
                   "disabled:opacity-50 disabled:cursor-not-allowed",
                   isOpen && "bg-muted font-bold",
@@ -207,7 +207,7 @@ export const Accordion: React.FC<AccordionProps> = ({
                   icon={ChevronDown}
                   size="sm"
                   className={cn(
-                    "transition-transform duration-200",
+                    "transition-transform duration-fast",
                     isOpen && "transform rotate-180",
                   )}
                 />

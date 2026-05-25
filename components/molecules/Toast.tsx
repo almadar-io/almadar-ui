@@ -114,7 +114,7 @@ export const Toast: React.FC<ToastProps> = ({
         // `min-w-[300px]` only kicks in at `sm:` and above so a phone
         // viewport doesn't get a toast wider than the screen near the
         // edge. `max-w-[calc(100vw-2rem)]` clamps to viewport too.
-        "border-l-4 p-4 shadow min-w-0 sm:min-w-[300px] max-w-md max-w-[calc(100vw-2rem)]",
+        "border-l-4 p-4 shadow-elevation-toast min-w-0 sm:min-w-[300px] max-w-md max-w-[calc(100vw-2rem)]",
         "rounded-sm",
         variantClasses[variant],
         className,

@@ -48,7 +48,7 @@ export const PricingCard: React.FC<PricingCardProps> = ({
         'hover:-translate-y-1 transition-all',
         highlighted && [
           'border-[length:2px] border-primary',
-          'shadow-lg',
+          'shadow-elevation-dialog',
           'scale-[1.05]',
           'ring-2 ring-primary',
         ],

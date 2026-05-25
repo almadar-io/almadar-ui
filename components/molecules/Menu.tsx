@@ -170,7 +170,7 @@ export const Menu: React.FC<MenuProps> = ({
   const menuContainerStyles = cn(
     "bg-card",
     "border-[length:var(--border-width)] border-border",
-    "shadow",
+    "shadow-elevation-popover",
     "rounded-sm",
     "min-w-0 sm:min-w-[200px] max-w-[calc(100vw-1rem)] py-1",
   );

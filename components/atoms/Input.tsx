@@ -81,7 +81,7 @@ export const Input = React.forwardRef<
     const type = inputType || htmlType || "text";
     // Resolve left icon: prefer leftIcon ReactNode, fallback to icon Lucide component
     const resolvedLeftIcon =
-      leftIcon || (IconComponent && <IconComponent className="h-4 w-4" />);
+      leftIcon || (IconComponent && <IconComponent className="h-icon-default w-icon-default" />);
     const showClearButton = clearable && value && String(value).length > 0;
 
     const baseClassName = cn(
@@ -124,7 +124,7 @@ export const Input = React.forwardRef<
             ))}
           </select>
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-muted-foreground">
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className="h-icon-default w-icon-default" />
           </div>
         </div>
       );
@@ -188,7 +188,7 @@ export const Input = React.forwardRef<
             onClick={onClear}
             className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
           >
-            <X className="h-4 w-4" />
+            <X className="h-icon-default w-icon-default" />
           </button>
         )}
         {rightIcon && !showClearButton && (

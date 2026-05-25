@@ -46,7 +46,7 @@ export function DocCodeBlock({
   return (
     <Box
       className={cn(
-        'rounded-md border border-border overflow-hidden',
+        'rounded-container border border-border overflow-hidden',
         className,
       )}
       position="relative"

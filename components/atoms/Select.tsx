@@ -60,7 +60,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
           ))}
         </select>
         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-          <ChevronDown className="h-4 w-4 text-foreground" />
+          <ChevronDown className="h-icon-default w-icon-default text-foreground" />
         </div>
       </div>
     );

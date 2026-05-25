@@ -30,11 +30,11 @@ export interface DocPaginationProps {
 
 const linkCardStyles = [
   'border border-border',
-  'rounded-md',
+  'rounded-container',
   'p-4',
   'transition-all',
   'hover:border-primary',
-  'hover:shadow-lg',
+  'hover:shadow-elevation-dialog',
   'no-underline',
   'flex-1',
   'min-w-0',

@@ -92,8 +92,8 @@ export function Card({
       className={`
         bg-card
         border border-border
-        rounded-md shadow-sm
-        ${isClickable ? "cursor-pointer hover:shadow-lg transition-shadow" : ""}
+        rounded-container shadow-elevation-card
+        ${isClickable ? "cursor-pointer hover:shadow-elevation-dialog transition-shadow" : ""}
         ${className}
       `}
       onClick={isClickable ? handleClick : undefined}

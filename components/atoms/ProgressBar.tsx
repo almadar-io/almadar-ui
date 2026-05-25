@@ -131,7 +131,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
         <div className="w-full h-2 bg-muted border border-border overflow-hidden">
           <div
             className={cn(
-              "h-full transition-all duration-300 ease-out",
+              "h-full transition-all duration-normal ease-emphasized",
               colorClasses[effectiveColor],
             )}
             style={{ width: `${percentage}%` }}
@@ -184,7 +184,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
             strokeDashoffset={offset}
             strokeLinecap="round"
             className={cn(
-              "transition-all duration-300 ease-out",
+              "transition-all duration-normal ease-emphasized",
               colorClasses[effectiveColor],
             )}
           />
@@ -231,7 +231,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
               >
                 <div
                   className={cn(
-                    "h-full transition-all duration-300 ease-out",
+                    "h-full transition-all duration-normal ease-emphasized",
                     (isActive || isPartial) && colorClasses[effectiveColor],
                   )}
                   style={{

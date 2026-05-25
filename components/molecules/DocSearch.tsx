@@ -177,7 +177,7 @@ export function DocSearch({
       {isOpen && results.length > 0 ? (
         <Box
           position="absolute"
-          className="top-full left-0 right-0 mt-1 z-50 bg-card border border-border rounded-md shadow-lg max-h-80 overflow-y-auto"
+          className="top-full left-0 right-0 mt-1 z-50 bg-card border border-border rounded-container shadow-elevation-popover max-h-80 overflow-y-auto"
         >
           <VStack gap="none">
             {results.map((result, index) => (

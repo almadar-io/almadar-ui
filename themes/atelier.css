@@ -1,0 +1,427 @@
+/**
+ * Atelier Theme
+ *
+ * Display-heavy editorial feel — Apple Newsroom / Behance / fashion magazine.
+ * Generous whitespace, dramatic type scale, hairline borders, no shadows;
+ * monochrome warm-grey palette punctuated by a single cobalt accent.
+ */
+
+/* ==========================================================================
+ * LIGHT MODE
+ * ========================================================================== */
+[data-theme="atelier-light"] {
+    /* Shadows - None. Hairline borders carry all hierarchy. */
+    --shadow-none: none;
+    --shadow-sm: none;
+    --shadow-main: none;
+    --shadow-lg: none;
+    --shadow-inner: none;
+    --shadow-hover: none;
+    --shadow-active: none;
+
+    /* Border radius - Asymmetric: small on containers, chunky pill on interactive */
+    --radius-none: 0px;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-full: 9999px;
+
+    /* Border width - Hairline throughout */
+    --border-width: 1px;
+    --border-width-thin: 1px;
+    --border-width-thick: 1px;
+
+    /* Colors - Warm off-white canvas, near-black ink, single cobalt accent */
+    --color-primary: #1f51ff;
+    --color-primary-hover: #1a45e0;
+    --color-primary-foreground: #fafaf7;
+
+    --color-secondary: #f2f1ec;
+    --color-secondary-hover: #e8e7e1;
+    --color-secondary-foreground: #0a0a0a;
+
+    --color-accent: #0a0a0a;
+    --color-accent-foreground: #fafaf7;
+
+    --color-muted: #f2f1ec;
+    --color-muted-foreground: #6b6b66;
+
+    --color-background: #fafaf7;
+    --color-foreground: #0a0a0a;
+    --color-card: #ffffff;
+    --color-card-foreground: #0a0a0a;
+    --color-surface: #f2f1ec;
+    --color-border: #e5e4de;
+    --color-input: #d6d5cf;
+    --color-ring: #1f51ff;
+
+    --color-table-header: #f2f1ec;
+    --color-table-border: #e5e4de;
+    --color-table-row-hover: #f6f5f0;
+    --color-surface-hover: #e8e7e1;
+    --color-border-hover: #c7c6c0;
+    --color-placeholder: #9a998f;
+
+    /* Semantic colors - Muted, editorial */
+    --color-error: #b91c1c;
+    --color-error-foreground: #fafaf7;
+    --color-success: #15803d;
+    --color-success-foreground: #fafaf7;
+    --color-warning: #a16207;
+    --color-warning-foreground: #fafaf7;
+    --color-info: #1f51ff;
+    --color-info-foreground: #fafaf7;
+
+    /* Typography - Display-heavy editorial */
+    --font-family:
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-family-display:
+        "Söhne", "Inter Display", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-family-body:
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-family-mono:
+        "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-bold: 700;
+    --letter-spacing: -0.02em;
+    --line-height: 1.625;
+
+    /* Type scale - Dramatic, editorial */
+    --text-xs: 12px;
+    --leading-xs: 18px;
+    --text-sm: 14px;
+    --leading-sm: 22px;
+    --text-base: 16px;
+    --leading-base: 26px;
+    --text-lg: 20px;
+    --leading-lg: 30px;
+    --text-xl: 24px;
+    --leading-xl: 32px;
+    --text-2xl: 32px;
+    --leading-2xl: 38px;
+    --text-3xl: 40px;
+    --leading-3xl: 44px;
+    --text-4xl: 52px;
+    --leading-4xl: 56px;
+    --text-display-1: 64px;
+    --leading-display-1: 68px;
+    --text-display-2: 80px;
+    --leading-display-2: 84px;
+
+    /* Intent mapping - heading-major HUGE, numeric uses display family */
+    --intent-heading-major-size: var(--text-3xl);
+    --intent-heading-major-weight: var(--font-weight-bold);
+    --intent-heading-major-leading: var(--leading-3xl);
+    --intent-heading-minor-size: var(--text-xl);
+    --intent-heading-minor-weight: var(--font-weight-bold);
+    --intent-heading-minor-leading: var(--leading-xl);
+    --intent-body-emphasis-size: var(--text-base);
+    --intent-body-emphasis-weight: var(--font-weight-medium);
+    --intent-body-emphasis-leading: var(--leading-base);
+    --intent-body-default-size: var(--text-base);
+    --intent-body-default-weight: var(--font-weight-normal);
+    --intent-body-default-leading: var(--leading-base);
+    --intent-body-quiet-size: var(--text-sm);
+    --intent-body-quiet-weight: var(--font-weight-normal);
+    --intent-body-quiet-leading: var(--leading-sm);
+    --intent-caption-size: var(--text-xs);
+    --intent-caption-weight: var(--font-weight-medium);
+    --intent-caption-leading: var(--leading-xs);
+    --intent-numeric-size: var(--text-4xl);
+    --intent-numeric-weight: var(--font-weight-bold);
+    --intent-numeric-leading: var(--leading-4xl);
+    --intent-numeric-family: var(--font-family-display);
+
+    /* Density - Generous 10pt rhythm */
+    --space-0: 0px;
+    --space-1: 4px;
+    --space-2: 6px;
+    --space-3: 10px;
+    --space-4: 14px;
+    --space-5: 20px;
+    --space-6: 28px;
+    --space-7: 36px;
+    --space-8: 44px;
+    --space-9: 52px;
+    --space-10: 60px;
+    --space-11: 68px;
+    --space-12: 80px;
+
+    --button-height-sm: 36px;
+    --button-height-md: 44px;
+    --button-height-lg: 56px;
+    --input-height-sm: 36px;
+    --input-height-md: 44px;
+    --input-height-lg: 56px;
+    --row-height-compact: 48px;
+    --row-height-normal: 64px;
+    --row-height-spacious: 80px;
+
+    --card-padding-sm: 20px;
+    --card-padding-md: 28px;
+    --card-padding-lg: 40px;
+    --dialog-padding: 40px;
+    --section-gap: 64px;
+
+    /* Icon styling - Phosphor fill, larger default */
+    --icon-family: phosphor-fill;
+    --icon-default-size: 22px;
+    --icon-stroke-width: 0;
+    --icon-color: currentColor;
+
+    /* Elevation - All none, hairlines do the work */
+    --elevation-card: none;
+    --elevation-popover: none;
+    --elevation-dialog: none;
+    --elevation-toast: none;
+
+    /* Geometry - Asymmetric: small container radius, chunky interactive */
+    --radius-container: 8px;
+    --radius-interactive: 24px;
+    --radius-pill: 9999px;
+    --border-hairline: 1px;
+    --border-standard: 1px;
+    --border-heavy: 1px;
+
+    /* Transitions - Dramatic, considered */
+    --transition-fast: 300ms;
+    --transition-normal: 500ms;
+    --transition-slow: 800ms;
+    --transition-timing: cubic-bezier(0.2, 0, 0, 1);
+
+    /* Motion palette */
+    --duration-instant: 0ms;
+    --duration-fast: 300ms;
+    --duration-normal: 500ms;
+    --duration-slow: 800ms;
+    --duration-dramatic: 1200ms;
+    --easing-linear: linear;
+    --easing-standard: cubic-bezier(0.2, 0, 0, 1);
+    --easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+    --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /* Hover/Active transforms - Subtle, no lift */
+    --hover-scale: 1;
+    --hover-translate-y: 0;
+    --hover-translate-x: 0;
+    --active-scale: 1;
+    --active-translate-y: 0;
+
+    /* Focus ring */
+    --focus-ring-width: 2px;
+    --focus-ring-offset: 3px;
+    --focus-ring-color: #1f51ff;
+
+}
+
+/* ==========================================================================
+ * DARK MODE
+ * ========================================================================== */
+[data-theme="atelier-dark"] {
+    /* Shadows - None */
+    --shadow-none: none;
+    --shadow-sm: none;
+    --shadow-main: none;
+    --shadow-lg: none;
+    --shadow-inner: none;
+    --shadow-hover: none;
+    --shadow-active: none;
+
+    /* Border radius */
+    --radius-none: 0px;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+    --radius-full: 9999px;
+
+    /* Border width - Hairline */
+    --border-width: 1px;
+    --border-width-thin: 1px;
+    --border-width-thick: 1px;
+
+    /* Colors - Very dark grey canvas, near-white ink, brighter cobalt */
+    --color-primary: #5b7fff;
+    --color-primary-hover: #7a96ff;
+    --color-primary-foreground: #0d0d0d;
+
+    --color-secondary: #1a1a1a;
+    --color-secondary-hover: #242424;
+    --color-secondary-foreground: #fafafa;
+
+    --color-accent: #fafafa;
+    --color-accent-foreground: #0d0d0d;
+
+    --color-muted: #1a1a1a;
+    --color-muted-foreground: #999999;
+
+    --color-background: #0d0d0d;
+    --color-foreground: #fafafa;
+    --color-card: #141414;
+    --color-card-foreground: #fafafa;
+    --color-surface: #1a1a1a;
+    --color-border: #262626;
+    --color-input: #333333;
+    --color-ring: #5b7fff;
+
+    --color-table-header: #1a1a1a;
+    --color-table-border: #262626;
+    --color-table-row-hover: #181818;
+    --color-surface-hover: #242424;
+    --color-border-hover: #3a3a3a;
+    --color-placeholder: #666666;
+
+    /* Semantic colors - Muted in dark mode, cobalt punches through */
+    --color-error: #cf6679;
+    --color-error-foreground: #0d0d0d;
+    --color-success: #8aa899;
+    --color-success-foreground: #0d0d0d;
+    --color-warning: #c9a96e;
+    --color-warning-foreground: #0d0d0d;
+    --color-info: #5b7fff;
+    --color-info-foreground: #0d0d0d;
+
+    /* Typography */
+    --font-family:
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-family-display:
+        "Söhne", "Inter Display", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-family-body:
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-family-mono:
+        "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-bold: 700;
+    --letter-spacing: -0.02em;
+    --line-height: 1.625;
+
+    /* Type scale */
+    --text-xs: 12px;
+    --leading-xs: 18px;
+    --text-sm: 14px;
+    --leading-sm: 22px;
+    --text-base: 16px;
+    --leading-base: 26px;
+    --text-lg: 20px;
+    --leading-lg: 30px;
+    --text-xl: 24px;
+    --leading-xl: 32px;
+    --text-2xl: 32px;
+    --leading-2xl: 38px;
+    --text-3xl: 40px;
+    --leading-3xl: 44px;
+    --text-4xl: 52px;
+    --leading-4xl: 56px;
+    --text-display-1: 64px;
+    --leading-display-1: 68px;
+    --text-display-2: 80px;
+    --leading-display-2: 84px;
+
+    /* Intent mapping */
+    --intent-heading-major-size: var(--text-3xl);
+    --intent-heading-major-weight: var(--font-weight-bold);
+    --intent-heading-major-leading: var(--leading-3xl);
+    --intent-heading-minor-size: var(--text-xl);
+    --intent-heading-minor-weight: var(--font-weight-bold);
+    --intent-heading-minor-leading: var(--leading-xl);
+    --intent-body-emphasis-size: var(--text-base);
+    --intent-body-emphasis-weight: var(--font-weight-medium);
+    --intent-body-emphasis-leading: var(--leading-base);
+    --intent-body-default-size: var(--text-base);
+    --intent-body-default-weight: var(--font-weight-normal);
+    --intent-body-default-leading: var(--leading-base);
+    --intent-body-quiet-size: var(--text-sm);
+    --intent-body-quiet-weight: var(--font-weight-normal);
+    --intent-body-quiet-leading: var(--leading-sm);
+    --intent-caption-size: var(--text-xs);
+    --intent-caption-weight: var(--font-weight-medium);
+    --intent-caption-leading: var(--leading-xs);
+    --intent-numeric-size: var(--text-4xl);
+    --intent-numeric-weight: var(--font-weight-bold);
+    --intent-numeric-leading: var(--leading-4xl);
+    --intent-numeric-family: var(--font-family-display);
+
+    /* Density */
+    --space-0: 0px;
+    --space-1: 4px;
+    --space-2: 6px;
+    --space-3: 10px;
+    --space-4: 14px;
+    --space-5: 20px;
+    --space-6: 28px;
+    --space-7: 36px;
+    --space-8: 44px;
+    --space-9: 52px;
+    --space-10: 60px;
+    --space-11: 68px;
+    --space-12: 80px;
+
+    --button-height-sm: 36px;
+    --button-height-md: 44px;
+    --button-height-lg: 56px;
+    --input-height-sm: 36px;
+    --input-height-md: 44px;
+    --input-height-lg: 56px;
+    --row-height-compact: 48px;
+    --row-height-normal: 64px;
+    --row-height-spacious: 80px;
+
+    --card-padding-sm: 20px;
+    --card-padding-md: 28px;
+    --card-padding-lg: 40px;
+    --dialog-padding: 40px;
+    --section-gap: 64px;
+
+    /* Icon styling */
+    --icon-family: phosphor-fill;
+    --icon-default-size: 22px;
+    --icon-stroke-width: 0;
+    --icon-color: currentColor;
+
+    /* Elevation */
+    --elevation-card: none;
+    --elevation-popover: none;
+    --elevation-dialog: none;
+    --elevation-toast: none;
+
+    /* Geometry */
+    --radius-container: 8px;
+    --radius-interactive: 24px;
+    --radius-pill: 9999px;
+    --border-hairline: 1px;
+    --border-standard: 1px;
+    --border-heavy: 1px;
+
+    /* Transitions */
+    --transition-fast: 300ms;
+    --transition-normal: 500ms;
+    --transition-slow: 800ms;
+    --transition-timing: cubic-bezier(0.2, 0, 0, 1);
+
+    /* Motion palette */
+    --duration-instant: 0ms;
+    --duration-fast: 300ms;
+    --duration-normal: 500ms;
+    --duration-slow: 800ms;
+    --duration-dramatic: 1200ms;
+    --easing-linear: linear;
+    --easing-standard: cubic-bezier(0.2, 0, 0, 1);
+    --easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+    --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /* Hover/Active transforms - No lift */
+    --hover-scale: 1;
+    --hover-translate-y: 0;
+    --hover-translate-x: 0;
+    --active-scale: 1;
+    --active-translate-y: 0;
+
+    /* Focus ring */
+    --focus-ring-width: 2px;
+    --focus-ring-offset: 3px;
+    --focus-ring-color: #5b7fff;
+
+}

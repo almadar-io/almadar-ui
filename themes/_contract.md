@@ -1,0 +1,198 @@
+# Theme CSS Variable Contract
+
+> Reference: `docs/Almadar_Std_Variations.md` §2 (Skin layer).
+> Type counterpart: `@almadar/core` exports `ThemeTokens` with typed sub-interfaces — `DensityTokens`, `TypeScaleTokens`, `MotionTokens`, `IconographyTokens`, `ElevationTokens`, `GeometryTokens`.
+> This file is **not loaded at runtime**. It is the authoritative reference both for theme authors and for the `_defaults.css` fallback layer in `themes/index.css`.
+
+CSS custom properties are the runtime source of truth — every `@almadar/ui` component reads from these variables via Tailwind utility classes (mapped in `tailwind-preset.cjs`). A theme that omits a variable inherits a deterministic fallback from the `:root` block declared in `themes/index.css`; the fallbacks are calibrated to preserve the visual baseline of the 18 pre-Layer-1 themes.
+
+A "truly unique" theme overrides variables across **all** axes below — not just `--color-*`. Two themes that diverge only on color will feel like the same product in two paint jobs.
+
+## Existing variables (preserved unchanged)
+
+These were defined by every pre-Layer-1 theme and continue to be the canonical paint surface. Backfill agents MUST NOT change existing values; they only append the new axis variables below.
+
+### Color
+`--color-primary`, `--color-primary-hover`, `--color-primary-foreground`,
+`--color-secondary`, `--color-secondary-hover`, `--color-secondary-foreground`,
+`--color-accent`, `--color-accent-foreground`,
+`--color-muted`, `--color-muted-foreground`,
+`--color-background`, `--color-foreground`,
+`--color-card`, `--color-card-foreground`,
+`--color-surface`, `--color-border`, `--color-input`, `--color-ring`,
+`--color-error`, `--color-error-foreground`,
+`--color-success`, `--color-success-foreground`,
+`--color-warning`, `--color-warning-foreground`,
+`--color-info`, `--color-info-foreground`.
+
+Optional table-specific (defined by some themes, fall back to neutrals when absent): `--color-table-header`, `--color-table-border`, `--color-table-row-hover`, `--color-surface-hover`, `--color-border-hover`, `--color-placeholder`.
+
+### Radius (existing — Geometry axis below adds intent overlay)
+`--radius-none`, `--radius-sm`, `--radius-md`, `--radius-lg`, `--radius-xl`, `--radius-full`.
+
+### Border width (existing — Geometry axis adds intent overlay)
+`--border-width`, `--border-width-thin`, `--border-width-thick`.
+
+### Shadow (existing — Elevation axis adds intent overlay)
+`--shadow-none`, `--shadow-sm`, `--shadow-main`, `--shadow-lg`, `--shadow-inner`, `--shadow-hover`, `--shadow-active`.
+
+### Typography (existing — TypeScale axis adds family triplet + scale)
+`--font-family`, `--font-weight-normal`, `--font-weight-medium`, `--font-weight-bold`, `--line-height`, `--letter-spacing`.
+
+### Icon (existing — Iconography axis adds family selector)
+`--icon-stroke-width`, `--icon-color`.
+
+### Transitions (existing — Motion axis adds named palette)
+`--transition-fast`, `--transition-normal`, `--transition-slow`, `--transition-timing`.
+
+### Interaction (existing)
+`--hover-scale`, `--hover-translate-y`, `--hover-translate-x`,
+`--active-scale`, `--active-translate-y`,
+`--focus-ring-width`, `--focus-ring-offset`, `--focus-ring-color`.
+
+---
+
+## New variables (added in Layer 1)
+
+Every theme — backfilled or new — defines the variables below. The defaults column shows what the `_defaults.css` `:root` block declares; backfill agents copy these into each existing theme block so post-migration visual output stays identical. New-theme authors override per their personality brief.
+
+### Density axis — `--space-*` scale + per-element heights/paddings
+
+Spacing scale (12 steps; current Tailwind defaults shown to preserve `p-3 / p-4 / p-6` parity):
+
+| Variable | Default | Tailwind equivalent |
+|---|---|---|
+| `--space-0` | `0px` | `0` |
+| `--space-1` | `4px` | `1` |
+| `--space-2` | `8px` | `2` |
+| `--space-3` | `12px` | `3` |
+| `--space-4` | `16px` | `4` |
+| `--space-5` | `20px` | `5` |
+| `--space-6` | `24px` | `6` |
+| `--space-7` | `28px` | `7` |
+| `--space-8` | `32px` | `8` |
+| `--space-9` | `36px` | `9` |
+| `--space-10` | `40px` | `10` |
+| `--space-11` | `44px` | `11` |
+| `--space-12` | `48px` | `12` |
+
+Per-element heights:
+
+| Variable | Default | Used by |
+|---|---|---|
+| `--button-height-sm` | `28px` | Button size="sm" |
+| `--button-height-md` | `36px` | Button size="md" |
+| `--button-height-lg` | `44px` | Button size="lg" |
+| `--input-height-sm` | `28px` | Input size="sm" |
+| `--input-height-md` | `36px` | Input size="md" |
+| `--input-height-lg` | `44px` | Input size="lg" |
+| `--row-height-compact` | `32px` | Table dense rows |
+| `--row-height-normal` | `40px` | Table default rows |
+| `--row-height-spacious` | `48px` | Table comfortable rows |
+
+Per-element padding:
+
+| Variable | Default | Used by |
+|---|---|---|
+| `--card-padding-sm` | `12px` | Card padding="sm" (matches `p-3`) |
+| `--card-padding-md` | `16px` | Card padding="md" (matches `p-4`) |
+| `--card-padding-lg` | `24px` | Card padding="lg" (matches `p-6`) |
+| `--dialog-padding` | `24px` | Dialog body |
+| `--section-gap` | `32px` | Section-to-section vertical rhythm |
+
+### Type axis — family triplet + scale + intent mapping
+
+Family slots (the existing `--font-family` aliases to `--font-family-body` for backward compat):
+
+| Variable | Default |
+|---|---|
+| `--font-family-display` | `var(--font-family)` |
+| `--font-family-body` | `var(--font-family)` |
+| `--font-family-mono` | `ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace` |
+
+Size scale + paired line-heights (defaults match Tailwind's default `text-*` scale so existing `text-sm` resolves to identical px):
+
+| Size key | `--text-*` default | `--leading-*` default |
+|---|---|---|
+| `xs` | `12px` | `16px` |
+| `sm` | `14px` | `20px` |
+| `base` | `16px` | `24px` |
+| `lg` | `18px` | `28px` |
+| `xl` | `20px` | `28px` |
+| `2xl` | `24px` | `32px` |
+| `3xl` | `30px` | `36px` |
+| `4xl` | `36px` | `40px` |
+| `display-1` | `48px` | `52px` |
+| `display-2` | `60px` | `64px` |
+
+Intent mapping — three vars per intent (`size`, `weight`, `leading`). Defaults are calibrated against current component usage (Card title `text-lg` → `heading-major`; subtitle `text-sm` muted → `caption`):
+
+| Intent | `--intent-*-size` | `--intent-*-weight` | `--intent-*-leading` |
+|---|---|---|---|
+| `heading-major` | `var(--text-2xl)` | `var(--font-weight-bold)` | `var(--leading-2xl)` |
+| `heading-minor` | `var(--text-lg)` | `var(--font-weight-bold)` | `var(--leading-lg)` |
+| `body-emphasis` | `var(--text-base)` | `var(--font-weight-medium)` | `var(--leading-base)` |
+| `body-default` | `var(--text-sm)` | `var(--font-weight-normal)` | `var(--leading-sm)` |
+| `body-quiet` | `var(--text-sm)` | `var(--font-weight-normal)` | `var(--leading-sm)` |
+| `caption` | `var(--text-xs)` | `var(--font-weight-normal)` | `var(--leading-xs)` |
+| `numeric` | `var(--text-sm)` | `var(--font-weight-medium)` | `var(--leading-sm)` |
+
+### Motion axis — duration palette + easing palette
+
+Duration palette (existing `--transition-fast/normal/slow` alias to `--duration-fast/normal/slow`):
+
+| Variable | Default |
+|---|---|
+| `--duration-instant` | `0ms` |
+| `--duration-fast` | `var(--transition-fast)` |
+| `--duration-normal` | `var(--transition-normal)` |
+| `--duration-slow` | `var(--transition-slow)` |
+| `--duration-dramatic` | `600ms` |
+
+Easing palette (existing `--transition-timing` aliases to `--easing-standard`):
+
+| Variable | Default |
+|---|---|
+| `--easing-linear` | `linear` |
+| `--easing-standard` | `var(--transition-timing)` |
+| `--easing-emphasized` | `cubic-bezier(0.2, 0, 0, 1)` |
+| `--easing-spring` | `cubic-bezier(0.34, 1.56, 0.64, 1)` |
+
+### Iconography axis
+
+| Variable | Default | Notes |
+|---|---|---|
+| `--icon-family` | `lucide` | String identifier consumed by the icon resolver. Values: `lucide` \| `phosphor-outline` \| `phosphor-fill` \| `phosphor-duotone` \| `tabler` \| `fa-solid`. |
+| `--icon-default-size` | `16px` | Default icon px size when component doesn't override. |
+
+`--icon-stroke-width` and `--icon-color` continue from the existing surface.
+
+### Elevation axis — per-layer mapping
+
+| Variable | Default |
+|---|---|
+| `--elevation-card` | `var(--shadow-sm)` |
+| `--elevation-popover` | `var(--shadow-main)` |
+| `--elevation-dialog` | `var(--shadow-lg)` |
+| `--elevation-toast` | `var(--shadow-main)` |
+
+### Geometry axis — radius rhythm + border-width rhythm with intent
+
+| Variable | Default |
+|---|---|
+| `--radius-container` | `var(--radius-md)` |
+| `--radius-interactive` | `var(--radius-md)` |
+| `--radius-pill` | `var(--radius-full)` |
+| `--border-hairline` | `1px` |
+| `--border-standard` | `var(--border-width)` |
+| `--border-heavy` | `var(--border-width-thick)` |
+
+---
+
+## Authoring rules
+
+1. **Backfill agents** (B1, B2, B3): copy the defaults above verbatim into each existing theme's light and dark blocks. Do not change any pre-existing variable. The migration must produce pixel-identical output to today for every pre-Layer-1 theme.
+2. **New-theme agents** (B4–B8): define every variable above. Pick values that express the personality brief — compact density, editorial type, sharp geometry, dramatic motion, filled iconography, etc. Defaults are NOT a fallback for new themes; new themes are the proof that the axis surface works.
+3. **No raw pixel literals in components**. All dimensional values flow through these tokens or through Tailwind utilities backed by them in `tailwind-preset.cjs`. Components that hardcode `text-[10px]` or `min-w-[44px]` are migration targets.
+4. **Icon family swap is runtime-resolved**. `--icon-family` is read by the icon resolver in `@almadar/ui`; setting the variable in a theme does not require component edits.
+5. **Wireframe and trait-wars exceptions**. Wireframe's `--easing-standard` is `linear` not the default cubic-bezier; trait-wars's iconography may remain `lucide` even if its visual personality diverges. Document any per-theme override at the top of the theme file.

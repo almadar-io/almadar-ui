@@ -29,6 +29,13 @@
 @import "./arctic.css";
 @import "./copper.css";
 
+/* Layer 1 skin axes — truly-unique themes (see docs/Almadar_Std_Variations.md) */
+@import "./prism.css";
+@import "./gazette.css";
+@import "./terminal.css";
+@import "./atelier.css";
+@import "./kiosk.css";
+
 /**
  * Minimal element reset for @almadar/ui components.
  *

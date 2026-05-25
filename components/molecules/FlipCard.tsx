@@ -41,7 +41,7 @@ export const FlipCard = ({
     >
       {/* Front face */}
       <Box
-        className="absolute inset-0 w-full h-full rounded-lg shadow-lg flex items-center justify-center p-6"
+        className="absolute inset-0 w-full h-full rounded-lg shadow-elevation-dialog flex items-center justify-center p-6"
         style={{ backfaceVisibility: 'hidden', transform: 'rotateY(0deg)' }}
       >
         {front}
@@ -49,7 +49,7 @@ export const FlipCard = ({
 
       {/* Back face */}
       <Box
-        className="absolute inset-0 w-full h-full rounded-lg shadow-lg flex items-center justify-center p-6"
+        className="absolute inset-0 w-full h-full rounded-lg shadow-elevation-dialog flex items-center justify-center p-6"
         style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
       >
         {back}

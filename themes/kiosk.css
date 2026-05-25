@@ -1,0 +1,412 @@
+/**
+ * Kiosk Theme
+ *
+ * Touch-first, chunky, mobile/kiosk-influenced. Big tap targets,
+ * pill buttons, friendly saturated colors, and generous spacing.
+ */
+
+/* ==========================================================================
+ * LIGHT MODE
+ * ========================================================================== */
+[data-theme="kiosk-light"] {
+    /* Shadows - Lifted, prominent for touch feedback */
+    --shadow-main:
+        0 6px 20px rgba(255, 90, 79, 0.14), 0 2px 6px rgba(0, 0, 0, 0.08);
+    --shadow-sm: 0 3px 8px rgba(0, 0, 0, 0.08);
+    --shadow-lg:
+        0 16px 40px rgba(255, 90, 79, 0.22), 0 6px 16px rgba(0, 0, 0, 0.1);
+    --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.08);
+    --shadow-none: none;
+    --shadow-hover:
+        0 20px 50px rgba(255, 90, 79, 0.28), 0 8px 20px rgba(0, 0, 0, 0.12);
+    --shadow-active: 0 3px 10px rgba(255, 90, 79, 0.2);
+
+    /* Border radius - Chunky containers, pill interactive */
+    --radius-none: 0px;
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
+    --radius-full: 9999px;
+
+    /* Border width - Tactile, visible */
+    --border-width: 2px;
+    --border-width-thin: 1px;
+    --border-width-thick: 3px;
+
+    /* Colors - Warm white background, saturated coral primary */
+    --color-primary: #ff5a4f;
+    --color-primary-hover: #e8483e;
+    --color-primary-foreground: #ffffff;
+
+    --color-secondary: #fff1ef;
+    --color-secondary-hover: #ffe1dd;
+    --color-secondary-foreground: #1a1a1a;
+
+    --color-accent: #22c8be;
+    --color-accent-foreground: #ffffff;
+
+    --color-muted: #f5f5f4;
+    --color-muted-foreground: #595959;
+
+    --color-background: #fefefe;
+    --color-foreground: #1a1a1a;
+    --color-card: #ffffff;
+    --color-card-foreground: #1a1a1a;
+    --color-surface: #fff8f6;
+    --color-border: #e6e6e6;
+    --color-input: #d4d4d4;
+    --color-ring: #ff5a4f;
+
+    /* Semantic colors - Saturated, cheerful */
+    --color-error: #ef4444;
+    --color-error-foreground: #ffffff;
+    --color-success: #16a34a;
+    --color-success-foreground: #ffffff;
+    --color-warning: #f59e0b;
+    --color-warning-foreground: #1a1a1a;
+    --color-info: #0ea5e9;
+    --color-info-foreground: #ffffff;
+
+    /* Typography - Chunky, rounded geometric */
+    --font-family:
+        "Manrope", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-weight-normal: 500;
+    --font-weight-medium: 600;
+    --font-weight-bold: 800;
+    --letter-spacing: -0.01em;
+    --line-height: 1.55;
+
+    /* Icon styling - Filled, large, visible */
+    --icon-stroke-width: 0;
+    --icon-color: #1a1a1a;
+
+    /* Transitions - Organic, friendly */
+    --transition-fast: 300ms;
+    --transition-normal: 500ms;
+    --transition-slow: 750ms;
+    --transition-timing: cubic-bezier(0.16, 1, 0.3, 1);
+
+    /* Hover/Active transforms - Bigger lift for touch */
+    --hover-scale: 1.03;
+    --hover-translate-y: -3px;
+    --hover-translate-x: 0;
+    --active-scale: 0.96;
+    --active-translate-y: 1px;
+
+    /* Focus ring - Thick coral */
+    --focus-ring-width: 3px;
+    --focus-ring-offset: 3px;
+    --focus-ring-color: #ff5a4f;
+
+    /* Density axis — spacing scale (extra-spacious, 12pt rhythm) */
+    --space-0: 0px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 18px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --space-7: 40px;
+    --space-8: 48px;
+    --space-9: 56px;
+    --space-10: 64px;
+    --space-11: 72px;
+    --space-12: 80px;
+    /* Density axis — per-element heights (large tap targets) */
+    --button-height-sm: 44px;
+    --button-height-md: 52px;
+    --button-height-lg: 64px;
+    --input-height-sm: 44px;
+    --input-height-md: 52px;
+    --input-height-lg: 64px;
+    --row-height-compact: 56px;
+    --row-height-normal: 72px;
+    --row-height-spacious: 88px;
+    /* Density axis — per-element padding (generous) */
+    --card-padding-sm: 16px;
+    --card-padding-md: 24px;
+    --card-padding-lg: 32px;
+    --dialog-padding: 32px;
+    --section-gap: 48px;
+    /* Type axis — family triplet */
+    --font-family-display:
+        "Manrope", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-family-body:
+        "Manrope", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-family-mono:
+        "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    /* Type axis — size scale (chunky, readable at arm's length) */
+    --text-xs: 14px;
+    --leading-xs: 20px;
+    --text-sm: 16px;
+    --leading-sm: 24px;
+    --text-base: 18px;
+    --leading-base: 28px;
+    --text-lg: 22px;
+    --leading-lg: 32px;
+    --text-xl: 26px;
+    --leading-xl: 34px;
+    --text-2xl: 32px;
+    --leading-2xl: 40px;
+    --text-3xl: 40px;
+    --leading-3xl: 48px;
+    --text-4xl: 48px;
+    --leading-4xl: 56px;
+    --text-display-1: 64px;
+    --leading-display-1: 72px;
+    --text-display-2: 80px;
+    --leading-display-2: 88px;
+    /* Type axis — intent mapping */
+    --intent-heading-major-size: 28px;
+    --intent-heading-major-weight: var(--font-weight-bold);
+    --intent-heading-major-leading: 36px;
+    --intent-heading-minor-size: var(--text-lg);
+    --intent-heading-minor-weight: var(--font-weight-bold);
+    --intent-heading-minor-leading: var(--leading-lg);
+    --intent-body-emphasis-size: var(--text-base);
+    --intent-body-emphasis-weight: var(--font-weight-medium);
+    --intent-body-emphasis-leading: var(--leading-base);
+    --intent-body-default-size: var(--text-base);
+    --intent-body-default-weight: var(--font-weight-normal);
+    --intent-body-default-leading: var(--leading-base);
+    --intent-body-quiet-size: var(--text-sm);
+    --intent-body-quiet-weight: var(--font-weight-normal);
+    --intent-body-quiet-leading: var(--leading-sm);
+    --intent-caption-size: var(--text-sm);
+    --intent-caption-weight: var(--font-weight-medium);
+    --intent-caption-leading: var(--leading-sm);
+    --intent-numeric-size: var(--text-base);
+    --intent-numeric-weight: var(--font-weight-bold);
+    --intent-numeric-leading: var(--leading-base);
+    /* Motion axis — duration palette (organic, slower) */
+    --duration-instant: 0ms;
+    --duration-fast: 300ms;
+    --duration-normal: 500ms;
+    --duration-slow: 750ms;
+    --duration-dramatic: 1000ms;
+    /* Motion axis — easing palette (ease-out, friendly) */
+    --easing-linear: linear;
+    --easing-standard: cubic-bezier(0.16, 1, 0.3, 1);
+    --easing-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+    --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    /* Iconography axis - filled phosphor, large */
+    --icon-family: phosphor-fill;
+    --icon-default-size: 26px;
+    /* Elevation axis - lifted, prominent */
+    --elevation-card: var(--shadow-lg);
+    --elevation-popover: var(--shadow-lg);
+    --elevation-dialog: var(--shadow-lg);
+    --elevation-toast: var(--shadow-main);
+    /* Geometry axis - pill interactive, chunky containers */
+    --radius-container: 16px;
+    --radius-interactive: 9999px;
+    --radius-pill: 9999px;
+    /* Geometry axis - tactile borders */
+    --border-hairline: 1px;
+    --border-standard: 2px;
+    --border-heavy: 3px;
+}
+
+/* ==========================================================================
+ * DARK MODE
+ * ========================================================================== */
+[data-theme="kiosk-dark"] {
+    /* Shadows - Deep, lifted with coral glow */
+    --shadow-main:
+        0 6px 20px rgba(255, 90, 79, 0.2), 0 2px 6px rgba(0, 0, 0, 0.4);
+    --shadow-sm: 0 3px 8px rgba(0, 0, 0, 0.4);
+    --shadow-lg:
+        0 16px 40px rgba(255, 90, 79, 0.3), 0 6px 16px rgba(0, 0, 0, 0.5);
+    --shadow-inner: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    --shadow-none: none;
+    --shadow-hover:
+        0 20px 50px rgba(255, 90, 79, 0.4), 0 8px 20px rgba(34, 200, 190, 0.2);
+    --shadow-active: 0 3px 10px rgba(255, 90, 79, 0.3);
+
+    /* Border radius - Chunky containers, pill interactive */
+    --radius-none: 0px;
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
+    --radius-full: 9999px;
+
+    /* Border width - Tactile, visible */
+    --border-width: 2px;
+    --border-width-thin: 1px;
+    --border-width-thick: 3px;
+
+    /* Colors - Deep navy background, coral primary, turquoise pop */
+    --color-primary: #ff6b5e;
+    --color-primary-hover: #ff8478;
+    --color-primary-foreground: #ffffff;
+
+    --color-secondary: #1c2a44;
+    --color-secondary-hover: #2a3a5c;
+    --color-secondary-foreground: #ffffff;
+
+    --color-accent: #2ee0d4;
+    --color-accent-foreground: #06231f;
+
+    --color-muted: #16243c;
+    --color-muted-foreground: #b8c4d8;
+
+    --color-background: #0a1428;
+    --color-foreground: #ffffff;
+    --color-card: #122038;
+    --color-card-foreground: #ffffff;
+    --color-surface: #16243c;
+    --color-border: rgba(255, 255, 255, 0.12);
+    --color-input: rgba(255, 255, 255, 0.16);
+    --color-ring: #ff6b5e;
+
+    /* Semantic colors - Saturated, bright for dark */
+    --color-error: #ff7a7a;
+    --color-error-foreground: #1a0606;
+    --color-success: #4ade80;
+    --color-success-foreground: #052e14;
+    --color-warning: #fbbf24;
+    --color-warning-foreground: #1a1106;
+    --color-info: #38bdf8;
+    --color-info-foreground: #062235;
+
+    /* Typography - Chunky, rounded geometric */
+    --font-family:
+        "Manrope", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-weight-normal: 500;
+    --font-weight-medium: 600;
+    --font-weight-bold: 800;
+    --letter-spacing: -0.01em;
+    --line-height: 1.55;
+
+    /* Icon styling - Filled, large, visible */
+    --icon-stroke-width: 0;
+    --icon-color: #ffffff;
+
+    /* Transitions - Organic, friendly */
+    --transition-fast: 300ms;
+    --transition-normal: 500ms;
+    --transition-slow: 750ms;
+    --transition-timing: cubic-bezier(0.16, 1, 0.3, 1);
+
+    /* Hover/Active transforms - Bigger lift for touch */
+    --hover-scale: 1.03;
+    --hover-translate-y: -3px;
+    --hover-translate-x: 0;
+    --active-scale: 0.96;
+    --active-translate-y: 1px;
+
+    /* Focus ring - Thick coral */
+    --focus-ring-width: 3px;
+    --focus-ring-offset: 3px;
+    --focus-ring-color: #ff6b5e;
+
+    /* Density axis — spacing scale (extra-spacious, 12pt rhythm) */
+    --space-0: 0px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 18px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --space-7: 40px;
+    --space-8: 48px;
+    --space-9: 56px;
+    --space-10: 64px;
+    --space-11: 72px;
+    --space-12: 80px;
+    /* Density axis — per-element heights (large tap targets) */
+    --button-height-sm: 44px;
+    --button-height-md: 52px;
+    --button-height-lg: 64px;
+    --input-height-sm: 44px;
+    --input-height-md: 52px;
+    --input-height-lg: 64px;
+    --row-height-compact: 56px;
+    --row-height-normal: 72px;
+    --row-height-spacious: 88px;
+    /* Density axis — per-element padding (generous) */
+    --card-padding-sm: 16px;
+    --card-padding-md: 24px;
+    --card-padding-lg: 32px;
+    --dialog-padding: 32px;
+    --section-gap: 48px;
+    /* Type axis — family triplet */
+    --font-family-display:
+        "Manrope", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-family-body:
+        "Manrope", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-family-mono:
+        "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    /* Type axis — size scale (chunky, readable at arm's length) */
+    --text-xs: 14px;
+    --leading-xs: 20px;
+    --text-sm: 16px;
+    --leading-sm: 24px;
+    --text-base: 18px;
+    --leading-base: 28px;
+    --text-lg: 22px;
+    --leading-lg: 32px;
+    --text-xl: 26px;
+    --leading-xl: 34px;
+    --text-2xl: 32px;
+    --leading-2xl: 40px;
+    --text-3xl: 40px;
+    --leading-3xl: 48px;
+    --text-4xl: 48px;
+    --leading-4xl: 56px;
+    --text-display-1: 64px;
+    --leading-display-1: 72px;
+    --text-display-2: 80px;
+    --leading-display-2: 88px;
+    /* Type axis — intent mapping */
+    --intent-heading-major-size: 28px;
+    --intent-heading-major-weight: var(--font-weight-bold);
+    --intent-heading-major-leading: 36px;
+    --intent-heading-minor-size: var(--text-lg);
+    --intent-heading-minor-weight: var(--font-weight-bold);
+    --intent-heading-minor-leading: var(--leading-lg);
+    --intent-body-emphasis-size: var(--text-base);
+    --intent-body-emphasis-weight: var(--font-weight-medium);
+    --intent-body-emphasis-leading: var(--leading-base);
+    --intent-body-default-size: var(--text-base);
+    --intent-body-default-weight: var(--font-weight-normal);
+    --intent-body-default-leading: var(--leading-base);
+    --intent-body-quiet-size: var(--text-sm);
+    --intent-body-quiet-weight: var(--font-weight-normal);
+    --intent-body-quiet-leading: var(--leading-sm);
+    --intent-caption-size: var(--text-sm);
+    --intent-caption-weight: var(--font-weight-medium);
+    --intent-caption-leading: var(--leading-sm);
+    --intent-numeric-size: var(--text-base);
+    --intent-numeric-weight: var(--font-weight-bold);
+    --intent-numeric-leading: var(--leading-base);
+    /* Motion axis — duration palette (organic, slower) */
+    --duration-instant: 0ms;
+    --duration-fast: 300ms;
+    --duration-normal: 500ms;
+    --duration-slow: 750ms;
+    --duration-dramatic: 1000ms;
+    /* Motion axis — easing palette (ease-out, friendly) */
+    --easing-linear: linear;
+    --easing-standard: cubic-bezier(0.16, 1, 0.3, 1);
+    --easing-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+    --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+    /* Iconography axis - filled phosphor, large */
+    --icon-family: phosphor-fill;
+    --icon-default-size: 26px;
+    /* Elevation axis - lifted, prominent */
+    --elevation-card: var(--shadow-lg);
+    --elevation-popover: var(--shadow-lg);
+    --elevation-dialog: var(--shadow-lg);
+    --elevation-toast: var(--shadow-main);
+    /* Geometry axis - pill interactive, chunky containers */
+    --radius-container: 16px;
+    --radius-interactive: 9999px;
+    --radius-pill: 9999px;
+    /* Geometry axis - tactile borders */
+    --border-hairline: 1px;
+    --border-standard: 2px;
+    --border-heavy: 3px;
+}

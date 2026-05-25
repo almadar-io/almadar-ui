@@ -70,7 +70,7 @@ export const ProgressDots: React.FC<ProgressDotsProps> = ({
           <Box
             key={index}
             className={cn(
-              'rounded-full transition-all duration-200',
+              'rounded-full transition-all duration-fast',
               onDotClick && 'cursor-pointer'
             )}
             style={{

@@ -97,7 +97,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
         className={cn(
           'top-0 left-0 right-0 z-10',
           'items-center justify-center',
-          'transition-opacity duration-200',
+          'transition-opacity duration-fast',
           showIndicator ? 'opacity-100' : 'opacity-0',
         )}
         style={{

@@ -496,10 +496,11 @@ export const Form: React.FC<FormProps> = ({
           type: f.type,
           required: f.required,
           defaultValue: f.default,
-          values: f.values,
+          // EntityField is a discriminated union — `values` lives on Scalar/Enum, `relation` lives on Relation.
+          values: 'values' in f ? f.values : undefined,
           min: f.min,
           max: f.max,
-          relation: f.relation ? { entity: f.relation.entity } : undefined,
+          relation: 'relation' in f ? { entity: f.relation.entity } : undefined,
         }),
       );
     }, [entity, fields]);
@@ -850,10 +851,14 @@ export const Form: React.FC<FormProps> = ({
             type: entityField.type,
             required: entityField.required,
             defaultValue: entityField.default,
-            values: entityField.values,
+            // EntityField is a discriminated union — `values` lives on Scalar/Enum, `relation` lives on Relation.
+            values: 'values' in entityField ? entityField.values : undefined,
             min: entityField.min,
             max: entityField.max,
-            relation: entityField.relation ? { entity: entityField.relation.entity } : undefined,
+            relation:
+              'relation' in entityField
+                ? { entity: entityField.relation.entity }
+                : undefined,
           };
         }
         return { name: field, type: 'string' };

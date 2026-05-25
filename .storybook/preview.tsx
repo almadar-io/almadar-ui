@@ -44,6 +44,17 @@ const THEME_ITEMS = [
     { value: 'copper-light', title: 'Copper Light' },
     { value: 'copper-dark', title: 'Copper Dark' },
     { value: 'trait-wars-dark', title: 'Trait Wars' },
+    // Layer 1 skin axes — truly-unique themes
+    { value: 'prism-light', title: 'Prism Light (compact tech)' },
+    { value: 'prism-dark', title: 'Prism Dark (compact tech)' },
+    { value: 'gazette-light', title: 'Gazette Light (editorial)' },
+    { value: 'gazette-dark', title: 'Gazette Dark (editorial)' },
+    { value: 'terminal-light', title: 'Terminal Light (brutalist dense)' },
+    { value: 'terminal-dark', title: 'Terminal Dark (brutalist dense)' },
+    { value: 'atelier-light', title: 'Atelier Light (display-heavy)' },
+    { value: 'atelier-dark', title: 'Atelier Dark (display-heavy)' },
+    { value: 'kiosk-light', title: 'Kiosk Light (touch-first)' },
+    { value: 'kiosk-dark', title: 'Kiosk Dark (touch-first)' },
 ];
 
 /**

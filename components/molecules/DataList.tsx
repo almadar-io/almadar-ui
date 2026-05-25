@@ -398,7 +398,7 @@ export function DataList<T extends EntityRow = EntityRow>({
                       <Typography
                         variant="caption"
                         className={cn(
-                          'mt-1 text-[0.65rem]',
+                          'mt-1 text-xs',
                           isSent ? 'opacity-70' : 'text-muted-foreground',
                         )}
                       >
@@ -472,7 +472,7 @@ export function DataList<T extends EntityRow = EntityRow>({
       <Box key={id} data-entity-row data-entity-id={id}>
         <Box
           className={cn(
-            'group flex items-center gap-4 transition-all duration-200',
+            'group flex items-center gap-4 transition-all duration-fast',
             isCompact ? 'px-4 py-2' : 'px-6 py-4',
             'hover:bg-muted/80',
             !isCard && !isCompact && 'rounded-lg border border-transparent hover:border-border',
@@ -588,7 +588,7 @@ export function DataList<T extends EntityRow = EntityRow>({
   return dnd.wrapContainer(
     <Box
       className={cn(
-        isCard && 'bg-card rounded-xl border border-border shadow-lg overflow-hidden',
+        isCard && 'bg-card rounded-xl border border-border shadow-elevation-dialog overflow-hidden',
         !isCard && gapClass,
         className,
       )}

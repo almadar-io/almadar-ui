@@ -109,7 +109,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           "border-l-2 border-border",
           position === "left" && "border-l-0 border-r-2",
           "flex flex-col",
-          "transition-transform duration-300 ease-in-out",
+          "transition-transform duration-normal ease-standard",
           width,
           position === "right" ? "right-0" : "left-0",
           className,

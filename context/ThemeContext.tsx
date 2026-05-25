@@ -139,6 +139,37 @@ export const BUILT_IN_THEMES: ThemeDefinition[] = [
     hasLightMode: true,
     hasDarkMode: true,
   },
+  // Layer 1 skin axes — truly-unique themes (compact tech / editorial / brutalist dense / display-heavy / touch-first)
+  {
+    name: "prism",
+    displayName: "Prism",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
+  {
+    name: "gazette",
+    displayName: "Gazette",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
+  {
+    name: "terminal",
+    displayName: "Terminal",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
+  {
+    name: "atelier",
+    displayName: "Atelier",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
+  {
+    name: "kiosk",
+    displayName: "Kiosk",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
 ];
 
 /** Theme context value */

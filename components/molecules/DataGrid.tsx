@@ -436,7 +436,7 @@ export function DataGrid<T extends EntityRow = EntityRow>({
               className={cn(
                 'bg-card rounded-lg',
                 'border border-border',
-                'shadow-sm hover:shadow-lg',
+                'shadow-elevation-card hover:shadow-elevation-dialog',
                 'hover:border-primary transition-all',
                 'flex flex-col',
                 isSelected && 'ring-2 ring-primary border-primary',

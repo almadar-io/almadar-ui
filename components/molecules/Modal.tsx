@@ -154,7 +154,7 @@ export const Modal: React.FC<ModalProps> = ({
             // Reset browser-default dialog chrome — we own styling.
             "m-0 p-0 border-0 bg-transparent",
             // Pre-existing dialog frame
-            "pointer-events-auto w-full flex flex-col bg-surface border shadow-lg rounded-md",
+            "pointer-events-auto w-full flex flex-col bg-surface border shadow-elevation-dialog rounded-container",
             // Desktop sizing + viewport-aware floor.
             sizeClasses[size],
             minWidthClasses[size],
