@@ -27,16 +27,50 @@ import type {
   EventEdgeData,
   RenderUIEntry,
   PatternEventSource,
+  ScreenSize,
 } from './avl-preview-types';
+import { SCREEN_SIZE_PRESETS } from './avl-preview-types';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-// Spacing must exceed the largest screen preset (desktop 780px) plus margin
-const OVERVIEW_SPACING = 900;
-const EXPANDED_SPACING_X = 900;
-const EXPANDED_SPACING_Y = 600;
+// Card-to-card gap between preview nodes, on top of the preset width/height.
+// Wide enough that cards read as separate units; not so wide that the L1
+// grid sprawls past one viewport.
+const OVERVIEW_GAP_X = 160;
+const OVERVIEW_GAP_Y = 240;
+const EXPANDED_GAP_X = 160;
+const EXPANDED_GAP_Y = 240;
+
+// Card chrome (header bar + name strip + footer) on top of the device preset's
+// `minHeight`. Keeps Y spacing honest even when the preset reports a short
+// preview height.
+const CARD_CHROME_Y = 120;
+
+/**
+ * Compute non-overlapping grid spacing for a given screen-size preset.
+ * Each cell = preset.width × (preset.minHeight + chrome) + gap on both axes,
+ * so cards at any preset (mobile → wide) get the same visual breathing room.
+ *
+ * `screenSize` is optional and defaults to `'wide'` — the widest preset —
+ * so legacy callers that don't pass it are guaranteed not to overlap.
+ */
+function computeSpacing(screenSize: ScreenSize = 'wide'): { x: number; y: number } {
+  const preset = SCREEN_SIZE_PRESETS[screenSize];
+  return {
+    x: preset.width + OVERVIEW_GAP_X,
+    y: preset.minHeight + CARD_CHROME_Y + OVERVIEW_GAP_Y,
+  };
+}
+
+function computeExpandedSpacing(screenSize: ScreenSize = 'wide'): { x: number; y: number } {
+  const preset = SCREEN_SIZE_PRESETS[screenSize];
+  return {
+    x: preset.width + EXPANDED_GAP_X,
+    y: preset.minHeight + CARD_CHROME_Y + EXPANDED_GAP_Y,
+  };
+}
 
 /** Pattern types that can fire events via their `event` prop. */
 const EVENT_FIRING_PATTERNS = new Set([
@@ -341,6 +375,7 @@ export function schemaToOverviewGraph(
   behaviorMeta?: Record<string, { layer: string }>,
   layoutHint?: 'pipeline' | 'grid',
   orbitalStatus?: Record<string, PreviewNodeData['status']>,
+  screenSize?: ScreenSize,
 ): {
   nodes: Node<PreviewNodeData>[];
   edges: Edge<EventEdgeData>[];
@@ -351,6 +386,7 @@ export function schemaToOverviewGraph(
 
   const count = orbitals.length;
   const cols = layoutHint === 'pipeline' ? count : Math.ceil(Math.sqrt(count));
+  const spacing = computeSpacing(screenSize);
 
   for (let i = 0; i < orbitals.length; i++) {
     const orb = orbitals[i];
@@ -422,7 +458,7 @@ export function schemaToOverviewGraph(
     nodes.push({
       id: orb.name,
       type: 'preview',
-      position: { x: col * OVERVIEW_SPACING, y: row * OVERVIEW_SPACING },
+      position: { x: col * spacing.x, y: row * spacing.y },
       data: {
         orbitalName: orb.name,
         patterns: initPatterns,
@@ -540,9 +576,11 @@ function buildScreenGraph(
     transitionCount: number;
   }>,
   mockData?: Record<string, unknown[]>,
+  screenSize?: ScreenSize,
 ): { nodes: Node<PreviewNodeData>[]; edges: Edge<EventEdgeData>[] } {
   const nodes: Node<PreviewNodeData>[] = [];
   const edges: Edge<EventEdgeData>[] = [];
+  const spacing = computeExpandedSpacing(screenSize);
 
   // Edge-resolution helper: pick the most-informative transition per
   // (trait, to-state) so edges have a single canonical anchor per state.
@@ -587,7 +625,7 @@ function buildScreenGraph(
     nodes.push({
       id: nodeId,
       type: 'preview',
-      position: { x: col * EXPANDED_SPACING_X, y: row * EXPANDED_SPACING_Y },
+      position: { x: col * spacing.x, y: row * spacing.y },
       data: {
         orbitalName,
         traitName: entry.traitName,
@@ -617,7 +655,7 @@ function buildScreenGraph(
     nodes.push({
       id: nodeId,
       type: 'preview',
-      position: { x: col * EXPANDED_SPACING_X, y: row * EXPANDED_SPACING_Y },
+      position: { x: col * spacing.x, y: row * spacing.y },
       data: {
         orbitalName,
         traitName: group.representative.traitName,
@@ -692,6 +730,7 @@ export function orbitalToExpandedGraph(
   schema: OrbitalSchema,
   orbitalName: string,
   mockData?: Record<string, unknown[]>,
+  screenSize?: ScreenSize,
 ): {
   nodes: Node<PreviewNodeData>[];
   edges: Edge<EventEdgeData>[];
@@ -747,6 +786,7 @@ export function orbitalToExpandedGraph(
     organismTransitions,
     groupedBehaviors,
     mockData,
+    screenSize,
   );
 }
 
@@ -762,6 +802,7 @@ export function orbitalAliasToExpandedGraph(
   orbitalName: string,
   alias: string,
   mockData?: Record<string, unknown[]>,
+  screenSize?: ScreenSize,
 ): {
   nodes: Node<PreviewNodeData>[];
   edges: Edge<EventEdgeData>[];
@@ -782,6 +823,7 @@ export function orbitalAliasToExpandedGraph(
     transitions,
     [],
     mockData,
+    screenSize,
   );
 }
 

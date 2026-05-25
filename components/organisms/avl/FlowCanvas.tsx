@@ -307,15 +307,15 @@ function FlowCanvasInner({
       ? behaviorsToComposeGraph(behaviorEntries, behaviorWires ?? [], layoutHint)
       : { nodes: [], edges: [] };
 
-    const overview = schemaToOverviewGraph(parsedSchema, mockData, behaviorMeta, layoutHint, orbitalStatus);
+    const overview = schemaToOverviewGraph(parsedSchema, mockData, behaviorMeta, layoutHint, orbitalStatus, screenSize);
     const expanded = expandedOrbital
-      ? orbitalToExpandedGraph(parsedSchema, expandedOrbital, mockData)
+      ? orbitalToExpandedGraph(parsedSchema, expandedOrbital, mockData, screenSize)
       : { nodes: [], edges: [] };
     // STUDIO-1: L3 (`behavior-expanded`) — only one alias bucket's
     // transitions. Computed lazily; empty unless both `expandedOrbital`
     // and `expandedBehaviorAlias` are set.
     const behaviorExpanded = (expandedOrbital && expandedBehaviorAlias)
-      ? orbitalAliasToExpandedGraph(parsedSchema, expandedOrbital, expandedBehaviorAlias, mockData)
+      ? orbitalAliasToExpandedGraph(parsedSchema, expandedOrbital, expandedBehaviorAlias, mockData, screenSize)
       : { nodes: [], edges: [] };
     // COSMIC-1: trait-expanded — one card per trait of `expandedOrbital`
     // with intra-orbital `emit→listen` edges. Used by the cosmic tab L3.
@@ -342,7 +342,7 @@ function FlowCanvasInner({
       traitExpandedNodes: traitExpanded.nodes,
       traitExpandedEdges: traitExpanded.edges,
     };
-  }, [parsedSchema, expandedOrbital, expandedBehaviorAlias, behaviorMeta, layoutHint, composeLevel, behaviorEntries, behaviorWires, mockData, orbitalStatus]);
+  }, [parsedSchema, expandedOrbital, expandedBehaviorAlias, behaviorMeta, layoutHint, composeLevel, behaviorEntries, behaviorWires, mockData, orbitalStatus, screenSize]);
 
   // Both compose and orbital nodes flow through the same React Flow instance.
   // Cast to Node<Record<string, unknown>> for the union.
@@ -377,7 +377,7 @@ function FlowCanvasInner({
     setNodes(activeNodes);
     setEdges(activeEdges);
     requestAnimationFrame(() => {
-      reactFlow.fitView({ duration: 300, padding: 0.15 });
+      reactFlow.fitView({ duration: 300, padding: 0.25 });
     });
   }, [activeNodes, activeEdges, setNodes, setEdges, reactFlow]);
 
@@ -628,7 +628,7 @@ function FlowCanvasInner({
           minZoom={0.1}
           maxZoom={2.0}
           fitView
-          fitViewOptions={{ padding: 0.15 }}
+          fitViewOptions={{ padding: 0.25 }}
           nodesDraggable
           elementsSelectable
           proOptions={{ hideAttribution: true }}
@@ -689,7 +689,7 @@ function FlowCanvasInner({
                   onClick={() => {
                     pickScreenSize(size);
                     requestAnimationFrame(() => {
-                      reactFlow.fitView({ duration: 300, padding: 0.15 });
+                      reactFlow.fitView({ duration: 300, padding: 0.25 });
                     });
                   }}
                   className={`px-2 py-1 text-[11px] font-medium rounded cursor-pointer border-none transition-colors ${
