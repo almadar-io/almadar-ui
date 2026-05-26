@@ -195,6 +195,18 @@ function groupData(
 
 // ── Component ────────────────────────────────────────────────────────
 
+// Layer 2 look styles for DataList — applied to the list root and
+// child row containers via `[&_[data-entity-row]>div]:` selectors
+// (each row's inner Box carries the row's classes; targeting the
+// outer wrapper would miss the rendered chrome).
+const listLookStyles: Record<NonNullable<DataListProps['look']>, string> = {
+  dense: '[&_[data-entity-row]>div]:!py-1 [&_[data-entity-row]>div]:!px-3',
+  spacious: '[&_[data-entity-row]>div]:!py-5 [&_[data-entity-row]>div]:!px-8',
+  striped: '[&_[data-entity-row]:nth-child(even)>div]:bg-muted/30',
+  borderless: '[&_[data-entity-row]>div]:!border-0 [&_[data-entity-row]>div]:!hover:border-transparent',
+  'card-rows': '[&_[data-entity-row]>div]:shadow-elevation-card [&_[data-entity-row]>div]:rounded-container [&_[data-entity-row]>div]:!border [&_[data-entity-row]>div]:border-border [&_[data-entity-row]]:mb-2',
+};
+
 export function DataList<T extends EntityRow = EntityRow>({
   entity,
   fields,
@@ -232,6 +244,7 @@ export function DataList<T extends EntityRow = EntityRow>({
   positionEvent,
   dndItemIdField,
   dndRoot,
+  look = 'dense',
 }: DataListProps<T>) {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -595,6 +608,7 @@ export function DataList<T extends EntityRow = EntityRow>({
       className={cn(
         isCard && 'bg-card rounded-xl border border-border shadow-elevation-dialog overflow-hidden',
         !isCard && gapClass,
+        listLookStyles[look],
         className,
       )}
     >

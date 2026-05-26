@@ -201,6 +201,18 @@ const gapStyles: Record<string, string> = {
 
 // ── Component ────────────────────────────────────────────────────────
 
+// Layer 2 look styles for DataGrid — applied to the grid's child item
+// containers via `[&>*]:` selectors. Tuned to be visibly distinct in
+// Storybook: gap and per-item padding/radius/border do the work since
+// the grid itself is just a flex/grid layout container.
+const lookStyles: Record<NonNullable<DataGridProps['look']>, string> = {
+  dense: 'gap-2 [&>*]:p-card-sm',
+  spacious: 'gap-8 [&>*]:p-card-lg',
+  striped: '[&>*:nth-child(even)]:bg-muted/30',
+  borderless: '[&>*]:border-0 [&>*]:shadow-none',
+  'card-rows': '[&>*]:shadow-elevation-card [&>*]:rounded-container [&>*]:border [&>*]:border-border [&>*]:p-card-md',
+};
+
 export function DataGrid<T extends EntityRow = EntityRow>({
   entity,
   fields,
@@ -229,6 +241,7 @@ export function DataGrid<T extends EntityRow = EntityRow>({
   positionEvent,
   dndItemIdField,
   dndRoot,
+  look = 'dense',
 }: DataGridProps<T>) {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -405,7 +418,7 @@ export function DataGrid<T extends EntityRow = EntityRow>({
       )}
 
       <Box
-        className={cn('grid', gapStyles[gap], colsClass, className)}
+        className={cn('grid', gapStyles[gap], colsClass, lookStyles[look], className)}
         style={gridTemplateColumns ? { gridTemplateColumns } : undefined}
       >
         {data.map((item, index) => {
