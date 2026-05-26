@@ -88,7 +88,7 @@ export function VerificationTab({ checks, summary }: VerificationTabProps) {
                                         </Typography>
                                     )}
                                 </div>
-                                <Typography variant="small" className="text-gray-400 font-mono text-[10px] shrink-0">
+                                <Typography variant="small" className="text-muted-foreground font-mono text-xs shrink-0">
                                     {new Date(check.updatedAt).toLocaleTimeString('en-US', {
                                         hour12: false,
                                         hour: '2-digit',

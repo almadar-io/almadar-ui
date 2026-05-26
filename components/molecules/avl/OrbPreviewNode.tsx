@@ -696,7 +696,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       {!isExpanded && (
         <>
           <Box
-            className="absolute top-1.5 right-1.5 rounded px-1 py-[1px] text-[8px] font-mono uppercase tracking-wider pointer-events-none"
+            className="absolute top-1.5 right-1.5 rounded px-1 py-[1px] text-xs font-mono uppercase tracking-wider pointer-events-none"
             style={{
               backgroundColor: 'var(--color-muted)',
               color: 'var(--color-muted-foreground)',
@@ -714,7 +714,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
               }}
             >
               <Box
-                className="rounded-md px-2 py-1 text-[11px] font-medium flex items-center gap-1"
+                className="rounded-md px-2 py-1 text-xs font-medium flex items-center gap-1"
                 style={{
                   backgroundColor: 'var(--color-card)',
                   color: 'var(--color-foreground)',
@@ -735,7 +735,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
               }}
             >
               <Box
-                className="rounded-md px-2 py-1 text-[11px] font-semibold"
+                className="rounded-md px-2 py-1 text-xs font-semibold"
                 style={{
                   backgroundColor: 'var(--color-primary)',
                   color: 'var(--color-primary-foreground)',
@@ -801,7 +801,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
             {label}
           </Typography>
           {sublabel && (
-            <Typography variant="small" className="text-muted-foreground truncate text-[11px] leading-tight">
+            <Typography variant="small" className="text-muted-foreground truncate text-xs leading-tight">
               {sublabel}
             </Typography>
           )}
@@ -811,7 +811,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
             {eventSources.slice(0, 3).map((src) => (
               <Box
                 key={src.event}
-                className="rounded-full px-1 py-0 text-[8px] font-medium leading-tight"
+                className="rounded-full px-1 py-0 text-xs font-medium leading-tight"
                 style={{
                   backgroundColor: '#F9731615',
                   color: '#F97316',

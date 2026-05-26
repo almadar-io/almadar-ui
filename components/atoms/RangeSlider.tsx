@@ -192,12 +192,12 @@ export const RangeSlider = React.forwardRef<HTMLDivElement, RangeSliderProps>(
               "shadow-sm",
               "pointer-events-none",
               "transition-transform duration-100",
-              isDragging && "scale-110",
+              isDragging && "scale-[var(--hover-scale)]",
               thumbSizes[size],
             )}
             style={{
               top: "50%",
-              transform: `translateY(-50%) translateX(-50%)${isDragging ? " scale(1.1)" : ""}`,
+              transform: `translateY(-50%) translateX(-50%)${isDragging ? " scale(var(--hover-scale))" : ""}`,
               left: `${percentage}%`,
             }}
           />

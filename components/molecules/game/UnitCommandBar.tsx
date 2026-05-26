@@ -65,7 +65,7 @@ export function UnitCommandBar({
           {command.hotkey && (
             <Typography
               variant="caption"
-              className="text-gray-500 text-[10px] font-mono"
+              className="text-muted-foreground text-xs font-mono"
             >
               {command.hotkey}
             </Typography>

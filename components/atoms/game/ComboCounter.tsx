@@ -15,7 +15,7 @@ export interface ComboCounterProps {
 }
 
 const sizeMap = {
-  sm: { combo: 'text-lg', label: 'text-[10px]', multiplier: 'text-xs' },
+  sm: { combo: 'text-lg', label: 'text-xs', multiplier: 'text-xs' },
   md: { combo: 'text-2xl', label: 'text-xs', multiplier: 'text-sm' },
   lg: { combo: 'text-4xl', label: 'text-sm', multiplier: 'text-base' },
 };

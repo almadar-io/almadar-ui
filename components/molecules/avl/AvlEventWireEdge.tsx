@@ -56,7 +56,7 @@ export const AvlEventWireEdge: React.FC<EdgeProps<AvlEventWireFlowEdge>> = ({
           style={{ transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)` }}
         >
           <div
-            className="px-2 py-0.5 text-[10px] font-medium rounded-full border truncate max-w-[180px]"
+            className="px-2 py-0.5 text-xs font-medium rounded-full border truncate max-w-[180px]"
             style={{
               color: wireColor,
               borderColor: wireColor,

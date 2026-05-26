@@ -692,7 +692,7 @@ function FlowCanvasInner({
                       reactFlow.fitView({ duration: 300, padding: 0.25 });
                     });
                   }}
-                  className={`px-2 py-1 text-[11px] font-medium rounded cursor-pointer border-none transition-colors ${
+                  className={`px-2 py-1 text-xs font-medium rounded cursor-pointer border-none transition-colors ${
                     active
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'

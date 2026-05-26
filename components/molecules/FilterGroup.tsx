@@ -177,7 +177,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
         )}
         {filters.map((filter) => (
           <HStack key={filter.field} gap="xs" align="center">
-            <span className="text-sm font-[var(--font-weight-medium)] text-muted-foreground">
+            <span className="text-sm font-medium text-muted-foreground">
               {filter.label}:
             </span>
             <HStack
@@ -188,7 +188,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
                 type="button"
                 onClick={() => handleFilterSelect(filter.field, null)}
                 className={cn(
-                  "px-3 py-1.5 text-sm font-[var(--font-weight-medium)] transition-all duration-[var(--transition-fast)]",
+                  "px-3 py-1.5 text-sm font-medium transition-all duration-[var(--transition-fast)]",
                   !selectedValues[filter.field]
                     ? "bg-primary text-primary-foreground"
                     : "bg-card text-muted-foreground hover:bg-muted",
@@ -202,7 +202,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
                   type="button"
                   onClick={() => handleFilterSelect(filter.field, option)}
                   className={cn(
-                    "px-3 py-1.5 text-sm font-[var(--font-weight-medium)] transition-all duration-[var(--transition-fast)]",
+                    "px-3 py-1.5 text-sm font-medium transition-all duration-[var(--transition-fast)]",
                     "border-l-[length:var(--border-width)] border-border",
                     selectedValues[filter.field] === option
                       ? "bg-primary text-primary-foreground"
@@ -238,14 +238,14 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
         {showIcon && (
           <div className="flex items-center gap-2 text-muted-foreground">
             <Icon name="filter" className="h-4 w-4" />
-            <span className="text-sm font-[var(--font-weight-bold)] uppercase tracking-wide">
+            <span className="text-sm font-bold uppercase tracking-wide">
               Filters
             </span>
           </div>
         )}
         {filters.map((filter) => (
           <div key={filter.field} className="flex flex-col gap-1">
-            <label className="text-xs font-[var(--font-weight-bold)] text-muted-foreground uppercase tracking-wide">
+            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
               {filter.label}
             </label>
             {resolveFilterType(filter) === "date" ? (
@@ -454,7 +454,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
             className="text-muted-foreground"
           >
             <Icon name="filter" className="h-4 w-4" />
-            <span className="text-sm font-[var(--font-weight-bold)] uppercase tracking-wide">
+            <span className="text-sm font-bold uppercase tracking-wide">
               Filters
             </span>
           </HStack>
@@ -463,7 +463,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
         {/* Filter selects and date inputs */}
         {filters.map((filter) => (
           <div key={filter.field} className="flex flex-col gap-1">
-            <label className="text-xs font-[var(--font-weight-bold)] text-muted-foreground uppercase tracking-wide">
+            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
               {filter.label}
             </label>
             {resolveFilterType(filter) === "date" ? (

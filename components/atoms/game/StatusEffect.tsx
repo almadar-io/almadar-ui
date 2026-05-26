@@ -19,8 +19,8 @@ export interface StatusEffectProps {
 }
 
 const sizeMap = {
-  sm: { container: 'w-8 h-8', icon: 'text-sm', badge: 'text-[10px] -top-1 -right-1 w-4 h-4', timer: 'text-[9px]' },
-  md: { container: 'w-10 h-10', icon: 'text-base', badge: 'text-xs -top-1 -right-1 w-5 h-5', timer: 'text-[10px]' },
+  sm: { container: 'w-8 h-8', icon: 'text-sm', badge: 'text-xs -top-1 -right-1 w-4 h-4', timer: 'text-[9px]' },
+  md: { container: 'w-10 h-10', icon: 'text-base', badge: 'text-xs -top-1 -right-1 w-5 h-5', timer: 'text-xs' },
   lg: { container: 'w-12 h-12', icon: 'text-lg', badge: 'text-sm -top-1.5 -right-1.5 w-6 h-6', timer: 'text-xs' },
 };
 
@@ -83,7 +83,7 @@ export function StatusEffect({
         </span>
       )}
       {label && (
-        <span className="text-[10px] text-gray-400 mt-0.5 text-center whitespace-nowrap">
+        <span className="text-xs text-muted-foreground mt-0.5 text-center whitespace-nowrap">
           {label}
         </span>
       )}

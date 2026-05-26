@@ -78,7 +78,11 @@ const sizeStyles: Record<BadgeSize, string> = {
 
 export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
   ({ className, variant = "default", size = "sm", amount, label, icon, children, onRemove, removeLabel, ...props }, ref) => {
-    const iconSizes: Record<BadgeSize, string> = { sm: "w-3 h-3", md: "w-3.5 h-3.5", lg: "w-4 h-4" };
+    const iconSizes: Record<BadgeSize, string> = {
+      sm: "h-icon-default w-icon-default",
+      md: "h-icon-default w-icon-default",
+      lg: "h-icon-default w-icon-default",
+    };
     const resolvedIcon = typeof icon === "string"
       ? <Icon name={icon} className={iconSizes[size]} />
       : icon;

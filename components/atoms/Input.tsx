@@ -85,10 +85,11 @@ export const Input = React.forwardRef<
       leftIcon || (IconComponent && <IconComponent className="h-icon-default w-icon-default" />);
     const showClearButton = clearable && value && String(value).length > 0;
 
+    const isMultiline = type === "textarea";
     const baseClassName = cn(
       "block w-full rounded-sm transition-all duration-[var(--transition-fast)]",
       "border-[length:var(--border-width-thin)] border-border",
-      "px-3 py-2 text-sm",
+      isMultiline ? "px-3 py-2 text-sm" : "h-input-md px-3 text-sm",
       "bg-card hover:bg-muted focus:bg-card",
       "text-foreground placeholder:text-muted-foreground",
       "focus:outline-none focus:ring-1 focus:ring-ring focus:border-ring",
@@ -156,7 +157,7 @@ export const Input = React.forwardRef<
           checked={props.checked}
           onChange={onChange}
           className={cn(
-            "h-4 w-4 rounded-sm",
+            "h-icon-default w-icon-default rounded-sm",
             "border-border",
             "text-primary focus:ring-ring",
             "disabled:opacity-50 disabled:cursor-not-allowed",

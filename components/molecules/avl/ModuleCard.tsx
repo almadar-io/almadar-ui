@@ -69,7 +69,7 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ data }) => {
 
       {/* Header */}
       <div className="px-3 py-2 border-b border-[var(--color-border)]">
-        <span className="text-[15px] font-bold text-[var(--color-foreground)]">{orbitalName}</span>
+        <span className="text-base font-bold text-[var(--color-foreground)]">{orbitalName}</span>
       </div>
 
       {/* Entity section */}
@@ -78,8 +78,8 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ data }) => {
           <svg width={18} height={18} viewBox="0 0 20 20">
             <AvlEntity x={10} y={10} r={8} persistence={persistence as AvlPersistenceKind} />
           </svg>
-          <span className="text-[13px] font-semibold text-[var(--color-foreground)]">{entityName}</span>
-          <span className="ml-auto text-[10px] opacity-50" title={persistence}>
+          <span className="text-sm font-semibold text-[var(--color-foreground)]">{entityName}</span>
+          <span className="ml-auto text-xs opacity-50" title={persistence}>
             {PERSISTENCE_ICON[persistence] ?? ''}
           </span>
         </div>
@@ -92,7 +92,7 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ data }) => {
                 <svg width={14} height={14} viewBox="0 0 16 16">
                   <AvlFieldType x={8} y={8} kind={toFieldKind(f.type)} size={6} />
                 </svg>
-                <span className="text-[10px] text-[var(--color-muted-foreground)] truncate">{f.name}</span>
+                <span className="text-xs text-[var(--color-muted-foreground)] truncate">{f.name}</span>
               </div>
             ))}
           </div>
@@ -107,7 +107,7 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ data }) => {
 
         return (
           <div key={trait.name} className="px-3 py-2 border-b border-[var(--color-border)]">
-            <div className="text-[12px] font-semibold text-[var(--color-foreground)] mb-1">{trait.name}</div>
+            <div className="text-xs font-semibold text-[var(--color-foreground)] mb-1">{trait.name}</div>
 
             {/* Mini state machine */}
             {detail && <MiniStateMachine data={detail} className="mb-1" />}
@@ -140,7 +140,7 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ data }) => {
               <svg width={10} height={10} viewBox="0 0 12 12">
                 <AvlPage x={6} y={6} size={5} />
               </svg>
-              <span className="text-[10px] font-mono text-[var(--color-muted-foreground)]">{p.route}</span>
+              <span className="text-xs font-mono text-[var(--color-muted-foreground)]">{p.route}</span>
             </div>
           ))}
         </div>

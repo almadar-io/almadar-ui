@@ -386,7 +386,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       <Box
                         as="span"
                         className={cn(
-                          "absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-semibold text-white flex items-center justify-center",
+                          "absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-xs font-semibold text-white flex items-center justify-center",
                           action.variant === "danger" ? "bg-error" : action.variant === "primary" ? "bg-primary" : "bg-foreground"
                         )}
                       >
@@ -408,7 +408,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     {unreadCount > 0 && (
                       <Box
                         as="span"
-                        className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-error rounded-full text-[10px] font-semibold text-white flex items-center justify-center"
+                        className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-error rounded-full text-xs font-semibold text-white flex items-center justify-center"
                       >
                         {unreadCount > 99 ? '99+' : unreadCount}
                       </Box>
@@ -642,7 +642,7 @@ const NavLinkBottom: React.FC<{ item: NavItem; currentPath: string }> = ({
       <Typography
         variant="caption"
         className={cn(
-          "text-[10px] leading-tight truncate max-w-full",
+          "text-xs leading-tight truncate max-w-full",
           isActive ? "text-primary font-medium" : "text-muted-foreground",
         )}
         as="span"
@@ -650,7 +650,7 @@ const NavLinkBottom: React.FC<{ item: NavItem; currentPath: string }> = ({
         {item.label}
       </Typography>
       {item.badge && (
-        <Badge variant={isActive ? "primary" : "default"} size="sm" className="text-[8px] px-1 py-0 min-w-0">
+        <Badge variant={isActive ? "primary" : "default"} size="sm" className="text-xs px-1 py-0 min-w-0">
           {item.badge}
         </Badge>
       )}

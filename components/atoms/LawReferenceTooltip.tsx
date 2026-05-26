@@ -118,10 +118,9 @@ export const LawReferenceTooltip: React.FC<LawReferenceTooltipProps> = ({
         <Box
           padding="sm"
           rounded="lg"
-          shadow="lg"
           position="absolute"
           className={cn(
-            "z-50 w-64 bg-foreground text-background",
+            "z-50 w-64 bg-foreground text-background shadow-elevation-popover",
             positionStyles[position],
           )}
           role="tooltip"
@@ -131,7 +130,7 @@ export const LawReferenceTooltip: React.FC<LawReferenceTooltipProps> = ({
             <Typography
               variant="label"
               weight="semibold"
-              className="text-amber-400"
+              className="text-warning"
             >
               {reference.law} {reference.article}
             </Typography>
@@ -164,7 +163,7 @@ export const LawReferenceTooltip: React.FC<LawReferenceTooltipProps> = ({
               <Typography
                 as="a"
                 variant="caption"
-                className="text-blue-400 hover:text-blue-300 underline cursor-pointer"
+                className="text-info hover:text-info/80 underline cursor-pointer"
                 // @ts-expect-error - anchor props
                 href={reference.link}
                 target="_blank"

@@ -19,7 +19,7 @@ export interface XPBarProps {
 }
 
 const sizeMap = {
-  sm: { bar: 'h-2', text: 'text-[10px]', badge: 'text-[10px] px-1.5 py-0.5' },
+  sm: { bar: 'h-2', text: 'text-xs', badge: 'text-xs px-1.5 py-0.5' },
   md: { bar: 'h-3', text: 'text-xs', badge: 'text-xs px-2 py-0.5' },
   lg: { bar: 'h-4', text: 'text-sm', badge: 'text-sm px-2.5 py-1' },
 };

@@ -25,7 +25,7 @@ export interface ActionButtonProps {
 
 const sizeMap = {
   sm: { button: 'px-3 py-1.5 text-xs', hotkey: 'text-[9px] px-1', icon: 'text-xs' },
-  md: { button: 'px-4 py-2 text-sm', hotkey: 'text-[10px] px-1.5', icon: 'text-sm' },
+  md: { button: 'px-4 py-2 text-sm', hotkey: 'text-xs px-1.5', icon: 'text-sm' },
   lg: { button: 'px-5 py-2.5 text-base', hotkey: 'text-xs px-2', icon: 'text-base' },
 };
 

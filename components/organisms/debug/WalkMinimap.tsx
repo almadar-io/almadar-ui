@@ -379,11 +379,11 @@ export function WalkMinimap(): React.ReactElement | null {
       {/* Layer 3: Progress footer */}
       <Box className="px-2 py-1 border-t border-border">
         <HStack gap="sm" className="items-center justify-between">
-          <Typography variant="caption" className="text-[10px] font-mono text-green-500">
+          <Typography variant="caption" className="text-xs font-mono text-green-500">
             Engine: {engineCount}/{totalTransitions}
           </Typography>
           {domCount > 0 && (
-            <Typography variant="caption" className="text-[10px] font-mono text-cyan-500">
+            <Typography variant="caption" className="text-xs font-mono text-cyan-500">
               DOM: {domCount}
             </Typography>
           )}

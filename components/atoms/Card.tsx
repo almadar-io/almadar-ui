@@ -23,21 +23,21 @@ const variantStyles = {
     "border-[length:var(--border-width)] border-border",
     "shadow-elevation-card",
     "transition-all duration-[var(--transition-normal)]",
-    "hover:shadow-elevation-dialog hover:-translate-y-0.5",
+    "hover:shadow-elevation-dialog hover:translate-y-[var(--hover-translate-y)]",
   ].join(" "),
   bordered: [
     "bg-card",
     "border-[length:var(--border-width)] border-border",
     "shadow-elevation-card",
     "transition-all duration-[var(--transition-normal)]",
-    "hover:shadow-elevation-dialog hover:-translate-y-0.5",
+    "hover:shadow-elevation-dialog hover:translate-y-[var(--hover-translate-y)]",
   ].join(" "),
   elevated: [
     "bg-card",
     "border-[length:var(--border-width)] border-border",
     "shadow",
     "transition-all duration-[var(--transition-normal)]",
-    "hover:shadow-elevation-dialog hover:-translate-y-0.5",
+    "hover:shadow-elevation-dialog hover:translate-y-[var(--hover-translate-y)]",
   ].join(" "),
   // Interactive variant with theme-specific hover effects
   interactive: [
@@ -94,7 +94,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
         {(title || subtitle) && (
           <div className="mb-4">
             {title && (
-              <h3 className="text-lg text-card-foreground font-[var(--font-weight-bold)]">
+              <h3 className="text-lg text-card-foreground font-bold">
                 {title}
               </h3>
             )}
@@ -130,7 +130,7 @@ export const CardTitle = React.forwardRef<
     ref={ref}
     className={cn(
       "text-lg text-card-foreground",
-      "font-[var(--font-weight-bold)]",
+      "font-bold",
       className,
     )}
     {...props}

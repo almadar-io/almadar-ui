@@ -25,7 +25,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           "placeholder:text-[var(--color-placeholder)]",
           "focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-ring",
           "disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed",
-          "resize-y min-h-[80px]",
+          "resize-y min-h-20",
           error
             ? "border-error focus:border-error"
             : "border-border focus:border-primary",

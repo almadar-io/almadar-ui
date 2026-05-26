@@ -31,7 +31,7 @@ function EffectBadge({ effect }: { effect: EffectTrace }) {
     const icon = effect.status === 'executed' ? '\u2713' : effect.status === 'failed' ? '\u2717' : '-';
 
     return (
-        <span className="inline-flex items-center gap-1 text-[10px] font-mono bg-gray-100 dark:bg-gray-700 rounded px-1.5 py-0.5">
+        <span className="inline-flex items-center gap-1 text-xs font-mono bg-gray-100 dark:bg-gray-700 rounded px-1.5 py-0.5">
             <Badge variant={variant} size="sm" className="!text-[9px] !px-1 !py-0">
                 {icon}
             </Badge>
@@ -155,12 +155,12 @@ export function TransitionTimeline({ transitions }: TransitionTimelineProps) {
                                         <div key={eIdx} className="flex items-center gap-1">
                                             <EffectBadge effect={effect} />
                                             {effect.args.length > 0 && (
-                                                <Typography variant="small" className="text-gray-400 font-mono text-[10px] truncate max-w-[200px]">
+                                                <Typography variant="small" className="text-muted-foreground font-mono text-xs truncate max-w-[200px]">
                                                     {JSON.stringify(effect.args)}
                                                 </Typography>
                                             )}
                                             {effect.durationMs !== undefined && (
-                                                <Typography variant="small" className="text-gray-400 text-[10px]">
+                                                <Typography variant="small" className="text-muted-foreground text-xs">
                                                     {effect.durationMs}ms
                                                 </Typography>
                                             )}

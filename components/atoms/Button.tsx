@@ -93,15 +93,15 @@ const variantStyles = {
 variantStyles.destructive = variantStyles.danger;
 
 const sizeStyles = {
-  sm: "px-3 py-1.5 text-sm",
-  md: "px-4 py-2 text-sm",
-  lg: "px-6 py-3 text-base",
+  sm: "h-button-sm px-3 text-sm",
+  md: "h-button-md px-4 text-sm",
+  lg: "h-button-lg px-6 text-base",
 };
 
 const iconSizeStyles = {
-  sm: "h-3.5 w-3.5",
+  sm: "h-icon-default w-icon-default",
   md: "h-icon-default w-icon-default",
-  lg: "h-5 w-5",
+  lg: "h-icon-default w-icon-default",
 };
 
 /** Resolve an icon prop that can be a string name, LucideIcon component, or ReactNode */
@@ -174,7 +174,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={disabled || isLoading}
         className={cn(
           "inline-flex items-center justify-center gap-2",
-          "font-[var(--font-weight-medium)]",
+          "font-medium",
           "rounded-sm",
           "cursor-pointer",
           "transition-all duration-[var(--transition-normal)]",

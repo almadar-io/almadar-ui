@@ -89,7 +89,7 @@ export function ItemSlot({
               className={cn(
                 'absolute -bottom-1 -right-1 flex items-center justify-center',
                 'min-w-[18px] h-[18px] rounded-full px-1',
-                'bg-[var(--color-surface,#374151)] border border-gray-500 text-[10px] font-bold text-[var(--color-foreground)]'
+                'bg-[var(--color-surface,#374151)] border border-gray-500 text-xs font-bold text-[var(--color-foreground)]'
               )}
             >
               {quantity}

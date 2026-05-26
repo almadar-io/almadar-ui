@@ -38,7 +38,7 @@ import './RuntimeDebugger.css';
 function ServerResponseRow({ sr }: { sr: ServerResponseTrace }) {
     const entityEntries = Object.entries(sr.dataEntities);
     return (
-        <div className="ml-4 pl-2 border-l border-purple-500/30 py-0.5 text-[10px] font-mono">
+        <div className="ml-4 pl-2 border-l border-purple-500/30 py-0.5 text-xs font-mono">
             <div className="flex items-center gap-2">
                 <span className={sr.success ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
                     {sr.success ? '\u2713' : '\u2717'} server
@@ -112,7 +112,7 @@ function TransitionRow({ trace }: { trace: TransitionTrace }) {
                 <div className="flex flex-wrap gap-1 ml-6 mt-0.5">
                     {trace.effects.map((eff: EffectTrace, i: number) => (
                         <span key={i} className={cn(
-                            'px-1 rounded text-[10px]',
+                            'px-1 rounded text-xs',
                             eff.status === 'executed' ? 'bg-green-500/15 text-green-600 dark:text-green-400' :
                             eff.status === 'failed' ? 'bg-red-500/15 text-red-600 dark:text-red-400' :
                             'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400'

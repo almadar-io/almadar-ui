@@ -10,7 +10,7 @@ export interface SpinnerProps extends React.HTMLAttributes<HTMLDivElement> {
 
 const sizeStyles: Record<SpinnerSize, string> = {
   xs: "h-3 w-3",
-  sm: "h-4 w-4",
+  sm: "h-icon-default w-icon-default",
   md: "h-6 w-6",
   lg: "h-8 w-8",
 };

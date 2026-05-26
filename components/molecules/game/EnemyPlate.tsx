@@ -80,7 +80,7 @@ export function EnemyPlate({
         />
         <Typography
           variant="caption"
-          className="font-mono tabular-nums text-gray-400 text-[10px] shrink-0"
+          className="font-mono tabular-nums text-muted-foreground text-xs shrink-0"
         >
           {health}/{maxHealth}
         </Typography>

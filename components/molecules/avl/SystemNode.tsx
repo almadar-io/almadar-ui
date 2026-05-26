@@ -72,7 +72,7 @@ export const SystemNode: React.FC<SystemNodeProps> = ({ data }) => {
         <svg width={14} height={14} viewBox="0 0 20 20">
           <AvlEntity x={10} y={10} r={8} persistence={persistence as 'persistent' | 'runtime' | 'singleton' | 'instance'} />
         </svg>
-        <span className="text-[11px] font-semibold text-[var(--color-foreground)] truncate flex-1">
+        <span className="text-xs font-semibold text-[var(--color-foreground)] truncate flex-1">
           {orbitalName}
         </span>
       </div>

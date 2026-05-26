@@ -73,24 +73,24 @@ export const DetailView: React.FC<DetailViewProps> = ({ data }) => {
       <div className="px-4 py-3 space-y-3">
         {/* TRIGGER */}
         <div>
-          <div className="text-[10px] uppercase tracking-wider text-[var(--color-muted-foreground)] mb-1">Trigger</div>
+          <div className="text-xs uppercase tracking-wider text-[var(--color-muted-foreground)] mb-1">Trigger</div>
           <div className="flex items-center gap-1.5">
             <svg width={16} height={16} viewBox="0 0 16 16">
               <AvlEvent x={8} y={8} size={7} />
             </svg>
-            <span className="text-[14px] font-semibold text-[var(--color-foreground)]">{transition.event}</span>
+            <span className="text-sm font-semibold text-[var(--color-foreground)]">{transition.event}</span>
           </div>
         </div>
 
         {/* GUARD */}
         {hasGuard && (
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-[var(--color-muted-foreground)] mb-1">Guard</div>
+            <div className="text-xs uppercase tracking-wider text-[var(--color-muted-foreground)] mb-1">Guard</div>
             <div className="flex items-center gap-1.5">
               <svg width={14} height={14} viewBox="0 0 14 14">
                 <AvlGuard x={7} y={7} size={6} />
               </svg>
-              <span className="text-[11px] font-mono text-[var(--color-muted-foreground)] opacity-60">
+              <span className="text-xs font-mono text-[var(--color-muted-foreground)] opacity-60">
                 {typeof transition.guard === 'string' ? transition.guard : JSON.stringify(transition.guard)}
               </span>
             </div>
@@ -100,15 +100,15 @@ export const DetailView: React.FC<DetailViewProps> = ({ data }) => {
         {/* EFFECTS */}
         {transition.effects.length > 0 && (
           <div>
-            <div className="text-[10px] uppercase tracking-wider text-[var(--color-muted-foreground)] mb-1">Effects</div>
+            <div className="text-xs uppercase tracking-wider text-[var(--color-muted-foreground)] mb-1">Effects</div>
             <div className="space-y-1.5">
               {transition.effects.map((effect, i) => (
                 <div key={i} className="flex items-start gap-1.5">
-                  <span className="text-[10px] text-[var(--color-muted-foreground)] w-3 text-right mt-0.5">{i + 1}.</span>
+                  <span className="text-xs text-[var(--color-muted-foreground)] w-3 text-right mt-0.5">{i + 1}.</span>
                   <svg width={18} height={18} viewBox="0 0 20 20">
                     <AvlEffect x={10} y={10} effectType={effect.type as AvlEffectType} size={8} showBackground />
                   </svg>
-                  <span className="text-[11px] text-[var(--color-foreground)]">{effect.type}</span>
+                  <span className="text-xs text-[var(--color-foreground)]">{effect.type}</span>
                 </div>
               ))}
             </div>

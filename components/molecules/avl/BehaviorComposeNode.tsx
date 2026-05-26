@@ -99,10 +99,10 @@ const BehaviorComposeNodeInner: React.FC<NodeProps> = (props) => {
       {/* Header - drag handle */}
       <Box className="flex items-center gap-2 px-3 py-1.5 border-b border-border/40 drag-handle cursor-grab">
         <Box className="flex flex-col min-w-0 flex-1">
-          <Typography variant="small" className="font-semibold truncate leading-tight text-[12px]">
+          <Typography variant="small" className="font-semibold truncate leading-tight text-xs">
             {data.behaviorName}
           </Typography>
-          <Typography variant="small" className="text-muted-foreground truncate text-[10px] leading-tight">
+          <Typography variant="small" className="text-muted-foreground truncate text-xs leading-tight">
             {data.entityName}
           </Typography>
         </Box>
@@ -136,7 +136,7 @@ const BehaviorComposeNodeInner: React.FC<NodeProps> = (props) => {
           {connectableEvents.slice(0, 4).map((ev) => (
             <Box
               key={ev.event}
-              className="rounded-full px-1.5 py-0 text-[8px] font-medium leading-tight"
+              className="rounded-full px-1.5 py-0 text-xs font-medium leading-tight"
               style={{
                 backgroundColor: '#F9731615',
                 color: '#F97316',
@@ -149,7 +149,7 @@ const BehaviorComposeNodeInner: React.FC<NodeProps> = (props) => {
           ))}
           {connectableEvents.length > 4 && (
             <Box
-              className="rounded-full px-1.5 py-0 text-[8px] font-medium leading-tight"
+              className="rounded-full px-1.5 py-0 text-xs font-medium leading-tight"
               style={{ color: 'var(--color-muted-foreground)' }}
             >
               +{connectableEvents.length - 4}
@@ -164,8 +164,8 @@ const BehaviorComposeNodeInner: React.FC<NodeProps> = (props) => {
           {data.stateCount} states
         </Typography>
         {data.layer && (
-          <Badge variant="neutral" className="text-[8px]">
-            <Typography variant="caption" className="text-[8px] text-inherit">
+          <Badge variant="neutral" className="text-xs">
+            <Typography variant="caption" className="text-xs text-inherit">
               {data.layer}
             </Typography>
           </Badge>

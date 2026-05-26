@@ -572,7 +572,7 @@ export const List: React.FC<ListProps> = ({
               <Typography
                 as="h3"
                 className={cn(
-                  "text-[15px] font-semibold text-foreground truncate flex-1",
+                  "text-base font-semibold text-foreground truncate flex-1",
                   "tracking-tight leading-snug",
                   item.completed &&
                   "line-through text-muted-foreground",
@@ -599,7 +599,7 @@ export const List: React.FC<ListProps> = ({
             </HStack>
 
             {/* Secondary row: Metadata */}
-            <HStack className="flex items-center gap-6 text-[13px] font-medium text-muted-foreground">
+            <HStack className="flex items-center gap-6 text-sm font-medium text-muted-foreground">
               {/* Date fields with icon */}
               {dateFields.slice(0, 1).map((field) => {
                 const value = item._fields?.[field];
