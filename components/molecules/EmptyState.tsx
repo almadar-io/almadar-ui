@@ -22,6 +22,15 @@ const ICON_NAME_ALIASES: Record<string, string> = {
   warning: "alert-circle",
 };
 
+export type EmptyStateLook = "illustrated" | "icon-only" | "text-only" | "mascot";
+
+const lookStyles: Record<EmptyStateLook, string> = {
+  "icon-only": "",
+  illustrated: "[&_svg]:w-32 [&_svg]:h-32",
+  "text-only": "[&_svg]:hidden",
+  mascot: "[&_svg]:w-24 [&_svg]:h-24 [&_svg]:rounded-pill",
+};
+
 export interface EmptyStateProps {
   /**
    * Icon to display. Accepts either:
@@ -43,6 +52,8 @@ export interface EmptyStateProps {
   variant?: "default" | "success" | "error" | "warning" | "info";
   /** Declarative action event — emits UI:{actionEvent} via eventBus when action button is clicked */
   actionEvent?: EventEmit<Record<string, never>>;
+  /** Layer 2 visual treatment — orthogonal to the semantic variant (which carries status color). */
+  look?: EmptyStateLook;
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
@@ -56,6 +67,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   destructive,
   variant,
   actionEvent,
+  look = "icon-only",
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -85,6 +97,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       align="center"
       className={cn(
         "justify-center py-12 text-center",
+        lookStyles[look],
         className,
       )}
     >

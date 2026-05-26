@@ -33,6 +33,16 @@ import { Circle, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 
 export type TimelineItemStatus = "complete" | "active" | "pending" | "error";
 
+/**
+ * Layer 2 visual treatment for the timeline pattern — orthogonal to the
+ * semantic status conveyed by per-item style.
+ */
+export type TimelineLook =
+    | "vertical-compact"
+    | "vertical-spacious"
+    | "horizontal"
+    | "swimlane";
+
 export interface TimelineItem {
     /** Unique identifier */
     id: string;
@@ -79,7 +89,21 @@ export interface TimelineProps {
     fields: readonly string[];
     /** Actions per item */
     itemActions?: readonly TimelineAction[];
+    /** Layer 2 visual treatment. */
+    look?: TimelineLook;
 }
+
+// Layer 2 look styles. Each non-default look is a delta on the baseline
+// (vertical-spacious). The Timeline DOM doesn't render <ul>/<li>, so the
+// selectors target the actual item containers — VStack rendered <div>s
+// inside the items wrapper. `swimlane` ships v1 as `horizontal` plus extra
+// gap; grouping by lane needs additional DOM and is deferred.
+const lookStyles: Record<TimelineLook, string> = {
+    "vertical-compact": "gap-1 [&>*]:py-1",
+    "vertical-spacious": "",
+    horizontal: "flex-row [&>*]:flex-row [&>*]:items-center",
+    swimlane: "flex-row gap-6 [&>*]:flex-row [&>*]:items-center",
+};
 
 const STATUS_STYLES: Record<
     TimelineItemStatus,
@@ -116,6 +140,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     isLoading = false,
     error,
     className,
+    look = "vertical-spacious",
 }) => {
     const { t } = useTranslate();
     void t;
@@ -186,7 +211,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                     </Typography>
                 )}
 
-                <VStack gap="none" className="relative">
+                <VStack gap="none" className={cn("relative", lookStyles[look])}>
                     {items.map((item, idx) => {
                         const status = (item.status as TimelineItemStatus) || "pending";
                         const style = STATUS_STYLES[status] || STATUS_STYLES.pending;

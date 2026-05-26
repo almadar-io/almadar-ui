@@ -17,6 +17,17 @@ const log = createLogger('almadar:ui:button-group');
 
 export type ButtonGroupVariant = 'default' | 'segmented' | 'toggle';
 
+/**
+ * Layer 2 visual treatment for the action-cluster (form-actions) pattern —
+ * orthogonal to the semantic `variant` (which conveys grouping shape).
+ */
+export type ActionClusterLook =
+  | 'right-aligned-buttons'
+  | 'floating-bar'
+  | 'inline-row'
+  | 'dropdown-menu'
+  | 'command-palette-trigger';
+
 /** Action button config for form-actions pattern */
 export interface ActionButton {
   label: string;
@@ -82,7 +93,27 @@ export interface ButtonGroupProps {
    * Filter definitions for filter-group pattern
    */
   filters?: readonly FilterDefinition[];
+
+  /**
+   * Layer 2 visual treatment for the action-cluster (form-actions) pattern.
+   * @default 'right-aligned-buttons'
+   */
+  look?: ActionClusterLook;
 }
+
+// Layer 2 look styles for the form-actions pattern — applied as a delta on the
+// baseline inline-flex container. `right-aligned-buttons` is the default and
+// leaves the baseline untouched. `dropdown-menu` and `command-palette-trigger`
+// collapse the cluster to a single trigger; the dropdown/palette body itself
+// is the consumer's responsibility (no clean DOM fit here yet).
+const lookStyles: Record<ActionClusterLook, string> = {
+  'right-aligned-buttons': '',
+  'floating-bar':
+    'fixed bottom-section left-1/2 -translate-x-1/2 shadow-elevation-toast bg-card p-card-sm rounded-container',
+  'inline-row': 'gap-2 inline-flex',
+  'dropdown-menu': '[&>button:not(:first-child)]:hidden',
+  'command-palette-trigger': '[&>button:not(:first-child)]:hidden',
+};
 
 /**
  * Safe event bus hook that works outside EventBusProvider context.
@@ -107,6 +138,7 @@ export const ButtonGroup: React.FC<ButtonGroupProps> = ({
   // Filter-group pattern props (entity and filters are used for schema-driven filtering)
   entity: _entity,
   filters,
+  look = 'right-aligned-buttons',
 }) => {
   const eventBus = useSafeEventBus();
   const variantClasses = {
@@ -198,6 +230,7 @@ export const ButtonGroup: React.FC<ButtonGroupProps> = ({
         'inline-flex gap-2',
         variantClasses[variant],
         orientationClasses[orientation],
+        lookStyles[look],
         className
       )}
       role="group"

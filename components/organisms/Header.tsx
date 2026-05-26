@@ -19,6 +19,22 @@ import { Typography } from "../atoms/Typography";
 import { cn } from "../../lib/cn";
 import { useTranslate } from "../../hooks/useTranslate";
 
+export type HeaderLook =
+  | "hero"
+  | "compact-bar"
+  | "breadcrumb"
+  | "contextual"
+  | "editorial-banner";
+
+const lookStyles: Record<HeaderLook, string> = {
+  "compact-bar": "",
+  hero: "py-section min-h-[200px] [&_h1]:text-display-1",
+  breadcrumb: "py-2 text-sm [&_h1]:text-base [&_h1]:font-medium",
+  contextual: "py-3 [&_h1]:text-lg",
+  "editorial-banner":
+    "py-12 [&_h1]:text-display-2 [&_h1]:font-display-bold border-b border-border",
+};
+
 export interface HeaderProps {
   /**
    * Logo/Brand content
@@ -115,6 +131,9 @@ export interface HeaderProps {
    */
   variant?: "mobile" | "desktop";
 
+  /** Layer 2 visual treatment — orthogonal to the structural variant (which currently flips mobile vs desktop). */
+  look?: HeaderLook;
+
   /**
    * Callback when logo/brand is clicked
    */
@@ -158,6 +177,7 @@ export const Header: React.FC<HeaderProps> = ({
   actions,
   sticky = true,
   variant = "mobile",
+  look = "compact-bar",
   onLogoClick,
   className,
 }) => {
@@ -176,6 +196,7 @@ export const Header: React.FC<HeaderProps> = ({
         "flex items-center px-4 justify-between bg-card",
         sticky && "sticky top-0 z-50",
         variant === "mobile" && "lg:hidden",
+        lookStyles[look],
         className,
       )}
     >

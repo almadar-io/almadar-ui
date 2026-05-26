@@ -16,6 +16,21 @@ import { Sparkline } from '../atoms/Sparkline';
 import { resolveIcon } from '../atoms/Icon';
 import { useEventBus } from '../../hooks/useEventBus';
 
+export type StatDisplayLook =
+  | 'elevated'
+  | 'flat'
+  | 'progress-backed'
+  | 'gauge'
+  | 'sparkline';
+
+const lookStyles: Record<StatDisplayLook, string> = {
+  elevated: '',
+  flat: 'shadow-none border-[length:var(--border-width)] border-border',
+  'progress-backed': '',
+  gauge: '',
+  sparkline: '',
+};
+
 export interface StatDisplayProps {
   /** Display label (e.g., "Total", "Remaining") */
   label: string;
@@ -53,6 +68,8 @@ export interface StatDisplayProps {
   variant?: 'default' | 'primary' | 'success' | 'warning' | 'error' | 'info';
   /** Compact mode (inline, no card wrapper) */
   compact?: boolean;
+  /** Layer 2 visual treatment. */
+  look?: StatDisplayLook;
   /** Additional CSS classes */
   className?: string;
   /** Loading state */
@@ -119,6 +136,7 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
   size = 'md',
   variant = 'default',
   compact = false,
+  look = 'elevated',
   className,
   isLoading = false,
   error = null,
@@ -194,7 +212,7 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
   // Card mode (default)
   return (
     <Card
-      className={cn(padSizes[size], clickEvent && 'cursor-pointer hover:shadow-md transition-shadow', className)}
+      className={cn(padSizes[size], lookStyles[look], clickEvent && 'cursor-pointer hover:shadow-md transition-shadow', className)}
       onClick={clickEvent ? handleClick : undefined}
     >
       <HStack align="start" justify="between">

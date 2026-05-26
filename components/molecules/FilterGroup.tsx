@@ -24,6 +24,17 @@ import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../hooks/useEventBus";
 import { useQuerySingleton } from "../../hooks/useQuerySingleton";
 
+/**
+ * Layer 2 visual treatment for the filter-group pattern — orthogonal to the
+ * semantic `variant` (which conveys layout / role).
+ */
+export type FilterGroupLook =
+  | "toolbar"
+  | "chips"
+  | "pills"
+  | "popover-trigger"
+  | "inline-column-header";
+
 /** Filter definition from schema */
 export interface FilterDefinition {
   field: string;
@@ -70,7 +81,17 @@ export interface FilterGroupProps {
   query?: string;
   /** Loading state indicator */
   isLoading?: boolean;
+  /** Layer 2 visual treatment — orthogonal to the semantic variant. */
+  look?: FilterGroupLook;
 }
+
+const lookStyles: Record<FilterGroupLook, string> = {
+  toolbar: "",
+  chips: "gap-2 [&>*]:rounded-pill [&>*]:px-3 [&>*]:py-1",
+  pills: "gap-2 [&>*]:rounded-pill",
+  "popover-trigger": "[&>*:not(:first-child)]:hidden",
+  "inline-column-header": "hidden",
+};
 
 /**
  * FilterGroup - Renders filter controls for entity data
@@ -86,6 +107,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
   showIcon = true,
   query,
   isLoading,
+  look = "toolbar",
 }) => {
   const eventBus = useEventBus();
   const queryState = useQuerySingleton(query);
@@ -171,7 +193,11 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
   // Pills variant - horizontal toggle buttons
   if (variant === "pills") {
     return (
-      <HStack gap="md" align="center" className={cn("flex-wrap", className)}>
+      <HStack
+        gap="md"
+        align="center"
+        className={cn("flex-wrap", lookStyles[look], className)}
+      >
         {showIcon && (
           <Icon name="filter" className="h-4 w-4 text-muted-foreground" />
         )}
@@ -234,7 +260,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
   // Vertical variant - stacked filters for sidebars
   if (variant === "vertical") {
     return (
-      <div className={cn("flex flex-col gap-4", className)}>
+      <div className={cn("flex flex-col gap-4", lookStyles[look], className)}>
         {showIcon && (
           <div className="flex items-center gap-2 text-muted-foreground">
             <Icon name="filter" className="h-4 w-4" />
@@ -335,7 +361,11 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
   // Compact variant - smaller selects inline
   if (variant === "compact") {
     return (
-      <HStack gap="sm" align="center" className={cn("flex-wrap", className)}>
+      <HStack
+        gap="sm"
+        align="center"
+        className={cn("flex-wrap", lookStyles[look], className)}
+      >
         {showIcon && (
           <Icon name="filter" className="h-4 w-4 text-muted-foreground" />
         )}
@@ -443,6 +473,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
         "p-4 rounded-container",
         "bg-card",
         "border-[length:var(--border-width)] border-border",
+        lookStyles[look],
         className,
       )}
     >

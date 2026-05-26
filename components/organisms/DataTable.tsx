@@ -23,6 +23,13 @@ import {
 import { EntityDisplayProps, EntityDisplayEvents } from "./types";
 import type { EntityRow } from "@almadar/core";
 
+export type EntityTableLook =
+  | "dense"
+  | "spacious"
+  | "striped"
+  | "borderless"
+  | "card-rows";
+
 export interface Column<T> {
   key: keyof T | string;
   header: string;
@@ -140,7 +147,24 @@ export interface DataTableProps<T extends EntityRow & { id: string | number }>
 
   /** Show total count in pagination */
   showTotal?: boolean;
+
+  /** Layer 2 visual treatment — orthogonal to the semantic variant. */
+  look?: EntityTableLook;
 }
+
+// Layer 2 look styles — applied on the outer Box AFTER baseline classes so
+// row/border deltas can target descendant rows via Tailwind arbitrary
+// selectors. Empty string for `dense` since the table currently renders
+// dense rows by default.
+const lookStyles: Record<EntityTableLook, string> = {
+  dense: "",
+  spacious: "[&_tbody_tr_td]:py-5 [&_thead_tr_th]:py-4",
+  striped: "[&_tbody_tr:nth-child(odd)]:bg-muted/30",
+  borderless:
+    "border-0 [&_thead]:border-b-0 [&_tbody_tr]:border-b-0 [&_tbody]:divide-y-0",
+  "card-rows":
+    "border-0 [&_tbody]:divide-y-0 [&_tbody_tr]:border-b-0 [&_tbody_tr]:shadow-elevation-card [&_tbody_tr]:rounded-container [&_tbody_tr]:bg-card [&_tbody]:[&_tr]:my-2",
+};
 
 export function DataTable<T extends EntityRow & { id: string | number }>({
   fields,
@@ -168,6 +192,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
   headerActions,
   showTotal = true,
   className,
+  look = "dense",
 }: DataTableProps<T>) {
   const [openActionMenu, setOpenActionMenu] = useState<string | number | null>(
     null,
@@ -325,6 +350,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
     <Box
       className={cn(
         "bg-card border-2 border-border rounded-none overflow-hidden",
+        lookStyles[look],
         className,
       )}
     >

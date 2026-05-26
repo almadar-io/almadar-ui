@@ -135,6 +135,11 @@ export interface DataListProps<T extends EntityRow = EntityRow> extends DataDndP
   renderItem?: (item: T, index: number) => React.ReactNode;
   /** Max items to show before "Show More" button. Defaults to 5. Set to 0 to disable. */
   pageSize?: number;
+  /**
+   * Layer 2 visual treatment — mirrors the `entity-table` look enum so
+   * data-grid / data-list / entity-table share one knob name from authors.
+   */
+  look?: "dense" | "spacious" | "striped" | "borderless" | "card-rows";
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────

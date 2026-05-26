@@ -18,6 +18,16 @@ import { useEventBus } from "../../hooks/useEventBus";
 
 export type ModalSize = "sm" | "md" | "lg" | "xl" | "full";
 
+/**
+ * Layer 2 visual treatment for the modal pattern — orthogonal to the semantic
+ * `size` (which conveys content scale).
+ */
+export type ModalLook =
+  | "centered-card"
+  | "top-sheet"
+  | "side-drawer"
+  | "full-screen";
+
 export interface ModalProps {
   /** Whether the modal is open (defaults to true when rendered by slot wrapper) */
   isOpen?: boolean;
@@ -36,6 +46,8 @@ export interface ModalProps {
   closeEvent?: EventEmit<Record<string, never>>;
   /** Enable swipe-down-to-close on mobile bottom sheet (default: true) */
   swipeDownToClose?: boolean;
+  /** Layer 2 visual treatment — orthogonal to the semantic variant. */
+  look?: ModalLook;
 }
 
 const sizeClasses: Record<ModalSize, string> = {
@@ -58,6 +70,18 @@ const minWidthClasses: Record<ModalSize, string> = {
   full: "min-w-0",
 };
 
+// Layer 2 look styles — applied AFTER sizeClasses/minWidthClasses so they
+// override positioning, radius, and width caps. Empty string for
+// `centered-card` since the default already produces that treatment. Each
+// non-default look is a delta on the baseline.
+const lookStyles: Record<ModalLook, string> = {
+  "centered-card": "",
+  "top-sheet": "top-0 rounded-t-none rounded-b-container max-w-full w-full",
+  "side-drawer":
+    "right-0 top-0 bottom-0 h-full rounded-l-container rounded-r-none w-[400px] max-w-full",
+  "full-screen": "inset-0 rounded-none w-full h-full max-w-full",
+};
+
 export const Modal: React.FC<ModalProps> = ({
   isOpen = true,
   onClose = () => {},
@@ -71,6 +95,7 @@ export const Modal: React.FC<ModalProps> = ({
   className,
   closeEvent,
   swipeDownToClose = true,
+  look = "centered-card",
 }) => {
   const eventBus = useEventBus();
   const modalRef = useRef<HTMLDialogElement>(null);
@@ -161,6 +186,7 @@ export const Modal: React.FC<ModalProps> = ({
             // Mobile: take the entire screen. Override desktop max-w cap,
             // full height, no rounded corners, no min-width.
             "max-sm:max-w-none max-sm:max-h-none max-sm:w-full max-sm:h-full max-sm:rounded-none",
+            lookStyles[look],
             className,
           )}
           style={dragY > 0 ? {

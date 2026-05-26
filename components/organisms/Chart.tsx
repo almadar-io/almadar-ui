@@ -35,6 +35,32 @@ export type ChartType =
     | "scatter"
     | "histogram";
 
+/**
+ * Layer 2 visual treatment for the chart pattern — drives the chart
+ * sub-renderer (bar / line / pie / etc.). The chart "look" axis is the chart
+ * KIND, not pure visual styling. `look` is the primary surface; the legacy
+ * `chartType` prop remains as an alias.
+ *
+ * Mapping to `chartType`:
+ *  - `bar-vertical`   ↔ `bar`        (default)
+ *  - `bar-horizontal` ↔ (new)        renders bars laid out horizontally
+ *  - `line`           ↔ `line`
+ *  - `area`           ↔ `area`
+ *  - `pie`            ↔ `pie`
+ *  - `donut`          ↔ `donut`
+ *  - `scatter`        ↔ `scatter`
+ *  - `histogram`      ↔ `histogram`
+ */
+export type ChartLook =
+    | "bar-vertical"
+    | "bar-horizontal"
+    | "line"
+    | "area"
+    | "pie"
+    | "donut"
+    | "scatter"
+    | "histogram";
+
 export type ChartStackMode = "none" | "stack" | "normalize";
 
 export interface ChartDataPoint {
@@ -70,8 +96,10 @@ export interface ChartProps {
     title?: string;
     /** Chart subtitle / description */
     subtitle?: string;
-    /** Chart type */
+    /** Chart type (legacy alias for `look`). */
     chartType?: ChartType;
+    /** Layer 2 visual treatment — drives the chart sub-renderer (bar / line / pie / etc.). */
+    look?: ChartLook;
     /** Multi-series data */
     series?: readonly ChartSeries[];
     /** Simple single-series shorthand (bar/line/pie/area/donut/histogram) */
@@ -133,8 +161,9 @@ const BarChart: React.FC<{
     stack: ChartStackMode;
     timeAxis: boolean;
     histogram?: boolean;
+    horizontal?: boolean;
     onPointClick?: (point: ChartDataPoint, seriesName: string) => void;
-}> = ({ series, height, showValues, stack, timeAxis, histogram = false, onPointClick }) => {
+}> = ({ series, height, showValues, stack, timeAxis, histogram = false, horizontal = false, onPointClick }) => {
     const categories = useMemo(() => {
         const set: string[] = [];
         const seen = new Set<string>();
@@ -175,6 +204,73 @@ const BarChart: React.FC<{
         }
         return m;
     }, [series, stack, columnTotals]);
+
+    if (horizontal) {
+        return (
+            <VStack gap="xs" align="stretch" className="w-full" style={{ minHeight: height }}>
+                {categories.map((label, catIdx) => {
+                    const displayLabel = timeAxis ? formatTimeLabel(label) : label;
+                    const total = columnTotals?.[catIdx] ?? 1;
+                    return (
+                        <HStack key={label} gap="sm" align="center" className="w-full">
+                            <Typography
+                                variant="caption"
+                                color="secondary"
+                                className="truncate text-right"
+                                style={{ width: 80, flexShrink: 0 }}
+                            >
+                                {displayLabel}
+                            </Typography>
+                            <HStack
+                                gap={stack === "none" ? "xs" : "none"}
+                                align="center"
+                                className="flex-1 min-w-0"
+                                style={{ height: 24 }}
+                            >
+                                {series.map((s, sIdx) => {
+                                    const value = valueAt(s, label);
+                                    const ratio =
+                                        stack === "normalize"
+                                            ? total === 0
+                                                ? 0
+                                                : (value / total) * 100
+                                            : (value / maxValue) * 100;
+                                    const color = seriesColor(s, sIdx);
+                                    return (
+                                        <Box
+                                            key={s.name}
+                                            className="h-full rounded-r-sm transition-all duration-500 ease-out min-w-[2px] cursor-pointer hover:opacity-80"
+                                            style={{
+                                                width: `${ratio}%`,
+                                                backgroundColor: color,
+                                            }}
+                                            onClick={() =>
+                                                onPointClick?.(
+                                                    { label, value, color },
+                                                    s.name,
+                                                )
+                                            }
+                                            title={`${s.name}: ${value}`}
+                                        />
+                                    );
+                                })}
+                            </HStack>
+                            {showValues && series.length === 1 && (
+                                <Typography
+                                    variant="caption"
+                                    color="secondary"
+                                    className="tabular-nums"
+                                    style={{ width: 40, flexShrink: 0 }}
+                                >
+                                    {valueAt(series[0], label)}
+                                </Typography>
+                            )}
+                        </HStack>
+                    );
+                })}
+            </VStack>
+        );
+    }
 
     return (
         <HStack
@@ -647,10 +743,21 @@ const ScatterChart: React.FC<{
     );
 };
 
+const LOOK_FROM_CHART_TYPE: Record<ChartType, ChartLook> = {
+    bar: "bar-vertical",
+    line: "line",
+    pie: "pie",
+    area: "area",
+    donut: "donut",
+    scatter: "scatter",
+    histogram: "histogram",
+};
+
 export const Chart: React.FC<ChartProps> = ({
     title,
     subtitle,
-    chartType = "bar",
+    chartType,
+    look,
     series,
     data: simpleData,
     scatterData,
@@ -666,6 +773,8 @@ export const Chart: React.FC<ChartProps> = ({
     error,
     className,
 }) => {
+    const resolvedLook: ChartLook =
+        look ?? (chartType ? LOOK_FROM_CHART_TYPE[chartType] : "bar-vertical");
     const eventBus = useEventBus();
     const { t } = useTranslate();
 
@@ -699,7 +808,7 @@ export const Chart: React.FC<ChartProps> = ({
 
     const firstSeriesData = normalizedSeries[0]?.data ?? [];
     const hasContent =
-        chartType === "scatter"
+        resolvedLook === "scatter"
             ? (scatterData?.length ?? 0) > 0
             : normalizedSeries.some((s) => s.data.length > 0);
 
@@ -756,7 +865,7 @@ export const Chart: React.FC<ChartProps> = ({
                 )}
 
                 <Box className="w-full">
-                    {chartType === "bar" && (
+                    {resolvedLook === "bar-vertical" && (
                         <BarChart
                             series={normalizedSeries}
                             height={height}
@@ -766,7 +875,18 @@ export const Chart: React.FC<ChartProps> = ({
                             onPointClick={handlePointClick}
                         />
                     )}
-                    {chartType === "histogram" && (
+                    {resolvedLook === "bar-horizontal" && (
+                        <BarChart
+                            series={normalizedSeries}
+                            height={height}
+                            showValues={showValues}
+                            stack={stack}
+                            timeAxis={timeAxis}
+                            horizontal
+                            onPointClick={handlePointClick}
+                        />
+                    )}
+                    {resolvedLook === "histogram" && (
                         <BarChart
                             series={normalizedSeries}
                             height={height}
@@ -777,7 +897,7 @@ export const Chart: React.FC<ChartProps> = ({
                             onPointClick={handlePointClick}
                         />
                     )}
-                    {chartType === "line" && (
+                    {resolvedLook === "line" && (
                         <LineChart
                             series={normalizedSeries}
                             height={height}
@@ -786,7 +906,7 @@ export const Chart: React.FC<ChartProps> = ({
                             onPointClick={handlePointClick}
                         />
                     )}
-                    {chartType === "area" && (
+                    {resolvedLook === "area" && (
                         <LineChart
                             series={normalizedSeries}
                             height={height}
@@ -796,7 +916,7 @@ export const Chart: React.FC<ChartProps> = ({
                             onPointClick={handlePointClick}
                         />
                     )}
-                    {chartType === "pie" && (
+                    {resolvedLook === "pie" && (
                         <PieChart
                             data={firstSeriesData}
                             height={height}
@@ -804,7 +924,7 @@ export const Chart: React.FC<ChartProps> = ({
                             onPointClick={handlePointClick}
                         />
                     )}
-                    {chartType === "donut" && (
+                    {resolvedLook === "donut" && (
                         <PieChart
                             data={firstSeriesData}
                             height={height}
@@ -813,7 +933,7 @@ export const Chart: React.FC<ChartProps> = ({
                             onPointClick={handlePointClick}
                         />
                     )}
-                    {chartType === "scatter" && (
+                    {resolvedLook === "scatter" && (
                         <ScatterChart
                             data={scatterData ?? []}
                             height={height}
