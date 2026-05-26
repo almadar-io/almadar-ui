@@ -13,6 +13,12 @@
  * means body text renders immediately with the fallback chain while the web fonts load. */
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;700;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@400;500;600;700;800&display=swap");
 
+/* Shared base layer — atelier's typography + density at :root, inherited
+ * by every theme that doesn't override. MUST come before per-theme
+ * imports so [data-theme="..."] selectors win the cascade on the few
+ * personality themes that intentionally opt out. */
+@import "./_base.css";
+
 /* Core themes */
 @import "./wireframe.css";
 @import "./minimalist.css";

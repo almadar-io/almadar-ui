@@ -1,0 +1,124 @@
+/**
+ * _base.css — Shared Typography + Density base
+ *
+ * Lifted from `atelier.css` so the editorial type rhythm and generous
+ * 10pt spacing scale are the default across every theme that doesn't
+ * deliberately opt out. Themes can still override any token by declaring
+ * it in their own [data-theme="..."] block — that selector is more
+ * specific than :root and wins via the CSS cascade.
+ *
+ * Personality themes that DO opt out today (keep their own typography
+ * and/or density): terminal (monospace), wireframe (chunky), neon (tight
+ * glow), kiosk (oversized), gazette (serif), minimalist (compact),
+ * trait-wars (gamer). All others inherit from this file.
+ *
+ * Loaded FIRST in themes/index.css so individual theme blocks override
+ * cleanly. The contract reference is `themes/_contract.md`.
+ */
+:root {
+    /* ----------------------------------------------------------------
+     * Typography
+     * ----------------------------------------------------------------
+     * Inter for body + UI, JetBrains Mono for code, optional display
+     * family for hero numerics. Mid-weight 500 reads as confident but
+     * not heavy; tight letter-spacing + 1.625 line-height give the
+     * editorial feel.
+     */
+    --font-family:
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-family-display:
+        "Söhne", "Inter Display", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-family-body:
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-family-mono:
+        "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-bold: 700;
+    --letter-spacing: -0.02em;
+    --line-height: 1.625;
+
+    /* Type scale */
+    --text-xs: 12px;
+    --leading-xs: 18px;
+    --text-sm: 14px;
+    --leading-sm: 22px;
+    --text-base: 16px;
+    --leading-base: 26px;
+    --text-lg: 20px;
+    --leading-lg: 30px;
+    --text-xl: 24px;
+    --leading-xl: 32px;
+    --text-2xl: 32px;
+    --leading-2xl: 38px;
+    --text-3xl: 40px;
+    --leading-3xl: 44px;
+    --text-4xl: 52px;
+    --leading-4xl: 56px;
+    --text-display-1: 64px;
+    --leading-display-1: 68px;
+    --text-display-2: 80px;
+    --leading-display-2: 84px;
+
+    /* Intent mapping — what component variants resolve to. */
+    --intent-heading-major-size: var(--text-3xl);
+    --intent-heading-major-weight: var(--font-weight-bold);
+    --intent-heading-major-leading: var(--leading-3xl);
+    --intent-heading-minor-size: var(--text-xl);
+    --intent-heading-minor-weight: var(--font-weight-bold);
+    --intent-heading-minor-leading: var(--leading-xl);
+    --intent-body-emphasis-size: var(--text-base);
+    --intent-body-emphasis-weight: var(--font-weight-medium);
+    --intent-body-emphasis-leading: var(--leading-base);
+    --intent-body-default-size: var(--text-base);
+    --intent-body-default-weight: var(--font-weight-normal);
+    --intent-body-default-leading: var(--leading-base);
+    --intent-body-quiet-size: var(--text-sm);
+    --intent-body-quiet-weight: var(--font-weight-normal);
+    --intent-body-quiet-leading: var(--leading-sm);
+    --intent-caption-size: var(--text-xs);
+    --intent-caption-weight: var(--font-weight-medium);
+    --intent-caption-leading: var(--leading-xs);
+    --intent-numeric-size: var(--text-4xl);
+    --intent-numeric-weight: var(--font-weight-bold);
+    --intent-numeric-leading: var(--leading-4xl);
+    --intent-numeric-family: var(--font-family-display);
+
+    /* ----------------------------------------------------------------
+     * Density — generous 10pt rhythm
+     * ----------------------------------------------------------------
+     * Slightly larger than Tailwind defaults so cards / dialogs / rows
+     * read as airy without feeling sparse. Per-element heights tuned to
+     * comfortable click targets (44px md is also the iOS HIG minimum).
+     */
+    --space-0: 0px;
+    --space-1: 4px;
+    --space-2: 6px;
+    --space-3: 10px;
+    --space-4: 14px;
+    --space-5: 20px;
+    --space-6: 28px;
+    --space-7: 36px;
+    --space-8: 44px;
+    --space-9: 52px;
+    --space-10: 60px;
+    --space-11: 68px;
+    --space-12: 80px;
+
+    --button-height-sm: 36px;
+    --button-height-md: 44px;
+    --button-height-lg: 56px;
+    --input-height-sm: 36px;
+    --input-height-md: 44px;
+    --input-height-lg: 56px;
+    --row-height-compact: 48px;
+    --row-height-normal: 64px;
+    --row-height-spacious: 80px;
+
+    --card-padding-sm: 20px;
+    --card-padding-md: 28px;
+    --card-padding-lg: 40px;
+    --dialog-padding: 40px;
+    --section-gap: 64px;
+}
