@@ -112,6 +112,83 @@ export const Sorted: Story = {
     },
 };
 
+/** ── Layer 2 looks ── */
+
+export const Dense: Story = {
+    args: {
+        entity: sampleData,
+        columns: columns,
+        look: 'dense',
+    },
+    parameters: {
+        docs: {
+            description: {
+                story: 'Tight row padding for high-density data tables (Bloomberg-style).',
+            },
+        },
+    },
+};
+
+export const Spacious: Story = {
+    args: {
+        entity: sampleData,
+        columns: columns,
+        look: 'spacious',
+    },
+    parameters: {
+        docs: {
+            description: {
+                story: 'Generous row padding for editorial / content-heavy data.',
+            },
+        },
+    },
+};
+
+export const Striped: Story = {
+    args: {
+        entity: sampleData,
+        columns: columns,
+        look: 'striped',
+    },
+    parameters: {
+        docs: {
+            description: {
+                story: 'Zebra-striped rows for scanning long tables.',
+            },
+        },
+    },
+};
+
+export const Borderless: Story = {
+    args: {
+        entity: sampleData,
+        columns: columns,
+        look: 'borderless',
+    },
+    parameters: {
+        docs: {
+            description: {
+                story: 'No row borders — pure data, minimal chrome.',
+            },
+        },
+    },
+};
+
+export const CardRows: Story = {
+    args: {
+        entity: sampleData,
+        columns: columns,
+        look: 'card-rows',
+    },
+    parameters: {
+        docs: {
+            description: {
+                story: 'Each row reads as a stacked card with shadow + radius.',
+            },
+        },
+    },
+};
+
 export const FullFeatured: Story = {
     args: {
         entity: sampleData,

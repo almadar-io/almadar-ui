@@ -215,3 +215,59 @@ export const OpenLarge: Story = {
         </Modal>
     ),
 };
+
+/** ── Layer 2 looks ── */
+
+export const TopSheet: Story = {
+    render: () => (
+        <Modal
+            isOpen={true}
+            onClose={() => {}}
+            title="Top Sheet"
+            look="top-sheet"
+        >
+            <Typography variant="body">
+                Slides in from the top edge — banner-style notifications, command palettes, or quick prompts.
+            </Typography>
+        </Modal>
+    ),
+    parameters: {
+        docs: { description: { story: 'Anchored to the top edge of the viewport — banners, command palettes, transient prompts.' } },
+    },
+};
+
+export const SideDrawer: Story = {
+    render: () => (
+        <Modal
+            isOpen={true}
+            onClose={() => {}}
+            title="Side Drawer"
+            look="side-drawer"
+        >
+            <Typography variant="body">
+                Slides in from a side edge — settings panels, navigation, or detail inspectors.
+            </Typography>
+        </Modal>
+    ),
+    parameters: {
+        docs: { description: { story: 'Slides in from a side edge — drawer-style panels for settings, navigation, or detail inspectors.' } },
+    },
+};
+
+export const FullScreen: Story = {
+    render: () => (
+        <Modal
+            isOpen={true}
+            onClose={() => {}}
+            title="Full Screen"
+            look="full-screen"
+        >
+            <Typography variant="body">
+                Occupies the entire viewport — immersive flows, complex editors, mobile-first dialogs.
+            </Typography>
+        </Modal>
+    ),
+    parameters: {
+        docs: { description: { story: 'Covers the entire viewport — immersive editors, complex flows, mobile-first dialogs.' } },
+    },
+};

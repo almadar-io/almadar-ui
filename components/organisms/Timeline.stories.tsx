@@ -134,3 +134,90 @@ export const Empty: Story = {
         items: [],
     },
 };
+
+/** ── Layer 2 looks ── */
+
+const lookSampleItems = [
+    {
+        id: '1',
+        title: 'Project kickoff',
+        description: 'Initial planning and requirement gathering completed',
+        date: '2025-01-15',
+        status: 'complete' as const,
+        tags: ['planning'],
+    },
+    {
+        id: '2',
+        title: 'Design phase',
+        description: 'UI/UX design and prototyping',
+        date: '2025-02-01',
+        status: 'complete' as const,
+        tags: ['design', 'ux'],
+    },
+    {
+        id: '3',
+        title: 'Development sprint 1',
+        description: 'Core features implementation in progress',
+        date: '2025-03-01',
+        status: 'active' as const,
+        tags: ['dev', 'sprint-1'],
+    },
+    {
+        id: '4',
+        title: 'Testing & QA',
+        description: 'Integration and user acceptance testing',
+        date: '2025-04-01',
+        status: 'pending' as const,
+    },
+    {
+        id: '5',
+        title: 'Launch',
+        description: 'Production deployment and go-live',
+        date: '2025-05-01',
+        status: 'pending' as const,
+    },
+];
+
+export const VerticalCompact: Story = {
+    args: {
+        title: 'Project History',
+        look: 'vertical-compact',
+        items: lookSampleItems,
+    },
+    parameters: {
+        docs: { description: { story: 'Tight rows + short connectors. Activity-feed density.' } },
+    },
+};
+
+export const VerticalSpacious: Story = {
+    args: {
+        title: 'Project History',
+        look: 'vertical-spacious',
+        items: lookSampleItems,
+    },
+    parameters: {
+        docs: { description: { story: 'Generous spacing — editorial timeline.' } },
+    },
+};
+
+export const Horizontal: Story = {
+    args: {
+        title: 'Project History',
+        look: 'horizontal',
+        items: lookSampleItems,
+    },
+    parameters: {
+        docs: { description: { story: 'Axis flipped to horizontal — process/Gantt feel.' } },
+    },
+};
+
+export const Swimlane: Story = {
+    args: {
+        title: 'Project History',
+        look: 'swimlane',
+        items: lookSampleItems,
+    },
+    parameters: {
+        docs: { description: { story: 'Horizontal grouped lanes (v1 ships as horizontal with extra gap; lane-headed grouping is a Phase-2 DOM follow-up).' } },
+    },
+};

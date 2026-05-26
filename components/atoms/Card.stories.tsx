@@ -95,3 +95,95 @@ export const Interactive: Story = {
         </Card>
     ),
 };
+
+/** ── Layer 2 looks ── */
+
+export const FlatBordered: Story = {
+    args: {
+        look: 'flat-bordered',
+        children: (
+            <CardBody>
+                <CardTitle>Flat Bordered</CardTitle>
+                <p className="text-sm text-neutral-600">A card with a hairline border and no shadow.</p>
+            </CardBody>
+        ),
+    },
+    parameters: {
+        docs: { description: { story: 'Hairline border, no shadow. Linear/Notion-style flat cards.' } },
+    },
+};
+
+export const BorderlessDivider: Story = {
+    args: {
+        look: 'borderless-divider',
+        children: (
+            <CardBody>
+                <CardTitle>Borderless Divider</CardTitle>
+                <p className="text-sm text-neutral-600">A card delineated by dividers instead of a border.</p>
+            </CardBody>
+        ),
+    },
+    parameters: {
+        docs: { description: { story: 'No border or shadow; sections are separated by horizontal dividers only.' } },
+    },
+};
+
+export const Ticket: Story = {
+    args: {
+        look: 'ticket',
+        children: (
+            <CardBody>
+                <CardTitle>Ticket</CardTitle>
+                <p className="text-sm text-neutral-600">A perforated ticket-style card for passes and receipts.</p>
+            </CardBody>
+        ),
+    },
+    parameters: {
+        docs: { description: { story: 'Ticket/stub silhouette with notched edges, evoking event passes or boarding stubs.' } },
+    },
+};
+
+export const Invoice: Story = {
+    args: {
+        look: 'invoice',
+        children: (
+            <CardBody>
+                <CardTitle>Invoice</CardTitle>
+                <p className="text-sm text-neutral-600">Paper-document treatment for invoices and statements.</p>
+            </CardBody>
+        ),
+    },
+    parameters: {
+        docs: { description: { story: 'Document-paper treatment with crisp edges and conservative spacing — invoices, receipts, statements.' } },
+    },
+};
+
+export const Chip: Story = {
+    args: {
+        look: 'chip',
+        children: (
+            <CardBody>
+                <CardTitle>Chip</CardTitle>
+                <p className="text-sm text-neutral-600">Compact pill-shaped card for tags or compact metadata.</p>
+            </CardBody>
+        ),
+    },
+    parameters: {
+        docs: { description: { story: 'Compact pill-shaped surface for tag-like or token-sized content.' } },
+    },
+};
+
+export const TileImageFirst: Story = {
+    args: {
+        look: 'tile-image-first',
+        children: (
+            <CardBody>
+                <CardTitle>Tile (Image First)</CardTitle>
+                <p className="text-sm text-neutral-600">Media-led tile where the image dominates above the text.</p>
+            </CardBody>
+        ),
+    },
+    parameters: {
+        docs: { description: { story: 'Media-led tile: image area occupies the top, text content sits beneath.' } },
+    },
+};

@@ -139,3 +139,85 @@ export const WithActions: Story = {
     ],
   },
 };
+
+/** ── Layer 2 looks ── */
+
+export const Dense: Story = {
+  args: {
+    entity: sampleUsers,
+    look: "dense",
+    fields: [
+      { name: "name", variant: "h4" },
+      { name: "role", variant: "badge" },
+      { name: "status", variant: "badge" },
+      { name: "department", variant: "body" },
+    ],
+  },
+  parameters: {
+    docs: { description: { story: "Tight rows for data-heavy operator views — maximum information density." } },
+  },
+};
+
+export const Spacious: Story = {
+  args: {
+    entity: sampleUsers,
+    look: "spacious",
+    fields: [
+      { name: "name", variant: "h4" },
+      { name: "role", variant: "badge" },
+      { name: "status", variant: "badge" },
+      { name: "department", variant: "body" },
+    ],
+  },
+  parameters: {
+    docs: { description: { story: "Generous row padding — editorial / settings-page feel." } },
+  },
+};
+
+export const Striped: Story = {
+  args: {
+    entity: sampleUsers,
+    look: "striped",
+    fields: [
+      { name: "name", variant: "h4" },
+      { name: "role", variant: "badge" },
+      { name: "status", variant: "badge" },
+      { name: "department", variant: "body" },
+    ],
+  },
+  parameters: {
+    docs: { description: { story: "Alternating row background — long-list scannability." } },
+  },
+};
+
+export const Borderless: Story = {
+  args: {
+    entity: sampleUsers,
+    look: "borderless",
+    fields: [
+      { name: "name", variant: "h4" },
+      { name: "role", variant: "badge" },
+      { name: "status", variant: "badge" },
+      { name: "department", variant: "body" },
+    ],
+  },
+  parameters: {
+    docs: { description: { story: "No dividers — clean, minimal embed inside cards or panels." } },
+  },
+};
+
+export const CardRows: Story = {
+  args: {
+    entity: sampleUsers,
+    look: "card-rows",
+    fields: [
+      { name: "name", variant: "h4" },
+      { name: "role", variant: "badge" },
+      { name: "status", variant: "badge" },
+      { name: "department", variant: "body" },
+    ],
+  },
+  parameters: {
+    docs: { description: { story: "Each row rendered as a separated card — touch-friendly, mobile-first." } },
+  },
+};

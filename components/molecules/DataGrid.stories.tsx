@@ -90,3 +90,110 @@ export const WithImages: Story = {
     ],
   },
 };
+
+/** ── Layer 2 looks ── */
+
+export const Dense: Story = {
+  args: {
+    entity: sampleProducts,
+    cols: 3,
+    look: "dense",
+    fields: [
+      { name: "name", variant: "h4" },
+      { name: "status", variant: "badge" },
+      { name: "price", format: "currency" },
+      { name: "category", variant: "caption" },
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Tight row padding for high-density data tables (Bloomberg-style).",
+      },
+    },
+  },
+};
+
+export const Spacious: Story = {
+  args: {
+    entity: sampleProducts,
+    cols: 3,
+    look: "spacious",
+    fields: [
+      { name: "name", variant: "h4" },
+      { name: "status", variant: "badge" },
+      { name: "price", format: "currency" },
+      { name: "category", variant: "caption" },
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Generous row padding for editorial / content-heavy data.",
+      },
+    },
+  },
+};
+
+export const Striped: Story = {
+  args: {
+    entity: sampleProducts,
+    cols: 3,
+    look: "striped",
+    fields: [
+      { name: "name", variant: "h4" },
+      { name: "status", variant: "badge" },
+      { name: "price", format: "currency" },
+      { name: "category", variant: "caption" },
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Zebra-striped rows for scanning long tables.",
+      },
+    },
+  },
+};
+
+export const Borderless: Story = {
+  args: {
+    entity: sampleProducts,
+    cols: 3,
+    look: "borderless",
+    fields: [
+      { name: "name", variant: "h4" },
+      { name: "status", variant: "badge" },
+      { name: "price", format: "currency" },
+      { name: "category", variant: "caption" },
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "No row borders — pure data, minimal chrome.",
+      },
+    },
+  },
+};
+
+export const CardRows: Story = {
+  args: {
+    entity: sampleProducts,
+    cols: 3,
+    look: "card-rows",
+    fields: [
+      { name: "name", variant: "h4" },
+      { name: "status", variant: "badge" },
+      { name: "price", format: "currency" },
+      { name: "category", variant: "caption" },
+    ],
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Each row reads as a stacked card with shadow + radius.",
+      },
+    },
+  },
+};

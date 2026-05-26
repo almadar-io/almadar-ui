@@ -81,3 +81,130 @@ export const FullFeatured: Story = {
         ],
     },
 };
+
+/** ── Layer 2 looks ── */
+
+export const Hero: Story = {
+    args: {
+        brandName: 'MyApp',
+        userName: 'John Doe',
+        userAvatar: {
+            src: 'https://i.pravatar.cc/150?img=1',
+            alt: 'John Doe',
+        },
+        variant: 'desktop',
+        navigationItems: [
+            { label: 'Dashboard', href: '#' },
+            { label: 'Projects', href: '#' },
+            { label: 'Team', href: '#' },
+        ],
+        look: 'hero',
+    },
+    parameters: {
+        docs: {
+            description: {
+                story: 'Large vertical spacing + display-1 typography for landing-style pages.',
+            },
+        },
+    },
+};
+
+export const CompactBar: Story = {
+    args: {
+        brandName: 'MyApp',
+        userName: 'John Doe',
+        userAvatar: {
+            src: 'https://i.pravatar.cc/150?img=1',
+            alt: 'John Doe',
+        },
+        variant: 'desktop',
+        navigationItems: [
+            { label: 'Dashboard', href: '#' },
+            { label: 'Projects', href: '#' },
+            { label: 'Team', href: '#' },
+        ],
+        look: 'compact-bar',
+    },
+    parameters: {
+        docs: {
+            description: {
+                story: 'Single-line app bar — the typical product header.',
+            },
+        },
+    },
+};
+
+export const Breadcrumb: Story = {
+    args: {
+        brandName: 'MyApp',
+        userName: 'John Doe',
+        userAvatar: {
+            src: 'https://i.pravatar.cc/150?img=1',
+            alt: 'John Doe',
+        },
+        variant: 'desktop',
+        navigationItems: [
+            { label: 'Dashboard', href: '#' },
+            { label: 'Projects', href: '#' },
+            { label: 'Team', href: '#' },
+        ],
+        look: 'breadcrumb',
+    },
+    parameters: {
+        docs: {
+            description: {
+                story: 'Tight secondary header — text-sm, breadcrumb-style.',
+            },
+        },
+    },
+};
+
+export const Contextual: Story = {
+    args: {
+        brandName: 'MyApp',
+        userName: 'John Doe',
+        userAvatar: {
+            src: 'https://i.pravatar.cc/150?img=1',
+            alt: 'John Doe',
+        },
+        variant: 'desktop',
+        navigationItems: [
+            { label: 'Dashboard', href: '#' },
+            { label: 'Projects', href: '#' },
+            { label: 'Team', href: '#' },
+        ],
+        look: 'contextual',
+    },
+    parameters: {
+        docs: {
+            description: {
+                story: 'Inline header with status badges; tighter than compact-bar.',
+            },
+        },
+    },
+};
+
+export const EditorialBanner: Story = {
+    args: {
+        brandName: 'MyApp',
+        userName: 'John Doe',
+        userAvatar: {
+            src: 'https://i.pravatar.cc/150?img=1',
+            alt: 'John Doe',
+        },
+        variant: 'desktop',
+        navigationItems: [
+            { label: 'Dashboard', href: '#' },
+            { label: 'Projects', href: '#' },
+            { label: 'Team', href: '#' },
+        ],
+        look: 'editorial-banner',
+    },
+    parameters: {
+        docs: {
+            description: {
+                story: 'Magazine-style banner — display-2 type with bottom border.',
+            },
+        },
+    },
+};
