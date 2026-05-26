@@ -170,6 +170,24 @@ export const BUILT_IN_THEMES: ThemeDefinition[] = [
     hasLightMode: true,
     hasDarkMode: true,
   },
+  {
+    name: "linear-clean",
+    displayName: "Linear Clean",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
+  {
+    name: "notion-editorial",
+    displayName: "Notion Editorial",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
+  {
+    name: "bloomberg-dense",
+    displayName: "Bloomberg Dense",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
 ];
 
 /** Theme context value */
