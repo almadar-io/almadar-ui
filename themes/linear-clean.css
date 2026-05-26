@@ -1,0 +1,403 @@
+/**
+ * Linear Clean Theme
+ *
+ * Personality: minimalist product-tool aesthetic — Linear/Stripe lineage. Warm-grey
+ * neutrals, a single confident blue accent, snappy linear motion, and outline icons.
+ * Tight 4pt rhythm and small button heights signal speed without being cramped.
+ *
+ * Spec axes (per docs/Almadar_Std_Variations.md §2.4):
+ *   Color        warm-grey + single blue accent
+ *   Density      compact (4pt rhythm, 28/32/36 buttons)
+ *   Type         tech (Inter everywhere, mono numerics, tight leading)
+ *   Geometry     soft (4/8/12 radius, hairline borders)
+ *   Elevation    flat (no shadows, borders only)
+ *   Motion       snappy (linear, 80/120/180ms)
+ *   Iconography  outline (lucide, stroke 1.5)
+ *   Illustration minimal (icon+text empty states)
+ */
+
+/* ==========================================================================
+ * LIGHT MODE
+ * ========================================================================== */
+[data-theme="linear-clean-light"] {
+    --shadow-none: none;
+    --shadow-sm: none;
+    --shadow-main: none;
+    --shadow-lg: none;
+    --shadow-inner: none;
+    --shadow-hover: none;
+    --shadow-active: none;
+
+    --radius-none: 0px;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 12px;
+    --radius-full: 9999px;
+
+    --border-width: 1px;
+    --border-width-thin: 1px;
+    --border-width-thick: 1px;
+
+    --color-primary: #0066ff;
+    --color-primary-hover: #0052cc;
+    --color-primary-foreground: #ffffff;
+
+    --color-secondary: #f4f4f2;
+    --color-secondary-hover: #ececea;
+    --color-secondary-foreground: #0a0a0a;
+
+    --color-accent: #0066ff;
+    --color-accent-foreground: #ffffff;
+
+    --color-muted: #f4f4f2;
+    --color-muted-foreground: #6b6b66;
+
+    --color-background: #fafafa;
+    --color-foreground: #0a0a0a;
+    --color-card: #ffffff;
+    --color-card-foreground: #0a0a0a;
+    --color-surface: #f7f7f5;
+    --color-border: #e6e6e2;
+    --color-input: #d8d8d4;
+    --color-ring: #0066ff;
+
+    --color-table-header: #f7f7f5;
+    --color-table-border: #e6e6e2;
+    --color-table-row-hover: #f4f4f2;
+    --color-surface-hover: #ececea;
+    --color-border-hover: #c9c9c4;
+    --color-placeholder: #9a998f;
+
+    --color-error: #d92d20;
+    --color-error-foreground: #ffffff;
+    --color-success: #079455;
+    --color-success-foreground: #ffffff;
+    --color-warning: #b54708;
+    --color-warning-foreground: #ffffff;
+    --color-info: #0066ff;
+    --color-info-foreground: #ffffff;
+
+    --font-family:
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-family-display:
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-family-body:
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-family-mono:
+        "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-bold: 600;
+    --letter-spacing: -0.01em;
+    --line-height: 1.4;
+
+    --text-xs: 11px;
+    --leading-xs: 14px;
+    --text-sm: 13px;
+    --leading-sm: 18px;
+    --text-base: 14px;
+    --leading-base: 20px;
+    --text-lg: 16px;
+    --leading-lg: 22px;
+    --text-xl: 18px;
+    --leading-xl: 24px;
+    --text-2xl: 22px;
+    --leading-2xl: 28px;
+    --text-3xl: 28px;
+    --leading-3xl: 34px;
+    --text-4xl: 34px;
+    --leading-4xl: 40px;
+    --text-display-1: 44px;
+    --leading-display-1: 48px;
+    --text-display-2: 56px;
+    --leading-display-2: 60px;
+
+    --intent-heading-major-size: var(--text-2xl);
+    --intent-heading-major-weight: var(--font-weight-bold);
+    --intent-heading-major-leading: var(--leading-2xl);
+    --intent-heading-minor-size: var(--text-lg);
+    --intent-heading-minor-weight: var(--font-weight-bold);
+    --intent-heading-minor-leading: var(--leading-lg);
+    --intent-body-emphasis-size: var(--text-sm);
+    --intent-body-emphasis-weight: var(--font-weight-medium);
+    --intent-body-emphasis-leading: var(--leading-sm);
+    --intent-body-default-size: var(--text-sm);
+    --intent-body-default-weight: var(--font-weight-normal);
+    --intent-body-default-leading: var(--leading-sm);
+    --intent-body-quiet-size: var(--text-xs);
+    --intent-body-quiet-weight: var(--font-weight-normal);
+    --intent-body-quiet-leading: var(--leading-xs);
+    --intent-caption-size: var(--text-xs);
+    --intent-caption-weight: var(--font-weight-medium);
+    --intent-caption-leading: var(--leading-xs);
+    --intent-numeric-size: var(--text-sm);
+    --intent-numeric-weight: var(--font-weight-medium);
+    --intent-numeric-leading: var(--leading-sm);
+    --intent-numeric-family: var(--font-family-mono);
+
+    --space-0: 0px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 28px;
+    --space-8: 32px;
+    --space-9: 36px;
+    --space-10: 40px;
+    --space-11: 44px;
+    --space-12: 48px;
+
+    --button-height-sm: 28px;
+    --button-height-md: 32px;
+    --button-height-lg: 36px;
+    --input-height-sm: 28px;
+    --input-height-md: 32px;
+    --input-height-lg: 36px;
+    --row-height-compact: 32px;
+    --row-height-normal: 36px;
+    --row-height-spacious: 44px;
+
+    --card-padding-sm: 12px;
+    --card-padding-md: 16px;
+    --card-padding-lg: 20px;
+    --dialog-padding: 24px;
+    --section-gap: 32px;
+
+    --icon-family: lucide;
+    --icon-default-size: 16px;
+    --icon-stroke-width: 1.5;
+    --icon-color: currentColor;
+
+    --elevation-card: none;
+    --elevation-popover: none;
+    --elevation-dialog: none;
+    --elevation-toast: none;
+
+    --radius-container: 8px;
+    --radius-interactive: 6px;
+    --radius-pill: 9999px;
+    --border-hairline: 1px;
+    --border-standard: 1px;
+    --border-heavy: 1px;
+
+    --transition-fast: 80ms;
+    --transition-normal: 120ms;
+    --transition-slow: 180ms;
+    --transition-timing: linear;
+
+    --duration-instant: 0ms;
+    --duration-fast: 80ms;
+    --duration-normal: 120ms;
+    --duration-slow: 180ms;
+    --duration-dramatic: 240ms;
+    --easing-linear: linear;
+    --easing-standard: linear;
+    --easing-emphasized: linear;
+    --easing-spring: linear;
+
+    --hover-scale: 1;
+    --hover-translate-y: 0;
+    --hover-translate-x: 0;
+    --active-scale: 1;
+    --active-translate-y: 0;
+
+    --focus-ring-width: 2px;
+    --focus-ring-offset: 2px;
+    --focus-ring-color: #0066ff;
+}
+
+/* ==========================================================================
+ * DARK MODE
+ * ========================================================================== */
+[data-theme="linear-clean-dark"] {
+    --shadow-none: none;
+    --shadow-sm: none;
+    --shadow-main: none;
+    --shadow-lg: none;
+    --shadow-inner: none;
+    --shadow-hover: none;
+    --shadow-active: none;
+
+    --radius-none: 0px;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 12px;
+    --radius-full: 9999px;
+
+    --border-width: 1px;
+    --border-width-thin: 1px;
+    --border-width-thick: 1px;
+
+    --color-primary: #4d8bff;
+    --color-primary-hover: #6ea2ff;
+    --color-primary-foreground: #0a0a0c;
+
+    --color-secondary: #18181b;
+    --color-secondary-hover: #222226;
+    --color-secondary-foreground: #fafafa;
+
+    --color-accent: #4d8bff;
+    --color-accent-foreground: #0a0a0c;
+
+    --color-muted: #18181b;
+    --color-muted-foreground: #8b8b90;
+
+    --color-background: #0a0a0c;
+    --color-foreground: #fafafa;
+    --color-card: #121214;
+    --color-card-foreground: #fafafa;
+    --color-surface: #18181b;
+    --color-border: #26262b;
+    --color-input: #2e2e34;
+    --color-ring: #4d8bff;
+
+    --color-table-header: #18181b;
+    --color-table-border: #26262b;
+    --color-table-row-hover: #161618;
+    --color-surface-hover: #222226;
+    --color-border-hover: #3a3a40;
+    --color-placeholder: #6b6b70;
+
+    --color-error: #f97066;
+    --color-error-foreground: #0a0a0c;
+    --color-success: #47cd89;
+    --color-success-foreground: #0a0a0c;
+    --color-warning: #fdb022;
+    --color-warning-foreground: #0a0a0c;
+    --color-info: #4d8bff;
+    --color-info-foreground: #0a0a0c;
+
+    --font-family:
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-family-display:
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-family-body:
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-family-mono:
+        "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-bold: 600;
+    --letter-spacing: -0.01em;
+    --line-height: 1.4;
+
+    --text-xs: 11px;
+    --leading-xs: 14px;
+    --text-sm: 13px;
+    --leading-sm: 18px;
+    --text-base: 14px;
+    --leading-base: 20px;
+    --text-lg: 16px;
+    --leading-lg: 22px;
+    --text-xl: 18px;
+    --leading-xl: 24px;
+    --text-2xl: 22px;
+    --leading-2xl: 28px;
+    --text-3xl: 28px;
+    --leading-3xl: 34px;
+    --text-4xl: 34px;
+    --leading-4xl: 40px;
+    --text-display-1: 44px;
+    --leading-display-1: 48px;
+    --text-display-2: 56px;
+    --leading-display-2: 60px;
+
+    --intent-heading-major-size: var(--text-2xl);
+    --intent-heading-major-weight: var(--font-weight-bold);
+    --intent-heading-major-leading: var(--leading-2xl);
+    --intent-heading-minor-size: var(--text-lg);
+    --intent-heading-minor-weight: var(--font-weight-bold);
+    --intent-heading-minor-leading: var(--leading-lg);
+    --intent-body-emphasis-size: var(--text-sm);
+    --intent-body-emphasis-weight: var(--font-weight-medium);
+    --intent-body-emphasis-leading: var(--leading-sm);
+    --intent-body-default-size: var(--text-sm);
+    --intent-body-default-weight: var(--font-weight-normal);
+    --intent-body-default-leading: var(--leading-sm);
+    --intent-body-quiet-size: var(--text-xs);
+    --intent-body-quiet-weight: var(--font-weight-normal);
+    --intent-body-quiet-leading: var(--leading-xs);
+    --intent-caption-size: var(--text-xs);
+    --intent-caption-weight: var(--font-weight-medium);
+    --intent-caption-leading: var(--leading-xs);
+    --intent-numeric-size: var(--text-sm);
+    --intent-numeric-weight: var(--font-weight-medium);
+    --intent-numeric-leading: var(--leading-sm);
+    --intent-numeric-family: var(--font-family-mono);
+
+    --space-0: 0px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 28px;
+    --space-8: 32px;
+    --space-9: 36px;
+    --space-10: 40px;
+    --space-11: 44px;
+    --space-12: 48px;
+
+    --button-height-sm: 28px;
+    --button-height-md: 32px;
+    --button-height-lg: 36px;
+    --input-height-sm: 28px;
+    --input-height-md: 32px;
+    --input-height-lg: 36px;
+    --row-height-compact: 32px;
+    --row-height-normal: 36px;
+    --row-height-spacious: 44px;
+
+    --card-padding-sm: 12px;
+    --card-padding-md: 16px;
+    --card-padding-lg: 20px;
+    --dialog-padding: 24px;
+    --section-gap: 32px;
+
+    --icon-family: lucide;
+    --icon-default-size: 16px;
+    --icon-stroke-width: 1.5;
+    --icon-color: currentColor;
+
+    --elevation-card: none;
+    --elevation-popover: none;
+    --elevation-dialog: none;
+    --elevation-toast: none;
+
+    --radius-container: 8px;
+    --radius-interactive: 6px;
+    --radius-pill: 9999px;
+    --border-hairline: 1px;
+    --border-standard: 1px;
+    --border-heavy: 1px;
+
+    --transition-fast: 80ms;
+    --transition-normal: 120ms;
+    --transition-slow: 180ms;
+    --transition-timing: linear;
+
+    --duration-instant: 0ms;
+    --duration-fast: 80ms;
+    --duration-normal: 120ms;
+    --duration-slow: 180ms;
+    --duration-dramatic: 240ms;
+    --easing-linear: linear;
+    --easing-standard: linear;
+    --easing-emphasized: linear;
+    --easing-spring: linear;
+
+    --hover-scale: 1;
+    --hover-translate-y: 0;
+    --hover-translate-x: 0;
+    --active-scale: 1;
+    --active-translate-y: 0;
+
+    --focus-ring-width: 2px;
+    --focus-ring-offset: 2px;
+    --focus-ring-color: #4d8bff;
+}

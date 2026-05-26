@@ -1,0 +1,403 @@
+/**
+ * Bloomberg Dense Theme
+ *
+ * Personality: trading-terminal / data-cockpit feel. Very dark navy canvas, cyan +
+ * amber data accents, JetBrains Mono everywhere, sharp 0-radius corners with thick
+ * 2px borders carrying hierarchy. Mechanical linear motion under 200ms.
+ *
+ * Spec axes (per docs/Almadar_Std_Variations.md §2.4):
+ *   Color        very dark navy/black + cyan/amber data accents
+ *   Density      compact (4pt rhythm, 24/28/32 buttons — tighter than linear)
+ *   Type         dense (JetBrains Mono everywhere, 1.3 leading, base 14px)
+ *   Geometry     sharp (radius 0, borders 2px thick)
+ *   Elevation    outline (no shadows — borders carry hierarchy)
+ *   Motion       mechanical (linear easing, 100/150/200ms)
+ *   Iconography  filled (phosphor-fill, 0 stroke)
+ *   Illustration text-only (no imagery in empty states)
+ */
+
+/* ==========================================================================
+ * LIGHT MODE
+ * ========================================================================== */
+[data-theme="bloomberg-dense-light"] {
+    --shadow-none: none;
+    --shadow-sm: none;
+    --shadow-main: none;
+    --shadow-lg: none;
+    --shadow-inner: none;
+    --shadow-hover: none;
+    --shadow-active: none;
+
+    --radius-none: 0px;
+    --radius-sm: 0px;
+    --radius-md: 0px;
+    --radius-lg: 0px;
+    --radius-xl: 0px;
+    --radius-full: 9999px;
+
+    --border-width: 2px;
+    --border-width-thin: 1px;
+    --border-width-thick: 3px;
+
+    --color-primary: #06b6d4;
+    --color-primary-hover: #0891b2;
+    --color-primary-foreground: #0a0e1a;
+
+    --color-secondary: #e4e9f2;
+    --color-secondary-hover: #d6dce8;
+    --color-secondary-foreground: #0a0e1a;
+
+    --color-accent: #f59e0b;
+    --color-accent-foreground: #0a0e1a;
+
+    --color-muted: #e4e9f2;
+    --color-muted-foreground: #4a5568;
+
+    --color-background: #f5f7fa;
+    --color-foreground: #0a0e1a;
+    --color-card: #ffffff;
+    --color-card-foreground: #0a0e1a;
+    --color-surface: #eceff5;
+    --color-border: #0a0e1a;
+    --color-input: #0a0e1a;
+    --color-ring: #06b6d4;
+
+    --color-table-header: #0a0e1a;
+    --color-table-border: #0a0e1a;
+    --color-table-row-hover: #eceff5;
+    --color-surface-hover: #d6dce8;
+    --color-border-hover: #0a0e1a;
+    --color-placeholder: #6b7280;
+
+    --color-error: #dc2626;
+    --color-error-foreground: #ffffff;
+    --color-success: #16a34a;
+    --color-success-foreground: #ffffff;
+    --color-warning: #f59e0b;
+    --color-warning-foreground: #0a0e1a;
+    --color-info: #06b6d4;
+    --color-info-foreground: #0a0e1a;
+
+    --font-family:
+        "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
+    --font-family-display:
+        "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
+    --font-family-body:
+        "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
+    --font-family-mono:
+        "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-bold: 700;
+    --letter-spacing: 0;
+    --line-height: 1.3;
+
+    --text-xs: 10px;
+    --leading-xs: 13px;
+    --text-sm: 12px;
+    --leading-sm: 16px;
+    --text-base: 14px;
+    --leading-base: 18px;
+    --text-lg: 16px;
+    --leading-lg: 20px;
+    --text-xl: 18px;
+    --leading-xl: 23px;
+    --text-2xl: 20px;
+    --leading-2xl: 26px;
+    --text-3xl: 24px;
+    --leading-3xl: 31px;
+    --text-4xl: 30px;
+    --leading-4xl: 39px;
+    --text-display-1: 38px;
+    --leading-display-1: 49px;
+    --text-display-2: 48px;
+    --leading-display-2: 62px;
+
+    --intent-heading-major-size: var(--text-xl);
+    --intent-heading-major-weight: var(--font-weight-bold);
+    --intent-heading-major-leading: var(--leading-xl);
+    --intent-heading-minor-size: var(--text-base);
+    --intent-heading-minor-weight: var(--font-weight-bold);
+    --intent-heading-minor-leading: var(--leading-base);
+    --intent-body-emphasis-size: var(--text-sm);
+    --intent-body-emphasis-weight: var(--font-weight-medium);
+    --intent-body-emphasis-leading: var(--leading-sm);
+    --intent-body-default-size: var(--text-sm);
+    --intent-body-default-weight: var(--font-weight-normal);
+    --intent-body-default-leading: var(--leading-sm);
+    --intent-body-quiet-size: var(--text-xs);
+    --intent-body-quiet-weight: var(--font-weight-normal);
+    --intent-body-quiet-leading: var(--leading-xs);
+    --intent-caption-size: var(--text-xs);
+    --intent-caption-weight: var(--font-weight-normal);
+    --intent-caption-leading: var(--leading-xs);
+    --intent-numeric-size: var(--text-sm);
+    --intent-numeric-weight: var(--font-weight-bold);
+    --intent-numeric-leading: var(--leading-sm);
+    --intent-numeric-family: var(--font-family-mono);
+
+    --space-0: 0px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 28px;
+    --space-8: 32px;
+    --space-9: 36px;
+    --space-10: 40px;
+    --space-11: 44px;
+    --space-12: 48px;
+
+    --button-height-sm: 24px;
+    --button-height-md: 28px;
+    --button-height-lg: 32px;
+    --input-height-sm: 24px;
+    --input-height-md: 28px;
+    --input-height-lg: 32px;
+    --row-height-compact: 24px;
+    --row-height-normal: 28px;
+    --row-height-spacious: 36px;
+
+    --card-padding-sm: 8px;
+    --card-padding-md: 12px;
+    --card-padding-lg: 16px;
+    --dialog-padding: 20px;
+    --section-gap: 24px;
+
+    --icon-family: phosphor-fill;
+    --icon-default-size: 14px;
+    --icon-stroke-width: 0;
+    --icon-color: currentColor;
+
+    --elevation-card: none;
+    --elevation-popover: none;
+    --elevation-dialog: none;
+    --elevation-toast: none;
+
+    --radius-container: 0px;
+    --radius-interactive: 0px;
+    --radius-pill: 9999px;
+    --border-hairline: 1px;
+    --border-standard: 2px;
+    --border-heavy: 3px;
+
+    --transition-fast: 100ms;
+    --transition-normal: 150ms;
+    --transition-slow: 200ms;
+    --transition-timing: linear;
+
+    --duration-instant: 0ms;
+    --duration-fast: 100ms;
+    --duration-normal: 150ms;
+    --duration-slow: 200ms;
+    --duration-dramatic: 300ms;
+    --easing-linear: linear;
+    --easing-standard: linear;
+    --easing-emphasized: linear;
+    --easing-spring: linear;
+
+    --hover-scale: 1;
+    --hover-translate-y: 0;
+    --hover-translate-x: 0;
+    --active-scale: 1;
+    --active-translate-y: 0;
+
+    --focus-ring-width: 2px;
+    --focus-ring-offset: 0px;
+    --focus-ring-color: #06b6d4;
+}
+
+/* ==========================================================================
+ * DARK MODE
+ * ========================================================================== */
+[data-theme="bloomberg-dense-dark"] {
+    --shadow-none: none;
+    --shadow-sm: none;
+    --shadow-main: none;
+    --shadow-lg: none;
+    --shadow-inner: none;
+    --shadow-hover: none;
+    --shadow-active: none;
+
+    --radius-none: 0px;
+    --radius-sm: 0px;
+    --radius-md: 0px;
+    --radius-lg: 0px;
+    --radius-xl: 0px;
+    --radius-full: 9999px;
+
+    --border-width: 2px;
+    --border-width-thin: 1px;
+    --border-width-thick: 3px;
+
+    --color-primary: #22d3ee;
+    --color-primary-hover: #67e8f9;
+    --color-primary-foreground: #0a0e1a;
+
+    --color-secondary: #131826;
+    --color-secondary-hover: #1c2236;
+    --color-secondary-foreground: #c7d2e0;
+
+    --color-accent: #fbbf24;
+    --color-accent-foreground: #0a0e1a;
+
+    --color-muted: #131826;
+    --color-muted-foreground: #6b7a94;
+
+    --color-background: #0a0e1a;
+    --color-foreground: #c7d2e0;
+    --color-card: #0e1322;
+    --color-card-foreground: #c7d2e0;
+    --color-surface: #131826;
+    --color-border: #22d3ee;
+    --color-input: #22d3ee;
+    --color-ring: #22d3ee;
+
+    --color-table-header: #131826;
+    --color-table-border: #22d3ee;
+    --color-table-row-hover: #131826;
+    --color-surface-hover: #1c2236;
+    --color-border-hover: #67e8f9;
+    --color-placeholder: #4a5772;
+
+    --color-error: #f87171;
+    --color-error-foreground: #0a0e1a;
+    --color-success: #4ade80;
+    --color-success-foreground: #0a0e1a;
+    --color-warning: #fbbf24;
+    --color-warning-foreground: #0a0e1a;
+    --color-info: #22d3ee;
+    --color-info-foreground: #0a0e1a;
+
+    --font-family:
+        "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
+    --font-family-display:
+        "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
+    --font-family-body:
+        "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
+    --font-family-mono:
+        "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-bold: 700;
+    --letter-spacing: 0;
+    --line-height: 1.3;
+
+    --text-xs: 10px;
+    --leading-xs: 13px;
+    --text-sm: 12px;
+    --leading-sm: 16px;
+    --text-base: 14px;
+    --leading-base: 18px;
+    --text-lg: 16px;
+    --leading-lg: 20px;
+    --text-xl: 18px;
+    --leading-xl: 23px;
+    --text-2xl: 20px;
+    --leading-2xl: 26px;
+    --text-3xl: 24px;
+    --leading-3xl: 31px;
+    --text-4xl: 30px;
+    --leading-4xl: 39px;
+    --text-display-1: 38px;
+    --leading-display-1: 49px;
+    --text-display-2: 48px;
+    --leading-display-2: 62px;
+
+    --intent-heading-major-size: var(--text-xl);
+    --intent-heading-major-weight: var(--font-weight-bold);
+    --intent-heading-major-leading: var(--leading-xl);
+    --intent-heading-minor-size: var(--text-base);
+    --intent-heading-minor-weight: var(--font-weight-bold);
+    --intent-heading-minor-leading: var(--leading-base);
+    --intent-body-emphasis-size: var(--text-sm);
+    --intent-body-emphasis-weight: var(--font-weight-medium);
+    --intent-body-emphasis-leading: var(--leading-sm);
+    --intent-body-default-size: var(--text-sm);
+    --intent-body-default-weight: var(--font-weight-normal);
+    --intent-body-default-leading: var(--leading-sm);
+    --intent-body-quiet-size: var(--text-xs);
+    --intent-body-quiet-weight: var(--font-weight-normal);
+    --intent-body-quiet-leading: var(--leading-xs);
+    --intent-caption-size: var(--text-xs);
+    --intent-caption-weight: var(--font-weight-normal);
+    --intent-caption-leading: var(--leading-xs);
+    --intent-numeric-size: var(--text-sm);
+    --intent-numeric-weight: var(--font-weight-bold);
+    --intent-numeric-leading: var(--leading-sm);
+    --intent-numeric-family: var(--font-family-mono);
+
+    --space-0: 0px;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 28px;
+    --space-8: 32px;
+    --space-9: 36px;
+    --space-10: 40px;
+    --space-11: 44px;
+    --space-12: 48px;
+
+    --button-height-sm: 24px;
+    --button-height-md: 28px;
+    --button-height-lg: 32px;
+    --input-height-sm: 24px;
+    --input-height-md: 28px;
+    --input-height-lg: 32px;
+    --row-height-compact: 24px;
+    --row-height-normal: 28px;
+    --row-height-spacious: 36px;
+
+    --card-padding-sm: 8px;
+    --card-padding-md: 12px;
+    --card-padding-lg: 16px;
+    --dialog-padding: 20px;
+    --section-gap: 24px;
+
+    --icon-family: phosphor-fill;
+    --icon-default-size: 14px;
+    --icon-stroke-width: 0;
+    --icon-color: currentColor;
+
+    --elevation-card: none;
+    --elevation-popover: none;
+    --elevation-dialog: none;
+    --elevation-toast: none;
+
+    --radius-container: 0px;
+    --radius-interactive: 0px;
+    --radius-pill: 9999px;
+    --border-hairline: 1px;
+    --border-standard: 2px;
+    --border-heavy: 3px;
+
+    --transition-fast: 100ms;
+    --transition-normal: 150ms;
+    --transition-slow: 200ms;
+    --transition-timing: linear;
+
+    --duration-instant: 0ms;
+    --duration-fast: 100ms;
+    --duration-normal: 150ms;
+    --duration-slow: 200ms;
+    --duration-dramatic: 300ms;
+    --easing-linear: linear;
+    --easing-standard: linear;
+    --easing-emphasized: linear;
+    --easing-spring: linear;
+
+    --hover-scale: 1;
+    --hover-translate-y: 0;
+    --hover-translate-x: 0;
+    --active-scale: 1;
+    --active-translate-y: 0;
+
+    --focus-ring-width: 2px;
+    --focus-ring-offset: 0px;
+    --focus-ring-color: #22d3ee;
+}
