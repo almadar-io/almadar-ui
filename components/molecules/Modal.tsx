@@ -175,8 +175,13 @@ export const Modal: React.FC<ModalProps> = ({
           ref={modalRef}
           open
           className={cn(
-            // Reset browser-default dialog chrome — we own styling.
-            "m-0 p-0 border-0 bg-transparent",
+            // Reset browser-default dialog chrome — we own styling. `static`
+            // overrides the user-agent `position: absolute` so the parent
+            // flex container's `justify-center` actually centers the dialog
+            // (without this, the dialog drops out of flex flow and `m-0`
+            // kills the user-agent's `margin: auto` centering, pinning the
+            // dialog to top-left).
+            "static m-0 p-0 border-0 bg-transparent",
             // Pre-existing dialog frame
             "pointer-events-auto w-full flex flex-col bg-surface border shadow-elevation-dialog rounded-container",
             // Desktop sizing + viewport-aware floor.
