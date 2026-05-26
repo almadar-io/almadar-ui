@@ -3,6 +3,19 @@ import { cn } from "../../lib/cn";
 
 export type CardShadow = "none" | "sm" | "md" | "lg";
 
+/**
+ * Layer 2 visual treatment for the card pattern — orthogonal to the semantic
+ * `variant` (which conveys role / state).
+ */
+export type CardLook =
+  | "elevated"
+  | "flat-bordered"
+  | "borderless-divider"
+  | "ticket"
+  | "invoice"
+  | "chip"
+  | "tile-image-first";
+
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: "default" | "bordered" | "elevated" | "interactive";
   padding?: "none" | "sm" | "md" | "lg";
@@ -12,6 +25,8 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   subtitle?: string;
   /** Shadow size override */
   shadow?: CardShadow;
+  /** Layer 2 visual treatment — orthogonal to the semantic variant. */
+  look?: CardLook;
   /** Card content */
   children?: React.ReactNode;
 }
@@ -64,6 +79,24 @@ const shadowStyles: Record<CardShadow, string> = {
   lg: "shadow-elevation-dialog",
 };
 
+// Layer 2 look styles — applied AFTER variantStyles so they override
+// shadow/border/radius/padding-intent. Empty string for `elevated` since the
+// default variant already produces the elevated treatment. Each non-default
+// look is a delta on the baseline.
+const lookStyles: Record<CardLook, string> = {
+  elevated: "",
+  "flat-bordered": "shadow-none border-[length:var(--border-width)] border-border",
+  "borderless-divider":
+    "shadow-none border-0 border-b border-border rounded-none",
+  ticket:
+    "shadow-none border-dashed border-[length:var(--border-width)] border-border",
+  invoice:
+    "shadow-none border-[length:var(--border-width-thick)] border-border rounded-sm",
+  chip:
+    "shadow-none rounded-pill border-[length:var(--border-width)] border-border",
+  "tile-image-first": "p-0 overflow-hidden",
+};
+
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
   (
     {
@@ -73,6 +106,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       title,
       subtitle,
       shadow,
+      look = "elevated",
       children,
       ...props
     },
@@ -86,6 +120,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
           "transition-all duration-[var(--transition-normal)]",
           variantStyles[variant],
           paddingStyles[padding],
+          lookStyles[look],
           shadow && shadowStyles[shadow],
           className,
         )}
