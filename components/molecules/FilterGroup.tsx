@@ -85,10 +85,16 @@ export interface FilterGroupProps {
   look?: FilterGroupLook;
 }
 
+// Layer 2 look styles target actual form controls (input / select / button)
+// inside the per-filter wrappers — wrappers are layout-only with no visible
+// chrome, so rounding them is invisible. These selectors descend to the
+// controls and adjust shape / background / padding / labels.
 const lookStyles: Record<FilterGroupLook, string> = {
   toolbar: "",
-  chips: "gap-2 [&>*]:rounded-pill [&>*]:px-3 [&>*]:py-1",
-  pills: "gap-2 [&>*]:rounded-pill",
+  chips:
+    "gap-1 [&_input]:rounded-pill [&_select]:rounded-pill [&_button]:rounded-pill [&_input]:!px-3 [&_select]:!px-3 [&_input]:bg-muted [&_select]:bg-muted [&_label]:hidden",
+  pills:
+    "gap-2 [&_input]:rounded-pill [&_select]:rounded-pill [&_button]:rounded-pill",
   "popover-trigger": "[&>*:not(:first-child)]:hidden",
   "inline-column-header": "hidden",
 };
