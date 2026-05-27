@@ -44,7 +44,7 @@ export const SplitSection: React.FC<SplitSectionProps> = ({
       ) : (
         description
       )}
-      {bullets && bullets.length > 0 && (
+      {Array.isArray(bullets) && bullets.length > 0 && (
         <VStack gap="sm">
           {bullets.map((bullet, index) => (
             <HStack key={index} gap="sm" align="start" className="mt-0.5">

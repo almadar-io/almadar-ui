@@ -61,7 +61,7 @@ export const AboutPageTemplate: React.FC<AboutPageTemplateProps> = ({
         background={resolved.hero.background}
       />
 
-      {resolved.articles.map((article, index) => (
+      {(Array.isArray(resolved.articles) ? resolved.articles : []).map((article, index) => (
         <Box
           key={`article-${index}`}
           className={cn('py-12', index % 2 !== 0 && 'bg-muted/20')}

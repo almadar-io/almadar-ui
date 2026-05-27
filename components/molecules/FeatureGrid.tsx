@@ -34,7 +34,7 @@ export const FeatureGrid: React.FC<FeatureGridProps> = ({
       gap={gap}
       className={cn(className)}
     >
-      {items.map((item, index) => (
+      {(Array.isArray(items) ? items : []).map((item, index) => (
         <FeatureCard key={`${item.title}-${index}`} {...item} />
       ))}
     </SimpleGrid>

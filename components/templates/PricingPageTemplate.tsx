@@ -58,7 +58,7 @@ export const PricingPageTemplate: React.FC<PricingPageTemplateProps> = ({
       <Box className="py-16">
         <Container size="xl" padding="lg">
           <PricingGrid
-            plans={resolved.plans.map((plan) => ({
+            plans={(Array.isArray(resolved.plans) ? resolved.plans : []).map((plan) => ({
               name: plan.name,
               price: plan.price,
               description: plan.description,

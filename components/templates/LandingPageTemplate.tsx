@@ -77,7 +77,7 @@ export const LandingPageTemplate: React.FC<LandingPageTemplateProps> = ({
         background={resolved.hero.background}
       />
 
-      {resolved.features.length > 0 && (
+      {Array.isArray(resolved.features) && resolved.features.length > 0 && (
         <Box className="bg-muted/20 py-16">
           <Container size="xl" padding="lg">
             <VStack gap="lg">
