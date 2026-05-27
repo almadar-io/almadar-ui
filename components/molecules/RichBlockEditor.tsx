@@ -137,7 +137,12 @@ const BLOCK_TYPES = new Set<BlockType>([
 function normalizeBlocks(
   raw: readonly RichBlock[] | readonly EntityRow[] | undefined,
 ): RichBlock[] {
-  if (!raw || raw.length === 0) return [createBlock("paragraph")];
+  // Defensive guard: mock data can seed array-typed entity fields as a
+  // stringified JSON (or `null`) rather than a real array. Without this
+  // check the next `.map()` crashes with `TypeError: t.map is not a
+  // function`. The atom type system says `[BlockSpec]`; this just defends
+  // against runtime-seeding drift.
+  if (!Array.isArray(raw) || raw.length === 0) return [createBlock("paragraph")];
   return raw.map((row): RichBlock => {
     const r = row as Record<string, unknown>;
     const rawType = r.type;
