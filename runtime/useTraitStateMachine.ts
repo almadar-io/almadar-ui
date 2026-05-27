@@ -887,6 +887,19 @@ export function useTraitStateMachine(
                     // implicit in `flushSlot`.
                     void slotSource;
                     for (const [slot, patterns] of pendingSlots) {
+                        // Trace every slot flush so the verifier's
+                        // `portal: expected slot to be empty` failures
+                        // can be correlated to the exact tick that cleared
+                        // (or didn't clear) the slot. patterns.length===0
+                        // is the (render-ui slot null) clearing case.
+                        stateLog.debug('flush:slot', {
+                            traitName,
+                            slot,
+                            patternCount: patterns.length,
+                            event: eventKey,
+                            transition: `${result.previousState}->${result.newState}`,
+                            cleared: patterns.length === 0,
+                        });
                         flushSlot(traitName, slot, patterns);
                     }
                 } catch (error: unknown) {

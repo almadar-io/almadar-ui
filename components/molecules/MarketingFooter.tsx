@@ -37,6 +37,7 @@ export const MarketingFooter: React.FC<MarketingFooterProps> = ({
   logo,
   className,
 }) => {
+  const safeColumns = Array.isArray(columns) ? columns : [];
   return (
     <Box
       as="footer"
@@ -61,7 +62,7 @@ export const MarketingFooter: React.FC<MarketingFooterProps> = ({
               )}
             </VStack>
           )}
-          {columns.map((col) => (
+          {safeColumns.map((col) => (
             <VStack key={col.title} gap="sm" className="min-w-[140px] mb-4">
               <Typography
                 variant="body2"
@@ -69,7 +70,7 @@ export const MarketingFooter: React.FC<MarketingFooterProps> = ({
               >
                 {col.title}
               </Typography>
-              {col.items.map((item) => (
+              {(Array.isArray(col.items) ? col.items : []).map((item) => (
                 <a
                   key={item.label}
                   href={item.href}
