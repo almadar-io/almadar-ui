@@ -57,7 +57,7 @@ export const FeatureDetailPageTemplate: React.FC<FeatureDetailPageTemplateProps>
         background={resolved.hero.background}
       />
 
-      {resolved.sections.map((section, index) => (
+      {(Array.isArray(resolved.sections) ? resolved.sections : []).map((section, index) => (
         <SplitSection
           key={`section-${index}`}
           title={section.title}
