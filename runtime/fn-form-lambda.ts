@@ -114,10 +114,18 @@ function makeLambdaFn(
       return null;
     }
     const SlotContentRenderer = getSlotContentRenderer();
-    const childProps: SlotProps = {};
+    const rawChildProps: SlotProps = {};
     for (const [k, v] of Object.entries(record)) {
-      if (k !== "type") childProps[k] = v;
+      if (k !== "type") rawChildProps[k] = v;
     }
+    // Nested fn-form lambdas (e.g. a `data-list` inside this lambda's body
+    // with its OWN `renderItem`) must be compiled here, not deferred — the
+    // top-level `convertFnFormLambdasInProps` call only runs once at the
+    // render-ui dispatch site and cannot see inside per-row lambda bodies.
+    // Without this, the inner data-list receives a raw `["fn", ...]` array
+    // and falls back to fields-based rendering with no fields, silently
+    // dropping the children.
+    const childProps = convertObjectProps(rawChildProps);
     const childContent = {
       id: `lambda-${callerKey}-${index}`,
       pattern: record.type,
