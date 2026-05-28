@@ -165,15 +165,17 @@ function VerifyModePanel({
     }, [transitions.length, expanded]);
 
     // Render into a dedicated host portal so we sit below modals (z-40) and
-    // don't obscure any overlay slots (modal=z-1000, drawer=z-900). Prefer
-    // `#runtime-debugger-portal` (a host-provided container OUTSIDE the slot
-    // system); fall back to the legacy `#slot-hud-bottom` slot for older
-    // hosts, and finally to inline rendering. The two-id split avoids
-    // colliding with UISlotRenderer's own `#slot-hud-bottom` element, which
-    // sits inside the scrollable preview area and would otherwise cover
-    // page content when the host page scrolls.
+    // don't obscure any overlay slots (modal=z-1000, drawer=z-900). ONLY
+    // honor `#runtime-debugger-portal` (a host-provided container OUTSIDE
+    // the slot system). The previous fallback to `#slot-hud-bottom` was
+    // removed because UISlotRenderer's own `#slot-hud-bottom` is an
+    // absolute-positioned child of the scrollable preview area — portalling
+    // into it parents the debugger inside the (potentially-short) preview's
+    // content height instead of pinning it to the viewport. When the host
+    // doesn't provide `#runtime-debugger-portal`, fall through to the
+    // viewport-fixed inline rendering (see the className branch below).
     const hudBottom = typeof document !== 'undefined'
-      ? (document.getElementById('runtime-debugger-portal') ?? document.getElementById('slot-hud-bottom'))
+      ? document.getElementById('runtime-debugger-portal')
       : null;
 
     const panel = (
