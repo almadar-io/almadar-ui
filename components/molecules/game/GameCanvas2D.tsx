@@ -2,6 +2,7 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import { Box } from '../../atoms/Box';
+import { useEmitEvent } from '../../../hooks/useEventBus';
 
 export interface GameCanvas2DProps {
   /** Canvas width in pixels */
@@ -12,6 +13,10 @@ export interface GameCanvas2DProps {
   onDraw?: (ctx: CanvasRenderingContext2D, frame: number) => void;
   /** Called each tick with delta time in seconds */
   onTick?: (dt: number) => void;
+  /** Event name emitted each tick with { dt, frame } — for closed-circuit .orb integration */
+  tickEvent?: string;
+  /** Event name emitted each draw frame with { frame } — for closed-circuit .orb integration */
+  drawEvent?: string;
   /** Target frames per second */
   fps?: number;
   /** Additional CSS classes */
@@ -23,6 +28,8 @@ export function GameCanvas2D({
   height = 600,
   onDraw,
   onTick,
+  tickEvent,
+  drawEvent,
   fps = 60,
   className,
 }: GameCanvas2DProps) {
@@ -30,6 +37,7 @@ export function GameCanvas2D({
   const rafRef = React.useRef<number>(0);
   const frameRef = React.useRef(0);
   const lastTimeRef = React.useRef(0);
+  const emit = useEmitEvent();
 
   // Store callbacks in refs to avoid re-creating the animation loop
   const onDrawRef = React.useRef(onDraw);
@@ -37,6 +45,15 @@ export function GameCanvas2D({
 
   const onTickRef = React.useRef(onTick);
   onTickRef.current = onTick;
+
+  const tickEventRef = React.useRef(tickEvent);
+  tickEventRef.current = tickEvent;
+
+  const drawEventRef = React.useRef(drawEvent);
+  drawEventRef.current = drawEvent;
+
+  const emitRef = React.useRef(emit);
+  emitRef.current = emit;
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -60,9 +77,18 @@ export function GameCanvas2D({
       if (elapsed >= interval) {
         const dt = elapsed / 1000;
         lastTimeRef.current = timestamp - (elapsed % interval);
+        const frame = frameRef.current;
 
         onTickRef.current?.(dt);
-        onDrawRef.current?.(ctx, frameRef.current);
+        if (tickEventRef.current) {
+          emitRef.current(tickEventRef.current, { dt, frame });
+        }
+
+        onDrawRef.current?.(ctx, frame);
+        if (drawEventRef.current) {
+          emitRef.current(drawEventRef.current, { frame });
+        }
+
         frameRef.current += 1;
       }
 
