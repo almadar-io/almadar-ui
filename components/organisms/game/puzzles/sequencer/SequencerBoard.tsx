@@ -289,11 +289,11 @@ export function SequencerBoard({
         >
             {/* Header image */}
             {entity.headerImage && !headerError ? (
-                <Box className="w-full h-32 overflow-hidden rounded-lg">
+                <Box className="w-full h-32 overflow-hidden rounded-container">
                     <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
                 </Box>
             ) : entity.headerImage && headerError ? (
-                <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-muted to-accent opacity-60" />
+                <Box className="w-full h-32 rounded-container bg-gradient-to-br from-muted to-accent opacity-60" />
             ) : null}
 
             {/* Title + description */}
@@ -308,7 +308,7 @@ export function SequencerBoard({
 
             {/* Persistent hint after 3 failures */}
             {showHint && (
-                <Box className="p-3 rounded-lg bg-accent/10 border border-accent/30">
+                <Box className="p-3 rounded-container bg-accent/10 border border-accent/30">
                     <HStack className="items-start" gap="xs">
                         <Typography variant="body2" className="text-accent font-bold shrink-0">
                             {'\uD83D\uDCA1 ' + t('game.hint') + ':'}
@@ -365,7 +365,7 @@ export function SequencerBoard({
 
             {/* Encouraging message after failure — stays until next attempt */}
             {hasFeedback && playState === 'idle' && attempts > 0 && (
-                <Box className="p-3 rounded-lg bg-warning/10 border border-warning/30 text-center">
+                <Box className="p-3 rounded-container bg-warning/10 border border-warning/30 text-center">
                     <Typography variant="body2" className="text-foreground">
                         {t(encourageKey)}
                     </Typography>
@@ -374,7 +374,7 @@ export function SequencerBoard({
 
             {/* Success message */}
             {playState === 'success' && (
-                <Box className="p-4 rounded-lg bg-success/20 border border-success text-center">
+                <Box className="p-4 rounded-container bg-success/20 border border-success text-center">
                     <Typography variant="h5" className="text-success">
                         {entity.successMessage || t('sequencer.levelComplete')}
                     </Typography>

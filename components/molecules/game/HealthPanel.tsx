@@ -52,7 +52,7 @@ export function HealthPanel({
   return (
     <Box
       className={cn(
-        'rounded-lg bg-[var(--color-card)]/90 border border-gray-700 backdrop-blur-sm',
+        'rounded-container bg-[var(--color-card)]/90 border border-border backdrop-blur-sm',
         sizes.padding,
         className
       )}
@@ -65,7 +65,7 @@ export function HealthPanel({
               <Typography
                 variant="caption"
                 weight="bold"
-                className="text-gray-300 uppercase tracking-wider"
+                className="text-muted-foreground uppercase tracking-wider"
               >
                 {label}
               </Typography>
@@ -83,7 +83,7 @@ export function HealthPanel({
                     as="span"
                     variant="caption"
                     weight="bold"
-                    className="text-blue-400 ml-1"
+                    className="text-info ml-1"
                   >
                     +{shield}
                   </Typography>
@@ -106,13 +106,13 @@ export function HealthPanel({
         {shield != null && shield > 0 && (
           <Box
             className={cn(
-              'relative overflow-hidden rounded-full bg-gray-700',
+              'relative overflow-hidden rounded-container bg-muted',
               size === 'sm' ? 'h-1' : size === 'md' ? 'h-1.5' : 'h-2',
               'w-full'
             )}
           >
             <Box
-              className="absolute inset-y-0 left-0 rounded-full bg-blue-500 transition-all duration-300"
+              className="absolute inset-y-0 left-0 rounded-container bg-info transition-all duration-300"
               style={{ width: `${Math.min(100, (shield / max) * 100)}%` }}
             />
           </Box>

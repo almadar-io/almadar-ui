@@ -242,11 +242,11 @@ export function DialogueBox({
       role="dialog"
       aria-label="Dialogue"
     >
-      <div className="mx-4 my-4 bg-[var(--color-card)] bg-opacity-95 border-2 border-gray-600 rounded-lg overflow-hidden">
+      <div className="mx-4 my-4 bg-[var(--color-card)] bg-opacity-95 border-2 border-border rounded-container overflow-hidden">
         <div className="flex">
           {/* Portrait */}
           {dialogue.portrait && (
-            <div className="flex-shrink-0 p-4 border-r border-gray-700">
+            <div className="flex-shrink-0 p-4 border-r border-border">
               <img
                 src={dialogue.portrait}
                 alt={dialogue.speaker}
@@ -259,7 +259,7 @@ export function DialogueBox({
           {/* Content */}
           <div className="flex-1 p-4">
             {/* Speaker name */}
-            <div className="text-yellow-400 font-bold mb-2">
+            <div className="text-warning font-bold mb-2">
               {dialogue.speaker}
             </div>
 
@@ -279,10 +279,10 @@ export function DialogueBox({
                     key={index}
                     type="button"
                     className={cn(
-                      'block w-full text-left px-4 py-2 rounded transition-colors',
-                      'hover:bg-[var(--color-surface,#374151)] focus:outline-none focus:ring-2 focus:ring-yellow-400',
+                      'block w-full text-left px-4 py-2 rounded-interactive transition-colors',
+                      'hover:bg-[var(--color-surface,#374151)] focus:outline-none focus:ring-2 focus:ring-warning',
                       selectedChoice === index
-                        ? 'bg-[var(--color-surface,#374151)] text-yellow-400'
+                        ? 'bg-[var(--color-surface,#374151)] text-warning'
                         : 'bg-[var(--color-card)] text-[var(--color-foreground)]'
                     )}
                     onClick={(e) => {
@@ -291,7 +291,7 @@ export function DialogueBox({
                       onChoice?.(choice);
                     }}
                   >
-                    <span className="text-gray-500 mr-2">{index + 1}.</span>
+                    <span className="text-muted-foreground mr-2">{index + 1}.</span>
                     {choice.text}
                   </button>
                 ))}
@@ -300,7 +300,7 @@ export function DialogueBox({
 
             {/* Continue indicator */}
             {!isTyping && !dialogue.choices?.length && (
-              <div className="mt-4 text-gray-500 text-sm animate-pulse">
+              <div className="mt-4 text-muted-foreground text-sm animate-pulse">
                 Press SPACE or click to continue...
               </div>
             )}

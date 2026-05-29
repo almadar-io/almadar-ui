@@ -19,10 +19,10 @@ const sizeMap = {
 };
 
 const typeStyles = {
-  damage: 'text-red-500 font-bold',
-  heal: 'text-green-500 font-bold',
-  crit: 'text-orange-400 font-extrabold',
-  miss: 'text-gray-400 italic',
+  damage: 'text-error font-bold',
+  heal: 'text-success font-bold',
+  crit: 'text-warning font-extrabold',
+  miss: 'text-muted-foreground italic',
 };
 
 const floatKeyframes = `

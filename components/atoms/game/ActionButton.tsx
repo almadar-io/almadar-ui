@@ -24,9 +24,9 @@ export interface ActionButtonProps {
 }
 
 const sizeMap = {
-  sm: { button: 'px-3 py-1.5 text-xs', hotkey: 'text-[9px] px-1', icon: 'text-xs' },
-  md: { button: 'px-4 py-2 text-sm', hotkey: 'text-xs px-1.5', icon: 'text-sm' },
-  lg: { button: 'px-5 py-2.5 text-base', hotkey: 'text-xs px-2', icon: 'text-base' },
+  sm: { button: 'h-button-sm px-3 text-xs', hotkey: 'text-[9px] px-1', icon: 'text-xs' },
+  md: { button: 'h-button-md px-4 text-sm', hotkey: 'text-xs px-1.5', icon: 'text-sm' },
+  lg: { button: 'h-button-lg px-5 text-base', hotkey: 'text-xs px-2', icon: 'text-base' },
 };
 
 const variantStyles = {
@@ -57,7 +57,7 @@ export function ActionButton({
       disabled={isDisabled}
       onClick={onClick}
       className={cn(
-        'relative inline-flex items-center gap-1.5 rounded-md border font-medium overflow-hidden transition-colors duration-150',
+        'relative inline-flex items-center gap-1.5 rounded-interactive border font-medium overflow-hidden transition-colors duration-150',
         sizes.button,
         variantStyles[variant],
         isDisabled && 'opacity-60 cursor-not-allowed',

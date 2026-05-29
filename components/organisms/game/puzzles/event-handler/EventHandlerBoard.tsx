@@ -235,11 +235,11 @@ export function EventHandlerBoard({
         >
             {/* Header image */}
             {entity.headerImage && !headerError ? (
-                <Box className="w-full h-32 overflow-hidden rounded-lg">
+                <Box className="w-full h-32 overflow-hidden rounded-container">
                     <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
                 </Box>
             ) : entity.headerImage && headerError ? (
-                <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-muted to-accent opacity-60" />
+                <Box className="w-full h-32 rounded-container bg-gradient-to-br from-muted to-accent opacity-60" />
             ) : null}
 
             {/* Title + goal */}
@@ -270,7 +270,7 @@ export function EventHandlerBoard({
                         <Box
                             key={obj.id}
                             className={cn(
-                                'p-3 rounded-lg border-2 cursor-pointer transition-all hover:scale-105',
+                                'p-3 rounded-container border-2 cursor-pointer transition-all hover:scale-105',
                                 selectedObjectId === obj.id
                                     ? 'border-primary bg-primary/10'
                                     : 'border-border bg-card hover:border-muted-foreground',
@@ -305,7 +305,7 @@ export function EventHandlerBoard({
 
             {/* Result feedback */}
             {playState === 'success' && (
-                <Box className="p-4 rounded-lg bg-success/20 border border-success text-center">
+                <Box className="p-4 rounded-container bg-success/20 border border-success text-center">
                     <Typography variant="h5" className="text-success">
                         {entity.successMessage || t('eventHandler.chainComplete')}
                     </Typography>
@@ -314,13 +314,13 @@ export function EventHandlerBoard({
 
             {playState === 'fail' && (
                 <VStack gap="sm">
-                    <Box className="p-4 rounded-lg bg-warning/10 border border-warning/30 text-center">
+                    <Box className="p-4 rounded-container bg-warning/10 border border-warning/30 text-center">
                         <Typography variant="body1" className="text-foreground font-medium">
                             {t(encourageKey)}
                         </Typography>
                     </Box>
                     {showHint && (
-                        <Box className="p-3 rounded-lg bg-accent/10 border border-accent/30">
+                        <Box className="p-3 rounded-container bg-accent/10 border border-accent/30">
                             <HStack className="items-start" gap="xs">
                                 <Typography variant="body2" className="text-accent font-bold shrink-0">
                                     {'\uD83D\uDCA1 ' + t('game.hint') + ':'}

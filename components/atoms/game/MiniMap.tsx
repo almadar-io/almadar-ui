@@ -108,7 +108,7 @@ export function MiniMap({
   return (
     <div
       className={cn(
-        'relative inline-block border border-white/20 rounded',
+        'relative inline-block border border-border/20 rounded-container',
         className
       )}
     >

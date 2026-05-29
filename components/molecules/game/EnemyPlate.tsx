@@ -47,7 +47,7 @@ export function EnemyPlate({
   return (
     <Box
       className={cn(
-        'inline-flex flex-col gap-1 rounded-lg bg-[var(--color-card)]/90 border border-gray-700 backdrop-blur-sm px-3 py-1.5',
+        'inline-flex flex-col gap-1 rounded-container bg-[var(--color-card)]/90 border border-border backdrop-blur-sm px-3 py-1.5',
         'min-w-[120px]',
         className
       )}

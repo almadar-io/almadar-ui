@@ -140,11 +140,11 @@ export function BuilderBoard({
       <VStack gap="lg" className="p-4">
         {/* Header image */}
         {entity.headerImage && !headerError ? (
-          <Box className="w-full h-32 overflow-hidden rounded-lg">
+          <Box className="w-full h-32 overflow-hidden rounded-container">
             <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
           </Box>
         ) : entity.headerImage && headerError ? (
-          <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-muted to-accent opacity-60" />
+          <Box className="w-full h-32 rounded-container bg-gradient-to-br from-muted to-accent opacity-60" />
         ) : null}
 
         <Card className="p-4">
@@ -203,8 +203,8 @@ export function BuilderBoard({
                     className={`p-3 border-2 rounded ${
                       result
                         ? result.correct
-                          ? 'border-green-500'
-                          : 'border-red-500'
+                          ? 'border-success'
+                          : 'border-error'
                         : selectedComponent
                           ? 'border-dashed border-foreground cursor-pointer'
                           : 'border-border'
@@ -227,7 +227,7 @@ export function BuilderBoard({
                           ) : null}{placedComp.label}
                         </Badge>
                         {result && (
-                          <Icon icon={result.correct ? CheckCircle : XCircle} size="sm" className={result.correct ? 'text-green-600' : 'text-red-600'} />
+                          <Icon icon={result.correct ? CheckCircle : XCircle} size="sm" className={result.correct ? 'text-success' : 'text-error'} />
                         )}
                       </HStack>
                     ) : (
@@ -246,7 +246,7 @@ export function BuilderBoard({
         {submitted && (
           <Card className="p-4">
             <VStack gap="sm" align="center">
-              <Icon icon={allCorrect ? CheckCircle : XCircle} size="lg" className={allCorrect ? 'text-green-600' : 'text-red-600'} />
+              <Icon icon={allCorrect ? CheckCircle : XCircle} size="lg" className={allCorrect ? 'text-success' : 'text-error'} />
               <Typography variant="body" weight="bold">
                 {allCorrect
                   ? (entity.successMessage ?? t('builder.success'))
@@ -257,7 +257,7 @@ export function BuilderBoard({
         )}
 
         {showHint && entity.hint && (
-          <Card className="p-4 border-l-4 border-l-yellow-500">
+          <Card className="p-4 border-l-4 border-l-warning">
             <Typography variant="body">{entity.hint}</Typography>
           </Card>
         )}

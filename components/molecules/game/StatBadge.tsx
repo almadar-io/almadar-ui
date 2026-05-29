@@ -59,7 +59,7 @@ export function StatBadge({
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-2 rounded-lg border backdrop-blur-sm',
+        'inline-flex items-center gap-2 rounded-container border backdrop-blur-sm',
         sizeMap[size as keyof typeof sizeMap] ?? sizeMap.md,
         variantMap[variant as keyof typeof variantMap] ?? variantMap.default,
         className

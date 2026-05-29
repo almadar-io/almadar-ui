@@ -44,7 +44,7 @@ export function WaypointMarker({
         {active && (
           <div
             className={cn(
-              'absolute rounded-full border-2 border-blue-400 animate-ping opacity-50',
+              'absolute rounded-full border-2 border-info animate-ping opacity-50',
               sizes.ring
             )}
           />
@@ -52,7 +52,7 @@ export function WaypointMarker({
         {active && (
           <div
             className={cn(
-              'absolute rounded-full border-2 border-blue-400',
+              'absolute rounded-full border-2 border-info',
               sizes.ring
             )}
           />
@@ -61,9 +61,9 @@ export function WaypointMarker({
           className={cn(
             'relative flex items-center justify-center rounded-full transition-all duration-200',
             sizes.dot,
-            completed && 'bg-green-500 text-white',
-            active && !completed && 'bg-blue-500 text-white',
-            !active && !completed && 'bg-gray-500'
+            completed && 'bg-success text-foreground',
+            active && !completed && 'bg-info text-foreground',
+            !active && !completed && 'bg-muted'
           )}
         >
           {completed ? checkIcon : icon}
@@ -74,7 +74,7 @@ export function WaypointMarker({
           className={cn(
             'text-center whitespace-nowrap',
             sizes.label,
-            completed ? 'text-green-400' : active ? 'text-blue-400' : 'text-gray-400'
+            completed ? 'text-success' : active ? 'text-info' : 'text-muted-foreground'
           )}
         >
           {label}

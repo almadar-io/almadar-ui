@@ -24,13 +24,13 @@ export function DialogueBubble({
   return (
     <div
       className={cn(
-        'flex items-start gap-3 rounded-lg bg-black/80 backdrop-blur-sm px-4 py-3 border border-white/10',
+        'flex items-start gap-3 rounded-container bg-background/80 backdrop-blur-sm px-4 py-3 border border-border/10',
         position === 'top' ? 'rounded-bl-none' : 'rounded-tl-none',
         className
       )}
     >
       {portrait && (
-        <div className="flex-shrink-0 w-12 h-12 rounded-full overflow-hidden border-2 border-yellow-400/60">
+        <div className="flex-shrink-0 w-12 h-12 rounded-full overflow-hidden border-2 border-warning/60">
           <img
             src={portrait}
             alt={speaker ?? 'speaker'}
@@ -40,11 +40,11 @@ export function DialogueBubble({
       )}
       <div className="flex flex-col gap-1 min-w-0">
         {speaker && (
-          <span className="text-sm font-bold text-yellow-400">
+          <span className="text-sm font-bold text-warning">
             {speaker}
           </span>
         )}
-        <span className="text-sm text-[var(--color-foreground)] leading-relaxed">
+        <span className="text-sm text-foreground leading-relaxed">
           {text}
         </span>
       </div>

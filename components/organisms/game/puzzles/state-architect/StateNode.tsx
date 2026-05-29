@@ -42,7 +42,7 @@ export function StateNode({
             position="absolute"
             display="flex"
             className={cn(
-                'items-center justify-center rounded-full border-3 transition-all cursor-pointer select-none',
+                'items-center justify-center rounded-pill border-3 transition-all cursor-pointer select-none',
                 'min-w-[80px] h-[80px] px-3',
                 isCurrent && 'bg-primary/20 border-primary shadow-lg shadow-primary/30 scale-110',
                 isSelected && !isCurrent && 'bg-accent/20 border-accent ring-2 ring-accent/50',

@@ -56,13 +56,13 @@ export function PowerupSlots({
             <Box
               className={cn(
                 'absolute -bottom-1 left-1/2 -translate-x-1/2',
-                'rounded px-1 py-px',
-                'bg-black/80 border border-gray-600',
+                'rounded-interactive px-1 py-px',
+                'bg-background/80 border border-border',
               )}
             >
               <Typography
                 variant="caption"
-                className="text-[9px] font-mono font-bold text-yellow-300 whitespace-nowrap"
+                className="text-[9px] font-mono font-bold text-warning whitespace-nowrap"
               >
                 {formatTime(powerup.remainingTime)}
               </Typography>

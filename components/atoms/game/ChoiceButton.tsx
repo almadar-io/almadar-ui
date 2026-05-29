@@ -30,7 +30,7 @@ export function ChoiceButton({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        'w-full text-left px-4 py-2.5 rounded-md border transition-all duration-150',
+        'w-full text-left px-4 py-2.5 rounded-interactive border transition-all duration-150',
         'flex items-center gap-2',
         selected
           ? 'bg-accent/15 border-accent text-foreground'

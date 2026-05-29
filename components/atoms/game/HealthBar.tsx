@@ -18,7 +18,7 @@ export interface HealthBarProps {
 
 const heartIcon = (filled: boolean, size: string) => (
   <svg
-    className={cn('transition-all duration-200', size, filled ? 'text-red-500' : 'text-gray-400')}
+    className={cn('transition-all duration-200', size, filled ? 'text-error' : 'text-muted-foreground')}
     viewBox="0 0 24 24"
     fill={filled ? 'currentColor' : 'none'}
     stroke="currentColor"
@@ -64,7 +64,7 @@ export function HealthBar({
     return (
       <div
         className={cn(
-          'relative overflow-hidden rounded-full bg-gray-700',
+          'relative overflow-hidden rounded-full bg-muted',
           sizes.bar,
           'w-24',
           className
@@ -73,7 +73,7 @@ export function HealthBar({
         <div
           className={cn(
             'absolute inset-y-0 left-0 rounded-full',
-            percentage > 66 ? 'bg-green-500' : percentage > 33 ? 'bg-yellow-500' : 'bg-red-500',
+            percentage > 66 ? 'bg-success' : percentage > 33 ? 'bg-warning' : 'bg-error',
             animated && 'transition-all duration-300'
           )}
           style={{ width: `${percentage}%` }}

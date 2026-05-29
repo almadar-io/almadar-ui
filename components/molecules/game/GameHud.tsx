@@ -132,9 +132,9 @@ export function GameHud({
       className={cn(
         "relative z-10",
         positionMap[position],
-        transparent && "bg-gradient-to-b from-black/50 to-transparent",
+        transparent && "bg-gradient-to-b from-background/50 to-transparent",
         position === "bottom" &&
-          "bg-gradient-to-t from-black/50 to-transparent",
+          "bg-gradient-to-t from-background/50 to-transparent",
         className,
       )}
     >

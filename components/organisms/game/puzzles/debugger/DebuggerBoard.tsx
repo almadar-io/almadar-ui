@@ -116,11 +116,11 @@ export function DebuggerBoard({
       <VStack gap="lg" className="p-4">
         {/* Header image */}
         {entity.headerImage && !headerError ? (
-          <Box className="w-full h-32 overflow-hidden rounded-lg">
+          <Box className="w-full h-32 overflow-hidden rounded-container">
             <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
           </Box>
         ) : entity.headerImage && headerError ? (
-          <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-muted to-accent opacity-60" />
+          <Box className="w-full h-32 rounded-container bg-gradient-to-br from-muted to-accent opacity-60" />
         ) : null}
 
         <Card className="p-4">
@@ -143,11 +143,11 @@ export function DebuggerBoard({
               const isFlagged = flaggedLines.has(line.id);
               let lineStyle = '';
               if (submitted) {
-                if (line.isBug && isFlagged) lineStyle = 'bg-green-50 dark:bg-green-950';
-                else if (line.isBug && !isFlagged) lineStyle = 'bg-yellow-50 dark:bg-yellow-950';
-                else if (!line.isBug && isFlagged) lineStyle = 'bg-red-50 dark:bg-red-950';
+                if (line.isBug && isFlagged) lineStyle = 'bg-success/10';
+                else if (line.isBug && !isFlagged) lineStyle = 'bg-warning/10';
+                else if (!line.isBug && isFlagged) lineStyle = 'bg-error/10';
               } else if (isFlagged) {
-                lineStyle = 'bg-red-50 dark:bg-red-950';
+                lineStyle = 'bg-error/10';
               }
 
               return (
@@ -165,8 +165,8 @@ export function DebuggerBoard({
                     <Typography variant="body" className="font-mono text-sm">{line.content}</Typography>
                   </Box>
                   <Box className="w-8 flex-shrink-0 flex items-center justify-center">
-                    {isFlagged && <Icon icon={Bug} size="xs" className="text-red-600" />}
-                    {submitted && line.isBug && !isFlagged && <Icon icon={Bug} size="xs" className="text-yellow-600" />}
+                    {isFlagged && <Icon icon={Bug} size="xs" className="text-error" />}
+                    {submitted && line.isBug && !isFlagged && <Icon icon={Bug} size="xs" className="text-warning" />}
                   </Box>
                 </HStack>
               );
@@ -188,7 +188,7 @@ export function DebuggerBoard({
                   <Icon
                     icon={flaggedLines.has(line.id) ? CheckCircle : XCircle}
                     size="xs"
-                    className={flaggedLines.has(line.id) ? 'text-green-600 mt-0.5' : 'text-yellow-600 mt-0.5'}
+                    className={flaggedLines.has(line.id) ? 'text-success mt-0.5' : 'text-warning mt-0.5'}
                   />
                   <VStack gap="none">
                     <Typography variant="caption" weight="bold" className="font-mono">{line.content.trim()}</Typography>
@@ -203,7 +203,7 @@ export function DebuggerBoard({
         )}
 
         {showHint && entity.hint && (
-          <Card className="p-4 border-l-4 border-l-yellow-500">
+          <Card className="p-4 border-l-4 border-l-warning">
             <Typography variant="body">{entity.hint}</Typography>
           </Card>
         )}

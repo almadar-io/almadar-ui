@@ -174,7 +174,7 @@ export function InventoryPanel({
     <div className={cn('relative', className)}>
       {/* Inventory Grid */}
       <div
-        className="grid gap-1 bg-[var(--color-card)] p-2 rounded-lg border border-gray-700"
+        className="grid gap-1 bg-[var(--color-card)] p-2 rounded-container border border-border"
         style={{
           gridTemplateColumns: `repeat(${safeColumns}, ${slotSize}px)`,
           gridTemplateRows: `repeat(${rows}, ${slotSize}px)`,
@@ -187,10 +187,10 @@ export function InventoryPanel({
             className={cn(
               'relative flex items-center justify-center',
               'bg-[var(--color-card)] border rounded transition-colors',
-              'hover:bg-[var(--color-surface,#374151)] focus:outline-none focus:ring-2 focus:ring-blue-500',
+              'hover:bg-[var(--color-surface,#374151)] focus:outline-none focus:ring-2 focus:ring-info',
               selectedSlot === index
-                ? 'border-yellow-400 bg-[var(--color-surface,#374151)]'
-                : 'border-gray-600'
+                ? 'border-warning bg-[var(--color-surface,#374151)]'
+                : 'border-muted'
             )}
             style={{ width: slotSize, height: slotSize }}
             onClick={() => handleSlotClick(index)}
@@ -212,14 +212,14 @@ export function InventoryPanel({
                     style={{ imageRendering: 'pixelated' }}
                   />
                 ) : (
-                  <div className="w-8 h-8 bg-gray-600 rounded flex items-center justify-center text-xs text-gray-300">
+                  <div className="w-8 h-8 bg-muted rounded-interactive flex items-center justify-center text-xs text-muted-foreground">
                     {(item.type ?? item.name ?? 'I').charAt(0).toUpperCase()}
                   </div>
                 )}
 
                 {/* Quantity badge */}
                 {item.quantity > 1 && (
-                  <span className="absolute bottom-0 right-0 bg-black bg-opacity-70 text-white text-xs px-1 rounded-tl">
+                  <span className="absolute bottom-0 right-0 bg-background/70 text-foreground text-xs px-1 rounded-tl">
                     {item.quantity}
                   </span>
                 )}
@@ -232,7 +232,7 @@ export function InventoryPanel({
       {/* Tooltip */}
       {showTooltips && hoveredItem && (
         <div
-          className="fixed z-50 bg-[var(--color-card)] border border-gray-600 rounded-lg p-2 shadow-lg pointer-events-none"
+          className="fixed z-50 bg-[var(--color-card)] border border-border rounded-container p-2 shadow-elevation-card pointer-events-none"
           style={{
             left: tooltipPosition.x,
             top: tooltipPosition.y,
@@ -243,11 +243,11 @@ export function InventoryPanel({
             {hoveredItem.name || hoveredItem.type}
           </div>
           {hoveredItem.description && (
-            <div className="text-sm text-gray-400 mt-1">
+            <div className="text-sm text-muted-foreground mt-1">
               {hoveredItem.description}
             </div>
           )}
-          <div className="text-xs text-gray-500 mt-1">
+          <div className="text-xs text-muted-foreground mt-1">
             Quantity: {hoveredItem.quantity}
           </div>
         </div>

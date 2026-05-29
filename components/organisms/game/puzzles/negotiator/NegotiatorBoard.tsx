@@ -152,11 +152,11 @@ export function NegotiatorBoard({
       <VStack gap="lg" className="p-4">
         {/* Header image */}
         {entity.headerImage && !headerError ? (
-          <Box className="w-full h-32 overflow-hidden rounded-lg">
+          <Box className="w-full h-32 overflow-hidden rounded-container">
             <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
           </Box>
         ) : entity.headerImage && headerError ? (
-          <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-muted to-accent opacity-60" />
+          <Box className="w-full h-32 rounded-container bg-gradient-to-br from-muted to-accent opacity-60" />
         ) : null}
 
         <Card className="p-4">
@@ -222,7 +222,7 @@ export function NegotiatorBoard({
                   <Typography variant="caption" className="text-muted-foreground">vs</Typography>
                   <Typography variant="caption">{getActionLabel(round.opponentAction)}</Typography>
                   <Icon icon={ArrowRight} size="xs" />
-                  <Typography variant="caption" weight="bold" className="text-green-600">+{round.playerPayoff}</Typography>
+                  <Typography variant="caption" weight="bold" className="text-success">+{round.playerPayoff}</Typography>
                   <Typography variant="caption" className="text-muted-foreground">/ +{round.opponentPayoff}</Typography>
                 </HStack>
               ))}
@@ -234,7 +234,7 @@ export function NegotiatorBoard({
         {isComplete && (
           <Card className="p-4">
             <VStack gap="sm" align="center">
-              <Icon icon={CheckCircle} size="lg" className={won ? 'text-green-600' : 'text-red-600'} />
+              <Icon icon={CheckCircle} size="lg" className={won ? 'text-success' : 'text-error'} />
               <Typography variant="body" weight="bold">
                 {won
                   ? (entity.successMessage ?? t('negotiator.success'))
@@ -248,7 +248,7 @@ export function NegotiatorBoard({
         )}
 
         {showHint && entity.hint && !won && (
-          <Card className="p-4 border-l-4 border-l-yellow-500">
+          <Card className="p-4 border-l-4 border-l-warning">
             <Typography variant="body">{entity.hint}</Typography>
           </Card>
         )}

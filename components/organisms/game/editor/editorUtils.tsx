@@ -100,7 +100,7 @@ export interface EditorSliderProps {
 export function EditorSlider({ label, value, min, max, step = 0.1, onChange, className }: EditorSliderProps) {
     return (
         <HStack gap="sm" align="center" className={className}>
-            <Typography variant="caption" className="min-w-[80px] text-gray-300">{label}</Typography>
+            <Typography variant="caption" className="min-w-[80px] text-muted-foreground">{label}</Typography>
             <Box className="flex-1">
                 <input
                     type="range"
@@ -109,10 +109,10 @@ export function EditorSlider({ label, value, min, max, step = 0.1, onChange, cla
                     step={step}
                     value={value}
                     onChange={(e) => onChange(parseFloat(e.target.value))}
-                    className="w-full h-1.5 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                    className="w-full h-1.5 bg-muted rounded-interactive appearance-none cursor-pointer accent-primary"
                 />
             </Box>
-            <Typography variant="caption" className="min-w-[40px] text-right text-gray-400">
+            <Typography variant="caption" className="min-w-[40px] text-right text-muted-foreground">
                 {typeof step === 'number' && step < 1 ? value.toFixed(1) : value}
             </Typography>
         </HStack>
@@ -135,12 +135,12 @@ export interface EditorSelectProps {
 export function EditorSelect({ label, value, options, onChange, className }: EditorSelectProps) {
     return (
         <HStack gap="sm" align="center" className={className}>
-            <Typography variant="caption" className="min-w-[80px] text-gray-300">{label}</Typography>
+            <Typography variant="caption" className="min-w-[80px] text-muted-foreground">{label}</Typography>
             <Box className="flex-1">
                 <select
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
-                    className="w-full px-2 py-1 text-xs bg-gray-700 text-gray-200 border border-gray-600 rounded cursor-pointer"
+                    className="w-full px-2 py-1 text-xs bg-muted text-foreground border border-muted rounded cursor-pointer"
                 >
                     {options.map((opt) => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -166,13 +166,13 @@ export interface EditorCheckboxProps {
 export function EditorCheckbox({ label, checked, onChange, className }: EditorCheckboxProps) {
     return (
         <HStack gap="sm" align="center" className={className}>
-            <Typography variant="caption" className="min-w-[80px] text-gray-300">{label}</Typography>
+            <Typography variant="caption" className="min-w-[80px] text-muted-foreground">{label}</Typography>
             <Box>
                 <input
                     type="checkbox"
                     checked={checked}
                     onChange={(e) => onChange(e.target.checked)}
-                    className="w-4 h-4 accent-blue-500 cursor-pointer"
+                    className="w-4 h-4 accent-primary cursor-pointer"
                 />
             </Box>
         </HStack>
@@ -195,14 +195,14 @@ export interface EditorTextInputProps {
 export function EditorTextInput({ label, value, onChange, placeholder, className }: EditorTextInputProps) {
     return (
         <HStack gap="sm" align="center" className={className}>
-            <Typography variant="caption" className="min-w-[80px] text-gray-300">{label}</Typography>
+            <Typography variant="caption" className="min-w-[80px] text-muted-foreground">{label}</Typography>
             <Box className="flex-1">
                 <input
                     type="text"
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                     placeholder={placeholder}
-                    className="w-full px-2 py-1 text-xs bg-gray-700 text-gray-200 border border-gray-600 rounded"
+                    className="w-full px-2 py-1 text-xs bg-muted text-foreground border border-muted rounded"
                 />
             </Box>
         </HStack>
@@ -225,23 +225,23 @@ export interface StatusBarProps {
 
 export function StatusBar({ hoveredTile, mode, gridSize, unitCount, featureCount, className }: StatusBarProps) {
     return (
-        <HStack gap="sm" align="center" className={`px-3 py-1.5 bg-gray-800 border-t border-gray-700 ${className ?? ''}`}>
+        <HStack gap="sm" align="center" className={`px-3 py-1.5 bg-background border-t border-border ${className ?? ''}`}>
             <Badge variant="info" size="sm">{mode}</Badge>
-            <Typography variant="caption" className="text-gray-400">
+            <Typography variant="caption" className="text-muted-foreground">
                 Tile: {hoveredTile ? `(${hoveredTile.x}, ${hoveredTile.y})` : '—'}
             </Typography>
             {gridSize && (
-                <Typography variant="caption" className="text-gray-500">
+                <Typography variant="caption" className="text-muted-foreground">
                     Grid: {gridSize.width}x{gridSize.height}
                 </Typography>
             )}
             {unitCount !== undefined && (
-                <Typography variant="caption" className="text-gray-500">
+                <Typography variant="caption" className="text-muted-foreground">
                     Units: {unitCount}
                 </Typography>
             )}
             {featureCount !== undefined && (
-                <Typography variant="caption" className="text-gray-500">
+                <Typography variant="caption" className="text-muted-foreground">
                     Features: {featureCount}
                 </Typography>
             )}
@@ -270,10 +270,10 @@ export function TerrainPalette({ terrains, selectedTerrain, onSelect, className 
                     onClick={() => onSelect(terrain)}
                     className={`w-8 h-8 rounded cursor-pointer border-2 transition-all ${
                         selectedTerrain === terrain
-                            ? 'border-white scale-110 shadow-lg'
-                            : 'border-gray-600 hover:border-gray-400'
+                            ? 'border-foreground scale-110 shadow-lg'
+                            : 'border-muted hover:border-muted-foreground'
                     }`}
-                    style={{ backgroundColor: TERRAIN_COLORS[terrain] || '#555' }}
+                    style={{ backgroundColor: TERRAIN_COLORS[terrain] || 'var(--color-muted)' }}
                     title={terrain}
                 />
             ))}

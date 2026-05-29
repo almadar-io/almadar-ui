@@ -999,14 +999,14 @@ export function IsometricCanvas({
     if (sortedTiles.length === 0) {
         return (
             <Box
-                className={cn('relative w-full overflow-hidden rounded-lg', className)}
+                className={cn('relative w-full overflow-hidden rounded-container', className)}
                 style={{ height: viewportSize.height }}
                 data-testid="game-canvas-empty"
             >
-                <Box className="flex items-center justify-center h-full bg-[var(--color-card)] rounded-lg">
+                <Box className="flex items-center justify-center h-full bg-[var(--color-card)] rounded-container">
                     <Stack direction="vertical" gap="md" align="center">
                         <Icon name="map" size="xl" />
-                        <Typography variant="body" className="text-slate-400">
+                        <Typography variant="body" className="text-muted-foreground">
                             {t('canvas.emptyMessage') || 'No map data loaded'}
                         </Typography>
                     </Stack>

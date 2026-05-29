@@ -25,9 +25,9 @@ const sizeMap = {
 };
 
 const variantStyles = {
-  buff: 'border-green-500 bg-green-500/20',
-  debuff: 'border-red-500 bg-red-500/20',
-  neutral: 'border-gray-500 bg-gray-500/20',
+  buff: 'border-success bg-success/20',
+  debuff: 'border-error bg-error/20',
+  neutral: 'border-muted bg-muted/20',
 };
 
 function formatDuration(seconds: number): string {
@@ -52,7 +52,7 @@ export function StatusEffect({
     <div className={cn('relative inline-flex flex-col items-center', className)}>
       <div
         className={cn(
-          'relative flex items-center justify-center rounded border-2',
+          'relative flex items-center justify-center rounded-interactive border-2',
           sizes.container,
           variantStyles[variant]
         )}
@@ -64,7 +64,7 @@ export function StatusEffect({
         {duration !== undefined && (
           <span
             className={cn(
-              'absolute bottom-0 left-0 right-0 text-center font-mono font-bold text-white bg-black/60 leading-tight',
+              'absolute bottom-0 left-0 right-0 text-center font-mono font-bold text-foreground bg-background/60 leading-tight',
               sizes.timer
             )}
           >
@@ -75,7 +75,7 @@ export function StatusEffect({
       {stacks !== undefined && stacks > 1 && (
         <span
           className={cn(
-            'absolute flex items-center justify-center rounded-full bg-[var(--color-card)] text-[var(--color-foreground)] font-bold leading-none',
+            'absolute flex items-center justify-center rounded-full bg-card text-foreground font-bold leading-none',
             sizes.badge
           )}
         >

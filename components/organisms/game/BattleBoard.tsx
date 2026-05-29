@@ -607,18 +607,18 @@ export function BattleBoard({
                 gameOverOverlay
                     ? gameOverOverlay(ctx)
                     : (
-                        <Box className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm rounded-xl">
+                        <Box className="absolute inset-0 z-50 flex items-center justify-center bg-background/70 backdrop-blur-sm rounded-container">
                             <VStack className="text-center p-8" gap="lg">
                                 <Typography
                                     variant="h2"
                                     className={cn(
                                         'text-4xl font-black tracking-widest uppercase',
-                                        gameResult === 'victory' ? 'text-yellow-400' : 'text-red-500',
+                                        gameResult === 'victory' ? 'text-warning' : 'text-error',
                                     )}
                                 >
                                     {gameResult === 'victory' ? t('battle.victory') : t('battle.defeat')}
                                 </Typography>
-                                <Typography variant="body1" className="text-gray-300">
+                                <Typography variant="body1" className="text-muted-foreground">
                                     {t('battle.turnsPlayed')}: {currentTurn}
                                 </Typography>
                                 <Button

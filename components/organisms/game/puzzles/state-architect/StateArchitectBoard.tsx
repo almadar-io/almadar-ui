@@ -305,11 +305,11 @@ export function StateArchitectBoard({
         >
             {/* Header image */}
             {entity.headerImage && !headerError ? (
-                <Box className="w-full h-32 overflow-hidden rounded-lg">
+                <Box className="w-full h-32 overflow-hidden rounded-container">
                     <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
                 </Box>
             ) : entity.headerImage && headerError ? (
-                <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-muted to-accent opacity-60" />
+                <Box className="w-full h-32 rounded-container bg-gradient-to-br from-muted to-accent opacity-60" />
             ) : null}
 
             {/* Title */}
@@ -345,7 +345,7 @@ export function StateArchitectBoard({
                     </HStack>
                     <Box
                         position="relative"
-                        className="rounded-lg border border-border bg-background overflow-hidden"
+                        className="rounded-container border border-border bg-background overflow-hidden"
                         style={{ width: GRAPH_W, height: GRAPH_H }}
                     >
                         {/* SVG arrows */}
@@ -410,7 +410,7 @@ export function StateArchitectBoard({
 
                     {/* Transition list */}
                     {transitions.length > 0 && (
-                        <VStack gap="xs" className="p-3 rounded-lg bg-muted/50 border border-border">
+                        <VStack gap="xs" className="p-3 rounded-container bg-muted/50 border border-border">
                             <Typography variant="caption" className="text-muted-foreground font-medium">
                                 {t('stateArchitect.transitions', { count: transitions.length }) + ':'}
                             </Typography>
@@ -464,7 +464,7 @@ export function StateArchitectBoard({
 
                     {/* Test results */}
                     {testResults.length > 0 && (
-                        <VStack className="p-3 rounded-lg bg-card border border-border" gap="xs">
+                        <VStack className="p-3 rounded-container bg-card border border-border" gap="xs">
                             <Typography variant="body2" className="text-muted-foreground font-medium">
                                 {t('stateArchitect.testResults') + ':'}
                             </Typography>
@@ -495,7 +495,7 @@ export function StateArchitectBoard({
 
             {/* Result feedback */}
             {playState === 'success' && (
-                <Box className="p-4 rounded-lg bg-success/20 border border-success text-center">
+                <Box className="p-4 rounded-container bg-success/20 border border-success text-center">
                     <Typography variant="h5" className="text-success">
                         {entity.successMessage || t('stateArchitect.allPassed')}
                     </Typography>
@@ -503,13 +503,13 @@ export function StateArchitectBoard({
             )}
             {playState === 'fail' && (
                 <VStack gap="sm">
-                    <Box className="p-4 rounded-lg bg-warning/10 border border-warning/30 text-center">
+                    <Box className="p-4 rounded-container bg-warning/10 border border-warning/30 text-center">
                         <Typography variant="body1" className="text-foreground font-medium">
                             {t(ENCOURAGEMENT_KEYS[Math.min(attempts - 1, ENCOURAGEMENT_KEYS.length - 1)] ?? ENCOURAGEMENT_KEYS[0])}
                         </Typography>
                     </Box>
                     {attempts >= 3 && entity.hint && (
-                        <Box className="p-3 rounded-lg bg-accent/10 border border-accent/30">
+                        <Box className="p-3 rounded-container bg-accent/10 border border-accent/30">
                             <HStack className="items-start" gap="xs">
                                 <Typography variant="body2" className="text-accent font-bold shrink-0">
                                     {'\uD83D\uDCA1 ' + t('game.hint') + ':'}

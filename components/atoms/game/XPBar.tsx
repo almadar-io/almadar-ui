@@ -41,8 +41,8 @@ export function XPBar({
       {level != null && (
         <span
           className={cn(
-            'flex-shrink-0 rounded-md font-bold',
-            'bg-indigo-600 text-white border border-indigo-400',
+            'flex-shrink-0 rounded-interactive font-bold',
+            'bg-accent text-foreground border border-accent',
             sizes.badge
           )}
         >
@@ -53,14 +53,14 @@ export function XPBar({
       <div className="flex-1 flex flex-col gap-0.5">
         <div
           className={cn(
-            'relative w-full overflow-hidden rounded-full bg-gray-700 border border-gray-600',
+            'relative w-full overflow-hidden rounded-full bg-muted border border-muted',
             sizes.bar
           )}
         >
           <div
             className={cn(
               'absolute inset-y-0 left-0 rounded-full',
-              'bg-gradient-to-r from-indigo-600 to-purple-500',
+              'bg-gradient-to-r from-accent to-info',
               animated && 'transition-all duration-500 ease-out'
             )}
             style={{ width: `${percentage}%` }}
@@ -68,7 +68,7 @@ export function XPBar({
         </div>
 
         {showLabel && (
-          <span className={cn('text-gray-400 tabular-nums', sizes.text)}>
+          <span className={cn('text-muted-foreground tabular-nums', sizes.text)}>
             {current} / {max} XP
           </span>
         )}

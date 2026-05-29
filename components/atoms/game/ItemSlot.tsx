@@ -30,19 +30,19 @@ const sizeMap = {
 };
 
 const rarityBorderMap = {
-  common: 'border-gray-500',
-  uncommon: 'border-green-500',
-  rare: 'border-blue-500',
-  epic: 'border-purple-500',
-  legendary: 'border-amber-400',
+  common: 'border-muted',
+  uncommon: 'border-success',
+  rare: 'border-info',
+  epic: 'border-accent',
+  legendary: 'border-warning',
 };
 
 const rarityGlowMap = {
   common: '',
   uncommon: '',
-  rare: 'shadow-[0_0_6px_rgba(59,130,246,0.3)]',
-  epic: 'shadow-[0_0_8px_rgba(168,85,247,0.4)]',
-  legendary: 'shadow-[0_0_10px_rgba(251,191,36,0.5)]',
+  rare: 'shadow-sm',
+  epic: 'shadow-lg',
+  legendary: 'shadow-lg',
 };
 
 export function ItemSlot({
@@ -65,22 +65,22 @@ export function ItemSlot({
       disabled={!isClickable}
       title={label}
       className={cn(
-        'relative flex items-center justify-center rounded-lg border-2',
-        'bg-[var(--color-card)]/80 transition-all duration-150',
+        'relative flex items-center justify-center rounded-interactive border-2',
+        'bg-card/80 transition-all duration-150',
         sizeMap[size],
         empty
-          ? 'border-gray-700 bg-[var(--color-card)]/50'
+          ? 'border-border bg-card/50'
           : rarityBorderMap[rarity],
         !empty && rarityGlowMap[rarity],
-        selected && 'ring-2 ring-white ring-offset-1 ring-offset-gray-900',
+        selected && 'ring-2 ring-foreground ring-offset-1 ring-offset-background',
         isClickable && !empty && 'hover:brightness-125 cursor-pointer',
-        isClickable && empty && 'hover:border-gray-500 cursor-pointer',
+        isClickable && empty && 'hover:border-muted cursor-pointer',
         !isClickable && 'cursor-default',
         className
       )}
     >
       {empty ? (
-        <span className="text-gray-600 text-base">+</span>
+        <span className="text-muted-foreground text-base">+</span>
       ) : (
         <>
           {icon && <span className="flex-shrink-0">{icon}</span>}
@@ -89,7 +89,7 @@ export function ItemSlot({
               className={cn(
                 'absolute -bottom-1 -right-1 flex items-center justify-center',
                 'min-w-[18px] h-[18px] rounded-full px-1',
-                'bg-[var(--color-surface,#374151)] border border-gray-500 text-xs font-bold text-[var(--color-foreground)]'
+                'bg-surface border border-muted text-xs font-bold text-foreground'
               )}
             >
               {quantity}

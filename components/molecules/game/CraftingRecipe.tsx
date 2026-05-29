@@ -65,7 +65,7 @@ export function CraftingRecipe({
   return (
     <Box
       className={cn(
-        'flex flex-wrap items-center gap-3 rounded-lg bg-gray-800/50 border border-gray-700/50 p-3',
+        'flex flex-wrap items-center gap-3 rounded-container bg-muted/50 border border-border/50 p-3',
         className,
       )}
     >
@@ -85,7 +85,7 @@ export function CraftingRecipe({
                 />
               </Box>
               {index < inputs.length - 1 && (
-                <Icon name="plus" size="sm" className="text-gray-500" />
+                <Icon name="plus" size="sm" className="text-muted-foreground" />
               )}
             </React.Fragment>
           );
@@ -93,7 +93,7 @@ export function CraftingRecipe({
       </HStack>
 
       {/* Arrow separator */}
-      <Icon name="arrow-right" size="md" className="text-gray-400" />
+      <Icon name="arrow-right" size="md" className="text-muted-foreground" />
 
       {/* Output item */}
       <ItemSlot

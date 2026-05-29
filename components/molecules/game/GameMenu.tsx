@@ -49,9 +49,9 @@ export interface GameMenuProps {
 
 const variantMap = {
   primary:
-    "bg-[var(--color-primary)] hover:bg-blue-500 text-[var(--color-primary-foreground)] border-blue-400 shadow-lg shadow-blue-500/25",
-  secondary: "bg-[var(--color-surface,#374151)] hover:bg-gray-600 text-[var(--color-foreground)] border-gray-500",
-  ghost: "bg-transparent hover:bg-white/10 text-[var(--color-foreground)] border-white/20",
+    "bg-[var(--color-primary)] hover:bg-info text-[var(--color-primary-foreground)] border-info shadow-lg shadow-info/25",
+  secondary: "bg-[var(--color-surface,#374151)] hover:bg-muted text-[var(--color-foreground)] border-muted",
+  ghost: "bg-transparent hover:bg-foreground/10 text-[var(--color-foreground)] border-foreground/20",
 };
 
 export function GameMenu({
@@ -127,7 +127,7 @@ export function GameMenu({
           {title}
         </h1>
         {subtitle && (
-          <p className="mt-2 text-lg text-gray-400 tracking-widest uppercase">
+          <p className="mt-2 text-lg text-muted-foreground tracking-widest uppercase">
             {subtitle}
           </p>
         )}
@@ -141,10 +141,10 @@ export function GameMenu({
             onClick={() => handleOptionClick(option)}
             disabled={option.disabled}
             className={cn(
-              "w-full py-4 px-8 rounded-xl border-2 font-bold text-lg",
+              "w-full py-4 px-8 rounded-container border-2 font-bold text-lg",
               "transition-all duration-200 transform",
               "hover:scale-105 active:scale-95",
-              "focus:outline-none focus:ring-4 focus:ring-white/25",
+              "focus:outline-none focus:ring-4 focus:ring-foreground/25",
               variantMap[
                 (option.variant ?? "secondary") as keyof typeof variantMap
               ] ?? variantMap.secondary,
@@ -162,8 +162,8 @@ export function GameMenu({
 
       {/* Decorative Elements */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-info/10 rounded-container blur-3xl" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/10 rounded-container blur-3xl" />
       </div>
     </div>
   );

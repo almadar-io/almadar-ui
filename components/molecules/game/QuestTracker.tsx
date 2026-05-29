@@ -40,10 +40,10 @@ export function QuestTracker({
           <Box
             key={quest.id}
             className={cn(
-              'flex items-start gap-3 rounded-lg px-3 py-2 transition-colors',
-              isActive && !isCompleted && 'bg-blue-900/20 border border-blue-800/50',
-              isCompleted && 'bg-green-900/10 border border-green-800/30 opacity-70',
-              !isActive && !isCompleted && 'bg-gray-800/30 border border-gray-700/30',
+              'flex items-start gap-3 rounded-container px-3 py-2 transition-colors',
+              isActive && !isCompleted && 'bg-info/20 border border-info/50',
+              isCompleted && 'bg-success/10 border border-success/30 opacity-70',
+              !isActive && !isCompleted && 'bg-muted/30 border border-border/30',
             )}
           >
             <Box className="flex-shrink-0 pt-0.5">
@@ -59,9 +59,9 @@ export function QuestTracker({
                 variant="body2"
                 className={cn(
                   'font-medium truncate',
-                  isCompleted && 'line-through text-gray-500',
-                  isActive && !isCompleted && 'text-blue-300',
-                  !isActive && !isCompleted && 'text-gray-300',
+                  isCompleted && 'line-through text-muted-foreground',
+                  isActive && !isCompleted && 'text-info',
+                  !isActive && !isCompleted && 'text-muted-foreground',
                 )}
               >
                 {quest.title}
@@ -78,7 +78,7 @@ export function QuestTracker({
 
               <Typography
                 variant="caption"
-                className="text-gray-500 mt-1"
+                className="text-muted-foreground mt-1"
               >
                 {quest.progress} / {quest.maxProgress}
               </Typography>

@@ -35,29 +35,29 @@ export function TurnIndicator({
   return (
     <div
       className={cn(
-        'inline-flex items-center rounded-lg',
-        'bg-[var(--color-card)]/80 border border-gray-600 font-medium text-[var(--color-foreground)]',
+        'inline-flex items-center rounded-container',
+        'bg-card/80 border border-muted font-medium text-foreground',
         sizes.wrapper,
         className
       )}
     >
       <span className="font-bold tabular-nums">
         Turn {currentTurn}
-        {maxTurns != null && <span className="text-gray-400">/{maxTurns}</span>}
+        {maxTurns != null && <span className="text-muted-foreground">/{maxTurns}</span>}
       </span>
 
       {phase && (
         <>
-          <span className="text-gray-600">|</span>
-          <span className="text-gray-300">{phase}</span>
+          <span className="text-muted-foreground">|</span>
+          <span className="text-muted-foreground">{phase}</span>
         </>
       )}
 
       {activeTeam && (
         <>
-          <span className="text-gray-600">|</span>
-          <span className={cn('rounded-full bg-green-500/20', sizes.dot)} />
-          <span className="text-green-400">{activeTeam}</span>
+          <span className="text-muted-foreground">|</span>
+          <span className={cn('rounded-full bg-success/20', sizes.dot)} />
+          <span className="text-success">{activeTeam}</span>
         </>
       )}
     </div>

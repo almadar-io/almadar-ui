@@ -63,26 +63,26 @@ export interface GameOverScreenProps {
 
 const variantColors = {
   victory: {
-    bg: "from-green-900/90 to-emerald-950/90",
-    title: "text-green-400",
-    accent: "border-green-500",
+    bg: "from-success/90 to-success/90",
+    title: "text-success",
+    accent: "border-success",
   },
   defeat: {
-    bg: "from-red-900/90 to-gray-950/90",
-    title: "text-red-400",
-    accent: "border-red-500",
+    bg: "from-error/90 to-background/90",
+    title: "text-error",
+    accent: "border-error",
   },
   neutral: {
-    bg: "from-gray-900/90 to-gray-950/90",
-    title: "text-white",
-    accent: "border-gray-500",
+    bg: "from-muted/90 to-background/90",
+    title: "text-foreground",
+    accent: "border-muted",
   },
 };
 
 const buttonVariants = {
-  primary: "bg-[var(--color-primary)] hover:bg-blue-500 text-[var(--color-primary-foreground)] border-blue-400",
-  secondary: "bg-[var(--color-surface,#374151)] hover:bg-gray-600 text-[var(--color-foreground)] border-gray-500",
-  ghost: "bg-transparent hover:bg-white/10 text-[var(--color-foreground)] border-white/20",
+  primary: "bg-[var(--color-primary)] hover:bg-info text-[var(--color-primary-foreground)] border-info",
+  secondary: "bg-[var(--color-surface,#374151)] hover:bg-muted text-[var(--color-foreground)] border-muted",
+  ghost: "bg-transparent hover:bg-foreground/10 text-[var(--color-foreground)] border-foreground/20",
 };
 
 function formatTime(ms: number): string {
@@ -173,15 +173,15 @@ export function GameOverScreen({
 
       {/* Message */}
       {message && (
-        <p className="text-xl text-gray-300 mb-8 text-center max-w-md">
+        <p className="text-xl text-muted-foreground mb-8 text-center max-w-md">
           {message}
         </p>
       )}
 
       {/* New High Score Banner */}
       {isNewHighScore && (
-        <div className="mb-6 px-6 py-2 bg-yellow-500/20 border-2 border-yellow-500 rounded-full animate-pulse">
-          <span className="text-yellow-400 font-bold text-lg tracking-wide">
+        <div className="mb-6 px-6 py-2 bg-warning/20 border-2 border-warning rounded-container animate-pulse">
+          <span className="text-warning font-bold text-lg tracking-wide">
             🏆 NEW HIGH SCORE! 🏆
           </span>
         </div>
@@ -191,7 +191,7 @@ export function GameOverScreen({
       {stats.length > 0 && (
         <div
           className={cn(
-            "mb-8 p-6 rounded-xl border-2 bg-black/30",
+            "mb-8 p-6 rounded-container border-2 bg-background/30",
             colors.accent,
           )}
         >
@@ -205,7 +205,7 @@ export function GameOverScreen({
 
               return (
                 <div key={index} className="text-center">
-                  <div className="text-gray-400 text-sm mb-1">{stat.label}</div>
+                  <div className="text-muted-foreground text-sm mb-1">{stat.label}</div>
                   <div className="text-[var(--color-foreground)] text-2xl font-bold flex items-center justify-center gap-2">
                     {stat.icon && <span>{stat.icon}</span>}
                     <span className="tabular-nums">{displayValue}</span>
@@ -224,10 +224,10 @@ export function GameOverScreen({
             key={index}
             onClick={() => handleActionClick(action)}
             className={cn(
-              "px-8 py-4 rounded-xl border-2 font-bold text-lg",
+              "px-8 py-4 rounded-container border-2 font-bold text-lg",
               "transition-all duration-200",
               "hover:scale-105 active:scale-95",
-              "focus:outline-none focus:ring-4 focus:ring-white/25",
+              "focus:outline-none focus:ring-4 focus:ring-foreground/25",
               buttonVariants[action.variant ?? "secondary"],
             )}
           >

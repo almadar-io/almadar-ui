@@ -95,7 +95,7 @@ export function DPad({
       {/* Row 2: Left, Center, Right */}
       {createButton('left')}
       <div className="flex items-center justify-center">
-        <div className="w-6 h-6 rounded-full bg-gray-700 border-2 border-gray-600" />
+        <div className="w-6 h-6 rounded-interactive bg-muted border-2 border-muted-foreground" />
       </div>
       {createButton('right')}
 

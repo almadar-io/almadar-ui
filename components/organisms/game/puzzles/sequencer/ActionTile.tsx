@@ -59,7 +59,7 @@ export function ActionTile({
         <Box
             display="flex"
             className={cn(
-                'flex-col items-center gap-1 rounded-lg border-2 transition-all select-none',
+                'flex-col items-center gap-1 rounded-container border-2 transition-all select-none',
                 config.px,
                 disabled
                     ? 'opacity-40 cursor-not-allowed border-border bg-muted'

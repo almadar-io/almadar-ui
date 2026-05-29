@@ -21,10 +21,10 @@ const sizeMap = {
 };
 
 function getComboIntensity(combo: number): string {
-  if (combo >= 10) return 'text-red-400 animate-pulse';
-  if (combo >= 7) return 'text-orange-400';
-  if (combo >= 4) return 'text-yellow-400';
-  return 'text-[var(--color-foreground)]';
+  if (combo >= 10) return 'text-error animate-pulse';
+  if (combo >= 7) return 'text-warning';
+  if (combo >= 4) return 'text-warning';
+  return 'text-foreground';
 }
 
 function getComboScale(combo: number): string {
@@ -48,7 +48,7 @@ export function ComboCounter({
     <div
       className={cn(
         'inline-flex flex-col items-center justify-center',
-        'rounded-xl bg-[var(--color-card)]/80 border border-gray-600 px-3 py-1.5',
+        'rounded-container bg-card/80 border border-muted px-3 py-1.5',
         'transition-transform duration-200',
         getComboScale(combo),
         className
@@ -57,18 +57,18 @@ export function ComboCounter({
       <span className={cn('font-black tabular-nums leading-none', sizes.combo, getComboIntensity(combo))}>
         {combo}
       </span>
-      <span className={cn('font-bold uppercase tracking-wider text-gray-400', sizes.label)}>
+      <span className={cn('font-bold uppercase tracking-wider text-muted-foreground', sizes.label)}>
         combo
       </span>
 
       {multiplier != null && multiplier > 1 && (
-        <span className={cn('font-bold text-amber-400 tabular-nums', sizes.multiplier)}>
+        <span className={cn('font-bold text-warning tabular-nums', sizes.multiplier)}>
           x{multiplier.toFixed(1)}
         </span>
       )}
 
       {streak != null && streak > 0 && (
-        <span className={cn('text-gray-500 tabular-nums', sizes.label)}>
+        <span className={cn('text-muted-foreground tabular-nums', sizes.label)}>
           {streak} streak
         </span>
       )}

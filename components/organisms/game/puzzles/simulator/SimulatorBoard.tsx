@@ -134,11 +134,11 @@ export function SimulatorBoard({
       <VStack gap="lg" className="p-4">
         {/* Header image */}
         {entity.headerImage && !headerError ? (
-          <Box className="w-full h-32 overflow-hidden rounded-lg">
+          <Box className="w-full h-32 overflow-hidden rounded-container">
             <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
           </Box>
         ) : entity.headerImage && headerError ? (
-          <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-muted to-accent opacity-60" />
+          <Box className="w-full h-32 rounded-container bg-gradient-to-br from-muted to-accent opacity-60" />
         ) : null}
 
         <Card className="p-4">
@@ -190,8 +190,8 @@ export function SimulatorBoard({
             </Typography>
             {submitted && (
               <HStack gap="xs" align="center">
-                <Icon icon={isCorrect ? CheckCircle : XCircle} size="sm" className={isCorrect ? 'text-green-600' : 'text-red-600'} />
-                <Typography variant="body" className={isCorrect ? 'text-green-600' : 'text-red-600'}>
+                <Icon icon={isCorrect ? CheckCircle : XCircle} size="sm" className={isCorrect ? 'text-success' : 'text-error'} />
+                <Typography variant="body" className={isCorrect ? 'text-success' : 'text-error'}>
                   {isCorrect
                     ? (entity.successMessage ?? t('simulator.correct'))
                     : (entity.failMessage ?? t('simulator.incorrect'))}
@@ -206,7 +206,7 @@ export function SimulatorBoard({
 
         {/* Hint */}
         {showHint && entity.hint && (
-          <Card className="p-4 border-l-4 border-l-yellow-500">
+          <Card className="p-4 border-l-4 border-l-warning">
             <Typography variant="body">{entity.hint}</Typography>
           </Card>
         )}

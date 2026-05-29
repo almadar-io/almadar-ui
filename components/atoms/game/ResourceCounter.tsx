@@ -38,17 +38,17 @@ export function ResourceCounter({
   return (
     <div
       className={cn(
-        'inline-flex items-center rounded-md',
-        'bg-[var(--color-card)]/80 border border-gray-600 font-medium text-[var(--color-foreground)]',
+        'inline-flex items-center rounded-container',
+        'bg-card/80 border border-muted font-medium text-foreground',
         sizes.wrapper,
         className
       )}
     >
       {icon && <span className={cn('flex-shrink-0', sizes.icon)}>{icon}</span>}
-      <span className="text-gray-400">{label}</span>
+      <span className="text-muted-foreground">{label}</span>
       <span className={cn('font-bold tabular-nums', color)}>
         {value}
-        {max != null && <span className="text-gray-500">/{max}</span>}
+        {max != null && <span className="text-muted-foreground">/{max}</span>}
       </span>
     </div>
   );

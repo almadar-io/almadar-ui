@@ -244,7 +244,7 @@ export function TraitSlot({
             display="flex"
             position="relative"
             className={cn(
-                'items-center justify-center rounded-lg transition-all duration-200',
+                'items-center justify-center rounded-container transition-all duration-200 bg-card/50',
                 !locked && 'cursor-pointer',
                 locked && 'cursor-not-allowed opacity-50',
                 isEmpty && !locked && 'border-2 border-dashed border-border hover:border-muted-foreground',
@@ -260,7 +260,7 @@ export function TraitSlot({
             style={{
                 width: config.box,
                 height: config.box,
-                backgroundColor: catColor?.bg || 'rgba(30,41,59,0.5)',
+                backgroundColor: catColor?.bg || undefined,
                 borderColor: isDragOver
                     ? undefined
                     : feedback === 'correct'
@@ -313,7 +313,7 @@ export function TraitSlot({
                     {(onRemove || removeEvent) && (
                         <Box
                             position="absolute"
-                            className="-top-1.5 -right-1.5 w-4 h-4 bg-error rounded-full flex items-center justify-center cursor-pointer hover:bg-error/80 transition-colors"
+                            className="-top-1.5 -right-1.5 w-4 h-4 bg-error rounded-pill flex items-center justify-center cursor-pointer hover:bg-error/80 transition-colors"
                             onClick={handleRemove}
                         >
                             <Typography variant="caption" className="text-foreground text-xs leading-none">
@@ -327,7 +327,7 @@ export function TraitSlot({
             {/* Slot number */}
             <Box
                 position="absolute"
-                className="-bottom-1 -left-1 w-4 h-4 bg-card rounded-full flex items-center justify-center border border-border"
+                className="-bottom-1 -left-1 w-4 h-4 bg-card rounded-pill flex items-center justify-center border border-border"
             >
                 <Typography variant="caption" className="text-muted-foreground text-xs">
                     {slotNumber}
@@ -337,7 +337,7 @@ export function TraitSlot({
             {/* Tooltip */}
             {showTooltip && isHovered && itemMachine && !isEmpty && equippedItem && (
                 <Box
-                    className="p-3 bg-background border border-border rounded-lg shadow-xl"
+                    className="p-3 bg-background border border-border rounded-container shadow-xl"
                     style={{
                         ...getTooltipStyle(),
                         minWidth: 200,

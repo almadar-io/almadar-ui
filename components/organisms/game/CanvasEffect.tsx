@@ -238,7 +238,7 @@ function CanvasEffectEngine({
         >
             {flash && (
                 <Box
-                    className="absolute inset-0 z-20 pointer-events-none rounded-lg"
+                    className="absolute inset-0 z-20 pointer-events-none rounded-container"
                     style={{ backgroundColor: flash.color, opacity: flash.alpha }}
                 />
             )}
@@ -316,7 +316,7 @@ function EmojiEffect({
             }}
         >
             <Box
-                className="absolute rounded-full animate-ping"
+                className="absolute rounded-pill animate-ping"
                 style={{
                     width: 48 * intensity,
                     height: 48 * intensity,

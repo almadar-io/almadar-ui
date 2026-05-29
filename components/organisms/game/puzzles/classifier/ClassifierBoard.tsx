@@ -135,11 +135,11 @@ export function ClassifierBoard({
       <VStack gap="lg" className="p-4">
         {/* Header image */}
         {entity.headerImage && !headerError ? (
-          <Box className="w-full h-32 overflow-hidden rounded-lg">
+          <Box className="w-full h-32 overflow-hidden rounded-container">
             <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
           </Box>
         ) : entity.headerImage && headerError ? (
-          <Box className="w-full h-32 rounded-lg bg-gradient-to-br from-muted to-accent opacity-60" />
+          <Box className="w-full h-32 rounded-container bg-gradient-to-br from-muted to-accent opacity-60" />
         ) : null}
 
         <Card className="p-4">
@@ -178,7 +178,7 @@ export function ClassifierBoard({
               <Card key={cat.id} className="p-4">
                 <VStack gap="sm">
                   {cat.imageUrl && (
-                    <Box className="w-full h-16 overflow-hidden rounded-md">
+                    <Box className="w-full h-16 overflow-hidden rounded-container">
                       <img src={cat.imageUrl} alt="" className="w-full h-full object-cover" />
                     </Box>
                   )}
@@ -196,8 +196,8 @@ export function ClassifierBoard({
                           className={`cursor-pointer ${
                             result
                               ? result.correct
-                                ? 'border-green-500 bg-green-50 dark:bg-green-950'
-                                : 'border-red-500 bg-red-50 dark:bg-red-950'
+                                ? 'border-success bg-success/10'
+                                : 'border-error bg-error/10'
                               : ''
                           }`}
                           onClick={() => handleUnassign(item.id)}
@@ -207,7 +207,7 @@ export function ClassifierBoard({
                           )}
                           {item.label}
                           {result && (
-                            <Icon icon={result.correct ? CheckCircle : XCircle} size="xs" className={result.correct ? 'text-green-600' : 'text-red-600'} />
+                            <Icon icon={result.correct ? CheckCircle : XCircle} size="xs" className={result.correct ? 'text-success' : 'text-error'} />
                           )}
                         </Badge>
                       );
@@ -239,7 +239,7 @@ export function ClassifierBoard({
         {submitted && (
           <Card className="p-4">
             <VStack gap="sm" align="center">
-              <Icon icon={allCorrect ? CheckCircle : XCircle} size="lg" className={allCorrect ? 'text-green-600' : 'text-red-600'} />
+              <Icon icon={allCorrect ? CheckCircle : XCircle} size="lg" className={allCorrect ? 'text-success' : 'text-error'} />
               <Typography variant="body" weight="bold">
                 {allCorrect
                   ? (entity.successMessage ?? t('classifier.allCorrect'))
@@ -254,7 +254,7 @@ export function ClassifierBoard({
 
         {/* Hint */}
         {showHint && entity.hint && (
-          <Card className="p-4 border-l-4 border-l-yellow-500">
+          <Card className="p-4 border-l-4 border-l-warning">
             <Typography variant="body">{entity.hint}</Typography>
           </Card>
         )}

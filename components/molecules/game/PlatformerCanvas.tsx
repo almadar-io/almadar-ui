@@ -341,7 +341,7 @@ export function PlatformerCanvas({
     <canvas
       ref={canvasRef}
       style={{ width: canvasWidth, height: canvasHeight }}
-      className={cn('block rounded-lg border border-white/10', className)}
+      className={cn('block rounded-container border border-border/10', className)}
       data-testid="platformer-canvas"
       tabIndex={0}
     />

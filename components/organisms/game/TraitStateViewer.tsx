@@ -79,7 +79,7 @@ function LinearView({
     const currentIdx = trait.states.indexOf(trait.currentState);
 
     return (
-        <VStack className={cn('p-3 rounded-lg bg-card border border-border', className)} gap="sm">
+        <VStack className={cn('p-3 rounded-container bg-card border border-border', className)} gap="sm">
             {trait.description && (
                 <Typography variant="caption" className="text-muted-foreground">
                     {trait.description}
@@ -105,10 +105,10 @@ function LinearView({
                             <Box
                                 display="inline-flex"
                                 className={cn(
-                                    'items-center justify-center rounded-full px-3 py-1 border-2 transition-all',
+                                    'items-center justify-center rounded-pill px-3 py-1 border-2 transition-all',
                                     SIZE_CONFIG[size || 'md'].fontSize,
                                     isDone && 'bg-success/20 border-success text-success',
-                                    isCurrent && 'bg-primary/20 border-primary text-primary font-bold shadow-md shadow-primary/20',
+                                    isCurrent && 'bg-primary/20 border-primary text-primary font-bold shadow-elevation-card shadow-primary/20',
                                     !isDone && !isCurrent && 'bg-muted border-border text-muted-foreground',
                                 )}
                             >
@@ -140,7 +140,7 @@ function CompactView({
     const currentTransitions = trait.transitions.filter(t => t.from === trait.currentState);
 
     return (
-        <VStack className={cn('p-3 rounded-lg bg-card border border-border', className)} gap="sm">
+        <VStack className={cn('p-3 rounded-container bg-card border border-border', className)} gap="sm">
             <HStack className="items-center justify-between">
                 <Typography variant="body2" className="text-foreground font-bold">
                     {trait.name}
@@ -202,7 +202,7 @@ function FullView({
     const currentTransitions = trait.transitions.filter(t => t.from === trait.currentState);
 
     return (
-        <VStack className={cn('p-3 rounded-lg bg-card border border-border', className)} gap="sm">
+        <VStack className={cn('p-3 rounded-container bg-card border border-border', className)} gap="sm">
             {/* Header */}
             <HStack className="items-center justify-between">
                 <Typography variant="body2" className="text-foreground font-bold">
@@ -228,9 +228,9 @@ function FullView({
                             key={state}
                             display="flex"
                             className={cn(
-                                'items-center justify-center rounded-md border-2 transition-all px-2',
+                                'items-center justify-center rounded-container border-2 transition-all px-2',
                                 config.nodeSize,
-                                isCurrent && 'bg-primary/20 border-primary shadow-md shadow-primary/20',
+                                isCurrent && 'bg-primary/20 border-primary shadow-elevation-card shadow-primary/20',
                                 !isCurrent && hasOutgoing && 'bg-muted border-border hover:border-muted-foreground',
                                 !isCurrent && !hasOutgoing && 'bg-background border-border opacity-60',
                                 onStateClick && 'cursor-pointer',

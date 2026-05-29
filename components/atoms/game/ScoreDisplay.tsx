@@ -85,7 +85,7 @@ export function ScoreDisplay({
       )}
     >
       {icon && <span className="flex-shrink-0">{icon}</span>}
-      {label && <span className="text-gray-400">{label}</span>}
+      {label && <span className="text-muted-foreground">{label}</span>}
       <span className="tabular-nums">{formattedValue}</span>
     </div>
   );

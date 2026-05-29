@@ -41,8 +41,8 @@ const sizeMap = {
 
 const shapeMap = {
   circle: 'rounded-full',
-  rounded: 'rounded-xl',
-  square: 'rounded-md',
+  rounded: 'rounded-interactive',
+  square: 'rounded-interactive',
 };
 
 const variantMap = {

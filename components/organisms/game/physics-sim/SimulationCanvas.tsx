@@ -187,7 +187,7 @@ export function SimulationCanvas({
                 ref={canvasRef}
                 width={width}
                 height={height}
-                className="rounded-md block max-w-full h-auto"
+                className="rounded-container block max-w-full h-auto"
             />
         </Box>
     );
