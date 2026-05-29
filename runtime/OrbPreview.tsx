@@ -27,6 +27,7 @@ import { useResolvedSchema } from './useResolvedSchema';
 import { collectEmbeddedTraits } from './embedded-traits';
 import { convertFnFormLambdasInProps } from './fn-form-lambda';
 import { useTraitStateMachine } from './useTraitStateMachine';
+import { buildOrbitalsByTrait, type OrbitalsByTraitSchema } from './orbitalsByTrait';
 import { EntitySchemaProvider } from './EntitySchemaContext';
 import { ServerBridgeProvider, useServerBridge, type ServerBridgeTransport } from './ServerBridge';
 import { OrbitalThemeProvider } from '../context/OrbitalThemeProvider';
@@ -395,27 +396,19 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavi
   // `schema.orbitals[].traits[]` so `useTraitStateMachine` can construct
   // the qualified `UI:Orbital.Trait.EVENT` bus key at both subscribe and
   // emit sites — same scope shape the compiled codegen produces.
-  const orbitalsByTrait = useMemo<Record<string, string>>(() => {
-    const map: Record<string, string> = {};
-    const parsed = schema as OrbitalSchema | undefined;
-    if (!parsed?.orbitals) return map;
-    for (const orb of parsed.orbitals) {
-      for (const traitRef of orb.traits) {
-        let traitName: string | undefined;
-        if (typeof traitRef === 'string') {
-          const parts = traitRef.split('.');
-          traitName = parts[parts.length - 1];
-        } else if ('ref' in traitRef && typeof traitRef.ref === 'string') {
-          const parts = traitRef.ref.split('.');
-          traitName = traitRef.name ?? parts[parts.length - 1];
-        } else if ('name' in traitRef && typeof traitRef.name === 'string') {
-          traitName = traitRef.name;
-        }
-        if (traitName) map[traitName] = orb.name;
-      }
-    }
-    return map;
-  }, [schema]);
+  const orbitalsByTrait = useMemo<Record<string, string>>(
+    () =>
+      buildOrbitalsByTrait(
+        schema as OrbitalsByTraitSchema | undefined,
+        ir
+          ? Array.from(ir.pages.values()).map((p) => ({
+              path: p.path,
+              traitNames: p.traits.map((b) => b.trait.name),
+            }))
+          : [],
+      ),
+    [schema, ir],
+  );
 
   // Per-trait linkedEntity map for EntitySchemaProvider. Walks every
   // page's bindings once. Wrapped in `useMemo` so the resulting `Map`
