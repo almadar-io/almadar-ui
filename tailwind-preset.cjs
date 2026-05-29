@@ -18,6 +18,7 @@ module.exports = {
   darkMode: 'class',
   safelist: [
   // Standard utilities used via dynamic className from .orb schemas
+  'contents',
   'p-4', 'p-6', 'p-8',
   'px-4', 'px-6', 'py-4', 'py-6',
   'mx-auto',

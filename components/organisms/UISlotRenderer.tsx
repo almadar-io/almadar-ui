@@ -1361,7 +1361,7 @@ function SlotContentRenderer({
     // callbacks survive when we have no recursive child JSX of our own.
     return (
       <Box
-        className="slot-content"
+        className="slot-content contents"
         data-pattern={content.pattern}
         data-id={content.id}
         data-node-id={content.nodeId}
