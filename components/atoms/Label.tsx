@@ -2,6 +2,8 @@ import React from "react";
 import { cn } from "../../lib/cn";
 
 export interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {
+  /** Additional CSS classes applied to the root element. */
+  className?: string;
   /** Label text content */
   text?: string;
   /** Associated input element ID */

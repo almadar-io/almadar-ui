@@ -6,6 +6,8 @@ export type TrendDirection = "up" | "down" | "flat";
 export type TrendIndicatorSize = "sm" | "md" | "lg";
 
 export interface TrendIndicatorProps extends React.HTMLAttributes<HTMLSpanElement> {
+  /** Additional CSS classes applied to the root element. */
+  className?: string;
   /** Numeric value to display (e.g., 12.5 for +12.5%) */
   value?: number;
   /** Override automatic direction detection (positive=up, negative=down, zero=flat) */

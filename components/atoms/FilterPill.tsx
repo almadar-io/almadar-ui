@@ -16,6 +16,8 @@ export type FilterPillVariant =
 export type FilterPillSize = "sm" | "md" | "lg";
 
 export interface FilterPillProps extends Omit<React.HTMLAttributes<HTMLSpanElement>, "onClick"> {
+  /** Additional CSS classes applied to the root element. */
+  className?: string;
   variant?: FilterPillVariant;
   size?: FilterPillSize;
   /** Pill label text (alternative to children for schema-driven rendering). */

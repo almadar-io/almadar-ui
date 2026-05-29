@@ -12,6 +12,8 @@ export interface RadioProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
   "type" | "size"
 > {
+  /** Additional CSS classes applied to the root element. */
+  className?: string;
   /** Radio options (string array or SelectOption array) */
   options?: string[];
   /** Current selected value */

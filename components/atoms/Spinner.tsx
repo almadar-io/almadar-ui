@@ -5,6 +5,8 @@ import { Icon } from "./Icon";
 export type SpinnerSize = "xs" | "sm" | "md" | "lg";
 
 export interface SpinnerProps extends React.HTMLAttributes<HTMLDivElement> {
+  /** Additional CSS classes applied to the root element. */
+  className?: string;
   size?: SpinnerSize;
 }
 

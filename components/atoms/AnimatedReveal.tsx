@@ -15,6 +15,8 @@ export type RevealAnimation =
   | 'none';
 
 export interface AnimatedRevealProps extends Omit<React.HTMLAttributes<HTMLDivElement>, 'children'> {
+  /** Additional CSS classes applied to the root element. */
+  className?: string;
   /** What triggers the animation */
   trigger?: RevealTrigger;
   /** Built-in animation preset */

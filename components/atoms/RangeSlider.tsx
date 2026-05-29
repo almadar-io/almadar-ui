@@ -16,6 +16,8 @@ function useSafeEventBus() {
 export type RangeSliderSize = "sm" | "md" | "lg";
 
 export interface RangeSliderProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "onChange"> {
+  /** Additional CSS classes applied to the root element. */
+  className?: string;
   /** Minimum value */
   min?: number;
   /** Maximum value */

@@ -16,6 +16,8 @@ export type BadgeVariant =
 export type BadgeSize = "sm" | "md" | "lg";
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
+  /** Additional CSS classes applied to the root element. */
+  className?: string;
   variant?: BadgeVariant;
   size?: BadgeSize;
   /** Numeric count or amount to display in badge */

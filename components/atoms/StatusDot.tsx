@@ -5,6 +5,8 @@ export type StatusDotStatus = "online" | "offline" | "away" | "busy" | "warning"
 export type StatusDotSize = "sm" | "md" | "lg";
 
 export interface StatusDotProps extends React.HTMLAttributes<HTMLSpanElement> {
+  /** Additional CSS classes applied to the root element. */
+  className?: string;
   /** Status determines the dot color */
   status?: StatusDotStatus;
   /** Enable pulse animation for active/critical states */

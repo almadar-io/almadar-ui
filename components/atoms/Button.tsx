@@ -17,6 +17,8 @@ export type ButtonVariant =
 export type ButtonSize = "sm" | "md" | "lg";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  /** Additional CSS classes applied to the root element. */
+  className?: string;
   variant?: ButtonVariant;
   size?: ButtonSize;
   isLoading?: boolean;

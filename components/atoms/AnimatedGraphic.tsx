@@ -6,6 +6,8 @@ import { cn } from '../../lib/cn';
 export type GraphicAnimation = 'draw' | 'fill' | 'pulse' | 'morph';
 
 export interface AnimatedGraphicProps extends React.HTMLAttributes<HTMLDivElement> {
+  /** Additional CSS classes applied to the root element. */
+  className?: string;
   /** URL to an SVG file. Fetched and inlined to enable stroke/fill animations. */
   src?: string;
   /** Inline SVG string. Takes precedence over src if both provided. */

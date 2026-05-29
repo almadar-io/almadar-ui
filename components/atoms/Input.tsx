@@ -13,6 +13,8 @@ export interface InputProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
   "onChange"
 > {
+  /** Additional CSS classes applied to the root element. */
+  className?: string;
   /** Placeholder text */
   placeholder?: string;
   /** Current value */

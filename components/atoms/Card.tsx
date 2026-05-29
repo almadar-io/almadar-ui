@@ -17,6 +17,8 @@ export type CardLook =
   | "tile-image-first";
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  /** Additional CSS classes applied to the root element. */
+  className?: string;
   variant?: "default" | "bordered" | "elevated" | "interactive";
   padding?: "none" | "sm" | "md" | "lg";
   /** Card title - renders in header if provided */

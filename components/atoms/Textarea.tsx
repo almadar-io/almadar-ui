@@ -3,6 +3,8 @@ import type { EventKey } from "@almadar/core";
 import { cn } from "../../lib/cn";
 
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+  /** Additional CSS classes applied to the root element. */
+  className?: string;
   /** Placeholder text */
   placeholder?: string;
   /** Number of visible rows */

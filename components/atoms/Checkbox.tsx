@@ -5,6 +5,8 @@ export interface CheckboxProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
   "type"
 > {
+  /** Additional CSS classes applied to the root element. */
+  className?: string;
   /** Whether the checkbox is checked */
   checked?: boolean;
   /** Default checked state (uncontrolled) */

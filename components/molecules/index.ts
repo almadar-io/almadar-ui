@@ -77,6 +77,7 @@ export { Lightbox, type LightboxProps, type LightboxImage } from './Lightbox';
 // Data iteration molecules (simplified from organisms)
 export { DataGrid, type DataGridProps, type DataGridField, type DataGridItemAction } from './DataGrid';
 export { DataList, type DataListProps, type DataListField, type DataListItemAction } from './DataList';
+export { TableView, type TableViewProps, type TableViewColumn } from './TableView';
 
 // Stat display molecule (behavior-safe replacement for StatCard organism)
 export { StatDisplay, type StatDisplayProps } from './StatDisplay';

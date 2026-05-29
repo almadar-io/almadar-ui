@@ -13,6 +13,8 @@ export interface SelectProps extends Omit<
   React.SelectHTMLAttributes<HTMLSelectElement>,
   "children"
 > {
+  /** Additional CSS classes applied to the root element. */
+  className?: string;
   /** Select options */
   options: SelectOption[];
   /** Placeholder text */
