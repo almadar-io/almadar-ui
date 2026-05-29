@@ -83,6 +83,9 @@ export interface DataListProps<T extends EntityRow = EntityRow> extends DataDndP
   columns?: readonly DataListField[];
   /** Per-item action buttons */
   itemActions?: readonly DataListItemAction[];
+  /** When set, the whole row is clickable and emits UI:{itemClickEvent} with
+   *  { id, row } (action-button clicks stopPropagation so they still win). */
+  itemClickEvent?: EventKey;
   /** Gap between rows */
   gap?: 'none' | 'sm' | 'md' | 'lg';
   /** Visual variant */
@@ -212,6 +215,7 @@ export function DataList<T extends EntityRow = EntityRow>({
   fields,
   columns,
   itemActions,
+  itemClickEvent,
   gap = 'none',
   variant = 'default',
   groupBy,
@@ -319,6 +323,15 @@ export function DataList<T extends EntityRow = EntityRow>({
     eventBus.emit(`UI:${action.event}`, payload);
   };
 
+  const handleRowClick = (itemData: Record<string, unknown>) => () => {
+    if (!itemClickEvent) return;
+    const payload: ItemActionPayload = {
+      id: itemData.id as string | number,
+      row: itemData as ItemActionPayload['row'],
+    };
+    eventBus.emit(`UI:${itemClickEvent}`, payload);
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -409,7 +422,7 @@ export function DataList<T extends EntityRow = EntityRow>({
                         {sender}
                       </Typography>
                     )}
-                    <Typography variant="body">
+                    <Typography variant="body" className={cn(isSent && 'text-primary-foreground')}>
                       {content !== undefined && content !== null ? String(content) : ''}
                     </Typography>
                     {timestamp != null ? (
@@ -446,7 +459,7 @@ export function DataList<T extends EntityRow = EntityRow>({
     if (hasRenderProp) {
       const id = (itemData.id as string) || String(index);
       return wrapDnd(
-        <Box key={id} data-entity-row data-entity-id={id}>
+        <Box key={id} data-entity-row data-entity-id={id} onClick={itemClickEvent ? handleRowClick(itemData) : undefined} className={cn(itemClickEvent && 'cursor-pointer')}>
           <Box className="group flex items-stretch gap-2">
             <Box className="flex-1 min-w-0">
               {children(itemData as T, index)}
@@ -487,7 +500,7 @@ export function DataList<T extends EntityRow = EntityRow>({
     const titleValue = getNestedValue(itemData, titleField?.name ?? '');
 
     return wrapDnd(
-      <Box key={id} data-entity-row data-entity-id={id}>
+      <Box key={id} data-entity-row data-entity-id={id} onClick={itemClickEvent ? handleRowClick(itemData) : undefined} className={cn(itemClickEvent && 'cursor-pointer')}>
         <Box
           className={cn(
             'group flex items-center gap-4 transition-all duration-fast',
