@@ -10,7 +10,7 @@ import React, { useCallback, useState } from "react";
 import type { EventEmit } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
-import { Avatar, Typography, Button, Box } from "../atoms";
+import { Avatar, Typography, Button, Box, Input } from "../atoms";
 import { VoteStack, type VoteValue } from "../molecules/VoteStack";
 
 export interface ReplyNode {
@@ -33,7 +33,7 @@ export interface ReplyTreeProps {
     onFlag?: (nodeId: string) => void;
     onContinueThread?: (nodeId: string) => void;
     voteEvent?: EventEmit<{ nodeId: string; vote: VoteValue }>;
-    replyEvent?: EventEmit<{ parentNodeId: string }>;
+    replyEvent?: EventEmit<{ parentNodeId: string; content: string }>;
     flagEvent?: EventEmit<{ nodeId: string }>;
     continueThreadEvent?: EventEmit<{ nodeId: string }>;
     showActions?: boolean;
@@ -51,7 +51,7 @@ interface ReplyTreeNodeProps {
     onFlag?: (nodeId: string) => void;
     onContinueThread?: (nodeId: string) => void;
     voteEvent?: EventEmit<{ nodeId: string; vote: VoteValue }>;
-    replyEvent?: EventEmit<{ parentNodeId: string }>;
+    replyEvent?: EventEmit<{ parentNodeId: string; content: string }>;
     flagEvent?: EventEmit<{ nodeId: string }>;
     continueThreadEvent?: EventEmit<{ nodeId: string }>;
     showActions: boolean;
@@ -77,6 +77,10 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
     const hasReplies = !!node.replies && node.replies.length > 0;
     const isCollapsed = collapsedSet.has(node.id);
     const atMaxDepth = depth >= maxDepth;
+    // Inline reply composer: opens beneath this node so the reply box stays in
+    // place instead of swapping the whole view.
+    const [replyOpen, setReplyOpen] = useState(false);
+    const [draft, setDraft] = useState("");
 
     const handleVote = useCallback(
         (next: VoteValue) => {
@@ -86,10 +90,25 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
         [node.id, onVote, voteEvent, eventBus],
     );
 
+    // Toggle the inline composer open/closed (notify the host that a reply was
+    // initiated, but don't emit the reply itself until the user submits text).
     const handleReply = useCallback(() => {
         onReply?.(node.id);
-        if (replyEvent) eventBus.emit(`UI:${replyEvent}`, { parentNodeId: node.id });
-    }, [node.id, onReply, replyEvent, eventBus]);
+        setReplyOpen((open) => !open);
+    }, [node.id, onReply]);
+
+    const handleSubmitReply = useCallback(() => {
+        const content = draft.trim();
+        if (!content) return;
+        if (replyEvent) eventBus.emit(`UI:${replyEvent}`, { parentNodeId: node.id, content });
+        setDraft("");
+        setReplyOpen(false);
+    }, [node.id, draft, replyEvent, eventBus]);
+
+    const handleCancelReply = useCallback(() => {
+        setDraft("");
+        setReplyOpen(false);
+    }, []);
 
     const handleFlag = useCallback(() => {
         onFlag?.(node.id);
@@ -180,6 +199,33 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
                         >
                             Flag
                         </Button>
+                    </Box>
+                )}
+
+                {replyOpen && (
+                    <Box className="flex flex-col gap-2 mt-1">
+                        <Input
+                            inputType="textarea"
+                            rows={2}
+                            value={draft}
+                            placeholder={`Reply to ${node.authorName}…`}
+                            onChange={(e) => setDraft(e.target.value)}
+                            aria-label={`Reply to ${node.authorName}`}
+                        />
+                        <Box className="flex flex-row gap-2 items-center">
+                            <Button
+                                variant="primary"
+                                size="sm"
+                                leftIcon="send"
+                                onClick={handleSubmitReply}
+                                disabled={!draft.trim()}
+                            >
+                                Send
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={handleCancelReply}>
+                                Cancel
+                            </Button>
+                        </Box>
                     </Box>
                 )}
 
