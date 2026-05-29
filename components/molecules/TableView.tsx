@@ -43,7 +43,9 @@ export interface TableViewColumn {
   header?: string;
   /** Accessibility / fallback label. */
   label?: string;
-  /** Width utility class applied to header + body cells (e.g. "w-28", "flex-1", "min-w-[10rem]"). */
+  /** CSS grid track size for this column (e.g. "7rem", "minmax(10rem, 1.5fr)",
+   *  "1fr"). Shared across header + body so columns align. Defaults to
+   *  "minmax(0, 1fr)" (equal flexible share). */
   width?: string;
   /** Horizontal alignment of the column's cells. */
   align?: 'left' | 'center' | 'right';
@@ -330,19 +332,31 @@ export function TableView<T extends EntityRow = EntityRow>({
 
   const lk = LOOKS[look];
 
+  // Shared CSS-grid track template so columns line up across every row
+  // (flex-per-row sizes each row independently → misaligned columns). A
+  // leading `auto` reserves the checkbox column, a trailing `auto` the
+  // actions column. Each column's `width` is a grid track size.
+  const hasActions = Boolean(itemActions && itemActions.length > 0);
+  const gridTemplateColumns = [
+    selectable ? 'auto' : null,
+    ...colDefs.map((c) => c.width ?? 'minmax(0, 1fr)'),
+    hasActions ? 'auto' : null,
+  ].filter(Boolean).join(' ');
+
   // ── Header row ──────────────────────────────────────────────────
   const header = (
     <Box
       role="row"
+      style={{ gridTemplateColumns }}
       className={cn(
-        'flex items-center gap-3 sticky top-0 z-10',
-        'bg-[var(--color-surface-subtle)] border-b border-[var(--color-table-border)]',
+        'grid items-center gap-3 sticky top-0 z-10',
+        'bg-[var(--color-surface-subtle)] border-b border-[var(--color-border)]',
         'text-[var(--color-text-muted)] uppercase text-xs font-semibold tracking-wide',
         lk.headPad,
       )}
     >
       {selectable && (
-        <Box className="w-8 flex-shrink-0 flex items-center">
+        <Box className="flex items-center">
           <Checkbox checked={allSelected} onChange={toggleAll} aria-label="Select all rows" />
         </Box>
       )}
@@ -355,7 +369,6 @@ export function TableView<T extends EntityRow = EntityRow>({
             onClick={() => handleSort(col)}
             className={cn(
               'flex items-center gap-1 min-w-0',
-              col.width ?? 'flex-1',
               alignClass[col.align ?? 'left'],
               col.sortable && sortEvent && 'cursor-pointer select-none hover:text-foreground',
             )}
@@ -372,7 +385,7 @@ export function TableView<T extends EntityRow = EntityRow>({
           </Box>
         );
       })}
-      {itemActions && itemActions.length > 0 && <Box className="w-px flex-shrink-0" aria-hidden />}
+      {hasActions && <Box aria-hidden />}
     </Box>
   );
 
@@ -384,17 +397,19 @@ export function TableView<T extends EntityRow = EntityRow>({
         role="row"
         data-entity-row
         data-entity-id={id}
+        style={!hasRenderProp ? { gridTemplateColumns } : undefined}
         className={cn(
-          'group flex items-center gap-3 transition-colors duration-fast',
+          'group items-center gap-3 transition-colors duration-fast',
+          hasRenderProp ? 'flex' : 'grid',
           lk.rowPad,
-          lk.divider && 'border-b border-[var(--color-table-border)]',
+          lk.divider && 'border-b border-[var(--color-border)]',
           lk.striped && index % 2 === 1 && 'bg-[var(--color-surface-subtle)]',
           'hover:bg-[var(--color-surface-subtle)]',
-          look === 'bordered' && '[&>*]:border-r [&>*]:border-[var(--color-table-border)] [&>*:last-child]:border-r-0',
+          look === 'bordered' && '[&>*]:border-r [&>*]:border-[var(--color-border)] [&>*:last-child]:border-r-0',
         )}
       >
         {selectable && (
-          <Box className="w-8 flex-shrink-0 flex items-center">
+          <Box className="flex items-center">
             <Checkbox
               checked={selected.has(id)}
               onChange={() => toggleRow(id)}
@@ -409,7 +424,6 @@ export function TableView<T extends EntityRow = EntityRow>({
             const raw = getNestedValue(row, col.field ?? col.key);
             const cellBase = cn(
               'flex items-center min-w-0',
-              col.width ?? 'flex-1',
               alignClass[col.align ?? 'left'],
               weightClass[col.weight ?? 'normal'],
               col.className,
@@ -422,8 +436,8 @@ export function TableView<T extends EntityRow = EntityRow>({
               );
             }
             return (
-              <Box key={col.key} role="cell" className={cn(cellBase, 'truncate block')}>
-                {formatCell(raw, col.format)}
+              <Box key={col.key} role="cell" className={cellBase}>
+                <span className="truncate">{formatCell(raw, col.format)}</span>
               </Box>
             );
           })
