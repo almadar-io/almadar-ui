@@ -107,7 +107,7 @@ export const Input = React.forwardRef<
     // Handle select type
     if (type === "select") {
       return (
-        <div className="relative">
+        <div className="relative w-full">
           {resolvedLeftIcon && (
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
               {resolvedLeftIcon}
@@ -137,7 +137,7 @@ export const Input = React.forwardRef<
     // Handle textarea type
     if (type === "textarea") {
       return (
-        <div className="relative">
+        <div className="relative w-full">
           <textarea
             ref={ref as React.Ref<HTMLTextAreaElement>}
             value={value as string}
@@ -172,7 +172,7 @@ export const Input = React.forwardRef<
 
     // Standard input types
     return (
-      <div className="relative">
+      <div className="relative w-full">
         {resolvedLeftIcon && (
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
             {resolvedLeftIcon}
