@@ -24,7 +24,7 @@ import { UISlotRenderer } from '../components/organisms/UISlotRenderer';
 import { useEventBus } from '../hooks/useEventBus';
 import type { OrbitalSchema, EntityData, ResolvedTraitBinding } from '@almadar/core';
 import { useResolvedSchema } from './useResolvedSchema';
-import { collectEmbeddedTraits } from './embedded-traits';
+import { collectEmbeddedTraits, collectTraitRefsFromResolvedTrait } from './embedded-traits';
 import { convertFnFormLambdasInProps } from './fn-form-lambda';
 import { useTraitStateMachine } from './useTraitStateMachine';
 import { buildOrbitalsByTrait, type OrbitalsByTraitSchema } from './orbitalsByTrait';
@@ -344,7 +344,7 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavi
   /** Offline-preview persistence layer. */
   persistence?: PersistenceAdapter;
 }) {
-  const { traits, allEntities, ir } = useResolvedSchema(schema as Parameters<typeof useResolvedSchema>[0], pageName);
+  const { traits, allEntities, allTraits, ir } = useResolvedSchema(schema as Parameters<typeof useResolvedSchema>[0], pageName);
 
   // Gap #13: orbitals are bound to pages, so trait subscriptions must be
   // route-scoped. Pre-fix, this branch collected traits from every page on
@@ -361,26 +361,58 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavi
   // orbital isolation is now enforced at both subscription and dispatch
   // layers.
   const allPageTraits = useMemo<ResolvedTraitBinding[]>(() => {
-    // If a specific page was navigated to, use its traits only.
-    if (pageName && traits.length > 0) return traits;
-    // For single-page schemas the resolved traits are already the right set.
-    if (!ir?.pages || ir.pages.size <= 1) return traits;
-    // Initial load with multiple pages: pick the first page's traits.
-    // The schema's first `page` declaration is the canonical default
-    // landing page, mirroring the compiled shell's `<Route index>`.
-    const firstPage = ir.pages.values().next().value;
-    if (!firstPage) return traits;
-    const firstPageTraits: ResolvedTraitBinding[] = [];
-    const seen = new Set<string>();
-    for (const binding of firstPage.traits) {
-      const name = binding.trait.name;
-      if (name && !seen.has(name)) {
-        seen.add(name);
-        firstPageTraits.push(binding);
+    // Resolve the page's directly-composed trait bindings.
+    let base: ResolvedTraitBinding[];
+    if (pageName && traits.length > 0) {
+      base = traits;
+    } else if (!ir?.pages || ir.pages.size <= 1) {
+      // Single-page schemas: the resolved traits are already the right set.
+      base = traits;
+    } else {
+      // Initial load with multiple pages: pick the first page's traits.
+      // The schema's first `page` declaration is the canonical default
+      // landing page, mirroring the compiled shell's `<Route index>`.
+      const firstPage = ir.pages.values().next().value;
+      if (!firstPage) {
+        base = traits;
+      } else {
+        const firstPageTraits: ResolvedTraitBinding[] = [];
+        const seen = new Set<string>();
+        for (const binding of firstPage.traits) {
+          const name = binding.trait.name;
+          if (name && !seen.has(name)) {
+            seen.add(name);
+            firstPageTraits.push(binding);
+          }
+        }
+        base = firstPageTraits.length > 0 ? firstPageTraits : traits;
       }
     }
-    return firstPageTraits.length > 0 ? firstPageTraits : traits;
-  }, [ir, traits, pageName]);
+    // Append embed-routed `@trait.X` siblings (e.g. a calendar pulled into the
+    // orbital by the compiler's sibling-pull and rendered via `@trait` inside a
+    // page trait). They are NOT page bindings, so without this they'd never get
+    // a state machine — their own fetch-success (e.g. CalendarEventLoaded) would
+    // fire with no subscriber and the trait would stick in `loading`. Look each
+    // referenced sibling up in the full resolved-trait map and bind it (rebound
+    // to its resolved linkedEntity), recursively, deduped.
+    const byName = new Set(base.map((b) => b.trait.name));
+    const extra: ResolvedTraitBinding[] = [];
+    const queue = [...base];
+    while (queue.length > 0) {
+      const binding = queue.shift();
+      if (!binding) continue;
+      for (const refName of collectTraitRefsFromResolvedTrait(binding.trait)) {
+        if (byName.has(refName)) continue;
+        const rt = allTraits.get(refName);
+        if (!rt) continue;
+        byName.add(refName);
+        const sibling: ResolvedTraitBinding = { trait: rt, linkedEntity: rt.linkedEntity };
+        extra.push(sibling);
+        queue.push(sibling);
+      }
+    }
+    return extra.length > 0 ? [...base, ...extra] : base;
+  }, [ir, traits, pageName, allTraits]);
 
   // Extract orbital names from schema for server event forwarding
   const orbitalNames = useMemo(() => {

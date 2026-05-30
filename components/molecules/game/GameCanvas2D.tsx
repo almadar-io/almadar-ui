@@ -19,6 +19,10 @@ export interface GameCanvas2DProps {
   drawEvent?: string;
   /** Target frames per second */
   fps?: number;
+  /** Background image URL */
+  backgroundImage?: string;
+  /** Base URL prefix for asset URLs */
+  assetBaseUrl?: string;
   /** Additional CSS classes */
   className?: string;
 }
@@ -31,12 +35,15 @@ export function GameCanvas2D({
   tickEvent,
   drawEvent,
   fps = 60,
+  backgroundImage,
+  assetBaseUrl = '',
   className,
 }: GameCanvas2DProps) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const rafRef = React.useRef<number>(0);
   const frameRef = React.useRef(0);
   const lastTimeRef = React.useRef(0);
+  const imageCache = React.useRef<Map<string, HTMLImageElement>>(new Map());
   const emit = useEmitEvent();
 
   // Store callbacks in refs to avoid re-creating the animation loop
@@ -54,6 +61,19 @@ export function GameCanvas2D({
 
   const emitRef = React.useRef(emit);
   emitRef.current = emit;
+
+  const loadImage = React.useCallback((url: string): HTMLImageElement | null => {
+    const fullUrl = url.startsWith('http') ? url : `${assetBaseUrl}${url}`;
+    const cached = imageCache.current.get(fullUrl);
+    if (cached?.complete && cached.naturalWidth > 0) return cached;
+    if (!cached) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = fullUrl;
+      imageCache.current.set(fullUrl, img);
+    }
+    return null;
+  }, [assetBaseUrl]);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -82,6 +102,13 @@ export function GameCanvas2D({
         onTickRef.current?.(dt);
         if (tickEventRef.current) {
           emitRef.current(tickEventRef.current, { dt, frame });
+        }
+
+        if (backgroundImage) {
+          const bgImg = loadImage(backgroundImage);
+          if (bgImg) {
+            ctx.drawImage(bgImg, 0, 0, width, height);
+          }
         }
 
         onDrawRef.current?.(ctx, frame);

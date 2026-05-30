@@ -21,7 +21,7 @@
  *
  * @packageDocumentation
  */
-import type { OrbitalSchema } from '@almadar/core';
+import type { OrbitalSchema, ResolvedTrait } from '@almadar/core';
 
 /**
  * Bare-trait reference prefix. Author writes `"@trait.FilteredItemBrowse"`
@@ -72,6 +72,23 @@ function collectTraitRefsFromEffects(
       else collectTraitRefsFromValue(arg, into);
     }
   }
+}
+
+/**
+ * Collect the `@trait.X` names referenced by a single resolved trait's
+ * render-ui effects (transitions + initial + ticks). Used to pull embed-routed
+ * sibling traits into a page's state-machine binding set so their own state
+ * machines register + subscribe (otherwise their fetch-success is never heard).
+ */
+export function collectTraitRefsFromResolvedTrait(trait: ResolvedTrait): Set<string> {
+  const out = new Set<string>();
+  for (const transition of trait.transitions ?? []) {
+    collectTraitRefsFromEffects(transition.effects, out);
+  }
+  for (const tick of trait.ticks ?? []) {
+    collectTraitRefsFromEffects(tick.effects, out);
+  }
+  return out;
 }
 
 /**
