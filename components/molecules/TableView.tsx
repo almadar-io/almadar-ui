@@ -337,14 +337,24 @@ export function TableView<T extends EntityRow = EntityRow>({
   const lk = LOOKS[look];
 
   // Shared CSS-grid track template so columns line up across every row
-  // (flex-per-row sizes each row independently → misaligned columns). A
-  // leading `auto` reserves the checkbox column, a trailing `auto` the
-  // actions column. Each column's `width` is a grid track size.
+  // (flex-per-row sizes each row independently → misaligned columns). The
+  // actions track must be a FIXED size, not `auto`: each row is its own grid,
+  // so an `auto` track measures that row's own content — empty (0) in the
+  // header, wide in the body — and the `fr` data columns then split different
+  // leftover space per row, drifting the header labels off their columns. A
+  // fixed width is identical in header and body, so columns stay aligned.
   const hasActions = Boolean(itemActions && itemActions.length > 0);
+  const inlineActionCount = hasActions
+    ? (maxInlineActions != null ? Math.min(itemActions!.length, maxInlineActions) : itemActions!.length)
+    : 0;
+  const hasOverflowActions = hasActions && maxInlineActions != null && itemActions!.length > maxInlineActions;
+  const actionsTrack = hasActions
+    ? `${inlineActionCount * 6 + (hasOverflowActions ? 3 : 0)}rem`
+    : null;
   const gridTemplateColumns = [
     selectable ? 'auto' : null,
     ...colDefs.map((c) => c.width ?? 'minmax(0, 1fr)'),
-    hasActions ? 'auto' : null,
+    actionsTrack,
   ].filter(Boolean).join(' ');
 
   // ── Header row ──────────────────────────────────────────────────
@@ -447,7 +457,7 @@ export function TableView<T extends EntityRow = EntityRow>({
           })
         )}
         {itemActions && itemActions.length > 0 && (
-          <HStack gap="xs" className="flex-shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
+          <HStack gap="xs" className="justify-end flex-shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
             {(maxInlineActions != null ? itemActions.slice(0, maxInlineActions) : itemActions).map((action, i) => (
               <Button
                 key={i}
