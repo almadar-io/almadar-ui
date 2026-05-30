@@ -30,6 +30,7 @@ import { Icon } from '../atoms/Icon';
 import { ProgressBar } from '../atoms/ProgressBar';
 import { Divider } from '../atoms/Divider';
 import { InfiniteScrollSentinel } from '../atoms/InfiniteScrollSentinel';
+import { Menu } from './Menu';
 import { useDataDnd, type DataDndProps } from './useDataDnd';
 
 // ── Field Definition ─────────────────────────────────────────────────
@@ -83,6 +84,8 @@ export interface DataListProps<T extends EntityRow = EntityRow> extends DataDndP
   columns?: readonly DataListField[];
   /** Per-item action buttons */
   itemActions?: readonly DataListItemAction[];
+  /** Max inline action buttons before the rest collapse into a "⋯" overflow menu. Omit = all inline. */
+  maxInlineActions?: number;
   /** When set, the whole row is clickable and emits UI:{itemClickEvent} with
    *  { id, row } (action-button clicks stopPropagation so they still win). */
   itemClickEvent?: EventKey;
@@ -215,6 +218,7 @@ export function DataList<T extends EntityRow = EntityRow>({
   fields,
   columns,
   itemActions,
+  maxInlineActions,
   itemClickEvent,
   gap = 'none',
   variant = 'default',
@@ -321,6 +325,52 @@ export function DataList<T extends EntityRow = EntityRow>({
       row: itemData as ItemActionPayload['row'],
     };
     eventBus.emit(`UI:${action.event}`, payload);
+  };
+
+  // Inline up to `maxInlineActions` row actions; collapse the rest into a "⋯" overflow menu.
+  const renderItemActions = (itemData: Record<string, unknown>) => {
+    if (!itemActions || itemActions.length === 0) return null;
+    const inline = maxInlineActions != null ? itemActions.slice(0, maxInlineActions) : itemActions;
+    const overflow = maxInlineActions != null ? itemActions.slice(maxInlineActions) : [];
+    return (
+      <HStack gap="xs" className="flex-shrink-0">
+        {inline.map((action, idx) => (
+          <Button
+            key={idx}
+            variant={action.variant ?? 'ghost'}
+            size="sm"
+            onClick={handleActionClick(action, itemData)}
+            data-testid={`action-${action.event}`}
+            data-row-id={String(itemData.id)}
+            className={cn(action.variant === 'danger' && 'text-error hover:bg-error/10')}
+          >
+            {action.icon && <Icon name={action.icon} size="xs" className="mr-1" />}
+            {action.label}
+          </Button>
+        ))}
+        {overflow.length > 0 && (
+          <Menu
+            position="bottom-end"
+            trigger={
+              <Button variant="ghost" size="sm" aria-label="More actions" data-testid="action-overflow">
+                <Icon name="more-horizontal" size="xs" />
+              </Button>
+            }
+            items={overflow.map((action) => ({
+              label: action.label,
+              icon: action.icon,
+              event: action.event,
+              variant: action.variant === 'danger' ? 'danger' : 'default',
+              onClick: () =>
+                eventBus.emit(`UI:${action.event}`, {
+                  id: itemData.id as string | number,
+                  row: itemData as ItemActionPayload['row'],
+                }),
+            }))}
+          />
+        )}
+      </HStack>
+    );
   };
 
   const handleRowClick = (itemData: Record<string, unknown>) => () => {
@@ -464,29 +514,7 @@ export function DataList<T extends EntityRow = EntityRow>({
             <Box className="flex-1 min-w-0">
               {children(itemData as T, index)}
             </Box>
-            {itemActions && itemActions.length > 0 && (
-              <HStack
-                gap="xs"
-                className="flex-shrink-0"
-              >
-                {itemActions.map((action, idx) => (
-                  <Button
-                    key={idx}
-                    variant={action.variant ?? 'ghost'}
-                    size="sm"
-                    onClick={handleActionClick(action, itemData)}
-                    data-testid={`action-${action.event}`}
-                    data-row-id={String(itemData.id)}
-                    className={cn(
-                      action.variant === 'danger' && 'text-error hover:bg-error/10',
-                    )}
-                  >
-                    {action.icon && <Icon name={action.icon} size="xs" className="mr-1" />}
-                    {action.label}
-                  </Button>
-                ))}
-              </HStack>
-            )}
+            {renderItemActions(itemData)}
           </Box>
           {isCard && !isLast && (
             <Box className="mx-6 border-b border-border/40" />
@@ -586,26 +614,7 @@ export function DataList<T extends EntityRow = EntityRow>({
           </Box>
 
           {/* Actions (visible on hover) */}
-          {itemActions && itemActions.length > 0 && (
-            <HStack gap="xs" className="flex-shrink-0">
-              {itemActions.map((action, idx) => (
-                <Button
-                  key={idx}
-                  variant={action.variant ?? 'ghost'}
-                  size="sm"
-                  onClick={handleActionClick(action, itemData)}
-                  data-testid={`action-${action.event}`}
-                  data-row-id={String(itemData.id)}
-                  className={cn(
-                    action.variant === 'danger' && 'text-error hover:bg-error/10',
-                  )}
-                >
-                  {action.icon && <Icon name={action.icon} size="xs" className="mr-1" />}
-                  {action.label}
-                </Button>
-              ))}
-            </HStack>
-          )}
+          {renderItemActions(itemData)}
         </Box>
 
         {/* Divider between items (card variant) */}

@@ -30,6 +30,7 @@ import { Button } from '../atoms/Button';
 import { Icon } from '../atoms/Icon';
 import { Checkbox } from '../atoms/Checkbox';
 import { Divider } from '../atoms/Divider';
+import { Menu } from './Menu';
 import { useDataDnd, type DataDndProps } from './useDataDnd';
 
 // ── Column Definition ────────────────────────────────────────────────
@@ -85,6 +86,8 @@ export interface TableViewProps<T extends EntityRow = EntityRow> extends DataDnd
   fields?: readonly TableViewColumn[];
   /** Per-row action buttons (trailing column). */
   itemActions?: readonly TableViewItemAction[];
+  /** Max inline action buttons before the rest collapse into a "⋯" overflow menu. Omit = all inline. */
+  maxInlineActions?: number;
   /** Render a leading checkbox column. Selection changes emit `selectEvent`. */
   selectable?: boolean;
   /** Event emitted on selection change: UI:{selectEvent} with { ids, rows }. */
@@ -205,11 +208,11 @@ interface LookConfig {
 }
 
 const LOOKS: Record<NonNullable<TableViewProps['look']>, LookConfig> = {
-  dense: { rowPad: 'px-3 py-2', headPad: 'px-3 py-2', striped: false, divider: true },
-  spacious: { rowPad: 'px-5 py-4', headPad: 'px-5 py-3', striped: false, divider: true },
-  striped: { rowPad: 'px-3 py-2', headPad: 'px-3 py-2', striped: true, divider: false },
-  borderless: { rowPad: 'px-3 py-2', headPad: 'px-3 py-2', striped: false, divider: false },
-  bordered: { rowPad: 'px-3 py-2', headPad: 'px-3 py-2', striped: false, divider: true },
+  dense: { rowPad: 'px-card-md py-card-sm', headPad: 'px-card-md py-card-sm', striped: false, divider: true },
+  spacious: { rowPad: 'px-card-lg py-card-md', headPad: 'px-card-lg py-card-sm', striped: false, divider: true },
+  striped: { rowPad: 'px-card-md py-card-sm', headPad: 'px-card-md py-card-sm', striped: true, divider: false },
+  borderless: { rowPad: 'px-card-md py-card-sm', headPad: 'px-card-md py-card-sm', striped: false, divider: false },
+  bordered: { rowPad: 'px-card-md py-card-sm', headPad: 'px-card-md py-card-sm', striped: false, divider: true },
 };
 
 // ── Component ────────────────────────────────────────────────────────
@@ -219,6 +222,7 @@ export function TableView<T extends EntityRow = EntityRow>({
   columns,
   fields,
   itemActions,
+  maxInlineActions,
   selectable = false,
   selectEvent,
   selectedIds,
@@ -444,7 +448,7 @@ export function TableView<T extends EntityRow = EntityRow>({
         )}
         {itemActions && itemActions.length > 0 && (
           <HStack gap="xs" className="flex-shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
-            {itemActions.map((action, i) => (
+            {(maxInlineActions != null ? itemActions.slice(0, maxInlineActions) : itemActions).map((action, i) => (
               <Button
                 key={i}
                 variant={action.variant ?? 'ghost'}
@@ -458,6 +462,27 @@ export function TableView<T extends EntityRow = EntityRow>({
                 {action.label}
               </Button>
             ))}
+            {maxInlineActions != null && itemActions.length > maxInlineActions && (
+              <Menu
+                position="bottom-end"
+                trigger={
+                  <Button variant="ghost" size="sm" aria-label="More actions" data-testid="action-overflow">
+                    <Icon name="more-horizontal" size="xs" />
+                  </Button>
+                }
+                items={itemActions.slice(maxInlineActions).map((action) => ({
+                  label: action.label,
+                  icon: action.icon,
+                  event: action.event,
+                  variant: action.variant === 'danger' ? 'danger' : 'default',
+                  onClick: () =>
+                    eventBus.emit(`UI:${action.event}`, {
+                      id: row.id as string | number,
+                      row: row as ItemActionPayload['row'],
+                    }),
+                }))}
+              />
+            )}
           </HStack>
         )}
       </Box>

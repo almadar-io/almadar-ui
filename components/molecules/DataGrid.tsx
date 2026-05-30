@@ -28,6 +28,7 @@ import { Badge, type BadgeVariant } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
 import { Icon } from '../atoms/Icon';
 import { InfiniteScrollSentinel } from '../atoms/InfiniteScrollSentinel';
+import { Menu } from './Menu';
 import { useDataDnd, type DataDndProps } from './useDataDnd';
 
 // ── Field Definition ─────────────────────────────────────────────────
@@ -91,6 +92,8 @@ export interface DataGridProps<T extends EntityRow = EntityRow> extends DataDndP
   columns?: readonly DataGridField[];
   /** Per-item action buttons */
   itemActions?: readonly DataGridItemAction[];
+  /** Max inline primary action buttons before the rest collapse into a "⋯" overflow menu. Omit = all inline. */
+  maxInlineActions?: number;
   /** Number of columns (uses auto-fit if omitted) */
   cols?: 1 | 2 | 3 | 4 | 5 | 6;
   /** Gap between cards */
@@ -218,6 +221,7 @@ export function DataGrid<T extends EntityRow = EntityRow>({
   fields,
   columns,
   itemActions,
+  maxInlineActions,
   cols,
   gap = 'md',
   minCardWidth = 280,
@@ -591,7 +595,7 @@ export function DataGrid<T extends EntityRow = EntityRow>({
             {primaryActions.length > 0 && (
               <Box className="px-4 py-3 mt-auto border-t border-border">
                 <HStack gap="sm" className="justify-end">
-                  {primaryActions.map((action, idx) => (
+                  {(maxInlineActions != null ? primaryActions.slice(0, maxInlineActions) : primaryActions).map((action, idx) => (
                     <Button
                       key={idx}
                       variant={action.variant === 'primary' ? 'primary' : 'ghost'}
@@ -604,6 +608,26 @@ export function DataGrid<T extends EntityRow = EntityRow>({
                       {action.label}
                     </Button>
                   ))}
+                  {maxInlineActions != null && primaryActions.length > maxInlineActions && (
+                    <Menu
+                      position="bottom-end"
+                      trigger={
+                        <Button variant="ghost" size="sm" aria-label="More actions" data-testid="action-overflow">
+                          <Icon name="more-horizontal" size="xs" />
+                        </Button>
+                      }
+                      items={primaryActions.slice(maxInlineActions).map((action) => ({
+                        label: action.label,
+                        icon: action.icon,
+                        event: action.event,
+                        onClick: () =>
+                          eventBus.emit(`UI:${action.event}`, {
+                            id: itemData.id as string | number,
+                            row: itemData as ItemActionPayload['row'],
+                          }),
+                      }))}
+                    />
+                  )}
                 </HStack>
               </Box>
             )}
