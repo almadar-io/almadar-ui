@@ -804,14 +804,22 @@ export function OrbPreview({
   }, [pages, initialPagePath]);
   const [currentPage, setCurrentPage] = useState<string | undefined>(initialPageName);
 
-  // When the parent passes a different initialPagePath later (e.g.
-  // runtime-verify drives the playground via URL), keep currentPage
-  // in sync. Pure-mount initialization handled by useState above.
+  // When the parent passes a different initialPagePath later (e.g. the host
+  // syncs `?page=` on browser back/forward / popstate), follow it — INCLUDING
+  // when it clears to undefined (a back to a URL without `?page`), which must
+  // reset to the schema's first page. Keying on `initialPagePath` (not
+  // `currentPage`) means an in-preview nav click — which sets `currentPage`
+  // before its synthetic popstate round-trips the prop — does NOT trigger this
+  // effect, so there's no revert race. Previously the `initialPageName &&`
+  // guard skipped the undefined case, leaving the prior page rendered stale
+  // (or empty) after back/forward.
+  const prevInitialPagePathRef = useRef(initialPagePath);
   useEffect(() => {
-    if (initialPageName && initialPageName !== currentPage) {
+    if (prevInitialPagePathRef.current !== initialPagePath) {
+      prevInitialPagePathRef.current = initialPagePath;
       setCurrentPage(initialPageName);
     }
-  }, [initialPageName, currentPage]);
+  }, [initialPagePath, initialPageName]);
 
   // Navigate handler: when a ['navigate', '/path'] effect fires OR a
   // sidebar `<Link>` click is intercepted, find the matching page and
