@@ -94,6 +94,8 @@ export interface DataGridProps<T extends EntityRow = EntityRow> extends DataDndP
   itemActions?: readonly DataGridItemAction[];
   /** Max inline primary action buttons before the rest collapse into a "⋯" overflow menu. Omit = all inline. */
   maxInlineActions?: number;
+  /** Lay items in a single horizontally-scrolling row (kanban columns) sized to `minCardWidth` instead of a wrapping grid. */
+  scrollX?: boolean;
   /** Number of columns (uses auto-fit if omitted) */
   cols?: 1 | 2 | 3 | 4 | 5 | 6;
   /** Gap between cards */
@@ -222,6 +224,7 @@ export function DataGrid<T extends EntityRow = EntityRow>({
   columns,
   itemActions,
   maxInlineActions,
+  scrollX = false,
   cols,
   gap = 'md',
   minCardWidth = 280,
@@ -422,8 +425,14 @@ export function DataGrid<T extends EntityRow = EntityRow>({
       )}
 
       <Box
-        className={cn('grid', gapStyles[gap], colsClass, lookStyles[look], className)}
-        style={gridTemplateColumns ? { gridTemplateColumns } : undefined}
+        className={cn('grid', gapStyles[gap], scrollX ? 'grid-flow-col overflow-x-auto' : colsClass, lookStyles[look], className)}
+        style={
+          scrollX
+            ? { gridAutoFlow: 'column', gridAutoColumns: `minmax(${minCardWidth}px, 1fr)` }
+            : gridTemplateColumns
+              ? { gridTemplateColumns }
+              : undefined
+        }
       >
         {data.map((item, index) => {
           const itemData = item as Record<string, unknown>;
