@@ -46,7 +46,7 @@ export function GameCanvas2D({
   const imageCache = React.useRef<Map<string, HTMLImageElement>>(new Map());
   const emit = useEmitEvent();
 
-  // Store callbacks in refs to avoid re-creating the animation loop
+  // Store callbacks and mutable props in refs to avoid re-creating the animation loop
   const onDrawRef = React.useRef(onDraw);
   onDrawRef.current = onDraw;
 
@@ -62,8 +62,20 @@ export function GameCanvas2D({
   const emitRef = React.useRef(emit);
   emitRef.current = emit;
 
+  const assetBaseUrlRef = React.useRef(assetBaseUrl);
+  assetBaseUrlRef.current = assetBaseUrl;
+
+  const backgroundImageRef = React.useRef(backgroundImage);
+  backgroundImageRef.current = backgroundImage;
+
+  const widthRef = React.useRef(width);
+  widthRef.current = width;
+
+  const heightRef = React.useRef(height);
+  heightRef.current = height;
+
   const loadImage = React.useCallback((url: string): HTMLImageElement | null => {
-    const fullUrl = url.startsWith('http') ? url : `${assetBaseUrl}${url}`;
+    const fullUrl = url.startsWith('http') ? url : `${assetBaseUrlRef.current}${url}`;
     const cached = imageCache.current.get(fullUrl);
     if (cached?.complete && cached.naturalWidth > 0) return cached;
     if (!cached) {
@@ -73,7 +85,7 @@ export function GameCanvas2D({
       imageCache.current.set(fullUrl, img);
     }
     return null;
-  }, [assetBaseUrl]);
+  }, []);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -104,10 +116,10 @@ export function GameCanvas2D({
           emitRef.current(tickEventRef.current, { dt, frame });
         }
 
-        if (backgroundImage) {
-          const bgImg = loadImage(backgroundImage);
+        if (backgroundImageRef.current) {
+          const bgImg = loadImage(backgroundImageRef.current);
           if (bgImg) {
-            ctx.drawImage(bgImg, 0, 0, width, height);
+            ctx.drawImage(bgImg, 0, 0, widthRef.current, heightRef.current);
           }
         }
 
@@ -128,7 +140,7 @@ export function GameCanvas2D({
       running = false;
       cancelAnimationFrame(rafRef.current);
     };
-  }, [fps]);
+  }, [fps, loadImage]);
 
   return (
     <Box className={cn('inline-block', className)}>

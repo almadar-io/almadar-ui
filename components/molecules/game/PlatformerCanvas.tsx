@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useState } from 'react';
 import type { EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -98,23 +98,32 @@ export function PlatformerCanvas({
   const eventBus = useEventBus();
   const keysRef = useRef<Set<string>>(new Set());
   const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
 
-  // Load an image and cache it
+  // Load an image and cache it; trigger re-render when it loads
   const loadImage = useCallback((url: string): HTMLImageElement | null => {
     const fullUrl = url.startsWith('http') ? url : `${assetBaseUrl}${url}`;
     const cached = imageCache.current.get(fullUrl);
-    if (cached?.complete && cached.naturalWidth > 0) return cached;
+    if (cached?.complete && cached.naturalWidth > 0) {
+      if (!loadedImages.has(fullUrl)) {
+        setLoadedImages((prev) => new Set(prev).add(fullUrl));
+      }
+      return cached;
+    }
     if (!cached) {
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.src = fullUrl;
-      img.onload = () => { updateAssetStatus(fullUrl, 'loaded'); };
+      img.onload = () => {
+        setLoadedImages((prev) => new Set(prev).add(fullUrl));
+        updateAssetStatus(fullUrl, 'loaded');
+      };
       img.onerror = () => { updateAssetStatus(fullUrl, 'failed'); };
       imageCache.current.set(fullUrl, img);
       updateAssetStatus(fullUrl, 'pending');
     }
     return null;
-  }, [assetBaseUrl]);
+  }, [assetBaseUrl, loadedImages]);
 
   // -- Verification bridge: register canvas frame capture --
   useEffect(() => {
@@ -335,7 +344,7 @@ export function PlatformerCanvas({
       ctx.arc(ppx + eyeOffsetX + 7, eyeY, eyeSize, 0, Math.PI * 2);
       ctx.fill();
     }
-  });
+  }, [player, platforms, worldWidth, worldHeight, canvasWidth, canvasHeight, followCamera, bgColor, playerSprite, tileSprites, backgroundImage, assetBaseUrl, loadedImages]);
 
   return (
     <canvas
