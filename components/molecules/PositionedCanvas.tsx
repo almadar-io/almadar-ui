@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useRef, useState } from "react";
-import type { EventEmit, EventPayloadValue } from "@almadar/core";
+import type { EventEmit, EventPayloadValue, EntityCollection } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
 import { Typography, Badge, Box } from "../atoms";
@@ -29,7 +29,7 @@ export interface PositionedCanvasProps {
      * molecule narrows non-array values to `[]` and validates element shape at
      * render time via the `id` / `x` / `y` guards.
      */
-    items: readonly CanvasItem[] | EventPayloadValue;
+    items: EntityCollection<CanvasItem>;
     width?: number;
     height?: number;
     selectedId?: string | null;

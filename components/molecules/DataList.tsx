@@ -12,7 +12,7 @@
  * Uses atoms only internally: Box, VStack, HStack, Typography, Badge, Button, Icon.
  */
 import React from 'react';
-import type { EntityRow, EventKey } from "@almadar/core";
+import type { EntityRow, EntityCollection, EventKey } from "@almadar/core";
 import type { ItemActionPayload } from '@almadar/patterns';
 import { cn } from '../../lib/cn';
 import { createLogger } from '@almadar/logger';
@@ -73,7 +73,7 @@ export interface DataListProps<T extends EntityRow = EntityRow> extends DataDndP
    * entity (e.g. `CartItem`) and have the `children` render function
    * receive items of that exact shape.
    */
-  entity: T | readonly T[];
+  entity: EntityCollection<T>;
   /**
    * Field definitions for rendering each row. The pattern contract in
    * `@almadar/patterns` documents `columns` as the wire-format alias the

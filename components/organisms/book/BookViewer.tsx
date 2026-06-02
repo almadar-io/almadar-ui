@@ -28,11 +28,14 @@ import { BookTableOfContents } from './BookTableOfContents';
 import { BookChapterView } from './BookChapterView';
 import { BookNavBar } from './BookNavBar';
 import { EmptyState } from '../../molecules/EmptyState';
+import type { EntityRecord, EntityRow } from '@almadar/core';
 import type { EntityDisplayProps } from '../types';
 import type { BookData, BookChapter, BookFieldMap } from './types';
 import { mapBookData, resolveFieldMap } from './types';
 
 export interface BookViewerProps extends EntityDisplayProps {
+  /** Renders ONE record (the book), not a collection */
+  entity?: EntityRecord<EntityRow>;
   /** Initial page index (default: 0 = cover) */
   initialPage?: number;
   /** Field name translation map — a BookFieldMap object or locale key ("ar") */

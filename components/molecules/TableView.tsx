@@ -13,7 +13,7 @@
  * Icon, Checkbox, Divider.
  */
 import React from 'react';
-import type { EntityRow, EventKey } from '@almadar/core';
+import type { EntityRow, EventKey, EntityCollection } from '@almadar/core';
 import type { ItemActionPayload, SelectionChangePayload } from '@almadar/patterns';
 import { cn } from '../../lib/cn';
 import { createLogger } from '@almadar/logger';
@@ -79,7 +79,7 @@ export interface TableViewItemAction {
 
 export interface TableViewProps<T extends EntityRow = EntityRow> extends DataDndProps {
   /** Schema entity data — single record or collection. */
-  entity: T | readonly T[];
+  entity: EntityCollection<T>;
   /** Column definitions. The compiler emits `columns`; `fields` is the alias. */
   columns?: readonly TableViewColumn[];
   /** Alias for `columns`. */

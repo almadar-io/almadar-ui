@@ -7,7 +7,7 @@
  */
 
 import React, { useCallback, useState } from "react";
-import type { EventEmit } from "@almadar/core";
+import type { EventEmit, EntityCollection } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
 import { Avatar, Typography, Button, Box, Input } from "../atoms";
@@ -26,7 +26,7 @@ export interface ReplyNode {
 }
 
 export interface ReplyTreeProps {
-    nodes: ReplyNode[];
+    nodes: EntityCollection<ReplyNode>;
     maxDepth?: number;
     onVote?: (nodeId: string, vote: VoteValue) => void;
     onReply?: (parentNodeId: string) => void;
@@ -295,9 +295,10 @@ export const ReplyTree: React.FC<ReplyTreeProps> = ({
     showActions = true,
     className,
 }) => {
+    const nodeList = Array.isArray(nodes) ? nodes : nodes ? [nodes] : [];
     const [collapsedSet, setCollapsedSet] = useState<Set<string>>(() => {
         const acc = new Set<string>();
-        collectInitiallyCollapsed(nodes, acc);
+        collectInitiallyCollapsed(nodeList, acc);
         return acc;
     });
 
@@ -313,7 +314,7 @@ export const ReplyTree: React.FC<ReplyTreeProps> = ({
         });
     }, []);
 
-    if (nodes.length === 0) {
+    if (nodeList.length === 0) {
         return (
             <Box className={cn("text-sm text-muted-foreground", className)}>
                 No replies yet.
@@ -323,7 +324,7 @@ export const ReplyTree: React.FC<ReplyTreeProps> = ({
 
     return (
         <Box className={cn("flex flex-col gap-2 min-w-0", className)}>
-            {nodes.map((node) => (
+            {nodeList.map((node) => (
                 <ReplyTreeNode
                     key={node.id}
                     node={node}

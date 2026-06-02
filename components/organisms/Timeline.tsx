@@ -27,7 +27,7 @@ import { useTranslate } from "../../hooks/useTranslate";
 // via the `entity` prop typed against @almadar/core's EntityRow, and is
 // normalised into TimelineItems (icon-less) at render time; UI-shaped
 // TimelineItems come through the dedicated `items` prop.
-import type { EntityRow, EventPayload } from "@almadar/core";
+import type { EntityCollection, EntityRow, EventPayload } from "@almadar/core";
 import type { LucideIcon } from "lucide-react";
 import { Circle, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 
@@ -80,7 +80,7 @@ export interface TimelineProps {
      * TimelineItem fields (`icon`, callbacks) cannot round-trip through the
      * event bus, so decorative stories that need them pass `items` directly.
      */
-    entity?: EntityRow | readonly EntityRow[];
+    entity?: EntityCollection<EntityRow>;
     /** Timeline title */
     title?: string;
     /** Timeline items */

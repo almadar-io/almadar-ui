@@ -8,7 +8,7 @@
  * Shows a drop indicator line at the target position during drag.
  */
 import React, { useCallback } from 'react';
-import type { EventKey, EventPayload, EventPayloadValue } from "@almadar/core";
+import type { EntityCollection, EventKey, EventPayload, EventPayloadValue } from "@almadar/core";
 import { cn } from '../../lib/cn';
 import { useEventBus } from '../../hooks/useEventBus';
 import { useDragReorder } from '../../hooks/useDragReorder';
@@ -20,7 +20,7 @@ import { Icon } from '../atoms/Icon';
 const EMPTY_ITEMS: never[] = [];
 
 export interface SortableListProps<T extends EventPayloadValue = EventPayload> {
-  items: T[];
+  items: EntityCollection<T>;
   renderItem: (item: T, index: number) => React.ReactNode;
   reorderEvent: EventKey;
   reorderPayload?: EventPayload;
@@ -37,7 +37,7 @@ function useSafeEventBus() {
 }
 
 function SortableListInner<T extends EventPayloadValue = EventPayload>({
-  items: initialItems = EMPTY_ITEMS as T[],
+  items: initialItemsProp = EMPTY_ITEMS as T[],
   renderItem,
   reorderEvent,
   reorderPayload,
@@ -45,6 +45,8 @@ function SortableListInner<T extends EventPayloadValue = EventPayload>({
   className,
 }: SortableListProps<T>) {
   const eventBus = useSafeEventBus();
+
+  const initialItems = Array.isArray(initialItemsProp) ? initialItemsProp : initialItemsProp ? [initialItemsProp] : [];
 
   const handleReorder = useCallback(
     (fromIndex: number, toIndex: number, item: T) => {

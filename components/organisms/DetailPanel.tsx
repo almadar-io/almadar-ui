@@ -9,7 +9,7 @@
  */
 
 import React, { useCallback, Suspense, lazy } from "react";
-import type { EventPayload } from "@almadar/core";
+import type { EventPayload, EntityRecord, EntityRow } from "@almadar/core";
 import type { ItemActionPayload } from "@almadar/patterns";
 import {
   Calendar,
@@ -279,6 +279,8 @@ function buildFieldTypeMap(fields: readonly FieldDef[] | undefined): Record<stri
 }
 
 export interface DetailPanelProps extends EntityDisplayProps {
+  /** RECORD-cardinality override: renders ONE record (see body collapse below). */
+  entity?: EntityRecord<EntityRow>;
   title?: string;
   subtitle?: string;
   status?: {

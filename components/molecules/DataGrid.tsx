@@ -12,7 +12,7 @@
  * Uses atoms only internally: Box, VStack, HStack, Typography, Badge, Button, Icon.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import type { EntityRow, EventKey } from '@almadar/core';
+import type { EntityRow, EventKey, EntityCollection } from '@almadar/core';
 import type { ItemActionPayload, SelectionChangePayload } from '@almadar/patterns';
 import { cn } from '../../lib/cn';
 import { createLogger } from '@almadar/logger';
@@ -80,8 +80,14 @@ export interface DataGridProps<T extends EntityRow = EntityRow> extends DataDndP
    * without widening. The generic `T` lets consumers pass a narrower
    * entity (e.g. `CartItem`) and have the `children` render function
    * receive cards typed to that exact shape.
+   *
+   * Declared as the pattern's data INLET via `EntityCollection<T>` (the inlet
+   * half of the circuit, symmetric with the `EventKey` outlet props below):
+   * pattern-sync tags it `kind:"entity", cardinality:"collection"` so consumers
+   * bind the domain entity without name-matching the prop. Structurally still
+   * `T | readonly T[]` — see the brand's doc.
    */
-  entity: T | readonly T[];
+  entity: EntityCollection<T>;
   /**
    * Field definitions for rendering each card. The pattern contract in
    * `@almadar/patterns` documents `columns` as the wire-format alias the

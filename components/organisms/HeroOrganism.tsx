@@ -18,10 +18,12 @@ import { useTranslate } from '../../hooks/useTranslate';
 import { HeroSection } from '../molecules/HeroSection';
 import { LoadingState } from '../molecules/LoadingState';
 import { ErrorState } from '../molecules/ErrorState';
+import type { EntityRecord } from '@almadar/core';
 import type { EntityDisplayProps } from './types';
 import type { HeroEntity } from './marketing-types';
 
 export interface HeroOrganismProps extends EntityDisplayProps<HeroEntity> {
+  entity?: EntityRecord<HeroEntity>;
   children?: React.ReactNode;
 }
 

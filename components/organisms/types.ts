@@ -8,7 +8,7 @@
  * This is the ONE allowed exception — documented here.
  */
 
-import type { EntityRow } from '@almadar/core';
+import type { EntityRow, EntityInlet } from '@almadar/core';
 
 // ── Event Name Constants ──────────────────────────────────────────────
 
@@ -75,7 +75,7 @@ export interface EntityDisplayProps<T extends EntityRow = EntityRow> {
    * extend `EntityRow`. They surface `EntityDisplayProps<T>` constraint errors.
    * Tracked as a Phase 7 follow-up in `docs/Almadar_Entity_V2_Plan.md` §10.
    */
-  entity?: T | readonly T[];
+  entity?: EntityInlet<T>;
   /** Additional CSS classes */
   className?: string;
   /** Loading state indicator */

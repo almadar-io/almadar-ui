@@ -7,7 +7,7 @@
  * Composes DayCell and TimeSlotCell atoms into a 7-day grid.
  */
 import React, { useMemo, useCallback, useEffect, useRef, useState } from "react";
-import type { EventEmit, EventPayload } from "@almadar/core";
+import type { EventEmit, EventPayload, EntityCollection } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
@@ -40,7 +40,7 @@ export interface CalendarGridProps {
   /** Time slot labels (defaults to 09:00-17:00) */
   timeSlots?: string[];
   /** Events to display on the grid */
-  events?: CalendarEvent[];
+  events?: EntityCollection<CalendarEvent>;
   /** Called when a time slot is clicked */
   onSlotClick?: (day: Date, time: string) => void;
   /** Called when a day header is clicked */
@@ -169,6 +169,7 @@ export function CalendarGrid({
   swipeRightEvent,
   dayWindow = 'auto',
 }: CalendarGridProps): React.JSX.Element {
+  const evs = Array.isArray(events) ? events : events ? [events] : [];
   const eventBus = useEventBus();
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resolvedWeekStart = useMemo(
@@ -239,7 +240,7 @@ export function CalendarGrid({
 
   const eventsForDayCount = useCallback(
     (day: Date): number =>
-      events.filter(
+      evs.filter(
         (ev) => new Date(ev.startTime).toDateString() === day.toDateString(),
       ).length,
     [events],
@@ -377,7 +378,7 @@ export function CalendarGrid({
 
               {/* Day cells */}
               {visibleDays.map((day) => {
-                const slotEvents = events.filter((ev) =>
+                const slotEvents = evs.filter((ev) =>
                   eventInSlot(ev, day, time),
                 );
                 const isToday =
