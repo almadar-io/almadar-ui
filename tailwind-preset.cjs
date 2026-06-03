@@ -242,6 +242,8 @@ module.exports = {
   'w-[480px]',
   'w-[640px]',
   'will-change-[opacity,transform]',
+  'z-[1000]',
+  'z-[1001]',
   'z-[60]',
 ],
   theme: {

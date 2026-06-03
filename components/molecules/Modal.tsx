@@ -7,6 +7,7 @@
  */
 
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { EventEmit } from "@almadar/core";
 import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
@@ -140,7 +141,7 @@ export const Modal: React.FC<ModalProps> = ({
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || typeof document === "undefined") return null;
 
   const handleClose = () => {
     if (closeEvent) eventBus.emit(`UI:${closeEvent}`, {});
@@ -153,12 +154,14 @@ export const Modal: React.FC<ModalProps> = ({
     }
   };
 
-  return (
+  // Portal to <body> so the dialog escapes any ancestor stacking/overflow
+  // context (sticky sidebars, transformed panes) and overlays the whole app.
+  return createPortal(
     <>
       <Overlay
         isVisible={isOpen}
         onClick={handleOverlayClick}
-        className="z-40"
+        className="z-[1000]"
       />
 
       {/* Desktop: dialog positioned in upper third. Mobile (<640px):
@@ -166,7 +169,7 @@ export const Modal: React.FC<ModalProps> = ({
           top inset. */}
       <Box
         className={cn(
-          "fixed inset-0 z-50 pointer-events-none",
+          "fixed inset-0 z-[1001] pointer-events-none",
           "flex items-start justify-center px-4 pb-4 pt-[10vh]",
           "max-sm:items-stretch max-sm:p-0 max-sm:pt-0",
         )}
@@ -272,7 +275,8 @@ export const Modal: React.FC<ModalProps> = ({
           )}
         </Dialog>
       </Box>
-    </>
+    </>,
+    document.body,
   );
 };
 

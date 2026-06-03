@@ -195,7 +195,7 @@ export interface CodeBlockProps {
   showLanguageBadge?: boolean;
   /** Maximum height before scrolling */
   maxHeight?: string;
-  /** Enable JSON-style code folding (default: true for json/orb) */
+  /** Enable brace-based code folding of multi-line `{}`/`[]` blocks (default: true). */
   foldable?: boolean;
   /** Additional CSS classes */
   className?: string;
@@ -311,7 +311,10 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     }, [errorLines]);
 
     // ── Fold state ──
-    const isFoldable = foldableProp ?? (language === 'orb' || language === 'json');
+    // Folding is brace-based (language-agnostic): any language with multi-line
+    // `{}`/`[]` blocks gets collapse/expand gutters by default. Languages with
+    // no such blocks yield zero fold regions, so this is a no-op for them.
+    const isFoldable = foldableProp ?? true;
     const [collapsed, setCollapsed] = useState<Set<number>>(() => new Set());
 
     const foldRegions = useMemo(
