@@ -341,6 +341,8 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     collapsedRef.current = collapsed;
     const foldStartMapRef = useRef(foldStartMap);
     foldStartMapRef.current = foldStartMap;
+    const hiddenLinesRef = useRef(hiddenLines);
+    hiddenLinesRef.current = hiddenLines;
 
     const toggleFold = useCallback((lineNum: number) => {
       setCollapsed((prev) => {
@@ -475,6 +477,70 @@ export const CodeBlock = React.memo<CodeBlockProps>(
         eventBus.emit('UI:COPY_CODE', { language, success: false });
       }
     };
+
+    // Selection-copy: when the selection spans collapsed (folded) lines, the
+    // DOM only holds the `… N lines` summary plus the visible lines, so a plain
+    // copy loses the folded content. Reconstruct the selected line range from
+    // the original `code` (fully expanded) instead. Untouched when the range
+    // has no hidden lines, so partial in-line selections copy verbatim.
+    const handleSelectionCopy = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
+      if (hiddenLinesRef.current.size === 0) return;
+      const sel = typeof window !== 'undefined' ? window.getSelection() : null;
+      if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+      const lineOf = (node: Node | null): number | null => {
+        const start = node instanceof HTMLElement ? node : node?.parentElement ?? null;
+        const lineEl = start?.closest('[data-line]') as HTMLElement | null;
+        if (!lineEl) return null;
+        const n = parseInt(lineEl.getAttribute('data-line') ?? '', 10);
+        return Number.isNaN(n) ? null : n;
+      };
+      const range = sel.getRangeAt(0);
+      let a = lineOf(range.startContainer);
+      let b = lineOf(range.endContainer);
+      // Endpoints can land on a container (e.g. select-all) rather than inside a
+      // line — fall back to the min/max line the selection actually intersects.
+      if (a === null || b === null) {
+        const container = codeRef.current;
+        if (!container) return;
+        let min = Infinity, max = -Infinity;
+        container.querySelectorAll('[data-line]').forEach((el) => {
+          if (!sel.containsNode(el, true)) return;
+          const n = parseInt(el.getAttribute('data-line') ?? '', 10);
+          if (!Number.isNaN(n)) { min = Math.min(min, n); max = Math.max(max, n); }
+        });
+        if (min === Infinity) return;
+        a = a ?? min;
+        b = b ?? max;
+      }
+      if (a > b) [a, b] = [b, a];
+      // A folded region is represented by its (visible) start line plus the
+      // `… N lines` summary; the body lines are hidden below it. The selection
+      // "touches" folded content if it covers a hidden line OR a collapsed
+      // start line. When it does, expand the range over every collapsed region
+      // it reaches (fixpoint, so nested folds are covered) and emit the
+      // original — fully-expanded — slice. Otherwise leave the copy verbatim.
+      let touchesFold = false;
+      for (let i = a; i <= b; i++) {
+        if (hiddenLinesRef.current.has(i) || (foldStartMapRef.current.has(i) && collapsedRef.current.has(i))) {
+          touchesFold = true;
+          break;
+        }
+      }
+      if (!touchesFold) return;
+      let changed = true;
+      while (changed) {
+        changed = false;
+        foldStartMapRef.current.forEach((region, start) => {
+          if (start >= a && start <= b && collapsedRef.current.has(start) && region.end > b) {
+            b = region.end;
+            changed = true;
+          }
+        });
+      }
+      const full = code.split('\n').slice(a, b + 1).join('\n');
+      e.clipboardData.setData('text/plain', full);
+      e.preventDefault();
+    }, [code]);
 
     const hasHeader = showLanguageBadge || showCopyButton;
 
@@ -624,6 +690,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
         ) : (
           <div
             ref={scrollRef}
+            onCopy={handleSelectionCopy}
             style={{
               flex: 1,
               minHeight: 0,
