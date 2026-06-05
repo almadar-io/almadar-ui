@@ -136,6 +136,14 @@ export interface SlotContent {
   sourceTrait?: string;
   /** Stable node ID from the schema pattern tree (for edit mode overlay targeting) */
   nodeId?: string;
+  /** Slot this content was rendered into (= RenderUIConfig.target) — contextual-edit address. */
+  slot?: string;
+  /** Transition event key that produced this render (raw, as fired). */
+  transitionEvent?: string;
+  /** State the trait was in when this render fired (the from-state). */
+  fromState?: string;
+  /** linkedEntity of the source trait — contextual-edit address. */
+  entity?: string;
 }
 
 /**
@@ -158,6 +166,12 @@ export interface RenderUIConfig {
   onDismiss?: () => void;
   /** Source trait name */
   sourceTrait?: string;
+  /** Transition event key that produced this render (raw, as fired). */
+  transitionEvent?: string;
+  /** State the trait was in when this render fired (the from-state). */
+  fromState?: string;
+  /** linkedEntity of the source trait. */
+  entity?: string;
 }
 
 /**
@@ -435,6 +449,10 @@ export function useUISlotManager(): UISlotManager {
         animation: config.animation ?? 'fade',
         onDismiss: config.onDismiss,
         sourceTrait: config.sourceTrait,
+        slot: config.target,
+        transitionEvent: config.transitionEvent,
+        fromState: config.fromState,
+        entity: config.entity,
       };
 
       // Set auto-dismiss timer if specified

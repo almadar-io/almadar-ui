@@ -961,6 +961,7 @@ function renderPatternChildren(
   parentId = "root",
   parentPath = "root",
   sourceTrait?: string,
+  orbCtx?: { slot?: string; transitionEvent?: string; fromState?: string; entity?: string },
 ): React.ReactNode {
   if (children === undefined || children === null) return null;
 
@@ -1036,8 +1037,11 @@ function renderPatternChildren(
       nodeId: child._id,
       // Inherit sourceTrait from the parent slot so nested patterns
       // (e.g. form-section inside a stack) can resolve entityDef via
-      // the trait's linkedEntity for form-field enrichment.
+      // the trait's linkedEntity for form-field enrichment. The orbCtx
+      // (slot/transition/state/entity) propagates the same way so every
+      // nested node carries a complete contextual-edit address.
       ...(sourceTrait !== undefined && { sourceTrait }),
+      ...(orbCtx ?? {}),
     };
 
     return (
@@ -1274,7 +1278,12 @@ function SlotContentRenderer({
     // sourceTrait and form enrichment skips for every nested form.
     const myPath = patternPath ?? 'root';
     const renderedChildren = hasChildren
-      ? renderPatternChildren(childrenConfig, onDismiss, content.id, myPath, content.sourceTrait)
+      ? renderPatternChildren(childrenConfig, onDismiss, content.id, myPath, content.sourceTrait, {
+          slot: content.slot,
+          transitionEvent: content.transitionEvent,
+          fromState: content.fromState,
+          entity: content.entity,
+        })
       : undefined;
 
     // Function-typed children come from the upstream fn-form lambda
@@ -1369,6 +1378,13 @@ function SlotContentRenderer({
         data-pattern-path={myPath}
         data-pattern-type={content.pattern}
         data-accepts-children={acceptsChildren ? 'true' : undefined}
+        data-orb-trait={content.sourceTrait}
+        data-orb-slot={content.slot}
+        data-orb-transition={content.transitionEvent}
+        data-orb-state={content.fromState}
+        data-orb-entity={content.entity}
+        data-orb-path={myPath}
+        data-orb-pattern={content.pattern}
       >
         {renderedChildren !== undefined ? (
           <PatternComponent {...finalProps}>{renderedChildren}</PatternComponent>
@@ -1387,6 +1403,13 @@ function SlotContentRenderer({
       data-id={content.id}
       data-node-id={content.nodeId}
       data-source-trait={content.sourceTrait}
+      data-orb-trait={content.sourceTrait}
+      data-orb-slot={content.slot}
+      data-orb-transition={content.transitionEvent}
+      data-orb-state={content.fromState}
+      data-orb-entity={content.entity}
+      data-orb-path={patternPath ?? 'root'}
+      data-orb-pattern={content.pattern}
     >
       {(content.props.children as React.ReactNode) ?? (
         <Box className="p-4 text-sm text-muted-foreground border border-dashed border-border rounded">

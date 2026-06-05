@@ -257,7 +257,12 @@ export function useTraitStateMachine(
      * inlines atom views as JSX inside the layout's pattern.
      */
     const flushSlot = useCallback(
-        (traitName: string, slot: string, patterns: SlotPatternEntry[]): void => {
+        (
+            traitName: string,
+            slot: string,
+            patterns: SlotPatternEntry[],
+            source?: { event?: string; state?: string; entity?: string },
+        ): void => {
             const slots = uiSlotsRef.current;
             const embedded = embeddedTraitsRef.current;
             if (patterns.length === 0) {
@@ -290,6 +295,9 @@ export function useTraitStateMachine(
                     props,
                     priority: 0,
                     animation: 'fade',
+                    transitionEvent: source?.event,
+                    fromState: source?.state,
+                    entity: source?.entity,
                 });
                 return;
             }
@@ -304,6 +312,9 @@ export function useTraitStateMachine(
                 pattern: patternType as string,
                 props,
                 sourceTrait: traitName,
+                transitionEvent: source?.event,
+                fromState: source?.state,
+                entity: source?.entity,
             });
         },
         [],
@@ -516,7 +527,11 @@ export function useTraitStateMachine(
         // routing, so it's the only thing we forward.
         void slotSource;
         for (const [slot, patterns] of pendingSlots) {
-            flushSlot(binding.trait.name, slot, patterns);
+            flushSlot(binding.trait.name, slot, patterns, {
+                event: `tick:${tick.name}`,
+                state: currentState,
+                entity: binding.linkedEntity,
+            });
         }
     }, [flushSlot]);
 
@@ -900,7 +915,11 @@ export function useTraitStateMachine(
                             transition: `${result.previousState}->${result.newState}`,
                             cleared: patterns.length === 0,
                         });
-                        flushSlot(traitName, slot, patterns);
+                        flushSlot(traitName, slot, patterns, {
+                            event: eventKey,
+                            state: result.previousState,
+                            entity: binding.linkedEntity,
+                        });
                     }
                 } catch (error: unknown) {
                     stateLog.error('transition:effect-error', {
