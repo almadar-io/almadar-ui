@@ -13,7 +13,9 @@ import { stdBrowse } from '@almadar/std/behaviors/functions';
 // std-wizard-form (molecule) inline.
 import { stdList } from '@almadar/std/behaviors/functions';
 import { stdConfirmation } from '@almadar/std/behaviors/functions';
-import { stdTimer } from '@almadar/std/behaviors/functions';
+// stdTimer was cut from @almadar/std. Use stdList instead — same CRUD-shaped
+// params (entityName/fields/persistence/pagePath) so the story schema stays a
+// valid 3-orbital OrbitalSchema.
 import { schemaToFlowGraph } from './avl-flow-converter';
 import { parseOrbitalLevel, parseTraitLevel } from '../../organisms/avl/avl-schema-parser';
 
@@ -54,7 +56,7 @@ export const CLINIC_SCHEMA: OrbitalSchema = {
 /**
  * Task manager schema: 3 orbitals for a richer multi-module story.
  * - TaskOrbital (std-browse): task list
- * - TimerOrbital (std-timer): countdown timer
+ * - FocusTimer (std-list): focus session list
  * - ArchiveOrbital (std-confirmation): archive confirmation
  */
 export const TASK_SCHEMA: OrbitalSchema = {
@@ -73,7 +75,7 @@ export const TASK_SCHEMA: OrbitalSchema = {
       ],
       persistence: 'persistent',
     }),
-    stdTimer({
+    stdList({
       entityName: 'FocusTimer',
       fields: [
         { name: 'label', type: 'string' },

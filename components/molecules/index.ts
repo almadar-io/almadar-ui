@@ -22,6 +22,18 @@ export { Menu, type MenuProps, type MenuItem } from './Menu';
 export { Modal, type ModalProps, type ModalSize } from './Modal';
 export { Pagination, type PaginationProps } from './Pagination';
 export { Popover, type PopoverProps } from './Popover';
+export {
+  Coachmark,
+  useAnchorRect,
+  type CoachmarkProps,
+  type CoachmarkPlacement,
+  type CoachmarkAnchor,
+} from './Coachmark';
+export {
+  OnboardingSpotlight,
+  type OnboardingSpotlightProps,
+  type SpotlightStep,
+} from './OnboardingSpotlight';
 export { RelationSelect, type RelationSelectProps, type RelationOption } from './RelationSelect';
 export { SearchInput, type SearchInputProps } from './SearchInput';
 export { SidePanel, type SidePanelProps } from './SidePanel';
