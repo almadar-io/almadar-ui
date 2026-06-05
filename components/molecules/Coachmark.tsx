@@ -41,6 +41,13 @@ export interface CoachmarkProps {
   secondaryLabel?: string;
   /** Render a pulsing beacon dot over the anchor (keystone hints). */
   showBeacon?: boolean;
+  /**
+   * If the anchor can't be resolved, render the card centered in the viewport
+   * instead of hiding it. Guarantees the card (and its dismiss/skip) is always
+   * reachable — used by OnboardingSpotlight so a missing anchor never traps the
+   * user behind a dimmed backdrop. Default false: a missing anchor hides the card.
+   */
+  fallbackCentered?: boolean;
   className?: string;
 }
 
@@ -145,11 +152,14 @@ export const Coachmark: React.FC<CoachmarkProps> = ({
   onSecondary,
   secondaryLabel,
   showBeacon = false,
+  fallbackCentered = false,
   className,
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   const rect = useAnchorRect(anchor, open);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+  const centered = open && !rect && fallbackCentered;
 
   useLayoutEffect(() => {
     if (!open || !rect || !cardRef.current) {
@@ -163,9 +173,28 @@ export const Coachmark: React.FC<CoachmarkProps> = ({
     setPos(placeCard(placement, rect, size));
   }, [open, rect, placement, children, title]);
 
-  if (!open || !rect || typeof document === "undefined") return null;
+  // Escape always dismisses — a coach-mark must never trap focus or the screen.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent): void => {
+      if (e.key === "Escape") onDismiss();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onDismiss]);
+
+  if (!open || typeof document === "undefined") return null;
+  // No anchor and no centered fallback → render nothing (don't trap behind any
+  // backdrop a parent may have drawn).
+  if (!rect && !centered) return null;
 
   const hasFooter = Boolean(onPrimary || onSecondary);
+
+  const cardStyle: React.CSSProperties = centered
+    ? { top: "50%", left: "50%", transform: "translate(-50%, -50%)" }
+    : pos
+      ? { top: pos.top, left: pos.left }
+      : { top: -9999, left: -9999 };
 
   const card = (
     <Box
@@ -179,10 +208,10 @@ export const Coachmark: React.FC<CoachmarkProps> = ({
       aria-label={title}
       className={cn(
         "fixed z-50 max-w-xs w-72 transition-opacity duration-150",
-        pos ? "opacity-100" : "opacity-0",
+        centered || pos ? "opacity-100" : "opacity-0",
         className,
       )}
-      style={pos ? { top: pos.top, left: pos.left } : { top: -9999, left: -9999 }}
+      style={cardStyle}
     >
       <button
         type="button"
@@ -220,7 +249,7 @@ export const Coachmark: React.FC<CoachmarkProps> = ({
     </Box>
   );
 
-  const beacon = showBeacon ? (
+  const beacon = showBeacon && rect ? (
     <div
       className="fixed z-50 pointer-events-none"
       style={{

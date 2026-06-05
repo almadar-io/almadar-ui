@@ -76,6 +76,7 @@ export const OnboardingSpotlight: React.FC<OnboardingSpotlightProps> = ({
         open
         anchor={step.anchor}
         placement={step.placement ?? "bottom"}
+        fallbackCentered
         title={step.title}
         onDismiss={onSkip}
         onSecondary={onSkip}
