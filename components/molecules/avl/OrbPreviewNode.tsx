@@ -20,6 +20,7 @@ import type {
   Trait,
   Transition,
   Effect,
+  EditFocus,
   EntityData,
   EntityRow,
   EventPayloadField,
@@ -442,15 +443,14 @@ function buildTransitionSchema(
 // Selection highlight styles (injected once)
 // ---------------------------------------------------------------------------
 
+// NOTE: hover/selection outlines are NOT done with CSS `outline` on
+// `[data-pattern]`. Those wrappers are `display:contents` (no generated box),
+// so `outline` paints nothing and `getBoundingClientRect()` is 0×0. The
+// visible highlight is a JS-positioned overlay (see component) sized to the
+// union of the wrapper's rendered children. CSS here only sets the cursor.
 const SELECTION_STYLES = `
-  .orb-preview-live [data-pattern]:hover {
-    outline: 2px dashed var(--color-primary);
-    outline-offset: 1px;
+  .orb-preview-live [data-pattern] {
     cursor: pointer;
-  }
-  .orb-preview-live [data-pattern].pattern-selected {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 1px;
   }
   .orb-preview-live.drag-active [data-accepts-children="true"] {
     outline: 2px dashed var(--color-primary);
@@ -470,6 +470,81 @@ const SELECTION_STYLES = `
 `;
 
 // ---------------------------------------------------------------------------
+// Selection / hover overlay geometry
+// ---------------------------------------------------------------------------
+
+interface RectLike {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Absolute (viewport) union box of `el`. A `[data-pattern]` wrapper is
+ * `display:contents`, so its own `getBoundingClientRect()` is 0×0 — we union
+ * its rendered descendants' boxes instead (recursing through any nested
+ * contents wrappers) to get the real painted bounds.
+ */
+function absUnion(el: Element): { top: number; left: number; right: number; bottom: number } | null {
+  const own = el.getBoundingClientRect();
+  if (own.width > 0 || own.height > 0) {
+    return { top: own.top, left: own.left, right: own.right, bottom: own.bottom };
+  }
+  let r: { top: number; left: number; right: number; bottom: number } | null = null;
+  for (const child of Array.from(el.children)) {
+    const box = absUnion(child);
+    if (!box) continue;
+    r = r
+      ? {
+          top: Math.min(r.top, box.top),
+          left: Math.min(r.left, box.left),
+          right: Math.max(r.right, box.right),
+          bottom: Math.max(r.bottom, box.bottom),
+        }
+      : box;
+  }
+  return r;
+}
+
+/** `el`'s painted bounds expressed relative to `container`'s top-left. */
+function rectRelativeTo(el: Element, container: Element): RectLike | null {
+  const u = absUnion(el);
+  if (!u) return null;
+  const base = container.getBoundingClientRect();
+  return { top: u.top - base.top, left: u.left - base.left, width: u.right - u.left, height: u.bottom - u.top };
+}
+
+/**
+ * Build an `EditFocus` from a clicked `[data-pattern]` element's `data-orb-*`
+ * address (emitted by UISlotRenderer) plus the node's own orbital name. This
+ * feeds the studio chatbox's contextual-edit flow via `UI:ELEMENT_SELECTED`.
+ */
+function buildFocus(el: HTMLElement, orbitalName: string): EditFocus | null {
+  if (!orbitalName) return null;
+  const path = el.getAttribute('data-orb-path') ?? el.getAttribute('data-pattern-path');
+  const patternType = el.getAttribute('data-orb-pattern') ?? el.getAttribute('data-pattern');
+  const trait = el.getAttribute('data-orb-trait') ?? el.getAttribute('data-source-trait');
+  const focus: EditFocus = {
+    level: 'node',
+    orbital: orbitalName,
+    label: patternType ?? trait ?? 'element',
+  };
+  if (path !== null) focus.path = path;
+  if (trait !== null) focus.trait = trait;
+  if (patternType !== null) focus.patternType = patternType;
+  const transition = el.getAttribute('data-orb-transition');
+  if (transition !== null) focus.transition = transition;
+  const state = el.getAttribute('data-orb-state');
+  if (state !== null) focus.state = state;
+  const slot = el.getAttribute('data-orb-slot');
+  if (slot !== null) focus.slot = slot;
+  const entity = el.getAttribute('data-orb-entity');
+  if (entity !== null) focus.entity = entity;
+  return focus;
+}
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -478,10 +553,17 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   const screenSize = useContext(ScreenSizeContext);
   const preset = SCREEN_SIZE_PRESETS[screenSize];
   const { select } = useContext(PatternSelectionContext);
+  const eventBus = useEventBus();
   const contentRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
   const handleMouseEnter = useCallback(() => setHovered(true), []);
   const handleMouseLeave = useCallback(() => setHovered(false), []);
+
+  // Contextual-edit selection/hover overlays (sized to the union of the
+  // clicked/hovered element's rendered children; see rectRelativeTo).
+  const [selectedRect, setSelectedRect] = useState<RectLike | null>(null);
+  const [hoverRect, setHoverRect] = useState<RectLike | null>(null);
+  const lastHoverElRef = useRef<Element | null>(null);
 
   const role = data.stateRole ?? 'default';
   const colors = ROLE_COLORS[role] ?? ROLE_COLORS.default;
@@ -535,17 +617,19 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
 
     const target = e.target as HTMLElement;
     const patternEl = target.closest('[data-pattern]') as HTMLElement | null;
+    const container = contentRef.current;
 
     // Clear previous selection highlights
-    contentRef.current?.querySelectorAll('.pattern-selected').forEach(el => {
+    container?.querySelectorAll('.pattern-selected').forEach(el => {
       el.classList.remove('pattern-selected');
     });
 
-    if (patternEl) {
+    if (patternEl && container) {
       patternEl.classList.add('pattern-selected');
-
-      const nodeRect = contentRef.current?.getBoundingClientRect();
-      const elRect = patternEl.getBoundingClientRect();
+      // Union of rendered children — the wrapper itself is display:contents
+      // (0×0 own rect), so its own getBoundingClientRect is useless.
+      const rect = rectRelativeTo(patternEl, container);
+      setSelectedRect(rect);
 
       select({
         patternType: patternEl.getAttribute('data-pattern') ?? 'unknown',
@@ -557,19 +641,44 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
         patternId: patternEl.getAttribute('data-pattern-path') ?? undefined,
         sourceTrait: patternEl.getAttribute('data-source-trait') ?? undefined,
         nodeData: data,
-        rect: nodeRect ? {
-          top: elRect.top - nodeRect.top,
-          left: elRect.left - nodeRect.left,
-          width: elRect.width,
-          height: elRect.height,
-        } : undefined,
+        rect: rect ?? undefined,
       });
-    } else {
-      select(null);
-    }
-  }, [data, select]);
 
-  const eventBus = useEventBus();
+      // Feed the studio chatbox's contextual-edit flow with the element's
+      // address. The node knows its own orbital — more reliable than a
+      // client-side trait→orbital lookup.
+      const focus = buildFocus(patternEl, data.orbitalName);
+      if (focus) eventBus.emit('UI:ELEMENT_SELECTED', { focus: { ...focus } });
+    } else {
+      setSelectedRect(null);
+      select(null);
+      eventBus.emit('UI:ELEMENT_SELECTED', { focus: null });
+    }
+  }, [data, select, eventBus]);
+
+  // Hover overlay — track the nearest [data-pattern] under the cursor.
+  const handleContentMouseMove = useCallback((e: React.MouseEvent) => {
+    const container = contentRef.current;
+    if (!container) return;
+    const el = (e.target as HTMLElement).closest('[data-pattern]') as HTMLElement | null;
+    if (el === lastHoverElRef.current) return;
+    lastHoverElRef.current = el;
+    setHoverRect(el ? rectRelativeTo(el, container) : null);
+  }, []);
+
+  const handleContentMouseLeave = useCallback(() => {
+    lastHoverElRef.current = null;
+    setHoverRect(null);
+  }, []);
+
+  // Drop stale overlays whenever the rendered schema changes (post-edit
+  // re-render moves elements; a stale rect would float over the wrong spot).
+  useEffect(() => {
+    setSelectedRect(null);
+    setHoverRect(null);
+    lastHoverElRef.current = null;
+  }, [orbitalSchema]);
+
   const [dragActive, setDragActive] = useState(false);
 
   // Listen for drag start/end from PatternPalette to toggle container highlighting
@@ -832,9 +941,48 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
           droppable. */}
       <Box
         ref={setContentRef}
-        className={`orb-preview-live nodrag${dragActive || l2IsOver ? ' drag-active' : ''}`}
+        className={`orb-preview-live nodrag relative${dragActive || l2IsOver ? ' drag-active' : ''}`}
         onClick={handleContentClick}
+        onMouseMove={handleContentMouseMove}
+        onMouseLeave={handleContentMouseLeave}
       >
+        {/* Hover + selection overlays. Positioned over the element's painted
+            bounds (the [data-pattern] wrapper is display:contents, so CSS
+            outline on it paints nothing — this overlay is the highlight). */}
+        {hoverRect && (
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              pointerEvents: 'none',
+              top: hoverRect.top,
+              left: hoverRect.left,
+              width: hoverRect.width,
+              height: hoverRect.height,
+              outline: '2px dashed var(--color-primary)',
+              outlineOffset: '1px',
+              borderRadius: '2px',
+              zIndex: 20,
+            }}
+          />
+        )}
+        {selectedRect && (
+          <div
+            aria-hidden
+            style={{
+              position: 'absolute',
+              pointerEvents: 'none',
+              top: selectedRect.top,
+              left: selectedRect.left,
+              width: selectedRect.width,
+              height: selectedRect.height,
+              outline: '2px solid var(--color-primary)',
+              outlineOffset: '1px',
+              borderRadius: '2px',
+              zIndex: 21,
+            }}
+          />
+        )}
         {orbitalSchema ? (
           // L1 and L2 both auto-grow with content. L2's `buildTransitionSchema`
           // rewrites portal slots (modal/drawer/overlay/center) to `main`, so

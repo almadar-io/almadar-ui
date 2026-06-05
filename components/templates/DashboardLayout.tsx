@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "../../lib/cn";
 import type { LucideIcon } from "lucide-react";
@@ -163,6 +163,30 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   };
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+
+  // Responsive sidebar is driven by a JS-measured container width (ResizeObserver
+  // on the layout root) rather than Tailwind container-query classes. The
+  // open/close + desktop-vs-mobile decision then uses React state + inline
+  // styles, so dismissing the drawer works in ANY consumer regardless of whether
+  // their CSS build emits `@container`/`@lg/dashboard:*`/`-translate-x-full`
+  // utilities. (Studio mobile/tablet preview still works — the container shrinks,
+  // the observer fires.) `< 1024px` mirrors the `lg` breakpoint.
+  const layoutRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const el = layoutRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? el.clientWidth;
+      setIsMobile(w < 1024);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  // Leaving mobile (e.g. preview resized up) shouldn't leave a stale open drawer.
+  useEffect(() => {
+    if (!isMobile && sidebarOpen) setSidebarOpen(false);
+  }, [isMobile, sidebarOpen]);
   const location = useLocation();
   // Resolution order: explicit prop > runtime context > router pathname.
   // The studio preview wraps the playground with `CurrentPagePathProvider`
@@ -194,19 +218,16 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const isTopNav = layoutMode === "topnav";
 
   return (
-    <HStack
-      gap="none"
-      // `@container/dashboard` makes the layout root a CSS Container so
-      // descendants can use `@lg:` / `@md:` / `@sm:` prefixes that
-      // measure THIS container's width, not the viewport's. This is
-      // what makes the Studio's "mobile" / "tablet" preview toggle
-      // actually change the layout (otherwise media queries see the
-      // full browser viewport and stay in desktop mode).
-      className="@container/dashboard min-h-screen w-full bg-background dark:bg-background items-stretch"
+    <Box
+      ref={layoutRef}
+      // `@container/dashboard` is kept for descendant grid components that opt
+      // into container queries; the sidebar's own responsiveness is JS-driven
+      // (see isMobile above) so it never depends on those classes being emitted.
+      className="@container/dashboard min-h-screen w-full bg-background dark:bg-background flex flex-row items-stretch"
     >
-      {showSidebar && sidebarOpen && (
+      {showSidebar && isMobile && sidebarOpen && (
         <Box
-          className="fixed inset-0 bg-foreground/50 dark:bg-foreground/70 z-20 @lg/dashboard:hidden"
+          className="fixed inset-0 bg-foreground/50 dark:bg-foreground/70 z-20"
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -217,11 +238,23 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           as="aside"
           className={cn(
             "z-30 w-64 flex-shrink-0 bg-card dark:bg-card border-r border-border dark:border-border",
-            "fixed inset-y-0 left-0 @lg/dashboard:static @lg/dashboard:translate-x-0 @lg/dashboard:h-auto",
-            "transform transition-transform duration-200 ease-in-out",
             "flex flex-col",
-            sidebarOpen ? "translate-x-0" : "-translate-x-full",
           )}
+          // Position + slide driven by inline styles (not Tailwind transform /
+          // container-query classes) so the drawer reliably opens/closes in any
+          // consumer. Desktop: static, in-flow. Mobile: fixed off-canvas drawer.
+          style={
+            isMobile
+              ? {
+                  position: "fixed",
+                  top: 0,
+                  bottom: 0,
+                  left: 0,
+                  transform: sidebarOpen ? "translateX(0)" : "translateX(-100%)",
+                  transition: "transform 200ms ease-in-out",
+                }
+              : { position: "static", transform: "none" }
+          }
         >
           {/* Sidebar header */}
           <HStack
@@ -249,13 +282,15 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 {appName}
               </Typography>
             </Link>
-            <Button
-              variant="ghost"
-              className="@lg/dashboard:hidden p-2 rounded-md hover:bg-muted dark:hover:bg-muted text-muted-foreground dark:text-muted-foreground"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <AlmadarIcon name="x" className="h-5 w-5" />
-            </Button>
+            {isMobile && (
+              <Button
+                variant="ghost"
+                className="p-2 rounded-md hover:bg-muted dark:hover:bg-muted text-muted-foreground dark:text-muted-foreground"
+                onClick={() => setSidebarOpen(false)}
+              >
+                <AlmadarIcon name="x" className="h-5 w-5" />
+              </Button>
+            )}
           </HStack>
 
           {/* Navigation */}
@@ -296,10 +331,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               className="h-full px-3 @sm/dashboard:px-4 gap-2 @sm/dashboard:gap-4"
             >
               {/* Mobile menu button — only in sidebar mode. */}
-              {showSidebar && (
+              {showSidebar && isMobile && (
                 <Button
                   variant="ghost"
-                  className="@lg/dashboard:hidden p-2 rounded-md hover:bg-muted dark:hover:bg-muted text-muted-foreground dark:text-muted-foreground touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  className="p-2 rounded-md hover:bg-muted dark:hover:bg-muted text-muted-foreground dark:text-muted-foreground touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
                   onClick={() => setSidebarOpen(true)}
                   aria-label="Open sidebar"
                 >
@@ -522,7 +557,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           </Box>
         )}
       </VStack>
-    </HStack>
+    </Box>
   );
 };
 
