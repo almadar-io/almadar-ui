@@ -527,17 +527,21 @@ export const CodeBlock = React.memo<CodeBlockProps>(
         }
       }
       if (!touchesFold) return;
+      // Expand the end over every collapsed region the selection reaches.
+      // `b` is non-null here, but reassigning it inside the closure below would
+      // widen it back to `number | null` for TS — use a dedicated number local.
+      let endLine = b;
       let changed = true;
       while (changed) {
         changed = false;
         foldStartMapRef.current.forEach((region, start) => {
-          if (start >= a && start <= b && collapsedRef.current.has(start) && region.end > b) {
-            b = region.end;
+          if (start >= a && start <= endLine && collapsedRef.current.has(start) && region.end > endLine) {
+            endLine = region.end;
             changed = true;
           }
         });
       }
-      const full = code.split('\n').slice(a, b + 1).join('\n');
+      const full = code.split('\n').slice(a, endLine + 1).join('\n');
       e.clipboardData.setData('text/plain', full);
       e.preventDefault();
     }, [code]);
