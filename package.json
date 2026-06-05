@@ -169,7 +169,7 @@
     "three": "^0.160.0"
   },
   "devDependencies": {
-    "@almadar/eslint-plugin": ">=2.3.0",
+    "@almadar/eslint-plugin": "^2.8.2",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.0",
     "@react-three/postprocessing": "3.0.4",
