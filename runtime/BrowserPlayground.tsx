@@ -136,6 +136,13 @@ export function BrowserPlayground({
       initialPagePath={initialPagePath}
       height={height}
       className={className}
+      // BrowserPlayground is always a sandboxed in-process preview embedded in
+      // a host (studio canvas / preview tab). Its bus must stay context-local
+      // and must NOT clobber the host's global event bus — otherwise a host
+      // component that falls back to the global (e.g. a canvas node bundled
+      // from @almadar/ui/avl, with no matching React context) would emit into
+      // this sandbox instead of the studio.
+      isolated
     />
   );
 }

@@ -684,6 +684,13 @@ export interface OrbPreviewProps {
    * to walk DealCreate, NoteCompose, etc. on their owning pages.
    */
   initialPagePath?: string;
+  /**
+   * Sandbox mode: the preview's event bus stays context-local and does NOT
+   * register as the global bus. Set when embedded inside a host app (e.g. the
+   * studio canvas) so preview events don't clobber the host's global bus.
+   * Default false (standalone previews own the global bridge).
+   */
+  isolated?: boolean;
 }
 
 /**
@@ -708,6 +715,7 @@ export function OrbPreview({
   serverUrl,
   transport,
   initialPagePath,
+  isolated = false,
 }: OrbPreviewProps): React.ReactElement {
   if (serverUrl && transport) {
     throw new Error('OrbPreview accepts serverUrl OR transport, not both');
@@ -910,7 +918,7 @@ export function OrbPreview({
           </Typography>
         </Box>
       )}
-      <OrbitalProvider initialData={effectiveMockData} skipTheme verification>
+      <OrbitalProvider initialData={effectiveMockData} skipTheme verification isolated={isolated}>
         <UISlotProvider>
           <SchemaRunner
             schema={parsedSchema}

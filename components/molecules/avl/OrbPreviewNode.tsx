@@ -13,7 +13,7 @@
  */
 
 import React, { useMemo, useState, useCallback, useContext, createContext, useRef, useEffect } from 'react';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { Handle, Position, useReactFlow, type NodeProps } from '@xyflow/react';
 import type {
   OrbitalSchema,
   OrbitalDefinition,
@@ -507,12 +507,24 @@ function absUnion(el: Element): { top: number; left: number; right: number; bott
   return r;
 }
 
-/** `el`'s painted bounds expressed relative to `container`'s top-left. */
-function rectRelativeTo(el: Element, container: Element): RectLike | null {
+/**
+ * `el`'s painted bounds in `container`'s LOCAL (pre-transform) coordinate
+ * space. getBoundingClientRect returns SCREEN px — and this node lives inside
+ * ReactFlow's zoom/pan CSS transform — so the screen-space delta is divided by
+ * `zoom` to undo the transform. The overlay (a child of the same transformed
+ * container) is then re-scaled by ReactFlow to land exactly on the element.
+ */
+function rectRelativeTo(el: Element, container: Element, zoom: number): RectLike | null {
   const u = absUnion(el);
   if (!u) return null;
   const base = container.getBoundingClientRect();
-  return { top: u.top - base.top, left: u.left - base.left, width: u.right - u.left, height: u.bottom - u.top };
+  const z = zoom > 0 ? zoom : 1;
+  return {
+    top: (u.top - base.top) / z,
+    left: (u.left - base.left) / z,
+    width: (u.right - u.left) / z,
+    height: (u.bottom - u.top) / z,
+  };
 }
 
 /**
@@ -554,6 +566,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   const preset = SCREEN_SIZE_PRESETS[screenSize];
   const { select } = useContext(PatternSelectionContext);
   const eventBus = useEventBus();
+  const reactFlow = useReactFlow();
   const contentRef = useRef<HTMLDivElement>(null);
   const [hovered, setHovered] = useState(false);
   const handleMouseEnter = useCallback(() => setHovered(true), []);
@@ -624,11 +637,12 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       el.classList.remove('pattern-selected');
     });
 
+    const zoom = reactFlow.getViewport().zoom;
     if (patternEl && container) {
       patternEl.classList.add('pattern-selected');
       // Union of rendered children — the wrapper itself is display:contents
       // (0×0 own rect), so its own getBoundingClientRect is useless.
-      const rect = rectRelativeTo(patternEl, container);
+      const rect = rectRelativeTo(patternEl, container, zoom);
       setSelectedRect(rect);
 
       select({
@@ -654,7 +668,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       select(null);
       eventBus.emit('UI:ELEMENT_SELECTED', { focus: null });
     }
-  }, [data, select, eventBus]);
+  }, [data, select, eventBus, reactFlow]);
 
   // Hover overlay — track the nearest [data-pattern] under the cursor.
   const handleContentMouseMove = useCallback((e: React.MouseEvent) => {
@@ -663,8 +677,8 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
     const el = (e.target as HTMLElement).closest('[data-pattern]') as HTMLElement | null;
     if (el === lastHoverElRef.current) return;
     lastHoverElRef.current = el;
-    setHoverRect(el ? rectRelativeTo(el, container) : null);
-  }, []);
+    setHoverRect(el ? rectRelativeTo(el, container, reactFlow.getViewport().zoom) : null);
+  }, [reactFlow]);
 
   const handleContentMouseLeave = useCallback(() => {
     lastHoverElRef.current = null;

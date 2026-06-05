@@ -67,6 +67,13 @@ export interface OrbitalProviderProps {
    * Default: true in development, false in production.
    */
   verification?: boolean;
+
+  /**
+   * Sandbox mode: the event bus stays context-local and does NOT register as
+   * the global bus. Set for studio previews embedded in a host app (so the
+   * preview's events don't clobber the host's global bus). Default false.
+   */
+  isolated?: boolean;
 }
 
 // ============================================================================
@@ -131,6 +138,7 @@ export function OrbitalProvider({
   initialData,
   suspense = false,
   verification,
+  isolated = false,
 }: OrbitalProviderProps): React.ReactElement {
   const suspenseConfig: SuspenseConfig = useMemo(
     () => ({ enabled: suspense }),
@@ -138,7 +146,7 @@ export function OrbitalProvider({
   );
 
   const inner = (
-    <EventBusProvider debug={debug}>
+    <EventBusProvider debug={debug} isolated={isolated}>
       <VerificationProvider enabled={verification}>
         <SelectionProvider debug={debug}>
           <SuspenseConfigProvider config={suspenseConfig}>

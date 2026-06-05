@@ -57,6 +57,15 @@ interface EventBusProviderProps {
    * from `@almadar/logger` to control verbosity. Kept for API compatibility.
    */
   debug?: boolean;
+  /**
+   * When true, this provider does NOT register itself as the global event bus
+   * (`window.__kflowEventBus`). Use for SANDBOXED subtrees — e.g. a studio
+   * preview (`BrowserPlayground`) embedded inside a host app — whose internal
+   * events must stay context-local and must NOT clobber the host's global bus.
+   * Children still get this bus via React context; only the global bridge is
+   * skipped. Default false (root/standalone providers own the global bridge).
+   */
+  isolated?: boolean;
 }
 
 /**
@@ -111,7 +120,7 @@ function captureSubscriberTag(listener: EventListener): string {
     return 'unknown';
 }
 
-export function EventBusProvider({ children }: EventBusProviderProps) {
+export function EventBusProvider({ children, isolated = false }: EventBusProviderProps) {
   // Store listeners by event type
   const listenersRef = useRef<Map<string, Set<EventListener>>>(new Map());
 
@@ -284,12 +293,20 @@ export function EventBusProvider({ children }: EventBusProviderProps) {
   // Components in other packages (like shell components) use their own useEventBus hook
   // which checks for a global event bus. Setting it here allows shell components to
   // emit events to the same bus that the main app's trait state machine listens to.
+  //
+  // ISOLATED providers (e.g. a studio preview sandbox embedded in a host app)
+  // skip this — registering would clobber the host's global bus, so a host
+  // component that falls back to the global (e.g. one bundled from a different
+  // @almadar/ui entry, with no matching React context) would emit into the
+  // sandbox instead of the host. The sandbox's children still get this bus via
+  // context above; only the global bridge is withheld.
   useEffect(() => {
+    if (isolated) return;
     setGlobalEventBus(contextValue);
     return () => {
       setGlobalEventBus(null);
     };
-  }, [contextValue]);
+  }, [contextValue, isolated]);
 
   return (
     <EventBusContext.Provider value={contextValue}>
