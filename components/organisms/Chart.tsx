@@ -96,9 +96,17 @@ export interface ChartProps {
     title?: string;
     /** Chart subtitle / description */
     subtitle?: string;
-    /** Chart type (legacy alias for `look`). */
+    /**
+     * Chart type (legacy alias for `look`).
+     * @synonyms chart style, graph type, bar chart, line chart, pie chart, area chart, donut chart, scatter plot, histogram
+     * @tier domain
+     */
     chartType?: ChartType;
-    /** Layer 2 visual treatment — drives the chart sub-renderer (bar / line / pie / etc.). */
+    /**
+     * Layer 2 visual treatment — drives the chart sub-renderer (bar / line / pie / etc.).
+     * @synonyms chart style, render style, visual treatment
+     * @tier presentation
+     */
     look?: ChartLook;
     /** Multi-series data */
     series?: readonly ChartSeries[];
