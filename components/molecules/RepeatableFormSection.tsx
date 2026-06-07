@@ -24,14 +24,14 @@ import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../hooks/useEventBus";
 import { useTranslate } from "../../hooks/useTranslate";
 
-export interface RepeatableItem {
+export type RepeatableItem = {
   id: string;
   /** State in which this item was added (for audit trails) */
   addedInState?: string;
   /** Timestamp when item was added */
   addedAt?: string;
   [key: string]: unknown;
-}
+};
 
 export interface RepeatableFormSectionProps {
   /** Section type identifier */

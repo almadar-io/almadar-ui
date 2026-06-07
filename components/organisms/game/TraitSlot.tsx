@@ -33,7 +33,7 @@ import type { UiError } from '../../atoms/types';
 // =============================================================================
 
 /** Data shape for a slot's equipped item */
-export interface SlotItemData {
+export type SlotItemData = {
     id: string;
     name: string;
     category: string;
@@ -44,7 +44,7 @@ export interface SlotItemData {
     iconUrl?: string;
     /** Optional state machine for tooltip display */
     stateMachine?: TraitStateMachineDefinition;
-}
+};
 
 /** Event Contract:
  *  Emits: UI:CLICK

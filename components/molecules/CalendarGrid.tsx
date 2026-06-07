@@ -19,13 +19,16 @@ import { TimeSlotCell } from "../atoms/TimeSlotCell";
 import { useEventBus } from "../../hooks/useEventBus";
 import { useSwipeGesture } from "../../hooks/useSwipeGesture";
 
-export interface CalendarEvent {
+// Data-transfer shape crossing the event bus — declared as a `type` alias (not
+// `interface`) so it carries an implicit index signature and is assignable to
+// the bus's `EventPayloadValue` payload (a named interface never is).
+export type CalendarEvent = {
   id: string;
   title: string;
   startTime: string | Date;
   endTime?: string | Date;
   color?: string;
-}
+};
 
 /**
  * Number of day columns rendered at once. Matches the responsiveness-

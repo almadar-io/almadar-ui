@@ -12,11 +12,11 @@ import { HStack, Box, Typography, Select, Button } from '../../../../atoms';
 import { cn } from '../../../../../lib/cn';
 import { useTranslate } from '../../../../../hooks/useTranslate';
 
-export interface RuleDefinition {
+export type RuleDefinition = {
     id: string;
     whenEvent: string;
     thenAction: string;
-}
+};
 
 export interface RuleOption {
     value: string;

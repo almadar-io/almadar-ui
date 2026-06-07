@@ -24,7 +24,7 @@ import { cn } from '../../lib/cn';
 // Type-only import is erased at compile time and never pulls leaflet at runtime.
 import type { LeafletMouseEvent } from 'leaflet';
 
-export interface MapMarkerData {
+export type MapMarkerData = {
   /** Unique marker identifier */
   id: string | number;
   /** Latitude */
@@ -35,7 +35,7 @@ export interface MapMarkerData {
   label?: string;
   /** Optional category for styling */
   category?: string;
-}
+};
 
 export interface MapRouteWaypoint {
   lat: number;

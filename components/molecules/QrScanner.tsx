@@ -12,11 +12,11 @@ import { useEventBus } from "../../hooks/useEventBus";
  * `EventPayloadValue` map) so the result is directly assignable to a
  * render-ui dispatched event payload without re-shaping.
  */
-export interface QrScanResult extends EventPayload {
+export type QrScanResult = EventPayload & {
   text: string;
   format: string;
   timestamp: number;
-}
+};
 
 export interface QrScannerProps {
   onScan?: (result: QrScanResult) => void;

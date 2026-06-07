@@ -42,7 +42,7 @@ import { useTranslate } from "../../hooks/useTranslate";
 import type { EntityDisplayProps } from "./types";
 import { EntityDisplayEvents } from "./types";
 
-export interface ListItem {
+export type ListItem = {
   id: string;
   title?: string;
   description?: string;
@@ -59,7 +59,7 @@ export interface ListItem {
   completed?: boolean;
   [key: string]: unknown;
   _fields?: Record<string, unknown>;
-}
+};
 
 export interface SchemaItemAction {
   label: string;

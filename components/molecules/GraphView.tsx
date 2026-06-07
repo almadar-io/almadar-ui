@@ -13,13 +13,13 @@ import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react'
 import { cn } from '../../lib/cn';
 import { Box } from '../atoms';
 
-export interface GraphViewNode {
+export type GraphViewNode = {
   id: string;
   label?: string;
   color?: string;
   size?: number;
   group?: string;
-}
+};
 
 export interface GraphViewEdge {
   source: string;

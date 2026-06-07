@@ -42,7 +42,7 @@ export interface IsometricTile {
 // =============================================================================
 
 /** A unit positioned on the isometric grid */
-export interface IsometricUnit {
+export type IsometricUnit = {
     /** Unique unit identifier */
     id: string;
     /** Current grid position (2D format) */
@@ -80,14 +80,14 @@ export interface IsometricUnit {
     previousPosition?: { x: number; y: number };
     /** Elevation offset for 3D rendering */
     elevation?: number;
-}
+};
 
 // =============================================================================
 // Feature Types
 // =============================================================================
 
 /** A map feature (resource, building, portal, etc.) */
-export interface IsometricFeature {
+export type IsometricFeature = {
     /** Optional unique identifier (required for 3D rendering) */
     id?: string;
     /** Grid x coordinate */
@@ -106,7 +106,7 @@ export interface IsometricFeature {
     color?: string;
     /** Elevation offset for 3D rendering */
     elevation?: number;
-}
+};
 
 // =============================================================================
 // Camera Types

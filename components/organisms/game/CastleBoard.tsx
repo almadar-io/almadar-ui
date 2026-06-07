@@ -46,7 +46,7 @@ export interface CastleEntity {
 }
 
 /** Context exposed to render-prop slots */
-export interface CastleSlotContext {
+export type CastleSlotContext = {
     /** Currently hovered tile coordinates (null when not hovering) */
     hoveredTile: { x: number; y: number } | null;
     /** Feature that sits on the hovered tile, if any */
@@ -61,7 +61,7 @@ export interface CastleSlotContext {
     tileToScreen: (x: number, y: number) => { x: number; y: number };
     /** Canvas scale */
     scale: number;
-}
+};
 
 export interface CastleBoardProps {
     /** Castle entity data */

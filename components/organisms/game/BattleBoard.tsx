@@ -53,7 +53,7 @@ export type BattlePhase =
     | 'game_over';
 
 /** A unit participating in battle */
-export interface BattleUnit {
+export type BattleUnit = {
     id: string;
     name: string;
     unitType?: string;
@@ -79,7 +79,7 @@ export interface BattleUnit {
         states: string[];
         cooldown?: number;
     }[];
-}
+};
 
 /** Minimal tile for map generation */
 export interface BattleTile {
@@ -130,7 +130,7 @@ export interface BattleEntity {
 }
 
 /** Context exposed to render-prop slots */
-export interface BattleSlotContext {
+export type BattleSlotContext = {
     phase: BattlePhase;
     turn: number;
     selectedUnit: BattleUnit | null;
@@ -144,7 +144,7 @@ export interface BattleSlotContext {
     attackTargets: Array<{ x: number; y: number }>;
     /** Resolve screen position of a tile for overlays */
     tileToScreen: (x: number, y: number) => { x: number; y: number };
-}
+};
 
 export interface BattleBoardProps extends Omit<EntityDisplayProps, 'entity'> {
     /** Entity containing all board data */

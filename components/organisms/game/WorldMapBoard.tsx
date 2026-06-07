@@ -64,7 +64,7 @@ export interface MapHero {
 }
 
 /** A hex on the map */
-export interface MapHex {
+export type MapHex = {
     x: number;
     y: number;
     terrain: string;
@@ -72,10 +72,10 @@ export interface MapHex {
     feature?: string;
     featureData?: Record<string, unknown>;
     passable?: boolean;
-}
+};
 
 /** Context exposed to render-prop slots */
-export interface WorldMapSlotContext {
+export type WorldMapSlotContext = {
     /** Currently hovered tile */
     hoveredTile: { x: number; y: number } | null;
     /** Hex at the hovered tile */
@@ -92,7 +92,7 @@ export interface WorldMapSlotContext {
     tileToScreen: (x: number, y: number) => { x: number; y: number };
     /** Canvas scale */
     scale: number;
-}
+};
 
 /** Entity shape for the WorldMapBoard */
 export interface WorldMapEntity {
