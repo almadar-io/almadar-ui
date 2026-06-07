@@ -1324,6 +1324,25 @@ function SlotContentRenderer({
       }
     }
 
+    // Date props: a bound value arrives as its serialized string/number form,
+    // but the leaf component expects a real `Date`. Coerce at the renderer
+    // boundary — symmetric with the compiled codegen's `new Date(...)`
+    // (orbital-shell-typescript `pattern/registry.rs`) — so leaf components keep
+    // pure `Date` props on both the compiled and runtime paths.
+    if (propsSchema) {
+      for (const [propKey, propDef] of Object.entries(propsSchema)) {
+        const v = renderedProps[propKey];
+        if (
+          (typeof v === 'string' || typeof v === 'number') &&
+          propDef.types?.some(
+            (t) => t === 'date' || t === 'datetime' || t === 'timestamp',
+          )
+        ) {
+          renderedProps[propKey] = new Date(v);
+        }
+      }
+    }
+
     // Replace entity string with reactive store data. When the caller
     // already passed a pre-resolved array or single object via `entity`,
     // it flows through `renderedProps` untouched (no renderer action
