@@ -8,10 +8,18 @@ import React from 'react';
 import { HStack, VStack, Button, Typography, Icon } from '../../../atoms';
 import { Play, Pause, SkipForward, RotateCcw } from 'lucide-react';
 
+export interface SimulationParameter {
+    value: number;
+    min: number;
+    max: number;
+    step: number;
+    label: string;
+}
+
 export interface SimulationControlsProps {
     running: boolean;
     speed: number;
-    parameters: Record<string, { value: number; min: number; max: number; step: number; label: string }>;
+    parameters: Record<string, SimulationParameter>;
     onPlay: () => void;
     onPause: () => void;
     onStep: () => void;

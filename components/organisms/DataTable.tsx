@@ -102,6 +102,11 @@ export interface RowAction<T> {
   event?: string;
 }
 
+export interface DataTableEmptyAction {
+  label: string;
+  event?: string;
+}
+
 export interface DataTableProps<T extends EntityRow & { id: string | number }>
   extends EntityDisplayProps<T> {
   /** Fields to display - accepts string[] or Column[] for unified interface. Alias for columns */
@@ -122,7 +127,7 @@ export interface DataTableProps<T extends EntityRow & { id: string | number }>
   emptyIcon?: LucideIcon;
   emptyTitle?: string;
   emptyDescription?: string;
-  emptyAction?: { label: string; event?: string };
+  emptyAction?: DataTableEmptyAction;
 
   // Selection
   selectable?: boolean;

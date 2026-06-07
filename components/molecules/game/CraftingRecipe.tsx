@@ -20,11 +20,20 @@ export interface CraftingIngredient {
   available: number;
 }
 
+export interface CraftingOutput {
+  /** Icon component or emoji */
+  icon?: React.ReactNode;
+  /** Output item label */
+  label: string;
+  /** Rarity tier */
+  rarity?: string;
+}
+
 export interface CraftingRecipeProps {
   /** Input ingredients for the recipe */
   inputs: CraftingIngredient[];
   /** Output item produced by the recipe */
-  output: { icon?: React.ReactNode; label: string; rarity?: string };
+  output: CraftingOutput;
   /** Whether the player has enough ingredients to craft */
   canCraft?: boolean;
   /** Callback when the craft button is clicked */

@@ -63,6 +63,15 @@ export interface DataListItemAction {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
 }
 
+export interface DataListSwipeAction {
+  /** Button label */
+  label: string;
+  /** Lucide icon name */
+  icon?: string;
+  /** Button variant */
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+}
+
 // ── Props ────────────────────────────────────────────────────────────
 
 export interface DataListProps<T extends EntityRow = EntityRow> extends DataDndProps {
@@ -113,11 +122,11 @@ export interface DataListProps<T extends EntityRow = EntityRow> extends DataDndP
   /** Event emitted on left swipe: UI:{swipeLeftEvent} with { row } */
   swipeLeftEvent?: EventKey;
   /** Actions revealed on left swipe */
-  swipeLeftActions?: readonly { label: string; icon?: string; variant?: 'primary' | 'secondary' | 'danger' | 'ghost' }[];
+  swipeLeftActions?: readonly DataListSwipeAction[];
   /** Event emitted on right swipe: UI:{swipeRightEvent} with { row } */
   swipeRightEvent?: EventKey;
   /** Actions revealed on right swipe */
-  swipeRightActions?: readonly { label: string; icon?: string; variant?: 'primary' | 'secondary' | 'danger' | 'ghost' }[];
+  swipeRightActions?: readonly DataListSwipeAction[];
   /** Event emitted on long press: UI:{longPressEvent} with { row } */
   longPressEvent?: EventKey;
   /** Enable infinite scroll loading */

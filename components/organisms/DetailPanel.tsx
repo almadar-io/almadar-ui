@@ -278,15 +278,17 @@ function buildFieldTypeMap(fields: readonly FieldDef[] | undefined): Record<stri
   return map;
 }
 
+export interface DetailPanelStatus {
+  label: string;
+  variant?: "default" | "success" | "warning" | "danger" | "info";
+}
+
 export interface DetailPanelProps extends EntityDisplayProps {
   /** RECORD-cardinality override: renders ONE record (see body collapse below). */
   entity?: EntityRecord<EntityRow>;
   title?: string;
   subtitle?: string;
-  status?: {
-    label: string;
-    variant?: "default" | "success" | "warning" | "danger" | "info";
-  };
+  status?: DetailPanelStatus;
   avatar?: React.ReactNode;
   sections?: readonly DetailSection[];
   /** Unified actions array - first action with variant='primary' is the main action */

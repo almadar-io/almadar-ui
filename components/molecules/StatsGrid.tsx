@@ -13,8 +13,13 @@ import { SimpleGrid } from './SimpleGrid';
 import { VStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 
+export interface StatItem {
+  value: string;
+  label: string;
+}
+
 export interface StatsGridProps {
-  stats: { value: string; label: string }[];
+  stats: StatItem[];
   columns?: 2 | 3 | 4 | 6;
   className?: string;
 }

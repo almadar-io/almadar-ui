@@ -6,6 +6,12 @@ import { Box } from '../../atoms/Box';
 import { Typography } from '../../atoms/Typography';
 import { Badge } from '../../atoms/Badge';
 
+export interface HealthEffect {
+  icon: React.ReactNode;
+  label?: string;
+  variant?: 'buff' | 'debuff' | 'neutral';
+}
+
 export interface HealthPanelProps {
   /** Current health value */
   current: number;
@@ -16,7 +22,7 @@ export interface HealthPanelProps {
   /** Label shown above the bar */
   label?: string;
   /** Active status effects displayed as small badges */
-  effects?: { icon: React.ReactNode; label?: string; variant?: 'buff' | 'debuff' | 'neutral' }[];
+  effects?: HealthEffect[];
   /** Whether to display numeric HP values */
   showNumbers?: boolean;
   /** Size variant */

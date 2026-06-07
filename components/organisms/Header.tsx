@@ -36,6 +36,21 @@ const lookStyles: Record<HeaderLook, string> = {
     "py-12 [&_h1]:text-display-2 [&_h1]:font-display-bold border-b border-border",
 };
 
+export interface HeaderNavigationItem {
+  label: string;
+  href?: string;
+  onClick?: () => void;
+  icon?: LucideIcon;
+  badge?: string | number;
+  active?: boolean;
+}
+
+export interface HeaderUserAvatar {
+  src?: string;
+  alt?: string;
+  initials?: string;
+}
+
 export interface HeaderProps {
   /**
    * Logo/Brand content
@@ -55,14 +70,7 @@ export interface HeaderProps {
   /**
    * Navigation items (for desktop header variant)
    */
-  navigationItems?: Array<{
-    label: string;
-    href?: string;
-    onClick?: () => void;
-    icon?: LucideIcon;
-    badge?: string | number;
-    active?: boolean;
-  }>;
+  navigationItems?: HeaderNavigationItem[];
 
   /**
    * Show menu toggle button
@@ -99,11 +107,7 @@ export interface HeaderProps {
   /**
    * User avatar configuration
    */
-  userAvatar?: {
-    src?: string;
-    alt?: string;
-    initials?: string;
-  };
+  userAvatar?: HeaderUserAvatar;
 
   /**
    * User name (display name or email)

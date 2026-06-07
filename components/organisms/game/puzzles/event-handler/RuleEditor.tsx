@@ -18,13 +18,18 @@ export interface RuleDefinition {
     thenAction: string;
 }
 
+export interface RuleOption {
+    value: string;
+    label: string;
+}
+
 export interface RuleEditorProps {
     /** The current rule */
     rule: RuleDefinition;
     /** Available event triggers to listen for */
-    availableEvents: Array<{ value: string; label: string }>;
+    availableEvents: RuleOption[];
     /** Available actions to perform */
-    availableActions: Array<{ value: string; label: string }>;
+    availableActions: RuleOption[];
     /** Called when rule changes */
     onChange: (rule: RuleDefinition) => void;
     /** Called when rule is removed */

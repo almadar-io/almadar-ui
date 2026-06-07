@@ -40,6 +40,12 @@ export interface CodeViewerAction {
     variant?: "primary" | "secondary" | "ghost";
 }
 
+export interface CodeViewerFile {
+    label: string;
+    code: string;
+    language?: string;
+}
+
 export interface CodeViewerProps {
     /** Viewer title */
     title?: string;
@@ -64,7 +70,7 @@ export interface CodeViewerProps {
     /** Max height before scrolling */
     maxHeight?: number | string;
     /** Multiple files (tabbed view) */
-    files?: readonly { label: string; code: string; language?: string }[];
+    files?: readonly CodeViewerFile[];
     /** Actions */
     actions?: readonly CodeViewerAction[];
     /** Entity name for schema-driven auto-fetch */

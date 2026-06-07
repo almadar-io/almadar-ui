@@ -64,6 +64,11 @@ import type { UiError } from '../../atoms/types';
  *  Emits: UI:TILE_HOVER
  *  Emits: UI:TILE_LEAVE
  */
+export interface TileCoord {
+    x: number;
+    y: number;
+}
+
 export interface IsometricCanvasProps {
     /** Additional CSS classes */
     className?: string;
@@ -84,11 +89,11 @@ export interface IsometricCanvasProps {
     /** Currently selected unit ID */
     selectedUnitId?: string | null;
     /** Valid move positions (shown as pulsing green highlights) */
-    validMoves?: Array<{ x: number; y: number }>;
+    validMoves?: TileCoord[];
     /** Attack target positions (shown as pulsing red highlights) */
-    attackTargets?: Array<{ x: number; y: number }>;
+    attackTargets?: TileCoord[];
     /** Hovered tile position */
-    hoveredTile?: { x: number; y: number } | null;
+    hoveredTile?: TileCoord | null;
 
     // --- Event handlers (legacy callbacks — prefer declarative event string props below) ---
 

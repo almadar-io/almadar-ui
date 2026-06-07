@@ -31,6 +31,11 @@ export interface SchemaAction {
   disabled?: boolean;
 }
 
+export interface PageHeaderStatus {
+  label: string;
+  variant?: "default" | "success" | "warning" | "danger" | "info";
+}
+
 export interface PageHeaderProps {
   /** Page title - accepts unknown to handle generated code accessing dynamic entity data */
   title?: string | number | unknown;
@@ -43,10 +48,7 @@ export interface PageHeaderProps {
   /** Breadcrumbs */
   breadcrumbs?: readonly PageBreadcrumb[];
   /** Status badge */
-  status?: {
-    label: string;
-    variant?: "default" | "success" | "warning" | "danger" | "info";
-  };
+  status?: PageHeaderStatus;
   /** Actions array - first action with variant='primary' (or first action) is the main action */
   actions?: readonly Readonly<SchemaAction>[];
   /** Loading state indicator */

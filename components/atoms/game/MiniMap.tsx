@@ -3,11 +3,24 @@ import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import type { Rect } from '../types';
 
+export interface MiniMapTile {
+  x: number;
+  y: number;
+  color: string;
+}
+
+export interface MiniMapUnit {
+  x: number;
+  y: number;
+  color: string;
+  isPlayer?: boolean;
+}
+
 export interface MiniMapProps {
   /** Tile data: each tile renders as a 1px dot at (x,y) with the given color */
-  tiles?: { x: number; y: number; color: string }[];
+  tiles?: MiniMapTile[];
   /** Unit positions: each unit renders as a 2px dot */
-  units?: { x: number; y: number; color: string; isPlayer?: boolean }[];
+  units?: MiniMapUnit[];
   /** Canvas display width in pixels */
   width?: number;
   /** Canvas display height in pixels */

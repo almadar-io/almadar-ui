@@ -19,6 +19,13 @@ interface GameEntity {
   title?: string;
 }
 
+export interface GameControls {
+  onPlay?: () => void;
+  onPause?: () => void;
+  onReset?: () => void;
+  isPlaying?: boolean;
+}
+
 export interface GameTemplateProps extends TemplateProps<GameEntity> {
   /** Title of the game */
   title?: string;
@@ -31,12 +38,7 @@ export interface GameTemplateProps extends TemplateProps<GameEntity> {
   /** Whether the debug panel is visible */
   showDebugPanel?: boolean;
   /** Game controls */
-  controls?: {
-    onPlay?: () => void;
-    onPause?: () => void;
-    onReset?: () => void;
-    isPlaying?: boolean;
-  };
+  controls?: GameControls;
   /** Additional class name */
   className?: string;
 }

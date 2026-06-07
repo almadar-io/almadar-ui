@@ -42,6 +42,13 @@ export interface DocumentAction {
     variant?: "primary" | "secondary" | "ghost";
 }
 
+export interface DocumentItem {
+    label: string;
+    src?: string;
+    content?: string;
+    documentType?: DocumentType;
+}
+
 export interface DocumentViewerProps {
     /** Document title */
     title?: string;
@@ -66,7 +73,7 @@ export interface DocumentViewerProps {
     /** Actions */
     actions?: readonly DocumentAction[];
     /** Multiple documents (tabbed view) */
-    documents?: readonly { label: string; src?: string; content?: string; documentType?: DocumentType }[];
+    documents?: readonly DocumentItem[];
     /** Entity name for schema-driven auto-fetch */
     entity?: string;
     /** Loading state */
