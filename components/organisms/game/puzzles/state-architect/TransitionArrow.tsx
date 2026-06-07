@@ -9,12 +9,13 @@
 
 import React from 'react';
 import { cn } from '../../../../../lib/cn';
+import type { Point } from '../../../../atoms/types';
 
 export interface TransitionArrowProps {
     /** Start position (center of from-node) */
-    from: { x: number; y: number };
+    from: Point;
     /** End position (center of to-node) */
-    to: { x: number; y: number };
+    to: Point;
     /** Event label shown on the arrow */
     eventLabel: string;
     /** Guard hint shown below event */

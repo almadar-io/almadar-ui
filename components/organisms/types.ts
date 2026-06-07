@@ -9,6 +9,9 @@
  */
 
 import type { EntityRow, EntityInlet } from '@almadar/core';
+import type { UiError } from '../atoms/types';
+
+export type { UiError };
 
 // ── Event Name Constants ──────────────────────────────────────────────
 
@@ -81,7 +84,7 @@ export interface EntityDisplayProps<T extends EntityRow = EntityRow> {
   /** Loading state indicator */
   isLoading?: boolean;
   /** Error state */
-  error?: Error | null;
+  error?: UiError | null;
 
   // ── Display hints (set by trait via render-ui, never written by organism) ──
 

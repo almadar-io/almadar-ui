@@ -15,6 +15,7 @@ import { HStack, VStack } from '../atoms/Stack';
 import { Sparkline } from '../atoms/Sparkline';
 import { resolveIcon } from '../atoms/Icon';
 import { useEventBus } from '../../hooks/useEventBus';
+import type { UiError } from '../atoms/types';
 
 export type StatDisplayLook =
   | 'elevated'
@@ -75,7 +76,7 @@ export interface StatDisplayProps {
   /** Loading state */
   isLoading?: boolean;
   /** Error state */
-  error?: Error | null;
+  error?: UiError | null;
 }
 
 function formatNumber(value: unknown, format?: string): string {

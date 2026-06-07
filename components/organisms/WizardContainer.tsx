@@ -16,6 +16,7 @@ import { HStack } from "../atoms/Stack";
 import { Icon } from "../atoms/Icon";
 import { cn } from "../../lib/cn";
 import { useTranslate } from "../../hooks/useTranslate";
+import type { UiError } from '../atoms/types';
 
 /** Form field definition for wizard sections */
 export interface WizardField {
@@ -161,7 +162,7 @@ export interface WizardContainerProps {
   /** Loading state indicator */
   isLoading?: boolean;
   /** Error state */
-  error?: Error | null;
+  error?: UiError | null;
   /** Entity type name (schema-driven) */
   entity?: string;
 }

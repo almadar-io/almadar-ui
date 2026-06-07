@@ -18,6 +18,7 @@ import { Box } from '../../atoms/Box';
 import { Typography } from '../../atoms/Typography';
 import { HStack, VStack } from '../../atoms/Stack';
 import { StateIndicator, type StateStyle } from '../../atoms/game/StateIndicator';
+import type { UiError } from '../../atoms/types';
 
 // =============================================================================
 // Types
@@ -56,7 +57,7 @@ export interface TraitStateViewerProps {
     /** Loading state */
     isLoading?: boolean;
     /** Error state */
-    error?: Error | null;
+    error?: UiError | null;
     /** Entity name for schema-driven auto-fetch */
     entity?: string;
 }

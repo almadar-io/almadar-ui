@@ -17,6 +17,7 @@ import { Box } from "../atoms/Box";
 import { HStack } from "../atoms/Stack";
 import { cn } from "../../lib/cn";
 import { useTranslate } from "../../hooks/useTranslate";
+import type { UiError } from '../atoms/types';
 
 export type ConfirmDialogVariant = "danger" | "warning" | "info" | "default";
 
@@ -48,7 +49,7 @@ export interface ConfirmDialogProps {
   /** Loading state for confirm button */
   isLoading?: boolean;
   /** Error state */
-  error?: Error | null;
+  error?: UiError | null;
   /** Entity name for schema-driven auto-fetch */
   entity?: string;
   /** Additional CSS classes */

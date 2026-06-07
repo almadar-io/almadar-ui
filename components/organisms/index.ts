@@ -1,6 +1,7 @@
 // Shared organism types — base props contract for all entity-display organisms
 export {
   type EntityDisplayProps,
+  type UiError,
   EntityDisplayEvents,
   type SortPayload,
   type PaginatePayload,

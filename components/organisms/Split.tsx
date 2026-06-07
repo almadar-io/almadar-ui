@@ -7,6 +7,7 @@
 import React from 'react';
 import { cn } from '../../lib/cn';
 import { Box } from '../atoms/Box';
+import type { UiError } from '../atoms/types';
 
 export type SplitRatio = '1:1' | '1:2' | '2:1' | '1:3' | '3:1' | '1:4' | '4:1' | '2:3' | '3:2';
 export type SplitGap = 'none' | 'sm' | 'md' | 'lg' | 'xl';
@@ -35,7 +36,7 @@ export interface SplitProps {
   /** Loading state indicator */
   isLoading?: boolean;
   /** Error state */
-  error?: Error | null;
+  error?: UiError | null;
   /** Entity name for schema-driven auto-fetch */
   entity?: string;
 }

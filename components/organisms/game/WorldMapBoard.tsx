@@ -39,6 +39,7 @@ import type {
 } from './types/isometric';
 import type { ResolvedFrame } from './types/spriteAnimation';
 import { isoToScreen, TILE_WIDTH } from './utils/isometric';
+import type { UiError } from '../../atoms/types';
 
 // =============================================================================
 // Types
@@ -122,7 +123,7 @@ export interface WorldMapBoardProps {
     /** Loading state indicator */
     isLoading?: boolean;
     /** Error state */
-    error?: Error | null;
+    error?: UiError | null;
     /** World map entity data */
     entity?: WorldMapEntity | readonly WorldMapEntity[];
 

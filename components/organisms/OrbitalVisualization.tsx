@@ -19,6 +19,7 @@ import React, { useMemo } from "react";
 import { Box } from "../atoms/Box";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../lib/cn";
+import type { UiError } from '../atoms/types';
 
 // ============ Types ============
 
@@ -44,7 +45,7 @@ export interface OrbitalVisualizationProps {
   /** Loading state indicator */
   isLoading?: boolean;
   /** Error state */
-  error?: Error | null;
+  error?: UiError | null;
   /** Entity name for schema-driven auto-fetch */
   entity?: string;
 }
@@ -179,7 +180,7 @@ interface OrbitalSphereProps {
   animated: boolean;
   className?: string;
   isLoading?: boolean;
-  error?: Error | null;
+  error?: UiError | null;
   entity?: string;
 }
 
@@ -222,7 +223,7 @@ interface DumbbellOrbitalProps {
   rotation?: number;
   className?: string;
   isLoading?: boolean;
-  error?: Error | null;
+  error?: UiError | null;
   entity?: string;
 }
 
@@ -300,7 +301,7 @@ interface CloverleafOrbitalProps {
   animated: boolean;
   className?: string;
   isLoading?: boolean;
-  error?: Error | null;
+  error?: UiError | null;
   entity?: string;
 }
 

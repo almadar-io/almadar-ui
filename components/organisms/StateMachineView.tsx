@@ -40,6 +40,7 @@ import { cn } from '../../lib/cn';
 // is a nested structural type that doesn't fit EntityRow's primitive-field
 // constraint. Takes its layout directly via the `layoutData` prop.
 import { X } from 'lucide-react';
+import type { UiError } from '../atoms/types';
 
 // =============================================================================
 // Types
@@ -69,7 +70,7 @@ export interface StateMachineViewProps {
   /** Loading state indicator */
   isLoading?: boolean;
   /** Error state */
-  error?: Error | null;
+  error?: UiError | null;
   layoutData: DomLayoutData;
   /** Custom state node renderer — when provided, replaces the default circle nodes */
   renderStateNode?: (state: DomStateNode, config: VisualizerConfig) => React.ReactNode;

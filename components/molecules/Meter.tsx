@@ -14,6 +14,7 @@ import { VStack, HStack } from "../atoms/Stack";
 import { LoadingState } from "./LoadingState";
 import { ErrorState } from "./ErrorState";
 import { useEventBus } from "../../hooks/useEventBus";
+import type { UiError } from '../atoms/types';
 
 export type MeterVariant = "linear" | "radial" | "segmented";
 
@@ -56,7 +57,7 @@ export interface MeterProps {
     /** Loading state */
     isLoading?: boolean;
     /** Error state */
-    error?: Error | null;
+    error?: UiError | null;
     /** Additional CSS classes */
     className?: string;
 }

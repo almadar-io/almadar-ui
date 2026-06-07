@@ -22,6 +22,7 @@ import { Typography } from '../atoms/Typography';
 import { cn } from '../../lib/cn';
 import { useEventBus } from '../../hooks/useEventBus';
 import { useTranslate } from '../../hooks/useTranslate';
+import type { UiError } from '../atoms/types';
 // Sidebar is a pure UI navigation primitive, not a schema-entity display
 // organism. SidebarItem carries React nodes (icons) and callbacks (onClick)
 // that don't fit EntityRow's primitive-field constraint, so Sidebar does
@@ -54,7 +55,7 @@ export interface SidebarProps {
   /** Loading state indicator */
   isLoading?: boolean;
   /** Error state */
-  error?: Error | null;
+  error?: UiError | null;
   /** Logo/Brand content - can be a ReactNode or logo config */
   logo?: React.ReactNode;
   /** Logo image source */

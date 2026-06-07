@@ -7,6 +7,7 @@ import { Box } from "../atoms/Box";
 import { Typography } from "../atoms/Typography";
 import { ArrowLeft, LucideIcon } from "lucide-react";
 import { useEventBus } from "../../hooks/useEventBus";
+import type { UiError } from '../atoms/types';
 
 export interface PageBreadcrumb {
   label: string;
@@ -51,7 +52,7 @@ export interface PageHeaderProps {
   /** Loading state indicator */
   isLoading?: boolean;
   /** Error state */
-  error?: Error | null;
+  error?: UiError | null;
   /** Entity name for schema-driven auto-fetch */
   entity?: string;
   /** Tabs for sub-navigation */

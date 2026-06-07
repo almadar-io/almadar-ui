@@ -21,6 +21,7 @@ import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
 import { useEventBus } from "../../hooks/useEventBus";
 import { Eraser, Check } from "lucide-react";
+import type { UiError } from '../atoms/types';
 
 export interface SignaturePadProps {
     /** Label above the pad */
@@ -48,7 +49,7 @@ export interface SignaturePadProps {
     /** Loading state */
     isLoading?: boolean;
     /** Error state */
-    error?: Error | null;
+    error?: UiError | null;
     /** Additional CSS classes */
     className?: string;
 }

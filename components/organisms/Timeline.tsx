@@ -30,6 +30,7 @@ import { useTranslate } from "../../hooks/useTranslate";
 import type { EntityCollection, EntityRow, EventPayload } from "@almadar/core";
 import type { LucideIcon } from "lucide-react";
 import { Circle, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import type { UiError } from '../atoms/types';
 
 export type TimelineItemStatus = "complete" | "active" | "pending" | "error";
 
@@ -73,7 +74,7 @@ export interface TimelineProps {
     /** Loading state indicator */
     isLoading?: boolean;
     /** Error state */
-    error?: Error | null;
+    error?: UiError | null;
     /**
      * Schema entity data typed against @almadar/core's EntityRow. Items from
      * `entity` are normalised into `items` when `items` is omitted. UI-specific

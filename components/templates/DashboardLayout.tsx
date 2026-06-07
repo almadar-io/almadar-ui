@@ -55,6 +55,12 @@ export interface TopBarAction {
   variant?: "default" | "primary" | "danger";
 }
 
+export interface DashboardUser {
+  name: string;
+  email: string;
+  avatar?: string;
+}
+
 export interface DashboardLayoutProps {
   /** App name shown in sidebar */
   appName?: string;
@@ -64,11 +70,7 @@ export interface DashboardLayoutProps {
    *  as a navItems entry, not depend on baked-in chrome. */
   navItems?: NavItem[];
   /** Current user info (optional - auto-populated from auth context if not provided) */
-  user?: {
-    name: string;
-    email: string;
-    avatar?: string;
-  };
+  user?: DashboardUser;
   /** Header actions (extra slots beyond bell/search/theme). */
   headerActions?: React.ReactNode;
   /** Show the top-bar search box. Default `false` — opt in by setting

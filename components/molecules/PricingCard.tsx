@@ -8,6 +8,7 @@
 
 import React from 'react';
 import { cn } from '../../lib/cn';
+import type { LinkAction } from '../atoms/types';
 import { Card } from '../atoms/Card';
 import { VStack, HStack } from '../atoms/Stack';
 import { Badge } from '../atoms/Badge';
@@ -22,7 +23,7 @@ export interface PricingCardProps {
   price: string;
   description?: string;
   features: string[];
-  action: { label: string; href: string };
+  action: LinkAction;
   highlighted?: boolean;
   badge?: string;
   className?: string;

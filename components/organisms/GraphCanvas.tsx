@@ -22,6 +22,7 @@ import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
 import { useEventBus } from "../../hooks/useEventBus";
 import { Maximize2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import type { UiError } from '../atoms/types';
 
 export type GraphNode = EventPayload & {
     id: string;
@@ -77,7 +78,7 @@ export interface GraphCanvasProps {
     /** Loading state */
     isLoading?: boolean;
     /** Error state */
-    error?: Error | null;
+    error?: UiError | null;
     /** Additional CSS classes */
     className?: string;
 }

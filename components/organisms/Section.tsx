@@ -8,6 +8,7 @@ import React from 'react';
 import { cn } from '../../lib/cn';
 import { Typography } from '../atoms/Typography';
 import { Box } from '../atoms/Box';
+import type { UiError } from '../atoms/types';
 
 export type SectionPadding = 'none' | 'sm' | 'md' | 'lg' | 'xl';
 export type SectionVariant = 'default' | 'card' | 'bordered' | 'filled';
@@ -38,7 +39,7 @@ export interface SectionProps {
   /** Loading state indicator */
   isLoading?: boolean;
   /** Error state */
-  error?: Error | null;
+  error?: UiError | null;
   /** Entity name for schema-driven auto-fetch */
   entity?: string;
 }

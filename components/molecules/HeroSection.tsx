@@ -9,6 +9,7 @@
 
 import React from 'react';
 import { cn } from '../../lib/cn';
+import type { LinkAction, ImageSource } from '../atoms/types';
 import { Box } from '../atoms/Box';
 import { VStack, HStack } from '../atoms/Stack';
 import { Badge } from '../atoms/Badge';
@@ -22,10 +23,10 @@ export interface HeroSectionProps {
   title: string;
   titleAccent?: string;
   subtitle: string;
-  primaryAction?: { label: string; href: string };
-  secondaryAction?: { label: string; href: string };
+  primaryAction?: LinkAction;
+  secondaryAction?: LinkAction;
   installCommand?: string;
-  image?: { src: string; alt: string };
+  image?: ImageSource;
   imagePosition?: 'below' | 'right' | 'background';
   background?: 'dark' | 'gradient' | 'subtle';
   align?: 'center' | 'left';

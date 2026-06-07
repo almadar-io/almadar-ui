@@ -18,6 +18,7 @@ import { HStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../lib/cn";
 import { useTranslate } from "../../hooks/useTranslate";
+import type { UiError } from '../atoms/types';
 
 export type HeaderLook =
   | "hero"
@@ -152,7 +153,7 @@ export interface HeaderProps {
   /**
    * Error state (closed circuit)
    */
-  error?: Error | null;
+  error?: UiError | null;
 
   /**
    * Entity name for schema-driven auto-fetch (closed circuit)

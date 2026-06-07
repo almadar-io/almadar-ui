@@ -23,6 +23,7 @@ import { EmptyState } from "../molecules/EmptyState";
 import { Tabs, type TabItem } from "../molecules/Tabs";
 import { useEventBus } from "../../hooks/useEventBus";
 import { Copy, Check, Code, FileText, WrapText } from "lucide-react";
+import type { UiError } from '../atoms/types';
 
 export type CodeViewerMode = "code" | "diff";
 
@@ -71,7 +72,7 @@ export interface CodeViewerProps {
     /** Loading state */
     isLoading?: boolean;
     /** Error state */
-    error?: Error | null;
+    error?: UiError | null;
     /** Additional CSS classes */
     className?: string;
 }

@@ -52,6 +52,7 @@ import {
     DIAMOND_TOP_Y,
     FEATURE_COLORS,
 } from '../../organisms/game/utils/isometric';
+import type { UiError } from '../../atoms/types';
 
 // =============================================================================
 // Props
@@ -69,7 +70,7 @@ export interface IsometricCanvasProps {
     /** Loading state indicator */
     isLoading?: boolean;
     /** Error state */
-    error?: Error | null;
+    error?: UiError | null;
 
     // --- Grid data ---
     /** Array of tiles to render */

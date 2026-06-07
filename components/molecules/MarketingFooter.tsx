@@ -24,10 +24,16 @@ export interface FooterLinkColumn {
   items: FooterLinkItem[];
 }
 
+export interface FooterLogo {
+  src: string;
+  alt: string;
+  href?: string;
+}
+
 export interface MarketingFooterProps {
   columns: FooterLinkColumn[];
   copyright?: string;
-  logo?: { src: string; alt: string; href?: string };
+  logo?: FooterLogo;
   className?: string;
 }
 

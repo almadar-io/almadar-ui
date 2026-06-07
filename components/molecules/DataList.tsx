@@ -32,6 +32,7 @@ import { Divider } from '../atoms/Divider';
 import { InfiniteScrollSentinel } from '../atoms/InfiniteScrollSentinel';
 import { Menu } from './Menu';
 import { useDataDnd, type DataDndProps } from './useDataDnd';
+import type { UiError } from '../atoms/types';
 
 // ── Field Definition ─────────────────────────────────────────────────
 
@@ -104,7 +105,7 @@ export interface DataListProps<T extends EntityRow = EntityRow> extends DataDndP
   /** Loading state */
   isLoading?: boolean;
   /** Error state */
-  error?: Error | null;
+  error?: UiError | null;
   /** Enable drag-to-reorder with grip handles */
   reorderable?: boolean;
   /** Event emitted on reorder: UI:{reorderEvent} with { fromIndex, toIndex } */

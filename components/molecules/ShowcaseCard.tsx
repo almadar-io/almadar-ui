@@ -8,6 +8,7 @@
 
 import React from 'react';
 import { cn } from '../../lib/cn';
+import type { ImageSource } from '../atoms/types';
 import { Card } from '../atoms/Card';
 import { Box } from '../atoms/Box';
 import { VStack } from '../atoms/Stack';
@@ -17,7 +18,7 @@ import { Typography } from '../atoms/Typography';
 export interface ShowcaseCardProps {
   title: string;
   description?: string;
-  image: { src: string; alt: string };
+  image: ImageSource;
   href?: string;
   badge?: string;
   accentColor?: string;

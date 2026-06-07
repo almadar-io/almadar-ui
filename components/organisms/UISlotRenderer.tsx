@@ -125,6 +125,7 @@ import { COMPONENT_REGISTRY } from "./component-registry.generated";
 
 // Legacy imports kept for direct use in slot wrappers below (used by non-registry code)
 import { DataTable } from "./DataTable";
+import type { UiError } from '../atoms/types';
 // ============================================================================
 // Component Registry (auto-generated, imported from component-registry.generated.ts)
 // ============================================================================
@@ -274,7 +275,7 @@ interface UISlotComponentProps {
   className?: string;
   draggable?: boolean;
   isLoading?: boolean;
-  error?: Error | null;
+  error?: UiError | null;
   entity?: string;
   /** Compiled mode: render children directly instead of resolving from context */
   children?: React.ReactNode;
@@ -794,7 +795,7 @@ interface SlotPortalProps {
   onDismiss: () => void;
   className?: string;
   isLoading?: boolean;
-  error?: Error | null;
+  error?: UiError | null;
   entity?: string;
 }
 
@@ -935,7 +936,7 @@ interface SlotContentRendererProps {
   onDismiss: () => void;
   className?: string;
   isLoading?: boolean;
-  error?: Error | null;
+  error?: UiError | null;
   entity?: string;
   /** Schema-compatible path for WYSIWYG drop targeting (e.g., "root.children.0"). */
   patternPath?: string;
@@ -1439,7 +1440,7 @@ export interface UISlotRendererProps {
   /** Loading state indicator */
   isLoading?: boolean;
   /** Error state */
-  error?: Error | null;
+  error?: UiError | null;
   /** Entity name for schema-driven auto-fetch */
   entity?: string;
   /**

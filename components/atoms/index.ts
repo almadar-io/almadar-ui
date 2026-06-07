@@ -140,3 +140,12 @@ export { TraitFrame, type TraitFrameProps } from "./TraitFrame";
 // Game atom components
 export * from "./game";
 
+// Cross-cutting shared prop shapes
+export {
+  type UiError,
+  type LinkAction,
+  type ImageSource,
+  type Point,
+  type Rect,
+} from "./types";
+

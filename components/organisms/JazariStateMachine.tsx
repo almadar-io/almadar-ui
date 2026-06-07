@@ -40,6 +40,7 @@ import type {
   Entity as CoreEntity,
 } from '@almadar/core';
 import { isInlineTrait } from '@almadar/core';
+import type { UiError } from '../atoms/types';
 
 type SmState = CoreState;
 type SmTransition = CoreTransition;
@@ -89,7 +90,7 @@ export interface JazariStateMachineProps {
   /** Loading state indicator */
   isLoading?: boolean;
   /** Error state */
-  error?: Error | null;
+  error?: UiError | null;
   /** Full schema — extracts first trait's state machine */
   schema?: SmSchema;
   /** Or pass a single trait directly */

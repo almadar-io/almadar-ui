@@ -46,6 +46,7 @@ import {
   type SExpr,
   type EvaluationContext as SharedEvaluationContext,
 } from "@almadar/evaluator";
+import type { UiError } from '../atoms/types';
 
 /**
  * S-Expression type for conditional logic (re-export from @almadar/evaluator)
@@ -244,7 +245,7 @@ export interface FormProps extends Omit<
   /** Loading state */
   isLoading?: boolean;
   /** Error state */
-  error?: Error | null;
+  error?: UiError | null;
   /** Submit button label */
   submitLabel?: string;
   /** Cancel button label (if provided, shows cancel button) */

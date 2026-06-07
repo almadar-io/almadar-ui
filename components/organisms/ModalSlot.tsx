@@ -14,6 +14,7 @@
 import React from 'react';
 import { Modal } from '../molecules/Modal';
 import { useEventBus } from '../../hooks/useEventBus';
+import type { UiError } from '../atoms/types';
 
 export interface ModalSlotProps {
   /** Content to display in the modal */
@@ -27,7 +28,7 @@ export interface ModalSlotProps {
   /** Loading state indicator */
   isLoading?: boolean;
   /** Error state */
-  error?: Error | null;
+  error?: UiError | null;
   /** Entity name for schema-driven auto-fetch */
   entity?: string;
 }

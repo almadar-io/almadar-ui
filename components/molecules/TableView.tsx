@@ -32,6 +32,7 @@ import { Checkbox } from '../atoms/Checkbox';
 import { Divider } from '../atoms/Divider';
 import { Menu } from './Menu';
 import { useDataDnd, type DataDndProps } from './useDataDnd';
+import type { UiError } from '../atoms/types';
 
 // ── Column Definition ────────────────────────────────────────────────
 
@@ -107,7 +108,7 @@ export interface TableViewProps<T extends EntityRow = EntityRow> extends DataDnd
   /** Loading state. */
   isLoading?: boolean;
   /** Error state. */
-  error?: Error | null;
+  error?: UiError | null;
   /** Group rows under section headers by a field value. */
   groupBy?: string;
   /** Max rows before a "Show More" button. Defaults to 0 (show all). */

@@ -15,6 +15,7 @@ import React from 'react';
 import { Toast, ToastVariant } from '../molecules/Toast';
 import { Box } from '../atoms/Box';
 import { useEventBus } from '../../hooks/useEventBus';
+import type { UiError } from '../atoms/types';
 
 export interface ToastSlotProps {
   /** Content to display in the toast (message or ReactNode) */
@@ -30,7 +31,7 @@ export interface ToastSlotProps {
   /** Loading state indicator */
   isLoading?: boolean;
   /** Error state */
-  error?: Error | null;
+  error?: UiError | null;
   /** Entity name for schema-driven auto-fetch */
   entity?: string;
 }

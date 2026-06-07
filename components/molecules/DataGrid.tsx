@@ -30,6 +30,7 @@ import { Icon } from '../atoms/Icon';
 import { InfiniteScrollSentinel } from '../atoms/InfiniteScrollSentinel';
 import { Menu } from './Menu';
 import { useDataDnd, type DataDndProps } from './useDataDnd';
+import type { UiError } from '../atoms/types';
 
 // ── Field Definition ─────────────────────────────────────────────────
 
@@ -113,7 +114,7 @@ export interface DataGridProps<T extends EntityRow = EntityRow> extends DataDndP
   /** Loading state */
   isLoading?: boolean;
   /** Error state */
-  error?: Error | null;
+  error?: UiError | null;
   /** Entity field name containing an image URL for card thumbnails */
   imageField?: string;
   /** Enable multi-select with checkboxes */

@@ -43,6 +43,7 @@ import {
     getAllEffectSpriteUrls,
 } from './utils/canvasEffects';
 import { createCombatPresets } from './utils/combatPresets';
+import type { UiError } from '../../atoms/types';
 
 export type { CombatActionType } from './types/effects';
 export type { EffectAssetManifest } from './types/effects';
@@ -67,7 +68,7 @@ export interface CanvasEffectProps {
     /** Loading state indicator */
     isLoading?: boolean;
     /** Error state */
-    error?: Error | null;
+    error?: UiError | null;
 
     // --- Remote asset loading ---
     /** Sprite URL for the effect (emoji fallback mode).

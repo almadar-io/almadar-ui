@@ -31,6 +31,7 @@ import {
     ChevronRight,
     Maximize2,
 } from "lucide-react";
+import type { UiError } from '../atoms/types';
 
 export type DocumentType = "pdf" | "text" | "html" | "markdown";
 
@@ -71,7 +72,7 @@ export interface DocumentViewerProps {
     /** Loading state */
     isLoading?: boolean;
     /** Error state */
-    error?: Error | null;
+    error?: UiError | null;
     /** Additional CSS classes */
     className?: string;
 }

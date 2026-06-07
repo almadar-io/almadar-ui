@@ -14,6 +14,7 @@ import React, { useCallback } from 'react';
 import { Button } from '../../atoms';
 import { cn } from '../../../lib/cn';
 import { useGameAudioContext } from './GameAudioProvider';
+import type { UiError } from '../../atoms/types';
 
 // =============================================================================
 // Props
@@ -27,7 +28,7 @@ export interface GameAudioToggleProps {
     /** Loading state (passed through) */
     isLoading?: boolean;
     /** Error state (passed through) */
-    error?: Error | null;
+    error?: UiError | null;
     /** Entity name for schema-driven auto-fetch */
     entity?: string;
 }

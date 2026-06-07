@@ -21,6 +21,7 @@
 import React, { createContext, useContext, useEffect } from 'react';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useGameAudio, type AudioManifest, type GameAudioControls } from './hooks/useGameAudio';
+import type { UiError } from '../../atoms/types';
 
 // =============================================================================
 // Context
@@ -62,7 +63,7 @@ export interface GameAudioProviderProps {
     /** Closed-circuit props (unused, accepted for runtime compatibility) */
     className?: string;
     isLoading?: boolean;
-    error?: Error | null;
+    error?: UiError | null;
     entity?: string;
 }
 

@@ -8,6 +8,7 @@
 
 import React from 'react';
 import { cn } from '../../lib/cn';
+import type { ImageSource } from '../atoms/types';
 import { Box } from '../atoms/Box';
 import { HStack, VStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
@@ -17,7 +18,7 @@ export interface SplitSectionProps {
   title: string;
   description: string | React.ReactNode;
   bullets?: string[];
-  image?: { src: string; alt: string };
+  image?: ImageSource;
   imagePosition?: 'left' | 'right';
   background?: 'default' | 'alt';
   children?: React.ReactNode;

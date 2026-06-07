@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { Box, Typography } from '../../../../atoms';
+import { Box, Typography, type Point } from '../../../../atoms';
 import { cn } from '../../../../../lib/cn';
 
 export interface StateNodeProps {
@@ -21,7 +21,7 @@ export interface StateNodeProps {
     /** Whether this is the initial state */
     isInitial?: boolean;
     /** Position on the graph canvas */
-    position: { x: number; y: number };
+    position: Point;
     /** Click handler */
     onClick?: () => void;
     /** Additional CSS classes */

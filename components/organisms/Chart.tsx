@@ -25,6 +25,7 @@ import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
 import { useEventBus } from "../../hooks/useEventBus";
 import { useTranslate } from "../../hooks/useTranslate";
+import type { UiError } from '../atoms/types';
 
 export type ChartType =
     | "bar"
@@ -133,7 +134,7 @@ export interface ChartProps {
     /** Loading state */
     isLoading?: boolean;
     /** Error state */
-    error?: Error | null;
+    error?: UiError | null;
     /** Additional CSS classes */
     className?: string;
 }

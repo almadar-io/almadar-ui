@@ -13,10 +13,25 @@ import { Typography } from '../atoms/Typography';
 import { Button } from '../atoms/Button';
 import { Icon } from '../atoms/Icon';
 
+export interface GithubLink {
+  url: string;
+  stars?: number;
+}
+
+export interface DiscordLink {
+  url: string;
+  members?: number;
+}
+
+export interface TwitterLink {
+  url: string;
+  followers?: number;
+}
+
 export interface CommunityLinksProps {
-  github?: { url: string; stars?: number };
-  discord?: { url: string; members?: number };
-  twitter?: { url: string; followers?: number };
+  github?: GithubLink;
+  discord?: DiscordLink;
+  twitter?: TwitterLink;
   heading?: string;
   subtitle?: string;
   className?: string;

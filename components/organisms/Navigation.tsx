@@ -12,6 +12,7 @@ import { Button } from '../atoms/Button';
 import { Badge } from '../atoms/Badge';
 import { Box } from '../atoms/Box';
 import { cn } from '../../lib/cn';
+import type { UiError } from '../atoms/types';
 
 export interface NavigationItem {
   /**
@@ -81,7 +82,7 @@ export interface NavigationProps {
   isLoading?: boolean;
 
   /** Error state */
-  error?: Error | null;
+  error?: UiError | null;
 
   /** Entity name for schema-driven auto-fetch */
   entity?: string;

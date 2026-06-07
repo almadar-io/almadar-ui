@@ -8,6 +8,7 @@
 
 import React from 'react';
 import { cn } from '../../lib/cn';
+import type { LinkAction } from '../atoms/types';
 import { Box } from '../atoms/Box';
 import { VStack, HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
@@ -21,9 +22,9 @@ export interface CTABannerProps {
   /** Supporting text below the title */
   subtitle?: string;
   /** Primary action button config */
-  primaryAction?: { label: string; href: string };
+  primaryAction?: LinkAction;
   /** Secondary action button config */
-  secondaryAction?: { label: string; href: string };
+  secondaryAction?: LinkAction;
   /** Background style */
   background?: CTABannerBackground;
   /** Content alignment */

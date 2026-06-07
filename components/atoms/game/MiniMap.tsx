@@ -1,6 +1,7 @@
 'use client';
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
+import type { Rect } from '../types';
 
 export interface MiniMapProps {
   /** Tile data: each tile renders as a 1px dot at (x,y) with the given color */
@@ -16,7 +17,7 @@ export interface MiniMapProps {
   /** Logical map height (for coordinate scaling) */
   mapHeight?: number;
   /** Viewport rectangle outline */
-  viewportRect?: { x: number; y: number; w: number; h: number };
+  viewportRect?: Rect;
   /** Additional CSS classes */
   className?: string;
 }
