@@ -18,7 +18,7 @@ import { Typography } from "../atoms/Typography";
 import { Button } from "../atoms/Button";
 import { Icon } from "../atoms/Icon";
 
-export interface ViolationRecord {
+export type ViolationRecord = {
   /** Unique violation identifier */
   id: string;
   /** Law reference (e.g., "ZVPOT-1") */
@@ -37,7 +37,7 @@ export interface ViolationRecord {
   fieldId?: string;
   /** Tab/form where violation occurred */
   tabId?: string;
-}
+};
 
 export interface ViolationAlertProps {
   /** Violation data */

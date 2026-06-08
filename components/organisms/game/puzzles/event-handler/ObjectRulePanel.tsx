@@ -16,7 +16,7 @@ import { TraitStateViewer } from '../../TraitStateViewer';
 import type { TraitStateMachineDefinition } from '../../TraitStateViewer';
 import { RuleEditor, type RuleDefinition } from './RuleEditor';
 
-export interface PuzzleObjectDef {
+export type PuzzleObjectDef = {
     id: string;
     name: string;
     icon: string;
@@ -28,7 +28,7 @@ export interface PuzzleObjectDef {
     rules: RuleDefinition[];
     /** Max rules allowed on this object */
     maxRules?: number;
-}
+};
 
 export interface ObjectRulePanelProps {
     /** The selected object */

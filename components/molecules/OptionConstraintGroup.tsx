@@ -19,13 +19,13 @@ import { Label } from '../atoms/Label';
 import { Radio } from '../atoms/Radio';
 import { Checkbox } from '../atoms/Checkbox';
 
-export interface OptionConstraintOption {
+export type OptionConstraintOption = {
   id: string;
   label: string;
   priceDelta?: number;
   disabled?: boolean;
   outOfStock?: boolean;
-}
+};
 
 export type OptionConstraint =
   | { type: 'single'; required?: boolean }
@@ -36,7 +36,9 @@ export interface OptionConstraintGroupProps {
   title: string;
   description?: string;
   options: OptionConstraintOption[];
-  constraint: OptionConstraint;
+  /** Selection constraint. Optional — defaults to single-select (the generic
+   *  factory can't author a discriminated-union value; an author overrides it). */
+  constraint?: OptionConstraint;
   selected?: string[];
   onChange?: (selected: string[]) => void;
   changeEvent?: EventEmit<{ selected: string[] }>;
@@ -92,7 +94,7 @@ export const OptionConstraintGroup: React.FC<OptionConstraintGroupProps> = ({
   title,
   description,
   options,
-  constraint,
+  constraint = { type: 'single' },
   selected = [],
   onChange,
   changeEvent,

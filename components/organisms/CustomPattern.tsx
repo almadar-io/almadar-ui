@@ -11,6 +11,7 @@
 
 import React from "react";
 import type { EventKey, EventPayload } from "@almadar/core";
+import type { UiError } from "../atoms/types";
 import { useEventBus } from "../../hooks/useEventBus";
 import { cn } from "../../lib/cn";
 import { Box } from "../atoms/Box";
@@ -128,7 +129,7 @@ export interface CustomPatternProps {
   /** Loading state */
   isLoading?: boolean;
   /** Error state */
-  error?: Error | null;
+  error?: UiError | null;
   /** Entity name */
   entity?: string;
 }

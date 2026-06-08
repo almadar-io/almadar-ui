@@ -2,7 +2,7 @@ import React from "react";
 import type { EventKey } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { type LucideIcon } from "lucide-react";
-import { Icon } from "./Icon";
+import { Icon, resolveIcon } from "./Icon";
 
 export interface SelectOption {
   value: string;
@@ -41,8 +41,9 @@ export interface InputProps extends Omit<
   error?: string;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
-  /** Lucide icon component for left side (convenience prop) */
-  icon?: LucideIcon;
+  /** Lucide icon component for left side (convenience prop), or a canonical
+   *  kebab-case icon name string (resolved via `resolveIcon`). */
+  icon?: LucideIcon | string;
   /** Show clear button when input has value */
   clearable?: boolean;
   /** Callback when clear button is clicked */
@@ -69,7 +70,7 @@ export const Input = React.forwardRef<
       error,
       leftIcon,
       rightIcon,
-      icon: IconComponent,
+      icon: iconProp,
       clearable,
       onClear,
       value,
@@ -82,7 +83,10 @@ export const Input = React.forwardRef<
   ) => {
     // inputType takes precedence over type, default to "text"
     const type = inputType || htmlType || "text";
-    // Resolve left icon: prefer leftIcon ReactNode, fallback to icon Lucide component
+    // Resolve left icon: prefer leftIcon ReactNode, fallback to icon Lucide
+    // component (a string `icon` is a name, resolved via `resolveIcon`).
+    const IconComponent =
+      typeof iconProp === "string" ? resolveIcon(iconProp) : iconProp;
     const resolvedLeftIcon =
       leftIcon || (IconComponent && <IconComponent className="h-icon-default w-icon-default" />);
     const showClearButton = clearable && value && String(value).length > 0;

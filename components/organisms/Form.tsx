@@ -14,7 +14,7 @@
  */
 
 import React from "react";
-import type { EntityRow, EventKey, EventPayload } from "@almadar/core";
+import type { EntityRow, EventKey, EventPayload, FieldValue } from "@almadar/core";
 import type { FormSubmitPayload } from "@almadar/patterns";
 import { cn } from "../../lib/cn";
 import { Input } from "../atoms/Input";
@@ -283,8 +283,8 @@ export interface FormProps extends Omit<
   /** Callback when any field value changes */
   onFieldChange?: (change: {
     fieldId: string;
-    value: unknown;
-    formValues: Record<string, unknown>;
+    value: FieldValue | undefined;
+    formValues: Record<string, FieldValue | undefined>;
   }) => void;
   /** Config path for form configuration (schema-driven) */
   configPath?: string;
@@ -513,7 +513,7 @@ export const Form: React.FC<FormProps> = ({
     typeof hiddenCalculationsRaw === "boolean" ? [] : hiddenCalculationsRaw;
   const violationTriggers =
     typeof violationTriggersRaw === "boolean" ? [] : violationTriggersRaw;
-  const [formData, setFormData] = React.useState<Record<string, unknown>>(
+  const [formData, setFormData] = React.useState<EntityRow>(
     normalizedInitialData,
   );
   const [collapsedSections, setCollapsedSections] = React.useState<Set<string>>(
@@ -644,7 +644,7 @@ export const Form: React.FC<FormProps> = ({
     [violationTriggers, externalContext, eventBus],
   );
 
-  const handleChange = (name: string, value: unknown) => {
+  const handleChange = (name: string, value: FieldValue | undefined) => {
     const newFormData = { ...formData, [name]: value };
     debug('forms', 'field-change', { mode: formMode, name, value, prevFormData: formData, newFormData });
     setFormData(newFormData);

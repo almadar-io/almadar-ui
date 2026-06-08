@@ -8,7 +8,7 @@
 import React from "react";
 import type { EventKey, EventPayload } from "@almadar/core";
 import type { LucideIcon } from "lucide-react";
-import { Icon } from "./Icon";
+import { Icon, resolveIcon } from "./Icon";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
 
@@ -38,9 +38,11 @@ export interface AvatarProps {
   initials?: string;
 
   /**
-   * Icon to display when no image or initials
+   * Icon to display when no image or initials. Accepts a Lucide component
+   * directly, or a canonical kebab-case icon name string (resolved via
+   * `resolveIcon`) so trait/factory authors can pass an icon by name.
    */
-  icon?: LucideIcon;
+  icon?: LucideIcon | string;
 
   /**
    * Size of the avatar
@@ -130,7 +132,7 @@ export const Avatar: React.FC<AvatarProps> = ({
   alt,
   name,
   initials: providedInitials,
-  icon: IconComponent,
+  icon: iconProp,
   size = "md",
   status,
   badge,
@@ -144,6 +146,8 @@ export const Avatar: React.FC<AvatarProps> = ({
   const initials =
     providedInitials ?? (name ? generateInitials(name) : undefined);
 
+  const IconComponent =
+    typeof iconProp === "string" ? resolveIcon(iconProp) : iconProp;
   const hasImage = !!src;
   const hasInitials = !!initials;
   const hasIcon = !!IconComponent;

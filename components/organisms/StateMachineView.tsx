@@ -47,14 +47,14 @@ import type { UiError } from '../atoms/types';
 // =============================================================================
 
 /** Bundled transitions between same from→to states */
-export interface TransitionBundle {
+export type TransitionBundle = {
   id: string;
   from: string;
   to: string;
   labels: DomTransitionLabel[];
   isBidirectional: boolean;
   isReverse: boolean;
-}
+};
 
 interface TooltipState {
   visible: boolean;
@@ -71,7 +71,10 @@ export interface StateMachineViewProps {
   isLoading?: boolean;
   /** Error state */
   error?: UiError | null;
-  layoutData: DomLayoutData;
+  /** Pre-computed visualizer layout. Optional: when absent the view renders
+   *  nothing (an author wires real layout via config; the generic factory
+   *  can't synthesize a `DomLayoutData`). */
+  layoutData?: DomLayoutData;
   /** Custom state node renderer — when provided, replaces the default circle nodes */
   renderStateNode?: (state: DomStateNode, config: VisualizerConfig) => React.ReactNode;
 }
@@ -822,6 +825,10 @@ export const StateMachineView: React.FC<StateMachineViewProps> = ({
 
   // Listen for tooltip close from the Button action
   useEventListener('UI:TOOLTIP_CLOSE', handleCloseTooltip);
+
+  // No layout supplied (generic factory instance without authored layout) —
+  // nothing to draw. Placed after all hooks to respect rules-of-hooks.
+  if (!layoutData) return null;
 
   const { width, height, title, states, labels, entity, outputs, config } = layoutData;
 

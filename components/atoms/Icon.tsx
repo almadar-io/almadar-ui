@@ -86,8 +86,12 @@ function doResolve(name: string): LucideIcon {
 }
 
 export interface IconProps {
-  /** Lucide icon component (preferred for type-safe usage) */
-  icon?: LucideIcon;
+  /**
+   * Lucide icon component (preferred for type-safe usage), OR a canonical
+   * kebab-case icon name string — a string is treated exactly like `name` so
+   * trait/factory authors can pass an icon by name through the `icon` prop.
+   */
+  icon?: LucideIcon | string;
   /** Icon name as string (resolved from iconMap) */
   name?: string;
   /** Size of the icon */
@@ -131,11 +135,16 @@ export const Icon: React.FC<IconProps> = ({
   // The `icon` prop bypasses the family resolver (caller already chose a specific
   // component reference, usually a direct lucide import). The `name` prop dispatches
   // through useIconFamily so the icon swaps families when the user changes theme.
+  // A string `icon` is an icon NAME, not a component — route it through the
+  // family-aware `name` path so it resolves (and theme-swaps) like `name`.
+  const directIcon: LucideIcon | undefined =
+    typeof icon === "string" ? undefined : icon;
+  const effectiveName = typeof icon === "string" ? icon : name;
   const family = useIconFamily();
   const RenderedComponent = React.useMemo(() => {
-    if (icon) return null;
-    return name ? resolveIconForFamily(name, family) : null;
-  }, [icon, name, family]);
+    if (directIcon) return null;
+    return effectiveName ? resolveIconForFamily(effectiveName, family) : null;
+  }, [directIcon, effectiveName, family]);
 
   const effectiveStrokeWidth = strokeWidth ?? undefined;
   const inlineStyle: React.CSSProperties = {
@@ -151,8 +160,8 @@ export const Icon: React.FC<IconProps> = ({
     className,
   );
 
-  if (icon) {
-    const Direct = icon;
+  if (directIcon) {
+    const Direct = directIcon;
     return (
       <Direct
         className={composedClassName}

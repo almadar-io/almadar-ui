@@ -25,14 +25,14 @@ export type DialogueChoice = EventPayload & {
   disabled?: boolean;
 }
 
-export interface DialogueNode {
+export type DialogueNode = {
   id?: string;
   speaker: string;
   text: string;
   portrait?: string;
   choices?: DialogueChoice[];
   autoAdvance?: number; // ms to auto-advance, undefined = wait for input
-}
+};
 
 /** Event Contract:
  *  Emits: UI:COMPLETE

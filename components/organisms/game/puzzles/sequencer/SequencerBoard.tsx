@@ -20,7 +20,7 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { EventEmit, EntityRow } from '@almadar/core';
 import { VStack, HStack, Box, Typography, Button } from '../../../../atoms';
 import { cn } from '../../../../../lib/cn';
 import { useEventBus } from '../../../../../hooks/useEventBus';
@@ -62,8 +62,9 @@ export interface SequencerPuzzleEntity {
 }
 
 export interface SequencerBoardProps extends Omit<EntityDisplayProps, 'entity'> {
-    /** Puzzle data */
-    entity: SequencerPuzzleEntity;
+    /** Puzzle data. Also accepts the canonical `EntityRow` the compiler binds
+     *  (and arrays); narrowed to `SequencerPuzzleEntity` internally. */
+    entity?: SequencerPuzzleEntity | EntityRow | readonly (SequencerPuzzleEntity | EntityRow)[];
     /** Category → color mapping */
     categoryColors?: Record<string, { bg: string; border: string }>;
     /** Playback speed in ms per step */
@@ -124,19 +125,20 @@ export function SequencerBoard({
     playEvent,
     completeEvent,
     className,
-}: SequencerBoardProps): React.JSX.Element {
+}: SequencerBoardProps): React.JSX.Element | null {
     const { emit } = useEventBus();
     const { t } = useTranslate();
+    const resolved = (Array.isArray(entity) ? entity[0] : entity) as SequencerPuzzleEntity | undefined;
     const [headerError, setHeaderError] = useState(false);
     const [slots, setSlots] = useState<Array<SlotItemData | undefined>>(
-        () => Array.from({ length: entity.maxSlots }, () => undefined),
+        () => Array.from({ length: resolved?.maxSlots ?? 0 }, () => undefined),
     );
     const [playState, setPlayState] = useState<PlayState>('idle');
     const [currentStep, setCurrentStep] = useState(-1);
     const [attempts, setAttempts] = useState(0);
     /** Per-slot green/red rings after a failed attempt. Cleared per-slot when modified. */
     const [slotFeedback, setSlotFeedback] = useState<Array<'correct' | 'wrong' | null>>(
-        () => Array.from({ length: entity.maxSlots }, () => null),
+        () => Array.from({ length: resolved?.maxSlots ?? 0 }, () => null),
     );
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -179,12 +181,12 @@ export function SequencerBoard({
 
     const handleReset = useCallback(() => {
         if (timerRef.current) clearTimeout(timerRef.current);
-        setSlots(Array.from({ length: entity.maxSlots }, () => undefined));
+        setSlots(Array.from({ length: resolved?.maxSlots ?? 0 }, () => undefined));
         setPlayState('idle');
         setCurrentStep(-1);
         setAttempts(0);
-        setSlotFeedback(Array.from({ length: entity.maxSlots }, () => null));
-    }, [entity.maxSlots]);
+        setSlotFeedback(Array.from({ length: resolved?.maxSlots ?? 0 }, () => null));
+    }, [resolved?.maxSlots]);
 
     // -- Playback -------------------------------------------------------------
 
@@ -195,7 +197,7 @@ export function SequencerBoard({
         if (!canPlay) return;
 
         // Clear any previous feedback before re-running
-        setSlotFeedback(Array.from({ length: entity.maxSlots }, () => null));
+        setSlotFeedback(Array.from({ length: resolved?.maxSlots ?? 0 }, () => null));
         emit('UI:PLAY_SOUND', { key: 'confirm' });
 
         const sequence = slots.map(s => s?.id || '');
@@ -210,10 +212,10 @@ export function SequencerBoard({
         let step = 0;
         const advance = () => {
             step++;
-            if (step >= entity.maxSlots) {
+            if (step >= (resolved?.maxSlots ?? 0)) {
                 const playerSeq = slots.map(s => s?.id);
                 const playerIds = slots.filter(Boolean).map(s => s?.id || '');
-                const success = entity.solutions.some(sol =>
+                const success = (resolved?.solutions ?? []).some(sol =>
                     sol.length === playerIds.length &&
                     sol.every((id, i) => id === playerIds[i]),
                 );
@@ -229,7 +231,7 @@ export function SequencerBoard({
                     // Failure: compute per-slot feedback, stay in 'idle'
                     // so the kid can see the highlights and adjust immediately
                     setAttempts(prev => prev + 1);
-                    const feedback = computeSlotFeedback(playerSeq, entity.solutions);
+                    const feedback = computeSlotFeedback(playerSeq, resolved?.solutions ?? []);
                     setSlotFeedback(feedback);
                     setPlayState('idle');
                     setCurrentStep(-1);
@@ -246,7 +248,7 @@ export function SequencerBoard({
             }
         };
         timerRef.current = setTimeout(advance, stepDurationMs);
-    }, [canPlay, slots, entity.maxSlots, entity.solutions, stepDurationMs, playEvent, completeEvent, emit]);
+    }, [canPlay, slots, resolved?.maxSlots, resolved?.solutions, stepDurationMs, playEvent, completeEvent, emit]);
 
     // -- TraitStateViewer definition ------------------------------------------
     //
@@ -254,8 +256,8 @@ export function SequencerBoard({
     // correctly highlights the active step even when the same action repeats.
 
     const machine: TraitStateMachineDefinition = {
-        name: entity.title,
-        description: entity.description,
+        name: resolved?.title ?? '',
+        description: resolved?.description ?? '',
         states: slots.map((s, i) => stepLabel(s, i)),
         currentState: currentStep >= 0
             ? stepLabel(slots[currentStep], currentStep)
@@ -269,40 +271,42 @@ export function SequencerBoard({
 
     // -- Derived display state ------------------------------------------------
 
-    const usedIds = entity.allowDuplicates === false
+    const usedIds = resolved?.allowDuplicates === false
         ? slots.filter(Boolean).map(s => s?.id || '')
         : [];
 
-    const showHint = attempts >= 3 && !!entity.hint;
+    const showHint = attempts >= 3 && !!resolved?.hint;
     const hasFeedback = slotFeedback.some(f => f !== null);
     const correctCount = slotFeedback.filter(f => f === 'correct').length;
     const encourageKey = ENCOURAGEMENT_KEYS[Math.min(attempts - 1, ENCOURAGEMENT_KEYS.length - 1)] ?? ENCOURAGEMENT_KEYS[0];
+
+    if (!resolved) return null;
 
     return (
         <VStack
             className={cn('p-4 gap-6', className)}
             style={{
-                backgroundImage: entity.theme?.background ? `url(${entity.theme.background})` : undefined,
+                backgroundImage: resolved.theme?.background ? `url(${resolved.theme.background})` : undefined,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
             }}
         >
             {/* Header image */}
-            {entity.headerImage && !headerError ? (
+            {resolved.headerImage && !headerError ? (
                 <Box className="w-full h-32 overflow-hidden rounded-container">
-                    <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
+                    <img src={resolved.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
                 </Box>
-            ) : entity.headerImage && headerError ? (
+            ) : resolved.headerImage && headerError ? (
                 <Box className="w-full h-32 rounded-container bg-gradient-to-br from-muted to-accent opacity-60" />
             ) : null}
 
             {/* Title + description */}
             <VStack gap="xs">
                 <Typography variant="h4" className="text-foreground">
-                    {entity.title}
+                    {resolved.title}
                 </Typography>
                 <Typography variant="body2" className="text-muted-foreground">
-                    {entity.description}
+                    {resolved.description}
                 </Typography>
             </VStack>
 
@@ -314,7 +318,7 @@ export function SequencerBoard({
                             {'\uD83D\uDCA1 ' + t('game.hint') + ':'}
                         </Typography>
                         <Typography variant="body2" className="text-foreground">
-                            {entity.hint}
+                            {resolved.hint}
                         </Typography>
                     </HStack>
                 </Box>
@@ -334,14 +338,14 @@ export function SequencerBoard({
                     {/* Score summary after a failed attempt */}
                     {hasFeedback && playState === 'idle' && (
                         <Typography variant="caption" className="text-muted-foreground">
-                            {`${correctCount}/${entity.maxSlots} `}
+                            {`${correctCount}/${resolved.maxSlots} `}
                             {'\u2705'}
                         </Typography>
                     )}
                 </HStack>
                 <SequenceBar
                     slots={slots}
-                    maxSlots={entity.maxSlots}
+                    maxSlots={resolved.maxSlots}
                     onSlotDrop={handleSlotDrop}
                     onSlotRemove={handleSlotRemove}
                     playing={playState === 'playing'}
@@ -355,9 +359,9 @@ export function SequencerBoard({
             {/* Action palette — always visible when not playing */}
             {playState !== 'playing' && (
                 <ActionPalette
-                    actions={entity.availableActions}
+                    actions={resolved.availableActions}
                     usedActionIds={usedIds}
-                    allowDuplicates={entity.allowDuplicates !== false}
+                    allowDuplicates={resolved.allowDuplicates !== false}
                     categoryColors={categoryColors}
                     label={t('sequencer.dragActions')}
                 />
@@ -376,7 +380,7 @@ export function SequencerBoard({
             {playState === 'success' && (
                 <Box className="p-4 rounded-container bg-success/20 border border-success text-center">
                     <Typography variant="h5" className="text-success">
-                        {entity.successMessage || t('sequencer.levelComplete')}
+                        {resolved.successMessage || t('sequencer.levelComplete')}
                     </Typography>
                 </Box>
             )}

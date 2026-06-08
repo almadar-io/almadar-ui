@@ -15,18 +15,32 @@
  */
 
 import * as React from 'react';
+import type { EntityRow } from '@almadar/core';
 import { BattleBoard, type BattleBoardProps, type BattleUnit } from './BattleBoard';
 import { useBattleState } from './hooks/useBattleState';
 
+/** Uncontrolled entity read-shape: controlled game-state fields are dropped in
+ *  favor of `initialUnits`, which the internal `useBattleState` hook manages. */
+export type UncontrolledBattleEntity = Omit<
+    BattleBoardProps['entity'],
+    'units' | 'phase' | 'turn' | 'gameResult' | 'selectedUnitId'
+> & {
+    initialUnits: BattleUnit[];
+};
+
 export interface UncontrolledBattleBoardProps extends Omit<BattleBoardProps, 'entity'> {
-    entity: Omit<BattleBoardProps['entity'], 'units' | 'phase' | 'turn' | 'gameResult' | 'selectedUnitId'> & {
-        initialUnits: BattleUnit[];
-    };
+    // The compiler binds the generic `EntityRow`, so the inlet accepts it (and
+    // arrays) as union members; the component narrows to its curated
+    // `UncontrolledBattleEntity` read-shape below (a valid union-narrow) and
+    // renders nothing until an entity is present.
+    entity?: UncontrolledBattleEntity | EntityRow | readonly (UncontrolledBattleEntity | EntityRow)[];
 }
 
-export function UncontrolledBattleBoard({ entity, ...rest }: UncontrolledBattleBoardProps) {
+export function UncontrolledBattleBoard({ entity, ...rest }: UncontrolledBattleBoardProps): React.JSX.Element | null {
+    const resolved = (Array.isArray(entity) ? entity[0] : entity) as UncontrolledBattleEntity | undefined;
+
     const battleState = useBattleState(
-        entity.initialUnits,
+        resolved?.initialUnits ?? [],
         {
             tileClickEvent: rest.tileClickEvent,
             unitClickEvent: rest.unitClickEvent,
@@ -44,11 +58,13 @@ export function UncontrolledBattleBoard({ entity, ...rest }: UncontrolledBattleB
         },
     );
 
+    if (!resolved) return null;
+
     return (
         <BattleBoard
             {...rest}
             entity={{
-                ...entity,
+                ...resolved,
                 units: battleState.units,
                 phase: battleState.phase,
                 turn: battleState.turn,

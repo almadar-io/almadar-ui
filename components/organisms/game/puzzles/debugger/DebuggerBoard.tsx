@@ -12,7 +12,7 @@
  
 
 import React, { useState, useCallback } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { EventEmit, EntityRow } from '@almadar/core';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
@@ -44,7 +44,11 @@ export interface DebuggerPuzzleEntity {
 }
 
 export interface DebuggerBoardProps extends Omit<EntityDisplayProps, 'entity'> {
-  entity: DebuggerPuzzleEntity;
+  // The compiler binds the generic `EntityRow`, so the inlet accepts it (and
+  // arrays) as union members; the component narrows to its curated
+  // `DebuggerPuzzleEntity` read-shape below (a valid union-narrow) and renders
+  // nothing until a puzzle entity is present.
+  entity?: DebuggerPuzzleEntity | EntityRow | readonly (DebuggerPuzzleEntity | EntityRow)[];
   completeEvent?: EventEmit<{ success: boolean; attempts: number }>;
 }
 
@@ -52,9 +56,10 @@ export function DebuggerBoard({
   entity,
   completeEvent = 'PUZZLE_COMPLETE',
   className,
-}: DebuggerBoardProps): React.JSX.Element {
+}: DebuggerBoardProps): React.JSX.Element | null {
   const { emit } = useEventBus();
   const { t } = useTranslate();
+  const resolved = (Array.isArray(entity) ? entity[0] : entity) as DebuggerPuzzleEntity | undefined;
 
   const [flaggedLines, setFlaggedLines] = useState<Set<string>>(new Set());
   const [headerError, setHeaderError] = useState(false);
@@ -75,7 +80,7 @@ export function DebuggerBoard({
     });
   };
 
-  const lines = entity?.lines ?? [];
+  const lines = resolved?.lines ?? [];
   const bugLines = lines.filter((l) => l.isBug);
   const correctFlags = lines.filter((l) => l.isBug && flaggedLines.has(l.id));
   const falseFlags = lines.filter((l) => !l.isBug && flaggedLines.has(l.id));
@@ -92,7 +97,7 @@ export function DebuggerBoard({
 
   const handleReset = () => {
     setSubmitted(false);
-    if (attempts >= 2 && entity.hint) {
+    if (attempts >= 2 && resolved?.hint) {
       setShowHint(true);
     }
   };
@@ -104,22 +109,24 @@ export function DebuggerBoard({
     setShowHint(false);
   };
 
+  if (!resolved) return null;
+
   return (
     <Box
       className={className}
       style={{
-        backgroundImage: entity.theme?.background ? `url(${entity.theme.background})` : undefined,
+        backgroundImage: resolved.theme?.background ? `url(${resolved.theme.background})` : undefined,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
     >
       <VStack gap="lg" className="p-4">
         {/* Header image */}
-        {entity.headerImage && !headerError ? (
+        {resolved.headerImage && !headerError ? (
           <Box className="w-full h-32 overflow-hidden rounded-container">
-            <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
+            <img src={resolved.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
           </Box>
-        ) : entity.headerImage && headerError ? (
+        ) : resolved.headerImage && headerError ? (
           <Box className="w-full h-32 rounded-container bg-gradient-to-br from-muted to-accent opacity-60" />
         ) : null}
 
@@ -127,11 +134,11 @@ export function DebuggerBoard({
           <VStack gap="sm">
             <HStack gap="xs" align="center">
               <Icon icon={Bug} size="sm" />
-              <Typography variant="h4" weight="bold">{entity.title}</Typography>
+              <Typography variant="h4" weight="bold">{resolved.title}</Typography>
             </HStack>
-            <Typography variant="body">{entity.description}</Typography>
+            <Typography variant="body">{resolved.description}</Typography>
             <Typography variant="caption" className="text-muted-foreground">
-              {t('debugger.findBugs', { count: String(entity.bugCount) })}
+              {t('debugger.findBugs', { count: String(resolved.bugCount) })}
             </Typography>
           </VStack>
         </Card>
@@ -180,7 +187,7 @@ export function DebuggerBoard({
             <VStack gap="sm">
               <Typography variant="body" weight="bold">
                 {allCorrect
-                  ? (entity.successMessage ?? t('debugger.allFound'))
+                  ? (resolved.successMessage ?? t('debugger.allFound'))
                   : `${correctFlags.length}/${bugLines.length} ${t('debugger.bugsFound')}`}
               </Typography>
               {bugLines.map((line) => (
@@ -202,9 +209,9 @@ export function DebuggerBoard({
           </Card>
         )}
 
-        {showHint && entity.hint && (
+        {showHint && resolved.hint && (
           <Card className="p-4 border-l-4 border-l-warning">
-            <Typography variant="body">{entity.hint}</Typography>
+            <Typography variant="body">{resolved.hint}</Typography>
           </Card>
         )}
 

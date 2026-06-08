@@ -9,6 +9,7 @@ import { Box } from "../atoms/Box";
 import { HStack, VStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { EmptyState, Pagination } from "../molecules";
+import { resolveIcon } from "../atoms/Icon";
 import { useEventBus } from "../../hooks/useEventBus";
 import { useTranslate } from "../../hooks/useTranslate";
 import {
@@ -124,7 +125,7 @@ export interface DataTableProps<T extends EntityRow & { id: string | number }>
     variant?: "default" | "primary" | "secondary" | "ghost" | "danger" | string;
     onClick?: (row: T) => void;
   }[];
-  emptyIcon?: LucideIcon;
+  emptyIcon?: LucideIcon | string;
   emptyTitle?: string;
   emptyDescription?: string;
   emptyAction?: DataTableEmptyAction;
@@ -514,7 +515,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
                   className="px-4 py-12"
                 >
                   <EmptyState
-                    icon={emptyIcon}
+                    icon={typeof emptyIcon === "string" ? resolveIcon(emptyIcon) : emptyIcon}
                     title={resolvedEmptyTitle}
                     description={resolvedEmptyDescription}
                     actionLabel={emptyAction?.label}

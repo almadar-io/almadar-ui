@@ -11,6 +11,7 @@
  */
 
 import React from 'react';
+import type { UiError } from '../atoms/types';
 import { VStack, HStack, type StackGap, type StackAlign, type StackJustify } from '../atoms/Stack';
 import { Box, type BoxPadding, type BoxBg, type BoxRounded, type BoxShadow } from '../atoms/Box';
 import { Grid, type GridCols, type GridGap, type ResponsiveGridCols } from '../molecules/Grid';
@@ -35,7 +36,7 @@ export interface LayoutPatternProps {
   /** Loading state */
   isLoading?: boolean;
   /** Error state */
-  error?: Error | null;
+  error?: UiError | null;
   /** Entity name */
   entity?: string;
 }
@@ -246,7 +247,7 @@ export interface SpacerPatternProps {
   /** Loading state */
   isLoading?: boolean;
   /** Error state */
-  error?: Error | null;
+  error?: UiError | null;
   /** Entity name */
   entity?: string;
 }
@@ -292,7 +293,7 @@ export interface DividerPatternProps {
   /** Loading state */
   isLoading?: boolean;
   /** Error state */
-  error?: Error | null;
+  error?: UiError | null;
   /** Entity name */
   entity?: string;
 }

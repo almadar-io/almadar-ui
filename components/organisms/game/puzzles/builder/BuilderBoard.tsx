@@ -12,7 +12,7 @@
  
 
 import React, { useState, useCallback } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { EventEmit, EntityRow } from '@almadar/core';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
@@ -52,7 +52,11 @@ export interface BuilderPuzzleEntity {
 }
 
 export interface BuilderBoardProps extends Omit<EntityDisplayProps, 'entity'> {
-  entity: BuilderPuzzleEntity;
+  // The compiler binds the generic `EntityRow`, so the inlet accepts it (and
+  // arrays) as union members; the component narrows to its curated
+  // `BuilderPuzzleEntity` read-shape below (a valid union-narrow) and renders
+  // nothing until a puzzle entity is present.
+  entity?: BuilderPuzzleEntity | EntityRow | readonly (BuilderPuzzleEntity | EntityRow)[];
   completeEvent?: EventEmit<{ success: boolean; attempts: number }>;
 }
 
@@ -60,9 +64,10 @@ export function BuilderBoard({
   entity,
   completeEvent = 'PUZZLE_COMPLETE',
   className,
-}: BuilderBoardProps): React.JSX.Element {
+}: BuilderBoardProps): React.JSX.Element | null {
   const { emit } = useEventBus();
   const { t } = useTranslate();
+  const resolved = (Array.isArray(entity) ? entity[0] : entity) as BuilderPuzzleEntity | undefined;
 
   const [placements, setPlacements] = useState<Record<string, string>>({});
   const [headerError, setHeaderError] = useState(false);
@@ -70,8 +75,8 @@ export function BuilderBoard({
   const [attempts, setAttempts] = useState(0);
   const [showHint, setShowHint] = useState(false);
 
-  const components = entity?.components ?? [];
-  const slots = entity?.slots ?? [];
+  const components = resolved?.components ?? [];
+  const slots = resolved?.slots ?? [];
   const usedComponentIds = new Set(Object.values(placements));
   const availableComponents = components.filter((c) => !usedComponentIds.has(c.id));
   const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
@@ -113,7 +118,7 @@ export function BuilderBoard({
 
   const handleReset = () => {
     setSubmitted(false);
-    if (attempts >= 2 && entity.hint) {
+    if (attempts >= 2 && resolved?.hint) {
       setShowHint(true);
     }
   };
@@ -128,29 +133,31 @@ export function BuilderBoard({
 
   const getComponentById = (id: string) => components.find((c) => c.id === id);
 
+  if (!resolved) return null;
+
   return (
     <Box
       className={className}
       style={{
-        backgroundImage: entity.theme?.background ? `url(${entity.theme.background})` : undefined,
+        backgroundImage: resolved.theme?.background ? `url(${resolved.theme.background})` : undefined,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
     >
       <VStack gap="lg" className="p-4">
         {/* Header image */}
-        {entity.headerImage && !headerError ? (
+        {resolved.headerImage && !headerError ? (
           <Box className="w-full h-32 overflow-hidden rounded-container">
-            <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
+            <img src={resolved.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
           </Box>
-        ) : entity.headerImage && headerError ? (
+        ) : resolved.headerImage && headerError ? (
           <Box className="w-full h-32 rounded-container bg-gradient-to-br from-muted to-accent opacity-60" />
         ) : null}
 
         <Card className="p-4">
           <VStack gap="sm">
-            <Typography variant="h4" weight="bold">{entity.title}</Typography>
-            <Typography variant="body">{entity.description}</Typography>
+            <Typography variant="h4" weight="bold">{resolved.title}</Typography>
+            <Typography variant="body">{resolved.description}</Typography>
           </VStack>
         </Card>
 
@@ -249,16 +256,16 @@ export function BuilderBoard({
               <Icon icon={allCorrect ? CheckCircle : XCircle} size="lg" className={allCorrect ? 'text-success' : 'text-error'} />
               <Typography variant="body" weight="bold">
                 {allCorrect
-                  ? (entity.successMessage ?? t('builder.success'))
-                  : (entity.failMessage ?? t('builder.incorrect'))}
+                  ? (resolved.successMessage ?? t('builder.success'))
+                  : (resolved.failMessage ?? t('builder.incorrect'))}
               </Typography>
             </VStack>
           </Card>
         )}
 
-        {showHint && entity.hint && (
+        {showHint && resolved.hint && (
           <Card className="p-4 border-l-4 border-l-warning">
-            <Typography variant="body">{entity.hint}</Typography>
+            <Typography variant="body">{resolved.hint}</Typography>
           </Card>
         )}
 

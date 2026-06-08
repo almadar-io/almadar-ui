@@ -26,12 +26,12 @@ export interface BookPart {
   chapters: BookChapter[];
 }
 
-export interface BookChapter {
+export type BookChapter = {
   id: string;
   title: string;
   content: string;
   orbitalSchema?: OrbitalSchema;
-}
+};
 
 /**
  * Maps raw entity field names to canonical BookData field names.

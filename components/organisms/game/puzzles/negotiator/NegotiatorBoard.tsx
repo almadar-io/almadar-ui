@@ -13,7 +13,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { EventEmit, EntityRow } from '@almadar/core';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
@@ -53,7 +53,11 @@ export interface NegotiatorPuzzleEntity {
 }
 
 export interface NegotiatorBoardProps extends Omit<EntityDisplayProps, 'entity'> {
-  entity: NegotiatorPuzzleEntity;
+  // The compiler binds the generic `EntityRow`, so the inlet accepts it (and
+  // arrays) as union members; the component narrows to its curated
+  // `NegotiatorPuzzleEntity` read-shape below (a valid union-narrow) and renders
+  // nothing until a puzzle entity is present.
+  entity?: NegotiatorPuzzleEntity | EntityRow | readonly (NegotiatorPuzzleEntity | EntityRow)[];
   completeEvent?: EventEmit<{ success: boolean; score: number }>;
 }
 
@@ -89,26 +93,27 @@ export function NegotiatorBoard({
   entity,
   completeEvent = 'PUZZLE_COMPLETE',
   className,
-}: NegotiatorBoardProps): React.JSX.Element {
+}: NegotiatorBoardProps): React.JSX.Element | null {
   const { emit } = useEventBus();
   const { t } = useTranslate();
+  const resolved = (Array.isArray(entity) ? entity[0] : entity) as NegotiatorPuzzleEntity | undefined;
 
   const [history, setHistory] = useState<RoundResult[]>([]);
   const [headerError, setHeaderError] = useState(false);
   const [showHint, setShowHint] = useState(false);
 
   const currentRound = history.length;
-  const isComplete = currentRound >= entity.totalRounds;
+  const isComplete = currentRound >= (resolved?.totalRounds ?? 0);
   const playerTotal = history.reduce((s, r) => s + r.playerPayoff, 0);
   const opponentTotal = history.reduce((s, r) => s + r.opponentPayoff, 0);
-  const won = isComplete && playerTotal >= entity.targetScore;
+  const won = isComplete && playerTotal >= (resolved?.targetScore ?? 0);
 
-  const actions = entity?.actions ?? [];
-  const payoffMatrix = entity?.payoffMatrix ?? [];
+  const actions = resolved?.actions ?? [];
+  const payoffMatrix = resolved?.payoffMatrix ?? [];
 
   const handleAction = useCallback((actionId: string) => {
     if (isComplete) return;
-    const opponentAction = getOpponentAction(entity.opponentStrategy, actions, history);
+    const opponentAction = getOpponentAction(resolved?.opponentStrategy ?? 'random', actions, history);
     const payoff = payoffMatrix.find(
       (p) => p.playerAction === actionId && p.opponentAction === opponentAction,
     );
@@ -122,16 +127,16 @@ export function NegotiatorBoard({
     const newHistory = [...history, result];
     setHistory(newHistory);
 
-    if (newHistory.length >= entity.totalRounds) {
+    if (newHistory.length >= (resolved?.totalRounds ?? 0)) {
       const total = newHistory.reduce((s, r) => s + r.playerPayoff, 0);
-      if (total >= entity.targetScore) {
+      if (total >= (resolved?.targetScore ?? 0)) {
         emit(`UI:${completeEvent}`, { success: true, score: total });
       }
-      if (newHistory.length >= 3 && entity.hint) {
+      if (newHistory.length >= 3 && resolved?.hint) {
         setShowHint(true);
       }
     }
-  }, [isComplete, entity, actions, payoffMatrix, history, currentRound, completeEvent, emit]);
+  }, [isComplete, resolved, actions, payoffMatrix, history, currentRound, completeEvent, emit]);
 
   const handleReset = () => {
     setHistory([]);
@@ -140,32 +145,34 @@ export function NegotiatorBoard({
 
   const getActionLabel = (id: string) => actions.find((a) => a.id === id)?.label ?? id;
 
+  if (!resolved) return null;
+
   return (
     <Box
       className={className}
       style={{
-        backgroundImage: entity.theme?.background ? `url(${entity.theme.background})` : undefined,
+        backgroundImage: resolved.theme?.background ? `url(${resolved.theme.background})` : undefined,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
     >
       <VStack gap="lg" className="p-4">
         {/* Header image */}
-        {entity.headerImage && !headerError ? (
+        {resolved.headerImage && !headerError ? (
           <Box className="w-full h-32 overflow-hidden rounded-container">
-            <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
+            <img src={resolved.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
           </Box>
-        ) : entity.headerImage && headerError ? (
+        ) : resolved.headerImage && headerError ? (
           <Box className="w-full h-32 rounded-container bg-gradient-to-br from-muted to-accent opacity-60" />
         ) : null}
 
         <Card className="p-4">
           <VStack gap="sm">
-            <Typography variant="h4" weight="bold">{entity.title}</Typography>
-            <Typography variant="body">{entity.description}</Typography>
+            <Typography variant="h4" weight="bold">{resolved.title}</Typography>
+            <Typography variant="body">{resolved.description}</Typography>
             <HStack gap="md">
-              <Badge size="sm">{t('negotiator.round', { current: String(currentRound), total: String(entity.totalRounds) })}</Badge>
-              <Badge size="sm">{t('negotiator.target')}: {entity.targetScore}</Badge>
+              <Badge size="sm">{t('negotiator.round', { current: String(currentRound), total: String(resolved.totalRounds) })}</Badge>
+              <Badge size="sm">{t('negotiator.target')}: {resolved.targetScore}</Badge>
             </HStack>
           </VStack>
         </Card>
@@ -237,19 +244,19 @@ export function NegotiatorBoard({
               <Icon icon={CheckCircle} size="lg" className={won ? 'text-success' : 'text-error'} />
               <Typography variant="body" weight="bold">
                 {won
-                  ? (entity.successMessage ?? t('negotiator.success'))
-                  : (entity.failMessage ?? t('negotiator.failed'))}
+                  ? (resolved.successMessage ?? t('negotiator.success'))
+                  : (resolved.failMessage ?? t('negotiator.failed'))}
               </Typography>
               <Typography variant="caption" className="text-muted-foreground">
-                {t('negotiator.finalScore')}: {playerTotal}/{entity.targetScore}
+                {t('negotiator.finalScore')}: {playerTotal}/{resolved.targetScore}
               </Typography>
             </VStack>
           </Card>
         )}
 
-        {showHint && entity.hint && !won && (
+        {showHint && resolved.hint && !won && (
           <Card className="p-4 border-l-4 border-l-warning">
-            <Typography variant="body">{entity.hint}</Typography>
+            <Typography variant="body">{resolved.hint}</Typography>
           </Card>
         )}
 

@@ -12,6 +12,7 @@
 
 import React from 'react';
 import type { EventKey, EventPayload } from '@almadar/core';
+import type { UiError } from '../atoms/types';
 import { useEventBus } from '../../hooks/useEventBus';
 
 // Shell component imports
@@ -46,7 +47,7 @@ import { MapView, type MapViewProps } from '../molecules/MapView';
 interface ClosedCircuitProps {
   className?: string;
   isLoading?: boolean;
-  error?: Error | null;
+  error?: UiError | null;
   entity?: string;
 }
 

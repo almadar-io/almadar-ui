@@ -22,7 +22,7 @@
 
  
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { EventEmit, EntityRow, FieldValue } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { VStack, HStack, Stack } from '../../atoms/Stack';
@@ -70,7 +70,7 @@ export type MapHex = {
     terrain: string;
     terrainSprite?: string;
     feature?: string;
-    featureData?: Record<string, unknown>;
+    featureData?: Record<string, FieldValue | undefined>;
     passable?: boolean;
 };
 
@@ -124,8 +124,9 @@ export interface WorldMapBoardProps {
     isLoading?: boolean;
     /** Error state */
     error?: UiError | null;
-    /** World map entity data */
-    entity?: WorldMapEntity | readonly WorldMapEntity[];
+    /** World map entity data. Also accepts the canonical `EntityRow` the
+     *  compiler binds; the component narrows to `WorldMapEntity` below. */
+    entity?: WorldMapEntity | EntityRow | readonly (WorldMapEntity | EntityRow)[];
 
     /** Canvas render scale */
     scale?: number;
@@ -222,7 +223,7 @@ export function WorldMapBoard({
     const eventBus = useEventBus();
 
     // Resolve entity (handles undefined, array, or single object)
-    const resolved = Array.isArray(entity) ? entity[0] : (entity as WorldMapEntity | undefined);
+    const resolved = (Array.isArray(entity) ? entity[0] : entity) as WorldMapEntity | undefined;
     const hexes = resolved?.hexes ?? [];
     const heroes = resolved?.heroes ?? [];
     const features = resolved?.features ?? [];

@@ -14,13 +14,10 @@ import { Typography } from "../atoms/Typography";
 import { Button } from "../atoms/Button";
 import type { TemplateProps } from "./types";
 
-interface GenericAppEntity {
-  id: string;
-  title?: string;
-  subtitle?: string;
-}
-
-export interface GenericAppTemplateProps extends TemplateProps<GenericAppEntity> {
+// Entity data flows in as the canonical `EntityRow` (the compiler binds the
+// generic `EntityRow[]`). This template doesn't read entity fields, so it uses
+// the default `TemplateProps` entity type rather than a narrow local shape.
+export interface GenericAppTemplateProps extends TemplateProps {
   /** Page title */
   title: string;
   /** Subtitle or description */

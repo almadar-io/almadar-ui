@@ -24,20 +24,20 @@ import type { UiError } from '../../atoms/types';
 // Types
 // =============================================================================
 
-export interface TraitTransition {
+export type TraitTransition = {
     from: string;
     to: string;
     event: string;
     guardHint?: string;
-}
+};
 
-export interface TraitStateMachineDefinition {
+export type TraitStateMachineDefinition = {
     name: string;
     states: string[];
     currentState: string;
     transitions: TraitTransition[];
     description?: string;
-}
+};
 
 export interface TraitStateViewerProps {
     /** The trait / state machine to visualize */

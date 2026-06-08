@@ -9,7 +9,7 @@ import { Box } from '../../atoms/Box';
 import { HStack } from '../../atoms/Stack';
 import { Icon } from '../../atoms/Icon';
 
-export interface CraftingIngredient {
+export type CraftingIngredient = {
   /** Icon component or emoji */
   icon?: React.ReactNode;
   /** Ingredient label */
@@ -18,16 +18,16 @@ export interface CraftingIngredient {
   required: number;
   /** Number currently available */
   available: number;
-}
+};
 
-export interface CraftingOutput {
+export type CraftingOutput = {
   /** Icon component or emoji */
   icon?: React.ReactNode;
   /** Output item label */
   label: string;
   /** Rarity tier */
   rarity?: string;
-}
+};
 
 export interface CraftingRecipeProps {
   /** Input ingredients for the recipe */

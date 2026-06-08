@@ -17,12 +17,12 @@ import {
 /**
  * Context for conditional evaluation
  */
-export interface ConditionalContext {
+export type ConditionalContext = {
   formValues: Record<string, unknown>;
   globalVariables: Record<string, unknown>;
   localVariables?: Record<string, unknown>;
   entity?: Record<string, unknown>;
-}
+};
 
 export interface ConditionalWrapperProps {
   /** The S-expression condition to evaluate */

@@ -16,7 +16,7 @@ import { cn } from "../../lib/cn";
 /**
  * Law reference definition
  */
-export interface LawReference {
+export type LawReference = {
   /** Law identifier (e.g., "VVO", "TPED") */
   law: string;
   /** Full name of the law */
@@ -27,7 +27,7 @@ export interface LawReference {
   clause?: string;
   /** Optional link to full law text */
   link?: string;
-}
+};
 
 export interface LawReferenceTooltipProps {
   /** The law reference to display */

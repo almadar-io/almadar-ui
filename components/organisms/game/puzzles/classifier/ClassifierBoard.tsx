@@ -12,7 +12,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { EventEmit, EntityRow } from '@almadar/core';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
@@ -52,7 +52,11 @@ export interface ClassifierPuzzleEntity {
 }
 
 export interface ClassifierBoardProps extends Omit<EntityDisplayProps, 'entity'> {
-  entity: ClassifierPuzzleEntity;
+  // The compiler binds the generic `EntityRow`, so the inlet accepts it (and
+  // arrays) as union members; the component narrows to its curated
+  // `ClassifierPuzzleEntity` read-shape below (a valid union-narrow) and renders
+  // nothing until a puzzle entity is present.
+  entity?: ClassifierPuzzleEntity | EntityRow | readonly (ClassifierPuzzleEntity | EntityRow)[];
   completeEvent?: EventEmit<{ success: boolean; attempts: number }>;
 }
 
@@ -60,9 +64,10 @@ export function ClassifierBoard({
   entity,
   completeEvent = 'PUZZLE_COMPLETE',
   className,
-}: ClassifierBoardProps): React.JSX.Element {
+}: ClassifierBoardProps): React.JSX.Element | null {
   const { emit } = useEventBus();
   const { t } = useTranslate();
+  const resolved = (Array.isArray(entity) ? entity[0] : entity) as ClassifierPuzzleEntity | undefined;
 
   const [assignments, setAssignments] = useState<Record<string, string>>({});
   const [headerError, setHeaderError] = useState(false);
@@ -70,8 +75,8 @@ export function ClassifierBoard({
   const [attempts, setAttempts] = useState(0);
   const [showHint, setShowHint] = useState(false);
 
-  const items = entity?.items ?? [];
-  const categories = entity?.categories ?? [];
+  const items = resolved?.items ?? [];
+  const categories = resolved?.categories ?? [];
   const unassignedItems = items.filter((item) => !assignments[item.id]);
   const allAssigned = Object.keys(assignments).length === items.length;
 
@@ -111,7 +116,7 @@ export function ClassifierBoard({
 
   const handleReset = () => {
     setSubmitted(false);
-    if (attempts >= 2 && entity.hint) {
+    if (attempts >= 2 && resolved?.hint) {
       setShowHint(true);
     }
   };
@@ -123,29 +128,31 @@ export function ClassifierBoard({
     setShowHint(false);
   };
 
+  if (!resolved) return null;
+
   return (
     <Box
       className={className}
       style={{
-        backgroundImage: entity.theme?.background ? `url(${entity.theme.background})` : undefined,
+        backgroundImage: resolved.theme?.background ? `url(${resolved.theme.background})` : undefined,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
     >
       <VStack gap="lg" className="p-4">
         {/* Header image */}
-        {entity.headerImage && !headerError ? (
+        {resolved.headerImage && !headerError ? (
           <Box className="w-full h-32 overflow-hidden rounded-container">
-            <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
+            <img src={resolved.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
           </Box>
-        ) : entity.headerImage && headerError ? (
+        ) : resolved.headerImage && headerError ? (
           <Box className="w-full h-32 rounded-container bg-gradient-to-br from-muted to-accent opacity-60" />
         ) : null}
 
         <Card className="p-4">
           <VStack gap="sm">
-            <Typography variant="h4" weight="bold">{entity.title}</Typography>
-            <Typography variant="body">{entity.description}</Typography>
+            <Typography variant="h4" weight="bold">{resolved.title}</Typography>
+            <Typography variant="body">{resolved.description}</Typography>
           </VStack>
         </Card>
 
@@ -242,20 +249,20 @@ export function ClassifierBoard({
               <Icon icon={allCorrect ? CheckCircle : XCircle} size="lg" className={allCorrect ? 'text-success' : 'text-error'} />
               <Typography variant="body" weight="bold">
                 {allCorrect
-                  ? (entity.successMessage ?? t('classifier.allCorrect'))
+                  ? (resolved.successMessage ?? t('classifier.allCorrect'))
                   : `${correctCount}/${items.length} ${t('classifier.correct')}`}
               </Typography>
-              {!allCorrect && entity.failMessage && (
-                <Typography variant="body" className="text-muted-foreground">{entity.failMessage}</Typography>
+              {!allCorrect && resolved.failMessage && (
+                <Typography variant="body" className="text-muted-foreground">{resolved.failMessage}</Typography>
               )}
             </VStack>
           </Card>
         )}
 
         {/* Hint */}
-        {showHint && entity.hint && (
+        {showHint && resolved.hint && (
           <Card className="p-4 border-l-4 border-l-warning">
-            <Typography variant="body">{entity.hint}</Typography>
+            <Typography variant="body">{resolved.hint}</Typography>
           </Card>
         )}
 

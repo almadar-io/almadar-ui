@@ -15,7 +15,7 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { EventEmit, EntityRow } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import IsometricCanvas from './IsometricCanvas';
@@ -64,8 +64,9 @@ export type CastleSlotContext = {
 };
 
 export interface CastleBoardProps {
-    /** Castle entity data */
-    entity: CastleEntity;
+    /** Castle entity data. Also accepts the canonical `EntityRow` the compiler
+     *  binds (and arrays); narrowed to `CastleEntity` internally. */
+    entity?: CastleEntity | EntityRow | readonly (CastleEntity | EntityRow)[];
     /** Canvas render scale */
     scale?: number;
 
@@ -119,12 +120,15 @@ export function CastleBoard({
 }: CastleBoardProps): React.JSX.Element {
     const eventBus = useEventBus();
 
-    // Destructure entity with defaults
-    const tiles = entity.tiles;
-    const features = entity.features ?? [];
-    const units = entity.units ?? [];
-    const assetManifest = entity.assetManifest;
-    const backgroundImage = entity.backgroundImage;
+    // Narrow the compiler-bound inlet to the curated CastleEntity read-shape
+    // (a valid union-narrow), then read defensively so a missing entity yields
+    // empty collections rather than throwing.
+    const resolved = (Array.isArray(entity) ? entity[0] : entity) as CastleEntity | undefined;
+    const tiles = resolved?.tiles ?? [];
+    const features = resolved?.features ?? [];
+    const units = resolved?.units ?? [];
+    const assetManifest = resolved?.assetManifest;
+    const backgroundImage = resolved?.backgroundImage;
 
     const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
     const [selectedFeature, setSelectedFeature] = useState<IsometricFeature | null>(null);

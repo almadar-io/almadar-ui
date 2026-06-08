@@ -13,7 +13,7 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { EventEmit, EntityRow } from '@almadar/core';
 import { VStack, HStack, Box, Typography, Button } from '../../../../atoms';
 import { cn } from '../../../../../lib/cn';
 import { useEventBus } from '../../../../../hooks/useEventBus';
@@ -53,8 +53,11 @@ export interface EventHandlerPuzzleEntity {
 }
 
 export interface EventHandlerBoardProps extends Omit<EntityDisplayProps, 'entity'> {
-    /** Puzzle data */
-    entity: EventHandlerPuzzleEntity;
+    /** Puzzle data. The compiler binds the generic `EntityRow`, so the inlet
+     *  accepts it (and arrays) as union members; the component narrows to its
+     *  curated `EventHandlerPuzzleEntity` read-shape below (a valid
+     *  union-narrow) and renders nothing until a puzzle entity is present. */
+    entity?: EventHandlerPuzzleEntity | EntityRow | readonly (EventHandlerPuzzleEntity | EntityRow)[];
     /** Playback speed in ms per event */
     stepDurationMs?: number;
     /** Emits UI:{playEvent} */
@@ -81,10 +84,11 @@ export function EventHandlerBoard({
     playEvent,
     completeEvent,
     className,
-}: EventHandlerBoardProps): React.JSX.Element {
+}: EventHandlerBoardProps): React.JSX.Element | null {
     const { emit } = useEventBus();
     const { t } = useTranslate();
-    const entityObjects = entity?.objects ?? [];
+    const resolved = (Array.isArray(entity) ? entity[0] : entity) as EventHandlerPuzzleEntity | undefined;
+    const entityObjects = resolved?.objects ?? [];
     const [objects, setObjects] = useState<PuzzleObjectDef[]>(entityObjects);
     const [selectedObjectId, setSelectedObjectId] = useState<string | null>(
         entityObjects[0]?.id || null,
@@ -133,7 +137,7 @@ export function EventHandlerBoard({
             });
         });
 
-        const triggers = entity.triggerEvents || [];
+        const triggers = resolved?.triggerEvents || [];
         const eventQueue = [...triggers];
         const firedEvents = new Set<string>();
         let stepIdx = 0;
@@ -169,13 +173,13 @@ export function EventHandlerBoard({
                 matching.forEach(({ object, rule }) => {
                     addLogEntry(object.icon, t('eventHandler.heardEvent', { object: object.name, event: currentEvent, action: rule.thenAction }), 'done');
                     eventQueue.push(rule.thenAction);
-                    if (rule.thenAction === entity.goalEvent) {
+                    if (rule.thenAction === resolved?.goalEvent) {
                         goalReached = true;
                     }
                 });
             }
 
-            if (currentEvent === entity.goalEvent) {
+            if (currentEvent === resolved?.goalEvent) {
                 goalReached = true;
             }
 
@@ -187,7 +191,7 @@ export function EventHandlerBoard({
             addLogEntry('\uD83C\uDFAC', t('eventHandler.simulationStarted', { events: triggers.join(', ') }), 'active');
         }
         timerRef.current = setTimeout(processNext, stepDurationMs);
-    }, [playState, objects, entity, stepDurationMs, playEvent, completeEvent, emit, addLogEntry, t]);
+    }, [playState, objects, resolved, stepDurationMs, playEvent, completeEvent, emit, addLogEntry, t]);
 
     const handleTryAgain = useCallback(() => {
         if (timerRef.current) clearTimeout(timerRef.current);
@@ -198,12 +202,14 @@ export function EventHandlerBoard({
 
     const handleReset = useCallback(() => {
         if (timerRef.current) clearTimeout(timerRef.current);
-        setObjects(entity?.objects ?? []);
+        setObjects(resolved?.objects ?? []);
         setPlayState('editing');
         setEventLog([]);
-        setSelectedObjectId((entity?.objects ?? [])[0]?.id || null);
+        setSelectedObjectId((resolved?.objects ?? [])[0]?.id || null);
         setAttempts(0);
-    }, [entity?.objects]);
+    }, [resolved?.objects]);
+
+    if (!resolved) return null;
 
     // -- Build compact viewers ------------------------------------------------
 
@@ -221,41 +227,41 @@ export function EventHandlerBoard({
         return { obj, machine };
     });
 
-    const showHint = attempts >= 3 && entity.hint;
+    const showHint = attempts >= 3 && resolved.hint;
     const encourageKey = ENCOURAGEMENT_KEYS[Math.min(attempts - 1, ENCOURAGEMENT_KEYS.length - 1)] ?? ENCOURAGEMENT_KEYS[0];
 
     return (
         <VStack
             className={cn('p-4 gap-6', className)}
             style={{
-                backgroundImage: entity.theme?.background ? `url(${entity.theme.background})` : undefined,
+                backgroundImage: resolved.theme?.background ? `url(${resolved.theme.background})` : undefined,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
             }}
         >
             {/* Header image */}
-            {entity.headerImage && !headerError ? (
+            {resolved.headerImage && !headerError ? (
                 <Box className="w-full h-32 overflow-hidden rounded-container">
-                    <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
+                    <img src={resolved.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
                 </Box>
-            ) : entity.headerImage && headerError ? (
+            ) : resolved.headerImage && headerError ? (
                 <Box className="w-full h-32 rounded-container bg-gradient-to-br from-muted to-accent opacity-60" />
             ) : null}
 
             {/* Title + goal */}
             <VStack gap="xs">
                 <Typography variant="h4" className="text-foreground">
-                    {entity.title}
+                    {resolved.title}
                 </Typography>
                 <Typography variant="body2" className="text-muted-foreground">
-                    {entity.description}
+                    {resolved.description}
                 </Typography>
                 <HStack className="items-center p-2 rounded bg-primary/10 border border-primary/30" gap="xs">
                     <Typography variant="caption" className="text-primary font-bold">
                         {t('game.goal') + ':'}
                     </Typography>
                     <Typography variant="caption" className="text-foreground">
-                        {entity.goalCondition}
+                        {resolved.goalCondition}
                     </Typography>
                 </HStack>
             </VStack>
@@ -307,7 +313,7 @@ export function EventHandlerBoard({
             {playState === 'success' && (
                 <Box className="p-4 rounded-container bg-success/20 border border-success text-center">
                     <Typography variant="h5" className="text-success">
-                        {entity.successMessage || t('eventHandler.chainComplete')}
+                        {resolved.successMessage || t('eventHandler.chainComplete')}
                     </Typography>
                 </Box>
             )}
@@ -326,7 +332,7 @@ export function EventHandlerBoard({
                                     {'\uD83D\uDCA1 ' + t('game.hint') + ':'}
                                 </Typography>
                                 <Typography variant="body2" className="text-foreground">
-                                    {entity.hint}
+                                    {resolved.hint}
                                 </Typography>
                             </HStack>
                         </Box>

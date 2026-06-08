@@ -12,7 +12,7 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { EventEmit, EntityRow } from '@almadar/core';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
@@ -52,7 +52,11 @@ export interface SimulatorPuzzleEntity {
 }
 
 export interface SimulatorBoardProps extends Omit<EntityDisplayProps, 'entity'> {
-  entity: SimulatorPuzzleEntity;
+  // The compiler binds the generic `EntityRow`, so the inlet accepts it (and
+  // arrays) as union members; the component narrows to its curated
+  // `SimulatorPuzzleEntity` read-shape below (a valid union-narrow) and renders
+  // nothing until a puzzle entity is present.
+  entity?: SimulatorPuzzleEntity | EntityRow | readonly (SimulatorPuzzleEntity | EntityRow)[];
   completeEvent?: EventEmit<{ success: boolean; attempts: number }>;
 }
 
@@ -60,11 +64,12 @@ export function SimulatorBoard({
   entity,
   completeEvent = 'PUZZLE_COMPLETE',
   className,
-}: SimulatorBoardProps): React.JSX.Element {
+}: SimulatorBoardProps): React.JSX.Element | null {
   const { emit } = useEventBus();
   const { t } = useTranslate();
+  const resolved = (Array.isArray(entity) ? entity[0] : entity) as SimulatorPuzzleEntity | undefined;
 
-  const parameters = entity?.parameters ?? [];
+  const parameters = resolved?.parameters ?? [];
   const [values, setValues] = useState<Record<string, number>>(() => {
     const init: Record<string, number> = {};
     for (const p of parameters) {
@@ -79,16 +84,16 @@ export function SimulatorBoard({
 
   const computeOutput = useCallback((params: Record<string, number>): number => {
     try {
-      const fn = new Function('params', `return (${entity.computeExpression})`);
+      const fn = new Function('params', `return (${resolved?.computeExpression})`);
       return fn(params) as number;
     } catch {
       return 0;
     }
-  }, [entity.computeExpression]);
+  }, [resolved?.computeExpression]);
 
   const output = useMemo(() => computeOutput(values) ?? 0, [computeOutput, values]);
-  const targetValue = entity?.targetValue ?? 0;
-  const targetTolerance = entity?.targetTolerance ?? 0;
+  const targetValue = resolved?.targetValue ?? 0;
+  const targetTolerance = resolved?.targetTolerance ?? 0;
   const isCorrect = Math.abs(output - targetValue) <= targetTolerance;
 
   const handleParameterChange = (id: string, value: number) => {
@@ -106,7 +111,7 @@ export function SimulatorBoard({
 
   const handleReset = () => {
     setSubmitted(false);
-    if (attempts >= 2 && entity.hint) {
+    if (attempts >= 2 && resolved?.hint) {
       setShowHint(true);
     }
   };
@@ -122,29 +127,31 @@ export function SimulatorBoard({
     setShowHint(false);
   };
 
+  if (!resolved) return null;
+
   return (
     <Box
       className={className}
       style={{
-        backgroundImage: entity.theme?.background ? `url(${entity.theme.background})` : undefined,
+        backgroundImage: resolved.theme?.background ? `url(${resolved.theme.background})` : undefined,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
     >
       <VStack gap="lg" className="p-4">
         {/* Header image */}
-        {entity.headerImage && !headerError ? (
+        {resolved.headerImage && !headerError ? (
           <Box className="w-full h-32 overflow-hidden rounded-container">
-            <img src={entity.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
+            <img src={resolved.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
           </Box>
-        ) : entity.headerImage && headerError ? (
+        ) : resolved.headerImage && headerError ? (
           <Box className="w-full h-32 rounded-container bg-gradient-to-br from-muted to-accent opacity-60" />
         ) : null}
 
         <Card className="p-4">
           <VStack gap="sm">
-            <Typography variant="h4" weight="bold">{entity.title}</Typography>
-            <Typography variant="body">{entity.description}</Typography>
+            <Typography variant="h4" weight="bold">{resolved.title}</Typography>
+            <Typography variant="body">{resolved.description}</Typography>
           </VStack>
         </Card>
 
@@ -183,31 +190,31 @@ export function SimulatorBoard({
         <Card className="p-4">
           <VStack gap="sm" align="center">
             <Typography variant="small" weight="bold" className="uppercase tracking-wider text-muted-foreground">
-              {entity.outputLabel}
+              {resolved.outputLabel}
             </Typography>
             <Typography variant="h3" weight="bold">
-              {output.toFixed(2)} {entity.outputUnit}
+              {output.toFixed(2)} {resolved.outputUnit}
             </Typography>
             {submitted && (
               <HStack gap="xs" align="center">
                 <Icon icon={isCorrect ? CheckCircle : XCircle} size="sm" className={isCorrect ? 'text-success' : 'text-error'} />
                 <Typography variant="body" className={isCorrect ? 'text-success' : 'text-error'}>
                   {isCorrect
-                    ? (entity.successMessage ?? t('simulator.correct'))
-                    : (entity.failMessage ?? t('simulator.incorrect'))}
+                    ? (resolved.successMessage ?? t('simulator.correct'))
+                    : (resolved.failMessage ?? t('simulator.incorrect'))}
                 </Typography>
               </HStack>
             )}
             <Typography variant="caption" className="text-muted-foreground">
-              {t('simulator.target')}: {targetValue} {entity?.outputUnit ?? ''} (±{targetTolerance})
+              {t('simulator.target')}: {targetValue} {resolved.outputUnit} (±{targetTolerance})
             </Typography>
           </VStack>
         </Card>
 
         {/* Hint */}
-        {showHint && entity.hint && (
+        {showHint && resolved.hint && (
           <Card className="p-4 border-l-4 border-l-warning">
-            <Typography variant="body">{entity.hint}</Typography>
+            <Typography variant="body">{resolved.hint}</Typography>
           </Card>
         )}
 
