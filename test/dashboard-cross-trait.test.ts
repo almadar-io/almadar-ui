@@ -119,7 +119,7 @@ describe('renderItem lambda binding resolution', () => {
             format: '@card.format',
             max: '@card.max',
         };
-        expect(resolveLambdaBindings(body, 'card', card)).toEqual({
+        expect(resolveLambdaBindings(body, ['card'], card, 0)).toEqual({
             type: 'stat-display',
             label: 'Total Revenue',
             value: 97,
@@ -139,11 +139,24 @@ describe('renderItem lambda binding resolution', () => {
         // as missing and fall back to '0' string.
         const card = { value: 0, max: 0, label: 'Empty Bucket' };
         const body = { value: '@card.value', max: '@card.max', label: '@card.label' };
-        const resolved = resolveLambdaBindings(body, 'card', card) as Record<string, unknown>;
+        const resolved = resolveLambdaBindings(body, ['card'], card, 0) as Record<string, unknown>;
         expect(resolved.value).toBe(0);
         expect(resolved.max).toBe(0);
         expect(resolved.label).toBe('Empty Bucket');
         expect(typeof resolved.value).toBe('number');
         expect(typeof resolved.max).toBe('number');
+    });
+
+    it('grouped multi-param lambda (item, index) resolves both params', () => {
+        // The compiler canonicalizes 2-param render callbacks to the grouped
+        // form `["fn", ["item","index"], body]`. The UI runtime must accept it
+        // and substitute @item.* against the row AND @index against the loop
+        // position (was previously single-param-only, rejecting this shape).
+        expect(isFnFormLambda(['fn', ['item', 'index'], { type: 'stat-display', label: '@item.label', value: '@index' }])).toBe(true);
+        const body = { type: 'stat-display', label: '@item.label', value: '@index' };
+        const resolved = resolveLambdaBindings(body, ['item', 'index'], { label: 'Row A' }, 3) as Record<string, unknown>;
+        expect(resolved.label).toBe('Row A');
+        expect(resolved.value).toBe(3);
+        expect(typeof resolved.value).toBe('number');
     });
 });

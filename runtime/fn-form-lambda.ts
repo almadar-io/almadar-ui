@@ -19,14 +19,31 @@ import { createLogger } from '@almadar/logger';
 const lambdaLog = createLogger("almadar:ui:fn-form-lambda");
 
 export function isFnFormLambda(value: SlotPropValue): value is RenderItemLambda {
+  if (!Array.isArray(value)) return false;
+  // After the runtime array guard, view it as a homogeneous prop-value list so
+  // `[1]` types as `SlotPropValue`. (Indexing the narrowed `RenderItemLambda`
+  // tuple types `[1]` as `string`, collapsing the grouped-array branch to
+  // `never`.)
+  const arr = value as ReadonlyArray<SlotPropValue>;
+  if (arr.length !== 3 || arr[0] !== "fn" || arr[2] === null || typeof arr[2] !== "object") {
+    return false;
+  }
+  // Single-param shorthand (`["fn","item",body]`) OR the grouped multi-param
+  // form (`["fn",["item","index"],body]`) the compiler now canonicalizes to.
+  const params = arr[1];
   return (
-    Array.isArray(value) &&
-    value.length === 3 &&
-    value[0] === "fn" &&
-    typeof value[1] === "string" &&
-    value[2] !== null &&
-    typeof value[2] === "object"
+    typeof params === "string" ||
+    (Array.isArray(params) && params.length > 0 && params.every((p) => typeof p === "string"))
   );
+}
+
+/** Lambda param names: `["fn","item",b]` → `["item"]`;
+ *  `["fn",["item","index"],b]` → `["item","index"]`. */
+function fnFormParams(value: ReadonlyArray<SlotPropValue>): string[] {
+  const p = value[1];
+  if (typeof p === "string") return [p];
+  if (Array.isArray(p)) return p.filter((x): x is string => typeof x === "string");
+  return [];
 }
 
 /**
@@ -36,12 +53,18 @@ export function isFnFormLambda(value: SlotPropValue): value is RenderItemLambda 
  */
 export function resolveLambdaBindings(
   body: SlotPropValue,
-  argName: string,
-  arg: EntityRow,
+  params: readonly string[],
+  item: EntityRow,
+  index: number,
 ): SlotPropValue {
-  const prefix = `@${argName}.`;
+  // params[0] = the row (`item`); params[1] (optional) = the loop position
+  // (`index`). `@<item>` / `@<item>.path` resolve against the row; a bare
+  // `@<index>` resolves to the numeric loop position.
+  const itemName = params[0];
+  const indexName = params[1];
+  const itemPrefix = itemName ? `@${itemName}.` : null;
   const lookup = (path: string): EventPayloadValue => {
-    let cur: EventPayloadValue = arg as EventPayloadValue;
+    let cur: EventPayloadValue = item as EventPayloadValue;
     for (const seg of path.split(".")) {
       if (cur === null || cur === undefined) return undefined;
       if (typeof cur !== "object" || Array.isArray(cur)) return undefined;
@@ -49,21 +72,23 @@ export function resolveLambdaBindings(
     }
     return cur;
   };
+  const recur = (b: SlotPropValue): SlotPropValue => resolveLambdaBindings(b, params, item, index);
   if (typeof body === "string") {
-    if (body === `@${argName}`) return arg as EventPayloadValue;
-    if (body.startsWith(prefix)) {
-      const v = lookup(body.slice(prefix.length));
+    if (indexName && body === `@${indexName}`) return index;
+    if (itemName && body === `@${itemName}`) return item as EventPayloadValue;
+    if (itemPrefix && body.startsWith(itemPrefix)) {
+      const v = lookup(body.slice(itemPrefix.length));
       return v === undefined || v === null ? "" : v;
     }
     return body;
   }
   if (Array.isArray(body)) {
-    return body.map((b) => resolveLambdaBindings(b as SlotPropValue, argName, arg)) as SlotPropValue;
+    return body.map((b) => recur(b as SlotPropValue)) as SlotPropValue;
   }
   if (body !== null && typeof body === "object" && !React.isValidElement(body) && !(body instanceof Date) && typeof body !== "function") {
     const out: Record<string, SlotPropValue> = {};
     for (const [k, v] of Object.entries(body as Record<string, SlotPropValue>)) {
-      out[k] = resolveLambdaBindings(v, argName, arg);
+      out[k] = recur(v);
     }
     return out as SlotPropValue;
   }
@@ -93,12 +118,12 @@ function getSlotContentRenderer(): SlotContentRendererComponent {
 }
 
 function makeLambdaFn(
-  argName: string,
+  params: readonly string[],
   lambdaBody: AnyPatternConfig,
   callerKey: string,
 ): (item: EntityRow, index: number) => React.ReactNode {
   return (item, index) => {
-    const resolvedBody = resolveLambdaBindings(lambdaBody as SlotPropValue, argName, item);
+    const resolvedBody = resolveLambdaBindings(lambdaBody as SlotPropValue, params, item, index);
     if (
       resolvedBody === null ||
       typeof resolvedBody !== "object" ||
@@ -144,8 +169,8 @@ function convertNode(node: SlotPropValue, callerKey: string): SlotPropValue {
   if (node === null || node === undefined) return node;
   if (Array.isArray(node)) {
     if (isFnFormLambda(node)) {
-      const [, argName, body] = node;
-      return makeLambdaFn(argName, body, callerKey);
+      const arr = node as ReadonlyArray<SlotPropValue>;
+      return makeLambdaFn(fnFormParams(arr), arr[2] as AnyPatternConfig, callerKey);
     }
     const arr = node as ReadonlyArray<SlotPropValue>;
     let anyChanged = false;
@@ -168,11 +193,11 @@ function convertObjectProps(props: SlotProps): SlotProps {
   for (const [key, value] of Object.entries(props)) {
     if (isFnFormLambda(value)) {
       convertedAny = true;
-      const [, argName, body] = value;
+      const arr = value as ReadonlyArray<SlotPropValue>;
       // `renderItem` is the schema-level alias; consumers (DataGrid,
       // DataList, Carousel) read the per-row render via React `children`.
       const targetKey = key === "renderItem" ? "children" : key;
-      out[targetKey] = makeLambdaFn(argName, body, key);
+      out[targetKey] = makeLambdaFn(fnFormParams(arr), arr[2] as AnyPatternConfig, key);
       lambdaLog.debug(`convert key=${key} → ${targetKey}`);
       continue;
     }
