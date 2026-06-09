@@ -1331,14 +1331,18 @@ function SlotContentRenderer({
     // pure `Date` props on both the compiled and runtime paths.
     if (propsSchema) {
       for (const [propKey, propDef] of Object.entries(propsSchema)) {
+        const isDate = propDef.types?.some(
+          (t) => t === 'date' || t === 'datetime' || t === 'timestamp',
+        );
+        if (!isDate) continue;
         const v = renderedProps[propKey];
-        if (
-          (typeof v === 'string' || typeof v === 'number') &&
-          propDef.types?.some(
-            (t) => t === 'date' || t === 'datetime' || t === 'timestamp',
-          )
-        ) {
+        if (typeof v === 'string' || typeof v === 'number') {
           renderedProps[propKey] = new Date(v);
+        } else if (v == null && propDef.required) {
+          // Required `Date` with no bound value → default to today so the leaf
+          // component's `date: Date` contract holds (symmetric with the compiled
+          // edge's null→`new Date()` fallback in pattern/registry.rs).
+          renderedProps[propKey] = new Date();
         }
       }
     }
