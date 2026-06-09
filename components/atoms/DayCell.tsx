@@ -11,8 +11,9 @@ import { Box } from "./Box";
 import { Typography } from "./Typography";
 
 export interface DayCellProps {
-  /** The date this cell represents */
-  date: Date;
+  /** The date this cell represents. Optional at the dynamic render edge: an
+   *  unbound `@config.date` arrives as `undefined`, so the cell falls back to today. */
+  date?: Date;
   /** Whether this date is today */
   isToday?: boolean;
   /** Called when the day is clicked */
@@ -29,11 +30,13 @@ export function DayCell({
   onClick,
   className,
 }: DayCellProps): React.JSX.Element {
+  const safeDate =
+    date instanceof Date && !Number.isNaN(date.getTime()) ? date : new Date();
   const handleClick = useCallback(() => {
-    onClick?.(date);
-  }, [onClick, date]);
+    onClick?.(safeDate);
+  }, [onClick, safeDate]);
 
-  const dayAbbr = DAY_ABBREVIATIONS[date.getDay()];
+  const dayAbbr = DAY_ABBREVIATIONS[safeDate.getDay()];
 
   return (
     <Box
@@ -64,7 +67,7 @@ export function DayCell({
         )}
       >
         <Typography variant="body" className="font-semibold">
-          {date.getDate()}
+          {safeDate.getDate()}
         </Typography>
       </Box>
     </Box>
