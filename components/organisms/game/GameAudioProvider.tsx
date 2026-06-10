@@ -47,6 +47,15 @@ export function useGameAudioContext(): GameAudioContextValue {
     return ctx;
 }
 
+/**
+ * Access the game audio context, or `null` when there is no `<GameAudioProvider>`
+ * ancestor. Lets a component stay self-contained (render standalone with a local
+ * fallback) — the provider is an implementation detail, never a hard precondition.
+ */
+export function useGameAudioContextOptional(): GameAudioContextValue | null {
+    return useContext(GameAudioContext);
+}
+
 // =============================================================================
 // Props
 // =============================================================================

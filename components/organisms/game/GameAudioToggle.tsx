@@ -2,18 +2,20 @@
 /**
  * GameAudioToggle
  *
- * A small mute/unmute button for game HUDs.
- * Must be rendered inside a <GameAudioProvider> tree.
+ * A small mute/unmute button for game HUDs. Self-contained: inside a
+ * <GameAudioProvider> it drives the shared audio state; standalone it falls back
+ * to a local muted state so it renders without a provider (the provider is an
+ * implementation detail, not a precondition).
  *
  * Shows 🔊 when sound is on and 🔇 when muted.
  *
  * @packageDocumentation
  */
 
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Button } from '../../atoms';
 import { cn } from '../../../lib/cn';
-import { useGameAudioContext } from './GameAudioProvider';
+import { useGameAudioContextOptional } from './GameAudioProvider';
 import type { UiError } from '../../atoms/types';
 
 // =============================================================================
@@ -42,7 +44,10 @@ export function GameAudioToggle({
     size = 'sm',
     className,
 }: GameAudioToggleProps): React.JSX.Element {
-    const { muted, setMuted } = useGameAudioContext();
+    const ctx = useGameAudioContextOptional();
+    const [localMuted, setLocalMuted] = useState(false);
+    const muted = ctx ? ctx.muted : localMuted;
+    const setMuted = ctx ? ctx.setMuted : setLocalMuted;
 
     const handleToggle = useCallback(() => {
         setMuted(!muted);
