@@ -126,7 +126,12 @@ export function ControlButton({
       {icon && (
         <span className="text-2xl">
           {typeof icon === 'string'
-            ? (() => { const I = resolveIcon(icon); return I ? <I className="w-6 h-6" /> : null; })()
+            // An icon NAME (lucide kebab/ascii) resolves to a component; a literal
+            // glyph (e.g. the D-pad arrows ▲▼◀▶) is rendered as-is rather than
+            // funneled through resolveIcon (which would fall back to a `?`).
+            ? /^[a-zA-Z0-9-]+$/.test(icon)
+              ? (() => { const I = resolveIcon(icon); return I ? <I className="w-6 h-6" /> : null; })()
+              : icon
             : icon}
         </span>
       )}
