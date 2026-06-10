@@ -9,25 +9,25 @@
  */
 
 // Atoms (re-exported for convenience in doc swizzles)
-export { Box } from '../components/atoms/Box';
-export { VStack, HStack } from '../components/atoms/Stack';
-export { Typography } from '../components/atoms/Typography';
-export { Button } from '../components/atoms/Button';
-export { Icon } from '../components/atoms/Icon';
-export { Card } from '../components/atoms/Card';
-export { Divider } from '../components/atoms/Divider';
-export { Input } from '../components/atoms/Input';
+export { Box } from '../components/core/atoms/Box';
+export { VStack, HStack } from '../components/core/atoms/Stack';
+export { Typography } from '../components/core/atoms/Typography';
+export { Button } from '../components/core/atoms/Button';
+export { Icon } from '../components/core/atoms/Icon';
+export { Card } from '../components/core/atoms/Card';
+export { Divider } from '../components/core/atoms/Divider';
+export { Input } from '../components/core/atoms/Input';
 
 // Doc Molecules
-export { DocSidebar } from '../components/molecules/DocSidebar';
-export type { DocSidebarProps, DocSidebarItem } from '../components/molecules/DocSidebar';
-export { DocTOC } from '../components/molecules/DocTOC';
-export type { DocTOCProps, DocTOCItem } from '../components/molecules/DocTOC';
-export { DocBreadcrumb } from '../components/molecules/DocBreadcrumb';
-export type { DocBreadcrumbProps, DocBreadcrumbItem } from '../components/molecules/DocBreadcrumb';
-export { DocCodeBlock } from '../components/molecules/DocCodeBlock';
-export type { DocCodeBlockProps } from '../components/molecules/DocCodeBlock';
-export { DocPagination } from '../components/molecules/DocPagination';
-export type { DocPaginationProps } from '../components/molecules/DocPagination';
-export { DocSearch } from '../components/molecules/DocSearch';
-export type { DocSearchProps, DocSearchResult } from '../components/molecules/DocSearch';
+export { DocSidebar } from '../components/core/molecules/DocSidebar';
+export type { DocSidebarProps, DocSidebarItem } from '../components/core/molecules/DocSidebar';
+export { DocTOC } from '../components/core/molecules/DocTOC';
+export type { DocTOCProps, DocTOCItem } from '../components/core/molecules/DocTOC';
+export { DocBreadcrumb } from '../components/core/molecules/DocBreadcrumb';
+export type { DocBreadcrumbProps, DocBreadcrumbItem } from '../components/core/molecules/DocBreadcrumb';
+export { DocCodeBlock } from '../components/core/molecules/DocCodeBlock';
+export type { DocCodeBlockProps } from '../components/core/molecules/DocCodeBlock';
+export { DocPagination } from '../components/core/molecules/DocPagination';
+export type { DocPaginationProps } from '../components/core/molecules/DocPagination';
+export { DocSearch } from '../components/core/molecules/DocSearch';
+export type { DocSearchProps, DocSearchResult } from '../components/core/molecules/DocSearch';

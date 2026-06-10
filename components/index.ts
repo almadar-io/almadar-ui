@@ -1,7 +1,7 @@
-export * from './atoms';
-export * from './molecules';
-export * from './organisms';
-export * from './templates';
+export * from './core/atoms';
+export * from './core/molecules';
+export * from './core/organisms';
+export * from './core/templates';
 
 // Utility re-exports (so clients can use `import { cn } from '@almadar/ui'`)
 export { cn } from '../lib/cn';

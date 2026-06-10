@@ -110,7 +110,7 @@ type SlotContentRendererComponent = React.ComponentType<{
 let _slotContentRenderer: SlotContentRendererComponent | null = null;
 function getSlotContentRenderer(): SlotContentRendererComponent {
   if (_slotContentRenderer) return _slotContentRenderer;
-  const mod = require("../components/organisms/UISlotRenderer") as {
+  const mod = require("../components/core/organisms/UISlotRenderer") as {
     SlotContentRenderer: SlotContentRendererComponent;
   };
   _slotContentRenderer = mod.SlotContentRenderer;

@@ -20,7 +20,7 @@ import React, { type ReactNode, useMemo } from 'react';
 import { ThemeProvider, type ThemeProviderProps, type ThemeDefinition } from '../context/ThemeContext';
 import { EventBusProvider } from './EventBusProvider';
 import { SelectionProvider } from './SelectionProvider';
-import { SuspenseConfigProvider, type SuspenseConfig } from '../components/organisms/UISlotRenderer';
+import { SuspenseConfigProvider, type SuspenseConfig } from '../components/core/organisms/UISlotRenderer';
 import { VerificationProvider } from './VerificationProvider';
 
 // ============================================================================

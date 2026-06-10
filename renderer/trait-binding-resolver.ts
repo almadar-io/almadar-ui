@@ -24,7 +24,7 @@
  */
 
 import React from "react";
-import { TraitFrame } from "../components/atoms/TraitFrame";
+import { TraitFrame } from "../components/core/atoms/TraitFrame";
 import { createLogger } from "@almadar/logger";
 
 const log = createLogger("almadar:ui:trait-binding-resolver");

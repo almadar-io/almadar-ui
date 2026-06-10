@@ -57,17 +57,17 @@
       "require": "./dist/lib/index.cjs"
     },
     "./components/organisms/game/three": {
-      "types": "./dist/components/organisms/game/three/index.d.ts",
-      "import": "./dist/components/organisms/game/three/index.js",
-      "require": "./dist/components/organisms/game/three/index.cjs"
+      "types": "./dist/components/game/organisms/three/index.d.ts",
+      "import": "./dist/components/game/organisms/three/index.js",
+      "require": "./dist/components/game/organisms/three/index.cjs"
     },
     "./components/organisms/game/TraitStateViewer": {
-      "import": "./components/organisms/game/TraitStateViewer.tsx",
-      "types": "./components/organisms/game/TraitStateViewer.tsx"
+      "import": "./components/game/organisms/TraitStateViewer.tsx",
+      "types": "./components/game/organisms/TraitStateViewer.tsx"
     },
     "./components/organisms/game/TraitSlot": {
-      "import": "./components/organisms/game/TraitSlot.tsx",
-      "types": "./components/organisms/game/TraitSlot.tsx"
+      "import": "./components/game/organisms/TraitSlot.tsx",
+      "types": "./components/game/organisms/TraitSlot.tsx"
     },
     "./templates": {
       "import": "./templates/index.ts",

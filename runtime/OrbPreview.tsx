@@ -15,12 +15,12 @@
  */
 
 import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react';
-import { Box } from '../components/atoms/Box';
-import { Typography } from '../components/atoms/Typography';
+import { Box } from '../components/core/atoms/Box';
+import { Typography } from '../components/core/atoms/Typography';
 import { OrbitalProvider } from '../providers/OrbitalProvider';
 import { VerificationProvider } from '../providers/VerificationProvider';
 import { UISlotProvider, useUISlots, type SlotProps } from '../context/UISlotContext';
-import { UISlotRenderer } from '../components/organisms/UISlotRenderer';
+import { UISlotRenderer } from '../components/core/organisms/UISlotRenderer';
 import { useEventBus } from '../hooks/useEventBus';
 import type { OrbitalSchema, EntityData, ResolvedTraitBinding } from '@almadar/core';
 import { useResolvedSchema } from './useResolvedSchema';

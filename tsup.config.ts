@@ -78,6 +78,22 @@ const dedupeProvidersPlugin = {
   },
 };
 
+// The component registry lazy-loads the heavy Three.js bundle via the package's
+// own published subpath: `import('@almadar/ui/components/organisms/game/three')`.
+// It is a runtime code-split (resolved in the consumer's installed package), so
+// it must stay EXTERNAL during this build — esbuild otherwise resolves the
+// self-reference through `exports` to a dist file that doesn't exist yet at
+// bundle time. The `three` entry below still emits that dist chunk.
+const externalThreeSubpathPlugin = {
+  name: 'external-three-subpath',
+  setup(build: { onResolve: (opts: { filter: RegExp }, cb: () => { path: string; external: boolean }) => void }) {
+    build.onResolve({ filter: /^@almadar\/ui\/components\/organisms\/game\/three$/ }, () => ({
+      path: '@almadar/ui/components/organisms/game/three',
+      external: true,
+    }));
+  },
+};
+
 export default defineConfig([
   // Main build: all components (ESM + CJS, no splitting)
   {
@@ -90,7 +106,7 @@ export default defineConfig([
       'runtime/index.ts',
       'stores/index.ts',
       'lib/index.ts',
-      'components/organisms/game/three/index.ts',
+      'components/game/organisms/three/index.ts',
       'locales/index.ts',
     ],
     format: ['esm', 'cjs'],
@@ -101,7 +117,7 @@ export default defineConfig([
     treeshake: true,
     external: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query', '@almadar/ui', '@almadar/runtime', '@almadar/core', '@almadar/evaluator', '@almadar/patterns'],
     banner: { js: '"use client";' },
-    esbuildPlugins: [dedupeContextPlugin, dedupeEventBusPlugin, dedupeProvidersPlugin],
+    esbuildPlugins: [dedupeContextPlugin, dedupeEventBusPlugin, dedupeProvidersPlugin, externalThreeSubpathPlugin],
   },
   // Marketing build: SSR-safe subset for Docusaurus/webpack sites
   // No game engines, no Three.js, no browser globals at module scope
@@ -117,6 +133,7 @@ export default defineConfig([
     external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react'],
     noExternal: ['clsx', 'tailwind-merge'],
     banner: { js: '"use client";' },
+    esbuildPlugins: [externalThreeSubpathPlugin],
   },
   // Docs build: SSR-safe doc components for Docusaurus swizzles
   {
@@ -131,6 +148,7 @@ export default defineConfig([
     external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react'],
     noExternal: ['clsx', 'tailwind-merge'],
     banner: { js: '"use client";' },
+    esbuildPlugins: [externalThreeSubpathPlugin],
   },
   // AVL build: Almadar Visual Language formal notation
   {
@@ -145,5 +163,6 @@ export default defineConfig([
     external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react'],
     noExternal: ['clsx', 'tailwind-merge'],
     banner: { js: '"use client";' },
+    esbuildPlugins: [externalThreeSubpathPlugin],
   },
 ]);

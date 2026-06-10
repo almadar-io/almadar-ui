@@ -16,7 +16,7 @@ import {
   coreMessages,
   localeMeta,
   type SupportedLocale,
-} from '../../locales/index';
+} from '../../locales';
 
 /**
  * Storybook globalTypes config for the locale toolbar.
