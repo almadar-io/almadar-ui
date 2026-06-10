@@ -12,6 +12,7 @@ import { ButtonGroup } from '../../../molecules/ButtonGroup';
 import { Button } from '../../../atoms/Button';
 import { Checkbox } from '../../../atoms/Checkbox';
 import { EmptyState } from '../../../molecules/EmptyState';
+import { useTranslate } from '../../../../hooks/useTranslate';
 
 interface EventFlowTabProps {
     events: DebugEvent[];
@@ -27,6 +28,7 @@ const TYPE_BADGES: Record<string, { variant: 'default' | 'primary' | 'success' |
 };
 
 export function EventFlowTab({ events }: EventFlowTabProps) {
+    const { t } = useTranslate();
     const [filter, setFilter] = React.useState<string>('all');
     const containerRef = React.useRef<HTMLDivElement>(null);
     const [autoScroll, setAutoScroll] = React.useState(true);
@@ -56,7 +58,7 @@ export function EventFlowTab({ events }: EventFlowTabProps) {
     if (events.length === 0) {
         return (
             <EmptyState
-                title="No events yet"
+                title={t('debug.noEventsYet')}
                 description="Events will appear as traits, ticks, and other systems execute"
                 className="py-8"
             />

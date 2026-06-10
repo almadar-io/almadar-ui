@@ -14,6 +14,7 @@ import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
+import { useTranslate } from "../../hooks/useTranslate";
 
 export interface SidePanelProps {
   /**
@@ -80,6 +81,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   closeEvent,
 }) => {
   const eventBus = useEventBus();
+  const { t } = useTranslate();
 
   const handleClose = () => {
     if (closeEvent) eventBus.emit(`UI:${closeEvent}`, {});
@@ -122,9 +124,9 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             size="sm"
             icon="x"
             onClick={handleClose}
-            aria-label="Close panel"
+            aria-label={t('aria.closePanel')}
           >
-            <Typography variant="small" as="span" className="sr-only">Close</Typography>
+            <Typography variant="small" as="span" className="sr-only">{t('aria.closePanel')}</Typography>
           </Button>
         </Box>
 

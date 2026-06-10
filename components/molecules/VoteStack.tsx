@@ -5,6 +5,7 @@ import type { EventEmit } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../hooks/useEventBus";
+import { useTranslate } from "../../hooks/useTranslate";
 
 export type VoteStackSize = "sm" | "md" | "lg";
 export type VoteStackVariant = "vertical" | "horizontal";
@@ -71,6 +72,7 @@ export const VoteStack: React.FC<VoteStackProps> = ({
   const isUp = userVote === "up";
   const isDown = userVote === "down";
   const eventBus = useEventBus();
+  const { t } = useTranslate();
 
   const handleUp = useCallback(() => {
     const next: VoteValue = isUp ? null : "up";
@@ -106,7 +108,7 @@ export const VoteStack: React.FC<VoteStackProps> = ({
         type="button"
         onClick={handleUp}
         disabled={disabled}
-        aria-label="Upvote"
+        aria-label={t('aria.upvote')}
         aria-pressed={isUp}
         className={cn(
           "inline-flex items-center justify-center",
@@ -143,7 +145,7 @@ export const VoteStack: React.FC<VoteStackProps> = ({
         type="button"
         onClick={handleDown}
         disabled={disabled}
-        aria-label="Downvote"
+        aria-label={t('aria.downvote')}
         aria-pressed={isDown}
         className={cn(
           "inline-flex items-center justify-center",

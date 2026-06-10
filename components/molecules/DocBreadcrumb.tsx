@@ -12,6 +12,7 @@ import { Box } from '../atoms/Box';
 import { HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 import { Icon } from '../atoms/Icon';
+import { useTranslate } from '../../hooks/useTranslate';
 
 export interface DocBreadcrumbItem {
   /** Display label */
@@ -31,11 +32,12 @@ export const DocBreadcrumb: React.FC<DocBreadcrumbProps> = ({
   items,
   className,
 }) => {
+  const { t } = useTranslate();
   return (
     <Box
       className={cn('w-full', className)}
       role="navigation"
-      aria-label="Breadcrumb"
+      aria-label={t('aria.breadcrumb')}
     >
       <HStack gap="xs" align="center" wrap>
         {items.map((item, idx) => {

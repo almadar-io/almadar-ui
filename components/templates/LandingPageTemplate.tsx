@@ -8,6 +8,7 @@
 
 import React from 'react';
 import { cn } from '../../lib/cn';
+import { useTranslate } from '../../hooks/useTranslate';
 import { VStack } from '../atoms/Stack';
 import { Box } from '../atoms/Box';
 import { Container } from '../molecules/Container';
@@ -57,6 +58,7 @@ export const LandingPageTemplate: React.FC<LandingPageTemplateProps> = ({
   featureColumns = 3,
   className,
 }) => {
+  const { t } = useTranslate();
   const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity))
     ? entity as LandingPageEntity
     : undefined;
@@ -81,7 +83,7 @@ export const LandingPageTemplate: React.FC<LandingPageTemplateProps> = ({
         <Box className="bg-muted/20 py-16">
           <Container size="xl" padding="lg">
             <VStack gap="lg">
-              <SectionHeader title="Features" />
+              <SectionHeader title={t('template.features')} />
               <FeatureGrid
                 items={resolved.features.map((f) => ({
                   icon: f.icon,
@@ -113,7 +115,7 @@ export const LandingPageTemplate: React.FC<LandingPageTemplateProps> = ({
         <Box className="bg-muted/20 py-16">
           <Container size="xl" padding="lg">
             <VStack gap="lg">
-              <SectionHeader title="How It Works" />
+              <SectionHeader title={t('template.howItWorks')} />
               <StepFlow
                 steps={resolved.steps.map((s, i) => ({
                   number: i + 1,
@@ -131,7 +133,7 @@ export const LandingPageTemplate: React.FC<LandingPageTemplateProps> = ({
         <Box className="py-16">
           <Container size="xl" padding="lg">
             <VStack gap="lg">
-              <SectionHeader title="Showcase" />
+              <SectionHeader title={t('template.showcase')} />
               <SimpleGrid cols={Math.min(resolved.showcase.length, 3) as 1 | 2 | 3} gap="lg">
                 {resolved.showcase.map((item) => (
                   <ShowcaseCard

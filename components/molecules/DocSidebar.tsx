@@ -13,6 +13,7 @@ import { VStack } from '../atoms/Stack';
 import { HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 import { Icon } from '../atoms/Icon';
+import { useTranslate } from '../../hooks/useTranslate';
 
 export interface DocSidebarItem {
   /** Display label */
@@ -124,11 +125,12 @@ export const DocSidebar: React.FC<DocSidebarProps> = ({
   items,
   className,
 }) => {
+  const { t } = useTranslate();
   return (
     <Box
       className={cn('w-full', className)}
       role="navigation"
-      aria-label="Documentation sidebar"
+      aria-label={t('aria.docsSidebar')}
     >
       <VStack gap="xs">
         {items.map((item, idx) => (

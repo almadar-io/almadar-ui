@@ -144,7 +144,6 @@ export const Timeline: React.FC<TimelineProps> = ({
     look = "vertical-spacious",
 }) => {
     const { t } = useTranslate();
-    void t;
 
     // Normalize entity data to TimelineItem[] if schema data is provided
     const entityData = Array.isArray(entity) ? entity as readonly Record<string, unknown>[] : [];
@@ -180,13 +179,13 @@ export const Timeline: React.FC<TimelineProps> = ({
     }, [propItems, entityData, fields]);
 
     if (isLoading) {
-        return <LoadingState message="Loading timeline..." className={className} />;
+        return <LoadingState message={t('common.loading')} className={className} />;
     }
 
     if (error) {
         return (
             <ErrorState
-                title="Timeline error"
+                title={t('display.timelineError')}
                 message={error.message}
                 className={className}
             />
@@ -196,7 +195,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     if (items.length === 0) {
         return (
             <EmptyState
-                title="No events"
+                title={t('display.noEvents')}
                 description="No timeline events to display."
                 className={className}
             />

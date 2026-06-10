@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { Icon } from "../atoms/Icon";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
+import { useTranslate } from "../../hooks/useTranslate";
 
 function useSafeEventBus() {
   try {
@@ -53,6 +54,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
   const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
   const eventBus = useSafeEventBus();
+  const { t } = useTranslate();
 
   // Sync external index changes
   useEffect(() => {
@@ -157,7 +159,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
           "hover:bg-opacity-70 transition-opacity",
           "focus:outline-none focus:ring-2 focus:ring-white",
         )}
-        aria-label="Close"
+        aria-label={t('aria.closeModal')}
       >
         <Icon name="x" className="w-6 h-6" />
       </button>
@@ -177,7 +179,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
             "hover:bg-opacity-70 transition-opacity",
             "focus:outline-none focus:ring-2 focus:ring-white",
           )}
-          aria-label="Previous image"
+          aria-label={t('aria.previousImage')}
         >
           <Icon name="chevron-left" className="w-8 h-8" />
         </button>
@@ -215,7 +217,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
             "hover:bg-opacity-70 transition-opacity",
             "focus:outline-none focus:ring-2 focus:ring-white",
           )}
-          aria-label="Next image"
+          aria-label={t('aria.nextImage')}
         >
           <Icon name="chevron-right" className="w-8 h-8" />
         </button>

@@ -13,6 +13,7 @@ import { Icon } from "../atoms/Icon";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
+import { useTranslate } from "../../hooks/useTranslate";
 
 export interface BreadcrumbItem {
   /**
@@ -78,6 +79,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
   className,
 }) => {
   const eventBus = useEventBus();
+  const { t } = useTranslate();
   const displayItems =
     maxItems && items.length > maxItems
       ? [
@@ -89,7 +91,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
 
   return (
     <nav
-      aria-label="Breadcrumb"
+      aria-label={t('aria.breadcrumb')}
       className={cn("flex items-center gap-2", className)}
     >
       <ol className="flex items-center gap-2">

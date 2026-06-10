@@ -3,6 +3,7 @@ import type { EventKey } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { type LucideIcon } from "lucide-react";
 import { Icon, resolveIcon } from "./Icon";
+import { useTranslate } from "../../hooks/useTranslate";
 
 export interface SelectOption {
   value: string;
@@ -81,6 +82,7 @@ export const Input = React.forwardRef<
     },
     ref,
   ) => {
+    const { t } = useTranslate();
     // inputType takes precedence over type, default to "text"
     const type = inputType || htmlType || "text";
     // Resolve left icon: prefer leftIcon ReactNode, fallback to icon Lucide
@@ -124,7 +126,7 @@ export const Input = React.forwardRef<
             className={cn(baseClassName, "appearance-none pr-10", className)}
             {...(props as React.SelectHTMLAttributes<HTMLSelectElement>)}
           >
-            <option value="">Select...</option>
+            <option value="">{t('form.selectPlaceholder', { label: '' })}</option>
             {options?.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}

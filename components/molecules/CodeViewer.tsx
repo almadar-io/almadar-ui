@@ -22,6 +22,7 @@ import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
 import { Tabs, type TabItem } from "../molecules/Tabs";
 import { useEventBus } from "../../hooks/useEventBus";
+import { useTranslate } from "../../hooks/useTranslate";
 import { Copy, Check, Code, FileText, WrapText } from "lucide-react";
 import type { UiError } from '../atoms/types';
 
@@ -147,6 +148,7 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({
     className,
 }) => {
     const eventBus = useEventBus();
+    const { t } = useTranslate();
     const [copied, setCopied] = useState(false);
     const [wrap, setWrap] = useState(wordWrap);
     const [activeFileIndex, setActiveFileIndex] = useState(0);
@@ -193,13 +195,13 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({
     }));
 
     if (isLoading) {
-        return <LoadingState message="Loading code..." className={className} />;
+        return <LoadingState message={t('common.loading')} className={className} />;
     }
 
     if (error) {
         return (
             <ErrorState
-                title="Code viewer error"
+                title={t('display.codeViewerError')}
                 message={error.message}
                 className={className}
             />
@@ -210,7 +212,7 @@ export const CodeViewer: React.FC<CodeViewerProps> = ({
         return (
             <EmptyState
                 icon={Code}
-                title="No code"
+                title={t('display.noCode')}
                 description="No code to display."
                 className={className}
             />

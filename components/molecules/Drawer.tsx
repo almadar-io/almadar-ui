@@ -24,6 +24,7 @@ import { Typography } from "../atoms/Typography";
 import { Overlay } from "../atoms/Overlay";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
+import { useTranslate } from "../../hooks/useTranslate";
 
 // ============================================================================
 // Types
@@ -94,6 +95,7 @@ export const Drawer: React.FC<DrawerProps> = ({
   closeEvent,
 }) => {
   const eventBus = useEventBus();
+  const { t } = useTranslate();
   const drawerRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
 
@@ -211,7 +213,7 @@ export const Drawer: React.FC<DrawerProps> = ({
                 size="sm"
                 icon="x"
                 onClick={handleClose}
-                aria-label="Close drawer"
+                aria-label={t('aria.closeDrawer')}
                 className={cn(!title && "ml-auto")}
               />
             )}

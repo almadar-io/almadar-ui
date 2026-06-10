@@ -16,6 +16,7 @@ import { Typography } from '../../../atoms/Typography';
 import { Stack } from '../../../atoms/Stack';
 import { EmptyState } from '../../../molecules/EmptyState';
 import { useEventBus } from '../../../../hooks/useEventBus';
+import { useTranslate } from '../../../../hooks/useTranslate';
 
 interface EventDispatcherTabProps {
     traits: TraitDebugInfo[];
@@ -126,6 +127,7 @@ function getAllEvents(traits: TraitDebugInfo[]): Set<string> {
 
 export function EventDispatcherTab({ traits, schema }: EventDispatcherTabProps) {
     const eventBus = useEventBus();
+    const { t } = useTranslate();
     const [log, setLog] = React.useState<TransitionLogEntry[]>([]);
     const prevStatesRef = React.useRef<Map<string, string>>(new Map());
 
@@ -146,7 +148,7 @@ export function EventDispatcherTab({ traits, schema }: EventDispatcherTabProps) 
     if (traits.length === 0) {
         return (
             <EmptyState
-                title="No active traits"
+                title={t('debug.noActiveTraits')}
                 description="Traits will appear when the state machine initializes"
                 className="py-8"
             />

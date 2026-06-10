@@ -10,19 +10,21 @@ import { Typography } from '../../../atoms/Typography';
 import { Stack } from '../../../atoms/Stack';
 import { Card } from '../../../atoms/Card';
 import { EmptyState } from '../../../molecules/EmptyState';
+import { useTranslate } from '../../../../hooks/useTranslate';
 
 interface TicksTabProps {
     ticks: TickExecution[];
 }
 
 export function TicksTab({ ticks }: TicksTabProps) {
+    const { t } = useTranslate();
     const activeTicks = ticks.filter(t => t.active);
     const inactiveTicks = ticks.filter(t => !t.active);
 
     if (ticks.length === 0) {
         return (
             <EmptyState
-                title="No ticks registered"
+                title={t('debug.noTicks')}
                 description="Ticks will appear when trait tick handlers are running"
                 className="py-8"
             />

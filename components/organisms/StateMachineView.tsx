@@ -521,7 +521,7 @@ const BundleTooltip: React.FC<{
             action="TOOLTIP_CLOSE"
             className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center hover:scale-110 transition-transform"
             style={{ backgroundColor: 'var(--color-error)', padding: 0 }}
-            title="Close"
+            title={t('common.close')}
           >
             <Icon icon={X} size="xs" style={{ color: 'var(--color-error-foreground)' }} />
           </Button>

@@ -16,6 +16,7 @@ import { Typography } from "../atoms/Typography";
 import { Overlay } from "../atoms/Overlay";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
+import { useTranslate } from "../../hooks/useTranslate";
 
 export type ModalSize = "sm" | "md" | "lg" | "xl" | "full";
 
@@ -99,6 +100,7 @@ export const Modal: React.FC<ModalProps> = ({
   look = "centered-card",
 }) => {
   const eventBus = useEventBus();
+  const { t } = useTranslate();
   const modalRef = useRef<HTMLDialogElement>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
   const [dragY, setDragY] = useState(0);
@@ -253,7 +255,7 @@ export const Modal: React.FC<ModalProps> = ({
                   icon="x"
                   onClick={handleClose}
                   data-event="CLOSE"
-                  aria-label="Close modal"
+                  aria-label={t('aria.closeModal')}
                 />
               )}
             </Box>

@@ -392,7 +392,7 @@ export const List: React.FC<ListProps> = ({
   if (isLoading) {
     return (
       <LoadingState
-        message="Loading items..."
+        message={t('error.loadingItems')}
         className={className}
       />
     );
@@ -403,7 +403,7 @@ export const List: React.FC<ListProps> = ({
     return (
       <EmptyState
         icon={Package}
-        title="Error loading items"
+        title={t('error.somethingWentWrong')}
         description={error.message}
         className={className}
       />
@@ -731,7 +731,7 @@ export const List: React.FC<ListProps> = ({
     return (
       <EmptyState
         icon={Package}
-        title="No items found"
+        title={t('error.noItemsFound')}
         description={resolvedEmptyMessage}
         className={className}
       />

@@ -10,16 +10,18 @@ import { Badge } from '../../../atoms/Badge';
 import { Typography } from '../../../atoms/Typography';
 import { Stack } from '../../../atoms/Stack';
 import { EmptyState } from '../../../molecules/EmptyState';
+import { useTranslate } from '../../../../hooks/useTranslate';
 
 interface TraitsTabProps {
     traits: TraitDebugInfo[];
 }
 
 export function TraitsTab({ traits }: TraitsTabProps) {
+    const { t } = useTranslate();
     if (traits.length === 0) {
         return (
             <EmptyState
-                title="No active traits"
+                title={t('debug.noActiveTraits')}
                 description="Traits will appear when components using them are mounted"
                 className="py-8"
             />

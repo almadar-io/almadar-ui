@@ -15,6 +15,7 @@ import { Button } from "../atoms/Button";
 import { Badge } from "../atoms/Badge";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
+import { useTranslate } from "../../hooks/useTranslate";
 
 export type ToastVariant = "success" | "error" | "info" | "warning";
 
@@ -85,6 +86,7 @@ export const Toast: React.FC<ToastProps> = ({
   actionEvent,
 }) => {
   const eventBus = useEventBus();
+  const { t } = useTranslate();
 
   const handleDismiss = () => {
     if (dismissEvent) eventBus.emit(`UI:${dismissEvent}`, {});
@@ -160,7 +162,7 @@ export const Toast: React.FC<ToastProps> = ({
               size="sm"
               icon="x"
               onClick={handleDismiss}
-              aria-label="Dismiss toast"
+              aria-label={t('aria.closeToast')}
               className="flex-shrink-0"
             />
           )}

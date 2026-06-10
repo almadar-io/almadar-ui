@@ -4,6 +4,18 @@ import React from 'react';
 import type { ReactNode, ErrorInfo } from 'react';
 import { cn } from '../../lib/cn';
 import { ErrorState } from './ErrorState';
+import { useTranslate } from '../../hooks/useTranslate';
+
+const DefaultFallback: React.FC<{ error: Error; onRetry: () => void }> = ({ error, onRetry }) => {
+  const { t } = useTranslate();
+  return (
+    <ErrorState
+      title={t('error.somethingWentWrong')}
+      message={error.message}
+      onRetry={onRetry}
+    />
+  );
+};
 
 export interface ErrorBoundaryProps {
   /** Content to render when no error */
@@ -75,31 +87,13 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     const { children, fallback, className } = this.props;
 
     if (error) {
-      const wrapper = className ? (
-        <div className={cn(className)}>{this.renderFallback(error, fallback)}</div>
-      ) : (
-        this.renderFallback(error, fallback)
-      );
-      return wrapper;
+      const fallbackNode = typeof fallback === 'function'
+        ? fallback(error, this.reset)
+        : fallback || <DefaultFallback error={error} onRetry={this.reset} />;
+      return className ? <div className={cn(className)}>{fallbackNode}</div> : fallbackNode;
     }
 
     return children;
-  }
-
-  private renderFallback(error: Error, fallback: ErrorBoundaryProps['fallback']): ReactNode {
-    if (typeof fallback === 'function') {
-      return fallback(error, this.reset);
-    }
-    if (fallback) {
-      return fallback;
-    }
-    return (
-      <ErrorState
-        title="Something went wrong"
-        message={error.message}
-        onRetry={this.reset}
-      />
-    );
   }
 }
 

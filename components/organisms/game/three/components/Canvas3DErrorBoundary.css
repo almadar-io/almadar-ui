@@ -55,7 +55,7 @@
 /* Error Details */
 .canvas-3d-error__details {
     margin: 24px 0;
-    text-align: left;
+    text-align: start;
     background: rgba(0, 0, 0, 0.3);
     border-radius: 8px;
     overflow: hidden;

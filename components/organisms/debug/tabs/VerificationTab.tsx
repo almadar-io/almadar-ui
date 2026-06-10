@@ -12,6 +12,7 @@ import { Badge } from '../../../atoms/Badge';
 import { Typography } from '../../../atoms/Typography';
 import { Stack } from '../../../atoms/Stack';
 import { EmptyState } from '../../../molecules/EmptyState';
+import { useTranslate } from '../../../../hooks/useTranslate';
 
 interface VerificationTabProps {
     checks: VerificationCheck[];
@@ -30,10 +31,11 @@ const STATUS_CONFIG: Record<string, {
 };
 
 export function VerificationTab({ checks, summary }: VerificationTabProps) {
+    const { t } = useTranslate();
     if (checks.length === 0) {
         return (
             <EmptyState
-                title="No verification checks yet"
+                title={t('debug.noVerificationChecks')}
                 description="Checks will appear as the app executes transitions and effects"
                 className="py-8"
             />

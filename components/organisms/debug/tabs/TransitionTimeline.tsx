@@ -15,6 +15,7 @@ import { Badge } from '../../../atoms/Badge';
 import { Typography } from '../../../atoms/Typography';
 import { EmptyState } from '../../../molecules/EmptyState';
 import { Checkbox } from '../../../atoms/Checkbox';
+import { useTranslate } from '../../../../hooks/useTranslate';
 
 interface TransitionTimelineProps {
     transitions: TransitionTrace[];
@@ -46,6 +47,7 @@ function EffectBadge({ effect }: { effect: EffectTrace }) {
 }
 
 export function TransitionTimeline({ transitions }: TransitionTimelineProps) {
+    const { t } = useTranslate();
     const containerRef = React.useRef<HTMLDivElement>(null);
     const [autoScroll, setAutoScroll] = React.useState(true);
     const [expandedId, setExpandedId] = React.useState<string | null>(null);
@@ -59,7 +61,7 @@ export function TransitionTimeline({ transitions }: TransitionTimelineProps) {
     if (transitions.length === 0) {
         return (
             <EmptyState
-                title="No transitions recorded"
+                title={t('debug.noTransitionsRecorded')}
                 description="Transitions will appear as the state machine processes events"
                 className="py-8"
             />

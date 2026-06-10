@@ -338,7 +338,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   variant="ghost"
                   className="p-2 rounded-md hover:bg-muted dark:hover:bg-muted text-muted-foreground dark:text-muted-foreground touch-manipulation min-h-[44px] min-w-[44px] flex items-center justify-center"
                   onClick={() => setSidebarOpen(true)}
-                  aria-label="Open sidebar"
+                  aria-label={t('aria.openSidebar')}
                 >
                   <AlmadarIcon name="menu" className="h-5 w-5" />
                 </Button>

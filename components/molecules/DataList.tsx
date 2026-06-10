@@ -362,7 +362,7 @@ export function DataList<T extends EntityRow = EntityRow>({
           <Menu
             position="bottom-end"
             trigger={
-              <Button variant="ghost" size="sm" aria-label="More actions" data-testid="action-overflow">
+              <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow">
                 <Icon name="more-horizontal" size="xs" />
               </Button>
             }
@@ -397,7 +397,7 @@ export function DataList<T extends EntityRow = EntityRow>({
     return (
       <Box className="text-center py-8">
         <Typography variant="body" color="secondary">
-          {t('loading.items') || 'Loading...'}
+          {t('loading.items')}
         </Typography>
       </Box>
     );
@@ -422,7 +422,7 @@ export function DataList<T extends EntityRow = EntityRow>({
     const emptyNode = (
       <Box className="text-center py-12">
         <Typography variant="body" color="secondary">
-          {t('empty.noItems') || 'No items found'}
+          {t('empty.noItems')}
         </Typography>
       </Box>
     );
@@ -662,7 +662,7 @@ export function DataList<T extends EntityRow = EntityRow>({
             onClick={() => setVisibleCount((prev) => prev + (pageSize || 5))}
           >
             <Icon name="chevron-down" size="xs" className="mr-1" />
-            {t('common.showMore')} ({allData.length - visibleCount} remaining)
+            {t('common.showMore')} ({t('common.remaining', { count: allData.length - visibleCount })})
           </Button>
         </Box>
       )}

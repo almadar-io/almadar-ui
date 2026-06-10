@@ -2,6 +2,7 @@ import React, { useCallback } from "react";
 import type { EventEmit } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { useEventBus } from "../../hooks/useEventBus";
+import { useTranslate } from "../../hooks/useTranslate";
 import { Icon } from "./Icon";
 
 export type FilterPillVariant =
@@ -96,6 +97,7 @@ export const FilterPill = React.forwardRef<HTMLSpanElement, FilterPillProps>(
     ref,
   ) => {
     const eventBus = useEventBus();
+  const { t } = useTranslate();
     const payloadLabel =
       typeof children === "string" || typeof children === "number" ? children : label;
 
@@ -136,7 +138,7 @@ export const FilterPill = React.forwardRef<HTMLSpanElement, FilterPillProps>(
               e.stopPropagation();
               handleRemove();
             }}
-            aria-label="Remove filter"
+            aria-label={t('aria.removeFilter')}
             className={cn(
               "ml-0.5 rounded-full hover:bg-foreground/10 transition-colors flex items-center justify-center",
             )}

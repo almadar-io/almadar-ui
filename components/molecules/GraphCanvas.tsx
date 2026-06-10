@@ -21,6 +21,7 @@ import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
 import { useEventBus } from "../../hooks/useEventBus";
+import { useTranslate } from "../../hooks/useTranslate";
 import { Maximize2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import type { UiError } from '../atoms/types';
 
@@ -124,6 +125,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     className,
 }) => {
     const eventBus = useEventBus();
+    const { t } = useTranslate();
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const animRef = useRef<number>(0);
     const [zoom, setZoom] = useState(1);
@@ -354,13 +356,13 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     }, []);
 
     if (isLoading) {
-        return <LoadingState message="Loading graph..." className={className} />;
+        return <LoadingState message={t('common.loading')} className={className} />;
     }
 
     if (error) {
         return (
             <ErrorState
-                title="Graph error"
+                title={t('display.graphError')}
                 message={error.message}
                 className={className}
             />
@@ -370,7 +372,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     if (propNodes.length === 0) {
         return (
             <EmptyState
-                title="No graph data"
+                title={t('display.noGraphData')}
                 description="No nodes to display."
                 className={className}
             />

@@ -315,7 +315,7 @@ export function TableView<T extends EntityRow = EntityRow>({
   if (isLoading) {
     return (
       <Box className="text-center py-8">
-        <Typography variant="body" color="secondary">{t('loading.items') || 'Loading…'}</Typography>
+        <Typography variant="body" color="secondary">{t('loading.items')}</Typography>
       </Box>
     );
   }
@@ -329,7 +329,7 @@ export function TableView<T extends EntityRow = EntityRow>({
   if (data.length === 0) {
     const emptyNode = (
       <Box className="text-center py-12">
-        <Typography variant="body" color="secondary">{emptyMessage || t('empty.noItems') || 'No records'}</Typography>
+        <Typography variant="body" color="secondary">{emptyMessage || t('empty.noItems')}</Typography>
       </Box>
     );
     return dnd.enabled ? <>{dnd.wrapContainer(emptyNode)}</> : emptyNode;
@@ -372,7 +372,7 @@ export function TableView<T extends EntityRow = EntityRow>({
     >
       {selectable && (
         <Box className="flex items-center">
-          <Checkbox checked={allSelected} onChange={toggleAll} aria-label="Select all rows" />
+          <Checkbox checked={allSelected} onChange={toggleAll} aria-label={t('aria.selectAllRows')} />
         </Box>
       )}
       {colDefs.map((col) => {
@@ -477,7 +477,7 @@ export function TableView<T extends EntityRow = EntityRow>({
               <Menu
                 position="bottom-end"
                 trigger={
-                  <Button variant="ghost" size="sm" aria-label="More actions" data-testid="action-overflow">
+                  <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow">
                     <Icon name="more-horizontal" size="xs" />
                   </Button>
                 }
@@ -531,7 +531,7 @@ export function TableView<T extends EntityRow = EntityRow>({
         <Box className="flex justify-center py-3">
           <Button variant="ghost" size="sm" onClick={() => setVisibleCount((p) => p + (pageSize || 5))}>
             <Icon name="chevron-down" size="xs" className="mr-1" />
-            {t('common.showMore')} ({ordered.length - visibleCount} remaining)
+            {t('common.showMore')} ({t('common.remaining', { count: ordered.length - visibleCount })})
           </Button>
         </Box>
       )}

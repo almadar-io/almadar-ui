@@ -549,7 +549,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   if (isLoading) {
     return (
       <LoadingState
-        message="Loading details..."
+        message={t('common.loading')}
         className={className}
       />
     );
@@ -574,7 +574,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   ) {
     return (
       <EmptyState
-        title="Not Found"
+        title={t('error.notFound')}
         description="The requested item could not be found."
         className={className}
       />

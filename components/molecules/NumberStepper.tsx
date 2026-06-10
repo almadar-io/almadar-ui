@@ -5,6 +5,7 @@ import type { EventKey, EventPayload } from "@almadar/core";
 import { cn } from "../../lib/cn";
 import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../hooks/useEventBus";
+import { useTranslate } from "../../hooks/useTranslate";
 
 function useSafeEventBus() {
   try {
@@ -76,6 +77,7 @@ export const NumberStepper: React.FC<NumberStepperProps> = ({
   label,
 }) => {
   const eventBus = useSafeEventBus();
+  const { t } = useTranslate();
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -168,7 +170,7 @@ export const NumberStepper: React.FC<NumberStepperProps> = ({
           "focus:outline-none focus:ring-[length:var(--focus-ring-width)] focus:ring-ring focus:ring-inset",
           styles.button,
         )}
-        aria-label="Decrease"
+        aria-label={t('aria.decrease')}
       >
         <Icon name="minus" className={styles.icon} />
       </button>
@@ -209,7 +211,7 @@ export const NumberStepper: React.FC<NumberStepperProps> = ({
           "focus:outline-none focus:ring-[length:var(--focus-ring-width)] focus:ring-ring focus:ring-inset",
           styles.button,
         )}
-        aria-label="Increase"
+        aria-label={t('aria.increase')}
       >
         <Icon name="plus" className={styles.icon} />
       </button>

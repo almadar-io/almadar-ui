@@ -20,6 +20,7 @@ import { VStack, HStack } from "../atoms/Stack";
 import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
 import { useEventBus } from "../../hooks/useEventBus";
+import { useTranslate } from "../../hooks/useTranslate";
 import { Eraser, Check } from "lucide-react";
 import type { UiError } from '../atoms/types';
 
@@ -71,6 +72,7 @@ export const SignaturePad: React.FC<SignaturePadProps> = ({
     className,
 }) => {
     const eventBus = useEventBus();
+    const { t } = useTranslate();
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isDrawing, setIsDrawing] = useState(false);
     const [hasSignature, setHasSignature] = useState(!!value);
@@ -175,13 +177,13 @@ export const SignaturePad: React.FC<SignaturePadProps> = ({
     }, [signEvent, eventBus]);
 
     if (isLoading) {
-        return <LoadingState message="Loading signature pad..." className={className} />;
+        return <LoadingState message={t('common.loading')} className={className} />;
     }
 
     if (error) {
         return (
             <ErrorState
-                title="Signature pad error"
+                title={t('display.signaturePadError')}
                 message={error.message}
                 className={className}
             />

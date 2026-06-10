@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { cn } from '../../lib/cn';
+import { useTranslate } from '../../hooks/useTranslate';
 import { VStack } from '../atoms/Stack';
 import { Box } from '../atoms/Box';
 import { Container } from '../molecules/Container';
@@ -40,6 +41,7 @@ export const PricingPageTemplate: React.FC<PricingPageTemplateProps> = ({
   entity,
   className,
 }) => {
+  const { t } = useTranslate();
   const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity))
     ? entity as PricingPageEntity
     : undefined;
@@ -75,7 +77,7 @@ export const PricingPageTemplate: React.FC<PricingPageTemplateProps> = ({
         <Box className="bg-muted/20 py-16">
           <Container size="lg" padding="lg">
             <VStack gap="lg">
-              <SectionHeader title="Frequently Asked Questions" />
+              <SectionHeader title={t('template.faq')} />
               <Accordion
                 items={resolved.faq.map((item, index) => ({
                   id: `faq-${index}`,

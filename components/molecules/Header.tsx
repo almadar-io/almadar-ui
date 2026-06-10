@@ -213,7 +213,7 @@ export const Header: React.FC<HeaderProps> = ({
             variant="ghost"
             onClick={onMenuToggle}
             className="p-2 -ml-2 text-foreground hover:bg-muted transition-colors"
-            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+            aria-label={isMenuOpen ? t('aria.closeMenu') : t('aria.openMenu')}
           >
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </Button>

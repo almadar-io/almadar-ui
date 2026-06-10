@@ -21,6 +21,7 @@ import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
 import { Tabs, type TabItem } from "../molecules/Tabs";
 import { useEventBus } from "../../hooks/useEventBus";
+import { useTranslate } from "../../hooks/useTranslate";
 import {
     FileText,
     Download,
@@ -103,6 +104,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
     className,
 }) => {
     const eventBus = useEventBus();
+    const { t } = useTranslate();
     const [zoom, setZoom] = useState(100);
     const [currentPage, setCurrentPage] = useState(propPage ?? 1);
     const [activeDocIndex, setActiveDocIndex] = useState(0);
@@ -145,13 +147,13 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
     }, [totalPages, eventBus, currentPage]);
 
     if (isLoading) {
-        return <LoadingState message="Loading document..." className={className} />;
+        return <LoadingState message={t('common.loading')} className={className} />;
     }
 
     if (error) {
         return (
             <ErrorState
-                title="Document error"
+                title={t('display.documentError')}
                 message={error.message}
                 className={className}
             />
@@ -168,7 +170,7 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
         return (
             <EmptyState
                 icon={FileText}
-                title="No document"
+                title={t('display.noDocument')}
                 description="No document to display."
                 className={className}
             />

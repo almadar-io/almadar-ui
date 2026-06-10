@@ -10,16 +10,18 @@ import { Badge } from '../../../atoms/Badge';
 import { Typography } from '../../../atoms/Typography';
 import { Stack } from '../../../atoms/Stack';
 import { EmptyState } from '../../../molecules/EmptyState';
+import { useTranslate } from '../../../../hooks/useTranslate';
 
 interface EntitiesTabProps {
     snapshot: EntitySnapshot | null;
 }
 
 export function EntitiesTab({ snapshot }: EntitiesTabProps) {
+    const { t } = useTranslate();
     if (!snapshot) {
         return (
             <EmptyState
-                title="No entity data"
+                title={t('debug.noEntityData')}
                 description="Debug mode may not be enabled"
                 className="py-8"
             />
@@ -33,7 +35,7 @@ export function EntitiesTab({ snapshot }: EntitiesTabProps) {
     if (singletonEntries.length === 0 && runtimeEntities.length === 0 && persistentEntries.length === 0) {
         return (
             <EmptyState
-                title="No entities"
+                title={t('debug.noEntities')}
                 description="Entities will appear when spawned"
                 className="py-8"
             />

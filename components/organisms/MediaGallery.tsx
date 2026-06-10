@@ -102,7 +102,6 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
 }) => {
     const eventBus = useEventBus();
     const { t } = useTranslate();
-    void t;
     const [lightboxItem, setLightboxItem] = useState<MediaItem | null>(null);
 
     const closeLightbox = useCallback(() => setLightboxItem(null), []);
@@ -140,13 +139,13 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
     }, [propItems, entityData]);
 
     if (isLoading) {
-        return <LoadingState message="Loading media..." className={className} />;
+        return <LoadingState message={t('common.loading')} className={className} />;
     }
 
     if (error) {
         return (
             <ErrorState
-                title="Gallery error"
+                title={t('display.galleryError')}
                 message={error.message}
                 className={className}
             />
@@ -157,7 +156,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
         return (
             <EmptyState
                 icon={ImageIcon}
-                title="No media"
+                title={t('display.noMedia')}
                 description="No media items to display."
                 className={className}
             />

@@ -14,6 +14,7 @@ import { VStack, HStack } from "../atoms/Stack";
 import { LoadingState } from "./LoadingState";
 import { ErrorState } from "./ErrorState";
 import { useEventBus } from "../../hooks/useEventBus";
+import { useTranslate } from "../../hooks/useTranslate";
 import type { UiError } from '../atoms/types';
 
 export type MeterVariant = "linear" | "radial" | "segmented";
@@ -106,6 +107,7 @@ export const Meter: React.FC<MeterProps> = ({
     className,
 }) => {
     const eventBus = useEventBus();
+    const { t } = useTranslate();
 
     const handleAction = useCallback(
         (action: MeterAction) => {
@@ -135,13 +137,13 @@ export const Meter: React.FC<MeterProps> = ({
     }, [safeVal, unit]);
 
     if (isLoading) {
-        return <LoadingState message="Loading meter..." className={className} />;
+        return <LoadingState message={t('common.loading')} className={className} />;
     }
 
     if (error) {
         return (
             <ErrorState
-                title="Meter error"
+                title={t('display.meterError')}
                 message={error.message}
                 className={className}
             />

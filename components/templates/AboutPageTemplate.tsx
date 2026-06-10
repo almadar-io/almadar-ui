@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { cn } from '../../lib/cn';
+import { useTranslate } from '../../hooks/useTranslate';
 import { VStack } from '../atoms/Stack';
 import { Box } from '../atoms/Box';
 import { Typography } from '../atoms/Typography';
@@ -44,6 +45,7 @@ export const AboutPageTemplate: React.FC<AboutPageTemplateProps> = ({
   entity,
   className,
 }) => {
+  const { t } = useTranslate();
   const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity))
     ? entity as AboutPageEntity
     : undefined;
@@ -80,7 +82,7 @@ export const AboutPageTemplate: React.FC<AboutPageTemplateProps> = ({
         <Box className="bg-muted/20 py-16">
           <Container size="xl" padding="lg">
             <VStack gap="lg">
-              <SectionHeader title="Our Team" />
+              <SectionHeader title={t('template.ourTeam')} />
               <SimpleGrid
                 cols={Math.min(resolved.team.length, 4) as 1 | 2 | 3 | 4}
                 gap="lg"
@@ -105,7 +107,7 @@ export const AboutPageTemplate: React.FC<AboutPageTemplateProps> = ({
         <Box className="py-16">
           <Container size="xl" padding="lg">
             <VStack gap="lg">
-              <SectionHeader title="Case Studies" />
+              <SectionHeader title={t('template.caseStudies')} />
               <SimpleGrid
                 cols={Math.min(resolved.caseStudies.length, 3) as 1 | 2 | 3}
                 gap="lg"

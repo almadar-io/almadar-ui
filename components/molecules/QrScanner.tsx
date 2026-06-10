@@ -6,6 +6,7 @@ import { cn } from "../../lib/cn";
 import { Box, Typography, Button } from "../atoms";
 import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../hooks/useEventBus";
+import { useTranslate } from "../../hooks/useTranslate";
 
 /**
  * QR scan callback payload. Extends `EventPayload` (string-indexed
@@ -42,6 +43,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({
   className,
 }) => {
   const eventBus = useEventBus();
+  const { t } = useTranslate();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scanIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -162,7 +164,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({
       )}
       data-pattern="qr-scanner"
       role="region"
-      aria-label="QR scanner"
+      aria-label={t('aria.qrScanner')}
     >
       <Box
         as="video"
@@ -243,7 +245,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({
               "rounded-full bg-black bg-opacity-60 px-3 py-2 text-xs text-white",
               "hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-white",
             )}
-            aria-label="Mock scan (dev)"
+            aria-label={t('aria.mockScanDev')}
           >
             Mock Scan
           </Button>

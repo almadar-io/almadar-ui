@@ -822,13 +822,13 @@ export const Chart: React.FC<ChartProps> = ({
             : normalizedSeries.some((s) => s.data.length > 0);
 
     if (isLoading) {
-        return <LoadingState message="Loading chart..." className={className} />;
+        return <LoadingState message={t('common.loading')} className={className} />;
     }
 
     if (error) {
         return (
             <ErrorState
-                title="Chart error"
+                title={t('display.chartError')}
                 message={error.message}
                 className={className}
             />

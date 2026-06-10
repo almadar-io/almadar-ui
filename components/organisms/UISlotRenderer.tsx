@@ -33,6 +33,7 @@ import { Toast } from "../molecules/Toast";
 import { Box } from "../atoms/Box";
 import { Typography } from "../atoms/Typography";
 import { useEventBus } from "../../hooks/useEventBus";
+import { useTranslate } from "../../hooks/useTranslate";
 import { slotLog, refId } from "../../runtime/ui/slot-types";
 import { cn } from "../../lib/cn";
 import { ErrorBoundary } from "../molecules/ErrorBoundary";
@@ -291,6 +292,7 @@ interface UISlotComponentProps {
  * Mirrors SlotPortal's wrapper logic but uses absolute instead of fixed positioning.
  */
 function renderContainedPortal(
+  t: (key: string) => string,
   slot: UISlot,
   content: SlotContent,
   onDismiss: () => void,
@@ -358,7 +360,7 @@ function renderContainedPortal(
                 onClick={onDismiss}
                 data-event="CLOSE"
                 data-testid="action-CLOSE"
-                aria-label="Close modal"
+                aria-label={t('aria.closeModal')}
               >
                 ✕
               </Box>
@@ -405,7 +407,7 @@ function renderContainedPortal(
                 onClick={onDismiss}
                 data-event="CLOSE"
                 data-testid="action-CLOSE"
-                aria-label="Close drawer"
+                aria-label={t('aria.closeDrawer')}
               >
                 ✕
               </Box>
@@ -516,6 +518,7 @@ function UISlotComponent({
 }: UISlotComponentProps): React.ReactElement | null {
   const { slots, clear } = useUISlots();
   const eventBus = useEventBus();
+  const { t } = useTranslate();
   const suspenseConfig = useContext(SuspenseConfigContext);
   const contained = useContext(SlotContainedContext);
   const content = slots[slot];
@@ -595,7 +598,7 @@ function UISlotComponent({
   if (portal) {
     // In contained mode, render inline with absolute positioning
     if (contained) {
-      return renderContainedPortal(slot, content, handleDismiss);
+      return renderContainedPortal(t, slot, content, handleDismiss);
     }
     return (
       <SlotPortal
@@ -689,6 +692,7 @@ function CompiledPortal({ slot, className, pattern, sourceTrait, children }: Com
   const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
   const slotsBus = useUISlots();
   const eventBus = useEventBus();
+  const { t } = useTranslate();
 
   useEffect(() => {
     setPortalRoot(getOrCreatePortalRoot());
@@ -1228,6 +1232,7 @@ function SlotContentRenderer({
   // `MaybeTraitScope` qualifies bare `UI:X` keys to `UI:Orbital.Trait.X`
   // so the trait state machine receives the dispatch.
   const eventBus = useEventBus();
+  const { t } = useTranslate();
 
   // Entity schema for form field type enrichment (optional — only available in runtime mode)
   const schemaCtx = useEntitySchemaOptional();

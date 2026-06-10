@@ -15,6 +15,7 @@ import { Typography } from "../atoms/Typography";
 import { Button } from "../atoms/Button";
 import { Icon } from "../atoms/Icon";
 import { cn } from "../../lib/cn";
+import { useTranslate } from "../../hooks/useTranslate";
 
 export type CoachmarkPlacement = "top" | "bottom" | "left" | "right";
 export type CoachmarkAnchor =
@@ -156,6 +157,7 @@ export const Coachmark: React.FC<CoachmarkProps> = ({
   className,
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslate();
   const rect = useAnchorRect(anchor, open);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
 
@@ -215,7 +217,7 @@ export const Coachmark: React.FC<CoachmarkProps> = ({
     >
       <button
         type="button"
-        aria-label="Dismiss"
+        aria-label={t('aria.dismiss')}
         onClick={onDismiss}
         className="absolute top-2 right-2 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
       >

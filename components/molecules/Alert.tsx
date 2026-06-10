@@ -13,6 +13,7 @@ import { Box } from "../atoms/Box";
 import { Icon } from "../atoms/Icon";
 import { Typography } from "../atoms/Typography";
 import { useEventBus } from "../../hooks/useEventBus";
+import { useTranslate } from "../../hooks/useTranslate";
 
 export type AlertVariant = "info" | "success" | "warning" | "error";
 
@@ -66,6 +67,7 @@ export const Alert: React.FC<AlertProps> = ({
   dismissEvent,
 }) => {
   const eventBus = useEventBus();
+  const { t } = useTranslate();
   const handleDismissCallback = onDismiss || onClose;
 
   const handleDismiss = () => {
@@ -115,7 +117,7 @@ export const Alert: React.FC<AlertProps> = ({
               "flex-shrink-0 p-1 transition-colors rounded-sm",
               "hover:bg-muted",
             )}
-            aria-label="Dismiss alert"
+            aria-label={t('aria.closeAlert')}
           >
             <Icon name="x" size="sm" />
           </button>

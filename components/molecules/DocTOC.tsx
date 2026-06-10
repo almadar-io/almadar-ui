@@ -11,6 +11,7 @@ import { cn } from '../../lib/cn';
 import { Box } from '../atoms/Box';
 import { VStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
+import { useTranslate } from '../../hooks/useTranslate';
 
 export interface DocTOCItem {
   /** Heading element id to link to */
@@ -35,11 +36,12 @@ export const DocTOC: React.FC<DocTOCProps> = ({
   activeId,
   className,
 }) => {
+  const { t } = useTranslate();
   return (
     <Box
       className={cn('w-full', className)}
       role="navigation"
-      aria-label="Table of contents"
+      aria-label={t('aria.tableOfContents')}
     >
       <VStack gap="none">
         {items.map((item) => {

@@ -18,6 +18,7 @@ import { DayCell } from "../atoms/DayCell";
 import { TimeSlotCell } from "../atoms/TimeSlotCell";
 import { useEventBus } from "../../hooks/useEventBus";
 import { useSwipeGesture } from "../../hooks/useSwipeGesture";
+import { useTranslate } from "../../hooks/useTranslate";
 
 // Data-transfer shape crossing the event bus — declared as a `type` alias (not
 // `interface`) so it carries an implicit index signature and is assignable to
@@ -174,6 +175,7 @@ export function CalendarGrid({
 }: CalendarGridProps): React.JSX.Element {
   const evs = Array.isArray(events) ? events : events ? [events] : [];
   const eventBus = useEventBus();
+  const { t } = useTranslate();
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resolvedWeekStart = useMemo(
     () => (weekStart ? getStartOfWeek(weekStart) : getStartOfWeek(new Date())),
@@ -311,7 +313,7 @@ export function CalendarGrid({
             icon="chevron-left"
             onClick={stepPrev}
             aria-disabled={!canPrev || undefined}
-            aria-label="Previous days"
+            aria-label={t('aria.previousDays')}
           >
             Prev
           </Button>
@@ -324,7 +326,7 @@ export function CalendarGrid({
             iconRight="chevron-right"
             onClick={stepNext}
             aria-disabled={!canNext || undefined}
-            aria-label="Next days"
+            aria-label={t('aria.nextDays')}
           >
             Next
           </Button>

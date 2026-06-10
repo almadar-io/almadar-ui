@@ -13,6 +13,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { useEventBus } from '../../hooks/useEventBus';
 import { useSwipeGesture } from '../../hooks/useSwipeGesture';
+import { useTranslate } from "../../hooks/useTranslate";
 import { Box } from '../atoms/Box';
 import { HStack } from '../atoms/Stack';
 import { Button } from '../atoms/Button';
@@ -71,6 +72,7 @@ export const Carousel = <T = Record<string, unknown>,>({
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoPlayRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const eventBus = useSafeEventBus();
+  const { t } = useTranslate();
 
   // `items` comes from pattern binding resolution (useEntityRef / prop passthrough).
   // In the playground/preview path data may resolve async; a crashed render here
@@ -234,7 +236,7 @@ export const Carousel = <T = Record<string, unknown>,>({
             variant="ghost"
             size="sm"
             onClick={goPrev}
-            aria-label="Previous slide"
+            aria-label={t('aria.previousSlide')}
             className={cn(
               'rounded-full',
               'bg-surface/80',
@@ -258,7 +260,7 @@ export const Carousel = <T = Record<string, unknown>,>({
             variant="ghost"
             size="sm"
             onClick={goNext}
-            aria-label="Next slide"
+            aria-label={t('aria.nextSlide')}
             className={cn(
               'rounded-full',
               'bg-surface/80',

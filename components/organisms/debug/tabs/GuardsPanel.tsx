@@ -13,18 +13,20 @@ import { Stack } from '../../../atoms/Stack';
 import { ButtonGroup } from '../../../molecules/ButtonGroup';
 import { Button } from '../../../atoms/Button';
 import { EmptyState } from '../../../molecules/EmptyState';
+import { useTranslate } from '../../../../hooks/useTranslate';
 
 interface GuardsPanelProps {
     guards: GuardEvaluation[];
 }
 
 export function GuardsPanel({ guards }: GuardsPanelProps) {
+    const { t } = useTranslate();
     const [filter, setFilter] = React.useState<'all' | 'passed' | 'failed'>('all');
 
     if (guards.length === 0) {
         return (
             <EmptyState
-                title="No guard evaluations"
+                title={t('debug.noGuardEvaluations')}
                 description="Guard evaluations will appear when transitions or ticks with guards execute"
                 className="py-8"
             />

@@ -17,6 +17,7 @@ import { Typography } from '../../../atoms/Typography';
 import { Stack } from '../../../atoms/Stack';
 import { Card } from '../../../atoms/Card';
 import { EmptyState } from '../../../molecules/EmptyState';
+import { useTranslate } from '../../../../hooks/useTranslate';
 
 interface ServerBridgeTabProps {
     bridge: BridgeHealth | null;
@@ -44,10 +45,11 @@ function StatRow({ label, value, variant }: {
 }
 
 export function ServerBridgeTab({ bridge }: ServerBridgeTabProps) {
+    const { t } = useTranslate();
     if (!bridge) {
         return (
             <EmptyState
-                title="No bridge data"
+                title={t('debug.noBridgeData')}
                 description="The ServerBridge has not been initialized. Bridge health will appear once the runtime connects to the server."
                 className="py-8"
             />
@@ -79,20 +81,20 @@ export function ServerBridgeTab({ bridge }: ServerBridgeTabProps) {
 
                     <Stack gap="xs">
                         <StatRow
-                            label="Status"
+                            label={t('debug.status')}
                             value={bridge.connected ? 'Connected' : 'Disconnected'}
                             variant={bridge.connected ? 'success' : 'danger'}
                         />
                         <StatRow
-                            label="Events Forwarded (Client → Server)"
+                            label={t('debug.eventsForwarded')}
                             value={bridge.eventsForwarded}
                         />
                         <StatRow
-                            label="Events Received (Server → Client)"
+                            label={t('debug.eventsReceived')}
                             value={bridge.eventsReceived}
                         />
                         <StatRow
-                            label="Last Heartbeat"
+                            label={t('debug.lastHeartbeat')}
                             value={formatTime(bridge.lastHeartbeat)}
                         />
                     </Stack>
