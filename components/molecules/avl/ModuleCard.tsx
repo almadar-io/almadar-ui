@@ -10,7 +10,7 @@
  */
 
 import React from 'react';
-import { Handle, Position } from '@xyflow/react';
+import { Handle, Position, useNodeId, ReactFlowProvider } from '@xyflow/react';
 import { AvlEntity } from '../../atoms/avl/AvlEntity';
 import { AvlFieldType } from '../../atoms/avl/AvlFieldType';
 import { AvlPage } from '../../atoms/avl/AvlPage';
@@ -44,7 +44,7 @@ const PERSISTENCE_ICON: Record<string, string> = {
   instance: '\u22A1',   // ⊡ box
 };
 
-export const ModuleCard: React.FC<ModuleCardProps> = ({ data }) => {
+const ModuleCardInner: React.FC<ModuleCardProps> = ({ data }) => {
   const {
     orbitalName,
     entityName,
@@ -146,6 +146,26 @@ export const ModuleCard: React.FC<ModuleCardProps> = ({ data }) => {
         </div>
       )}
     </div>
+  );
+};
+
+ModuleCardInner.displayName = 'ModuleCardInner';
+
+/**
+ * Self-contained ModuleCard. The connection `<Handle>`s need the ReactFlow store,
+ * so standalone they'd throw ("no zustand provider as an ancestor"). When this
+ * card isn't already a flow node (`useNodeId() === null`) it bundles its own
+ * `<ReactFlowProvider>` so it renders anywhere; inside `<FlowCanvas>` it's a real
+ * node and renders raw (no nested provider). The provider is an implementation
+ * detail, never a precondition for using the component.
+ */
+export const ModuleCard: React.FC<ModuleCardProps> = (props) => {
+  const nodeId = useNodeId();
+  if (nodeId !== null) return <ModuleCardInner {...props} />;
+  return (
+    <ReactFlowProvider>
+      <ModuleCardInner {...props} />
+    </ReactFlowProvider>
   );
 };
 

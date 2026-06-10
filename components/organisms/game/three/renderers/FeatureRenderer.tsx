@@ -8,8 +8,8 @@
  * @packageDocumentation
  */
 
-import React, { useMemo } from 'react';
-import * as THREE from 'three';
+import React, { useContext } from 'react';
+import { Canvas, context as fiberContext } from '@react-three/fiber';
 import type { IsometricFeature } from '../../types/isometric';
 
 export interface FeatureRendererProps {
@@ -276,7 +276,8 @@ function FeatureVisual({
  * />
  * ```
  */
-export function FeatureRenderer({
+/** The raw three.js scene-graph group — rendered directly when already inside a Canvas. */
+function FeatureGroup({
     features,
     cellSize = 1,
     offsetX = 0,
@@ -284,7 +285,6 @@ export function FeatureRenderer({
     onFeatureClick,
     onFeatureHover,
     selectedFeatureIds = [],
-    featureColors,
 }: FeatureRendererProps): React.JSX.Element {
     return (
         <group>
@@ -307,6 +307,26 @@ export function FeatureRenderer({
                 );
             })}
         </group>
+    );
+}
+
+/**
+ * Self-contained FeatureRenderer. three.js geometry only renders inside an
+ * `@react-three/fiber` `<Canvas>`. When already inside one (the fiber context is
+ * set) it renders the raw group; standalone it bundles a default `<Canvas>`
+ * (camera + lighting) so it shows on its own. The Canvas is an implementation
+ * detail, and the conditional check keeps it composable inside a larger scene
+ * (no nested Canvas).
+ */
+export function FeatureRenderer(props: FeatureRendererProps): React.JSX.Element {
+    const insideCanvas = useContext(fiberContext) != null;
+    if (insideCanvas) return <FeatureGroup {...props} />;
+    return (
+        <Canvas camera={{ position: [4, 4, 6], fov: 50 }} style={{ width: '100%', height: 360 }}>
+            <ambientLight intensity={0.6} />
+            <directionalLight position={[5, 8, 5]} intensity={0.8} />
+            <FeatureGroup {...props} />
+        </Canvas>
     );
 }
 
