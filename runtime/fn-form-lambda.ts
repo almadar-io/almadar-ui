@@ -194,11 +194,14 @@ function convertObjectProps(props: SlotProps): SlotProps {
     if (isFnFormLambda(value)) {
       convertedAny = true;
       const arr = value as ReadonlyArray<SlotPropValue>;
-      // `renderItem` is the schema-level alias; consumers (DataGrid,
-      // DataList, Carousel) read the per-row render via React `children`.
-      const targetKey = key === "renderItem" ? "children" : key;
-      out[targetKey] = makeLambdaFn(fnFormParams(arr), arr[2] as AnyPatternConfig, key);
-      lambdaLog.debug(`convert key=${key} → ${targetKey}`);
+      const compiled = makeLambdaFn(fnFormParams(arr), arr[2] as AnyPatternConfig, key);
+      // `renderItem` is the schema-level alias: most consumers (DataGrid/DataList/
+      // Carousel) read the per-row render via React `children`, but some
+      // (RepeatableFormSection) read `renderItem` directly — set BOTH so either
+      // reader gets the callable (else the latter throws "renderItem is not a function").
+      out[key] = compiled;
+      if (key === "renderItem") out.children = compiled;
+      lambdaLog.debug(`convert key=${key}${key === "renderItem" ? " (+children)" : ""}`);
       continue;
     }
     const next = convertNode(value, key);
