@@ -13,8 +13,8 @@ import { VStack } from '../../atoms/Stack';
 import { Typography } from '../../atoms/Typography';
 import { Divider } from '../../atoms/Divider';
 import { ScaledDiagram } from '../../molecules/ScaledDiagram';
-import { ContentRenderer } from '../ContentRenderer';
-import { JazariStateMachine } from '../JazariStateMachine';
+import { ContentRenderer } from '../../molecules/ContentRenderer';
+import { JazariStateMachine } from '../../molecules/JazariStateMachine';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';
 // Internal rendering component — takes typed content-model props directly

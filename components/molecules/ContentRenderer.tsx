@@ -23,7 +23,7 @@ import {
 } from '../../lib/parseContentSegments';
 import { useTranslate } from '../../hooks/useTranslate';
 import { cn } from '../../lib/cn';
-import type { EntityDisplayProps } from './types';
+import type { EntityDisplayProps } from '../organisms/types';
 import type { OrbitalSchema, StateMachine, Trait } from '@almadar/core';
 
 export interface ContentRendererProps extends EntityDisplayProps {

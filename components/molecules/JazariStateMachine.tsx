@@ -15,7 +15,7 @@ import { Box } from '../atoms/Box';
 import { Typography } from '../atoms/Typography';
 import { LoadingState } from '../molecules/LoadingState';
 import { ErrorState } from '../molecules/ErrorState';
-import { StateMachineView } from './StateMachineView';
+import { StateMachineView } from '../organisms/StateMachineView';
 import { renderStateMachineToDomData, DEFAULT_CONFIG } from '../../lib/visualizer/index.js';
 import type { DomStateNode, VisualizerConfig, StateMachineDefinition } from '../../lib/visualizer/index.js';
 import { gearTeethPath } from '../../lib/jazari/svg-paths';

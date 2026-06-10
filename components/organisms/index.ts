@@ -18,64 +18,24 @@ export {
   type RowAction,
 } from "./DataTable";
 export { StatCard, type StatCardProps } from "./StatCard";
-export {
-  PageHeader,
-  type PageHeaderProps,
-  type PageBreadcrumb,
-} from "./PageHeader";
+
 export {
   DetailPanel,
   type DetailPanelProps,
   type DetailField,
   type DetailSection,
 } from "./DetailPanel";
-export {
-  FormSection,
-  FormLayout,
-  FormActions,
-  type FormSectionProps,
-  type FormLayoutProps,
-  type FormActionsProps,
-} from "./FormSection";
 
 // Migrated organisms
 export { Form, type FormProps } from "./Form";
-export { Header, type HeaderProps } from "./Header";
-export {
-  Navigation,
-  type NavigationProps,
-  type NavigationItem,
-} from "./Navigation";
-export { Section, type SectionProps } from "./Section";
-export { Sidebar, type SidebarProps, type SidebarItem } from "./Sidebar";
-export { Split, type SplitProps } from "./Split";
-export {
-  Table,
-  type TableProps,
-  type TableColumn,
-  type SortDirection,
-} from "./Table";
+
 export { List, type ListProps, type ListItem } from "./List";
 export { CardGrid, type CardGridProps, type CardGridGap } from "./CardGrid";
 export { MasterDetail, type MasterDetailProps } from "./MasterDetail";
 
 // Dialog organisms
-export {
-  ConfirmDialog,
-  type ConfirmDialogProps,
-  type ConfirmDialogVariant,
-} from "./ConfirmDialog";
-export {
-  WizardContainer,
-  type WizardContainerProps,
-  type WizardStep,
-} from "./WizardContainer";
 
 // Orbital visualization
-export {
-  OrbitalVisualization,
-  type OrbitalVisualizationProps,
-} from "./OrbitalVisualization";
 
 // State machine visualization
 export {
@@ -87,16 +47,8 @@ export {
 } from "./StateMachineView";
 
 // Jazari state machine visualization
-export {
-  JazariStateMachine,
-  type JazariStateMachineProps,
-} from "./JazariStateMachine";
 
 // Content rendering
-export {
-  ContentRenderer,
-  type ContentRendererProps,
-} from "./ContentRenderer";
 
 // Book viewer
 export * from "./book";
@@ -120,12 +72,7 @@ export { ToastSlot, type ToastSlotProps } from "./ToastSlot";
 export { NotifyListener } from "./NotifyListener";
 
 // Phase 7b - New core pattern organisms
-export {
-  Chart,
-  type ChartProps,
-  type ChartType,
-  type ChartSeries,
-} from "./Chart";
+
 export {
   Timeline,
   type TimelineProps,
@@ -137,27 +84,6 @@ export {
   type MediaGalleryProps,
   type MediaItem,
 } from "./MediaGallery";
-export {
-  SignaturePad,
-  type SignaturePadProps,
-} from "./SignaturePad";
-export {
-  DocumentViewer,
-  type DocumentViewerProps,
-  type DocumentType,
-} from "./DocumentViewer";
-export {
-  GraphCanvas,
-  type GraphCanvasProps,
-  type GraphNode,
-  type GraphEdge,
-} from "./GraphCanvas";
-export {
-  CodeViewer,
-  type CodeViewerProps,
-  type CodeViewerMode,
-  type DiffLine,
-} from "./CodeViewer";
 
 // Debug organisms
 export {

@@ -10,7 +10,7 @@ import { Icon } from "../atoms/Icon";
 import { ChevronDown } from "lucide-react";
 import { useTranslate } from "../../hooks/useTranslate";
 import { useEventBus } from "../../hooks/useEventBus";
-import type { EntityDisplayProps } from "./types";
+import type { EntityDisplayProps } from "../organisms/types";
 
 export interface FormSectionProps extends EntityDisplayProps {
   /** Section title */

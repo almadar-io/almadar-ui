@@ -117,7 +117,7 @@ export { StatsGrid, type StatsGridProps } from './StatsGrid';
 export { ServiceCatalog, type ServiceCatalogProps, type ServiceCatalogItem } from './ServiceCatalog';
 export { CaseStudyCard, type CaseStudyCardProps } from './CaseStudyCard';
 export { ArticleSection, type ArticleSectionProps } from './ArticleSection';
-export { CodeExample, type CodeExampleProps } from './CodeExample';
+
 export { SocialProof, type SocialProofProps, type SocialProofItem } from './SocialProof';
 export { StepFlow, type StepFlowProps, type StepItemProps } from './StepFlow';
 export { SplitSection, type SplitSectionProps } from './SplitSection';
@@ -164,3 +164,75 @@ export { PullQuote, type PullQuoteProps } from './PullQuote';
 export { BehaviorView, type BehaviorViewProps } from './avl/BehaviorView';
 export { ModuleCard, type ModuleCardProps } from './avl/ModuleCard';
 
+// Relocated from organisms (presentational — no entity manipulation)
+export {
+  PageHeader,
+  type PageHeaderProps,
+  type PageBreadcrumb,
+} from "./PageHeader";
+export {
+  FormSection,
+  FormLayout,
+  FormActions,
+  type FormSectionProps,
+  type FormLayoutProps,
+  type FormActionsProps,
+} from "./FormSection";
+export { Header, type HeaderProps } from "./Header";
+export {
+  Navigation,
+  type NavigationProps,
+  type NavigationItem,
+} from "./Navigation";
+export { Section, type SectionProps } from "./Section";
+export { Sidebar, type SidebarProps, type SidebarItem } from "./Sidebar";
+export { Split, type SplitProps } from "./Split";
+export {
+  ConfirmDialog,
+  type ConfirmDialogProps,
+  type ConfirmDialogVariant,
+} from "./ConfirmDialog";
+export {
+  WizardContainer,
+  type WizardContainerProps,
+  type WizardStep,
+} from "./WizardContainer";
+export {
+  OrbitalVisualization,
+  type OrbitalVisualizationProps,
+} from "./OrbitalVisualization";
+export {
+  JazariStateMachine,
+  type JazariStateMachineProps,
+} from "./JazariStateMachine";
+export {
+  ContentRenderer,
+  type ContentRendererProps,
+} from "./ContentRenderer";
+export {
+  Chart,
+  type ChartProps,
+  type ChartType,
+  type ChartSeries,
+} from "./Chart";
+export {
+  SignaturePad,
+  type SignaturePadProps,
+} from "./SignaturePad";
+export {
+  DocumentViewer,
+  type DocumentViewerProps,
+  type DocumentType,
+} from "./DocumentViewer";
+export {
+  GraphCanvas,
+  type GraphCanvasProps,
+  type GraphNode,
+  type GraphEdge,
+} from "./GraphCanvas";
+export {
+  CodeViewer,
+  type CodeViewerProps,
+  type CodeViewerMode,
+  type DiffLine,
+} from "./CodeViewer";
