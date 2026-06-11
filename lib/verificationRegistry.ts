@@ -342,6 +342,24 @@ declare global {
   }
 }
 
+/**
+ * Default `getTraitState` reader: derive a trait's current state from the
+ * generated-hook-registered snapshot getter (same source as
+ * `getTraitSnapshots`). Without this the bridge only exposed `getTraitState`
+ * when a runtimeManager-backed `VerificationProvider` ran `bindTraitStateGetter`
+ * — which the generated shell never wires — so the verifier's `getState` read
+ * `undefined` after every dispatch.
+ */
+function defaultGetTraitState(traitName: string): string | undefined {
+  const getter = getState().traitSnapshots.get(traitName);
+  if (getter === undefined) return undefined;
+  try {
+    return getter().currentState;
+  } catch {
+    return undefined;
+  }
+}
+
 function exposeOnWindow(): void {
   if (typeof window === "undefined") return;
 
@@ -354,11 +372,19 @@ function exposeOnWindow(): void {
       getSummary,
       waitForTransition,
       getTraitSnapshots,
+      getTraitState: defaultGetTraitState,
     };
-  } else if (!window.__orbitalVerification.getTraitSnapshots) {
-    // Back-compat: if the API was exposed before getTraitSnapshots existed
-    // (older bundle loaded first), attach it on next call.
-    window.__orbitalVerification.getTraitSnapshots = getTraitSnapshots;
+  } else {
+    // Back-compat: attach readers that may have been added after an older
+    // bundle exposed the API first. getTraitState defaults to reading the
+    // generated-hook-registered trait snapshots (a `bindTraitStateGetter`
+    // override from a runtimeManager-backed VerificationProvider still wins).
+    if (!window.__orbitalVerification.getTraitSnapshots) {
+      window.__orbitalVerification.getTraitSnapshots = getTraitSnapshots;
+    }
+    if (!window.__orbitalVerification.getTraitState) {
+      window.__orbitalVerification.getTraitState = defaultGetTraitState;
+    }
   }
 }
 

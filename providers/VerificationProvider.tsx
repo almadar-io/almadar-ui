@@ -146,7 +146,18 @@ export function VerificationProvider({
   runtimeManager,
   traitStateGetter,
 }: VerificationProviderProps): React.ReactElement {
-  const isEnabled = enabled ?? (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production');
+  // Enable when: explicitly told (`enabled`), OR a verifier set the
+  // `__ALMADAR_VERIFY__` window flag (Playwright/automation — this is what gets
+  // `__orbitalVerification.sendEvent` attached, via bindEventBus below), OR
+  // we're a non-production Node build. The `process` heuristic alone is
+  // Node-centric and is always false in the browser bundle (`process` is
+  // undefined), which is why compiled-shell dispatch was silently never wired.
+  const verifyFlag =
+    typeof window !== 'undefined' &&
+    (window as { __ALMADAR_VERIFY__?: boolean }).__ALMADAR_VERIFY__ === true;
+  const isEnabled =
+    enabled ??
+    (verifyFlag || (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production'));
   const eventBus = useEventBus();
   const pendingRef = useRef<Map<string, PendingDispatch>>(new Map());
 
