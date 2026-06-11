@@ -39,8 +39,26 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
     const safeContent = typeof content === 'string' ? content : String(content ?? '');
     return (
       <Box
-        className={cn('prose prose-slate dark:prose-invert max-w-none', className)}
-        style={{ direction }}
+        className={cn('prose max-w-none', className)}
+        style={{
+          '--tw-prose-body': 'var(--color-foreground)',
+          '--tw-prose-headings': 'var(--color-foreground)',
+          '--tw-prose-lead': 'var(--color-muted-foreground)',
+          '--tw-prose-links': 'var(--color-primary)',
+          '--tw-prose-bold': 'var(--color-foreground)',
+          '--tw-prose-counters': 'var(--color-muted-foreground)',
+          '--tw-prose-bullets': 'var(--color-muted-foreground)',
+          '--tw-prose-hr': 'var(--color-border)',
+          '--tw-prose-quotes': 'var(--color-foreground)',
+          '--tw-prose-quote-borders': 'var(--color-primary)',
+          '--tw-prose-captions': 'var(--color-muted-foreground)',
+          '--tw-prose-code': 'var(--color-foreground)',
+          '--tw-prose-pre-code': 'var(--color-foreground)',
+          '--tw-prose-pre-bg': 'var(--color-muted)',
+          '--tw-prose-th-borders': 'var(--color-border)',
+          '--tw-prose-td-borders': 'var(--color-border)',
+          direction,
+        } as React.CSSProperties}
       >
         <ReactMarkdown
           remarkPlugins={[remarkMath, remarkGfm]}
@@ -55,8 +73,8 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                   {...props}
                   className={codeClassName}
                   style={{
-                    backgroundColor: '#1f2937',
-                    color: '#e5e7eb',
+                    backgroundColor: 'var(--color-muted)',
+                    color: 'var(--color-foreground)',
                     padding: '0.125rem 0.375rem',
                     borderRadius: '0.25rem',
                     fontSize: '0.875em',
@@ -73,7 +91,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                 <a
                   href={href}
                   {...props}
-                  className="text-blue-600 dark:text-blue-400 hover:underline"
+                  className="text-[var(--color-primary)] hover:underline"
                   target={href?.startsWith('http') ? '_blank' : undefined}
                   rel={href?.startsWith('http') ? 'noopener noreferrer' : undefined}
                 >
@@ -87,7 +105,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                 <div className="overflow-x-auto my-4">
                   <table
                     {...props}
-                    className="min-w-full border-collapse border border-gray-300 dark:border-gray-600"
+                    className="min-w-full border-collapse border border-[var(--color-border)]"
                   >
                     {children}
                   </table>
@@ -98,7 +116,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
               return (
                 <th
                   {...props}
-                  className="border border-gray-300 dark:border-gray-600 bg-[var(--color-muted)] px-4 py-2 text-left font-semibold"
+                  className="border border-[var(--color-border)] bg-[var(--color-muted)] px-4 py-2 text-left font-semibold"
                 >
                   {children}
                 </th>
@@ -108,7 +126,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
               return (
                 <td
                   {...props}
-                  className="border border-gray-300 dark:border-gray-600 px-4 py-2"
+                  className="border border-[var(--color-border)] px-4 py-2"
                 >
                   {children}
                 </td>
@@ -119,7 +137,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
               return (
                 <blockquote
                   {...props}
-                  className="border-l-4 border-blue-500 pl-4 italic text-foreground my-4"
+                  className="border-l-4 border-[var(--color-primary)] pl-4 italic text-[var(--color-foreground)] my-4"
                 >
                   {children}
                 </blockquote>

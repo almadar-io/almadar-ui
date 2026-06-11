@@ -178,7 +178,22 @@ function renderRichFieldValue(
     case "richtext":
       return (
         <Suspense fallback={<Typography variant="body" className="break-words">{str}</Typography>}>
-          <Box className="prose prose-sm max-w-none dark:prose-invert">
+          <Box
+            className="prose prose-sm max-w-none"
+            style={{
+              '--tw-prose-body': 'var(--color-foreground)',
+              '--tw-prose-headings': 'var(--color-foreground)',
+              '--tw-prose-bold': 'var(--color-foreground)',
+              '--tw-prose-links': 'var(--color-primary)',
+              '--tw-prose-code': 'var(--color-foreground)',
+              '--tw-prose-hr': 'var(--color-border)',
+              '--tw-prose-quotes': 'var(--color-foreground)',
+              '--tw-prose-quote-borders': 'var(--color-primary)',
+              '--tw-prose-captions': 'var(--color-muted-foreground)',
+              '--tw-prose-th-borders': 'var(--color-border)',
+              '--tw-prose-td-borders': 'var(--color-border)',
+            } as React.CSSProperties}
+          >
             <ReactMarkdown>{str}</ReactMarkdown>
           </Box>
         </Suspense>
@@ -195,7 +210,22 @@ function renderRichFieldValue(
 
     case "html":
       return (
-        <Box className="mt-1 prose prose-sm max-w-none dark:prose-invert break-words">
+        <Box
+          className="mt-1 prose prose-sm max-w-none break-words"
+          style={{
+            '--tw-prose-body': 'var(--color-foreground)',
+            '--tw-prose-headings': 'var(--color-foreground)',
+            '--tw-prose-bold': 'var(--color-foreground)',
+            '--tw-prose-links': 'var(--color-primary)',
+            '--tw-prose-code': 'var(--color-foreground)',
+            '--tw-prose-hr': 'var(--color-border)',
+            '--tw-prose-quotes': 'var(--color-foreground)',
+            '--tw-prose-quote-borders': 'var(--color-primary)',
+            '--tw-prose-captions': 'var(--color-muted-foreground)',
+            '--tw-prose-th-borders': 'var(--color-border)',
+            '--tw-prose-td-borders': 'var(--color-border)',
+          } as React.CSSProperties}
+        >
           <Typography variant="body">{str}</Typography>
         </Box>
       );
