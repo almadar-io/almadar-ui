@@ -75,6 +75,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                   style={{
                     backgroundColor: 'var(--color-muted)',
                     color: 'var(--color-foreground)',
+                    border: '1px solid var(--color-border)',
                     padding: '0.125rem 0.375rem',
                     borderRadius: '0.25rem',
                     fontSize: '0.875em',
