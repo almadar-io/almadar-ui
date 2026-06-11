@@ -87,16 +87,25 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                     />
                   );
                 }
-                // Indented block without language — inline wrapping text, no block
+                // Indented block without language — styled like inline code, flows inline
                 return (
-                  <span
+                  <code
+                    {...props}
+                    className={codeClassName}
                     style={{
+                      backgroundColor: 'var(--color-muted)',
+                      color: 'var(--color-foreground)',
+                      border: '1px solid var(--color-border)',
+                      padding: '0.125rem 0.375rem',
+                      borderRadius: '0.25rem',
+                      fontSize: '0.875em',
+                      fontFamily: 'ui-monospace, monospace',
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-word',
                     }}
                   >
                     {children}
-                  </span>
+                  </code>
                 );
               }
               // Inline code
