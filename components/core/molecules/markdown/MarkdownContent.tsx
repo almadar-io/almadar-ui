@@ -87,28 +87,23 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                     />
                   );
                 }
-                // Indented block without language — plain styled pre, no header
+                // Indented block without language — wrap text, keep it subtle
                 return (
                   <pre
                     style={{
                       backgroundColor: 'var(--color-muted)',
                       color: 'var(--color-foreground)',
-                      padding: '1rem',
-                      borderRadius: '0.5rem',
-                      overflow: 'auto',
-                      margin: 0,
+                      padding: '0.5rem 0.75rem',
+                      borderRadius: '0.375rem',
+                      margin: '0.5rem 0',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      fontFamily: 'ui-monospace, monospace',
+                      fontSize: '0.875em',
+                      lineHeight: 1.6,
                     }}
                   >
-                    <code
-                      {...props}
-                      className={codeClassName}
-                      style={{
-                        fontFamily: 'ui-monospace, monospace',
-                        fontSize: '0.875em',
-                      }}
-                    >
-                      {children}
-                    </code>
+                    {children}
                   </pre>
                 );
               }
