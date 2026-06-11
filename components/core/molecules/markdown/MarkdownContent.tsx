@@ -41,6 +41,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
       <Box
         className={cn('prose max-w-none', className)}
         style={{
+          color: 'var(--color-foreground)',
           '--tw-prose-body': 'var(--color-foreground)',
           '--tw-prose-headings': 'var(--color-foreground)',
           '--tw-prose-lead': 'var(--color-muted-foreground)',

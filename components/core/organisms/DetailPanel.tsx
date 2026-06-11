@@ -181,6 +181,7 @@ function renderRichFieldValue(
           <Box
             className="prose prose-sm max-w-none"
             style={{
+              color: 'var(--color-foreground)',
               '--tw-prose-body': 'var(--color-foreground)',
               '--tw-prose-headings': 'var(--color-foreground)',
               '--tw-prose-bold': 'var(--color-foreground)',
@@ -213,6 +214,7 @@ function renderRichFieldValue(
         <Box
           className="mt-1 prose prose-sm max-w-none break-words"
           style={{
+            color: 'var(--color-foreground)',
             '--tw-prose-body': 'var(--color-foreground)',
             '--tw-prose-headings': 'var(--color-foreground)',
             '--tw-prose-bold': 'var(--color-foreground)',
