@@ -21,6 +21,7 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import { Box } from '../../atoms/Box';
+import { CodeBlock } from './CodeBlock';
 import { useTranslate } from '../../../../hooks/useTranslate';
 import { cn } from '../../../../lib/cn';
 
@@ -67,8 +68,26 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
             [rehypeKatex, { strict: false, throwOnError: false }],
           ]}
           components={{
-            // Handle inline code only — fenced code blocks are parsed out separately
-            code({ className: codeClassName, children, ...props }: React.ComponentPropsWithoutRef<'code'>) {
+            code({
+              className: codeClassName,
+              children,
+              inline,
+              ...props
+            }: React.ComponentPropsWithoutRef<'code'> & { inline?: boolean }) {
+              // Fenced code block — extract language and render with CodeBlock
+              if (!inline) {
+                const match = /language-(\w+)/.exec(codeClassName ?? '');
+                const language = match ? match[1] : 'text';
+                const code = String(children).replace(/\n$/, '');
+                return (
+                  <CodeBlock
+                    code={code}
+                    language={language}
+                    maxHeight="60vh"
+                  />
+                );
+              }
+              // Inline code
               return (
                 <code
                   {...props}
