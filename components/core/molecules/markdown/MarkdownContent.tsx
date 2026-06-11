@@ -74,17 +74,42 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
               inline,
               ...props
             }: React.ComponentPropsWithoutRef<'code'> & { inline?: boolean }) {
-              // Fenced code block — extract language and render with CodeBlock
               if (!inline) {
                 const match = /language-(\w+)/.exec(codeClassName ?? '');
-                const language = match ? match[1] : 'text';
                 const code = String(children).replace(/\n$/, '');
+                // Fenced block with a language — render with CodeBlock for syntax highlighting
+                if (match) {
+                  return (
+                    <CodeBlock
+                      code={code}
+                      language={match[1]}
+                      maxHeight="60vh"
+                    />
+                  );
+                }
+                // Indented block without language — plain styled pre, no header
                 return (
-                  <CodeBlock
-                    code={code}
-                    language={language}
-                    maxHeight="60vh"
-                  />
+                  <pre
+                    style={{
+                      backgroundColor: 'var(--color-muted)',
+                      color: 'var(--color-foreground)',
+                      padding: '1rem',
+                      borderRadius: '0.5rem',
+                      overflow: 'auto',
+                      margin: 0,
+                    }}
+                  >
+                    <code
+                      {...props}
+                      className={codeClassName}
+                      style={{
+                        fontFamily: 'ui-monospace, monospace',
+                        fontSize: '0.875em',
+                      }}
+                    >
+                      {children}
+                    </code>
+                  </pre>
                 );
               }
               // Inline code
