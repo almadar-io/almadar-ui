@@ -87,24 +87,16 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                     />
                   );
                 }
-                // Indented block without language — wrap text, keep it subtle
+                // Indented block without language — inline wrapping text, no block
                 return (
-                  <pre
+                  <span
                     style={{
-                      backgroundColor: 'var(--color-muted)',
-                      color: 'var(--color-foreground)',
-                      padding: '0.5rem 0.75rem',
-                      borderRadius: '0.375rem',
-                      margin: '0.5rem 0',
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-word',
-                      fontFamily: 'ui-monospace, monospace',
-                      fontSize: '0.875em',
-                      lineHeight: 1.6,
                     }}
                   >
                     {children}
-                  </pre>
+                  </span>
                 );
               }
               // Inline code
@@ -172,6 +164,10 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                   {children}
                 </td>
               );
+            },
+            // Strip <pre> wrapper so block code renders inline when needed
+            pre({ children }: React.ComponentPropsWithoutRef<'pre'>) {
+              return <>{children}</>;
             },
             // Style blockquotes
             blockquote({ children, ...props }: React.ComponentPropsWithoutRef<'blockquote'>) {
