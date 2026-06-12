@@ -11,6 +11,7 @@ import React, { useState, useMemo, useCallback } from "react";
 import type { EventPayloadValue, EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { useTranslate } from "../../../hooks/useTranslate";
 import { Card, Typography, Button, Badge, Icon, Box, Select } from "../atoms";
 import { VStack, HStack } from "../atoms/Stack";
 
@@ -136,6 +137,7 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
     language,
     className,
 }) => {
+    const { t } = useTranslate();
     const eventBus = useEventBus();
     const revisions: readonly DiffRevision[] = Array.isArray(revisionsProp)
         ? (revisionsProp as readonly DiffRevision[])
@@ -235,25 +237,25 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
                     <HStack gap="sm" align="center" className="flex-wrap">
                         <Icon name="git-commit" size="sm" className="text-muted-foreground" />
                         <Typography variant="small" weight="medium" className="whitespace-nowrap">
-                            Compare
+                            {t('versionDiff.compare')}
                         </Typography>
                         <Box className="min-w-0 md:min-w-[160px]">
                             <Select
                                 options={options}
                                 value={activeBeforeId}
                                 onChange={handleBeforeChange}
-                                aria-label="Before revision"
+                                aria-label={t('versionDiff.beforeRevision')}
                             />
                         </Box>
                         <Typography variant="caption" color="secondary">
-                            to
+                            {t('versionDiff.to')}
                         </Typography>
                         <Box className="min-w-0 md:min-w-[160px]">
                             <Select
                                 options={options}
                                 value={activeAfterId}
                                 onChange={handleAfterChange}
-                                aria-label="After revision"
+                                aria-label={t('versionDiff.afterRevision')}
                             />
                         </Box>
                         {language && <Badge variant="default">{language}</Badge>}
@@ -269,8 +271,8 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
                             onClick={handleViewToggle}
                             aria-label={
                                 activeView === "side-by-side"
-                                    ? "Switch to inline view"
-                                    : "Switch to side-by-side view"
+                                    ? t('versionDiff.switchToInline')
+                                    : t('versionDiff.switchToSideBySide')
                             }
                         />
                         {(onRevert || revertEvent) && (
@@ -280,7 +282,7 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
                                 icon="rotate-ccw"
                                 onClick={handleRevert}
                             >
-                                Revert
+                                {t('versionDiff.revert')}
                             </Button>
                         )}
                     </HStack>
@@ -296,12 +298,12 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
                     >
                         <Typography variant="caption" color="secondary" className="truncate">
                             {beforeRev?.label}
-                            {beforeRev?.author ? ` by ${beforeRev.author}` : ""}
+                            {beforeRev?.author ? t('versionDiff.byAuthor', { author: beforeRev.author }) : ""}
                             {beforeRev?.timestamp ? ` (${beforeRev.timestamp})` : ""}
                         </Typography>
                         <Typography variant="caption" color="secondary" className="truncate">
                             {afterRev?.label}
-                            {afterRev?.author ? ` by ${afterRev.author}` : ""}
+                            {afterRev?.author ? t('versionDiff.byAuthor', { author: afterRev.author }) : ""}
                             {afterRev?.timestamp ? ` (${afterRev.timestamp})` : ""}
                         </Typography>
                     </HStack>

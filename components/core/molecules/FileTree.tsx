@@ -14,6 +14,7 @@ import React, { useState, useCallback } from 'react';
 import { Box } from '../atoms/Box';
 import { Typography } from '../atoms/Typography';
 import { Icon } from '../atoms/Icon';
+import { useTranslate } from '../../../hooks/useTranslate';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -173,10 +174,11 @@ export const FileTree: React.FC<FileTreeProps> = ({
   className,
   indent = 16,
 }) => {
+  const { t } = useTranslate();
   if (tree.length === 0) {
     return (
       <Box className={`p-4 ${className ?? ''}`}>
-        <Typography variant="caption" color="muted">No files</Typography>
+        <Typography variant="caption" color="muted">{t('fileTree.noFiles')}</Typography>
       </Box>
     );
   }

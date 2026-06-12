@@ -59,7 +59,7 @@ export function EventFlowTab({ events }: EventFlowTabProps) {
         return (
             <EmptyState
                 title={t('debug.noEventsYet')}
-                description="Events will appear as traits, ticks, and other systems execute"
+                description={t('debug.eventsExecuteHint')}
                 className="py-8"
             />
         );
@@ -79,7 +79,7 @@ export function EventFlowTab({ events }: EventFlowTabProps) {
                         variant={filter === 'all' ? 'primary' : 'secondary'}
                         onClick={() => setFilter('all')}
                     >
-                        All ({events.length})
+                        {t('debug.allCount', { count: events.length })}
                     </Button>
                     {eventTypes.map(type => {
                         const count = events.filter(e => e.type === type).length;
@@ -101,7 +101,7 @@ export function EventFlowTab({ events }: EventFlowTabProps) {
                         checked={autoScroll}
                         onChange={(e) => setAutoScroll(e.target.checked)}
                     />
-                    Auto-scroll
+                    {t('debug.autoScroll')}
                 </label>
             </div>
 

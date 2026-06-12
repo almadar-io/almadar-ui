@@ -203,7 +203,6 @@ const TransitionBundleArrow: React.FC<{
   onHover: (bundle: TransitionBundle | null, x: number, y: number) => void;
 }> = ({ bundle, states, bundleIndex, config, onClick, onHover }) => {
   const { t } = useTranslate();
-  void t;
 
   const groupRef = useRef<SVGGElement>(null);
 
@@ -231,7 +230,7 @@ const TransitionBundleArrow: React.FC<{
     const endY = fromState.y + Math.sin(Math.PI / 2 * loopDirection + endAngle) * fromState.radius;
 
     const isSingle = bundle.labels.length === 1;
-    const labelText = isSingle ? bundle.labels[0].event : `${bundle.labels.length} events`;
+    const labelText = isSingle ? bundle.labels[0].event : t('stateMachine.eventCount', { count: bundle.labels.length });
     const bundleColor = isSingle ? config.colors.arrow : 'var(--color-accent)';
     const labelWidth = labelText.length * 9 + (isSingle ? 24 : 40);
 
@@ -366,7 +365,7 @@ const TransitionBundleArrow: React.FC<{
   const controlY = midY + perpY;
 
   const isSingle = bundle.labels.length === 1;
-  const labelText = isSingle ? bundle.labels[0].event : `${bundle.labels.length} events`;
+  const labelText = isSingle ? bundle.labels[0].event : t('stateMachine.eventCount', { count: bundle.labels.length });
   const labelWidth = labelText.length * 9 + (isSingle ? 24 : 40);
   const bundleColor = isSingle ? config.colors.arrow : 'var(--color-accent)';
 
@@ -476,7 +475,6 @@ const BundleTooltip: React.FC<{
   config: VisualizerConfig;
 }> = ({ tooltip, config }) => {
   const { t } = useTranslate();
-  void t;
 
   if (!tooltip.visible || !tooltip.bundle) return null;
 
@@ -534,7 +532,7 @@ const BundleTooltip: React.FC<{
             style={{ backgroundColor: 'var(--color-success)' }}
           >
             <Typography variant="caption" weight="semibold" style={{ color: 'var(--color-success-foreground)' }}>
-              Pinned
+              {t('stateMachine.pinned')}
             </Typography>
           </Box>
         )}
@@ -558,7 +556,7 @@ const BundleTooltip: React.FC<{
               style={{ backgroundColor: 'var(--color-accent)' }}
             >
               <Typography variant="caption" style={{ color: 'var(--color-accent-foreground)' }}>
-                {bundle.labels.length} events
+                {t('stateMachine.eventCount', { count: bundle.labels.length })}
               </Typography>
             </Box>
           </HStack>
@@ -687,7 +685,6 @@ const OutputsBox: React.FC<{
   config: VisualizerConfig;
 }> = ({ outputs, config }) => {
   const { t } = useTranslate();
-  void t;
 
   return (
     <VStack
@@ -710,7 +707,7 @@ const OutputsBox: React.FC<{
         className="mb-2"
         style={{ color: 'var(--color-warning)', fontSize: '13px' }}
       >
-        External Effects
+        {t('stateMachine.externalEffects')}
       </Typography>
       {outputs.outputs.map((output, idx) => (
         <Typography
@@ -732,13 +729,12 @@ const Legend: React.FC<{
   y: number;
 }> = ({ config, y }) => {
   const { t } = useTranslate();
-  void t;
 
   const items = [
-    { label: 'Initial', color: config.colors.initialNode },
-    { label: 'Final', color: config.colors.finalNode },
-    { label: 'State', color: config.colors.nodeBorder },
-    { label: 'Multi-event', color: 'var(--color-accent)' },
+    { key: 'initial', label: t('stateMachine.legend.initial'), color: config.colors.initialNode, isMultiEvent: false },
+    { key: 'final', label: t('stateMachine.legend.final'), color: config.colors.finalNode, isMultiEvent: false },
+    { key: 'state', label: t('stateMachine.legend.state'), color: config.colors.nodeBorder, isMultiEvent: false },
+    { key: 'multiEvent', label: t('stateMachine.legend.multiEvent'), color: 'var(--color-accent)', isMultiEvent: true },
   ];
 
   return (
@@ -749,12 +745,12 @@ const Legend: React.FC<{
       style={{ left: 20, top: y, zIndex: 15 }}
     >
       {items.map((item) => (
-        <HStack key={item.label} gap="xs" align="center">
+        <HStack key={item.key} gap="xs" align="center">
           <Box
             className="w-3 h-3 rounded-full"
             style={{
-              backgroundColor: item.label === 'Multi-event' ? item.color : config.colors.node,
-              border: item.label !== 'Multi-event' ? `2px solid ${item.color}` : 'none',
+              backgroundColor: item.isMultiEvent ? item.color : config.colors.node,
+              border: !item.isMultiEvent ? `2px solid ${item.color}` : 'none',
             }}
           />
           <Typography

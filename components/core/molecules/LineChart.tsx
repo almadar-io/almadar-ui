@@ -9,6 +9,7 @@
 import React, { useMemo, useId } from 'react';
 import { cn } from '../../../lib/cn';
 import { Box } from '../atoms';
+import { useTranslate } from '../../../hooks/useTranslate';
 
 export interface ChartDataPoint {
   date: string | Date;
@@ -55,6 +56,7 @@ export const LineChart: React.FC<LineChartProps> = ({
   areaColor = 'var(--color-primary)',
   className,
 }) => {
+  const { t } = useTranslate();
   const gradientId = useId();
 
   const safeData = data ?? [];
@@ -104,7 +106,7 @@ export const LineChart: React.FC<LineChartProps> = ({
   if (safeData.length === 0) {
     return (
       <Box className={cn('flex items-center justify-center text-muted-foreground', className)} style={{ width, height }}>
-        No data
+        {t('empty.noData')}
       </Box>
     );
   }

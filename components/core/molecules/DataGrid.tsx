@@ -506,7 +506,7 @@ export function DataGrid<T extends EntityRow = EntityRow>({
                     onChange={() => toggleSelection(id)}
                     onClick={(e) => e.stopPropagation()}
                     className="w-4 h-4 mt-1 flex-shrink-0 accent-primary"
-                    aria-label={`Select ${titleValue !== undefined ? String(titleValue) : 'item'}`}
+                    aria-label={t('card.selectItem', { item: titleValue !== undefined ? String(titleValue) : t('card.itemFallback') })}
                   />
                 )}
                 <VStack gap="xs" className="flex-1 min-w-0">

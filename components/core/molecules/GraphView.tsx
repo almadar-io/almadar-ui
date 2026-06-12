@@ -12,6 +12,7 @@
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { cn } from '../../../lib/cn';
 import { Box } from '../atoms';
+import { useTranslate } from '../../../hooks/useTranslate';
 
 export type GraphViewNode = {
   id: string;
@@ -99,6 +100,7 @@ export const GraphView: React.FC<GraphViewProps> = ({
   showLabels = true,
   zoomToFit = true,
 }) => {
+  const { t } = useTranslate();
   const containerRef = useRef<HTMLDivElement>(null);
   const animRef = useRef<number>(0);
   const [simNodes, setSimNodes] = useState<SimNode[]>([]);
@@ -314,7 +316,7 @@ export const GraphView: React.FC<GraphViewProps> = ({
   if (nodes.length === 0) {
     return (
       <Box className={cn('flex items-center justify-center', className)} style={{ width: w, height: h }}>
-        <Box className="text-muted-foreground text-sm">No graph data</Box>
+        <Box className="text-muted-foreground text-sm">{t('display.noGraphData')}</Box>
       </Box>
     );
   }

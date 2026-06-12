@@ -260,7 +260,6 @@ export const JazariStateMachine: React.FC<JazariStateMachineProps> = ({
   error = null,
 }) => {
   const { t } = useTranslate();
-  void t;
 
   const resolvedTrait = useMemo(
     () => extractTrait(schema, traitProp, traitIndex),
@@ -286,7 +285,7 @@ export const JazariStateMachine: React.FC<JazariStateMachineProps> = ({
   }, [resolvedTrait, entityFields]);
 
   if (isLoading) {
-    return <LoadingState message="Loading state machine…" />;
+    return <LoadingState message={t('stateMachine.loading')} />;
   }
 
   if (error) {
@@ -297,7 +296,7 @@ export const JazariStateMachine: React.FC<JazariStateMachineProps> = ({
     return (
       <Box padding="lg" className={cn('text-center', className)}>
         <Typography variant="body" className="opacity-60">
-          No state machine to visualize
+          {t('stateMachine.noStateMachine')}
         </Typography>
       </Box>
     );

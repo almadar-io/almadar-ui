@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslate } from '../../../hooks/useTranslate';
 
 export interface AvlSlotMapSlot {
   name: string;
@@ -70,6 +71,7 @@ export const AvlSlotMap: React.FC<AvlSlotMapProps> = ({
   color = 'var(--color-primary)',
   animated = false,
 }) => {
+  const { t } = useTranslate();
   // Center the page frame in the viewBox
   const ox = (600 - pageWidth) / 2;
   const oy = (400 - pageHeight) / 2;
@@ -123,7 +125,7 @@ export const AvlSlotMap: React.FC<AvlSlotMapProps> = ({
         fontFamily="inherit"
         fontWeight="bold"
       >
-        Page Layout
+        {t('avl.pageLayout')}
       </text>
 
       {/* Named slot regions - content slots first, then overlays on top */}
@@ -168,7 +170,7 @@ export const AvlSlotMap: React.FC<AvlSlotMapProps> = ({
             fontFamily="inherit"
             opacity={0.6}
           >
-            {slot.name}{isOverlay ? ' (overlay)' : ''}
+            {slot.name}{isOverlay ? ` ${t('avl.overlaySuffix')}` : ''}
           </text>
         </g>
         );

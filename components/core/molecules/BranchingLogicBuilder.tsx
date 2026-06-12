@@ -13,6 +13,7 @@ import { Card } from '../atoms/Card';
 import { FilterPill } from '../atoms/FilterPill';
 import { Box } from '../atoms/Box';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';
 
 export interface BranchingQuestion {
@@ -50,27 +51,20 @@ export interface BranchingLogicBuilderProps {
 
 type ViewMode = 'edit' | 'graph';
 
-const OPERATOR_OPTIONS: SelectOption[] = [
-  { value: 'equals', label: 'equals' },
-  { value: 'not-equals', label: 'does not equal' },
-  { value: 'contains', label: 'contains' },
-  { value: 'in', label: 'is one of' },
-];
-
 function generateRuleId(): string {
   return `rule-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
 function questionsToOptions(
   questions: readonly BranchingQuestion[],
-  includeEndOfSurvey: boolean,
+  endOfSurveyLabel: string | null,
 ): SelectOption[] {
   const opts: SelectOption[] = questions.map((q) => ({
     value: q.id,
     label: q.label,
   }));
-  if (includeEndOfSurvey) {
-    opts.push({ value: END_OF_SURVEY, label: 'End of survey' });
+  if (endOfSurveyLabel !== null) {
+    opts.push({ value: END_OF_SURVEY, label: endOfSurveyLabel });
   }
   return opts;
 }
@@ -100,8 +94,21 @@ const RuleRow: React.FC<RuleRowProps> = ({
   onChange,
   onDelete,
 }) => {
-  const sourceOptions = useMemo(() => questionsToOptions(questions, false), [questions]);
-  const targetOptions = useMemo(() => questionsToOptions(questions, true), [questions]);
+  const { t } = useTranslate();
+  const operatorOptions: SelectOption[] = useMemo(
+    () => [
+      { value: 'equals', label: t('branchingLogic.operatorEquals') },
+      { value: 'not-equals', label: t('branchingLogic.operatorNotEquals') },
+      { value: 'contains', label: t('branchingLogic.operatorContains') },
+      { value: 'in', label: t('branchingLogic.operatorIn') },
+    ],
+    [t],
+  );
+  const sourceOptions = useMemo(() => questionsToOptions(questions, null), [questions]);
+  const targetOptions = useMemo(
+    () => questionsToOptions(questions, t('branchingLogic.endOfSurvey')),
+    [questions, t],
+  );
 
   const sourceQuestion = questions.find((q) => q.id === rule.sourceQuestionId);
   const valueOptions: SelectOption[] = useMemo(() => {
@@ -162,23 +169,23 @@ const RuleRow: React.FC<RuleRowProps> = ({
     >
       <Box className="flex flex-wrap items-center gap-2">
         <Typography variant="label" weight="semibold" className="shrink-0">
-          If
+          {t('branchingLogic.if')}
         </Typography>
 
         <Box className="min-w-[10rem] grow basis-40">
           <Select
             options={sourceOptions}
             value={rule.sourceQuestionId}
-            placeholder="Select question"
+            placeholder={t('branchingLogic.selectQuestion')}
             onChange={handleSource}
             disabled={readOnly}
-            error={broken ? 'Broken reference' : undefined}
+            error={broken ? t('branchingLogic.brokenReference') : undefined}
           />
         </Box>
 
         <Box className="min-w-[8rem] basis-32">
           <Select
-            options={OPERATOR_OPTIONS}
+            options={operatorOptions}
             value={rule.operator}
             onChange={handleOperator}
             disabled={readOnly}
@@ -202,7 +209,7 @@ const RuleRow: React.FC<RuleRowProps> = ({
                 <Select
                   options={valueOptions.filter((o) => !chips.includes(o.value))}
                   value=""
-                  placeholder="Add value"
+                  placeholder={t('branchingLogic.addValue')}
                   onChange={handleAddChip}
                   disabled={readOnly}
                 />
@@ -210,7 +217,7 @@ const RuleRow: React.FC<RuleRowProps> = ({
             ) : (
               <Input
                 inputType="text"
-                placeholder="Type value, press Enter"
+                placeholder={t('branchingLogic.typeValuePressEnter')}
                 value=""
                 onKeyDown={(e) => {
                   if (e.key !== 'Enter') return;
@@ -230,7 +237,7 @@ const RuleRow: React.FC<RuleRowProps> = ({
               <Select
                 options={valueOptions}
                 value={scalarValue}
-                placeholder="Select value"
+                placeholder={t('branchingLogic.selectValue')}
                 onChange={(e) =>
                   onChange({ ...rule, value: (e.target as HTMLSelectElement).value })
                 }
@@ -239,7 +246,7 @@ const RuleRow: React.FC<RuleRowProps> = ({
             ) : (
               <Input
                 inputType="text"
-                placeholder="Value"
+                placeholder={t('branchingLogic.value')}
                 value={scalarValue}
                 onChange={handleScalarValue}
                 disabled={readOnly}
@@ -250,18 +257,20 @@ const RuleRow: React.FC<RuleRowProps> = ({
 
         <Typography variant="label" weight="semibold" className="shrink-0 inline-flex items-center gap-1">
           <ArrowRight className="h-4 w-4" />
-          go to
+          {t('branchingLogic.goTo')}
         </Typography>
 
         <Box className="min-w-[10rem] grow basis-40">
           <Select
             options={targetOptions}
             value={rule.targetQuestionId}
-            placeholder="Select target"
+            placeholder={t('branchingLogic.selectTarget')}
             onChange={handleTarget}
             disabled={readOnly}
             error={
-              broken && rule.targetQuestionId !== END_OF_SURVEY ? 'Broken reference' : undefined
+              broken && rule.targetQuestionId !== END_OF_SURVEY
+                ? t('branchingLogic.brokenReference')
+                : undefined
             }
           />
         </Box>
@@ -274,13 +283,13 @@ const RuleRow: React.FC<RuleRowProps> = ({
             action="DELETE_RULE"
             actionPayload={{ ruleId: rule.id }}
             onClick={onDelete}
-            aria-label="Delete rule"
+            aria-label={t('branchingLogic.deleteRule')}
           />
         )}
       </Box>
 
       {broken && (
-        <Badge variant="error" size="sm" label="Broken reference" />
+        <Badge variant="error" size="sm" label={t('branchingLogic.brokenReference')} />
       )}
     </Card>
   );
@@ -297,10 +306,12 @@ const NODE_GAP_Y = 80;
 const PADDING = 32;
 
 const LogicGraph: React.FC<LogicGraphProps> = ({ questions, rules }) => {
+  const { t } = useTranslate();
+  const endOfSurveyLabel = t('branchingLogic.endOfSurvey');
   const layout = useMemo(() => {
     const items = [
       ...questions.map((q) => ({ id: q.id, label: q.label, isEnd: false })),
-      { id: END_OF_SURVEY, label: 'End of survey', isEnd: true },
+      { id: END_OF_SURVEY, label: endOfSurveyLabel, isEnd: true },
     ];
     const positions: Record<string, { x: number; y: number }> = {};
     items.forEach((item, i) => {
@@ -312,7 +323,7 @@ const LogicGraph: React.FC<LogicGraphProps> = ({ questions, rules }) => {
     const width = NODE_WIDTH + PADDING * 2 + 220;
     const height = PADDING * 2 + items.length * (NODE_HEIGHT + NODE_GAP_Y);
     return { items, positions, width, height };
-  }, [questions]);
+  }, [questions, endOfSurveyLabel]);
 
   return (
     <Box className="overflow-auto rounded-container border border-border bg-card p-2">
@@ -320,7 +331,7 @@ const LogicGraph: React.FC<LogicGraphProps> = ({ questions, rules }) => {
         width={layout.width}
         height={layout.height}
         role="img"
-        aria-label="Branching logic graph"
+        aria-label={t('branchingLogic.graphAriaLabel')}
         style={{ display: 'block' }}
       >
         <defs>
@@ -425,6 +436,7 @@ export const BranchingLogicBuilder: React.FC<BranchingLogicBuilderProps> = ({
   readOnly = false,
   className,
 }) => {
+  const { t } = useTranslate();
   const eventBus = useEventBus();
   const questions: readonly BranchingQuestion[] = Array.isArray(questionsProp)
     ? (questionsProp as readonly BranchingQuestion[])
@@ -491,15 +503,23 @@ export const BranchingLogicBuilder: React.FC<BranchingLogicBuilderProps> = ({
         <Box className="flex items-center gap-2">
           <GitBranch className="h-5 w-5 text-foreground" />
           <Typography variant="subheading" weight="semibold">
-            Branching logic
+            {t('branchingLogic.title')}
           </Typography>
           <Badge
             variant="neutral"
             size="sm"
-            label={`${rules.length} rule${rules.length === 1 ? '' : 's'}`}
+            label={
+              rules.length === 1
+                ? t('branchingLogic.ruleCountOne', { count: rules.length })
+                : t('branchingLogic.ruleCountOther', { count: rules.length })
+            }
           />
           {brokenCount > 0 && (
-            <Badge variant="error" size="sm" label={`${brokenCount} broken`} />
+            <Badge
+              variant="error"
+              size="sm"
+              label={t('branchingLogic.brokenCount', { count: brokenCount })}
+            />
           )}
         </Box>
 
@@ -511,7 +531,7 @@ export const BranchingLogicBuilder: React.FC<BranchingLogicBuilderProps> = ({
             action="VIEW_EDIT"
             onClick={() => setView('edit')}
           >
-            Rules
+            {t('branchingLogic.rules')}
           </Button>
           <Button
             variant={view === 'graph' ? 'primary' : 'ghost'}
@@ -520,7 +540,7 @@ export const BranchingLogicBuilder: React.FC<BranchingLogicBuilderProps> = ({
             action="VIEW_GRAPH"
             onClick={() => setView('graph')}
           >
-            Logic graph
+            {t('branchingLogic.logicGraph')}
           </Button>
         </Box>
       </Box>
@@ -531,8 +551,8 @@ export const BranchingLogicBuilder: React.FC<BranchingLogicBuilderProps> = ({
             <Card variant="bordered" padding="lg" className="text-center">
               <Typography variant="body" color="muted">
                 {noQuestions
-                  ? 'Add questions before building branching rules.'
-                  : 'No rules yet. Add a rule to define branching logic.'}
+                  ? t('branchingLogic.emptyNoQuestions')
+                  : t('branchingLogic.emptyNoRules')}
               </Typography>
             </Card>
           ) : (
@@ -559,7 +579,7 @@ export const BranchingLogicBuilder: React.FC<BranchingLogicBuilderProps> = ({
                 onClick={handleAddRule}
                 disabled={noQuestions}
               >
-                Add rule
+                {t('branchingLogic.addRule')}
               </Button>
             </Box>
           )}

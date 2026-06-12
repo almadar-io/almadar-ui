@@ -428,7 +428,7 @@ export function TableView<T extends EntityRow = EntityRow>({
             <Checkbox
               checked={selected.has(id)}
               onChange={() => toggleRow(id)}
-              aria-label={`Select row ${id}`}
+              aria-label={t('table.selectRow', { id })}
             />
           </Box>
         )}

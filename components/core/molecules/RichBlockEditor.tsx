@@ -32,6 +32,7 @@ import { Divider } from "../atoms/Divider";
 import { Input } from "../atoms/Input";
 import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { useTranslate } from "../../../hooks/useTranslate";
 
 export type BlockType =
   | "paragraph"
@@ -73,34 +74,34 @@ export interface RichBlockEditorProps {
 
 interface ToolbarEntry {
   type: BlockType;
-  label: string;
+  labelKey: string;
   icon: React.ComponentType<{ className?: string; size?: number }>;
 }
 
 const TOOLBAR_ENTRIES: ToolbarEntry[] = [
-  { type: "paragraph", label: "Text", icon: TypeIcon },
-  { type: "heading-1", label: "H1", icon: Heading1 },
-  { type: "heading-2", label: "H2", icon: Heading2 },
-  { type: "heading-3", label: "H3", icon: Heading3 },
-  { type: "bullet-list", label: "Bullet list", icon: List },
-  { type: "numbered-list", label: "Numbered", icon: ListOrdered },
-  { type: "quote", label: "Quote", icon: Quote },
-  { type: "code", label: "Code", icon: Code },
-  { type: "divider", label: "Divider", icon: Minus },
-  { type: "image", label: "Image", icon: ImageIcon },
+  { type: "paragraph", labelKey: "richBlockEditor.toolbar.text", icon: TypeIcon },
+  { type: "heading-1", labelKey: "richBlockEditor.toolbar.h1", icon: Heading1 },
+  { type: "heading-2", labelKey: "richBlockEditor.toolbar.h2", icon: Heading2 },
+  { type: "heading-3", labelKey: "richBlockEditor.toolbar.h3", icon: Heading3 },
+  { type: "bullet-list", labelKey: "richBlockEditor.toolbar.bulletList", icon: List },
+  { type: "numbered-list", labelKey: "richBlockEditor.toolbar.numbered", icon: ListOrdered },
+  { type: "quote", labelKey: "richBlockEditor.toolbar.quote", icon: Quote },
+  { type: "code", labelKey: "richBlockEditor.toolbar.code", icon: Code },
+  { type: "divider", labelKey: "richBlockEditor.toolbar.divider", icon: Minus },
+  { type: "image", labelKey: "richBlockEditor.toolbar.image", icon: ImageIcon },
 ];
 
-const BLOCK_TYPE_LABEL: Record<BlockType, string> = {
-  paragraph: "Text",
-  "heading-1": "Heading 1",
-  "heading-2": "Heading 2",
-  "heading-3": "Heading 3",
-  "bullet-list": "Bullet list",
-  "numbered-list": "Numbered list",
-  quote: "Quote",
-  code: "Code",
-  divider: "Divider",
-  image: "Image",
+const BLOCK_TYPE_LABEL_KEY: Record<BlockType, string> = {
+  paragraph: "richBlockEditor.blockType.paragraph",
+  "heading-1": "richBlockEditor.blockType.heading1",
+  "heading-2": "richBlockEditor.blockType.heading2",
+  "heading-3": "richBlockEditor.blockType.heading3",
+  "bullet-list": "richBlockEditor.blockType.bulletList",
+  "numbered-list": "richBlockEditor.blockType.numberedList",
+  quote: "richBlockEditor.blockType.quote",
+  code: "richBlockEditor.blockType.code",
+  divider: "richBlockEditor.blockType.divider",
+  image: "richBlockEditor.blockType.image",
 };
 
 const CHANGEABLE_TYPES: BlockType[] = [
@@ -271,6 +272,7 @@ interface BlockMenuProps {
 }
 
 function BlockMenu({ block, readOnly, onDelete, onDuplicate, onChangeType }: BlockMenuProps) {
+  const { t } = useTranslate();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -292,7 +294,7 @@ function BlockMenu({ block, readOnly, onDelete, onDuplicate, onChangeType }: Blo
       <Button
         type="button"
         variant="ghost"
-        aria-label="Block actions"
+        aria-label={t('richBlockEditor.blockActions')}
         className={cn(
           "inline-flex items-center justify-center",
           "h-6 w-6 rounded-sm p-0 gap-0",
@@ -314,7 +316,7 @@ function BlockMenu({ block, readOnly, onDelete, onDuplicate, onChangeType }: Blo
           )}
         >
           <Box className="px-2 py-1 text-xs uppercase tracking-wide text-muted-foreground">
-            {BLOCK_TYPE_LABEL[block.type]}
+            {t(BLOCK_TYPE_LABEL_KEY[block.type])}
           </Box>
           <Button
             type="button"
@@ -326,7 +328,7 @@ function BlockMenu({ block, readOnly, onDelete, onDuplicate, onChangeType }: Blo
               setOpen(false);
             }}
           >
-            <Icon name="plus" className="w-3.5 h-3.5" /> Duplicate
+            <Icon name="plus" className="w-3.5 h-3.5" /> {t('richBlockEditor.duplicate')}
           </Button>
           <Button
             type="button"
@@ -338,27 +340,27 @@ function BlockMenu({ block, readOnly, onDelete, onDuplicate, onChangeType }: Blo
               setOpen(false);
             }}
           >
-            <Icon name="trash" className="w-3.5 h-3.5" /> Delete
+            <Icon name="trash" className="w-3.5 h-3.5" /> {t('common.delete')}
           </Button>
           {CHANGEABLE_TYPES.includes(block.type) && (
             <>
               <Box className="my-1 border-t border-border" />
               <Box className="px-2 py-1 text-xs uppercase tracking-wide text-muted-foreground">
-                Turn into
+                {t('richBlockEditor.turnInto')}
               </Box>
-              {CHANGEABLE_TYPES.filter((t) => t !== block.type).map((t) => (
+              {CHANGEABLE_TYPES.filter((bt) => bt !== block.type).map((bt) => (
                 <Button
                   type="button"
                   variant="ghost"
                   role="menuitem"
-                  key={t}
+                  key={bt}
                   className="flex w-full items-center gap-2 px-2 py-1.5 text-left justify-start rounded-none"
                   onClick={() => {
-                    onChangeType(t);
+                    onChangeType(bt);
                     setOpen(false);
                   }}
                 >
-                  {BLOCK_TYPE_LABEL[t]}
+                  {t(BLOCK_TYPE_LABEL_KEY[bt])}
                 </Button>
               ))}
             </>
@@ -448,6 +450,7 @@ function BlockRow({
   onInsertAfter,
   onChangeType,
 }: BlockRowProps) {
+  const { t } = useTranslate();
   const setContent = useCallback(
     (next: string) => onUpdate((b) => ({ ...b, content: next })),
     [onUpdate],
@@ -508,8 +511,8 @@ function BlockRow({
             tag="h1"
             value={block.content ?? ""}
             readOnly={readOnly}
-            placeholder={placeholder ?? "Heading 1"}
-            ariaLabel="Heading 1 block"
+            placeholder={placeholder ?? t('richBlockEditor.placeholder.heading1')}
+            ariaLabel={t('richBlockEditor.aria.heading1Block')}
             className="text-3xl font-bold leading-tight"
             onValueChange={setContent}
           />
@@ -520,8 +523,8 @@ function BlockRow({
             tag="h2"
             value={block.content ?? ""}
             readOnly={readOnly}
-            placeholder={placeholder ?? "Heading 2"}
-            ariaLabel="Heading 2 block"
+            placeholder={placeholder ?? t('richBlockEditor.placeholder.heading2')}
+            ariaLabel={t('richBlockEditor.aria.heading2Block')}
             className="text-2xl font-semibold leading-tight"
             onValueChange={setContent}
           />
@@ -532,8 +535,8 @@ function BlockRow({
             tag="h3"
             value={block.content ?? ""}
             readOnly={readOnly}
-            placeholder={placeholder ?? "Heading 3"}
-            ariaLabel="Heading 3 block"
+            placeholder={placeholder ?? t('richBlockEditor.placeholder.heading3')}
+            ariaLabel={t('richBlockEditor.aria.heading3Block')}
             className="text-xl font-semibold leading-tight"
             onValueChange={setContent}
           />
@@ -544,8 +547,8 @@ function BlockRow({
             tag="blockquote"
             value={block.content ?? ""}
             readOnly={readOnly}
-            placeholder={placeholder ?? "Quote"}
-            ariaLabel="Quote block"
+            placeholder={placeholder ?? t('richBlockEditor.placeholder.quote')}
+            ariaLabel={t('richBlockEditor.aria.quoteBlock')}
             className="border-l-4 border-primary/60 pl-4 italic text-muted-foreground"
             onValueChange={setContent}
           />
@@ -554,12 +557,12 @@ function BlockRow({
         return (
           <Box className="rounded-md border border-border bg-muted/40">
             <Box className="flex items-center justify-between border-b border-border px-3 py-1 text-xs text-muted-foreground">
-              <Typography as="span" variant="caption" className="uppercase tracking-wide">Code</Typography>
+              <Typography as="span" variant="caption" className="uppercase tracking-wide">{t('richBlockEditor.blockType.code')}</Typography>
               {!readOnly && (
                 <Input
                   inputType="text"
                   value={String(block.metadata?.language ?? "plaintext")}
-                  aria-label="Code language"
+                  aria-label={t('richBlockEditor.aria.codeLanguage')}
                   className={cn(
                     "h-6 w-32 rounded-sm border border-border bg-background",
                     "px-2 text-xs outline-none focus:ring-1 focus:ring-ring",
@@ -577,8 +580,8 @@ function BlockRow({
               tag="pre"
               value={block.content ?? ""}
               readOnly={readOnly}
-              placeholder={placeholder ?? "Enter code"}
-              ariaLabel="Code block"
+              placeholder={placeholder ?? t('richBlockEditor.placeholder.code')}
+              ariaLabel={t('richBlockEditor.aria.codeBlock')}
               className="block whitespace-pre-wrap p-3 font-mono text-sm leading-relaxed"
               onValueChange={setContent}
             />
@@ -591,7 +594,7 @@ function BlockRow({
         const caption = String(block.metadata?.caption ?? "");
         const imgProps: React.ImgHTMLAttributes<HTMLImageElement> = {
           src: url,
-          alt: caption || "Embedded image",
+          alt: caption || t('richBlockEditor.embeddedImage'),
           className: "max-h-96 w-full rounded-md border border-border object-contain",
         };
         return (
@@ -606,7 +609,7 @@ function BlockRow({
                   "text-sm text-muted-foreground",
                 )}
               >
-                <Icon name="image" className="mr-2 w-4 h-4" /> No image URL set
+                <Icon name="image" className="mr-2 w-4 h-4" /> {t('richBlockEditor.noImageUrl')}
               </Box>
             )}
             {!readOnly && (
@@ -615,7 +618,7 @@ function BlockRow({
                   inputType="url"
                   value={url}
                   placeholder="https://example.com/image.png"
-                  aria-label="Image URL"
+                  aria-label={t('richBlockEditor.aria.imageUrl')}
                   className={cn(
                     "h-8 flex-1 rounded-sm border border-border bg-background",
                     "px-2 text-sm outline-none focus:ring-1 focus:ring-ring",
@@ -625,8 +628,8 @@ function BlockRow({
                 <Input
                   inputType="text"
                   value={caption}
-                  placeholder="Caption (optional)"
-                  aria-label="Image caption"
+                  placeholder={t('richBlockEditor.placeholder.caption')}
+                  aria-label={t('richBlockEditor.aria.imageCaption')}
                   className={cn(
                     "h-8 flex-1 rounded-sm border border-border bg-background",
                     "px-2 text-sm outline-none focus:ring-1 focus:ring-ring",
@@ -660,8 +663,8 @@ function BlockRow({
                   tag="span"
                   value={child.content ?? ""}
                   readOnly={readOnly}
-                  placeholder="List item"
-                  ariaLabel="List item"
+                  placeholder={t('richBlockEditor.placeholder.listItem')}
+                  ariaLabel={t('richBlockEditor.aria.listItem')}
                   className="inline-block min-w-[1ch] flex-1"
                   onValueChange={(next) => setChildContent(child.id, next)}
                 />
@@ -669,7 +672,7 @@ function BlockRow({
                   <Button
                     type="button"
                     variant="ghost"
-                    aria-label="Remove list item"
+                    aria-label={t('richBlockEditor.aria.removeListItem')}
                     className={cn(
                       "h-5 w-5 shrink-0 rounded-sm text-muted-foreground p-0 gap-0",
                       "opacity-0 group-hover/item:opacity-100 hover:bg-muted hover:text-foreground",
@@ -692,7 +695,7 @@ function BlockRow({
                   )}
                   onClick={addListItem}
                 >
-                  <Icon name="plus" className="w-3 h-3" /> Add item
+                  <Icon name="plus" className="w-3 h-3" /> {t('richBlockEditor.addItem')}
                 </Button>
               </Box>
             )}
@@ -706,8 +709,8 @@ function BlockRow({
             tag="p"
             value={block.content ?? ""}
             readOnly={readOnly}
-            placeholder={placeholder ?? "Start writing..."}
-            ariaLabel="Paragraph block"
+            placeholder={placeholder ?? t('richBlockEditor.placeholder.paragraph')}
+            ariaLabel={t('richBlockEditor.aria.paragraphBlock')}
             className="leading-7"
             onValueChange={setContent}
           />
@@ -729,7 +732,7 @@ function BlockRow({
           <Button
             type="button"
             variant="ghost"
-            aria-label="Insert paragraph below"
+            aria-label={t('richBlockEditor.insertParagraphBelow')}
             className={cn(
               "inline-flex h-6 w-6 items-center justify-center rounded-sm p-0 gap-0",
               "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -763,6 +766,7 @@ export const RichBlockEditor: React.FC<RichBlockEditorProps> = ({
   showToolbar = true,
   className,
 }) => {
+  const { t } = useTranslate();
   const [blocks, setBlocks] = useState<RichBlock[]>(
     () => normalizeBlocks(initialBlocks),
   );
@@ -840,7 +844,7 @@ export const RichBlockEditor: React.FC<RichBlockEditorProps> = ({
       {showToolbar && !readOnly && (
         <Box
           role="toolbar"
-          aria-label="Block editor toolbar"
+          aria-label={t('richBlockEditor.editorToolbar')}
           className={cn(
             "flex flex-wrap items-center gap-1",
             "border-b border-border bg-muted/30 px-2 py-2",
@@ -848,18 +852,19 @@ export const RichBlockEditor: React.FC<RichBlockEditorProps> = ({
         >
           {TOOLBAR_ENTRIES.map((entry) => {
             const Icon = entry.icon;
+            const entryLabel = t(entry.labelKey);
             return (
               <Button
                 key={entry.type}
                 type="button"
                 variant="ghost"
                 size="sm"
-                aria-label={`Insert ${entry.label}`}
-                title={entry.label}
+                aria-label={t('richBlockEditor.insertEntry', { label: entryLabel })}
+                title={entryLabel}
                 onClick={() => handleAppend(entry.type)}
               >
                 <Icon size={14} />
-                <Typography as="span" variant="caption" className="ml-1 hidden text-xs sm:inline">{entry.label}</Typography>
+                <Typography as="span" variant="caption" className="ml-1 hidden text-xs sm:inline">{entryLabel}</Typography>
               </Button>
             );
           })}

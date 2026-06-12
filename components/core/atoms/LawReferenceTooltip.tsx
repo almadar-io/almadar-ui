@@ -12,6 +12,7 @@ import { VStack } from "./Stack";
 import { Typography } from "./Typography";
 import { Divider } from "./Divider";
 import { cn } from "../../../lib/cn";
+import { useTranslate } from "../../../hooks/useTranslate";
 
 /**
  * Law reference definition
@@ -83,6 +84,7 @@ export const LawReferenceTooltip: React.FC<LawReferenceTooltipProps> = ({
   position = "top",
   className,
 }) => {
+  const { t } = useTranslate();
   const [isVisible, setIsVisible] = React.useState(false);
   const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
@@ -170,7 +172,7 @@ export const LawReferenceTooltip: React.FC<LawReferenceTooltipProps> = ({
                 rel="noopener noreferrer"
                 onClick={(e: React.MouseEvent) => e.stopPropagation()}
               >
-                View full law text
+                {t('lawReference.viewFullText')}
               </Typography>
             )}
           </VStack>

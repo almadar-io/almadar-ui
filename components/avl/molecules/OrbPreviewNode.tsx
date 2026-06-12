@@ -43,6 +43,7 @@ import { BrowserPlayground } from '../../../runtime/BrowserPlayground';
 import type { PreviewNodeData, PatternEventSource, ScreenSize } from './avl-preview-types';
 import { SCREEN_SIZE_PRESETS } from './avl-preview-types';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { useCanvasDroppable, type CanvasDropTarget } from './useCanvasDnd';
 import { formatPayloadTooltip } from './wire-validation';
 import { createLogger } from '@almadar/logger';
@@ -565,6 +566,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   const screenSize = useContext(ScreenSizeContext);
   const preset = SCREEN_SIZE_PRESETS[screenSize];
   const { select } = useContext(PatternSelectionContext);
+  const { t } = useTranslate();
   const eventBus = useEventBus();
   const reactFlow = useReactFlow();
   const contentRef = useRef<HTMLDivElement>(null);
@@ -600,7 +602,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       ? `${data.transitionEvent ?? ''}`
       : data.orbitalName;
   const sublabel = isImportedGroup
-    ? `${data.behaviorName ?? ''}${typeof data.transitionCount === 'number' && data.transitionCount > 1 ? ` \u00b7 ${data.transitionCount} screens` : ''}`
+    ? `${data.behaviorName ?? ''}${typeof data.transitionCount === 'number' && data.transitionCount > 1 ? ` \u00b7 ${t('orbPreview.screensCount', { count: data.transitionCount })}` : ''}`
     : isExpanded
       ? `${data.fromState ?? ''} \u2192 ${data.toState ?? ''}`
       : data.entityName ?? '';
@@ -826,7 +828,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
               zIndex: 3,
             }}
           >
-            Preview
+            {t('orbPreview.previewBadge')}
           </Box>
           {hovered && !dragActive && !l1IsOver && (
             <Box
@@ -845,7 +847,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
                 }}
               >
                 <span style={{ fontSize: 12 }}>{'➞'}</span>
-                Double-click to open
+                {t('orbPreview.doubleClickToOpen')}
               </Box>
             </Box>
           )}
@@ -865,7 +867,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
                   boxShadow: 'var(--shadow-lg)',
                 }}
               >
-                Drop to add and open
+                {t('orbPreview.dropToAddAndOpen')}
               </Box>
             </Box>
           )}
@@ -900,7 +902,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
               borderTopColor: 'transparent',
               zIndex: 2,
             }}
-            title="Coordinator is dispatching to this orbital"
+            title={t('orbPreview.dispatching')}
           />
         </>
       )}
@@ -1012,7 +1014,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
         ) : (
           <Box className="flex items-center justify-center" style={{ minHeight: preset.minHeight }}>
             <Typography variant="small" className="text-muted-foreground">
-              No preview available
+              {t('orbPreview.noPreview')}
             </Typography>
           </Box>
         )}

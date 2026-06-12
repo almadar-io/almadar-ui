@@ -149,7 +149,7 @@ export function EventDispatcherTab({ traits, schema }: EventDispatcherTabProps) 
         return (
             <EmptyState
                 title={t('debug.noActiveTraits')}
-                description="Traits will appear when the state machine initializes"
+                description={t('debug.traitsInitHint')}
                 className="py-8"
             />
         );
@@ -174,7 +174,7 @@ export function EventDispatcherTab({ traits, schema }: EventDispatcherTabProps) 
             {/* Current state per trait */}
             <div className="mb-3">
                 <Typography variant="small" weight="medium" className="text-gray-500 mb-1">
-                    Active States
+                    {t('debug.activeStates')}
                 </Typography>
                 <div className="flex flex-wrap gap-1">
                     {traits.map((trait) => (
@@ -188,11 +188,11 @@ export function EventDispatcherTab({ traits, schema }: EventDispatcherTabProps) 
             {/* Available events (from current state) */}
             <div className="mb-3">
                 <Typography variant="small" weight="medium" className="text-gray-500 mb-1">
-                    Available Events
+                    {t('debug.availableEvents')}
                 </Typography>
                 {availableEvents.length === 0 ? (
                     <Typography variant="small" className="text-gray-400 italic">
-                        No transitions from current state
+                        {t('debug.noTransitionsFromState')}
                     </Typography>
                 ) : (
                     <Stack gap="xs">
@@ -209,8 +209,8 @@ export function EventDispatcherTab({ traits, schema }: EventDispatcherTabProps) 
                                 <Typography variant="small" className="text-gray-500">
                                     {transitions.map((t) => `${t.from} -> ${t.to}`).join(', ')}
                                 </Typography>
-                                {transitions.some((t) => t.guard) && (
-                                    <Badge variant="warning" size="sm">guarded</Badge>
+                                {transitions.some((tr) => tr.guard) && (
+                                    <Badge variant="warning" size="sm">{t('debug.guarded')}</Badge>
                                 )}
                             </div>
                         ))}
@@ -222,7 +222,7 @@ export function EventDispatcherTab({ traits, schema }: EventDispatcherTabProps) 
             {unavailableEvents.length > 0 && (
                 <div className="mb-3">
                     <Typography variant="small" weight="medium" className="text-gray-500 mb-1">
-                        Other Events (not available from current state)
+                        {t('debug.otherEvents')}
                     </Typography>
                     <div className="flex flex-wrap gap-1">
                         {unavailableEvents.map((event) => (
@@ -238,7 +238,7 @@ export function EventDispatcherTab({ traits, schema }: EventDispatcherTabProps) 
             {log.length > 0 && (
                 <div>
                     <Typography variant="small" weight="medium" className="text-gray-500 mb-1">
-                        Recent Transitions
+                        {t('debug.recentTransitions')}
                     </Typography>
                     <Stack gap="xs">
                         {log.map((entry, i) => (

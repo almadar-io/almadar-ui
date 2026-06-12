@@ -157,7 +157,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
             <EmptyState
                 icon={ImageIcon}
                 title={t('display.noMedia')}
-                description="No media items to display."
+                description={t('mediaGallery.noMediaDescription')}
                 className={className}
             />
         );
@@ -183,7 +183,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                                         icon={Upload}
                                         action="MEDIA_UPLOAD"
                                     >
-                                        Upload
+                                        {t('mediaGallery.upload')}
                                     </Button>
                                 )}
                                 {actions?.map((action, idx) => (
@@ -204,7 +204,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                     {/* Selection count */}
                     {selectable && selectedItems.length > 0 && (
                         <HStack gap="sm" align="center">
-                            <Badge variant="info">{selectedItems.length} selected</Badge>
+                            <Badge variant="info">{t('table.bulk.selected', { count: selectedItems.length })}</Badge>
                         </HStack>
                     )}
 

@@ -23,6 +23,7 @@ import { HStack } from "../atoms/Stack";
 import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useQuerySingleton } from "../../../hooks/useQuerySingleton";
+import { useTranslate } from "../../../hooks/useTranslate";
 
 /**
  * Layer 2 visual treatment for the filter-group pattern — orthogonal to the
@@ -115,6 +116,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
   isLoading,
   look = "toolbar",
 }) => {
+  const { t } = useTranslate();
   const eventBus = useEventBus();
   const queryState = useQuerySingleton(query);
 
@@ -226,7 +228,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
                     : "bg-card text-muted-foreground hover:bg-muted",
                 )}
               >
-                All
+                {t('filterGroup.all')}
               </button>
               {filter.options?.map((option) => (
                 <button
@@ -256,7 +258,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
             onClick={handleClearAll}
             leftIcon={<Icon name="x" className="h-3.5 w-3.5" />}
           >
-            Clear
+            {t('filterGroup.clear')}
           </Button>
         )}
       </HStack>
@@ -271,7 +273,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
           <div className="flex items-center gap-2 text-muted-foreground">
             <Icon name="filter" className="h-4 w-4" />
             <span className="text-sm font-bold uppercase tracking-wide">
-              Filters
+              {t('filterGroup.filters')}
             </span>
           </div>
         )}
@@ -302,7 +304,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
                       e.target.value || null,
                     )
                   }
-                  placeholder="From"
+                  placeholder={t('filterGroup.from')}
                   clearable
                   onClear={() =>
                     handleFilterSelect(`${filter.field}_from`, null)
@@ -317,7 +319,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
                       e.target.value || null,
                     )
                   }
-                  placeholder="To"
+                  placeholder={t('filterGroup.to')}
                   clearable
                   onClear={() => handleFilterSelect(`${filter.field}_to`, null)}
                 />
@@ -339,7 +341,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
                   handleFilterSelect(filter.field, e.target.value)
                 }
                 options={[
-                  { value: "all", label: "All" },
+                  { value: "all", label: t('filterGroup.all') },
                   ...(filter.options?.map((opt) => ({
                     value: opt,
                     label: opt,
@@ -357,7 +359,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
             leftIcon={<Icon name="x" className="h-3.5 w-3.5" />}
             className="self-start"
           >
-            Clear all
+            {t('filterGroup.clearAll')}
           </Button>
         )}
       </div>
@@ -433,7 +435,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
                   handleFilterSelect(filter.field, e.target.value)
                 }
                 options={[
-                  { value: "all", label: `All ${filter.label}` },
+                  { value: "all", label: t('filterGroup.allOf', { label: filter.label }) },
                   ...(filter.options?.map((opt) => ({
                     value: opt,
                     label: opt,
@@ -464,7 +466,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
               );
             })}
             <Button variant="ghost" size="sm" onClick={handleClearAll}>
-              Clear all
+              {t('filterGroup.clearAll')}
             </Button>
           </>
         )}
@@ -492,7 +494,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
           >
             <Icon name="filter" className="h-4 w-4" />
             <span className="text-sm font-bold uppercase tracking-wide">
-              Filters
+              {t('filterGroup.filters')}
             </span>
           </HStack>
         )}
@@ -526,7 +528,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
                       e.target.value || null,
                     )
                   }
-                  placeholder="From"
+                  placeholder={t('filterGroup.from')}
                   clearable
                   onClear={() =>
                     handleFilterSelect(`${filter.field}_from`, null)
@@ -543,7 +545,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
                       e.target.value || null,
                     )
                   }
-                  placeholder="To"
+                  placeholder={t('filterGroup.to')}
                   clearable
                   onClear={() => handleFilterSelect(`${filter.field}_to`, null)}
                   className="min-w-[130px]"
@@ -567,7 +569,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
                   handleFilterSelect(filter.field, e.target.value)
                 }
                 options={[
-                  { value: "all", label: "All" },
+                  { value: "all", label: t('filterGroup.all') },
                   ...(filter.options?.map((opt) => ({
                     value: opt,
                     label: opt,
@@ -583,7 +585,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
         {activeFilterCount > 0 && (
           <HStack gap="sm" align="center" className="ml-auto">
             <Badge variant="primary" size="md">
-              {activeFilterCount} active
+              {t('filterGroup.activeCount', { count: activeFilterCount })}
             </Badge>
             <Button
               variant="ghost"
@@ -591,7 +593,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
               onClick={handleClearAll}
               leftIcon={<Icon name="x" className="h-3.5 w-3.5" />}
             >
-              Clear all
+              {t('filterGroup.clearAll')}
             </Button>
           </HStack>
         )}

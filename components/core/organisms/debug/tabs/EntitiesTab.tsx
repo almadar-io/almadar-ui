@@ -22,7 +22,7 @@ export function EntitiesTab({ snapshot }: EntitiesTabProps) {
         return (
             <EmptyState
                 title={t('debug.noEntityData')}
-                description="Debug mode may not be enabled"
+                description={t('debug.debugModeHint')}
                 className="py-8"
             />
         );
@@ -36,7 +36,7 @@ export function EntitiesTab({ snapshot }: EntitiesTabProps) {
         return (
             <EmptyState
                 title={t('debug.noEntities')}
-                description="Entities will appear when spawned"
+                description={t('debug.entitiesSpawnHint')}
                 className="py-8"
             />
         );
@@ -47,7 +47,7 @@ export function EntitiesTab({ snapshot }: EntitiesTabProps) {
         id: `singleton-${name}`,
         header: (
             <div className="flex items-center gap-2">
-                <Badge variant="primary" size="sm">Singleton</Badge>
+                <Badge variant="primary" size="sm">{t('debug.singleton')}</Badge>
                 <Typography variant="body" weight="semibold" className="text-sky-600 dark:text-sky-400">
                     {name}
                 </Typography>
@@ -86,7 +86,7 @@ export function EntitiesTab({ snapshot }: EntitiesTabProps) {
             {singletonItems.length > 0 && (
                 <div className="mb-4">
                     <Typography variant="small" weight="medium" className="text-gray-500 mb-2">
-                        Singletons ({singletonItems.length})
+                        {t('debug.singletonsCount', { count: singletonItems.length })}
                     </Typography>
                     <Accordion items={singletonItems} multiple />
                 </div>
@@ -96,12 +96,12 @@ export function EntitiesTab({ snapshot }: EntitiesTabProps) {
             {runtimeItems.length > 0 && (
                 <div className="mb-4">
                     <Typography variant="small" weight="medium" className="text-gray-500 mb-2">
-                        Runtime ({runtimeEntities.length})
+                        {t('debug.runtimeCount', { count: runtimeEntities.length })}
                     </Typography>
                     <Accordion items={runtimeItems} multiple />
                     {runtimeEntities.length > 20 && (
                         <Typography variant="small" className="text-gray-400 text-center mt-2">
-                            +{runtimeEntities.length - 20} more entities
+                            {t('debug.moreEntities', { count: runtimeEntities.length - 20 })}
                         </Typography>
                     )}
                 </div>
@@ -111,14 +111,14 @@ export function EntitiesTab({ snapshot }: EntitiesTabProps) {
             {persistentEntries.length > 0 && (
                 <div>
                     <Typography variant="small" weight="medium" className="text-gray-500 mb-2">
-                        Persistent
+                        {t('debug.persistent')}
                     </Typography>
                     <Stack gap="xs">
                         {persistentEntries.map(([type, info]) => (
                             <div key={type} className="flex items-center justify-between py-1">
                                 <Typography variant="small">{type}</Typography>
                                 <Badge variant={info.loaded ? 'success' : 'default'} size="sm">
-                                    {info.loaded ? `${info.count} loaded` : 'not loaded'}
+                                    {info.loaded ? t('debug.loadedCount', { count: info.count }) : t('debug.notLoaded')}
                                 </Badge>
                             </div>
                         ))}

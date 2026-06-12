@@ -13,6 +13,7 @@ import React, { useCallback } from 'react';
 import type { EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useTranslate, type TranslateFunction } from '../../../hooks/useTranslate';
 import { Typography } from '../atoms/Typography';
 import { Box } from '../atoms/Box';
 import { Label } from '../atoms/Label';
@@ -51,40 +52,41 @@ const formatPriceDelta = (delta: number): string => {
   return `${sign}$${Math.abs(delta).toFixed(2)}`;
 };
 
-const constraintHint = (constraint: OptionConstraint): string => {
+const constraintHint = (constraint: OptionConstraint, t: TranslateFunction): string => {
   if (constraint.type === 'single') {
-    return constraint.required ? 'Required, pick 1' : 'Optional, pick up to 1';
+    return constraint.required ? t('optionConstraint.requiredOne') : t('optionConstraint.optionalOne');
   }
   const { min, max } = constraint;
   if (min && max) {
-    return min === max ? `Pick exactly ${min}` : `Pick ${min}-${max}`;
+    return min === max ? t('optionConstraint.pickExactly', { count: min }) : t('optionConstraint.pickRange', { min, max });
   }
-  if (min) return `Pick at least ${min}`;
-  if (max) return `Pick up to ${max}`;
-  return 'Optional';
+  if (min) return t('optionConstraint.pickAtLeast', { count: min });
+  if (max) return t('optionConstraint.pickUpTo', { count: max });
+  return t('optionConstraint.optional');
 };
 
 const validateSelection = (
   selected: string[],
   constraint: OptionConstraint,
+  t: TranslateFunction,
 ): string | undefined => {
   if (constraint.type === 'single') {
     if (constraint.required && selected.length === 0) {
-      return 'Pick 1 option';
+      return t('optionConstraint.error.pickOne');
     }
     if (selected.length > 1) {
-      return 'Pick only 1 option';
+      return t('optionConstraint.error.pickOnlyOne');
     }
     return undefined;
   }
   const { min, max } = constraint;
   if (min !== undefined && selected.length < min) {
     const remaining = min - selected.length;
-    return `Pick at least ${remaining} more`;
+    return t('optionConstraint.error.pickMore', { count: remaining });
   }
   if (max !== undefined && selected.length > max) {
     const excess = selected.length - max;
-    return `Remove ${excess} option${excess === 1 ? '' : 's'}`;
+    return t('optionConstraint.error.removeOptions', { count: excess });
   }
   return undefined;
 };
@@ -102,8 +104,9 @@ export const OptionConstraintGroup: React.FC<OptionConstraintGroupProps> = ({
   className,
 }) => {
   const eventBus = useEventBus();
-  const hint = constraintHint(constraint);
-  const error = validateSelection(selected, constraint);
+  const { t } = useTranslate();
+  const hint = constraintHint(constraint, t);
+  const error = validateSelection(selected, constraint, t);
   const inputName = `option-${groupId}`;
   const labelTextSize = size === 'sm' ? 'text-sm' : 'text-base';
   const optionGap = size === 'sm' ? 'gap-2' : 'gap-2.5';
@@ -212,7 +215,7 @@ export const OptionConstraintGroup: React.FC<OptionConstraintGroupProps> = ({
                   color="warning"
                   className="rounded border border-warning/40 px-1.5 py-0.5"
                 >
-                  Out of stock
+                  {t('optionConstraint.outOfStock')}
                 </Typography>
               )}
             </Label>

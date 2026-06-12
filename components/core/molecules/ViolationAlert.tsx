@@ -12,6 +12,7 @@
 
 import React from "react";
 import { cn } from "../../../lib/cn";
+import { useTranslate } from "../../../hooks/useTranslate";
 import { Box } from "../atoms/Box";
 import { VStack, HStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
@@ -56,10 +57,10 @@ export interface ViolationAlertProps {
   className?: string;
 }
 
-const actionTypeLabels: Record<string, string> = {
-  measure: "Corrective Measure",
-  admin: "Administrative Action",
-  penalty: "Penalty Proceedings",
+const actionTypeLabelKeys: Record<string, string> = {
+  measure: "violationAlert.actionType.measure",
+  admin: "violationAlert.actionType.admin",
+  penalty: "violationAlert.actionType.penalty",
 };
 
 const actionTypeIcons: Record<string, string> = {
@@ -78,12 +79,13 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
   className,
   ...flatProps
 }) => {
+  const { t } = useTranslate();
   // Support flat props from playground render-ui (message, category passed directly)
   const resolvedViolation: ViolationRecord = violation ?? {
     id: "unknown",
     law: "",
     article: "",
-    message: (flatProps as Record<string, unknown>).message as string ?? "Violation",
+    message: (flatProps as Record<string, unknown>).message as string ?? t('violationAlert.fallbackMessage'),
     actionType: "measure",
   };
 
@@ -173,7 +175,7 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
                 variant="caption"
                 className={cn(textColor, "opacity-75")}
               >
-                {actionTypeLabels[resolvedViolation.actionType]}
+                {t(actionTypeLabelKeys[resolvedViolation.actionType])}
               </Typography>
             </VStack>
           </HStack>
@@ -211,7 +213,7 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
                     variant="caption"
                     className={cn(textColor, "opacity-75")}
                   >
-                    Admin:
+                    {t('violationAlert.adminLabel')}
                   </Typography>
                   <Typography
                     variant="caption"
@@ -228,7 +230,7 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
                     variant="caption"
                     className={cn(textColor, "opacity-75")}
                   >
-                    Penalty:
+                    {t('violationAlert.penaltyLabel')}
                   </Typography>
                   <Typography
                     variant="caption"
@@ -252,7 +254,7 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
             className={cn(textColor, "self-start")}
           >
             <Icon name="arrow-right" size="sm" className="mr-1" />
-            Go to field
+            {t('violationAlert.goToField')}
           </Button>
         )}
       </VStack>

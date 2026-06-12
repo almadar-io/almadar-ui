@@ -29,6 +29,7 @@ import { Typography } from '../../core/atoms/Typography';
 import { Badge } from '../../core/atoms/Badge';
 import { AvlTraitScene } from '../organisms/AvlTraitScene';
 import { parseTraitLevel } from '../organisms/avl-schema-parser';
+import { useTranslate } from '../../../hooks/useTranslate';
 
 // ---------------------------------------------------------------------------
 // Selection context
@@ -61,6 +62,7 @@ const SCENE_HEIGHT = 400;
 
 const TraitCardNodeInner: React.FC<NodeProps> = (props) => {
   const data = props.data as PreviewNodeData;
+  const { t } = useTranslate();
   const { selectTransition } = useContext(TraitCardSelectionContext);
 
   const orbitalName = data.orbitalName;
@@ -91,7 +93,7 @@ const TraitCardNodeInner: React.FC<NodeProps> = (props) => {
           position={Position.Left}
           id={`listen-${event}`}
           style={{ top: `${((i + 1) / (listens.length + 1)) * 100}%` }}
-          aria-label={`listens for ${event}`}
+          aria-label={t('avl.listensFor', { event })}
         />
       ))}
       {emits.map((event, i) => (
@@ -101,7 +103,7 @@ const TraitCardNodeInner: React.FC<NodeProps> = (props) => {
           position={Position.Right}
           id={`emit-${event}`}
           style={{ top: `${((i + 1) / (emits.length + 1)) * 100}%` }}
-          aria-label={`emits ${event}`}
+          aria-label={t('avl.emits', { event })}
         />
       ))}
 
@@ -140,7 +142,7 @@ const TraitCardNodeInner: React.FC<NodeProps> = (props) => {
             />
           </svg>
         ) : (
-          <Typography variant="small" color="muted">No state machine</Typography>
+          <Typography variant="small" color="muted">{t('avl.noStateMachine')}</Typography>
         )}
       </VStack>
     </Box>

@@ -241,7 +241,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   }
 
   // Use schema stats if available (single metric), otherwise use props
-  const label = schemaStats?.[0]?.label || labelToUse || "Stat";
+  const label = schemaStats?.[0]?.label || labelToUse || t('statCard.defaultLabel');
   // Handle array values (use first element or array length)
   const normalizedPropValue = Array.isArray(propValue)
     ? (propValue[0] ?? propValue.length)
@@ -325,7 +325,7 @@ export const StatCard: React.FC<StatCardProps> = ({
                 <Typography variant="caption" as="span">{Math.abs(calculatedTrend).toFixed(1)}%</Typography>
               </HStack>
               <Typography variant="small" color="secondary" as="span">
-                vs last period
+                {t('statCard.vsLastPeriod')}
               </Typography>
             </HStack>
           )}

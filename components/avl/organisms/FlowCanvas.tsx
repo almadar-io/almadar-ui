@@ -41,6 +41,7 @@ import { SCREEN_SIZE_PRESETS, detectScreenSize } from '../molecules/avl-preview-
 import { OrbInspector } from './OrbInspector';
 import { validateWire } from '../molecules/wire-validation';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { BehaviorComposeNode } from '../molecules/BehaviorComposeNode';
 import { behaviorsToComposeGraph } from '../molecules/avl-behavior-compose-converter';
 import type { ComposeViewLevel, BehaviorCanvasEntry, BehaviorWireEdgeData, BehaviorComposeNodeData } from '../molecules/avl-behavior-compose-types';
@@ -222,6 +223,7 @@ function FlowCanvasInner({
   userType = 'builder',
   themeManifest,
 }: FlowCanvasProps) {
+  const { t } = useTranslate();
   // Render-time NODE_TYPES / EDGE_TYPES — not module-level. When vite's
   // dep-optimizer splits @almadar/ui/avl across multiple pre-bundle
   // chunks (apps/builder triggers this), FlowCanvas and OrbPreviewNode
@@ -661,20 +663,20 @@ function FlowCanvasInner({
               <button
                 onClick={handleGoBack}
                 className="text-muted-foreground hover:text-foreground text-sm cursor-pointer bg-transparent border-none p-0"
-                aria-label="Go back to overview"
+                aria-label={t('canvas.goBackToOverview')}
               >
                 &larr;
               </button>
             )}
             <Typography variant="small" className="font-medium">
               {level === 'overview'
-                ? 'Overview'
-                : expandedOrbital ?? 'Expanded'}
+                ? t('canvas.overview')
+                : expandedOrbital ?? t('canvas.expanded')}
             </Typography>
             <Typography variant="small" className="text-muted-foreground">
               {level === 'overview'
-                ? `${nodes.length} modules`
-                : `${nodes.length} screens`}
+                ? t('canvas.modulesCount', { count: nodes.length })
+                : t('canvas.screensCount', { count: nodes.length })}
             </Typography>
           </Box>
 
@@ -698,7 +700,7 @@ function FlowCanvasInner({
                       : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
                   }`}
                   title={`${p.label} (${p.width}px)`}
-                  aria-label={`Switch to ${p.label} view`}
+                  aria-label={t('canvas.switchToView', { label: p.label })}
                 >
                   {p.label}
                 </button>

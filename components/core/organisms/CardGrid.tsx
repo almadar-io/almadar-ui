@@ -260,7 +260,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
     if (isLoading) {
       return (
         <Box className="col-span-full text-center py-8 text-muted-foreground">
-          <Typography variant="body" color="secondary">Loading items...</Typography>
+          <Typography variant="body" color="secondary">{t('loading.items')}</Typography>
         </Box>
       );
     }
@@ -269,7 +269,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
     if (error) {
       return (
         <Box className="col-span-full text-center py-8 text-error">
-          <Typography variant="body" color="error">Error loading items: {error.message}</Typography>
+          <Typography variant="body" color="error">{t('error.loadFailed', { message: error.message })}</Typography>
         </Box>
       );
     }

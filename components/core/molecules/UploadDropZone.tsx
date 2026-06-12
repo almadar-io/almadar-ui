@@ -6,6 +6,7 @@ import { cn } from "../../../lib/cn";
 import { Icon } from "../atoms/Icon";
 import { Typography } from "../atoms/Typography";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { useTranslate } from "../../../hooks/useTranslate";
 
 function useSafeEventBus() {
   try {
@@ -50,7 +51,7 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
   accept,
   maxSize,
   maxFiles = 1,
-  label = "Drop files here or click to browse",
+  label,
   description,
   disabled = false,
   action,
@@ -58,6 +59,8 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
   onFiles,
   className,
 }) => {
+  const { t } = useTranslate();
+  const resolvedLabel = label ?? t("upload.dropOrBrowse");
   const [isDragOver, setIsDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -65,9 +68,9 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
   const eventBus = useSafeEventBus();
 
   const defaultDescription = [
-    accept ? `Accepted: ${accept}` : null,
-    maxSize ? `Max size: ${formatFileSize(maxSize)}` : null,
-    maxFiles > 1 ? `Up to ${maxFiles} files` : null,
+    accept ? t("upload.accepted", { accept }) : null,
+    maxSize ? t("upload.maxSize", { size: formatFileSize(maxSize) }) : null,
+    maxFiles > 1 ? t("upload.maxFiles", { count: maxFiles }) : null,
   ]
     .filter(Boolean)
     .join(". ");
@@ -75,11 +78,11 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
   const validateFiles = useCallback(
     (files: File[]): { valid: File[]; error: string | null } => {
       if (files.length > maxFiles) {
-        return { valid: [], error: `Maximum ${maxFiles} file${maxFiles > 1 ? "s" : ""} allowed` };
+        return { valid: [], error: t("upload.error.maxFiles", { count: maxFiles }) };
       }
 
       if (accept) {
-        const acceptedTypes = accept.split(",").map((t) => t.trim());
+        const acceptedTypes = accept.split(",").map((s) => s.trim());
         const invalid = files.filter((file) => {
           return !acceptedTypes.some((type) => {
             if (type.endsWith("/*")) {
@@ -89,7 +92,7 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
           });
         });
         if (invalid.length > 0) {
-          return { valid: [], error: `Invalid file type: ${invalid[0].name}` };
+          return { valid: [], error: t("upload.error.invalidType", { name: invalid[0].name }) };
         }
       }
 
@@ -98,14 +101,14 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
         if (tooLarge.length > 0) {
           return {
             valid: [],
-            error: `File too large: ${tooLarge[0].name} (max ${formatFileSize(maxSize)})`,
+            error: t("upload.error.tooLarge", { name: tooLarge[0].name, size: formatFileSize(maxSize) }),
           };
         }
       }
 
       return { valid: files, error: null };
     },
-    [accept, maxSize, maxFiles],
+    [accept, maxSize, maxFiles, t],
   );
 
   const handleFiles = useCallback(
@@ -187,7 +190,7 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
           handleClick();
         }
       }}
-      aria-label={label}
+      aria-label={resolvedLabel}
     >
       <input
         ref={inputRef}
@@ -207,7 +210,7 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
       )}
 
       <Typography variant="body1" className="text-center font-medium mb-1">
-        {isDragOver ? "Drop files here" : label}
+        {isDragOver ? t("upload.dropFilesHere") : resolvedLabel}
       </Typography>
 
       {error ? (

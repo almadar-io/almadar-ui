@@ -183,14 +183,18 @@ function formatDate(value: unknown): string {
   return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-function formatValue(value: unknown, format?: DataListField['format']): string {
+function formatValue(
+  value: unknown,
+  format?: DataListField['format'],
+  boolLabels?: { yes: string; no: string },
+): string {
   if (value === undefined || value === null) return '';
   switch (format) {
     case 'date': return formatDate(value);
     case 'currency': return typeof value === 'number' ? `$${value.toFixed(2)}` : String(value);
     case 'number': return typeof value === 'number' ? value.toLocaleString() : String(value);
     case 'percent': return typeof value === 'number' ? `${Math.round(value)}%` : String(value);
-    case 'boolean': return value ? 'Yes' : 'No';
+    case 'boolean': return value ? (boolLabels?.yes ?? 'Yes') : (boolLabels?.no ?? 'No');
     default: return String(value);
   }
 }
@@ -597,7 +601,7 @@ export function DataList<T extends EntityRow = EntityRow>({
                         {field.label ?? fieldLabel(field.name)}:
                       </Typography>
                       <Typography variant="small">
-                        {formatValue(value, field.format)}
+                        {formatValue(value, field.format, { yes: t('common.yes'), no: t('common.no') })}
                       </Typography>
                     </HStack>
                   );

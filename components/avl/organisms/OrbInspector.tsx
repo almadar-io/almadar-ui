@@ -407,7 +407,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
 
   const headerTitle = selectedPattern
     ? selectedPattern.patternType
-    : isExpanded ? transitionEvent || 'Transition' : orbitalName;
+    : isExpanded ? transitionEvent || t('avl.transition') : orbitalName;
 
   return (
     <Box className="flex flex-col bg-card border-l border-border h-full w-full sm:w-[340px]">
@@ -429,7 +429,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
           <button
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground text-sm cursor-pointer bg-transparent border-none p-1"
-            aria-label="Close"
+            aria-label={t('common.close')}
           >
             &times;
           </button>
@@ -449,7 +449,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
                     : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {tab}
+                {t(`orbInspector.tab.${tab}`)}
               </button>
             ))}
         </Box>
@@ -496,7 +496,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
             {/* Pattern Props */}
             {selectedPattern && patternDef?.propsSchema && (
               <Box className="px-4 py-3 border-b border-border/40">
-                <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">{t('Props')}</Typography>
+                <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">{t('avl.props')}</Typography>
                 <Box className="flex flex-col gap-1.5">
                   {Object.entries(patternDef.propsSchema).slice(0, 12).map(([propName, propSchema]) => {
                     const ps = propSchema as Record<string, unknown>;
@@ -540,7 +540,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
             {/* Entity Fields (architect only — designer/builder hide entity persistence + field types) */}
             {userType === 'architect' && ((selectedPattern && isEntityPattern) || (!selectedPattern && !isExpanded)) && entity && (
               <Box className="px-4 py-3 border-b border-border/40">
-                <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">{t('Entity')}</Typography>
+                <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">{t('avl.entity')}</Typography>
                 <Box className="flex items-center gap-2 mb-2">
                   <svg width={14} height={14}><circle cx={7} cy={7} r={5} fill="var(--color-primary)" /></svg>
                   <Typography variant="small" className="font-semibold text-xs">{entity.name}</Typography>
@@ -580,7 +580,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
                         <>
                           <Typography variant="small" className="text-xs font-mono flex-1">{f.name}</Typography>
                           <Typography variant="small" className="text-muted-foreground text-xs">{f.type}</Typography>
-                          {f.required && <Typography variant="small" className="text-primary text-[9px]">{t('req')}</Typography>}
+                          {f.required && <Typography variant="small" className="text-primary text-[9px]">{t('orbInspector.required')}</Typography>}
                         </>
                       )}
                     </HStack>
@@ -594,7 +594,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
                     className="mt-2 text-xs w-full"
                   >
                     <Icon name="plus" size="xs" className="mr-1" />
-                    {t('Add Field')}
+                    {t('orbInspector.addField')}
                   </Button>
                 )}
               </Box>
@@ -603,7 +603,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
             {/* Service Mode Toggle (service behaviors only) */}
             {editable && !selectedPattern && !isExpanded && node.layer === 'Services' && (
               <Box className="px-4 py-3 border-b border-border/40">
-                <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">{t('Service Mode')}</Typography>
+                <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">{t('orbInspector.serviceMode')}</Typography>
                 <HStack gap="sm" className="items-center">
                   <Button
                     variant={hasRenderUi ? 'primary' : 'ghost'}
@@ -614,7 +614,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
                     }}
                   >
                     <Icon name="monitor" size="xs" className="mr-1" />
-                    {t('Standalone')}
+                    {t('orbInspector.standalone')}
                   </Button>
                   <Button
                     variant={hasRenderUi ? 'ghost' : 'primary'}
@@ -625,11 +625,11 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
                     }}
                   >
                     <Icon name="cpu" size="xs" className="mr-1" />
-                    {t('Embedded')}
+                    {t('orbInspector.embedded')}
                   </Button>
                 </HStack>
                 <Typography variant="small" className="text-muted-foreground text-xs mt-1">
-                  {hasRenderUi ? t('Renders its own UI') : t('Headless, wired to other behaviors')}
+                  {hasRenderUi ? t('orbInspector.rendersOwnUi') : t('orbInspector.headless')}
                 </Typography>
               </Box>
             )}
@@ -637,12 +637,12 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
             {/* Traits (orbital overview) */}
             {!selectedPattern && !isExpanded && traits.length > 0 && (
               <Box className="px-4 py-3 border-b border-border/40">
-                <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Traits</Typography>
+                <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">{t('avl.traits')}</Typography>
                 <Box className="flex flex-col gap-1">
-                  {traits.map(t => (
-                    <Box key={t.name} className="flex items-center gap-2">
-                      <Typography variant="small" className="text-xs font-semibold">{t.name}</Typography>
-                      <Typography variant="small" className="text-muted-foreground text-xs">{t.stateCount} states</Typography>
+                  {traits.map(tr => (
+                    <Box key={tr.name} className="flex items-center gap-2">
+                      <Typography variant="small" className="text-xs font-semibold">{tr.name}</Typography>
+                      <Typography variant="small" className="text-muted-foreground text-xs">{t('orbInspector.statesCount', { count: tr.stateCount })}</Typography>
                     </Box>
                   ))}
                 </Box>
@@ -652,7 +652,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
             {/* State Transition */}
             {isExpanded && fromState && toState && (
               <Box className="px-4 py-3 border-b border-border/40">
-                <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Transition</Typography>
+                <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">{t('avl.transition')}</Typography>
                 <svg width="100%" height={44} viewBox="0 0 280 44">
                   <AvlState x={8} y={8} name={fromState} role={getStateRole(fromState) as StateRole} width={90} height={26} />
                   <line x1={104} y1={21} x2={158} y2={21} stroke="#1E293B" strokeWidth={2} markerEnd="url(#orb-arrow)" />
@@ -665,7 +665,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
                 </svg>
                 {traitName && (
                   <Typography variant="small" className="text-muted-foreground text-xs">
-                    {traitName}{entityName ? ` on ${entityName}` : ''}
+                    {traitName}{entityName ? t('orbInspector.onEntity', { entity: entityName }) : ''}
                   </Typography>
                 )}
               </Box>
@@ -689,7 +689,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
                   {editable ? (
                     <Input
                       defaultValue={formatExpression(transition?.guard ?? guard)}
-                      placeholder={t('Guard expression')}
+                      placeholder={t('orbInspector.guardExpression')}
                       className="flex-1 text-xs font-mono h-6"
                       onBlur={(e: React.FocusEvent<HTMLInputElement>) => handleGuardChange(e.target.value)}
                     />
@@ -706,7 +706,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
             {userType === 'architect' && (effectTypes.length > 0 || editable) && isExpanded && (
               <Box className="px-4 py-3 border-b border-border/40">
                 <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">
-                  {t('Effects')} ({effectTypes.length})
+                  {t('avl.effects')} ({effectTypes.length})
                 </Typography>
                 <Box className="flex flex-col gap-1.5">
                   {effectTypes.map((type, i) => {
@@ -780,7 +780,7 @@ function AddEffectButton({ onAdd }: { onAdd: (type: string) => void }): React.Re
         className="text-xs w-full"
       >
         <Icon name="plus" size="xs" className="mr-1" />
-        {t('Add Effect')}
+        {t('orbInspector.addEffect')}
       </Button>
       {open && (
         <Box className="absolute z-20 top-full left-0 right-0 mt-1 bg-card border border-border rounded-md shadow-lg overflow-hidden">
@@ -881,7 +881,7 @@ function StylesTab({ patternType, patternDef, patternConfig, editable, onPropCha
     return (
       <Box className="p-4">
         <Typography variant="small" className="text-muted-foreground text-xs">
-          {t('Select a pattern to view its style tokens.')}
+          {t('orbInspector.selectPatternForStyles')}
         </Typography>
       </Box>
     );
@@ -911,11 +911,11 @@ function StylesTab({ patternType, patternDef, patternConfig, editable, onPropCha
       {/* Tokens this pattern consumes */}
       <Box>
         <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">
-          {t('Tokens')}
+          {t('orbInspector.tokens')}
         </Typography>
         {tokens.length === 0 ? (
           <Typography variant="small" className="text-muted-foreground text-xs italic">
-            {t('No token contract declared for this pattern.')}
+            {t('orbInspector.noTokenContract')}
           </Typography>
         ) : (
           <Box className="flex flex-col gap-1">
@@ -932,7 +932,7 @@ function StylesTab({ patternType, patternDef, patternConfig, editable, onPropCha
       {variantEnum && variantEnum.length > 0 && (
         <Box>
           <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">
-            {t('Variant')}
+            {t('orbInspector.variant')}
           </Typography>
           <Box className="flex flex-wrap gap-1">
             {variantEnum.map((variant) => {
@@ -960,7 +960,7 @@ function StylesTab({ patternType, patternDef, patternConfig, editable, onPropCha
       {sizeEnum && sizeEnum.length > 0 && (
         <Box>
           <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">
-            {t('Size')}
+            {t('orbInspector.size')}
           </Typography>
           <Box className="flex flex-wrap gap-1">
             {sizeEnum.map((size) => {
@@ -1004,26 +1004,27 @@ interface TokenEditorSectionProps {
 }
 
 /** Theme-token categories the inspector exposes for editing. */
-const TOKEN_GROUPS: readonly { group: 'colors' | 'radii' | 'spacing' | 'shadows'; label: string }[] = [
-  { group: 'colors', label: 'Colors' },
-  { group: 'radii', label: 'Radii' },
-  { group: 'spacing', label: 'Spacing' },
-  { group: 'shadows', label: 'Shadows' },
+const TOKEN_GROUPS: readonly { group: 'colors' | 'radii' | 'spacing' | 'shadows'; labelKey: string }[] = [
+  { group: 'colors', labelKey: 'orbInspector.tokenGroup.colors' },
+  { group: 'radii', labelKey: 'orbInspector.tokenGroup.radii' },
+  { group: 'spacing', labelKey: 'orbInspector.tokenGroup.spacing' },
+  { group: 'shadows', labelKey: 'orbInspector.tokenGroup.shadows' },
 ] as const;
 
 function TokenEditorSection({ themeManifest, onPropChange }: TokenEditorSectionProps): React.ReactElement {
+  const { t } = useTranslate();
   const tokens = themeManifest.tokens ?? {};
   return (
     <Box className="flex flex-col gap-3 pt-2 border-t border-border/40">
       <Typography variant="small" className="text-xs uppercase tracking-wider text-muted-foreground">
-        Project theme tokens
+        {t('orbInspector.projectThemeTokens')}
       </Typography>
-      {TOKEN_GROUPS.map(({ group, label }) => {
+      {TOKEN_GROUPS.map(({ group, labelKey }) => {
         const entries = Object.entries(tokens[group] ?? {});
         if (entries.length === 0) return null;
         return (
           <Box key={group} className="flex flex-col gap-1.5">
-            <Typography variant="small" className="text-xs font-mono text-muted-foreground">{label}</Typography>
+            <Typography variant="small" className="text-xs font-mono text-muted-foreground">{t(labelKey)}</Typography>
             {entries.map(([key, value]) => (
               <TokenRow
                 key={key}

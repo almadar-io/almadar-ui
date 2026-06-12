@@ -29,6 +29,7 @@ import { VerificationTab } from './tabs/VerificationTab';
 import { TransitionTimeline } from './tabs/TransitionTimeline';
 import { ServerBridgeTab } from './tabs/ServerBridgeTab';
 import { EventDispatcherTab } from './tabs/EventDispatcherTab';
+import { useTranslate } from '../../../../hooks/useTranslate';
 import './RuntimeDebugger.css';
 
 // ---------------------------------------------------------------------------
@@ -36,24 +37,25 @@ import './RuntimeDebugger.css';
 // ---------------------------------------------------------------------------
 
 function ServerResponseRow({ sr }: { sr: ServerResponseTrace }) {
+    const { t } = useTranslate();
     const entityEntries = Object.entries(sr.dataEntities);
     return (
         <div className="ml-4 pl-2 border-l border-purple-500/30 py-0.5 text-xs font-mono">
             <div className="flex items-center gap-2">
                 <span className={sr.success ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                    {sr.success ? '\u2713' : '\u2717'} server
+                    {sr.success ? '\u2713' : '\u2717'} {t('debug.server')}
                 </span>
                 <span className="text-purple-600 dark:text-purple-300">
                     {sr.orbitalName}
                 </span>
                 {sr.clientEffects > 0 && (
                     <span className="px-1 rounded bg-purple-500/15 text-purple-600 dark:text-purple-300">
-                        {sr.clientEffects} clientEffect{sr.clientEffects !== 1 ? 's' : ''}
+                        {t('debug.clientEffectsCount', { count: sr.clientEffects })}
                     </span>
                 )}
                 {sr.emittedEvents.length > 0 && (
                     <span className="px-1 rounded bg-blue-500/15 text-blue-300">
-                        emit: {sr.emittedEvents.join(', ')}
+                        {t('debug.emitLabel')} {sr.emittedEvents.join(', ')}
                     </span>
                 )}
                 {sr.error && (
@@ -66,7 +68,7 @@ function ServerResponseRow({ sr }: { sr: ServerResponseTrace }) {
                 <div className="flex flex-wrap gap-1 mt-0.5">
                     {entityEntries.map(([name, count]) => (
                         <span key={name} className="px-1 rounded bg-[var(--color-card)] text-foreground">
-                            {name}: {count} row{count !== 1 ? 's' : ''}
+                            {name}: {t('debug.rowsCount', { count })}
                         </span>
                     ))}
                 </div>
@@ -76,6 +78,7 @@ function ServerResponseRow({ sr }: { sr: ServerResponseTrace }) {
 }
 
 function TransitionRow({ trace }: { trace: TransitionTrace }) {
+    const { t } = useTranslate();
     const isServerEntry = !!trace.serverResponse && trace.traitName.startsWith('server:');
     const hasFailedEffects = trace.effects.some((e: EffectTrace) => e.status === 'failed');
 
@@ -88,7 +91,7 @@ function TransitionRow({ trace }: { trace: TransitionTrace }) {
                     <Badge variant="warning" size="sm" className="flex-shrink-0">
                         {trace.event}
                     </Badge>
-                    <span className="text-purple-600 dark:text-purple-400 flex-shrink-0">server response</span>
+                    <span className="text-purple-600 dark:text-purple-400 flex-shrink-0">{t('debug.serverResponse')}</span>
                 </div>
                 <ServerResponseRow sr={trace.serverResponse} />
             </div>
@@ -148,6 +151,7 @@ function VerifyModePanel({
     serverCount: number;
     localCount: number;
 }) {
+    const { t } = useTranslate();
     // Expanded by default — verification screenshots otherwise reduce to a
     // collapsed strip with no diagnostic value. The 25vh panel still leaves
     // 75% of the viewport for the UI under inspection. Click the status bar
@@ -196,24 +200,24 @@ function VerifyModePanel({
                 onClick={() => setExpanded((v) => !v)}
                 className="px-3 py-1.5 flex items-center gap-3 text-xs font-mono border-b border-border flex-shrink-0 w-full text-left hover:bg-[var(--color-card-hover,transparent)] cursor-pointer"
                 aria-expanded={expanded}
-                aria-label={expanded ? 'Collapse verification timeline' : 'Expand verification timeline'}
+                aria-label={expanded ? t('debug.collapseVerificationTimeline') : t('debug.expandVerificationTimeline')}
                 data-testid="debugger-verify-toggle"
             >
                 <span className="text-foreground/50 w-3" aria-hidden>{expanded ? '▾' : '▸'}</span>
                 <Badge variant={failedChecks > 0 ? 'danger' : 'success'} size="sm">
-                    {failedChecks > 0 ? `${failedChecks} fail` : 'OK'}
+                    {failedChecks > 0 ? t('debug.failCount', { count: failedChecks }) : t('debug.ok')}
                 </Badge>
                 <span className="text-foreground/70">
-                    {localCount} local
+                    {t('debug.localCount', { count: localCount })}
                 </span>
                 <span className="text-purple-600 dark:text-purple-400">
-                    {serverCount} server
+                    {t('debug.serverCount', { count: serverCount })}
                 </span>
                 {traitStates && (
                     <span className="text-cyan-600 dark:text-cyan-400 truncate max-w-[400px]">{traitStates}</span>
                 )}
                 {!expanded && transitions.length > 0 && (
-                    <span className="ml-auto text-foreground/50">{transitions.length} transition{transitions.length !== 1 ? 's' : ''}</span>
+                    <span className="ml-auto text-foreground/50">{t('debug.transitionsCount', { count: transitions.length })}</span>
                 )}
             </button>
 
@@ -224,7 +228,7 @@ function VerifyModePanel({
                         <div className="px-2 py-1">
                             {transitions.length === 0 ? (
                                 <div className="text-foreground/50 text-xs font-mono py-2 text-center">
-                                    Waiting for transitions...
+                                    {t('debug.waitingForTransitions')}
                                 </div>
                             ) : (
                                 <div className="space-y-0.5">
@@ -267,6 +271,7 @@ export function RuntimeDebugger({
     defaultTab,
     schema,
 }: RuntimeDebuggerProps) {
+    const { t } = useTranslate();
     const [isCollapsed, setIsCollapsed] = React.useState(mode === 'verify' ? true : defaultCollapsed);
     const [isVisible, setIsVisible] = React.useState(mode === 'inline' || mode === 'verify' || isDebugEnabled());
 
@@ -317,55 +322,55 @@ export function RuntimeDebugger({
     const tabItems: TabItem[] = [
         {
             id: 'dispatch',
-            label: 'Dispatch',
+            label: t('debug.tabDispatch'),
             badge: debugData.traits.length || undefined,
             content: <EventDispatcherTab traits={debugData.traits} schema={schema} />,
         },
         {
             id: 'verify',
-            label: failedChecks > 0 ? 'Verify (!)' : 'Verify',
+            label: failedChecks > 0 ? t('debug.tabVerifyAlert') : t('debug.tabVerify'),
             badge: verification.summary.totalChecks || undefined,
             content: <VerificationTab checks={verification.checks} summary={verification.summary} />,
         },
         {
             id: 'timeline',
-            label: 'Timeline',
+            label: t('debug.tabTimeline'),
             badge: verification.transitions.length || undefined,
             content: <TransitionTimeline transitions={verification.transitions} />,
         },
         {
             id: 'bridge',
-            label: 'Bridge',
+            label: t('debug.tabBridge'),
             badge: verification.bridge?.connected ? undefined : 1,
             content: <ServerBridgeTab bridge={verification.bridge} />,
         },
         {
             id: 'traits',
-            label: 'Traits',
+            label: t('debug.tabTraits'),
             badge: debugData.traits.length || undefined,
             content: <TraitsTab traits={debugData.traits} />,
         },
         {
             id: 'ticks',
-            label: 'Ticks',
-            badge: debugData.ticks.filter((t: { active: boolean }) => t.active).length || undefined,
+            label: t('debug.tabTicks'),
+            badge: debugData.ticks.filter((tick: { active: boolean }) => tick.active).length || undefined,
             content: <TicksTab ticks={debugData.ticks} />,
         },
         {
             id: 'entities',
-            label: 'Entities',
+            label: t('debug.tabEntities'),
             badge: debugData.entitySnapshot?.runtime.length || undefined,
             content: <EntitiesTab snapshot={debugData.entitySnapshot} />,
         },
         {
             id: 'events',
-            label: 'Events',
+            label: t('debug.tabEvents'),
             badge: debugData.events.length > 0 ? debugData.events.length : undefined,
             content: <EventFlowTab events={debugData.events} />,
         },
         {
             id: 'guards',
-            label: 'Guards',
+            label: t('debug.tabGuards'),
             badge: debugData.guards.filter((g: { result: boolean }) => !g.result).length || undefined,
             content: <GuardsPanel guards={debugData.guards} />,
         },
@@ -394,14 +399,14 @@ export function RuntimeDebugger({
                     >
                         <div className="flex items-center gap-2">
                             <Typography variant="h6" style={{ fontSize: '0.75rem' }}>
-                                {isCollapsed ? '\u25B6' : '\u25BC'} Debugger
+                                {isCollapsed ? '\u25B6' : '\u25BC'} {t('debug.debugger')}
                             </Typography>
                             {failedChecks > 0 ? (
-                                <Badge variant="danger" size="sm">{failedChecks} failed</Badge>
+                                <Badge variant="danger" size="sm">{t('debug.failedCount', { count: failedChecks })}</Badge>
                             ) : debugData.traits.length > 0 ? (
-                                <Badge variant="success" size="sm">{debugData.traits.length} traits</Badge>
+                                <Badge variant="success" size="sm">{t('debug.traitsCount', { count: debugData.traits.length })}</Badge>
                             ) : (
-                                <Badge variant="info" size="sm">Idle</Badge>
+                                <Badge variant="info" size="sm">{t('debug.idle')}</Badge>
                             )}
                         </div>
                     </div>
@@ -459,7 +464,7 @@ export function RuntimeDebugger({
                     variant="secondary"
                     size="sm"
                     className="runtime-debugger__toggle"
-                    title="Open Debugger (`)"
+                    title={t('debug.openDebugger')}
                 >
                     {failedChecks > 0 ? (
                         <span className="relative">
@@ -476,20 +481,20 @@ export function RuntimeDebugger({
                     <div className="runtime-debugger__header">
                         <div className="flex items-center gap-2">
                             <span className="text-lg">V</span>
-                            <Typography variant="h6">KFlow Verifier</Typography>
+                            <Typography variant="h6">{t('debug.kflowVerifier')}</Typography>
                             {failedChecks > 0 ? (
-                                <Badge variant="danger" size="sm">{failedChecks} failed</Badge>
+                                <Badge variant="danger" size="sm">{t('debug.failedCount', { count: failedChecks })}</Badge>
                             ) : verification.summary.totalChecks > 0 ? (
-                                <Badge variant="success" size="sm">All passing</Badge>
+                                <Badge variant="success" size="sm">{t('debug.allPassing')}</Badge>
                             ) : (
-                                <Badge variant="info" size="sm">Runtime</Badge>
+                                <Badge variant="info" size="sm">{t('debug.runtime')}</Badge>
                             )}
                         </div>
                         <Button
                             onClick={() => setIsCollapsed(true)}
                             variant="ghost"
                             size="sm"
-                            title="Close (`)"
+                            title={t('debug.close')}
                         >
                             x
                         </Button>
@@ -508,7 +513,7 @@ export function RuntimeDebugger({
                     {/* Footer */}
                     <div className="runtime-debugger__footer">
                         <Typography variant="small" className="text-foreground/50">
-                            Press ` to toggle | window.__orbitalVerification for automation
+                            {t('debug.toggleHint')}
                         </Typography>
                     </div>
                 </Card>

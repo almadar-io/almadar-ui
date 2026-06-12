@@ -315,7 +315,7 @@ export function CalendarGrid({
             aria-disabled={!canPrev || undefined}
             aria-label={t('aria.previousDays')}
           >
-            Prev
+            {t('nav.previous')}
           </Button>
           <Typography variant="small" className="text-muted-foreground">
             {formatDateRange(visibleDays[0], visibleDays[visibleDays.length - 1])}
@@ -328,7 +328,7 @@ export function CalendarGrid({
             aria-disabled={!canNext || undefined}
             aria-label={t('aria.nextDays')}
           >
-            Next
+            {t('nav.next')}
           </Button>
         </HStack>
       )}

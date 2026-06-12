@@ -40,6 +40,7 @@ import { Avl3DTraitScene } from './Avl3DTraitScene';
 import { Avl3DTransitionScene } from './Avl3DTransitionScene';
 import { Avl3DEffects } from './Avl3DEffects';
 import { Avl3DContext, type Avl3DModelOverrides } from './avl-3d-context';
+import { useTranslate } from '../../../hooks/useTranslate';
 
 // ---------------------------------------------------------------------------
 // Props
@@ -166,6 +167,7 @@ export const Avl3DViewer: React.FC<Avl3DViewerProps> = ({
   effects = true,
   modelOverrides = {},
 }) => {
+  const { t } = useTranslate();
   // Parse schema
   const schema: OrbitalSchema = useMemo(() => {
     if (typeof schemaProp === 'string') {
@@ -358,7 +360,7 @@ export const Avl3DViewer: React.FC<Avl3DViewerProps> = ({
           color="muted"
           className="absolute bottom-2 right-2 z-10 bg-surface/60 backdrop-blur rounded px-2 py-1"
         >
-          Press Esc to zoom out
+          {t('avl.pressEscToZoomOut')}
         </Typography>
       )}
 

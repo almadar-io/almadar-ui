@@ -248,7 +248,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     const isLolo = language === 'lolo';
     const activeStyle = isOrb ? orbStyle : isLolo ? loloStyle : dark;
     const eventBus = useEventBus();
-    const { t: _t } = useTranslate();
+    const { t } = useTranslate();
     const scrollRef = useRef<HTMLDivElement | null>(null);
     const codeRef = useRef<HTMLDivElement | null>(null);
     const savedScrollLeftRef = useRef<number>(0);
@@ -567,7 +567,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
                 size="sm"
                 onClick={handleCopy}
                 className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity text-muted-foreground hover:text-white"
-                aria-label="Copy code"
+                aria-label={t('common.copy')}
               >
                 {copied ? (
                   <Icon name="check" className="w-4 h-4 text-green-400" />

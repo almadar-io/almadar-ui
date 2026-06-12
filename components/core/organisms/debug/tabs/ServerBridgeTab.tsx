@@ -50,14 +50,14 @@ export function ServerBridgeTab({ bridge }: ServerBridgeTabProps) {
         return (
             <EmptyState
                 title={t('debug.noBridgeData')}
-                description="The ServerBridge has not been initialized. Bridge health will appear once the runtime connects to the server."
+                description={t('debug.bridgeInitHint')}
                 className="py-8"
             />
         );
     }
 
     const formatTime = (ts: number) => {
-        if (ts === 0) return 'Never';
+        if (ts === 0) return t('debug.never');
         const d = new Date(ts);
         return d.toLocaleTimeString('en-US', {
             hour12: false,
@@ -75,14 +75,14 @@ export function ServerBridgeTab({ bridge }: ServerBridgeTabProps) {
                     <div className="flex items-center gap-3 mb-3">
                         <div className={`w-3 h-3 rounded-full ${bridge.connected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
                         <Typography variant="h6">
-                            {bridge.connected ? 'Connected' : 'Disconnected'}
+                            {bridge.connected ? t('debug.connected') : t('debug.disconnected')}
                         </Typography>
                     </div>
 
                     <Stack gap="xs">
                         <StatRow
                             label={t('debug.status')}
-                            value={bridge.connected ? 'Connected' : 'Disconnected'}
+                            value={bridge.connected ? t('debug.connected') : t('debug.disconnected')}
                             variant={bridge.connected ? 'success' : 'danger'}
                         />
                         <StatRow
@@ -104,7 +104,7 @@ export function ServerBridgeTab({ bridge }: ServerBridgeTabProps) {
                 {bridge.lastError && (
                     <Card className="p-3 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950">
                         <Typography variant="small" weight="semibold" className="text-red-600 dark:text-red-400 mb-1">
-                            Last Error
+                            {t('debug.lastError')}
                         </Typography>
                         <Typography variant="small" className="text-red-500 font-mono break-all">
                             {bridge.lastError}
@@ -116,7 +116,7 @@ export function ServerBridgeTab({ bridge }: ServerBridgeTabProps) {
                 {bridge.connected && (
                     <div className="text-center py-2">
                         <Typography variant="small" className="text-gray-400">
-                            {bridge.eventsForwarded + bridge.eventsReceived} total events processed
+                            {t('debug.totalEventsProcessed', { count: bridge.eventsForwarded + bridge.eventsReceived })}
                         </Typography>
                     </div>
                 )}

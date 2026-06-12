@@ -13,6 +13,7 @@ import { HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 import { Icon } from '../atoms/Icon';
 import { Input } from '../atoms/Input';
+import { useTranslate } from '../../../hooks/useTranslate';
 
 export interface DocSearchResult {
   title: string;
@@ -31,10 +32,12 @@ export interface DocSearchProps {
 }
 
 export function DocSearch({
-  placeholder = 'Search documentation...',
+  placeholder,
   onSearch,
   className,
 }: DocSearchProps) {
+  const { t } = useTranslate();
+  const resolvedPlaceholder = placeholder ?? t('docSearch.placeholder');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<DocSearchResult[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -158,7 +161,7 @@ export function DocSearch({
       <Box position="relative">
         <Input
           inputType="search"
-          placeholder={placeholder}
+          placeholder={resolvedPlaceholder}
           value={query}
           onChange={handleChange}
           onFocus={handleFocus}

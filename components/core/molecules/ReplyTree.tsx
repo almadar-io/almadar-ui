@@ -10,6 +10,7 @@ import React, { useCallback, useState } from "react";
 import type { EventEmit, EntityCollection } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { useTranslate } from "../../../hooks/useTranslate";
 import { Avatar, Typography, Button, Box, Input } from "../atoms";
 import { VoteStack, type VoteValue } from "./VoteStack";
 
@@ -74,6 +75,7 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
     showActions,
 }) => {
     const eventBus = useEventBus();
+    const { t } = useTranslate();
     const hasReplies = !!node.replies && node.replies.length > 0;
     const isCollapsed = collapsedSet.has(node.id);
     const atMaxDepth = depth >= maxDepth;
@@ -132,7 +134,7 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
                         variant="ghost"
                         size="sm"
                         onClick={handleToggle}
-                        aria-label={isCollapsed ? "Expand replies" : "Collapse replies"}
+                        aria-label={isCollapsed ? t('replyTree.expandReplies') : t('replyTree.collapseReplies')}
                         aria-expanded={!isCollapsed}
                         leftIcon={isCollapsed ? "chevron-right" : "chevron-down"}
                         className={cn(
@@ -179,25 +181,25 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
                             onVote={handleVote}
                             size="sm"
                             variant="horizontal"
-                            label={`Vote on reply by ${node.authorName}`}
+                            label={t('replyTree.voteOnReplyBy', { author: node.authorName })}
                         />
                         <Button
                             variant="ghost"
                             size="sm"
                             leftIcon="message-square"
                             onClick={handleReply}
-                            aria-label={`Reply to ${node.authorName}`}
+                            aria-label={t('replyTree.replyTo', { author: node.authorName })}
                         >
-                            Reply
+                            {t('replyTree.reply')}
                         </Button>
                         <Button
                             variant="ghost"
                             size="sm"
                             leftIcon="flag"
                             onClick={handleFlag}
-                            aria-label={`Flag reply by ${node.authorName}`}
+                            aria-label={t('replyTree.flagReplyBy', { author: node.authorName })}
                         >
-                            Flag
+                            {t('replyTree.flag')}
                         </Button>
                     </Box>
                 )}
@@ -208,9 +210,9 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
                             inputType="textarea"
                             rows={2}
                             value={draft}
-                            placeholder={`Reply to ${node.authorName}…`}
+                            placeholder={t('replyTree.replyToPlaceholder', { author: node.authorName })}
                             onChange={(e) => setDraft(e.target.value)}
-                            aria-label={`Reply to ${node.authorName}`}
+                            aria-label={t('replyTree.replyTo', { author: node.authorName })}
                         />
                         <Box className="flex flex-row gap-2 items-center">
                             <Button
@@ -220,10 +222,10 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
                                 onClick={handleSubmitReply}
                                 disabled={!draft.trim()}
                             >
-                                Send
+                                {t('replyTree.send')}
                             </Button>
                             <Button variant="ghost" size="sm" onClick={handleCancelReply}>
-                                Cancel
+                                {t('common.cancel')}
                             </Button>
                         </Box>
                     </Box>
@@ -241,7 +243,7 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
                                 "text-sm text-primary hover:underline hover:bg-transparent",
                             )}
                         >
-                            Continue thread
+                            {t('replyTree.continueThread')}
                         </Button>
                     ) : (
                         <Box className="flex flex-col gap-2 mt-1">
@@ -295,6 +297,7 @@ export const ReplyTree: React.FC<ReplyTreeProps> = ({
     showActions = true,
     className,
 }) => {
+    const { t } = useTranslate();
     const nodeList = Array.isArray(nodes) ? nodes : nodes ? [nodes] : [];
     const [collapsedSet, setCollapsedSet] = useState<Set<string>>(() => {
         const acc = new Set<string>();
@@ -317,7 +320,7 @@ export const ReplyTree: React.FC<ReplyTreeProps> = ({
     if (nodeList.length === 0) {
         return (
             <Box className={cn("text-sm text-muted-foreground", className)}>
-                No replies yet.
+                {t('replyTree.noRepliesYet')}
             </Box>
         );
     }

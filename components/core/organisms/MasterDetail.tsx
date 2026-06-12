@@ -15,6 +15,7 @@ import React from 'react';
 import { DataTable, type DataTableProps } from './DataTable';
 import type { EntityDisplayProps } from './types';
 import type { EntityRow } from '@almadar/core';
+import { useTranslate } from '../../../hooks/useTranslate';
 
 export interface MasterDetailProps<T extends EntityRow & { id: string | number } = EntityRow & { id: string | number }> extends EntityDisplayProps<T> {
   /** Fields to show in the master list (maps to DataTable columns) */
@@ -35,6 +36,7 @@ export function MasterDetail<T extends EntityRow & { id: string | number }>({
   className,
   ...rest
 }: MasterDetailProps<T>): React.ReactElement {
+  const { t } = useTranslate();
   const loading = externalLoading ?? false;
   const isLoading = externalIsLoading ?? false;
   const error = externalError ?? null;
@@ -47,8 +49,8 @@ export function MasterDetail<T extends EntityRow & { id: string | number }>({
       isLoading={loading || isLoading}
       error={error}
       className={className}
-      emptyTitle="No items found"
-      emptyDescription="Create your first item to get started."
+      emptyTitle={t('table.empty.title')}
+      emptyDescription={t('empty.createFirst')}
       {...(rest as Partial<DataTableProps<T>>)}
     />
   );

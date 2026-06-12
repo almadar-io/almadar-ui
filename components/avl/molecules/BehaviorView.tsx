@@ -8,6 +8,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { AvlState } from '../atoms/AvlState';
 import { AvlTransitionLane } from './AvlTransitionLane';
 import { AvlSwimLane } from './AvlSwimLane';
@@ -26,6 +27,7 @@ const SWIM_GUTTER = 120;
 const CENTER_W = 360;
 
 export const BehaviorView: React.FC<BehaviorViewProps> = ({ data }) => {
+  const { t } = useTranslate();
   const [layout, setLayout] = useState<ElkLayout | null>(null);
 
   // Use the first trait's details for the behavior view
@@ -42,7 +44,7 @@ export const BehaviorView: React.FC<BehaviorViewProps> = ({ data }) => {
   if (!traitData) {
     return (
       <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-4 text-center text-[var(--color-muted-foreground)] text-sm">
-        No trait data
+        {t('avl.noTraitData')}
       </div>
     );
   }
@@ -50,7 +52,7 @@ export const BehaviorView: React.FC<BehaviorViewProps> = ({ data }) => {
   if (!layout) {
     return (
       <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-4 text-center text-[var(--color-muted-foreground)] text-sm">
-        Computing layout...
+        {t('avl.computingLayout')}
       </div>
     );
   }
@@ -75,7 +77,7 @@ export const BehaviorView: React.FC<BehaviorViewProps> = ({ data }) => {
         {traitData.name}
       </text>
       <text x={CENTER_W / 2} y={36} textAnchor="middle" fill="var(--color-muted-foreground)" fontSize={11} opacity={0.5} fontFamily="inherit">
-        on {traitData.linkedEntity}
+        {t('avl.onEntity', { entity: traitData.linkedEntity })}
       </text>
 
       <defs>

@@ -40,6 +40,7 @@ import { Typography } from '../../core/atoms/Typography';
 import { Button } from '../../core/atoms/Button';
 import { Icon } from '../../core/atoms/Icon';
 import { FlowCanvas } from './FlowCanvas';
+import { useTranslate } from '../../../hooks/useTranslate';
 import type { ViewLevel } from '../molecules/avl-preview-types';
 
 // ---------------------------------------------------------------------------
@@ -344,6 +345,7 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
   minZoom = 0.4,
   maxZoom = 3,
 }) => {
+  const { t } = useTranslate();
   // Parse schema
   const parsedSchema = useMemo<OrbitalSchema>(() => {
     if (typeof schemaProp === 'string') return JSON.parse(schemaProp) as OrbitalSchema;
@@ -676,7 +678,7 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
           }}
         >
           <Typography variant="small" style={{ color }}>
-            Press Esc to zoom out
+            {t('avl.pressEscToZoomOut')}
           </Typography>
         </Box>
       )}
@@ -727,7 +729,9 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
                   data-orbital-tile="true"
                   onClick={() => handleSelect(view.name)}
                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSelect(view.name); }}
-                  aria-label={`Orbital: ${view.name}${isHighlighted ? ' (highlighted)' : ''}`}
+                  aria-label={isHighlighted
+                    ? t('avl.orbitalLabelHighlighted', { name: view.name })
+                    : t('avl.orbitalLabel', { name: view.name })}
                   position="absolute"
                   style={{
                     left: view.cx - UNIT_DISPLAY_W / 2,
@@ -771,13 +775,13 @@ export const AvlOrbitalsCosmicZoom: React.FC<AvlOrbitalsCosmicZoomProps> = ({
               zIndex: 30,
             }}
           >
-            <Button variant="secondary" size="sm" onClick={zoomIn} title="Zoom in" action="COSMIC_ZOOM_IN">
+            <Button variant="secondary" size="sm" onClick={zoomIn} title={t('avl.zoomIn')} action="COSMIC_ZOOM_IN">
               <Icon name="plus" size="sm" />
             </Button>
-            <Button variant="secondary" size="sm" onClick={zoomOut} title="Zoom out" action="COSMIC_ZOOM_OUT">
+            <Button variant="secondary" size="sm" onClick={zoomOut} title={t('avl.zoomOut')} action="COSMIC_ZOOM_OUT">
               <Icon name="minus" size="sm" />
             </Button>
-            <Button variant="secondary" size="sm" onClick={resetZoom} title="Reset" action="COSMIC_ZOOM_RESET">
+            <Button variant="secondary" size="sm" onClick={resetZoom} title={t('common.reset')} action="COSMIC_ZOOM_RESET">
               <Icon name="maximize" size="sm" />
             </Button>
           </Box>

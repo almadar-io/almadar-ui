@@ -195,7 +195,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({
           className="inset-0 flex-col items-center justify-center gap-2 bg-black bg-opacity-80 text-center"
         >
           <Icon name="camera" className="h-8 w-8 text-white" aria-hidden="true" />
-          <Typography variant="body2" className="text-white">Camera unavailable</Typography>
+          <Typography variant="body2" className="text-white">{t('qrScanner.cameraUnavailable')}</Typography>
           <Typography variant="caption" className="text-white opacity-70">{cameraError.message}</Typography>
         </Box>
       )}
@@ -206,7 +206,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({
           display="flex"
           className="inset-0 items-center justify-center bg-black bg-opacity-60"
         >
-          <Typography variant="body2" className="text-white">Paused</Typography>
+          <Typography variant="body2" className="text-white">{t('qrScanner.paused')}</Typography>
         </Box>
       )}
 
@@ -223,7 +223,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({
               "rounded-full bg-black bg-opacity-60 p-2 text-white",
               "hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-white",
             )}
-            aria-label={isPaused ? "Resume scanning" : "Pause scanning"}
+            aria-label={isPaused ? t('qrScanner.resumeScanning') : t('qrScanner.pauseScanning')}
           >
             {isPaused ? <Icon name="play" className="h-4 w-4" /> : <Icon name="pause" className="h-4 w-4" />}
           </Button>
@@ -234,7 +234,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({
               "rounded-full bg-black bg-opacity-60 p-2 text-white",
               "hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-white",
             )}
-            aria-label={`Switch to ${currentFacing === 'environment' ? 'front' : 'rear'} camera`}
+            aria-label={currentFacing === 'environment' ? t('qrScanner.switchToFrontCamera') : t('qrScanner.switchToRearCamera')}
           >
             <Icon name="refresh-cw" className="h-4 w-4" />
           </Button>
@@ -247,7 +247,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({
             )}
             aria-label={t('aria.mockScanDev')}
           >
-            Mock Scan
+            {t('qrScanner.mockScan')}
           </Button>
         </Box>
       )}

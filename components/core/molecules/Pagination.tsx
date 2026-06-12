@@ -258,7 +258,7 @@ export const Pagination: React.FC<PaginationProps> = ({
             type="number"
             value={jumpToPage}
             onChange={(e) => setJumpToPage(e.target.value)}
-            placeholder="Page"
+            placeholder={t('pagination.jumpPlaceholder')}
             className="w-20"
             onKeyDown={(e) => {
               if (e.key === "Enter") {

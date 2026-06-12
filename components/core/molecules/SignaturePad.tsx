@@ -56,8 +56,8 @@ export interface SignaturePadProps {
 }
 
 export const SignaturePad: React.FC<SignaturePadProps> = ({
-    label = "Signature",
-    helperText = "Draw your signature above",
+    label,
+    helperText,
     strokeColor,
     strokeWidth = 2,
     height = 200,
@@ -73,6 +73,8 @@ export const SignaturePad: React.FC<SignaturePadProps> = ({
 }) => {
     const eventBus = useEventBus();
     const { t } = useTranslate();
+    const resolvedLabel = label ?? t('signaturePad.label');
+    const resolvedHelperText = helperText ?? t('signaturePad.helperText');
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isDrawing, setIsDrawing] = useState(false);
     const [hasSignature, setHasSignature] = useState(!!value);
@@ -193,9 +195,9 @@ export const SignaturePad: React.FC<SignaturePadProps> = ({
     return (
         <Card className={cn("p-4", className)}>
             <VStack gap="sm">
-                {label && (
+                {resolvedLabel && (
                     <Typography variant="label" weight="medium">
-                        {label}
+                        {resolvedLabel}
                     </Typography>
                 )}
 
@@ -224,9 +226,9 @@ export const SignaturePad: React.FC<SignaturePadProps> = ({
                     />
                 </Box>
 
-                {helperText && (
+                {resolvedHelperText && (
                     <Typography variant="caption" color="secondary">
-                        {helperText}
+                        {resolvedHelperText}
                     </Typography>
                 )}
 
@@ -239,7 +241,7 @@ export const SignaturePad: React.FC<SignaturePadProps> = ({
                             onClick={clearSignature}
                             disabled={!hasSignature}
                         >
-                            Clear
+                            {t('signaturePad.clear')}
                         </Button>
                         {signEvent && (
                             <Button
@@ -249,7 +251,7 @@ export const SignaturePad: React.FC<SignaturePadProps> = ({
                                 onClick={confirmSignature}
                                 disabled={!hasSignature}
                             >
-                                Confirm
+                                {t('signaturePad.confirm')}
                             </Button>
                         )}
                     </HStack>

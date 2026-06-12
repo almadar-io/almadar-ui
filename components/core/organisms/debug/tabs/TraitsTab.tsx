@@ -22,7 +22,7 @@ export function TraitsTab({ traits }: TraitsTabProps) {
         return (
             <EmptyState
                 title={t('debug.noActiveTraits')}
-                description="Traits will appear when components using them are mounted"
+                description={t('debug.traitsMountHint')}
                 className="py-8"
             />
         );
@@ -37,7 +37,7 @@ export function TraitsTab({ traits }: TraitsTabProps) {
                 </Typography>
                 <Badge variant="success" size="sm">{trait.currentState}</Badge>
                 <Typography variant="small" className="text-gray-500 ml-auto">
-                    {trait.transitionCount} transitions
+                    {t('debug.transitionsCount', { count: trait.transitionCount })}
                 </Typography>
             </div>
         ),
@@ -45,7 +45,7 @@ export function TraitsTab({ traits }: TraitsTabProps) {
             <Stack gap="sm">
                 {/* States */}
                 <div>
-                    <Typography variant="small" weight="medium" className="text-gray-500 mb-2">States</Typography>
+                    <Typography variant="small" weight="medium" className="text-gray-500 mb-2">{t('debug.states')}</Typography>
                     <div className="flex flex-wrap gap-1">
                         {trait.states.map(state => (
                             <Badge
@@ -62,7 +62,7 @@ export function TraitsTab({ traits }: TraitsTabProps) {
                 {/* Transitions */}
                 {trait.transitions.length > 0 && (
                     <div>
-                        <Typography variant="small" weight="medium" className="text-gray-500 mb-2">Transitions</Typography>
+                        <Typography variant="small" weight="medium" className="text-gray-500 mb-2">{t('debug.transitions')}</Typography>
                         <Stack gap="xs">
                             {trait.transitions.map((t, i) => (
                                 <Typography key={i} variant="small" className="font-mono">
@@ -77,7 +77,7 @@ export function TraitsTab({ traits }: TraitsTabProps) {
                 {/* Guards */}
                 {trait.guards.length > 0 && (
                     <div>
-                        <Typography variant="small" weight="medium" className="text-gray-500 mb-2">Guards</Typography>
+                        <Typography variant="small" weight="medium" className="text-gray-500 mb-2">{t('debug.guards')}</Typography>
                         <Stack gap="xs">
                             {trait.guards.map((g, i) => (
                                 <div key={i} className="flex items-center justify-between">

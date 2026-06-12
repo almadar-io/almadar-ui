@@ -9,6 +9,7 @@
  */
 
 import React from 'react';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { AvlState } from '../atoms/AvlState';
 import { AvlEvent } from '../atoms/AvlEvent';
 import { AvlGuard } from '../atoms/AvlGuard';
@@ -21,6 +22,7 @@ export interface DetailViewProps {
 }
 
 export const DetailView: React.FC<DetailViewProps> = ({ data }) => {
+  const { t } = useTranslate();
   // Show the first transition of the first trait
   const traitName = data.traits[0]?.name;
   const traitData = traitName ? data.traitDetails[traitName] : undefined;
@@ -28,7 +30,7 @@ export const DetailView: React.FC<DetailViewProps> = ({ data }) => {
   if (!traitData || traitData.transitions.length === 0) {
     return (
       <div className="rounded-lg border-2 border-[var(--color-border)] bg-[var(--color-card)] p-4 text-center text-[var(--color-muted-foreground)] text-sm">
-        No transition data
+        {t('detailView.noTransitionData')}
       </div>
     );
   }
@@ -73,7 +75,7 @@ export const DetailView: React.FC<DetailViewProps> = ({ data }) => {
       <div className="px-4 py-3 space-y-3">
         {/* TRIGGER */}
         <div>
-          <div className="text-xs uppercase tracking-wider text-[var(--color-muted-foreground)] mb-1">Trigger</div>
+          <div className="text-xs uppercase tracking-wider text-[var(--color-muted-foreground)] mb-1">{t('avl.trigger')}</div>
           <div className="flex items-center gap-1.5">
             <svg width={16} height={16} viewBox="0 0 16 16">
               <AvlEvent x={8} y={8} size={7} />
@@ -85,7 +87,7 @@ export const DetailView: React.FC<DetailViewProps> = ({ data }) => {
         {/* GUARD */}
         {hasGuard && (
           <div>
-            <div className="text-xs uppercase tracking-wider text-[var(--color-muted-foreground)] mb-1">Guard</div>
+            <div className="text-xs uppercase tracking-wider text-[var(--color-muted-foreground)] mb-1">{t('avl.guard')}</div>
             <div className="flex items-center gap-1.5">
               <svg width={14} height={14} viewBox="0 0 14 14">
                 <AvlGuard x={7} y={7} size={6} />
@@ -100,7 +102,7 @@ export const DetailView: React.FC<DetailViewProps> = ({ data }) => {
         {/* EFFECTS */}
         {transition.effects.length > 0 && (
           <div>
-            <div className="text-xs uppercase tracking-wider text-[var(--color-muted-foreground)] mb-1">Effects</div>
+            <div className="text-xs uppercase tracking-wider text-[var(--color-muted-foreground)] mb-1">{t('avl.effects')}</div>
             <div className="space-y-1.5">
               {transition.effects.map((effect, i) => (
                 <div key={i} className="flex items-start gap-1.5">

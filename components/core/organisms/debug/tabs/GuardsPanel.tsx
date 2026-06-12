@@ -27,7 +27,7 @@ export function GuardsPanel({ guards }: GuardsPanelProps) {
         return (
             <EmptyState
                 title={t('debug.noGuardEvaluations')}
-                description="Guard evaluations will appear when transitions or ticks with guards execute"
+                description={t('debug.guardEvaluationsHint')}
                 className="py-8"
             />
         );
@@ -76,19 +76,19 @@ export function GuardsPanel({ guards }: GuardsPanelProps) {
         content: (
             <Stack gap="sm">
                 <div>
-                    <Typography variant="small" weight="medium" className="text-gray-500">Expression</Typography>
+                    <Typography variant="small" weight="medium" className="text-gray-500">{t('debug.expression')}</Typography>
                     <code className="block mt-1 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded">
                         {guard.expression}
                     </code>
                 </div>
                 <div>
-                    <Typography variant="small" weight="medium" className="text-gray-500">Inputs</Typography>
+                    <Typography variant="small" weight="medium" className="text-gray-500">{t('debug.inputs')}</Typography>
                     <pre className="mt-1 text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-2 rounded overflow-auto max-h-24">
                         {JSON.stringify(guard.inputs, null, 2)}
                     </pre>
                 </div>
                 <div>
-                    <Typography variant="small" weight="medium" className="text-gray-500">Trait</Typography>
+                    <Typography variant="small" weight="medium" className="text-gray-500">{t('debug.trait')}</Typography>
                     <Typography variant="small">{guard.context.traitName}</Typography>
                 </div>
             </Stack>
@@ -105,13 +105,13 @@ export function GuardsPanel({ guards }: GuardsPanelProps) {
                 </div>
                 <ButtonGroup>
                     <Button size="sm" variant={filter === 'all' ? 'primary' : 'secondary'} onClick={() => setFilter('all')}>
-                        All
+                        {t('debug.filterAll')}
                     </Button>
                     <Button size="sm" variant={filter === 'passed' ? 'primary' : 'secondary'} onClick={() => setFilter('passed')}>
-                        Passed
+                        {t('debug.filterPassed')}
                     </Button>
                     <Button size="sm" variant={filter === 'failed' ? 'primary' : 'secondary'} onClick={() => setFilter('failed')}>
-                        Failed
+                        {t('debug.filterFailed')}
                     </Button>
                 </ButtonGroup>
             </div>

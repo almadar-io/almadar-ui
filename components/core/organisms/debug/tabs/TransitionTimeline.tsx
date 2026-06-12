@@ -62,7 +62,7 @@ export function TransitionTimeline({ transitions }: TransitionTimelineProps) {
         return (
             <EmptyState
                 title={t('debug.noTransitionsRecorded')}
-                description="Transitions will appear as the state machine processes events"
+                description={t('debug.transitionsProcessHint')}
                 className="py-8"
             />
         );
@@ -86,14 +86,14 @@ export function TransitionTimeline({ transitions }: TransitionTimelineProps) {
             {/* Header */}
             <div className="flex items-center justify-between mb-2">
                 <Typography variant="small" className="text-gray-500">
-                    {transitions.length} transitions recorded
+                    {t('debug.transitionsRecorded', { count: transitions.length })}
                 </Typography>
                 <label className="flex items-center gap-1 text-xs text-gray-500 cursor-pointer">
                     <Checkbox
                         checked={autoScroll}
                         onChange={(e) => setAutoScroll(e.target.checked)}
                     />
-                    Auto-scroll
+                    {t('debug.autoScroll')}
                 </label>
             </div>
 
@@ -142,11 +142,11 @@ export function TransitionTimeline({ transitions }: TransitionTimelineProps) {
                                         variant={trace.guardResult ? 'success' : 'danger'}
                                         size="sm"
                                     >
-                                        guard: {trace.guardResult ? '\u2713' : '\u2717'}
+                                        {t('debug.guardLabel')} {trace.guardResult ? '\u2713' : '\u2717'}
                                     </Badge>
                                 )}
                                 <Typography variant="small" className="text-gray-400 ml-auto">
-                                    {trace.effects.length} effects
+                                    {t('debug.effectsCount', { count: trace.effects.length })}
                                 </Typography>
                             </div>
 

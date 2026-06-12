@@ -10,6 +10,7 @@ import React from "react";
 import { cn } from "../../../../lib/cn";
 import { Typography } from "../../atoms/Typography";
 import { SplitPane } from "./SplitPane";
+import { useTranslate } from "../../../../hooks/useTranslate";
 
 export interface MasterDetailLayoutProps {
   /** Master panel content (usually a list) */
@@ -33,16 +34,19 @@ export interface MasterDetailLayoutProps {
 /**
  * Default empty state for detail panel
  */
-const DefaultEmptyDetail: React.FC = () => (
-  <div className="flex items-center justify-center h-full border-2 border-dashed border-border">
-    <Typography
-      variant="body2"
-      className="text-muted-foreground"
-    >
-      Select an item to view details
-    </Typography>
-  </div>
-);
+const DefaultEmptyDetail: React.FC = () => {
+  const { t } = useTranslate();
+  return (
+    <div className="flex items-center justify-center h-full border-2 border-dashed border-border">
+      <Typography
+        variant="body2"
+        className="text-muted-foreground"
+      >
+        {t('masterDetail.selectItem')}
+      </Typography>
+    </div>
+  );
+};
 
 /**
  * MasterDetail - List + detail split layout

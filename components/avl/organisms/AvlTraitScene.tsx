@@ -9,6 +9,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { createLogger } from '@almadar/logger';
+import { useTranslate } from '../../../hooks/useTranslate';
 import { AvlState } from '../atoms/AvlState';
 
 const log = createLogger('almadar:ui:avl:trait-scene');
@@ -37,6 +38,7 @@ export const AvlTraitScene: React.FC<AvlTraitSceneProps> = ({
   color = 'var(--color-primary)',
   onTransitionClick,
 }) => {
+  const { t } = useTranslate();
   const [layout, setLayout] = useState<ElkLayout | null>(null);
   const dataKey = useMemo(() => JSON.stringify(data), [data]);
 
@@ -50,7 +52,7 @@ export const AvlTraitScene: React.FC<AvlTraitSceneProps> = ({
     return (
       <g>
         <text x={300} y={200} textAnchor="middle" fill={color} fontSize={12} opacity={0.5}>
-          Computing layout...
+          {t('avl.computingLayout')}
         </text>
       </g>
     );
@@ -79,7 +81,7 @@ export const AvlTraitScene: React.FC<AvlTraitSceneProps> = ({
         {data.name}
       </text>
       <text x={CENTER_W / 2} y={38} textAnchor="middle" fill={color} fontSize={11} opacity={0.5} fontFamily="inherit">
-        linked to {data.linkedEntity}
+        {t('avl.linkedTo', { entity: data.linkedEntity })}
       </text>
 
       {/* Arrow markers */}
