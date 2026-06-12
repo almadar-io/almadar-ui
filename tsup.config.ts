@@ -44,6 +44,30 @@ const dedupeEventBusPlugin = {
   },
 };
 
+// Same pattern for the i18n context. hooks/useTranslate.ts defines I18nContext;
+// every entry that imports `useTranslate` (components, avl, runtime, …) otherwise
+// inlines its OWN createContext(), so a `<I18nProvider>` mounted from one entry
+// (@almadar/ui/hooks) never reaches a `useTranslate()` consumer from another entry
+// (@almadar/ui main / avl) — the consumer silently falls back to the passthrough
+// default (English-only core locale; app keys render raw). Redirect every
+// useTranslate import from outside hooks/ to the shared @almadar/ui/hooks export.
+const hooksDir = resolve(__dirname, 'hooks');
+
+const dedupeI18nPlugin = {
+  name: 'dedupe-i18n-context',
+  setup(build: { onResolve: (opts: { filter: RegExp }, cb: (args: { importer: string }) => { path: string; external: boolean } | undefined) => void }) {
+    // Match both the direct file (`../../hooks/useTranslate`) and the barrel
+    // (`../hooks`, re-exported by components/index.ts via `export * from '../hooks'`)
+    // — the barrel is how I18nContext leaks into the components entry.
+    build.onResolve({ filter: /(^|\/)hooks($|\/useTranslate$)/ }, (args: { importer: string }) => {
+      if (args.importer && !args.importer.startsWith(hooksDir)) {
+        return { path: '@almadar/ui/hooks', external: true };
+      }
+      return undefined;
+    });
+  },
+};
+
 // Dedupe ALL providers/* relative imports from non-providers chunks.
 //
 // This is broader than the per-context plugins above because providers form
@@ -117,7 +141,7 @@ export default defineConfig([
     treeshake: true,
     external: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query', '@almadar/ui', '@almadar/runtime', '@almadar/core', '@almadar/evaluator', '@almadar/patterns'],
     banner: { js: '"use client";' },
-    esbuildPlugins: [dedupeContextPlugin, dedupeEventBusPlugin, dedupeProvidersPlugin, externalThreeSubpathPlugin],
+    esbuildPlugins: [dedupeContextPlugin, dedupeEventBusPlugin, dedupeProvidersPlugin, dedupeI18nPlugin, externalThreeSubpathPlugin],
   },
   // Marketing build: SSR-safe subset for Docusaurus/webpack sites
   // No game engines, no Three.js, no browser globals at module scope
@@ -163,6 +187,6 @@ export default defineConfig([
     external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react'],
     noExternal: ['clsx', 'tailwind-merge'],
     banner: { js: '"use client";' },
-    esbuildPlugins: [externalThreeSubpathPlugin],
+    esbuildPlugins: [dedupeI18nPlugin, externalThreeSubpathPlugin],
   },
 ]);
