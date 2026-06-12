@@ -7,7 +7,7 @@
  * Composes DayCell and TimeSlotCell atoms into a 7-day grid.
  */
 import React, { useMemo, useCallback, useEffect, useRef, useState } from "react";
-import type { EventEmit, EventPayload, EntityRow } from "@almadar/core";
+import type { EventEmit, EventPayload, EntityRow, EntityWith } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
@@ -33,7 +33,7 @@ export interface CalendarGridProps {
   /** Time slot labels (defaults to 09:00-17:00) */
   timeSlots?: string[];
   /** Events to display on the grid */
-  events?: readonly EntityRow[];
+  events?: readonly EntityWith<'id' | 'title' | 'startTime'>[];
   /** Called when a time slot is clicked */
   onSlotClick?: (day: Date, time: string) => void;
   /** Called when a day header is clicked */

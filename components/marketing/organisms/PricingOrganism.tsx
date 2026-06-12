@@ -20,12 +20,12 @@ import { Typography } from '../../core/atoms/Typography';
 import { PricingGrid } from '../molecules/PricingGrid';
 import { LoadingState } from '../../core/molecules/LoadingState';
 import { ErrorState } from '../../core/molecules/ErrorState';
-import type { EntityRow } from '@almadar/core';
+import type { EntityRow, EntityWith } from '@almadar/core';
 import type { DisplayStateProps } from '../../core/organisms/types';
 import type { PricingCardProps } from '../molecules/PricingCard';
 
 export interface PricingOrganismProps extends DisplayStateProps {
-  entity?: EntityRow | readonly EntityRow[];
+  entity?: EntityWith<'name' | 'price'> | readonly EntityWith<'name' | 'price'>[];
   heading?: string;
   subtitle?: string;
 }

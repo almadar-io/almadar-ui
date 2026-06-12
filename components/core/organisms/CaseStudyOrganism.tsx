@@ -21,11 +21,11 @@ import { SimpleGrid } from '../molecules/SimpleGrid';
 import { CaseStudyCard } from '../../marketing/molecules/CaseStudyCard';
 import { LoadingState } from '../molecules/LoadingState';
 import { ErrorState } from '../molecules/ErrorState';
-import type { EntityRow } from '@almadar/core';
+import type { EntityRow, EntityWith } from '@almadar/core';
 import type { DisplayStateProps } from './types';
 
 export interface CaseStudyOrganismProps extends DisplayStateProps {
-  entity?: EntityRow | readonly EntityRow[];
+  entity?: EntityWith<'title'> | readonly EntityWith<'title'>[];
   heading?: string;
   subtitle?: string;
 }

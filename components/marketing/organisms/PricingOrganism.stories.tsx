@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import type { EntityRow } from '@almadar/core';
+import type { EntityWith } from '@almadar/core';
 import { PricingOrganism } from './PricingOrganism';
 
-const MOCK_PLANS: readonly EntityRow[] = [
+const MOCK_PLANS: readonly EntityWith<'name' | 'price'>[] = [
   {
     id: 'free',
     name: 'Free',

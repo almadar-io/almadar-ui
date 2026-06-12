@@ -18,12 +18,12 @@ import { Typography } from '../atoms/Typography';
 import { StepFlow } from '../../marketing/molecules/StepFlow';
 import { LoadingState } from '../molecules/LoadingState';
 import { ErrorState } from '../molecules/ErrorState';
-import type { EntityRow } from '@almadar/core';
+import type { EntityRow, EntityWith } from '@almadar/core';
 import type { DisplayStateProps } from './types';
 import type { StepItemProps } from '../../marketing/molecules/StepFlow';
 
 export interface StepFlowOrganismProps extends DisplayStateProps {
-  entity?: EntityRow | readonly EntityRow[];
+  entity?: EntityWith<'title'> | readonly EntityWith<'title'>[];
   orientation?: 'horizontal' | 'vertical';
   showConnectors?: boolean;
   heading?: string;

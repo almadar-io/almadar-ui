@@ -19,11 +19,11 @@ import { SimpleGrid } from '../../core/molecules/SimpleGrid';
 import { TeamCard } from '../molecules/TeamCard';
 import { LoadingState } from '../../core/molecules/LoadingState';
 import { ErrorState } from '../../core/molecules/ErrorState';
-import type { EntityRow } from '@almadar/core';
+import type { EntityRow, EntityWith } from '@almadar/core';
 import type { DisplayStateProps } from '../../core/organisms/types';
 
 export interface TeamOrganismProps extends DisplayStateProps {
-  entity?: EntityRow | readonly EntityRow[];
+  entity?: EntityWith<'name'> | readonly EntityWith<'name'>[];
   heading?: string;
   subtitle?: string;
 }

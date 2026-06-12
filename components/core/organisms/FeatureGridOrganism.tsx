@@ -20,12 +20,12 @@ import { Typography } from '../atoms/Typography';
 import { FeatureGrid } from '../molecules/FeatureGrid';
 import { LoadingState } from '../molecules/LoadingState';
 import { ErrorState } from '../molecules/ErrorState';
-import type { EntityRow } from '@almadar/core';
+import type { EntityRow, EntityWith } from '@almadar/core';
 import type { DisplayStateProps } from './types';
 import type { FeatureCardProps } from '../../marketing/molecules/FeatureCard';
 
 export interface FeatureGridOrganismProps extends DisplayStateProps {
-  entity?: EntityRow | readonly EntityRow[];
+  entity?: EntityWith<'title'> | readonly EntityWith<'title'>[];
   columns?: 2 | 3 | 4 | 6;
   heading?: string;
   subtitle?: string;

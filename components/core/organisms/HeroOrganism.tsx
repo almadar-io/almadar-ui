@@ -18,11 +18,11 @@ import { useTranslate } from '../../../hooks/useTranslate';
 import { HeroSection } from '../../marketing/molecules/HeroSection';
 import { LoadingState } from '../molecules/LoadingState';
 import { ErrorState } from '../molecules/ErrorState';
-import type { EntityRow } from '@almadar/core';
+import type { EntityWith } from '@almadar/core';
 import type { DisplayStateProps } from './types';
 
 export interface HeroOrganismProps extends DisplayStateProps {
-  entity?: EntityRow;
+  entity?: EntityWith<'title'>;
   children?: React.ReactNode;
 }
 

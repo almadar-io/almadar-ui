@@ -16,11 +16,11 @@ import { useTranslate } from '../../../hooks/useTranslate';
 import { StatsGrid } from '../molecules/StatsGrid';
 import { LoadingState } from '../../core/molecules/LoadingState';
 import { ErrorState } from '../../core/molecules/ErrorState';
-import type { EntityRow } from '@almadar/core';
+import type { EntityRow, EntityWith } from '@almadar/core';
 import type { DisplayStateProps } from '../../core/organisms/types';
 
 export interface StatsOrganismProps extends DisplayStateProps {
-  entity?: EntityRow | readonly EntityRow[];
+  entity?: EntityWith<'value' | 'label'> | readonly EntityWith<'value' | 'label'>[];
   columns?: 2 | 3 | 4 | 6;
 }
 

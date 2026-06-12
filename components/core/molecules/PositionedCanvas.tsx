@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useRef, useState } from "react";
-import type { EventEmit, EntityRow } from "@almadar/core";
+import type { EventEmit, EntityRow, EntityWith } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { Typography, Badge, Box } from "../atoms";
@@ -15,7 +15,7 @@ export interface PositionedCanvasProps {
      * Items to render. The molecule narrows non-array values to `[]` and reads
      * each row's `id` / `x` / `y` / `label` fields at render time.
      */
-    items: readonly EntityRow[];
+    items: readonly EntityWith<'id' | 'label' | 'x' | 'y'>[];
     width?: number;
     height?: number;
     selectedId?: string | null;

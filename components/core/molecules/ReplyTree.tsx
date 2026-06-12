@@ -7,7 +7,7 @@
  */
 
 import React, { useCallback, useState } from "react";
-import type { EventEmit, EntityRow } from "@almadar/core";
+import type { EventEmit, EntityRow, EntityWith } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
@@ -15,7 +15,7 @@ import { Avatar, Typography, Button, Box, Input } from "../atoms";
 import { VoteStack, type VoteValue } from "./VoteStack";
 
 export interface ReplyTreeProps {
-    nodes: readonly EntityRow[];
+    nodes: readonly EntityWith<'id' | 'authorName' | 'content'>[];
     maxDepth?: number;
     onVote?: (nodeId: string, vote: VoteValue) => void;
     onReply?: (parentNodeId: string) => void;
