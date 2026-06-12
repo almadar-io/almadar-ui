@@ -466,5 +466,6 @@
   "common.selected": "محدد",
   "common.showMore": "عرض المزيد",
   "common.showLess": "عرض أقل",
-  "common.noResults": "لا توجد نتائج"
+  "common.noResults": "لا توجد نتائج",
+  "relationSelect.selectPlaceholder": "اختر..."
 }

@@ -466,5 +466,6 @@
   "stateMachine.legend.initial": "Initial",
   "stateMachine.legend.final": "Final",
   "stateMachine.legend.state": "State",
-  "stateMachine.legend.multiEvent": "Multi-event"
+  "stateMachine.legend.multiEvent": "Multi-event",
+  "relationSelect.selectPlaceholder": "Select..."
 }

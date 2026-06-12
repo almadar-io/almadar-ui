@@ -466,5 +466,6 @@
   "common.selected": "Izbrano",
   "common.showMore": "Pokaži več",
   "common.showLess": "Pokaži manj",
-  "common.noResults": "Ni rezultatov"
+  "common.noResults": "Ni rezultatov",
+  "relationSelect.selectPlaceholder": "Izberi..."
 }

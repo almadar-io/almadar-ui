@@ -79,7 +79,7 @@ export const RelationSelect: React.FC<RelationSelectProps> = ({
   value,
   onChange,
   options = [],
-  placeholder = "Select...",
+  placeholder,
   required = false,
   disabled = false,
   isLoading = false,
@@ -91,6 +91,7 @@ export const RelationSelect: React.FC<RelationSelectProps> = ({
   emptyMessage,
 }) => {
   const { t } = useTranslate();
+  const resolvedPlaceholder = placeholder ?? t('relationSelect.selectPlaceholder');
   const resolvedSearchPlaceholder = searchPlaceholder ?? t('common.search');
   const resolvedEmptyMessage = emptyMessage ?? t('empty.noOptionsFound');
   const [isOpen, setIsOpen] = useState(false);
@@ -227,7 +228,7 @@ export const RelationSelect: React.FC<RelationSelectProps> = ({
           ) : selectedOption ? (
             selectedOption.label
           ) : (
-            placeholder
+            resolvedPlaceholder
           )}
         </Typography>
         <HStack gap="xs" align="center">
