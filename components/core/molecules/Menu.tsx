@@ -78,7 +78,7 @@ export const Menu: React.FC<MenuProps> = ({
   className,
 }) => {
   const eventBus = useEventBus();
-  const { t } = useTranslate();
+  const { t, direction } = useTranslate();
   const [isOpen, setIsOpen] = useState(false);
   const [activeSubMenu, setActiveSubMenu] = useState<string | null>(null);
   const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null);
@@ -147,6 +147,20 @@ export const Menu: React.FC<MenuProps> = ({
     "bottom-end": "top-full right-0 mt-2",
   };
 
+  // RTL: mirror the horizontal anchor so a right-anchored menu doesn't open off
+  // the left edge (and vice-versa). The trigger sits on the mirrored side of the
+  // bar in RTL, so the menu must open inward from there.
+  const rtlMirror: Record<string, string> = {
+    "top-left": "top-right", "top-right": "top-left",
+    "bottom-left": "bottom-right", "bottom-right": "bottom-left",
+    "top-start": "top-end", "top-end": "top-start",
+    "bottom-start": "bottom-end", "bottom-end": "bottom-start",
+  };
+  const effectivePosition =
+    direction === "rtl" ? (rtlMirror[position] ?? position) : position;
+  // Submenu flyout opens toward the inline-end edge (right in LTR, left in RTL).
+  const subMenuSideClass = direction === "rtl" ? "right-full mr-2" : "left-full ml-2";
+
   // Wrap non-element trigger in a Typography inline span — atoms only.
   const triggerChild = React.isValidElement(trigger) ? (
     trigger
@@ -194,7 +208,7 @@ export const Menu: React.FC<MenuProps> = ({
         onMouseEnter={() => hasSubMenu && setActiveSubMenu(itemId)}
         data-testid={item.event ? `action-${item.event}` : undefined}
         className={cn(
-          "w-full flex items-center justify-between gap-3 px-4 py-2 text-left",
+          "w-full flex items-center justify-between gap-3 px-4 py-2 text-start",
           "text-sm transition-colors",
           "hover:bg-muted",
           "focus:outline-none focus:bg-muted",
@@ -222,7 +236,7 @@ export const Menu: React.FC<MenuProps> = ({
             </Badge>
           )}
           {hasSubMenu && (
-            <Icon name="chevron-right" size="sm" className="flex-shrink-0" />
+            <Icon name={direction === "rtl" ? "chevron-left" : "chevron-right"} size="sm" className="flex-shrink-0" />
           )}
         </Box>
       </Box>
@@ -247,7 +261,8 @@ export const Menu: React.FC<MenuProps> = ({
           {hasSubMenu && activeSubMenu === itemId && item.subMenu && (
             <Box
               className={cn(
-                "absolute left-full top-0 ml-2 z-50",
+                "absolute top-0 z-50",
+                subMenuSideClass,
                 menuContainerStyles,
               )}
             >
@@ -268,12 +283,12 @@ export const Menu: React.FC<MenuProps> = ({
           className={cn(
             "absolute z-50",
             menuContainerStyles,
-            positionClasses[position],
+            positionClasses[effectivePosition],
             className,
           )}
           style={{
-            left: position.includes("left") ? 0 : "auto",
-            right: position.includes("right") ? 0 : "auto",
+            left: effectivePosition.includes("left") ? 0 : "auto",
+            right: effectivePosition.includes("right") ? 0 : "auto",
           }}
           role="menu"
         >
