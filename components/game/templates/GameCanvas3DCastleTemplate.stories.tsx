@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { GameCanvas3DCastleTemplate, type Castle3DEntity } from './GameCanvas3DCastleTemplate';
+import { GameCanvas3DCastleTemplate } from './GameCanvas3DCastleTemplate';
+import type { EntityRow } from '@almadar/core';
 
 function generateCastleTiles(width: number, height: number) {
     const tiles = [];
@@ -22,7 +23,7 @@ function generateCastleTiles(width: number, height: number) {
     return tiles;
 }
 
-const castleEntity: Castle3DEntity = {
+const castleEntity: EntityRow = {
     id: 'castle-1',
     name: 'Stormwind Keep',
     level: 5,

@@ -1,5 +1,16 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { CalendarGrid, type CalendarEvent } from './CalendarGrid';
+import { CalendarGrid } from './CalendarGrid';
+
+// Story-local demo shape. The component consumes the canonical
+// `readonly EntityRow[]`; a `type` alias carries an implicit index signature
+// so this sample data stays assignable to EntityRow.
+type CalendarEvent = {
+    id: string;
+    title: string;
+    startTime: string;
+    endTime?: string;
+    color?: string;
+};
 
 const meta: Meta<typeof CalendarGrid> = {
     title: 'Core/Molecules/CalendarGrid',

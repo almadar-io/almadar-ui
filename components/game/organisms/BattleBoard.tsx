@@ -21,7 +21,7 @@
  */
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { EventEmit, EntityRow } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -29,7 +29,7 @@ import { Box } from '../../core/atoms/Box';
 import { Button } from '../../core/atoms/Button';
 import { Typography } from '../../core/atoms/Typography';
 import { VStack, HStack } from '../../core/atoms/Stack';
-import type { EntityDisplayProps } from '../../core/organisms/types';
+import type { DisplayStateProps } from '../../core/organisms/types';
 import IsometricCanvas from './IsometricCanvas';
 import type {
     IsometricTile,
@@ -37,13 +37,23 @@ import type {
     IsometricFeature,
 } from './types/isometric';
 import type { ResolvedFrame } from './types/spriteAnimation';
+import {
+    boardEntity,
+    str,
+    num,
+    rows,
+    type TeamUnitTraits,
+    unitPosition,
+    unitTeam,
+    unitHealth,
+} from './boardEntity';
 import { isoToScreen, TILE_WIDTH, FLOOR_HEIGHT } from './utils/isometric';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-/** Battle phases an encounter walks through */
+/** Battle phases an encounter walks through (UI value enum — not entity data). */
 export type BattlePhase =
     | 'observation'
     | 'selection'
@@ -52,91 +62,14 @@ export type BattlePhase =
     | 'enemy_turn'
     | 'game_over';
 
-/** A unit participating in battle */
-export type BattleUnit = {
-    id: string;
-    name: string;
-    unitType?: string;
-    heroId?: string;
-    sprite?: string;
-    /** Optional sprite sheet for animation (null = use static sprite) */
-    spriteSheet?: {
-        se: string;
-        sw: string;
-        frameWidth: number;
-        frameHeight: number;
-    } | null;
-    team: 'player' | 'enemy';
-    position: { x: number; y: number };
-    health: number;
-    maxHealth: number;
-    movement: number;
-    attack: number;
-    defense: number;
-    traits?: {
-        name: string;
-        currentState: string;
-        states: string[];
-        cooldown?: number;
-    }[];
-};
-
-/** Minimal tile for map generation */
-export interface BattleTile {
-    x: number;
-    y: number;
-    terrain: string;
-    terrainSprite?: string;
-}
-
-/** Entity prop containing all board data.
- *
- * BattleBoard is **controlled-only**: all game-state fields (`units`, `phase`,
- * `turn`, `gameResult`, `selectedUnitId`) must be provided.  Mutations are
- * communicated via event bus emissions — the component never calls `setState`
- * for game-logic values.
- *
- * For a self-managing variant, use `UncontrolledBattleBoard`.
- *
- * Animation-only state (`movingPositions`, `isShaking`, `hoveredTile`) is
- * always managed locally.
- */
-export interface BattleEntity {
-    id: string;
-    tiles: IsometricTile[];
-    features?: IsometricFeature[];
-    boardWidth?: number;
-    boardHeight?: number;
-    assetManifest?: {
-        baseUrl: string;
-        terrains?: Record<string, string>;
-        units?: Record<string, string>;
-        features?: Record<string, string>;
-        effects?: Record<string, string>;
-    };
-    backgroundImage?: string;
-
-    // ── Game-state fields (required — controlled by parent) ──────────────
-    /** Current unit state. */
-    units: BattleUnit[];
-    /** Current battle phase. */
-    phase: BattlePhase;
-    /** Current turn number. */
-    turn: number;
-    /** Game result. `null` = still in progress. */
-    gameResult: 'victory' | 'defeat' | null;
-    /** Currently selected unit ID. */
-    selectedUnitId: string | null;
-}
-
-/** Context exposed to render-prop slots */
+/** Context exposed to render-prop slots. Carries coerced entity rows + UI helpers. */
 export type BattleSlotContext = {
     phase: BattlePhase;
     turn: number;
-    selectedUnit: BattleUnit | null;
-    hoveredUnit: BattleUnit | null;
-    playerUnits: BattleUnit[];
-    enemyUnits: BattleUnit[];
+    selectedUnit: EntityRow | null;
+    hoveredUnit: EntityRow | null;
+    playerUnits: readonly EntityRow[];
+    enemyUnits: readonly EntityRow[];
     gameResult: 'victory' | 'defeat' | null;
     onEndTurn: () => void;
     onCancel: () => void;
@@ -146,9 +79,9 @@ export type BattleSlotContext = {
     tileToScreen: (x: number, y: number) => { x: number; y: number };
 };
 
-export interface BattleBoardProps extends Omit<EntityDisplayProps, 'entity'> {
-    /** Entity containing all board data */
-    entity: BattleEntity;
+export interface BattleBoardProps extends DisplayStateProps {
+    /** Entity (single board state) containing all board data */
+    entity?: EntityRow | readonly EntityRow[];
 
     /** Canvas render scale */
     scale?: number;
@@ -169,13 +102,13 @@ export interface BattleBoardProps extends Omit<EntityDisplayProps, 'entity'> {
 
     // -- Callbacks --
     /** Called when a unit attacks another */
-    onAttack?: (attacker: BattleUnit, target: BattleUnit, damage: number) => void;
+    onAttack?: (attacker: EntityRow, target: EntityRow, damage: number) => void;
     /** Called when battle ends */
     onGameEnd?: (result: 'victory' | 'defeat') => void;
     /** Called after a unit moves */
-    onUnitMove?: (unit: BattleUnit, to: { x: number; y: number }) => void;
+    onUnitMove?: (unit: EntityRow, to: { x: number; y: number }) => void;
     /** Custom combat damage calculator */
-    calculateDamage?: (attacker: BattleUnit, target: BattleUnit) => number;
+    calculateDamage?: (attacker: EntityRow, target: EntityRow) => number;
 
     // -- Canvas pass-through --
     onDrawEffects?: (ctx: CanvasRenderingContext2D, timestamp: number) => void;
@@ -232,20 +165,29 @@ export function BattleBoard({
     attackEvent,
     className,
 }: BattleBoardProps): React.JSX.Element {
-    // -- Unpack entity --
-    const tiles = entity.tiles;
-    const features = entity.features ?? [];
-    const boardWidth = entity.boardWidth ?? 8;
-    const boardHeight = entity.boardHeight ?? 6;
-    const assetManifest = entity.assetManifest;
-    const backgroundImage = entity.backgroundImage;
+    // -- Unpack entity (single board-state row) --
+    const board = boardEntity(entity) ?? {};
+    const tiles = (Array.isArray(board.tiles) ? board.tiles : []) as unknown as IsometricTile[];
+    const features = (Array.isArray(board.features) ? board.features : []) as unknown as IsometricFeature[];
+    const boardWidth = num(board.boardWidth, 8);
+    const boardHeight = num(board.boardHeight, 6);
+    const assetManifest = board.assetManifest as
+        | {
+              baseUrl?: string;
+              terrains?: Record<string, string>;
+              units?: Record<string, string>;
+              features?: Record<string, string>;
+              effects?: Record<string, string>;
+          }
+        | undefined;
+    const backgroundImage = board.backgroundImage as string | undefined;
 
     // ── Game state (read from entity — controlled by parent) ─────────────
-    const units = entity.units;
-    const selectedUnitId = entity.selectedUnitId;
-    const currentPhase = entity.phase;
-    const currentTurn = entity.turn;
-    const gameResult = entity.gameResult;
+    const units = rows(board.units);
+    const selectedUnitId = (board.selectedUnitId as string | null | undefined) ?? null;
+    const currentPhase = (str(board.phase) || 'observation') as BattlePhase;
+    const currentTurn = num(board.turn, 1);
+    const gameResult = (board.gameResult as 'victory' | 'defeat' | null | undefined) ?? null;
 
     // -- Event bus --
     const eventBus = useEventBus();
@@ -257,36 +199,41 @@ export function BattleBoard({
 
     // ── Derived state ───────────────────────────────────────────────────────
     const selectedUnit = useMemo(
-        () => units.find(u => u.id === selectedUnitId) ?? null,
+        () => units.find(u => str(u.id) === selectedUnitId) ?? null,
         [units, selectedUnitId],
     );
 
     const hoveredUnit = useMemo(() => {
         if (!hoveredTile) return null;
-        return units.find(
-            u => u.position.x === hoveredTile.x && u.position.y === hoveredTile.y && u.health > 0,
-        ) ?? null;
+        return units.find(u => {
+            const p = unitPosition(u);
+            return p.x === hoveredTile.x && p.y === hoveredTile.y && unitHealth(u) > 0;
+        }) ?? null;
     }, [hoveredTile, units]);
 
-    const playerUnits = useMemo(() => units.filter(u => u.team === 'player' && u.health > 0), [units]);
-    const enemyUnits = useMemo(() => units.filter(u => u.team === 'enemy' && u.health > 0), [units]);
+    const playerUnits = useMemo(() => units.filter(u => unitTeam(u) === 'player' && unitHealth(u) > 0), [units]);
+    const enemyUnits = useMemo(() => units.filter(u => unitTeam(u) === 'enemy' && unitHealth(u) > 0), [units]);
 
     // ── Valid moves ─────────────────────────────────────────────────────────
     const validMoves = useMemo(() => {
         if (!selectedUnit || currentPhase !== 'movement') return [];
         const moves: Array<{ x: number; y: number }> = [];
-        const range = selectedUnit.movement;
+        const range = num(selectedUnit.movement);
+        const origin = unitPosition(selectedUnit);
         for (let dy = -range; dy <= range; dy++) {
             for (let dx = -range; dx <= range; dx++) {
-                const nx = selectedUnit.position.x + dx;
-                const ny = selectedUnit.position.y + dy;
+                const nx = origin.x + dx;
+                const ny = origin.y + dy;
                 const dist = Math.abs(dx) + Math.abs(dy);
                 if (
                     dist > 0 &&
                     dist <= range &&
                     nx >= 0 && nx < boardWidth &&
                     ny >= 0 && ny < boardHeight &&
-                    !units.some(u => u.position.x === nx && u.position.y === ny && u.health > 0)
+                    !units.some(u => {
+                        const p = unitPosition(u);
+                        return p.x === nx && p.y === ny && unitHealth(u) > 0;
+                    })
                 ) {
                     moves.push({ x: nx, y: ny });
                 }
@@ -298,14 +245,17 @@ export function BattleBoard({
     // ── Attack Targets ──────────────────────────────────────────────────────
     const attackTargets = useMemo(() => {
         if (!selectedUnit || currentPhase !== 'action') return [];
+        const sp = unitPosition(selectedUnit);
+        const sTeam = unitTeam(selectedUnit);
         return units
-            .filter(u => u.team !== selectedUnit.team && u.health > 0)
+            .filter(u => unitTeam(u) !== sTeam && unitHealth(u) > 0)
             .filter(u => {
-                const dx = Math.abs(u.position.x - selectedUnit.position.x);
-                const dy = Math.abs(u.position.y - selectedUnit.position.y);
+                const p = unitPosition(u);
+                const dx = Math.abs(p.x - sp.x);
+                const dy = Math.abs(p.y - sp.y);
                 return dx <= 1 && dy <= 1 && dx + dy > 0;
             })
-            .map(u => u.position);
+            .map(u => unitPosition(u));
     }, [selectedUnit, currentPhase, units]);
 
     // ── Movement animation ──────────────────────────────────────────────────
@@ -369,24 +319,28 @@ export function BattleBoard({
     // ── Visual units (with interpolated positions) ──────────────────────────
     const isoUnits: IsometricUnit[] = useMemo(() => {
         return units
-            .filter(u => u.health > 0)
+            .filter(u => unitHealth(u) > 0)
             .map(unit => {
-                const pos = movingPositions.get(unit.id) ?? unit.position;
+                const id = str(unit.id);
+                const pos = movingPositions.get(id) ?? unitPosition(unit);
+                const unitTraits = Array.isArray(unit.traits)
+                    ? (unit.traits as unknown as TeamUnitTraits[])
+                    : undefined;
                 return {
-                    id: unit.id,
+                    id,
                     position: pos,
-                    name: unit.name,
-                    team: unit.team,
-                    health: unit.health,
-                    maxHealth: unit.maxHealth,
-                    unitType: unit.unitType,
-                    heroId: unit.heroId,
-                    sprite: unit.sprite,
-                    traits: unit.traits?.map(t => ({
-                        name: t.name,
-                        currentState: t.currentState,
-                        states: t.states,
-                        cooldown: t.cooldown ?? 0,
+                    name: str(unit.name),
+                    team: unitTeam(unit) as 'player' | 'enemy' | 'neutral',
+                    health: unitHealth(unit),
+                    maxHealth: num(unit.maxHealth),
+                    unitType: unit.unitType == null ? undefined : str(unit.unitType),
+                    heroId: unit.heroId == null ? undefined : str(unit.heroId),
+                    sprite: unit.sprite == null ? undefined : str(unit.sprite),
+                    traits: unitTraits?.map(tr => ({
+                        name: tr.name,
+                        currentState: tr.currentState,
+                        states: tr.states,
+                        cooldown: tr.cooldown ?? 0,
                     })),
                 };
             });
@@ -402,8 +356,8 @@ export function BattleBoard({
 
     // ── Check game end (emit only — state managed by parent) ───────────────
     const checkGameEnd = useCallback(() => {
-        const pa = units.filter(u => u.team === 'player' && u.health > 0);
-        const ea = units.filter(u => u.team === 'enemy' && u.health > 0);
+        const pa = units.filter(u => unitTeam(u) === 'player' && unitHealth(u) > 0);
+        const ea = units.filter(u => unitTeam(u) === 'enemy' && unitHealth(u) > 0);
         if (pa.length === 0) {
             onGameEnd?.('defeat');
             if (gameEndEvent) {
@@ -419,7 +373,7 @@ export function BattleBoard({
 
     // ── Handle unit click (emit only — state managed by parent) ────────────
     const handleUnitClick = useCallback((unitId: string) => {
-        const unit = units.find(u => u.id === unitId);
+        const unit = units.find(u => str(u.id) === unitId);
         if (!unit) return;
 
         if (unitClickEvent) {
@@ -428,13 +382,14 @@ export function BattleBoard({
 
         // Screen shake on attack hit (rendering-only state)
         if (currentPhase === 'action' && selectedUnit) {
+            const up = unitPosition(unit);
             if (
-                unit.team === 'enemy' &&
-                attackTargets.some(t => t.x === unit.position.x && t.y === unit.position.y)
+                unitTeam(unit) === 'enemy' &&
+                attackTargets.some(t => t.x === up.x && t.y === up.y)
             ) {
                 const damage = calculateDamage
                     ? calculateDamage(selectedUnit, unit)
-                    : Math.max(1, selectedUnit.attack - unit.defense);
+                    : Math.max(1, num(selectedUnit.attack) - num(unit.defense));
 
                 setIsShaking(true);
                 setTimeout(() => setIsShaking(false), 300);
@@ -442,8 +397,8 @@ export function BattleBoard({
                 onAttack?.(selectedUnit, unit, damage);
                 if (attackEvent) {
                     eventBus.emit(`UI:${attackEvent}`, {
-                        attackerId: selectedUnit.id,
-                        targetId: unit.id,
+                        attackerId: str(selectedUnit.id),
+                        targetId: str(unit.id),
                         damage,
                     });
                 }
@@ -462,9 +417,9 @@ export function BattleBoard({
         if (currentPhase === 'movement' && selectedUnit) {
             if (movementAnimRef.current) return; // block during animation
             if (validMoves.some(m => m.x === x && m.y === y)) {
-                const from = { ...selectedUnit.position };
+                const from = { ...unitPosition(selectedUnit) };
                 const to = { x, y };
-                startMoveAnimation(selectedUnit.id, from, to, () => {
+                startMoveAnimation(str(selectedUnit.id), from, to, () => {
                     onUnitMove?.(selectedUnit, to);
                 });
             }

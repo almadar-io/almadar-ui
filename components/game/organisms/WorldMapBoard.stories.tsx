@@ -1,7 +1,9 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { WorldMapBoard } from './WorldMapBoard';
-import type { WorldMapEntity, MapHero, MapHex, WorldMapSlotContext } from './WorldMapBoard';
+import type { WorldMapSlotContext } from './WorldMapBoard';
+import type { EntityRow } from '@almadar/core';
+import { str, num, vec2 } from './boardEntity';
 import { Box } from '../../core/atoms/Box';
 import { VStack, HStack } from '../../core/atoms/Stack';
 import { Typography } from '../../core/atoms/Typography';
@@ -35,8 +37,8 @@ const HERO_TYPES = ['warrior', 'ranger', 'sorcerer', 'paladin', 'rogue'] as cons
 // =============================================================================
 
 /** Generates a hex grid with mixed terrains */
-function generateWorldHexes(w: number, h: number): MapHex[] {
-    const hexes: MapHex[] = [];
+function generateWorldHexes(w: number, h: number): EntityRow[] {
+    const hexes: EntityRow[] = [];
     for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
             let terrain: string;
@@ -77,7 +79,7 @@ function generateWorldHexes(w: number, h: number): MapHex[] {
 // Mock Data
 // =============================================================================
 
-const MOCK_HEROES: MapHero[] = [
+const MOCK_HEROES: EntityRow[] = [
     {
         id: 'hero-1',
         name: 'Aldric the Bold',
@@ -119,7 +121,7 @@ const MOCK_FEATURES: IsometricFeature[] = [
     { x: 2, y: 8, type: 'traitCache' },
 ];
 
-const MOCK_ENTITY: WorldMapEntity = {
+const MOCK_ENTITY: EntityRow = {
     id: 'world-map-1',
     hexes: generateWorldHexes(12, 10),
     heroes: MOCK_HEROES,
@@ -163,7 +165,7 @@ export const Default: Story = {
 function WithSlotsRender() {
     const [selectedHeroId, setSelectedHeroId] = useState<string | null>(null);
 
-    const entity: WorldMapEntity = useMemo(() => ({
+    const entity: EntityRow = useMemo(() => ({
         ...MOCK_ENTITY,
         selectedHeroId,
     }), [selectedHeroId]);
@@ -185,7 +187,7 @@ function WithSlotsRender() {
                 >
                     <Typography variant="h3" weight="bold">World Map</Typography>
                     {ctx.selectedHero && (
-                        <Badge variant="info" size="md">{ctx.selectedHero.name}</Badge>
+                        <Badge variant="info" size="md">{str(ctx.selectedHero.name)}</Badge>
                     )}
                     {!ctx.selectedHero && (
                         <Typography variant="caption" className="text-gray-400">
@@ -201,23 +203,23 @@ function WithSlotsRender() {
                         <VStack gap="sm" className="p-3 rounded bg-background">
                             <HStack gap="sm" align="center">
                                 <Typography variant="label" weight="bold">
-                                    {ctx.selectedHero.name}
+                                    {str(ctx.selectedHero.name)}
                                 </Typography>
                                 <Badge
-                                    variant={ctx.selectedHero.owner === 'player' ? 'success' : 'error'}
+                                    variant={str(ctx.selectedHero.owner) === 'player' ? 'success' : 'error'}
                                     size="sm"
                                 >
-                                    {ctx.selectedHero.owner}
+                                    {str(ctx.selectedHero.owner)}
                                 </Badge>
                             </HStack>
                             <Typography variant="caption" className="text-gray-400">
-                                Level: {ctx.selectedHero.level ?? 1}
+                                Level: {num(ctx.selectedHero.level, 1)}
                             </Typography>
                             <Typography variant="caption" className="text-gray-400">
-                                Movement: {ctx.selectedHero.movement}
+                                Movement: {num(ctx.selectedHero.movement)}
                             </Typography>
                             <Typography variant="caption" className="text-gray-400">
-                                Position: ({ctx.selectedHero.position.x}, {ctx.selectedHero.position.y})
+                                Position: ({vec2(ctx.selectedHero.position).x}, {vec2(ctx.selectedHero.position).y})
                             </Typography>
                         </VStack>
                     ) : (
@@ -229,14 +231,16 @@ function WithSlotsRender() {
             )}
             overlay={(ctx: WorldMapSlotContext) => {
                 if (!ctx.hoveredHex) return null;
-                const pos = ctx.tileToScreen(ctx.hoveredHex.x, ctx.hoveredHex.y);
+                const hx = num(ctx.hoveredHex.x);
+                const hy = num(ctx.hoveredHex.y);
+                const pos = ctx.tileToScreen(hx, hy);
                 return (
                     <Box
                         className="absolute pointer-events-none z-10 px-2 py-1 rounded bg-black/80 text-white text-xs"
                         style={{ left: pos.x + 20, top: pos.y - 10 }}
                     >
                         <Typography variant="caption">
-                            {ctx.hoveredHex.terrain} ({ctx.hoveredHex.x}, {ctx.hoveredHex.y})
+                            {str(ctx.hoveredHex.terrain)} ({hx}, {hy})
                         </Typography>
                     </Box>
                 );
@@ -255,7 +259,7 @@ function WithSlotsRender() {
                     </Badge>
                     {ctx.hoveredHex && (
                         <Typography variant="caption" className="text-gray-400">
-                            Hovered: {ctx.hoveredHex.terrain} ({ctx.hoveredHex.x}, {ctx.hoveredHex.y})
+                            Hovered: {str(ctx.hoveredHex.terrain)} ({num(ctx.hoveredHex.x)}, {num(ctx.hoveredHex.y)})
                         </Typography>
                     )}
                 </HStack>
@@ -296,7 +300,7 @@ function EditorRender() {
     // -- Grid settings --
     const [gridWidth, setGridWidth] = useState(12);
     const [gridHeight, setGridHeight] = useState(10);
-    const [hexes, setHexes] = useState<MapHex[]>(() => generateWorldHexes(12, 10));
+    const [hexes, setHexes] = useState<EntityRow[]>(() => generateWorldHexes(12, 10));
 
     // -- Editor mode --
     const [mode, setMode] = useState<EditorMode>('select');
@@ -343,7 +347,7 @@ function EditorRender() {
         [featurePlacements],
     );
 
-    const mapHeroes: MapHero[] = useMemo(
+    const mapHeroes: EntityRow[] = useMemo(
         () => heroes.map((h) => ({
             id: h.id,
             name: h.name,
@@ -355,7 +359,7 @@ function EditorRender() {
         [heroes],
     );
 
-    const entity: WorldMapEntity = useMemo(() => ({
+    const entity: EntityRow = useMemo(() => ({
         id: 'editor-map',
         hexes,
         heroes: mapHeroes,
@@ -756,22 +760,24 @@ function EditorRender() {
                             </Badge>
                             {ctx.selectedHero && (
                                 <Badge variant="success" size="sm">
-                                    {ctx.selectedHero.name}
+                                    {str(ctx.selectedHero.name)}
                                 </Badge>
                             )}
                         </HStack>
                     )}
                     overlay={(ctx: WorldMapSlotContext) => {
                         if (!ctx.hoveredHex) return null;
-                        setHoveredTile({ x: ctx.hoveredHex.x, y: ctx.hoveredHex.y });
-                        const pos = ctx.tileToScreen(ctx.hoveredHex.x, ctx.hoveredHex.y);
+                        const hx = num(ctx.hoveredHex.x);
+                        const hy = num(ctx.hoveredHex.y);
+                        setHoveredTile({ x: hx, y: hy });
+                        const pos = ctx.tileToScreen(hx, hy);
                         return (
                             <Box
                                 className="absolute pointer-events-none z-10 px-2 py-1 rounded bg-black/80 text-white text-xs"
                                 style={{ left: pos.x + 20, top: pos.y - 10 }}
                             >
                                 <Typography variant="caption">
-                                    {ctx.hoveredHex.terrain} ({ctx.hoveredHex.x}, {ctx.hoveredHex.y})
+                                    {str(ctx.hoveredHex.terrain)} ({hx}, {hy})
                                     {ctx.hoveredHex.passable === false ? ' [blocked]' : ''}
                                 </Typography>
                             </Box>

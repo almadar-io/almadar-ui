@@ -10,7 +10,8 @@ import { TrendingUp, TrendingDown, Minus, LucideIcon } from "lucide-react";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { resolveIcon } from "../atoms/Icon";
-import type { EntityDisplayProps } from "./types";
+import type { DisplayStateProps } from "./types";
+import type { EntityRow } from "@almadar/core";
 
 /**
  * Schema metric definition
@@ -29,7 +30,9 @@ export interface MetricDefinition {
   format?: "currency" | "percent" | "number" | string;
 }
 
-export interface StatCardProps extends EntityDisplayProps {
+export interface StatCardProps extends DisplayStateProps {
+  /** Entity data (single record or collection) used to compute metrics. */
+  entity?: EntityRow | readonly EntityRow[];
   /** Main label */
   label?: string;
   /** Title (alias for label) */

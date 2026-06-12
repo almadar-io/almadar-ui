@@ -33,26 +33,19 @@ export {
 export {
   BattleTemplate,
   type BattleTemplateProps,
-  type BattleEntity,
   type BattlePhase,
-  type BattleUnit,
-  type BattleTile,
   type BattleSlotContext,
 } from '../../game/templates/BattleTemplate';
 
 export {
   CastleTemplate,
   type CastleTemplateProps,
-  type CastleEntity,
   type CastleSlotContext,
 } from '../../game/templates/CastleTemplate';
 
 export {
   WorldMapTemplate,
   type WorldMapTemplateProps,
-  type WorldMapEntity,
-  type MapHero,
-  type MapHex,
   type WorldMapSlotContext,
 } from '../../game/templates/WorldMapTemplate';
 
@@ -61,18 +54,12 @@ export {
   LandingPageTemplate,
   type LandingPageTemplateProps,
   type LandingPageEntity,
-  type HeroEntity,
-  type FeatureEntity,
-  type StatEntity,
-  type StepEntity,
-  type ShowcaseEntity,
 } from '../../marketing/templates/LandingPageTemplate';
 
 export {
   PricingPageTemplate,
   type PricingPageTemplateProps,
   type PricingPageEntity,
-  type PricingPlanEntity,
 } from '../../marketing/templates/PricingPageTemplate';
 
 export {
@@ -86,8 +73,6 @@ export {
   AboutPageTemplate,
   type AboutPageTemplateProps,
   type AboutPageEntity,
-  type TeamMemberEntity,
-  type CaseStudyEntity,
 } from '../../marketing/templates/AboutPageTemplate';
 
 // 3D Game Canvas Templates are NOT barrel-exported because they depend on

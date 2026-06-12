@@ -28,24 +28,24 @@ import { BookTableOfContents } from './BookTableOfContents';
 import { BookChapterView } from './BookChapterView';
 import { BookNavBar } from './BookNavBar';
 import { EmptyState } from '../../../core/molecules/EmptyState';
-import type { EntityRecord, EntityRow } from '@almadar/core';
-import type { EntityDisplayProps } from '../../../core/organisms/types';
-import type { BookData, BookChapter, BookFieldMap } from '../../../core/organisms/book/types';
+import type { EntityRow } from '@almadar/core';
+import type { DisplayStateProps } from '../../../core/organisms/types';
+import type { NormalizedBook, BookFieldMap } from '../../../core/organisms/book/types';
 import { mapBookData, resolveFieldMap } from '../../../core/organisms/book/types';
 
-export interface BookViewerProps extends EntityDisplayProps {
+export interface BookViewerProps extends DisplayStateProps {
   /** Renders ONE record (the book), not a collection */
-  entity?: EntityRecord<EntityRow>;
+  entity?: EntityRow | readonly EntityRow[];
   /** Initial page index (default: 0 = cover) */
   initialPage?: number;
   /** Field name translation map — a BookFieldMap object or locale key ("ar") */
   fieldMap?: BookFieldMap | string;
 }
 
-/** Flatten all chapters from all parts into a single ordered array */
-function flattenChapters(book: BookData): BookChapter[] {
-  return book.parts.flatMap((part) => part.chapters);
-}
+const chapterId = (ch: EntityRow | undefined): string | undefined =>
+  ch?.id == null ? undefined : String(ch.id);
+const chapterTitle = (ch: EntityRow | undefined): string | undefined =>
+  ch?.title == null ? undefined : String(ch.title);
 
 /** Print styles injected once */
 const PRINT_STYLES = `
@@ -73,8 +73,8 @@ export const BookViewer: React.FC<BookViewerProps> = ({
   // Resolve string key ("ar") or object to a BookFieldMap
   const resolvedFieldMap = useMemo(() => resolveFieldMap(fieldMap), [fieldMap]);
 
-  // Map raw entity data to canonical BookData using field map
-  const book = useMemo<BookData | null>(() => {
+  // Map raw entity data to a NormalizedBook using field map
+  const book = useMemo<NormalizedBook | null>(() => {
     const entityArray = Array.isArray(entity) ? entity : entity ? [entity] : [];
     const raw = entityArray[0];
     if (!raw) return null;
@@ -83,15 +83,15 @@ export const BookViewer: React.FC<BookViewerProps> = ({
 
   const direction = book?.direction ?? 'ltr';
 
-  const chapters = useMemo(() => book ? flattenChapters(book) : [], [book]);
+  const chapters = useMemo<readonly EntityRow[]>(() => book ? book.chapters : [], [book]);
   const totalPages = 2 + chapters.length; // cover + TOC + chapters
 
   const navigateTo = useCallback(
     (page: number) => {
       const clamped = Math.max(0, Math.min(page, totalPages - 1));
       setCurrentPage(clamped);
-      const chapterId = clamped >= 2 ? chapters[clamped - 2]?.id : undefined;
-      eventBus.emit('UI:BOOK_PAGE_CHANGE', { pageIndex: clamped, chapterId });
+      const id = clamped >= 2 ? chapterId(chapters[clamped - 2]) : undefined;
+      eventBus.emit('UI:BOOK_PAGE_CHANGE', { pageIndex: clamped, chapterId: id });
     },
     [totalPages, chapters, eventBus],
   );
@@ -105,8 +105,8 @@ export const BookViewer: React.FC<BookViewerProps> = ({
       eventBus.on('UI:BOOK_PAGE_NEXT', () => navigateTo(currentPage + 1)),
       eventBus.on('UI:BOOK_PRINT', () => window.print()),
       eventBus.on('UI:BOOK_NAVIGATE', (event) => {
-        const chapterId = event.payload?.chapterId as string;
-        const idx = chapters.findIndex((ch) => ch.id === chapterId);
+        const targetId = event.payload?.chapterId as string;
+        const idx = chapters.findIndex((ch) => chapterId(ch) === targetId);
         if (idx >= 0) navigateTo(idx + 2);
       }),
     ];
@@ -125,11 +125,14 @@ export const BookViewer: React.FC<BookViewerProps> = ({
   }, []);
 
   // Resolve current chapter ID for TOC highlighting
-  const currentChapterId = currentPage >= 2 ? chapters[currentPage - 2]?.id : undefined;
-  const currentChapterTitle = currentPage >= 2 ? chapters[currentPage - 2]?.title : undefined;
+  const currentChapterId = currentPage >= 2 ? chapterId(chapters[currentPage - 2]) : undefined;
+  const currentChapterTitle = currentPage >= 2 ? chapterTitle(chapters[currentPage - 2]) : undefined;
 
   // No data — Suspense/ErrorBoundary handles loading and errors at the parent level
   if (!book) return <EmptyState message={t('book.noData')} />;
+
+  const cover = book.cover;
+  const coverTitle = String(cover.title ?? '');
 
   return (
     <VStack className={cn('relative h-full overflow-hidden bg-background', className)}>
@@ -141,33 +144,37 @@ export const BookViewer: React.FC<BookViewerProps> = ({
         {/* Print-mode: render all chapters sequentially */}
         <Box className="hidden print:block">
           <BookCoverPage
-            title={book.title}
-            subtitle={book.subtitle}
-            author={book.author}
-            coverImageUrl={book.coverImageUrl}
+            title={coverTitle}
+            subtitle={String(cover.subtitle ?? '') || undefined}
+            author={String(cover.author ?? '') || undefined}
+            coverImageUrl={String(cover.coverImageUrl ?? '') || undefined}
             direction={direction}
           />
           <BookTableOfContents
             parts={book.parts}
             direction={direction}
           />
-          {chapters.map((chapter) => (
-            <BookChapterView
-              key={chapter.id}
-              chapter={chapter}
-              direction={direction}
-            />
-          ))}
+          {chapters.map((chapter) => {
+            const id = chapterId(chapter);
+            return (
+              <BookChapterView
+                key={id}
+                chapter={chapter}
+                orbitalSchema={id ? book.schemaByChapterId[id] : undefined}
+                direction={direction}
+              />
+            );
+          })}
         </Box>
 
         {/* Screen-mode: single page at a time */}
         <Box className="print:hidden">
           {currentPage === 0 && (
             <BookCoverPage
-              title={book.title}
-              subtitle={book.subtitle}
-              author={book.author}
-              coverImageUrl={book.coverImageUrl}
+              title={coverTitle}
+              subtitle={String(cover.subtitle ?? '') || undefined}
+              author={String(cover.author ?? '') || undefined}
+              coverImageUrl={String(cover.coverImageUrl ?? '') || undefined}
               direction={direction}
             />
           )}
@@ -183,6 +190,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
           {currentPage >= 2 && chapters[currentPage - 2] && (
             <BookChapterView
               chapter={chapters[currentPage - 2]}
+              orbitalSchema={currentChapterId ? book.schemaByChapterId[currentChapterId] : undefined}
               direction={direction}
             />
           )}
@@ -195,7 +203,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
         totalPages={totalPages}
         chapterTitle={
           currentPage === 0
-            ? book.title
+            ? coverTitle
             : currentPage === 1
               ? t('book.tableOfContents')
               : currentChapterTitle

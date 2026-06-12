@@ -1,6 +1,6 @@
 // Shared organism types — base props contract for all entity-display organisms
 export {
-  type EntityDisplayProps,
+  type DisplayStateProps,
   type UiError,
   EntityDisplayEvents,
   type SortPayload,
@@ -90,20 +90,6 @@ export {
   RuntimeDebugger,
   type RuntimeDebuggerProps,
 } from "./debug";
-
-// Marketing entity types
-export type {
-  MarketingAction,
-  MarketingImage,
-  HeroEntity,
-  FeatureEntity,
-  PricingPlanEntity,
-  StatEntity,
-  StepEntity,
-  ShowcaseEntity,
-  TeamMemberEntity,
-  CaseStudyEntity,
-} from "./marketing-types";
 
 // Marketing organisms
 export {

@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { EntityWith } from '@almadar/core';
 import { HeroOrganism } from './HeroOrganism';
-import type { HeroEntity } from './marketing-types';
 
-const MOCK_HERO: HeroEntity = {
+const MOCK_HERO: EntityWith<'title'> = {
   id: 'hero-1',
   tag: 'Open Source',
   title: 'Core/Organisms/HeroOrganism',
@@ -15,7 +15,7 @@ const MOCK_HERO: HeroEntity = {
   background: 'gradient',
 };
 
-const MOCK_HERO_WITH_IMAGE: HeroEntity = {
+const MOCK_HERO_WITH_IMAGE: EntityWith<'title'> = {
   ...MOCK_HERO,
   id: 'hero-2',
   image: {

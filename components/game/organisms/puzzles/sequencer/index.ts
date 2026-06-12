@@ -8,4 +8,4 @@ export { SequenceBar } from './SequenceBar';
 export type { SequenceBarProps } from './SequenceBar';
 
 export { SequencerBoard } from './SequencerBoard';
-export type { SequencerBoardProps, SequencerPuzzleEntity } from './SequencerBoard';
+export type { SequencerBoardProps } from './SequencerBoard';

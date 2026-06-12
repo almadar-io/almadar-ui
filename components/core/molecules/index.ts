@@ -56,7 +56,7 @@ export { QuizBlock, type QuizBlockProps } from './QuizBlock';
 export { ScaledDiagram, type ScaledDiagramProps } from './ScaledDiagram';
 
 // Calendar
-export { CalendarGrid, type CalendarGridProps, type CalendarEvent } from './CalendarGrid';
+export { CalendarGrid, type CalendarGridProps } from './CalendarGrid';
 
 // Inspection form components
 export { RepeatableFormSection, type RepeatableFormSectionProps, type RepeatableItem } from './RepeatableFormSection';
@@ -137,10 +137,10 @@ export { LikertScale, type LikertScaleProps, type LikertOption, DEFAULT_LIKERT_O
 export { MatrixQuestion, type MatrixQuestionProps, type MatrixRow, type MatrixColumn, DEFAULT_MATRIX_COLUMNS } from './MatrixQuestion';
 export { QrScanner, type QrScannerProps, type QrScanResult } from './QrScanner';
 export { OptionConstraintGroup, type OptionConstraintGroupProps, type OptionConstraintOption, type OptionConstraint } from './OptionConstraintGroup';
-export { PositionedCanvas, type PositionedCanvasProps, type CanvasItem, type CanvasItemStatus, type CanvasItemShape } from './PositionedCanvas';
+export { PositionedCanvas, type PositionedCanvasProps, type CanvasItemStatus, type CanvasItemShape } from './PositionedCanvas';
 // Demoted from organisms — no entity binding
 export { RichBlockEditor, type RichBlockEditorProps, type RichBlock, type BlockType } from './RichBlockEditor';
-export { ReplyTree, type ReplyTreeProps, type ReplyNode } from './ReplyTree';
+export { ReplyTree, type ReplyTreeProps } from './ReplyTree';
 export { BranchingLogicBuilder, type BranchingLogicBuilderProps, type BranchingQuestion, type BranchingRule } from './BranchingLogicBuilder';
 export { VersionDiff, type VersionDiffProps, type DiffRevision, type DiffLine as VersionDiffLine, type DiffLineType } from './VersionDiff';
 

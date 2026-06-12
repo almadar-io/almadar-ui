@@ -1,16 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import React from 'react';
 import { WorldMapTemplate } from './WorldMapTemplate';
-import type { MapHero, MapHex } from './WorldMapTemplate';
-import type { IsometricFeature } from '../organisms/types/isometric';
+import type { EntityRow } from '@almadar/core';
 
 // =============================================================================
 // MOCK DATA
 // =============================================================================
 
-function generateWorldHexes(w = 10, h = 8): MapHex[] {
+function generateWorldHexes(w = 10, h = 8): EntityRow[] {
     const terrains = ['grass', 'forest', 'plains', 'mountain', 'swamp'];
-    const hexes: MapHex[] = [];
+    const hexes: EntityRow[] = [];
     for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
             const t = terrains[(x * 3 + y * 7) % terrains.length];
@@ -33,14 +32,14 @@ function generateWorldHexes(w = 10, h = 8): MapHex[] {
     return hexes;
 }
 
-const MOCK_HEROES: MapHero[] = [
+const MOCK_HEROES: EntityRow[] = [
     { id: 'hero-1', name: 'Sir Kaelen', owner: 'player', position: { x: 1, y: 1 }, movement: 4, level: 5 },
     { id: 'hero-2', name: 'Lady Lumina', owner: 'player', position: { x: 2, y: 5 }, movement: 3, level: 3 },
     { id: 'enemy-1', name: 'Overlord Vexx', owner: 'enemy', position: { x: 8, y: 3 }, movement: 3, level: 6 },
     { id: 'enemy-2', name: 'Dread Scout', owner: 'enemy', position: { x: 6, y: 6 }, movement: 5, level: 2 },
 ];
 
-const MOCK_FEATURES: IsometricFeature[] = [
+const MOCK_FEATURES: EntityRow[] = [
     { x: 3, y: 2, type: 'goldMine' },
     { x: 7, y: 1, type: 'resonanceCrystal' },
     { x: 5, y: 5, type: 'castle' },

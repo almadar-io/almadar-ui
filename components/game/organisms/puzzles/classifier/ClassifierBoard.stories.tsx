@@ -1,9 +1,9 @@
 // eslint-disable-next-line almadar/require-translate -- storybook-only, not a shipped component
 import type { Meta, StoryObj } from '@storybook/react';
 import { ClassifierBoard } from './ClassifierBoard';
-import type { ClassifierPuzzleEntity } from './ClassifierBoard';
+import type { EntityRow } from '@almadar/core';
 
-const sampleEntity: ClassifierPuzzleEntity = {
+const sampleEntity: EntityRow = {
     id: 'cls-1',
     title: 'Game/Organisms/Puzzles/ClassifierBoard',
     description: 'Sort the animals into the correct categories.',

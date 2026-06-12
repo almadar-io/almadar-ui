@@ -7,9 +7,9 @@
  * Designed to be consumed by CastleTemplate (thin wrapper) or embedded directly
  * in any page that needs an isometric castle view.
  *
- * Accepts an `entity` prop conforming to `CastleEntity` and optional declarative
- * event props (`featureClickEvent`, `unitClickEvent`, `tileClickEvent`) that
- * emit through the Orbital event bus.
+ * Accepts an `entity` prop (`EntityRow`) and optional declarative event props
+ * (`featureClickEvent`, `unitClickEvent`, `tileClickEvent`) that emit through
+ * the Orbital event bus.
  *
  * @packageDocumentation
  */
@@ -24,26 +24,20 @@ import type {
     IsometricUnit,
     IsometricFeature,
 } from './types/isometric';
+import { boardEntity } from './boardEntity';
 import { isoToScreen, TILE_WIDTH, FLOOR_HEIGHT } from './utils/isometric';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-/** Entity shape consumed by CastleBoard */
-export interface CastleEntity {
-    id: string;
-    tiles: IsometricTile[];
-    features?: IsometricFeature[];
-    units?: IsometricUnit[];
-    assetManifest?: {
-        baseUrl: string;
-        terrains?: Record<string, string>;
-        units?: Record<string, string>;
-        features?: Record<string, string>;
-    };
-    backgroundImage?: string;
-}
+/** Manifest of asset base-url + per-kind sprite maps (UI value DTO). */
+type CastleAssetManifest = {
+    baseUrl?: string;
+    terrains?: Record<string, string>;
+    units?: Record<string, string>;
+    features?: Record<string, string>;
+};
 
 /** Context exposed to render-prop slots */
 export type CastleSlotContext = {
@@ -64,9 +58,9 @@ export type CastleSlotContext = {
 };
 
 export interface CastleBoardProps {
-    /** Castle entity data. Also accepts the canonical `EntityRow` the compiler
-     *  binds (and arrays); narrowed to `CastleEntity` internally. */
-    entity?: CastleEntity | EntityRow | readonly (CastleEntity | EntityRow)[];
+    /** Castle board-state entity (single row or array). The board reads
+     *  `tiles` / `features` / `units` arrays plus an `assetManifest` off it. */
+    entity?: EntityRow | readonly EntityRow[];
     /** Canvas render scale */
     scale?: number;
 
@@ -120,15 +114,15 @@ export function CastleBoard({
 }: CastleBoardProps): React.JSX.Element {
     const eventBus = useEventBus();
 
-    // Narrow the compiler-bound inlet to the curated CastleEntity read-shape
-    // (a valid union-narrow), then read defensively so a missing entity yields
-    // empty collections rather than throwing.
-    const resolved = (Array.isArray(entity) ? entity[0] : entity) as CastleEntity | undefined;
-    const tiles = resolved?.tiles ?? [];
-    const features = resolved?.features ?? [];
-    const units = resolved?.units ?? [];
-    const assetManifest = resolved?.assetManifest;
-    const backgroundImage = resolved?.backgroundImage;
+    // Resolve the single board-state row, then read defensively so a missing
+    // entity yields empty collections rather than throwing. The tiles/features/
+    // units arrays carry the IsometricCanvas render-DTO shape.
+    const resolved = boardEntity(entity);
+    const tiles = (Array.isArray(resolved?.tiles) ? resolved.tiles : []) as unknown as IsometricTile[];
+    const features = (Array.isArray(resolved?.features) ? resolved.features : []) as unknown as IsometricFeature[];
+    const units = (Array.isArray(resolved?.units) ? resolved.units : []) as unknown as IsometricUnit[];
+    const assetManifest = resolved?.assetManifest as CastleAssetManifest | undefined;
+    const backgroundImage = resolved?.backgroundImage as string | undefined;
 
     const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
     const [selectedFeature, setSelectedFeature] = useState<IsometricFeature | null>(null);
@@ -163,7 +157,7 @@ export function CastleBoard({
             onFeatureClick?.(feature);
             if (featureClickEvent) {
                 eventBus.emit(`UI:${featureClickEvent}`, {
-                    featureId: feature.id,
+                    featureId: feature.id ?? '',
                     featureType: feature.type,
                     x: feature.x,
                     y: feature.y,

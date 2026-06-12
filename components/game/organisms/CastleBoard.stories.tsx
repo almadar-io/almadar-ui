@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { CastleBoard } from './CastleBoard';
-import type { CastleEntity, CastleSlotContext } from './CastleBoard';
+import type { CastleSlotContext } from './CastleBoard';
+import type { EntityRow } from '@almadar/core';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from './types/isometric';
 import { Box } from '../../core/atoms/Box';
 import { VStack, HStack } from '../../core/atoms/Stack';
@@ -71,9 +72,9 @@ const MOCK_UNITS: IsometricUnit[] = [
     { id: 'unit-3', position: { x: 2, y: 3 }, name: 'Theron', unitType: 'cavalry', team: 'player', health: 110, maxHealth: 120 },
 ];
 
-const MOCK_ENTITY: CastleEntity = {
+const MOCK_ENTITY: EntityRow = {
     id: 'castle-001',
-    tiles: generateCastleTiles(8, 8),
+    tiles: generateCastleTiles(8, 8).map((t) => ({ ...t })),
     features: MOCK_FEATURES,
     units: MOCK_UNITS,
 };
@@ -348,9 +349,9 @@ function EditorRender() {
         }
     }, []);
 
-    const entity: CastleEntity = useMemo(() => ({
+    const entity: EntityRow = useMemo(() => ({
         id: 'editor-castle',
-        tiles,
+        tiles: tiles.map((t) => ({ ...t })),
         features,
         units,
     }), [tiles, features, units]);

@@ -20,11 +20,12 @@ import { Typography } from '../../core/atoms/Typography';
 import { PricingGrid } from '../molecules/PricingGrid';
 import { LoadingState } from '../../core/molecules/LoadingState';
 import { ErrorState } from '../../core/molecules/ErrorState';
-import type { EntityDisplayProps } from '../../core/organisms/types';
-import type { PricingPlanEntity } from '../../core/organisms/marketing-types';
+import type { EntityRow, EntityWith } from '@almadar/core';
+import type { DisplayStateProps } from '../../core/organisms/types';
 import type { PricingCardProps } from '../molecules/PricingCard';
 
-export interface PricingOrganismProps extends EntityDisplayProps<PricingPlanEntity> {
+export interface PricingOrganismProps extends DisplayStateProps {
+  entity?: EntityWith<'name' | 'price'> | readonly EntityWith<'name' | 'price'>[];
   heading?: string;
   subtitle?: string;
 }
@@ -40,12 +41,12 @@ export const PricingOrganism: React.FC<PricingOrganismProps> = ({
   const eventBus = useEventBus();
   const { t } = useTranslate();
 
-  const items = useMemo(
+  const items = useMemo<readonly EntityRow[]>(
     () =>
       Array.isArray(entity)
         ? entity
         : entity && typeof entity === 'object'
-          ? [entity as PricingPlanEntity]
+          ? [entity as EntityRow]
           : [],
     [entity],
   );
@@ -59,13 +60,13 @@ export const PricingOrganism: React.FC<PricingOrganismProps> = ({
   }
 
   const plans: PricingCardProps[] = items.map((plan) => ({
-    name: plan.name,
-    price: plan.price,
-    description: plan.description,
-    features: plan.features,
-    action: { label: plan.actionLabel, href: plan.actionHref },
-    highlighted: plan.highlighted,
-    badge: plan.badge,
+    name: String(plan.name ?? ''),
+    price: String(plan.price ?? ''),
+    description: plan.description != null ? String(plan.description) : undefined,
+    features: ((plan.features as readonly string[] | undefined) ?? []).map((f) => String(f)),
+    action: { label: String(plan.actionLabel ?? ''), href: String(plan.actionHref ?? '') },
+    highlighted: Boolean(plan.highlighted),
+    badge: plan.badge != null ? String(plan.badge) : undefined,
   }));
 
   return (

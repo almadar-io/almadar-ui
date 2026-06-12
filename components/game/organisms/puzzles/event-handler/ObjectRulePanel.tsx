@@ -9,30 +9,28 @@
  */
 
 import React, { useCallback } from 'react';
-import { VStack, HStack, Box, Typography, Button } from '../../../../core/atoms';
+import type { EntityRow } from '@almadar/core';
+import { VStack, HStack, Typography, Button } from '../../../../core/atoms';
 import { cn } from '../../../../../lib/cn';
 import { useTranslate } from '../../../../../hooks/useTranslate';
 import { TraitStateViewer } from '../../TraitStateViewer';
 import type { TraitStateMachineDefinition } from '../../TraitStateViewer';
-import { RuleEditor, type RuleDefinition } from './RuleEditor';
-
-export type PuzzleObjectDef = {
-    id: string;
-    name: string;
-    icon: string;
-    states: string[];
-    initialState: string;
-    currentState: string;
-    availableEvents: Array<{ value: string; label: string }>;
-    availableActions: Array<{ value: string; label: string }>;
-    rules: RuleDefinition[];
-    /** Max rules allowed on this object */
-    maxRules?: number;
-};
+import { RuleEditor, type RuleDefinition, type RuleOption } from './RuleEditor';
+import {
+    objId,
+    objName,
+    objIcon,
+    objStates,
+    objCurrentState,
+    objAvailableEvents,
+    objAvailableActions,
+    objRules,
+    objMaxRules,
+} from './puzzleObject';
 
 export interface ObjectRulePanelProps {
-    /** The selected object */
-    object: PuzzleObjectDef;
+    /** The selected puzzle-object row (`EntityRow` carrying the editable object data) */
+    object: EntityRow;
     /** Called when rules change */
     onRulesChange: (objectId: string, rules: RuleDefinition[]) => void;
     /** Whether editing is disabled */
@@ -50,40 +48,48 @@ export function ObjectRulePanel({
     className,
 }: ObjectRulePanelProps): React.JSX.Element {
     const { t } = useTranslate();
-    const maxRules = object.maxRules || 3;
-    const canAdd = object.rules.length < maxRules;
+    const id = objId(object);
+    const name = objName(object);
+    const icon = objIcon(object);
+    const states = objStates(object);
+    const currentState = objCurrentState(object);
+    const availableEvents: RuleOption[] = objAvailableEvents(object);
+    const availableActions: RuleOption[] = objAvailableActions(object);
+    const rules = objRules(object);
+    const maxRules = objMaxRules(object);
+    const canAdd = rules.length < maxRules;
 
     const handleRuleChange = useCallback((index: number, updatedRule: RuleDefinition) => {
-        const newRules = [...object.rules];
+        const newRules = [...rules];
         newRules[index] = updatedRule;
-        onRulesChange(object.id, newRules);
-    }, [object.id, object.rules, onRulesChange]);
+        onRulesChange(id, newRules);
+    }, [id, rules, onRulesChange]);
 
     const handleRuleRemove = useCallback((index: number) => {
-        const newRules = object.rules.filter((_, i) => i !== index);
-        onRulesChange(object.id, newRules);
-    }, [object.id, object.rules, onRulesChange]);
+        const newRules = rules.filter((_, i) => i !== index);
+        onRulesChange(id, newRules);
+    }, [id, rules, onRulesChange]);
 
     const handleAddRule = useCallback(() => {
         if (!canAdd || disabled) return;
-        const firstEvent = object.availableEvents[0]?.value || '';
-        const firstAction = object.availableActions[0]?.value || '';
+        const firstEvent = availableEvents[0]?.value || '';
+        const firstAction = availableActions[0]?.value || '';
         const newRule: RuleDefinition = {
             id: `rule-${nextRuleId++}`,
             whenEvent: firstEvent,
             thenAction: firstAction,
         };
-        onRulesChange(object.id, [...object.rules, newRule]);
-    }, [canAdd, disabled, object, onRulesChange]);
+        onRulesChange(id, [...rules, newRule]);
+    }, [canAdd, disabled, id, rules, availableEvents, availableActions, onRulesChange]);
 
     // Build a simple state machine for the viewer
     const machine: TraitStateMachineDefinition = {
-        name: object.name,
-        states: object.states,
-        currentState: object.currentState,
-        transitions: object.rules.map(r => ({
-            from: object.currentState,
-            to: object.states.find(s => s !== object.currentState) || object.currentState,
+        name,
+        states,
+        currentState,
+        transitions: rules.map(r => ({
+            from: currentState,
+            to: states.find(s => s !== currentState) || currentState,
             event: r.whenEvent,
         })),
     };
@@ -92,13 +98,13 @@ export function ObjectRulePanel({
         <VStack className={cn('p-4 rounded-lg bg-card border border-border', className)} gap="sm">
             {/* Object header */}
             <HStack className="items-center" gap="sm">
-                <Typography variant="h5">{object.icon}</Typography>
+                <Typography variant="h5">{icon}</Typography>
                 <VStack gap="none">
                     <Typography variant="body1" className="text-foreground font-bold">
-                        {object.name}
+                        {name}
                     </Typography>
                     <Typography variant="caption" className="text-muted-foreground">
-                        {t('eventHandler.state') + ': ' + object.currentState}
+                        {t('eventHandler.state') + ': ' + currentState}
                     </Typography>
                 </VStack>
             </HStack>
@@ -109,14 +115,14 @@ export function ObjectRulePanel({
             {/* Rules */}
             <VStack gap="xs">
                 <Typography variant="body2" className="text-muted-foreground font-medium">
-                    {t('eventHandler.rules', { count: object.rules.length, max: maxRules }) + ':'}
+                    {t('eventHandler.rules', { count: rules.length, max: maxRules }) + ':'}
                 </Typography>
-                {object.rules.map((rule, i) => (
+                {rules.map((rule, i) => (
                     <RuleEditor
                         key={rule.id}
                         rule={rule}
-                        availableEvents={object.availableEvents}
-                        availableActions={object.availableActions}
+                        availableEvents={availableEvents}
+                        availableActions={availableActions}
                         onChange={(r) => handleRuleChange(i, r)}
                         onRemove={() => handleRuleRemove(i)}
                         disabled={disabled}

@@ -21,10 +21,11 @@ import { SimpleGrid } from '../molecules/SimpleGrid';
 import { CaseStudyCard } from '../../marketing/molecules/CaseStudyCard';
 import { LoadingState } from '../molecules/LoadingState';
 import { ErrorState } from '../molecules/ErrorState';
-import type { EntityDisplayProps } from './types';
-import type { CaseStudyEntity } from './marketing-types';
+import type { EntityRow, EntityWith } from '@almadar/core';
+import type { DisplayStateProps } from './types';
 
-export interface CaseStudyOrganismProps extends EntityDisplayProps<CaseStudyEntity> {
+export interface CaseStudyOrganismProps extends DisplayStateProps {
+  entity?: EntityWith<'title'> | readonly EntityWith<'title'>[];
   heading?: string;
   subtitle?: string;
 }
@@ -40,12 +41,12 @@ export const CaseStudyOrganism: React.FC<CaseStudyOrganismProps> = ({
   const eventBus = useEventBus();
   const { t } = useTranslate();
 
-  const items = useMemo(
+  const items = useMemo<readonly EntityRow[]>(
     () =>
       Array.isArray(entity)
         ? entity
         : entity && typeof entity === 'object'
-          ? [entity as CaseStudyEntity]
+          ? [entity as EntityRow]
           : [],
     [entity],
   );
@@ -79,13 +80,13 @@ export const CaseStudyOrganism: React.FC<CaseStudyOrganismProps> = ({
       <SimpleGrid cols={cols > 0 ? cols : 1} gap="lg">
         {items.map((study) => (
           <CaseStudyCard
-            key={study.id}
-            title={study.title}
-            description={study.description}
-            category={study.category}
-            categoryColor={study.categoryColor}
-            href={study.href}
-            linkLabel={study.linkLabel}
+            key={String(study.id ?? '')}
+            title={String(study.title ?? '')}
+            description={String(study.description ?? '')}
+            category={String(study.category ?? '')}
+            categoryColor={study.categoryColor != null ? String(study.categoryColor) : undefined}
+            href={String(study.href ?? '')}
+            linkLabel={study.linkLabel != null ? String(study.linkLabel) : undefined}
           />
         ))}
       </SimpleGrid>

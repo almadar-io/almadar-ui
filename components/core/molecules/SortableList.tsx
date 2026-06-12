@@ -8,7 +8,7 @@
  * Shows a drop indicator line at the target position during drag.
  */
 import React, { useCallback } from 'react';
-import type { EntityCollection, EventKey, EventPayload, EventPayloadValue } from "@almadar/core";
+import type { EntityRow, EventKey, EventPayload } from "@almadar/core";
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useDragReorder } from '../../../hooks/useDragReorder';
@@ -17,11 +17,11 @@ import { HStack } from '../atoms/Stack';
 import { VStack } from '../atoms/Stack';
 import { Icon } from '../atoms/Icon';
 
-const EMPTY_ITEMS: never[] = [];
+const EMPTY_ITEMS: readonly EntityRow[] = [];
 
-export interface SortableListProps<T extends EventPayloadValue = EventPayload> {
-  items: EntityCollection<T>;
-  renderItem: (item: T, index: number) => React.ReactNode;
+export interface SortableListProps {
+  items: readonly EntityRow[];
+  renderItem: (item: EntityRow, index: number) => React.ReactNode;
   reorderEvent: EventKey;
   reorderPayload?: EventPayload;
   dragHandlePosition?: 'left' | 'right';
@@ -36,20 +36,20 @@ function useSafeEventBus() {
   }
 }
 
-function SortableListInner<T extends EventPayloadValue = EventPayload>({
-  items: initialItemsProp = EMPTY_ITEMS as T[],
+function SortableListInner({
+  items: initialItemsProp = EMPTY_ITEMS,
   renderItem,
   reorderEvent,
   reorderPayload,
   dragHandlePosition = 'left',
   className,
-}: SortableListProps<T>) {
+}: SortableListProps) {
   const eventBus = useSafeEventBus();
 
   const initialItems = Array.isArray(initialItemsProp) ? initialItemsProp : initialItemsProp ? [initialItemsProp] : [];
 
   const handleReorder = useCallback(
-    (fromIndex: number, toIndex: number, item: T) => {
+    (fromIndex: number, toIndex: number, item: EntityRow) => {
       eventBus.emit(`UI:${reorderEvent}`, {
         fromIndex,
         toIndex,
@@ -67,7 +67,7 @@ function SortableListInner<T extends EventPayloadValue = EventPayload>({
     isDragging,
     getDragHandleProps,
     getItemProps,
-  } = useDragReorder<T>(initialItems, handleReorder);
+  } = useDragReorder<EntityRow>(initialItems, handleReorder);
 
   return (
     <VStack gap="none" className={cn('w-full', className)}>
@@ -133,8 +133,6 @@ function SortableListInner<T extends EventPayloadValue = EventPayload>({
   );
 }
 
-export const SortableList = SortableListInner as <T extends EventPayloadValue = EventPayload>(
-  props: SortableListProps<T>,
-) => React.ReactElement;
+export const SortableList = SortableListInner;
 
 (SortableList as React.FC).displayName = 'SortableList';

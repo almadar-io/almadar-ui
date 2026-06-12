@@ -13,7 +13,7 @@
  * Icon, Checkbox, Divider.
  */
 import React from 'react';
-import type { EntityRow, EventKey, EntityCollection } from '@almadar/core';
+import type { EntityRow, EventKey } from '@almadar/core';
 import type { ItemActionPayload, SelectionChangePayload } from '@almadar/patterns';
 import { cn } from '../../../lib/cn';
 import { createLogger } from '@almadar/logger';
@@ -78,9 +78,9 @@ export interface TableViewItemAction {
 
 // ── Props ────────────────────────────────────────────────────────────
 
-export interface TableViewProps<T extends EntityRow = EntityRow> extends DataDndProps {
-  /** Schema entity data — single record or collection. */
-  entity: EntityCollection<T>;
+export interface TableViewProps extends DataDndProps {
+  /** Schema entity data — the collection of rows to render. */
+  entity: readonly EntityRow[];
   /** Column definitions. The compiler emits `columns`; `fields` is the alias. */
   columns?: readonly TableViewColumn[];
   /** Alias for `columns`. */
@@ -118,13 +118,13 @@ export interface TableViewProps<T extends EntityRow = EntityRow> extends DataDnd
    * to this function (columns are ignored for the body; the header still
    * renders). Mirrors DataList's children render prop.
    */
-  children?: (item: T, index: number) => React.ReactNode;
+  children?: (item: EntityRow, index: number) => React.ReactNode;
   /**
    * Per-row render function (schema alias). In .orb: ["fn","item",{...}].
    * The compiler converts this to the children render prop.
    * @deprecated Use children in React code; exists for pattern registry sync.
    */
-  renderItem?: (item: T, index: number) => React.ReactNode;
+  renderItem?: (item: EntityRow, index: number) => React.ReactNode;
   /**
    * Layer 2 visual treatment — mirrors the data-list / entity-table look enum
    * so authors share one knob name across row renderers.
@@ -218,7 +218,7 @@ const LOOKS: Record<NonNullable<TableViewProps['look']>, LookConfig> = {
 
 // ── Component ────────────────────────────────────────────────────────
 
-export function TableView<T extends EntityRow = EntityRow>({
+export function TableView({
   entity,
   columns,
   fields,
@@ -248,7 +248,7 @@ export function TableView<T extends EntityRow = EntityRow>({
   positionEvent,
   dndItemIdField,
   dndRoot,
-}: TableViewProps<T>) {
+}: TableViewProps) {
   const eventBus = useEventBus();
   const { t } = useTranslate();
   const [visibleCount, setVisibleCount] = React.useState(pageSize > 0 ? pageSize : Infinity);
@@ -258,7 +258,7 @@ export function TableView<T extends EntityRow = EntityRow>({
   const allDataRaw = Array.isArray(entity) ? entity : entity ? [entity] : [];
 
   const dnd = useDataDnd({
-    items: allDataRaw as readonly T[],
+    items: allDataRaw as readonly EntityRow[],
     layout: 'list',
     dragGroup,
     accepts,
@@ -433,7 +433,7 @@ export function TableView<T extends EntityRow = EntityRow>({
           </Box>
         )}
         {hasRenderProp ? (
-          <Box className="flex-1 min-w-0">{children(row as T, index)}</Box>
+          <Box className="flex-1 min-w-0">{children(row as EntityRow, index)}</Box>
         ) : (
           colDefs.map((col) => {
             const raw = getNestedValue(row, col.field ?? col.key);

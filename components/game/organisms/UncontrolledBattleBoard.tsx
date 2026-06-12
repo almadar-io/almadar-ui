@@ -16,31 +16,22 @@
 
 import * as React from 'react';
 import type { EntityRow } from '@almadar/core';
-import { BattleBoard, type BattleBoardProps, type BattleUnit } from './BattleBoard';
+import { BattleBoard, type BattleBoardProps } from './BattleBoard';
+import { boardEntity, rows } from './boardEntity';
 import { useBattleState } from './hooks/useBattleState';
 
-/** Uncontrolled entity read-shape: controlled game-state fields are dropped in
- *  favor of `initialUnits`, which the internal `useBattleState` hook manages. */
-export type UncontrolledBattleEntity = Omit<
-    BattleBoardProps['entity'],
-    'units' | 'phase' | 'turn' | 'gameResult' | 'selectedUnitId'
-> & {
-    initialUnits: BattleUnit[];
-};
-
 export interface UncontrolledBattleBoardProps extends Omit<BattleBoardProps, 'entity'> {
-    // The compiler binds the generic `EntityRow`, so the inlet accepts it (and
-    // arrays) as union members; the component narrows to its curated
-    // `UncontrolledBattleEntity` read-shape below (a valid union-narrow) and
-    // renders nothing until an entity is present.
-    entity?: UncontrolledBattleEntity | EntityRow | readonly (UncontrolledBattleEntity | EntityRow)[];
+    // Single board-state entity row (or array). The internal `useBattleState`
+    // hook owns the controlled game-state fields; this row supplies the static
+    // board config plus an `initialUnits` array (`EntityRow[]`) seed.
+    entity?: EntityRow | readonly EntityRow[];
 }
 
 export function UncontrolledBattleBoard({ entity, ...rest }: UncontrolledBattleBoardProps): React.JSX.Element | null {
-    const resolved = (Array.isArray(entity) ? entity[0] : entity) as UncontrolledBattleEntity | undefined;
+    const resolved = boardEntity(entity);
 
     const battleState = useBattleState(
-        resolved?.initialUnits ?? [],
+        rows(resolved?.initialUnits) as EntityRow[],
         {
             tileClickEvent: rest.tileClickEvent,
             unitClickEvent: rest.unitClickEvent,
@@ -70,7 +61,7 @@ export function UncontrolledBattleBoard({ entity, ...rest }: UncontrolledBattleB
                 turn: battleState.turn,
                 gameResult: battleState.gameResult,
                 selectedUnitId: battleState.selectedUnitId,
-            }}
+            } as EntityRow}
         />
     );
 }

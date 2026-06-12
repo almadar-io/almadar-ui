@@ -10,23 +10,17 @@
  */
 
 import React from 'react';
-import type { TemplateProps } from '../../core/templates/types';
 import { WorldMapBoard } from '../organisms/WorldMapBoard';
-import type { WorldMapEntity } from '../organisms/WorldMapBoard';
+import type { TemplateProps } from '../../core/templates/types';
 
-// Re-export types for backward compatibility
-export type {
-    WorldMapEntity,
-    MapHero,
-    MapHex,
-    WorldMapSlotContext,
-} from '../organisms/WorldMapBoard';
+// Re-export the surviving UI value type (entity types were collapsed to EntityRow).
+export type { WorldMapSlotContext } from '../organisms/WorldMapBoard';
 
 // =============================================================================
 // Template Props
 // =============================================================================
 
-export interface WorldMapTemplateProps extends TemplateProps<WorldMapEntity> {
+export interface WorldMapTemplateProps extends TemplateProps {
     /** Canvas render scale */
     scale?: number;
     /** Unit draw-size multiplier */

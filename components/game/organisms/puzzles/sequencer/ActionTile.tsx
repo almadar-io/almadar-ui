@@ -13,10 +13,10 @@ import React, { useCallback } from 'react';
 import { Box, Typography } from '../../../../core/atoms';
 import { cn } from '../../../../../lib/cn';
 import { useTranslate } from '../../../../../hooks/useTranslate';
-import type { EntityDisplayProps } from '../../../../core/organisms/types';
+import type { DisplayStateProps } from '../../../../core/organisms/types';
 import type { SlotItemData } from '../../TraitSlot';
 
-export interface ActionTileProps extends Omit<EntityDisplayProps, 'entity'> {
+export interface ActionTileProps extends DisplayStateProps {
     /** The action data */
     action: SlotItemData;
     /** Size variant */

@@ -7,27 +7,15 @@
  */
 
 import React, { useCallback, useState } from "react";
-import type { EventEmit, EntityCollection } from "@almadar/core";
+import type { EventEmit, EntityRow, EntityWith } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { Avatar, Typography, Button, Box, Input } from "../atoms";
 import { VoteStack, type VoteValue } from "./VoteStack";
 
-export interface ReplyNode {
-    id: string;
-    authorName: string;
-    authorAvatarUrl?: string;
-    content: string;
-    postedAt: string;
-    voteCount?: number;
-    userVote?: VoteValue;
-    replies?: ReplyNode[];
-    collapsed?: boolean;
-}
-
 export interface ReplyTreeProps {
-    nodes: EntityCollection<ReplyNode>;
+    nodes: readonly EntityWith<'id' | 'authorName' | 'content'>[];
     maxDepth?: number;
     onVote?: (nodeId: string, vote: VoteValue) => void;
     onReply?: (parentNodeId: string) => void;
@@ -42,7 +30,7 @@ export interface ReplyTreeProps {
 }
 
 interface ReplyTreeNodeProps {
-    node: ReplyNode;
+    node: EntityRow;
     depth: number;
     maxDepth: number;
     collapsedSet: Set<string>;
@@ -76,8 +64,16 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
 }) => {
     const eventBus = useEventBus();
     const { t } = useTranslate();
-    const hasReplies = !!node.replies && node.replies.length > 0;
-    const isCollapsed = collapsedSet.has(node.id);
+    const nodeId = node.id as string;
+    const authorName = node.authorName as string;
+    const authorAvatarUrl = node.authorAvatarUrl as string | undefined;
+    const content = node.content as string;
+    const postedAt = node.postedAt as string;
+    const voteCount = node.voteCount as number | undefined;
+    const userVote = node.userVote as VoteValue | undefined;
+    const replies = node.replies as readonly EntityRow[] | undefined;
+    const hasReplies = !!replies && replies.length > 0;
+    const isCollapsed = collapsedSet.has(nodeId);
     const atMaxDepth = depth >= maxDepth;
     // Inline reply composer: opens beneath this node so the reply box stays in
     // place instead of swapping the whole view.
@@ -86,26 +82,26 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
 
     const handleVote = useCallback(
         (next: VoteValue) => {
-            onVote?.(node.id, next);
-            if (voteEvent) eventBus.emit(`UI:${voteEvent}`, { nodeId: node.id, vote: next });
+            onVote?.(nodeId, next);
+            if (voteEvent) eventBus.emit(`UI:${voteEvent}`, { nodeId, vote: next });
         },
-        [node.id, onVote, voteEvent, eventBus],
+        [nodeId, onVote, voteEvent, eventBus],
     );
 
     // Toggle the inline composer open/closed (notify the host that a reply was
     // initiated, but don't emit the reply itself until the user submits text).
     const handleReply = useCallback(() => {
-        onReply?.(node.id);
+        onReply?.(nodeId);
         setReplyOpen((open) => !open);
-    }, [node.id, onReply]);
+    }, [nodeId, onReply]);
 
     const handleSubmitReply = useCallback(() => {
-        const content = draft.trim();
-        if (!content) return;
-        if (replyEvent) eventBus.emit(`UI:${replyEvent}`, { parentNodeId: node.id, content });
+        const text = draft.trim();
+        if (!text) return;
+        if (replyEvent) eventBus.emit(`UI:${replyEvent}`, { parentNodeId: nodeId, content: text });
         setDraft("");
         setReplyOpen(false);
-    }, [node.id, draft, replyEvent, eventBus]);
+    }, [nodeId, draft, replyEvent, eventBus]);
 
     const handleCancelReply = useCallback(() => {
         setDraft("");
@@ -113,18 +109,18 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
     }, []);
 
     const handleFlag = useCallback(() => {
-        onFlag?.(node.id);
-        if (flagEvent) eventBus.emit(`UI:${flagEvent}`, { nodeId: node.id });
-    }, [node.id, onFlag, flagEvent, eventBus]);
+        onFlag?.(nodeId);
+        if (flagEvent) eventBus.emit(`UI:${flagEvent}`, { nodeId });
+    }, [nodeId, onFlag, flagEvent, eventBus]);
 
     const handleContinue = useCallback(() => {
-        onContinueThread?.(node.id);
-        if (continueThreadEvent) eventBus.emit(`UI:${continueThreadEvent}`, { nodeId: node.id });
-    }, [node.id, onContinueThread, continueThreadEvent, eventBus]);
+        onContinueThread?.(nodeId);
+        if (continueThreadEvent) eventBus.emit(`UI:${continueThreadEvent}`, { nodeId });
+    }, [nodeId, onContinueThread, continueThreadEvent, eventBus]);
 
     const handleToggle = useCallback(() => {
-        toggleCollapse(node.id);
-    }, [node.id, toggleCollapse]);
+        toggleCollapse(nodeId);
+    }, [nodeId, toggleCollapse]);
 
     return (
         <Box className="flex flex-row gap-2 items-stretch min-w-0">
@@ -157,38 +153,38 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
             <Box className="flex flex-col gap-2 flex-1 min-w-0 pb-3">
                 <Box className="flex flex-row gap-2 items-center min-w-0">
                     <Avatar
-                        src={node.authorAvatarUrl}
-                        name={node.authorName}
+                        src={authorAvatarUrl}
+                        name={authorName}
                         size="sm"
                     />
                     <Typography variant="body" weight="semibold">
-                        {node.authorName}
+                        {authorName}
                     </Typography>
                     <Typography variant="caption" color="secondary">
-                        {node.postedAt}
+                        {postedAt}
                     </Typography>
                 </Box>
 
                 <Typography variant="body" className="whitespace-pre-wrap break-words">
-                    {node.content}
+                    {content}
                 </Typography>
 
                 {showActions && (
                     <Box className="flex flex-row gap-2 items-center">
                         <VoteStack
-                            count={node.voteCount ?? 0}
-                            userVote={node.userVote ?? null}
+                            count={voteCount ?? 0}
+                            userVote={userVote ?? null}
                             onVote={handleVote}
                             size="sm"
                             variant="horizontal"
-                            label={t('replyTree.voteOnReplyBy', { author: node.authorName })}
+                            label={t('replyTree.voteOnReplyBy', { author: authorName })}
                         />
                         <Button
                             variant="ghost"
                             size="sm"
                             leftIcon="message-square"
                             onClick={handleReply}
-                            aria-label={t('replyTree.replyTo', { author: node.authorName })}
+                            aria-label={t('replyTree.replyTo', { author: authorName })}
                         >
                             {t('replyTree.reply')}
                         </Button>
@@ -197,7 +193,7 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
                             size="sm"
                             leftIcon="flag"
                             onClick={handleFlag}
-                            aria-label={t('replyTree.flagReplyBy', { author: node.authorName })}
+                            aria-label={t('replyTree.flagReplyBy', { author: authorName })}
                         >
                             {t('replyTree.flag')}
                         </Button>
@@ -210,9 +206,9 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
                             inputType="textarea"
                             rows={2}
                             value={draft}
-                            placeholder={t('replyTree.replyToPlaceholder', { author: node.authorName })}
+                            placeholder={t('replyTree.replyToPlaceholder', { author: authorName })}
                             onChange={(e) => setDraft(e.target.value)}
-                            aria-label={t('replyTree.replyTo', { author: node.authorName })}
+                            aria-label={t('replyTree.replyTo', { author: authorName })}
                         />
                         <Box className="flex flex-row gap-2 items-center">
                             <Button
@@ -247,9 +243,9 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
                         </Button>
                     ) : (
                         <Box className="flex flex-col gap-2 mt-1">
-                            {node.replies!.map((child) => (
+                            {replies!.map((child) => (
                                 <ReplyTreeNode
-                                    key={child.id}
+                                    key={child.id as string}
                                     node={child}
                                     depth={depth + 1}
                                     maxDepth={maxDepth}
@@ -274,11 +270,12 @@ const ReplyTreeNode: React.FC<ReplyTreeNodeProps> = ({
     );
 };
 
-function collectInitiallyCollapsed(nodes: readonly ReplyNode[], acc: Set<string>): void {
+function collectInitiallyCollapsed(nodes: readonly EntityRow[], acc: Set<string>): void {
     for (const n of nodes) {
-        if (n.collapsed) acc.add(n.id);
-        if (n.replies && n.replies.length > 0) {
-            collectInitiallyCollapsed(n.replies, acc);
+        const replies = n.replies as readonly EntityRow[] | undefined;
+        if (n.collapsed as boolean | undefined) acc.add(n.id as string);
+        if (replies && replies.length > 0) {
+            collectInitiallyCollapsed(replies, acc);
         }
     }
 }
@@ -329,7 +326,7 @@ export const ReplyTree: React.FC<ReplyTreeProps> = ({
         <Box className={cn("flex flex-col gap-2 min-w-0", className)}>
             {nodeList.map((node) => (
                 <ReplyTreeNode
-                    key={node.id}
+                    key={node.id as string}
                     node={node}
                     depth={0}
                     maxDepth={maxDepth}

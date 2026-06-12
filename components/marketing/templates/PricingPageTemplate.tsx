@@ -17,22 +17,37 @@ import { Accordion } from '../../core/molecules/Accordion';
 import { CTABanner } from '../molecules/CTABanner';
 import { SectionHeader } from '../../core/atoms/SectionHeader';
 import type { TemplateProps } from '../../core/templates/types';
-import type {
-  MarketingAction,
-  HeroEntity,
-  PricingPlanEntity,
-} from '../../core/organisms/marketing-types';
+import type { LinkAction } from '../../core/atoms/types';
 
-export type { PricingPlanEntity };
+interface PricingHero {
+  id?: string;
+  tag?: string;
+  title: string;
+  titleAccent?: string;
+  subtitle: string;
+  background?: 'dark' | 'gradient' | 'subtle';
+}
+
+interface PricingPlanContent {
+  id?: string;
+  name: string;
+  price: string;
+  description?: string;
+  features: string[];
+  actionLabel: string;
+  actionHref: string;
+  highlighted?: boolean;
+  badge?: string;
+}
 
 export interface PricingPageEntity {
   id: string;
-  hero: HeroEntity;
-  plans: PricingPlanEntity[];
+  hero: PricingHero;
+  plans: PricingPlanContent[];
   faq?: { question: string; answer: string }[];
   ctaTitle?: string;
   ctaSubtitle?: string;
-  ctaAction?: MarketingAction;
+  ctaAction?: LinkAction;
 }
 
 export interface PricingPageTemplateProps extends TemplateProps<PricingPageEntity> {}

@@ -2,8 +2,9 @@ import React, { useState, useCallback } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { BattleBoard } from './BattleBoard';
 import { UncontrolledBattleBoard } from './UncontrolledBattleBoard';
-import type { UncontrolledBattleBoardProps } from './UncontrolledBattleBoard';
-import type { BattleEntity, BattleUnit, BattleSlotContext } from './BattleBoard';
+import type { BattleSlotContext } from './BattleBoard';
+import type { EntityRow } from '@almadar/core';
+import { str, num, unitPosition } from './boardEntity';
 import type { IsometricTile } from './types/isometric';
 import { Box } from '../../core/atoms/Box';
 import { VStack, HStack } from '../../core/atoms/Stack';
@@ -50,7 +51,7 @@ function generateBattleTiles(
     return tiles;
 }
 
-const MOCK_UNITS: BattleUnit[] = [
+const MOCK_UNITS: EntityRow[] = [
     // Player units
     {
         id: 'p1',
@@ -128,24 +129,24 @@ const MOCK_UNITS: BattleUnit[] = [
 ];
 
 /** Mock entity for uncontrolled stories (uses initialUnits). */
-const MOCK_UNCONTROLLED_ENTITY: UncontrolledBattleBoardProps['entity'] = {
+const MOCK_UNCONTROLLED_ENTITY: EntityRow = {
     id: 'battle-001',
     initialUnits: MOCK_UNITS,
-    tiles: generateBattleTiles(8, 8, 'grass'),
+    tiles: generateBattleTiles(8, 8, 'grass').map((t) => ({ ...t })),
     features: [],
     boardWidth: 8,
     boardHeight: 8,
 };
 
 /** Mock entity for controlled stories (uses required game-state fields). */
-const MOCK_CONTROLLED_ENTITY: BattleEntity = {
+const MOCK_CONTROLLED_ENTITY: EntityRow = {
     id: 'battle-001',
     units: MOCK_UNITS,
     phase: 'observation',
     turn: 1,
     gameResult: null,
     selectedUnitId: null,
-    tiles: generateBattleTiles(8, 8, 'grass'),
+    tiles: generateBattleTiles(8, 8, 'grass').map((t) => ({ ...t })),
     features: [],
     boardWidth: 8,
     boardHeight: 8,
@@ -209,53 +210,58 @@ function HeaderSlot(ctx: BattleSlotContext) {
 }
 
 function SidebarSlot(ctx: BattleSlotContext) {
-    const renderUnitList = (units: BattleUnit[], label: string, color: string) => (
+    const renderUnitList = (units: readonly EntityRow[], label: string, color: string) => (
         <VStack gap="xs">
             <Typography variant="label" weight="semibold" className={color}>
                 {label} ({units.length})
             </Typography>
-            {units.map((u) => (
-                <Box
-                    key={u.id}
-                    padding="xs"
-                    className={cn(
-                        'rounded border border-gray-700 bg-gray-800/60',
-                        ctx.selectedUnit?.id === u.id && 'border-blue-500 bg-blue-900/30',
-                    )}
-                >
-                    <HStack gap="sm" align="center" className="justify-between">
-                        <VStack gap="none">
-                            <Typography variant="caption" weight="semibold" className="text-gray-200">
-                                {u.name}
+            {units.map((u) => {
+                const health = num(u.health);
+                const maxHealth = num(u.maxHealth);
+                const ratio = maxHealth > 0 ? health / maxHealth : 0;
+                return (
+                    <Box
+                        key={str(u.id)}
+                        padding="xs"
+                        className={cn(
+                            'rounded border border-gray-700 bg-gray-800/60',
+                            ctx.selectedUnit?.id === u.id && 'border-blue-500 bg-blue-900/30',
+                        )}
+                    >
+                        <HStack gap="sm" align="center" className="justify-between">
+                            <VStack gap="none">
+                                <Typography variant="caption" weight="semibold" className="text-gray-200">
+                                    {str(u.name)}
+                                </Typography>
+                                <Typography variant="caption" className="text-gray-500">
+                                    {str(u.unitType) || 'unknown'}
+                                </Typography>
+                            </VStack>
+                            <Typography variant="caption" className="text-gray-400">
+                                ATK {num(u.attack)} / DEF {num(u.defense)}
                             </Typography>
-                            <Typography variant="caption" className="text-gray-500">
-                                {u.unitType ?? 'unknown'}
+                        </HStack>
+                        <Box className="mt-1">
+                            <Box className="h-1.5 rounded-full bg-gray-700 overflow-hidden">
+                                <Box
+                                    className="h-full rounded-full transition-all"
+                                    style={{
+                                        width: `${ratio * 100}%`,
+                                        backgroundColor: ratio > 0.5
+                                            ? '#22c55e'
+                                            : ratio > 0.25
+                                                ? '#eab308'
+                                                : '#ef4444',
+                                    }}
+                                />
+                            </Box>
+                            <Typography variant="caption" className="text-gray-500 text-right">
+                                {health}/{maxHealth}
                             </Typography>
-                        </VStack>
-                        <Typography variant="caption" className="text-gray-400">
-                            ATK {u.attack} / DEF {u.defense}
-                        </Typography>
-                    </HStack>
-                    <Box className="mt-1">
-                        <Box className="h-1.5 rounded-full bg-gray-700 overflow-hidden">
-                            <Box
-                                className="h-full rounded-full transition-all"
-                                style={{
-                                    width: `${(u.health / u.maxHealth) * 100}%`,
-                                    backgroundColor: u.health / u.maxHealth > 0.5
-                                        ? '#22c55e'
-                                        : u.health / u.maxHealth > 0.25
-                                            ? '#eab308'
-                                            : '#ef4444',
-                                }}
-                            />
                         </Box>
-                        <Typography variant="caption" className="text-gray-500 text-right">
-                            {u.health}/{u.maxHealth}
-                        </Typography>
                     </Box>
-                </Box>
-            ))}
+                );
+            })}
         </VStack>
     );
 
@@ -273,7 +279,8 @@ function SidebarSlot(ctx: BattleSlotContext) {
 function OverlaySlot(ctx: BattleSlotContext) {
     if (!ctx.hoveredUnit) return null;
     const u = ctx.hoveredUnit;
-    const screenPos = ctx.tileToScreen(u.position.x, u.position.y);
+    const pos = unitPosition(u);
+    const screenPos = ctx.tileToScreen(pos.x, pos.y);
 
     return (
         <Box
@@ -289,14 +296,14 @@ function OverlaySlot(ctx: BattleSlotContext) {
             >
                 <HStack gap="xs" align="center" className="justify-between">
                     <Typography variant="caption" weight="bold" className="text-gray-100">
-                        {u.name}
+                        {str(u.name)}
                     </Typography>
-                    <Badge variant={u.team === 'player' ? 'info' : 'error'} size="sm">
-                        {u.team}
+                    <Badge variant={str(u.team) === 'player' ? 'info' : 'error'} size="sm">
+                        {str(u.team)}
                     </Badge>
                 </HStack>
                 <Typography variant="caption" className="text-gray-400">
-                    HP: {u.health}/{u.maxHealth} | ATK: {u.attack} | DEF: {u.defense}
+                    HP: {num(u.health)}/{num(u.maxHealth)} | ATK: {num(u.attack)} | DEF: {num(u.defense)}
                 </Typography>
             </VStack>
         </Box>
@@ -383,10 +390,10 @@ function EditorStory() {
     const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
 
     // Build entity from editor state (uncontrolled — uses initialUnits)
-    const entity: UncontrolledBattleBoardProps['entity'] = {
+    const entity: EntityRow = {
         id: 'editor-battle',
-        initialUnits: placedUnits,
-        tiles,
+        initialUnits: placedUnits.map((u) => ({ ...u })),
+        tiles: tiles.map((t) => ({ ...t })),
         features: [],
         boardWidth: gridWidth,
         boardHeight: gridHeight,

@@ -20,11 +20,12 @@ import { Typography } from '../atoms/Typography';
 import { FeatureGrid } from '../molecules/FeatureGrid';
 import { LoadingState } from '../molecules/LoadingState';
 import { ErrorState } from '../molecules/ErrorState';
-import type { EntityDisplayProps } from './types';
-import type { FeatureEntity } from './marketing-types';
+import type { EntityRow, EntityWith } from '@almadar/core';
+import type { DisplayStateProps } from './types';
 import type { FeatureCardProps } from '../../marketing/molecules/FeatureCard';
 
-export interface FeatureGridOrganismProps extends EntityDisplayProps<FeatureEntity> {
+export interface FeatureGridOrganismProps extends DisplayStateProps {
+  entity?: EntityWith<'title'> | readonly EntityWith<'title'>[];
   columns?: 2 | 3 | 4 | 6;
   heading?: string;
   subtitle?: string;
@@ -42,19 +43,22 @@ export const FeatureGridOrganism: React.FC<FeatureGridOrganismProps> = ({
   const eventBus = useEventBus();
   const { t } = useTranslate();
 
-  const items = useMemo(
+  const items = useMemo<readonly EntityRow[]>(
     () =>
       Array.isArray(entity)
         ? entity
         : entity && typeof entity === 'object'
-          ? [entity as FeatureEntity]
+          ? [entity as EntityRow]
           : [],
     [entity],
   );
 
   const handleFeatureClick = useCallback(
-    (feature: FeatureEntity) => {
-      eventBus.emit('UI:FEATURE_CLICK', { id: feature.id, href: feature.href ?? '' });
+    (feature: EntityRow) => {
+      eventBus.emit('UI:FEATURE_CLICK', {
+        id: String(feature.id ?? ''),
+        href: String(feature.href ?? ''),
+      });
     },
     [eventBus],
   );
@@ -67,14 +71,17 @@ export const FeatureGridOrganism: React.FC<FeatureGridOrganismProps> = ({
     return <ErrorState message={error.message} className={className} />;
   }
 
-  const featureCards: FeatureCardProps[] = items.map((feature) => ({
-    icon: feature.icon,
-    title: feature.title,
-    description: feature.description,
-    href: feature.href,
-    linkLabel: feature.linkLabel,
-    variant: feature.href ? 'interactive' as const : 'bordered' as const,
-  }));
+  const featureCards: FeatureCardProps[] = items.map((feature) => {
+    const href = feature.href != null ? String(feature.href) : undefined;
+    return {
+      icon: feature.icon != null ? String(feature.icon) : undefined,
+      title: String(feature.title ?? ''),
+      description: String(feature.description ?? ''),
+      href,
+      linkLabel: feature.linkLabel != null ? String(feature.linkLabel) : undefined,
+      variant: href ? ('interactive' as const) : ('bordered' as const),
+    };
+  });
 
   return (
     <VStack gap="lg" className={cn('w-full', className)}>

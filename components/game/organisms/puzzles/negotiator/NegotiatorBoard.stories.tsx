@@ -1,6 +1,7 @@
 // eslint-disable-next-line almadar/require-translate -- storybook-only, not a shipped component
 import type { Meta, StoryObj } from '@storybook/react';
-import { NegotiatorBoard, type NegotiatorPuzzleEntity } from './NegotiatorBoard';
+import { NegotiatorBoard } from './NegotiatorBoard';
+import type { EntityRow } from '@almadar/core';
 
 const meta: Meta<typeof NegotiatorBoard> = {
     title: 'Game/Organisms/Puzzles/NegotiatorBoard',
@@ -9,7 +10,7 @@ const meta: Meta<typeof NegotiatorBoard> = {
 export default meta;
 type Story = StoryObj<typeof NegotiatorBoard>;
 
-const prisonersDilemma: NegotiatorPuzzleEntity = {
+const prisonersDilemma: EntityRow = {
     id: 'prisoners-dilemma',
     title: 'The Prisoner\'s Dilemma',
     description: 'Two suspects are interrogated separately. Will you cooperate or betray?',

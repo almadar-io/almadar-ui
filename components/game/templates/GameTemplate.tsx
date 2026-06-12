@@ -14,11 +14,6 @@ import { Typography } from "../../core/atoms/Typography";
 import { Button } from "../../core/atoms/Button";
 import type { TemplateProps } from "../../core/templates/types";
 
-interface GameEntity {
-  id: string;
-  title?: string;
-}
-
 export interface GameControls {
   onPlay?: () => void;
   onPause?: () => void;
@@ -26,7 +21,7 @@ export interface GameControls {
   isPlaying?: boolean;
 }
 
-export interface GameTemplateProps extends TemplateProps<GameEntity> {
+export interface GameTemplateProps extends TemplateProps {
   /** Title of the game */
   title?: string;
   /** The main game canvas or content */

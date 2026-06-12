@@ -22,7 +22,8 @@ import { Box } from '../atoms/Box';
 import { Typography } from '../atoms/Typography';
 import { VStack, HStack } from '../atoms/Stack';
 import { Pagination } from '../molecules/Pagination';
-import type { EntityDisplayProps } from './types';
+import type { DisplayStateProps } from './types';
+import type { EntityRow } from '@almadar/core';
 
 export type CardGridGap = 'none' | 'sm' | 'md' | 'lg' | 'xl';
 
@@ -116,7 +117,9 @@ function statusVariant(value: string): 'success' | 'warning' | 'error' | 'info' 
   return 'default';
 }
 
-export interface CardGridProps extends EntityDisplayProps {
+export interface CardGridProps extends DisplayStateProps {
+  /** Entity data (single record or collection). */
+  entity?: EntityRow | readonly EntityRow[];
   /** Minimum width of each card (default: 280px) */
   minCardWidth?: number;
   /** Maximum number of columns */
@@ -177,7 +180,6 @@ export const CardGrid: React.FC<CardGridProps> = ({
   alignItems = 'stretch',
   className,
   children,
-  // EntityDisplayProps
   entity,
   isLoading = false,
   error = null,
@@ -207,7 +209,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
   // Normalize entity data to array
   const normalizedData = Array.isArray(entity) ? entity : entity ? [entity] : [];
 
-  // Compute pagination display hints from EntityDisplayProps
+  // Compute pagination display hints from the display-state props
   const resolvedPage = page ?? 1;
   const resolvedTotalPages = totalCount && pageSize ? Math.ceil(totalCount / pageSize) : 1;
 

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { GameCanvas3DBattleTemplate, type Battle3DEntity } from './GameCanvas3DBattleTemplate';
+import { GameCanvas3DBattleTemplate } from './GameCanvas3DBattleTemplate';
+import type { EntityRow } from '@almadar/core';
 
 function generateBattleTiles(width: number, height: number) {
     const tiles = [];
@@ -22,7 +23,7 @@ function generateBattleTiles(width: number, height: number) {
     return tiles;
 }
 
-const battleEntity: Battle3DEntity = {
+const battleEntity: EntityRow = {
     id: 'battle-1',
     tiles: generateBattleTiles(8, 8),
     units: [

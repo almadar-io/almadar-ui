@@ -1,6 +1,25 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
-import { PositionedCanvas, type CanvasItem } from './PositionedCanvas';
+import {
+    PositionedCanvas,
+    type CanvasItemShape,
+    type CanvasItemStatus,
+} from './PositionedCanvas';
+
+// Story-local demo shape. The component consumes the canonical
+// `readonly EntityRow[]`; a `type` alias carries an implicit index signature
+// so this sample data stays assignable to EntityRow.
+type CanvasItem = {
+    id: string;
+    label: string;
+    x: number;
+    y: number;
+    shape?: CanvasItemShape;
+    capacity: number;
+    status?: CanvasItemStatus;
+    partySize?: number;
+    serverName?: string;
+};
 
 const meta: Meta<typeof PositionedCanvas> = {
     title: 'Core/Molecules/PositionedCanvas',

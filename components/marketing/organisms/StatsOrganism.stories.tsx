@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { EntityWith } from '@almadar/core';
 import { StatsOrganism } from './StatsOrganism';
-import type { StatEntity } from '../../core/organisms/marketing-types';
 
-const MOCK_STATS: StatEntity[] = [
+const MOCK_STATS: readonly EntityWith<'value' | 'label'>[] = [
   { id: '1', value: '10,000+', label: 'Active Users' },
   { id: '2', value: '500+', label: 'Projects Built' },
   { id: '3', value: '99.9%', label: 'Uptime' },

@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { EntityRow } from '@almadar/core';
 import { BookViewer } from './BookViewer';
-import type { BookData } from '../../../core/organisms/book/types';
 
 const meta: Meta<typeof BookViewer> = {
   title: 'Marketing/Organisms/Book/BookViewer',

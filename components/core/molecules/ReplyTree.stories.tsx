@@ -1,6 +1,22 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import React, { useCallback, useState } from 'react';
-import { ReplyTree, type ReplyNode } from './ReplyTree';
+import { ReplyTree } from './ReplyTree';
+import type { VoteValue } from './VoteStack';
+
+// Story-local demo shape. The component itself consumes the canonical
+// `readonly EntityRow[]`; a `type` alias (not interface) carries an implicit
+// index signature so this sample data stays assignable to EntityRow.
+type ReplyNode = {
+    id: string;
+    authorName: string;
+    authorAvatarUrl?: string;
+    content: string;
+    postedAt: string;
+    voteCount?: number;
+    userVote?: VoteValue;
+    replies?: ReplyNode[];
+    collapsed?: boolean;
+};
 
 const meta: Meta<typeof ReplyTree> = {
     title: 'Core/Molecules/ReplyTree',

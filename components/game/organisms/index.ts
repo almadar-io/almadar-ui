@@ -129,10 +129,7 @@ export { DialogueBox, type DialogueBoxProps, type DialogueNode, type DialogueCho
 export {
     BattleBoard,
     type BattleBoardProps,
-    type BattleEntity,
     type BattlePhase,
-    type BattleUnit,
-    type BattleTile,
     type BattleSlotContext,
 } from './BattleBoard';
 export {
@@ -148,15 +145,11 @@ export {
 export {
     WorldMapBoard,
     type WorldMapBoardProps,
-    type WorldMapEntity,
-    type MapHero,
-    type MapHex,
     type WorldMapSlotContext,
 } from './WorldMapBoard';
 export {
     CastleBoard,
     type CastleBoardProps,
-    type CastleEntity,
     type CastleSlotContext,
 } from './CastleBoard';
 

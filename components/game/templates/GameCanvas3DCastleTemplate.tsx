@@ -19,32 +19,15 @@
  */
 
 import React from 'react';
-import { GameCanvas3D, type GameCanvas3DProps } from '../organisms/GameCanvas3D';
+import type { EntityRow } from '@almadar/core';
+import { GameCanvas3D } from '../organisms/GameCanvas3D';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from '../organisms/types/isometric';
-import { Box } from '../../core/atoms/Box';
 import { VStack, HStack } from '../../core/atoms/Stack';
 import { Typography } from '../../core/atoms/Typography';
 import { cn } from '../../../lib/cn';
 import type { TemplateProps } from '../../core/templates/types';
 
-export interface Castle3DEntity {
-    /** Castle grounds tiles */
-    tiles: IsometricTile[];
-    /** Garrisoned units */
-    units: IsometricUnit[];
-    /** Buildings and structures */
-    features: IsometricFeature[];
-    /** Castle name */
-    name?: string;
-    /** Castle level */
-    level?: number;
-    /** Owner faction */
-    owner?: string;
-    /** Entity ID */
-    id: string;
-}
-
-export interface GameCanvas3DCastleTemplateProps extends TemplateProps<Castle3DEntity> {
+export interface GameCanvas3DCastleTemplateProps extends TemplateProps {
     /** 3D camera mode */
     cameraMode?: 'isometric' | 'perspective' | 'top-down';
     /** Show grid helper */
@@ -106,27 +89,33 @@ export function GameCanvas3DCastleTemplate({
     showHeader = true,
     className,
 }: GameCanvas3DCastleTemplateProps): React.JSX.Element | null {
-    const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as Castle3DEntity : undefined;
+    const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as EntityRow : undefined;
     if (!resolved) return null;
+    const tiles = (Array.isArray(resolved.tiles) ? resolved.tiles : []) as unknown as IsometricTile[];
+    const units = (Array.isArray(resolved.units) ? resolved.units : []) as unknown as IsometricUnit[];
+    const features = (Array.isArray(resolved.features) ? resolved.features : []) as unknown as IsometricFeature[];
+    const name = resolved.name == null ? undefined : String(resolved.name);
+    const level = resolved.level == null ? undefined : Number(resolved.level);
+    const owner = resolved.owner == null ? undefined : String(resolved.owner);
     return (
         <VStack className={cn('game-canvas-3d-castle-template', className)}>
             {/* Castle header */}
-            {showHeader && resolved.name && (
+            {showHeader && name && (
                 <HStack gap="md" align="center" className="castle-template__header">
-                    <Typography variant="h2" className="header__name">{resolved.name}</Typography>
-                    {resolved.level && (
-                        <Typography variant="small" className="header__level">Level {resolved.level}</Typography>
+                    <Typography variant="h2" className="header__name">{name}</Typography>
+                    {level != null && (
+                        <Typography variant="small" className="header__level">Level {level}</Typography>
                     )}
-                    {resolved.owner && (
-                        <Typography variant="small" color="muted" className="header__owner">{resolved.owner}</Typography>
+                    {owner && (
+                        <Typography variant="small" color="muted" className="header__owner">{owner}</Typography>
                     )}
                 </HStack>
             )}
 
             <GameCanvas3D
-                tiles={resolved.tiles}
-                units={resolved.units}
-                features={resolved.features}
+                tiles={tiles}
+                units={units}
+                features={features}
                 cameraMode={cameraMode}
                 showGrid={showGrid}
                 showCoordinates={false}
@@ -141,10 +130,10 @@ export function GameCanvas3DCastleTemplate({
             />
 
             {/* Garrison info overlay */}
-            {resolved.units.length > 0 && (
+            {units.length > 0 && (
                 <HStack gap="sm" align="center" className="castle-template__garrison-info">
                     <Typography variant="small" className="garrison-info__label">Garrison:</Typography>
-                    <Typography variant="small" weight="bold" className="garrison-info__count">{resolved.units.length} units</Typography>
+                    <Typography variant="small" weight="bold" className="garrison-info__count">{units.length} units</Typography>
                 </HStack>
             )}
         </VStack>

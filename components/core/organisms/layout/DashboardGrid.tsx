@@ -10,7 +10,7 @@ import React from "react";
 import { cn } from "../../../../lib/cn";
 import { Box } from "../../atoms/Box";
 import { useTranslate } from "../../../../hooks/useTranslate";
-import type { EntityDisplayProps } from "../types";
+import type { DisplayStateProps } from "../types";
 
 export interface DashboardGridCell {
   /** Optional unique cell ID */
@@ -25,7 +25,7 @@ export interface DashboardGridCell {
   [key: string]: unknown;
 }
 
-export interface DashboardGridProps extends EntityDisplayProps {
+export interface DashboardGridProps extends DisplayStateProps {
   /** Number of columns */
   columns?: 2 | 3 | 4;
   /** Gap between cells */

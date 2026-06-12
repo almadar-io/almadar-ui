@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import React, { useState } from 'react';
-import { RichBlockEditor, type RichBlock } from './RichBlockEditor';
+import { RichBlockEditor } from './RichBlockEditor';
+import type { EntityRow } from '@almadar/core';
 import { VStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 import { Box } from '../atoms/Box';
@@ -18,7 +19,7 @@ const meta: Meta<typeof RichBlockEditor> = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const sampleBlocks: RichBlock[] = [
+const sampleBlocks: EntityRow[] = [
   {
     id: 'b1',
     type: 'heading-1',
@@ -87,7 +88,7 @@ export const ReadOnly: Story = {
 };
 
 function InteractiveEditor() {
-  const [blocks, setBlocks] = useState<RichBlock[]>([
+  const [blocks, setBlocks] = useState<EntityRow[]>([
     {
       id: 'i1',
       type: 'heading-2',
@@ -110,7 +111,7 @@ function InteractiveEditor() {
 
   return (
     <VStack gap="md">
-      <RichBlockEditor initialBlocks={blocks} onChange={setBlocks} />
+      <RichBlockEditor initialBlocks={blocks} onChange={(next) => setBlocks(next as EntityRow[])} />
       <Box className="rounded-md border border-border bg-muted/40 p-3">
         <Typography variant="caption" className="text-muted-foreground">
           Block count: {blocks.length} — Types:{' '}

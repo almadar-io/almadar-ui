@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { SequencerBoard } from './SequencerBoard';
-import type { SequencerPuzzleEntity } from './SequencerBoard';
+import type { EntityRow } from '@almadar/core';
 import type { SlotItemData } from '../../TraitSlot';
 
 // =============================================================================
@@ -20,7 +20,7 @@ const CATEGORY_COLORS: Record<string, { bg: string; border: string }> = {
     item: { bg: 'rgba(34,197,94,0.2)', border: '#22c55e' },
 };
 
-const BASE_ENTITY: SequencerPuzzleEntity = {
+const BASE_ENTITY: EntityRow = {
     id: 'puzzle-1',
     title: 'Game/Organisms/Puzzles/SequencerBoard',
     description: 'Help Kekec find his way through the forest!',

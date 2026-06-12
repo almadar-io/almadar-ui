@@ -39,8 +39,9 @@ import { cn } from "../../../lib/cn";
 import { getNestedValue } from "../../../lib/getNestedValue";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
-import type { EntityDisplayProps } from "./types";
+import type { DisplayStateProps } from "./types";
 import { EntityDisplayEvents } from "./types";
+import type { EntityRow } from "@almadar/core";
 
 export type ListItem = {
   id: string;
@@ -129,7 +130,9 @@ function entityFieldsFromListItem(item: ListItem): EventPayload {
   return result;
 }
 
-export interface ListProps extends EntityDisplayProps {
+export interface ListProps extends DisplayStateProps {
+  /** Entity data (single record or collection). */
+  entity?: EntityRow | readonly EntityRow[];
   /** Entity type name for display */
   entityType?: string;
   selectable?: boolean;

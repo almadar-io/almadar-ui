@@ -22,15 +22,11 @@
 
  
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import type { EventEmit, EntityRow, FieldValue } from '@almadar/core';
+import type { EventEmit, EntityRow } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { VStack, HStack, Stack } from '../../core/atoms/Stack';
 import { LoadingState } from '../../core/molecules/LoadingState';
-// WorldMapBoard is a game-canvas visualization organism. WorldMapEntity
-// carries nested hex / hero arrays with non-primitive fields that don't
-// fit EntityRow. Takes its entity via a dedicated `entity` prop typed as
-// WorldMapEntity directly.
 import IsometricCanvas from './IsometricCanvas';
 import type {
     IsometricTile,
@@ -38,6 +34,7 @@ import type {
     IsometricFeature,
 } from './types/isometric';
 import type { ResolvedFrame } from './types/spriteAnimation';
+import { boardEntity, str, num, rows, vec2, type Vec2 } from './boardEntity';
 import { isoToScreen, TILE_WIDTH } from './utils/isometric';
 import type { UiError } from '../../core/atoms/types';
 
@@ -45,45 +42,24 @@ import type { UiError } from '../../core/atoms/types';
 // Types
 // =============================================================================
 
-/** A hero on the world map */
-export interface MapHero {
-    id: string;
-    name: string;
-    owner: 'player' | 'enemy' | string;
-    position: { x: number; y: number };
-    movement: number;
-    sprite?: string;
-    /** Optional sprite sheet for animation (null = use static sprite) */
-    spriteSheet?: {
-        se: string;
-        sw: string;
-        frameWidth: number;
-        frameHeight: number;
-    } | null;
-    level?: number;
-}
-
-/** A hex on the map */
-export type MapHex = {
-    x: number;
-    y: number;
-    terrain: string;
-    terrainSprite?: string;
-    feature?: string;
-    featureData?: Record<string, FieldValue | undefined>;
-    passable?: boolean;
+/** Manifest of asset base-url + per-kind sprite maps (UI value DTO). */
+type WorldMapAssetManifest = {
+    baseUrl?: string;
+    terrains?: Record<string, string>;
+    units?: Record<string, string>;
+    features?: Record<string, string>;
 };
 
-/** Context exposed to render-prop slots */
+/** Context exposed to render-prop slots. Hex / hero rows are `EntityRow`. */
 export type WorldMapSlotContext = {
     /** Currently hovered tile */
     hoveredTile: { x: number; y: number } | null;
-    /** Hex at the hovered tile */
-    hoveredHex: MapHex | null;
-    /** Hero at the hovered tile */
-    hoveredHero: MapHero | null;
-    /** Currently selected hero */
-    selectedHero: MapHero | null;
+    /** Hex row at the hovered tile */
+    hoveredHex: EntityRow | null;
+    /** Hero row at the hovered tile */
+    hoveredHero: EntityRow | null;
+    /** Currently selected hero row */
+    selectedHero: EntityRow | null;
     /** Valid move tiles for selected hero */
     validMoves: Array<{ x: number; y: number }>;
     /** Selects a hero */
@@ -94,21 +70,12 @@ export type WorldMapSlotContext = {
     scale: number;
 };
 
-/** Entity shape for the WorldMapBoard */
-export interface WorldMapEntity {
-    id: string;
-    hexes: MapHex[];
-    heroes: MapHero[];
-    features?: IsometricFeature[];
-    selectedHeroId?: string | null;
-    assetManifest?: {
-        baseUrl: string;
-        terrains?: Record<string, string>;
-        units?: Record<string, string>;
-        features?: Record<string, string>;
-    };
-    backgroundImage?: string;
-}
+// ── Hex / hero field accessors (read off `EntityRow`) ─────────────────────────
+
+function heroPosition(h: EntityRow): Vec2 { return vec2(h.position); }
+function heroOwner(h: EntityRow): string { return str(h.owner); }
+function heroMovement(h: EntityRow): number { return num(h.movement); }
+function hexPassable(h: EntityRow): boolean { return h.passable !== false; }
 
 /** Event Contract:
  *  Emits: UI:HERO_SELECT
@@ -124,9 +91,9 @@ export interface WorldMapBoardProps {
     isLoading?: boolean;
     /** Error state */
     error?: UiError | null;
-    /** World map entity data. Also accepts the canonical `EntityRow` the
-     *  compiler binds; the component narrows to `WorldMapEntity` below. */
-    entity?: WorldMapEntity | EntityRow | readonly (WorldMapEntity | EntityRow)[];
+    /** World-map board-state entity (single row or array). The board reads
+     *  `hexes` / `heroes` / `features` arrays + `selectedHeroId` off it. */
+    entity?: EntityRow | readonly EntityRow[];
 
     /** Canvas render scale */
     scale?: number;
@@ -145,7 +112,7 @@ export interface WorldMapBoardProps {
     /** Emits UI:{battleEncounterEvent} with { attackerId, defenderId } */
     battleEncounterEvent?: EventEmit<{ attackerId: string; defenderId: string }>;
     /** Emits UI:{featureEnterEvent} with { heroId, feature, hex } */
-    featureEnterEvent?: EventEmit<{ heroId: string; feature: string; hex: MapHex }>;
+    featureEnterEvent?: EventEmit<{ heroId: string; feature: string; hex: EntityRow }>;
     /** Emits UI:{tileClickEvent} with { x, y } */
     tileClickEvent?: EventEmit<{ x: number; y: number }>;
 
@@ -165,7 +132,7 @@ export interface WorldMapBoardProps {
     /** Called when hero clicks an enemy hero tile */
     onBattleEncounter?: (attackerId: string, defenderId: string) => void;
     /** Called when hero enters a feature hex (castle, resource, etc.) */
-    onFeatureEnter?: (heroId: string, hex: MapHex) => void;
+    onFeatureEnter?: (heroId: string, hex: EntityRow) => void;
 
     // -- Canvas pass-through --
     /** Override for the diamond-top Y offset within tile sprites (default: 374). */
@@ -222,44 +189,44 @@ export function WorldMapBoard({
 }: WorldMapBoardProps): React.JSX.Element {
     const eventBus = useEventBus();
 
-    // Resolve entity (handles undefined, array, or single object)
-    const resolved = (Array.isArray(entity) ? entity[0] : entity) as WorldMapEntity | undefined;
-    const hexes = resolved?.hexes ?? [];
-    const heroes = resolved?.heroes ?? [];
-    const features = resolved?.features ?? [];
-    const selectedHeroId = resolved?.selectedHeroId;
-    const assetManifest = resolved?.assetManifest;
-    const backgroundImage = resolved?.backgroundImage;
+    // Resolve the single board-state row (handles undefined, array, or row)
+    const resolved = boardEntity(entity);
+    const hexes = rows(resolved?.hexes);
+    const heroes = rows(resolved?.heroes);
+    const features = (Array.isArray(resolved?.features) ? resolved.features : []) as unknown as IsometricFeature[];
+    const selectedHeroId = (resolved?.selectedHeroId as string | null | undefined) ?? null;
+    const assetManifest = resolved?.assetManifest as WorldMapAssetManifest | undefined;
+    const backgroundImage = resolved?.backgroundImage as string | undefined;
 
     const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
 
     // -- Selected hero --------------------------------------------------------
     const selectedHero = useMemo(
-        () => heroes.find((h: MapHero) => h.id === selectedHeroId) ?? null,
+        () => heroes.find(h => str(h.id) === selectedHeroId) ?? null,
         [heroes, selectedHeroId],
     );
 
     // -- Convert hexes -> IsometricTile[] -------------------------------------
     const tiles: IsometricTile[] = useMemo(
-        () => hexes.map((hex: MapHex) => ({
-            x: hex.x,
-            y: hex.y,
-            terrain: hex.terrain,
-            terrainSprite: hex.terrainSprite,
+        () => hexes.map(hex => ({
+            x: num(hex.x),
+            y: num(hex.y),
+            terrain: str(hex.terrain),
+            terrainSprite: hex.terrainSprite == null ? undefined : str(hex.terrainSprite),
         })),
         [hexes],
     );
 
     // -- Convert heroes -> IsometricUnit[] ------------------------------------
     const baseUnits: IsometricUnit[] = useMemo(
-        () => heroes.map((hero: MapHero) => ({
-            id: hero.id,
-            position: hero.position,
-            name: hero.name,
-            team: (hero.owner === 'enemy' ? 'enemy' : 'player') as 'player' | 'enemy',
+        () => heroes.map(hero => ({
+            id: str(hero.id),
+            position: heroPosition(hero),
+            name: str(hero.name),
+            team: (heroOwner(hero) === 'enemy' ? 'enemy' : 'player') as 'player' | 'enemy',
             health: 100,
             maxHealth: 100,
-            sprite: hero.sprite,
+            sprite: hero.sprite == null ? undefined : str(hero.sprite),
         })),
         [heroes],
     );
@@ -311,37 +278,48 @@ export function WorldMapBoard({
     const isoUnits: IsometricUnit[] = useMemo(() => {
         if (movingPositions.size === 0) return baseUnits;
         return baseUnits.map(u => {
-            const pos = movingPositions.get(u.id);
+            const pos = u.id == null ? undefined : movingPositions.get(u.id);
             return pos ? { ...u, position: pos } : u;
         });
     }, [baseUnits, movingPositions]);
 
     // -- Valid moves ----------------------------------------------------------
     const validMoves = useMemo(() => {
-        if (!selectedHero || selectedHero.movement <= 0) return [];
+        if (!selectedHero || heroMovement(selectedHero) <= 0) return [];
+        const sp = heroPosition(selectedHero);
+        const sOwner = heroOwner(selectedHero);
+        const range = heroMovement(selectedHero);
         const moves: Array<{ x: number; y: number }> = [];
-        hexes.forEach((hex: MapHex) => {
-            if (hex.passable === false) return;
-            if (hex.x === selectedHero.position.x && hex.y === selectedHero.position.y) return;
-            if (!isInRange(selectedHero.position, { x: hex.x, y: hex.y }, selectedHero.movement)) return;
+        hexes.forEach(hex => {
+            const hx = num(hex.x);
+            const hy = num(hex.y);
+            if (!hexPassable(hex)) return;
+            if (hx === sp.x && hy === sp.y) return;
+            if (!isInRange(sp, { x: hx, y: hy }, range)) return;
             // Don't overlap friendly heroes
-            if (heroes.some((h: MapHero) => h.position.x === hex.x && h.position.y === hex.y && h.owner === selectedHero.owner)) return;
-            moves.push({ x: hex.x, y: hex.y });
+            if (heroes.some(h => {
+                const hp = heroPosition(h);
+                return hp.x === hx && hp.y === hy && heroOwner(h) === sOwner;
+            })) return;
+            moves.push({ x: hx, y: hy });
         });
         return moves;
     }, [selectedHero, hexes, heroes, isInRange]);
 
     // -- Attack targets -------------------------------------------------------
     const attackTargets = useMemo(() => {
-        if (!selectedHero || selectedHero.movement <= 0) return [];
+        if (!selectedHero || heroMovement(selectedHero) <= 0) return [];
+        const sp = heroPosition(selectedHero);
+        const sOwner = heroOwner(selectedHero);
+        const range = heroMovement(selectedHero);
         return heroes
-            .filter((h: MapHero) => h.owner !== selectedHero.owner)
-            .filter((h: MapHero) => isInRange(selectedHero.position, h.position, selectedHero.movement))
-            .map((h: MapHero) => h.position);
+            .filter(h => heroOwner(h) !== sOwner)
+            .filter(h => isInRange(sp, heroPosition(h), range))
+            .map(h => heroPosition(h));
     }, [selectedHero, heroes, isInRange]);
 
     // -- Tile-to-screen helper ------------------------------------------------
-    const maxY = Math.max(...hexes.map((h: MapHex) => h.y), 0);
+    const maxY = Math.max(...hexes.map(h => num(h.y)), 0);
     const baseOffsetX = (maxY + 1) * (TILE_WIDTH * scale / 2);
     const tileToScreen = useCallback(
         (tx: number, ty: number) => isoToScreen(tx, ty, scale, baseOffsetX),
@@ -350,18 +328,21 @@ export function WorldMapBoard({
 
     // -- Hovered info ---------------------------------------------------------
     const hoveredHex = useMemo(
-        () => hoveredTile ? hexes.find((h: MapHex) => h.x === hoveredTile.x && h.y === hoveredTile.y) ?? null : null,
+        () => hoveredTile ? hexes.find(h => num(h.x) === hoveredTile.x && num(h.y) === hoveredTile.y) ?? null : null,
         [hoveredTile, hexes],
     );
     const hoveredHero = useMemo(
-        () => hoveredTile ? heroes.find((h: MapHero) => h.position.x === hoveredTile.x && h.position.y === hoveredTile.y) ?? null : null,
+        () => hoveredTile ? heroes.find(h => {
+            const hp = heroPosition(h);
+            return hp.x === hoveredTile.x && hp.y === hoveredTile.y;
+        }) ?? null : null,
         [hoveredTile, heroes],
     );
 
     // -- Handle tile click ----------------------------------------------------
     const handleTileClick = useCallback((x: number, y: number) => {
         if (movementAnimRef.current) return;
-        const hex = hexes.find((h: MapHex) => h.x === x && h.y === y);
+        const hex = hexes.find(h => num(h.x) === x && num(h.y) === y);
         if (!hex) return;
 
         // Emit declarative tile click event
@@ -370,15 +351,17 @@ export function WorldMapBoard({
         }
 
         if (selectedHero && validMoves.some(m => m.x === x && m.y === y)) {
-            startMoveAnimation(selectedHero.id, { ...selectedHero.position }, { x, y }, () => {
-                onHeroMove?.(selectedHero.id, x, y);
+            const heroId = str(selectedHero.id);
+            startMoveAnimation(heroId, { ...heroPosition(selectedHero) }, { x, y }, () => {
+                onHeroMove?.(heroId, x, y);
                 if (heroMoveEvent) {
-                    eventBus.emit(`UI:${heroMoveEvent}`, { heroId: selectedHero.id, toX: x, toY: y });
+                    eventBus.emit(`UI:${heroMoveEvent}`, { heroId, toX: x, toY: y });
                 }
-                if (hex.feature && hex.feature !== 'none') {
-                    onFeatureEnter?.(selectedHero.id, hex);
+                const feature = str(hex.feature);
+                if (feature && feature !== 'none') {
+                    onFeatureEnter?.(heroId, hex);
                     if (featureEnterEvent) {
-                        eventBus.emit(`UI:${featureEnterEvent}`, { heroId: selectedHero.id, feature: hex.feature, hex });
+                        eventBus.emit(`UI:${featureEnterEvent}`, { heroId, feature, hex });
                     }
                 }
             });
@@ -386,19 +369,24 @@ export function WorldMapBoard({
         }
 
         // Check for battle encounter
-        const enemy = heroes.find((h: MapHero) => h.position.x === x && h.position.y === y && h.owner === 'enemy');
+        const enemy = heroes.find(h => {
+            const hp = heroPosition(h);
+            return hp.x === x && hp.y === y && heroOwner(h) === 'enemy';
+        });
         if (selectedHero && enemy && attackTargets.some((t: { x: number; y: number }) => t.x === x && t.y === y)) {
-            onBattleEncounter?.(selectedHero.id, enemy.id);
+            const attackerId = str(selectedHero.id);
+            const defenderId = str(enemy.id);
+            onBattleEncounter?.(attackerId, defenderId);
             if (battleEncounterEvent) {
-                eventBus.emit(`UI:${battleEncounterEvent}`, { attackerId: selectedHero.id, defenderId: enemy.id });
+                eventBus.emit(`UI:${battleEncounterEvent}`, { attackerId, defenderId });
             }
         }
     }, [hexes, heroes, selectedHero, validMoves, attackTargets, startMoveAnimation, onHeroMove, onFeatureEnter, onBattleEncounter, eventBus, tileClickEvent, heroMoveEvent, featureEnterEvent, battleEncounterEvent]);
 
     // -- Handle unit click ----------------------------------------------------
     const handleUnitClick = useCallback((unitId: string) => {
-        const hero = heroes.find((h: MapHero) => h.id === unitId);
-        if (hero && (hero.owner === 'player' || allowMoveAllHeroes)) {
+        const hero = heroes.find(h => str(h.id) === unitId);
+        if (hero && (heroOwner(hero) === 'player' || allowMoveAllHeroes)) {
             onHeroSelect?.(unitId);
             if (heroSelectEvent) {
                 eventBus.emit(`UI:${heroSelectEvent}`, { heroId: unitId });

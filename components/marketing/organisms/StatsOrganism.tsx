@@ -16,10 +16,11 @@ import { useTranslate } from '../../../hooks/useTranslate';
 import { StatsGrid } from '../molecules/StatsGrid';
 import { LoadingState } from '../../core/molecules/LoadingState';
 import { ErrorState } from '../../core/molecules/ErrorState';
-import type { EntityDisplayProps } from '../../core/organisms/types';
-import type { StatEntity } from '../../core/organisms/marketing-types';
+import type { EntityRow, EntityWith } from '@almadar/core';
+import type { DisplayStateProps } from '../../core/organisms/types';
 
-export interface StatsOrganismProps extends EntityDisplayProps<StatEntity> {
+export interface StatsOrganismProps extends DisplayStateProps {
+  entity?: EntityWith<'value' | 'label'> | readonly EntityWith<'value' | 'label'>[];
   columns?: 2 | 3 | 4 | 6;
 }
 
@@ -32,12 +33,12 @@ export const StatsOrganism: React.FC<StatsOrganismProps> = ({
 }) => {
   const { t } = useTranslate();
 
-  const items = useMemo(
+  const items = useMemo<readonly EntityRow[]>(
     () =>
       Array.isArray(entity)
         ? entity
         : entity && typeof entity === 'object'
-          ? [entity as StatEntity]
+          ? [entity as EntityRow]
           : [],
     [entity],
   );
@@ -51,8 +52,8 @@ export const StatsOrganism: React.FC<StatsOrganismProps> = ({
   }
 
   const stats = items.map((item) => ({
-    value: item.value,
-    label: item.label,
+    value: String(item.value ?? ''),
+    label: String(item.label ?? ''),
   }));
 
   return (

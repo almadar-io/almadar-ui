@@ -17,25 +17,27 @@ import { ContentRenderer } from '../../../core/molecules/ContentRenderer';
 import { JazariStateMachine } from '../../../core/molecules/JazariStateMachine';
 import { useTranslate } from '../../../../hooks/useTranslate';
 import { cn } from '../../../../lib/cn';
-// Internal rendering component — takes typed content-model props directly
-// (BookData / BookPart / BookChapter), not schema entity data. Does not
-// extend EntityDisplayProps; its parent (BookViewer) owns the entity-prop
-// contract.
-import type { BookChapter } from '../../../core/organisms/book/types';
+import type { EntityRow, OrbitalSchema } from '@almadar/core';
 
 export interface BookChapterViewProps {
   /** Additional CSS classes */
   className?: string;
-  chapter: BookChapter;
+  /** Chapter row (`EntityRow` carrying title/content). */
+  chapter: EntityRow;
+  /** Embedded orbital diagram — passed SEPARATELY (off the entity boundary). */
+  orbitalSchema?: OrbitalSchema;
   direction?: 'rtl' | 'ltr';
 }
 
 export const BookChapterView: React.FC<BookChapterViewProps> = ({
   chapter,
+  orbitalSchema,
   direction,
   className,
 }) => {
   const { t: _t } = useTranslate();
+  const title = String(chapter.title ?? '');
+  const content = String(chapter.content ?? '');
 
   return (
     <VStack
@@ -44,21 +46,21 @@ export const BookChapterView: React.FC<BookChapterViewProps> = ({
       style={{ direction }}
     >
       <Typography variant="h1" className="text-3xl font-bold">
-        {chapter.title}
+        {title}
       </Typography>
 
       <Divider />
 
-      {!!chapter.orbitalSchema && (
+      {!!orbitalSchema && (
         <ScaledDiagram>
           <JazariStateMachine
-            schema={chapter.orbitalSchema}
+            schema={orbitalSchema}
             direction={direction}
           />
         </ScaledDiagram>
       )}
 
-      <ContentRenderer content={chapter.content} direction={direction} />
+      <ContentRenderer content={content} direction={direction} />
     </VStack>
   );
 };

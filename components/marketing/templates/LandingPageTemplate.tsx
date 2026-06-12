@@ -22,28 +22,63 @@ import { CTABanner } from '../molecules/CTABanner';
 import { CommunityLinks } from '../molecules/CommunityLinks';
 import { SectionHeader } from '../../core/atoms/SectionHeader';
 import type { TemplateProps } from '../../core/templates/types';
-import type {
-  MarketingAction,
-  HeroEntity,
-  FeatureEntity,
-  StatEntity,
-  StepEntity,
-  ShowcaseEntity,
-} from '../../core/organisms/marketing-types';
+import type { LinkAction, ImageSource } from '../../core/atoms/types';
 
-export type { HeroEntity, FeatureEntity, StatEntity, StepEntity, ShowcaseEntity };
+interface MarketingHero {
+  id?: string;
+  tag?: string;
+  title: string;
+  titleAccent?: string;
+  subtitle: string;
+  primaryAction?: LinkAction;
+  secondaryAction?: LinkAction;
+  installCommand?: string;
+  image?: ImageSource;
+  imagePosition?: 'below' | 'right' | 'background';
+  background?: 'dark' | 'gradient' | 'subtle';
+}
+
+interface FeatureContent {
+  id?: string;
+  icon?: string;
+  title: string;
+  description: string;
+  href?: string;
+}
+
+interface StatContent {
+  id?: string;
+  value: string;
+  label: string;
+}
+
+interface StepContent {
+  id?: string;
+  title: string;
+  description: string;
+  icon?: string;
+}
+
+interface ShowcaseContent {
+  id: string;
+  title: string;
+  description?: string;
+  image: ImageSource;
+  href?: string;
+  badge?: string;
+}
 
 export interface LandingPageEntity {
   id: string;
-  hero: HeroEntity;
-  features: FeatureEntity[];
-  stats?: StatEntity[];
-  steps?: StepEntity[];
-  showcase?: ShowcaseEntity[];
+  hero: MarketingHero;
+  features: FeatureContent[];
+  stats?: StatContent[];
+  steps?: StepContent[];
+  showcase?: ShowcaseContent[];
   ctaTitle: string;
   ctaSubtitle?: string;
-  ctaPrimaryAction?: MarketingAction;
-  ctaSecondaryAction?: MarketingAction;
+  ctaPrimaryAction?: LinkAction;
+  ctaSecondaryAction?: LinkAction;
   communityGithub?: string;
   communityDiscord?: string;
 }

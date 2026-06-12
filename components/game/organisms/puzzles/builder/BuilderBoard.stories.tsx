@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { BuilderBoard, type BuilderPuzzleEntity } from './BuilderBoard';
+import { BuilderBoard } from './BuilderBoard';
+import type { EntityRow } from '@almadar/core';
 
 const meta: Meta<typeof BuilderBoard> = {
     title: 'Game/Organisms/Puzzles/BuilderBoard',
@@ -8,7 +9,7 @@ const meta: Meta<typeof BuilderBoard> = {
 export default meta;
 type Story = StoryObj<typeof BuilderBoard>;
 
-const sampleEntity: BuilderPuzzleEntity = {
+const sampleEntity: EntityRow = {
     id: 'circuit-1',
     title: 'Build the Circuit',
     description: 'Place each component in the correct slot to complete the circuit.',
