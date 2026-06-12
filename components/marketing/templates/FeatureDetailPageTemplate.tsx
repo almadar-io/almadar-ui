@@ -12,26 +12,33 @@ import { HeroSection } from '../molecules/HeroSection';
 import { SplitSection } from '../molecules/SplitSection';
 import { CTABanner } from '../molecules/CTABanner';
 import type { TemplateProps } from '../../core/templates/types';
-import type {
-  MarketingAction,
-  MarketingImage,
-  HeroEntity,
-} from '../../core/organisms/marketing-types';
+import type { LinkAction, ImageSource } from '../../core/atoms/types';
+
+interface FeatureDetailHero {
+  id?: string;
+  tag?: string;
+  title: string;
+  titleAccent?: string;
+  subtitle: string;
+  primaryAction?: LinkAction;
+  secondaryAction?: LinkAction;
+  background?: 'dark' | 'gradient' | 'subtle';
+}
 
 export interface FeatureDetailSection {
   title: string;
   description: string;
   bullets?: string[];
-  image?: MarketingImage;
+  image?: ImageSource;
   imagePosition?: 'left' | 'right';
 }
 
 export interface FeatureDetailPageEntity {
   id: string;
-  hero: HeroEntity;
+  hero: FeatureDetailHero;
   sections: FeatureDetailSection[];
   ctaTitle?: string;
-  ctaAction?: MarketingAction;
+  ctaAction?: LinkAction;
 }
 
 export interface FeatureDetailPageTemplateProps extends TemplateProps<FeatureDetailPageEntity> {}

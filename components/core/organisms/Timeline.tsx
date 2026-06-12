@@ -21,13 +21,12 @@ import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
 import { useTranslate } from "../../../hooks/useTranslate";
-// Timeline carries `icon?: LucideIcon` on TimelineItem (a React component)
-// which doesn't fit EntityRow's primitive-field constraint, so the organism
-// doesn't inherit EntityDisplayProps directly. Schema entity data arrives
+// Timeline carries `icon?: LucideIcon` on TimelineItem (a React component),
+// which is the separate non-entity item channel. Schema entity data arrives
 // via the `entity` prop typed against @almadar/core's EntityRow, and is
 // normalised into TimelineItems (icon-less) at render time; UI-shaped
 // TimelineItems come through the dedicated `items` prop.
-import type { EntityCollection, EntityRow, EventPayload } from "@almadar/core";
+import type { EntityRow, EventPayload } from "@almadar/core";
 import type { LucideIcon } from "lucide-react";
 import { Circle, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import type { UiError } from '../atoms/types';
@@ -81,7 +80,7 @@ export interface TimelineProps {
      * TimelineItem fields (`icon`, callbacks) cannot round-trip through the
      * event bus, so decorative stories that need them pass `items` directly.
      */
-    entity?: EntityCollection<EntityRow>;
+    entity?: readonly EntityRow[];
     /** Timeline title */
     title?: string;
     /** Timeline items */

@@ -21,10 +21,11 @@ import { SimpleGrid } from '../molecules/SimpleGrid';
 import { ShowcaseCard } from '../../marketing/molecules/ShowcaseCard';
 import { LoadingState } from '../molecules/LoadingState';
 import { ErrorState } from '../molecules/ErrorState';
-import type { EntityDisplayProps } from './types';
-import type { ShowcaseEntity } from './marketing-types';
+import type { EntityRow } from '@almadar/core';
+import type { DisplayStateProps } from './types';
 
-export interface ShowcaseOrganismProps extends EntityDisplayProps<ShowcaseEntity> {
+export interface ShowcaseOrganismProps extends DisplayStateProps {
+  entity?: EntityRow | readonly EntityRow[];
   columns?: 2 | 3 | 4;
   heading?: string;
   subtitle?: string;
@@ -42,12 +43,12 @@ export const ShowcaseOrganism: React.FC<ShowcaseOrganismProps> = ({
   const eventBus = useEventBus();
   const { t } = useTranslate();
 
-  const items = useMemo(
+  const items = useMemo<readonly EntityRow[]>(
     () =>
       Array.isArray(entity)
         ? entity
         : entity && typeof entity === 'object'
-          ? [entity as ShowcaseEntity]
+          ? [entity as EntityRow]
           : [],
     [entity],
   );
@@ -77,17 +78,20 @@ export const ShowcaseOrganism: React.FC<ShowcaseOrganismProps> = ({
         </VStack>
       )}
       <SimpleGrid cols={columns} gap="lg">
-        {items.map((item) => (
-          <ShowcaseCard
-            key={item.id}
-            title={item.title}
-            description={item.description}
-            image={item.image}
-            href={item.href}
-            badge={item.badge}
-            accentColor={item.accentColor}
-          />
-        ))}
+        {items.map((item) => {
+          const imageRaw = item.image as { src?: string; alt?: string } | undefined;
+          return (
+            <ShowcaseCard
+              key={String(item.id ?? '')}
+              title={String(item.title ?? '')}
+              description={item.description != null ? String(item.description) : undefined}
+              image={{ src: String(imageRaw?.src ?? ''), alt: String(imageRaw?.alt ?? '') }}
+              href={item.href != null ? String(item.href) : undefined}
+              badge={item.badge != null ? String(item.badge) : undefined}
+              accentColor={item.accentColor != null ? String(item.accentColor) : undefined}
+            />
+          );
+        })}
       </SimpleGrid>
     </VStack>
   );

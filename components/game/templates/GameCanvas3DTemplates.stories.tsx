@@ -7,9 +7,10 @@
  */
 
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { GameCanvas3DWorldMapTemplate, type WorldMap3DEntity } from './GameCanvas3DWorldMapTemplate';
-import { GameCanvas3DBattleTemplate, type Battle3DEntity } from './GameCanvas3DBattleTemplate';
-import { GameCanvas3DCastleTemplate, type Castle3DEntity } from './GameCanvas3DCastleTemplate';
+import { GameCanvas3DWorldMapTemplate } from './GameCanvas3DWorldMapTemplate';
+import { GameCanvas3DBattleTemplate } from './GameCanvas3DBattleTemplate';
+import { GameCanvas3DCastleTemplate } from './GameCanvas3DCastleTemplate';
+import type { EntityRow } from '@almadar/core';
 
 // =============================================================================
 // Sample Data Generators
@@ -59,7 +60,7 @@ function castleTerrain(x: number, z: number): string {
 // Sample Entities
 // =============================================================================
 
-const worldMapEntity: WorldMap3DEntity = {
+const worldMapEntity: EntityRow = {
     id: 'world-1',
     name: 'Kingdom of Aldoria',
     tiles: generateTiles(12, 12, worldMapTerrain),
@@ -76,7 +77,7 @@ const worldMapEntity: WorldMap3DEntity = {
     ],
 };
 
-const battleEntity: Battle3DEntity = {
+const battleEntity: EntityRow = {
     id: 'battle-1',
     tiles: generateTiles(8, 8, battleTerrain),
     units: [
@@ -95,7 +96,7 @@ const battleEntity: Battle3DEntity = {
     round: 3,
 };
 
-const castleEntity: Castle3DEntity = {
+const castleEntity: EntityRow = {
     id: 'castle-1',
     name: 'Stormwind Keep',
     level: 5,

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { DebuggerBoard, type DebuggerPuzzleEntity } from './DebuggerBoard';
+import { DebuggerBoard } from './DebuggerBoard';
+import type { EntityRow } from '@almadar/core';
 
 const meta: Meta<typeof DebuggerBoard> = {
     title: 'Game/Organisms/Puzzles/DebuggerBoard',
@@ -8,7 +9,7 @@ const meta: Meta<typeof DebuggerBoard> = {
 export default meta;
 type Story = StoryObj<typeof DebuggerBoard>;
 
-const sampleEntity: DebuggerPuzzleEntity = {
+const sampleEntity: EntityRow = {
     id: 'debug-1',
     title: 'Find the Bugs',
     description: 'This function has 2 bugs. Click on the lines that contain errors.',

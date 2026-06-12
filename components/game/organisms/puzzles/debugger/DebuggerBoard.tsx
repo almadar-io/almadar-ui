@@ -16,9 +16,11 @@ import type { EventEmit, EntityRow } from '@almadar/core';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../core/atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
-import type { EntityDisplayProps } from '../../../../core/organisms/types';
+import type { DisplayStateProps } from '../../../../core/organisms/types';
+import { boardEntity, str, num } from '../../boardEntity';
 import { CheckCircle, XCircle, RotateCcw, Bug, Send } from 'lucide-react';
 
+/** A reviewable code line (UI value DTO read off the entity). */
 export interface DebuggerLine {
   id: string;
   content: string;
@@ -26,29 +28,10 @@ export interface DebuggerLine {
   explanation?: string;
 }
 
-export interface DebuggerPuzzleEntity {
-  id: string;
-  title: string;
-  description: string;
-  language?: string;
-  lines: DebuggerLine[];
-  /** How many bugs the player should find */
-  bugCount: number;
-  successMessage?: string;
-  failMessage?: string;
-  hint?: string;
-  /** Header image URL displayed above the title */
-  headerImage?: string;
-  /** Visual theme overrides */
-  theme?: { background?: string; accentColor?: string };
-}
-
-export interface DebuggerBoardProps extends Omit<EntityDisplayProps, 'entity'> {
-  // The compiler binds the generic `EntityRow`, so the inlet accepts it (and
-  // arrays) as union members; the component narrows to its curated
-  // `DebuggerPuzzleEntity` read-shape below (a valid union-narrow) and renders
-  // nothing until a puzzle entity is present.
-  entity?: DebuggerPuzzleEntity | EntityRow | readonly (DebuggerPuzzleEntity | EntityRow)[];
+export interface DebuggerBoardProps extends DisplayStateProps {
+  /** Puzzle board-state entity (single row or array). The board reads
+   *  `lines` array plus title/description/bugCount/hint off the row. */
+  entity?: EntityRow | readonly EntityRow[];
   completeEvent?: EventEmit<{ success: boolean; attempts: number }>;
 }
 
@@ -59,7 +42,7 @@ export function DebuggerBoard({
 }: DebuggerBoardProps): React.JSX.Element | null {
   const { emit } = useEventBus();
   const { t } = useTranslate();
-  const resolved = (Array.isArray(entity) ? entity[0] : entity) as DebuggerPuzzleEntity | undefined;
+  const resolved = boardEntity(entity);
 
   const [flaggedLines, setFlaggedLines] = useState<Set<string>>(new Set());
   const [headerError, setHeaderError] = useState(false);
@@ -80,7 +63,7 @@ export function DebuggerBoard({
     });
   };
 
-  const lines = resolved?.lines ?? [];
+  const lines = (Array.isArray(resolved?.lines) ? resolved.lines : []) as unknown as DebuggerLine[];
   const bugLines = lines.filter((l) => l.isBug);
   const correctFlags = lines.filter((l) => l.isBug && flaggedLines.has(l.id));
   const falseFlags = lines.filter((l) => !l.isBug && flaggedLines.has(l.id));
@@ -97,7 +80,7 @@ export function DebuggerBoard({
 
   const handleReset = () => {
     setSubmitted(false);
-    if (attempts >= 2 && resolved?.hint) {
+    if (attempts >= 2 && str(resolved?.hint)) {
       setShowHint(true);
     }
   };
@@ -111,22 +94,27 @@ export function DebuggerBoard({
 
   if (!resolved) return null;
 
+  const theme = (resolved.theme ?? undefined) as { background?: string; accentColor?: string } | undefined;
+  const themeBackground = theme?.background;
+  const headerImage = str(resolved.headerImage);
+  const hint = str(resolved.hint);
+
   return (
     <Box
       className={className}
       style={{
-        backgroundImage: resolved.theme?.background ? `url(${resolved.theme.background})` : undefined,
+        backgroundImage: themeBackground ? `url(${themeBackground})` : undefined,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
     >
       <VStack gap="lg" className="p-4">
         {/* Header image */}
-        {resolved.headerImage && !headerError ? (
+        {headerImage && !headerError ? (
           <Box className="w-full h-32 overflow-hidden rounded-container">
-            <img src={resolved.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
+            <img src={headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
           </Box>
-        ) : resolved.headerImage && headerError ? (
+        ) : headerImage && headerError ? (
           <Box className="w-full h-32 rounded-container bg-gradient-to-br from-muted to-accent opacity-60" />
         ) : null}
 
@@ -134,11 +122,11 @@ export function DebuggerBoard({
           <VStack gap="sm">
             <HStack gap="xs" align="center">
               <Icon icon={Bug} size="sm" />
-              <Typography variant="h4" weight="bold">{resolved.title}</Typography>
+              <Typography variant="h4" weight="bold">{str(resolved.title)}</Typography>
             </HStack>
-            <Typography variant="body">{resolved.description}</Typography>
+            <Typography variant="body">{str(resolved.description)}</Typography>
             <Typography variant="caption" className="text-muted-foreground">
-              {t('debugger.findBugs', { count: String(resolved.bugCount) })}
+              {t('debugger.findBugs', { count: String(num(resolved.bugCount)) })}
             </Typography>
           </VStack>
         </Card>
@@ -187,7 +175,7 @@ export function DebuggerBoard({
             <VStack gap="sm">
               <Typography variant="body" weight="bold">
                 {allCorrect
-                  ? (resolved.successMessage ?? t('debugger.allFound'))
+                  ? (str(resolved.successMessage) || t('debugger.allFound'))
                   : `${correctFlags.length}/${bugLines.length} ${t('debugger.bugsFound')}`}
               </Typography>
               {bugLines.map((line) => (
@@ -209,9 +197,9 @@ export function DebuggerBoard({
           </Card>
         )}
 
-        {showHint && resolved.hint && (
+        {showHint && hint && (
           <Card className="p-4 border-l-4 border-l-warning">
-            <Typography variant="body">{resolved.hint}</Typography>
+            <Typography variant="body">{hint}</Typography>
           </Card>
         )}
 

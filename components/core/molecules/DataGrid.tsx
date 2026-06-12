@@ -12,7 +12,7 @@
  * Uses atoms only internally: Box, VStack, HStack, Typography, Badge, Button, Icon.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import type { EntityRow, EventKey, EntityCollection } from '@almadar/core';
+import type { EntityRow, EventKey } from '@almadar/core';
 import type { ItemActionPayload, SelectionChangePayload } from '@almadar/patterns';
 import { cn } from '../../../lib/cn';
 import { createLogger } from '@almadar/logger';
@@ -73,22 +73,13 @@ export interface DataGridItemAction {
 
 // ── Props ────────────────────────────────────────────────────────────
 
-export interface DataGridProps<T extends EntityRow = EntityRow> extends DataDndProps {
+export interface DataGridProps extends DataDndProps {
   /**
-   * Schema entity data — single record or collection, typed against
-   * `@almadar/core`'s `EntityRow` so the narrow type declared on the
-   * emitting trait's `Event { data : [X] }` flows through to the prop
-   * without widening. The generic `T` lets consumers pass a narrower
-   * entity (e.g. `CartItem`) and have the `children` render function
-   * receive cards typed to that exact shape.
-   *
-   * Declared as the pattern's data INLET via `EntityCollection<T>` (the inlet
-   * half of the circuit, symmetric with the `EventKey` outlet props below):
-   * pattern-sync tags it `kind:"entity", cardinality:"collection"` so consumers
-   * bind the domain entity without name-matching the prop. Structurally still
-   * `T | readonly T[]` — see the brand's doc.
+   * Schema entity data — the collection of rows to render. pattern-sync tags
+   * it `kind:"entity", cardinality:"collection"` so consumers bind the domain
+   * entity without name-matching the prop.
    */
-  entity: EntityCollection<T>;
+  entity: readonly EntityRow[];
   /**
    * Field definitions for rendering each card. The pattern contract in
    * `@almadar/patterns` documents `columns` as the wire-format alias the
@@ -127,16 +118,16 @@ export interface DataGridProps<T extends EntityRow = EntityRow> extends DataDndP
   loadMoreEvent?: EventKey;
   /** Whether more items are available for infinite scroll */
   hasMore?: boolean;
-  /** Render prop for custom per-card content, typed to the grid's entity
-   *  shape `T`. When provided, `fields` and `itemActions` are ignored. */
-  children?: (item: T, index: number) => React.ReactNode;
+  /** Render prop for custom per-card content. When provided, `fields` and
+   *  `itemActions` are ignored. */
+  children?: (item: EntityRow, index: number) => React.ReactNode;
   /**
    * Per-item render function (schema-level alias for children render prop).
    * In .orb schemas: ["fn", "item", { pattern tree with @item.field bindings }]
    * The compiler converts this to the children render prop.
    * @deprecated Use children render prop in React code. This prop exists for pattern registry sync.
    */
-  renderItem?: (item: T, index: number) => React.ReactNode;
+  renderItem?: (item: EntityRow, index: number) => React.ReactNode;
   /** Max items to show before "Show More" button. Defaults to 0 (disabled). */
   pageSize?: number;
   /**
@@ -225,7 +216,7 @@ const lookStyles: Record<NonNullable<DataGridProps['look']>, string> = {
   'card-rows': '[&>*]:shadow-elevation-card [&>*]:rounded-container [&>*]:border [&>*]:border-border [&>*]:p-card-md',
 };
 
-export function DataGrid<T extends EntityRow = EntityRow>({
+export function DataGrid({
   entity,
   fields,
   columns,
@@ -256,7 +247,7 @@ export function DataGrid<T extends EntityRow = EntityRow>({
   dndItemIdField,
   dndRoot,
   look = 'dense',
-}: DataGridProps<T>) {
+}: DataGridProps) {
   const eventBus = useEventBus();
   const { t } = useTranslate();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -269,7 +260,7 @@ export function DataGrid<T extends EntityRow = EntityRow>({
 
   const allDataRaw = Array.isArray(entity) ? entity : entity ? [entity] : [];
   const dnd = useDataDnd({
-    items: allDataRaw as readonly T[],
+    items: allDataRaw as readonly EntityRow[],
     layout: 'grid',
     dragGroup,
     accepts,
@@ -458,7 +449,7 @@ export function DataGrid<T extends EntityRow = EntityRow>({
                 data-entity-id={id}
                 className={cn(isSelected && 'ring-2 ring-primary rounded-lg')}
               >
-                {children(itemData as T, index)}
+                {children(itemData as EntityRow, index)}
               </Box>
             );
           }

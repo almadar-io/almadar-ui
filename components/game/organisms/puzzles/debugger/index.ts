@@ -1,2 +1,2 @@
 export { DebuggerBoard } from './DebuggerBoard';
-export type { DebuggerBoardProps, DebuggerPuzzleEntity, DebuggerLine } from './DebuggerBoard';
+export type { DebuggerBoardProps, DebuggerLine } from './DebuggerBoard';

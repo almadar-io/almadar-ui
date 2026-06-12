@@ -16,16 +16,13 @@ import { Box } from '../../../core/atoms/Box';
 import { Badge } from '../../../core/atoms/Badge';
 import { useTranslate } from '../../../../hooks/useTranslate';
 import { cn } from '../../../../lib/cn';
-// Internal rendering component — takes typed content-model props directly
-// (BookData / BookPart / BookChapter), not schema entity data. Does not
-// extend EntityDisplayProps; its parent (BookViewer) owns the entity-prop
-// contract.
-import type { BookPart } from '../../../core/organisms/book/types';
+import type { EntityRow } from '@almadar/core';
 
 export interface BookTableOfContentsProps {
   /** Additional CSS classes */
   className?: string;
-  parts: BookPart[];
+  /** Part rows (`EntityRow` carrying `title` + a `chapters: EntityRow[]`). */
+  parts: readonly EntityRow[];
   currentChapterId?: string;
   direction?: 'rtl' | 'ltr';
 }
@@ -48,27 +45,30 @@ export const BookTableOfContents: React.FC<BookTableOfContentsProps> = ({
         {t('book.tableOfContents')}
       </Typography>
 
-      {parts.map((part, partIdx) => (
+      {parts.map((part, partIdx) => {
+        const chapters = (Array.isArray(part.chapters) ? part.chapters : []) as readonly EntityRow[];
+        return (
         <VStack key={partIdx} gap="sm">
           <HStack gap="sm" align="center">
             <Badge variant="default" size="sm">
               {t('book.partNumber', { number: String(partIdx + 1) })}
             </Badge>
             <Typography variant="h3" className="font-semibold">
-              {part.title}
+              {String(part.title ?? '')}
             </Typography>
           </HStack>
 
           <VStack gap="xs" className={direction === 'rtl' ? 'pr-6' : 'pl-6'}>
-            {part.chapters.map((chapter) => {
-              const isCurrent = chapter.id === currentChapterId;
+            {chapters.map((chapter) => {
+              const id = chapter.id == null ? '' : String(chapter.id);
+              const isCurrent = id === currentChapterId;
               return (
                 <Button
-                  key={chapter.id}
+                  key={id}
                   variant="ghost"
                   size="sm"
                   action="BOOK_NAVIGATE"
-                  actionPayload={{ chapterId: chapter.id }}
+                  actionPayload={{ chapterId: id }}
                   className={cn(
                     'justify-start text-left w-full',
                     direction === 'rtl' && 'text-right',
@@ -77,7 +77,7 @@ export const BookTableOfContents: React.FC<BookTableOfContentsProps> = ({
                 >
                   <Box className="truncate">
                     <Typography variant="body">
-                      {chapter.title}
+                      {String(chapter.title ?? '')}
                     </Typography>
                   </Box>
                 </Button>
@@ -85,7 +85,8 @@ export const BookTableOfContents: React.FC<BookTableOfContentsProps> = ({
             })}
           </VStack>
         </VStack>
-      ))}
+        );
+      })}
     </VStack>
   );
 };

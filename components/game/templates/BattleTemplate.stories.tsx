@@ -1,16 +1,15 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import React from 'react';
 import { BattleTemplate } from './BattleTemplate';
-import type { BattleUnit } from './BattleTemplate';
-import type { IsometricTile } from '../organisms/types/isometric';
+import type { EntityRow } from '@almadar/core';
 
 // =============================================================================
 // MOCK DATA
 // =============================================================================
 
 /** Generate a simple 8×6 dungeon grid */
-function generateMockTiles(w = 8, h = 6): IsometricTile[] {
-    const tiles: IsometricTile[] = [];
+function generateMockTiles(w = 8, h = 6): EntityRow[] {
+    const tiles: EntityRow[] = [];
     const terrains = ['stone_floor', 'cobblestone', 'dirt'];
     for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
@@ -24,7 +23,7 @@ function generateMockTiles(w = 8, h = 6): IsometricTile[] {
     return tiles;
 }
 
-const MOCK_UNITS: BattleUnit[] = [
+const MOCK_UNITS: EntityRow[] = [
     {
         id: 'hero-1',
         name: 'Iron Sentinel',

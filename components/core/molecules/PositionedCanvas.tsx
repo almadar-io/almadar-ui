@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useRef, useState } from "react";
-import type { EventEmit, EventPayloadValue, EntityCollection } from "@almadar/core";
+import type { EventEmit, EntityRow } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { Typography, Badge, Box } from "../atoms";
@@ -10,26 +10,12 @@ import { Icon } from "../atoms/Icon";
 export type CanvasItemStatus = 'empty' | 'seated' | 'ordered' | 'awaiting-bill' | 'cleaning';
 export type CanvasItemShape = 'round' | 'rectangle' | 'square';
 
-export interface CanvasItem {
-    id: string;
-    label: string;
-    x: number;
-    y: number;
-    shape?: CanvasItemShape;
-    capacity: number;
-    status?: CanvasItemStatus;
-    partySize?: number;
-    serverName?: string;
-}
-
 export interface PositionedCanvasProps {
     /**
-     * Items to render. Accepts either a typed array (direct consumers) or the
-     * runtime payload shape from a render-ui binding (`@payload.data`). The
-     * molecule narrows non-array values to `[]` and validates element shape at
-     * render time via the `id` / `x` / `y` guards.
+     * Items to render. The molecule narrows non-array values to `[]` and reads
+     * each row's `id` / `x` / `y` / `label` fields at render time.
      */
-    items: EntityCollection<CanvasItem>;
+    items: readonly EntityRow[];
     width?: number;
     height?: number;
     selectedId?: string | null;
@@ -106,24 +92,22 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const eventBus = useEventBus();
 
-    const items: readonly CanvasItem[] = Array.isArray(itemsProp)
-        ? (itemsProp as readonly CanvasItem[])
-        : [];
+    const items: readonly EntityRow[] = Array.isArray(itemsProp) ? itemsProp : [];
 
     const handlePointerDown = useCallback(
-        (e: React.PointerEvent<HTMLDivElement>, item: CanvasItem) => {
+        (e: React.PointerEvent<HTMLDivElement>, item: EntityRow) => {
             if (!editable) return;
             const target = e.currentTarget;
             const rect = target.getBoundingClientRect();
             dragRef.current = {
-                id: item.id,
+                id: item.id as string,
                 pointerId: e.pointerId,
                 offsetX: e.clientX - rect.left,
                 offsetY: e.clientY - rect.top,
                 moved: false,
             };
             target.setPointerCapture(e.pointerId);
-            setDraggingId(item.id);
+            setDraggingId(item.id as string);
         },
         [editable],
     );
@@ -155,7 +139,7 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
     );
 
     const handlePointerUp = useCallback(
-        (e: React.PointerEvent<HTMLDivElement>, item: CanvasItem) => {
+        (e: React.PointerEvent<HTMLDivElement>, item: EntityRow) => {
             const drag = dragRef.current;
             if (!drag || drag.pointerId !== e.pointerId) return;
 
@@ -169,7 +153,8 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
             setDraggingId(null);
 
             if (!wasDrag) {
-                const next = selectedId === item.id ? null : item.id;
+                const itemId = item.id as string;
+                const next = selectedId === itemId ? null : itemId;
                 onSelect?.(next);
                 if (selectEvent) {
                     eventBus.emit(`UI:${selectEvent}`, { id: next });
@@ -206,16 +191,23 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
             onClick={handleContainerClick}
         >
             {items.map((item) => {
-                const status = item.status ?? 'empty';
-                const shape = item.shape ?? 'round';
-                const isSelected = selectedId === item.id;
-                const isDragging = draggingId === item.id;
+                const itemId = item.id as string;
+                const label = item.label as string;
+                const x = item.x as number;
+                const y = item.y as number;
+                const capacity = item.capacity as number;
+                const partySize = item.partySize as number | undefined;
+                const serverName = item.serverName as string | undefined;
+                const status = (item.status as CanvasItemStatus | undefined) ?? 'empty';
+                const shape = (item.shape as CanvasItemShape | undefined) ?? 'round';
+                const isSelected = selectedId === itemId;
+                const isDragging = draggingId === itemId;
                 const statusBadge = STATUS_BADGE[status];
 
                 return (
                     <Box
-                        key={item.id}
-                        data-testid={`item-node-${item.id}`}
+                        key={itemId}
+                        data-testid={`item-node-${itemId}`}
                         data-status={status}
                         className={cn(
                             "absolute flex flex-col items-center justify-center gap-1 border-2 select-none",
@@ -226,7 +218,7 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
                             isSelected && "outline outline-2 outline-offset-2 outline-primary shadow-md",
                             isDragging && "shadow-lg z-10",
                         )}
-                        style={{ left: item.x, top: item.y, touchAction: 'none' }}
+                        style={{ left: x, top: y, touchAction: 'none' }}
                         onPointerDown={(e) => handlePointerDown(e, item)}
                         onPointerMove={handlePointerMove}
                         onPointerUp={(e) => handlePointerUp(e, item)}
@@ -235,17 +227,17 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
                         <Box className="flex items-center gap-1">
                             {getStatusIcon(status)}
                             <Typography variant="body2" weight="semibold">
-                                {item.label}
+                                {label}
                             </Typography>
                         </Box>
                         <Typography variant="caption" color="secondary">
-                            {item.partySize !== undefined && status === 'seated'
-                                ? `${item.partySize}/${item.capacity}`
-                                : `Cap ${item.capacity}`}
+                            {partySize !== undefined && status === 'seated'
+                                ? `${partySize}/${capacity}`
+                                : `Cap ${capacity}`}
                         </Typography>
-                        {status === 'seated' && item.serverName && (
+                        {status === 'seated' && serverName && (
                             <Typography variant="caption" color="secondary" className="truncate max-w-[80%]">
-                                {item.serverName}
+                                {serverName}
                             </Typography>
                         )}
                         {isSelected && (

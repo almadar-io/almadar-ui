@@ -2,18 +2,21 @@
 
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import type { EventPayload } from '@almadar/core';
+import type { EntityRow } from '@almadar/core';
 import { SortableList } from './SortableList';
 import { HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 import { Box } from '../atoms/Box';
 import { Icon } from '../atoms/Icon';
 
-type TaskItem = EventPayload & {
+// Story-local demo shape. The component consumes the canonical
+// `readonly EntityRow[]`; a `type` alias carries an implicit index signature
+// so this sample data stays assignable to EntityRow.
+type TaskItem = {
   id: string;
   title: string;
   icon: string;
-}
+};
 
 const sampleItems: TaskItem[] = [
   { id: '1', title: 'Core/Molecules/SortableList', icon: 'file-text' },
@@ -23,16 +26,16 @@ const sampleItems: TaskItem[] = [
   { id: '5', title: 'Write unit tests', icon: 'test-tube' },
 ];
 
-function renderTaskItem(item: TaskItem, index: number) {
+function renderTaskItem(item: EntityRow, index: number) {
   return (
     <HStack
       align="center"
       gap="sm"
       className="py-3 px-2 border-b border-border"
     >
-      <Icon name={item.icon} size="sm" />
+      <Icon name={item.icon as string} size="sm" />
       <Typography variant="body2">
-        {index + 1}. {item.title}
+        {index + 1}. {item.title as string}
       </Typography>
     </HStack>
   );
@@ -59,7 +62,7 @@ type Story = StoryObj;
 
 export const Default: Story = {
   render: () => (
-    <SortableList<TaskItem>
+    <SortableList
       items={sampleItems}
       renderItem={renderTaskItem}
       reorderEvent="REORDER_TASKS"
@@ -75,7 +78,7 @@ export const Interactive: Story = {
           Drag the grip handles to reorder. Check the browser console for reorder events.
         </Typography>
       </Box>
-      <SortableList<TaskItem>
+      <SortableList
         items={sampleItems}
         renderItem={renderTaskItem}
         reorderEvent="REORDER_TASKS"
@@ -87,7 +90,7 @@ export const Interactive: Story = {
 
 export const RightHandle: Story = {
   render: () => (
-    <SortableList<TaskItem>
+    <SortableList
       items={sampleItems}
       renderItem={renderTaskItem}
       reorderEvent="REORDER_TASKS"

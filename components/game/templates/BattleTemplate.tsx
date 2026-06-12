@@ -10,16 +10,13 @@
  */
 
 import React from 'react';
+import type { EntityRow } from '@almadar/core';
 import type { TemplateProps } from '../../core/templates/types';
 import { BattleBoard } from '../organisms/BattleBoard';
-import type { BattleEntity } from '../organisms/BattleBoard';
 
-// Re-export types for backward compatibility
+// Re-export the surviving UI value types (entity types were collapsed to EntityRow).
 export type {
-    BattleEntity,
     BattlePhase,
-    BattleUnit,
-    BattleTile,
     BattleSlotContext,
 } from '../organisms/BattleBoard';
 
@@ -27,7 +24,7 @@ export type {
 // Template Props
 // =============================================================================
 
-export interface BattleTemplateProps extends TemplateProps<BattleEntity> {
+export interface BattleTemplateProps extends TemplateProps {
     /** Canvas render scale */
     scale?: number;
     /** Unit draw-size multiplier */
@@ -44,7 +41,7 @@ export function BattleTemplate({
     unitScale = 1,
     className,
 }: BattleTemplateProps): React.JSX.Element | null {
-    const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as BattleEntity : undefined;
+    const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as EntityRow : undefined;
     if (!resolved) return null;
     return (
         <BattleBoard

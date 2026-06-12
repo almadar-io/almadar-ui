@@ -16,9 +16,11 @@ import type { EventEmit, EntityRow } from '@almadar/core';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../core/atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
-import type { EntityDisplayProps } from '../../../../core/organisms/types';
+import type { DisplayStateProps } from '../../../../core/organisms/types';
+import { boardEntity, str } from '../../boardEntity';
 import { CheckCircle, XCircle, RotateCcw, Send } from 'lucide-react';
 
+/** A sortable item (UI value DTO read off the entity). */
 export interface ClassifierItem {
   id: string;
   label: string;
@@ -28,6 +30,7 @@ export interface ClassifierItem {
   iconUrl?: string;
 }
 
+/** A category bucket (UI value DTO read off the entity). */
 export interface ClassifierCategory {
   id: string;
   label: string;
@@ -36,27 +39,10 @@ export interface ClassifierCategory {
   imageUrl?: string;
 }
 
-export interface ClassifierPuzzleEntity {
-  id: string;
-  title: string;
-  description: string;
-  items: ClassifierItem[];
-  categories: ClassifierCategory[];
-  successMessage?: string;
-  failMessage?: string;
-  hint?: string;
-  /** Header image URL displayed above the title */
-  headerImage?: string;
-  /** Visual theme overrides */
-  theme?: { background?: string; accentColor?: string };
-}
-
-export interface ClassifierBoardProps extends Omit<EntityDisplayProps, 'entity'> {
-  // The compiler binds the generic `EntityRow`, so the inlet accepts it (and
-  // arrays) as union members; the component narrows to its curated
-  // `ClassifierPuzzleEntity` read-shape below (a valid union-narrow) and renders
-  // nothing until a puzzle entity is present.
-  entity?: ClassifierPuzzleEntity | EntityRow | readonly (ClassifierPuzzleEntity | EntityRow)[];
+export interface ClassifierBoardProps extends DisplayStateProps {
+  /** Puzzle board-state entity (single row or array). The board reads
+   *  `items` / `categories` arrays plus title/description/hint off the row. */
+  entity?: EntityRow | readonly EntityRow[];
   completeEvent?: EventEmit<{ success: boolean; attempts: number }>;
 }
 
@@ -67,7 +53,7 @@ export function ClassifierBoard({
 }: ClassifierBoardProps): React.JSX.Element | null {
   const { emit } = useEventBus();
   const { t } = useTranslate();
-  const resolved = (Array.isArray(entity) ? entity[0] : entity) as ClassifierPuzzleEntity | undefined;
+  const resolved = boardEntity(entity);
 
   const [assignments, setAssignments] = useState<Record<string, string>>({});
   const [headerError, setHeaderError] = useState(false);
@@ -75,8 +61,8 @@ export function ClassifierBoard({
   const [attempts, setAttempts] = useState(0);
   const [showHint, setShowHint] = useState(false);
 
-  const items = resolved?.items ?? [];
-  const categories = resolved?.categories ?? [];
+  const items = (Array.isArray(resolved?.items) ? resolved.items : []) as unknown as ClassifierItem[];
+  const categories = (Array.isArray(resolved?.categories) ? resolved.categories : []) as unknown as ClassifierCategory[];
   const unassignedItems = items.filter((item) => !assignments[item.id]);
   const allAssigned = Object.keys(assignments).length === items.length;
 
@@ -116,7 +102,7 @@ export function ClassifierBoard({
 
   const handleReset = () => {
     setSubmitted(false);
-    if (attempts >= 2 && resolved?.hint) {
+    if (attempts >= 2 && str(resolved?.hint)) {
       setShowHint(true);
     }
   };
@@ -130,29 +116,35 @@ export function ClassifierBoard({
 
   if (!resolved) return null;
 
+  const theme = (resolved.theme ?? undefined) as { background?: string; accentColor?: string } | undefined;
+  const themeBackground = theme?.background;
+  const headerImage = str(resolved.headerImage);
+  const hint = str(resolved.hint);
+  const failMessage = str(resolved.failMessage);
+
   return (
     <Box
       className={className}
       style={{
-        backgroundImage: resolved.theme?.background ? `url(${resolved.theme.background})` : undefined,
+        backgroundImage: themeBackground ? `url(${themeBackground})` : undefined,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
     >
       <VStack gap="lg" className="p-4">
         {/* Header image */}
-        {resolved.headerImage && !headerError ? (
+        {headerImage && !headerError ? (
           <Box className="w-full h-32 overflow-hidden rounded-container">
-            <img src={resolved.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
+            <img src={headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
           </Box>
-        ) : resolved.headerImage && headerError ? (
+        ) : headerImage && headerError ? (
           <Box className="w-full h-32 rounded-container bg-gradient-to-br from-muted to-accent opacity-60" />
         ) : null}
 
         <Card className="p-4">
           <VStack gap="sm">
-            <Typography variant="h4" weight="bold">{resolved.title}</Typography>
-            <Typography variant="body">{resolved.description}</Typography>
+            <Typography variant="h4" weight="bold">{str(resolved.title)}</Typography>
+            <Typography variant="body">{str(resolved.description)}</Typography>
           </VStack>
         </Card>
 
@@ -249,20 +241,20 @@ export function ClassifierBoard({
               <Icon icon={allCorrect ? CheckCircle : XCircle} size="lg" className={allCorrect ? 'text-success' : 'text-error'} />
               <Typography variant="body" weight="bold">
                 {allCorrect
-                  ? (resolved.successMessage ?? t('classifier.allCorrect'))
+                  ? (str(resolved.successMessage) || t('classifier.allCorrect'))
                   : `${correctCount}/${items.length} ${t('classifier.correct')}`}
               </Typography>
-              {!allCorrect && resolved.failMessage && (
-                <Typography variant="body" className="text-muted-foreground">{resolved.failMessage}</Typography>
+              {!allCorrect && failMessage && (
+                <Typography variant="body" className="text-muted-foreground">{failMessage}</Typography>
               )}
             </VStack>
           </Card>
         )}
 
         {/* Hint */}
-        {showHint && resolved.hint && (
+        {showHint && hint && (
           <Card className="p-4 border-l-4 border-l-warning">
-            <Typography variant="body">{resolved.hint}</Typography>
+            <Typography variant="body">{hint}</Typography>
           </Card>
         )}
 

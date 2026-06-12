@@ -20,23 +20,46 @@ import { CaseStudyCard } from '../molecules/CaseStudyCard';
 import { CTABanner } from '../molecules/CTABanner';
 import { SectionHeader } from '../../core/atoms/SectionHeader';
 import type { TemplateProps } from '../../core/templates/types';
-import type {
-  MarketingAction,
-  HeroEntity,
-  TeamMemberEntity,
-  CaseStudyEntity,
-} from '../../core/organisms/marketing-types';
+import type { LinkAction } from '../../core/atoms/types';
 
-export type { TeamMemberEntity, CaseStudyEntity };
+interface AboutHero {
+  id?: string;
+  tag?: string;
+  title: string;
+  titleAccent?: string;
+  subtitle: string;
+  primaryAction?: LinkAction;
+  secondaryAction?: LinkAction;
+  background?: 'dark' | 'gradient' | 'subtle';
+}
+
+interface TeamMemberContent {
+  id: string;
+  name: string;
+  nameAr?: string;
+  role: string;
+  bio: string;
+  avatar?: string;
+}
+
+interface CaseStudyContent {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  categoryColor?: string;
+  href: string;
+  linkLabel?: string;
+}
 
 export interface AboutPageEntity {
   id: string;
-  hero: HeroEntity;
+  hero: AboutHero;
   articles: { title: string; content: string }[];
-  team?: TeamMemberEntity[];
-  caseStudies?: CaseStudyEntity[];
+  team?: TeamMemberContent[];
+  caseStudies?: CaseStudyContent[];
   ctaTitle?: string;
-  ctaAction?: MarketingAction;
+  ctaAction?: LinkAction;
 }
 
 export interface AboutPageTemplateProps extends TemplateProps<AboutPageEntity> {}

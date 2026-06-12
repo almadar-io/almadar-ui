@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { EntityRow } from '@almadar/core';
 import { ShowcaseOrganism } from './ShowcaseOrganism';
-import type { ShowcaseEntity } from './marketing-types';
 
-const MOCK_SHOWCASES: ShowcaseEntity[] = [
+const MOCK_SHOWCASES: readonly EntityRow[] = [
   {
     id: '1',
     title: 'Core/Organisms/ShowcaseOrganism',

@@ -18,14 +18,15 @@ import { useTranslate } from '../../../hooks/useTranslate';
 import { HeroSection } from '../../marketing/molecules/HeroSection';
 import { LoadingState } from '../molecules/LoadingState';
 import { ErrorState } from '../molecules/ErrorState';
-import type { EntityRecord } from '@almadar/core';
-import type { EntityDisplayProps } from './types';
-import type { HeroEntity } from './marketing-types';
+import type { EntityRow } from '@almadar/core';
+import type { DisplayStateProps } from './types';
 
-export interface HeroOrganismProps extends EntityDisplayProps<HeroEntity> {
-  entity?: EntityRecord<HeroEntity>;
+export interface HeroOrganismProps extends DisplayStateProps {
+  entity?: EntityRow;
   children?: React.ReactNode;
 }
+
+type ActionLike = { label?: string; href?: string } | undefined;
 
 export const HeroOrganism: React.FC<HeroOrganismProps> = ({
   entity,
@@ -42,28 +43,31 @@ export const HeroOrganism: React.FC<HeroOrganismProps> = ({
       Array.isArray(entity)
         ? entity[0]
         : entity && typeof entity === 'object'
-          ? (entity as HeroEntity)
+          ? entity
           : undefined,
     [entity],
   );
 
+  const primaryAction = resolved?.primaryAction as ActionLike;
+  const secondaryAction = resolved?.secondaryAction as ActionLike;
+
   const handlePrimaryClick = useCallback(() => {
-    if (resolved?.primaryAction) {
+    if (primaryAction) {
       eventBus.emit('UI:CTA_PRIMARY', {
-        label: resolved.primaryAction.label,
-        href: resolved.primaryAction.href,
+        label: String(primaryAction.label ?? ''),
+        href: String(primaryAction.href ?? ''),
       });
     }
-  }, [eventBus, resolved]);
+  }, [eventBus, primaryAction]);
 
   const handleSecondaryClick = useCallback(() => {
-    if (resolved?.secondaryAction) {
+    if (secondaryAction) {
       eventBus.emit('UI:CTA_SECONDARY', {
-        label: resolved.secondaryAction.label,
-        href: resolved.secondaryAction.href,
+        label: String(secondaryAction.label ?? ''),
+        href: String(secondaryAction.href ?? ''),
       });
     }
-  }, [eventBus, resolved]);
+  }, [eventBus, secondaryAction]);
 
   if (isLoading) {
     return <LoadingState message={t('common.loading')} className={className} />;
@@ -77,37 +81,40 @@ export const HeroOrganism: React.FC<HeroOrganismProps> = ({
     return null;
   }
 
+  const imageRaw = resolved.image as { src?: string; alt?: string } | undefined;
+  const image = imageRaw
+    ? { src: String(imageRaw.src ?? ''), alt: String(imageRaw.alt ?? '') }
+    : undefined;
+
   return (
     <HeroSection
-      tag={resolved.tag}
-      title={resolved.title}
-      titleAccent={resolved.titleAccent}
-      subtitle={resolved.subtitle}
+      tag={resolved.tag != null ? String(resolved.tag) : undefined}
+      title={String(resolved.title ?? '')}
+      titleAccent={resolved.titleAccent != null ? String(resolved.titleAccent) : undefined}
+      subtitle={String(resolved.subtitle ?? '')}
       primaryAction={
-        resolved.primaryAction
-          ? { label: resolved.primaryAction.label, href: resolved.primaryAction.href }
+        primaryAction
+          ? { label: String(primaryAction.label ?? ''), href: String(primaryAction.href ?? '') }
           : undefined
       }
       secondaryAction={
-        resolved.secondaryAction
-          ? { label: resolved.secondaryAction.label, href: resolved.secondaryAction.href }
+        secondaryAction
+          ? { label: String(secondaryAction.label ?? ''), href: String(secondaryAction.href ?? '') }
           : undefined
       }
-      installCommand={resolved.installCommand}
-      image={resolved.image}
-      imagePosition={resolved.imagePosition}
-      background={resolved.background}
+      installCommand={resolved.installCommand != null ? String(resolved.installCommand) : undefined}
+      image={image}
+      imagePosition={resolved.imagePosition as 'below' | 'right' | 'background' | undefined}
+      background={resolved.background as 'dark' | 'gradient' | 'subtle' | undefined}
       className={cn(className)}
       // Wrap children to intercept button clicks
     >
       {children}
-      {/* Event bus emissions are triggered via onClick interception at organism level.
-          We attach hidden handlers to the component tree. The HeroSection molecule
-          renders buttons that we intercept. Since HeroSection doesn't expose onClick
-          for its action buttons, we use a wrapper approach with onClickCapture. */}
+      {/* HeroSection doesn't expose onClick for its action buttons, so we
+          intercept clicks via onClickCapture to dispatch CTA events. */}
       <_HeroClickInterceptor
-        hasPrimary={!!resolved.primaryAction}
-        hasSecondary={!!resolved.secondaryAction}
+        hasPrimary={!!primaryAction}
+        hasSecondary={!!secondaryAction}
         onPrimaryClick={handlePrimaryClick}
         onSecondaryClick={handleSecondaryClick}
       />

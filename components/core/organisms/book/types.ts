@@ -1,60 +1,37 @@
 /**
- * BookViewer shared types
+ * BookViewer shared types + field-map normalisation.
  *
- * `BookData` / `BookPart` / `BookChapter` are rendering-layer content-model
- * types: they carry a typed `OrbitalSchema` (via `@almadar/core`) for the
- * embedded orbital-diagram feature, which is richer than `FieldValue` and
- * therefore cannot satisfy `EntityRow`'s primitive-field constraint. The
- * BookViewer organism's prop surface IS `EntityRow` — raw schema data bound
- * from `@payload.data`; `mapBookData()` normalises those records (English or
- * localised) into the typed `BookData` representation at render time.
+ * The BookViewer's entity boundary is `EntityRow` (raw schema data bound from
+ * `@payload.data`). Books may use non-English field names (e.g. Arabic `.orb`
+ * schemas), so `mapBookData()` normalises a raw record into canonical English
+ * field names while keeping every value as `EntityRow` — no private entity
+ * content-model types.
+ *
+ * The embedded orbital-diagram (`OrbitalSchema`) is richer than `FieldValue`
+ * and therefore CANNOT live on an `EntityRow`. It is lifted OFF the entity
+ * boundary into a separate `schemaByChapterId` lookup; consumers fetch a
+ * chapter's schema by id and pass it as its own non-entity prop.
  */
 
-import type { OrbitalSchema } from '@almadar/core';
+import type { EntityRow, OrbitalSchema } from '@almadar/core';
 
-export interface BookData {
-  title: string;
-  subtitle?: string;
-  author?: string;
-  coverImageUrl?: string;
-  direction?: 'rtl' | 'ltr';
-  parts: BookPart[];
+/** A normalised book: cover fields + part rows + a chapter→schema side-table. */
+export interface NormalizedBook {
+  /** Cover-level fields (title/subtitle/author/coverImageUrl/direction). */
+  cover: EntityRow;
+  /** Reading direction resolved from the cover record. */
+  direction: 'rtl' | 'ltr';
+  /** Parts, each an `EntityRow` carrying `title` + a `chapters: EntityRow[]`. */
+  parts: readonly EntityRow[];
+  /** Flattened chapter rows in reading order (each carries id/title/content). */
+  chapters: readonly EntityRow[];
+  /** Orbital diagram schemas keyed by chapter id — kept OFF the entity rows. */
+  schemaByChapterId: Record<string, OrbitalSchema>;
 }
-
-export interface BookPart {
-  title: string;
-  chapters: BookChapter[];
-}
-
-export type BookChapter = {
-  id: string;
-  title: string;
-  content: string;
-  orbitalSchema?: OrbitalSchema;
-};
 
 /**
  * Maps raw entity field names to canonical BookData field names.
  * Each key is a canonical field, each value is the entity field name.
- *
- * @example
- * ```ts
- * // Arabic schema
- * const AR_BOOK_FIELDS: BookFieldMap = {
- *   title: 'العنوان',
- *   subtitle: 'العنوان_الفرعي',
- *   author: 'المؤلف',
- *   coverImageUrl: 'صورة_الغلاف',
- *   direction: 'الاتجاه',
- *   parts: 'الأجزاء',
- *   partTitle: 'العنوان',
- *   chapters: 'الفصول',
- *   chapterId: 'المعرف',
- *   chapterTitle: 'العنوان',
- *   chapterContent: 'المحتوى',
- *   chapterOrbitalSchema: 'المخطط_المداري',
- * };
- * ```
  */
 export interface BookFieldMap {
   title: string;
@@ -126,33 +103,52 @@ function get(obj: Record<string, unknown>, key: string): unknown {
   return obj[key];
 }
 
+function asStr(v: unknown): string {
+  return v == null ? '' : String(v);
+}
+
 /**
- * Maps a raw entity record to a typed BookData using a field map.
- * Pass `IDENTITY_BOOK_FIELDS` for English schemas, `AR_BOOK_FIELDS` for Arabic, etc.
+ * Maps a raw entity record to a `NormalizedBook` using a field map. Cover and
+ * chapter data come back as `EntityRow`s; the per-chapter `OrbitalSchema` is
+ * lifted off into `schemaByChapterId`.
  */
 export function mapBookData(
   raw: Record<string, unknown>,
   fields: BookFieldMap = IDENTITY_BOOK_FIELDS,
-): BookData {
+): NormalizedBook {
   const rawParts = (get(raw, fields.parts) ?? []) as Record<string, unknown>[];
+  const direction = (get(raw, fields.direction) as 'rtl' | 'ltr') ?? 'ltr';
 
-  return {
-    title: (get(raw, fields.title) as string) ?? '',
-    subtitle: get(raw, fields.subtitle) as string | undefined,
-    author: get(raw, fields.author) as string | undefined,
-    coverImageUrl: get(raw, fields.coverImageUrl) as string | undefined,
-    direction: (get(raw, fields.direction) as 'rtl' | 'ltr') ?? undefined,
-    parts: rawParts.map((part) => {
-      const rawChapters = (get(part, fields.chapters) ?? []) as Record<string, unknown>[];
-      return {
-        title: (get(part, fields.partTitle) as string) ?? '',
-        chapters: rawChapters.map((ch): BookChapter => ({
-          id: (get(ch, fields.chapterId) as string) ?? '',
-          title: (get(ch, fields.chapterTitle) as string) ?? '',
-          content: (get(ch, fields.chapterContent) as string) ?? '',
-          orbitalSchema: get(ch, fields.chapterOrbitalSchema) as OrbitalSchema | undefined,
-        })),
-      };
-    }),
+  const cover: EntityRow = {
+    title: asStr(get(raw, fields.title)),
+    subtitle: asStr(get(raw, fields.subtitle)),
+    author: asStr(get(raw, fields.author)),
+    coverImageUrl: asStr(get(raw, fields.coverImageUrl)),
+    direction,
   };
+
+  const schemaByChapterId: Record<string, OrbitalSchema> = {};
+  const chapters: EntityRow[] = [];
+
+  const parts: EntityRow[] = rawParts.map((part) => {
+    const rawChapters = (get(part, fields.chapters) ?? []) as Record<string, unknown>[];
+    const chapterRows: EntityRow[] = rawChapters.map((ch) => {
+      const id = asStr(get(ch, fields.chapterId));
+      const schema = get(ch, fields.chapterOrbitalSchema) as OrbitalSchema | undefined;
+      if (schema) schemaByChapterId[id] = schema;
+      const row: EntityRow = {
+        id,
+        title: asStr(get(ch, fields.chapterTitle)),
+        content: asStr(get(ch, fields.chapterContent)),
+      };
+      chapters.push(row);
+      return row;
+    });
+    return {
+      title: asStr(get(part, fields.partTitle)),
+      chapters: chapterRows,
+    } as EntityRow;
+  });
+
+  return { cover, direction, parts, chapters, schemaByChapterId };
 }

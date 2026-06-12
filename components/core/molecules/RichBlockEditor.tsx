@@ -57,13 +57,10 @@ export interface RichBlock {
 
 export interface RichBlockEditorProps {
   /**
-   * Initial block payload. Accepts strongly-typed RichBlock[] from native
-   * callers and the wider EntityRow[] shape that orb-bound traits emit
-   * (orb `[object]` lowers to `Record<string, FieldValue | undefined>[]`,
-   * which is structurally EntityRow[]). Items missing id/type are normalized
-   * into paragraph blocks at mount.
+   * Initial block payload — the rows that orb-bound traits emit. Items missing
+   * id/type are normalized into paragraph blocks at mount.
    */
-  initialBlocks?: readonly RichBlock[] | readonly EntityRow[];
+  initialBlocks?: readonly EntityRow[];
   onChange?: (blocks: RichBlock[]) => void;
   changeEvent?: EventEmit<{ blocks: RichBlock[] }>;
   readOnly?: boolean;

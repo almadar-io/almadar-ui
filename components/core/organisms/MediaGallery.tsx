@@ -22,7 +22,7 @@ import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
 import { useEventBus, useEventListener } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
-import type { EntityDisplayProps } from "./types";
+import type { DisplayStateProps } from "./types";
 import type { EntityRow } from "@almadar/core";
 import { X, ZoomIn, Upload, Image as ImageIcon } from "lucide-react";
 
@@ -50,7 +50,9 @@ export interface MediaGalleryAction {
     variant?: "primary" | "secondary" | "ghost";
 }
 
-export interface MediaGalleryProps extends EntityDisplayProps<EntityRow> {
+export interface MediaGalleryProps extends DisplayStateProps {
+    /** Entity rows to display (collection cardinality). */
+    entity?: readonly EntityRow[];
     /** Gallery title */
     title?: string;
     /** Media items */

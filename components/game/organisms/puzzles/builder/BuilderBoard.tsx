@@ -16,9 +16,11 @@ import type { EventEmit, EntityRow } from '@almadar/core';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../core/atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
-import type { EntityDisplayProps } from '../../../../core/organisms/types';
+import type { DisplayStateProps } from '../../../../core/organisms/types';
+import { boardEntity, str } from '../../boardEntity';
 import { CheckCircle, XCircle, RotateCcw, Wrench } from 'lucide-react';
 
+/** A draggable build component (UI value DTO read off the entity). */
 export interface BuilderComponent {
   id: string;
   label: string;
@@ -29,6 +31,7 @@ export interface BuilderComponent {
   category?: string;
 }
 
+/** A blueprint slot accepting a component (UI value DTO read off the entity). */
 export interface BuilderSlot {
   id: string;
   label: string;
@@ -36,27 +39,10 @@ export interface BuilderSlot {
   acceptsComponentId: string;
 }
 
-export interface BuilderPuzzleEntity {
-  id: string;
-  title: string;
-  description: string;
-  components: BuilderComponent[];
-  slots: BuilderSlot[];
-  successMessage?: string;
-  failMessage?: string;
-  hint?: string;
-  /** Header image URL displayed above the title */
-  headerImage?: string;
-  /** Visual theme overrides */
-  theme?: { background?: string; accentColor?: string };
-}
-
-export interface BuilderBoardProps extends Omit<EntityDisplayProps, 'entity'> {
-  // The compiler binds the generic `EntityRow`, so the inlet accepts it (and
-  // arrays) as union members; the component narrows to its curated
-  // `BuilderPuzzleEntity` read-shape below (a valid union-narrow) and renders
-  // nothing until a puzzle entity is present.
-  entity?: BuilderPuzzleEntity | EntityRow | readonly (BuilderPuzzleEntity | EntityRow)[];
+export interface BuilderBoardProps extends DisplayStateProps {
+  /** Puzzle board-state entity (single row or array). The board reads
+   *  `components` / `slots` arrays plus title/description/hint off the row. */
+  entity?: EntityRow | readonly EntityRow[];
   completeEvent?: EventEmit<{ success: boolean; attempts: number }>;
 }
 
@@ -67,7 +53,7 @@ export function BuilderBoard({
 }: BuilderBoardProps): React.JSX.Element | null {
   const { emit } = useEventBus();
   const { t } = useTranslate();
-  const resolved = (Array.isArray(entity) ? entity[0] : entity) as BuilderPuzzleEntity | undefined;
+  const resolved = boardEntity(entity);
 
   const [placements, setPlacements] = useState<Record<string, string>>({});
   const [headerError, setHeaderError] = useState(false);
@@ -75,8 +61,8 @@ export function BuilderBoard({
   const [attempts, setAttempts] = useState(0);
   const [showHint, setShowHint] = useState(false);
 
-  const components = resolved?.components ?? [];
-  const slots = resolved?.slots ?? [];
+  const components = (Array.isArray(resolved?.components) ? resolved.components : []) as unknown as BuilderComponent[];
+  const slots = (Array.isArray(resolved?.slots) ? resolved.slots : []) as unknown as BuilderSlot[];
   const usedComponentIds = new Set(Object.values(placements));
   const availableComponents = components.filter((c) => !usedComponentIds.has(c.id));
   const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
@@ -118,7 +104,7 @@ export function BuilderBoard({
 
   const handleReset = () => {
     setSubmitted(false);
-    if (attempts >= 2 && resolved?.hint) {
+    if (attempts >= 2 && str(resolved?.hint)) {
       setShowHint(true);
     }
   };
@@ -135,29 +121,34 @@ export function BuilderBoard({
 
   if (!resolved) return null;
 
+  const theme = (resolved.theme ?? undefined) as { background?: string; accentColor?: string } | undefined;
+  const themeBackground = theme?.background;
+  const headerImage = str(resolved.headerImage);
+  const hint = str(resolved.hint);
+
   return (
     <Box
       className={className}
       style={{
-        backgroundImage: resolved.theme?.background ? `url(${resolved.theme.background})` : undefined,
+        backgroundImage: themeBackground ? `url(${themeBackground})` : undefined,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
       }}
     >
       <VStack gap="lg" className="p-4">
         {/* Header image */}
-        {resolved.headerImage && !headerError ? (
+        {headerImage && !headerError ? (
           <Box className="w-full h-32 overflow-hidden rounded-container">
-            <img src={resolved.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
+            <img src={headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
           </Box>
-        ) : resolved.headerImage && headerError ? (
+        ) : headerImage && headerError ? (
           <Box className="w-full h-32 rounded-container bg-gradient-to-br from-muted to-accent opacity-60" />
         ) : null}
 
         <Card className="p-4">
           <VStack gap="sm">
-            <Typography variant="h4" weight="bold">{resolved.title}</Typography>
-            <Typography variant="body">{resolved.description}</Typography>
+            <Typography variant="h4" weight="bold">{str(resolved.title)}</Typography>
+            <Typography variant="body">{str(resolved.description)}</Typography>
           </VStack>
         </Card>
 
@@ -256,16 +247,16 @@ export function BuilderBoard({
               <Icon icon={allCorrect ? CheckCircle : XCircle} size="lg" className={allCorrect ? 'text-success' : 'text-error'} />
               <Typography variant="body" weight="bold">
                 {allCorrect
-                  ? (resolved.successMessage ?? t('builder.success'))
-                  : (resolved.failMessage ?? t('builder.incorrect'))}
+                  ? (str(resolved.successMessage) || t('builder.success'))
+                  : (str(resolved.failMessage) || t('builder.incorrect'))}
               </Typography>
             </VStack>
           </Card>
         )}
 
-        {showHint && resolved.hint && (
+        {showHint && hint && (
           <Card className="p-4 border-l-4 border-l-warning">
-            <Typography variant="body">{resolved.hint}</Typography>
+            <Typography variant="body">{hint}</Typography>
           </Card>
         )}
 

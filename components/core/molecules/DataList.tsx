@@ -12,7 +12,7 @@
  * Uses atoms only internally: Box, VStack, HStack, Typography, Badge, Button, Icon.
  */
 import React from 'react';
-import type { EntityRow, EntityCollection, EventKey } from "@almadar/core";
+import type { EntityRow, EventKey } from "@almadar/core";
 import type { ItemActionPayload } from '@almadar/patterns';
 import { cn } from '../../../lib/cn';
 import { createLogger } from '@almadar/logger';
@@ -74,16 +74,11 @@ export interface DataListSwipeAction {
 
 // ── Props ────────────────────────────────────────────────────────────
 
-export interface DataListProps<T extends EntityRow = EntityRow> extends DataDndProps {
+export interface DataListProps extends DataDndProps {
   /**
-   * Schema entity data — single record or collection, typed against
-   * `@almadar/core`'s `EntityRow` so the narrow type declared on the
-   * emitting trait's `Event { data : [X] }` flows through to the prop
-   * without widening. The generic `T` lets consumers pass a narrower
-   * entity (e.g. `CartItem`) and have the `children` render function
-   * receive items of that exact shape.
+   * Schema entity data — the collection of rows to render.
    */
-  entity: EntityCollection<T>;
+  entity: readonly EntityRow[];
   /**
    * Field definitions for rendering each row. The pattern contract in
    * `@almadar/patterns` documents `columns` as the wire-format alias the
@@ -137,18 +132,17 @@ export interface DataListProps<T extends EntityRow = EntityRow> extends DataDndP
   hasMore?: boolean;
   /** Render prop for custom per-item content. When provided, `fields` and `itemActions` are ignored. */
   /**
-   * Render function for each row's content. Receives an item of the
-   * component's entity type `T` (narrowed via the generic parameter)
-   * and the row's index in the materialised array.
+   * Render function for each row's content. Receives a row and the row's
+   * index in the materialised array.
    */
-  children?: (item: T, index: number) => React.ReactNode;
+  children?: (item: EntityRow, index: number) => React.ReactNode;
   /**
    * Per-item render function (schema-level alias for children render prop).
    * In .orb schemas: ["fn", "item", { pattern tree with @item.field bindings }]
    * The compiler converts this to the children render prop.
    * @deprecated Use children render prop in React code. This prop exists for pattern registry sync.
    */
-  renderItem?: (item: T, index: number) => React.ReactNode;
+  renderItem?: (item: EntityRow, index: number) => React.ReactNode;
   /** Max items to show before "Show More" button. Defaults to 5. Set to 0 to disable. */
   pageSize?: number;
   /**
@@ -227,7 +221,7 @@ const listLookStyles: Record<NonNullable<DataListProps['look']>, string> = {
   'card-rows': '[&_[data-entity-row]>div]:shadow-elevation-card [&_[data-entity-row]>div]:rounded-container [&_[data-entity-row]>div]:!border [&_[data-entity-row]>div]:border-border [&_[data-entity-row]]:mb-2',
 };
 
-export function DataList<T extends EntityRow = EntityRow>({
+export function DataList({
   entity,
   fields,
   columns,
@@ -267,7 +261,7 @@ export function DataList<T extends EntityRow = EntityRow>({
   dndItemIdField,
   dndRoot,
   look = 'dense',
-}: DataListProps<T>) {
+}: DataListProps) {
   const eventBus = useEventBus();
   const { t } = useTranslate();
   const [visibleCount, setVisibleCount] = React.useState(pageSize || Infinity);
@@ -279,7 +273,7 @@ export function DataList<T extends EntityRow = EntityRow>({
 
   const allDataRaw = Array.isArray(entity) ? entity : entity ? [entity] : [];
   const dnd = useDataDnd({
-    items: allDataRaw as readonly T[],
+    items: allDataRaw as readonly EntityRow[],
     layout: 'list',
     dragGroup,
     accepts,
@@ -526,7 +520,7 @@ export function DataList<T extends EntityRow = EntityRow>({
         <Box key={id} data-entity-row data-entity-id={id} onClick={itemClickEvent ? handleRowClick(itemData) : undefined} className={cn(itemClickEvent && 'cursor-pointer')}>
           <Box className="group flex items-stretch gap-2">
             <Box className="flex-1 min-w-0">
-              {children(itemData as T, index)}
+              {children(itemData as EntityRow, index)}
             </Box>
             {renderItemActions(itemData)}
           </Box>

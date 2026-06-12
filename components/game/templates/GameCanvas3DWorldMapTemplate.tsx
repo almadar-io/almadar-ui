@@ -20,24 +20,12 @@
  */
 
 import React from 'react';
-import { GameCanvas3D, type GameCanvas3DProps } from '../organisms/GameCanvas3D';
+import type { EntityRow } from '@almadar/core';
+import { GameCanvas3D } from '../organisms/GameCanvas3D';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from '../organisms/types/isometric';
 import type { TemplateProps } from '../../core/templates/types';
 
-export interface WorldMap3DEntity {
-    /** Map tiles */
-    tiles: IsometricTile[];
-    /** Units on the map */
-    units: IsometricUnit[];
-    /** Map features (castles, resources, etc.) */
-    features: IsometricFeature[];
-    /** Entity ID */
-    id: string;
-    /** Entity name */
-    name?: string;
-}
-
-export interface GameCanvas3DWorldMapTemplateProps extends TemplateProps<WorldMap3DEntity> {
+export interface GameCanvas3DWorldMapTemplateProps extends TemplateProps {
     /** 3D camera mode */
     cameraMode?: 'isometric' | 'perspective' | 'top-down';
     /** Show grid helper */
@@ -107,13 +95,16 @@ export function GameCanvas3DWorldMapTemplate({
     attackTargets,
     className,
 }: GameCanvas3DWorldMapTemplateProps): React.JSX.Element | null {
-    const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as WorldMap3DEntity : undefined;
+    const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as EntityRow : undefined;
     if (!resolved) return null;
+    const tiles = (Array.isArray(resolved.tiles) ? resolved.tiles : []) as unknown as IsometricTile[];
+    const units = (Array.isArray(resolved.units) ? resolved.units : []) as unknown as IsometricUnit[];
+    const features = (Array.isArray(resolved.features) ? resolved.features : []) as unknown as IsometricFeature[];
     return (
         <GameCanvas3D
-            tiles={resolved.tiles}
-            units={resolved.units}
-            features={resolved.features}
+            tiles={tiles}
+            units={units}
+            features={features}
             cameraMode={cameraMode}
             showGrid={showGrid}
             showCoordinates={showCoordinates}

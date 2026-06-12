@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { EntityRow } from '@almadar/core';
 import { CaseStudyOrganism } from './CaseStudyOrganism';
-import type { CaseStudyEntity } from './marketing-types';
 
-const MOCK_CASE_STUDIES: CaseStudyEntity[] = [
+const MOCK_CASE_STUDIES: readonly EntityRow[] = [
   {
     id: '1',
     title: 'Core/Organisms/CaseStudyOrganism',

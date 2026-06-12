@@ -10,21 +10,18 @@
  */
 
 import React from 'react';
+import type { EntityRow } from '@almadar/core';
 import type { TemplateProps } from '../../core/templates/types';
 import { CastleBoard } from '../organisms/CastleBoard';
-import type { CastleEntity } from '../organisms/CastleBoard';
 
-// Re-export types for backward compatibility
-export type {
-    CastleEntity,
-    CastleSlotContext,
-} from '../organisms/CastleBoard';
+// Re-export the surviving UI value type (entity type was collapsed to EntityRow).
+export type { CastleSlotContext } from '../organisms/CastleBoard';
 
 // =============================================================================
 // Template Props
 // =============================================================================
 
-export interface CastleTemplateProps extends TemplateProps<CastleEntity> {
+export interface CastleTemplateProps extends TemplateProps {
     /** Canvas render scale */
     scale?: number;
 }
@@ -38,7 +35,7 @@ export function CastleTemplate({
     scale = 0.45,
     className,
 }: CastleTemplateProps): React.JSX.Element | null {
-    const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as CastleEntity : undefined;
+    const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as EntityRow : undefined;
     if (!resolved) return null;
     return (
         <CastleBoard

@@ -13,11 +13,13 @@
 
 import React from 'react';
 import { DataTable, type DataTableProps } from './DataTable';
-import type { EntityDisplayProps } from './types';
+import type { DisplayStateProps } from './types';
 import type { EntityRow } from '@almadar/core';
 import { useTranslate } from '../../../hooks/useTranslate';
 
-export interface MasterDetailProps<T extends EntityRow & { id: string | number } = EntityRow & { id: string | number }> extends EntityDisplayProps<T> {
+export interface MasterDetailProps<T extends EntityRow & { id: string | number } = EntityRow & { id: string | number }> extends DisplayStateProps {
+  /** Entity rows to display in the master list (collection cardinality). */
+  entity?: readonly EntityRow[];
   /** Fields to show in the master list (maps to DataTable columns) */
   masterFields: readonly string[];
   /** Fields for detail view (passed through but typically handled by separate render_ui) */

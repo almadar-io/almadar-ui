@@ -18,11 +18,12 @@ import { Typography } from '../atoms/Typography';
 import { StepFlow } from '../../marketing/molecules/StepFlow';
 import { LoadingState } from '../molecules/LoadingState';
 import { ErrorState } from '../molecules/ErrorState';
-import type { EntityDisplayProps } from './types';
-import type { StepEntity } from './marketing-types';
+import type { EntityRow } from '@almadar/core';
+import type { DisplayStateProps } from './types';
 import type { StepItemProps } from '../../marketing/molecules/StepFlow';
 
-export interface StepFlowOrganismProps extends EntityDisplayProps<StepEntity> {
+export interface StepFlowOrganismProps extends DisplayStateProps {
+  entity?: EntityRow | readonly EntityRow[];
   orientation?: 'horizontal' | 'vertical';
   showConnectors?: boolean;
   heading?: string;
@@ -41,12 +42,12 @@ export const StepFlowOrganism: React.FC<StepFlowOrganismProps> = ({
 }) => {
   const { t } = useTranslate();
 
-  const items = useMemo(
+  const items = useMemo<readonly EntityRow[]>(
     () =>
       Array.isArray(entity)
         ? entity
         : entity && typeof entity === 'object'
-          ? [entity as StepEntity]
+          ? [entity as EntityRow]
           : [],
     [entity],
   );
@@ -60,10 +61,10 @@ export const StepFlowOrganism: React.FC<StepFlowOrganismProps> = ({
   }
 
   const steps: StepItemProps[] = items.map((item) => ({
-    number: item.number,
-    title: item.title,
-    description: item.description,
-    icon: item.icon,
+    number: item.number != null ? Number(item.number) : undefined,
+    title: String(item.title ?? ''),
+    description: String(item.description ?? ''),
+    icon: item.icon != null ? String(item.icon) : undefined,
   }));
 
   return (

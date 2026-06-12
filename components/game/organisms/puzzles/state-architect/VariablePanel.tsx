@@ -7,26 +7,24 @@
  */
 
 import React from 'react';
-import { VStack, HStack, Box, Typography, ProgressBar } from '../../../../core/atoms';
+import type { EntityRow } from '@almadar/core';
+import { VStack, HStack, Typography, ProgressBar } from '../../../../core/atoms';
 import { cn } from '../../../../../lib/cn';
 import { useTranslate } from '../../../../../hooks/useTranslate';
-
-export interface VariableDef {
-    name: string;
-    value: number;
-    min?: number;
-    max?: number;
-    unit?: string;
-}
 
 export interface VariablePanelProps {
     /** Entity name */
     entityName: string;
-    /** Variables to display */
-    variables: VariableDef[];
+    /** Variable rows to display (`EntityRow` carrying name/value/min/max/unit) */
+    variables: readonly EntityRow[];
     /** Additional CSS classes */
     className?: string;
 }
+
+const numField = (v: unknown, fallback = 0): number => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fallback;
+};
 
 export function VariablePanel({
     entityName,
@@ -40,22 +38,25 @@ export function VariablePanel({
                 {t('stateArchitect.variables', { name: entityName })}
             </Typography>
             {variables.map(v => {
-                const max = v.max ?? 100;
-                const min = v.min ?? 0;
-                const pct = Math.round(((v.value - min) / (max - min)) * 100);
+                const name = v.name == null ? '' : String(v.name);
+                const value = numField(v.value);
+                const max = numField(v.max, 100);
+                const min = numField(v.min, 0);
+                const unit = v.unit == null ? '' : String(v.unit);
+                const pct = Math.round(((value - min) / (max - min)) * 100);
                 const isHigh = pct > 80;
                 const isLow = pct < 20;
 
                 return (
-                    <VStack key={v.name} gap="none">
+                    <VStack key={name} gap="none">
                         <HStack className="items-center justify-between">
                             <Typography variant="caption" className="text-foreground font-medium">
-                                {v.name}
+                                {name}
                             </Typography>
                             <Typography variant="caption" className={cn(
                                 isHigh ? 'text-error' : isLow ? 'text-warning' : 'text-foreground',
                             )}>
-                                {v.value}{v.unit || ''} / {max}{v.unit || ''}
+                                {value}{unit} / {max}{unit}
                             </Typography>
                         </HStack>
                         <ProgressBar

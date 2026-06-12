@@ -110,23 +110,23 @@ interface RootContext {
 
 const RootCtx = React.createContext<RootContext | null>(null);
 
-interface UseDataDndArgs<T extends EntityRow> extends DataDndProps {
-  items: readonly T[];
+interface UseDataDndArgs extends DataDndProps {
+  items: readonly EntityRow[];
   layout: 'list' | 'grid';
 }
 
-interface UseDataDndResult<T extends EntityRow> {
+interface UseDataDndResult {
   enabled: boolean;
   /** True when this container is a sortable zone (own items are draggable). False in dndRoot-only mode. */
   isZone: boolean;
   wrapContainer: (children: React.ReactNode) => React.ReactNode;
   SortableItem: React.FC<{ id: UniqueIdentifier; children: React.ReactNode }>;
-  orderedItems: readonly T[];
+  orderedItems: readonly EntityRow[];
 }
 
-export function useDataDnd<T extends EntityRow>(
-  args: UseDataDndArgs<T>,
-): UseDataDndResult<T> {
+export function useDataDnd(
+  args: UseDataDndArgs,
+): UseDataDndResult {
   const {
     dragGroup,
     accepts,
@@ -173,7 +173,7 @@ export function useDataDnd<T extends EntityRow>(
     ? optimisticOrders
     : parentRoot?.optimisticOrders ?? new Map();
   const optimisticEntry = sharedOptimistic.get(ownGroup);
-  const orderedItems = (optimisticEntry ?? items) as readonly T[];
+  const orderedItems = optimisticEntry ?? items;
   // Per-render log so we can correlate splice timing with what each zone
   // actually renders. Only logs when we're in a zone (skip the root-only mode).
   if (isZone && enabled) {

@@ -8,7 +8,7 @@
  * This is the ONE allowed exception — documented here.
  */
 
-import type { EntityRow, EntityInlet } from '@almadar/core';
+import type { EntityRow } from '@almadar/core';
 import type { UiError } from '../atoms/types';
 
 export type { UiError };
@@ -53,32 +53,15 @@ export interface SelectPayload {
 
 // ── Base Props ────────────────────────────────────────────────────────
 
-export interface EntityDisplayProps<T extends EntityRow = EntityRow> {
-  /**
-   * Pre-resolved entity data, typed against `@almadar/core`'s `EntityRow`
-   * (`{ id?: string } & Record<string, FieldValue>`) so the single source of
-   * truth for runtime entity shape lives in core. Consumers narrow via the
-   * generic parameter; the constraint guarantees every organism receives
-   * something with an optional `id` and a Record of `FieldValue` fields.
-   *
-   * Two shapes accepted:
-   * - `readonly T[]`: array for list patterns (authoring: `entity: @payload.data`
-   *   on the calling trait after a `fetch … { emit: { success } }` listener).
-   * - `T`: single record for detail patterns.
-   *
-   * The legacy `string` (entity-name) branch was removed in V2 Phase 6. The
-   * EntityStore resolver is gone; components now receive pre-resolved data via
-   * the event bus.
-   *
-   * NOTE: Several legacy organisms (HeroOrganism, TeamOrganism, CaseStudyOrganism,
-   * MediaGallery, PricingOrganism, ShowcaseOrganism, StatsOrganism, Sidebar,
-   * Timeline, StepFlowOrganism, FeatureGridOrganism, book/*, WorldMapBoard,
-   * StateMachineView, JazariStateMachine, MasterDetail, DataTable, Table) define
-   * local entity types (HeroEntity, TeamMemberEntity, …) that don't formally
-   * extend `EntityRow`. They surface `EntityDisplayProps<T>` constraint errors.
-   * Tracked as a Phase 7 follow-up in `docs/Almadar_Entity_V2_Plan.md` §10.
-   */
-  entity?: EntityInlet<T>;
+/**
+ * Common non-entity display state shared by every display organism — loading,
+ * error, and the render-ui display hints (sort/search/pagination/selection).
+ * Carries NO entity data and NO generic. Components that show entity data add
+ * their own `entity?: EntityRow | readonly EntityRow[]` field directly (the one
+ * unified entity type from `@almadar/core`); components that only need the
+ * loading/hint surface just extend this.
+ */
+export interface DisplayStateProps {
   /** Additional CSS classes */
   className?: string;
   /** Loading state indicator */
@@ -105,3 +88,4 @@ export interface EntityDisplayProps<T extends EntityRow = EntityRow> {
   /** Currently selected item IDs */
   selectedIds?: readonly (string | number)[];
 }
+

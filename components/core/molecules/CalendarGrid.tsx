@@ -7,7 +7,7 @@
  * Composes DayCell and TimeSlotCell atoms into a 7-day grid.
  */
 import React, { useMemo, useCallback, useEffect, useRef, useState } from "react";
-import type { EventEmit, EventPayload, EntityCollection } from "@almadar/core";
+import type { EventEmit, EventPayload, EntityRow } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
@@ -19,17 +19,6 @@ import { TimeSlotCell } from "../atoms/TimeSlotCell";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useSwipeGesture } from "../../../hooks/useSwipeGesture";
 import { useTranslate } from "../../../hooks/useTranslate";
-
-// Data-transfer shape crossing the event bus — declared as a `type` alias (not
-// `interface`) so it carries an implicit index signature and is assignable to
-// the bus's `EventPayloadValue` payload (a named interface never is).
-export type CalendarEvent = {
-  id: string;
-  title: string;
-  startTime: string | Date;
-  endTime?: string | Date;
-  color?: string;
-};
 
 /**
  * Number of day columns rendered at once. Matches the responsiveness-
@@ -44,13 +33,13 @@ export interface CalendarGridProps {
   /** Time slot labels (defaults to 09:00-17:00) */
   timeSlots?: string[];
   /** Events to display on the grid */
-  events?: EntityCollection<CalendarEvent>;
+  events?: readonly EntityRow[];
   /** Called when a time slot is clicked */
   onSlotClick?: (day: Date, time: string) => void;
   /** Called when a day header is clicked */
   onDayClick?: (day: Date) => void;
   /** Called when an event is clicked */
-  onEventClick?: (event: CalendarEvent) => void;
+  onEventClick?: (event: EntityRow) => void;
   /** Additional CSS classes */
   className?: string;
   /** Event emitted on long-press of a time slot: UI:{longPressEvent} with { date, time, ...longPressPayload } */
@@ -145,11 +134,11 @@ function generateDefaultTimeSlots(): string[] {
 
 /** Check whether an event falls within a specific day and time slot */
 function eventInSlot(
-  event: CalendarEvent,
+  event: EntityRow,
   day: Date,
   slotTime: string,
 ): boolean {
-  const eventStart = new Date(event.startTime);
+  const eventStart = new Date(event.startTime as string);
   const [slotHour, slotMinute] = slotTime.split(":").map(Number);
 
   return (
@@ -236,7 +225,7 @@ export function CalendarGrid({
   );
 
   const handleEventClick = useCallback(
-    (event: CalendarEvent, e: React.MouseEvent) => {
+    (event: EntityRow, e: React.MouseEvent) => {
       e.stopPropagation();
       onEventClick?.(event);
     },
@@ -246,7 +235,7 @@ export function CalendarGrid({
   const eventsForDayCount = useCallback(
     (day: Date): number =>
       evs.filter(
-        (ev) => new Date(ev.startTime).toDateString() === day.toDateString(),
+        (ev) => new Date(ev.startTime as string).toDateString() === day.toDateString(),
       ).length,
     [events],
   );
@@ -272,25 +261,28 @@ export function CalendarGrid({
     }, 500);
   }, [longPressEvent, longPressPayload, eventBus]);
 
-  const renderEvent = (event: CalendarEvent) => (
+  const renderEvent = (event: EntityRow) => {
+    const color = event.color as string | undefined;
+    return (
     <Box
-      key={event.id}
+      key={event.id as string}
       rounded="md"
       padding="xs"
       border
       className={cn(
         "cursor-pointer hover:shadow-sm transition-shadow text-xs truncate",
-        event.color
-          ? event.color
+        color
+          ? color
           : "bg-blue-500/15 border-blue-500/30 text-blue-600",
       )}
       onClick={(e: React.MouseEvent) => handleEventClick(event, e)}
     >
       <Typography variant="small" className="truncate font-medium">
-        {event.title}
+        {event.title as string}
       </Typography>
     </Box>
-  );
+    );
+  };
 
   return (
     <Box

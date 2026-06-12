@@ -15,11 +15,6 @@ import { Button } from '../../../core/atoms/Button';
 import { Box } from '../../../core/atoms/Box';
 import { useTranslate } from '../../../../hooks/useTranslate';
 import { cn } from '../../../../lib/cn';
-// Internal rendering component — takes typed content-model props directly
-// (BookData / BookPart / BookChapter), not schema entity data. Does not
-// extend EntityDisplayProps; its parent (BookViewer) owns the entity-prop
-// contract.
-import type { BookData } from '../../../core/organisms/book/types';
 
 export interface BookCoverPageProps {
   /** Additional CSS classes */

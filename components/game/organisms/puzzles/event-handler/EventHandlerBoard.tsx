@@ -20,44 +20,29 @@ import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
 import { TraitStateViewer } from '../../TraitStateViewer';
 import type { TraitStateMachineDefinition } from '../../TraitStateViewer';
-import type { EntityDisplayProps } from '../../../../core/organisms/types';
-import { ObjectRulePanel, type PuzzleObjectDef } from './ObjectRulePanel';
+import type { DisplayStateProps } from '../../../../core/organisms/types';
+import { ObjectRulePanel } from './ObjectRulePanel';
 import { EventLog, type EventLogEntry } from './EventLog';
 import type { RuleDefinition } from './RuleEditor';
+import {
+    objId,
+    objName,
+    objIcon,
+    objStates,
+    objCurrentState,
+    objRules,
+} from './puzzleObject';
+import { boardEntity, str, rows } from '../../boardEntity';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export interface EventHandlerPuzzleEntity {
-    id: string;
-    title: string;
-    description: string;
-    /** Objects the kid can configure */
-    objects: PuzzleObjectDef[];
-    /** Goal condition description */
-    goalCondition: string;
-    /** Event that represents goal completion */
-    goalEvent: string;
-    /** Sequence of events that auto-fire to start the simulation */
-    triggerEvents?: string[];
-    /** Feedback */
-    successMessage?: string;
-    failMessage?: string;
-    /** Progressive hint shown after 3 failures */
-    hint?: string;
-    /** Header image URL displayed above the title */
-    headerImage?: string;
-    /** Visual theme overrides */
-    theme?: { background?: string; accentColor?: string };
-}
-
-export interface EventHandlerBoardProps extends Omit<EntityDisplayProps, 'entity'> {
-    /** Puzzle data. The compiler binds the generic `EntityRow`, so the inlet
-     *  accepts it (and arrays) as union members; the component narrows to its
-     *  curated `EventHandlerPuzzleEntity` read-shape below (a valid
-     *  union-narrow) and renders nothing until a puzzle entity is present. */
-    entity?: EventHandlerPuzzleEntity | EntityRow | readonly (EventHandlerPuzzleEntity | EntityRow)[];
+export interface EventHandlerBoardProps extends DisplayStateProps {
+    /** Puzzle board-state entity (single row or array). The board reads
+     *  `objects` / `triggerEvents` / `goalEvent` etc. off the row; the editable
+     *  puzzle objects are themselves `EntityRow`s carried under `objects`. */
+    entity?: EntityRow | readonly EntityRow[];
     /** Playback speed in ms per event */
     stepDurationMs?: number;
     /** Emits UI:{playEvent} */
@@ -87,11 +72,11 @@ export function EventHandlerBoard({
 }: EventHandlerBoardProps): React.JSX.Element | null {
     const { emit } = useEventBus();
     const { t } = useTranslate();
-    const resolved = (Array.isArray(entity) ? entity[0] : entity) as EventHandlerPuzzleEntity | undefined;
-    const entityObjects = resolved?.objects ?? [];
-    const [objects, setObjects] = useState<PuzzleObjectDef[]>(entityObjects);
+    const resolved = boardEntity(entity);
+    const entityObjects = rows(resolved?.objects);
+    const [objects, setObjects] = useState<EntityRow[]>(() => [...entityObjects]);
     const [selectedObjectId, setSelectedObjectId] = useState<string | null>(
-        entityObjects[0]?.id || null,
+        entityObjects[0] ? objId(entityObjects[0]) : null,
     );
     const [headerError, setHeaderError] = useState(false);
     const [playState, setPlayState] = useState<PlayState>('editing');
@@ -104,13 +89,13 @@ export function EventHandlerBoard({
         if (timerRef.current) clearTimeout(timerRef.current);
     }, []);
 
-    const selectedObject = objects.find(o => o.id === selectedObjectId) || null;
+    const selectedObject = objects.find(o => objId(o) === selectedObjectId) || null;
 
     // -- Rule changes ---------------------------------------------------------
 
     const handleRulesChange = useCallback((objectId: string, rules: RuleDefinition[]) => {
         setObjects(prev => prev.map(o =>
-            o.id === objectId ? { ...o, rules } : o,
+            objId(o) === objectId ? { ...o, rules } : o,
         ));
     }, []);
 
@@ -130,14 +115,15 @@ export function EventHandlerBoard({
         setPlayState('playing');
         setEventLog([]);
 
-        const allRules: Array<{ object: PuzzleObjectDef; rule: RuleDefinition }> = [];
+        const allRules: Array<{ object: EntityRow; rule: RuleDefinition }> = [];
         objects.forEach(obj => {
-            obj.rules.forEach(rule => {
+            objRules(obj).forEach(rule => {
                 allRules.push({ object: obj, rule });
             });
         });
 
-        const triggers = resolved?.triggerEvents || [];
+        const triggers = (Array.isArray(resolved?.triggerEvents) ? resolved.triggerEvents : []) as string[];
+        const goalEvent = str(resolved?.goalEvent);
         const eventQueue = [...triggers];
         const firedEvents = new Set<string>();
         let stepIdx = 0;
@@ -171,15 +157,15 @@ export function EventHandlerBoard({
                 addLogEntry('\u26A1', t('eventHandler.noListeners', { event: currentEvent }), 'done');
             } else {
                 matching.forEach(({ object, rule }) => {
-                    addLogEntry(object.icon, t('eventHandler.heardEvent', { object: object.name, event: currentEvent, action: rule.thenAction }), 'done');
+                    addLogEntry(objIcon(object), t('eventHandler.heardEvent', { object: objName(object), event: currentEvent, action: rule.thenAction }), 'done');
                     eventQueue.push(rule.thenAction);
-                    if (rule.thenAction === resolved?.goalEvent) {
+                    if (rule.thenAction === goalEvent) {
                         goalReached = true;
                     }
                 });
             }
 
-            if (currentEvent === resolved?.goalEvent) {
+            if (currentEvent === goalEvent) {
                 goalReached = true;
             }
 
@@ -202,10 +188,11 @@ export function EventHandlerBoard({
 
     const handleReset = useCallback(() => {
         if (timerRef.current) clearTimeout(timerRef.current);
-        setObjects(resolved?.objects ?? []);
+        const resetObjects = rows(resolved?.objects);
+        setObjects([...resetObjects]);
         setPlayState('editing');
         setEventLog([]);
-        setSelectedObjectId((resolved?.objects ?? [])[0]?.id || null);
+        setSelectedObjectId(resetObjects[0] ? objId(resetObjects[0]) : null);
         setAttempts(0);
     }, [resolved?.objects]);
 
@@ -214,54 +201,60 @@ export function EventHandlerBoard({
     // -- Build compact viewers ------------------------------------------------
 
     const objectViewers = objects.map(obj => {
+        const states = objStates(obj);
+        const currentState = objCurrentState(obj);
         const machine: TraitStateMachineDefinition = {
-            name: obj.name,
-            states: obj.states,
-            currentState: obj.currentState,
-            transitions: obj.rules.map(r => ({
-                from: obj.currentState,
-                to: obj.states.find(s => s !== obj.currentState) || obj.currentState,
+            name: objName(obj),
+            states,
+            currentState,
+            transitions: objRules(obj).map(r => ({
+                from: currentState,
+                to: states.find(s => s !== currentState) || currentState,
                 event: r.whenEvent,
             })),
         };
         return { obj, machine };
     });
 
-    const showHint = attempts >= 3 && resolved.hint;
+    const hint = str(resolved.hint);
+    const showHint = attempts >= 3 && hint;
+    const theme = (resolved.theme ?? undefined) as { background?: string; accentColor?: string } | undefined;
+    const themeBackground = theme?.background;
+    const headerImage = str(resolved.headerImage);
     const encourageKey = ENCOURAGEMENT_KEYS[Math.min(attempts - 1, ENCOURAGEMENT_KEYS.length - 1)] ?? ENCOURAGEMENT_KEYS[0];
 
     return (
         <VStack
             className={cn('p-4 gap-6', className)}
             style={{
-                backgroundImage: resolved.theme?.background ? `url(${resolved.theme.background})` : undefined,
+                backgroundImage: themeBackground ? `url(${themeBackground})` : undefined,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
             }}
         >
             {/* Header image */}
-            {resolved.headerImage && !headerError ? (
+            {headerImage && !headerError ? (
                 <Box className="w-full h-32 overflow-hidden rounded-container">
-                    <img src={resolved.headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
+                    <img src={headerImage} alt="" onError={() => setHeaderError(true)} className="w-full h-full object-cover" />
                 </Box>
-            ) : resolved.headerImage && headerError ? (
+            ) : headerImage && headerError ? (
                 <Box className="w-full h-32 rounded-container bg-gradient-to-br from-muted to-accent opacity-60" />
             ) : null}
 
             {/* Title + goal */}
             <VStack gap="xs">
                 <Typography variant="h4" className="text-foreground">
-                    {resolved.title}
+                    {str(resolved.title)}
                 </Typography>
                 <Typography variant="body2" className="text-muted-foreground">
-                    {resolved.description}
+                    {str(resolved.description)}
                 </Typography>
                 <HStack className="items-center p-2 rounded bg-primary/10 border border-primary/30" gap="xs">
                     <Typography variant="caption" className="text-primary font-bold">
                         {t('game.goal') + ':'}
                     </Typography>
                     <Typography variant="caption" className="text-foreground">
-                        {resolved.goalCondition}
+                        {str(resolved.goalCondition)}
                     </Typography>
                 </HStack>
             </VStack>
@@ -272,26 +265,29 @@ export function EventHandlerBoard({
                     {t('eventHandler.clickObject') + ':'}
                 </Typography>
                 <HStack className="flex-wrap" gap="sm">
-                    {objectViewers.map(({ obj, machine }) => (
+                    {objectViewers.map(({ obj, machine }) => {
+                        const oid = objId(obj);
+                        return (
                         <Box
-                            key={obj.id}
+                            key={oid}
                             className={cn(
                                 'p-3 rounded-container border-2 cursor-pointer transition-all hover:scale-105',
-                                selectedObjectId === obj.id
+                                selectedObjectId === oid
                                     ? 'border-primary bg-primary/10'
                                     : 'border-border bg-card hover:border-muted-foreground',
                             )}
-                            onClick={() => setSelectedObjectId(obj.id)}
+                            onClick={() => setSelectedObjectId(oid)}
                         >
                             <VStack gap="xs" className="items-center min-w-[120px]">
-                                <Typography variant="h5">{obj.icon}</Typography>
+                                <Typography variant="h5">{objIcon(obj)}</Typography>
                                 <Typography variant="body2" className="text-foreground font-medium">
-                                    {obj.name}
+                                    {objName(obj)}
                                 </Typography>
                                 <TraitStateViewer trait={machine} variant="compact" size="sm" />
                             </VStack>
                         </Box>
-                    ))}
+                        );
+                    })}
                 </HStack>
             </VStack>
 
@@ -313,7 +309,7 @@ export function EventHandlerBoard({
             {playState === 'success' && (
                 <Box className="p-4 rounded-container bg-success/20 border border-success text-center">
                     <Typography variant="h5" className="text-success">
-                        {resolved.successMessage || t('eventHandler.chainComplete')}
+                        {str(resolved.successMessage) || t('eventHandler.chainComplete')}
                     </Typography>
                 </Box>
             )}
@@ -332,7 +328,7 @@ export function EventHandlerBoard({
                                     {'\uD83D\uDCA1 ' + t('game.hint') + ':'}
                                 </Typography>
                                 <Typography variant="body2" className="text-foreground">
-                                    {resolved.hint}
+                                    {hint}
                                 </Typography>
                             </HStack>
                         </Box>

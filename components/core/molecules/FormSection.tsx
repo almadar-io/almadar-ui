@@ -10,9 +10,9 @@ import { Icon } from "../atoms/Icon";
 import { ChevronDown } from "lucide-react";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { useEventBus } from "../../../hooks/useEventBus";
-import type { EntityDisplayProps } from "../organisms/types";
+import type { DisplayStateProps } from "../organisms/types";
 
-export interface FormSectionProps extends EntityDisplayProps {
+export interface FormSectionProps extends DisplayStateProps {
   /** Section title */
   title?: string;
   /** Section description */
@@ -113,7 +113,7 @@ FormSection.displayName = "FormSection";
 /**
  * Form layout with multiple sections
  */
-export interface FormLayoutProps extends EntityDisplayProps {
+export interface FormLayoutProps extends DisplayStateProps {
   children: React.ReactNode;
   /** Show section dividers */
   dividers?: boolean;
@@ -143,7 +143,7 @@ FormLayout.displayName = "FormLayout";
 /**
  * Form actions bar (submit/cancel buttons)
  */
-export interface FormActionsProps extends EntityDisplayProps {
+export interface FormActionsProps extends DisplayStateProps {
   children: React.ReactNode;
   /** Sticky at bottom */
   sticky?: boolean;

@@ -1,2 +1,2 @@
 export { ClassifierBoard } from './ClassifierBoard';
-export type { ClassifierBoardProps, ClassifierPuzzleEntity, ClassifierItem, ClassifierCategory } from './ClassifierBoard';
+export type { ClassifierBoardProps, ClassifierItem, ClassifierCategory } from './ClassifierBoard';

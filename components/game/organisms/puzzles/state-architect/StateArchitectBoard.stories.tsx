@@ -1,6 +1,7 @@
 /* eslint-disable almadar/require-translate -- storybook-only, not a shipped component */
 import type { Meta, StoryObj } from '@storybook/react';
-import { StateArchitectBoard, type StateArchitectPuzzleEntity } from './StateArchitectBoard';
+import { StateArchitectBoard } from './StateArchitectBoard';
+import type { EntityRow } from '@almadar/core';
 
 const meta: Meta<typeof StateArchitectBoard> = {
     title: 'Game/Organisms/Puzzles/StateArchitectBoard',
@@ -9,7 +10,7 @@ const meta: Meta<typeof StateArchitectBoard> = {
 export default meta;
 type Story = StoryObj<typeof StateArchitectBoard>;
 
-const simplePuzzle: StateArchitectPuzzleEntity = {
+const simplePuzzle: EntityRow = {
     id: 'puzzle-traffic-light',
     title: 'Traffic Light Controller',
     description: 'Design a state machine for a traffic light that cycles through red, green, and yellow.',
@@ -42,7 +43,7 @@ const simplePuzzle: StateArchitectPuzzleEntity = {
     showCodeView: true,
 };
 
-const prefilledPuzzle: StateArchitectPuzzleEntity = {
+const prefilledPuzzle: EntityRow = {
     ...simplePuzzle,
     id: 'puzzle-traffic-prefilled',
     title: 'Traffic Light (Prefilled)',

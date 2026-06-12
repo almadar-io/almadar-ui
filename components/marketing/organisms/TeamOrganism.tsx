@@ -19,10 +19,11 @@ import { SimpleGrid } from '../../core/molecules/SimpleGrid';
 import { TeamCard } from '../molecules/TeamCard';
 import { LoadingState } from '../../core/molecules/LoadingState';
 import { ErrorState } from '../../core/molecules/ErrorState';
-import type { EntityDisplayProps } from '../../core/organisms/types';
-import type { TeamMemberEntity } from '../../core/organisms/marketing-types';
+import type { EntityRow } from '@almadar/core';
+import type { DisplayStateProps } from '../../core/organisms/types';
 
-export interface TeamOrganismProps extends EntityDisplayProps<TeamMemberEntity> {
+export interface TeamOrganismProps extends DisplayStateProps {
+  entity?: EntityRow | readonly EntityRow[];
   heading?: string;
   subtitle?: string;
 }
@@ -37,12 +38,12 @@ export const TeamOrganism: React.FC<TeamOrganismProps> = ({
 }) => {
   const { t } = useTranslate();
 
-  const items = useMemo(
+  const items = useMemo<readonly EntityRow[]>(
     () =>
       Array.isArray(entity)
         ? entity
         : entity && typeof entity === 'object'
-          ? [entity as TeamMemberEntity]
+          ? [entity as EntityRow]
           : [],
     [entity],
   );
@@ -76,12 +77,12 @@ export const TeamOrganism: React.FC<TeamOrganismProps> = ({
       <SimpleGrid cols={cols > 0 ? cols : 1} gap="lg">
         {items.map((member) => (
           <TeamCard
-            key={member.id}
-            name={member.name}
-            nameAr={member.nameAr}
-            role={member.role}
-            bio={member.bio}
-            avatar={member.avatar}
+            key={String(member.id ?? '')}
+            name={String(member.name ?? '')}
+            nameAr={member.nameAr != null ? String(member.nameAr) : undefined}
+            role={String(member.role ?? '')}
+            bio={String(member.bio ?? '')}
+            avatar={member.avatar != null ? String(member.avatar) : undefined}
           />
         ))}
       </SimpleGrid>

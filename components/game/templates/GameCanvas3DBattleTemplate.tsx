@@ -20,7 +20,8 @@
  */
 
 import React from 'react';
-import { GameCanvas3D, type GameCanvas3DProps } from '../organisms/GameCanvas3D';
+import type { EntityRow } from '@almadar/core';
+import { GameCanvas3D } from '../organisms/GameCanvas3D';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from '../organisms/types/isometric';
 import { Box } from '../../core/atoms/Box';
 import { HStack } from '../../core/atoms/Stack';
@@ -28,22 +29,7 @@ import { Typography } from '../../core/atoms/Typography';
 import { cn } from '../../../lib/cn';
 import type { TemplateProps } from '../../core/templates/types';
 
-export interface Battle3DEntity {
-    /** Battlefield tiles */
-    tiles: IsometricTile[];
-    /** Combatants */
-    units: IsometricUnit[];
-    /** Battlefield features (cover, obstacles) */
-    features: IsometricFeature[];
-    /** Current turn (player/enemy) */
-    currentTurn?: 'player' | 'enemy';
-    /** Round number */
-    round?: number;
-    /** Entity ID */
-    id: string;
-}
-
-export interface GameCanvas3DBattleTemplateProps extends TemplateProps<Battle3DEntity> {
+export interface GameCanvas3DBattleTemplateProps extends TemplateProps {
     /** 3D camera mode - defaults to perspective for dramatic effect */
     cameraMode?: 'isometric' | 'perspective' | 'top-down';
     /** Show grid helper */
@@ -109,14 +95,19 @@ export function GameCanvas3DBattleTemplate({
     attackTargets,
     className,
 }: GameCanvas3DBattleTemplateProps): React.JSX.Element | null {
-    const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as Battle3DEntity : undefined;
+    const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as EntityRow : undefined;
     if (!resolved) return null;
+    const tiles = (Array.isArray(resolved.tiles) ? resolved.tiles : []) as unknown as IsometricTile[];
+    const units = (Array.isArray(resolved.units) ? resolved.units : []) as unknown as IsometricUnit[];
+    const features = (Array.isArray(resolved.features) ? resolved.features : []) as unknown as IsometricFeature[];
+    const currentTurn = resolved.currentTurn as 'player' | 'enemy' | undefined;
+    const round = resolved.round == null ? undefined : Number(resolved.round);
     return (
         <Box className={cn('game-canvas-3d-battle-template', className)}>
             <GameCanvas3D
-                tiles={resolved.tiles}
-                units={resolved.units}
-                features={resolved.features}
+                tiles={tiles}
+                units={units}
+                features={features}
                 cameraMode={cameraMode}
                 showGrid={showGrid}
                 showCoordinates={false}
@@ -132,18 +123,18 @@ export function GameCanvas3DBattleTemplate({
             />
 
             {/* Turn indicator overlay */}
-            {resolved.currentTurn && (
+            {currentTurn && (
                 <HStack
                     gap="sm"
                     align="center"
-                    className={cn('battle-template__turn-indicator', `battle-template__turn-indicator--${resolved.currentTurn}`)}
+                    className={cn('battle-template__turn-indicator', `battle-template__turn-indicator--${currentTurn}`)}
                 >
                     <Typography variant="body" className="turn-indicator__label">
-                        {resolved.currentTurn === 'player' ? 'Your Turn' : "Enemy's Turn"}
+                        {currentTurn === 'player' ? 'Your Turn' : "Enemy's Turn"}
                     </Typography>
-                    {resolved.round && (
+                    {round != null && (
                         <Typography variant="small" className="turn-indicator__round">
-                            Round {resolved.round}
+                            Round {round}
                         </Typography>
                     )}
                 </HStack>

@@ -23,10 +23,10 @@ import {
 } from '../../../lib/parseContentSegments';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';
-import type { EntityDisplayProps } from '../organisms/types';
+import type { DisplayStateProps } from '../organisms/types';
 import type { OrbitalSchema, StateMachine, Trait } from '@almadar/core';
 
-export interface ContentRendererProps extends EntityDisplayProps {
+export interface ContentRendererProps extends DisplayStateProps {
   /** Raw content string — auto-parsed into segments */
   content?: string;
   /** Pre-parsed segments (overrides content) */

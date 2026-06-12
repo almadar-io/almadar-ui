@@ -5,11 +5,11 @@
  * Composes atoms and molecules to create a professional detail view.
  *
  * Data is provided by the runtime via the `entity` prop.
- * See EntityDisplayProps in ./types.ts for base prop contract.
+ * Extends DisplayStateProps (see ./types.ts) and declares `entity?: EntityRow`.
  */
 
 import React, { useCallback, Suspense, lazy } from "react";
-import type { EventPayload, EntityRecord, EntityRow } from "@almadar/core";
+import type { EventPayload, EntityRow } from "@almadar/core";
 import type { ItemActionPayload } from "@almadar/patterns";
 import {
   Calendar,
@@ -45,7 +45,7 @@ import { cn } from "../../../lib/cn";
 import { getNestedValue } from "../../../lib/getNestedValue";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
-import type { EntityDisplayProps } from "./types";
+import type { DisplayStateProps } from "./types";
 
 function getFieldIcon(fieldName: string): LucideIcon {
   const name = fieldName.toLowerCase();
@@ -315,9 +315,9 @@ export interface DetailPanelStatus {
   variant?: "default" | "success" | "warning" | "danger" | "info";
 }
 
-export interface DetailPanelProps extends EntityDisplayProps {
-  /** RECORD-cardinality override: renders ONE record (see body collapse below). */
-  entity?: EntityRecord<EntityRow>;
+export interface DetailPanelProps extends DisplayStateProps {
+  /** RECORD-cardinality: renders ONE record (see body collapse below). */
+  entity?: EntityRow;
   title?: string;
   subtitle?: string;
   status?: DetailPanelStatus;

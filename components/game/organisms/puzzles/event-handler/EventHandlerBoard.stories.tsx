@@ -1,6 +1,7 @@
 // eslint-disable-next-line almadar/require-translate -- storybook-only, not a shipped component
 import type { Meta, StoryObj } from '@storybook/react';
-import { EventHandlerBoard, type EventHandlerPuzzleEntity } from './EventHandlerBoard';
+import { EventHandlerBoard } from './EventHandlerBoard';
+import type { EntityRow } from '@almadar/core';
 
 const meta: Meta<typeof EventHandlerBoard> = {
     title: 'Game/Organisms/Puzzles/EventHandlerBoard',
@@ -9,7 +10,7 @@ const meta: Meta<typeof EventHandlerBoard> = {
 export default meta;
 type Story = StoryObj<typeof EventHandlerBoard>;
 
-const firePuzzle: EventHandlerPuzzleEntity = {
+const firePuzzle: EntityRow = {
     id: 'fire-puzzle',
     title: 'The Kitchen Fire',
     description: 'A fire breaks out in the kitchen. Set up event handlers so the alarm sounds and sprinklers activate.',

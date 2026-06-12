@@ -21,7 +21,7 @@ import {
   MoreHorizontal,
   LucideIcon,
 } from "lucide-react";
-import { EntityDisplayProps, EntityDisplayEvents } from "./types";
+import { DisplayStateProps, EntityDisplayEvents } from "./types";
 import type { EntityRow } from "@almadar/core";
 
 export type EntityTableLook =
@@ -109,7 +109,9 @@ export interface DataTableEmptyAction {
 }
 
 export interface DataTableProps<T extends EntityRow & { id: string | number }>
-  extends EntityDisplayProps<T> {
+  extends DisplayStateProps {
+  /** Entity rows to display (collection cardinality). */
+  entity?: readonly EntityRow[];
   /** Fields to display - accepts string[] or Column[] for unified interface. Alias for columns */
   fields: readonly Column<T>[] | readonly string[];
   /** Columns can be Column objects or simple string field names */

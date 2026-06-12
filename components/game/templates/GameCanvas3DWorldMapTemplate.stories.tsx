@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { GameCanvas3DWorldMapTemplate, type WorldMap3DEntity } from './GameCanvas3DWorldMapTemplate';
+import { GameCanvas3DWorldMapTemplate } from './GameCanvas3DWorldMapTemplate';
+import type { EntityRow } from '@almadar/core';
 
 function generateWorldTiles(width: number, height: number) {
     const tiles = [];
@@ -23,7 +24,7 @@ function generateWorldTiles(width: number, height: number) {
     return tiles;
 }
 
-const worldMapEntity: WorldMap3DEntity = {
+const worldMapEntity: EntityRow = {
     id: 'world-1',
     name: 'Kingdom of Aldoria',
     tiles: generateWorldTiles(12, 12),
