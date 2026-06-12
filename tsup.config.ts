@@ -187,6 +187,6 @@ export default defineConfig([
     external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react'],
     noExternal: ['clsx', 'tailwind-merge'],
     banner: { js: '"use client";' },
-    esbuildPlugins: [dedupeI18nPlugin, externalThreeSubpathPlugin],
+    esbuildPlugins: [dedupeContextPlugin, dedupeEventBusPlugin, dedupeProvidersPlugin, dedupeI18nPlugin, externalThreeSubpathPlugin],
   },
 ]);
