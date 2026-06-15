@@ -178,6 +178,7 @@ export {
   type FormLayoutProps,
   type FormActionsProps,
 } from "./FormSection";
+export { PropertyInspector, type PropertyInspectorProps } from "./PropertyInspector";
 export { Header, type HeaderProps } from "./Header";
 export {
   Navigation,
