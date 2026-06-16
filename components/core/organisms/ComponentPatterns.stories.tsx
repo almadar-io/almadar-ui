@@ -4,12 +4,12 @@ import {
   ButtonPattern,
   IconButtonPattern,
   TextPattern,
-  CardPattern,
-  InputPattern,
-  SelectPattern,
-  CheckboxPattern,
   AlertPattern,
 } from './ComponentPatterns';
+import { Card } from '../atoms/Card';
+import { Input } from '../atoms/Input';
+import { Select } from '../atoms/Select';
+import { Checkbox } from '../atoms/Checkbox';
 import { VStack, HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 import { Badge } from '../atoms/Badge';
@@ -107,9 +107,9 @@ export const DisplayComponents: Story = {
 export const FormInputs: Story = {
   render: () => (
     <VStack gap="md" className="max-w-sm">
-      <InputPattern placeholder="Enter your name" onChange="NAME_CHANGE" />
-      <InputPattern inputType="email" placeholder="Email address" onChange="EMAIL_CHANGE" />
-      <SelectPattern
+      <Input placeholder="Enter your name" onChange="NAME_CHANGE" />
+      <Input inputType="email" placeholder="Email address" onChange="EMAIL_CHANGE" />
+      <Select
         options={[
           { value: 'admin', label: 'Admin' },
           { value: 'user', label: 'User' },
@@ -118,7 +118,7 @@ export const FormInputs: Story = {
         placeholder="Select role"
         onChange="ROLE_CHANGE"
       />
-      <CheckboxPattern label="Accept terms" onChange="TERMS_CHANGE" />
+      <Checkbox label="Accept terms" onChange="TERMS_CHANGE" />
     </VStack>
   ),
 };
@@ -152,12 +152,12 @@ export const NavigationComponents: Story = {
 export const LayoutComponents: Story = {
   render: () => (
     <ContainerPattern maxWidth="md" padding="lg">
-      <CardPattern title="Card Title" subtitle="Card subtitle" padding="lg">
+      <Card title="Card Title" subtitle="Card subtitle" padding="lg" action="CARD_ACTION">
         <VStack gap="sm">
           <TextPattern content="This card is rendered via the pattern system." />
           <ButtonPattern label="Action" variant="primary" onClick="CARD_ACTION" />
         </VStack>
-      </CardPattern>
+      </Card>
     </ContainerPattern>
   ),
 };

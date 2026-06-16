@@ -1,8 +1,9 @@
 import React from "react";
 import type { EventKey } from "@almadar/core";
 import { cn } from "../../../lib/cn";
+import { useEventBus } from "../../../hooks/useEventBus";
 
-export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+export interface TextareaProps extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'onChange'> {
   /** Additional CSS classes applied to the root element. */
   className?: string;
   /** Placeholder text */
@@ -13,13 +14,26 @@ export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextArea
   action?: EventKey;
   /** Error message */
   error?: string;
+  /** onChange handler or declarative event key for trait dispatch */
+  onChange?: React.ChangeEventHandler<HTMLTextAreaElement> | EventKey;
 }
 
 export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, error, ...props }, ref) => {
+  ({ className, error, onChange, ...props }, ref) => {
+    const eventBus = useEventBus();
+
+    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      if (typeof onChange === 'string') {
+        eventBus.emit(`UI:${onChange}`, { value: e.target.value });
+      } else {
+        onChange?.(e);
+      }
+    };
+
     return (
       <textarea
         ref={ref}
+        onChange={handleChange}
         className={cn(
           "block w-full border-[length:var(--border-width)] shadow-sm",
           "px-3 py-2 text-sm text-foreground",

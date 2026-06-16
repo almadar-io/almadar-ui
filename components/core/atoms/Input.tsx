@@ -3,6 +3,7 @@ import type { EventKey } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Icon, resolveIcon, type IconInput } from "./Icon";
 import { useTranslate } from "../../../hooks/useTranslate";
+import { useEventBus } from "../../../hooks/useEventBus";
 
 export interface SelectOption {
   value: string;
@@ -45,16 +46,16 @@ export interface InputProps extends Omit<
   icon?: IconInput;
   /** Show clear button when input has value */
   clearable?: boolean;
-  /** Callback when clear button is clicked */
-  onClear?: () => void;
+  /** Callback or declarative event key when clear button is clicked */
+  onClear?: (() => void) | EventKey;
   /** Options for select type */
   options?: SelectOption[];
   /** Rows for textarea type */
   rows?: number;
-  /** onChange handler - accepts events from input, select, or textarea */
+  /** onChange handler or declarative event key for trait dispatch */
   onChange?: React.ChangeEventHandler<
     HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-  >;
+  > | EventKey;
 }
 
 export const Input = React.forwardRef<
@@ -81,6 +82,7 @@ export const Input = React.forwardRef<
     ref,
   ) => {
     const { t } = useTranslate();
+    const eventBus = useEventBus();
     // inputType takes precedence over type, default to "text"
     const type = inputType || htmlType || "text";
     const resolveIconNode = (i: IconInput | undefined, cls: string) => {
@@ -114,6 +116,26 @@ export const Input = React.forwardRef<
       className,
     );
 
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+      if (typeof onChange === 'string') {
+        const target = e.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+        const payload = type === 'checkbox'
+          ? { checked: (target as HTMLInputElement).checked }
+          : { value: target.value };
+        eventBus.emit(`UI:${onChange}`, payload);
+      } else {
+        onChange?.(e);
+      }
+    };
+
+    const handleClear = () => {
+      if (typeof onClear === 'string') {
+        eventBus.emit(`UI:${onClear}`, {});
+      } else {
+        onClear?.();
+      }
+    };
+
     // Handle select type
     if (type === "select") {
       return (
@@ -126,7 +148,7 @@ export const Input = React.forwardRef<
           <select
             ref={ref as React.Ref<HTMLSelectElement>}
             value={value as string}
-            onChange={onChange as React.ChangeEventHandler<HTMLSelectElement>}
+            onChange={handleChange as React.ChangeEventHandler<HTMLSelectElement>}
             className={cn(baseClassName, "appearance-none pr-10", className)}
             {...(props as React.SelectHTMLAttributes<HTMLSelectElement>)}
           >
@@ -151,7 +173,7 @@ export const Input = React.forwardRef<
           <textarea
             ref={ref as React.Ref<HTMLTextAreaElement>}
             value={value as string}
-            onChange={onChange as React.ChangeEventHandler<HTMLTextAreaElement>}
+            onChange={handleChange as React.ChangeEventHandler<HTMLTextAreaElement>}
             rows={rows}
             className={baseClassName}
             {...(props as React.TextareaHTMLAttributes<HTMLTextAreaElement>)}
@@ -167,7 +189,7 @@ export const Input = React.forwardRef<
           ref={ref as React.Ref<HTMLInputElement>}
           type="checkbox"
           checked={props.checked}
-          onChange={onChange}
+          onChange={handleChange as React.ChangeEventHandler<HTMLInputElement>}
           className={cn(
             "h-icon-default w-icon-default rounded-sm",
             "border-border",
@@ -192,14 +214,14 @@ export const Input = React.forwardRef<
           ref={ref as React.Ref<HTMLInputElement>}
           type={type}
           value={value}
-          onChange={onChange}
+          onChange={handleChange as React.ChangeEventHandler<HTMLInputElement>}
           className={baseClassName}
           {...props}
         />
         {showClearButton && (
           <button
             type="button"
-            onClick={onClear}
+            onClick={handleClear}
             className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
           >
             <Icon name="x" className="h-icon-default w-icon-default" />

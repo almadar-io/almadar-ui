@@ -1,9 +1,11 @@
 import React from "react";
+import type { EventKey } from "@almadar/core";
 import { cn } from "../../../lib/cn";
+import { useEventBus } from "../../../hooks/useEventBus";
 
 export interface CheckboxProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
-  "type"
+  "type" | "onChange"
 > {
   /** Additional CSS classes applied to the root element. */
   className?: string;
@@ -12,11 +14,22 @@ export interface CheckboxProps extends Omit<
   /** Default checked state (uncontrolled) */
   defaultChecked?: boolean;
   label?: string;
+  /** onChange handler or declarative event key for trait dispatch */
+  onChange?: React.ChangeEventHandler<HTMLInputElement> | EventKey;
 }
 
 export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
-  ({ className, label, id, ...props }, ref) => {
+  ({ className, label, id, onChange, ...props }, ref) => {
     const inputId = id || `checkbox-${Math.random().toString(36).substr(2, 9)}`;
+    const eventBus = useEventBus();
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (typeof onChange === 'string') {
+        eventBus.emit(`UI:${onChange}`, { checked: e.target.checked });
+      } else {
+        onChange?.(e);
+      }
+    };
 
     return (
       <div className="flex items-center">
@@ -25,6 +38,7 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
             ref={ref}
             type="checkbox"
             id={inputId}
+            onChange={handleChange}
             className={cn(
               "peer h-4 w-4 border-[length:var(--border-width)] border-border",
               "accent-primary focus:ring-ring focus:ring-offset-0",

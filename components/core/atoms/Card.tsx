@@ -1,5 +1,7 @@
 import React from "react";
+import type { EventKey } from "@almadar/core";
 import { cn } from "../../../lib/cn";
+import { useEventBus } from "../../../hooks/useEventBus";
 
 export type CardShadow = "none" | "sm" | "md" | "lg";
 
@@ -31,6 +33,8 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   look?: CardLook;
   /** Card content */
   children?: React.ReactNode;
+  /** Declarative event key emitted on click for trait dispatch */
+  action?: EventKey;
 }
 
 // Using CSS variables for theme-aware styling
@@ -110,10 +114,21 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       shadow,
       look = "elevated",
       children,
+      action,
+      onClick,
       ...props
     },
     ref,
   ) => {
+    const eventBus = useEventBus();
+
+    const handleClick = action
+      ? (e: React.MouseEvent<HTMLDivElement>) => {
+          eventBus.emit(`UI:${action}`, {});
+          onClick?.(e);
+        }
+      : onClick;
+
     return (
       <div
         ref={ref}
@@ -126,6 +141,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
           shadow && shadowStyles[shadow],
           className,
         )}
+        onClick={handleClick}
         {...props}
       >
         {(title || subtitle) && (
