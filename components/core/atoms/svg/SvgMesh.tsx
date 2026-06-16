@@ -3,14 +3,18 @@
 import React from 'react';
 
 export interface SvgMeshProps {
-  cx: number;
-  cy: number;
+  cx?: number;
+  cy?: number;
   nodes?: number;
   radius?: number;
   color?: string;
   connectionDensity?: number;
   opacity?: number;
   className?: string;
+  /** When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context. */
+  asRoot?: boolean;
+  width?: number;
+  height?: number;
 }
 
 function getNodePositions(
@@ -46,19 +50,22 @@ function getConnections(
 }
 
 export const SvgMesh: React.FC<SvgMeshProps> = ({
-  cx,
-  cy,
+  cx = 60,
+  cy = 60,
   nodes = 6,
   radius = 50,
   color = 'var(--color-primary)',
   connectionDensity = 0.5,
   opacity = 1,
   className,
+  asRoot = true,
+  width = 120,
+  height = 120,
 }) => {
   const positions = getNodePositions(cx, cy, nodes, radius);
   const connections = getConnections(nodes, connectionDensity);
 
-  return (
+  const inner = (
     <g className={className} opacity={opacity}>
       {connections.map(([a, b]) => (
         <line
@@ -83,6 +90,16 @@ export const SvgMesh: React.FC<SvgMeshProps> = ({
       ))}
     </g>
   );
+
+  if (asRoot) {
+    return (
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
+        {inner}
+      </svg>
+    );
+  }
+
+  return inner;
 };
 
 SvgMesh.displayName = 'SvgMesh';

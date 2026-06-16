@@ -38,7 +38,15 @@ export interface I18nContextValue {
 const I18nContext = createContext<I18nContextValue>({
   locale: 'en',
   direction: 'ltr',
-  t: (key) => coreLocale[key] ?? key, // core locale fallback
+  t: (key, params) => {
+    let msg = coreLocale[key] ?? key;
+    if (params) {
+      for (const [k, v] of Object.entries(params)) {
+        msg = msg.split(`{{${k}}}`).join(String(v));
+      }
+    }
+    return msg;
+  },
 });
 
 I18nContext.displayName = 'I18nContext';

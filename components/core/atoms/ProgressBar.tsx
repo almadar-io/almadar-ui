@@ -117,15 +117,18 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   const effectiveShowPercentage = showPercentage || showLabel;
 
   if (progressType === "linear") {
+    const showHeader = label || effectiveShowPercentage;
     return (
       <div className={cn("w-full", className)}>
-        {label && (
+        {showHeader && (
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-sm font-bold text-foreground">
-              {label}
-            </span>
+            {label && (
+              <span className="text-sm font-bold text-foreground">
+                {label}
+              </span>
+            )}
             {effectiveShowPercentage && (
-              <span className="text-sm text-foreground font-medium">
+              <span className={cn("text-sm text-foreground font-medium", !label && "ml-auto")}>
                 {Math.round(percentage)}%
               </span>
             )}
@@ -208,15 +211,18 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
     const activeSteps = Math.floor(value / stepValue);
     const partialStep = (value % stepValue) / stepValue;
 
+    const showStepHeader = label || effectiveShowPercentage;
     return (
       <div className={cn("w-full", className)}>
-        {label && (
+        {showStepHeader && (
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-foreground">
-              {label}
-            </span>
+            {label && (
+              <span className="text-sm font-medium text-foreground">
+                {label}
+              </span>
+            )}
             {effectiveShowPercentage && (
-              <span className="text-sm text-muted-foreground">
+              <span className={cn("text-sm text-muted-foreground", !label && "ml-auto")}>
                 {Math.round(percentage)}%
               </span>
             )}

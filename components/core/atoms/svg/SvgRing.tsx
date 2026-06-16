@@ -3,8 +3,8 @@
 import React from 'react';
 
 export interface SvgRingProps {
-  cx: number;
-  cy: number;
+  cx?: number;
+  cy?: number;
   r?: number;
   variant?: 'solid' | 'dashed' | 'glow';
   color?: string;
@@ -12,13 +12,17 @@ export interface SvgRingProps {
   opacity?: number;
   className?: string;
   label?: string;
+  /** When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context. */
+  asRoot?: boolean;
+  width?: number;
+  height?: number;
 }
 
 let ringIdCounter = 0;
 
 export const SvgRing: React.FC<SvgRingProps> = ({
-  cx,
-  cy,
+  cx = 50,
+  cy = 50,
   r = 40,
   variant = 'solid',
   color = 'var(--color-primary)',
@@ -26,13 +30,16 @@ export const SvgRing: React.FC<SvgRingProps> = ({
   opacity = 1,
   className,
   label,
+  asRoot = true,
+  width = 100,
+  height = 100,
 }) => {
   const gradientId = React.useMemo(() => {
     ringIdCounter += 1;
     return `almadar-ring-glow-${ringIdCounter}`;
   }, []);
 
-  return (
+  const inner = (
     <g className={className} opacity={opacity}>
       {variant === 'glow' && (
         <>
@@ -68,6 +75,16 @@ export const SvgRing: React.FC<SvgRingProps> = ({
       )}
     </g>
   );
+
+  if (asRoot) {
+    return (
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
+        {inner}
+      </svg>
+    );
+  }
+
+  return inner;
 };
 
 SvgRing.displayName = 'SvgRing';

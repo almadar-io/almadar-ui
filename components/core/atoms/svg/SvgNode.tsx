@@ -3,27 +3,34 @@
 import React from 'react';
 
 export interface SvgNodeProps {
-  x: number;
-  y: number;
+  x?: number;
+  y?: number;
   r?: number;
   variant?: 'filled' | 'stroked' | 'pulse';
   color?: string;
   opacity?: number;
   className?: string;
   label?: string;
+  /** When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context. */
+  asRoot?: boolean;
+  width?: number;
+  height?: number;
 }
 
 export const SvgNode: React.FC<SvgNodeProps> = ({
-  x,
-  y,
+  x = 50,
+  y = 50,
   r = 6,
   variant = 'filled',
   color = 'var(--color-primary)',
   opacity = 1,
   className,
   label,
+  asRoot = true,
+  width = 100,
+  height = 100,
 }) => {
-  return (
+  const inner = (
     <g className={className} opacity={opacity}>
       {variant === 'pulse' && (
         <circle
@@ -59,6 +66,16 @@ export const SvgNode: React.FC<SvgNodeProps> = ({
       )}
     </g>
   );
+
+  if (asRoot) {
+    return (
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
+        {inner}
+      </svg>
+    );
+  }
+
+  return inner;
 };
 
 SvgNode.displayName = 'SvgNode';

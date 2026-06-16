@@ -3,8 +3,8 @@
 import React from 'react';
 
 export interface SvgGridProps {
-  x: number;
-  y: number;
+  x?: number;
+  y?: number;
   cols?: number;
   rows?: number;
   spacing?: number;
@@ -13,11 +13,15 @@ export interface SvgGridProps {
   opacity?: number;
   className?: string;
   highlights?: number[];
+  /** When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context. */
+  asRoot?: boolean;
+  width?: number;
+  height?: number;
 }
 
 export const SvgGrid: React.FC<SvgGridProps> = ({
-  x,
-  y,
+  x = 10,
+  y = 10,
   cols = 4,
   rows = 3,
   spacing = 20,
@@ -26,10 +30,13 @@ export const SvgGrid: React.FC<SvgGridProps> = ({
   opacity = 1,
   className,
   highlights = [],
+  asRoot = true,
+  width = 100,
+  height = 100,
 }) => {
   const highlightSet = new Set(highlights);
 
-  return (
+  const inner = (
     <g className={className} opacity={opacity}>
       {Array.from({ length: rows }).map((_, row) =>
         Array.from({ length: cols }).map((_, col) => {
@@ -52,6 +59,16 @@ export const SvgGrid: React.FC<SvgGridProps> = ({
       )}
     </g>
   );
+
+  if (asRoot) {
+    return (
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
+        {inner}
+      </svg>
+    );
+  }
+
+  return inner;
 };
 
 SvgGrid.displayName = 'SvgGrid';

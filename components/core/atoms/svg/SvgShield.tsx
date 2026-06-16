@@ -3,13 +3,17 @@
 import React from 'react';
 
 export interface SvgShieldProps {
-  x: number;
-  y: number;
+  x?: number;
+  y?: number;
   size?: number;
   variant?: 'outline' | 'filled' | 'check';
   color?: string;
   opacity?: number;
   className?: string;
+  /** When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context. */
+  asRoot?: boolean;
+  width?: number;
+  height?: number;
 }
 
 const SHIELD_PATH =
@@ -18,15 +22,18 @@ const SHIELD_PATH =
 const CHECK_PATH = 'M10,18 L14,22 L21,13';
 
 export const SvgShield: React.FC<SvgShieldProps> = ({
-  x,
-  y,
+  x = 50,
+  y = 50,
   size = 1,
   variant = 'outline',
   color = 'var(--color-primary)',
   opacity = 1,
   className,
+  asRoot = true,
+  width = 100,
+  height = 100,
 }) => {
-  return (
+  const inner = (
     <g
       className={className}
       opacity={opacity}
@@ -51,6 +58,16 @@ export const SvgShield: React.FC<SvgShieldProps> = ({
       )}
     </g>
   );
+
+  if (asRoot) {
+    return (
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
+        {inner}
+      </svg>
+    );
+  }
+
+  return inner;
 };
 
 SvgShield.displayName = 'SvgShield';

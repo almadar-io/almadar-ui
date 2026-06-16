@@ -3,13 +3,17 @@
 import React from 'react';
 
 export interface SvgMorphProps {
-  x: number;
-  y: number;
+  x?: number;
+  y?: number;
   size?: number;
   variant?: 'text-to-code' | 'code-to-app' | 'generic';
   color?: string;
   opacity?: number;
   className?: string;
+  /** When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context. */
+  asRoot?: boolean;
+  width?: number;
+  height?: number;
 }
 
 const TextLines: React.FC<{ x: number; y: number; scale: number; color: string }> = ({
@@ -147,75 +151,88 @@ const FlowArrow: React.FC<{
 FlowArrow.displayName = 'FlowArrow';
 
 export const SvgMorph: React.FC<SvgMorphProps> = ({
-  x,
-  y,
+  x = 5,
+  y = 10,
   size = 1,
   variant = 'generic',
   color = 'var(--color-primary)',
   opacity = 1,
   className,
+  asRoot = true,
+  width = 130,
+  height = 50,
 }) => {
   const gap = 40 * size;
   const midY = y + 10 * size;
 
+  let inner: React.ReactNode;
+
   if (variant === 'text-to-code') {
     const leftEnd = x + 30 * size;
     const rightStart = leftEnd + gap;
-    return (
+    inner = (
       <g className={className} opacity={opacity}>
         <TextLines x={x} y={y} scale={size} color={color} />
         <FlowArrow x1={leftEnd} y={midY} x2={rightStart} scale={size} color={color} />
         <CodeBrackets x={rightStart} y={y} scale={size} color={color} />
       </g>
     );
-  }
-
-  if (variant === 'code-to-app') {
+  } else if (variant === 'code-to-app') {
     const leftEnd = x + 26 * size;
     const rightStart = leftEnd + gap;
-    return (
+    inner = (
       <g className={className} opacity={opacity}>
         <CodeBrackets x={x} y={y} scale={size} color={color} />
         <FlowArrow x1={leftEnd} y={midY} x2={rightStart} scale={size} color={color} />
         <AppRect x={rightStart} y={y} scale={size} color={color} />
       </g>
     );
+  } else {
+    const circleR = 10 * size;
+    const circleX = x + circleR;
+    const squareStart = x + circleR * 2 + gap;
+    const squareSize = circleR * 2;
+
+    inner = (
+      <g className={className} opacity={opacity}>
+        <circle
+          cx={circleX}
+          cy={midY}
+          r={circleR}
+          fill="none"
+          stroke={color}
+          strokeWidth={2 * size}
+        />
+        <FlowArrow
+          x1={circleX + circleR + 2 * size}
+          y={midY}
+          x2={squareStart}
+          scale={size}
+          color={color}
+        />
+        <rect
+          x={squareStart}
+          y={midY - circleR}
+          width={squareSize}
+          height={squareSize}
+          rx={3 * size}
+          fill="none"
+          stroke={color}
+          strokeWidth={2 * size}
+        />
+      </g>
+    );
   }
 
-  const circleR = 10 * size;
-  const circleX = x + circleR;
-  const squareStart = x + circleR * 2 + gap;
-  const squareSize = circleR * 2;
+  if (asRoot) {
+    return (
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
+        {inner}
+      </svg>
+    );
+  }
 
-  return (
-    <g className={className} opacity={opacity}>
-      <circle
-        cx={circleX}
-        cy={midY}
-        r={circleR}
-        fill="none"
-        stroke={color}
-        strokeWidth={2 * size}
-      />
-      <FlowArrow
-        x1={circleX + circleR + 2 * size}
-        y={midY}
-        x2={squareStart}
-        scale={size}
-        color={color}
-      />
-      <rect
-        x={squareStart}
-        y={midY - circleR}
-        width={squareSize}
-        height={squareSize}
-        rx={3 * size}
-        fill="none"
-        stroke={color}
-        strokeWidth={2 * size}
-      />
-    </g>
-  );
+  return <>{inner}</>;
 };
 
 SvgMorph.displayName = 'SvgMorph';

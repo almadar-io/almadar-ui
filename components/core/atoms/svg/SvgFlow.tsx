@@ -3,23 +3,32 @@
 import React from 'react';
 
 export interface SvgFlowProps {
-  points: Array<[number, number]>;
+  points?: Array<[number, number]>;
   color?: string;
   strokeWidth?: number;
   animated?: boolean;
   opacity?: number;
   className?: string;
+  /** When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context. */
+  asRoot?: boolean;
+  width?: number;
+  height?: number;
 }
 
 let flowIdCounter = 0;
 
+const DEFAULT_POINTS: Array<[number, number]> = [[10, 50], [50, 20], [90, 50]];
+
 export const SvgFlow: React.FC<SvgFlowProps> = ({
-  points,
+  points = DEFAULT_POINTS,
   color = 'var(--color-primary)',
   strokeWidth = 1.5,
   animated = false,
   opacity = 1,
   className,
+  asRoot = true,
+  width = 100,
+  height = 100,
 }) => {
   const markerId = React.useMemo(() => {
     flowIdCounter += 1;
@@ -34,7 +43,7 @@ export const SvgFlow: React.FC<SvgFlowProps> = ({
     .map((pt, i) => `${i === 0 ? 'M' : 'L'}${pt[0]},${pt[1]}`)
     .join(' ');
 
-  return (
+  const inner = (
     <g className={className} opacity={opacity}>
       <defs>
         <marker
@@ -62,6 +71,16 @@ export const SvgFlow: React.FC<SvgFlowProps> = ({
       />
     </g>
   );
+
+  if (asRoot) {
+    return (
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
+        {inner}
+      </svg>
+    );
+  }
+
+  return inner;
 };
 
 SvgFlow.displayName = 'SvgFlow';

@@ -21,7 +21,7 @@ export interface AuthLayoutProps {
 }
 
 export const AuthLayout: React.FC<AuthLayoutProps> = ({
-  appName = "{{APP_TITLE}}",
+  appName = "My App",
   logo,
   backgroundImage,
   showBranding = true,

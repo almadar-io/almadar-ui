@@ -3,8 +3,8 @@
 import React from 'react';
 
 export interface SvgLobeProps {
-  cx: number;
-  cy: number;
+  cx?: number;
+  cy?: number;
   rx?: number;
   ry?: number;
   rotation?: number;
@@ -12,11 +12,15 @@ export interface SvgLobeProps {
   color?: string;
   opacity?: number;
   className?: string;
+  /** When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context. */
+  asRoot?: boolean;
+  width?: number;
+  height?: number;
 }
 
 export const SvgLobe: React.FC<SvgLobeProps> = ({
-  cx,
-  cy,
+  cx = 50,
+  cy = 50,
   rx = 14,
   ry = 20,
   rotation = 0,
@@ -24,6 +28,9 @@ export const SvgLobe: React.FC<SvgLobeProps> = ({
   color = 'var(--color-primary)',
   opacity = 1,
   className,
+  asRoot = true,
+  width = 100,
+  height = 100,
 }) => {
   const clampedShells = Math.max(1, Math.min(3, shells));
 
@@ -57,7 +64,7 @@ export const SvgLobe: React.FC<SvgLobeProps> = ({
     );
   };
 
-  return (
+  const inner = (
     <g
       className={className}
       opacity={opacity}
@@ -66,6 +73,16 @@ export const SvgLobe: React.FC<SvgLobeProps> = ({
       {Array.from({ length: clampedShells }, (_, i) => renderShell(i))}
     </g>
   );
+
+  if (asRoot) {
+    return (
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
+        {inner}
+      </svg>
+    );
+  }
+
+  return inner;
 };
 
 SvgLobe.displayName = 'SvgLobe';

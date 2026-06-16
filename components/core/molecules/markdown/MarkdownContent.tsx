@@ -28,14 +28,14 @@ import { cn } from '../../../../lib/cn';
 export interface MarkdownContentProps {
   /** The markdown content to render */
   content: string;
-  /** Text direction */
-  direction?: 'rtl' | 'ltr';
+  /** Text direction (defaults to ltr; `ltr` is first so the generated config seeds it) */
+  direction?: 'ltr' | 'rtl';
   /** Additional CSS classes */
   className?: string;
 }
 
 export const MarkdownContent = React.memo<MarkdownContentProps>(
-  ({ content, direction, className }) => {
+  ({ content, direction = 'ltr', className }) => {
     const { t: _t } = useTranslate();
     const safeContent = typeof content === 'string' ? content : String(content ?? '');
     return (

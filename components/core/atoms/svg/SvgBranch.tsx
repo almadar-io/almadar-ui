@@ -3,14 +3,18 @@
 import React from 'react';
 
 export interface SvgBranchProps {
-  x: number;
-  y: number;
+  x?: number;
+  y?: number;
   variant?: 'fork' | 'merge' | 'diamond';
   branches?: number;
   size?: number;
   color?: string;
   opacity?: number;
   className?: string;
+  /** When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context. */
+  asRoot?: boolean;
+  width?: number;
+  height?: number;
 }
 
 function buildForkPaths(
@@ -74,18 +78,23 @@ function buildDiamondPoints(x: number, y: number, scale: number): string {
 }
 
 export const SvgBranch: React.FC<SvgBranchProps> = ({
-  x,
-  y,
+  x = 5,
+  y = 50,
   variant = 'fork',
   branches = 2,
   size = 1,
   color = 'var(--color-primary)',
   opacity = 1,
   className,
+  asRoot = true,
+  width = 100,
+  height = 100,
 }) => {
+  let inner: React.ReactNode;
+
   if (variant === 'diamond') {
     const points = buildDiamondPoints(x, y, size);
-    return (
+    inner = (
       <g className={className} opacity={opacity}>
         <polygon
           points={points}
@@ -96,31 +105,41 @@ export const SvgBranch: React.FC<SvgBranchProps> = ({
         />
       </g>
     );
+  } else {
+    const paths =
+      variant === 'fork'
+        ? buildForkPaths(x, y, branches, size)
+        : buildMergePaths(x, y, branches, size);
+
+    inner = (
+      <g className={className} opacity={opacity}>
+        {paths.map((d, i) => (
+          <path
+            key={i}
+            d={d}
+            fill="none"
+            stroke={color}
+            strokeWidth={2}
+            strokeLinecap="round"
+          />
+        ))}
+        {variant === 'fork' && <circle cx={x + 30 * size} cy={y} r={3} fill={color} />}
+        {variant === 'merge' && (
+          <circle cx={x + 30 * size} cy={y} r={3} fill={color} />
+        )}
+      </g>
+    );
   }
 
-  const paths =
-    variant === 'fork'
-      ? buildForkPaths(x, y, branches, size)
-      : buildMergePaths(x, y, branches, size);
+  if (asRoot) {
+    return (
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
+        {inner}
+      </svg>
+    );
+  }
 
-  return (
-    <g className={className} opacity={opacity}>
-      {paths.map((d, i) => (
-        <path
-          key={i}
-          d={d}
-          fill="none"
-          stroke={color}
-          strokeWidth={2}
-          strokeLinecap="round"
-        />
-      ))}
-      {variant === 'fork' && <circle cx={x + 30 * size} cy={y} r={3} fill={color} />}
-      {variant === 'merge' && (
-        <circle cx={x + 30 * size} cy={y} r={3} fill={color} />
-      )}
-    </g>
-  );
+  return <>{inner}</>;
 };
 
 SvgBranch.displayName = 'SvgBranch';

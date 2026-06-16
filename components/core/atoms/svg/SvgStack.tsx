@@ -3,8 +3,8 @@
 import React from 'react';
 
 export interface SvgStackProps {
-  x: number;
-  y: number;
+  x?: number;
+  y?: number;
   layers?: number;
   width?: number;
   height?: number;
@@ -12,11 +12,15 @@ export interface SvgStackProps {
   opacity?: number;
   className?: string;
   labels?: string[];
+  /** When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context. */
+  asRoot?: boolean;
+  svgWidth?: number;
+  svgHeight?: number;
 }
 
 export const SvgStack: React.FC<SvgStackProps> = ({
-  x,
-  y,
+  x = 10,
+  y = 40,
   layers: rawLayers = 3,
   width = 60,
   height = 40,
@@ -24,12 +28,15 @@ export const SvgStack: React.FC<SvgStackProps> = ({
   opacity = 1,
   className,
   labels,
+  asRoot = true,
+  svgWidth = 90,
+  svgHeight = 80,
 }) => {
   const layers = Math.max(2, Math.min(4, rawLayers));
   const verticalOffset = 8;
   const horizontalOffset = 4;
 
-  return (
+  const inner = (
     <g className={className} opacity={opacity}>
       {Array.from({ length: layers }).map((_, i) => {
         const layerIndex = layers - 1 - i;
@@ -71,6 +78,16 @@ export const SvgStack: React.FC<SvgStackProps> = ({
       })}
     </g>
   );
+
+  if (asRoot) {
+    return (
+      <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} width={svgWidth} height={svgHeight}>
+        {inner}
+      </svg>
+    );
+  }
+
+  return inner;
 };
 
 SvgStack.displayName = 'SvgStack';

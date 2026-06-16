@@ -3,14 +3,18 @@
 import React from 'react';
 
 export interface SvgPulseProps {
-  cx: number;
-  cy: number;
+  cx?: number;
+  cy?: number;
   rings?: number;
   maxRadius?: number;
   color?: string;
   animated?: boolean;
   opacity?: number;
   className?: string;
+  /** When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context. */
+  asRoot?: boolean;
+  width?: number;
+  height?: number;
 }
 
 const PULSE_KEYFRAMES = `
@@ -27,16 +31,19 @@ const PULSE_KEYFRAMES = `
 `;
 
 export const SvgPulse: React.FC<SvgPulseProps> = ({
-  cx,
-  cy,
+  cx = 70,
+  cy = 70,
   rings = 3,
   maxRadius = 60,
   color = 'var(--color-primary)',
   animated = true,
   opacity = 1,
   className,
+  asRoot = true,
+  width = 140,
+  height = 140,
 }) => {
-  return (
+  const inner = (
     <g className={className} opacity={opacity}>
       {animated && <style>{PULSE_KEYFRAMES}</style>}
       {Array.from({ length: rings }).map((_, i) => {
@@ -68,6 +75,16 @@ export const SvgPulse: React.FC<SvgPulseProps> = ({
       <circle cx={cx} cy={cy} r={3} fill={color} />
     </g>
   );
+
+  if (asRoot) {
+    return (
+      <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
+        {inner}
+      </svg>
+    );
+  }
+
+  return inner;
 };
 
 SvgPulse.displayName = 'SvgPulse';
