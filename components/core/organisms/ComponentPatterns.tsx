@@ -30,7 +30,8 @@ import { Spinner } from '../atoms/Spinner';
 import { ProgressBar } from '../atoms/ProgressBar';
 import { Card } from '../atoms/Card';
 import { Box } from '../atoms/Box';
-import { Typography, Heading } from '../atoms/Typography';
+import { Typography, type TypographyVariant } from '../atoms/Typography';
+import { cn } from '../../../lib/cn';
 import { Alert, type AlertVariant } from '../molecules/Alert';
 import { Tooltip } from '../molecules/Tooltip';
 import { Popover } from '../molecules/Popover';
@@ -250,6 +251,11 @@ export interface HeadingPatternProps extends ClosedCircuitProps {
 /**
  * Heading pattern.
  */
+const headingSizeClass: Record<string, string> = {
+  xs: 'text-xs', sm: 'text-sm', md: 'text-base', lg: 'text-lg',
+  xl: 'text-xl', '2xl': 'text-2xl', '3xl': 'text-3xl',
+};
+
 export function HeadingPattern({
   content,
   level = 2,
@@ -257,9 +263,12 @@ export function HeadingPattern({
   className,
 }: HeadingPatternProps): React.ReactElement {
   return (
-    <Heading level={level} size={size} className={className}>
+    <Typography
+      variant={`h${level}` as TypographyVariant}
+      className={cn(size ? headingSizeClass[size] : undefined, className)}
+    >
       {content}
-    </Heading>
+    </Typography>
   );
 }
 

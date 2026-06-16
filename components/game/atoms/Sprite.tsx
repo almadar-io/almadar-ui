@@ -6,12 +6,12 @@
  */
 
 import React, { useMemo } from 'react';
-import type { EventKey } from "@almadar/core";
+import type { EventKey, AssetUrl } from "@almadar/core";
 import { useEventBus } from '../../../hooks/useEventBus';
 
 export interface SpriteProps {
   /** Spritesheet image URL */
-  spritesheet: string;
+  spritesheet: AssetUrl;
   /** Width of each frame in pixels */
   frameWidth: number;
   /** Height of each frame in pixels */
@@ -62,7 +62,7 @@ export interface SpriteProps {
  * ```
  */
 export function Sprite({
-  spritesheet,
+  spritesheet = "https://almadar-kflow-assets.web.app/shared/isometric-blocks/Spritesheet/allTiles_sheet.png",
   frameWidth,
   frameHeight,
   frame,

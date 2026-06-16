@@ -76,12 +76,8 @@ export {
 } from "./TextHighlight";
 export {
   Typography,
-  Heading,
-  Text,
   type TypographyProps,
   type TypographyVariant,
-  type HeadingProps,
-  type TextProps,
 } from "./Typography";
 export { ThemeToggle, type ThemeToggleProps } from "./ThemeToggle";
 export { ThemeSelector } from "./ThemeSelector";

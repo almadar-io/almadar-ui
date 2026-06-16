@@ -1,4 +1,5 @@
 import * as React from 'react';
+import type { AssetUrl } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 
 export interface DialogueBubbleProps {
@@ -7,7 +8,7 @@ export interface DialogueBubbleProps {
   /** Dialogue text content */
   text: string;
   /** URL for the speaker portrait image */
-  portrait?: string;
+  portrait?: AssetUrl;
   /** Position of the bubble on screen */
   position?: 'top' | 'bottom';
   /** Additional CSS classes */
@@ -17,7 +18,7 @@ export interface DialogueBubbleProps {
 export function DialogueBubble({
   speaker,
   text,
-  portrait,
+  portrait = "https://almadar-kflow-assets.web.app/shared/characters/archetypes/00_base_model.png",
   position = 'bottom',
   className,
 }: DialogueBubbleProps) {
