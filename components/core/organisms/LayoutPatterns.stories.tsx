@@ -1,17 +1,17 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import React from 'react';
-import {
-  VStackPattern,
-  HStackPattern,
-  BoxPattern,
-  GridPattern,
-  CenterPattern,
-  SpacerPattern,
-  DividerPattern,
-} from './LayoutPatterns';
+import { BoxPattern, SpacerPattern, DividerPattern } from './LayoutPatterns';
+import { VStack, HStack } from '../atoms/Stack';
+import { Grid } from '../molecules/Grid';
+import { Center } from '../atoms/Center';
 import { Typography } from '../atoms/Typography';
 import { Card } from '../atoms/Card';
 import { Badge } from '../atoms/Badge';
+
+const VStackPattern = VStack;
+const HStackPattern = HStack;
+const GridPattern = Grid;
+const CenterPattern = Center;
 
 const meta: Meta<typeof VStackPattern> = {
   title: 'Core/Organisms/LayoutPatterns',

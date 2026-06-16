@@ -16,31 +16,17 @@ import type { UiError } from '../atoms/types';
 import { useEventBus } from '../../../hooks/useEventBus';
 
 // Shell component imports
-import { Button, type ButtonVariant, type ButtonSize, type ButtonProps } from '../atoms/Button';
-import { Badge, type BadgeVariant } from '../atoms/Badge';
-import { Avatar } from '../atoms/Avatar';
-import { Icon } from '../atoms/Icon';
+import { Button, type ButtonProps } from '../atoms/Button';
 import { Input } from '../atoms/Input';
 import { Textarea } from '../atoms/Textarea';
 import { Select } from '../atoms/Select';
 import { Checkbox } from '../atoms/Checkbox';
 import { Radio } from '../atoms/Radio';
 import { Label } from '../atoms/Label';
-import { Spinner } from '../atoms/Spinner';
-import { ProgressBar } from '../atoms/ProgressBar';
 import { Card } from '../atoms/Card';
-import { Box } from '../atoms/Box';
-import { Typography, type TypographyVariant } from '../atoms/Typography';
-import { cn } from '../../../lib/cn';
+import { Typography } from '../atoms/Typography';
 import { Alert, type AlertVariant } from '../molecules/Alert';
-import { Tooltip } from '../molecules/Tooltip';
-import { Popover } from '../molecules/Popover';
-import { Menu } from '../molecules/Menu';
-import { Accordion } from '../molecules/Accordion';
-import { Container } from '../molecules/Container';
-import { SimpleGrid } from '../molecules/SimpleGrid';
 import { FloatingActionButton } from '../molecules/FloatingActionButton';
-import { MapView, type MapViewProps } from '../molecules/MapView';
 
 /**
  * Base closed circuit props required by all organism components.
@@ -241,103 +227,6 @@ export function TextPattern({
 
 TextPattern.displayName = 'TextPattern';
 
-export interface HeadingPatternProps extends ClosedCircuitProps {
-  content: string;
-  level?: 1 | 2 | 3 | 4 | 5 | 6;
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl';
-  className?: string;
-}
-
-/**
- * Heading pattern.
- */
-const headingSizeClass: Record<string, string> = {
-  xs: 'text-xs', sm: 'text-sm', md: 'text-base', lg: 'text-lg',
-  xl: 'text-xl', '2xl': 'text-2xl', '3xl': 'text-3xl',
-};
-
-export function HeadingPattern({
-  content,
-  level = 2,
-  size,
-  className,
-}: HeadingPatternProps): React.ReactElement {
-  return (
-    <Typography
-      variant={`h${level}` as TypographyVariant}
-      className={cn(size ? headingSizeClass[size] : undefined, className)}
-    >
-      {content}
-    </Typography>
-  );
-}
-
-HeadingPattern.displayName = 'HeadingPattern';
-
-export interface BadgePatternProps extends ClosedCircuitProps {
-  label: string;
-  variant?: BadgeVariant;
-  size?: 'sm' | 'md';
-  className?: string;
-}
-
-/**
- * Badge pattern for status/counts.
- */
-export function BadgePattern({
-  label,
-  variant = 'default',
-  size = 'md',
-  className,
-}: BadgePatternProps): React.ReactElement {
-  return <Badge variant={variant} size={size} className={className}>{label}</Badge>;
-}
-
-BadgePattern.displayName = 'BadgePattern';
-
-export interface AvatarPatternProps extends ClosedCircuitProps {
-  src?: string;
-  alt?: string;
-  name?: string;
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-  className?: string;
-}
-
-/**
- * Avatar pattern.
- */
-export function AvatarPattern({
-  src,
-  alt,
-  name,
-  size = 'md',
-  className,
-}: AvatarPatternProps): React.ReactElement {
-  return <Avatar src={src} alt={alt ?? name ?? ''} name={name} size={size} className={className} />;
-}
-
-AvatarPattern.displayName = 'AvatarPattern';
-
-export interface IconPatternProps extends ClosedCircuitProps {
-  name: string;
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-  color?: string;
-  className?: string;
-}
-
-/**
- * Icon pattern.
- */
-export function IconPattern({
-  name,
-  size = 'md',
-  color,
-  className,
-}: IconPatternProps): React.ReactElement {
-  return <Icon name={name} size={size} className={className} style={{ color }} />;
-}
-
-IconPattern.displayName = 'IconPattern';
 
 export interface ImagePatternProps extends ClosedCircuitProps {
   src: string;
@@ -419,57 +308,6 @@ export function CardPattern({
 
 CardPattern.displayName = 'CardPattern';
 
-export interface ProgressBarPatternProps extends ClosedCircuitProps {
-  value: number;
-  max?: number;
-  variant?: 'default' | 'primary' | 'success' | 'warning' | 'danger';
-  size?: 'sm' | 'md' | 'lg';
-  showLabel?: boolean;
-  className?: string;
-}
-
-/**
- * Progress bar pattern.
- */
-export function ProgressBarPattern({
-  value,
-  max = 100,
-  variant = 'primary',
-  size = 'md',
-  showLabel = false,
-  className,
-}: ProgressBarPatternProps): React.ReactElement {
-  return (
-    <ProgressBar
-      value={value}
-      max={max}
-      variant={variant}
-      size={size}
-      showLabel={showLabel}
-      className={className}
-    />
-  );
-}
-
-ProgressBarPattern.displayName = 'ProgressBarPattern';
-
-export interface SpinnerPatternProps extends ClosedCircuitProps {
-  size?: 'xs' | 'sm' | 'md' | 'lg';
-  color?: string;
-  className?: string;
-}
-
-/**
- * Spinner pattern.
- */
-export function SpinnerPattern({
-  size = 'md',
-  className,
-}: SpinnerPatternProps): React.ReactElement {
-  return <Spinner size={size} className={className} />;
-}
-
-SpinnerPattern.displayName = 'SpinnerPattern';
 
 // ============================================================================
 // Form Input Components
@@ -801,179 +639,16 @@ export function AlertPattern({
 
 AlertPattern.displayName = 'AlertPattern';
 
-export interface TooltipPatternProps extends ClosedCircuitProps {
-  content: string;
-  position?: 'top' | 'bottom' | 'left' | 'right';
-  className?: string;
-  children?: React.ReactNode;
-}
-
-/**
- * Tooltip pattern.
- */
-export function TooltipPattern({
-  content,
-  position = 'top',
-  className,
-  children,
-}: TooltipPatternProps): React.ReactElement {
-  return (
-    <Tooltip content={content} position={position} className={className}>
-      {children}
-    </Tooltip>
-  );
-}
-
-TooltipPattern.displayName = 'TooltipPattern';
-
-export interface PopoverPatternProps extends ClosedCircuitProps {
-  content: React.ReactNode;
-  position?: 'top' | 'bottom' | 'left' | 'right';
-  trigger?: 'click' | 'hover';
-  className?: string;
-  children?: React.ReactNode;
-}
-
-/**
- * Popover pattern.
- */
-export function PopoverPattern({
-  content,
-  position = 'bottom',
-  trigger = 'click',
-  className,
-  children,
-}: PopoverPatternProps): React.ReactElement {
-  return (
-    <Popover content={content} position={position} trigger={trigger} className={className}>
-      {children}
-    </Popover>
-  );
-}
-
-PopoverPattern.displayName = 'PopoverPattern';
 
 // ============================================================================
 // Navigation Components
 // ============================================================================
 
-export interface MenuPatternProps extends ClosedCircuitProps {
-  items: Array<{
-    label: string;
-    event: string;
-    icon?: string;
-    disabled?: boolean;
-    variant?: 'default' | 'danger';
-  }>;
-  trigger?: React.ReactNode;
-  position?: 'bottom-start' | 'bottom-end' | 'top-start' | 'top-end';
-  className?: string;
-}
-
-/**
- * Menu pattern.
- */
-export function MenuPattern({
-  items,
-  trigger,
-  position = 'bottom-start',
-  className,
-}: MenuPatternProps): React.ReactElement {
-  const { emit } = useEventBus();
-
-  const menuItems = items.map((item) => ({
-    ...item,
-    onClick: () => emit(`UI:${item.event}`, {}),
-  }));
-
-  return (
-    <Menu items={menuItems} trigger={trigger} position={position} className={className} />
-  );
-}
-
-MenuPattern.displayName = 'MenuPattern';
-
-export interface AccordionPatternProps extends ClosedCircuitProps {
-  items: Array<{ title: string; content: React.ReactNode }>;
-  multiple?: boolean;
-  defaultOpen?: number[];
-  className?: string;
-}
-
-/**
- * Accordion pattern.
- */
-export function AccordionPattern({
-  items,
-  multiple = false,
-  defaultOpen = [],
-  className,
-}: AccordionPatternProps): React.ReactElement {
-  return (
-    <Accordion
-      items={items}
-      multiple={multiple}
-      defaultOpen={defaultOpen}
-      className={className}
-    />
-  );
-}
-
-AccordionPattern.displayName = 'AccordionPattern';
 
 // ============================================================================
 // Layout Components
 // ============================================================================
 
-export interface ContainerPatternProps extends ClosedCircuitProps {
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
-  padding?: 'none' | 'sm' | 'md' | 'lg';
-  className?: string;
-  children?: React.ReactNode;
-}
-
-/**
- * Container pattern.
- */
-export function ContainerPattern({
-  maxWidth = 'lg',
-  padding = 'md',
-  className,
-  children,
-}: ContainerPatternProps): React.ReactElement {
-  return (
-    <Container maxWidth={maxWidth} padding={padding} className={className}>
-      {children}
-    </Container>
-  );
-}
-
-ContainerPattern.displayName = 'ContainerPattern';
-
-export interface SimpleGridPatternProps extends ClosedCircuitProps {
-  minChildWidth?: string;
-  gap?: 'xs' | 'sm' | 'md' | 'lg';
-  className?: string;
-  children?: React.ReactNode;
-}
-
-/**
- * Simple grid pattern.
- */
-export function SimpleGridPattern({
-  minChildWidth = '250px',
-  gap = 'md',
-  className,
-  children,
-}: SimpleGridPatternProps): React.ReactElement {
-  return (
-    <SimpleGrid minChildWidth={minChildWidth} gap={gap} className={className}>
-      {children}
-    </SimpleGrid>
-  );
-}
-
-SimpleGridPattern.displayName = 'SimpleGridPattern';
 
 export interface FloatButtonPatternProps extends ClosedCircuitProps {
   icon: string;
@@ -1015,50 +690,10 @@ export function FloatButtonPattern({
 FloatButtonPattern.displayName = 'FloatButtonPattern';
 
 // ============================================================================
-// Map Pattern
-// ============================================================================
-
-export type MapViewPatternProps = Omit<MapViewProps, 'onMapClick' | 'onMarkerClick'> & ClosedCircuitProps;
-
-/**
- * Map view pattern. Passes through all MapView props.
- * Event dispatch is handled internally by MapView via mapClickEvent/markerClickEvent.
- */
-export function MapViewPattern({
-  markers,
-  centerLat,
-  centerLng,
-  zoom,
-  height,
-  mapClickEvent,
-  markerClickEvent,
-  showClickedPin,
-  className,
-  showAttribution,
-}: MapViewPatternProps): React.ReactElement {
-  return (
-    <MapView
-      markers={markers}
-      centerLat={centerLat}
-      centerLng={centerLng}
-      zoom={zoom}
-      height={height}
-      mapClickEvent={mapClickEvent}
-      markerClickEvent={markerClickEvent}
-      showClickedPin={showClickedPin}
-      className={className}
-      showAttribution={showAttribution}
-    />
-  );
-}
-
-MapViewPattern.displayName = 'MapViewPattern';
-
-// ============================================================================
 // Export Pattern Registry
 // ============================================================================
 
- 
+
 export const COMPONENT_PATTERNS = {
   // Interactive
   'button': ButtonPattern,
@@ -1066,14 +701,8 @@ export const COMPONENT_PATTERNS = {
   'link': LinkPattern,
   // Display
   'text': TextPattern,
-  'heading': HeadingPattern,
-  'badge': BadgePattern,
-  'avatar': AvatarPattern,
-  'icon': IconPattern,
   'image': ImagePattern,
   'card': CardPattern,
-  'progress-bar': ProgressBarPattern,
-  'spinner': SpinnerPattern,
   // Form inputs
   'input': InputPattern,
   'textarea': TextareaPattern,
@@ -1083,15 +712,6 @@ export const COMPONENT_PATTERNS = {
   'label': LabelPattern,
   // Feedback
   'alert': AlertPattern,
-  'tooltip': TooltipPattern,
-  'popover': PopoverPattern,
-  // Navigation
-  'menu': MenuPattern,
-  'accordion': AccordionPattern,
   // Layout
-  'container': ContainerPattern,
-  'simple-grid': SimpleGridPattern,
   'float-button': FloatButtonPattern,
-  // Map
-  'map-view': MapViewPattern,
 } as const;

@@ -12,10 +12,7 @@
 
 import React from 'react';
 import type { UiError } from '../atoms/types';
-import { VStack, HStack, type StackGap, type StackAlign, type StackJustify } from '../atoms/Stack';
 import { Box, type BoxPadding, type BoxBg, type BoxRounded, type BoxShadow } from '../atoms/Box';
-import { Grid, type GridCols, type GridGap, type ResponsiveGridCols } from '../molecules/Grid';
-import { Center } from '../atoms/Center';
 import { Spacer } from '../atoms/Spacer';
 import { Divider, type DividerVariant, type DividerOrientation } from '../atoms/Divider';
 
@@ -41,78 +38,6 @@ export interface LayoutPatternProps {
   entity?: string;
 }
 
-// ============================================================================
-// VStack Pattern
-// ============================================================================
-
-export interface VStackPatternProps extends LayoutPatternProps {
-  /** Gap between children */
-  gap?: StackGap;
-  /** Cross-axis alignment */
-  align?: StackAlign;
-  /** Main-axis alignment */
-  justify?: StackJustify;
-}
-
-/**
- * VStack pattern component.
- *
- * Renders children in a vertical stack with configurable spacing.
- */
-export function VStackPattern({
-  gap = 'md',
-  align = 'stretch',
-  justify = 'start',
-  className,
-  style,
-  children,
-}: VStackPatternProps): React.ReactElement {
-  return (
-    <VStack gap={gap} align={align} justify={justify} className={className} style={style}>
-      {children}
-    </VStack>
-  );
-}
-
-VStackPattern.displayName = 'VStackPattern';
-
-// ============================================================================
-// HStack Pattern
-// ============================================================================
-
-export interface HStackPatternProps extends LayoutPatternProps {
-  /** Gap between children */
-  gap?: StackGap;
-  /** Cross-axis alignment */
-  align?: StackAlign;
-  /** Main-axis alignment */
-  justify?: StackJustify;
-  /** Enable wrapping */
-  wrap?: boolean;
-}
-
-/**
- * HStack pattern component.
- *
- * Renders children in a horizontal stack with configurable spacing.
- */
-export function HStackPattern({
-  gap = 'md',
-  align = 'center',
-  justify = 'start',
-  wrap = false,
-  className,
-  style,
-  children,
-}: HStackPatternProps): React.ReactElement {
-  return (
-    <HStack gap={gap} align={align} justify={justify} wrap={wrap} className={className} style={style}>
-      {children}
-    </HStack>
-  );
-}
-
-HStackPattern.displayName = 'HStackPattern';
 
 // ============================================================================
 // Box Pattern
@@ -167,73 +92,6 @@ export function BoxPattern({
 
 BoxPattern.displayName = 'BoxPattern';
 
-// ============================================================================
-// Grid Pattern
-// ============================================================================
-
-export interface GridPatternProps extends LayoutPatternProps {
-  /** Number of columns */
-  cols?: GridCols | ResponsiveGridCols;
-  /** Gap between cells */
-  gap?: GridGap;
-  /** Row gap override */
-  rowGap?: GridGap;
-  /** Column gap override */
-  colGap?: GridGap;
-}
-
-/**
- * Grid pattern component.
- *
- * CSS Grid layout for multi-column content.
- */
-export function GridPattern({
-  cols = 1,
-  gap = 'md',
-  rowGap,
-  colGap,
-  className,
-  style,
-  children,
-}: GridPatternProps): React.ReactElement {
-  return (
-    <Grid cols={cols} gap={gap} rowGap={rowGap} colGap={colGap} className={className} style={style}>
-      {children}
-    </Grid>
-  );
-}
-
-GridPattern.displayName = 'GridPattern';
-
-// ============================================================================
-// Center Pattern
-// ============================================================================
-
-export interface CenterPatternProps extends LayoutPatternProps {
-  /** Minimum height */
-  minHeight?: string;
-}
-
-/**
- * Center pattern component.
- *
- * Centers content horizontally and vertically.
- */
-export function CenterPattern({
-  minHeight,
-  className,
-  style,
-  children,
-}: CenterPatternProps): React.ReactElement {
-  const mergedStyle = minHeight ? { minHeight, ...style } : style;
-  return (
-    <Center className={className} style={mergedStyle}>
-      {children}
-    </Center>
-  );
-}
-
-CenterPattern.displayName = 'CenterPattern';
 
 // ============================================================================
 // Spacer Pattern
@@ -337,13 +195,9 @@ DividerPattern.displayName = 'DividerPattern';
 // Exports
 // ============================================================================
 
- 
+
 export const LAYOUT_PATTERNS = {
-  'vstack': VStackPattern,
-  'hstack': HStackPattern,
   'box': BoxPattern,
-  'grid': GridPattern,
-  'center': CenterPattern,
   'spacer': SpacerPattern,
   'divider': DividerPattern,
 } as const;

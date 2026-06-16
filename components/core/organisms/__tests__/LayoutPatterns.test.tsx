@@ -12,13 +12,10 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import {
-  VStackPattern,
-  HStackPattern,
-  BoxPattern,
-  GridPattern,
-  CenterPattern,
-} from '../LayoutPatterns';
+import { BoxPattern } from '../LayoutPatterns';
+import { VStack as VStackPattern, HStack as HStackPattern } from '../../atoms/Stack';
+import { Grid as GridPattern } from '../../molecules/Grid';
+import { Center as CenterPattern } from '../../atoms/Center';
 
 describe('LayoutPatterns', () => {
   // ===========================================================================

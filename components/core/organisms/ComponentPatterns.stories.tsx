@@ -4,21 +4,44 @@ import {
   ButtonPattern,
   IconButtonPattern,
   TextPattern,
-  HeadingPattern,
-  BadgePattern,
-  AvatarPattern,
-  IconPattern,
   CardPattern,
-  ProgressBarPattern,
-  SpinnerPattern,
   InputPattern,
   SelectPattern,
   CheckboxPattern,
   AlertPattern,
-  AccordionPattern,
-  ContainerPattern,
 } from './ComponentPatterns';
 import { VStack, HStack } from '../atoms/Stack';
+import { Typography } from '../atoms/Typography';
+import { Badge } from '../atoms/Badge';
+import { Avatar } from '../atoms/Avatar';
+import { Icon } from '../atoms/Icon';
+import { ProgressBar } from '../atoms/ProgressBar';
+import { Spinner } from '../atoms/Spinner';
+import { Accordion } from '../molecules/Accordion';
+import { Container } from '../molecules/Container';
+
+const HeadingPattern = ({ content, level = 2 }: { content: string; level?: 1|2|3|4|5|6 }) => (
+  <Typography variant={`h${level}` as 'h1'|'h2'|'h3'|'h4'|'h5'|'h6'}>{content}</Typography>
+);
+const BadgePattern = ({ label, variant }: { label: string; variant?: string }) => (
+  <Badge variant={variant as 'default'|'success'|'warning'|'danger'}>{label}</Badge>
+);
+const AvatarPattern = ({ name, size }: { name?: string; size?: 'xs'|'sm'|'md'|'lg'|'xl' }) => (
+  <Avatar name={name} size={size} />
+);
+const IconPattern = ({ name, size, color }: { name: string; size?: 'xs'|'sm'|'md'|'lg'|'xl'; color?: string }) => (
+  <Icon name={name} size={size} style={{ color }} />
+);
+const ProgressBarPattern = ({ value, variant, showLabel }: { value: number; variant?: string; showLabel?: boolean }) => (
+  <ProgressBar value={value} variant={variant as 'primary'} showLabel={showLabel} />
+);
+const SpinnerPattern = ({ size }: { size?: 'xs'|'sm'|'md'|'lg' }) => <Spinner size={size} />;
+const AccordionPattern = ({ items, defaultOpen }: { items: Array<{ title: string; content: React.ReactNode }>; defaultOpen?: number[] }) => (
+  <Accordion items={items.map(i => ({ ...i, header: i.title }))} defaultOpen={defaultOpen} />
+);
+const ContainerPattern = ({ maxWidth, padding, children }: { maxWidth?: string; padding?: string; children?: React.ReactNode }) => (
+  <Container maxWidth={maxWidth as 'md'} padding={padding as 'lg'}>{children}</Container>
+);
 
 const meta: Meta<typeof ButtonPattern> = {
   title: 'Core/Organisms/ComponentPatterns',
