@@ -20,8 +20,8 @@ export interface GameHudElement {
   label?: string;
   /** Direct value (from compiled render-ui effects) */
   value?: number | string;
-  /** Icon name or node */
-  icon?: React.ReactNode;
+  /** Lucide kebab-case icon name */
+  icon?: string;
   /** Display format */
   format?: string;
   /** Max value (for bars/hearts) */

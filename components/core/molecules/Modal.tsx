@@ -13,7 +13,6 @@ import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
 import { Dialog } from "../atoms/Dialog";
 import { Typography } from "../atoms/Typography";
-import { Overlay } from "../atoms/Overlay";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
@@ -158,24 +157,19 @@ export const Modal: React.FC<ModalProps> = ({
 
   // Portal to <body> so the dialog escapes any ancestor stacking/overflow
   // context (sticky sidebars, transformed panes) and overlays the whole app.
+  // Single div is both the dark backdrop AND the flex-centering container —
+  // two sibling `fixed inset-0` layers cause a ghost compositor artifact.
   return createPortal(
-    <>
-      <Overlay
-        isVisible={isOpen}
-        onClick={handleOverlayClick}
-        className="z-[1000]"
-      />
-
-      {/* Desktop: dialog positioned in upper third. Mobile (<640px):
-          classic full-screen modal — fills the viewport, no rounding, no
-          top inset. */}
-      <Box
-        className={cn(
-          "fixed inset-0 z-[1001] pointer-events-none",
-          "flex items-start justify-center px-4 pb-4 pt-[10vh]",
-          "max-sm:items-stretch max-sm:p-0 max-sm:pt-0",
-        )}
-      >
+    <div
+      className={cn(
+        "fixed inset-0 z-[1000]",
+        "flex items-start justify-center px-4 pb-4 pt-[10vh]",
+        "max-sm:items-stretch max-sm:p-0 max-sm:pt-0",
+      )}
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
+      onClick={handleOverlayClick}
+      aria-hidden="true"
+    >
         <Dialog
           ref={modalRef}
           open
@@ -276,8 +270,7 @@ export const Modal: React.FC<ModalProps> = ({
             </Box>
           )}
         </Dialog>
-      </Box>
-    </>,
+    </div>,
     document.body,
   );
 };

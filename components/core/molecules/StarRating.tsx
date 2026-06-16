@@ -138,7 +138,7 @@ export const StarRating: React.FC<StarRatingProps> = ({
               name="star"
               className={cn(
                 styles.star,
-                "text-muted-foreground",
+                "text-foreground/30",
                 "transition-colors duration-100",
               )}
               strokeWidth={1.5}

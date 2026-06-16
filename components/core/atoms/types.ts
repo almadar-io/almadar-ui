@@ -3,6 +3,19 @@
  */
 
 /**
+ * Canonical semantic color palette.  Values are the Tailwind / CSS-var token
+ * names that every component in the design system understands.  Prefer this
+ * over a bare `string` for any `color` or `variant` prop.
+ */
+export type ColorToken =
+  | 'primary'
+  | 'secondary'
+  | 'success'
+  | 'warning'
+  | 'error'
+  | 'muted';
+
+/**
  * Concrete error-state shape read by display components (`error.message`,
  * occasionally `error.stack`). Structurally assignable from the global `Error`,
  * so existing call sites passing an `Error` keep working — this just gives the

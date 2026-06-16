@@ -37,8 +37,9 @@ export function XPBar({
   const sizes = sizeMap[size];
   const percentage = max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0;
 
-  // Start the fill at 0 and grow to `percentage` so the CSS transition has a
-  // value change to animate on mount; without this, `animated` never animates.
+  // Start at 0 when animated so the CSS transition has something to move from.
+  // A single rAF isn't enough in all browsers — use a two-frame flush so the
+  // browser has committed the 0% paint before the value changes.
   const [fillWidth, setFillWidth] = React.useState(animated ? 0 : percentage);
 
   React.useEffect(() => {
@@ -46,8 +47,14 @@ export function XPBar({
       setFillWidth(percentage);
       return;
     }
-    const frame = requestAnimationFrame(() => setFillWidth(percentage));
-    return () => cancelAnimationFrame(frame);
+    let frame2: number;
+    const frame1 = requestAnimationFrame(() => {
+      frame2 = requestAnimationFrame(() => setFillWidth(percentage));
+    });
+    return () => {
+      cancelAnimationFrame(frame1);
+      cancelAnimationFrame(frame2);
+    };
   }, [animated, percentage]);
 
   return (
@@ -82,7 +89,7 @@ export function XPBar({
         </div>
 
         {showLabel && (
-          <span className={cn('text-muted-foreground tabular-nums', sizes.text)}>
+          <span className={cn('text-foreground/70 tabular-nums', sizes.text)}>
             {current} / {max} XP
           </span>
         )}

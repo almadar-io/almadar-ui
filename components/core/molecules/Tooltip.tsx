@@ -6,7 +6,7 @@
  * Uses theme-aware CSS variables for styling.
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Typography } from '../atoms/Typography';
 import { cn } from '../../../lib/cn';

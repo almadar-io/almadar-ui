@@ -154,9 +154,11 @@ export const Avatar: React.FC<AvatarProps> = ({
   const IconComponent =
     typeof iconProp === "string" ? resolveIcon(iconProp) : iconProp;
   const hasImage = !!src && !imgFailed;
-  // An explicitly-passed icon outranks name-derived initials; explicitly-passed
-  // initials still win. Precedence: src image → initials → icon → default.
+  // Precedence: src image → explicit initials → icon → name-derived initials → default.
+  // An explicitly-passed `icon` outranks name-derived initials so `icon` is
+  // never silently dropped when a `name` is also provided.
   const hasIcon = !!IconComponent;
+  // Name-derived initials are suppressed when an icon prop is present.
   const hasInitials = !!initials && !(hasIcon && !providedInitials);
 
   // Generate background based on initials
@@ -188,15 +190,12 @@ export const Avatar: React.FC<AvatarProps> = ({
         role={isClickable ? "button" : undefined}
         tabIndex={isClickable ? 0 : undefined}
       >
-        {hasImage ? (
+        {src && !imgFailed ? (
           <img
             src={src}
             alt={alt || "Avatar"}
             className="w-full h-full object-cover"
-            onError={() => {
-              // Fall back to initials → icon → default on image error.
-              setImgFailed(true);
-            }}
+            onError={() => setImgFailed(true)}
           />
         ) : hasInitials ? (
           <div

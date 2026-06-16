@@ -441,7 +441,6 @@ interface BlockRowProps {
   onUpdate: (updater: (block: RichBlock) => RichBlock) => void;
   onDelete: () => void;
   onDuplicate: () => void;
-  onInsertAfter: (type: BlockType) => void;
   onChangeType: (type: BlockType) => void;
 }
 
@@ -453,7 +452,6 @@ function BlockRow({
   onUpdate,
   onDelete,
   onDuplicate,
-  onInsertAfter,
   onChangeType,
 }: BlockRowProps) {
   const { t } = useTranslate();
@@ -734,21 +732,7 @@ function BlockRow({
       data-block-type={block.type}
     >
       {!readOnly && showAffordances && (
-        <Box className="flex w-12 shrink-0 items-center gap-0.5 pt-1">
-          <Button
-            type="button"
-            variant="ghost"
-            aria-label={t('richBlockEditor.insertParagraphBelow')}
-            className={cn(
-              "inline-flex h-6 w-6 items-center justify-center rounded-sm p-0 gap-0",
-              "text-muted-foreground hover:bg-muted hover:text-foreground",
-              "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
-              "transition-opacity",
-            )}
-            onClick={() => onInsertAfter("paragraph")}
-          >
-            <Icon name="plus" className="w-3.5 h-3.5" />
-          </Button>
+        <Box className="flex w-8 shrink-0 items-center pt-1">
           <BlockMenu
             block={block}
             readOnly={readOnly}
@@ -826,13 +810,6 @@ export const RichBlockEditor: React.FC<RichBlockEditorProps> = ({
     [blocks, commit],
   );
 
-  const handleInsertAfter = useCallback(
-    (id: string, type: BlockType) => {
-      commit(insertAfter(blocks, id, createBlock(type)));
-    },
-    [blocks, commit],
-  );
-
   const handleChangeType = useCallback(
     (id: string, type: BlockType) => {
       commit(
@@ -888,7 +865,6 @@ export const RichBlockEditor: React.FC<RichBlockEditorProps> = ({
             onUpdate={(updater) => handleUpdate(block.id, updater)}
             onDelete={() => handleDelete(block.id)}
             onDuplicate={() => handleDuplicate(block.id)}
-            onInsertAfter={(type) => handleInsertAfter(block.id, type)}
             onChangeType={(type) => handleChangeType(block.id, type)}
           />
         ))}

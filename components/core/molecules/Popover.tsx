@@ -215,7 +215,10 @@ export const Popover: React.FC<PopoverProps> = ({
         "bg-card border-2 border-border shadow-elevation-popover",
         className,
       )}
-      style={computePopoverStyle(position, triggerRect, popoverWidth)}
+      style={{
+        ...computePopoverStyle(position, triggerRect, popoverWidth),
+        ...(popoverWidth === 0 ? { visibility: 'hidden' as const } : undefined),
+      }}
       role="dialog"
       onMouseEnter={trigger === "hover" ? handleOpen : undefined}
       onMouseLeave={trigger === "hover" ? handleClose : undefined}

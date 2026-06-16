@@ -1,5 +1,15 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
+import type { ColorToken } from '../../core/atoms/types';
+
+const colorTokenClasses: Record<ColorToken, string> = {
+  primary: 'text-primary',
+  secondary: 'text-secondary',
+  success: 'text-success',
+  warning: 'text-warning',
+  error: 'text-error',
+  muted: 'text-muted-foreground',
+};
 
 export interface ResourceCounterProps {
   /** Icon component or emoji */
@@ -10,8 +20,8 @@ export interface ResourceCounterProps {
   value: number;
   /** Maximum value */
   max?: number;
-  /** Accent color class (e.g. 'text-yellow-400') */
-  color?: string;
+  /** Semantic palette token or an arbitrary Tailwind color class. */
+  color?: ColorToken | string;
   /** Size variant */
   size?: 'sm' | 'md' | 'lg';
   /** Additional CSS classes */
@@ -46,7 +56,7 @@ export function ResourceCounter({
     >
       {icon && <span className={cn('flex-shrink-0', sizes.icon)}>{icon}</span>}
       <span className="text-muted-foreground">{label}</span>
-      <span className={cn('font-bold tabular-nums', color)}>
+      <span className={cn('font-bold tabular-nums', color && (color in colorTokenClasses ? colorTokenClasses[color as ColorToken] : color))}>
         {value}
         {max != null && <span className="text-muted-foreground">/{max}</span>}
       </span>

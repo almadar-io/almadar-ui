@@ -6,6 +6,7 @@
 
 import React from "react";
 import { cn } from "../../../lib/cn";
+import type { ColorToken } from "./types";
 
 export type ProgressBarType = "linear" | "circular" | "stepped";
 export type ProgressBarVariant =
@@ -13,8 +14,9 @@ export type ProgressBarVariant =
   | "primary"
   | "success"
   | "warning"
-  | "danger";
-export type ProgressBarColor = ProgressBarVariant; // Alias
+  | "error"
+  | "danger"; // backward-compat alias for 'error'
+export type ProgressBarColor = ProgressBarVariant;
 
 export interface ProgressBarProps {
   /**
@@ -85,6 +87,7 @@ const colorClasses: Record<ProgressBarVariant, string> = {
   primary: "bg-primary",
   success: "bg-success",
   warning: "bg-warning",
+  error: "bg-error",
   danger: "bg-error",
 };
 

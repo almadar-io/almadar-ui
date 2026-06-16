@@ -30,7 +30,14 @@ function useSafeEventBus() {
   }
 }
 
-export interface CarouselProps<T = Record<string, unknown>> {
+/** Default shape for carousel slide items when no generic is provided. */
+export interface CarouselItem {
+  id?: string;
+  title?: string;
+  image?: string;
+}
+
+export interface CarouselProps<T = CarouselItem> {
   /** Array of items to display as slides */
   items: T[];
   /** Render function for each slide */
@@ -55,7 +62,7 @@ export interface CarouselProps<T = Record<string, unknown>> {
   className?: string;
 }
 
-export const Carousel = <T = Record<string, unknown>,>({
+export const Carousel = <T = CarouselItem,>({
   items,
   renderItem,
   children,

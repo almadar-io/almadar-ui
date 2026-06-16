@@ -18,9 +18,20 @@ import type { LucideIcon } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { cn } from '../../../lib/cn';
 import { resolveIconForFamily, useIconFamily } from '../../../lib/iconFamily';
+import type { ColorToken } from './types';
 
 export type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 export type IconAnimation = 'spin' | 'pulse' | 'none';
+export type { ColorToken };
+
+const colorTokenClasses: Record<ColorToken, string> = {
+  primary: 'text-primary',
+  secondary: 'text-secondary',
+  success: 'text-success',
+  warning: 'text-warning',
+  error: 'text-error',
+  muted: 'text-muted-foreground',
+};
 
 /**
  * Explicit aliases for icon names that don't follow standard kebab-to-PascalCase conversion.
@@ -96,8 +107,8 @@ export interface IconProps {
   name?: string;
   /** Size of the icon */
   size?: IconSize;
-  /** Color class (Tailwind color class) or 'inherit' for theme default */
-  color?: string;
+  /** Semantic palette token or an arbitrary Tailwind color class. */
+  color?: ColorToken | string;
   /** Animation type */
   animation?: IconAnimation;
   /** Additional CSS classes */
@@ -153,10 +164,15 @@ export const Icon: React.FC<IconProps> = ({
       : {}),
     ...style,
   };
+  const resolvedColor = color
+    ? (color in colorTokenClasses
+        ? colorTokenClasses[color as ColorToken]
+        : color)
+    : 'text-current';
   const composedClassName = cn(
     sizeClasses[size],
     animationClasses[animation],
-    color ? color : 'text-current',
+    resolvedColor,
     className,
   );
 

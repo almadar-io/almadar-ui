@@ -9,6 +9,14 @@
  */
 
 import React, { useState, useRef, useLayoutEffect, useEffect, useMemo, useCallback } from 'react';
+import { cn } from '../../../../lib/cn';
+import { Card, Typography } from '../../atoms';
+import { Tabs, type TabItem } from '../Tabs';
+import { LoadingState } from '../LoadingState';
+import { ErrorState } from '../ErrorState';
+import { EmptyState } from '../EmptyState';
+import { Copy, Check, FileText, Code as CodeIcon, WrapText } from 'lucide-react';
+import type { UiError } from '../../atoms/types';
 // GAP-78: explicit `.js` extensions on every react-syntax-highlighter deep
 // import. The package ships ESM files with no `package.json#exports` map and
 // no implicit-extension resolution, so Node ESM (used by vitest's externalized

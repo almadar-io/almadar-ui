@@ -18,9 +18,19 @@
 
 import React, { useId } from 'react';
 import { cn } from '../../../lib/cn';
+import type { ColorToken } from '../atoms/types';
 
 export type EdgeVariant = 'arch' | 'vine' | 'lattice';
 export type EdgeSide = 'left' | 'right' | 'both';
+
+const colorTokenVars: Record<ColorToken, string> = {
+  primary: 'var(--color-primary)',
+  secondary: 'var(--color-secondary)',
+  success: 'var(--color-success)',
+  warning: 'var(--color-warning)',
+  error: 'var(--color-error)',
+  muted: 'var(--color-muted)',
+};
 
 export interface EdgeDecorationProps {
     /** Which decorative element */
@@ -29,8 +39,8 @@ export interface EdgeDecorationProps {
     side?: EdgeSide;
     /** Overall opacity (default: 0.15) */
     opacity?: number;
-    /** Stroke color */
-    color?: string;
+    /** Semantic palette token or a raw CSS color value for the stroke. */
+    color?: ColorToken | string;
     /** Stroke width */
     strokeWidth?: number;
     /** Width of the decoration area as percentage of container (default: 15) */
@@ -251,13 +261,16 @@ export const EdgeDecoration: React.FC<EdgeDecorationProps> = ({
     variant = 'arch',
     side = 'both',
     opacity = 0.15,
-    color = 'var(--color-primary)',
+    color = 'primary',
     strokeWidth = 0.5,
     width = 15,
     className,
 }) => {
     const id = useId();
     const Variant = VARIANT_MAP[variant];
+    const resolvedColor = color in colorTokenVars
+        ? colorTokenVars[color as ColorToken]
+        : color;
 
     const sides: ('left' | 'right')[] =
         side === 'both' ? ['left', 'right'] : [side];
@@ -284,7 +297,7 @@ export const EdgeDecoration: React.FC<EdgeDecorationProps> = ({
                         facing={s}
                         w={200}
                         h={600}
-                        color={color}
+                        color={resolvedColor}
                         strokeWidth={strokeWidth}
                     />
                 </svg>

@@ -1,9 +1,10 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
+import { Icon } from '../../core/atoms/Icon';
 
 export interface StatusEffectProps {
-  /** Icon to display for the effect */
-  icon: React.ReactNode;
+  /** Lucide kebab-case icon name */
+  icon: string;
   /** Label describing the effect */
   label?: string;
   /** Remaining duration in seconds */
@@ -59,7 +60,7 @@ export function StatusEffect({
         title={label}
       >
         <span className={cn('flex items-center justify-center', sizes.icon)}>
-          {icon}
+          <Icon name={icon} size="sm" />
         </span>
         {duration !== undefined && (
           <span

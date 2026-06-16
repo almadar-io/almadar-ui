@@ -67,44 +67,41 @@ export const FormSectionHeader: React.FC<FormSectionHeaderProps> = ({
   return (
     <Box
       className={cn(
-        "px-4 py-3 bg-muted rounded-t-lg border-b-2 border-border border-l-4 border-l-primary",
+        "px-5 py-4 bg-muted/60 rounded-lg",
+        "border border-border border-l-4 border-l-primary",
         isClickable &&
-          "cursor-pointer hover:bg-[var(--color-surface-hover)] transition-colors",
+          "cursor-pointer hover:bg-muted transition-colors",
         className,
       )}
       onClick={isClickable ? onToggle : undefined}
     >
       <HStack justify="between" align="center">
         <HStack gap="sm" align="center">
-          {/* Custom icon */}
           {icon && (
             <Icon
               name={icon}
               size="md"
-              className="text-primary"
+              className="text-primary shrink-0"
             />
           )}
 
-          {/* Status icon */}
           {statusIcon && (
             <Icon
               name={statusIcon}
               size="md"
-              className={
-                hasErrors
-                  ? "text-error"
-                  : "text-success"
-              }
+              className={cn(
+                "shrink-0",
+                hasErrors ? "text-error" : "text-success",
+              )}
             />
           )}
 
-          {/* Title and subtitle */}
           <Box className="space-y-0.5">
-            <Typography variant="subheading" weight="semibold">
+            <Typography variant="subheading" weight="semibold" className="text-foreground">
               {title}
             </Typography>
             {subtitle && (
-              <Typography variant="caption" color="muted">
+              <Typography variant="caption" color="muted" className="leading-snug">
                 {subtitle}
               </Typography>
             )}
@@ -112,20 +109,18 @@ export const FormSectionHeader: React.FC<FormSectionHeaderProps> = ({
         </HStack>
 
         <HStack gap="sm" align="center">
-          {/* Badge */}
           {badge && (
             <Badge variant={effectiveBadgeVariant} size="sm">
               {badge}
             </Badge>
           )}
 
-          {/* Collapse indicator */}
           {isClickable && (
             <Icon
               name="chevron-down"
-              size="md"
+              size="sm"
               className={cn(
-                "text-muted-foreground transition-transform",
+                "text-muted-foreground transition-transform duration-200 shrink-0",
                 isCollapsed && "-rotate-90",
               )}
             />
