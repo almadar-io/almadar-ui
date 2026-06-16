@@ -118,7 +118,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
     }, hideDelay);
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (isVisible) {
       updatePosition();
     }

@@ -1,18 +1,9 @@
-/**
- * CodeView Component
- *
- * Shows the JSON code representation of a state machine.
- * Toggle between visual and code view in State Architect tier.
- *
- * @packageDocumentation
- */
-
 import React, { useState } from 'react';
 import { VStack, HStack, Box, Typography, Button } from '../../../../core/atoms';
 import { cn } from '../../../../../lib/cn';
 import { useTranslate } from '../../../../../hooks/useTranslate';
 
-export interface CodeViewProps {
+export interface StateJsonViewProps {
     /** JSON data to display */
     data: Record<string, unknown>;
     /** Label */
@@ -23,12 +14,12 @@ export interface CodeViewProps {
     className?: string;
 }
 
-export function CodeView({
+export function StateJsonView({
     data,
     label,
     defaultExpanded = false,
     className,
-}: CodeViewProps): React.JSX.Element {
+}: StateJsonViewProps): React.JSX.Element {
     const { t } = useTranslate();
     const [expanded, setExpanded] = useState(defaultExpanded);
     const jsonString = JSON.stringify(data, null, 2);
@@ -57,6 +48,6 @@ export function CodeView({
     );
 }
 
-CodeView.displayName = 'CodeView';
+StateJsonView.displayName = 'StateJsonView';
 
-export default CodeView;
+export default StateJsonView;

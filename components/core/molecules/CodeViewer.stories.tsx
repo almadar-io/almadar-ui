@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { CodeViewer } from './CodeViewer';
+import { CodeBlock } from './markdown/CodeBlock';
 
-const meta: Meta<typeof CodeViewer> = {
-    title: 'Core/Molecules/CodeViewer',
-    component: CodeViewer,
+const meta: Meta<typeof CodeBlock> = {
+    title: 'Core/Molecules/CodeBlock',
+    component: CodeBlock,
     parameters: {
         layout: 'centered',
     },

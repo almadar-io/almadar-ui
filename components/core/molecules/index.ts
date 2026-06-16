@@ -47,7 +47,16 @@ export { WizardNavigation, type WizardNavigationProps } from './WizardNavigation
 
 // Markdown components
 export { MarkdownContent, type MarkdownContentProps } from './markdown/MarkdownContent';
-export { CodeBlock, type CodeBlockProps, type CodeLanguage } from './markdown/CodeBlock';
+export {
+  CodeBlock,
+  type CodeBlockProps,
+  type CodeLanguage,
+  type CodeViewerMode,
+  type DiffLine,
+  type CodeViewerFile,
+  type CodeViewerAction,
+  toCodeLanguage,
+} from './markdown/CodeBlock';
 
 // Quiz
 export { QuizBlock, type QuizBlockProps } from './QuizBlock';
@@ -156,7 +165,6 @@ export { VersionDiff, type VersionDiffProps, type DiffRevision, type DiffLine as
 // help-center / docs-style content (std-public-help-center,
 // std-document-mgmt). Promoted alongside the G7 pattern-sync export filter.
 export { DocBreadcrumb, type DocBreadcrumbProps, type DocBreadcrumbItem } from './DocBreadcrumb';
-export { DocCodeBlock, type DocCodeBlockProps } from './DocCodeBlock';
 export { DocPagination, type DocPaginationProps, type DocPaginationLink } from './DocPagination';
 export { DocSearch, type DocSearchProps, type DocSearchResult } from './DocSearch';
 export { DocSidebar, type DocSidebarProps, type DocSidebarItem } from './DocSidebar';
@@ -239,9 +247,3 @@ export {
   type GraphNode,
   type GraphEdge,
 } from "./GraphCanvas";
-export {
-  CodeViewer,
-  type CodeViewerProps,
-  type CodeViewerMode,
-  type DiffLine,
-} from "./CodeViewer";

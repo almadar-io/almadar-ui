@@ -21,7 +21,7 @@ import type { DisplayStateProps } from '../../../../core/organisms/types';
 import { StateNode } from './StateNode';
 import { TransitionArrow } from './TransitionArrow';
 import { VariablePanel } from './VariablePanel';
-import { CodeView } from './CodeView';
+import { StateJsonView } from './StateJsonView';
 import { boardEntity, str, rows } from '../../boardEntity';
 
 // =============================================================================
@@ -476,7 +476,7 @@ export function StateArchitectBoard({
 
                     {/* Code view */}
                     {resolved.showCodeView !== false && (
-                        <CodeView data={codeData} label="View Code" />
+                        <StateJsonView data={codeData} label="View Code" />
                     )}
                 </VStack>
             </HStack>

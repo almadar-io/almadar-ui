@@ -242,9 +242,32 @@ export function toCodeLanguage(value: string | undefined): CodeLanguage {
   return value && CODE_LANGUAGE_SET.has(value) ? (value as CodeLanguage) : 'text';
 }
 
+// ── Viewer types (absorbed from CodeViewer) ──────────────────────────────────
+
+export type CodeViewerMode = 'code' | 'diff';
+
+export interface DiffLine {
+  type: 'add' | 'remove' | 'context';
+  content: string;
+  lineNumber?: number;
+}
+
+export interface CodeViewerAction {
+  label: string;
+  event?: string;
+  navigatesTo?: string;
+  variant?: 'primary' | 'secondary' | 'ghost';
+}
+
+export interface CodeViewerFile {
+  label: string;
+  code: string;
+  language?: CodeLanguage;
+}
+
 export interface CodeBlockProps {
   /** The code content to display */
-  code: string;
+  code?: string;
   /** Programming language for syntax highlighting */
   language?: CodeLanguage;
   /** Show the copy button */
@@ -252,7 +275,7 @@ export interface CodeBlockProps {
   /** Show the language badge */
   showLanguageBadge?: boolean;
   /** Maximum height before scrolling */
-  maxHeight?: string;
+  maxHeight?: string | number;
   /** Enable brace-based code folding of multi-line `{}`/`[]` blocks (default: true). */
   foldable?: boolean;
   /** Additional CSS classes */
@@ -282,7 +305,58 @@ export interface CodeBlockProps {
    * path → line map from the schema + validation results.
    */
   errorLines?: Map<number, 'error' | 'warning'>;
+  // ── Viewer props (absorbed from CodeViewer / DocCodeBlock) ────────────────
+  /** Title shown in the toolbar */
+  title?: string;
+  /** Diff or plain-code display mode */
+  mode?: CodeViewerMode;
+  /** Pre-computed diff lines */
+  diff?: readonly DiffLine[];
+  /** Old source text — generates diff when combined with newValue */
+  oldValue?: string;
+  /** New source text — generates diff when combined with oldValue */
+  newValue?: string;
+  /** Show line numbers in code / diff mode */
+  showLineNumbers?: boolean;
+  /** Enable word-wrap in code / diff mode */
+  wordWrap?: boolean;
+  /** Multiple files shown as tabs */
+  files?: readonly CodeViewerFile[];
+  /** Action badges in the toolbar */
+  actions?: readonly CodeViewerAction[];
+  /** Loading state */
+  isLoading?: boolean;
+  /** Error state */
+  error?: UiError | null;
+  /** Show copy button (viewer alias for showCopyButton) */
+  showCopy?: boolean;
 }
+
+// ── Diff helpers ─────────────────────────────────────────────────────────────
+
+function generateDiff(oldVal: string, newVal: string): DiffLine[] {
+  const oldLines = oldVal.split('\n');
+  const newLines = newVal.split('\n');
+  const diff: DiffLine[] = [];
+  const maxLen = Math.max(oldLines.length, newLines.length);
+  for (let i = 0; i < maxLen; i++) {
+    const oldLine = oldLines[i];
+    const newLine = newLines[i];
+    if (oldLine === newLine) {
+      diff.push({ type: 'context', content: oldLine ?? '', lineNumber: i + 1 });
+    } else {
+      if (oldLine !== undefined) diff.push({ type: 'remove', content: oldLine, lineNumber: i + 1 });
+      if (newLine !== undefined) diff.push({ type: 'add', content: newLine, lineNumber: i + 1 });
+    }
+  }
+  return diff;
+}
+
+const DIFF_STYLES: Record<DiffLine['type'], { bg: string; prefix: string; text: string }> = {
+  add:     { bg: 'bg-success/10', prefix: '+', text: 'text-success' },
+  remove:  { bg: 'bg-error/10',   prefix: '-', text: 'text-error' },
+  context: { bg: '',              prefix: ' ', text: 'text-foreground' },
+};
 
 // Stable lineProps function (never changes, safe for memoized element)
 const LINE_PROPS_FN = (n: number): React.HTMLProps<HTMLElement> => ({ 'data-line': String(n - 1) } as React.HTMLProps<HTMLElement>);
@@ -300,6 +374,19 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     editable = false,
     onChange,
     errorLines,
+    // viewer props
+    title,
+    mode = 'code',
+    diff: propDiff,
+    oldValue,
+    newValue,
+    showLineNumbers = false,
+    wordWrap = false,
+    files,
+    actions,
+    isLoading = false,
+    error,
+    showCopy,
   }) => {
     const code = typeof rawCode === 'string' ? rawCode : String(rawCode ?? '');
     const isOrb = language === 'orb';
@@ -311,6 +398,25 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     const codeRef = useRef<HTMLDivElement | null>(null);
     const savedScrollLeftRef = useRef<number>(0);
     const [copied, setCopied] = useState(false);
+
+    // ── Viewer-mode state ─────────────────────────────────────────────────────
+    const [wrap, setWrap] = useState(wordWrap);
+    const [activeFileIndex, setActiveFileIndex] = useState(0);
+
+    const activeFile = files?.[activeFileIndex];
+    const activeCode = activeFile?.code ?? code;
+    const activeLanguage = (activeFile?.language ?? language) as CodeLanguage;
+
+    const diffLines = useMemo(() => {
+      if (propDiff) return propDiff;
+      if (mode === 'diff' && oldValue !== undefined && newValue !== undefined) {
+        return generateDiff(oldValue, newValue);
+      }
+      return null;
+    }, [propDiff, mode, oldValue, newValue]);
+
+    const isViewerMode = !!(title || files || showLineNumbers || diffLines || mode === 'diff' || actions);
+    const effectiveCopy = showCopy ?? showCopyButton;
 
     // ── Editable mode (GAP-77): Prism overlay under transparent textarea ──
     // `editableValue` mirrors the textarea contents so the overlay re-renders
@@ -526,13 +632,13 @@ export const CodeBlock = React.memo<CodeBlockProps>(
 
     const handleCopy = async () => {
       try {
-        await navigator.clipboard.writeText(code);
+        await navigator.clipboard.writeText(activeCode);
         setCopied(true);
-        eventBus.emit('UI:COPY_CODE', { language, success: true });
+        eventBus.emit('UI:COPY_CODE', { language: activeLanguage, success: true });
         setTimeout(() => setCopied(false), 2000);
       } catch (err) {
         log.error('Failed to copy code', { error: err instanceof Error ? err : String(err) });
-        eventBus.emit('UI:COPY_CODE', { language, success: false });
+        eventBus.emit('UI:COPY_CODE', { language: activeLanguage, success: false });
       }
     };
 
@@ -599,12 +705,152 @@ export const CodeBlock = React.memo<CodeBlockProps>(
           }
         });
       }
-      const full = code.split('\n').slice(a, endLine + 1).join('\n');
+      const full = activeCode.split('\n').slice(a, endLine + 1).join('\n');
       e.clipboardData.setData('text/plain', full);
       e.preventDefault();
     }, [code]);
 
-    const hasHeader = showLanguageBadge || showCopyButton;
+    // ── Loading / error / empty guards ───────────────────────────────────────
+    if (isLoading) {
+      return <LoadingState message={t('common.loading')} className={className} />;
+    }
+    if (error) {
+      return <ErrorState title={t('display.codeViewerError')} message={error.message} className={className} />;
+    }
+    if (isViewerMode && !activeCode && !diffLines) {
+      return <EmptyState icon={CodeIcon} title={t('display.noCode')} description="No code to display." className={className} />;
+    }
+
+    // ── Viewer mode (title / multi-file / diff / showLineNumbers) ─────────────
+    if (isViewerMode) {
+      const tabItems: TabItem[] | undefined = files?.map((file, idx) => ({
+        id: `file-${idx}`,
+        label: file.label,
+        content: null,
+      }));
+      const lines = activeCode.split('\n');
+
+      return (
+        <Card className={cn('overflow-hidden', className)}>
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {tabItems && tabItems.length > 1 && (
+              <Box className="border-b border-border">
+                <Tabs
+                  tabs={tabItems}
+                  activeTab={`file-${activeFileIndex}`}
+                  onTabChange={(id) => {
+                    const idx = parseInt(id.replace('file-', ''), 10);
+                    setActiveFileIndex(idx);
+                  }}
+                />
+              </Box>
+            )}
+            <HStack
+              gap="sm"
+              align="center"
+              justify="between"
+              className="px-4 py-2 border-b border-border bg-muted/30"
+            >
+              <HStack gap="sm" align="center">
+                <Icon icon={mode === 'diff' ? FileText : CodeIcon} size="sm" className="text-muted-foreground" />
+                {title && (
+                  <Typography variant="small" weight="medium" className="truncate">
+                    {title}
+                  </Typography>
+                )}
+                {activeLanguage && activeLanguage !== 'text' && (
+                  <Badge variant="default">{activeLanguage}</Badge>
+                )}
+              </HStack>
+              <HStack gap="xs" align="center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  icon={WrapText}
+                  onClick={() => setWrap(!wrap)}
+                  className={cn(wrap && 'text-primary')}
+                />
+                {effectiveCopy && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon={copied ? Check : Copy}
+                    onClick={handleCopy}
+                    className={cn(copied && 'text-success')}
+                  />
+                )}
+                {actions?.map((action, idx) => (
+                  <Badge
+                    key={idx}
+                    variant="default"
+                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={() => {
+                      if (action.event) eventBus.emit(`UI:${action.event}`, {});
+                    }}
+                  >
+                    {action.label}
+                  </Badge>
+                ))}
+              </HStack>
+            </HStack>
+            <Box className="overflow-auto bg-muted/20" style={{ maxHeight }}>
+              {diffLines ? (
+                <div style={{ display: 'flex', flexDirection: 'column' }} className="font-mono text-xs">
+                  {diffLines.map((line, idx) => {
+                    const style = DIFF_STYLES[line.type];
+                    return (
+                      <HStack key={idx} gap="none" align="start" className={cn(style.bg, 'px-4 py-0.5')}>
+                        {showLineNumbers && (
+                          <Typography
+                            variant="caption"
+                            color="secondary"
+                            className="w-8 text-right mr-3 select-none tabular-nums flex-shrink-0"
+                          >
+                            {line.lineNumber ?? ''}
+                          </Typography>
+                        )}
+                        <Typography
+                          variant="caption"
+                          className={cn('font-mono flex-1 min-w-0', style.text, wrap ? 'whitespace-pre-wrap break-all' : 'whitespace-pre')}
+                        >
+                          <Box as="span" className="select-none opacity-50 mr-2">{style.prefix}</Box>
+                          {line.content}
+                        </Typography>
+                      </HStack>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column' }} className="font-mono text-xs">
+                  {lines.map((line, idx) => (
+                    <HStack key={idx} gap="none" align="start" className="px-4 py-0.5 hover:bg-muted/50">
+                      {showLineNumbers && (
+                        <Typography
+                          variant="caption"
+                          color="secondary"
+                          className="w-8 text-right mr-4 select-none tabular-nums flex-shrink-0"
+                        >
+                          {idx + 1}
+                        </Typography>
+                      )}
+                      <Typography
+                        variant="caption"
+                        className={cn('font-mono flex-1 min-w-0', wrap ? 'whitespace-pre-wrap break-all' : 'whitespace-pre')}
+                      >
+                        {line || ' '}
+                      </Typography>
+                    </HStack>
+                  ))}
+                </div>
+              )}
+            </Box>
+          </div>
+        </Card>
+      );
+    }
+
+    // ── Standard PrismLight code block (original behavior) ────────────────────
+    const hasHeader = showLanguageBadge || effectiveCopy;
 
     return (
       <Box className={`relative group ${className || ''}`} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -619,7 +865,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
                 {language}
               </Badge>
             )}
-            {showCopyButton && (
+            {effectiveCopy && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -779,11 +1025,19 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     prev.language === next.language &&
     prev.code === next.code &&
     prev.showCopyButton === next.showCopyButton &&
+    prev.showCopy === next.showCopy &&
     prev.maxHeight === next.maxHeight &&
     prev.foldable === next.foldable &&
     prev.editable === next.editable &&
     prev.onChange === next.onChange &&
-    prev.errorLines === next.errorLines,
+    prev.errorLines === next.errorLines &&
+    prev.mode === next.mode &&
+    prev.title === next.title &&
+    prev.diff === next.diff &&
+    prev.files === next.files &&
+    prev.actions === next.actions &&
+    prev.isLoading === next.isLoading &&
+    prev.error === next.error,
 );
 
 CodeBlock.displayName = 'CodeBlock';
