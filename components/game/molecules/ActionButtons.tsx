@@ -1,4 +1,10 @@
 'use client';
+/**
+ * ActionButtons — configurable button-group molecule for game controls (distinct from ActionButton atom).
+ * ActionButton is a single button with cooldown overlay and hotkey badge.
+ * ActionButtons manages a *set* of ControlButtons, tracks press/release state,
+ * and supports horizontal/vertical/diamond layouts for gamepad-style UI.
+ */
 import * as React from 'react';
 import type { EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';

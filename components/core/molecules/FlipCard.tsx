@@ -1,9 +1,8 @@
 'use client';
 /**
- * FlipCard - A two-sided card with 3D flip animation.
- *
- * Pure presentational molecule: no entity binding, no event bus, no translations.
- * Uses the FlipContainer atom for the 3D transform mechanics.
+ * FlipCard — two-sided card molecule with front/back faces (distinct from FlipContainer).
+ * FlipContainer is the raw 3D-transform atom; FlipCard wraps it with card styling,
+ * absolute face positioning, and `front`/`back` ReactNode props for lolo consumers.
  */
 import React from 'react';
 import { cn } from '../../../lib/cn';

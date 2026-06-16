@@ -1,9 +1,9 @@
 'use client';
 /**
- * FlipContainer - A 3D perspective container atom for flip animations.
- *
- * Provides CSS 3D transform infrastructure: perspective on the outer wrapper,
- * preserve-3d + rotateY on the inner, and backface-visibility hidden on each child face.
+ * FlipContainer — CSS 3D perspective atom (distinct from FlipCard molecule).
+ * Owns perspective/preserve-3d/rotateY only. Children are the raw face elements.
+ * Use FlipCard when you need standard card chrome; use FlipContainer when you
+ * need the flip mechanic around custom face content.
  */
 import React from 'react';
 import { cn } from '../../../lib/cn';

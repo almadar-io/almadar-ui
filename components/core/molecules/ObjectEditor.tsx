@@ -120,9 +120,11 @@ export const ObjectEditor: React.FC<ObjectEditorProps> = ({ value, onChange, cla
     <VStack gap="xs" className={cn('w-full', className)}>
       {entries.map(([k, v]) => (
         <HStack key={k} gap="sm" align="center">
-          <Typography variant="caption" className="w-24 shrink-0 text-muted-foreground truncate" title={k}>
-            {k}
-          </Typography>
+          <span className="w-24 shrink-0 truncate" title={k}>
+            <Typography variant="caption" className="text-muted-foreground">
+              {k}
+            </Typography>
+          </span>
           <div className="flex-1">
             <ScalarControl fieldKey={k} value={v} onFieldChange={handleFieldChange} />
           </div>

@@ -1,9 +1,8 @@
 'use client';
 /**
- * DateRangeSelector Molecule Component
- *
- * Button group for selecting time range periods.
- * Pure UI molecule with no entity binding.
+ * DateRangeSelector — preset period button-group (e.g. 1W / 1M / 3M / 1Y).
+ * Distinct from DateRangePicker: no calendar inputs, no custom dates.
+ * Use DateRangePicker when the user needs to enter an arbitrary from/to range.
  */
 
 import React from 'react';

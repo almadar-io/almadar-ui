@@ -97,8 +97,10 @@ function TextLikeControl({
 
 const SCALAR_TYPES = new Set(['string', 'number', 'boolean', 'icon', 'asset']);
 
-function isTraitConfigObject(v: TraitConfigValue): v is Record<string, TraitConfigValue> {
-  return v !== null && typeof v === 'object' && !Array.isArray(v);
+function isTraitConfigObject(
+  v: TraitConfigValue | undefined,
+): v is Record<string, TraitConfigValue> {
+  return v !== null && v !== undefined && typeof v === 'object' && !Array.isArray(v);
 }
 
 function FieldControl({

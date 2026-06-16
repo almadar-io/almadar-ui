@@ -1,9 +1,9 @@
 'use client';
 /**
- * DocSidebar Molecule Component
- *
- * A documentation navigation sidebar with collapsible category sections.
- * Composes from Box, VStack, HStack, Typography, and Icon atoms.
+ * DocSidebar — collapsible documentation navigation sidebar.
+ * Renders a nested item tree with expand/collapse per category and active-item
+ * highlighting. Not a generic nav; it owns doc-site-specific UX (uppercase
+ * category headers, indented children, active highlight).
  */
 
 import React, { useState } from 'react';

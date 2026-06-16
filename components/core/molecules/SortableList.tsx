@@ -1,11 +1,10 @@
 'use client';
 
 /**
- * SortableList Molecule
- *
- * A list where items can be dragged to reorder via drag handles.
- * Uses useDragReorder for drag state management and useEventBus for event emission.
- * Shows a drop indicator line at the target position during drag.
+ * SortableList — drag-to-reorder list (distinct from DataList).
+ * DataList is a read/action list with no drag. SortableList owns drag
+ * handles and emits a REORDER event with fromIndex/toIndex/item — use it
+ * when item ordering is user-controlled.
  */
 import React, { useCallback } from 'react';
 import type { EntityRow, EventKey, EventPayload } from "@almadar/core";

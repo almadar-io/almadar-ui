@@ -1,8 +1,8 @@
 /**
- * Container Component
- * 
- * A max-width wrapper that centers content horizontally.
- * Essential for controlling page width and maintaining consistent margins.
+ * Container — max-width centering wrapper (distinct from Box).
+ * Box controls padding/margin/bg/shadow on an arbitrary element.
+ * Container constrains page width and centers; use it at the layout level,
+ * not as a generic div replacement.
  */
 import React from 'react';
 import { cn } from '../../../lib/cn';

@@ -4,6 +4,12 @@ import { Icon } from '../../core/atoms/Icon';
 import { HealthBar } from '../atoms/HealthBar';
 import { ScoreDisplay } from '../atoms/ScoreDisplay';
 
+/**
+ * StatBadge — game stat display molecule (distinct from core Badge atom).
+ * Badge shows a text label/status token. StatBadge shows a numeric value
+ * with optional HealthBar (hearts/bar) or ScoreDisplay (animated number) and
+ * a named label — purpose-built for HUD stat rows, not general status tags.
+ */
 export interface StatBadgeProps {
   /** Stat label */
   label: string;

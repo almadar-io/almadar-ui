@@ -1,8 +1,8 @@
 /**
- * Flex Component
- * 
- * A flexbox wrapper with all common flex properties exposed as props.
- * More explicit than Stack for when you need full flex control.
+ * Flex — full-surface flexbox primitive (distinct from Stack).
+ * Stack covers the 95% case (VStack/HStack with gap/align/justify).
+ * Flex exposes direction, wrap, grow, shrink, basis individually; use it
+ * when you need those extra axes or inline-flex behavior.
  */
 import React from 'react';
 import { cn } from '../../../lib/cn';

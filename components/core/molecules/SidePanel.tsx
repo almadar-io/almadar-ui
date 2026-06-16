@@ -1,9 +1,9 @@
 'use client';
 /**
- * SidePanel Molecule Component
- *
- * A side panel that slides in from the right (or left) with header and content.
- * Uses Button, Typography atoms.
+ * SidePanel — fixed side panel for contextual detail on top of the page layout.
+ * Distinct from Drawer: Drawer is driven by the UI Slot system (render_ui drawer)
+ * and is generic. SidePanel is a direct-render component with its own close event
+ * API, used where the panel is always present in the component tree.
  */
 
 import React from "react";

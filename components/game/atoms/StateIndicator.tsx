@@ -1,9 +1,8 @@
 /**
- * StateIndicator Component
- *
- * Displays a visual indicator for a game entity's current state.
- * Generic — not tied to any specific game. Projects can extend
- * the state styles via the `stateStyles` prop.
+ * StateIndicator — animated game-entity state pill (distinct from core Badge atom).
+ * Badge is a static text label. StateIndicator maps a state string (idle/active/
+ * moving/…) to icon + bg colour + optional pulse via a style registry that callers
+ * can extend. Use it in game HUDs where the entity state machine drives the display.
  */
 
 import React from 'react';

@@ -1,9 +1,9 @@
 'use client';
 /**
- * DocSearch Molecule
- *
- * A search input with results dropdown for documentation sites.
- * Composed from Box, VStack, Typography, Icon, and Input atoms.
+ * DocSearch — documentation search input with inline results dropdown (distinct from SearchInput).
+ * SearchInput emits bus events for entity-list filtering with debounce.
+ * DocSearch drives a callback-based result list with keyboard navigation and
+ * popover dropdown; designed for docs site navigation, not data-list filtering.
  */
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { cn } from '../../../lib/cn';

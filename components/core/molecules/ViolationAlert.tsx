@@ -1,13 +1,8 @@
 /**
- * ViolationAlert
- *
- * Displays inspection violations with law references and action types.
- * Used in inspection forms to show detected compliance violations.
- *
- * Action Types:
- * - measure: Corrective measure required (warning)
- * - admin: Administrative action (error)
- * - penalty: Penalty proceedings (error, severe)
+ * ViolationAlert — domain-specific compliance violation display (distinct from Alert).
+ * Alert is a generic dismissible message. ViolationAlert owns structured
+ * `ViolationRecord` (law/article/actionType/adminAction/penaltyAction) and
+ * an optional "navigate to field" action — use it in inspection/compliance forms only.
  */
 
 import React from "react";
