@@ -3,7 +3,7 @@ export type { TemplateProps } from './types';
 
 // Layout Templates
 export { DashboardLayout, type DashboardLayoutProps, type NavItem } from './DashboardLayout';
-export { AuthLayout, type AuthLayoutProps } from './AuthLayout';
+export { AuthLayout, type AuthLayoutProps } from '../../marketing/templates/AuthLayout';
 
 // Feature Templates
 export {

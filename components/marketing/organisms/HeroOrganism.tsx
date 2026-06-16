@@ -15,11 +15,11 @@ import React, { useMemo, useCallback } from 'react';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
-import { HeroSection } from '../../marketing/molecules/HeroSection';
-import { LoadingState } from '../molecules/LoadingState';
-import { ErrorState } from '../molecules/ErrorState';
+import { HeroSection } from '../molecules/HeroSection';
+import { LoadingState } from '../../core/molecules/LoadingState';
+import { ErrorState } from '../../core/molecules/ErrorState';
 import type { EntityWith } from '@almadar/core';
-import type { DisplayStateProps } from './types';
+import type { DisplayStateProps } from '../../core/organisms/types';
 
 export interface HeroOrganismProps extends DisplayStateProps {
   entity?: EntityWith<'title'>;

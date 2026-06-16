@@ -95,11 +95,11 @@ export {
 export {
   HeroOrganism,
   type HeroOrganismProps,
-} from "./HeroOrganism";
+} from "../../marketing/organisms/HeroOrganism";
 export {
   FeatureGridOrganism,
   type FeatureGridOrganismProps,
-} from "./FeatureGridOrganism";
+} from "../../marketing/organisms/FeatureGridOrganism";
 export {
   PricingOrganism,
   type PricingOrganismProps,
@@ -111,11 +111,11 @@ export {
 export {
   StepFlowOrganism,
   type StepFlowOrganismProps,
-} from "./StepFlowOrganism";
+} from "../../marketing/organisms/StepFlowOrganism";
 export {
   ShowcaseOrganism,
   type ShowcaseOrganismProps,
-} from "./ShowcaseOrganism";
+} from "../../marketing/organisms/ShowcaseOrganism";
 export {
   TeamOrganism,
   type TeamOrganismProps,
@@ -123,7 +123,7 @@ export {
 export {
   CaseStudyOrganism,
   type CaseStudyOrganismProps,
-} from "./CaseStudyOrganism";
+} from "../../marketing/organisms/CaseStudyOrganism";
 
 // Phase 10: organisms moved to molecules (no entity binding) or expressed in std render-ui (domain-shaped).
 

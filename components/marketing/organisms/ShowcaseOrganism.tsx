@@ -15,14 +15,14 @@ import React, { useMemo, useCallback } from 'react';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
-import { VStack } from '../atoms/Stack';
-import { Typography } from '../atoms/Typography';
-import { SimpleGrid } from '../molecules/SimpleGrid';
-import { ShowcaseCard } from '../../marketing/molecules/ShowcaseCard';
-import { LoadingState } from '../molecules/LoadingState';
-import { ErrorState } from '../molecules/ErrorState';
+import { VStack } from '../../core/atoms/Stack';
+import { Typography } from '../../core/atoms/Typography';
+import { SimpleGrid } from '../../core/molecules/SimpleGrid';
+import { ShowcaseCard } from '../molecules/ShowcaseCard';
+import { LoadingState } from '../../core/molecules/LoadingState';
+import { ErrorState } from '../../core/molecules/ErrorState';
 import type { EntityRow, EntityWith } from '@almadar/core';
-import type { DisplayStateProps } from './types';
+import type { DisplayStateProps } from '../../core/organisms/types';
 
 export interface ShowcaseOrganismProps extends DisplayStateProps {
   entity?: EntityWith<'title'> | readonly EntityWith<'title'>[];

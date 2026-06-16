@@ -9,9 +9,9 @@
 
 import React from 'react';
 import { cn } from '../../../lib/cn';
-import { Box } from '../atoms/Box';
-import { VStack, HStack } from '../atoms/Stack';
-import { Typography } from '../atoms/Typography';
+import { Box } from '../../core/atoms/Box';
+import { VStack, HStack } from '../../core/atoms/Stack';
+import { Typography } from '../../core/atoms/Typography';
 // Divider removed - using border-top on copyright instead
 
 export interface FooterLinkItem {

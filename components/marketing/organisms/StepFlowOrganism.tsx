@@ -13,14 +13,14 @@
 import React, { useMemo } from 'react';
 import { cn } from '../../../lib/cn';
 import { useTranslate } from '../../../hooks/useTranslate';
-import { VStack } from '../atoms/Stack';
-import { Typography } from '../atoms/Typography';
-import { StepFlow } from '../../marketing/molecules/StepFlow';
-import { LoadingState } from '../molecules/LoadingState';
-import { ErrorState } from '../molecules/ErrorState';
+import { VStack } from '../../core/atoms/Stack';
+import { Typography } from '../../core/atoms/Typography';
+import { StepFlow } from '../molecules/StepFlow';
+import { LoadingState } from '../../core/molecules/LoadingState';
+import { ErrorState } from '../../core/molecules/ErrorState';
 import type { EntityRow, EntityWith } from '@almadar/core';
-import type { DisplayStateProps } from './types';
-import type { StepItemProps } from '../../marketing/molecules/StepFlow';
+import type { DisplayStateProps } from '../../core/organisms/types';
+import type { StepItemProps } from '../molecules/StepFlow';
 
 export interface StepFlowOrganismProps extends DisplayStateProps {
   entity?: EntityWith<'title'> | readonly EntityWith<'title'>[];

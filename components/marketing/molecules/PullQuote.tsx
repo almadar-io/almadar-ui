@@ -8,8 +8,8 @@
 
 import React from 'react';
 import { cn } from '../../../lib/cn';
-import { Box } from '../atoms/Box';
-import { Typography } from '../atoms/Typography';
+import { Box } from '../../core/atoms/Box';
+import { Typography } from '../../core/atoms/Typography';
 
 export interface PullQuoteProps {
   /** The quote text */

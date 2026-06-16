@@ -56,12 +56,12 @@ export type { CaseStudyCardProps } from '../components/marketing/molecules/CaseS
 export { ArticleSection } from '../components/marketing/molecules/ArticleSection';
 export type { ArticleSectionProps } from '../components/marketing/molecules/ArticleSection';
 export { SimpleGrid } from '../components/core/molecules/SimpleGrid';
-export { MarketingFooter } from '../components/core/molecules/MarketingFooter';
-export type { MarketingFooterProps, FooterLinkColumn, FooterLinkItem } from '../components/core/molecules/MarketingFooter';
+export { MarketingFooter } from '../components/marketing/molecules/MarketingFooter';
+export type { MarketingFooterProps, FooterLinkColumn, FooterLinkItem } from '../components/marketing/molecules/MarketingFooter';
 export { GradientDivider } from '../components/core/molecules/GradientDivider';
 export type { GradientDividerProps } from '../components/core/molecules/GradientDivider';
-export { PullQuote } from '../components/core/molecules/PullQuote';
-export type { PullQuoteProps } from '../components/core/molecules/PullQuote';
+export { PullQuote } from '../components/marketing/molecules/PullQuote';
+export type { PullQuoteProps } from '../components/marketing/molecules/PullQuote';
 export { AnimatedCounter } from '../components/core/molecules/AnimatedCounter';
 export type { AnimatedCounterProps } from '../components/core/molecules/AnimatedCounter';
 

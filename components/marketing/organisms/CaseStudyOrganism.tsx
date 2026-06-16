@@ -1,9 +1,9 @@
 'use client';
 /**
- * FeatureGridOrganism
+ * CaseStudyOrganism
  *
- * Resolves an array of FeatureEntity and renders them as a FeatureGrid molecule.
- * Emits UI:FEATURE_CLICK with { id, href } when a feature card is clicked.
+ * Resolves an array of CaseStudyEntity and renders them as a grid of CaseStudyCard molecules.
+ * Emits UI:CASE_STUDY_CLICK with { id, href } when a case study card is clicked.
  *
  * Closed Circuit Compliance:
  * - Receives ALL data via entity prop
@@ -15,28 +15,26 @@ import React, { useMemo, useCallback } from 'react';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
-import { VStack } from '../atoms/Stack';
-import { Typography } from '../atoms/Typography';
-import { FeatureGrid } from '../molecules/FeatureGrid';
-import { LoadingState } from '../molecules/LoadingState';
-import { ErrorState } from '../molecules/ErrorState';
+import { VStack } from '../../core/atoms/Stack';
+import { Typography } from '../../core/atoms/Typography';
+import { SimpleGrid } from '../../core/molecules/SimpleGrid';
+import { CaseStudyCard } from '../molecules/CaseStudyCard';
+import { LoadingState } from '../../core/molecules/LoadingState';
+import { ErrorState } from '../../core/molecules/ErrorState';
 import type { EntityRow, EntityWith } from '@almadar/core';
-import type { DisplayStateProps } from './types';
-import type { FeatureCardProps } from '../../marketing/molecules/FeatureCard';
+import type { DisplayStateProps } from '../../core/organisms/types';
 
-export interface FeatureGridOrganismProps extends DisplayStateProps {
+export interface CaseStudyOrganismProps extends DisplayStateProps {
   entity?: EntityWith<'title'> | readonly EntityWith<'title'>[];
-  columns?: 2 | 3 | 4 | 6;
   heading?: string;
   subtitle?: string;
 }
 
-export const FeatureGridOrganism: React.FC<FeatureGridOrganismProps> = ({
+export const CaseStudyOrganism: React.FC<CaseStudyOrganismProps> = ({
   entity,
   isLoading = false,
   error,
   className,
-  columns = 3,
   heading,
   subtitle,
 }) => {
@@ -53,16 +51,6 @@ export const FeatureGridOrganism: React.FC<FeatureGridOrganismProps> = ({
     [entity],
   );
 
-  const handleFeatureClick = useCallback(
-    (feature: EntityRow) => {
-      eventBus.emit('UI:FEATURE_CLICK', {
-        id: String(feature.id ?? ''),
-        href: String(feature.href ?? ''),
-      });
-    },
-    [eventBus],
-  );
-
   if (isLoading) {
     return <LoadingState message={t('common.loading')} className={className} />;
   }
@@ -71,17 +59,7 @@ export const FeatureGridOrganism: React.FC<FeatureGridOrganismProps> = ({
     return <ErrorState message={error.message} className={className} />;
   }
 
-  const featureCards: FeatureCardProps[] = items.map((feature) => {
-    const href = feature.href != null ? String(feature.href) : undefined;
-    return {
-      icon: feature.icon != null ? String(feature.icon) : undefined,
-      title: String(feature.title ?? ''),
-      description: String(feature.description ?? ''),
-      href,
-      linkLabel: feature.linkLabel != null ? String(feature.linkLabel) : undefined,
-      variant: href ? ('interactive' as const) : ('bordered' as const),
-    };
-  });
+  const cols = Math.min(items.length, 3) as 1 | 2 | 3;
 
   return (
     <VStack gap="lg" className={cn('w-full', className)}>
@@ -99,12 +77,21 @@ export const FeatureGridOrganism: React.FC<FeatureGridOrganismProps> = ({
           )}
         </VStack>
       )}
-      <FeatureGrid
-        items={featureCards}
-        columns={columns}
-      />
+      <SimpleGrid cols={cols > 0 ? cols : 1} gap="lg">
+        {items.map((study) => (
+          <CaseStudyCard
+            key={String(study.id ?? '')}
+            title={String(study.title ?? '')}
+            description={String(study.description ?? '')}
+            category={String(study.category ?? '')}
+            categoryColor={study.categoryColor != null ? String(study.categoryColor) : undefined}
+            href={String(study.href ?? '')}
+            linkLabel={study.linkLabel != null ? String(study.linkLabel) : undefined}
+          />
+        ))}
+      </SimpleGrid>
     </VStack>
   );
 };
 
-FeatureGridOrganism.displayName = 'FeatureGridOrganism';
+CaseStudyOrganism.displayName = 'CaseStudyOrganism';

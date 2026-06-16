@@ -23,7 +23,8 @@ import type { DisplayStateProps } from '../organisms/types';
  * PropertyInspector — Storybook-style controls panel for a trait's `config`.
  *
  * Derives one control per declared config field directly from the schema
- * (`@almadar/core` `DeclaredTraitConfig`): `boolean → Switch`, `string` with
+ * (`@almadar/core` `DeclaredTraitConfig`), dispatching on the field's `type`:
+ * `icon → IconPicker`, `asset → AssetPicker`, `boolean → Switch`, `string` with
  * `values → Select`, `number → numeric Input`, `string → Input`. Non-scalar
  * fields (array/object/node/SExpr) are shown read-only. Fields group + collapse
  * by `@tier`. The component is controlled — it emits `onChange(field, value)`;
@@ -40,7 +41,7 @@ export interface PropertyInspectorProps extends DisplayStateProps {
   onReset?: () => void;
   /** Panel heading (e.g. the trait name). */
   title?: string;
-  /** Browsable asset catalog supplied to `control: 'asset'` fields. */
+  /** Browsable asset catalog supplied to `asset`-typed fields' AssetPicker. */
   assets?: AssetCatalog;
 }
 
@@ -108,28 +109,19 @@ function FieldControl({
 
   const stringValue = typeof value === 'string' ? value : undefined;
 
-  // Deterministic `control` tag wins over the type-based dispatch below.
-  if (decl.control === 'icon') {
+  // Dispatch on the declared config field `type`. `icon`/`asset` are distinct
+  // config types (string runtime value, distinct `.orb` type tag) emitted by the
+  // pattern-sync generator from a `LucideIcon` / `AssetUrl` component prop.
+  if (decl.type === 'icon') {
     control = <IconPicker value={stringValue} onChange={(icon) => onChange(name, icon)} />;
-  } else if (decl.control === 'asset' && assets !== undefined) {
+  } else if (decl.type === 'asset') {
     control = (
-      <AssetPicker assets={assets} value={stringValue} onChange={(url) => onChange(name, url)} />
-    );
-  } else if (
-    decl.control === 'color' &&
-    decl.values !== undefined &&
-    decl.values.length > 0
-  ) {
-    control = (
-      <Select
-        options={decl.values.map((v) => ({ value: v, label: v }))}
-        value={stringValue ?? ''}
-        onChange={(e) => onChange(name, e.target.value)}
+      <AssetPicker
+        assets={assets ?? []}
+        value={stringValue}
+        onChange={(url) => onChange(name, url)}
       />
     );
-  } else if (decl.control === 'asset' || decl.control === 'color') {
-    // `asset` with no catalog / `color` with no enum: degrade to the text control.
-    control = <TextLikeControl field={name} numeric={false} value={value} onCommit={onChange} />;
   } else if (decl.type === 'boolean') {
     control = <Switch checked={value === true} onChange={(c) => onChange(name, c)} />;
   } else if (decl.type === 'string' && decl.values !== undefined && decl.values.length > 0) {

@@ -3,9 +3,9 @@ import React from "react";
 import { Outlet, Link } from "react-router-dom";
 import { cn } from "../../../lib/cn";
 import { useTranslate } from "../../../hooks/useTranslate";
-import { Box } from "../atoms/Box";
-import { VStack, HStack } from "../atoms/Stack";
-import { Typography } from "../atoms/Typography";
+import { Box } from "../../core/atoms/Box";
+import { VStack, HStack } from "../../core/atoms/Stack";
+import { Typography } from "../../core/atoms/Typography";
 
 export interface AuthLayoutProps {
   /** App name */
