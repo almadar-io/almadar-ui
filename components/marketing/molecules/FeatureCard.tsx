@@ -10,13 +10,12 @@ import React from 'react';
 import { cn } from '../../../lib/cn';
 import { Card } from '../../core/atoms/Card';
 import { VStack } from '../../core/atoms/Stack';
-import { Icon } from '../../core/atoms/Icon';
+import { Icon, type IconInput } from '../../core/atoms/Icon';
 import { Typography } from '../../core/atoms/Typography';
 import { Button } from '../../core/atoms/Button';
 
 export interface FeatureCardProps {
-  /** Icon name (Lucide string) or ReactNode */
-  icon?: string | React.ReactNode;
+  icon?: IconInput;
   /** Feature title */
   title: string;
   /** Feature description */
@@ -57,16 +56,14 @@ export const FeatureCard: React.FC<FeatureCardProps> = ({
 }) => {
   const renderIcon = () => {
     if (!icon) return null;
-    if (typeof icon === 'string') {
-      return (
-        <Icon
-          name={icon}
-          size={iconSizeMap[size]}
-          className="text-accent"
-        />
-      );
-    }
-    return icon;
+    return (
+      <Icon
+        icon={typeof icon === 'string' ? undefined : icon}
+        name={typeof icon === 'string' ? icon : undefined}
+        size={iconSizeMap[size]}
+        className="text-accent"
+      />
+    );
   };
 
   const handleLinkClick = () => {

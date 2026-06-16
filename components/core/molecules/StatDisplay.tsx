@@ -14,6 +14,7 @@ import { Box } from '../atoms/Box';
 import { HStack, VStack } from '../atoms/Stack';
 import { Sparkline } from '../atoms/Sparkline';
 import { resolveIcon } from '../atoms/Icon';
+import type { IconInput } from '../atoms';
 import { useEventBus } from '../../../hooks/useEventBus';
 import type { UiError } from '../atoms/types';
 
@@ -55,8 +56,8 @@ export interface StatDisplayProps {
   prefix?: string;
   /** Suffix appended to the formatted value (e.g. " /mo", " ms"). */
   suffix?: string;
-  /** Lucide icon name or React node */
-  icon?: React.ReactNode;
+  /** Lucide icon name or component */
+  icon?: IconInput;
   /** Icon background color class */
   iconBg?: string;
   /** Icon color class */
@@ -148,7 +149,7 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
   }, [clickEvent, eventBus, label]);
   const ResolvedIcon = typeof iconProp === 'string'
     ? resolveIcon(iconProp)
-    : null;
+    : (typeof iconProp === 'function' ? iconProp : null);
 
   const iconSizes = { sm: 'h-4 w-4', md: 'h-5 w-5', lg: 'h-6 w-6' };
   const valueSizes = { sm: 'text-lg', md: 'text-2xl', lg: 'text-3xl' };
@@ -193,7 +194,6 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
         onClick={clickEvent ? handleClick : undefined}
       >
         {ResolvedIcon && <ResolvedIcon className={cn(iconSizes[size], iconColor)} />}
-        {typeof iconProp !== 'string' && iconProp}
         <Typography variant="caption" color="secondary">{label}</Typography>
         <Typography variant="h4" className={cn('font-bold', valueSizes[size], variantColor[variant])}>
           {displayValue}
@@ -242,11 +242,9 @@ export const StatDisplay: React.FC<StatDisplayProps> = ({
           )}
         </VStack>
         <VStack gap="xs" align="end">
-          {(ResolvedIcon || (typeof iconProp !== 'string' && iconProp)) && (
+          {ResolvedIcon && (
             <Box className={cn('p-3 rounded-md', iconBg)}>
-              {ResolvedIcon
-                ? <ResolvedIcon className={cn(iconSizes[size], iconColor)} />
-                : iconProp}
+              <ResolvedIcon className={cn(iconSizes[size], iconColor)} />
             </Box>
           )}
           {sparklineData && sparklineData.length > 1 && (

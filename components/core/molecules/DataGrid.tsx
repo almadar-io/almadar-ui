@@ -27,6 +27,7 @@ import { Typography } from '../atoms/Typography';
 import { Badge, type BadgeVariant } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
 import { Icon } from '../atoms/Icon';
+import type { IconInput } from '../atoms';
 import { InfiniteScrollSentinel } from '../atoms/InfiniteScrollSentinel';
 import { Menu } from './Menu';
 import { useDataDnd, type DataDndProps } from './useDataDnd';
@@ -39,8 +40,8 @@ export interface DataGridField {
   name: string;
   /** Display label (auto-generated from name if omitted) */
   label?: string;
-  /** Lucide icon name to show beside the field */
-  icon?: string;
+  /** Lucide icon name or component to show beside the field */
+  icon?: IconInput;
   /** Rendering variant: 'h3' for title, 'body' for text, 'caption' for small,
    *  'badge' for status badge, 'progress' for progress display */
   variant?: 'h3' | 'h4' | 'body' | 'caption' | 'badge' | 'small' | 'progress';
@@ -65,8 +66,8 @@ export interface DataGridItemAction {
   label: string;
   /** Event name to emit (dispatched as UI:{event} with { row: itemData }) */
   event: EventKey;
-  /** Lucide icon name */
-  icon?: string;
+  /** Lucide icon name or component */
+  icon?: IconInput;
   /** Button variant */
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
 }
@@ -138,6 +139,12 @@ export interface DataGridProps extends DataDndProps {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
+
+function renderIconInput(icon: IconInput, props: React.ComponentProps<typeof Icon>): React.ReactElement {
+  return typeof icon === 'string'
+    ? <Icon name={icon} {...props} />
+    : <Icon icon={icon} {...props} />;
+}
 
 function fieldLabel(key: string): string {
   return key
@@ -503,9 +510,7 @@ export function DataGrid({
                 <VStack gap="xs" className="flex-1 min-w-0">
                   {titleValue !== undefined && titleValue !== null && (
                     <HStack gap="xs" className="items-center">
-                      {titleField?.icon && (
-                        <Icon name={titleField.icon} size="sm" className="text-primary flex-shrink-0" />
-                      )}
+                      {titleField?.icon && renderIconInput(titleField.icon, { size: 'sm', className: 'text-primary flex-shrink-0' })}
                       <Typography
                         variant={titleField?.variant === 'h3' ? 'h3' : 'h4'}
                         className="font-semibold truncate"
@@ -521,7 +526,7 @@ export function DataGrid({
                         if (val === undefined || val === null) return null;
                         return (
                           <HStack key={field.name} gap="xs" className="items-center">
-                            {field.icon && <Icon name={field.icon} size="xs" />}
+                            {field.icon && renderIconInput(field.icon, { size: 'xs' })}
                             <Badge variant={resolveBadgeVariant(field, String(val))}>
                               {String(val)}
                             </Badge>
@@ -543,7 +548,7 @@ export function DataGrid({
                         data-row-id={String(itemData.id)}
                         className="text-error hover:text-error hover:bg-error/10 px-2"
                       >
-                        {action.icon && <Icon name={action.icon} size="xs" />}
+                        {action.icon && renderIconInput(action.icon, { size: 'xs' })}
                         {action.label}
                       </Button>
                     ))}
@@ -565,7 +570,7 @@ export function DataGrid({
                       return (
                         <HStack key={field.name} gap="sm" className="justify-between items-center">
                           <HStack gap="xs" className="items-center">
-                            {field.icon && <Icon name={field.icon} size="xs" className="text-muted-foreground" />}
+                            {field.icon && renderIconInput(field.icon, { size: 'xs', className: 'text-muted-foreground' })}
                             <Typography variant="caption" color="secondary">
                               {field.label ?? fieldLabel(field.name)}
                             </Typography>
@@ -580,7 +585,7 @@ export function DataGrid({
                     return (
                       <HStack key={field.name} gap="sm" className="justify-between items-center">
                         <HStack gap="xs" className="items-center">
-                          {field.icon && <Icon name={field.icon} size="xs" className="text-muted-foreground" />}
+                          {field.icon && renderIconInput(field.icon, { size: 'xs', className: 'text-muted-foreground' })}
                           <Typography variant="caption" color="secondary">
                             {field.label ?? fieldLabel(field.name)}
                           </Typography>
@@ -611,7 +616,7 @@ export function DataGrid({
                       data-testid={`action-${action.event}`}
                       data-row-id={String(itemData.id)}
                     >
-                      {action.icon && <Icon name={action.icon} size="xs" className="mr-1" />}
+                      {action.icon && renderIconInput(action.icon, { size: 'xs', className: 'mr-1' })}
                       {action.label}
                     </Button>
                   ))}

@@ -5,12 +5,13 @@ import { TurnIndicator } from '../atoms/TurnIndicator';
 import { Button } from '../../core/atoms/Button';
 import { Box } from '../../core/atoms/Box';
 import { useEventBus } from '../../../hooks/useEventBus';
+import type { IconInput } from '../../core/atoms';
 
 export interface TurnPanelAction {
   /** Action button label */
   label: string;
   /** Icon for the button */
-  icon?: React.ReactNode;
+  icon?: IconInput;
   /** Event name to emit when clicked */
   event?: string;
   /** Whether the action is disabled */

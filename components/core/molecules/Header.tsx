@@ -7,13 +7,14 @@
  */
 
 import React from "react";
-import type { LucideIcon } from "lucide-react";
 import { Menu, X } from "lucide-react";
 import { SearchInput } from "./SearchInput";
 import { Avatar } from "../atoms/Avatar";
 import { Badge } from "../atoms/Badge";
 import { Button } from "../atoms/Button";
 import { Box } from "../atoms/Box";
+import { Icon } from "../atoms/Icon";
+import type { IconInput } from "../atoms";
 import { HStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../../lib/cn";
@@ -40,7 +41,7 @@ export interface HeaderNavigationItem {
   label: string;
   href?: string;
   onClick?: () => void;
-  icon?: LucideIcon;
+  icon?: IconInput;
   badge?: string | number;
   active?: boolean;
 }
@@ -270,7 +271,11 @@ export const Header: React.FC<HeaderProps> = ({
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
-                {item.icon && <item.icon size={18} />}
+                {item.icon && (
+                  typeof item.icon === 'string'
+                    ? <Icon name={item.icon} size="sm" />
+                    : <Icon icon={item.icon} size="sm" />
+                )}
                 <Typography variant="label" className="font-medium">
                   {item.label}
                 </Typography>

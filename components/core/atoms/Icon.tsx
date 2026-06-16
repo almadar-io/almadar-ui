@@ -24,6 +24,16 @@ export type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 export type IconAnimation = 'spin' | 'pulse' | 'none';
 export type { ColorToken };
 
+/**
+ * Canonical icon-input type: a Lucide component reference OR a canonical
+ * kebab-case icon name string. The single source of truth for every
+ * icon-bearing prop across `@almadar/ui` — pattern-sync's parser maps this
+ * union to the `icon` config type, so the factory inspector renders an
+ * IconPicker and a string name resolves via `resolveIcon`. Never declare an
+ * icon prop as `React.ReactNode` (it collapses to a non-editable `node`).
+ */
+export type IconInput = LucideIcon | string;
+
 const colorTokenClasses: Record<ColorToken, string> = {
   primary: 'text-primary',
   secondary: 'text-secondary',
@@ -102,7 +112,7 @@ export interface IconProps {
    * kebab-case icon name string — a string is treated exactly like `name` so
    * trait/factory authors can pass an icon by name through the `icon` prop.
    */
-  icon?: LucideIcon | string;
+  icon?: IconInput;
   /** Icon name as string (resolved from iconMap) */
   name?: string;
   /** Size of the icon */

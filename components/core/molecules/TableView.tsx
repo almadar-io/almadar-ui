@@ -28,6 +28,7 @@ import { Typography } from '../atoms/Typography';
 import { Badge } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
 import { Icon } from '../atoms/Icon';
+import type { IconInput } from '../atoms';
 import { Checkbox } from '../atoms/Checkbox';
 import { Divider } from '../atoms/Divider';
 import { Menu } from './Menu';
@@ -57,8 +58,8 @@ export interface TableViewColumn {
   weight?: 'normal' | 'medium' | 'semibold';
   /** Value formatting hint. `badge` renders a status Badge. */
   format?: 'badge' | 'date' | 'currency' | 'number' | 'percent' | 'boolean';
-  /** Lucide icon shown before the header label. */
-  icon?: string;
+  /** Lucide icon name or component shown before the header label. */
+  icon?: IconInput;
   /** Allow click-to-sort on this column's header (emits `sortEvent`). */
   sortable?: boolean;
 }
@@ -70,8 +71,8 @@ export interface TableViewItemAction {
   label: string;
   /** Event name to emit (dispatched as UI:{event} with { id, row }). */
   event: EventKey;
-  /** Lucide icon name. */
-  icon?: string;
+  /** Lucide icon name or component. */
+  icon?: IconInput;
   /** Button variant. */
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
 }
@@ -133,6 +134,12 @@ export interface TableViewProps extends DataDndProps {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
+
+function renderIconInput(icon: IconInput, props: React.ComponentProps<typeof Icon>): React.ReactElement {
+  return typeof icon === 'string'
+    ? <Icon name={icon} {...props} />
+    : <Icon icon={icon} {...props} />;
+}
 
 function columnLabel(col: TableViewColumn): string {
   return (
@@ -388,7 +395,7 @@ export function TableView({
               col.sortable && sortEvent && 'cursor-pointer select-none hover:text-foreground',
             )}
           >
-            {col.icon && <Icon name={col.icon} size="xs" />}
+            {col.icon && renderIconInput(col.icon, { size: 'xs' })}
             <span className="truncate">{columnLabel(col)}</span>
             {col.sortable && sortEvent && (
               <Icon
@@ -469,7 +476,7 @@ export function TableView({
                 data-row-id={String(row.id)}
                 className={cn(action.variant === 'danger' && 'text-error hover:bg-error/10')}
               >
-                {action.icon && <Icon name={action.icon} size="xs" className="mr-1" />}
+                {action.icon && renderIconInput(action.icon, { size: 'xs', className: 'mr-1' })}
                 {action.label}
               </Button>
             ))}

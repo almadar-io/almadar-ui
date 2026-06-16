@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import type { ColorToken } from '../../core/atoms/types';
+import { Icon, type IconInput } from '../../core/atoms/Icon';
 
 const colorTokenClasses: Record<ColorToken, string> = {
   primary: 'text-primary',
@@ -13,7 +14,7 @@ const colorTokenClasses: Record<ColorToken, string> = {
 
 export interface ResourceCounterProps {
   /** Icon component or emoji */
-  icon?: React.ReactNode;
+  icon?: IconInput;
   /** Resource label */
   label: string;
   /** Current value */
@@ -54,7 +55,11 @@ export function ResourceCounter({
         className
       )}
     >
-      {icon && <span className={cn('flex-shrink-0', sizes.icon)}>{icon}</span>}
+      {icon && (
+        <span className={cn('flex-shrink-0', sizes.icon)}>
+          {typeof icon === 'string' ? <Icon name={icon} /> : <Icon icon={icon} />}
+        </span>
+      )}
       <span className="text-muted-foreground">{label}</span>
       <span className={cn('font-bold tabular-nums', color && (color in colorTokenClasses ? colorTokenClasses[color as ColorToken] : color))}>
         {value}

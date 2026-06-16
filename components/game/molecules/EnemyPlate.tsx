@@ -5,10 +5,11 @@ import { HealthBar } from '../atoms/HealthBar';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 import { Badge } from '../../core/atoms/Badge';
+import type { IconInput } from '../../core/atoms';
 
 export interface EnemyPlateEffect {
   /** Effect icon */
-  icon: React.ReactNode;
+  icon: IconInput;
   /** Effect label */
   label?: string;
   /** Effect type */

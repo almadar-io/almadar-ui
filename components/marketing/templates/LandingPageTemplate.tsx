@@ -9,6 +9,7 @@
 import React from 'react';
 import { cn } from '../../../lib/cn';
 import { useTranslate } from '../../../hooks/useTranslate';
+import type { IconInput } from '../../core/atoms/Icon';
 import { VStack } from '../../core/atoms/Stack';
 import { Box } from '../../core/atoms/Box';
 import { Container } from '../../core/molecules/Container';
@@ -40,7 +41,7 @@ interface MarketingHero {
 
 interface FeatureContent {
   id?: string;
-  icon?: string;
+  icon?: IconInput;
   title: string;
   description: string;
   href?: string;
@@ -56,7 +57,7 @@ interface StepContent {
   id?: string;
   title: string;
   description: string;
-  icon?: string;
+  icon?: IconInput;
 }
 
 interface ShowcaseContent {

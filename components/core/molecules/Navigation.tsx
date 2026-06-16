@@ -6,11 +6,11 @@
  */
 
 import React from 'react';
-import type { LucideIcon } from 'lucide-react';
 import { Menu, MenuItem } from './Menu';
 import { Button } from '../atoms/Button';
 import { Badge } from '../atoms/Badge';
 import { Box } from '../atoms/Box';
+import type { IconInput } from '../atoms';
 import { cn } from '../../../lib/cn';
 import type { UiError } from '../atoms/types';
 
@@ -28,7 +28,7 @@ export interface NavigationItem {
   /**
    * Item icon
    */
-  icon?: LucideIcon;
+  icon?: IconInput;
   
   /**
    * Item badge

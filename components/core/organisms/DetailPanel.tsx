@@ -24,7 +24,7 @@ import {
   Package,
   X,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import type { IconInput } from "../atoms/Icon";
 import {
   Card,
   Badge,
@@ -47,7 +47,7 @@ import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import type { DisplayStateProps } from "./types";
 
-function getFieldIcon(fieldName: string): LucideIcon {
+function getFieldIcon(fieldName: string): IconInput {
   const name = fieldName.toLowerCase();
   if (name.includes("date") || name.includes("time")) return Calendar;
   if (name.includes("status")) return Tag;
@@ -254,7 +254,7 @@ function renderRichFieldValue(
 export interface DetailField {
   label: string;
   value: React.ReactNode;
-  icon?: LucideIcon;
+  icon?: IconInput;
   copyable?: boolean;
 }
 
@@ -268,7 +268,7 @@ export interface DetailSection {
  */
 export interface DetailPanelAction {
   label: string;
-  icon?: LucideIcon;
+  icon?: IconInput;
   onClick?: () => void;
   /** Event to emit via event bus */
   event?: string;

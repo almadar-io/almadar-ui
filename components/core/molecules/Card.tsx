@@ -10,6 +10,7 @@
 
 import React, { useCallback } from "react";
 import type { EventEmit, EventKey, EventPayload } from "@almadar/core";
+import type { IconInput } from "../atoms";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { useLongPress } from "../../../hooks/useLongPress";
@@ -20,7 +21,7 @@ export interface CardAction {
   /** Event name to emit when clicked (for trait state machine integration) */
   event?: string;
   variant?: "default" | "primary" | "danger";
-  icon?: string;
+  icon?: IconInput;
   disabled?: boolean;
 }
 

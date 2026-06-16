@@ -5,12 +5,13 @@ import { ItemSlot } from '../atoms/ItemSlot';
 import { Box } from '../../core/atoms/Box';
 import { HStack } from '../../core/atoms/Stack';
 import { Typography } from '../../core/atoms/Typography';
+import type { IconInput } from '../../core/atoms';
 
 export interface ActivePowerup {
   /** Unique powerup ID */
   id: string;
   /** Icon component or emoji */
-  icon?: React.ReactNode;
+  icon?: IconInput;
   /** Powerup label */
   label: string;
   /** Remaining time in seconds */

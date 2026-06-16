@@ -7,8 +7,7 @@
 
 import React from "react";
 import type { EventKey, EventPayload } from "@almadar/core";
-import type { LucideIcon } from "lucide-react";
-import { Icon, resolveIcon } from "./Icon";
+import { Icon, resolveIcon, type IconInput } from "./Icon";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 
@@ -42,7 +41,7 @@ export interface AvatarProps {
    * directly, or a canonical kebab-case icon name string (resolved via
    * `resolveIcon`) so trait/factory authors can pass an icon by name.
    */
-  icon?: LucideIcon | string;
+  icon?: IconInput;
 
   /**
    * Size of the avatar

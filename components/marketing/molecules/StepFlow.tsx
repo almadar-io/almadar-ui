@@ -12,14 +12,14 @@ import { Box } from '../../core/atoms/Box';
 import { HStack, VStack } from '../../core/atoms/Stack';
 import { Center } from '../../core/atoms/Center';
 import { Typography } from '../../core/atoms/Typography';
-import { Icon } from '../../core/atoms/Icon';
+import { Icon, type IconInput } from '../../core/atoms/Icon';
 import { Divider } from '../../core/atoms/Divider';
 
 export interface StepItemProps {
   number?: number;
   title: string;
   description: string;
-  icon?: string;
+  icon?: IconInput;
 }
 
 export interface StepFlowProps {
@@ -39,7 +39,12 @@ const StepCircle: React.FC<{ step: StepItemProps; index: number }> = ({ step, in
           'bg-primary text-primary-foreground',
         )}
       >
-        <Icon name={step.icon} size="sm" className="text-primary-foreground" />
+        <Icon
+          icon={typeof step.icon === 'string' ? undefined : step.icon}
+          name={typeof step.icon === 'string' ? step.icon : undefined}
+          size="sm"
+          className="text-primary-foreground"
+        />
       </Center>
     );
   }

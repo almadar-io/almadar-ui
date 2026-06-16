@@ -1,8 +1,7 @@
 import React from "react";
 import type { EventKey } from "@almadar/core";
 import { cn } from "../../../lib/cn";
-import { type LucideIcon } from "lucide-react";
-import { Icon, resolveIcon } from "./Icon";
+import { Icon, resolveIcon, type IconInput } from "./Icon";
 import { useTranslate } from "../../../hooks/useTranslate";
 
 export interface SelectOption {
@@ -40,11 +39,10 @@ export interface InputProps extends Omit<
   | "select"
   | "textarea";
   error?: string;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
-  /** Lucide icon component for left side (convenience prop), or a canonical
-   *  kebab-case icon name string (resolved via `resolveIcon`). */
-  icon?: LucideIcon | string;
+  leftIcon?: IconInput;
+  rightIcon?: IconInput;
+  /** Lucide icon component or canonical kebab-case icon name string for left side */
+  icon?: IconInput;
   /** Show clear button when input has value */
   clearable?: boolean;
   /** Callback when clear button is clicked */
@@ -85,12 +83,18 @@ export const Input = React.forwardRef<
     const { t } = useTranslate();
     // inputType takes precedence over type, default to "text"
     const type = inputType || htmlType || "text";
-    // Resolve left icon: prefer leftIcon ReactNode, fallback to icon Lucide
-    // component (a string `icon` is a name, resolved via `resolveIcon`).
+    const resolveIconNode = (i: IconInput | undefined, cls: string) => {
+      if (!i) return null;
+      if (typeof i === "string") return <Icon name={i} className={cls} />;
+      const C = i;
+      return <C className={cls} />;
+    };
+    const iconCls = "h-icon-default w-icon-default";
     const IconComponent =
       typeof iconProp === "string" ? resolveIcon(iconProp) : iconProp;
     const resolvedLeftIcon =
-      leftIcon || (IconComponent && <IconComponent className="h-icon-default w-icon-default" />);
+      (leftIcon ? resolveIconNode(leftIcon, iconCls) : null) ||
+      (IconComponent && <IconComponent className={iconCls} />);
     const showClearButton = clearable && value && String(value).length > 0;
 
     const isMultiline = type === "textarea";
@@ -203,7 +207,7 @@ export const Input = React.forwardRef<
         )}
         {rightIcon && !showClearButton && (
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground">
-            {rightIcon}
+            {resolveIconNode(rightIcon, iconCls)}
           </div>
         )}
       </div>

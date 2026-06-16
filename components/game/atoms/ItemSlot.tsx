@@ -1,10 +1,11 @@
 'use client';
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
+import { Icon, type IconInput } from '../../core/atoms/Icon';
 
 export interface ItemSlotProps {
   /** Icon component or emoji */
-  icon?: React.ReactNode;
+  icon?: IconInput;
   /** Item label */
   label?: string;
   /** Stack quantity */
@@ -83,7 +84,11 @@ export function ItemSlot({
         <span className="text-muted-foreground text-base">+</span>
       ) : (
         <>
-          {icon && <span className="flex-shrink-0">{icon}</span>}
+          {icon && (
+            <span className="flex-shrink-0">
+              {typeof icon === 'string' ? <Icon name={icon} /> : <Icon icon={icon} />}
+            </span>
+          )}
           {quantity != null && quantity > 1 && (
             <span
               className={cn(

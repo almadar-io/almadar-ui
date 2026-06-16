@@ -7,11 +7,11 @@ import { ItemSlot } from '../atoms/ItemSlot';
 import { Button } from '../../core/atoms/Button';
 import { Box } from '../../core/atoms/Box';
 import { HStack } from '../../core/atoms/Stack';
-import { Icon } from '../../core/atoms/Icon';
+import { Icon, type IconInput } from '../../core/atoms/Icon';
 
 export type CraftingIngredient = {
   /** Icon component or emoji */
-  icon?: React.ReactNode;
+  icon?: IconInput;
   /** Ingredient label */
   label: string;
   /** Number required for the recipe */
@@ -22,7 +22,7 @@ export type CraftingIngredient = {
 
 export type CraftingOutput = {
   /** Icon component or emoji */
-  icon?: React.ReactNode;
+  icon?: IconInput;
   /** Output item label */
   label: string;
   /** Rarity tier */

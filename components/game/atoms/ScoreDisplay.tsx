@@ -1,6 +1,7 @@
 'use client';
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
+import { Icon, type IconInput } from '../../core/atoms/Icon';
 
 export interface ScoreDisplayProps {
   /** Current score value */
@@ -8,7 +9,7 @@ export interface ScoreDisplayProps {
   /** Label to display before score */
   label?: string;
   /** Icon component or emoji */
-  icon?: React.ReactNode;
+  icon?: IconInput;
   /** Size variant */
   size?: 'sm' | 'md' | 'lg' | 'xl';
   /** Additional CSS classes */
@@ -84,7 +85,11 @@ export function ScoreDisplay({
         className
       )}
     >
-      {icon && <span className="flex-shrink-0">{icon}</span>}
+      {icon && (
+        <span className="flex-shrink-0">
+          {typeof icon === 'string' ? <Icon name={icon} /> : <Icon icon={icon} />}
+        </span>
+      )}
       {label && <span className="text-muted-foreground">{label}</span>}
       <span className="tabular-nums">{formattedValue}</span>
     </div>

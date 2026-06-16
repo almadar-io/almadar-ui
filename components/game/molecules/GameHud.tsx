@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cn } from "../../../lib/cn";
 import { StatBadge, type StatBadgeProps } from "./StatBadge";
+import type { IconInput } from "../../core/atoms";
 
 export interface GameHudStat extends Omit<StatBadgeProps, "size"> {
   /** Data source entity name */
@@ -20,8 +21,8 @@ export interface GameHudElement {
   label?: string;
   /** Direct value (from compiled render-ui effects) */
   value?: number | string;
-  /** Lucide kebab-case icon name */
-  icon?: string;
+  /** Lucide icon name or component */
+  icon?: IconInput;
   /** Display format */
   format?: string;
   /** Max value (for bars/hearts) */

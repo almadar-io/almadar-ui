@@ -7,9 +7,9 @@
  */
 
 import React, { useState, useRef } from 'react';
-import type { LucideIcon } from 'lucide-react';
 import type { EventEmit } from '@almadar/core';
 import { Icon } from '../atoms/Icon';
+import type { IconInput } from '../atoms';
 import { Badge } from '../atoms/Badge';
 import { Typography } from '../atoms/Typography';
 import { Box } from '../atoms/Box';
@@ -33,7 +33,7 @@ export interface TabItem {
   /** Tab content - optional for event-driven tabs */
   content?: React.ReactNode;
   /** Tab icon — pass either a Lucide component or its registry name (e.g. "file-text") */
-  icon?: LucideIcon | string;
+  icon?: IconInput;
   /** Tab badge */
   badge?: string | number;
   /** Disable tab */

@@ -256,7 +256,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
             variant="ghost"
             size="sm"
             onClick={handleClearAll}
-            leftIcon={<Icon name="x" className="h-3.5 w-3.5" />}
+            leftIcon="x"
           >
             {t('filterGroup.clear')}
           </Button>
@@ -356,7 +356,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
             variant="ghost"
             size="sm"
             onClick={handleClearAll}
-            leftIcon={<Icon name="x" className="h-3.5 w-3.5" />}
+            leftIcon="x"
             className="self-start"
           >
             {t('filterGroup.clearAll')}
@@ -591,7 +591,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
               variant="ghost"
               size="sm"
               onClick={handleClearAll}
-              leftIcon={<Icon name="x" className="h-3.5 w-3.5" />}
+              leftIcon="x"
             >
               {t('filterGroup.clearAll')}
             </Button>

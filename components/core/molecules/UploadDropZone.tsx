@@ -4,6 +4,7 @@ import React, { useCallback, useRef, useState } from "react";
 import type { EventKey, EventPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Icon } from "../atoms/Icon";
+import type { IconInput } from "../atoms";
 import { Typography } from "../atoms/Typography";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
@@ -27,8 +28,8 @@ export interface UploadDropZoneProps {
   label?: string;
   /** Description text below label */
   description?: string;
-  /** Icon name (Lucide string) */
-  icon?: string;
+  /** Icon name or component */
+  icon?: IconInput;
   /** Disabled state */
   disabled?: boolean;
   /** Declarative event name for file selection */
@@ -53,6 +54,7 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
   maxFiles = 1,
   label,
   description,
+  icon,
   disabled = false,
   action,
   actionPayload,
@@ -205,6 +207,10 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
 
       {error ? (
         <Icon name="file-warning" size="lg" className="text-error mb-2" />
+      ) : icon ? (
+        typeof icon === 'string'
+          ? <Icon name={icon} size="lg" className="text-muted-foreground mb-2" />
+          : <Icon icon={icon} size="lg" className="text-muted-foreground mb-2" />
       ) : (
         <Icon name="upload" size="lg" className="text-muted-foreground mb-2" />
       )}

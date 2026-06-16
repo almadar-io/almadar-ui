@@ -20,7 +20,7 @@
 
 import React, { useMemo } from "react";
 import type { EventKey, EventPayload } from "@almadar/core";
-import type { LucideIcon } from "lucide-react";
+import type { IconInput } from "../atoms/Icon";
 import {
   Calendar,
   MoreHorizontal,
@@ -47,7 +47,7 @@ export type ListItem = {
   id: string;
   title?: string;
   description?: string;
-  icon?: LucideIcon;
+  icon?: IconInput;
   avatar?: {
     src?: string;
     alt?: string;

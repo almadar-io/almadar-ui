@@ -46,6 +46,7 @@ export {
   type IconProps,
   type IconSize,
   type IconAnimation,
+  type IconInput,
 } from "./Icon";
 export {
   ProgressBar,

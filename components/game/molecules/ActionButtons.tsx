@@ -10,6 +10,7 @@ import type { EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { ControlButton } from '../atoms/ControlButton';
+import type { IconInput } from '../../core/atoms';
 
 export interface ActionButtonConfig {
   /** Unique identifier */
@@ -17,7 +18,7 @@ export interface ActionButtonConfig {
   /** Display label */
   label?: string;
   /** Icon component or emoji */
-  icon?: React.ReactNode;
+  icon?: IconInput;
   /** Button variant */
   variant?: 'primary' | 'secondary' | 'ghost' | string;
 }

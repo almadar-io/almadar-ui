@@ -3,7 +3,7 @@ import type { EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
-import { Icon } from "./Icon";
+import { Icon, type IconInput } from "./Icon";
 
 export type FilterPillVariant =
   | "default"
@@ -23,8 +23,8 @@ export interface FilterPillProps extends Omit<React.HTMLAttributes<HTMLSpanEleme
   size?: FilterPillSize;
   /** Pill label text (alternative to children for schema-driven rendering). */
   label?: string | number;
-  /** Optional icon name (Lucide icon string) or React node */
-  icon?: React.ReactNode;
+  /** Lucide icon component or canonical kebab-case icon name string */
+  icon?: IconInput;
   /** Called when the user clicks the remove (×) button */
   onRemove?: () => void;
   /** Disable the remove button (renders without × control) */
@@ -114,7 +114,7 @@ export const FilterPill = React.forwardRef<HTMLSpanElement, FilterPillProps>(
     const resolvedIcon =
       typeof icon === "string"
         ? <Icon name={icon} className={iconSizes[size]} />
-        : icon;
+        : icon ? <Icon icon={icon} className={iconSizes[size]} /> : null;
 
     return (
       <span

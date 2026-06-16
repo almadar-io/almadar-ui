@@ -70,10 +70,10 @@ export const WithHeaderActions: Story = {
         subtitle: 'Manage your active projects',
         headerActions: (
             <>
-                <Button variant="ghost" size="sm" leftIcon={<Settings className="h-4 w-4" />}>
+                <Button variant="ghost" size="sm" leftIcon={Settings}>
                     Settings
                 </Button>
-                <Button variant="primary" size="sm" leftIcon={<Plus className="h-4 w-4" />}>
+                <Button variant="primary" size="sm" leftIcon={Plus}>
                     New Project
                 </Button>
             </>
@@ -108,7 +108,7 @@ export const WithFooter: Story = {
                 </Typography>
                 <HStack gap="sm">
                     <Button variant="ghost" size="sm">Cancel</Button>
-                    <Button variant="primary" size="sm" leftIcon={<Download className="h-4 w-4" />}>
+                    <Button variant="primary" size="sm" leftIcon={Download}>
                         Save Document
                     </Button>
                 </HStack>
@@ -124,7 +124,7 @@ export const FullFeatured: Story = {
         headerActions: (
             <>
                 <Button variant="ghost" size="sm">Export</Button>
-                <Button variant="primary" size="sm" leftIcon={<Plus className="h-4 w-4" />}>
+                <Button variant="primary" size="sm" leftIcon={Plus}>
                     Add User
                 </Button>
             </>

@@ -4,8 +4,10 @@ import type { EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Button } from "../atoms";
 import { Box } from "../atoms/Box";
+import { Icon } from "../atoms/Icon";
+import type { IconInput } from "../atoms";
 import { Typography } from "../atoms/Typography";
-import { ArrowLeft, LucideIcon } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { useEventBus } from "../../../hooks/useEventBus";
 import type { UiError } from '../atoms/types';
 
@@ -26,7 +28,7 @@ export interface SchemaAction {
   /** Event to dispatch via event bus (for trait state machine integration) */
   event?: string;
   variant?: "primary" | "secondary" | "ghost" | "danger";
-  icon?: LucideIcon;
+  icon?: IconInput;
   loading?: boolean;
   disabled?: boolean;
 }
@@ -192,7 +194,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               data-event={action.event}
               data-testid={action.event ? `action-${action.event}` : undefined}
               variant={action.variant || (idx === 0 ? "primary" : "secondary")}
-              leftIcon={action.icon && <action.icon className="h-4 w-4" />}
+              leftIcon={action.icon || undefined}
               onClick={createActionHandler(action)}
               isLoading={action.loading || isLoading}
               disabled={action.disabled || isLoading}

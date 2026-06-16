@@ -1,11 +1,12 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
+import { Icon, type IconInput } from '../../core/atoms/Icon';
 
 export interface WaypointMarkerProps {
   /** Label text below the marker */
   label?: string;
   /** Custom icon to render inside the marker */
-  icon?: React.ReactNode;
+  icon?: IconInput;
   /** Whether this waypoint is currently active */
   active?: boolean;
   /** Whether this waypoint has been completed */
@@ -66,7 +67,7 @@ export function WaypointMarker({
             !active && !completed && 'bg-muted'
           )}
         >
-          {completed ? checkIcon : icon}
+          {completed ? checkIcon : icon && (typeof icon === 'string' ? <Icon name={icon} /> : <Icon icon={icon} />)}
         </div>
       </div>
       {label && (

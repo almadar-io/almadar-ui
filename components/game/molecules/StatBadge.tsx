@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
-import { Icon } from '../../core/atoms/Icon';
+import { Icon, type IconInput } from '../../core/atoms/Icon';
 import { HealthBar } from '../atoms/HealthBar';
 import { ScoreDisplay } from '../atoms/ScoreDisplay';
 
@@ -24,7 +24,7 @@ export interface StatBadgeProps {
   /** Display format */
   format?: 'number' | 'hearts' | 'bar' | 'text' | string;
   /** Icon component or emoji */
-  icon?: React.ReactNode;
+  icon?: IconInput;
   /** Size variant */
   size?: 'sm' | 'md' | 'lg' | string;
   /** Visual variant */
@@ -71,7 +71,7 @@ export function StatBadge({
         className
       )}
     >
-      {icon && <span className="flex-shrink-0 text-lg">{typeof icon === 'string' ? <Icon name={icon} className="w-4 h-4" /> : icon}</span>}
+      {icon && <span className="flex-shrink-0 text-lg">{typeof icon === 'string' ? <Icon name={icon} className="w-4 h-4" /> : <Icon icon={icon} className="w-4 h-4" />}</span>}
       
       <span className="text-muted-foreground font-medium">{label}</span>
       

@@ -1,12 +1,12 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
-import { resolveIcon } from '../../core/atoms/Icon';
+import { resolveIcon, type IconInput } from '../../core/atoms/Icon';
 
 export interface ActionButtonProps {
   /** Button label text */
   label: string;
   /** Icon displayed before the label */
-  icon?: React.ReactNode;
+  icon?: IconInput;
   /** Cooldown progress from 0 (ready) to 1 (full cooldown) */
   cooldown?: number;
   /** Whether the button is disabled */
@@ -78,7 +78,7 @@ export function ActionButton({
         <span className={cn('flex-shrink-0', sizes.icon)}>
           {typeof icon === 'string'
             ? (() => { const I = resolveIcon(icon); return I ? <I className="w-4 h-4" /> : null; })()
-            : icon}
+            : (() => { const I = icon; return <I className="w-4 h-4" />; })()}
         </span>
       )}
       <span className="relative z-10">{label}</span>

@@ -12,6 +12,7 @@ import { HStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { Badge } from "../atoms/Badge";
 import { Icon } from "../atoms/Icon";
+import type { IconInput } from "../atoms";
 
 export interface FormSectionHeaderProps {
   /** Section title */
@@ -26,8 +27,8 @@ export interface FormSectionHeaderProps {
   badge?: string;
   /** Badge variant */
   badgeVariant?: "default" | "primary" | "success" | "warning" | "danger";
-  /** Icon name to show before title */
-  icon?: string;
+  /** Lucide icon name or component to show before title */
+  icon?: IconInput;
   /** Whether section has validation errors */
   hasErrors?: boolean;
   /** Whether section is complete */
@@ -78,11 +79,9 @@ export const FormSectionHeader: React.FC<FormSectionHeaderProps> = ({
       <HStack justify="between" align="center">
         <HStack gap="sm" align="center">
           {icon && (
-            <Icon
-              name={icon}
-              size="md"
-              className="text-primary shrink-0"
-            />
+            typeof icon === 'string'
+              ? <Icon name={icon} size="md" className="text-primary shrink-0" />
+              : <Icon icon={icon} size="md" className="text-primary shrink-0" />
           )}
 
           {statusIcon && (

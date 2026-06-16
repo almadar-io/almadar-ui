@@ -3,10 +3,11 @@ import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import { StatBadge } from './StatBadge';
 import { Box } from '../../core/atoms/Box';
+import type { IconInput } from '../../core/atoms';
 
 export interface ResourceBarResource {
   /** Icon for the resource */
-  icon?: React.ReactNode;
+  icon?: IconInput;
   /** Resource name */
   label: string;
   /** Current amount */

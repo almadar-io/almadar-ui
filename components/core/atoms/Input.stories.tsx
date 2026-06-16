@@ -45,7 +45,7 @@ export const WithRightIcon: Story = {
     args: {
         placeholder: 'Enter email',
         inputType: 'email',
-        rightIcon: <Mail className="h-4 w-4" />,
+        rightIcon: Mail,
     },
 };
 

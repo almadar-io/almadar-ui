@@ -2,6 +2,7 @@
 import * as React from "react";
 import type { EventPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
+import { Icon, type IconInput } from "../../core/atoms/Icon";
 import { StatBadge } from "./StatBadge";
 import {
   useEventBus,
@@ -22,7 +23,7 @@ export interface GameOverStat {
   /** Display format */
   format?: "number" | "time" | "text";
   /** Icon */
-  icon?: React.ReactNode;
+  icon?: IconInput;
 }
 
 export type GameOverAction = EventPayload & {
@@ -207,7 +208,11 @@ export function GameOverScreen({
                 <div key={index} className="text-center">
                   <div className="text-muted-foreground text-sm mb-1">{stat.label}</div>
                   <div className="text-[var(--color-foreground)] text-2xl font-bold flex items-center justify-center gap-2">
-                    {stat.icon && <span>{stat.icon}</span>}
+                    {stat.icon && (
+                      <span>
+                        {typeof stat.icon === 'string' ? <Icon name={stat.icon} /> : <Icon icon={stat.icon} />}
+                      </span>
+                    )}
                     <span className="tabular-nums">{displayValue}</span>
                   </div>
                 </div>

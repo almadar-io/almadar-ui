@@ -1,7 +1,7 @@
 import React from "react";
 import { X } from "lucide-react";
 import { cn } from "../../../lib/cn";
-import { Icon } from "./Icon";
+import { Icon, type IconInput } from "./Icon";
 
 export type BadgeVariant =
   | "default"
@@ -26,8 +26,8 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
    *  Numeric values are auto-coerced to string for rendering — common case
    *  is unread counts, error counts, status codes, etc. */
   label?: string | number;
-  /** Icon name (Lucide icon string) or React node */
-  icon?: React.ReactNode;
+  /** Lucide icon component or canonical kebab-case icon name string */
+  icon?: IconInput;
   /** When set, renders a small X button on the right of the badge that
    *  invokes this handler — turns the badge into a removable chip.
    *  Used by the TagInput molecule and other "list of removable values"
@@ -87,7 +87,7 @@ export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
     };
     const resolvedIcon = typeof icon === "string"
       ? <Icon name={icon} className={iconSizes[size]} />
-      : icon;
+      : icon ? <Icon icon={icon} className={iconSizes[size]} /> : null;
     return (
       <span
         ref={ref}

@@ -34,6 +34,7 @@ import { Alert } from "../molecules/Alert";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import type { OrbitalEntity } from "@almadar/core";
+import type { IconInput } from "../atoms/Icon";
 import {
   debug,
   debugGroup,
@@ -139,8 +140,8 @@ export interface FormTabDefinition {
   id: string;
   /** Tab display label */
   label: string;
-  /** Icon name for the tab (from Icon component) */
-  icon?: string;
+  /** Icon for the tab */
+  icon?: IconInput;
   /** Sections within this tab */
   sections: FormSection[];
   /** Condition for showing/hiding the entire tab */

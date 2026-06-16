@@ -4,7 +4,7 @@ import type { EventKey, EventPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Loader2, type LucideIcon } from "lucide-react";
 import { useEventBus } from "../../../hooks/useEventBus";
-import { Icon } from "./Icon";
+import { Icon, type IconInput } from "./Icon";
 
 export type ButtonVariant =
   | "primary"
@@ -22,14 +22,14 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   variant?: ButtonVariant;
   size?: ButtonSize;
   isLoading?: boolean;
-  /** Left icon as ReactNode, Lucide component, or string name (e.g. "plus", "trash") */
-  leftIcon?: React.ReactNode | LucideIcon | string;
-  /** Right icon as ReactNode, Lucide component, or string name */
-  rightIcon?: React.ReactNode | LucideIcon | string;
+  /** Left icon: a Lucide component or a canonical icon name string (e.g. "plus", "trash"). */
+  leftIcon?: IconInput;
+  /** Right icon: a Lucide component or a canonical icon name string. */
+  rightIcon?: IconInput;
   /** Alias for leftIcon */
-  icon?: React.ReactNode | LucideIcon | string;
+  icon?: IconInput;
   /** Alias for rightIcon */
-  iconRight?: React.ReactNode | LucideIcon | string;
+  iconRight?: IconInput;
   /** Declarative event name — emits UI:{action} via eventBus on click */
   action?: EventKey;
   /** Payload to include with the action event */

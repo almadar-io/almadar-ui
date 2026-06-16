@@ -5,12 +5,13 @@ import { Button } from '../../core/atoms/Button';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 import { useEventBus } from '../../../hooks/useEventBus';
+import type { IconInput } from '../../core/atoms';
 
 export interface UnitCommand {
   /** Command label */
   label: string;
   /** Icon for the command button */
-  icon?: React.ReactNode;
+  icon?: IconInput;
   /** Event name to emit when clicked */
   event?: string;
   /** Whether the command is disabled */

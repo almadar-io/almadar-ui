@@ -7,9 +7,8 @@
  */
 
 import React from "react";
-import type { LucideIcon } from "lucide-react";
-
 import { Icon } from "../atoms/Icon";
+import type { IconInput } from "../atoms";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
@@ -34,7 +33,7 @@ export interface BreadcrumbItem {
   /**
    * Item icon (canonical kebab-case name or LucideIcon component)
    */
-  icon?: LucideIcon | string;
+  icon?: IconInput;
 
   /**
    * Click handler (if href not provided)
@@ -59,7 +58,7 @@ export interface BreadcrumbProps {
   /**
    * Separator icon (canonical kebab-case name or LucideIcon component)
    */
-  separator?: LucideIcon | string;
+  separator?: IconInput;
 
   /**
    * Maximum items to show (truncates with ellipsis)

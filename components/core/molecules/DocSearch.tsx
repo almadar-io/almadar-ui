@@ -166,7 +166,7 @@ export function DocSearch({
           onChange={handleChange}
           onFocus={handleFocus}
           onKeyDown={handleKeyDown}
-          leftIcon={<Icon name="search" size="sm" className="text-muted-foreground" />}
+          leftIcon="search"
           clearable={query.length > 0}
           onClear={() => {
             setQuery('');

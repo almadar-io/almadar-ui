@@ -31,7 +31,7 @@ const sizeMap = {
   lg: { button: 'lg' as const, gap: 'gap-1.5', container: 'w-52' },
 };
 
-const arrowIcons: Record<DPadDirection, React.ReactNode> = {
+const arrowIcons: Record<DPadDirection, string> = {
   up: '▲',
   down: '▼',
   left: '◀',

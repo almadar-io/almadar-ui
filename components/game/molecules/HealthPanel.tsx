@@ -5,9 +5,10 @@ import { HealthBar } from '../atoms/HealthBar';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 import { Badge } from '../../core/atoms/Badge';
+import type { IconInput } from '../../core/atoms';
 
 export interface HealthEffect {
-  icon: React.ReactNode;
+  icon: IconInput;
   label?: string;
   variant?: 'buff' | 'debuff' | 'neutral';
 }

@@ -3,13 +3,13 @@ import * as React from 'react';
 import type { EventKey } from "@almadar/core";
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
-import { resolveIcon } from '../../core/atoms/Icon';
+import { resolveIcon, type IconInput } from '../../core/atoms/Icon';
 
 export interface ControlButtonProps {
   /** Button label text */
   label?: string;
   /** Icon component or emoji */
-  icon?: React.ReactNode;
+  icon?: IconInput;
   /** Size variant */
   size?: 'sm' | 'md' | 'lg' | 'xl' | string;
   /** Shape variant */
@@ -132,7 +132,7 @@ export function ControlButton({
             ? /^[a-zA-Z0-9-]+$/.test(icon)
               ? (() => { const I = resolveIcon(icon); return I ? <I className="w-6 h-6" /> : null; })()
               : icon
-            : icon}
+            : (() => { const I = icon; return <I className="w-6 h-6" />; })()}
         </span>
       )}
       {label && !icon && <span>{label}</span>}

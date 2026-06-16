@@ -5,10 +5,11 @@ import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { ItemSlot } from '../atoms/ItemSlot';
 import { Box } from '../../core/atoms/Box';
+import type { IconInput } from '../../core/atoms';
 
 export interface InventoryGridItem {
   id: string;
-  icon?: React.ReactNode;
+  icon?: IconInput;
   label?: string;
   quantity?: number;
   rarity?: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';

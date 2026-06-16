@@ -9,7 +9,8 @@ import { Box } from "../atoms/Box";
 import { HStack, VStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { EmptyState, Pagination } from "../molecules";
-import { resolveIcon } from "../atoms/Icon";
+import { Icon, resolveIcon } from "../atoms/Icon";
+import type { IconInput } from "../atoms/Icon";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import {
@@ -19,7 +20,6 @@ import {
   ChevronRight,
   Search,
   MoreHorizontal,
-  LucideIcon,
 } from "lucide-react";
 import { DisplayStateProps, EntityDisplayEvents } from "./types";
 import type { EntityRow } from "@almadar/core";
@@ -96,7 +96,7 @@ function asBooleanValue(value: unknown): boolean | null {
 
 export interface RowAction<T> {
   label: string;
-  icon?: LucideIcon;
+  icon?: IconInput;
   onClick: (row: T) => void;
   variant?: "default" | "danger";
   show?: (row: T) => boolean;
@@ -123,11 +123,11 @@ export interface DataTableProps<T extends EntityRow & { id: string | number }>
     navigatesTo?: string;
     action?: EventKey;
     placement?: "row" | "bulk" | string;
-    icon?: LucideIcon;
+    icon?: IconInput;
     variant?: "default" | "primary" | "secondary" | "ghost" | "danger" | string;
     onClick?: (row: T) => void;
   }[];
-  emptyIcon?: LucideIcon | string;
+  emptyIcon?: IconInput;
   emptyTitle?: string;
   emptyDescription?: string;
   emptyAction?: DataTableEmptyAction;
@@ -145,7 +145,7 @@ export interface DataTableProps<T extends EntityRow & { id: string | number }>
   // Bulk actions
   bulkActions?: ReadonlyArray<{
     label: string;
-    icon?: LucideIcon;
+    icon?: IconInput;
     onClick: (selectedRows: T[]) => void;
     variant?: "default" | "danger";
   }>;
@@ -398,9 +398,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
                         action.variant === "danger" ? "danger" : "secondary"
                       }
                       size="sm"
-                      leftIcon={
-                        action.icon && <action.icon className="h-4 w-4" />
-                      }
+                      leftIcon={action.icon}
                       onClick={() => action.onClick(selectedRows)}
                     >
                       {action.label}
@@ -628,7 +626,9 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
                                   }}
                                 >
                                   {action.icon && (
-                                    <action.icon className="h-4 w-4" />
+                                    typeof action.icon === 'string'
+                                      ? <Icon name={action.icon} size="sm" />
+                                      : <action.icon className="h-4 w-4" />
                                   )}
                                   {action.label}
                                 </Button>

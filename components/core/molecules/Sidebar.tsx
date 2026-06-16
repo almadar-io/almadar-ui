@@ -13,11 +13,12 @@
 
 import React, { useState, useCallback } from 'react';
 import type { EventEmit } from '@almadar/core';
-import type { LucideIcon } from 'lucide-react';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Badge } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
 import { Box } from '../atoms/Box';
+import { Icon } from '../atoms/Icon';
+import type { IconInput } from '../atoms';
 import { Typography } from '../atoms/Typography';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -33,8 +34,8 @@ export interface SidebarItem {
   id: string;
   /** Item label */
   label: string;
-  /** Item icon */
-  icon?: LucideIcon;
+  /** Item icon — Lucide icon name or component */
+  icon?: IconInput;
   /** Item badge */
   badge?: string | number;
   /** Item href */
@@ -91,7 +92,6 @@ const SidebarNavItem: React.FC<{
   item: SidebarItem;
   collapsed: boolean;
 }> = ({ item, collapsed }) => {
-  const Icon = item.icon;
   const isActive = item.active ?? item.isActive;
 
   return (
@@ -115,14 +115,10 @@ const SidebarNavItem: React.FC<{
       )}
       title={collapsed ? item.label : undefined}
     >
-      {Icon && (
-        <Icon
-          size={20}
-          className={cn(
-            'min-w-[20px] flex-shrink-0',
-            isActive && 'text-primary-foreground'
-          )}
-        />
+      {item.icon && (
+        typeof item.icon === 'string'
+          ? <Icon name={item.icon} size="sm" className={cn('min-w-[20px] flex-shrink-0', isActive && 'text-primary-foreground')} />
+          : <Icon icon={item.icon} size="sm" className={cn('min-w-[20px] flex-shrink-0', isActive && 'text-primary-foreground')} />
       )}
 
       {!collapsed && (

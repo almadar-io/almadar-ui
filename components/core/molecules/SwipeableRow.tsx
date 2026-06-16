@@ -15,11 +15,12 @@ import { Box } from '../atoms/Box';
 import { HStack } from '../atoms/Stack';
 import { Button } from '../atoms/Button';
 import { Icon } from '../atoms/Icon';
+import type { IconInput } from '../atoms';
 import type { ButtonVariant } from '../atoms/Button';
 
 export interface SwipeAction {
   label: string;
-  icon?: string;
+  icon?: IconInput;
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   event: EventKey;
   eventPayload?: EventPayload;
@@ -186,7 +187,9 @@ export const SwipeableRow: React.FC<SwipeableRowProps> = ({
             className="flex-1 rounded-none h-full"
           >
             {action.icon ? (
-              <Icon name={action.icon} size="sm" />
+              typeof action.icon === 'string'
+                ? <Icon name={action.icon} size="sm" />
+                : <Icon icon={action.icon} size="sm" />
             ) : null}
             {action.label}
           </Button>

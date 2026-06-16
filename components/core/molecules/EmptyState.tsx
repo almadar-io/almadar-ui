@@ -1,15 +1,16 @@
 'use client';
 import React from "react";
 import type { EventEmit } from "@almadar/core";
+import type { LucideIcon } from "lucide-react";
 import { cn } from "../../../lib/cn";
 import { Button } from "../atoms";
 import { Box } from "../atoms/Box";
 import { Icon as IconAtom } from "../atoms/Icon";
+import type { IconInput } from "../atoms";
 import { VStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
-import type { LucideIcon } from "lucide-react";
 
 /**
  * String aliases for canonical kebab-case icon names.
@@ -37,7 +38,7 @@ export interface EmptyStateProps {
    * - A Lucide icon component (LucideIcon)
    * - A string icon name (e.g., "check-circle", "x-circle")
    */
-  icon?: LucideIcon | string;
+  icon?: IconInput;
   /** Primary text to display - use title or message (message is alias for backwards compat) */
   title?: string;
   /** Alias for title - used by schema patterns */

@@ -7,8 +7,8 @@
  */
 
 import React, { useState, useRef, useEffect } from "react";
-import type { LucideIcon } from "lucide-react";
 import { Box } from "../atoms/Box";
+import type { IconInput } from "../atoms";
 import { Button } from "../atoms/Button";
 import { Icon } from "../atoms/Icon";
 import { Divider } from "../atoms/Divider";
@@ -23,8 +23,8 @@ export interface MenuItem {
   id?: string;
   /** Item label */
   label: string;
-  /** Item icon (LucideIcon or string name) */
-  icon?: LucideIcon | string;
+  /** Item icon (Lucide icon name or component) */
+  icon?: IconInput;
   /** Item badge */
   badge?: string | number;
   /** Disable item */

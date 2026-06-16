@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "../../../lib/cn";
-import type { LucideIcon } from "lucide-react";
+import type { IconInput } from "../atoms/Icon";
 import { Button, Input, Badge, ThemeToggle, Avatar } from "../atoms";
 import { Box } from "../atoms/Box";
 import { HStack, VStack } from "../atoms/Stack";
@@ -18,7 +18,7 @@ export interface NavItem {
   label: string;
   href: string;
   /** Lucide icon component or string icon name (resolved by @almadar/ui Icon) */
-  icon?: LucideIcon | string;
+  icon?: IconInput;
   badge?: string | number;
   children?: NavItem[];
 }
@@ -40,8 +40,8 @@ export interface NotificationItem {
  *  an icon button between the search bar and the notifications bell;
  *  click dispatches the configured event onto the bus. */
 export interface TopBarAction {
-  /** Lucide icon name (e.g. "shopping-cart", "user", "help-circle"). */
-  icon: string;
+  /** Lucide icon name or component. */
+  icon: IconInput;
   /** Optional aria-label / tooltip. Falls back to `icon`. */
   label?: string;
   /** Bus event fired on click. Dispatched as `UI:{event}` with empty payload.
@@ -416,9 +416,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     variant="ghost"
                     className="relative p-2 rounded-full hover:bg-muted dark:hover:bg-muted"
                     onClick={() => handleTopBarActionClick(action.event)}
-                    aria-label={action.label ?? action.icon}
+                    aria-label={action.label ?? (typeof action.icon === 'string' ? action.icon : undefined)}
                   >
-                    <AlmadarIcon name={action.icon} className="h-5 w-5 text-muted-foreground dark:text-muted-foreground" />
+                    <AlmadarIcon icon={action.icon} className="h-5 w-5 text-muted-foreground dark:text-muted-foreground" />
                     {action.badge !== undefined && action.badge !== null && action.badge !== 0 && action.badge !== '' && (
                       <Box
                         as="span"

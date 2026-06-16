@@ -27,6 +27,7 @@ import { Typography } from '../atoms/Typography';
 import { Badge } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
 import { Icon } from '../atoms/Icon';
+import type { IconInput } from '../atoms';
 import { ProgressBar } from '../atoms/ProgressBar';
 import { Divider } from '../atoms/Divider';
 import { InfiniteScrollSentinel } from '../atoms/InfiniteScrollSentinel';
@@ -41,8 +42,8 @@ export interface DataListField {
   name: string;
   /** Display label (auto-generated from name if omitted) */
   label?: string;
-  /** Lucide icon name to show beside the field */
-  icon?: string;
+  /** Lucide icon name or component to show beside the field */
+  icon?: IconInput;
   /** Rendering variant: 'h3'/'h4' for title, 'body' for text, 'caption' for small,
    *  'badge' for status badge, 'progress' for progress bar */
   variant?: 'h3' | 'h4' | 'body' | 'caption' | 'badge' | 'small' | 'progress';
@@ -57,8 +58,8 @@ export interface DataListItemAction {
   label: string;
   /** Event name to emit (dispatched as UI:{event} with { id, row: itemData }) */
   event: EventKey;
-  /** Lucide icon name */
-  icon?: string;
+  /** Lucide icon name or component */
+  icon?: IconInput;
   /** Button variant */
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
 }
@@ -66,8 +67,8 @@ export interface DataListItemAction {
 export interface DataListSwipeAction {
   /** Button label */
   label: string;
-  /** Lucide icon name */
-  icon?: string;
+  /** Lucide icon name or component */
+  icon?: IconInput;
   /** Button variant */
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
 }
@@ -153,6 +154,12 @@ export interface DataListProps extends DataDndProps {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
+
+function renderIconInput(icon: IconInput, props: React.ComponentProps<typeof Icon>): React.ReactElement {
+  return typeof icon === 'string'
+    ? <Icon name={icon} {...props} />
+    : <Icon icon={icon} {...props} />;
+}
 
 function fieldLabel(key: string): string {
   return key
@@ -352,7 +359,7 @@ export function DataList({
             data-row-id={String(itemData.id)}
             className={cn(action.variant === 'danger' && 'text-error hover:bg-error/10')}
           >
-            {action.icon && <Icon name={action.icon} size="xs" className="mr-1" />}
+            {action.icon && renderIconInput(action.icon, { size: 'xs', className: 'mr-1' })}
             {action.label}
           </Button>
         ))}
@@ -549,13 +556,7 @@ export function DataList({
           <Box className="flex-1 min-w-0">
             {/* Primary row: icon + title + badges */}
             <HStack gap="sm" className="items-center">
-              {titleField?.icon && (
-                <Icon
-                  name={titleField.icon}
-                  size={isCompact ? 'xs' : 'sm'}
-                  className="text-primary flex-shrink-0"
-                />
-              )}
+              {titleField?.icon && renderIconInput(titleField.icon, { size: isCompact ? 'xs' : 'sm', className: 'text-primary flex-shrink-0' })}
               {titleValue !== undefined && titleValue !== null && (
                 <Typography
                   variant={titleField?.variant === 'h3' ? 'h3' : 'h4'}
@@ -570,7 +571,7 @@ export function DataList({
                 if (val === undefined || val === null) return null;
                 return (
                   <HStack key={field.name} gap="xs" className="items-center flex-shrink-0">
-                    {field.icon && <Icon name={field.icon} size="xs" />}
+                    {field.icon && renderIconInput(field.icon, { size: 'xs' })}
                     <Badge variant={statusVariant(String(val))}>
                       {String(val)}
                     </Badge>
@@ -588,9 +589,7 @@ export function DataList({
 
                   return (
                     <HStack key={field.name} gap="xs" className="items-center">
-                      {field.icon && (
-                        <Icon name={field.icon} size="xs" className="text-muted-foreground" />
-                      )}
+                      {field.icon && renderIconInput(field.icon, { size: 'xs', className: 'text-muted-foreground' })}
                       <Typography variant="caption" color="secondary">
                         {field.label ?? fieldLabel(field.name)}:
                       </Typography>
@@ -610,7 +609,7 @@ export function DataList({
               return (
                 <Box key={field.name} className="mt-2 max-w-xs">
                   <HStack gap="xs" className="items-center mb-1">
-                    {field.icon && <Icon name={field.icon} size="xs" className="text-muted-foreground" />}
+                    {field.icon && renderIconInput(field.icon, { size: 'xs', className: 'text-muted-foreground' })}
                     <Typography variant="caption" color="secondary">
                       {field.label ?? fieldLabel(field.name)}
                     </Typography>

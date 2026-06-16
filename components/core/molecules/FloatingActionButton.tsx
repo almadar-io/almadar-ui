@@ -12,10 +12,10 @@
  */
 
 import React, { useState, useRef, useEffect } from "react";
-import type { LucideIcon } from "lucide-react";
 import type { EventKey, EventPayload } from "@almadar/core";
 import { Button } from "../atoms/Button";
 import { Box } from "../atoms/Box";
+import type { IconInput } from "../atoms";
 import { HStack, VStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../../lib/cn";
@@ -34,9 +34,9 @@ export interface FloatingAction {
   label: string;
 
   /**
-   * Action icon
+   * Action icon — Lucide icon name or component
    */
-  icon: LucideIcon;
+  icon: IconInput;
 
   /**
    * Action click handler
@@ -72,9 +72,9 @@ export interface FloatingActionButtonProps {
   actions?: FloatingAction[];
 
   /**
-   * Icon name (resolves to a Lucide icon by PascalCase / kebab-case lookup).
+   * Icon: a canonical icon name string (resolved by Button) or a Lucide component.
    */
-  icon?: string;
+  icon?: IconInput;
 
   /**
    * Optional direct click handler. Runs after the action emit when both are
@@ -128,7 +128,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   // Build the single-action descriptor from the simplified props. Click
   // handler emits `UI:{action}` first (when action is set), then runs the
   // direct onClick — same order Button uses.
-  const resolvedAction: { icon: string; onClick: () => void; label?: string; variant?: FloatingActionButtonProps["variant"] } | undefined = icon
+  const resolvedAction: { icon: IconInput; onClick: () => void; label?: string; variant?: FloatingActionButtonProps["variant"] } | undefined = icon
     ? {
         icon,
         onClick: () => {

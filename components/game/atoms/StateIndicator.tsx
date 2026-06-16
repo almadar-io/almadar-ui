@@ -7,10 +7,11 @@
 
 import React from 'react';
 import { Box } from '../../core/atoms/Box';
+import { Icon, type IconInput } from '../../core/atoms/Icon';
 import { cn } from '../../../lib/cn';
 
 export interface StateStyle {
-    icon: string;
+    icon: IconInput;
     bgClass: string;
 }
 
@@ -77,7 +78,13 @@ export function StateIndicator({
                 className,
             )}
         >
-            <Box as="span">{config.icon}</Box>
+            <Box as="span">
+              {typeof config.icon === 'string'
+                ? /^[a-zA-Z0-9-]+$/.test(config.icon)
+                  ? <Icon name={config.icon} />
+                  : config.icon
+                : <Icon icon={config.icon} />}
+            </Box>
             <Box as="span">{displayLabel}</Box>
         </Box>
     );

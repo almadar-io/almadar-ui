@@ -6,7 +6,8 @@ import { Box } from "../atoms/Box";
 import { HStack, VStack } from "../atoms/Stack";
 import { Button } from "../atoms/Button";
 import { Sparkline } from "../atoms/Sparkline";
-import { TrendingUp, TrendingDown, Minus, LucideIcon } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus } from "lucide-react";
+import type { IconInput } from "../atoms/Icon";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { resolveIcon } from "../atoms/Icon";
@@ -24,8 +25,8 @@ export interface MetricDefinition {
   label: string;
   /** Static value for display (alternative to field-based computation) */
   value?: string | number;
-  /** Icon name for display */
-  icon?: string;
+  /** Icon name or component for display */
+  icon?: IconInput;
   /** Value format (e.g., 'currency', 'percent', 'number') */
   format?: "currency" | "percent" | "number" | string;
 }
@@ -50,7 +51,7 @@ export interface StatCardProps extends DisplayStateProps {
   /** Whether up is good (green) or bad (red) */
   invertTrend?: boolean;
   /** Icon to display (Lucide component or icon name string) */
-  icon?: LucideIcon | string;
+  icon?: IconInput;
   /** Icon background color */
   iconBg?: string;
   /** Icon color */

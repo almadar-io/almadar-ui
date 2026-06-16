@@ -21,12 +21,13 @@ import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
 import { useTranslate } from "../../../hooks/useTranslate";
-// Timeline carries `icon?: LucideIcon` on TimelineItem (a React component),
+// Timeline carries `icon?: IconInput` on TimelineItem (a React component),
 // which is the separate non-entity item channel. Schema entity data arrives
 // via the `entity` prop typed against @almadar/core's EntityRow, and is
 // normalised into TimelineItems (icon-less) at render time; UI-shaped
 // TimelineItems come through the dedicated `items` prop.
 import type { EntityRow, EventPayload } from "@almadar/core";
+import type { IconInput } from "../atoms/Icon";
 import type { LucideIcon } from "lucide-react";
 import { Circle, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import type { UiError } from '../atoms/types';
@@ -55,7 +56,7 @@ export interface TimelineItem {
     /** Status indicator */
     status?: TimelineItemStatus;
     /** Icon override */
-    icon?: LucideIcon;
+    icon?: IconInput;
     /** Additional metadata tags */
     tags?: readonly string[];
 }
@@ -269,9 +270,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                                     {itemActions && itemActions.length > 0 && (
                                         <HStack gap="xs" className="mt-1">
                                             {itemActions.map((action, actionIdx) => {
-                                                // TimelineItem.icon is a LucideIcon component ref
-                                                // (non-serializable). Project only the JSON-safe
-                                                // fields into the bus payload.
+                                                // TimelineItem.icon is non-serializable (component or string ref).
+                                                // Project only the JSON-safe fields into the bus payload.
                                                 const { icon: _icon, ...rowSafe } = item;
                                                 return (
                                                 <Box

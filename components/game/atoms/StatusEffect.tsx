@@ -1,10 +1,10 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
-import { Icon } from '../../core/atoms/Icon';
+import { Icon, type IconInput } from '../../core/atoms/Icon';
 
 export interface StatusEffectProps {
-  /** Lucide kebab-case icon name */
-  icon: string;
+  /** Lucide icon name or component */
+  icon: IconInput;
   /** Label describing the effect */
   label?: string;
   /** Remaining duration in seconds */
@@ -60,7 +60,7 @@ export function StatusEffect({
         title={label}
       >
         <span className={cn('flex items-center justify-center', sizes.icon)}>
-          <Icon name={icon} size="sm" />
+          {typeof icon === 'string' ? <Icon name={icon} size="sm" /> : <Icon icon={icon} size="sm" />}
         </span>
         {duration !== undefined && (
           <span
