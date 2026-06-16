@@ -7,6 +7,7 @@
  */
 
 import React from 'react';
+import type { AssetUrl } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { Box } from '../../core/atoms/Box';
 import { Card } from '../../core/atoms/Card';
@@ -19,7 +20,7 @@ export interface TeamCardProps {
   nameAr?: string;
   role: string;
   bio: string;
-  avatar?: string | { initials: string };
+  avatar?: AssetUrl | { initials: string };
   className?: string;
 }
 

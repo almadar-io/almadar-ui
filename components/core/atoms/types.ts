@@ -2,6 +2,8 @@
  * Cross-cutting atom-level prop shapes shared across the design system.
  */
 
+import type { AssetUrl } from "@almadar/core";
+
 /**
  * Canonical semantic color palette.  Values are the Tailwind / CSS-var token
  * names that every component in the design system understands.  Prefer this
@@ -39,7 +41,7 @@ export type LinkAction = {
 
 /** An image with its required alt text. */
 export type ImageSource = {
-  src: string;
+  src: AssetUrl;
   alt: string;
 };
 

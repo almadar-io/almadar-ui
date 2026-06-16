@@ -12,7 +12,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { AssetUrl, EventEmit } from '@almadar/core';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Badge } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
@@ -60,7 +60,7 @@ export interface SidebarProps {
   /** Logo/Brand content - can be a ReactNode or logo config */
   logo?: React.ReactNode;
   /** Logo image source */
-  logoSrc?: string;
+  logoSrc?: AssetUrl;
   /** Brand/App name */
   brandName?: string;
   /** Navigation items */

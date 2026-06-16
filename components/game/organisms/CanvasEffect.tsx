@@ -27,7 +27,7 @@
 
 import * as React from 'react';
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { AssetUrl, EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { Box } from '../../core/atoms/Box';
@@ -73,9 +73,9 @@ export interface CanvasEffectProps {
     // --- Remote asset loading ---
     /** Sprite URL for the effect (emoji fallback mode).
      *  When set without assetManifest, renders this image instead of emoji. */
-    effectSpriteUrl?: string;
+    effectSpriteUrl?: AssetUrl;
     /** Base URL for remote assets. Prepended to relative effectSpriteUrl paths. */
-    assetBaseUrl?: string;
+    assetBaseUrl?: AssetUrl;
     /** Full effect asset manifest for the sprite particle engine.
      *  When provided, enables the canvas-based particle system. */
     assetManifest?: EffectAssetManifest;

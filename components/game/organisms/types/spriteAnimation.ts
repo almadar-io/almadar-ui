@@ -1,3 +1,5 @@
+import type { AssetUrl } from '@almadar/core';
+
 /**
  * Sprite Sheet Animation Types
  *
@@ -31,7 +33,7 @@ export interface AnimationDef {
 /** A resolved frame ready to draw on canvas */
 export interface ResolvedFrame {
     /** URL of the sprite sheet image */
-    sheetUrl: string;
+    sheetUrl: AssetUrl;
     /** Source X in the sheet (pixel offset) */
     sx: number;
     /** Source Y in the sheet (pixel offset) */
@@ -75,7 +77,7 @@ export interface SpriteFrameDims {
 /** Sheet URLs for both directions */
 export interface SpriteSheetUrls {
     /** Southeast-facing sheet URL */
-    se: string;
+    se: AssetUrl;
     /** Southwest-facing sheet URL */
-    sw: string;
+    sw: AssetUrl;
 }

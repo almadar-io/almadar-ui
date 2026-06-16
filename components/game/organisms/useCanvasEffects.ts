@@ -15,6 +15,7 @@
  */
 
 import { useRef, useMemo, useCallback, useState } from 'react';
+import type { AssetUrl } from '@almadar/core';
 import type { CanvasEffectState, CombatActionType, EffectAssetManifest } from './types/effects';
 import { EMPTY_EFFECT_STATE } from './types/effects';
 import {
@@ -35,7 +36,7 @@ export interface UseCanvasEffectsOptions {
 
 export interface UseCanvasEffectsResult {
     /** All effect sprite URLs for preloading via useImageCache */
-    effectSpriteUrls: string[];
+    effectSpriteUrls: AssetUrl[];
     /** Spawn a combat effect at the given screen position */
     spawnEffect: (type: CombatActionType, screenX: number, screenY: number) => void;
     /** Draw all active effects — call inside draw() after units, before ctx.restore() */

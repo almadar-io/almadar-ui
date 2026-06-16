@@ -12,7 +12,7 @@
  
 
 import React, { useState, useCallback } from 'react';
-import type { EventEmit, EntityRow } from '@almadar/core';
+import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../core/atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
@@ -27,7 +27,7 @@ export interface BuilderComponent {
   description?: string;
   iconEmoji?: string;
   /** Image URL icon (takes precedence over iconEmoji) */
-  iconUrl?: string;
+  iconUrl?: AssetUrl;
   category?: string;
 }
 

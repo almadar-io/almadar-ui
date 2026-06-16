@@ -7,6 +7,7 @@
  */
 
 import React from "react";
+import type { AssetUrl } from "@almadar/core";
 import { Menu, X } from "lucide-react";
 import { SearchInput } from "./SearchInput";
 import { Avatar } from "../atoms/Avatar";
@@ -47,7 +48,7 @@ export interface HeaderNavigationItem {
 }
 
 export interface HeaderUserAvatar {
-  src?: string;
+  src?: AssetUrl;
   alt?: string;
   initials?: string;
 }
@@ -61,7 +62,7 @@ export interface HeaderProps {
   /**
    * Logo image source
    */
-  logoSrc?: string;
+  logoSrc?: AssetUrl;
 
   /**
    * Brand/App name

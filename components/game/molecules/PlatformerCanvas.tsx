@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useRef, useEffect, useCallback, useState } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { AssetUrl, EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { bindCanvasCapture, updateAssetStatus } from '../../../lib/verificationRegistry';
@@ -42,13 +42,13 @@ export interface PlatformerCanvasProps {
   /** Background color */
   bgColor?: string;
   /** Player sprite image URL */
-  playerSprite?: string;
+  playerSprite?: AssetUrl;
   /** Map of platform type to tile sprite URL */
-  tileSprites?: Record<string, string>;
+  tileSprites?: Record<string, AssetUrl>;
   /** Background image URL */
-  backgroundImage?: string;
+  backgroundImage?: AssetUrl;
   /** Base URL prefix for asset URLs */
-  assetBaseUrl?: string;
+  assetBaseUrl?: AssetUrl;
   /** Event names for keyboard controls */
   leftEvent?: EventEmit<{ direction: number }>;
   rightEvent?: EventEmit<{ direction: number }>;

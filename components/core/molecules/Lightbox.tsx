@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from "react";
+import type { AssetUrl } from "@almadar/core";
 import { Icon } from "../atoms/Icon";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
@@ -15,7 +16,7 @@ function useSafeEventBus() {
 }
 
 export interface LightboxImage {
-  src?: string;
+  src?: AssetUrl;
   alt?: string;
   caption?: string;
 }

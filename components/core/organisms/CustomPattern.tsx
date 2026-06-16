@@ -10,7 +10,7 @@
  */
 
 import React from "react";
-import type { EventKey, EventPayload } from "@almadar/core";
+import type { AssetUrl, EventKey, EventPayload } from "@almadar/core";
 import type { UiError } from "../atoms/types";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { cn } from "../../../lib/cn";
@@ -115,7 +115,7 @@ export interface CustomPatternProps {
   /** Nested children patterns */
   children?: React.ReactNode;
   /** Image source (for img elements) */
-  src?: string;
+  src?: AssetUrl;
   /** Image alt text (for img elements) */
   alt?: string;
   /** Link href (for a elements) */
@@ -419,7 +419,7 @@ export interface CustomPatternConfig {
   action?: EventKey;
   payload?: EventPayload;
   children?: CustomPatternConfig[];
-  src?: string;
+  src?: AssetUrl;
   alt?: string;
   href?: string;
   external?: boolean;

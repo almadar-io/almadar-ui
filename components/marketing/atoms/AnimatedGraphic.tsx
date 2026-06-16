@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import type { AssetUrl } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 
 export type GraphicAnimation = 'draw' | 'fill' | 'pulse' | 'morph';
@@ -9,7 +10,7 @@ export interface AnimatedGraphicProps extends React.HTMLAttributes<HTMLDivElemen
   /** Additional CSS classes applied to the root element. */
   className?: string;
   /** URL to an SVG file. Fetched and inlined to enable stroke/fill animations. */
-  src?: string;
+  src?: AssetUrl;
   /** Inline SVG string. Takes precedence over src if both provided. */
   svgContent?: string;
   /** Animation type applied to SVG paths/shapes */
@@ -34,7 +35,7 @@ export interface AnimatedGraphicProps extends React.HTMLAttributes<HTMLDivElemen
   alt?: string;
 }
 
-function useFetchedSvg(src: string | undefined): string | null {
+function useFetchedSvg(src: AssetUrl | undefined): string | null {
   const [svg, setSvg] = useState<string | null>(null);
   const cache = useRef<Record<string, string>>({});
 

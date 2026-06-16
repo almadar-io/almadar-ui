@@ -9,7 +9,7 @@
  */
 
 import React, { useCallback } from "react";
-import type { EventEmit, EventKey, EventPayload } from "@almadar/core";
+import type { AssetUrl, EventEmit, EventKey, EventPayload } from "@almadar/core";
 import type { IconInput } from "../atoms";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
@@ -31,7 +31,7 @@ export interface CardProps {
   /** Card subtitle or description */
   subtitle?: string;
   /** Image URL to display at top of card */
-  image?: string;
+  image?: AssetUrl;
   /** Action buttons to display in card footer */
   actions?: CardAction[];
   /** Card content */

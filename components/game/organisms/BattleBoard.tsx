@@ -21,7 +21,7 @@
  */
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import type { EventEmit, EntityRow } from '@almadar/core';
+import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -113,7 +113,7 @@ export interface BattleBoardProps extends DisplayStateProps {
     // -- Canvas pass-through --
     onDrawEffects?: (ctx: CanvasRenderingContext2D, timestamp: number) => void;
     hasActiveEffects?: boolean;
-    effectSpriteUrls?: string[];
+    effectSpriteUrls?: AssetUrl[];
     resolveUnitFrame?: (unitId: string) => ResolvedFrame | null;
 
     // -- Declarative event props --
@@ -173,14 +173,14 @@ export function BattleBoard({
     const boardHeight = num(board.boardHeight, 6);
     const assetManifest = board.assetManifest as
         | {
-              baseUrl?: string;
-              terrains?: Record<string, string>;
-              units?: Record<string, string>;
-              features?: Record<string, string>;
-              effects?: Record<string, string>;
+              baseUrl?: AssetUrl;
+              terrains?: Record<string, AssetUrl>;
+              units?: Record<string, AssetUrl>;
+              features?: Record<string, AssetUrl>;
+              effects?: Record<string, AssetUrl>;
           }
         | undefined;
-    const backgroundImage = board.backgroundImage as string | undefined;
+    const backgroundImage = board.backgroundImage as AssetUrl | undefined;
 
     // ── Game state (read from entity — controlled by parent) ─────────────
     const units = rows(board.units);

@@ -1,3 +1,5 @@
+import type { AssetUrl } from '@almadar/core';
+
 /**
  * Canvas Effect Types
  *
@@ -16,7 +18,7 @@
  */
 export interface CanvasParticle {
     /** Sprite URL (white-on-transparent particle) */
-    spriteUrl: string;
+    spriteUrl: AssetUrl;
     /** Current position in screen pixels */
     x: number;
     y: number;
@@ -52,7 +54,7 @@ export interface CanvasParticle {
  */
 export interface ParticleEmitterConfig {
     /** Array of sprite URLs to randomly pick from */
-    spriteUrls: string[];
+    spriteUrls: AssetUrl[];
     /** Number of particles to spawn */
     count: number;
     /** Spawn origin in screen pixels */
@@ -94,7 +96,7 @@ export interface ParticleEmitterConfig {
  */
 export interface CanvasSequence {
     /** Ordered array of frame sprite URLs */
-    frameUrls: string[];
+    frameUrls: AssetUrl[];
     /** Position in screen pixels (top-left of sprite) */
     x: number;
     y: number;
@@ -118,7 +120,7 @@ export interface CanvasSequence {
  * Configuration for spawning a frame sequence.
  */
 export interface SequenceConfig {
-    frameUrls: string[];
+    frameUrls: AssetUrl[];
     originX: number;
     originY: number;
     frameDuration: number;
@@ -134,7 +136,7 @@ export interface SequenceConfig {
  */
 export interface CanvasOverlay {
     /** Sprite URL */
-    spriteUrl: string;
+    spriteUrl: AssetUrl;
     /** Center position in screen pixels */
     x: number;
     y: number;
@@ -160,7 +162,7 @@ export interface CanvasOverlay {
  * Configuration for spawning an overlay.
  */
 export interface OverlayConfig {
-    spriteUrl: string;
+    spriteUrl: AssetUrl;
     originX: number;
     originY: number;
     alpha?: number;
@@ -233,7 +235,7 @@ export interface CombatPreset {
  */
 export interface EffectAssetManifest {
     /** Base URL for all asset paths */
-    baseUrl: string;
+    baseUrl: AssetUrl;
     /** Particle sprite groups (white-on-transparent, tinted at runtime) */
     particles?: {
         slash?: string[];

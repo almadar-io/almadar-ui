@@ -6,7 +6,7 @@
  */
 
 import React from "react";
-import type { EventKey, EventPayload } from "@almadar/core";
+import type { AssetUrl, EventKey, EventPayload } from "@almadar/core";
 import { Icon, resolveIcon, type IconInput } from "./Icon";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
@@ -18,7 +18,7 @@ export interface AvatarProps {
   /**
    * Image source URL
    */
-  src?: string;
+  src?: AssetUrl;
 
   /**
    * Alt text for the image

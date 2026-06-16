@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import type { AssetUrl } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { Box } from '../../core/atoms/Box';
 import { VStack, HStack } from '../../core/atoms/Stack';
@@ -25,7 +26,7 @@ export interface FooterLinkColumn {
 }
 
 export interface FooterLogo {
-  src: string;
+  src: AssetUrl;
   alt: string;
   href?: string;
 }

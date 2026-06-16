@@ -19,7 +19,7 @@
  */
 
 import React, { useMemo } from "react";
-import type { EventKey, EventPayload } from "@almadar/core";
+import type { AssetUrl, EventKey, EventPayload } from "@almadar/core";
 import type { IconInput } from "../atoms/Icon";
 import {
   Calendar,
@@ -49,7 +49,7 @@ export type ListItem = {
   description?: string;
   icon?: IconInput;
   avatar?: {
-    src?: string;
+    src?: AssetUrl;
     alt?: string;
     initials?: string;
   };

@@ -8,7 +8,7 @@
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { AssetUrl, EventEmit } from '@almadar/core';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -34,7 +34,7 @@ function useSafeEventBus() {
 export interface CarouselItem {
   id?: string;
   title?: string;
-  image?: string;
+  image?: AssetUrl;
 }
 
 export interface CarouselProps<T = CarouselItem> {

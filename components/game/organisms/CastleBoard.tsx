@@ -15,7 +15,7 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
-import type { EventEmit, EntityRow } from '@almadar/core';
+import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import IsometricCanvas from './IsometricCanvas';
@@ -33,10 +33,10 @@ import { isoToScreen, TILE_WIDTH, FLOOR_HEIGHT } from './utils/isometric';
 
 /** Manifest of asset base-url + per-kind sprite maps (UI value DTO). */
 type CastleAssetManifest = {
-    baseUrl?: string;
-    terrains?: Record<string, string>;
-    units?: Record<string, string>;
-    features?: Record<string, string>;
+    baseUrl?: AssetUrl;
+    terrains?: Record<string, AssetUrl>;
+    units?: Record<string, AssetUrl>;
+    features?: Record<string, AssetUrl>;
 };
 
 /** Context exposed to render-prop slots */

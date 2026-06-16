@@ -6,6 +6,7 @@
  */
 
 import React from 'react';
+import type { AssetUrl } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { VStack } from '../../core/atoms/Stack';
@@ -39,7 +40,7 @@ interface TeamMemberContent {
   nameAr?: string;
   role: string;
   bio: string;
-  avatar?: string;
+  avatar?: AssetUrl;
 }
 
 interface CaseStudyContent {

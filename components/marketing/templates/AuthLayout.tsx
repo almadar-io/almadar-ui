@@ -1,5 +1,6 @@
 'use client';
 import React from "react";
+import type { AssetUrl } from "@almadar/core";
 import { Outlet, Link } from "react-router-dom";
 import { cn } from "../../../lib/cn";
 import { useTranslate } from "../../../hooks/useTranslate";
@@ -13,7 +14,7 @@ export interface AuthLayoutProps {
   /** Logo component or URL */
   logo?: React.ReactNode;
   /** Background image URL */
-  backgroundImage?: string;
+  backgroundImage?: AssetUrl;
   /** Show branding panel on the side */
   showBranding?: boolean;
   /** Branding panel content */

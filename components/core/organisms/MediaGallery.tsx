@@ -13,7 +13,7 @@
  */
 
 import React, { useState, useCallback } from "react";
-import type { EventEmit } from "@almadar/core";
+import type { AssetUrl, EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Card, Typography, Badge, Button, Icon, Box } from "../atoms";
 import { VStack, HStack } from "../atoms/Stack";
@@ -30,11 +30,11 @@ export type MediaItem = EntityRow & {
     /** Unique identifier */
     id: string;
     /** Media URL */
-    src: string;
+    src: AssetUrl;
     /** Alt text */
     alt?: string;
     /** Thumbnail URL (defaults to src) */
-    thumbnail?: string;
+    thumbnail?: AssetUrl;
     /** Media type */
     mediaType?: "image" | "video";
     /** Caption */

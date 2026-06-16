@@ -27,7 +27,7 @@
 
 import * as React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { AssetUrl, EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -121,7 +121,7 @@ export interface IsometricCanvasProps {
     /** Show debug grid lines and coordinates */
     debug?: boolean;
     /** Background image URL tiled behind the isometric grid */
-    backgroundImage?: string;
+    backgroundImage?: AssetUrl;
     /** Toggle minimap overlay */
     showMinimap?: boolean;
     /** Enable camera pan/zoom controls */
@@ -146,7 +146,7 @@ export interface IsometricCanvasProps {
     /** Resolve animated sprite sheet frame for a unit */
     resolveUnitFrame?: (unitId: string) => ResolvedFrame | null;
     /** Additional sprite URLs to preload (e.g., effect sprites) */
-    effectSpriteUrls?: string[];
+    effectSpriteUrls?: AssetUrl[];
     /** Callback to draw canvas effects after units (canvas-specific: cannot be declarative) */
 
     onDrawEffects?: (
@@ -160,7 +160,7 @@ export interface IsometricCanvasProps {
     // --- Remote asset loading ---
     /** Base URL for remote asset resolution. When set, manifest paths
      *  are prefixed with this URL. Example: "https://trait-wars-assets.web.app" */
-    assetBaseUrl?: string;
+    assetBaseUrl?: AssetUrl;
     /** Manifest mapping entity keys to relative sprite paths.
      *  Combined with assetBaseUrl to produce full URLs.
      *  Used as a fallback when inline URLs and callbacks don't resolve. */

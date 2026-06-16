@@ -12,7 +12,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import type { EventEmit, EntityRow } from '@almadar/core';
+import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../core/atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
@@ -27,7 +27,7 @@ export interface ClassifierItem {
   description?: string;
   correctCategory: string;
   /** Image URL icon for story-specific visual skin */
-  iconUrl?: string;
+  iconUrl?: AssetUrl;
 }
 
 /** A category bucket (UI value DTO read off the entity). */
@@ -36,7 +36,7 @@ export interface ClassifierCategory {
   label: string;
   color?: string;
   /** Image URL for story-specific category header */
-  imageUrl?: string;
+  imageUrl?: AssetUrl;
 }
 
 export interface ClassifierBoardProps extends DisplayStateProps {

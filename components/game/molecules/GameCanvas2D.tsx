@@ -1,5 +1,6 @@
 'use client';
 import * as React from 'react';
+import type { AssetUrl } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { Box } from '../../core/atoms/Box';
 import { useEmitEvent } from '../../../hooks/useEventBus';
@@ -20,9 +21,9 @@ export interface GameCanvas2DProps {
   /** Target frames per second */
   fps?: number;
   /** Background image URL */
-  backgroundImage?: string;
+  backgroundImage?: AssetUrl;
   /** Base URL prefix for asset URLs */
-  assetBaseUrl?: string;
+  assetBaseUrl?: AssetUrl;
   /** Additional CSS classes */
   className?: string;
 }

@@ -9,6 +9,7 @@
  */
 
 import React from 'react';
+import type { AssetUrl } from '@almadar/core';
 import { VStack } from '../../../core/atoms/Stack';
 import { Typography } from '../../../core/atoms/Typography';
 import { Button } from '../../../core/atoms/Button';
@@ -22,7 +23,7 @@ export interface BookCoverPageProps {
   title: string;
   subtitle?: string;
   author?: string;
-  coverImageUrl?: string;
+  coverImageUrl?: AssetUrl;
   direction?: 'rtl' | 'ltr';
 }
 

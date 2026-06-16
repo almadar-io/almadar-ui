@@ -12,7 +12,7 @@ import { useAuthContext } from "../../../hooks/useAuthContext";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { useCurrentPagePath } from "../../../context/CurrentPagePathContext";
-import type { EventEmit, EventKey } from "@almadar/core";
+import type { AssetUrl, EventEmit, EventKey } from "@almadar/core";
 
 export interface NavItem {
   label: string;
@@ -58,7 +58,7 @@ export interface TopBarAction {
 export interface DashboardUser {
   name: string;
   email: string;
-  avatar?: string;
+  avatar?: AssetUrl;
 }
 
 export interface DashboardLayoutProps {

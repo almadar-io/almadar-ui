@@ -1,3 +1,5 @@
+import type { AssetUrl } from '@almadar/core';
+
 /**
  * Isometric Game Types
  *
@@ -26,7 +28,7 @@ export interface IsometricTile {
     /** Tile type for visual rendering (3D) */
     type?: string;
     /** Direct sprite URL override (bypasses getTerrainSprite resolver) */
-    terrainSprite?: string;
+    terrainSprite?: AssetUrl;
     /** Whether units can traverse this tile (default true) */
     passable?: boolean;
     /** Movement cost for pathfinding (default 1) */
@@ -54,7 +56,7 @@ export type IsometricUnit = {
     /** Grid z coordinate (3D format) */
     z?: number;
     /** Static sprite URL (used when no sprite sheet animation) */
-    sprite?: string;
+    sprite?: AssetUrl;
     /** Unit archetype key for sprite resolution */
     unitType?: string;
     /** Hero identifier for sprite sheet lookup */
@@ -99,9 +101,9 @@ export type IsometricFeature = {
     /** Feature type key (e.g., 'goldMine', 'castle', 'portal') */
     type: string;
     /** Direct sprite URL override (bypasses getFeatureSprite resolver) */
-    sprite?: string;
+    sprite?: AssetUrl;
     /** 3D model URL (GLB format) for GameCanvas3D */
-    assetUrl?: string;
+    assetUrl?: AssetUrl;
     /** Color override for 3D rendering */
     color?: string;
     /** Elevation offset for 3D rendering */

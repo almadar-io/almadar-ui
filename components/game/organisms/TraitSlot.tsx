@@ -20,7 +20,7 @@
  */
 
 import React, { useState, useRef, useCallback } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { AssetUrl, EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { Box } from '../../core/atoms/Box';
@@ -41,7 +41,7 @@ export type SlotItemData = {
     /** Emoji or text icon */
     iconEmoji?: string;
     /** Image URL icon (takes precedence over iconEmoji) */
-    iconUrl?: string;
+    iconUrl?: AssetUrl;
     /** Optional state machine for tooltip display */
     stateMachine?: TraitStateMachineDefinition;
 };
@@ -68,7 +68,7 @@ export interface TraitSlotProps {
     /** Category → color mapping */
     categoryColors?: Record<string, { bg: string; border: string }>;
     /** Optional tooltip frame image URL */
-    tooltipFrameUrl?: string;
+    tooltipFrameUrl?: AssetUrl;
     /** Additional CSS classes */
     className?: string;
     /** Loading state */

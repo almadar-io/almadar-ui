@@ -13,6 +13,7 @@
  */
 
 import React, { useState, useCallback } from "react";
+import type { AssetUrl } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Card, Typography, Button, Badge, Icon, Box } from "../atoms";
 import { VStack, HStack } from "../atoms/Stack";
@@ -45,7 +46,7 @@ export interface DocumentAction {
 
 export interface DocumentItem {
     label: string;
-    src?: string;
+    src?: AssetUrl;
     content?: string;
     documentType?: DocumentType;
 }
@@ -54,7 +55,7 @@ export interface DocumentViewerProps {
     /** Document title */
     title?: string;
     /** Document URL (for PDF/external documents) */
-    src?: string;
+    src?: AssetUrl;
     /** Document content (for text/html/markdown) */
     content?: string;
     /** Document type */

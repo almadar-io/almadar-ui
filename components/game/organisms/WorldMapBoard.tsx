@@ -22,7 +22,7 @@
 
  
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import type { EventEmit, EntityRow } from '@almadar/core';
+import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { VStack, HStack, Stack } from '../../core/atoms/Stack';
@@ -44,10 +44,10 @@ import type { UiError } from '../../core/atoms/types';
 
 /** Manifest of asset base-url + per-kind sprite maps (UI value DTO). */
 type WorldMapAssetManifest = {
-    baseUrl?: string;
-    terrains?: Record<string, string>;
-    units?: Record<string, string>;
-    features?: Record<string, string>;
+    baseUrl?: AssetUrl;
+    terrains?: Record<string, AssetUrl>;
+    units?: Record<string, AssetUrl>;
+    features?: Record<string, AssetUrl>;
 };
 
 /** Context exposed to render-prop slots. Hex / hero rows are `EntityRow`. */
@@ -139,7 +139,7 @@ export interface WorldMapBoardProps {
     diamondTopY?: number;
     /** Disable pan/zoom camera (default: true). Set false for fixed maps where overlay labels need stable positions. */
     enableCamera?: boolean;
-    effectSpriteUrls?: string[];
+    effectSpriteUrls?: AssetUrl[];
     resolveUnitFrame?: (unitId: string) => ResolvedFrame | null;
 }
 
@@ -196,7 +196,7 @@ export function WorldMapBoard({
     const features = (Array.isArray(resolved?.features) ? resolved.features : []) as unknown as IsometricFeature[];
     const selectedHeroId = (resolved?.selectedHeroId as string | null | undefined) ?? null;
     const assetManifest = resolved?.assetManifest as WorldMapAssetManifest | undefined;
-    const backgroundImage = resolved?.backgroundImage as string | undefined;
+    const backgroundImage = resolved?.backgroundImage as AssetUrl | undefined;
 
     const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
 
