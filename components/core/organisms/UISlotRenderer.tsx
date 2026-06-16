@@ -230,6 +230,13 @@ function enrichFormFields(
   });
 }
 
+// Overlay patterns that render their own backdrop + dialog chrome (Modal /
+// ConfirmDialog). When one of these is the modal-slot content, the portal
+// wrappers below must NOT add their own Modal shell — otherwise two backdrops
+// stack (the wrapper's + the component's). Render the self-overlaying content
+// bare so exactly one backdrop paints.
+const SELF_OVERLAY_PATTERNS = new Set(["modal", "confirm-dialog"]);
+
 // Patterns that support nested children
 const PATTERNS_WITH_CHILDREN = new Set([
   "stack",
@@ -317,6 +324,12 @@ function renderContainedPortal(
 
   switch (slot) {
     case "modal":
+      // Self-overlaying content (Modal / ConfirmDialog patterns) brings its
+      // own backdrop + chrome — render it bare under the slot anchor so the
+      // wrapper's backdrop doesn't double up.
+      if (SELF_OVERLAY_PATTERNS.has(content.pattern)) {
+        return <Box id={slotId} className="contents">{slotContent}</Box>;
+      }
       return (
         <Box
           id={slotId}
@@ -727,20 +740,29 @@ function CompiledPortal({ slot, className, pattern, sourceTrait, children }: Com
   let wrapper: React.ReactElement;
 
   switch (slot) {
-    case "modal":
-      wrapper = (
+    case "modal": {
+      const innerContent = (
+        <Box
+          id={slotId}
+          className={cn("ui-slot", `ui-slot-${slot}`, className)}
+          data-pattern={pattern}
+          data-source-trait={sourceTrait}
+        >
+          {children}
+        </Box>
+      );
+      // Self-overlaying content (Modal / ConfirmDialog patterns) renders its
+      // own backdrop + chrome — skip the Modal shell so only one backdrop
+      // paints. Plain content keeps the shell.
+      wrapper = pattern !== undefined && SELF_OVERLAY_PATTERNS.has(pattern) ? (
+        innerContent
+      ) : (
         <Modal isOpen={true} onClose={handleDismiss} showCloseButton={true} size="lg">
-          <Box
-            id={slotId}
-            className={cn("ui-slot", `ui-slot-${slot}`, className)}
-            data-pattern={pattern}
-            data-source-trait={sourceTrait}
-          >
-            {children}
-          </Box>
+          {innerContent}
         </Modal>
       );
       break;
+    }
 
     case "drawer":
       wrapper = (
@@ -838,7 +860,12 @@ function SlotPortal({
 
   switch (slot) {
     case "modal":
-      wrapper = (
+      // Self-overlaying content (Modal / ConfirmDialog patterns) renders its
+      // own backdrop + chrome — skip the Modal shell so only one backdrop
+      // paints. Plain content keeps the shell.
+      wrapper = SELF_OVERLAY_PATTERNS.has(content.pattern) ? (
+        <Box id={slotId}>{slotContent}</Box>
+      ) : (
         <Modal
           isOpen={true}
           onClose={onDismiss}

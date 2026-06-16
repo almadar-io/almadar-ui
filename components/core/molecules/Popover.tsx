@@ -49,13 +49,6 @@ export interface PopoverProps {
   className?: string;
 }
 
-const positionClasses: Record<PopoverPosition, string> = {
-  top: "mb-2",
-  bottom: "mt-2",
-  left: "mr-2 -translate-y-1/2",
-  right: "ml-2 -translate-y-1/2",
-};
-
 const arrowClasses: Record<PopoverPosition, string> = {
   top: "top-full left-1/2 -translate-x-1/2 border-t-white border-l-transparent border-r-transparent border-b-transparent",
   bottom:
@@ -66,7 +59,12 @@ const arrowClasses: Record<PopoverPosition, string> = {
 };
 
 const VIEWPORT_EDGE_PADDING = 8;
+const TRIGGER_GAP = 8;
 
+// Resolve the portaled `fixed` panel to absolute viewport pixel coordinates.
+// All offsets (gap, centering) are baked into `left`/`top` here so the panel
+// needs no positioning utility classes — those resolve against the viewport on
+// a `fixed` element and yank the panel off its trigger.
 function computePopoverStyle(
   position: PopoverPosition,
   triggerRect: DOMRect,
@@ -75,9 +73,11 @@ function computePopoverStyle(
   if (position === "left" || position === "right") {
     return {
       left:
-        triggerRect.left +
-        (position === "left" ? 0 : triggerRect.width),
+        position === "left"
+          ? triggerRect.left - popoverWidth - TRIGGER_GAP
+          : triggerRect.right + TRIGGER_GAP,
       top: triggerRect.top + triggerRect.height / 2,
+      transform: "translateY(-50%)",
     };
   }
   const viewportWidth =
@@ -92,8 +92,10 @@ function computePopoverStyle(
   return {
     left: clamped,
     top:
-      triggerRect.top +
-      (position === "top" ? 0 : triggerRect.height),
+      position === "top"
+        ? triggerRect.top - TRIGGER_GAP
+        : triggerRect.bottom + TRIGGER_GAP,
+    transform: position === "top" ? "translateY(-100%)" : undefined,
   };
 }
 
@@ -211,7 +213,6 @@ export const Popover: React.FC<PopoverProps> = ({
       className={cn(
         "fixed z-50 p-4",
         "bg-card border-2 border-border shadow-elevation-popover",
-        positionClasses[position],
         className,
       )}
       style={computePopoverStyle(position, triggerRect, popoverWidth)}

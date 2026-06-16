@@ -142,15 +142,22 @@ export const Avatar: React.FC<AvatarProps> = ({
   actionPayload,
 }) => {
   const eventBus = useEventBus();
+  // A broken `src` (onError) falls through to the initials → icon → default ladder.
+  const [imgFailed, setImgFailed] = React.useState(false);
+  React.useEffect(() => {
+    setImgFailed(false);
+  }, [src]);
   // Auto-generate initials from name if not provided
   const initials =
     providedInitials ?? (name ? generateInitials(name) : undefined);
 
   const IconComponent =
     typeof iconProp === "string" ? resolveIcon(iconProp) : iconProp;
-  const hasImage = !!src;
-  const hasInitials = !!initials;
+  const hasImage = !!src && !imgFailed;
+  // An explicitly-passed icon outranks name-derived initials; explicitly-passed
+  // initials still win. Precedence: src image → initials → icon → default.
   const hasIcon = !!IconComponent;
+  const hasInitials = !!initials && !(hasIcon && !providedInitials);
 
   // Generate background based on initials
   const getInitialsBackground = () =>
@@ -186,10 +193,9 @@ export const Avatar: React.FC<AvatarProps> = ({
             src={src}
             alt={alt || "Avatar"}
             className="w-full h-full object-cover"
-            onError={(e) => {
-              // Fallback to initials or icon on image error
-              const target = e.target as HTMLImageElement;
-              target.style.display = "none";
+            onError={() => {
+              // Fall back to initials → icon → default on image error.
+              setImgFailed(true);
             }}
           />
         ) : hasInitials ? (

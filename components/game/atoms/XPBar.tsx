@@ -1,3 +1,4 @@
+'use client';
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
 
@@ -36,13 +37,26 @@ export function XPBar({
   const sizes = sizeMap[size];
   const percentage = max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0;
 
+  // Start the fill at 0 and grow to `percentage` so the CSS transition has a
+  // value change to animate on mount; without this, `animated` never animates.
+  const [fillWidth, setFillWidth] = React.useState(animated ? 0 : percentage);
+
+  React.useEffect(() => {
+    if (!animated) {
+      setFillWidth(percentage);
+      return;
+    }
+    const frame = requestAnimationFrame(() => setFillWidth(percentage));
+    return () => cancelAnimationFrame(frame);
+  }, [animated, percentage]);
+
   return (
     <div className={cn('flex items-center gap-2', className)}>
       {level != null && (
         <span
           className={cn(
             'flex-shrink-0 rounded-interactive font-bold',
-            'bg-accent text-foreground border border-accent',
+            'bg-accent text-accent-foreground border border-accent',
             sizes.badge
           )}
         >
@@ -63,7 +77,7 @@ export function XPBar({
               'bg-gradient-to-r from-accent to-info',
               animated && 'transition-all duration-500 ease-out'
             )}
-            style={{ width: `${percentage}%` }}
+            style={{ width: `${fillWidth}%` }}
           />
         </div>
 

@@ -65,6 +65,13 @@ export interface RichBlockEditorProps {
   changeEvent?: EventEmit<{ blocks: RichBlock[] }>;
   readOnly?: boolean;
   placeholder?: string;
+  /**
+   * Opt-in to the Notion-style block authoring chrome (insert toolbar, per-row
+   * +/menu gutter, turn-into menu). Off by default: the editor renders as a
+   * plain rich text surface that edits block content inline without any
+   * add-block affordances.
+   */
+  enableBlocks?: boolean;
   showToolbar?: boolean;
   className?: string;
 }
@@ -429,6 +436,7 @@ function Editable({
 interface BlockRowProps {
   block: RichBlock;
   readOnly: boolean;
+  showAffordances: boolean;
   placeholder?: string;
   onUpdate: (updater: (block: RichBlock) => RichBlock) => void;
   onDelete: () => void;
@@ -440,6 +448,7 @@ interface BlockRowProps {
 function BlockRow({
   block,
   readOnly,
+  showAffordances,
   placeholder,
   onUpdate,
   onDelete,
@@ -665,7 +674,7 @@ function BlockRow({
                   className="inline-block min-w-[1ch] flex-1"
                   onValueChange={(next) => setChildContent(child.id, next)}
                 />
-                {!readOnly && (
+                {!readOnly && showAffordances && (
                   <Button
                     type="button"
                     variant="ghost"
@@ -681,7 +690,7 @@ function BlockRow({
                 )}
               </Box>
             ))}
-            {!readOnly && (
+            {!readOnly && showAffordances && (
               <Box as="li" className="list-none pl-0">
                 <Button
                   type="button"
@@ -724,7 +733,7 @@ function BlockRow({
       data-block-id={block.id}
       data-block-type={block.type}
     >
-      {!readOnly && (
+      {!readOnly && showAffordances && (
         <Box className="flex w-12 shrink-0 items-center gap-0.5 pt-1">
           <Button
             type="button"
@@ -760,6 +769,7 @@ export const RichBlockEditor: React.FC<RichBlockEditorProps> = ({
   changeEvent,
   readOnly = false,
   placeholder,
+  enableBlocks = false,
   showToolbar = true,
   className,
 }) => {
@@ -838,7 +848,7 @@ export const RichBlockEditor: React.FC<RichBlockEditorProps> = ({
       padding="none"
       className={cn("flex flex-col", className)}
     >
-      {showToolbar && !readOnly && (
+      {enableBlocks && showToolbar && !readOnly && (
         <Box
           role="toolbar"
           aria-label={t('richBlockEditor.editorToolbar')}
@@ -873,6 +883,7 @@ export const RichBlockEditor: React.FC<RichBlockEditorProps> = ({
             key={block.id}
             block={block}
             readOnly={readOnly}
+            showAffordances={enableBlocks}
             placeholder={placeholder}
             onUpdate={(updater) => handleUpdate(block.id, updater)}
             onDelete={() => handleDelete(block.id)}

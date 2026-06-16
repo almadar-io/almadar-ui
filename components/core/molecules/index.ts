@@ -47,7 +47,7 @@ export { WizardNavigation, type WizardNavigationProps } from './WizardNavigation
 
 // Markdown components
 export { MarkdownContent, type MarkdownContentProps } from './markdown/MarkdownContent';
-export { CodeBlock, type CodeBlockProps } from './markdown/CodeBlock';
+export { CodeBlock, type CodeBlockProps, type CodeLanguage } from './markdown/CodeBlock';
 
 // Quiz
 export { QuizBlock, type QuizBlockProps } from './QuizBlock';
@@ -63,6 +63,14 @@ export { RepeatableFormSection, type RepeatableFormSectionProps, type Repeatable
 export { ViolationAlert, type ViolationAlertProps, type ViolationRecord } from './ViolationAlert';
 export { FormSectionHeader, type FormSectionHeaderProps } from './FormSectionHeader';
 export { FlipCard, type FlipCardProps } from './FlipCard';
+export {
+  GridPicker,
+  type GridPickerProps,
+  type PickerItem,
+  type GridPickerCellSize,
+} from './GridPicker';
+export { AssetPicker, type AssetPickerProps } from './AssetPicker';
+export { IconPicker, type IconPickerProps } from './IconPicker';
 
 // Chart molecules
 export { DateRangePicker, type DateRangePickerProps, type DateRangePickerPreset } from './DateRangePicker';

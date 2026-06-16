@@ -30,12 +30,7 @@ export interface TooltipProps {
   className?: string;
 }
 
-const positionClasses: Record<TooltipPosition, string> = {
-  top: 'bottom-full left-1/2 -translate-x-1/2 mb-2',
-  bottom: 'top-full left-1/2 -translate-x-1/2 mt-2',
-  left: 'right-full top-1/2 -translate-y-1/2 mr-2',
-  right: 'left-full top-1/2 -translate-y-1/2 ml-2',
-};
+const TRIGGER_GAP = 8;
 
 // Arrow colors use CSS variables
 const arrowClasses: Record<TooltipPosition, string> = {
@@ -44,6 +39,43 @@ const arrowClasses: Record<TooltipPosition, string> = {
   left: 'left-full top-1/2 -translate-y-1/2 border-l-primary border-t-transparent border-b-transparent border-r-transparent',
   right: 'right-full top-1/2 -translate-y-1/2 border-r-primary border-t-transparent border-b-transparent border-l-transparent',
 };
+
+// Resolve the portaled `fixed` tooltip to absolute viewport pixel coordinates.
+// The gap and centering are baked into `left`/`top`/`transform` here so the
+// panel needs no positioning utility classes — those resolve against the
+// viewport on a `fixed` element and yank the tooltip off its trigger.
+function computeTooltipStyle(
+  position: TooltipPosition,
+  triggerRect: DOMRect,
+): React.CSSProperties {
+  switch (position) {
+    case 'bottom':
+      return {
+        left: triggerRect.left + triggerRect.width / 2,
+        top: triggerRect.bottom + TRIGGER_GAP,
+        transform: 'translateX(-50%)',
+      };
+    case 'left':
+      return {
+        left: triggerRect.left - TRIGGER_GAP,
+        top: triggerRect.top + triggerRect.height / 2,
+        transform: 'translate(-100%, -50%)',
+      };
+    case 'right':
+      return {
+        left: triggerRect.right + TRIGGER_GAP,
+        top: triggerRect.top + triggerRect.height / 2,
+        transform: 'translateY(-50%)',
+      };
+    case 'top':
+    default:
+      return {
+        left: triggerRect.left + triggerRect.width / 2,
+        top: triggerRect.top - TRIGGER_GAP,
+        transform: 'translate(-50%, -100%)',
+      };
+  }
+}
 
 export const Tooltip: React.FC<TooltipProps> = ({
   content,
@@ -120,22 +152,9 @@ export const Tooltip: React.FC<TooltipProps> = ({
         'text-sm pointer-events-none',
         'break-words whitespace-normal',
         'h-auto min-h-fit',
-        positionClasses[position],
         className
       )}
-      style={{
-        left: position === 'left' || position === 'right'
-          ? triggerRect.left + (position === 'left' ? 0 : triggerRect.width)
-          : triggerRect.left + triggerRect.width / 2,
-        top: position === 'top' || position === 'bottom'
-          ? triggerRect.top + (position === 'top' ? 0 : triggerRect.height)
-          : triggerRect.top + triggerRect.height / 2,
-        transform: position === 'top' || position === 'bottom'
-          ? 'translateX(-50%)'
-          : position === 'left' || position === 'right'
-            ? 'translateY(-50%)'
-            : 'none',
-      }}
+      style={computeTooltipStyle(position, triggerRect)}
       role="tooltip"
     >
       <div className="w-full break-words whitespace-normal h-auto">

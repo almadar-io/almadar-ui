@@ -5,6 +5,7 @@ import type {
   ConfigFieldDeclaration,
   TraitConfig,
   TraitConfigValue,
+  AssetCatalog,
 } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { VStack, HStack } from '../atoms/Stack';
@@ -14,6 +15,8 @@ import { Switch } from '../atoms/Switch';
 import { Select } from '../atoms/Select';
 import { Input } from '../atoms/Input';
 import { FormSection } from './FormSection';
+import { IconPicker } from './IconPicker';
+import { AssetPicker } from './AssetPicker';
 import type { DisplayStateProps } from '../organisms/types';
 
 /**
@@ -37,6 +40,8 @@ export interface PropertyInspectorProps extends DisplayStateProps {
   onReset?: () => void;
   /** Panel heading (e.g. the trait name). */
   title?: string;
+  /** Browsable asset catalog supplied to `control: 'asset'` fields. */
+  assets?: AssetCatalog;
 }
 
 const TIER_ORDER = ['presentation', 'domain', 'policy', 'infra', 'internal'];
@@ -91,15 +96,41 @@ function FieldControl({
   decl,
   value,
   onChange,
+  assets,
 }: {
   name: string;
   decl: ConfigFieldDeclaration;
   value: TraitConfigValue | undefined;
   onChange: (field: string, value: TraitConfigValue) => void;
+  assets?: AssetCatalog;
 }): React.ReactElement {
   let control: React.ReactNode;
 
-  if (decl.type === 'boolean') {
+  const stringValue = typeof value === 'string' ? value : undefined;
+
+  // Deterministic `control` tag wins over the type-based dispatch below.
+  if (decl.control === 'icon') {
+    control = <IconPicker value={stringValue} onChange={(icon) => onChange(name, icon)} />;
+  } else if (decl.control === 'asset' && assets !== undefined) {
+    control = (
+      <AssetPicker assets={assets} value={stringValue} onChange={(url) => onChange(name, url)} />
+    );
+  } else if (
+    decl.control === 'color' &&
+    decl.values !== undefined &&
+    decl.values.length > 0
+  ) {
+    control = (
+      <Select
+        options={decl.values.map((v) => ({ value: v, label: v }))}
+        value={stringValue ?? ''}
+        onChange={(e) => onChange(name, e.target.value)}
+      />
+    );
+  } else if (decl.control === 'asset' || decl.control === 'color') {
+    // `asset` with no catalog / `color` with no enum: degrade to the text control.
+    control = <TextLikeControl field={name} numeric={false} value={value} onCommit={onChange} />;
+  } else if (decl.type === 'boolean') {
     control = <Switch checked={value === true} onChange={(c) => onChange(name, c)} />;
   } else if (decl.type === 'string' && decl.values !== undefined && decl.values.length > 0) {
     control = (
@@ -141,6 +172,7 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({
   onReset,
   title,
   className,
+  assets,
 }) => {
   const fields = Object.entries(config);
 
@@ -184,6 +216,7 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({
                 decl={decl}
                 value={currentValue(decl, values?.[name])}
                 onChange={onChange}
+                assets={assets}
               />
             ))}
           </VStack>

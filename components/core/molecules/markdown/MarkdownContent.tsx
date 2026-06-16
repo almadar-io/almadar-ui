@@ -21,7 +21,7 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import { Box } from '../../atoms/Box';
-import { CodeBlock } from './CodeBlock';
+import { CodeBlock, toCodeLanguage } from './CodeBlock';
 import { useTranslate } from '../../../../hooks/useTranslate';
 import { cn } from '../../../../lib/cn';
 
@@ -82,7 +82,7 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
                   return (
                     <CodeBlock
                       code={code}
-                      language={match[1]}
+                      language={toCodeLanguage(match[1])}
                       maxHeight="60vh"
                     />
                   );

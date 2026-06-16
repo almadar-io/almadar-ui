@@ -11,12 +11,13 @@ import { Box } from '../atoms/Box';
 import { HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 import { Button } from '../atoms/Button';
+import type { CodeLanguage } from './markdown/CodeBlock';
 
 export interface DocCodeBlockProps {
   /** Code content to display */
   code: string;
   /** Programming language label */
-  language?: string;
+  language?: CodeLanguage;
   /** Optional title/filename shown in the header bar */
   title?: string;
   /** Show line numbers in the gutter */

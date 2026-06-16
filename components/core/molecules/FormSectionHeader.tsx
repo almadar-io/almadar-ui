@@ -67,7 +67,7 @@ export const FormSectionHeader: React.FC<FormSectionHeaderProps> = ({
   return (
     <Box
       className={cn(
-        "px-4 py-3 bg-muted rounded-t-lg",
+        "px-4 py-3 bg-muted rounded-t-lg border-b-2 border-border border-l-4 border-l-primary",
         isClickable &&
           "cursor-pointer hover:bg-[var(--color-surface-hover)] transition-colors",
         className,
@@ -81,7 +81,7 @@ export const FormSectionHeader: React.FC<FormSectionHeaderProps> = ({
             <Icon
               name={icon}
               size="md"
-              className="text-muted-foreground"
+              className="text-primary"
             />
           )}
 
@@ -99,8 +99,8 @@ export const FormSectionHeader: React.FC<FormSectionHeaderProps> = ({
           )}
 
           {/* Title and subtitle */}
-          <Box>
-            <Typography variant="label" weight="semibold">
+          <Box className="space-y-0.5">
+            <Typography variant="subheading" weight="semibold">
               {title}
             </Typography>
             {subtitle && (

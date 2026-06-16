@@ -184,11 +184,61 @@ import { createLogger } from '@almadar/logger';
 
 const log = createLogger('almadar:ui:markdown-code');
 
+/**
+ * The set of languages with a registered PrismLight grammar (above) plus the
+ * `.orb`/`.lolo` grammars from `@almadar/syntax`. Authoritative: an unregistered
+ * value renders as plain text, so this union mirrors the `registerLanguage`
+ * calls exactly.
+ */
+export const CODE_LANGUAGES = [
+  'text',
+  'json',
+  'javascript',
+  'js',
+  'typescript',
+  'ts',
+  'jsx',
+  'tsx',
+  'css',
+  'markdown',
+  'md',
+  'bash',
+  'shell',
+  'sh',
+  'yaml',
+  'yml',
+  'rust',
+  'python',
+  'py',
+  'sql',
+  'diff',
+  'toml',
+  'go',
+  'graphql',
+  'html',
+  'xml',
+  'orb',
+  'lolo',
+] as const;
+
+export type CodeLanguage = (typeof CODE_LANGUAGES)[number];
+
+const CODE_LANGUAGE_SET = new Set<string>(CODE_LANGUAGES);
+
+/**
+ * Narrow an arbitrary string (e.g. a markdown fence info-string) to a
+ * `CodeLanguage`, falling back to `'text'` for any value without a registered
+ * grammar — matching the highlighter's own plain-text fallback.
+ */
+export function toCodeLanguage(value: string | undefined): CodeLanguage {
+  return value && CODE_LANGUAGE_SET.has(value) ? (value as CodeLanguage) : 'text';
+}
+
 export interface CodeBlockProps {
   /** The code content to display */
   code: string;
   /** Programming language for syntax highlighting */
-  language?: string;
+  language?: CodeLanguage;
   /** Show the copy button */
   showCopyButton?: boolean;
   /** Show the language badge */

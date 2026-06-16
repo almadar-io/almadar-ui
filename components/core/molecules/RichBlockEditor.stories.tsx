@@ -62,6 +62,13 @@ export const WithInitialContent: Story = {
   },
 };
 
+export const BlockAuthoring: Story = {
+  args: {
+    initialBlocks: sampleBlocks,
+    enableBlocks: true,
+  },
+};
+
 export const ReadOnly: Story = {
   args: {
     initialBlocks: [
@@ -111,7 +118,11 @@ function InteractiveEditor() {
 
   return (
     <VStack gap="md">
-      <RichBlockEditor initialBlocks={blocks} onChange={(next) => setBlocks(next as EntityRow[])} />
+      <RichBlockEditor
+        initialBlocks={blocks}
+        enableBlocks
+        onChange={(next) => setBlocks(next as EntityRow[])}
+      />
       <Box className="rounded-md border border-border bg-muted/40 p-3">
         <Typography variant="caption" className="text-muted-foreground">
           Block count: {blocks.length} — Types:{' '}

@@ -40,7 +40,7 @@ export const Default: Story = {
     args: {
         title: 'Dashboard.tsx',
         code: sampleCode,
-        language: 'TypeScript',
+        language: 'typescript',
     },
 };
 
@@ -48,7 +48,7 @@ export const WithLineNumbers: Story = {
     args: {
         title: 'Dashboard.tsx',
         code: sampleCode,
-        language: 'TypeScript',
+        language: 'typescript',
         showLineNumbers: true,
     },
 };
@@ -57,7 +57,7 @@ export const WordWrap: Story = {
     args: {
         title: 'Long Lines Example',
         code: `const veryLongVariable = "This is a very long string that demonstrates word wrapping behavior when the content exceeds the available width of the code viewer container";\n\nconst anotherLongLine = { key1: "value1", key2: "value2", key3: "value3", key4: "value4", key5: "value5", key6: "value6", key7: "value7" };`,
-        language: 'JavaScript',
+        language: 'javascript',
         showLineNumbers: true,
         wordWrap: true,
     },
@@ -96,7 +96,7 @@ export const WithCopy: Story = {
     "storybook": "storybook dev -p 6006"
   }
 }`,
-        language: 'JSON',
+        language: 'json',
         showCopy: true,
         showLineNumbers: true,
     },
@@ -108,17 +108,17 @@ export const MultipleTabs: Story = {
         files: [
             {
                 label: 'index.ts',
-                language: 'TypeScript',
+                language: 'typescript',
                 code: `export { Dashboard } from './Dashboard';\nexport { Sidebar } from './Sidebar';\nexport { Header } from './Header';`,
             },
             {
                 label: 'Dashboard.tsx',
-                language: 'TypeScript',
+                language: 'typescript',
                 code: sampleCode,
             },
             {
                 label: 'styles.css',
-                language: 'CSS',
+                language: 'css',
                 code: `.dashboard {\n  display: grid;\n  grid-template-columns: 250px 1fr;\n  min-height: 100vh;\n}`,
             },
         ],
@@ -131,7 +131,7 @@ export const MaxHeight: Story = {
     args: {
         title: 'Scrollable Code',
         code: Array.from({ length: 50 }, (_, i) => `const line${i + 1} = "Content for line ${i + 1}";`).join('\n'),
-        language: 'JavaScript',
+        language: 'javascript',
         showLineNumbers: true,
         maxHeight: 300,
     },
@@ -148,7 +148,7 @@ export const WithActions: Story = {
     args: {
         title: 'Generated Schema',
         code: `orbital User {\n  entity {\n    name: string\n    email: string\n  }\n  trait CRUD uses std/List {}\n  page /users binds CRUD\n}`,
-        language: 'Orbital',
+        language: 'orb',
         showLineNumbers: true,
         showCopy: true,
         actions: [

@@ -25,6 +25,7 @@ import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { Copy, Check, Code, FileText, WrapText } from "lucide-react";
 import type { UiError } from '../atoms/types';
+import type { CodeLanguage } from "./markdown/CodeBlock";
 
 export type CodeViewerMode = "code" | "diff";
 
@@ -44,7 +45,7 @@ export interface CodeViewerAction {
 export interface CodeViewerFile {
     label: string;
     code: string;
-    language?: string;
+    language?: CodeLanguage;
 }
 
 export interface CodeViewerProps {
@@ -53,7 +54,7 @@ export interface CodeViewerProps {
     /** Code content */
     code?: string;
     /** Language for display label */
-    language?: string;
+    language?: CodeLanguage;
     /** Diff lines (for diff mode) */
     diff?: readonly DiffLine[];
     /** Old value (for generating diff) */

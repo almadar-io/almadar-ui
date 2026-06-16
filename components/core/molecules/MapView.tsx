@@ -196,7 +196,7 @@ const MapViewImpl = lazy(async () => {
 
     return (
       <Box
-        className={cn('relative w-full overflow-hidden rounded-lg', className)}
+        className={cn('relative isolate w-full overflow-hidden rounded-lg', className)}
         style={{ height }}
         data-testid="map-view"
       >

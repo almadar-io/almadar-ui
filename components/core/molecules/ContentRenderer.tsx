@@ -13,7 +13,7 @@
 import React, { useMemo } from 'react';
 import { VStack } from '../atoms/Stack';
 import { MarkdownContent } from './markdown/MarkdownContent';
-import { CodeBlock } from './markdown/CodeBlock';
+import { CodeBlock, toCodeLanguage } from './markdown/CodeBlock';
 import { QuizBlock } from './QuizBlock';
 import { ScaledDiagram } from './ScaledDiagram';
 import { JazariStateMachine } from './JazariStateMachine';
@@ -70,7 +70,7 @@ export const ContentRenderer: React.FC<ContentRendererProps> = ({
               <CodeBlock
                 key={key}
                 code={segment.content}
-                language={segment.language}
+                language={toCodeLanguage(segment.language)}
               />
             );
 
@@ -99,7 +99,7 @@ export const ContentRenderer: React.FC<ContentRendererProps> = ({
               <VStack key={key} gap="sm">
                 <CodeBlock
                   code={segment.content}
-                  language={segment.language}
+                  language={toCodeLanguage(segment.language)}
                 />
                 <ScaledDiagram>
                   <JazariStateMachine
