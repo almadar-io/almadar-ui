@@ -28,9 +28,9 @@ function kindOf(v: V): Kind {
 const TYPE_LABEL: Record<Kind, string> = {
   object: '{}',
   array: '[]',
-  string: 'abc',
-  number: '123',
-  boolean: 'on/off',
+  string: 'txt',
+  number: 'num',
+  boolean: 'y/n',
   null: '—',
 };
 
@@ -164,15 +164,15 @@ function Row({
   const container = isObj(value) || isArr(value);
 
   return (
-    <VStack gap="none" className="group">
-      <HStack gap="xs" align="center" className="py-0.5">
+    <VStack gap="none" className="group w-max min-w-full">
+      <HStack gap="xs" align="center" className="py-0.5 w-max">
         <KindSelect kind={kindOf(value)} onChange={onChangeKind} />
         {isArrayItem ? (
-          <Typography variant="caption" color="muted" className="w-7 shrink-0 font-mono">
+          <Typography variant="caption" color="muted" className="w-6 shrink-0 font-mono">
             {rowKey}
           </Typography>
         ) : (
-          <div className="w-28 shrink-0">
+          <div className="w-20 shrink-0">
             <Input
               inputType="text"
               value={keyDraft}
@@ -184,22 +184,21 @@ function Row({
           </div>
         )}
         {!container && (
-          <div className="flex-1 min-w-0">
+          <div className="w-48 shrink-0">
             <ValueNode value={value} onChange={onValue} depth={depth + 1} />
           </div>
         )}
-        {container && <div className="flex-1" />}
         <Button
           variant="ghost"
           size="sm"
           icon="x"
           onClick={onRemove}
           aria-label="Remove"
-          className="opacity-0 group-hover:opacity-100 transition-opacity"
+          className="shrink-0 text-muted-foreground hover:text-error"
         />
       </HStack>
       {container && (
-        <div className="pl-3">
+        <div className="pl-2">
           <ValueNode value={value} onChange={onValue} depth={depth + 1} />
         </div>
       )}
@@ -278,7 +277,7 @@ function ContainerNode({
       {open && (
         <VStack
           gap="none"
-          className={cn('ml-2 pl-2 border-l-[length:var(--border-width-thin)] border-border')}
+          className={cn('ml-1.5 pl-1.5 w-max min-w-full border-l-[length:var(--border-width-thin)] border-border')}
         >
           {entries.map(([k, v], idx) => (
             <Row
@@ -326,7 +325,7 @@ export interface JsonTreeEditorProps {
 export const JsonTreeEditor: React.FC<JsonTreeEditorProps> = ({ value, onChange, className }) => {
   const root = value ?? '';
   return (
-    <div className={cn('w-full rounded-sm bg-card/40 p-2 border-[length:var(--border-width-thin)] border-border', className)}>
+    <div className={cn('w-full overflow-x-auto rounded-sm bg-card/40 p-2 border-[length:var(--border-width-thin)] border-border', className)}>
       <ValueNode value={root} onChange={onChange} depth={0} />
     </div>
   );
