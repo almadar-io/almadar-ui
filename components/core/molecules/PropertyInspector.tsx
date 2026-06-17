@@ -17,9 +17,7 @@ import { Input } from '../atoms/Input';
 import { FormSection } from './FormSection';
 import { IconPicker } from './IconPicker';
 import { AssetPicker } from './AssetPicker';
-import { ArrayEditor } from './ArrayEditor';
-import { ObjectEditor } from './ObjectEditor';
-import { MapEditor } from './MapEditor';
+import { JsonTreeEditor } from './JsonTreeEditor';
 import type { DisplayStateProps } from '../organisms/types';
 
 /**
@@ -150,30 +148,14 @@ function FieldControl({
     control = <TextLikeControl field={name} numeric={false} value={value} onCommit={onChange} />;
   } else if (decl.type.startsWith('[') || Array.isArray(effectiveValue)) {
     const arr = Array.isArray(effectiveValue) ? effectiveValue : [];
-    control = (
-      <ArrayEditor
-        value={arr}
-        onChange={(next) => onChange(name, next)}
-      />
-    );
-  } else if (decl.type === 'object' && isTraitConfigObject(effectiveValue)) {
-    control = (
-      <ObjectEditor
-        value={effectiveValue}
-        onChange={(next) => onChange(name, next)}
-      />
-    );
+    control = <JsonTreeEditor value={arr} onChange={(next) => onChange(name, next)} />;
   } else if (
+    decl.type === 'object' ||
     decl.type.startsWith('Map ') ||
     (!SCALAR_TYPES.has(decl.type) && isTraitConfigObject(effectiveValue))
   ) {
     const obj = isTraitConfigObject(effectiveValue) ? effectiveValue : {};
-    control = (
-      <MapEditor
-        value={obj}
-        onChange={(next) => onChange(name, next)}
-      />
-    );
+    control = <JsonTreeEditor value={obj} onChange={(next) => onChange(name, next)} />;
   } else {
     control = (
       <Typography variant="caption" color="muted">

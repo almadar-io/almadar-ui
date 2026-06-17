@@ -2,6 +2,7 @@ export { ErrorBoundary, type ErrorBoundaryProps } from './ErrorBoundary';
 export { ArrayEditor, type ArrayEditorProps } from './ArrayEditor';
 export { ObjectEditor, type ObjectEditorProps } from './ObjectEditor';
 export { MapEditor, type MapEditorProps } from './MapEditor';
+export { JsonTreeEditor, type JsonTreeEditorProps } from './JsonTreeEditor';
 export { FileTree, type FileTreeProps, type FileTreeNode } from './FileTree';
 export { FormField, type FormFieldProps } from './FormField';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
