@@ -111,8 +111,8 @@ const dedupeProvidersPlugin = {
 const externalThreeSubpathPlugin = {
   name: 'external-three-subpath',
   setup(build: { onResolve: (opts: { filter: RegExp }, cb: () => { path: string; external: boolean }) => void }) {
-    build.onResolve({ filter: /^@almadar\/ui\/components\/organisms\/game\/three$/ }, () => ({
-      path: '@almadar/ui/components/organisms/game/three',
+    build.onResolve({ filter: /^@almadar\/ui\/components\/(organisms|molecules)\/game\/three$/ }, () => ({
+      path: '@almadar/ui/components/molecules/game/three',
       external: true,
     }));
   },
