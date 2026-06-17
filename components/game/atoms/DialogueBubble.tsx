@@ -18,7 +18,7 @@ export interface DialogueBubbleProps {
 export function DialogueBubble({
   speaker,
   text,
-  portrait = "https://almadar-kflow-assets.web.app/shared/characters/archetypes/00_base_model.png",
+  portrait = "https://almadar-kflow-assets.web.app/shared/characters/archetypes/04_hero.png",
   position = 'bottom',
   className,
 }: DialogueBubbleProps) {

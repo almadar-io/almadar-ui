@@ -355,9 +355,14 @@ function EmojiEffect({
 // Main Export — delegates to canvas engine or emoji fallback
 // =============================================================================
 
-export function CanvasEffect(props: CanvasEffectProps): React.JSX.Element | null {
+export function CanvasEffect({
+    effectSpriteUrl = "https://almadar-kflow-assets.web.app/shared/effects/gas/gas00.png",
+    assetBaseUrl = "https://almadar-kflow-assets.web.app/shared/effects/",
+    ...props
+}: CanvasEffectProps): React.JSX.Element | null {
     const eventBus = useEventBus();
-    const { completeEvent, onComplete, ...rest } = props;
+    const mergedProps = { effectSpriteUrl, assetBaseUrl, ...props };
+    const { completeEvent, onComplete, ...rest } = mergedProps;
 
     const handleComplete = useCallback(() => {
         if (completeEvent) eventBus.emit(`UI:${completeEvent}`, {});
@@ -366,8 +371,8 @@ export function CanvasEffect(props: CanvasEffectProps): React.JSX.Element | null
 
     const enhancedProps = { ...rest, onComplete: handleComplete };
 
-    if (props.assetManifest) {
-        return <CanvasEffectEngine {...enhancedProps} assetManifest={props.assetManifest} />;
+    if (rest.assetManifest) {
+        return <CanvasEffectEngine {...enhancedProps} assetManifest={rest.assetManifest} />;
     }
     return <EmojiEffect {...enhancedProps} />;
 }

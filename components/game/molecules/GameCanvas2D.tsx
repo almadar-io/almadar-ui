@@ -36,8 +36,8 @@ export function GameCanvas2D({
   tickEvent,
   drawEvent,
   fps = 60,
-  backgroundImage,
-  assetBaseUrl = '',
+  backgroundImage = "https://almadar-kflow-assets.web.app/shared/scenes/resonators.jpeg",
+  assetBaseUrl = "https://almadar-kflow-assets.web.app/shared/",
   className,
 }: GameCanvas2DProps) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
