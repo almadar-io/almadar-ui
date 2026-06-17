@@ -59,9 +59,6 @@ export type MapOrientation = 'standard' | 'rotated';
 /** Overlay control */
 export type OverlayControl = 'default' | 'hidden' | 'minimap';
 
-/** Unit animation state */
-export type UnitAnimationState = 'idle' | 'walk' | 'attack' | 'hurt' | 'die';
-
 /** Props for GameCanvas3D component */
 export interface GameCanvas3DProps {
     // --- Closed-circuit props (MANDATORY) ---

@@ -8,7 +8,7 @@
 
 // GameCanvas3D runtime is lazy (three.js code-split). Type-only exports below satisfy the
 // G7 public-barrel gate so pattern-sync can emit a factory, without pulling three.js into main.
-export type { GameCanvas3D, GameCanvas3DProps, GameCanvas3DHandle, GameEvent, CameraMode, MapOrientation, OverlayControl, UnitAnimationState } from './GameCanvas3D';
+export type { GameCanvas3D, GameCanvas3DProps, GameCanvas3DHandle, GameEvent, CameraMode, MapOrientation, OverlayControl } from './GameCanvas3D';
 
 export { DPad, type DPadProps, type DPadDirection } from './DPad';
 export { ActionButtons, type ActionButtonsProps, type ActionButtonConfig } from './ActionButtons';
