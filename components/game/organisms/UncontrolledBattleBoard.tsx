@@ -19,15 +19,35 @@ import type { EntityRow } from '@almadar/core';
 import { BattleBoard, type BattleBoardProps } from './BattleBoard';
 import { boardEntity, rows } from './boardEntity';
 import { useBattleState } from './hooks/useBattleState';
+import type {
+    IsometricTile,
+    IsometricUnit,
+    IsometricFeature,
+} from './types/isometric';
 
 export interface UncontrolledBattleBoardProps extends Omit<BattleBoardProps, 'entity'> {
     // Single board-state entity row (or array). The internal `useBattleState`
     // hook owns the controlled game-state fields; this row supplies the static
     // board config plus an `initialUnits` array (`EntityRow[]`) seed.
     entity?: EntityRow | readonly EntityRow[];
+    /** Direct tile data — takes priority over entity-derived tiles. */
+    tiles?: IsometricTile[];
+    /** Direct unit data — takes priority over entity-derived units. */
+    units?: IsometricUnit[];
+    /** Direct feature data — takes priority over entity-derived features. */
+    features?: IsometricFeature[];
+    /** Direct asset manifest — takes priority over entity-derived manifest. */
+    assetManifest?: BattleBoardProps['assetManifest'];
 }
 
-export function UncontrolledBattleBoard({ entity, ...rest }: UncontrolledBattleBoardProps): React.JSX.Element | null {
+export function UncontrolledBattleBoard({
+    entity,
+    tiles,
+    units,
+    features,
+    assetManifest,
+    ...rest
+}: UncontrolledBattleBoardProps): React.JSX.Element | null {
     const resolved = boardEntity(entity);
 
     const battleState = useBattleState(
@@ -49,19 +69,23 @@ export function UncontrolledBattleBoard({ entity, ...rest }: UncontrolledBattleB
         },
     );
 
-    if (!resolved) return null;
+    if (!resolved && !tiles && !units && !features && !assetManifest) return null;
 
     return (
         <BattleBoard
             {...rest}
-            entity={{
+            tiles={tiles}
+            units={units}
+            features={features}
+            assetManifest={assetManifest}
+            entity={resolved ? {
                 ...resolved,
                 units: battleState.units,
                 phase: battleState.phase,
                 turn: battleState.turn,
                 gameResult: battleState.gameResult,
                 selectedUnitId: battleState.selectedUnitId,
-            } as EntityRow}
+            } as EntityRow : undefined}
         />
     );
 }
