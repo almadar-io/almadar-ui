@@ -57,8 +57,6 @@ export interface PageHeaderProps {
   isLoading?: boolean;
   /** Error state */
   error?: UiError | null;
-  /** Entity name for schema-driven auto-fetch */
-  entity?: string;
   /** Tabs for sub-navigation */
   tabs?: ReadonlyArray<{
     label: string;

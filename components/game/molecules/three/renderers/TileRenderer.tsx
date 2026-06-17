@@ -11,6 +11,7 @@
 import React, { useRef, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import type { IsometricTile } from '../../../organisms/types/isometric';
+import { ModelLoader } from '../components/ModelLoader';
 
 export interface TileRendererProps {
     /** Array of tiles to render */
@@ -194,12 +195,35 @@ export function TileRenderer({
         }
     }
 
-    // Individual tiles (fallback when not using instancing)
+    // Individual tiles (fallback when not using instancing, or for GLB tiles)
     const renderIndividualTiles = () => {
         return tiles.map((tile) => {
             const x = (tile.x - offsetX) * cellSize
             const z = ((tile.z ?? tile.y ?? 0) - offsetZ) * cellSize
             const y = (tile.elevation ?? 0) * 0.1
+            const position: [number, number, number] = [x, y, z]
+
+            // GLB tile — use ModelLoader with box fallback; GLB materials take over coloring
+            if (tile.modelUrl) {
+                return (
+                    <group
+                        key={tile.id ?? `tile-${tile.x}-${tile.y}`}
+                        userData={{ type: 'tile', tileId: tile.id, gridX: tile.x, gridZ: tile.z ?? tile.y }}
+                        onClick={() => onTileClick?.(tile)}
+                        onPointerEnter={() => onTileHover?.(tile)}
+                        onPointerLeave={() => onTileHover?.(null)}
+                    >
+                        <ModelLoader
+                            url={tile.modelUrl}
+                            position={position}
+                            scale={cellSize * 0.9}
+                            fallbackGeometry="box"
+                            castShadow
+                            receiveShadow
+                        />
+                    </group>
+                )
+            }
 
             const colorHex =
                 terrainColors[tile.type || ''] || terrainColors[tile.terrain || ''] || '#808080'
@@ -219,7 +243,7 @@ export function TileRenderer({
             return (
                 <mesh
                     key={tile.id ?? `tile-${tile.x}-${tile.y}`}
-                    position={[x, y, z]}
+                    position={position}
                     userData={{ type: 'tile', tileId: tile.id, gridX: tile.x, gridZ: tile.z ?? tile.y }}
                     onClick={() => onTileClick?.(tile)}
                     onPointerEnter={() => onTileHover?.(tile)}
@@ -237,7 +261,9 @@ export function TileRenderer({
         })
     }
 
-    if (useInstancing && tiles.length > 0) {
+    // Instancing only applies to procedural tiles; any tile with modelUrl forces individual rendering
+    const hasModelTiles = tiles.some((t) => t.modelUrl)
+    if (useInstancing && tiles.length > 0 && !hasModelTiles) {
         return (
             <instancedMesh
                 ref={meshRef as React.RefObject<never>}

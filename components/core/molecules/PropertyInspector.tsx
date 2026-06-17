@@ -102,7 +102,7 @@ function isTraitConfigObject(
   return v !== null && v !== undefined && typeof v === 'object' && !Array.isArray(v);
 }
 
-function FieldControl({
+export function FieldControl({
   name,
   decl,
   value,

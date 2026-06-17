@@ -84,8 +84,6 @@ export interface NavigationProps {
   /** Error state */
   error?: UiError | null;
 
-  /** Entity name for schema-driven auto-fetch */
-  entity?: string;
 }
 
 export const Navigation: React.FC<NavigationProps> = ({

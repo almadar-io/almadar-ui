@@ -1,11 +1,12 @@
 'use client';
 import React from 'react';
-import type { TraitConfigValue, TraitConfigObject } from '@almadar/core';
+import type { TraitConfigValue, TraitConfigObject, ConfigFieldDeclaration } from '@almadar/core';
 import { VStack } from '../atoms/Stack';
 import { Select } from '../atoms/Select';
 import { Typography } from '../atoms/Typography';
 import { JsonTreeEditor } from './JsonTreeEditor';
-import { getKnownPatterns } from '../../../renderer/pattern-resolver';
+import { FieldControl } from './PropertyInspector';
+import { getKnownPatterns, getPatternDefinition } from '../../../renderer/pattern-resolver';
 import { cn } from '../../../lib/cn';
 
 const isObj = (v: TraitConfigValue | undefined): v is TraitConfigObject =>
@@ -54,6 +55,23 @@ export const NodeSlotEditor: React.FC<NodeSlotEditorProps> = ({ value, onChange,
     onChange(wasArray || value === undefined ? [pattern] : pattern);
   };
 
+  // Adapt pattern propsSchema → ConfigFieldDeclaration entries for typed controls
+  const schemaEntries = React.useMemo<Array<[string, ConfigFieldDeclaration]>>(() => {
+    if (!type) return [];
+    const def = getPatternDefinition(type);
+    if (!def?.propsSchema) return [];
+    return Object.entries(def.propsSchema).map(([propName, propDef]) => {
+      const decl: ConfigFieldDeclaration = {
+        type: propDef.types?.[0] ?? 'string',
+        description: propDef.description,
+        label: propName,
+      };
+      return [propName, decl];
+    });
+  }, [type]);
+
+  const hasSchema = schemaEntries.length > 0;
+
   return (
     <VStack gap="xs" className={cn('w-full', className)}>
       <Select
@@ -64,7 +82,21 @@ export const NodeSlotEditor: React.FC<NodeSlotEditorProps> = ({ value, onChange,
       {type !== '' && (
         <VStack gap="none" className="pl-1">
           <Typography variant="caption" color="muted">props</Typography>
-          <JsonTreeEditor value={props} onChange={(next) => emit(type, isObj(next) ? next : {})} />
+          {hasSchema ? (
+            <VStack gap="xs">
+              {schemaEntries.map(([propName, decl]) => (
+                <FieldControl
+                  key={propName}
+                  name={propName}
+                  decl={decl}
+                  value={props[propName]}
+                  onChange={(field, val) => emit(type, { ...props, [field]: val })}
+                />
+              ))}
+            </VStack>
+          ) : (
+            <JsonTreeEditor value={props} onChange={(next) => emit(type, isObj(next) ? next : {})} />
+          )}
         </VStack>
       )}
     </VStack>

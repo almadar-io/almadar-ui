@@ -76,8 +76,6 @@ export interface DocumentViewerProps {
     actions?: readonly DocumentAction[];
     /** Multiple documents (tabbed view) */
     documents?: readonly DocumentItem[];
-    /** Entity name for schema-driven auto-fetch */
-    entity?: string;
     /** Loading state */
     isLoading?: boolean;
     /** Error state */
@@ -99,7 +97,6 @@ export const DocumentViewer: React.FC<DocumentViewerProps> = ({
     showPrint = false,
     actions,
     documents,
-    entity,
     isLoading = false,
     error,
     className,

@@ -161,10 +161,6 @@ export interface HeaderProps {
    */
   error?: UiError | null;
 
-  /**
-   * Entity name for schema-driven auto-fetch (closed circuit)
-   */
-  entity?: string;
 }
 
 export const Header: React.FC<HeaderProps> = ({

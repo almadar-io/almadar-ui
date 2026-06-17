@@ -37,6 +37,8 @@ export interface IsometricTile {
     tileType?: string;
     /** Elevation offset for 3D rendering */
     elevation?: number;
+    /** 3D model URL (GLB format) for GameCanvas3D — rendered via ModelLoader with box fallback */
+    modelUrl?: AssetUrl;
 }
 
 // =============================================================================
