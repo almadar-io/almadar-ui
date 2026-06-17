@@ -121,6 +121,12 @@ export function GameCanvas2D({
           const bgImg = loadImage(backgroundImageRef.current);
           if (bgImg) {
             ctx.drawImage(bgImg, 0, 0, widthRef.current, heightRef.current);
+          } else {
+            // Image not loaded yet (or failed): paint a solid fallback so the
+            // canvas is never a blank flash. The continuous rAF loop redraws the
+            // real image on a later frame once it finishes loading.
+            ctx.fillStyle = '#0f1420';
+            ctx.fillRect(0, 0, widthRef.current, heightRef.current);
           }
         }
 

@@ -11,7 +11,13 @@
 
 import React from 'react';
 import { WorldMapBoard } from '../organisms/WorldMapBoard';
+import type { WorldMapBoardProps } from '../organisms/WorldMapBoard';
 import type { TemplateProps } from '../../core/templates/types';
+import type {
+    IsometricTile,
+    IsometricUnit,
+    IsometricFeature,
+} from '../organisms/types/isometric';
 
 // Re-export the surviving UI value type (entity types were collapsed to EntityRow).
 export type { WorldMapSlotContext } from '../organisms/WorldMapBoard';
@@ -29,6 +35,14 @@ export interface WorldMapTemplateProps extends TemplateProps {
     diamondTopY?: number;
     /** Allow selecting / moving ALL heroes (including enemy). For testing. */
     allowMoveAllHeroes?: boolean;
+    /** Direct tile data — forwarded to WorldMapBoard; takes priority over entity. */
+    tiles?: IsometricTile[];
+    /** Direct unit data — forwarded to WorldMapBoard; takes priority over entity. */
+    units?: IsometricUnit[];
+    /** Direct feature data — forwarded to WorldMapBoard; takes priority over entity. */
+    features?: IsometricFeature[];
+    /** Direct asset manifest — forwarded to WorldMapBoard; takes priority over entity. */
+    assetManifest?: WorldMapBoardProps['assetManifest'];
 }
 
 // =============================================================================
@@ -41,11 +55,19 @@ export function WorldMapTemplate({
     unitScale = 2.5,
     diamondTopY,
     allowMoveAllHeroes = false,
+    tiles,
+    units,
+    features,
+    assetManifest,
     className,
 }: WorldMapTemplateProps): React.JSX.Element {
     return (
         <WorldMapBoard
             entity={entity}
+            tiles={tiles}
+            units={units}
+            features={features}
+            assetManifest={assetManifest}
             scale={scale}
             unitScale={unitScale}
             diamondTopY={diamondTopY}
