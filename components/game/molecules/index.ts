@@ -6,6 +6,9 @@
  * @packageDocumentation
  */
 
+// GameCanvas3D and three/* are NOT barrel-exported here — @react-three/fiber is a lazy peer dep.
+// Import directly: '@almadar/ui/components/molecules/game/GameCanvas3D' or './three'
+
 export { DPad, type DPadProps, type DPadDirection } from './DPad';
 export { ActionButtons, type ActionButtonsProps, type ActionButtonConfig } from './ActionButtons';
 export { StatBadge, type StatBadgeProps } from './StatBadge';

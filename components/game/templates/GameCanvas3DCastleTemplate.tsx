@@ -20,7 +20,7 @@
 
 import React from 'react';
 import type { EntityRow } from '@almadar/core';
-import { GameCanvas3D } from '../organisms/GameCanvas3D';
+import { GameCanvas3D } from '../molecules/GameCanvas3D';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from '../organisms/types/isometric';
 import { VStack, HStack } from '../../core/atoms/Stack';
 import { Typography } from '../../core/atoms/Typography';

@@ -10,7 +10,7 @@
 
 import React, { useRef, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import type { IsometricTile } from '../../types/isometric';
+import type { IsometricTile } from '../../../organisms/types/isometric';
 
 export interface TileRendererProps {
     /** Array of tiles to render */

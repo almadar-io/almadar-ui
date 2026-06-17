@@ -34,7 +34,7 @@ import { useGameCanvas3DEvents } from './three/hooks/useGameCanvas3DEvents';
 import { Canvas3DLoadingState } from './three/components/Canvas3DLoadingState';
 import { Canvas3DErrorBoundary } from './three/components/Canvas3DErrorBoundary';
 import { ModelLoader } from './three/components/ModelLoader';
-import type { IsometricTile, IsometricUnit, IsometricFeature } from './types/isometric';
+import type { IsometricTile, IsometricUnit, IsometricFeature } from '../organisms/types/isometric';
 import './GameCanvas3D.css';
 
 // Re-export types for convenience

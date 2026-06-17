@@ -11,7 +11,7 @@
 import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { GameCanvas3D } from './GameCanvas3D';
-import type { IsometricTile, IsometricFeature, IsometricUnit } from './types/isometric';
+import type { IsometricTile, IsometricFeature, IsometricUnit } from '../organisms/types/isometric';
 
 // ── Inline 3D asset helpers (mirrors projects/trait-wars/design-system/assets-3d) ──
 

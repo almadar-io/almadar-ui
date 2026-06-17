@@ -10,7 +10,7 @@
 
 import React, { useContext } from 'react';
 import { Canvas, context as fiberContext } from '@react-three/fiber';
-import type { IsometricFeature } from '../../types/isometric';
+import type { IsometricFeature } from '../../../organisms/types/isometric';
 
 export interface FeatureRendererProps {
     /** Array of features to render */

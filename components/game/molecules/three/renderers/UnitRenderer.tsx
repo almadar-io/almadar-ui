@@ -11,7 +11,7 @@
 import React, { useRef, useEffect, useState, useMemo } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
-import type { IsometricUnit } from '../../types/isometric';
+import type { IsometricUnit } from '../../../organisms/types/isometric';
 
 export type UnitAnimationState = 'idle' | 'walk' | 'attack' | 'hurt' | 'die';
 

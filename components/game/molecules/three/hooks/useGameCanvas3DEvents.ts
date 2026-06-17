@@ -11,7 +11,7 @@
 import { useCallback, useRef } from 'react';
 import type { EventEmit } from '@almadar/core';
 import { useEventBus, useEmitEvent } from '../../../../../hooks/useEventBus';
-import type { IsometricTile, IsometricUnit, IsometricFeature } from '../../types/isometric';
+import type { IsometricTile, IsometricUnit, IsometricFeature } from '../../../organisms/types/isometric';
 
 export interface GameCanvas3DEventConfig {
     /** Event name for tile clicks */

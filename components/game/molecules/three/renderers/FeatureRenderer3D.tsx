@@ -13,7 +13,7 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { createLogger } from '@almadar/logger';
-import type { IsometricFeature } from '../../types/isometric';
+import type { IsometricFeature } from '../../../organisms/types/isometric';
 
 const log = createLogger('almadar:ui:game:feature-renderer');
 

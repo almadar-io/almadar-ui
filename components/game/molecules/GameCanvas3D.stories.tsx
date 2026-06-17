@@ -9,7 +9,7 @@
 
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { GameCanvas3D } from './GameCanvas3D';
-import type { IsometricTile, IsometricUnit, IsometricFeature } from './types/isometric';
+import type { IsometricTile, IsometricUnit, IsometricFeature } from '../organisms/types/isometric';
 
 // =============================================================================
 // Helpers: generate 3D tile grids
