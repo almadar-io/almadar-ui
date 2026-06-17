@@ -18,6 +18,7 @@ import { FormSection } from './FormSection';
 import { IconPicker } from './IconPicker';
 import { AssetPicker } from './AssetPicker';
 import { JsonTreeEditor } from './JsonTreeEditor';
+import { NodeSlotEditor } from './NodeSlotEditor';
 import type { DisplayStateProps } from '../organisms/types';
 
 /**
@@ -146,6 +147,8 @@ function FieldControl({
     control = <TextLikeControl field={name} numeric value={value} onCommit={onChange} />;
   } else if (decl.type === 'string') {
     control = <TextLikeControl field={name} numeric={false} value={value} onCommit={onChange} />;
+  } else if (decl.type === 'node') {
+    control = <NodeSlotEditor value={effectiveValue} onChange={(next) => onChange(name, next)} />;
   } else if (decl.type.startsWith('[') || Array.isArray(effectiveValue)) {
     const arr = Array.isArray(effectiveValue) ? effectiveValue : [];
     control = <JsonTreeEditor value={arr} onChange={(next) => onChange(name, next)} />;

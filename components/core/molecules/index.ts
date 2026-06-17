@@ -1,5 +1,6 @@
 export { ErrorBoundary, type ErrorBoundaryProps } from './ErrorBoundary';
 export { JsonTreeEditor, type JsonTreeEditorProps } from './JsonTreeEditor';
+export { NodeSlotEditor, type NodeSlotEditorProps } from './NodeSlotEditor';
 export { FileTree, type FileTreeProps, type FileTreeNode } from './FileTree';
 export { FormField, type FormFieldProps } from './FormField';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
