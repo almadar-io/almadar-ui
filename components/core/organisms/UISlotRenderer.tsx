@@ -1202,6 +1202,24 @@ function renderPatternProps(
       rendered[key] = (
         <SlotContentRenderer content={childContent} onDismiss={onDismiss} />
       );
+    } else if (Array.isArray(value)) {
+      rendered[key] = value.map((item, i) => {
+        const el = item as SlotPropValue;
+        if (isPatternConfig(el)) {
+          const nestedProps: SlotProps = {};
+          for (const [k, v] of Object.entries(el)) {
+            if (k !== "type") nestedProps[k] = v;
+          }
+          const childContent: SlotContent = {
+            id: `prop-${key}-${i}`,
+            pattern: el.type,
+            props: nestedProps,
+            priority: 0,
+          };
+          return <SlotContentRenderer key={i} content={childContent} onDismiss={onDismiss} />;
+        }
+        return substituteTraitRefsDeep(el, `prop:${key}[${i}]`);
+      }) as SlotPropValue;
     } else {
       // fn-form lambdas are converted UPSTREAM at the render-ui dispatch
       // site (see `convertFnFormLambdasInProps` in `runtime/fn-form-lambda.ts`).
