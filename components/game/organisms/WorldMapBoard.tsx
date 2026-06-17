@@ -94,6 +94,14 @@ export interface WorldMapBoardProps {
     /** World-map board-state entity (single row or array). The board reads
      *  `hexes` / `heroes` / `features` arrays + `selectedHeroId` off it. */
     entity?: EntityRow | readonly EntityRow[];
+    /** Direct tile data — takes priority over entity-derived tiles. */
+    tiles?: IsometricTile[];
+    /** Direct unit data — takes priority over entity-derived units. */
+    units?: IsometricUnit[];
+    /** Direct feature data — takes priority over entity-derived features. */
+    features?: IsometricFeature[];
+    /** Direct asset manifest — takes priority over entity-derived manifest. */
+    assetManifest?: WorldMapAssetManifest;
 
     /** Canvas render scale */
     scale?: number;
@@ -163,6 +171,10 @@ function defaultIsInRange(
  
 export function WorldMapBoard({
     entity,
+    tiles: propTiles,
+    units: propUnits,
+    features: propFeatures,
+    assetManifest: propAssetManifest,
     isLoading,
     scale = 0.4,
     unitScale = 2.5,
@@ -193,9 +205,9 @@ export function WorldMapBoard({
     const resolved = boardEntity(entity);
     const hexes = rows(resolved?.hexes);
     const heroes = rows(resolved?.heroes);
-    const features = (Array.isArray(resolved?.features) ? resolved.features : []) as unknown as IsometricFeature[];
+    const features = propFeatures ?? (Array.isArray(resolved?.features) ? resolved.features : []) as unknown as IsometricFeature[];
     const selectedHeroId = (resolved?.selectedHeroId as string | null | undefined) ?? null;
-    const assetManifest = resolved?.assetManifest as WorldMapAssetManifest | undefined;
+    const assetManifest = propAssetManifest ?? resolved?.assetManifest as WorldMapAssetManifest | undefined;
     const backgroundImage = resolved?.backgroundImage as AssetUrl | undefined;
 
     const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
@@ -206,8 +218,8 @@ export function WorldMapBoard({
         [heroes, selectedHeroId],
     );
 
-    // -- Convert hexes -> IsometricTile[] -------------------------------------
-    const tiles: IsometricTile[] = useMemo(
+    // -- Convert hexes -> IsometricTile[] (direct prop wins) ------------------
+    const derivedTiles: IsometricTile[] = useMemo(
         () => hexes.map(hex => ({
             x: num(hex.x),
             y: num(hex.y),
@@ -216,10 +228,11 @@ export function WorldMapBoard({
         })),
         [hexes],
     );
+    const tiles: IsometricTile[] = propTiles ?? derivedTiles;
 
-    // -- Convert heroes -> IsometricUnit[] ------------------------------------
+    // -- Convert heroes -> IsometricUnit[] (direct prop wins) -----------------
     const baseUnits: IsometricUnit[] = useMemo(
-        () => heroes.map(hero => ({
+        () => propUnits ?? heroes.map(hero => ({
             id: str(hero.id),
             position: heroPosition(hero),
             name: str(hero.name),
@@ -228,7 +241,7 @@ export function WorldMapBoard({
             maxHealth: 100,
             sprite: hero.sprite == null ? undefined : str(hero.sprite),
         })),
-        [heroes],
+        [heroes, propUnits],
     );
 
     // -- Movement animation ---------------------------------------------------

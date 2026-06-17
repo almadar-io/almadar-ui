@@ -61,6 +61,14 @@ export interface CastleBoardProps {
     /** Castle board-state entity (single row or array). The board reads
      *  `tiles` / `features` / `units` arrays plus an `assetManifest` off it. */
     entity?: EntityRow | readonly EntityRow[];
+    /** Direct tile data — takes priority over entity-derived tiles. */
+    tiles?: IsometricTile[];
+    /** Direct unit data — takes priority over entity-derived units. */
+    units?: IsometricUnit[];
+    /** Direct feature data — takes priority over entity-derived features. */
+    features?: IsometricFeature[];
+    /** Direct asset manifest — takes priority over entity-derived manifest. */
+    assetManifest?: CastleAssetManifest;
     /** Canvas render scale */
     scale?: number;
 
@@ -99,6 +107,10 @@ export interface CastleBoardProps {
 
 export function CastleBoard({
     entity,
+    tiles: propTiles,
+    units: propUnits,
+    features: propFeatures,
+    assetManifest: propAssetManifest,
     scale = 0.45,
     header,
     sidePanel,
@@ -115,13 +127,12 @@ export function CastleBoard({
     const eventBus = useEventBus();
 
     // Resolve the single board-state row, then read defensively so a missing
-    // entity yields empty collections rather than throwing. The tiles/features/
-    // units arrays carry the IsometricCanvas render-DTO shape.
+    // entity yields empty collections rather than throwing. Direct props win.
     const resolved = boardEntity(entity);
-    const tiles = (Array.isArray(resolved?.tiles) ? resolved.tiles : []) as unknown as IsometricTile[];
-    const features = (Array.isArray(resolved?.features) ? resolved.features : []) as unknown as IsometricFeature[];
-    const units = (Array.isArray(resolved?.units) ? resolved.units : []) as unknown as IsometricUnit[];
-    const assetManifest = resolved?.assetManifest as CastleAssetManifest | undefined;
+    const tiles = propTiles ?? (Array.isArray(resolved?.tiles) ? resolved.tiles : []) as unknown as IsometricTile[];
+    const features = propFeatures ?? (Array.isArray(resolved?.features) ? resolved.features : []) as unknown as IsometricFeature[];
+    const units = propUnits ?? (Array.isArray(resolved?.units) ? resolved.units : []) as unknown as IsometricUnit[];
+    const assetManifest = propAssetManifest ?? resolved?.assetManifest as CastleAssetManifest | undefined;
     const backgroundImage = resolved?.backgroundImage as string | undefined;
 
     const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);

@@ -79,9 +79,26 @@ export type BattleSlotContext = {
     tileToScreen: (x: number, y: number) => { x: number; y: number };
 };
 
+/** Asset manifest shape for BattleBoard. */
+type BattleAssetManifest = {
+    baseUrl?: AssetUrl;
+    terrains?: Record<string, AssetUrl>;
+    units?: Record<string, AssetUrl>;
+    features?: Record<string, AssetUrl>;
+    effects?: Record<string, AssetUrl>;
+};
+
 export interface BattleBoardProps extends DisplayStateProps {
     /** Entity (single board state) containing all board data */
     entity?: EntityRow | readonly EntityRow[];
+    /** Direct tile data — takes priority over entity-derived tiles. */
+    tiles?: IsometricTile[];
+    /** Direct unit data — takes priority over entity-derived units. */
+    units?: IsometricUnit[];
+    /** Direct feature data — takes priority over entity-derived features. */
+    features?: IsometricFeature[];
+    /** Direct asset manifest — takes priority over entity-derived manifest. */
+    assetManifest?: BattleAssetManifest;
 
     /** Canvas render scale */
     scale?: number;
@@ -141,6 +158,10 @@ export interface BattleBoardProps extends DisplayStateProps {
 
 export function BattleBoard({
     entity,
+    tiles: propTiles,
+    units: propUnits,
+    features: propFeatures,
+    assetManifest: propAssetManifest,
     scale = 0.45,
     unitScale = 1,
     header,
@@ -165,21 +186,13 @@ export function BattleBoard({
     attackEvent,
     className,
 }: BattleBoardProps): React.JSX.Element {
-    // -- Unpack entity (single board-state row) --
+    // -- Unpack entity (single board-state row); direct props win --
     const board = boardEntity(entity) ?? {};
-    const tiles = (Array.isArray(board.tiles) ? board.tiles : []) as unknown as IsometricTile[];
-    const features = (Array.isArray(board.features) ? board.features : []) as unknown as IsometricFeature[];
+    const tiles = propTiles ?? (Array.isArray(board.tiles) ? board.tiles : []) as unknown as IsometricTile[];
+    const features = propFeatures ?? (Array.isArray(board.features) ? board.features : []) as unknown as IsometricFeature[];
     const boardWidth = num(board.boardWidth, 8);
     const boardHeight = num(board.boardHeight, 6);
-    const assetManifest = board.assetManifest as
-        | {
-              baseUrl?: AssetUrl;
-              terrains?: Record<string, AssetUrl>;
-              units?: Record<string, AssetUrl>;
-              features?: Record<string, AssetUrl>;
-              effects?: Record<string, AssetUrl>;
-          }
-        | undefined;
+    const assetManifest = propAssetManifest ?? board.assetManifest as BattleAssetManifest | undefined;
     const backgroundImage = board.backgroundImage as AssetUrl | undefined;
 
     // ── Game state (read from entity — controlled by parent) ─────────────
@@ -317,7 +330,7 @@ export function BattleBoard({
     }, []);
 
     // ── Visual units (with interpolated positions) ──────────────────────────
-    const isoUnits: IsometricUnit[] = useMemo(() => {
+    const derivedIsoUnits: IsometricUnit[] = useMemo(() => {
         return units
             .filter(u => unitHealth(u) > 0)
             .map(unit => {
@@ -345,6 +358,7 @@ export function BattleBoard({
                 };
             });
     }, [units, movingPositions]);
+    const isoUnits = propUnits ?? derivedIsoUnits;
 
     // ── Tile-to-screen helper ───────────────────────────────────────────────
     const maxY = Math.max(...tiles.map(t => t.y), 0);

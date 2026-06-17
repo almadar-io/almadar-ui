@@ -203,7 +203,7 @@ export function IsometricCanvas({
     // Rendering options
     scale = 0.4,
     debug = false,
-    backgroundImage,
+    backgroundImage = "https://almadar-kflow-assets.web.app/shared/scenes/court.png",
     showMinimap = true,
     enableCamera = true,
     unitScale = 1,
