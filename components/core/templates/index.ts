@@ -75,9 +75,8 @@ export {
   type AboutPageEntity,
 } from '../../marketing/templates/AboutPageTemplate';
 
-// 3D Game Canvas Templates are NOT barrel-exported because they depend on
-// @react-three/fiber + three which are optional peer dependencies.
-// Import directly if needed:
-//   import { GameCanvas3DWorldMapTemplate } from '@almadar/ui/components/templates/GameCanvas3DWorldMapTemplate';
-//   import { GameCanvas3DBattleTemplate } from '@almadar/ui/components/templates/GameCanvas3DBattleTemplate';
-//   import { GameCanvas3DCastleTemplate } from '@almadar/ui/components/templates/GameCanvas3DCastleTemplate';
+// 3D Game Canvas Templates — runtime is lazy (three.js code-split). Type-only exports satisfy
+// the G7 public-barrel gate so pattern-sync emits factories, without pulling three.js into main.
+export type { GameCanvas3DBattleTemplate, GameCanvas3DBattleTemplateProps } from '../../game/templates/GameCanvas3DBattleTemplate';
+export type { GameCanvas3DCastleTemplate, GameCanvas3DCastleTemplateProps } from '../../game/templates/GameCanvas3DCastleTemplate';
+export type { GameCanvas3DWorldMapTemplate, GameCanvas3DWorldMapTemplateProps } from '../../game/templates/GameCanvas3DWorldMapTemplate';
