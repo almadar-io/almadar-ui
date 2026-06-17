@@ -65,6 +65,7 @@ export const NodeSlotEditor: React.FC<NodeSlotEditorProps> = ({ value, onChange,
         type: propDef.types?.[0] ?? 'string',
         description: propDef.description,
         label: propName,
+        ...(propDef.enumValues && propDef.enumValues.length > 0 ? { values: propDef.enumValues } : {}),
       };
       return [propName, decl];
     });

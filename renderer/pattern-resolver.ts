@@ -10,6 +10,7 @@
  * @packageDocumentation
  */
 
+import type { PatternPropDef } from '@almadar/patterns';
 import type { PatternConfig, ResolvedPattern } from './types';
 import { createLogger } from '@almadar/logger';
 
@@ -37,11 +38,7 @@ interface PatternDefinition {
   type: string;
   category: string;
   description: string;
-  propsSchema?: Record<string, {
-    required?: boolean;
-    types?: string[];
-    description?: string;
-  }>;
+  propsSchema?: Record<string, PatternPropDef>;
 }
 
 // These will be populated by the sync process or at runtime

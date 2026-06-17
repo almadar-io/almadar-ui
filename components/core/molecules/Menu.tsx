@@ -7,9 +7,9 @@
  */
 
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Box } from "../atoms/Box";
 import type { IconInput } from "../atoms";
-import { Button } from "../atoms/Button";
 import { Icon } from "../atoms/Icon";
 import { Divider } from "../atoms/Divider";
 import { Typography } from "../atoms/Typography";
@@ -47,7 +47,7 @@ export type MenuPosition =
   | "top-start"
   | "top-end"
   | "bottom-start"
-  | "bottom-end"; // Aliases for pattern compatibility
+  | "bottom-end";
 
 /**
  * Subset of props Menu's `React.cloneElement` injects into the trigger
@@ -71,6 +71,129 @@ export interface MenuProps {
   className?: string;
 }
 
+const MENU_GAP = 4;
+
+// Compute fixed viewport coords for the dropdown panel given the trigger rect
+// and the desired position. Returns inline style to apply to the portaled div.
+function computeMenuStyle(
+  position: string,
+  triggerRect: DOMRect,
+): React.CSSProperties {
+  const isTop = position.startsWith("top");
+  const isRight = position.endsWith("right") || position.endsWith("end");
+
+  if (isTop) {
+    return {
+      top: triggerRect.top - MENU_GAP,
+      transform: "translateY(-100%)",
+      ...(isRight
+        ? { right: window.innerWidth - triggerRect.right }
+        : { left: triggerRect.left }),
+    };
+  }
+  return {
+    top: triggerRect.bottom + MENU_GAP,
+    ...(isRight
+      ? { right: window.innerWidth - triggerRect.right }
+      : { left: triggerRect.left }),
+  };
+}
+
+const menuContainerStyles = cn(
+  "bg-card",
+  "border-[length:var(--border-width)] border-border",
+  "shadow-elevation-popover",
+  "rounded-sm",
+  "min-w-0 sm:min-w-[200px] max-w-[calc(100vw-1rem)] py-1",
+);
+
+// Submenu that portals to body and positions itself relative to the item row.
+function SubMenu({
+  items,
+  itemRef,
+  direction,
+  eventBus,
+}: {
+  items: MenuItem[];
+  itemRef: HTMLElement | null;
+  direction: string;
+  eventBus: ReturnType<typeof useEventBus>;
+}) {
+  const [rect, setRect] = useState<DOMRect | null>(null);
+
+  useEffect(() => {
+    if (itemRef) {
+      setRect(itemRef.getBoundingClientRect());
+    }
+  }, [itemRef]);
+
+  if (!rect) return null;
+
+  const isRtl = direction === "rtl";
+  const style: React.CSSProperties = {
+    top: rect.top,
+    ...(isRtl
+      ? { right: window.innerWidth - rect.left }
+      : { left: rect.right }),
+  };
+
+  const panel = (
+    <div
+      className={cn("fixed z-50", menuContainerStyles)}
+      style={style}
+    >
+      {items.map((item, index) => {
+        const isDivider = item.id === "divider" || item.label === "divider";
+        const itemId =
+          item.id ??
+          `item-${item.label.toLowerCase().replace(/\s+/g, "-")}-${index}`;
+        const isDanger = item.variant === "danger";
+
+        if (isDivider) {
+          return <Divider key={`divider-${index}`} className="my-1" />;
+        }
+
+        return (
+          <Box
+            key={itemId}
+            as="button"
+            onClick={() => {
+              if (item.disabled) return;
+              if (item.event) eventBus.emit(`UI:${item.event}`, { itemId, label: item.label });
+              item.onClick?.();
+            }}
+            aria-disabled={item.disabled || undefined}
+            data-testid={item.event ? `action-${item.event}` : undefined}
+            className={cn(
+              "w-full flex items-center gap-3 px-4 py-2 text-start",
+              "text-sm transition-colors",
+              "hover:bg-muted focus:outline-none focus:bg-muted",
+              "disabled:opacity-50 disabled:cursor-not-allowed",
+              item.disabled && "cursor-not-allowed",
+              isDanger && "text-error hover:bg-error/10",
+            )}
+          >
+            {item.icon &&
+              (typeof item.icon === "string" ? (
+                <Icon name={item.icon} size="sm" className="flex-shrink-0" />
+              ) : (
+                <Icon icon={item.icon} size="sm" className="flex-shrink-0" />
+              ))}
+            <Typography variant="small" className={cn("flex-1", isDanger && "text-red-600")}>
+              {item.label}
+            </Typography>
+            {item.badge !== undefined && (
+              <span className="ml-auto text-xs font-medium">{item.badge}</span>
+            )}
+          </Box>
+        );
+      })}
+    </div>
+  );
+
+  return typeof document !== "undefined" ? createPortal(panel, document.body) : panel;
+}
+
 export const Menu: React.FC<MenuProps> = ({
   trigger,
   items,
@@ -78,9 +201,10 @@ export const Menu: React.FC<MenuProps> = ({
   className,
 }) => {
   const eventBus = useEventBus();
-  const { t, direction } = useTranslate();
+  const { direction } = useTranslate();
   const [isOpen, setIsOpen] = useState(false);
   const [activeSubMenu, setActiveSubMenu] = useState<string | null>(null);
+  const [activeSubMenuRef, setActiveSubMenuRef] = useState<HTMLElement | null>(null);
   const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null);
   const triggerRef = useRef<HTMLElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -97,15 +221,16 @@ export const Menu: React.FC<MenuProps> = ({
     }
     setIsOpen(!isOpen);
     setActiveSubMenu(null);
+    setActiveSubMenuRef(null);
   };
 
-  const handleItemClick = (item: MenuItem) => {
+  const handleItemClick = (item: MenuItem, itemId: string) => {
     if (item.disabled) return;
 
     if (item.subMenu && item.subMenu.length > 0) {
-      setActiveSubMenu(item.id ?? null);
+      setActiveSubMenu(itemId);
     } else {
-      if (item.event) eventBus.emit(`UI:${item.event}`, { itemId: item.id, label: item.label });
+      if (item.event) eventBus.emit(`UI:${item.event}`, { itemId, label: item.label });
       item.onClick?.();
       setIsOpen(false);
     }
@@ -128,6 +253,7 @@ export const Menu: React.FC<MenuProps> = ({
       ) {
         setIsOpen(false);
         setActiveSubMenu(null);
+        setActiveSubMenuRef(null);
       }
     };
 
@@ -135,21 +261,7 @@ export const Menu: React.FC<MenuProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
-  const positionClasses: Record<string, string> = {
-    "top-left": "bottom-full left-0 mb-2",
-    "top-right": "bottom-full right-0 mb-2",
-    "bottom-left": "top-full left-0 mt-2",
-    "bottom-right": "top-full right-0 mt-2",
-    // Aliases for pattern compatibility
-    "top-start": "bottom-full left-0 mb-2",
-    "top-end": "bottom-full right-0 mb-2",
-    "bottom-start": "top-full left-0 mt-2",
-    "bottom-end": "top-full right-0 mt-2",
-  };
-
-  // RTL: mirror the horizontal anchor so a right-anchored menu doesn't open off
-  // the left edge (and vice-versa). The trigger sits on the mirrored side of the
-  // bar in RTL, so the menu must open inward from there.
+  // RTL: mirror the horizontal anchor
   const rtlMirror: Record<string, string> = {
     "top-left": "top-right", "top-right": "top-left",
     "bottom-left": "bottom-right", "bottom-right": "bottom-left",
@@ -158,8 +270,6 @@ export const Menu: React.FC<MenuProps> = ({
   };
   const effectivePosition =
     direction === "rtl" ? (rtlMirror[position] ?? position) : position;
-  // Submenu flyout opens toward the inline-end edge (right in LTR, left in RTL).
-  const subMenuSideClass = direction === "rtl" ? "right-full mr-2" : "left-full ml-2";
 
   // Wrap non-element trigger in a Typography inline span — atoms only.
   const triggerChild = React.isValidElement(trigger) ? (
@@ -176,80 +286,14 @@ export const Menu: React.FC<MenuProps> = ({
     },
   );
 
-  // Theme-aware menu container styles. Drops the min-width on mobile —
-  // 200px exceeds usable space when the menu is anchored near a viewport
-  // edge on phones. `max-w-[calc(100vw-1rem)]` clamps the popover to the
-  // viewport regardless of anchor position.
-  const menuContainerStyles = cn(
-    "bg-card",
-    "border-[length:var(--border-width)] border-border",
-    "shadow-elevation-popover",
-    "rounded-sm",
-    "min-w-0 sm:min-w-[200px] max-w-[calc(100vw-1rem)] py-1",
-  );
-
-  const renderMenuItem = (
-    item: MenuItem,
-    hasSubMenu: boolean,
-    index: number,
-  ) => {
-    // Auto-generate id from label if not provided
-    const itemId =
-      item.id ??
-      `item-${item.label.toLowerCase().replace(/\s+/g, "-")}-${index}`;
-    const isDanger = item.variant === "danger";
-
-    return (
-      <Box
-        key={itemId}
-        as="button"
-        onClick={() => !item.disabled && handleItemClick({ ...item, id: itemId })}
-        aria-disabled={item.disabled || undefined}
-        onMouseEnter={() => hasSubMenu && setActiveSubMenu(itemId)}
-        data-testid={item.event ? `action-${item.event}` : undefined}
-        className={cn(
-          "w-full flex items-center justify-between gap-3 px-4 py-2 text-start",
-          "text-sm transition-colors",
-          "hover:bg-muted",
-          "focus:outline-none focus:bg-muted",
-          "disabled:opacity-50 disabled:cursor-not-allowed",
-          item.disabled && "cursor-not-allowed",
-          isDanger && "text-error hover:bg-error/10",
-        )}
-      >
-        <Box className="flex items-center gap-3 flex-1 min-w-0">
-          {item.icon &&
-            (typeof item.icon === "string" ? (
-              <Icon name={item.icon} size="sm" className="flex-shrink-0" />
-            ) : (
-              <Icon icon={item.icon} size="sm" className="flex-shrink-0" />
-            ))}
-          <Typography
-            variant="small"
-            className={cn("flex-1", isDanger && "text-red-600")}
-          >
-            {item.label}
-          </Typography>
-          {item.badge !== undefined && (
-            <Badge variant="default" size="sm">
-              {item.badge}
-            </Badge>
-          )}
-          {hasSubMenu && (
-            <Icon name={direction === "rtl" ? "chevron-left" : "chevron-right"} size="sm" className="flex-shrink-0" />
-          )}
-        </Box>
-      </Box>
-    );
-  };
-
-  const renderMenuItems = (menuItems: MenuItem[]) => {
-    return menuItems.map((item, index) => {
-      const hasSubMenu = item.subMenu && item.subMenu.length > 0;
+  const renderMenuItems = (menuItems: MenuItem[]) =>
+    menuItems.map((item, index) => {
       const isDivider = item.id === "divider" || item.label === "divider";
       const itemId =
         item.id ??
         `item-${item.label.toLowerCase().replace(/\s+/g, "-")}-${index}`;
+      const hasSubMenu = !!(item.subMenu && item.subMenu.length > 0);
+      const isDanger = item.variant === "danger";
 
       if (isDivider) {
         return <Divider key={`divider-${index}`} className="my-1" />;
@@ -257,45 +301,87 @@ export const Menu: React.FC<MenuProps> = ({
 
       return (
         <Box key={itemId}>
-          {renderMenuItem(item, !!hasSubMenu, index)}
-          {hasSubMenu && activeSubMenu === itemId && item.subMenu && (
-            <Box
-              className={cn(
-                "absolute top-0 z-50",
-                subMenuSideClass,
-                menuContainerStyles,
+          <Box
+            as="button"
+            onClick={() => handleItemClick({ ...item, id: itemId }, itemId)}
+            aria-disabled={item.disabled || undefined}
+            onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
+              if (hasSubMenu) {
+                setActiveSubMenu(itemId);
+                setActiveSubMenuRef(e.currentTarget);
+              }
+            }}
+            data-testid={item.event ? `action-${item.event}` : undefined}
+            className={cn(
+              "w-full flex items-center justify-between gap-3 px-4 py-2 text-start",
+              "text-sm transition-colors",
+              "hover:bg-muted",
+              "focus:outline-none focus:bg-muted",
+              "disabled:opacity-50 disabled:cursor-not-allowed",
+              item.disabled && "cursor-not-allowed",
+              isDanger && "text-error hover:bg-error/10",
+            )}
+          >
+            <Box className="flex items-center gap-3 flex-1 min-w-0">
+              {item.icon &&
+                (typeof item.icon === "string" ? (
+                  <Icon name={item.icon} size="sm" className="flex-shrink-0" />
+                ) : (
+                  <Icon icon={item.icon} size="sm" className="flex-shrink-0" />
+                ))}
+              <Typography
+                variant="small"
+                className={cn("flex-1", isDanger && "text-red-600")}
+              >
+                {item.label}
+              </Typography>
+              {item.badge !== undefined && (
+                <Badge variant="default" size="sm">
+                  {item.badge}
+                </Badge>
               )}
-            >
-              {renderMenuItems(item.subMenu)}
+              {hasSubMenu && (
+                <Icon
+                  name={direction === "rtl" ? "chevron-left" : "chevron-right"}
+                  size="sm"
+                  className="flex-shrink-0"
+                />
+              )}
             </Box>
+          </Box>
+          {hasSubMenu && activeSubMenu === itemId && item.subMenu && (
+            <SubMenu
+              items={item.subMenu}
+              itemRef={activeSubMenuRef}
+              direction={direction}
+              eventBus={eventBus}
+            />
           )}
         </Box>
       );
     });
-  };
+
+  // Portal the dropdown to document.body with fixed coords so no ancestor
+  // transform (ReactFlow viewport, catalog sidebar, PreviewFrame chrome) can
+  // create a new containing block and trap the panel behind sibling layers.
+  const panel = isOpen && triggerRect ? (
+    <div
+      ref={menuRef}
+      className={cn("fixed z-50", menuContainerStyles, className)}
+      style={computeMenuStyle(effectivePosition, triggerRect)}
+      role="menu"
+    >
+      {renderMenuItems(items)}
+    </div>
+  ) : null;
 
   return (
-    <Box className="relative">
+    <>
       {triggerElement}
-      {isOpen && triggerRect && (
-        <Box
-          ref={menuRef}
-          className={cn(
-            "absolute z-50",
-            menuContainerStyles,
-            positionClasses[effectivePosition],
-            className,
-          )}
-          style={{
-            left: effectivePosition.includes("left") ? 0 : "auto",
-            right: effectivePosition.includes("right") ? 0 : "auto",
-          }}
-          role="menu"
-        >
-          {renderMenuItems(items)}
-        </Box>
-      )}
-    </Box>
+      {panel && typeof document !== "undefined"
+        ? createPortal(panel, document.body)
+        : panel}
+    </>
   );
 };
 
