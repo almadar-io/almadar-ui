@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { IsometricCanvas } from './IsometricCanvas';
+import { IsometricCanvas } from '../molecules/IsometricCanvas';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from './types/isometric';
 
 // =============================================================================

@@ -10,8 +10,6 @@
 // ---------------------------------------------------------------------------
 // Core Canvas Components
 // ---------------------------------------------------------------------------
-export { IsometricCanvas, type IsometricCanvasProps } from './IsometricCanvas';
-export { PlatformerCanvas, type PlatformerCanvasProps, type PlatformerPlatform, type PlatformerPlayer } from './PlatformerCanvas';
 // GameCanvas3D and Three.js components are NOT barrel-exported because they depend on
 // @react-three/fiber + three which are optional peer dependencies.
 // Import directly from './GameCanvas3D' or './three' if needed.
@@ -115,15 +113,6 @@ export {
 export { SPRITE_SHEET_LAYOUT, SHEET_COLUMNS } from './utils/spriteSheetConstants';
 
 // ---------------------------------------------------------------------------
-// Retained Pattern-Compliant Components
-// ---------------------------------------------------------------------------
-export { GameHud, type GameHudProps, type GameHudStat, type GameHudElement } from './GameHud';
-export { GameMenu, type GameMenuProps, type MenuOption } from './GameMenu';
-export { GameOverScreen, type GameOverScreenProps, type GameOverStat, type GameOverAction } from './GameOverScreen';
-export { InventoryPanel, type InventoryPanelProps, type InventoryItem } from './InventoryPanel';
-export { DialogueBox, type DialogueBoxProps, type DialogueNode, type DialogueChoice } from './DialogueBox';
-
-// ---------------------------------------------------------------------------
 // Board Organisms (game-logic containers — templates are thin wrappers)
 // ---------------------------------------------------------------------------
 export {
@@ -225,12 +214,6 @@ export * from './puzzles/negotiator';
 // Physics Simulation (educational presets)
 // ---------------------------------------------------------------------------
 export * from './physics-sim';
-
-// ---------------------------------------------------------------------------
-// Combat Log
-// ---------------------------------------------------------------------------
-export { CombatLog } from './CombatLog';
-export type { CombatLogProps, CombatEvent, CombatLogEventType } from './CombatLog';
 
 // ---------------------------------------------------------------------------
 // Game Types (tactical game state)

@@ -27,7 +27,7 @@ import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { VStack, HStack, Stack } from '../../core/atoms/Stack';
 import { LoadingState } from '../../core/molecules/LoadingState';
-import IsometricCanvas from './IsometricCanvas';
+import IsometricCanvas from '../molecules/IsometricCanvas';
 import type {
     IsometricTile,
     IsometricUnit,

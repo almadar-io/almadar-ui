@@ -8,7 +8,7 @@
 
 import React, { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
-import { IsometricCanvas } from './IsometricCanvas';
+import { IsometricCanvas } from '../molecules/IsometricCanvas';
 import { GameCanvas3D } from './GameCanvas3D';
 import { usePhysics2D } from './hooks/usePhysics2D';
 import { PhysicsObject3D } from './three/components/PhysicsObject3D';

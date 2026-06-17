@@ -18,7 +18,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
-import IsometricCanvas from './IsometricCanvas';
+import IsometricCanvas from '../molecules/IsometricCanvas';
 import type {
     IsometricTile,
     IsometricUnit,

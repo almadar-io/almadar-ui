@@ -30,7 +30,7 @@ import { Button } from '../../core/atoms/Button';
 import { Typography } from '../../core/atoms/Typography';
 import { VStack, HStack } from '../../core/atoms/Stack';
 import type { DisplayStateProps } from '../../core/organisms/types';
-import IsometricCanvas from './IsometricCanvas';
+import IsometricCanvas from '../molecules/IsometricCanvas';
 import type {
     IsometricTile,
     IsometricUnit,

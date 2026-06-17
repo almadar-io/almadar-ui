@@ -14,7 +14,7 @@
 
 import React, { useState, useCallback } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import IsometricCanvas from './IsometricCanvas';
+import IsometricCanvas from '../molecules/IsometricCanvas';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from './types/isometric';
 import { Box } from '../../core/atoms/Box';
 import { VStack, HStack } from '../../core/atoms/Stack';
