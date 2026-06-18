@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "5.30.0",
+  "version": "5.31.0",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "sideEffects": [
@@ -174,10 +174,18 @@
     "three": "^0.160.0"
   },
   "peerDependenciesMeta": {
-    "@react-three/drei": { "optional": true },
-    "@react-three/fiber": { "optional": true },
-    "@react-three/postprocessing": { "optional": true },
-    "three": { "optional": true }
+    "@react-three/drei": {
+      "optional": true
+    },
+    "@react-three/fiber": {
+      "optional": true
+    },
+    "@react-three/postprocessing": {
+      "optional": true
+    },
+    "three": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@almadar/eslint-plugin": "^2.8.2",
