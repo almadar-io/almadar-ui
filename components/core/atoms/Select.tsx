@@ -8,6 +8,12 @@ export interface SelectOption {
   value: string;
   label: string;
   disabled?: boolean;
+  /** Leading content rendered in rich mode only (native mode ignores this). */
+  icon?: React.ReactNode;
+  /** Secondary line of text rendered below label in rich mode only. */
+  secondaryLabel?: string;
+  /** dir attribute applied to the option row in rich mode only. */
+  dir?: string;
 }
 
 export interface SelectOptionGroup {
@@ -199,6 +205,7 @@ function RichSelect({
       <button
         key={opt.value}
         type="button"
+        dir={opt.dir}
         disabled={opt.disabled}
         onClick={() => !opt.disabled && toggle(opt.value)}
         className={cn(
@@ -208,9 +215,19 @@ function RichSelect({
           selected.includes(opt.value) && "text-primary font-medium",
         )}
       >
-        <span>{opt.label}</span>
+        <span className="flex items-center gap-2 min-w-0">
+          {opt.icon != null && (
+            <span className="shrink-0 flex items-center">{opt.icon}</span>
+          )}
+          <span className="flex flex-col min-w-0">
+            <span>{opt.label}</span>
+            {opt.secondaryLabel != null && (
+              <span className="text-xs text-muted-foreground font-normal">{opt.secondaryLabel}</span>
+            )}
+          </span>
+        </span>
         {selected.includes(opt.value) && (
-          <Icon name="check" className="h-icon-default w-icon-default" />
+          <Icon name="check" className="h-icon-default w-icon-default shrink-0" />
         )}
       </button>
     ));
