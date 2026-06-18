@@ -125,6 +125,17 @@ export {
   type CaseStudyOrganismProps,
 } from "../../marketing/organisms/CaseStudyOrganism";
 
+// Generative-UI primitives (math/code/lesson)
+export {
+  CodeRunnerPanel,
+  type CodeRunnerPanelProps,
+  type CodeSimulationOutput,
+} from './CodeRunnerPanel';
+export {
+  SegmentRenderer,
+  type SegmentRendererProps,
+} from './SegmentRenderer';
+
 // Phase 10: organisms moved to molecules (no entity binding) or expressed in std render-ui (domain-shaped).
 
 // FeatureRenderer is three.js-backed (imports @react-three/fiber at module top)

@@ -249,3 +249,11 @@ export {
   type GraphNode,
   type GraphEdge,
 } from "./GraphCanvas";
+
+// Learning-science molecules (generative-UI primitives)
+export { ActivationBlock, type ActivationBlockProps } from './ActivationBlock';
+export { ReflectionBlock, type ReflectionBlockProps } from './ReflectionBlock';
+export { ConnectionBlock, type ConnectionBlockProps } from './ConnectionBlock';
+export { BloomQuizBlock, type BloomQuizBlockProps, type BloomLevel } from './BloomQuizBlock';
+export { parseLessonSegments, type LessonSegment, type LessonUserProgress } from './parseLessonSegments';
+export { parseMarkdownWithCodeBlocks, type MixedSegment } from './lessonSegmentUtils';
