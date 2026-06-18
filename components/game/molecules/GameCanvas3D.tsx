@@ -30,7 +30,7 @@ import * as THREE from 'three';
 import { OrbitControls, Grid } from '@react-three/drei';
 import { AssetLoader, assetLoader } from './three/loaders/AssetLoader';
 import { useAssetLoader } from './three/hooks/useAssetLoader';
-import { useGameCanvas3DEvents } from './three/hooks/useGameCanvas3DEvents';
+import { useGameCanvas3DEvents, type MinimalMouseEvent } from './three/hooks/useGameCanvas3DEvents';
 import { Canvas3DLoadingState } from './three/components/Canvas3DLoadingState';
 import { Canvas3DErrorBoundary } from './three/components/Canvas3DErrorBoundary';
 import { ModelLoader } from './three/components/ModelLoader';
@@ -99,15 +99,15 @@ export interface GameCanvas3DProps {
     /** Background color */
     backgroundColor?: string;
     /** Callback when a tile is clicked */
-    onTileClick?: (tile: IsometricTile, event: React.MouseEvent) => void;
+    onTileClick?: (tile: IsometricTile, event: MinimalMouseEvent) => void;
     /** Callback when a unit is clicked */
-    onUnitClick?: (unit: IsometricUnit, event: React.MouseEvent) => void;
+    onUnitClick?: (unit: IsometricUnit, event: MinimalMouseEvent) => void;
     /** Callback when a feature is clicked */
-    onFeatureClick?: (feature: IsometricFeature, event: React.MouseEvent) => void;
+    onFeatureClick?: (feature: IsometricFeature, event: MinimalMouseEvent) => void;
     /** Callback when canvas is clicked (background) */
-    onCanvasClick?: (event: React.MouseEvent) => void;
+    onCanvasClick?: (event: MinimalMouseEvent) => void;
     /** Callback when mouse moves over a tile */
-    onTileHover?: (tile: IsometricTile | null, event: React.MouseEvent) => void;
+    onTileHover?: (tile: IsometricTile | null, event: MinimalMouseEvent) => void;
     /** Callback for unit animation state change */
     onUnitAnimation?: (unitId: string, state: string) => void;
     /** Asset loader instance (uses global singleton if not provided) */
@@ -387,7 +387,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
 
         // Handle tile click with event bus
         const handleTileClick = useCallback(
-            (tile: IsometricTile, event: any) => {
+            (tile: IsometricTile, event: MinimalMouseEvent) => {
                 eventHandlers.handleTileClick(tile, event);
             },
             [eventHandlers]
@@ -395,7 +395,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
 
         // Handle unit click with event bus
         const handleUnitClick = useCallback(
-            (unit: IsometricUnit, event: any) => {
+            (unit: IsometricUnit, event: MinimalMouseEvent) => {
                 eventHandlers.handleUnitClick(unit, event);
             },
             [eventHandlers]
@@ -403,7 +403,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
 
         // Handle feature click with event bus
         const handleFeatureClick = useCallback(
-            (feature: IsometricFeature, event: React.MouseEvent | null) => {
+            (feature: IsometricFeature, event: MinimalMouseEvent | null) => {
                 if (event) {
                     eventHandlers.handleFeatureClick(feature, event);
                 }
@@ -413,7 +413,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
 
         // Handle tile hover with event bus
         const handleTileHover = useCallback(
-            (tile: IsometricTile | null, event: React.MouseEvent | null) => {
+            (tile: IsometricTile | null, event: MinimalMouseEvent | null) => {
                 setHoveredTile(tile);
                 if (event) {
                     eventHandlers.handleTileHover(tile, event);
@@ -477,12 +477,35 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                 else if (isValidMove) emissive = 0x004400;
                 else if (isHovered) emissive = 0x222222;
 
+                // GLB tile — load the model (box fallback while loading / on error).
+                // The GLB's own materials provide coloring; the procedural color/
+                // emissive path below is only for tiles without a model.
+                if (tile.modelUrl) {
+                    return (
+                        <group
+                            position={position}
+                            onClick={(e) => handleTileClick(tile, e)}
+                            onPointerEnter={(e) => handleTileHover(tile, e)}
+                            onPointerLeave={(e) => handleTileHover(null, e)}
+                            userData={{ type: 'tile', tileId: tile.id, gridX: tile.x, gridZ: tile.z ?? tile.y }}
+                        >
+                            <ModelLoader
+                                url={tile.modelUrl}
+                                scale={0.95}
+                                fallbackGeometry="box"
+                                castShadow
+                                receiveShadow
+                            />
+                        </group>
+                    );
+                }
+
                 return (
                     <mesh
                         position={position}
                         onClick={(e) => handleTileClick(tile, e)}
-                        onPointerEnter={(e) => handleTileHover(tile, e as unknown as React.MouseEvent)}
-                        onPointerLeave={(e) => handleTileHover(null, e as unknown as React.MouseEvent)}
+                        onPointerEnter={(e) => handleTileHover(tile, e)}
+                        onPointerLeave={(e) => handleTileHover(null, e)}
                         userData={{ type: 'tile', tileId: tile.id, gridX: tile.x, gridZ: tile.z ?? tile.y }}
                     >
                         <boxGeometry args={[0.95, 0.2, 0.95]} />
@@ -513,23 +536,35 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                             </mesh>
                         )}
 
-                        {/* Base */}
-                        <mesh position={[0, 0.3, 0]}>
-                            <cylinderGeometry args={[0.3, 0.3, 0.1, 8]} />
-                            <meshStandardMaterial color={color} />
-                        </mesh>
+                        {unit.modelUrl ? (
+                            /* GLB unit model (box fallback while loading / on error) */
+                            <ModelLoader
+                                url={unit.modelUrl}
+                                scale={0.5}
+                                fallbackGeometry="box"
+                                castShadow
+                            />
+                        ) : (
+                            <>
+                                {/* Base */}
+                                <mesh position={[0, 0.3, 0]}>
+                                    <cylinderGeometry args={[0.3, 0.3, 0.1, 8]} />
+                                    <meshStandardMaterial color={color} />
+                                </mesh>
 
-                        {/* Body */}
-                        <mesh position={[0, 0.6, 0]}>
-                            <capsuleGeometry args={[0.2, 0.4, 4, 8]} />
-                            <meshStandardMaterial color={color} />
-                        </mesh>
+                                {/* Body */}
+                                <mesh position={[0, 0.6, 0]}>
+                                    <capsuleGeometry args={[0.2, 0.4, 4, 8]} />
+                                    <meshStandardMaterial color={color} />
+                                </mesh>
 
-                        {/* Head */}
-                        <mesh position={[0, 0.9, 0]}>
-                            <sphereGeometry args={[0.12, 8, 8]} />
-                            <meshStandardMaterial color={color} />
-                        </mesh>
+                                {/* Head */}
+                                <mesh position={[0, 0.9, 0]}>
+                                    <sphereGeometry args={[0.12, 8, 8]} />
+                                    <meshStandardMaterial color={color} />
+                                </mesh>
+                            </>
+                        )}
 
                         {/* Health bar */}
                         {unit.health !== undefined && unit.maxHealth !== undefined && (
@@ -593,7 +628,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                     return (
                         <group
                             position={position}
-                            onClick={(e) => handleFeatureClick(feature, e as unknown as React.MouseEvent)}
+                            onClick={(e) => handleFeatureClick(feature, e)}
                             userData={{ type: 'feature', featureId: feature.id }}
                         >
                             <mesh position={[0, 0.4, 0]}>
@@ -613,7 +648,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                     return (
                         <mesh
                             position={[position[0], position[1] + 0.3, position[2]]}
-                            onClick={(e) => handleFeatureClick(feature, e as unknown as React.MouseEvent)}
+                            onClick={(e) => handleFeatureClick(feature, e)}
                             userData={{ type: 'feature', featureId: feature.id }}
                         >
                             <dodecahedronGeometry args={[0.3, 0]} />

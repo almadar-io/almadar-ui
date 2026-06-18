@@ -41,30 +41,30 @@ export interface MinimalMouseEvent {
 
 export interface UseGameCanvas3DEventsOptions extends GameCanvas3DEventConfig {
     /** Callback for tile clicks (direct) */
-    onTileClick?: (tile: IsometricTile, event: React.MouseEvent) => void;
+    onTileClick?: (tile: IsometricTile, event: MinimalMouseEvent) => void;
     /** Callback for unit clicks (direct) */
-    onUnitClick?: (unit: IsometricUnit, event: React.MouseEvent) => void;
+    onUnitClick?: (unit: IsometricUnit, event: MinimalMouseEvent) => void;
     /** Callback for feature clicks (direct) */
-    onFeatureClick?: (feature: IsometricFeature, event: React.MouseEvent) => void;
+    onFeatureClick?: (feature: IsometricFeature, event: MinimalMouseEvent) => void;
     /** Callback for canvas clicks (direct) */
-    onCanvasClick?: (event: React.MouseEvent) => void;
+    onCanvasClick?: (event: MinimalMouseEvent) => void;
     /** Callback for tile hover (direct) */
-    onTileHover?: (tile: IsometricTile | null, event: React.MouseEvent) => void;
+    onTileHover?: (tile: IsometricTile | null, event: MinimalMouseEvent) => void;
     /** Callback for unit animation changes (direct) */
     onUnitAnimation?: (unitId: string, state: string) => void;
 }
 
 export interface UseGameCanvas3DEventsReturn {
     /** Handle tile click - emits event and calls callback */
-    handleTileClick: (tile: IsometricTile, event: React.MouseEvent) => void;
+    handleTileClick: (tile: IsometricTile, event: MinimalMouseEvent) => void;
     /** Handle unit click - emits event and calls callback */
-    handleUnitClick: (unit: IsometricUnit, event: React.MouseEvent) => void;
+    handleUnitClick: (unit: IsometricUnit, event: MinimalMouseEvent) => void;
     /** Handle feature click - emits event and calls callback */
-    handleFeatureClick: (feature: IsometricFeature, event: React.MouseEvent) => void;
+    handleFeatureClick: (feature: IsometricFeature, event: MinimalMouseEvent) => void;
     /** Handle canvas click - emits event and calls callback */
     handleCanvasClick: (event: MinimalMouseEvent) => void;
     /** Handle tile hover - emits event and calls callback */
-    handleTileHover: (tile: IsometricTile | null, event: React.MouseEvent) => void;
+    handleTileHover: (tile: IsometricTile | null, event: MinimalMouseEvent) => void;
     /** Handle unit animation - emits event and calls callback */
     handleUnitAnimation: (unitId: string, state: string) => void;
     /** Handle camera change - emits event */
@@ -116,7 +116,7 @@ export function useGameCanvas3DEvents(
     optionsRef.current = options;
 
     const handleTileClick = useCallback(
-        (tile: IsometricTile, event: React.MouseEvent) => {
+        (tile: IsometricTile, event: MinimalMouseEvent) => {
             // Emit declarative event
             if (tileClickEvent) {
                 emit(tileClickEvent, {
@@ -136,7 +136,7 @@ export function useGameCanvas3DEvents(
     );
 
     const handleUnitClick = useCallback(
-        (unit: IsometricUnit, event: React.MouseEvent) => {
+        (unit: IsometricUnit, event: MinimalMouseEvent) => {
             if (unitClickEvent) {
                 emit(unitClickEvent, {
                     unitId: unit.id,
@@ -157,7 +157,7 @@ export function useGameCanvas3DEvents(
     );
 
     const handleFeatureClick = useCallback(
-        (feature: IsometricFeature, event: React.MouseEvent) => {
+        (feature: IsometricFeature, event: MinimalMouseEvent) => {
             if (featureClickEvent) {
                 emit(featureClickEvent, {
                     featureId: feature.id,
@@ -183,13 +183,13 @@ export function useGameCanvas3DEvents(
                 });
             }
 
-            optionsRef.current.onCanvasClick?.(event as React.MouseEvent);
+            optionsRef.current.onCanvasClick?.(event);
         },
         [canvasClickEvent, emit]
     );
 
     const handleTileHover = useCallback(
-        (tile: IsometricTile | null, event: React.MouseEvent) => {
+        (tile: IsometricTile | null, event: MinimalMouseEvent) => {
             if (tile) {
                 if (tileHoverEvent) {
                     emit(tileHoverEvent, {

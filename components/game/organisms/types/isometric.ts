@@ -59,6 +59,8 @@ export type IsometricUnit = {
     z?: number;
     /** Static sprite URL (used when no sprite sheet animation) */
     sprite?: AssetUrl;
+    /** 3D model URL (GLB format) for GameCanvas3D — rendered via ModelLoader with box fallback */
+    modelUrl?: AssetUrl;
     /** Unit archetype key for sprite resolution */
     unitType?: string;
     /** Hero identifier for sprite sheet lookup */
