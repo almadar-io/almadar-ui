@@ -50,12 +50,12 @@ export function RuleEditor({
     className,
 }: RuleEditorProps): React.JSX.Element {
     const { t } = useTranslate();
-    const handleWhenChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-        onChange({ ...rule, whenEvent: e.target.value });
+    const handleWhenChange = useCallback((v: string | string[]) => {
+        onChange({ ...rule, whenEvent: v as string });
     }, [rule, onChange]);
 
-    const handleThenChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-        onChange({ ...rule, thenAction: e.target.value });
+    const handleThenChange = useCallback((v: string | string[]) => {
+        onChange({ ...rule, thenAction: v as string });
     }, [rule, onChange]);
 
     return (

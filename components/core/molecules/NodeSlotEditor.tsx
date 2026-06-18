@@ -78,7 +78,7 @@ export const NodeSlotEditor: React.FC<NodeSlotEditorProps> = ({ value, onChange,
       <Select
         options={options}
         value={type}
-        onChange={(e) => emit(e.target.value, props)}
+        onChange={(v) => emit(v as string, props)}
       />
       {type !== '' && (
         <VStack gap="none" className="pl-1">

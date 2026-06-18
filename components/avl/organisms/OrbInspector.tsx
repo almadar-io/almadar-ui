@@ -564,7 +564,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
                           <Select
                             value={f.type}
                             options={FIELD_TYPE_OPTIONS}
-                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleUpdateField(f.name, { type: e.target.value })}
+                            onChange={(v) => handleUpdateField(f.name, { type: v as string })}
                             className="w-20 text-xs h-6"
                           />
                           <Button

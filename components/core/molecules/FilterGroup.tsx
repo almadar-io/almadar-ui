@@ -337,8 +337,8 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
             ) : (
               <Select
                 value={selectedValues[filter.field] || "all"}
-                onChange={(e) =>
-                  handleFilterSelect(filter.field, e.target.value)
+                onChange={(v) =>
+                  handleFilterSelect(filter.field, v as string)
                 }
                 options={[
                   { value: "all", label: t('filterGroup.all') },
@@ -431,8 +431,8 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
             ) : (
               <Select
                 value={selectedValues[filter.field] || "all"}
-                onChange={(e) =>
-                  handleFilterSelect(filter.field, e.target.value)
+                onChange={(v) =>
+                  handleFilterSelect(filter.field, v as string)
                 }
                 options={[
                   { value: "all", label: t('filterGroup.allOf', { label: filter.label }) },
@@ -565,8 +565,8 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
             ) : (
               <Select
                 value={selectedValues[filter.field] || "all"}
-                onChange={(e) =>
-                  handleFilterSelect(filter.field, e.target.value)
+                onChange={(v) =>
+                  handleFilterSelect(filter.field, v as string)
                 }
                 options={[
                   { value: "all", label: t('filterGroup.all') },

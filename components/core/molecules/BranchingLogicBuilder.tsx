@@ -116,12 +116,12 @@ const RuleRow: React.FC<RuleRowProps> = ({
     return sourceQuestion.optionValues.map((v) => ({ value: v, label: v }));
   }, [sourceQuestion]);
 
-  const handleSource = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onChange({ ...rule, sourceQuestionId: e.target.value });
+  const handleSource = (v: string | string[]) => {
+    onChange({ ...rule, sourceQuestionId: v as string });
   };
 
-  const handleOperator = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const next = e.target.value as BranchingOperator;
+  const handleOperator = (v: string | string[]) => {
+    const next = v as BranchingOperator;
     const nextValue: string | string[] =
       next === 'in' && !Array.isArray(rule.value)
         ? rule.value
@@ -137,12 +137,12 @@ const RuleRow: React.FC<RuleRowProps> = ({
     onChange({ ...rule, value: e.target.value });
   };
 
-  const handleAddChip = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const v = e.target.value;
-    if (!v) return;
+  const handleAddChip = (v: string | string[]) => {
+    const val = v as string;
+    if (!val) return;
     const current = Array.isArray(rule.value) ? rule.value : [];
-    if (current.includes(v)) return;
-    onChange({ ...rule, value: [...current, v] });
+    if (current.includes(val)) return;
+    onChange({ ...rule, value: [...current, val] });
   };
 
   const handleRemoveChip = (chip: string) => {
@@ -150,8 +150,8 @@ const RuleRow: React.FC<RuleRowProps> = ({
     onChange({ ...rule, value: current.filter((c) => c !== chip) });
   };
 
-  const handleTarget = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    onChange({ ...rule, targetQuestionId: e.target.value as BranchingRule['targetQuestionId'] });
+  const handleTarget = (v: string | string[]) => {
+    onChange({ ...rule, targetQuestionId: v as BranchingRule['targetQuestionId'] });
   };
 
   const isMulti = rule.operator === 'in';
@@ -238,9 +238,7 @@ const RuleRow: React.FC<RuleRowProps> = ({
                 options={valueOptions}
                 value={scalarValue}
                 placeholder={t('branchingLogic.selectValue')}
-                onChange={(e) =>
-                  onChange({ ...rule, value: (e.target as HTMLSelectElement).value })
-                }
+                onChange={(v) => onChange({ ...rule, value: v as string })}
                 disabled={readOnly}
               />
             ) : (

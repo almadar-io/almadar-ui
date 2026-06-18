@@ -178,8 +178,8 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
     }, [diff]);
 
     const handleBeforeChange = useCallback(
-        (e: React.ChangeEvent<HTMLSelectElement>) => {
-            const id = e.target.value;
+        (v: string | string[]) => {
+            const id = v as string;
             setInternalBefore(id);
             onSelectBefore?.(id);
             if (selectBeforeEvent) eventBus.emit(`UI:${selectBeforeEvent}`, { id });
@@ -188,8 +188,8 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
     );
 
     const handleAfterChange = useCallback(
-        (e: React.ChangeEvent<HTMLSelectElement>) => {
-            const id = e.target.value;
+        (v: string | string[]) => {
+            const id = v as string;
             setInternalAfter(id);
             onSelectAfter?.(id);
             if (selectAfterEvent) eventBus.emit(`UI:${selectAfterEvent}`, { id });
