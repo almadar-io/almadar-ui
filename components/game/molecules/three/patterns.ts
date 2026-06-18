@@ -17,3 +17,4 @@ export { GameCanvas3D } from '../GameCanvas3D';
 export { GameCanvas3DBattleTemplate } from '../../templates/GameCanvas3DBattleTemplate';
 export { GameCanvas3DCastleTemplate } from '../../templates/GameCanvas3DCastleTemplate';
 export { GameCanvas3DWorldMapTemplate } from '../../templates/GameCanvas3DWorldMapTemplate';
+export { FeatureRenderer } from './renderers/FeatureRenderer';

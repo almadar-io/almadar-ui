@@ -989,7 +989,7 @@ export const Form: React.FC<FormProps> = ({
             {...commonProps}
             options={options}
             value={String(currentValue)}
-            onChange={(e) => handleChange(fieldName, e.target.value)}
+            onChange={(v) => handleChange(fieldName, v as string)}
             placeholder={field.placeholder || `Select ${label}...`}
           />
         );

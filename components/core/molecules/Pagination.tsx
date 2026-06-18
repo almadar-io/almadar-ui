@@ -185,7 +185,7 @@ export const Pagination: React.FC<PaginationProps> = ({
             </Typography>
             <Select
               value={String(pageSize)}
-              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+              onChange={(v) => handlePageSizeChange(Number(v as string))}
               options={pageSizeOptions.map((size) => ({
                 value: String(size),
                 label: String(size),

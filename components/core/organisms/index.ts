@@ -127,8 +127,10 @@ export {
 
 // Phase 10: organisms moved to molecules (no entity binding) or expressed in std render-ui (domain-shaped).
 
-// FeatureRenderer — surfaced from organisms/game/three/renderers so the
-// `feature-renderer` pattern resolves through the top-level
-// `@almadar/ui/components` barrel. The deeper three.js modules remain
-// import-on-demand via `@almadar/ui/components/organisms/game/three`.
-export { FeatureRenderer, type FeatureRendererProps } from '../../game/molecules/three/renderers/FeatureRenderer';
+// FeatureRenderer is three.js-backed (imports @react-three/fiber at module top)
+// and is intentionally NOT exported here — a value export from this main-reachable
+// barrel statically hoists @react-three/fiber into the main bundle for every app.
+// It ships code-split behind the optional
+// `@almadar/ui/components/molecules/game/three` subpath (see
+// ../../game/molecules/three/patterns.ts) and renders lazily via the component
+// registry. The pattern scanner reads that subpath, so no shadow export is needed.
