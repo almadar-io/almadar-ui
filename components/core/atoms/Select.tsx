@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import type { EventKey } from "@almadar/core";
+import type { EventKey, EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Icon } from "./Icon";
 import { useEventBus } from "../../../hooks/useEventBus";
@@ -47,8 +47,26 @@ export interface SelectProps extends Omit<
   clearable?: boolean;
   /** onChange handler (native ChangeEvent) or declarative event key for trait dispatch */
   onChange?: React.ChangeEventHandler<HTMLSelectElement> | EventKey;
-  /** Value-based callback — receives the selected string (or string[] for multiple). */
-  onValueChange?: (value: string | string[]) => void;
+  /** Value-based change: a React callback (internal use) OR a declarative event
+   *  key that emits `{ value }` on the bus (render-ui / lolo authoring). Mirrors
+   *  the `onChange` handler|event convention so it's an event-emitting prop, not a
+   *  bare callback. */
+  onValueChange?: ((value: string | string[]) => void) | EventEmit<{ value: string | string[] }>;
+}
+
+/** Dispatch an `onValueChange` value: emit on the bus when it's a declarative
+ *  event key (string), otherwise invoke the React callback. Mirrors the inline
+ *  `onChange` handling so both prop forms work. */
+function dispatchValueChange(
+  onValueChange: SelectProps["onValueChange"],
+  eventBus: ReturnType<typeof useEventBus>,
+  value: string | string[],
+): void {
+  if (typeof onValueChange === "string") {
+    eventBus.emit(`UI:${onValueChange}`, { value });
+  } else {
+    onValueChange?.(value);
+  }
 }
 
 // Flat list of all options across flat + grouped sources
@@ -78,7 +96,7 @@ function NativeSelect({
     } else {
       onChange?.(e);
     }
-    onValueChange?.(e.target.value);
+    dispatchValueChange(onValueChange, eventBus, e.target.value);
   };
 
   return (
@@ -169,7 +187,7 @@ function RichSelect({
     if (typeof onChange === "string") {
       eventBus.emit(`UI:${onChange}`, { value: next });
     }
-    onValueChange?.(next);
+    dispatchValueChange(onValueChange, eventBus, next);
   };
 
   const clear = (e: React.MouseEvent) => {
@@ -178,7 +196,7 @@ function RichSelect({
     if (typeof onChange === "string") {
       eventBus.emit(`UI:${onChange}`, { value: next });
     }
-    onValueChange?.(next);
+    dispatchValueChange(onValueChange, eventBus, next);
   };
 
   useEffect(() => {
