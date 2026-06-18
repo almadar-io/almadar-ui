@@ -8,6 +8,8 @@ export interface SpinnerProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Additional CSS classes applied to the root element. */
   className?: string;
   size?: SpinnerSize;
+  /** Renders a centered overlay backdrop instead of inline. */
+  overlay?: boolean;
 }
 
 const sizeStyles: Record<SpinnerSize, string> = {
@@ -18,7 +20,22 @@ const sizeStyles: Record<SpinnerSize, string> = {
 };
 
 export const Spinner = React.forwardRef<HTMLDivElement, SpinnerProps>(
-  ({ className, size = "md", ...props }, ref) => {
+  ({ className, size = "md", overlay, ...props }, ref) => {
+    if (overlay) {
+      return (
+        <div
+          ref={ref}
+          className={cn(
+            "absolute inset-0 z-10 flex items-center justify-center",
+            "bg-background/60 backdrop-blur-sm",
+            className,
+          )}
+          {...props}
+        >
+          <Icon name="loader" className={cn("animate-spin text-foreground", sizeStyles[size])} />
+        </div>
+      );
+    }
     return (
       <div
         ref={ref}

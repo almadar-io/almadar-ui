@@ -2,6 +2,7 @@ import React from "react";
 import type { EventKey } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { Spinner } from "./Spinner";
 
 export type CardShadow = "none" | "sm" | "md" | "lg";
 
@@ -35,6 +36,8 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children?: React.ReactNode;
   /** Declarative event key emitted on click for trait dispatch */
   action?: EventKey;
+  /** Shows a skeleton/spinner overlay while true. */
+  loading?: boolean;
 }
 
 // Using CSS variables for theme-aware styling
@@ -115,6 +118,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       look = "elevated",
       children,
       action,
+      loading,
       onClick,
       ...props
     },
@@ -133,7 +137,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={cn(
-          "rounded-container",
+          "rounded-container relative",
           "transition-all duration-[var(--transition-normal)]",
           variantStyles[variant],
           paddingStyles[padding],
@@ -144,6 +148,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
         onClick={handleClick}
         {...props}
       >
+        {loading && <Spinner overlay size="md" />}
         {(title || subtitle) && (
           <div className="mb-4">
             {title && (

@@ -69,6 +69,10 @@ export interface MenuProps {
   position?: MenuPosition;
   /** Additional CSS classes */
   className?: string;
+  /** Optional slot rendered above the items. */
+  header?: React.ReactNode;
+  /** Optional slot rendered below the items. */
+  footer?: React.ReactNode;
 }
 
 const MENU_GAP = 4;
@@ -199,6 +203,8 @@ export const Menu: React.FC<MenuProps> = ({
   items,
   position = "bottom-left",
   className,
+  header,
+  footer,
 }) => {
   const eventBus = useEventBus();
   const { direction } = useTranslate();
@@ -371,7 +377,9 @@ export const Menu: React.FC<MenuProps> = ({
       style={computeMenuStyle(effectivePosition, triggerRect)}
       role="menu"
     >
+      {header && <div className="px-4 py-2 border-b border-border">{header}</div>}
       {renderMenuItems(items)}
+      {footer && <div className="px-4 py-2 border-t border-border">{footer}</div>}
     </div>
   ) : null;
 

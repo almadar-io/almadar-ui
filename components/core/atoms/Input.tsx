@@ -69,6 +69,8 @@ export const Input = React.forwardRef<
       className,
       inputType,
       type: htmlType,
+      label,
+      helperText,
       error,
       leftIcon,
       rightIcon,
@@ -138,9 +140,25 @@ export const Input = React.forwardRef<
       }
     };
 
+    const wrapField = (field: React.ReactNode) => (
+      <div className="w-full">
+        {label && (
+          <label className="block text-sm font-medium text-foreground mb-1">
+            {label}
+          </label>
+        )}
+        {field}
+        {(helperText || error) && (
+          <p className={cn("mt-1 text-xs", error ? "text-error" : "text-muted-foreground")}>
+            {error ?? helperText}
+          </p>
+        )}
+      </div>
+    );
+
     // Handle select type
     if (type === "select") {
-      return (
+      return wrapField(
         <div className="relative w-full">
           {resolvedLeftIcon && (
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">
@@ -170,7 +188,7 @@ export const Input = React.forwardRef<
 
     // Handle textarea type
     if (type === "textarea") {
-      return (
+      return wrapField(
         <div className="relative w-full">
           <textarea
             ref={ref as React.Ref<HTMLTextAreaElement>}
@@ -186,7 +204,7 @@ export const Input = React.forwardRef<
 
     // Handle checkbox type
     if (type === "checkbox") {
-      return (
+      return wrapField(
         <input
           ref={ref as React.Ref<HTMLInputElement>}
           type="checkbox"
@@ -205,7 +223,7 @@ export const Input = React.forwardRef<
     }
 
     // Standard input types
-    return (
+    return wrapField(
       <div className="relative w-full">
         {resolvedLeftIcon && (
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-muted-foreground">

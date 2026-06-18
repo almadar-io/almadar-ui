@@ -126,15 +126,24 @@ function ValueNode({
   value,
   onChange,
   depth,
+  readonly,
 }: {
   value: V;
   onChange: (next: V) => void;
   depth: number;
+  readonly?: boolean;
 }): React.ReactElement {
   const kind = kindOf(value);
 
   if (kind === 'object' || kind === 'array') {
-    return <ContainerNode value={value} onChange={onChange} depth={depth} />;
+    return <ContainerNode value={value} onChange={onChange} depth={depth} readonly={readonly} />;
+  }
+  if (readonly) {
+    return (
+      <Typography variant="caption" className="font-mono text-foreground">
+        {value === null ? 'null' : String(value)}
+      </Typography>
+    );
   }
   return <ScalarControl value={value} onChange={onChange} />;
 }
