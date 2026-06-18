@@ -6,9 +6,10 @@
  * @packageDocumentation
  */
 
-// GameCanvas3D runtime is lazy (three.js code-split). Type-only exports below satisfy the
-// G7 public-barrel gate so pattern-sync can emit a factory, without pulling three.js into main.
-export type { GameCanvas3D, GameCanvas3DProps, GameCanvas3DHandle, GameEvent, CameraMode, MapOrientation, OverlayControl } from './GameCanvas3D';
+// GameCanvas3D and the 3D templates are three.js-backed and intentionally NOT
+// exported here — they ship code-split behind the optional
+// `@almadar/ui/components/molecules/game/three` subpath (see ./three/patterns.ts).
+// The pattern scanner reads that subpath directly, so no shadow export is needed.
 
 export { DPad, type DPadProps, type DPadDirection } from './DPad';
 export { ActionButtons, type ActionButtonsProps, type ActionButtonConfig } from './ActionButtons';

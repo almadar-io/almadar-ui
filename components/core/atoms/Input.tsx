@@ -39,6 +39,8 @@ export interface InputProps extends Omit<
   | "checkbox"
   | "select"
   | "textarea";
+  label?: string;
+  helperText?: string;
   error?: string;
   leftIcon?: IconInput;
   rightIcon?: IconInput;

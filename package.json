@@ -173,6 +173,12 @@
     "react-router-dom": "^7.0.0",
     "three": "^0.160.0"
   },
+  "peerDependenciesMeta": {
+    "@react-three/drei": { "optional": true },
+    "@react-three/fiber": { "optional": true },
+    "@react-three/postprocessing": { "optional": true },
+    "three": { "optional": true }
+  },
   "devDependencies": {
     "@almadar/eslint-plugin": "^2.8.2",
     "@react-three/drei": "^10.7.7",

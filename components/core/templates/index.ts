@@ -75,8 +75,8 @@ export {
   type AboutPageEntity,
 } from '../../marketing/templates/AboutPageTemplate';
 
-// 3D Game Canvas Templates — runtime is lazy (three.js code-split). Type-only exports satisfy
-// the G7 public-barrel gate so pattern-sync emits factories, without pulling three.js into main.
-export type { GameCanvas3DBattleTemplate, GameCanvas3DBattleTemplateProps } from '../../game/templates/GameCanvas3DBattleTemplate';
-export type { GameCanvas3DCastleTemplate, GameCanvas3DCastleTemplateProps } from '../../game/templates/GameCanvas3DCastleTemplate';
-export type { GameCanvas3DWorldMapTemplate, GameCanvas3DWorldMapTemplateProps } from '../../game/templates/GameCanvas3DWorldMapTemplate';
+// 3D Game Canvas Templates are three.js-backed and intentionally NOT exported
+// here — they ship code-split behind the optional
+// `@almadar/ui/components/molecules/game/three` subpath (see
+// ../../game/molecules/three/patterns.ts). The pattern scanner reads that
+// subpath directly, so no shadow export is needed.
