@@ -140,7 +140,7 @@ export function FieldControl({
       <Select
         options={decl.values.map((v) => ({ value: v, label: v }))}
         value={typeof value === 'string' ? value : ''}
-        onChange={(v) => onChange(name, v as string)}
+        onValueChange={(v) => onChange(name, v as string)}
       />
     );
   } else if (decl.type === 'number') {

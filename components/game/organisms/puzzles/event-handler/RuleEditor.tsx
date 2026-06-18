@@ -65,7 +65,7 @@ export function RuleEditor({
             </Typography>
             <Select
                 value={rule.whenEvent}
-                onChange={handleWhenChange}
+                onValueChange={handleWhenChange}
                 options={availableEvents}
                 disabled={disabled}
                 className="flex-1 min-w-0"
@@ -75,7 +75,7 @@ export function RuleEditor({
             </Typography>
             <Select
                 value={rule.thenAction}
-                onChange={handleThenChange}
+                onValueChange={handleThenChange}
                 options={availableActions}
                 disabled={disabled}
                 className="flex-1 min-w-0"

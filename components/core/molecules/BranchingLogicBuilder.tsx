@@ -177,7 +177,7 @@ const RuleRow: React.FC<RuleRowProps> = ({
             options={sourceOptions}
             value={rule.sourceQuestionId}
             placeholder={t('branchingLogic.selectQuestion')}
-            onChange={handleSource}
+            onValueChange={handleSource}
             disabled={readOnly}
             error={broken ? t('branchingLogic.brokenReference') : undefined}
           />
@@ -187,7 +187,7 @@ const RuleRow: React.FC<RuleRowProps> = ({
           <Select
             options={operatorOptions}
             value={rule.operator}
-            onChange={handleOperator}
+            onValueChange={handleOperator}
             disabled={readOnly}
           />
         </Box>
@@ -210,7 +210,7 @@ const RuleRow: React.FC<RuleRowProps> = ({
                   options={valueOptions.filter((o) => !chips.includes(o.value))}
                   value=""
                   placeholder={t('branchingLogic.addValue')}
-                  onChange={handleAddChip}
+                  onValueChange={handleAddChip}
                   disabled={readOnly}
                 />
               </Box>
@@ -238,7 +238,7 @@ const RuleRow: React.FC<RuleRowProps> = ({
                 options={valueOptions}
                 value={scalarValue}
                 placeholder={t('branchingLogic.selectValue')}
-                onChange={(v) => onChange({ ...rule, value: v as string })}
+                onValueChange={(v) => onChange({ ...rule, value: v as string })}
                 disabled={readOnly}
               />
             ) : (
@@ -263,7 +263,7 @@ const RuleRow: React.FC<RuleRowProps> = ({
             options={targetOptions}
             value={rule.targetQuestionId}
             placeholder={t('branchingLogic.selectTarget')}
-            onChange={handleTarget}
+            onValueChange={handleTarget}
             disabled={readOnly}
             error={
               broken && rule.targetQuestionId !== END_OF_SURVEY

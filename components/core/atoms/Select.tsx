@@ -39,8 +39,10 @@ export interface SelectProps extends Omit<
   searchable?: boolean;
   /** Show a clear button when a value is selected. */
   clearable?: boolean;
-  /** onChange handler or declarative event key for trait dispatch */
-  onChange?: ((value: string | string[]) => void) | EventKey;
+  /** onChange handler (native ChangeEvent) or declarative event key for trait dispatch */
+  onChange?: React.ChangeEventHandler<HTMLSelectElement> | EventKey;
+  /** Value-based callback — receives the selected string (or string[] for multiple). */
+  onValueChange?: (value: string | string[]) => void;
 }
 
 // Flat list of all options across flat + grouped sources
@@ -58,6 +60,7 @@ function NativeSelect({
   placeholder,
   error,
   onChange,
+  onValueChange,
   value,
   ...props
 }: Omit<SelectProps, "multiple" | "searchable" | "clearable">) {
@@ -67,8 +70,9 @@ function NativeSelect({
     if (typeof onChange === "string") {
       eventBus.emit(`UI:${onChange}`, { value: e.target.value });
     } else {
-      onChange?.(e.target.value);
+      onChange?.(e);
     }
+    onValueChange?.(e.target.value);
   };
 
   return (
@@ -124,6 +128,7 @@ function RichSelect({
   placeholder,
   error,
   onChange,
+  onValueChange,
   value,
   multiple,
   searchable,
@@ -157,9 +162,8 @@ function RichSelect({
     }
     if (typeof onChange === "string") {
       eventBus.emit(`UI:${onChange}`, { value: next });
-    } else {
-      onChange?.(next);
     }
+    onValueChange?.(next);
   };
 
   const clear = (e: React.MouseEvent) => {
@@ -167,9 +171,8 @@ function RichSelect({
     const next = multiple ? [] : "";
     if (typeof onChange === "string") {
       eventBus.emit(`UI:${onChange}`, { value: next });
-    } else {
-      onChange?.(next);
     }
+    onValueChange?.(next);
   };
 
   useEffect(() => {

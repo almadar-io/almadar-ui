@@ -243,7 +243,7 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
                             <Select
                                 options={options}
                                 value={activeBeforeId}
-                                onChange={handleBeforeChange}
+                                onValueChange={handleBeforeChange}
                                 aria-label={t('versionDiff.beforeRevision')}
                             />
                         </Box>
@@ -254,7 +254,7 @@ export const VersionDiff: React.FC<VersionDiffProps> = ({
                             <Select
                                 options={options}
                                 value={activeAfterId}
-                                onChange={handleAfterChange}
+                                onValueChange={handleAfterChange}
                                 aria-label={t('versionDiff.afterRevision')}
                             />
                         </Box>
