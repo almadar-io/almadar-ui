@@ -158,6 +158,7 @@ function Row({
   onRenameKey,
   onChangeKind,
   onRemove,
+  readonly,
 }: {
   rowKey: string;
   isArrayItem: boolean;
@@ -167,6 +168,7 @@ function Row({
   onRenameKey: (next: string) => void;
   onChangeKind: (k: Kind) => void;
   onRemove: () => void;
+  readonly?: boolean;
 }): React.ReactElement {
   const [keyDraft, setKeyDraft] = React.useState(rowKey);
   React.useEffect(() => setKeyDraft(rowKey), [rowKey]);
@@ -175,9 +177,22 @@ function Row({
   return (
     <VStack gap="none" className="group w-max min-w-full">
       <HStack gap="xs" align="center" className="py-0.5 w-max">
-        <KindSelect kind={kindOf(value)} onChange={onChangeKind} />
+        {readonly ? (
+          <span className={cn(
+            'h-6 rounded-sm bg-muted text-muted-foreground text-[10px] font-mono px-1 flex items-center',
+            'border-[length:var(--border-width-thin)] border-border',
+          )}>
+            {TYPE_LABEL[kindOf(value)]}
+          </span>
+        ) : (
+          <KindSelect kind={kindOf(value)} onChange={onChangeKind} />
+        )}
         {isArrayItem ? (
           <Typography variant="caption" color="muted" className="w-6 shrink-0 font-mono">
+            {rowKey}
+          </Typography>
+        ) : readonly ? (
+          <Typography variant="caption" color="muted" className="w-20 shrink-0 font-mono truncate">
             {rowKey}
           </Typography>
         ) : (
@@ -194,21 +209,23 @@ function Row({
         )}
         {!container && (
           <div className="w-48 shrink-0">
-            <ValueNode value={value} onChange={onValue} depth={depth + 1} />
+            <ValueNode value={value} onChange={onValue} depth={depth + 1} readonly={readonly} />
           </div>
         )}
-        <Button
-          variant="ghost"
-          size="sm"
-          icon="x"
-          onClick={onRemove}
-          aria-label="Remove"
-          className="shrink-0 text-muted-foreground hover:text-error"
-        />
+        {!readonly && (
+          <Button
+            variant="ghost"
+            size="sm"
+            icon="x"
+            onClick={onRemove}
+            aria-label="Remove"
+            className="shrink-0 text-muted-foreground hover:text-error"
+          />
+        )}
       </HStack>
       {container && (
         <div className="pl-2">
-          <ValueNode value={value} onChange={onValue} depth={depth + 1} />
+          <ValueNode value={value} onChange={onValue} depth={depth + 1} readonly={readonly} />
         </div>
       )}
     </VStack>
@@ -220,10 +237,12 @@ function ContainerNode({
   value,
   onChange,
   depth,
+  readonly,
 }: {
   value: V;
   onChange: (next: V) => void;
   depth: number;
+  readonly?: boolean;
 }): React.ReactElement {
   const [open, setOpen] = React.useState(depth < 2);
   const array = isArr(value);
@@ -299,16 +318,19 @@ function ContainerNode({
               onRenameKey={(nk) => renameKey(k, nk)}
               onChangeKind={(kind) => (array ? changeArrKind(idx, kind) : changeObjKind(k, kind))}
               onRemove={() => (array ? removeArrIdx(idx) : removeObjKey(k))}
+              readonly={readonly}
             />
           ))}
-          <Button
-            variant="ghost"
-            size="sm"
-            icon="plus"
-            label={array ? 'Add item' : 'Add field'}
-            onClick={add}
-            className="self-start text-muted-foreground"
-          />
+          {!readonly && (
+            <Button
+              variant="ghost"
+              size="sm"
+              icon="plus"
+              label={array ? 'Add item' : 'Add field'}
+              onClick={add}
+              className="self-start text-muted-foreground"
+            />
+          )}
         </VStack>
       )}
     </VStack>
@@ -318,24 +340,19 @@ function ContainerNode({
 export interface JsonTreeEditorProps {
   /** Current value (object / array / scalar). */
   value: TraitConfigValue;
-  /** Fired with the next value on any edit. */
+  /** Fired with the next value on any edit. Unused in readonly mode. */
   onChange: (next: TraitConfigValue) => void;
   /** Additional CSS classes. */
   className?: string;
+  /** Suppresses all edit controls — renders a read-only viewer. */
+  readonly?: boolean;
 }
 
-/**
- * JsonTreeEditor — a visual, collapsible tree editor for any `TraitConfigValue`
- * (object / array / nested / scalar). Replaces raw `JSON.stringify` text editing:
- * each node renders a typed inline control, containers collapse, and rows can be
- * added, removed, retyped, and (for objects) re-keyed. Self-contained — styled
- * purely with `@almadar/ui` atoms + design tokens.
- */
-export const JsonTreeEditor: React.FC<JsonTreeEditorProps> = ({ value, onChange, className }) => {
+export const JsonTreeEditor: React.FC<JsonTreeEditorProps> = ({ value, onChange, className, readonly }) => {
   const root = value ?? '';
   return (
     <div className={cn('w-full overflow-x-auto rounded-sm bg-card/40 p-2 border-[length:var(--border-width-thin)] border-border', className)}>
-      <ValueNode value={root} onChange={onChange} depth={0} />
+      <ValueNode value={root} onChange={onChange} depth={0} readonly={readonly} />
     </div>
   );
 };

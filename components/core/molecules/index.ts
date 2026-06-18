@@ -17,7 +17,7 @@ export { FilterGroup, type FilterGroupProps, type FilterDefinition } from './Fil
 export { Card as ActionCard, type CardProps as ActionCardProps, type CardAction } from './Card';
 export { Container, type ContainerProps } from './Container';
 export { Flex, type FlexProps } from './Flex';
-export { FloatingActionButton, type FloatingActionButtonProps } from './FloatingActionButton';
+export { FloatingActionButton, type FloatingActionButtonProps, type FloatingAction } from './FloatingActionButton';
 export { Grid, type GridProps } from './Grid';
 export { InputGroup, type InputGroupProps } from './InputGroup';
 export { Menu, type MenuProps, type MenuItem } from './Menu';
