@@ -64,6 +64,7 @@ export const PricingPageTemplate: React.FC<PricingPageTemplateProps> = ({
 
   return (
     <VStack gap="none" className={cn('w-full', className)}>
+      {resolved.hero && (
       <HeroSection
         tag={resolved.hero.tag}
         title={resolved.hero.title}
@@ -71,6 +72,7 @@ export const PricingPageTemplate: React.FC<PricingPageTemplateProps> = ({
         subtitle={resolved.hero.subtitle}
         background={resolved.hero.background}
       />
+      )}
 
       <Box className="py-16">
         <Container size="xl" padding="lg">

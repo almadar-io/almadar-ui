@@ -102,6 +102,7 @@ export const LandingPageTemplate: React.FC<LandingPageTemplateProps> = ({
 
   return (
     <VStack gap="none" className={cn('w-full', className)}>
+      {resolved.hero && (
       <HeroSection
         tag={resolved.hero.tag}
         title={resolved.hero.title}
@@ -114,6 +115,7 @@ export const LandingPageTemplate: React.FC<LandingPageTemplateProps> = ({
         imagePosition={resolved.hero.imagePosition}
         background={resolved.hero.background}
       />
+      )}
 
       {Array.isArray(resolved.features) && resolved.features.length > 0 && (
         <Box className="bg-muted/20 py-16">

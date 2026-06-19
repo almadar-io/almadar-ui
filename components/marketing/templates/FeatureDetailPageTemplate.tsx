@@ -54,6 +54,7 @@ export const FeatureDetailPageTemplate: React.FC<FeatureDetailPageTemplateProps>
 
   return (
     <VStack gap="none" className={cn('w-full', className)}>
+      {resolved.hero && (
       <HeroSection
         tag={resolved.hero.tag}
         title={resolved.hero.title}
@@ -63,6 +64,7 @@ export const FeatureDetailPageTemplate: React.FC<FeatureDetailPageTemplateProps>
         secondaryAction={resolved.hero.secondaryAction}
         background={resolved.hero.background}
       />
+      )}
 
       {(Array.isArray(resolved.sections) ? resolved.sections : []).map((section, index) => (
         <SplitSection

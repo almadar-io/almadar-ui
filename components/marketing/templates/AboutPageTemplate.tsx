@@ -77,6 +77,7 @@ export const AboutPageTemplate: React.FC<AboutPageTemplateProps> = ({
 
   return (
     <VStack gap="none" className={cn('w-full', className)}>
+      {resolved.hero && (
       <HeroSection
         tag={resolved.hero.tag}
         title={resolved.hero.title}
@@ -86,6 +87,7 @@ export const AboutPageTemplate: React.FC<AboutPageTemplateProps> = ({
         secondaryAction={resolved.hero.secondaryAction}
         background={resolved.hero.background}
       />
+      )}
 
       {(Array.isArray(resolved.articles) ? resolved.articles : []).map((article, index) => (
         <Box
