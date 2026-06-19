@@ -1,17 +1,19 @@
- 
+
 /**
  * SimulatorBoard
  *
- * Parameter-slider game board. The player adjusts parameters
- * and observes real-time output. Correct parameter values
- * must bring the output within a target range to win.
+ * Parameter-slider game board. The player adjusts two parameters (A and B)
+ * and observes the machine-derived output. Correct parameter values must
+ * bring the output within tolerance of the target to win.
  *
  * Good for: physics, economics, system design stories.
  *
- * Events emitted via completeEvent (default UI:PUZZLE_COMPLETE).
+ * Controlled-only: params, output, attempts, and result are owned by the
+ * gameplay machine and read off the bound entity. Slider/check/play-again
+ * interactions are emitted as events; the machine recomputes and re-renders.
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState } from 'react';
 import type { EventEmit, EntityRow } from '@almadar/core';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../core/atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
@@ -20,7 +22,7 @@ import type { DisplayStateProps } from '../../../../core/organisms/types';
 import { boardEntity, str, num } from '../../boardEntity';
 import { Play, RotateCcw, CheckCircle, XCircle } from 'lucide-react';
 
-/** A tunable simulation parameter (UI value DTO read off the entity). */
+/** A tunable simulation parameter slider descriptor (UI value DTO read off the entity). */
 export interface SimulatorParameter {
   id: string;
   label: string;
@@ -35,14 +37,27 @@ export interface SimulatorParameter {
 
 export interface SimulatorBoardProps extends DisplayStateProps {
   /** Puzzle board-state entity (single row or array). The board reads the
-   *  `parameters` array plus title/description/target/hint off the row. */
+   *  `parameters` slider descriptors plus the machine-owned `paramA`/`paramB`/
+   *  `output`/`target`/`tolerance`/`attempts`/`result` fields off the row. */
   entity?: EntityRow | readonly EntityRow[];
   completeEvent?: EventEmit<{ success: boolean; attempts: number }>;
+  /** Emits UI:{setAEvent} with { value } when parameter A's slider changes. */
+  setAEvent?: EventEmit<{ value: number }>;
+  /** Emits UI:{setBEvent} with { value } when parameter B's slider changes. */
+  setBEvent?: EventEmit<{ value: number }>;
+  /** Emits UI:{checkEvent} with {} on simulate / check. */
+  checkEvent?: EventEmit<Record<string, never>>;
+  /** Emits UI:{playAgainEvent} with {} on reset / play again. */
+  playAgainEvent?: EventEmit<Record<string, never>>;
 }
 
 export function SimulatorBoard({
   entity,
   completeEvent = 'PUZZLE_COMPLETE',
+  setAEvent,
+  setBEvent,
+  checkEvent,
+  playAgainEvent,
   className,
 }: SimulatorBoardProps): React.JSX.Element | null {
   const { emit } = useEventBus();
@@ -50,69 +65,46 @@ export function SimulatorBoard({
   const resolved = boardEntity(entity);
 
   const parameters = (Array.isArray(resolved?.parameters) ? resolved.parameters : []) as unknown as SimulatorParameter[];
-  const [values, setValues] = useState<Record<string, number>>(() => {
-    const init: Record<string, number> = {};
-    for (const p of parameters) {
-      init[p.id] = p.initial;
-    }
-    return init;
-  });
   const [headerError, setHeaderError] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [attempts, setAttempts] = useState(0);
-  const [showHint, setShowHint] = useState(false);
-
-  const computeOutput = useCallback((params: Record<string, number>): number => {
-    try {
-      const fn = new Function('params', `return (${str(resolved?.computeExpression)})`);
-      return fn(params) as number;
-    } catch {
-      return 0;
-    }
-  }, [resolved?.computeExpression]);
-
-  const output = useMemo(() => computeOutput(values) ?? 0, [computeOutput, values]);
-  const targetValue = num(resolved?.targetValue);
-  const targetTolerance = num(resolved?.targetTolerance);
-  const isCorrect = Math.abs(output - targetValue) <= targetTolerance;
-
-  const handleParameterChange = (id: string, value: number) => {
-    if (submitted) return;
-    setValues((prev) => ({ ...prev, [id]: value }));
-  };
-
-  const handleSubmit = () => {
-    setSubmitted(true);
-    setAttempts((a) => a + 1);
-    if (isCorrect) {
-      emit(`UI:${completeEvent}`, { success: true, attempts: attempts + 1 });
-    }
-  };
-
-  const handleReset = () => {
-    setSubmitted(false);
-    if (attempts >= 2 && str(resolved?.hint)) {
-      setShowHint(true);
-    }
-  };
-
-  const handleFullReset = () => {
-    const init: Record<string, number> = {};
-    for (const p of parameters) {
-      init[p.id] = p.initial;
-    }
-    setValues(init);
-    setSubmitted(false);
-    setAttempts(0);
-    setShowHint(false);
-  };
 
   if (!resolved) return null;
+
+  // ── Machine-owned state (read off the entity, never recomputed locally) ──
+  const paramA = num(resolved.paramA);
+  const paramB = num(resolved.paramB);
+  const output = num(resolved.output);
+  const targetValue = num(resolved.target);
+  const targetTolerance = num(resolved.tolerance);
+  const attempts = num(resolved.attempts);
+  const result = str(resolved.result);
+  const isWin = result === 'win';
+  const isComplete = result !== 'none' && result !== '';
+
+  // Map the first two slider descriptors to parameter A and B respectively.
+  const paramAValue = parameters[0];
+  const paramBValue = parameters[1];
+  const sliderValues = [paramA, paramB];
+  const sliderEvents = [setAEvent, setBEvent];
+
+  const handleParameterChange = (index: number, value: number) => {
+    if (isComplete) return;
+    const ev = sliderEvents[index];
+    if (ev) emit(`UI:${ev}`, { value });
+  };
+
+  const handleCheck = () => {
+    if (checkEvent) emit(`UI:${checkEvent}`, {});
+  };
+
+  const handlePlayAgain = () => {
+    if (playAgainEvent) emit(`UI:${playAgainEvent}`, {});
+  };
 
   const theme = (resolved.theme ?? undefined) as { background?: string; accentColor?: string } | undefined;
   const themeBackground = theme?.background;
   const headerImage = str(resolved.headerImage);
   const hint = str(resolved.hint);
+  const showHint = isComplete && !isWin && attempts >= 2 && Boolean(hint);
   const outputLabel = str(resolved.outputLabel);
   const outputUnit = str(resolved.outputUnit);
 
@@ -142,34 +134,36 @@ export function SimulatorBoard({
           </VStack>
         </Card>
 
-        {/* Parameter sliders */}
+        {/* Parameter sliders (A and B) */}
         <Card className="p-4">
           <VStack gap="md">
             <Typography variant="small" weight="bold" className="uppercase tracking-wider text-muted-foreground">
               {t('simulator.parameters')}
             </Typography>
-            {parameters.map((param) => (
-              <VStack key={param.id} gap="xs">
-                <HStack justify="between" align="center">
-                  <Typography variant="body" weight="medium">{param.label}</Typography>
-                  <Badge size="sm">{values[param.id]} {param.unit}</Badge>
-                </HStack>
-                <input
-                  type="range"
-                  min={param.min}
-                  max={param.max}
-                  step={param.step}
-                  value={values[param.id]}
-                  onChange={(e) => handleParameterChange(param.id, Number(e.target.value))}
-                  disabled={submitted}
-                  className="w-full accent-foreground"
-                />
-                <HStack justify="between">
-                  <Typography variant="caption" className="text-muted-foreground">{param.min} {param.unit}</Typography>
-                  <Typography variant="caption" className="text-muted-foreground">{param.max} {param.unit}</Typography>
-                </HStack>
-              </VStack>
-            ))}
+            {[paramAValue, paramBValue].map((param, index) =>
+              param ? (
+                <VStack key={param.id ?? index} gap="xs">
+                  <HStack justify="between" align="center">
+                    <Typography variant="body" weight="medium">{param.label}</Typography>
+                    <Badge size="sm">{sliderValues[index]} {param.unit}</Badge>
+                  </HStack>
+                  <input
+                    type="range"
+                    min={param.min}
+                    max={param.max}
+                    step={param.step}
+                    value={sliderValues[index]}
+                    onChange={(e) => handleParameterChange(index, Number(e.target.value))}
+                    disabled={isComplete}
+                    className="w-full accent-foreground"
+                  />
+                  <HStack justify="between">
+                    <Typography variant="caption" className="text-muted-foreground">{param.min} {param.unit}</Typography>
+                    <Typography variant="caption" className="text-muted-foreground">{param.max} {param.unit}</Typography>
+                  </HStack>
+                </VStack>
+              ) : null,
+            )}
           </VStack>
         </Card>
 
@@ -182,11 +176,11 @@ export function SimulatorBoard({
             <Typography variant="h3" weight="bold">
               {output.toFixed(2)} {outputUnit}
             </Typography>
-            {submitted && (
+            {isComplete && (
               <HStack gap="xs" align="center">
-                <Icon icon={isCorrect ? CheckCircle : XCircle} size="sm" className={isCorrect ? 'text-success' : 'text-error'} />
-                <Typography variant="body" className={isCorrect ? 'text-success' : 'text-error'}>
-                  {isCorrect
+                <Icon icon={isWin ? CheckCircle : XCircle} size="sm" className={isWin ? 'text-success' : 'text-error'} />
+                <Typography variant="body" className={isWin ? 'text-success' : 'text-error'}>
+                  {isWin
                     ? (str(resolved.successMessage) || t('simulator.correct'))
                     : (str(resolved.failMessage) || t('simulator.incorrect'))}
                 </Typography>
@@ -207,17 +201,13 @@ export function SimulatorBoard({
 
         {/* Actions */}
         <HStack gap="sm" justify="center">
-          {!submitted ? (
-            <Button variant="primary" onClick={handleSubmit}>
+          {!isComplete ? (
+            <Button variant="primary" onClick={handleCheck}>
               <Icon icon={Play} size="sm" />
               {t('simulator.simulate')}
             </Button>
-          ) : !isCorrect ? (
-            <Button variant="primary" onClick={handleReset}>
-              {t('simulator.tryAgain')}
-            </Button>
           ) : null}
-          <Button variant="secondary" onClick={handleFullReset}>
+          <Button variant="secondary" onClick={handlePlayAgain}>
             <Icon icon={RotateCcw} size="sm" />
             {t('simulator.reset')}
           </Button>

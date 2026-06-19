@@ -11,13 +11,13 @@
 
  
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../core/atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
 import type { DisplayStateProps } from '../../../../core/organisms/types';
-import { boardEntity, str } from '../../boardEntity';
+import { boardEntity, str, num } from '../../boardEntity';
 import { CheckCircle, XCircle, RotateCcw, Wrench } from 'lucide-react';
 
 /** A draggable build component (UI value DTO read off the entity). */
@@ -31,90 +31,97 @@ export interface BuilderComponent {
   category?: string;
 }
 
-/** A blueprint slot accepting a component (UI value DTO read off the entity). */
+/** A blueprint slot accepting a component (UI value DTO read off the entity).
+ *  Mirrors the state machine's `BuilderBoardSlotsItem`: the required component
+ *  and the currently placed component both live on the entity. */
 export interface BuilderSlot {
   id: string;
-  label: string;
+  label?: string;
   description?: string;
-  acceptsComponentId: string;
+  requiredComponentId: string;
+  placedComponentId?: string;
 }
 
 export interface BuilderBoardProps extends DisplayStateProps {
   /** Puzzle board-state entity (single row or array). The board reads
-   *  `components` / `slots` arrays plus title/description/hint off the row. */
+   *  `components` / `slots` arrays plus `attempts` / `result` off the row —
+   *  the state machine is the single source of truth for placements. */
   entity?: EntityRow | readonly EntityRow[];
   completeEvent?: EventEmit<{ success: boolean; attempts: number }>;
+  /** Emits UI:{placeEvent} with { slotId, componentId } on component placement. */
+  placeEvent?: EventEmit<{ slotId: string; componentId: string }>;
+  /** Emits UI:{checkEvent} with {} when the player checks the build. */
+  checkEvent?: EventEmit<Record<string, never>>;
+  /** Emits UI:{playAgainEvent} with {} on play again / reset. */
+  playAgainEvent?: EventEmit<Record<string, never>>;
 }
 
 export function BuilderBoard({
   entity,
   completeEvent = 'PUZZLE_COMPLETE',
+  placeEvent,
+  checkEvent,
+  playAgainEvent,
   className,
 }: BuilderBoardProps): React.JSX.Element | null {
   const { emit } = useEventBus();
   const { t } = useTranslate();
   const resolved = boardEntity(entity);
 
-  const [placements, setPlacements] = useState<Record<string, string>>({});
   const [headerError, setHeaderError] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [attempts, setAttempts] = useState(0);
-  const [showHint, setShowHint] = useState(false);
+  // UI-only: which available component is currently picked up for placement.
+  const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
 
   const components = (Array.isArray(resolved?.components) ? resolved.components : []) as unknown as BuilderComponent[];
   const slots = (Array.isArray(resolved?.slots) ? resolved.slots : []) as unknown as BuilderSlot[];
+
+  // ── Board state read off the entity (machine-owned source of truth) ──────
+  const placements: Record<string, string> = {};
+  for (const slot of slots) {
+    if (slot.placedComponentId) placements[slot.id] = slot.placedComponentId;
+  }
+  const attempts = num(resolved?.attempts);
+  const result = str(resolved?.result) || 'none';
+  const submitted = result === 'win';
+
   const usedComponentIds = new Set(Object.values(placements));
   const availableComponents = components.filter((c) => !usedComponentIds.has(c.id));
-  const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
-  const allPlaced = Object.keys(placements).length === slots.length;
+  const allPlaced = slots.length > 0 && slots.every((s) => Boolean(placements[s.id]));
 
   const results = submitted
     ? slots.map((slot) => ({
       slot,
       placed: placements[slot.id],
-      correct: placements[slot.id] === slot.acceptsComponentId,
+      correct: placements[slot.id] === slot.requiredComponentId,
     }))
     : [];
 
-  const allCorrect = results.length > 0 && results.every((r) => r.correct);
+  const showHint = attempts >= 2 && Boolean(str(resolved?.hint));
 
   const handlePlaceComponent = (slotId: string) => {
     if (submitted || !selectedComponent) return;
-    setPlacements((prev) => ({ ...prev, [slotId]: selectedComponent }));
+    if (placeEvent) emit(`UI:${placeEvent}`, { slotId, componentId: selectedComponent });
     setSelectedComponent(null);
   };
 
   const handleRemoveFromSlot = (slotId: string) => {
     if (submitted) return;
-    setPlacements((prev) => {
-      const next = { ...prev };
-      delete next[slotId];
-      return next;
-    });
+    // Clearing a slot is a placement of the empty component on the machine.
+    if (placeEvent) emit(`UI:${placeEvent}`, { slotId, componentId: '' });
   };
 
-  const handleSubmit = useCallback(() => {
-    setSubmitted(true);
-    setAttempts((a) => a + 1);
-    const correct = slots.every((slot) => placements[slot.id] === slot.acceptsComponentId);
-    if (correct) {
+  const handleSubmit = () => {
+    if (checkEvent) emit(`UI:${checkEvent}`, {});
+    // Forward the legacy completion signal when this check solves the build.
+    const solved = slots.length > 0 && slots.every((s) => placements[s.id] === s.requiredComponentId);
+    if (solved && completeEvent) {
       emit(`UI:${completeEvent}`, { success: true, attempts: attempts + 1 });
     }
-  }, [slots, placements, attempts, completeEvent, emit]);
-
-  const handleReset = () => {
-    setSubmitted(false);
-    if (attempts >= 2 && str(resolved?.hint)) {
-      setShowHint(true);
-    }
   };
 
-  const handleFullReset = () => {
-    setPlacements({});
-    setSubmitted(false);
+  const handlePlayAgain = () => {
     setSelectedComponent(null);
-    setAttempts(0);
-    setShowHint(false);
+    if (playAgainEvent) emit(`UI:${playAgainEvent}`, {});
   };
 
   const getComponentById = (id: string) => components.find((c) => c.id === id);
@@ -240,15 +247,13 @@ export function BuilderBoard({
           </VStack>
         </Card>
 
-        {/* Result */}
+        {/* Result — the machine only reaches `complete` (result === 'win'). */}
         {submitted && (
           <Card className="p-4">
             <VStack gap="sm" align="center">
-              <Icon icon={allCorrect ? CheckCircle : XCircle} size="lg" className={allCorrect ? 'text-success' : 'text-error'} />
+              <Icon icon={CheckCircle} size="lg" className="text-success" />
               <Typography variant="body" weight="bold">
-                {allCorrect
-                  ? (str(resolved.successMessage) || t('builder.success'))
-                  : (str(resolved.failMessage) || t('builder.incorrect'))}
+                {str(resolved.successMessage) || t('builder.success')}
               </Typography>
             </VStack>
           </Card>
@@ -261,17 +266,13 @@ export function BuilderBoard({
         )}
 
         <HStack gap="sm" justify="center">
-          {!submitted ? (
+          {!submitted && (
             <Button variant="primary" onClick={handleSubmit} disabled={!allPlaced}>
               <Icon icon={Wrench} size="sm" />
               {t('builder.build')}
             </Button>
-          ) : !allCorrect ? (
-            <Button variant="primary" onClick={handleReset}>
-              {t('builder.tryAgain')}
-            </Button>
-          ) : null}
-          <Button variant="secondary" onClick={handleFullReset}>
+          )}
+          <Button variant="secondary" onClick={handlePlayAgain}>
             <Icon icon={RotateCcw} size="sm" />
             {t('builder.reset')}
           </Button>

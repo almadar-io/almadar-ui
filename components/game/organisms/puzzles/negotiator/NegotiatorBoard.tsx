@@ -12,7 +12,7 @@
  * Events emitted via completeEvent (default UI:PUZZLE_COMPLETE).
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import type { EventEmit, EntityRow } from '@almadar/core';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../core/atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
@@ -38,10 +38,17 @@ export interface PayoffEntry {
 
 export interface NegotiatorBoardProps extends DisplayStateProps {
   /** Puzzle board-state entity (single row or array). The board reads
-   *  `actions` / `payoffMatrix` arrays plus title/description/rounds/hint off
-   *  the row. */
+   *  `score` / `round` / `result` / `targetScore` / `maxRounds` plus the
+   *  `actions` / `payoffMatrix` arrays and title/description/hint off the row.
+   *  Score accumulation + win/lose are owned by the gameplay machine. */
   entity?: EntityRow | readonly EntityRow[];
   completeEvent?: EventEmit<{ success: boolean; score: number }>;
+  /** Emits UI:{playRoundEvent} with the picked action + the UI-resolved payoff. */
+  playRoundEvent?: EventEmit<{ playerAction: string; payoff: number }>;
+  /** Emits UI:{finishEvent} with {} when all rounds are spent. */
+  finishEvent?: EventEmit<Record<string, never>>;
+  /** Emits UI:{playAgainEvent} with {} on play again / reset. */
+  playAgainEvent?: EventEmit<Record<string, never>>;
 }
 
 interface RoundResult {
@@ -75,58 +82,89 @@ function getOpponentAction(
 export function NegotiatorBoard({
   entity,
   completeEvent = 'PUZZLE_COMPLETE',
+  playRoundEvent,
+  finishEvent,
+  playAgainEvent,
   className,
 }: NegotiatorBoardProps): React.JSX.Element | null {
   const { emit } = useEventBus();
   const { t } = useTranslate();
   const resolved = boardEntity(entity);
 
+  // Per-round history for the display list only — the machine owns score/round/result.
   const [history, setHistory] = useState<RoundResult[]>([]);
   const [headerError, setHeaderError] = useState(false);
   const [showHint, setShowHint] = useState(false);
 
-  const totalRounds = num(resolved?.totalRounds);
+  // ── Machine-owned state (read from the bound entity) ──
+  const totalRounds = num(resolved?.maxRounds);
   const targetScore = num(resolved?.targetScore);
-  const currentRound = history.length;
-  const isComplete = currentRound >= totalRounds;
-  const playerTotal = history.reduce((s, r) => s + r.playerPayoff, 0);
+  const currentRound = num(resolved?.round);
+  const result = str(resolved?.result) || 'none';
+  const playerTotal = num(resolved?.score);
+  const isComplete = result !== 'none' || (totalRounds > 0 && currentRound >= totalRounds);
+  const won = result === 'win';
+
   const opponentTotal = history.reduce((s, r) => s + r.opponentPayoff, 0);
-  const won = isComplete && playerTotal >= targetScore;
 
   const actions = (Array.isArray(resolved?.actions) ? resolved.actions : []) as unknown as NegotiatorAction[];
   const payoffMatrix = (Array.isArray(resolved?.payoffMatrix) ? resolved.payoffMatrix : []) as unknown as PayoffEntry[];
 
   const handleAction = useCallback((actionId: string) => {
     if (isComplete) return;
+
+    // Resolve the payoff locally (opponent strategy + payoff matrix), then hand
+    // it to the machine — the machine accumulates score and advances the round.
     const opponentAction = getOpponentAction(str(resolved?.opponentStrategy) || 'random', actions, history);
     const payoff = payoffMatrix.find(
       (p) => p.playerAction === actionId && p.opponentAction === opponentAction,
     );
-    const result: RoundResult = {
-      round: currentRound + 1,
-      playerAction: actionId,
-      opponentAction,
-      playerPayoff: payoff?.playerPayoff ?? 0,
-      opponentPayoff: payoff?.opponentPayoff ?? 0,
-    };
-    const newHistory = [...history, result];
-    setHistory(newHistory);
+    const playerPayoff = payoff?.playerPayoff ?? 0;
 
-    if (newHistory.length >= totalRounds) {
-      const total = newHistory.reduce((s, r) => s + r.playerPayoff, 0);
-      if (total >= targetScore) {
-        emit(`UI:${completeEvent}`, { success: true, score: total });
+    setHistory((prev) => [
+      ...prev,
+      {
+        round: prev.length + 1,
+        playerAction: actionId,
+        opponentAction,
+        playerPayoff,
+        opponentPayoff: payoff?.opponentPayoff ?? 0,
+      },
+    ]);
+
+    if (playRoundEvent) {
+      emit(`UI:${playRoundEvent}`, { playerAction: actionId, payoff: playerPayoff });
+    }
+
+    // Last round just played — finish the game.
+    if (totalRounds > 0 && currentRound + 1 >= totalRounds) {
+      if (finishEvent) {
+        emit(`UI:${finishEvent}`, {});
       }
-      if (newHistory.length >= 3 && str(resolved?.hint)) {
+      if (str(resolved?.hint)) {
         setShowHint(true);
       }
     }
-  }, [isComplete, resolved, totalRounds, targetScore, actions, payoffMatrix, history, currentRound, completeEvent, emit]);
+  }, [isComplete, resolved, totalRounds, currentRound, actions, payoffMatrix, history, playRoundEvent, finishEvent, emit]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setHistory([]);
     setShowHint(false);
-  };
+    if (playAgainEvent) {
+      emit(`UI:${playAgainEvent}`, {});
+    }
+  }, [playAgainEvent, emit]);
+
+  // Emit completeEvent once when the machine reaches a win result.
+  const completedRef = useRef(false);
+  useEffect(() => {
+    if (result === 'win' && !completedRef.current) {
+      completedRef.current = true;
+      emit(`UI:${completeEvent}`, { success: true, score: playerTotal });
+    } else if (result === 'none') {
+      completedRef.current = false;
+    }
+  }, [result, playerTotal, completeEvent, emit]);
 
   const getActionLabel = (id: string) => actions.find((a) => a.id === id)?.label ?? id;
 

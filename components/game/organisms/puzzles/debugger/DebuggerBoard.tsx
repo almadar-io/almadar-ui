@@ -25,70 +25,81 @@ export interface DebuggerLine {
   id: string;
   content: string;
   isBug: boolean;
+  isFlagged?: boolean;
   explanation?: string;
 }
 
 export interface DebuggerBoardProps extends DisplayStateProps {
   /** Puzzle board-state entity (single row or array). The board reads
-   *  `lines` array plus title/description/bugCount/hint off the row. */
+   *  `lines` array (each with `isFlagged`), `result`, `attempts`, plus
+   *  title/description/bugCount/hint off the row. */
   entity?: EntityRow | readonly EntityRow[];
   completeEvent?: EventEmit<{ success: boolean; attempts: number }>;
+  /** Emits UI:{toggleFlagEvent} with { lineId } when a line's bug-flag is toggled. */
+  toggleFlagEvent?: EventEmit<{ lineId: string }>;
+  /** Emits UI:{checkEvent} with {} when the player checks/submits. */
+  checkEvent?: EventEmit<Record<string, never>>;
+  /** Emits UI:{playAgainEvent} with {} on play again / reset. */
+  playAgainEvent?: EventEmit<Record<string, never>>;
 }
 
 export function DebuggerBoard({
   entity,
   completeEvent = 'PUZZLE_COMPLETE',
+  toggleFlagEvent,
+  checkEvent,
+  playAgainEvent,
   className,
 }: DebuggerBoardProps): React.JSX.Element | null {
   const { emit } = useEventBus();
   const { t } = useTranslate();
   const resolved = boardEntity(entity);
 
-  const [flaggedLines, setFlaggedLines] = useState<Set<string>>(new Set());
   const [headerError, setHeaderError] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [attempts, setAttempts] = useState(0);
   const [showHint, setShowHint] = useState(false);
+
+  const lines = (Array.isArray(resolved?.lines) ? resolved.lines : []) as unknown as DebuggerLine[];
+  // `result` on the entity is the machine's verdict; presence means checked.
+  const result = (resolved?.result as 'win' | 'lose' | null | undefined) ?? null;
+  const attempts = num(resolved?.attempts);
+  const submitted = result != null;
+
+  const bugLines = lines.filter((l) => l.isBug);
+  const flaggedLines = lines.filter((l) => l.isFlagged);
+  const correctFlags = lines.filter((l) => l.isBug && l.isFlagged);
+  const falseFlags = lines.filter((l) => !l.isBug && l.isFlagged);
+  const allCorrect = result === 'win';
 
   const toggleLine = (lineId: string) => {
     if (submitted) return;
-    setFlaggedLines((prev) => {
-      const next = new Set(prev);
-      if (next.has(lineId)) {
-        next.delete(lineId);
-      } else {
-        next.add(lineId);
-      }
-      return next;
-    });
+    if (toggleFlagEvent) {
+      emit(`UI:${toggleFlagEvent}`, { lineId });
+    }
   };
 
-  const lines = (Array.isArray(resolved?.lines) ? resolved.lines : []) as unknown as DebuggerLine[];
-  const bugLines = lines.filter((l) => l.isBug);
-  const correctFlags = lines.filter((l) => l.isBug && flaggedLines.has(l.id));
-  const falseFlags = lines.filter((l) => !l.isBug && flaggedLines.has(l.id));
-  const allCorrect = submitted && correctFlags.length === bugLines.length && falseFlags.length === 0;
-
   const handleSubmit = useCallback(() => {
-    setSubmitted(true);
-    setAttempts((a) => a + 1);
+    if (checkEvent) {
+      emit(`UI:${checkEvent}`, {});
+    }
     const correct = correctFlags.length === bugLines.length && falseFlags.length === 0;
     if (correct) {
       emit(`UI:${completeEvent}`, { success: true, attempts: attempts + 1 });
     }
-  }, [correctFlags.length, bugLines.length, falseFlags.length, attempts, completeEvent, emit]);
+  }, [checkEvent, correctFlags.length, bugLines.length, falseFlags.length, attempts, completeEvent, emit]);
 
   const handleReset = () => {
-    setSubmitted(false);
+    if (playAgainEvent) {
+      emit(`UI:${playAgainEvent}`, {});
+    }
     if (attempts >= 2 && str(resolved?.hint)) {
       setShowHint(true);
     }
   };
 
   const handleFullReset = () => {
-    setFlaggedLines(new Set());
-    setSubmitted(false);
-    setAttempts(0);
+    if (playAgainEvent) {
+      emit(`UI:${playAgainEvent}`, {});
+    }
     setShowHint(false);
   };
 
@@ -135,7 +146,7 @@ export function DebuggerBoard({
         <Card className="p-0 overflow-hidden">
           <VStack gap="none">
             {lines.map((line, i) => {
-              const isFlagged = flaggedLines.has(line.id);
+              const isFlagged = !!line.isFlagged;
               let lineStyle = '';
               if (submitted) {
                 if (line.isBug && isFlagged) lineStyle = 'bg-success/10';
@@ -181,9 +192,9 @@ export function DebuggerBoard({
               {bugLines.map((line) => (
                 <HStack key={line.id} gap="xs" align="start">
                   <Icon
-                    icon={flaggedLines.has(line.id) ? CheckCircle : XCircle}
+                    icon={line.isFlagged ? CheckCircle : XCircle}
                     size="xs"
-                    className={flaggedLines.has(line.id) ? 'text-success mt-0.5' : 'text-warning mt-0.5'}
+                    className={line.isFlagged ? 'text-success mt-0.5' : 'text-warning mt-0.5'}
                   />
                   <VStack gap="none">
                     <Typography variant="caption" weight="bold" className="font-mono">{line.content.trim()}</Typography>
@@ -205,7 +216,7 @@ export function DebuggerBoard({
 
         <HStack gap="sm" justify="center">
           {!submitted ? (
-            <Button variant="primary" onClick={handleSubmit} disabled={flaggedLines.size === 0}>
+            <Button variant="primary" onClick={handleSubmit} disabled={flaggedLines.length === 0}>
               <Icon icon={Send} size="sm" />
               {t('debugger.submit')}
             </Button>

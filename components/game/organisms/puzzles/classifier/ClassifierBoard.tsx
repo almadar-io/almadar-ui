@@ -8,7 +8,12 @@
  *
  * Good for: taxonomy, pattern recognition, sorting stories.
  *
- * Events emitted via completeEvent (default UI:PUZZLE_COMPLETE).
+ * Gameplay events are emitted onto the bus so the bound Orbital trait
+ * (ui-classifier-board.lolo: menu -> playing -> complete) owns the state:
+ * assignEvent (ASSIGN), checkEvent (CHECK), playAgainEvent (PLAY_AGAIN),
+ * plus completeEvent (default UI:PUZZLE_COMPLETE). When the entity carries
+ * per-item `assignedCategory` / `result` / `attempts`, the board renders
+ * from those; otherwise it self-manages with local state.
  */
 
 import React, { useState, useCallback } from 'react';
@@ -17,7 +22,7 @@ import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../.
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
 import type { DisplayStateProps } from '../../../../core/organisms/types';
-import { boardEntity, str } from '../../boardEntity';
+import { boardEntity, str, num } from '../../boardEntity';
 import { CheckCircle, XCircle, RotateCcw, Send } from 'lucide-react';
 
 /** A sortable item (UI value DTO read off the entity). */
@@ -26,6 +31,8 @@ export interface ClassifierItem {
   label: string;
   description?: string;
   correctCategory: string;
+  /** Category the player has assigned (entity-provided; machine-owned). */
+  assignedCategory?: string;
   /** Image URL icon for story-specific visual skin */
   iconUrl?: AssetUrl;
 }
@@ -41,30 +48,58 @@ export interface ClassifierCategory {
 
 export interface ClassifierBoardProps extends DisplayStateProps {
   /** Puzzle board-state entity (single row or array). The board reads
-   *  `items` / `categories` arrays plus title/description/hint off the row. */
+   *  `items` / `categories` arrays plus title/description/hint off the row.
+   *  Items may carry `assignedCategory`; the row may carry `result` and
+   *  `attempts` — all machine-owned. */
   entity?: EntityRow | readonly EntityRow[];
   completeEvent?: EventEmit<{ success: boolean; attempts: number }>;
+  /** Emits UI:{assignEvent} with { itemId, categoryId } when an item is sorted. */
+  assignEvent?: EventEmit<{ itemId: string; categoryId: string }>;
+  /** Emits UI:{checkEvent} with {} when the player submits/checks. */
+  checkEvent?: EventEmit<Record<string, never>>;
+  /** Emits UI:{playAgainEvent} with {} on reset / play again. */
+  playAgainEvent?: EventEmit<Record<string, never>>;
 }
 
 export function ClassifierBoard({
   entity,
   completeEvent = 'PUZZLE_COMPLETE',
+  assignEvent,
+  checkEvent,
+  playAgainEvent,
   className,
 }: ClassifierBoardProps): React.JSX.Element | null {
   const { emit } = useEventBus();
   const { t } = useTranslate();
   const resolved = boardEntity(entity);
 
-  const [assignments, setAssignments] = useState<Record<string, string>>({});
+  const [localAssignments, setLocalAssignments] = useState<Record<string, string>>({});
   const [headerError, setHeaderError] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [attempts, setAttempts] = useState(0);
+  const [localSubmitted, setLocalSubmitted] = useState(false);
+  const [localAttempts, setLocalAttempts] = useState(0);
   const [showHint, setShowHint] = useState(false);
 
   const items = (Array.isArray(resolved?.items) ? resolved.items : []) as unknown as ClassifierItem[];
   const categories = (Array.isArray(resolved?.categories) ? resolved.categories : []) as unknown as ClassifierCategory[];
+
+  // Prefer the machine's entity data (assignedCategory / result / attempts);
+  // fall back to local state when the entity doesn't carry it.
+  const entityResult = str(resolved?.result);
+  const entityDrivesResult = entityResult.length > 0;
+  const entityHasAssignments = items.some((item) => item.assignedCategory != null);
+
+  const assignments: Record<string, string> = entityHasAssignments
+    ? items.reduce<Record<string, string>>((acc, item) => {
+      if (item.assignedCategory != null) acc[item.id] = item.assignedCategory;
+      return acc;
+    }, {})
+    : localAssignments;
+
+  const attempts = entityDrivesResult ? num(resolved?.attempts) : localAttempts;
+  const submitted = entityDrivesResult || localSubmitted;
+
   const unassignedItems = items.filter((item) => !assignments[item.id]);
-  const allAssigned = Object.keys(assignments).length === items.length;
+  const allAssigned = items.length > 0 && Object.keys(assignments).length === items.length;
 
   const results = submitted
     ? items.map((item) => ({
@@ -74,43 +109,61 @@ export function ClassifierBoard({
     }))
     : [];
 
-  const allCorrect = results.length > 0 && results.every((r) => r.correct);
+  // The machine's `result` ('success'/'fail') wins when present.
+  const allCorrect = entityDrivesResult
+    ? entityResult === 'success'
+    : results.length > 0 && results.every((r) => r.correct);
   const correctCount = results.filter((r) => r.correct).length;
 
   const handleAssign = (itemId: string, categoryId: string) => {
     if (submitted) return;
-    setAssignments((prev) => ({ ...prev, [itemId]: categoryId }));
+    if (assignEvent) {
+      emit(`UI:${assignEvent}`, { itemId, categoryId });
+    }
+    if (!entityHasAssignments) {
+      setLocalAssignments((prev) => ({ ...prev, [itemId]: categoryId }));
+    }
   };
 
   const handleUnassign = (itemId: string) => {
     if (submitted) return;
-    setAssignments((prev) => {
-      const next = { ...prev };
-      delete next[itemId];
-      return next;
-    });
+    if (!entityHasAssignments) {
+      setLocalAssignments((prev) => {
+        const next = { ...prev };
+        delete next[itemId];
+        return next;
+      });
+    }
   };
 
   const handleSubmit = useCallback(() => {
-    setSubmitted(true);
-    setAttempts((a) => a + 1);
-    const correct = items.every((item) => assignments[item.id] === item.correctCategory);
-    if (correct) {
-      emit(`UI:${completeEvent}`, { success: true, attempts: attempts + 1 });
+    if (checkEvent) {
+      emit(`UI:${checkEvent}`, {});
     }
-  }, [items, assignments, attempts, completeEvent, emit]);
+    if (!entityDrivesResult) {
+      setLocalSubmitted(true);
+      setLocalAttempts((a) => a + 1);
+      const correct = items.every((item) => assignments[item.id] === item.correctCategory);
+      if (correct) {
+        emit(`UI:${completeEvent}`, { success: true, attempts: attempts + 1 });
+      }
+    }
+  }, [checkEvent, entityDrivesResult, items, assignments, attempts, completeEvent, emit]);
 
   const handleReset = () => {
-    setSubmitted(false);
+    if (!entityDrivesResult) setLocalSubmitted(false);
     if (attempts >= 2 && str(resolved?.hint)) {
       setShowHint(true);
     }
   };
 
   const handleFullReset = () => {
-    setAssignments({});
-    setSubmitted(false);
-    setAttempts(0);
+    if (playAgainEvent) {
+      emit(`UI:${playAgainEvent}`, {});
+    }
+    setLocalAssignments({});
+    setLocalSubmitted(false);
+    setLocalAttempts(0);
     setShowHint(false);
   };
 
