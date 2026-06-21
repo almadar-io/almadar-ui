@@ -3,6 +3,8 @@
  *
  * Self-contained 2D physics canvas for educational presets.
  * Runs its own Euler integration loop — no external physics hook needed.
+ * When `bodies` prop is provided, an external model drives positions at ~30Hz
+ * and the interpolation bridge smooths them to 60fps.
  */
 
 import React, { useRef, useEffect, useCallback, useMemo } from 'react';
@@ -11,6 +13,7 @@ import { Box } from '../../../core/atoms';
 import { bindCanvasCapture } from '../../../../lib/verificationRegistry';
 import type { PhysicsPreset, PhysicsBody } from './presets/types';
 import { ALL_PRESETS, projectileMotion } from './presets';
+import { useRenderInterpolation } from '../../../../hooks/useRenderInterpolation';
 
 function resolvePreset(preset: string | PhysicsPreset): PhysicsPreset {
     if (typeof preset !== 'string') return preset;
@@ -26,6 +29,10 @@ export interface SimulationCanvasProps {
     height?: number;
     running: boolean;
     speed?: number;
+    /** External model-authoritative body snapshots (~30Hz). When provided,
+     *  the self-simulation loop is bypassed and positions are interpolated
+     *  to 60fps between consecutive snapshots. */
+    bodies?: readonly Pick<PhysicsBody, 'id' | 'x' | 'y'>[];
     className?: string;
 }
 
@@ -35,11 +42,15 @@ export function SimulationCanvas({
     height = 400,
     running,
     speed = 1,
+    bodies: externalBodies,
     className,
 }: SimulationCanvasProps): React.JSX.Element {
     const preset = useMemo(() => resolvePreset(presetProp), [presetProp]);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const bodiesRef = useRef<PhysicsBody[]>(structuredClone(preset.bodies));
+
+    // Interpolation bridge — active only when externalBodies prop is provided.
+    const interp = useRenderInterpolation<{ id: string; x: number; y: number }>();
 
     // Reset bodies when preset changes
     useEffect(() => {
@@ -154,8 +165,83 @@ export function SimulationCanvas({
         }
     }, [width, height, preset]);
 
-    // Animation loop
+    // Push external snapshots to the interpolation bridge.
     useEffect(() => {
+        if (!externalBodies) return;
+        interp.onSnapshot(externalBodies.map((b) => ({ id: b.id, x: b.x, y: b.y })));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [externalBodies]);
+
+    // Stable refs so the interpolated draw closure doesn't go stale.
+    const presetRef = useRef(preset);
+    presetRef.current = preset;
+    const widthRef = useRef(width);
+    widthRef.current = width;
+    const heightRef = useRef(height);
+    heightRef.current = height;
+
+    // Interpolated rAF loop — used when externalBodies prop is present.
+    useEffect(() => {
+        if (!externalBodies) return;
+
+        const drawInterpolated = (positions: Map<string, { x: number; y: number }>) => {
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+            const bodies = bodiesRef.current;
+            const p = presetRef.current;
+            const w = widthRef.current;
+            const h = heightRef.current;
+
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = p.backgroundColor ?? '#1a1a2e';
+            ctx.fillRect(0, 0, w, h);
+
+            if (p.constraints) {
+                for (const c of p.constraints) {
+                    const a = bodies[c.bodyA];
+                    const b = bodies[c.bodyB];
+                    if (a && b) {
+                        const aPos = positions.get(a.id) ?? a;
+                        const bPos = positions.get(b.id) ?? b;
+                        ctx.beginPath();
+                        ctx.moveTo(aPos.x, aPos.y);
+                        ctx.lineTo(bPos.x, bPos.y);
+                        ctx.strokeStyle = '#533483';
+                        ctx.lineWidth = 1;
+                        ctx.setLineDash([4, 4]);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+                }
+            }
+
+            for (const body of bodies) {
+                const pos = positions.get(body.id) ?? body;
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, body.radius, 0, Math.PI * 2);
+                ctx.fillStyle = body.color ?? '#e94560';
+                ctx.fill();
+
+                if (p.showVelocity) {
+                    ctx.beginPath();
+                    ctx.moveTo(pos.x, pos.y);
+                    ctx.lineTo(pos.x + body.vx * 0.1, pos.y + body.vy * 0.1);
+                    ctx.strokeStyle = '#16213e';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            }
+        };
+
+        return interp.startLoop(drawInterpolated);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [externalBodies !== undefined, interp.startLoop]);
+
+    // Self-simulation animation loop — only when externalBodies is absent.
+    useEffect(() => {
+        if (externalBodies !== undefined) return;
         if (!running) return;
         let raf: number;
         const loop = () => {
@@ -165,12 +251,13 @@ export function SimulationCanvas({
         };
         raf = requestAnimationFrame(loop);
         return () => cancelAnimationFrame(raf);
-    }, [running, step, draw]);
+    }, [running, step, draw, externalBodies]);
 
-    // Initial draw
+    // Initial draw (self-simulation path only)
     useEffect(() => {
+        if (externalBodies !== undefined) return;
         draw();
-    }, [draw]);
+    }, [draw, externalBodies]);
 
     // -- Verification bridge: register canvas frame capture --
     useEffect(() => {

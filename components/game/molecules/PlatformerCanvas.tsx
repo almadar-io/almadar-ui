@@ -4,6 +4,7 @@ import type { AssetUrl, EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { bindCanvasCapture, updateAssetStatus } from '../../../lib/verificationRegistry';
+import { useRenderInterpolation } from '../../../hooks/useRenderInterpolation';
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -151,6 +152,30 @@ export function PlatformerCanvas({
     facingRight: true,
   };
 
+  // ── Interpolation ──────────────────────────────────────────────
+  // Keeps a live ref to the authoritative player so the rAF draw
+  // closure always reads the latest value without re-subscribing.
+  const playerRef = useRef<PlatformerPlayer>(resolvedPlayer);
+  playerRef.current = resolvedPlayer;
+
+  const interp = useRenderInterpolation<{ id: string; x: number; y: number }>();
+
+  // Push a new snapshot whenever the authoritative player position changes.
+  useEffect(() => {
+    interp.onSnapshot([{ id: 'player', x: resolvedPlayer.x, y: resolvedPlayer.y }]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedPlayer.x, resolvedPlayer.y]);
+
+  // Stable refs for props consumed inside the rAF draw closure.
+  const propsRef = useRef({
+    platforms, worldWidth, worldHeight, canvasWidth, canvasHeight,
+    followCamera, bgColor, playerSprite, tileSprites, backgroundImage, assetBaseUrl,
+  });
+  propsRef.current = {
+    platforms, worldWidth, worldHeight, canvasWidth, canvasHeight,
+    followCamera, bgColor, playerSprite, tileSprites, backgroundImage, assetBaseUrl,
+  };
+
   // ── Keyboard handler ───────────────────────────────────────────
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -197,159 +222,176 @@ export function PlatformerCanvas({
     };
   }, [handleKeyDown, handleKeyUp]);
 
-  // ── Canvas rendering ───────────────────────────────────────────
+  // ── Canvas setup (dpr scaling) — runs only when dimensions change ──
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
     const dpr = window.devicePixelRatio || 1;
     canvas.width = canvasWidth * dpr;
     canvas.height = canvasHeight * dpr;
     ctx.scale(dpr, dpr);
+  }, [canvasWidth, canvasHeight]);
 
-    // Camera offset (follow player)
-    let camX = 0;
-    let camY = 0;
-    if (followCamera) {
-      camX = Math.max(0, Math.min(resolvedPlayer.x - canvasWidth / 2, worldWidth - canvasWidth));
-      camY = Math.max(0, Math.min(resolvedPlayer.y - canvasHeight / 2 - 50, worldHeight - canvasHeight));
-    }
+  // ── rAF draw loop — 60fps, uses interpolated player position ──
 
-    // Background: image, solid color, or gradient
-    const bgImg = backgroundImage ? loadImage(backgroundImage) : null;
-    if (bgImg) {
-      ctx.drawImage(bgImg, 0, 0, canvasWidth, canvasHeight);
-    } else if (bgColor) {
-      ctx.fillStyle = bgColor;
-      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-    } else {
-      const grad = ctx.createLinearGradient(0, 0, 0, canvasHeight);
-      grad.addColorStop(0, SKY_GRADIENT_TOP);
-      grad.addColorStop(1, SKY_GRADIENT_BOTTOM);
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-    }
+  useEffect(() => {
+    const drawFrame = (positions: Map<string, { x: number; y: number }>) => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
-    // Grid lines
-    ctx.strokeStyle = GRID_COLOR;
-    ctx.lineWidth = 1;
-    const gridSize = 32;
-    for (let gx = -camX % gridSize; gx < canvasWidth; gx += gridSize) {
-      ctx.beginPath();
-      ctx.moveTo(gx, 0);
-      ctx.lineTo(gx, canvasHeight);
-      ctx.stroke();
-    }
-    for (let gy = -camY % gridSize; gy < canvasHeight; gy += gridSize) {
-      ctx.beginPath();
-      ctx.moveTo(0, gy);
-      ctx.lineTo(canvasWidth, gy);
-      ctx.stroke();
-    }
+      const {
+        platforms: plats, worldWidth: ww, worldHeight: wh,
+        canvasWidth: cw, canvasHeight: ch, followCamera: fc,
+        bgColor: bg, playerSprite: pSprite, tileSprites: tSprites,
+        backgroundImage: bgImg,
+      } = propsRef.current;
 
-    // Platforms
-    for (const plat of platforms) {
-      const px = plat.x - camX;
-      const py = plat.y - camY;
-      const platType = plat.type ?? 'ground';
-      const spriteUrl = tileSprites?.[platType];
-      const tileImg = spriteUrl ? loadImage(spriteUrl) : null;
+      const auth = playerRef.current;
+      const interped = positions.get('player');
+      const px = interped?.x ?? auth.x;
+      const py = interped?.y ?? auth.y;
 
-      if (tileImg) {
-        // Tile the sprite across the platform width
-        const tileW = tileImg.naturalWidth;
-        const tileH = tileImg.naturalHeight;
-        const scaleH = plat.height / tileH;
-        const scaledW = tileW * scaleH;
-        for (let tx = 0; tx < plat.width; tx += scaledW) {
-          const drawW = Math.min(scaledW, plat.width - tx);
-          const srcW = drawW / scaleH;
-          ctx.drawImage(tileImg, 0, 0, srcW, tileH, px + tx, py, drawW, plat.height);
-        }
+      // Camera offset (follow player)
+      let camX = 0;
+      let camY = 0;
+      if (fc) {
+        camX = Math.max(0, Math.min(px - cw / 2, ww - cw));
+        camY = Math.max(0, Math.min(py - ch / 2 - 50, wh - ch));
+      }
+
+      // Background
+      const bgImage = bgImg ? loadImage(bgImg) : null;
+      if (bgImage) {
+        ctx.drawImage(bgImage, 0, 0, cw, ch);
+      } else if (bg) {
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, cw, ch);
       } else {
-        const color = PLATFORM_COLORS[platType] ?? PLATFORM_COLORS.ground;
-        ctx.fillStyle = color;
-        ctx.fillRect(px, py, plat.width, plat.height);
+        const grad = ctx.createLinearGradient(0, 0, 0, ch);
+        grad.addColorStop(0, SKY_GRADIENT_TOP);
+        grad.addColorStop(1, SKY_GRADIENT_BOTTOM);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, cw, ch);
+      }
 
-        // Top highlight
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-        ctx.fillRect(px, py, plat.width, 3);
+      // Grid lines
+      ctx.strokeStyle = GRID_COLOR;
+      ctx.lineWidth = 1;
+      const gridSize = 32;
+      for (let gx = -camX % gridSize; gx < cw; gx += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(gx, 0);
+        ctx.lineTo(gx, ch);
+        ctx.stroke();
+      }
+      for (let gy = -camY % gridSize; gy < ch; gy += gridSize) {
+        ctx.beginPath();
+        ctx.moveTo(0, gy);
+        ctx.lineTo(cw, gy);
+        ctx.stroke();
+      }
 
-        // Bottom shadow
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-        ctx.fillRect(px, py + plat.height - 2, plat.width, 2);
+      // Platforms
+      for (const plat of plats) {
+        const platX = plat.x - camX;
+        const platY = plat.y - camY;
+        const platType = plat.type ?? 'ground';
+        const spriteUrl = tSprites?.[platType];
+        const tileImg = spriteUrl ? loadImage(spriteUrl) : null;
 
-        // Hazard stripes
-        if (platType === 'hazard') {
-          ctx.strokeStyle = '#e74c3c';
-          ctx.lineWidth = 2;
-          for (let sx = px; sx < px + plat.width; sx += 12) {
+        if (tileImg) {
+          const tileW = tileImg.naturalWidth;
+          const tileH = tileImg.naturalHeight;
+          const scaleH = plat.height / tileH;
+          const scaledW = tileW * scaleH;
+          for (let tx = 0; tx < plat.width; tx += scaledW) {
+            const drawW = Math.min(scaledW, plat.width - tx);
+            const srcW = drawW / scaleH;
+            ctx.drawImage(tileImg, 0, 0, srcW, tileH, platX + tx, platY, drawW, plat.height);
+          }
+        } else {
+          const color = PLATFORM_COLORS[platType] ?? PLATFORM_COLORS.ground;
+          ctx.fillStyle = color;
+          ctx.fillRect(platX, platY, plat.width, plat.height);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+          ctx.fillRect(platX, platY, plat.width, 3);
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+          ctx.fillRect(platX, platY + plat.height - 2, plat.width, 2);
+          if (platType === 'hazard') {
+            ctx.strokeStyle = '#e74c3c';
+            ctx.lineWidth = 2;
+            for (let sx = platX; sx < platX + plat.width; sx += 12) {
+              ctx.beginPath();
+              ctx.moveTo(sx, platY);
+              ctx.lineTo(sx + 6, platY + plat.height);
+              ctx.stroke();
+            }
+          }
+          if (platType === 'goal') {
+            ctx.fillStyle = 'rgba(241, 196, 15, 0.5)';
             ctx.beginPath();
-            ctx.moveTo(sx, py);
-            ctx.lineTo(sx + 6, py + plat.height);
-            ctx.stroke();
+            ctx.arc(platX + plat.width / 2, platY - 10, 8, 0, Math.PI * 2);
+            ctx.fill();
           }
         }
+      }
 
-        // Goal sparkle
-        if (platType === 'goal') {
-          ctx.fillStyle = 'rgba(241, 196, 15, 0.5)';
-          ctx.beginPath();
-          ctx.arc(px + plat.width / 2, py - 10, 8, 0, Math.PI * 2);
-          ctx.fill();
+      // Player character (uses interpolated x/y; all other fields from auth)
+      const pw = auth.width ?? 24;
+      const ph = auth.height ?? 32;
+      const ppx = px - camX;
+      const ppy = py - camY;
+      const facingRight = auth.facingRight ?? true;
+      const playerImg = pSprite ? loadImage(pSprite) : null;
+
+      if (playerImg) {
+        ctx.save();
+        if (!facingRight) {
+          ctx.translate(ppx + pw, ppy);
+          ctx.scale(-1, 1);
+          ctx.drawImage(playerImg, 0, 0, pw, ph);
+        } else {
+          ctx.drawImage(playerImg, ppx, ppy, pw, ph);
         }
-      }
-    }
-
-    // Player character
-    const pw = resolvedPlayer.width ?? 24;
-    const ph = resolvedPlayer.height ?? 32;
-    const ppx = resolvedPlayer.x - camX;
-    const ppy = resolvedPlayer.y - camY;
-    const facingRight = resolvedPlayer.facingRight ?? true;
-    const playerImg = playerSprite ? loadImage(playerSprite) : null;
-
-    if (playerImg) {
-      ctx.save();
-      if (!facingRight) {
-        ctx.translate(ppx + pw, ppy);
-        ctx.scale(-1, 1);
-        ctx.drawImage(playerImg, 0, 0, pw, ph);
+        ctx.restore();
       } else {
-        ctx.drawImage(playerImg, ppx, ppy, pw, ph);
-      }
-      ctx.restore();
-    } else {
-      // Fallback: colored rectangle with eyes
-      ctx.fillStyle = PLAYER_COLOR;
-      const radius = Math.min(pw, ph) * 0.25;
-      ctx.beginPath();
-      ctx.moveTo(ppx + radius, ppy);
-      ctx.lineTo(ppx + pw - radius, ppy);
-      ctx.quadraticCurveTo(ppx + pw, ppy, ppx + pw, ppy + radius);
-      ctx.lineTo(ppx + pw, ppy + ph - radius);
-      ctx.quadraticCurveTo(ppx + pw, ppy + ph, ppx + pw - radius, ppy + ph);
-      ctx.lineTo(ppx + radius, ppy + ph);
-      ctx.quadraticCurveTo(ppx, ppy + ph, ppx, ppy + ph - radius);
-      ctx.lineTo(ppx, ppy + radius);
-      ctx.quadraticCurveTo(ppx, ppy, ppx + radius, ppy);
-      ctx.fill();
+        ctx.fillStyle = PLAYER_COLOR;
+        const radius = Math.min(pw, ph) * 0.25;
+        ctx.beginPath();
+        ctx.moveTo(ppx + radius, ppy);
+        ctx.lineTo(ppx + pw - radius, ppy);
+        ctx.quadraticCurveTo(ppx + pw, ppy, ppx + pw, ppy + radius);
+        ctx.lineTo(ppx + pw, ppy + ph - radius);
+        ctx.quadraticCurveTo(ppx + pw, ppy + ph, ppx + pw - radius, ppy + ph);
+        ctx.lineTo(ppx + radius, ppy + ph);
+        ctx.quadraticCurveTo(ppx, ppy + ph, ppx, ppy + ph - radius);
+        ctx.lineTo(ppx, ppy + radius);
+        ctx.quadraticCurveTo(ppx, ppy, ppx + radius, ppy);
+        ctx.fill();
 
-      const eyeY = ppy + ph * 0.3;
-      const eyeSize = 3;
-      const eyeOffsetX = facingRight ? pw * 0.55 : pw * 0.2;
-      ctx.fillStyle = PLAYER_EYE_COLOR;
-      ctx.beginPath();
-      ctx.arc(ppx + eyeOffsetX, eyeY, eyeSize, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(ppx + eyeOffsetX + 7, eyeY, eyeSize, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }, [player, platforms, worldWidth, worldHeight, canvasWidth, canvasHeight, followCamera, bgColor, playerSprite, tileSprites, backgroundImage, assetBaseUrl, loadedImages]);
+        const eyeY = ppy + ph * 0.3;
+        const eyeSize = 3;
+        const eyeOffsetX = facingRight ? pw * 0.55 : pw * 0.2;
+        ctx.fillStyle = PLAYER_EYE_COLOR;
+        ctx.beginPath();
+        ctx.arc(ppx + eyeOffsetX, eyeY, eyeSize, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(ppx + eyeOffsetX + 7, eyeY, eyeSize, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    };
+
+    return interp.startLoop(drawFrame);
+  // startLoop is stable (memoized with useCallback); loadImage changes when
+  // loadedImages state flips, which re-starts the loop to pick up new sprites.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [interp.startLoop, loadImage]);
 
   return (
     <canvas

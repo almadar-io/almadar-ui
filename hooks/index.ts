@@ -193,6 +193,14 @@ export {
   type UseDropZoneResult,
 } from './useDropZone';
 
+// Render interpolation hook (fixed-timestep lerp for 30Hz model → 60fps display)
+export {
+  useRenderInterpolation,
+  type Positioned,
+  type RenderInterpolationOptions,
+  type RenderInterpolationHandle,
+} from './useRenderInterpolation';
+
 // GitHub integration hooks
 export {
   useGitHubStatus,
