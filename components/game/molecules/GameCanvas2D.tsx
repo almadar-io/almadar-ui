@@ -36,7 +36,7 @@ export function GameCanvas2D({
   tickEvent,
   drawEvent,
   fps = 60,
-  backgroundImage = "https://almadar-kflow-assets.web.app/shared/scenes/resonators.jpeg",
+  backgroundImage = "https://almadar-kflow-assets.web.app/shared/scenes/dark_clouds_from_above.png",
   assetBaseUrl = "https://almadar-kflow-assets.web.app/shared/",
   className,
 }: GameCanvas2DProps) {
