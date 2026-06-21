@@ -698,6 +698,12 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                     data-orientation={orientation}
                     data-camera-mode={cameraMode}
                     data-overlay={overlay}
+                    // Layout set inline (not just via GameCanvas3D.css): the dedicated
+                    // component CSS is NOT rolled into @almadar/ui's bundled index.css,
+                    // so consumers (e.g. the playground catalog) never load it. r3f's
+                    // <Canvas> sizes to this container, so it MUST have a real height
+                    // here or the canvas collapses to ~150px.
+                    style={{ position: 'relative', width: '100%', height: '100%', minHeight: '85vh', overflow: 'hidden' }}
                 >
                     <Canvas
                         shadows={shadows}
