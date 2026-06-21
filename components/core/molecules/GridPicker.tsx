@@ -53,6 +53,9 @@ export interface GridPickerProps {
 
 const ALL_CATEGORY = '__all__';
 
+/** Max cells mounted at once; refine the search to reach the rest. */
+const MAX_RENDERED = 300;
+
 export const GridPicker: React.FC<GridPickerProps> = ({
   items,
   value,
@@ -85,6 +88,13 @@ export const GridPicker: React.FC<GridPickerProps> = ({
       return matchesCategory && matchesSearch;
     });
   }, [items, search, activeCategory]);
+
+  // Cap how many cells actually mount. With large sets (e.g. ~1500 lucide
+  // icons) rendering every filtered cell mounts a thumbnail component per item
+  // — heavy DOM + memory, multiplied by every picker on screen. Render a window
+  // and prompt to refine the search for the rest.
+  const visible = useMemo(() => filtered.slice(0, MAX_RENDERED), [filtered]);
+  const truncated = filtered.length - visible.length;
 
   const select = useCallback(
     (item: PickerItem) => {
@@ -191,7 +201,7 @@ export const GridPicker: React.FC<GridPickerProps> = ({
           gridTemplateColumns: `repeat(auto-fill, minmax(${cellSize}px, 1fr))`,
         }}
       >
-        {filtered.map((item, index) => {
+        {visible.map((item, index) => {
           const selected = item.id === value;
           return (
             <button
@@ -218,6 +228,12 @@ export const GridPicker: React.FC<GridPickerProps> = ({
           );
         })}
       </div>
+
+      {truncated > 0 && (
+        <div className="px-1 text-xs text-muted-foreground">
+          {`+${truncated} more — refine your search`}
+        </div>
+      )}
     </VStack>
   );
 };
