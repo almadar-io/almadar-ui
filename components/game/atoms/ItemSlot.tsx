@@ -2,9 +2,12 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import { Icon, type IconInput } from '../../core/atoms/Icon';
+import type { AssetUrl } from '@almadar/core';
 
 export interface ItemSlotProps {
-  /** Icon component or emoji */
+  /** Sprite image URL — takes precedence over icon when provided */
+  assetUrl?: AssetUrl;
+  /** Icon component or emoji — shown only when assetUrl is absent */
   icon?: IconInput;
   /** Item label */
   label?: string;
@@ -46,7 +49,17 @@ const rarityGlowMap = {
   legendary: 'shadow-lg',
 };
 
+const DEFAULT_ASSET_URL: AssetUrl =
+  'https://almadar-kflow-assets.web.app/shared/isometric-dungeon/Isometric/chestClosed_E.png';
+
+const assetSizeMap = {
+  sm: 28,
+  md: 40,
+  lg: 56,
+};
+
 export function ItemSlot({
+  assetUrl = DEFAULT_ASSET_URL,
   icon = 'sword',
   label = 'Iron Sword',
   quantity,
@@ -58,6 +71,7 @@ export function ItemSlot({
   className,
 }: ItemSlotProps) {
   const isClickable = onClick != null;
+  const px = assetSizeMap[size];
 
   return (
     <button
@@ -84,11 +98,20 @@ export function ItemSlot({
         <span className="text-muted-foreground text-base">+</span>
       ) : (
         <>
-          {icon && (
+          {assetUrl ? (
+            <img
+              src={assetUrl}
+              alt={label}
+              width={px}
+              height={px}
+              style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
+              className="flex-shrink-0"
+            />
+          ) : icon ? (
             <span className="flex-shrink-0">
               {typeof icon === 'string' ? <Icon name={icon} /> : <Icon icon={icon} />}
             </span>
-          )}
+          ) : null}
           {quantity != null && quantity > 1 && (
             <span
               className={cn(
