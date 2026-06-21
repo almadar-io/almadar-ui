@@ -47,10 +47,10 @@ const rarityGlowMap = {
 };
 
 export function ItemSlot({
-  icon,
-  label,
+  icon = 'sword',
+  label = 'Iron Sword',
   quantity,
-  rarity = 'common',
+  rarity = 'uncommon',
   empty,
   size = 'md',
   selected,

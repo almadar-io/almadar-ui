@@ -23,7 +23,7 @@ const sizeMap = {
 };
 
 export function TurnIndicator({
-  currentTurn,
+  currentTurn = 1,
   maxTurns,
   activeTeam,
   phase,

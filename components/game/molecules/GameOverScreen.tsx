@@ -93,21 +93,32 @@ function formatTime(ms: number): string {
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
+const DEFAULT_GAME_OVER_ACTIONS: GameOverAction[] = [
+  { label: 'Play Again', event: 'RESTART', variant: 'primary' },
+  { label: 'Main Menu', event: 'MAIN_MENU', variant: 'secondary' },
+];
+
+const DEFAULT_GAME_OVER_STATS: GameOverStat[] = [
+  { label: 'Score', value: 1240 },
+  { label: 'Enemies Defeated', value: 8 },
+  { label: 'Time', value: 93000, format: 'time' },
+];
+
 export function GameOverScreen({
-  title,
+  title = 'Game Over',
   message,
-  stats = [],
+  stats = DEFAULT_GAME_OVER_STATS,
   actions,
   menuItems,
   onAction,
   eventBus: eventBusProp,
-  variant = "neutral",
-  highScore,
-  currentScore,
+  variant = "defeat",
+  highScore = 2000,
+  currentScore = 1240,
   className,
 }: GameOverScreenProps) {
   // Resolve alias: menuItems → actions
-  const resolvedActions = actions ?? menuItems ?? [];
+  const resolvedActions = actions ?? menuItems ?? DEFAULT_GAME_OVER_ACTIONS;
   // Use provided eventBus or get from context (with fallback for outside provider)
   let eventBusFromHook: EventBusContextType | null = null;
   try {

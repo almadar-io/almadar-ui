@@ -86,6 +86,13 @@ function convertElementsToStats(
   });
 }
 
+const DEFAULT_HUD_STATS: GameHudStat[] = [
+  { label: 'HP', value: 75, max: 100, format: 'bar', variant: 'danger' },
+  { label: 'MP', value: 40, max: 60, format: 'bar', variant: 'primary' },
+  { label: 'Score', value: 4200, format: 'number', variant: 'warning' },
+  { label: 'Level', value: 4, format: 'number', variant: 'default' },
+];
+
 export function GameHud({
   position: propPosition,
   stats: propStats,
@@ -98,7 +105,7 @@ export function GameHud({
   // Convert elements to stats if provided, with items as alias for stats
   // Defensive: ensure stats is always a valid array even if props are malformed
   const rawStats =
-    propStats ?? items ?? (elements && Array.isArray(elements) ? convertElementsToStats(elements) : []);
+    propStats ?? items ?? (elements && Array.isArray(elements) ? convertElementsToStats(elements) : DEFAULT_HUD_STATS);
   const stats = Array.isArray(rawStats) ? rawStats : [];
 
   // Determine position from props or derive from elements

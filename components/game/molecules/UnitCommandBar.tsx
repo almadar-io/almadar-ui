@@ -29,9 +29,16 @@ export interface UnitCommandBarProps {
   className?: string;
 }
 
+const DEFAULT_COMMANDS: UnitCommand[] = [
+  { label: 'Move', icon: 'move', event: 'MOVE', hotkey: 'M' },
+  { label: 'Attack', icon: 'sword', event: 'ATTACK', hotkey: 'A' },
+  { label: 'Defend', icon: 'shield', event: 'DEFEND', hotkey: 'D' },
+  { label: 'Wait', icon: 'clock', event: 'WAIT', hotkey: 'W' },
+];
+
 export function UnitCommandBar({
-  commands,
-  selectedUnitId,
+  commands = DEFAULT_COMMANDS,
+  selectedUnitId = 'unit-1',
   className,
 }: UnitCommandBarProps) {
   const eventBus = useEventBus();

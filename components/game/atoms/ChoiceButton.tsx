@@ -17,7 +17,7 @@ export interface ChoiceButtonProps {
 }
 
 export function ChoiceButton({
-  text,
+  text = 'Charge forward into the fray',
   index,
   disabled = false,
   selected = false,

@@ -77,16 +77,21 @@ const GRID_COLOR = 'rgba(255, 255, 255, 0.03)';
 
 export function PlatformerCanvas({
   player,
-  platforms = [],
+  platforms = [
+    { x: 0, y: 368, width: 800, height: 32, type: 'ground' },
+    { x: 150, y: 280, width: 160, height: 16, type: 'platform' },
+    { x: 420, y: 220, width: 160, height: 16, type: 'platform' },
+    { x: 620, y: 300, width: 140, height: 16, type: 'platform' },
+  ],
   worldWidth = 800,
   worldHeight = 400,
   canvasWidth = 800,
   canvasHeight = 400,
   followCamera = true,
-  bgColor,
+  bgColor = "#5c94fc",
   playerSprite = "https://almadar-kflow-assets.web.app/shared/platformer/characters/platformChar_idle.png",
   tileSprites,
-  backgroundImage = "https://almadar-kflow-assets.web.app/shared/scenes/dark_clouds_from_above.png",
+  backgroundImage = "",
   assetBaseUrl = "https://almadar-kflow-assets.web.app/shared/platformer/",
   leftEvent = 'MOVE_LEFT',
   rightEvent = 'MOVE_RIGHT',
@@ -136,13 +141,13 @@ export function PlatformerCanvas({
 
   // Resolve player with defaults
   const resolvedPlayer: PlatformerPlayer = player ?? {
-    x: 50,
-    y: 300,
-    width: 24,
-    height: 32,
+    x: 80,
+    y: 336,
+    width: 32,
+    height: 48,
     vx: 0,
     vy: 0,
-    grounded: false,
+    grounded: true,
     facingRight: true,
   };
 

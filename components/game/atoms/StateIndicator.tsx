@@ -54,7 +54,7 @@ const SIZE_CLASSES = {
 };
 
 export function StateIndicator({
-    state,
+    state = 'idle',
     label,
     size = 'md',
     animated = true,

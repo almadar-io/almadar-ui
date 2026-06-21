@@ -63,8 +63,16 @@ const eventBadgeVariants: Record<CombatLogEventType, 'danger' | 'primary' | 'suc
     spawn: 'secondary',
 };
 
+const DEFAULT_COMBAT_EVENTS: CombatEvent[] = [
+    { id: 'e1', type: 'spawn', message: 'Shadow Guard entered the field.', timestamp: 0, turn: 1 },
+    { id: 'e2', type: 'move', message: 'Hero moved to (3, 4).', timestamp: 1, actorName: 'Hero', turn: 1 },
+    { id: 'e3', type: 'attack', message: 'Hero attacked Shadow Guard.', timestamp: 2, actorName: 'Hero', targetName: 'Shadow Guard', value: 18, turn: 2 },
+    { id: 'e4', type: 'defend', message: 'Shadow Guard blocked 5 damage.', timestamp: 3, actorName: 'Shadow Guard', value: 5, turn: 2 },
+    { id: 'e5', type: 'heal', message: 'Hero used Health Potion.', timestamp: 4, actorName: 'Hero', value: 25, turn: 3 },
+];
+
 export function CombatLog({
-    events,
+    events = DEFAULT_COMBAT_EVENTS,
     maxVisible = 50,
     autoScroll = true,
     showTimestamps = false,

@@ -45,10 +45,10 @@ const effectVariantMap = {
 };
 
 export function HealthPanel({
-  current,
-  max,
-  shield,
-  label,
+  current = 75,
+  max = 100,
+  shield = 20,
+  label = 'Player HP',
   effects,
   showNumbers = true,
   size = 'md',

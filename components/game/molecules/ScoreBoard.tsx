@@ -22,11 +22,11 @@ export interface ScoreBoardProps {
 }
 
 export function ScoreBoard({
-  score: rawScore,
-  highScore: rawHighScore,
-  combo: rawCombo,
-  multiplier: rawMultiplier,
-  level: rawLevel,
+  score: rawScore = 4200,
+  highScore: rawHighScore = 8750,
+  combo: rawCombo = 3,
+  multiplier: rawMultiplier = 2,
+  level: rawLevel = 4,
   className,
 }: ScoreBoardProps) {
   const score = rawScore ?? 0;

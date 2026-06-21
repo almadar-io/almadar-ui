@@ -63,11 +63,11 @@ export interface SpriteProps {
  */
 export function Sprite({
   spritesheet = "https://almadar-kflow-assets.web.app/shared/isometric-blocks/Spritesheet/allTiles_sheet.png",
-  frameWidth,
-  frameHeight,
-  frame,
-  x,
-  y,
+  frameWidth = 64,
+  frameHeight = 64,
+  frame = 0,
+  x = 0,
+  y = 0,
   scale = 1,
   flipX = false,
   flipY = false,

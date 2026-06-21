@@ -54,19 +54,25 @@ const variantMap = {
   ghost: "bg-transparent hover:bg-foreground/10 text-[var(--color-foreground)] border-foreground/20",
 };
 
+const DEFAULT_MENU_OPTIONS: MenuOption[] = [
+  { label: 'New Game', event: 'NEW_GAME', variant: 'primary' },
+  { label: 'Continue', event: 'CONTINUE', variant: 'secondary' },
+  { label: 'Settings', event: 'SETTINGS', variant: 'ghost' },
+];
+
 export function GameMenu({
-  title,
+  title = 'Epic Quest',
   subtitle,
   options,
   menuItems,
   onSelect,
   eventBus: eventBusProp,
   background,
-  logo,
+  logo = '',
   className,
 }: GameMenuProps) {
   // Resolve alias: menuItems → options
-  const resolvedOptions = options ?? menuItems ?? [];
+  const resolvedOptions = options ?? menuItems ?? DEFAULT_MENU_OPTIONS;
 
   // Use provided eventBus or get from context (with fallback for outside provider)
   let eventBusFromHook: EventBusContextType | null = null;

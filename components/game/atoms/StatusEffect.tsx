@@ -39,11 +39,11 @@ function formatDuration(seconds: number): string {
 }
 
 export function StatusEffect({
-  icon,
-  label,
-  duration,
+  icon = 'shield',
+  label = 'Shield',
+  duration = 30,
   stacks,
-  variant = 'neutral',
+  variant = 'buff',
   size = 'md',
   className,
 }: StatusEffectProps) {

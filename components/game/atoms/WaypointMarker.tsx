@@ -32,7 +32,7 @@ const checkIcon = (
 export function WaypointMarker({
   label,
   icon,
-  active = false,
+  active = true,
   completed = false,
   size = 'md',
   className,

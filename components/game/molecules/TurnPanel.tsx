@@ -33,12 +33,17 @@ export interface TurnPanelProps {
   className?: string;
 }
 
+const DEFAULT_TURN_ACTIONS: TurnPanelAction[] = [
+  { label: 'End Turn', icon: 'skip-forward', event: 'END_TURN' },
+  { label: 'Forfeit', icon: 'flag', event: 'FORFEIT', disabled: false },
+];
+
 export function TurnPanel({
-  currentTurn,
-  maxTurns,
-  phase,
-  activeTeam,
-  actions,
+  currentTurn = 3,
+  maxTurns = 10,
+  phase = 'Attack',
+  activeTeam = 'Heroes',
+  actions = DEFAULT_TURN_ACTIONS,
   className,
 }: TurnPanelProps) {
   const eventBus = useEventBus();

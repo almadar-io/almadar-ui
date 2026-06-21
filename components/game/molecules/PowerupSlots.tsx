@@ -36,8 +36,13 @@ function formatTime(seconds: number): string {
   return `${seconds}s`;
 }
 
+const DEFAULT_ACTIVE_POWERUPS: ActivePowerup[] = [
+  { id: 'pw1', icon: 'zap', label: 'Speed Boost', remainingTime: 12 },
+  { id: 'pw2', icon: 'shield', label: 'Iron Shield', remainingTime: 30 },
+];
+
 export function PowerupSlots({
-  active,
+  active = DEFAULT_ACTIVE_POWERUPS,
   maxSlots = 4,
   className,
 }: PowerupSlotsProps) {

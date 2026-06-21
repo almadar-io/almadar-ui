@@ -52,10 +52,21 @@ function isValidRarity(value: string | undefined): value is RarityValue {
   return (rarityValues as readonly string[]).includes(value);
 }
 
+const DEFAULT_INPUTS: CraftingIngredient[] = [
+  { icon: 'gem', label: 'Iron Ore', required: 2, available: 3 },
+  { icon: 'flame', label: 'Coal', required: 1, available: 1 },
+];
+
+const DEFAULT_OUTPUT: CraftingOutput = {
+  icon: 'sword',
+  label: 'Iron Sword',
+  rarity: 'uncommon',
+};
+
 export function CraftingRecipe({
-  inputs,
-  output,
-  canCraft = false,
+  inputs = DEFAULT_INPUTS,
+  output = DEFAULT_OUTPUT,
+  canCraft = true,
   onCraft,
   craftEvent,
   className,

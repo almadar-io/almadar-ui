@@ -36,7 +36,7 @@ const variantStyles = {
 };
 
 export function ActionButton({
-  label,
+  label = 'Attack',
   icon,
   cooldown = 0,
   disabled = false,

@@ -37,12 +37,16 @@ const effectVariantMap = {
   neutral: 'neutral' as const,
 };
 
+const DEFAULT_ENEMY_EFFECTS: EnemyPlateEffect[] = [
+  { icon: 'flame', label: 'Burn', variant: 'debuff' },
+];
+
 export function EnemyPlate({
-  name,
-  health,
-  maxHealth,
-  level,
-  effects,
+  name = 'Shadow Guard',
+  health = 80,
+  maxHealth = 100,
+  level = 5,
+  effects = DEFAULT_ENEMY_EFFECTS,
   className,
 }: EnemyPlateProps) {
   return (

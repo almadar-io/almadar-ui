@@ -71,10 +71,16 @@ export interface InventoryPanelProps {
  * />
  * ```
  */
+const DEFAULT_INVENTORY_ITEMS: InventoryItem[] = [
+  { id: 'item-1', type: 'weapon', name: 'Iron Sword', quantity: 1, description: 'A sturdy iron blade.' },
+  { id: 'item-2', type: 'potion', name: 'Health Potion', quantity: 3, description: 'Restores 50 HP.' },
+  { id: 'item-3', type: 'armor', name: 'Leather Helm', quantity: 1, description: 'Light head protection.' },
+];
+
 export function InventoryPanel({
-  items,
-  slots,
-  columns,
+  items = DEFAULT_INVENTORY_ITEMS,
+  slots = 12,
+  columns = 4,
   selectedSlot,
   onSelectSlot,
   onUseItem,

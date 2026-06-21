@@ -34,7 +34,7 @@ function getComboScale(combo: number): string {
 }
 
 export function ComboCounter({
-  combo,
+  combo = 5,
   multiplier,
   streak,
   size = 'md',

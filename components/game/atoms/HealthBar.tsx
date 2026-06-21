@@ -35,8 +35,8 @@ const sizeMap = {
 };
 
 export function HealthBar({
-  current,
-  max,
+  current = 3,
+  max = 5,
   format = 'hearts',
   size = 'md',
   className,

@@ -16,8 +16,8 @@ export interface DialogueBubbleProps {
 }
 
 export function DialogueBubble({
-  speaker,
-  text,
+  speaker = 'Hero',
+  text = 'The dungeon awaits. Choose your path wisely.',
   portrait = "https://almadar-kflow-assets.web.app/shared/characters/archetypes/04_hero.png",
   position = 'bottom',
   className,

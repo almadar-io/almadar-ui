@@ -20,6 +20,63 @@ import type {
     IsometricFeature,
 } from '../organisms/types/isometric';
 
+const CDN = 'https://almadar-kflow-assets.web.app/shared';
+
+const DEFAULT_BATTLE_TILES: IsometricTile[] = [
+    { x: 0, y: 0, terrain: 'stone', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_07.png` },
+    { x: 1, y: 0, terrain: 'stone', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_07.png` },
+    { x: 2, y: 0, terrain: 'stone', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_07.png` },
+    { x: 3, y: 0, terrain: 'stone', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_07.png` },
+    { x: 4, y: 0, terrain: 'stone', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_07.png` },
+    { x: 0, y: 1, terrain: 'stone', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_07.png` },
+    { x: 1, y: 1, terrain: 'dirt',  passable: true,  terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_01.png` },
+    { x: 2, y: 1, terrain: 'grass', passable: true,  terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_13.png` },
+    { x: 3, y: 1, terrain: 'grass', passable: true,  terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_13.png` },
+    { x: 4, y: 1, terrain: 'stone', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_07.png` },
+    { x: 0, y: 2, terrain: 'stone', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_07.png` },
+    { x: 1, y: 2, terrain: 'grass', passable: true,  terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_13.png` },
+    { x: 2, y: 2, terrain: 'dirt',  passable: true,  terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_01.png` },
+    { x: 3, y: 2, terrain: 'grass', passable: true,  terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_13.png` },
+    { x: 4, y: 2, terrain: 'stone', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_07.png` },
+    { x: 0, y: 3, terrain: 'stone', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_07.png` },
+    { x: 1, y: 3, terrain: 'grass', passable: true,  terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_13.png` },
+    { x: 2, y: 3, terrain: 'grass', passable: true,  terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_13.png` },
+    { x: 3, y: 3, terrain: 'dirt',  passable: true,  terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_01.png` },
+    { x: 4, y: 3, terrain: 'stone', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_07.png` },
+    { x: 0, y: 4, terrain: 'stone', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_07.png` },
+    { x: 1, y: 4, terrain: 'stone', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_07.png` },
+    { x: 2, y: 4, terrain: 'stone', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_07.png` },
+    { x: 3, y: 4, terrain: 'stone', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_07.png` },
+    { x: 4, y: 4, terrain: 'stone', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Abstract tiles/abstractTile_07.png` },
+];
+
+const DEFAULT_BATTLE_UNITS: IsometricUnit[] = [
+    { id: 'u1', position: { x: 1, y: 1 }, unitType: 'worker',   name: 'Worker',   team: 'player', health: 10, maxHealth: 10, sprite: `${CDN}/sprite-sheets/amir-sprite-sheet-se.png` },
+    { id: 'u2', position: { x: 3, y: 3 }, unitType: 'guardian', name: 'Guardian', team: 'enemy',  health: 8,  maxHealth: 10, sprite: `${CDN}/sprite-sheets/destroyer-sprite-sheet-sw.png` },
+];
+
+const DEFAULT_BATTLE_FEATURES: IsometricFeature[] = [
+    { id: 'f1', x: 2, y: 2, type: 'gold_mine', sprite: `${CDN}/world-map/gold_mine.png` },
+    { id: 'f2', x: 3, y: 1, type: 'portal',    sprite: `${CDN}/world-map/portal_open.png` },
+];
+
+const DEFAULT_BATTLE_MANIFEST: BattleBoardProps['assetManifest'] = {
+    baseUrl: CDN,
+    terrains: {
+        stone: '/isometric-blocks/PNG/Abstract tiles/abstractTile_07.png',
+        dirt:  '/isometric-blocks/PNG/Abstract tiles/abstractTile_01.png',
+        grass: '/isometric-blocks/PNG/Abstract tiles/abstractTile_13.png',
+    },
+    units: {
+        worker:   '/sprite-sheets/amir-sprite-sheet-se.png',
+        guardian: '/sprite-sheets/destroyer-sprite-sheet-sw.png',
+    },
+    features: {
+        gold_mine: '/world-map/gold_mine.png',
+        portal:    '/world-map/portal_open.png',
+    },
+};
+
 // Re-export the surviving UI value types (entity types were collapsed to EntityRow).
 export type {
     BattlePhase,
@@ -53,10 +110,10 @@ export function BattleTemplate({
     entity,
     scale = 0.45,
     unitScale = 1,
-    tiles,
-    units,
-    features,
-    assetManifest,
+    tiles = DEFAULT_BATTLE_TILES,
+    units = DEFAULT_BATTLE_UNITS,
+    features = DEFAULT_BATTLE_FEATURES,
+    assetManifest = DEFAULT_BATTLE_MANIFEST,
     className,
 }: BattleTemplateProps): React.JSX.Element | null {
     const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as EntityRow : undefined;

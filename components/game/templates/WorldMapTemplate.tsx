@@ -19,6 +19,64 @@ import type {
     IsometricFeature,
 } from '../organisms/types/isometric';
 
+const CDN = 'https://almadar-kflow-assets.web.app/shared';
+
+const DEFAULT_WORLDMAP_TILES: IsometricTile[] = [
+    { x: 0, y: 0, terrain: 'mountain', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_13.png` },
+    { x: 1, y: 0, terrain: 'mountain', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_13.png` },
+    { x: 2, y: 0, terrain: 'water',    passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_11.png` },
+    { x: 3, y: 0, terrain: 'mountain', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_13.png` },
+    { x: 4, y: 0, terrain: 'mountain', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_13.png` },
+    { x: 0, y: 1, terrain: 'mountain', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_13.png` },
+    { x: 1, y: 1, terrain: 'grass',    passable: true,  terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_01.png` },
+    { x: 2, y: 1, terrain: 'grass',    passable: true,  terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_01.png` },
+    { x: 3, y: 1, terrain: 'grass',    passable: true,  terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_01.png` },
+    { x: 4, y: 1, terrain: 'water',    passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_11.png` },
+    { x: 0, y: 2, terrain: 'water',    passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_11.png` },
+    { x: 1, y: 2, terrain: 'grass',    passable: true,  terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_01.png` },
+    { x: 2, y: 2, terrain: 'grass',    passable: true,  terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_03.png` },
+    { x: 3, y: 2, terrain: 'grass',    passable: true,  terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_01.png` },
+    { x: 4, y: 2, terrain: 'mountain', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_13.png` },
+    { x: 0, y: 3, terrain: 'mountain', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_13.png` },
+    { x: 1, y: 3, terrain: 'grass',    passable: true,  terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_01.png` },
+    { x: 2, y: 3, terrain: 'grass',    passable: true,  terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_01.png` },
+    { x: 3, y: 3, terrain: 'grass',    passable: true,  terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_03.png` },
+    { x: 4, y: 3, terrain: 'mountain', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_13.png` },
+    { x: 0, y: 4, terrain: 'mountain', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_13.png` },
+    { x: 1, y: 4, terrain: 'water',    passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_11.png` },
+    { x: 2, y: 4, terrain: 'grass',    passable: true,  terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_01.png` },
+    { x: 3, y: 4, terrain: 'mountain', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_13.png` },
+    { x: 4, y: 4, terrain: 'mountain', passable: false, terrainSprite: `${CDN}/isometric-blocks/PNG/Platformer tiles/platformerTile_13.png` },
+];
+
+const DEFAULT_WORLDMAP_UNITS: IsometricUnit[] = [
+    { id: 'h1', position: { x: 1, y: 1 }, unitType: 'hero',  name: 'Amir',      team: 'player', health: 10, maxHealth: 10, sprite: `${CDN}/sprite-sheets/amir-sprite-sheet-se.png` },
+    { id: 'h2', position: { x: 3, y: 3 }, unitType: 'scout', name: 'Archivist', team: 'player', health: 10, maxHealth: 10, sprite: `${CDN}/sprite-sheets/archivist-sprite-sheet-se.png` },
+];
+
+const DEFAULT_WORLDMAP_FEATURES: IsometricFeature[] = [
+    { id: 'f1', x: 2, y: 2, type: 'capital',    sprite: `${CDN}/scenes/world/capital.png` },
+    { id: 'f2', x: 4, y: 2, type: 'power_node', sprite: `${CDN}/world-map/power_node.png` },
+];
+
+const DEFAULT_WORLDMAP_MANIFEST: WorldMapBoardProps['assetManifest'] = {
+    baseUrl: CDN,
+    terrains: {
+        grass:    '/isometric-blocks/PNG/Platformer tiles/platformerTile_01.png',
+        water:    '/isometric-blocks/PNG/Platformer tiles/platformerTile_11.png',
+        mountain: '/isometric-blocks/PNG/Platformer tiles/platformerTile_13.png',
+        road:     '/isometric-blocks/PNG/Platformer tiles/platformerTile_03.png',
+    },
+    units: {
+        hero:  '/sprite-sheets/amir-sprite-sheet-se.png',
+        scout: '/sprite-sheets/archivist-sprite-sheet-se.png',
+    },
+    features: {
+        capital:    '/scenes/world/capital.png',
+        power_node: '/world-map/power_node.png',
+    },
+};
+
 // Re-export the surviving UI value type (entity types were collapsed to EntityRow).
 export type { WorldMapSlotContext } from '../organisms/WorldMapBoard';
 
@@ -53,12 +111,12 @@ export function WorldMapTemplate({
     entity,
     scale = 0.4,
     unitScale = 2.5,
-    diamondTopY,
+    diamondTopY = 374,
     allowMoveAllHeroes = false,
-    tiles,
-    units,
-    features,
-    assetManifest,
+    tiles = DEFAULT_WORLDMAP_TILES,
+    units = DEFAULT_WORLDMAP_UNITS,
+    features = DEFAULT_WORLDMAP_FEATURES,
+    assetManifest = DEFAULT_WORLDMAP_MANIFEST,
     className,
 }: WorldMapTemplateProps): React.JSX.Element {
     return (

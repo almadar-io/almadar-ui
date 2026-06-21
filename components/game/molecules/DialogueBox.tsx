@@ -83,8 +83,18 @@ export interface DialogueBoxProps {
  * />
  * ```
  */
+const DEFAULT_DIALOGUE: DialogueNode = {
+  speaker: 'Village Elder',
+  text: "The ancient ruins hold great power — and great danger. Choose your path wisely, traveler.",
+  choices: [
+    { text: 'I am ready. Lead the way.', action: 'ACCEPT_QUEST' },
+    { text: 'Tell me more about the ruins.', action: 'ASK_LORE' },
+    { text: 'Perhaps another time.', action: 'DECLINE' },
+  ],
+};
+
 export function DialogueBox({
-  dialogue,
+  dialogue = DEFAULT_DIALOGUE,
   typewriterSpeed = 30,
   position = 'bottom',
   onComplete,

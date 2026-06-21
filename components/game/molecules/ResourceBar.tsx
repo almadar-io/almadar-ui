@@ -25,8 +25,14 @@ export interface ResourceBarProps {
   className?: string;
 }
 
+const DEFAULT_RESOURCES: ResourceBarResource[] = [
+  { icon: 'coins', label: 'Gold', value: 320 },
+  { icon: 'zap', label: 'Energy', value: 7, max: 10 },
+  { icon: 'gem', label: 'Crystals', value: 15 },
+];
+
 export function ResourceBar({
-  resources,
+  resources = DEFAULT_RESOURCES,
   size = 'md',
   className,
 }: ResourceBarProps) {

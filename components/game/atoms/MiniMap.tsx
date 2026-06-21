@@ -35,14 +35,29 @@ export interface MiniMapProps {
   className?: string;
 }
 
+const DEFAULT_TILES: MiniMapTile[] = [
+  { x: 10, y: 10, color: '#4ade80' },
+  { x: 20, y: 15, color: '#4ade80' },
+  { x: 30, y: 25, color: '#22c55e' },
+  { x: 50, y: 40, color: '#4ade80' },
+  { x: 60, y: 55, color: '#16a34a' },
+  { x: 40, y: 60, color: '#4ade80' },
+  { x: 70, y: 30, color: '#22c55e' },
+  { x: 80, y: 70, color: '#4ade80' },
+];
+const DEFAULT_UNITS: MiniMapUnit[] = [
+  { x: 30, y: 30, color: '#60a5fa', isPlayer: true },
+];
+const DEFAULT_VIEWPORT = { x: 20, y: 20, w: 40, h: 40 };
+
 export function MiniMap({
-  tiles = [],
-  units = [],
+  tiles = DEFAULT_TILES,
+  units = DEFAULT_UNITS,
   width = 150,
   height = 150,
   mapWidth = 100,
   mapHeight = 100,
-  viewportRect,
+  viewportRect = DEFAULT_VIEWPORT,
   className,
 }: MiniMapProps) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);

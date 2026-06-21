@@ -55,8 +55,14 @@ const layoutMap = {
   diamond: 'grid grid-cols-3 gap-1',
 };
 
+const DEFAULT_BUTTONS: ActionButtonConfig[] = [
+  { id: 'jump', label: 'Jump', icon: 'chevron-up', variant: 'primary' },
+  { id: 'attack', label: 'Attack', icon: 'sword', variant: 'secondary' },
+  { id: 'dodge', label: 'Dodge', icon: 'wind', variant: 'ghost' },
+];
+
 export function ActionButtons({
-  buttons,
+  buttons = DEFAULT_BUTTONS,
   onAction,
   actionEvent,
   layout = 'horizontal',

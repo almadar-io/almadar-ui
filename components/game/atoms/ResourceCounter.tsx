@@ -37,8 +37,8 @@ const sizeMap = {
 
 export function ResourceCounter({
   icon,
-  label,
-  value,
+  label = 'Gold',
+  value = 250,
   max,
   color,
   size = 'md',

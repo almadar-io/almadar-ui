@@ -26,10 +26,10 @@ const sizeMap = {
 };
 
 export function XPBar({
-  current,
-  max,
-  level,
-  showLabel = false,
+  current = 350,
+  max = 1000,
+  level = 5,
+  showLabel = true,
   size = 'md',
   animated = true,
   className,

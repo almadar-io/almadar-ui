@@ -44,11 +44,18 @@ const columnMap = {
   8: 'grid-cols-8',
 };
 
+const DEFAULT_GRID_ITEMS: InventoryGridItem[] = [
+  { id: 'grid-1', icon: 'sword', label: 'Iron Sword', quantity: 1, rarity: 'common' },
+  { id: 'grid-2', icon: 'flask-conical', label: 'Health Potion', quantity: 3, rarity: 'uncommon' },
+  { id: 'grid-3', icon: 'shield', label: 'Wooden Shield', quantity: 1, rarity: 'common' },
+  { id: 'grid-4', icon: 'gem', label: 'Ruby Gem', quantity: 2, rarity: 'rare' },
+];
+
 export function InventoryGrid({
-  items,
+  items = DEFAULT_GRID_ITEMS,
   columns = 4,
-  totalSlots,
-  selectedId,
+  totalSlots = 12,
+  selectedId = '',
   onSelect,
   selectEvent,
   size = 'md',

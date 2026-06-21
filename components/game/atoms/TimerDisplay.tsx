@@ -42,8 +42,8 @@ function formatTime(seconds: number, format: 'mm:ss' | 'ss' | 'countdown'): stri
 }
 
 export function TimerDisplay({
-  seconds,
-  running,
+  seconds = 90,
+  running = true,
   format = 'mm:ss',
   size = 'md',
   className,

@@ -25,9 +25,15 @@ export interface QuestTrackerProps {
   className?: string;
 }
 
+const DEFAULT_QUESTS: Quest[] = [
+  { id: 'q1', title: 'Reach the Ancient Ruins', progress: 1, maxProgress: 1, completed: true },
+  { id: 'q2', title: 'Defeat the Shadow Guard', progress: 2, maxProgress: 5, active: true },
+  { id: 'q3', title: 'Collect 3 Crystal Shards', progress: 0, maxProgress: 3, active: false },
+];
+
 export function QuestTracker({
-  quests,
-  activeQuestId,
+  quests = DEFAULT_QUESTS,
+  activeQuestId = 'q2',
   className,
 }: QuestTrackerProps) {
   return (

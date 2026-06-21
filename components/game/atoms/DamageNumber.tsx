@@ -34,7 +34,7 @@ const floatKeyframes = `
 `;
 
 export function DamageNumber({
-  value,
+  value = 42,
   type = 'damage',
   size = 'md',
   className,

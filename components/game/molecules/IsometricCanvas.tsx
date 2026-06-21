@@ -203,7 +203,7 @@ export function IsometricCanvas({
     // Rendering options
     scale = 0.4,
     debug = false,
-    backgroundImage = "https://almadar-kflow-assets.web.app/shared/scenes/dark_clouds_from_above.png",
+    backgroundImage = "",
     showMinimap = true,
     enableCamera = true,
     unitScale = 1,
