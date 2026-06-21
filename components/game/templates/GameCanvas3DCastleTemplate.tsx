@@ -144,7 +144,12 @@ export function GameCanvas3DCastleTemplate({
     const level = resolved?.level == null ? undefined : Number(resolved.level);
     const owner = resolved?.owner == null ? undefined : String(resolved.owner);
     return (
-        <VStack className={cn('game-canvas-3d-castle-template', className)}>
+        <VStack
+            className={cn('game-canvas-3d-castle-template', className)}
+            // Block (not flex) container with a real height: a flex column collapses the
+            // GameCanvas3D flex-item's height → r3f canvas ~150px. Children still stack.
+            style={{ display: 'block', width: '100%', minHeight: '85vh' }}
+        >
             {/* Castle header */}
             {showHeader && name && (
                 <HStack gap="md" align="center" className="castle-template__header">
