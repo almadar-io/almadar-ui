@@ -86,7 +86,7 @@ export function PlatformerCanvas({
   bgColor,
   playerSprite = "https://almadar-kflow-assets.web.app/shared/platformer/characters/platformChar_idle.png",
   tileSprites,
-  backgroundImage = "https://almadar-kflow-assets.web.app/shared/scenes/court.png",
+  backgroundImage = "https://almadar-kflow-assets.web.app/shared/scenes/dark_clouds_from_above.png",
   assetBaseUrl = "https://almadar-kflow-assets.web.app/shared/platformer/",
   leftEvent = 'MOVE_LEFT',
   rightEvent = 'MOVE_RIGHT',
