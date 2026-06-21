@@ -20,9 +20,10 @@ import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import type { IconFamily as IconFamilyType } from '@almadar/core';
 import * as LucideIcons from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import * as PhosphorIcons from '@phosphor-icons/react';
-import * as TablerIcons from '@tabler/icons-react';
-import * as FaIcons from 'react-icons/fa';
+// Phosphor / Tabler / FontAwesome are loaded LAZILY (dynamic import) only when
+// their family is the ACTIVE one. Eager `import *` on these three pulled ~14k
+// icon components into every bundle even when the default lucide family is in
+// use — the dominant memory/parse cost. See `lazyFamilyIcon` below.
 
 export type IconFamily = IconFamilyType;
 
@@ -121,6 +122,60 @@ function kebabToPascal(name: string): string {
       return part.charAt(0).toUpperCase() + part.slice(1);
     })
     .join('');
+}
+
+// ---------------------------------------------------------------------------
+// Lazy family-library loading (phosphor / tabler / fa)
+// ---------------------------------------------------------------------------
+// A non-lucide family's icon library is dynamic-imported on first render of
+// that family, so a lucide-default app never pays for ~14k unused components.
+// Each resolved icon is a Suspense-wrapped React.lazy that loads the library,
+// picks the component, and falls back to lucide when the family lacks the icon.
+
+const libPromises = new Map<string, Promise<Record<string, unknown>>>();
+function loadLib(
+  key: string,
+  importer: () => Promise<unknown>,
+): Promise<Record<string, unknown>> {
+  let p = libPromises.get(key);
+  if (!p) {
+    p = importer().then((m) => m as Record<string, unknown>);
+    libPromises.set(key, p);
+  }
+  return p;
+}
+
+function lazyFamilyIcon(
+  libKey: string,
+  importer: () => Promise<unknown>,
+  pick: (lib: Record<string, unknown>) => React.ComponentType<RenderedIconProps> | null,
+  fallbackName: string,
+  family: IconFamily,
+): React.ComponentType<RenderedIconProps> {
+  const Lazy = React.lazy(async () => {
+    const lib = await loadLib(libKey, importer);
+    const Comp = pick(lib);
+    if (!Comp) {
+      warnFallback(fallbackName, family);
+      return { default: makeLucideAdapter(fallbackName, true) };
+    }
+    return { default: Comp };
+  });
+  const Wrapped: React.FC<RenderedIconProps> = (props) => (
+    <React.Suspense
+      fallback={
+        <span
+          aria-hidden
+          className={props.className}
+          style={{ display: 'inline-block', ...props.style }}
+        />
+      }
+    >
+      <Lazy {...props} />
+    </React.Suspense>
+  );
+  Wrapped.displayName = `Lazy.${libKey}.${fallbackName}`;
+  return Wrapped;
 }
 
 // ---------------------------------------------------------------------------
@@ -334,27 +389,35 @@ type PhosphorWeight = 'thin' | 'light' | 'regular' | 'bold' | 'fill' | 'duotone'
 function resolvePhosphor(
   name: string,
   weight: PhosphorWeight,
-): React.ComponentType<RenderedIconProps> | null {
+  family: IconFamily,
+): React.ComponentType<RenderedIconProps> {
   const target = phosphorAliases[name] ?? kebabToPascal(name);
-  const map = PhosphorIcons as unknown as Record<string, unknown>;
-  const PhosphorComp = map[target];
-  if (!PhosphorComp || typeof PhosphorComp !== 'object') return null;
-  const Component = PhosphorComp as React.ComponentType<{
-    weight?: PhosphorWeight;
-    size?: number | string;
-    className?: string;
-    style?: React.CSSProperties;
-  }>;
-  const Adapter: React.FC<RenderedIconProps> = (props) => (
-    <Component
-      weight={weight}
-      className={props.className}
-      style={props.style}
-      size={props.size ?? '1em'}
-    />
+  return lazyFamilyIcon(
+    'phosphor',
+    () => import('@phosphor-icons/react'),
+    (lib) => {
+      const PhosphorComp = lib[target];
+      if (!PhosphorComp || typeof PhosphorComp !== 'object') return null;
+      const Component = PhosphorComp as React.ComponentType<{
+        weight?: PhosphorWeight;
+        size?: number | string;
+        className?: string;
+        style?: React.CSSProperties;
+      }>;
+      const Adapter: React.FC<RenderedIconProps> = (props) => (
+        <Component
+          weight={weight}
+          className={props.className}
+          style={props.style}
+          size={props.size ?? '1em'}
+        />
+      );
+      Adapter.displayName = `Phosphor.${target}.${weight}`;
+      return Adapter;
+    },
+    name,
+    family,
   );
-  Adapter.displayName = `Phosphor.${target}.${weight}`;
-  return Adapter;
 }
 
 // ---------------------------------------------------------------------------
@@ -533,28 +596,38 @@ const tablerAliases: Record<string, string> = {
   network: 'Network',
 };
 
-function resolveTabler(name: string): React.ComponentType<RenderedIconProps> | null {
+function resolveTabler(
+  name: string,
+  family: IconFamily,
+): React.ComponentType<RenderedIconProps> {
   const suffix = tablerAliases[name] ?? kebabToPascal(name);
   const target = `Icon${suffix}`;
-  const map = TablerIcons as unknown as Record<string, unknown>;
-  const TablerComp = map[target];
-  if (!TablerComp || typeof TablerComp !== 'object') return null;
-  const Component = TablerComp as React.ComponentType<{
-    stroke?: number;
-    size?: number | string;
-    className?: string;
-    style?: React.CSSProperties;
-  }>;
-  const Adapter: React.FC<RenderedIconProps> = (props) => (
-    <Component
-      stroke={props.strokeWidth ?? 1.5}
-      className={props.className}
-      style={props.style}
-      size={props.size ?? 24}
-    />
+  return lazyFamilyIcon(
+    'tabler',
+    () => import('@tabler/icons-react'),
+    (lib) => {
+      const TablerComp = lib[target];
+      if (!TablerComp || typeof TablerComp !== 'object') return null;
+      const Component = TablerComp as React.ComponentType<{
+        stroke?: number;
+        size?: number | string;
+        className?: string;
+        style?: React.CSSProperties;
+      }>;
+      const Adapter: React.FC<RenderedIconProps> = (props) => (
+        <Component
+          stroke={props.strokeWidth ?? 1.5}
+          className={props.className}
+          style={props.style}
+          size={props.size ?? 24}
+        />
+      );
+      Adapter.displayName = `Tabler.${target}`;
+      return Adapter;
+    },
+    name,
+    family,
   );
-  Adapter.displayName = `Tabler.${target}`;
-  return Adapter;
 }
 
 // ---------------------------------------------------------------------------
@@ -735,26 +808,36 @@ const faAliases: Record<string, string> = {
   network: 'NetworkWired',
 };
 
-function resolveFa(name: string): React.ComponentType<RenderedIconProps> | null {
+function resolveFa(
+  name: string,
+  family: IconFamily,
+): React.ComponentType<RenderedIconProps> {
   const suffix = faAliases[name] ?? kebabToPascal(name);
   const target = `Fa${suffix}`;
-  const map = FaIcons as unknown as Record<string, unknown>;
-  const FaComp = map[target];
-  if (!FaComp || typeof FaComp !== 'function') return null;
-  const Component = FaComp as React.ComponentType<{
-    size?: number | string;
-    className?: string;
-    style?: React.CSSProperties;
-  }>;
-  const Adapter: React.FC<RenderedIconProps> = (props) => (
-    <Component
-      className={props.className}
-      style={props.style}
-      size={props.size ?? '1em'}
-    />
+  return lazyFamilyIcon(
+    'fa',
+    () => import('react-icons/fa'),
+    (lib) => {
+      const FaComp = lib[target];
+      if (!FaComp || typeof FaComp !== 'function') return null;
+      const Component = FaComp as React.ComponentType<{
+        size?: number | string;
+        className?: string;
+        style?: React.CSSProperties;
+      }>;
+      const Adapter: React.FC<RenderedIconProps> = (props) => (
+        <Component
+          className={props.className}
+          style={props.style}
+          size={props.size ?? '1em'}
+        />
+      );
+      Adapter.displayName = `Fa.${target}`;
+      return Adapter;
+    },
+    name,
+    family,
   );
-  Adapter.displayName = `Fa.${target}`;
-  return Adapter;
 }
 
 // ---------------------------------------------------------------------------
@@ -822,36 +905,19 @@ export function resolveIconForFamily(
   switch (family) {
     case 'lucide':
       return makeLucideAdapter(name, false);
-    case 'phosphor-outline': {
-      const p = resolvePhosphor(name, 'regular');
-      if (p) return p;
-      warnFallback(name, family);
-      return makeLucideAdapter(name, true);
-    }
-    case 'phosphor-fill': {
-      const p = resolvePhosphor(name, 'fill');
-      if (p) return p;
-      warnFallback(name, family);
-      return makeLucideAdapter(name, true);
-    }
-    case 'phosphor-duotone': {
-      const p = resolvePhosphor(name, 'duotone');
-      if (p) return p;
-      warnFallback(name, family);
-      return makeLucideAdapter(name, true);
-    }
-    case 'tabler': {
-      const t = resolveTabler(name);
-      if (t) return t;
-      warnFallback(name, family);
-      return makeLucideAdapter(name, true);
-    }
-    case 'fa-solid': {
-      const f = resolveFa(name);
-      if (f) return f;
-      warnFallback(name, family);
-      return makeLucideAdapter(name, true);
-    }
+    // Non-lucide families resolve to a lazy, Suspense-wrapped component that
+    // dynamic-imports the library on first render and falls back to lucide
+    // internally when the family lacks the icon (see lazyFamilyIcon).
+    case 'phosphor-outline':
+      return resolvePhosphor(name, 'regular', family);
+    case 'phosphor-fill':
+      return resolvePhosphor(name, 'fill', family);
+    case 'phosphor-duotone':
+      return resolvePhosphor(name, 'duotone', family);
+    case 'tabler':
+      return resolveTabler(name, family);
+    case 'fa-solid':
+      return resolveFa(name, family);
   }
 }
 
