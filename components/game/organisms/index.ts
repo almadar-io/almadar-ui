@@ -131,6 +131,22 @@ export {
     type CastleBoardProps,
     type CastleSlotContext,
 } from './CastleBoard';
+export {
+    PlatformerBoard,
+    type PlatformerBoardProps,
+} from './PlatformerBoard';
+export {
+    TowerDefenseBoard,
+    type TowerDefenseBoardProps,
+} from './TowerDefenseBoard';
+export {
+    RoguelikeBoard,
+    type RoguelikeBoardProps,
+} from './RoguelikeBoard';
+export {
+    GameBoard3D,
+    type GameBoard3DProps,
+} from './GameBoard3D';
 
 // ---------------------------------------------------------------------------
 // Trait / State Machine Visualization

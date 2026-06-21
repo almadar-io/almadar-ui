@@ -6,6 +6,7 @@ import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 import { Badge } from '../../core/atoms/Badge';
 import type { IconInput } from '../../core/atoms';
+import type { AssetUrl } from '@almadar/core';
 
 export interface EnemyPlateEffect {
   /** Effect icon */
@@ -17,6 +18,8 @@ export interface EnemyPlateEffect {
 }
 
 export interface EnemyPlateProps {
+  /** Portrait sprite URL — takes precedence over the default avatar slot */
+  assetUrl?: AssetUrl;
   /** Enemy name */
   name: string;
   /** Current health */
@@ -41,7 +44,11 @@ const DEFAULT_ENEMY_EFFECTS: EnemyPlateEffect[] = [
   { icon: 'flame', label: 'Burn', variant: 'debuff' },
 ];
 
+const DEFAULT_ASSET_URL: AssetUrl =
+  'https://almadar-kflow-assets.web.app/shared/portraits/shadow-legion.png';
+
 export function EnemyPlate({
+  assetUrl = DEFAULT_ASSET_URL,
   name = 'Shadow Guard',
   health = 80,
   maxHealth = 100,
@@ -59,13 +66,25 @@ export function EnemyPlate({
     >
       {/* Name + level row */}
       <Box className="flex items-center justify-between gap-2">
-        <Typography
-          variant="caption"
-          weight="bold"
-          className="text-[var(--color-foreground)] truncate"
-        >
-          {name}
-        </Typography>
+        <Box className="flex items-center gap-1.5 min-w-0">
+          {assetUrl && (
+            <img
+              src={assetUrl}
+              alt={name}
+              width={24}
+              height={24}
+              style={{ objectFit: 'cover', borderRadius: '50%' }}
+              className="flex-shrink-0"
+            />
+          )}
+          <Typography
+            variant="caption"
+            weight="bold"
+            className="text-[var(--color-foreground)] truncate"
+          >
+            {name}
+          </Typography>
+        </Box>
         {level != null && (
           <Badge variant="neutral" size="sm">
             Lv.{level}

@@ -1,27 +1,28 @@
 /**
  * GameCanvas3DCastleTemplate
  *
- * Pure declarative template wrapper for 3D castle/settlement view.
- * Shows castle layout with buildings and garrisoned units.
+ * Declarative template for 3D castle/settlement view.
+ * Delegates interaction state (selectedUnitId, validMoves, attackTargets)
+ * to <GameBoard3D> so the model owns all gameplay state.
  *
  * Page: Castle3DPage, Settlement3DPage
- * Entity: Castle3D, Settlement3D
+ * Entity: Castle3D / GameBoard3DItem
  * ViewType: detail
  *
  * Events Emitted:
  * - BUILDING_SELECTED - When a building is clicked
- * - UNIT_SELECTED - When a garrison unit is clicked
- * - BUILD - When building/upgrading
- * - RECRUIT - When recruiting units
- * - EXIT - When exiting castle view
+ * - UNIT_SELECTED     - When a garrison unit is clicked
+ * - BUILD             - When building/upgrading
+ * - RECRUIT           - When recruiting units
+ * - EXIT              - When exiting castle view
  *
  * @packageDocumentation
  */
 
 import React from 'react';
 import type { EntityRow } from '@almadar/core';
-import { GameCanvas3D } from '../molecules/GameCanvas3D';
-import type { IsometricTile, IsometricUnit, IsometricFeature } from '../organisms/types/isometric';
+import { GameBoard3D } from '../organisms/GameBoard3D';
+import type { IsometricTile, IsometricFeature } from '../organisms/types/isometric';
 import { VStack, HStack } from '../../core/atoms/Stack';
 import { Typography } from '../../core/atoms/Typography';
 import { cn } from '../../../lib/cn';
@@ -55,11 +56,6 @@ const DEFAULT_3D_CASTLE_TILES: IsometricTile[] = [
     { id: 't44', x: 4, y: 4, z: 4, type: 'wall',  passable: false },
 ];
 
-const DEFAULT_3D_CASTLE_UNITS: IsometricUnit[] = [
-    { id: 'u1', x: 1, y: 1, z: 1, unitType: 'worker',   name: 'Worker',   faction: 'player', health: 10, maxHealth: 10 },
-    { id: 'u2', x: 3, y: 3, z: 3, unitType: 'guardian', name: 'Guardian', faction: 'player', health: 10, maxHealth: 10 },
-];
-
 const DEFAULT_3D_CASTLE_FEATURES: IsometricFeature[] = [
     { id: 'f1', x: 2, y: 2, z: 2, type: 'chest',   color: '#f4c542' },
     { id: 'f2', x: 3, y: 1, z: 1, type: 'crystal', color: '#8b5cf6' },
@@ -68,8 +64,6 @@ const DEFAULT_3D_CASTLE_FEATURES: IsometricFeature[] = [
 export interface GameCanvas3DCastleTemplateProps extends TemplateProps {
     /** Fallback tile data when no entity is present */
     tiles?: IsometricTile[];
-    /** Fallback unit data when no entity is present */
-    units?: IsometricUnit[];
     /** Fallback feature data when no entity is present */
     features?: IsometricFeature[];
     /** 3D camera mode */
@@ -80,30 +74,35 @@ export interface GameCanvas3DCastleTemplateProps extends TemplateProps {
     shadows?: boolean;
     /** Background color */
     backgroundColor?: string;
-    /** Event name for building clicks */
+    /** Event name for building (feature) clicks */
     buildingClickEvent?: string;
     /** Event name for unit clicks */
     unitClickEvent?: string;
+    /** Event name for ending turn */
+    endTurnEvent?: string;
+    /** Event name for cancel/deselect */
+    cancelEvent?: string;
+    /** Event name for attack emission */
+    attackEvent?: string;
+    /** Event name for play again / reset */
+    playAgainEvent?: string;
+    /** Event name for game end detection */
+    gameEndEvent?: string;
     /** Event name for build action */
     buildEvent?: string;
     /** Event name for recruit action */
     recruitEvent?: string;
     /** Event name for exit */
     exitEvent?: string;
-    /** Currently selected building ID */
-    selectedBuildingId?: string | null;
-    /** Available build positions */
-    availableBuildSites?: Array<{ x: number; z: number }>;
     /** Show castle name header */
     showHeader?: boolean;
-    /** Pre-computed selected tile IDs array */
-    selectedTileIds?: string[];
 }
 
 /**
  * GameCanvas3DCastleTemplate Component
  *
  * Template for 3D castle/settlement management view.
+ * Interaction state lives in the entity (model), not in this component.
  *
  * @example
  * ```tsx
@@ -111,38 +110,34 @@ export interface GameCanvas3DCastleTemplateProps extends TemplateProps {
  *     entity={castleEntity}
  *     cameraMode="isometric"
  *     showHeader={true}
- *     buildingClickEvent="SELECT_BUILDING"
- *     buildEvent="BUILD_STRUCTURE"
+ *     buildingClickEvent="UNIT_CLICK"
  * />
  * ```
  */
 export function GameCanvas3DCastleTemplate({
     entity,
     tiles: propTiles = DEFAULT_3D_CASTLE_TILES,
-    units: propUnits = DEFAULT_3D_CASTLE_UNITS,
     features: propFeatures = DEFAULT_3D_CASTLE_FEATURES,
     cameraMode = 'isometric',
-    showGrid = true,
-    shadows = true,
     backgroundColor = '#1e1e2e',
     buildingClickEvent,
     unitClickEvent,
-    buildEvent,
-    recruitEvent,
-    exitEvent,
-    selectedBuildingId,
-    selectedTileIds = [],
-    availableBuildSites,
+    endTurnEvent,
+    cancelEvent,
+    attackEvent,
+    playAgainEvent,
+    gameEndEvent,
     showHeader = true,
     className,
 }: GameCanvas3DCastleTemplateProps): React.JSX.Element | null {
     const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as EntityRow : undefined;
-    const tiles = resolved ? (Array.isArray(resolved.tiles) ? resolved.tiles : []) as unknown as IsometricTile[] : propTiles;
-    const units = resolved ? (Array.isArray(resolved.units) ? resolved.units : []) as unknown as IsometricUnit[] : propUnits;
-    const features = resolved ? (Array.isArray(resolved.features) ? resolved.features : []) as unknown as IsometricFeature[] : propFeatures;
+    const tiles = resolved ? (Array.isArray(resolved.tiles) ? resolved.tiles as unknown as IsometricTile[] : []) : propTiles;
+    const features = resolved ? (Array.isArray(resolved.features) ? resolved.features as unknown as IsometricFeature[] : []) : propFeatures;
     const name = resolved?.name == null ? undefined : String(resolved.name);
     const level = resolved?.level == null ? undefined : Number(resolved.level);
     const owner = resolved?.owner == null ? undefined : String(resolved.owner);
+    const unitCount = resolved && Array.isArray(resolved.units) ? resolved.units.length : 0;
+
     return (
         <VStack
             className={cn('game-canvas-3d-castle-template block w-full min-h-[85vh]', className)}
@@ -160,28 +155,28 @@ export function GameCanvas3DCastleTemplate({
                 </HStack>
             )}
 
-            <GameCanvas3D
+            {/* GameBoard3D reads selectedUnitId/validMoves/attackTargets from entity */}
+            <GameBoard3D
+                entity={entity}
                 tiles={tiles}
-                units={units}
                 features={features}
                 cameraMode={cameraMode}
-                showGrid={showGrid}
-                showCoordinates={false}
-                showTileInfo={false}
-                shadows={shadows}
                 backgroundColor={backgroundColor}
-                featureClickEvent={buildingClickEvent}
+                tileClickEvent={buildingClickEvent}
                 unitClickEvent={unitClickEvent}
-                selectedTileIds={selectedTileIds}
-                validMoves={availableBuildSites}
-                className="game-canvas-3d-castle-template__canvas"
+                endTurnEvent={endTurnEvent}
+                cancelEvent={cancelEvent}
+                attackEvent={attackEvent}
+                playAgainEvent={playAgainEvent}
+                gameEndEvent={gameEndEvent}
+                className="game-canvas-3d-castle-template__board"
             />
 
-            {/* Garrison info overlay */}
-            {units.length > 0 && (
+            {/* Garrison info */}
+            {unitCount > 0 && (
                 <HStack gap="sm" align="center" className="castle-template__garrison-info">
                     <Typography variant="small" className="garrison-info__label">Garrison:</Typography>
-                    <Typography variant="small" weight="bold" className="garrison-info__count">{units.length} units</Typography>
+                    <Typography variant="small" weight="bold" className="garrison-info__count">{unitCount} units</Typography>
                 </HStack>
             )}
         </VStack>

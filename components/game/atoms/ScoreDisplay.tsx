@@ -2,8 +2,11 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import { Icon, type IconInput } from '../../core/atoms/Icon';
+import type { AssetUrl } from '@almadar/core';
 
 export interface ScoreDisplayProps {
+  /** Sprite image URL — takes precedence over icon when provided */
+  assetUrl?: AssetUrl;
   /** Current score value */
   value: number;
   /** Label to display before score */
@@ -27,7 +30,11 @@ const sizeMap = {
   xl: 'text-4xl',
 };
 
+const DEFAULT_ASSET_URL: AssetUrl =
+  'https://almadar-kflow-assets.web.app/shared/effects/particles/star_01.png';
+
 export function ScoreDisplay({
+  assetUrl = DEFAULT_ASSET_URL,
   value,
   label,
   icon,
@@ -85,11 +92,20 @@ export function ScoreDisplay({
         className
       )}
     >
-      {icon && (
+      {assetUrl ? (
+        <img
+          src={assetUrl}
+          alt=""
+          width={20}
+          height={20}
+          style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
+          className="flex-shrink-0"
+        />
+      ) : icon ? (
         <span className="flex-shrink-0">
           {typeof icon === 'string' ? <Icon name={icon} /> : <Icon icon={icon} />}
         </span>
-      )}
+      ) : null}
       {label && <span className="text-muted-foreground">{label}</span>}
       <span className="tabular-nums">{formattedValue}</span>
     </div>

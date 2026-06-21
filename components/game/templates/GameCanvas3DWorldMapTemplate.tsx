@@ -1,28 +1,29 @@
 /**
  * GameCanvas3DWorldMapTemplate
  *
- * Pure declarative template wrapper for 3D world map.
- * No hooks, no callbacks, no local state -- just entity data and config props.
+ * Declarative template for 3D world map.
+ * Delegates interaction state (selectedUnitId, validMoves, attackTargets)
+ * to <GameBoard3D> so the model owns all gameplay state.
  *
  * Page: WorldMap3DPage
- * Entity: WorldMap3D
+ * Entity: WorldMap3D / GameBoard3DItem
  * ViewType: detail
  *
  * Events Emitted:
- * - TILE_SELECTED - When a tile is clicked ({ tileId, x, z, type })
- * - UNIT_SELECTED - When a unit is clicked ({ unitId, x, z, name })
- * - FEATURE_SELECTED - When a feature is clicked ({ featureId, x, z, type })
- * - TILE_HOVERED - When hovering over a tile ({ tileId, x, z })
- * - TILE_LEAVE - When leaving a tile ({})
- * - CAMERA_CHANGED - When camera position changes ({ position })
+ * - TILE_CLICK    - When a tile is clicked ({ tileId, x, z, type })
+ * - UNIT_CLICK    - When a unit is clicked ({ unitId, x, z, name })
+ * - FEATURE_CLICK - When a feature is clicked ({ featureId, x, z, type })
+ * - TILE_HOVER    - When hovering over a tile ({ tileId, x, z })
+ * - TILE_LEAVE    - When leaving a tile ({})
+ * - CAMERA_CHANGE - When camera position changes ({ position })
  *
  * @packageDocumentation
  */
 
 import React from 'react';
 import type { EntityRow } from '@almadar/core';
-import { GameCanvas3D } from '../molecules/GameCanvas3D';
-import type { IsometricTile, IsometricUnit, IsometricFeature } from '../organisms/types/isometric';
+import { GameBoard3D } from '../organisms/GameBoard3D';
+import type { IsometricTile, IsometricFeature } from '../organisms/types/isometric';
 import type { TemplateProps } from '../../core/templates/types';
 
 const DEFAULT_3D_WORLDMAP_TILES: IsometricTile[] = [
@@ -53,11 +54,6 @@ const DEFAULT_3D_WORLDMAP_TILES: IsometricTile[] = [
     { id: 't44', x: 4, y: 4, z: 4, type: 'mountain', passable: false },
 ];
 
-const DEFAULT_3D_WORLDMAP_UNITS: IsometricUnit[] = [
-    { id: 'h1', x: 1, y: 1, z: 1, unitType: 'hero',  name: 'Amir',      faction: 'player', health: 10, maxHealth: 10 },
-    { id: 'h2', x: 3, y: 3, z: 3, unitType: 'scout', name: 'Archivist', faction: 'player', health: 10, maxHealth: 10 },
-];
-
 const DEFAULT_3D_WORLDMAP_FEATURES: IsometricFeature[] = [
     { id: 'f1', x: 2, y: 2, z: 2, type: 'capital',    color: '#f4c542' },
     { id: 'f2', x: 4, y: 2, z: 2, type: 'power_node', color: '#8b5cf6' },
@@ -66,8 +62,6 @@ const DEFAULT_3D_WORLDMAP_FEATURES: IsometricFeature[] = [
 export interface GameCanvas3DWorldMapTemplateProps extends TemplateProps {
     /** Fallback tile data when no entity is present */
     tiles?: IsometricTile[];
-    /** Fallback unit data when no entity is present */
-    units?: IsometricUnit[];
     /** Fallback feature data when no entity is present */
     features?: IsometricFeature[];
     /** 3D camera mode */
@@ -82,10 +76,20 @@ export interface GameCanvas3DWorldMapTemplateProps extends TemplateProps {
     shadows?: boolean;
     /** Background color */
     backgroundColor?: string;
-    /** Event name for tile clicks */
+    /** Event name for tile clicks — forwarded to the model */
     tileClickEvent?: string;
-    /** Event name for unit clicks */
+    /** Event name for unit clicks — forwarded to the model */
     unitClickEvent?: string;
+    /** Event name for ending turn */
+    endTurnEvent?: string;
+    /** Event name for cancel/deselect */
+    cancelEvent?: string;
+    /** Event name for attack emission */
+    attackEvent?: string;
+    /** Event name for play again / reset */
+    playAgainEvent?: string;
+    /** Event name for game end detection */
+    gameEndEvent?: string;
     /** Event name for feature clicks */
     featureClickEvent?: string;
     /** Event name for tile hover */
@@ -96,26 +100,21 @@ export interface GameCanvas3DWorldMapTemplateProps extends TemplateProps {
     cameraChangeEvent?: string;
     /** Exit/back event name */
     exitEvent?: string;
-    /** Currently selected unit ID */
-    selectedUnitId?: string | null;
-    /** Valid move positions for selected unit */
-    validMoves?: Array<{ x: number; z: number }>;
-    /** Attack target positions */
-    attackTargets?: Array<{ x: number; z: number }>;
 }
 
 /**
  * GameCanvas3DWorldMapTemplate Component
  *
  * Template for 3D world map view.
+ * Interaction state lives in the entity (model), not in this component.
  *
  * @example
  * ```tsx
  * <GameCanvas3DWorldMapTemplate
  *     entity={worldMapEntity}
  *     cameraMode="isometric"
- *     tileClickEvent="SELECT_TILE"
- *     unitClickEvent="SELECT_UNIT"
+ *     tileClickEvent="TILE_CLICK"
+ *     unitClickEvent="UNIT_CLICK"
  *     showCoordinates={true}
  * />
  * ```
@@ -123,49 +122,37 @@ export interface GameCanvas3DWorldMapTemplateProps extends TemplateProps {
 export function GameCanvas3DWorldMapTemplate({
     entity,
     tiles: propTiles = DEFAULT_3D_WORLDMAP_TILES,
-    units: propUnits = DEFAULT_3D_WORLDMAP_UNITS,
     features: propFeatures = DEFAULT_3D_WORLDMAP_FEATURES,
     cameraMode = 'isometric',
-    showGrid = true,
-    showCoordinates = true,
-    showTileInfo = true,
-    shadows = true,
     backgroundColor = '#1a1a2e',
     tileClickEvent,
     unitClickEvent,
-    featureClickEvent,
-    tileHoverEvent,
-    tileLeaveEvent,
-    cameraChangeEvent,
-    selectedUnitId,
-    validMoves,
-    attackTargets,
+    endTurnEvent,
+    cancelEvent,
+    attackEvent,
+    playAgainEvent,
+    gameEndEvent,
     className,
 }: GameCanvas3DWorldMapTemplateProps): React.JSX.Element | null {
     const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as EntityRow : undefined;
-    const tiles = resolved ? (Array.isArray(resolved.tiles) ? resolved.tiles : []) as unknown as IsometricTile[] : propTiles;
-    const units = resolved ? (Array.isArray(resolved.units) ? resolved.units : []) as unknown as IsometricUnit[] : propUnits;
-    const features = resolved ? (Array.isArray(resolved.features) ? resolved.features : []) as unknown as IsometricFeature[] : propFeatures;
+    const tiles = resolved ? (Array.isArray(resolved.tiles) ? resolved.tiles as unknown as IsometricTile[] : []) : propTiles;
+    const features = resolved ? (Array.isArray(resolved.features) ? resolved.features as unknown as IsometricFeature[] : []) : propFeatures;
+
     return (
-        <GameCanvas3D
+        /* GameBoard3D reads selectedUnitId/validMoves/attackTargets from entity */
+        <GameBoard3D
+            entity={entity}
             tiles={tiles}
-            units={units}
             features={features}
             cameraMode={cameraMode}
-            showGrid={showGrid}
-            showCoordinates={showCoordinates}
-            showTileInfo={showTileInfo}
-            shadows={shadows}
             backgroundColor={backgroundColor}
             tileClickEvent={tileClickEvent}
             unitClickEvent={unitClickEvent}
-            featureClickEvent={featureClickEvent}
-            tileHoverEvent={tileHoverEvent}
-            tileLeaveEvent={tileLeaveEvent}
-            cameraChangeEvent={cameraChangeEvent}
-            selectedUnitId={selectedUnitId}
-            validMoves={validMoves}
-            attackTargets={attackTargets}
+            endTurnEvent={endTurnEvent}
+            cancelEvent={cancelEvent}
+            attackEvent={attackEvent}
+            playAgainEvent={playAgainEvent}
+            gameEndEvent={gameEndEvent}
             className={className}
         />
     );

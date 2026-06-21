@@ -49,6 +49,21 @@ export {
   type WorldMapSlotContext,
 } from '../../game/templates/WorldMapTemplate';
 
+export {
+  PlatformerTemplate,
+  type PlatformerTemplateProps,
+} from '../../game/templates/PlatformerTemplate';
+
+export {
+  TowerDefenseTemplate,
+  type TowerDefenseTemplateProps,
+} from '../../game/templates/TowerDefenseTemplate';
+
+export {
+  RoguelikeTemplate,
+  type RoguelikeTemplateProps,
+} from '../../game/templates/RoguelikeTemplate';
+
 // Marketing Page Templates
 export {
   LandingPageTemplate,

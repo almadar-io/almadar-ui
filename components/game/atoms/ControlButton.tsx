@@ -1,11 +1,13 @@
 'use client';
 import * as React from 'react';
-import type { EventKey } from "@almadar/core";
+import type { EventKey, AssetUrl } from "@almadar/core";
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { resolveIcon, type IconInput } from '../../core/atoms/Icon';
 
 export interface ControlButtonProps {
+  /** Sprite image URL — takes precedence over icon when provided */
+  assetUrl?: AssetUrl;
   /** Button label text */
   label?: string;
   /** Icon component or emoji */
@@ -51,7 +53,11 @@ const variantMap = {
   ghost: 'bg-transparent text-foreground border-border hover:bg-muted',
 };
 
+const DEFAULT_ASSET_URL: AssetUrl =
+  'https://almadar-kflow-assets.web.app/shared/effects/particles/circle_01.png';
+
 export function ControlButton({
+  assetUrl = DEFAULT_ASSET_URL,
   label,
   icon,
   size = 'md',
@@ -123,19 +129,26 @@ export function ControlButton({
         className
       )}
     >
-      {icon && (
+      {assetUrl ? (
+        <img
+          src={assetUrl}
+          alt=""
+          width={24}
+          height={24}
+          style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
+          className="flex-shrink-0"
+        />
+      ) : icon ? (
         <span className="text-2xl">
           {typeof icon === 'string'
-            // An icon NAME (lucide kebab/ascii) resolves to a component; a literal
-            // glyph (e.g. the D-pad arrows ▲▼◀▶) is rendered as-is rather than
-            // funneled through resolveIcon (which would fall back to a `?`).
             ? /^[a-zA-Z0-9-]+$/.test(icon)
               ? (() => { const I = resolveIcon(icon); return I ? <I className="w-6 h-6" /> : null; })()
               : icon
             : (() => { const I = icon; return <I className="w-6 h-6" />; })()}
         </span>
-      )}
-      {label && !icon && <span>{label}</span>}
+      ) : label ? (
+        <span>{label}</span>
+      ) : null}
     </button>
   );
 }

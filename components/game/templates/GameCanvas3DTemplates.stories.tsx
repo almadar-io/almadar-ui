@@ -184,13 +184,10 @@ export const WorldMapTopDown: WorldMapStory = {
 
 export const BattleDefault: StoryObj<typeof GameCanvas3DBattleTemplate> = {
     args: {
-        entity: battleEntity,
+        entity: { ...battleEntity, selectedUnitId: 'p1', validMoves: [{ x: 2, z: 1 }, { x: 3, z: 1 }, { x: 2, z: 2 }], attackTargets: [{ x: 5, z: 5 }], phase: 'action' },
         cameraMode: 'perspective',
         showGrid: true,
         shadows: true,
-        selectedUnitId: 'p1',
-        validMoves: [{ x: 2, z: 1 }, { x: 3, z: 1 }, { x: 2, z: 2 }],
-        attackTargets: [{ x: 5, z: 5 }],
     },
     parameters: {
         docs: {
@@ -240,11 +237,9 @@ export const CastleDefault: StoryObj<typeof GameCanvas3DCastleTemplate> = {
 
 export const CastleWithSelection: StoryObj<typeof GameCanvas3DCastleTemplate> = {
     args: {
-        entity: castleEntity,
+        entity: { ...castleEntity, selectedUnitId: 'castle-main', validMoves: [{ x: 2, z: 2 }, { x: 5, z: 5 }], attackTargets: [] },
         cameraMode: 'isometric',
         showGrid: true,
-        selectedBuildingId: 'castle-main',
-        availableBuildSites: [{ x: 2, z: 2 }, { x: 5, z: 5 }],
         showHeader: true,
     },
 };

@@ -68,25 +68,20 @@ export const Default: Story = {
 
 export const PlayerTurn: Story = {
     args: {
-        entity: { ...battleEntity, currentTurn: 'player', round: 1 },
+        entity: { ...battleEntity, currentTeam: 'player', turn: 1, selectedUnitId: 'p1', validMoves: [{ x: 2, z: 1 }, { x: 3, z: 1 }], attackTargets: [], phase: 'selection' },
         cameraMode: 'isometric',
-        selectedUnitId: 'p1',
-        validMoves: [{ x: 2, z: 1 }, { x: 3, z: 1 }],
     },
 };
 
 export const EnemyTurn: Story = {
     args: {
-        entity: { ...battleEntity, currentTurn: 'enemy', round: 5 },
+        entity: { ...battleEntity, currentTeam: 'enemy', turn: 5, phase: 'enemy_turn' },
         cameraMode: 'isometric',
     },
 };
 
 export const WithAttackTargets: Story = {
     args: {
-        entity: battleEntity,
-        selectedUnitId: 'p1',
-        validMoves: [{ x: 2, z: 1 }],
-        attackTargets: [{ x: 5, z: 5 }],
+        entity: { ...battleEntity, selectedUnitId: 'p1', validMoves: [{ x: 2, z: 1 }], attackTargets: [{ x: 5, z: 5 }], phase: 'action' },
     },
 };

@@ -69,12 +69,9 @@ export const Default: Story = {
 
 export const WithSelection: Story = {
     args: {
-        entity: castleEntity,
+        entity: { ...castleEntity, selectedUnitId: 'castle-main', validMoves: [{ x: 2, z: 2 }, { x: 5, z: 5 }], attackTargets: [] },
         cameraMode: 'isometric',
         showGrid: true,
-        selectedBuildingId: 'castle-main',
-        selectedTileIds: ['castle-main'],
-        availableBuildSites: [{ x: 2, z: 2 }, { x: 5, z: 5 }],
         showHeader: true,
     },
 };

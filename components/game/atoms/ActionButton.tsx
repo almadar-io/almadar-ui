@@ -1,8 +1,11 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import { resolveIcon, type IconInput } from '../../core/atoms/Icon';
+import type { AssetUrl } from '@almadar/core';
 
 export interface ActionButtonProps {
+  /** Sprite image URL — takes precedence over icon when provided */
+  assetUrl?: AssetUrl;
   /** Button label text */
   label: string;
   /** Icon displayed before the label */
@@ -35,7 +38,11 @@ const variantStyles = {
   danger: 'bg-error text-error-foreground hover:bg-error/90 border-error',
 };
 
+const DEFAULT_ASSET_URL: AssetUrl =
+  'https://almadar-kflow-assets.web.app/shared/effects/particles/slash_01.png';
+
 export function ActionButton({
+  assetUrl = DEFAULT_ASSET_URL,
   label = 'Attack',
   icon,
   cooldown = 0,
@@ -74,13 +81,22 @@ export function ActionButton({
           }}
         />
       )}
-      {icon && (
+      {assetUrl ? (
+        <img
+          src={assetUrl}
+          alt=""
+          width={16}
+          height={16}
+          style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
+          className={cn('flex-shrink-0', sizes.icon)}
+        />
+      ) : icon ? (
         <span className={cn('flex-shrink-0', sizes.icon)}>
           {typeof icon === 'string'
             ? (() => { const I = resolveIcon(icon); return I ? <I className="w-4 h-4" /> : null; })()
             : (() => { const I = icon; return <I className="w-4 h-4" />; })()}
         </span>
-      )}
+      ) : null}
       <span className="relative z-10">{label}</span>
       {hotkey && (
         <span

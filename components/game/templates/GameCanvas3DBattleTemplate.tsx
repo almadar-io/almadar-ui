@@ -1,19 +1,18 @@
 /**
  * GameCanvas3DBattleTemplate
  *
- * Pure declarative template wrapper for 3D battle scenes.
- * Optimized for tactical combat view with turn indicators.
+ * Declarative template for 3D battle/tactical combat.
+ * Delegates all interaction state (selectedUnitId, validMoves, attackTargets)
+ * to <GameBoard3D> so the model (not this template) owns gameplay state.
  *
  * Page: Battle3DPage
- * Entity: Battle3D
+ * Entity: Battle3D / GameBoard3DItem
  * ViewType: detail
  *
  * Events Emitted:
- * - TILE_SELECTED - When a tile is clicked
- * - UNIT_SELECTED - When a unit is clicked
- * - UNIT_ATTACK - When attacking a unit
- * - UNIT_MOVE - When moving a unit
- * - END_TURN - When ending turn
+ * - TILE_CLICK - When a tile is clicked
+ * - UNIT_CLICK - When a unit is clicked
+ * - END_TURN   - When ending turn
  * - EXIT_BATTLE - When exiting battle
  *
  * @packageDocumentation
@@ -21,8 +20,8 @@
 
 import React from 'react';
 import type { EntityRow } from '@almadar/core';
-import { GameCanvas3D } from '../molecules/GameCanvas3D';
-import type { IsometricTile, IsometricUnit, IsometricFeature } from '../organisms/types/isometric';
+import { GameBoard3D } from '../organisms/GameBoard3D';
+import type { IsometricTile, IsometricFeature } from '../organisms/types/isometric';
 import { Box } from '../../core/atoms/Box';
 import { HStack } from '../../core/atoms/Stack';
 import { Typography } from '../../core/atoms/Typography';
@@ -57,11 +56,6 @@ const DEFAULT_3D_BATTLE_TILES: IsometricTile[] = [
     { id: 't44', x: 4, y: 4, z: 4, type: 'stone', passable: false },
 ];
 
-const DEFAULT_3D_BATTLE_UNITS: IsometricUnit[] = [
-    { id: 'u1', x: 1, y: 1, z: 1, unitType: 'warrior', name: 'Worker',   faction: 'player', health: 10, maxHealth: 10 },
-    { id: 'u2', x: 3, y: 3, z: 3, unitType: 'enemy',   name: 'Guardian', faction: 'enemy',  health: 8,  maxHealth: 10 },
-];
-
 const DEFAULT_3D_BATTLE_FEATURES: IsometricFeature[] = [
     { id: 'f1', x: 2, y: 2, z: 2, type: 'gold_mine', color: '#f4c542' },
     { id: 'f2', x: 3, y: 1, z: 1, type: 'portal',    color: '#8b5cf6' },
@@ -70,8 +64,6 @@ const DEFAULT_3D_BATTLE_FEATURES: IsometricFeature[] = [
 export interface GameCanvas3DBattleTemplateProps extends TemplateProps {
     /** Fallback tile data when no entity is present */
     tiles?: IsometricTile[];
-    /** Fallback unit data when no entity is present */
-    units?: IsometricUnit[];
     /** Fallback feature data when no entity is present */
     features?: IsometricFeature[];
     /** 3D camera mode - defaults to perspective for dramatic effect */
@@ -82,24 +74,22 @@ export interface GameCanvas3DBattleTemplateProps extends TemplateProps {
     shadows?: boolean;
     /** Background color - darker for battle atmosphere */
     backgroundColor?: string;
-    /** Event name for tile clicks */
+    /** Event name for tile clicks — forwarded to the model */
     tileClickEvent?: string;
-    /** Event name for unit clicks */
+    /** Event name for unit clicks — forwarded to the model */
     unitClickEvent?: string;
-    /** Event name for unit attack */
-    unitAttackEvent?: string;
-    /** Event name for unit move */
-    unitMoveEvent?: string;
     /** Event name for ending turn */
     endTurnEvent?: string;
+    /** Event name for cancel/deselect */
+    cancelEvent?: string;
+    /** Event name for attack emission */
+    attackEvent?: string;
+    /** Event name for play again / reset */
+    playAgainEvent?: string;
+    /** Event name for game end detection */
+    gameEndEvent?: string;
     /** Event name for exiting battle */
     exitEvent?: string;
-    /** Currently selected unit ID */
-    selectedUnitId?: string | null;
-    /** Valid move positions */
-    validMoves?: Array<{ x: number; z: number }>;
-    /** Valid attack targets */
-    attackTargets?: Array<{ x: number; z: number }>;
     /** Show turn indicator overlay */
     showTurnIndicator?: boolean;
 }
@@ -108,66 +98,58 @@ export interface GameCanvas3DBattleTemplateProps extends TemplateProps {
  * GameCanvas3DBattleTemplate Component
  *
  * Template for 3D battle/tactical combat view.
+ * Interaction state lives in the entity (model), not in this component.
  *
  * @example
  * ```tsx
  * <GameCanvas3DBattleTemplate
  *     entity={battleEntity}
  *     cameraMode="perspective"
- *     selectedUnitId="unit-1"
- *     validMoves={[{ x: 2, z: 3 }]}
- *     attackTargets={[{ x: 5, z: 5 }]}
- *     tileClickEvent="SELECT_TILE"
- *     unitClickEvent="SELECT_UNIT"
+ *     tileClickEvent="TILE_CLICK"
+ *     unitClickEvent="UNIT_CLICK"
  * />
  * ```
  */
 export function GameCanvas3DBattleTemplate({
     entity,
     tiles: propTiles = DEFAULT_3D_BATTLE_TILES,
-    units: propUnits = DEFAULT_3D_BATTLE_UNITS,
     features: propFeatures = DEFAULT_3D_BATTLE_FEATURES,
     cameraMode = 'perspective',
-    showGrid = true,
-    shadows = true,
     backgroundColor = '#2a1a1a',
     tileClickEvent,
     unitClickEvent,
-    unitAttackEvent,
-    unitMoveEvent,
     endTurnEvent,
-    exitEvent,
-    selectedUnitId,
-    validMoves,
-    attackTargets,
+    cancelEvent,
+    attackEvent,
+    playAgainEvent,
+    gameEndEvent,
     className,
 }: GameCanvas3DBattleTemplateProps): React.JSX.Element | null {
     const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as EntityRow : undefined;
-    const tiles = resolved ? (Array.isArray(resolved.tiles) ? resolved.tiles : []) as unknown as IsometricTile[] : propTiles;
-    const units = resolved ? (Array.isArray(resolved.units) ? resolved.units : []) as unknown as IsometricUnit[] : propUnits;
-    const features = resolved ? (Array.isArray(resolved.features) ? resolved.features : []) as unknown as IsometricFeature[] : propFeatures;
-    const currentTurn = resolved?.currentTurn as 'player' | 'enemy' | undefined;
-    const round = resolved?.round == null ? undefined : Number(resolved.round);
+    const tiles = resolved ? (Array.isArray(resolved.tiles) ? resolved.tiles as unknown as IsometricTile[] : []) : propTiles;
+    const features = resolved ? (Array.isArray(resolved.features) ? resolved.features as unknown as IsometricFeature[] : []) : propFeatures;
+    const currentTurn = resolved?.currentTeam as 'player' | 'enemy' | undefined;
+    const round = resolved?.turn == null ? undefined : Number(resolved.turn);
+
     return (
         <Box
             className={cn('game-canvas-3d-battle-template block relative w-full min-h-[85vh]', className)}
         >
-            <GameCanvas3D
+            {/* GameBoard3D reads selectedUnitId/validMoves/attackTargets from entity */}
+            <GameBoard3D
+                entity={entity}
                 tiles={tiles}
-                units={units}
                 features={features}
                 cameraMode={cameraMode}
-                showGrid={showGrid}
-                showCoordinates={false}
-                showTileInfo={false}
-                shadows={shadows}
                 backgroundColor={backgroundColor}
                 tileClickEvent={tileClickEvent}
                 unitClickEvent={unitClickEvent}
-                selectedUnitId={selectedUnitId}
-                validMoves={validMoves}
-                attackTargets={attackTargets}
-                className="game-canvas-3d-battle-template__canvas"
+                endTurnEvent={endTurnEvent}
+                cancelEvent={cancelEvent}
+                attackEvent={attackEvent}
+                playAgainEvent={playAgainEvent}
+                gameEndEvent={gameEndEvent}
+                className="game-canvas-3d-battle-template__board"
             />
 
             {/* Turn indicator overlay */}

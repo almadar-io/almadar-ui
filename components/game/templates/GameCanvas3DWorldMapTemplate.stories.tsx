@@ -91,9 +91,7 @@ export const TopDown: Story = {
 
 export const WithSelection: Story = {
     args: {
-        entity: worldMapEntity,
+        entity: { ...worldMapEntity, selectedUnitId: 'hero-1', validMoves: [{ x: 4, z: 5 }, { x: 3, z: 6 }], attackTargets: [], phase: 'selection' },
         cameraMode: 'isometric',
-        selectedUnitId: 'hero-1',
-        validMoves: [{ x: 4, z: 5 }, { x: 3, z: 6 }],
     },
 };

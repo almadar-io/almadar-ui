@@ -1,7 +1,10 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
+import type { AssetUrl } from '@almadar/core';
 
 export interface DamageNumberProps {
+  /** Sprite image URL — displayed as a hit-effect icon alongside the number */
+  assetUrl?: AssetUrl;
   /** The damage/heal value to display */
   value: number;
   /** Type of number display */
@@ -33,7 +36,11 @@ const floatKeyframes = `
 }
 `;
 
+const DEFAULT_ASSET_URL: AssetUrl =
+  'https://almadar-kflow-assets.web.app/shared/effects/particles/spark_01.png';
+
 export function DamageNumber({
+  assetUrl = DEFAULT_ASSET_URL,
   value = 42,
   type = 'damage',
   size = 'md',
@@ -46,13 +53,23 @@ export function DamageNumber({
       <style>{floatKeyframes}</style>
       <span
         className={cn(
-          'inline-block font-mono select-none pointer-events-none',
+          'inline-flex items-center gap-0.5 font-mono select-none pointer-events-none',
           sizeMap[size],
           typeStyles[type],
           className
         )}
         style={{ animation: 'damageFloat 1s ease-out forwards' }}
       >
+        {assetUrl && (
+          <img
+            src={assetUrl}
+            alt=""
+            width={14}
+            height={14}
+            style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
+            className="flex-shrink-0"
+          />
+        )}
         {displayText}
       </span>
     </>
