@@ -51,6 +51,14 @@ export interface SequencerBoardProps extends DisplayStateProps {
     playEvent?: EventEmit<{ sequence: string[] }>;
     /** Emits UI:{completeEvent} with { success: boolean } */
     completeEvent?: EventEmit<{ success: boolean; sequence: string[] }>;
+    /** Emits UI:{placeEvent} with { slotIndex, actionId } when an action is dropped into a slot */
+    placeEvent?: EventEmit<{ slotIndex: number; actionId: string }>;
+    /** Emits UI:{removeEvent} with { slotIndex } when an action is removed from a slot */
+    removeEvent?: EventEmit<{ slotIndex: number }>;
+    /** Emits UI:{checkEvent} with { sequence } when the player submits the sequence */
+    checkEvent?: EventEmit<{ sequence: string[] }>;
+    /** Emits UI:{playAgainEvent} with {} on reset */
+    playAgainEvent?: EventEmit<Record<string, never>>;
 }
 
 type PlayState = 'idle' | 'playing' | 'success';
@@ -102,6 +110,10 @@ export function SequencerBoard({
     stepDurationMs = 1000,
     playEvent,
     completeEvent,
+    placeEvent,
+    removeEvent,
+    checkEvent,
+    playAgainEvent,
     className,
 }: SequencerBoardProps): React.JSX.Element | null {
     const { emit } = useEventBus();
@@ -143,7 +155,8 @@ export function SequencerBoard({
             return next;
         });
         emit('UI:PLAY_SOUND', { key: 'drop_slot' });
-    }, [emit]);
+        if (placeEvent) emit(`UI:${placeEvent}`, { slotIndex: index, actionId: item.id });
+    }, [emit, placeEvent]);
 
     const handleSlotRemove = useCallback((index: number) => {
         setSlots(prev => {
@@ -157,7 +170,8 @@ export function SequencerBoard({
             return next;
         });
         emit('UI:PLAY_SOUND', { key: 'back' });
-    }, [emit]);
+        if (removeEvent) emit(`UI:${removeEvent}`, { slotIndex: index });
+    }, [emit, removeEvent]);
 
     // -- Reset ----------------------------------------------------------------
 
@@ -168,7 +182,8 @@ export function SequencerBoard({
         setCurrentStep(-1);
         setAttempts(0);
         setSlotFeedback(Array.from({ length: maxSlots }, () => null));
-    }, [maxSlots]);
+        if (playAgainEvent) emit(`UI:${playAgainEvent}`, {});
+    }, [maxSlots, playAgainEvent, emit]);
 
     // -- Playback -------------------------------------------------------------
 
@@ -202,6 +217,7 @@ export function SequencerBoard({
                     sol.every((id, i) => id === playerIds[i]),
                 );
 
+                if (checkEvent) emit(`UI:${checkEvent}`, { sequence: playerIds });
                 if (success) {
                     setPlayState('success');
                     setCurrentStep(-1);
@@ -230,7 +246,7 @@ export function SequencerBoard({
             }
         };
         timerRef.current = setTimeout(advance, stepDurationMs);
-    }, [canPlay, slots, maxSlots, solutions, stepDurationMs, playEvent, completeEvent, emit]);
+    }, [canPlay, slots, maxSlots, solutions, stepDurationMs, playEvent, completeEvent, checkEvent, emit]);
 
     // -- TraitStateViewer definition ------------------------------------------
     //

@@ -15,7 +15,7 @@
  */
 
 import * as React from 'react';
-import type { EntityRow } from '@almadar/core';
+import type { EntityRow, EventEmit } from '@almadar/core';
 import { BattleBoard, type BattleBoardProps } from './BattleBoard';
 import { boardEntity, rows } from './boardEntity';
 import { useBattleState } from './hooks/useBattleState';
@@ -38,6 +38,10 @@ export interface UncontrolledBattleBoardProps extends Omit<BattleBoardProps, 'en
     features?: IsometricFeature[];
     /** Direct asset manifest — takes priority over entity-derived manifest. */
     assetManifest?: BattleBoardProps['assetManifest'];
+    /** Emits UI:{stepEvent} with { attackerId, targetId, damage } each battle round */
+    stepEvent?: EventEmit<{ attackerId: string; targetId: string; damage: number }>;
+    /** Emits UI:{playAgainEvent} with {} on restart */
+    playAgainEvent?: EventEmit<Record<string, never>>;
 }
 
 export function UncontrolledBattleBoard({
