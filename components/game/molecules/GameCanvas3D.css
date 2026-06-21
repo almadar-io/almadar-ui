@@ -7,7 +7,11 @@
 .game-canvas-3d {
     position: relative;
     width: 100%;
+    /* Fill the parent when it has a defined height, but fall back to a large
+       viewport-relative size so the 3D scene is full-bleed instead of collapsing
+       to ~0 in containers that don't constrain height (e.g. the catalog). */
     height: 100%;
+    min-height: 85vh;
     overflow: hidden;
     background: #1a1a2e;
     border-radius: 8px;
