@@ -57,9 +57,13 @@ export interface StateArchitectBoardProps extends DisplayStateProps {
     testEvent?: EventEmit<Record<string, never>>;
     /** Emits UI:{completeEvent} with { success, passedTests } */
     completeEvent?: EventEmit<{ success: boolean; passedTests: number }>;
+    /** Emits UI:{addTransitionEvent} — lolo handles ADD_TRANSITION */
+    addTransitionEvent?: EventEmit<{ id: string; from: string; to: string; event: string }>;
+    /** Emits UI:{removeTransitionEvent} — lolo handles REMOVE_TRANSITION */
+    removeTransitionEvent?: EventEmit<{ id: string }>;
+    /** Emits UI:{playAgainEvent} — lolo handles PLAY_AGAIN */
+    playAgainEvent?: EventEmit<Record<string, never>>;
 }
-
-type PlayState = 'editing' | 'testing' | 'success' | 'fail';
 
 interface TestResult {
     label: string;
@@ -104,6 +108,9 @@ export function StateArchitectBoard({
     stepDurationMs = 600,
     testEvent,
     completeEvent,
+    addTransitionEvent,
+    removeTransitionEvent,
+    playAgainEvent,
     className,
 }: StateArchitectBoardProps): React.JSX.Element | null {
     const { emit } = useEventBus();
@@ -116,14 +123,16 @@ export function StateArchitectBoard({
     const testCases = (Array.isArray(resolved?.testCases) ? resolved.testCases : []) as unknown as TestCase[];
     const entityTransitions = (Array.isArray(resolved?.transitions) ? resolved.transitions : []) as unknown as StateArchitectTransition[];
     const entityVariables = rows(resolved?.variables);
-    const [transitions, setTransitions] = useState<StateArchitectTransition[]>(entityTransitions);
+    const transitions = entityTransitions;
+    const attempts = typeof resolved?.attempts === 'number' ? resolved.attempts : 0;
+    const entityResult = str(resolved?.result) || 'none';
+    const isSuccess = entityResult === 'win';
+    const [isTesting, setIsTesting] = useState(false);
     const [headerError, setHeaderError] = useState(false);
-    const [playState, setPlayState] = useState<PlayState>('editing');
     const [currentState, setCurrentState] = useState(initialState);
     const [selectedState, setSelectedState] = useState<string | null>(null);
     const [testResults, setTestResults] = useState<TestResult[]>([]);
     const [variables, setVariables] = useState<EntityRow[]>(() => [...entityVariables]);
-    const [attempts, setAttempts] = useState(0);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // -- Adding a new transition (simplified UI) ------------------------------
@@ -141,7 +150,7 @@ export function StateArchitectBoard({
     // -- Add transition -------------------------------------------------------
 
     const handleStateClick = useCallback((state: string) => {
-        if (playState !== 'editing') return;
+        if (isTesting) return;
 
         if (addingFrom) {
             // Second click — create transition
@@ -153,13 +162,13 @@ export function StateArchitectBoard({
                     to: state,
                     event,
                 };
-                setTransitions(prev => [...prev, newTrans]);
+                if (addTransitionEvent) emit(`UI:${addTransitionEvent}`, { id: newTrans.id, from: newTrans.from, to: newTrans.to, event: newTrans.event });
             }
             setAddingFrom(null);
         } else {
             setSelectedState(state);
         }
-    }, [playState, addingFrom, availableEvents]);
+    }, [isTesting, addingFrom, availableEvents, addTransitionEvent, emit]);
 
     const handleStartAddTransition = useCallback(() => {
         if (!selectedState) return;
@@ -167,8 +176,8 @@ export function StateArchitectBoard({
     }, [selectedState]);
 
     const handleRemoveTransition = useCallback((transId: string) => {
-        setTransitions(prev => prev.filter(t => t.id !== transId));
-    }, []);
+        if (removeTransitionEvent) emit(`UI:${removeTransitionEvent}`, { id: transId });
+    }, [removeTransitionEvent, emit]);
 
     // -- Build TraitStateMachineDefinition ------------------------------------
 
@@ -188,10 +197,10 @@ export function StateArchitectBoard({
     // -- Test runner ----------------------------------------------------------
 
     const handleTest = useCallback(() => {
-        if (playState !== 'editing') return;
+        if (isTesting) return;
         if (testEvent) emit(`UI:${testEvent}`, {});
 
-        setPlayState('testing');
+        setIsTesting(true);
         setTestResults([]);
 
         const results: TestResult[] = [];
@@ -200,16 +209,13 @@ export function StateArchitectBoard({
         const runNextTest = () => {
             if (testIdx >= testCases.length) {
                 const allPassed = results.every(r => r.passed);
-                setPlayState(allPassed ? 'success' : 'fail');
+                setIsTesting(false);
                 setTestResults(results);
                 if (allPassed && completeEvent) {
                     emit(`UI:${completeEvent}`, {
                         success: true,
                         passedTests: results.filter(r => r.passed).length,
                     });
-                }
-                if (!allPassed) {
-                    setAttempts(prev => prev + 1);
                 }
                 return;
             }
@@ -218,7 +224,6 @@ export function StateArchitectBoard({
             if (!testCase) return;
             let state = initialState;
 
-            // Simulate events
             for (const event of testCase.events) {
                 const trans = transitions.find(t => t.from === state && t.event === event);
                 if (trans) {
@@ -239,27 +244,25 @@ export function StateArchitectBoard({
         };
 
         timerRef.current = setTimeout(runNextTest, stepDurationMs);
-    }, [playState, transitions, testCases, initialState, stepDurationMs, testEvent, completeEvent, emit]);
+    }, [isTesting, transitions, testCases, initialState, stepDurationMs, testEvent, completeEvent, emit]);
 
     const handleTryAgain = useCallback(() => {
         if (timerRef.current) clearTimeout(timerRef.current);
-        // Keep the transitions the kid built — just reset play state
-        setPlayState('editing');
+        setIsTesting(false);
         setCurrentState(initialState);
         setTestResults([]);
     }, [initialState]);
 
     const handleReset = useCallback(() => {
         if (timerRef.current) clearTimeout(timerRef.current);
-        setTransitions(entityTransitions);
-        setPlayState('editing');
+        setIsTesting(false);
         setCurrentState(initialState);
         setTestResults([]);
         setVariables([...entityVariables]);
         setSelectedState(null);
         setAddingFrom(null);
-        setAttempts(0);
-    }, [entityTransitions, initialState, entityVariables]);
+        if (playAgainEvent) emit(`UI:${playAgainEvent}`, {});
+    }, [initialState, entityVariables, playAgainEvent, emit]);
 
     // -- Code view data -------------------------------------------------------
 
@@ -384,7 +387,7 @@ export function StateArchitectBoard({
                     </Box>
 
                     {/* Graph controls */}
-                    {playState === 'editing' && (
+                    {!isTesting && (
                         <HStack gap="sm">
                             <Button
                                 variant="ghost"
@@ -424,7 +427,7 @@ export function StateArchitectBoard({
                                             ({t.guardHint})
                                         </Typography>
                                     )}
-                                    {playState === 'editing' && (
+                                    {!isTesting && (
                                         <Button
                                             variant="ghost"
                                             onClick={() => handleRemoveTransition(t.id)}
@@ -482,21 +485,21 @@ export function StateArchitectBoard({
             </HStack>
 
             {/* Result feedback */}
-            {playState === 'success' && (
+            {isSuccess && (
                 <Box className="p-4 rounded-container bg-success/20 border border-success text-center">
                     <Typography variant="h5" className="text-success">
                         {str(resolved.successMessage) || t('stateArchitect.allPassed')}
                     </Typography>
                 </Box>
             )}
-            {playState === 'fail' && (
+            {!isTesting && !isSuccess && testResults.some(r => !r.passed) && (
                 <VStack gap="sm">
                     <Box className="p-4 rounded-container bg-warning/10 border border-warning/30 text-center">
                         <Typography variant="body1" className="text-foreground font-medium">
                             {t(ENCOURAGEMENT_KEYS[Math.min(attempts - 1, ENCOURAGEMENT_KEYS.length - 1)] ?? ENCOURAGEMENT_KEYS[0])}
                         </Typography>
                     </Box>
-                    {attempts >= 3 && hint && (
+                    {!isSuccess && attempts >= 2 && Boolean(str(resolved?.hint)) && (
                         <Box className="p-3 rounded-container bg-accent/10 border border-accent/30">
                             <HStack className="items-start" gap="xs">
                                 <Typography variant="body2" className="text-accent font-bold shrink-0">
@@ -513,7 +516,7 @@ export function StateArchitectBoard({
 
             {/* Controls */}
             <HStack gap="sm">
-                {playState === 'fail' ? (
+                {!isTesting && !isSuccess && testResults.some(r => !r.passed) ? (
                     <Button variant="primary" onClick={handleTryAgain}>
                         {'\uD83D\uDD04 ' + t('puzzle.tryAgainButton')}
                     </Button>
@@ -521,7 +524,7 @@ export function StateArchitectBoard({
                     <Button
                         variant="primary"
                         onClick={handleTest}
-                        disabled={playState !== 'editing'}
+                        disabled={isTesting}
                     >
                         {'\u25B6 ' + t('game.runTests')}
                     </Button>

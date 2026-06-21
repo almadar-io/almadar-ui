@@ -1,8 +1,14 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import { Icon, type IconInput } from '../../core/atoms/Icon';
+import type { AssetUrl } from '@almadar/core';
+
+const DEFAULT_ASSET_URL: AssetUrl =
+  'https://almadar-kflow-assets.web.app/shared/world-map/battle_marker.png';
 
 export interface WaypointMarkerProps {
+  /** Sprite image URL — takes precedence over icon when provided */
+  assetUrl?: AssetUrl;
   /** Label text below the marker */
   label?: string;
   /** Custom icon to render inside the marker */
@@ -18,9 +24,9 @@ export interface WaypointMarkerProps {
 }
 
 const sizeMap = {
-  sm: { dot: 'w-4 h-4', ring: 'w-6 h-6', label: 'text-xs mt-1' },
-  md: { dot: 'w-6 h-6', ring: 'w-8 h-8', label: 'text-sm mt-1.5' },
-  lg: { dot: 'w-8 h-8', ring: 'w-10 h-10', label: 'text-base mt-2' },
+  sm: { dot: 'w-4 h-4', ring: 'w-6 h-6', label: 'text-xs mt-1', img: 12 },
+  md: { dot: 'w-6 h-6', ring: 'w-8 h-8', label: 'text-sm mt-1.5', img: 18 },
+  lg: { dot: 'w-8 h-8', ring: 'w-10 h-10', label: 'text-base mt-2', img: 24 },
 };
 
 const checkIcon = (
@@ -30,6 +36,7 @@ const checkIcon = (
 );
 
 export function WaypointMarker({
+  assetUrl = DEFAULT_ASSET_URL,
   label,
   icon,
   active = true,
@@ -67,7 +74,16 @@ export function WaypointMarker({
             !active && !completed && 'bg-muted'
           )}
         >
-          {completed ? checkIcon : icon && (typeof icon === 'string' ? <Icon name={icon} /> : <Icon icon={icon} />)}
+          {completed ? checkIcon : assetUrl ? (
+            <img
+              src={assetUrl}
+              alt={label}
+              width={sizes.img}
+              height={sizes.img}
+              style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
+              className="flex-shrink-0"
+            />
+          ) : icon ? (typeof icon === 'string' ? <Icon name={icon} /> : <Icon icon={icon} />) : null}
         </div>
       </div>
       {label && (

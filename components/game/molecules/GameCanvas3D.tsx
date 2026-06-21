@@ -35,6 +35,7 @@ import { Canvas3DLoadingState } from './three/components/Canvas3DLoadingState';
 import { Canvas3DErrorBoundary } from './three/components/Canvas3DErrorBoundary';
 import { ModelLoader } from './three/components/ModelLoader';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from '../organisms/types/isometric';
+import { cn } from '../../../lib/cn';
 import './GameCanvas3D.css';
 
 // Re-export types for convenience
@@ -694,16 +695,10 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
             >
                 <div
                     ref={containerRef}
-                    className={`game-canvas-3d ${className || ''}`}
+                    className={cn('game-canvas-3d relative w-full h-full min-h-[85vh] overflow-hidden', className)}
                     data-orientation={orientation}
                     data-camera-mode={cameraMode}
                     data-overlay={overlay}
-                    // Layout set inline (not just via GameCanvas3D.css): the dedicated
-                    // component CSS is NOT rolled into @almadar/ui's bundled index.css,
-                    // so consumers (e.g. the playground catalog) never load it. r3f's
-                    // <Canvas> sizes to this container, so it MUST have a real height
-                    // here or the canvas collapses to ~150px.
-                    style={{ position: 'relative', width: '100%', height: '100%', minHeight: '85vh', overflow: 'hidden' }}
                 >
                     <Canvas
                         shadows={shadows}

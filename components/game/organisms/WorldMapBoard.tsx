@@ -72,10 +72,11 @@ export type WorldMapSlotContext = {
 
 // ── Hex / hero field accessors (read off `EntityRow`) ─────────────────────────
 
-function heroPosition(h: EntityRow): Vec2 { return vec2(h.position); }
-function heroOwner(h: EntityRow): string { return str(h.owner); }
-function heroMovement(h: EntityRow): number { return num(h.movement); }
-function hexPassable(h: EntityRow): boolean { return h.passable !== false; }
+function heroPosition(h: EntityRow | IsometricUnit): Vec2 {
+    if ('position' in h && h.position != null) return h.position as Vec2;
+    return vec2((h as EntityRow).position);
+}
+function heroMovement(h: EntityRow | IsometricUnit): number { return num((h as EntityRow).movement); }
 
 /** Event Contract:
  *  Emits: UI:HERO_SELECT
@@ -203,8 +204,9 @@ export function WorldMapBoard({
 
     // Resolve the single board-state row (handles undefined, array, or row)
     const resolved = boardEntity(entity);
-    const hexes = rows(resolved?.hexes);
-    const heroes = rows(resolved?.heroes);
+    // lolo sets @entity.units and @entity.tiles (not hexes/heroes)
+    const entityUnits = rows(resolved?.units);
+    const entityTiles = rows(resolved?.tiles);
     const features = propFeatures ?? (Array.isArray(resolved?.features) ? resolved.features : []) as unknown as IsometricFeature[];
     const selectedHeroId = (resolved?.selectedHeroId as string | null | undefined) ?? null;
     const assetManifest = propAssetManifest ?? resolved?.assetManifest as WorldMapAssetManifest | undefined;
@@ -212,36 +214,43 @@ export function WorldMapBoard({
 
     const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
 
-    // -- Selected hero --------------------------------------------------------
-    const selectedHero = useMemo(
-        () => heroes.find(h => str(h.id) === selectedHeroId) ?? null,
-        [heroes, selectedHeroId],
-    );
-
-    // -- Convert hexes -> IsometricTile[] (direct prop wins) ------------------
+    // -- Convert entity tiles -> IsometricTile[] (direct prop wins) -----------
     const derivedTiles: IsometricTile[] = useMemo(
-        () => hexes.map(hex => ({
-            x: num(hex.x),
-            y: num(hex.y),
-            terrain: str(hex.terrain),
-            terrainSprite: hex.terrainSprite == null ? undefined : str(hex.terrainSprite),
+        () => entityTiles.map(t => ({
+            x: num(t.x),
+            y: num(t.y),
+            terrain: str(t.terrain),
+            terrainSprite: t.terrainSprite == null ? undefined : str(t.terrainSprite),
+            passable: t.passable !== false,
         })),
-        [hexes],
+        [entityTiles],
     );
     const tiles: IsometricTile[] = propTiles ?? derivedTiles;
 
-    // -- Convert heroes -> IsometricUnit[] (direct prop wins) -----------------
+    // -- Convert entity units -> IsometricUnit[] (direct prop wins) -----------
     const baseUnits: IsometricUnit[] = useMemo(
-        () => propUnits ?? heroes.map(hero => ({
-            id: str(hero.id),
-            position: heroPosition(hero),
-            name: str(hero.name),
-            team: (heroOwner(hero) === 'enemy' ? 'enemy' : 'player') as 'player' | 'enemy',
-            health: 100,
-            maxHealth: 100,
-            sprite: hero.sprite == null ? undefined : str(hero.sprite),
+        () => propUnits ?? entityUnits.map(u => ({
+            id: str(u.id),
+            position: heroPosition(u),
+            name: str(u.name),
+            // lolo uses `team` field (not `owner`)
+            team: (str(u.team) === 'enemy' ? 'enemy' : 'player') as 'player' | 'enemy',
+            health: num(u.health) || 100,
+            maxHealth: num(u.maxHealth) || 100,
+            sprite: u.sprite == null ? undefined : str(u.sprite),
         })),
-        [heroes, propUnits],
+        [entityUnits, propUnits],
+    );
+
+    // -- Active unit list (for game-logic: selection, movement, battle) -------
+    // Use propUnits when provided (render-ui passes units: @entity.units as prop);
+    // otherwise fall back to entity-derived. Both represent the same data.
+    const gameUnits: IsometricUnit[] = baseUnits;
+
+    // -- Selected hero --------------------------------------------------------
+    const selectedHero = useMemo(
+        () => gameUnits.find(u => u.id === selectedHeroId) ?? null,
+        [gameUnits, selectedHeroId],
     );
 
     // -- Movement animation ---------------------------------------------------
@@ -300,39 +309,40 @@ export function WorldMapBoard({
     const validMoves = useMemo(() => {
         if (!selectedHero || heroMovement(selectedHero) <= 0) return [];
         const sp = heroPosition(selectedHero);
-        const sOwner = heroOwner(selectedHero);
+        const sTeam = str(selectedHero.team);
         const range = heroMovement(selectedHero);
         const moves: Array<{ x: number; y: number }> = [];
-        hexes.forEach(hex => {
-            const hx = num(hex.x);
-            const hy = num(hex.y);
-            if (!hexPassable(hex)) return;
-            if (hx === sp.x && hy === sp.y) return;
-            if (!isInRange(sp, { x: hx, y: hy }, range)) return;
-            // Don't overlap friendly heroes
-            if (heroes.some(h => {
-                const hp = heroPosition(h);
-                return hp.x === hx && hp.y === hy && heroOwner(h) === sOwner;
+        // Use the resolved `tiles` array (propTiles wins; entity tiles as fallback)
+        tiles.forEach(t => {
+            const tx = t.x;
+            const ty = t.y;
+            if (t.passable === false) return;
+            if (tx === sp.x && ty === sp.y) return;
+            if (!isInRange(sp, { x: tx, y: ty }, range)) return;
+            // Don't overlap friendly units
+            if (gameUnits.some(u => {
+                const up = u.position ?? { x: u.x ?? -1, y: u.y ?? -1 };
+                return up.x === tx && up.y === ty && str(u.team) === sTeam;
             })) return;
-            moves.push({ x: hx, y: hy });
+            moves.push({ x: tx, y: ty });
         });
         return moves;
-    }, [selectedHero, hexes, heroes, isInRange]);
+    }, [selectedHero, tiles, gameUnits, isInRange]);
 
     // -- Attack targets -------------------------------------------------------
     const attackTargets = useMemo(() => {
         if (!selectedHero || heroMovement(selectedHero) <= 0) return [];
         const sp = heroPosition(selectedHero);
-        const sOwner = heroOwner(selectedHero);
+        const sTeam = str(selectedHero.team);
         const range = heroMovement(selectedHero);
-        return heroes
-            .filter(h => heroOwner(h) !== sOwner)
-            .filter(h => isInRange(sp, heroPosition(h), range))
-            .map(h => heroPosition(h));
-    }, [selectedHero, heroes, isInRange]);
+        return gameUnits
+            .filter(u => str(u.team) !== sTeam)
+            .filter(u => isInRange(sp, u.position ?? { x: u.x ?? -1, y: u.y ?? -1 }, range))
+            .map(u => u.position ?? { x: u.x ?? -1, y: u.y ?? -1 });
+    }, [selectedHero, gameUnits, isInRange]);
 
     // -- Tile-to-screen helper ------------------------------------------------
-    const maxY = Math.max(...hexes.map(h => num(h.y)), 0);
+    const maxY = Math.max(...tiles.map(t => t.y), 0);
     const baseOffsetX = (maxY + 1) * (TILE_WIDTH * scale / 2);
     const tileToScreen = useCallback(
         (tx: number, ty: number) => isoToScreen(tx, ty, scale, baseOffsetX),
@@ -341,22 +351,21 @@ export function WorldMapBoard({
 
     // -- Hovered info ---------------------------------------------------------
     const hoveredHex = useMemo(
-        () => hoveredTile ? hexes.find(h => num(h.x) === hoveredTile.x && num(h.y) === hoveredTile.y) ?? null : null,
-        [hoveredTile, hexes],
+        () => hoveredTile ? (tiles.find(t => t.x === hoveredTile.x && t.y === hoveredTile.y) ?? null) as EntityRow | null : null,
+        [hoveredTile, tiles],
     );
     const hoveredHero = useMemo(
-        () => hoveredTile ? heroes.find(h => {
-            const hp = heroPosition(h);
-            return hp.x === hoveredTile.x && hp.y === hoveredTile.y;
-        }) ?? null : null,
-        [hoveredTile, heroes],
+        () => hoveredTile ? (gameUnits.find(u => {
+            const up = u.position ?? { x: u.x ?? -1, y: u.y ?? -1 };
+            return up.x === hoveredTile.x && up.y === hoveredTile.y;
+        }) ?? null) as EntityRow | null : null,
+        [hoveredTile, gameUnits],
     );
 
     // -- Handle tile click ----------------------------------------------------
     const handleTileClick = useCallback((x: number, y: number) => {
         if (movementAnimRef.current) return;
-        const hex = hexes.find(h => num(h.x) === x && num(h.y) === y);
-        if (!hex) return;
+        const tile = tiles.find(t => t.x === x && t.y === y);
 
         // Emit declarative tile click event
         if (tileClickEvent) {
@@ -370,11 +379,13 @@ export function WorldMapBoard({
                 if (heroMoveEvent) {
                     eventBus.emit(`UI:${heroMoveEvent}`, { heroId, toX: x, toY: y });
                 }
-                const feature = str(hex.feature);
+                // feature on a tile row (EntityRow from entity path)
+                const feature = tile ? str((tile as unknown as EntityRow).feature) : '';
                 if (feature && feature !== 'none') {
-                    onFeatureEnter?.(heroId, hex);
+                    const tileRow = tile as unknown as EntityRow;
+                    onFeatureEnter?.(heroId, tileRow);
                     if (featureEnterEvent) {
-                        eventBus.emit(`UI:${featureEnterEvent}`, { heroId, feature, hex });
+                        eventBus.emit(`UI:${featureEnterEvent}`, { heroId, feature, hex: tileRow });
                     }
                 }
             });
@@ -382,30 +393,30 @@ export function WorldMapBoard({
         }
 
         // Check for battle encounter
-        const enemy = heroes.find(h => {
-            const hp = heroPosition(h);
-            return hp.x === x && hp.y === y && heroOwner(h) === 'enemy';
+        const enemy = gameUnits.find(u => {
+            const up = u.position ?? { x: u.x ?? -1, y: u.y ?? -1 };
+            return up.x === x && up.y === y && str(u.team) === 'enemy';
         });
         if (selectedHero && enemy && attackTargets.some((t: { x: number; y: number }) => t.x === x && t.y === y)) {
             const attackerId = str(selectedHero.id);
-            const defenderId = str(enemy.id);
+            const defenderId = enemy.id;
             onBattleEncounter?.(attackerId, defenderId);
             if (battleEncounterEvent) {
                 eventBus.emit(`UI:${battleEncounterEvent}`, { attackerId, defenderId });
             }
         }
-    }, [hexes, heroes, selectedHero, validMoves, attackTargets, startMoveAnimation, onHeroMove, onFeatureEnter, onBattleEncounter, eventBus, tileClickEvent, heroMoveEvent, featureEnterEvent, battleEncounterEvent]);
+    }, [tiles, gameUnits, selectedHero, validMoves, attackTargets, startMoveAnimation, onHeroMove, onFeatureEnter, onBattleEncounter, eventBus, tileClickEvent, heroMoveEvent, featureEnterEvent, battleEncounterEvent]);
 
     // -- Handle unit click ----------------------------------------------------
     const handleUnitClick = useCallback((unitId: string) => {
-        const hero = heroes.find(h => str(h.id) === unitId);
-        if (hero && (heroOwner(hero) === 'player' || allowMoveAllHeroes)) {
+        const unit = gameUnits.find(u => u.id === unitId);
+        if (unit && (str(unit.team) === 'player' || allowMoveAllHeroes)) {
             onHeroSelect?.(unitId);
             if (heroSelectEvent) {
                 eventBus.emit(`UI:${heroSelectEvent}`, { heroId: unitId });
             }
         }
-    }, [heroes, onHeroSelect, allowMoveAllHeroes, eventBus, heroSelectEvent]);
+    }, [gameUnits, onHeroSelect, allowMoveAllHeroes, eventBus, heroSelectEvent]);
 
     const selectHero = useCallback((id: string) => {
         onHeroSelect?.(id);

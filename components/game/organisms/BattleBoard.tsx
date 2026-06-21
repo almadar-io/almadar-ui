@@ -190,8 +190,8 @@ export function BattleBoard({
     const board = boardEntity(entity) ?? {};
     const tiles = propTiles ?? (Array.isArray(board.tiles) ? board.tiles : []) as unknown as IsometricTile[];
     const features = propFeatures ?? (Array.isArray(board.features) ? board.features : []) as unknown as IsometricFeature[];
-    const boardWidth = num(board.boardWidth, 8);
-    const boardHeight = num(board.boardHeight, 6);
+    const boardWidth = num(board.gridWidth ?? board.boardWidth, 8);
+    const boardHeight = num(board.gridHeight ?? board.boardHeight, 6);
     const assetManifest = propAssetManifest ?? board.assetManifest as BattleAssetManifest | undefined;
     const backgroundImage = board.backgroundImage as AssetUrl | undefined;
 
@@ -200,7 +200,7 @@ export function BattleBoard({
     const selectedUnitId = (board.selectedUnitId as string | null | undefined) ?? null;
     const currentPhase = (str(board.phase) || 'observation') as BattlePhase;
     const currentTurn = num(board.turn, 1);
-    const gameResult = (board.gameResult as 'victory' | 'defeat' | null | undefined) ?? null;
+    const gameResult = (board.result as 'victory' | 'defeat' | null | undefined) ?? null;
 
     // -- Event bus --
     const eventBus = useEventBus();
@@ -231,7 +231,7 @@ export function BattleBoard({
     const validMoves = useMemo(() => {
         if (!selectedUnit || currentPhase !== 'movement') return [];
         const moves: Array<{ x: number; y: number }> = [];
-        const range = num(selectedUnit.movement);
+        const range = num(board.movementRange, 2);
         const origin = unitPosition(selectedUnit);
         for (let dy = -range; dy <= range; dy++) {
             for (let dx = -range; dx <= range; dx++) {

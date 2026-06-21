@@ -119,18 +119,34 @@ export function SequencerBoard({
     const { emit } = useEventBus();
     const { t } = useTranslate();
     const resolved = boardEntity(entity);
-    const maxSlots = num(resolved?.maxSlots);
+    const maxSlots = num(resolved?.maxSlots) || 3;
     const solutions = (Array.isArray(resolved?.solutions) ? resolved.solutions : []) as string[][];
     const availableActions = (Array.isArray(resolved?.availableActions) ? resolved.availableActions : []) as SlotItemData[];
     const allowDuplicates = resolved?.allowDuplicates !== false;
+
+    // -- Model-owned state (read from entity) ----------------------------------
+    // The lolo sets @entity.slots [{index, placedActionId}] on every PLACE/REMOVE.
+    const entitySlots = (Array.isArray(resolved?.slots) ? resolved.slots : []) as Array<{ index: number; placedActionId?: string }>;
+    const entityResult = str(resolved?.result);
+    const entityAttempts = num(resolved?.attempts);
+    // currentStep is set by the model on PLAY/STEP events; -1 = idle
+    const entityCurrentStep = typeof resolved?.currentStep === 'number' ? resolved.currentStep : -1;
+
+    // Reconstruct SlotItemData[] from entity's placedActionId references
+    const slots: Array<SlotItemData | undefined> = Array.from({ length: maxSlots }, (_, i) => {
+        const entitySlot = entitySlots.find(s => s.index === i);
+        if (!entitySlot?.placedActionId) return undefined;
+        return availableActions.find(a => a.id === entitySlot.placedActionId);
+    });
+
+    const isSuccess = entityResult === 'win';
+    const attempts = entityAttempts;
+    // Playing-back when the model is in the playing-back state (currentStep >= 0)
+    const isPlayingBack = entityCurrentStep >= 0 && !isSuccess;
+    const currentStep = entityCurrentStep;
+
     const [headerError, setHeaderError] = useState(false);
-    const [slots, setSlots] = useState<Array<SlotItemData | undefined>>(
-        () => Array.from({ length: maxSlots }, () => undefined),
-    );
-    const [playState, setPlayState] = useState<PlayState>('idle');
-    const [currentStep, setCurrentStep] = useState(-1);
-    const [attempts, setAttempts] = useState(0);
-    /** Per-slot green/red rings after a failed attempt. Cleared per-slot when modified. */
+    /** Per-slot green/red rings after a failed attempt (display-only, cleared on slot change). */
     const [slotFeedback, setSlotFeedback] = useState<Array<'correct' | 'wrong' | null>>(
         () => Array.from({ length: maxSlots }, () => null),
     );
@@ -143,12 +159,7 @@ export function SequencerBoard({
     // -- Slot handlers --------------------------------------------------------
 
     const handleSlotDrop = useCallback((index: number, item: SlotItemData) => {
-        setSlots(prev => {
-            const next = [...prev];
-            next[index] = item;
-            return next;
-        });
-        // Clear feedback only for the modified slot so correct slots stay green
+        // Clear feedback for the modified slot
         setSlotFeedback(prev => {
             const next = [...prev];
             next[index] = null;
@@ -159,11 +170,6 @@ export function SequencerBoard({
     }, [emit, placeEvent]);
 
     const handleSlotRemove = useCallback((index: number) => {
-        setSlots(prev => {
-            const next = [...prev];
-            next[index] = undefined;
-            return next;
-        });
         setSlotFeedback(prev => {
             const next = [...prev];
             next[index] = null;
@@ -177,10 +183,6 @@ export function SequencerBoard({
 
     const handleReset = useCallback(() => {
         if (timerRef.current) clearTimeout(timerRef.current);
-        setSlots(Array.from({ length: maxSlots }, () => undefined));
-        setPlayState('idle');
-        setCurrentStep(-1);
-        setAttempts(0);
         setSlotFeedback(Array.from({ length: maxSlots }, () => null));
         if (playAgainEvent) emit(`UI:${playAgainEvent}`, {});
     }, [maxSlots, playAgainEvent, emit]);
@@ -188,60 +190,47 @@ export function SequencerBoard({
     // -- Playback -------------------------------------------------------------
 
     const filledSlots = slots.filter((s): s is SlotItemData => !!s);
-    const canPlay = filledSlots.length > 0 && playState === 'idle';
+    const canPlay = filledSlots.length > 0 && !isPlayingBack && !isSuccess;
 
     const handlePlay = useCallback(() => {
         if (!canPlay) return;
 
-        // Clear any previous feedback before re-running
         setSlotFeedback(Array.from({ length: maxSlots }, () => null));
         emit('UI:PLAY_SOUND', { key: 'confirm' });
 
         const sequence = slots.map(s => s?.id || '');
+        const playerIds = slots.filter(Boolean).map(s => s?.id || '');
 
-        if (playEvent) {
-            emit(`UI:${playEvent}`, { sequence });
-        }
+        if (playEvent) emit(`UI:${playEvent}`, { sequence });
 
-        setPlayState('playing');
-        setCurrentStep(0);
-
+        // Drive the STEP progression on the model via a local timer (display animation)
+        // then CHECK at the end. The model's playing-back state is indicated by currentStep >= 0.
         let step = 0;
         const advance = () => {
             step++;
+            // Emit STEP to advance the model's currentStep
+            emit('UI:STEP', { step });
             if (step >= maxSlots) {
+                if (checkEvent) emit(`UI:${checkEvent}`, { sequence: playerIds });
+                // Compute display feedback for failed attempt (model drives win/lose)
                 const playerSeq = slots.map(s => s?.id);
-                const playerIds = slots.filter(Boolean).map(s => s?.id || '');
                 const success = solutions.some(sol =>
                     sol.length === playerIds.length &&
                     sol.every((id, i) => id === playerIds[i]),
                 );
-
-                if (checkEvent) emit(`UI:${checkEvent}`, { sequence: playerIds });
                 if (success) {
-                    setPlayState('success');
-                    setCurrentStep(-1);
                     emit('UI:PLAY_SOUND', { key: 'levelComplete' });
-                    if (completeEvent) {
-                        emit(`UI:${completeEvent}`, { success: true, sequence: playerIds });
-                    }
+                    if (completeEvent) emit(`UI:${completeEvent}`, { success: true, sequence: playerIds });
                 } else {
-                    // Failure: compute per-slot feedback, stay in 'idle'
-                    // so the kid can see the highlights and adjust immediately
-                    setAttempts(prev => prev + 1);
                     const feedback = computeSlotFeedback(playerSeq, solutions);
                     setSlotFeedback(feedback);
-                    setPlayState('idle');
-                    setCurrentStep(-1);
                     emit('UI:PLAY_SOUND', { key: 'fail' });
-                    // Chime for each correct slot
                     const correctCount = feedback.filter(f => f === 'correct').length;
                     for (let ci = 0; ci < correctCount; ci++) {
                         setTimeout(() => { emit('UI:PLAY_SOUND', { key: 'correctSlot' }); }, 300 + ci * 150);
                     }
                 }
             } else {
-                setCurrentStep(step);
                 timerRef.current = setTimeout(advance, stepDurationMs);
             }
         };
@@ -339,7 +328,7 @@ export function SequencerBoard({
                         {t('sequencer.yourSequence') + ':'}
                     </Typography>
                     {/* Score summary after a failed attempt */}
-                    {hasFeedback && playState === 'idle' && (
+                    {hasFeedback && !isPlayingBack && !isSuccess && (
                         <Typography variant="caption" className="text-muted-foreground">
                             {`${correctCount}/${maxSlots} `}
                             {'\u2705'}
@@ -351,7 +340,7 @@ export function SequencerBoard({
                     maxSlots={maxSlots}
                     onSlotDrop={handleSlotDrop}
                     onSlotRemove={handleSlotRemove}
-                    playing={playState === 'playing'}
+                    playing={isPlayingBack}
                     currentStep={currentStep}
                     categoryColors={categoryColors}
                     slotFeedback={slotFeedback}
@@ -359,8 +348,8 @@ export function SequencerBoard({
                 />
             </VStack>
 
-            {/* Action palette — always visible when not playing */}
-            {playState !== 'playing' && (
+            {/* Action palette — always visible when not playing back */}
+            {!isPlayingBack && (
                 <ActionPalette
                     actions={availableActions}
                     usedActionIds={usedIds}
@@ -371,7 +360,7 @@ export function SequencerBoard({
             )}
 
             {/* Encouraging message after failure — stays until next attempt */}
-            {hasFeedback && playState === 'idle' && attempts > 0 && (
+            {hasFeedback && !isPlayingBack && !isSuccess && attempts > 0 && (
                 <Box className="p-3 rounded-container bg-warning/10 border border-warning/30 text-center">
                     <Typography variant="body2" className="text-foreground">
                         {t(encourageKey)}
@@ -380,7 +369,7 @@ export function SequencerBoard({
             )}
 
             {/* Success message */}
-            {playState === 'success' && (
+            {isSuccess && (
                 <Box className="p-4 rounded-container bg-success/20 border border-success text-center">
                     <Typography variant="h5" className="text-success">
                         {str(resolved.successMessage) || t('sequencer.levelComplete')}

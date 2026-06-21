@@ -16,7 +16,7 @@
  * from those; otherwise it self-manages with local state.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../core/atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
@@ -73,30 +73,20 @@ export function ClassifierBoard({
   const { t } = useTranslate();
   const resolved = boardEntity(entity);
 
-  const [localAssignments, setLocalAssignments] = useState<Record<string, string>>({});
   const [headerError, setHeaderError] = useState(false);
-  const [localSubmitted, setLocalSubmitted] = useState(false);
-  const [localAttempts, setLocalAttempts] = useState(0);
-  const [showHint, setShowHint] = useState(false);
 
   const items = (Array.isArray(resolved?.items) ? resolved.items : []) as unknown as ClassifierItem[];
   const categories = (Array.isArray(resolved?.categories) ? resolved.categories : []) as unknown as ClassifierCategory[];
 
-  // Prefer the machine's entity data (assignedCategory / result / attempts);
-  // fall back to local state when the entity doesn't carry it.
-  const entityResult = str(resolved?.result);
-  const entityDrivesResult = entityResult.length > 0;
-  const entityHasAssignments = items.some((item) => item.assignedCategory != null);
+  // All state is model-owned; read directly from the entity.
+  const result = str(resolved?.result);
+  const submitted = result === 'win';
+  const attempts = num(resolved?.attempts);
 
-  const assignments: Record<string, string> = entityHasAssignments
-    ? items.reduce<Record<string, string>>((acc, item) => {
-      if (item.assignedCategory != null) acc[item.id] = item.assignedCategory;
-      return acc;
-    }, {})
-    : localAssignments;
-
-  const attempts = entityDrivesResult ? num(resolved?.attempts) : localAttempts;
-  const submitted = entityDrivesResult || localSubmitted;
+  const assignments: Record<string, string> = items.reduce<Record<string, string>>((acc, item) => {
+    if (item.assignedCategory != null && item.assignedCategory !== '') acc[item.id] = item.assignedCategory;
+    return acc;
+  }, {});
 
   const unassignedItems = items.filter((item) => !assignments[item.id]);
   const allAssigned = items.length > 0 && Object.keys(assignments).length === items.length;
@@ -109,62 +99,32 @@ export function ClassifierBoard({
     }))
     : [];
 
-  // The machine's `result` ('success'/'fail') wins when present.
-  const allCorrect = entityDrivesResult
-    ? entityResult === 'success'
-    : results.length > 0 && results.every((r) => r.correct);
+  // result === 'win' means all correct (the lolo guard ensures that)
+  const allCorrect = result === 'win';
   const correctCount = results.filter((r) => r.correct).length;
+  const showHint = attempts >= 2 && Boolean(str(resolved?.hint));
 
   const handleAssign = (itemId: string, categoryId: string) => {
     if (submitted) return;
-    if (assignEvent) {
-      emit(`UI:${assignEvent}`, { itemId, categoryId });
-    }
-    if (!entityHasAssignments) {
-      setLocalAssignments((prev) => ({ ...prev, [itemId]: categoryId }));
-    }
+    if (assignEvent) emit(`UI:${assignEvent}`, { itemId, categoryId });
   };
 
   const handleUnassign = (itemId: string) => {
     if (submitted) return;
-    if (!entityHasAssignments) {
-      setLocalAssignments((prev) => {
-        const next = { ...prev };
-        delete next[itemId];
-        return next;
-      });
-    }
+    // Clear assignment by assigning empty string
+    if (assignEvent) emit(`UI:${assignEvent}`, { itemId, categoryId: '' });
   };
 
-  const handleSubmit = useCallback(() => {
-    if (checkEvent) {
-      emit(`UI:${checkEvent}`, {});
-    }
-    if (!entityDrivesResult) {
-      setLocalSubmitted(true);
-      setLocalAttempts((a) => a + 1);
-      const correct = items.every((item) => assignments[item.id] === item.correctCategory);
-      if (correct) {
-        emit(`UI:${completeEvent}`, { success: true, attempts: attempts + 1 });
-      }
-    }
-  }, [checkEvent, entityDrivesResult, items, assignments, attempts, completeEvent, emit]);
-
-  const handleReset = () => {
-    if (!entityDrivesResult) setLocalSubmitted(false);
-    if (attempts >= 2 && str(resolved?.hint)) {
-      setShowHint(true);
+  const handleSubmit = () => {
+    if (checkEvent) emit(`UI:${checkEvent}`, {});
+    // Legacy completeEvent emitted when the model has declared a win
+    if (allAssigned && items.every((item) => assignments[item.id] === item.correctCategory)) {
+      emit(`UI:${completeEvent}`, { success: true, attempts: attempts + 1 });
     }
   };
 
   const handleFullReset = () => {
-    if (playAgainEvent) {
-      emit(`UI:${playAgainEvent}`, {});
-    }
-    setLocalAssignments({});
-    setLocalSubmitted(false);
-    setLocalAttempts(0);
-    setShowHint(false);
+    if (playAgainEvent) emit(`UI:${playAgainEvent}`, {});
   };
 
   if (!resolved) return null;
@@ -313,16 +273,12 @@ export function ClassifierBoard({
 
         {/* Actions */}
         <HStack gap="sm" justify="center">
-          {!submitted ? (
+          {!submitted && (
             <Button variant="primary" onClick={handleSubmit} disabled={!allAssigned}>
               <Icon icon={Send} size="sm" />
               {t('classifier.check')}
             </Button>
-          ) : !allCorrect ? (
-            <Button variant="primary" onClick={handleReset}>
-              {t('classifier.tryAgain')}
-            </Button>
-          ) : null}
+          )}
           <Button variant="secondary" onClick={handleFullReset}>
             <Icon icon={RotateCcw} size="sm" />
             {t('classifier.reset')}

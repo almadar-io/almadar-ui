@@ -49,9 +49,11 @@ export interface EventHandlerBoardProps extends DisplayStateProps {
     playEvent?: EventEmit<Record<string, never>>;
     /** Emits UI:{completeEvent} with { success } */
     completeEvent?: EventEmit<{ success: boolean }>;
+    /** Emits UI:{editRuleEvent} with { objectId, rules } — model updates @entity.objects */
+    editRuleEvent?: EventEmit<{ objectId: string; rules: RuleDefinition[] }>;
+    /** Emits UI:{playAgainEvent} to reset the model */
+    playAgainEvent?: EventEmit<Record<string, never>>;
 }
-
-type PlayState = 'editing' | 'playing' | 'success' | 'fail';
 
 const ENCOURAGEMENT_KEYS = [
     'puzzle.tryAgain1',
@@ -68,20 +70,23 @@ export function EventHandlerBoard({
     stepDurationMs = 800,
     playEvent,
     completeEvent,
+    editRuleEvent,
+    playAgainEvent,
     className,
 }: EventHandlerBoardProps): React.JSX.Element | null {
     const { emit } = useEventBus();
     const { t } = useTranslate();
     const resolved = boardEntity(entity);
-    const entityObjects = rows(resolved?.objects);
-    const [objects, setObjects] = useState<EntityRow[]>(() => [...entityObjects]);
+    const objects = rows(resolved?.objects);
+    const entityResult = str(resolved?.result) || 'none';
+    const isSuccess = entityResult === 'win';
+    const attempts = typeof resolved?.attempts === 'number' ? resolved.attempts : 0;
     const [selectedObjectId, setSelectedObjectId] = useState<string | null>(
-        entityObjects[0] ? objId(entityObjects[0]) : null,
+        objects[0] ? objId(objects[0]) : null,
     );
     const [headerError, setHeaderError] = useState(false);
-    const [playState, setPlayState] = useState<PlayState>('editing');
+    const [isPlaying, setIsPlaying] = useState(false);
     const [eventLog, setEventLog] = useState<EventLogEntry[]>([]);
-    const [attempts, setAttempts] = useState(0);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const logIdCounter = useRef(0);
 
@@ -89,15 +94,13 @@ export function EventHandlerBoard({
         if (timerRef.current) clearTimeout(timerRef.current);
     }, []);
 
-    const selectedObject = objects.find(o => objId(o) === selectedObjectId) || null;
+    const selectedObject = objects.find(o => objId(o) === selectedObjectId) ?? null;
 
     // -- Rule changes ---------------------------------------------------------
 
     const handleRulesChange = useCallback((objectId: string, rules: RuleDefinition[]) => {
-        setObjects(prev => prev.map(o =>
-            objId(o) === objectId ? { ...o, rules } : o,
-        ));
-    }, []);
+        if (editRuleEvent) emit(`UI:${editRuleEvent}`, { objectId, rules });
+    }, [editRuleEvent, emit]);
 
     // -- Add log entry --------------------------------------------------------
 
@@ -109,10 +112,10 @@ export function EventHandlerBoard({
     // -- Playback: simulate event chain ---------------------------------------
 
     const handlePlay = useCallback(() => {
-        if (playState !== 'editing') return;
+        if (isPlaying || isSuccess) return;
         if (playEvent) emit(`UI:${playEvent}`, {});
 
-        setPlayState('playing');
+        setIsPlaying(true);
         setEventLog([]);
 
         const allRules: Array<{ object: EntityRow; rule: RuleDefinition }> = [];
@@ -131,16 +134,8 @@ export function EventHandlerBoard({
 
         const processNext = () => {
             if (eventQueue.length === 0 || stepIdx > 20) {
-                if (goalReached) {
-                    setPlayState('success');
-                    if (completeEvent) {
-                        emit(`UI:${completeEvent}`, { success: true });
-                    }
-                } else {
-                    setAttempts(prev => prev + 1);
-                    setPlayState('fail');
-                    // Do NOT emit PUZZLE_COMPLETE on failure — kid keeps trying
-                }
+                setIsPlaying(false);
+                if (goalReached && completeEvent) emit(`UI:${completeEvent}`, { success: true });
                 return;
             }
 
@@ -177,24 +172,21 @@ export function EventHandlerBoard({
             addLogEntry('\uD83C\uDFAC', t('eventHandler.simulationStarted', { events: triggers.join(', ') }), 'active');
         }
         timerRef.current = setTimeout(processNext, stepDurationMs);
-    }, [playState, objects, resolved, stepDurationMs, playEvent, completeEvent, emit, addLogEntry, t]);
+    }, [isPlaying, isSuccess, objects, resolved, stepDurationMs, playEvent, completeEvent, emit, addLogEntry, t]);
 
     const handleTryAgain = useCallback(() => {
         if (timerRef.current) clearTimeout(timerRef.current);
-        // Keep the rules the kid set — just reset play state so they can tweak
-        setPlayState('editing');
+        setIsPlaying(false);
         setEventLog([]);
     }, []);
 
     const handleReset = useCallback(() => {
         if (timerRef.current) clearTimeout(timerRef.current);
-        const resetObjects = rows(resolved?.objects);
-        setObjects([...resetObjects]);
-        setPlayState('editing');
+        setIsPlaying(false);
         setEventLog([]);
-        setSelectedObjectId(resetObjects[0] ? objId(resetObjects[0]) : null);
-        setAttempts(0);
-    }, [resolved?.objects]);
+        setSelectedObjectId(objects[0] ? objId(objects[0]) : null);
+        if (playAgainEvent) emit(`UI:${playAgainEvent}`, {});
+    }, [objects, playAgainEvent, emit]);
 
     if (!resolved) return null;
 
@@ -296,7 +288,7 @@ export function EventHandlerBoard({
                 <ObjectRulePanel
                     object={selectedObject}
                     onRulesChange={handleRulesChange}
-                    disabled={playState !== 'editing'}
+                    disabled={isPlaying}
                 />
             )}
 
@@ -306,7 +298,7 @@ export function EventHandlerBoard({
             )}
 
             {/* Result feedback */}
-            {playState === 'success' && (
+            {isSuccess && (
                 <Box className="p-4 rounded-container bg-success/20 border border-success text-center">
                     <Typography variant="h5" className="text-success">
                         {str(resolved.successMessage) || t('eventHandler.chainComplete')}
@@ -314,7 +306,7 @@ export function EventHandlerBoard({
                 </Box>
             )}
 
-            {playState === 'fail' && (
+            {!isPlaying && !isSuccess && attempts > 0 && (
                 <VStack gap="sm">
                     <Box className="p-4 rounded-container bg-warning/10 border border-warning/30 text-center">
                         <Typography variant="body1" className="text-foreground font-medium">
@@ -338,7 +330,7 @@ export function EventHandlerBoard({
 
             {/* Controls */}
             <HStack gap="sm">
-                {playState === 'fail' ? (
+                {!isPlaying && !isSuccess && attempts > 0 ? (
                     <Button variant="primary" onClick={handleTryAgain}>
                         {'\uD83D\uDD04 ' + t('puzzle.tryAgainButton')}
                     </Button>
@@ -346,7 +338,7 @@ export function EventHandlerBoard({
                     <Button
                         variant="primary"
                         onClick={handlePlay}
-                        disabled={playState !== 'editing'}
+                        disabled={isPlaying || isSuccess}
                     >
                         {'\u25B6 ' + t('game.play')}
                     </Button>

@@ -188,6 +188,7 @@ module.exports = {
   'min-h-[60vh]',
   'min-h-[80px]',
   'min-h-[80vh]',
+  'min-h-[85vh]',
   'min-w-[100px]',
   'min-w-[120px]',
   'min-w-[130px]',

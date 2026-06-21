@@ -18,13 +18,18 @@ import React, { useState, useMemo, useCallback } from 'react';
 import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useTranslate } from '../../../hooks/useTranslate';
+import { Box } from '../../core/atoms/Box';
+import { Button } from '../../core/atoms/Button';
+import { Typography } from '../../core/atoms/Typography';
+import { VStack } from '../../core/atoms/Stack';
 import IsometricCanvas from '../molecules/IsometricCanvas';
 import type {
     IsometricTile,
     IsometricUnit,
     IsometricFeature,
 } from './types/isometric';
-import { boardEntity } from './boardEntity';
+import { boardEntity, num, str, rows } from './boardEntity';
 import { isoToScreen, TILE_WIDTH, FLOOR_HEIGHT } from './utils/isometric';
 
 // =============================================================================
@@ -55,6 +60,14 @@ export type CastleSlotContext = {
     tileToScreen: (x: number, y: number) => { x: number; y: number };
     /** Canvas scale */
     scale: number;
+    // -- Model-owned resource state (lolo sets these on @entity) --
+    gold: number;
+    health: number;
+    maxHealth: number;
+    wave: number;
+    tickCount: number;
+    buildings: readonly EntityRow[];
+    result: 'none' | 'victory' | 'defeat';
 };
 
 export interface CastleBoardProps {
@@ -97,6 +110,8 @@ export interface CastleBoardProps {
     unitClickEvent?: EventEmit<{ unitId: string }>;
     /** Event name to emit via event bus when a tile is clicked (emits UI:{tileClickEvent}) */
     tileClickEvent?: EventEmit<{ x: number; y: number }>;
+    /** Emits UI:{playAgainEvent} with {} on play again / reset */
+    playAgainEvent?: EventEmit<Record<string, never>>;
 
     className?: string;
 }
@@ -122,9 +137,11 @@ export function CastleBoard({
     featureClickEvent,
     unitClickEvent,
     tileClickEvent,
+    playAgainEvent,
     className,
 }: CastleBoardProps): React.JSX.Element {
     const eventBus = useEventBus();
+    const { t } = useTranslate();
 
     // Resolve the single board-state row, then read defensively so a missing
     // entity yields empty collections rather than throwing. Direct props win.
@@ -134,6 +151,15 @@ export function CastleBoard({
     const units = propUnits ?? (Array.isArray(resolved?.units) ? resolved.units : []) as unknown as IsometricUnit[];
     const assetManifest = propAssetManifest ?? resolved?.assetManifest as CastleAssetManifest | undefined;
     const backgroundImage = resolved?.backgroundImage as string | undefined;
+
+    // -- Model-owned resource state (set by lolo on every TICK/BUILD/etc) ------
+    const gold = num(resolved?.gold);
+    const health = num(resolved?.health);
+    const maxHealth = num(resolved?.maxHealth);
+    const wave = num(resolved?.wave);
+    const tickCount = num(resolved?.tickCount);
+    const buildings = rows(resolved?.buildings);
+    const result = (str(resolved?.result) || 'none') as 'none' | 'victory' | 'defeat';
 
     const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
     const [selectedFeature, setSelectedFeature] = useState<IsometricFeature | null>(null);
@@ -193,6 +219,12 @@ export function CastleBoard({
 
     const clearSelection = useCallback(() => setSelectedFeature(null), []);
 
+    const handlePlayAgain = useCallback(() => {
+        if (playAgainEvent) {
+            eventBus.emit(`UI:${playAgainEvent}`, {});
+        }
+    }, [playAgainEvent, eventBus]);
+
     // -- Slot context -------------------------------------------------------
     const ctx: CastleSlotContext = useMemo(
         () => ({
@@ -203,12 +235,19 @@ export function CastleBoard({
             clearSelection,
             tileToScreen,
             scale,
+            gold,
+            health,
+            maxHealth,
+            wave,
+            tickCount,
+            buildings,
+            result,
         }),
-        [hoveredTile, hoveredFeature, hoveredUnit, selectedFeature, clearSelection, tileToScreen, scale],
+        [hoveredTile, hoveredFeature, hoveredUnit, selectedFeature, clearSelection, tileToScreen, scale, gold, health, maxHealth, wave, tickCount, buildings, result],
     );
 
     return (
-        <div className={cn('castle-board min-h-screen flex flex-col bg-background', className)}>
+        <div className={cn('castle-board relative min-h-screen flex flex-col bg-background', className)}>
             {/* Header slot */}
             {header && header(ctx)}
 
@@ -245,6 +284,30 @@ export function CastleBoard({
 
             {/* Footer slot */}
             {footer && footer(ctx)}
+
+            {/* End-game overlay */}
+            {result !== 'none' && (
+                <Box className="absolute inset-0 z-50 flex items-center justify-center bg-background/70 backdrop-blur-sm rounded-container">
+                    <VStack className="text-center p-8" gap="lg">
+                        <Typography
+                            variant="h2"
+                            className={cn(
+                                'text-4xl font-black tracking-widest uppercase',
+                                result === 'victory' ? 'text-warning' : 'text-error',
+                            )}
+                        >
+                            {result === 'victory' ? t('battle.victory') : t('battle.defeat')}
+                        </Typography>
+                        <Button
+                            variant="primary"
+                            className="px-8 py-3 font-semibold"
+                            onClick={handlePlayAgain}
+                        >
+                            {t('battle.playAgain')}
+                        </Button>
+                    </VStack>
+                </Box>
+            )}
         </div>
     );
 }

@@ -1,8 +1,11 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import { Icon, type IconInput } from '../../core/atoms/Icon';
+import type { AssetUrl } from '@almadar/core';
 
 export interface StatusEffectProps {
+  /** Sprite image URL — takes precedence over icon when provided */
+  assetUrl?: AssetUrl;
   /** Lucide icon name or component */
   icon: IconInput;
   /** Label describing the effect */
@@ -19,10 +22,13 @@ export interface StatusEffectProps {
   className?: string;
 }
 
+const DEFAULT_ASSET_URL: AssetUrl =
+  'https://almadar-kflow-assets.web.app/shared/effects/particles/flame_01.png';
+
 const sizeMap = {
-  sm: { container: 'w-8 h-8', icon: 'text-sm', badge: 'text-xs -top-1 -right-1 w-4 h-4', timer: 'text-[9px]' },
-  md: { container: 'w-10 h-10', icon: 'text-base', badge: 'text-xs -top-1 -right-1 w-5 h-5', timer: 'text-xs' },
-  lg: { container: 'w-12 h-12', icon: 'text-lg', badge: 'text-sm -top-1.5 -right-1.5 w-6 h-6', timer: 'text-xs' },
+  sm: { container: 'w-8 h-8', icon: 'text-sm', badge: 'text-xs -top-1 -right-1 w-4 h-4', timer: 'text-[9px]', img: 20 },
+  md: { container: 'w-10 h-10', icon: 'text-base', badge: 'text-xs -top-1 -right-1 w-5 h-5', timer: 'text-xs', img: 28 },
+  lg: { container: 'w-12 h-12', icon: 'text-lg', badge: 'text-sm -top-1.5 -right-1.5 w-6 h-6', timer: 'text-xs', img: 36 },
 };
 
 const variantStyles = {
@@ -39,6 +45,7 @@ function formatDuration(seconds: number): string {
 }
 
 export function StatusEffect({
+  assetUrl = DEFAULT_ASSET_URL,
   icon = 'shield',
   label = 'Shield',
   duration = 30,
@@ -60,7 +67,20 @@ export function StatusEffect({
         title={label}
       >
         <span className={cn('flex items-center justify-center', sizes.icon)}>
-          {typeof icon === 'string' ? <Icon name={icon} size="sm" /> : <Icon icon={icon} size="sm" />}
+          {assetUrl ? (
+            <img
+              src={assetUrl}
+              alt={label}
+              width={sizes.img}
+              height={sizes.img}
+              style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
+              className="flex-shrink-0"
+            />
+          ) : typeof icon === 'string' ? (
+            <Icon name={icon} size="sm" />
+          ) : (
+            <Icon icon={icon} size="sm" />
+          )}
         </span>
         {duration !== undefined && (
           <span

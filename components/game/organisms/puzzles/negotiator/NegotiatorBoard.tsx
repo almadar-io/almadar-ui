@@ -12,7 +12,7 @@
  * Events emitted via completeEvent (default UI:PUZZLE_COMPLETE).
  */
 
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { EventEmit, EntityRow } from '@almadar/core';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../core/atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
@@ -59,26 +59,6 @@ interface RoundResult {
   opponentPayoff: number;
 }
 
-function getOpponentAction(
-  strategy: string,
-  actions: NegotiatorAction[],
-  history: RoundResult[],
-): string {
-  const actionIds = actions.map((a) => a.id);
-  switch (strategy) {
-    case 'always-cooperate':
-      return actionIds[0];
-    case 'always-defect':
-      return actionIds[actionIds.length - 1];
-    case 'tit-for-tat':
-      if (history.length === 0) return actionIds[0];
-      return history[history.length - 1].playerAction;
-    case 'random':
-    default:
-      return actionIds[Math.floor(Math.random() * actionIds.length)];
-  }
-}
-
 export function NegotiatorBoard({
   entity,
   completeEvent = 'PUZZLE_COMPLETE',
@@ -104,39 +84,45 @@ export function NegotiatorBoard({
   const playerTotal = num(resolved?.score);
   const isComplete = result !== 'none' || (totalRounds > 0 && currentRound >= totalRounds);
   const won = result === 'win';
-
-  const opponentTotal = history.reduce((s, r) => s + r.opponentPayoff, 0);
+  const lastPlayerAction = str(resolved?.lastPlayerAction);
+  const lastOpponentAction = str(resolved?.lastOpponentAction);
+  const lastPayoff = num(resolved?.lastPayoff);
 
   const actions = (Array.isArray(resolved?.actions) ? resolved.actions : []) as unknown as NegotiatorAction[];
   const payoffMatrix = (Array.isArray(resolved?.payoffMatrix) ? resolved.payoffMatrix : []) as unknown as PayoffEntry[];
 
+  // Append a display-history entry each time the model advances a round.
+  // The model is the single source for opponent action + payoff; we read them back.
+  const prevRoundRef = useRef(currentRound);
+  useEffect(() => {
+    if (currentRound > prevRoundRef.current && lastPlayerAction) {
+      const opponentPayoffEntry = payoffMatrix.find(
+        (p) => p.playerAction === lastPlayerAction && p.opponentAction === lastOpponentAction,
+      );
+      setHistory(prev => [
+        ...prev,
+        {
+          round: currentRound,
+          playerAction: lastPlayerAction,
+          opponentAction: lastOpponentAction,
+          playerPayoff: lastPayoff,
+          opponentPayoff: opponentPayoffEntry?.opponentPayoff ?? 0,
+        },
+      ]);
+    }
+    prevRoundRef.current = currentRound;
+  }, [currentRound, lastPlayerAction, lastOpponentAction, lastPayoff, payoffMatrix]);
+
+  const opponentTotal = useMemo(() => history.reduce((s, r) => s + r.opponentPayoff, 0), [history]);
+
   const handleAction = useCallback((actionId: string) => {
     if (isComplete) return;
-
-    // Resolve the payoff locally (opponent strategy + payoff matrix), then hand
-    // it to the machine — the machine accumulates score and advances the round.
-    const opponentAction = getOpponentAction(str(resolved?.opponentStrategy) || 'random', actions, history);
-    const payoff = payoffMatrix.find(
-      (p) => p.playerAction === actionId && p.opponentAction === opponentAction,
-    );
-    const playerPayoff = payoff?.playerPayoff ?? 0;
-
-    setHistory((prev) => [
-      ...prev,
-      {
-        round: prev.length + 1,
-        playerAction: actionId,
-        opponentAction,
-        playerPayoff,
-        opponentPayoff: payoff?.opponentPayoff ?? 0,
-      },
-    ]);
-
+    // Emit the player's action to the model; the model computes the opponent move
+    // and accumulates score+round. Display history is updated via useEffect above.
     if (playRoundEvent) {
-      emit(`UI:${playRoundEvent}`, { playerAction: actionId, payoff: playerPayoff });
+      emit(`UI:${playRoundEvent}`, { playerAction: actionId, payoff: 0 });
     }
-
-    // Last round just played — finish the game.
+    // When this is the last round, tell the model to evaluate the result.
     if (totalRounds > 0 && currentRound + 1 >= totalRounds) {
       if (finishEvent) {
         emit(`UI:${finishEvent}`, {});
@@ -145,11 +131,12 @@ export function NegotiatorBoard({
         setShowHint(true);
       }
     }
-  }, [isComplete, resolved, totalRounds, currentRound, actions, payoffMatrix, history, playRoundEvent, finishEvent, emit]);
+  }, [isComplete, resolved, totalRounds, currentRound, playRoundEvent, finishEvent, emit]);
 
   const handleReset = useCallback(() => {
     setHistory([]);
     setShowHint(false);
+    prevRoundRef.current = 0;
     if (playAgainEvent) {
       emit(`UI:${playAgainEvent}`, {});
     }

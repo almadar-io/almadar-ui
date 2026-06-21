@@ -56,51 +56,34 @@ export function DebuggerBoard({
   const resolved = boardEntity(entity);
 
   const [headerError, setHeaderError] = useState(false);
-  const [showHint, setShowHint] = useState(false);
 
   const lines = (Array.isArray(resolved?.lines) ? resolved.lines : []) as unknown as DebuggerLine[];
-  // `result` on the entity is the machine's verdict; presence means checked.
-  const result = (resolved?.result as 'win' | 'lose' | null | undefined) ?? null;
+  // Model sets result to "win" on correct check; "none" otherwise (never null after INIT)
+  const result = str(resolved?.result) || 'none';
   const attempts = num(resolved?.attempts);
-  const submitted = result != null;
+  const submitted = result === 'win';
+  const showHint = !submitted && attempts >= 2 && Boolean(str(resolved?.hint));
 
   const bugLines = lines.filter((l) => l.isBug);
   const flaggedLines = lines.filter((l) => l.isFlagged);
   const correctFlags = lines.filter((l) => l.isBug && l.isFlagged);
   const falseFlags = lines.filter((l) => !l.isBug && l.isFlagged);
-  const allCorrect = result === 'win';
+  const allCorrect = submitted;
 
   const toggleLine = (lineId: string) => {
     if (submitted) return;
-    if (toggleFlagEvent) {
-      emit(`UI:${toggleFlagEvent}`, { lineId });
-    }
+    if (toggleFlagEvent) emit(`UI:${toggleFlagEvent}`, { lineId });
   };
 
   const handleSubmit = useCallback(() => {
-    if (checkEvent) {
-      emit(`UI:${checkEvent}`, {});
-    }
+    if (checkEvent) emit(`UI:${checkEvent}`, {});
+    // Legacy completeEvent for when the model confirms a win
     const correct = correctFlags.length === bugLines.length && falseFlags.length === 0;
-    if (correct) {
-      emit(`UI:${completeEvent}`, { success: true, attempts: attempts + 1 });
-    }
+    if (correct) emit(`UI:${completeEvent}`, { success: true, attempts: attempts + 1 });
   }, [checkEvent, correctFlags.length, bugLines.length, falseFlags.length, attempts, completeEvent, emit]);
 
   const handleReset = () => {
-    if (playAgainEvent) {
-      emit(`UI:${playAgainEvent}`, {});
-    }
-    if (attempts >= 2 && str(resolved?.hint)) {
-      setShowHint(true);
-    }
-  };
-
-  const handleFullReset = () => {
-    if (playAgainEvent) {
-      emit(`UI:${playAgainEvent}`, {});
-    }
-    setShowHint(false);
+    if (playAgainEvent) emit(`UI:${playAgainEvent}`, {});
   };
 
   if (!resolved) return null;
@@ -137,7 +120,7 @@ export function DebuggerBoard({
             </HStack>
             <Typography variant="body">{str(resolved.description)}</Typography>
             <Typography variant="caption" className="text-muted-foreground">
-              {t('debugger.findBugs', { count: String(num(resolved.bugCount)) })}
+              {t('debugger.findBugs', { count: String(lines.filter(l => l.isBug).length) })}
             </Typography>
           </VStack>
         </Card>
@@ -215,17 +198,13 @@ export function DebuggerBoard({
         )}
 
         <HStack gap="sm" justify="center">
-          {!submitted ? (
+          {!submitted && (
             <Button variant="primary" onClick={handleSubmit} disabled={flaggedLines.length === 0}>
               <Icon icon={Send} size="sm" />
               {t('debugger.submit')}
             </Button>
-          ) : !allCorrect ? (
-            <Button variant="primary" onClick={handleReset}>
-              {t('debugger.tryAgain')}
-            </Button>
-          ) : null}
-          <Button variant="secondary" onClick={handleFullReset}>
+          )}
+          <Button variant="secondary" onClick={handleReset}>
             <Icon icon={RotateCcw} size="sm" />
             {t('debugger.reset')}
           </Button>

@@ -150,10 +150,7 @@ export function GameCanvas3DBattleTemplate({
     const round = resolved?.round == null ? undefined : Number(resolved.round);
     return (
         <Box
-            className={cn('game-canvas-3d-battle-template', className)}
-            // Block container with a real height (dedicated CSS isn't bundled): a flex
-            // wrapper collapses the GameCanvas3D flex-item's height → r3f canvas ~150px.
-            style={{ display: 'block', position: 'relative', width: '100%', minHeight: '85vh' }}
+            className={cn('game-canvas-3d-battle-template block relative w-full min-h-[85vh]', className)}
         >
             <GameCanvas3D
                 tiles={tiles}
@@ -178,8 +175,7 @@ export function GameCanvas3DBattleTemplate({
                 <HStack
                     gap="sm"
                     align="center"
-                    className={cn('battle-template__turn-indicator', `battle-template__turn-indicator--${currentTurn}`)}
-                    style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 10 }}
+                    className={cn('battle-template__turn-indicator absolute top-3 right-3 z-10', `battle-template__turn-indicator--${currentTurn}`)}
                 >
                     <Typography variant="body" className="turn-indicator__label">
                         {currentTurn === 'player' ? 'Your Turn' : "Enemy's Turn"}

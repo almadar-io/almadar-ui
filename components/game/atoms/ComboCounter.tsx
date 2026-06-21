@@ -1,7 +1,13 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
+import type { AssetUrl } from '@almadar/core';
+
+const DEFAULT_ASSET_URL: AssetUrl =
+  'https://almadar-kflow-assets.web.app/shared/effects/flash/flash00.png';
 
 export interface ComboCounterProps {
+  /** Sprite image URL displayed alongside the combo number */
+  assetUrl?: AssetUrl;
   /** Current combo count */
   combo: number;
   /** Score multiplier */
@@ -34,6 +40,7 @@ function getComboScale(combo: number): string {
 }
 
 export function ComboCounter({
+  assetUrl = DEFAULT_ASSET_URL,
   combo = 5,
   multiplier,
   streak,
@@ -54,6 +61,16 @@ export function ComboCounter({
         className
       )}
     >
+      {assetUrl && (
+        <img
+          src={assetUrl}
+          alt="combo"
+          width={24}
+          height={24}
+          style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
+          className="flex-shrink-0 mb-0.5"
+        />
+      )}
       <span className={cn('font-black tabular-nums leading-none', sizes.combo, getComboIntensity(combo))}>
         {combo}
       </span>

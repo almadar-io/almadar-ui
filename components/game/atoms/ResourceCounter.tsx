@@ -2,6 +2,7 @@ import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import type { ColorToken } from '../../core/atoms/types';
 import { Icon, type IconInput } from '../../core/atoms/Icon';
+import type { AssetUrl } from '@almadar/core';
 
 const colorTokenClasses: Record<ColorToken, string> = {
   primary: 'text-primary',
@@ -13,6 +14,8 @@ const colorTokenClasses: Record<ColorToken, string> = {
 };
 
 export interface ResourceCounterProps {
+  /** Sprite image URL — takes precedence over icon when provided */
+  assetUrl?: AssetUrl;
   /** Icon component or emoji */
   icon?: IconInput;
   /** Resource label */
@@ -29,13 +32,17 @@ export interface ResourceCounterProps {
   className?: string;
 }
 
+const DEFAULT_ASSET_URL: AssetUrl =
+  'https://almadar-kflow-assets.web.app/shared/world-map/gold_mine.png';
+
 const sizeMap = {
-  sm: { wrapper: 'text-xs gap-1 px-1.5 py-0.5', icon: 'text-sm' },
-  md: { wrapper: 'text-sm gap-1.5 px-2 py-1', icon: 'text-base' },
-  lg: { wrapper: 'text-base gap-2 px-3 py-1.5', icon: 'text-lg' },
+  sm: { wrapper: 'text-xs gap-1 px-1.5 py-0.5', icon: 'text-sm', img: 16 },
+  md: { wrapper: 'text-sm gap-1.5 px-2 py-1', icon: 'text-base', img: 20 },
+  lg: { wrapper: 'text-base gap-2 px-3 py-1.5', icon: 'text-lg', img: 28 },
 };
 
 export function ResourceCounter({
+  assetUrl = DEFAULT_ASSET_URL,
   icon,
   label = 'Gold',
   value = 250,
@@ -55,11 +62,20 @@ export function ResourceCounter({
         className
       )}
     >
-      {icon && (
+      {assetUrl ? (
+        <img
+          src={assetUrl}
+          alt={label}
+          width={sizes.img}
+          height={sizes.img}
+          style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
+          className="flex-shrink-0"
+        />
+      ) : icon ? (
         <span className={cn('flex-shrink-0', sizes.icon)}>
           {typeof icon === 'string' ? <Icon name={icon} /> : <Icon icon={icon} />}
         </span>
-      )}
+      ) : null}
       <span className="text-muted-foreground">{label}</span>
       <span className={cn('font-bold tabular-nums', color && (color in colorTokenClasses ? colorTokenClasses[color as ColorToken] : color))}>
         {value}

@@ -1,21 +1,20 @@
-/**
- * StateIndicator — animated game-entity state pill (distinct from core Badge atom).
- * Badge is a static text label. StateIndicator maps a state string (idle/active/
- * moving/…) to icon + bg colour + optional pulse via a style registry that callers
- * can extend. Use it in game HUDs where the entity state machine drives the display.
- */
-
 import React from 'react';
 import { Box } from '../../core/atoms/Box';
 import { Icon, type IconInput } from '../../core/atoms/Icon';
 import { cn } from '../../../lib/cn';
+import type { AssetUrl } from '@almadar/core';
 
 export interface StateStyle {
     icon: IconInput;
     bgClass: string;
 }
 
+const DEFAULT_ASSET_URL: AssetUrl =
+  'https://almadar-kflow-assets.web.app/shared/isometric-dungeon/Isometric/chestClosed_E.png';
+
 export interface StateIndicatorProps {
+    /** Sprite image URL — takes precedence over the state icon when provided */
+    assetUrl?: AssetUrl;
     /** The current state name */
     state: string;
     /** Optional label override (defaults to capitalized state name) */
@@ -54,6 +53,7 @@ const SIZE_CLASSES = {
 };
 
 export function StateIndicator({
+    assetUrl = DEFAULT_ASSET_URL,
     state = 'idle',
     label,
     size = 'md',
@@ -79,7 +79,16 @@ export function StateIndicator({
             )}
         >
             <Box as="span">
-              {typeof config.icon === 'string'
+              {assetUrl ? (
+                <img
+                  src={assetUrl}
+                  alt={displayLabel}
+                  width={16}
+                  height={16}
+                  style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
+                  className="flex-shrink-0"
+                />
+              ) : typeof config.icon === 'string'
                 ? /^[a-zA-Z0-9-]+$/.test(config.icon)
                   ? <Icon name={config.icon} />
                   : config.icon
