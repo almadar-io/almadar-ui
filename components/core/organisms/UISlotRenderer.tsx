@@ -1103,7 +1103,13 @@ function isPatternConfig(
   if (value instanceof Date) return false;
   if (typeof value === "function") return false;
   const record = value as Record<string, EventPayloadValue>;
-  return "type" in record && typeof record.type === "string";
+  // `type` must name a REGISTERED pattern/component — otherwise this is plain
+  // domain data that merely happens to have a `type` field (e.g. a platformer
+  // tile `{ type: "ground", x, y, width, height }` or a game unit). Without the
+  // registry check those data objects get mistaken for renderable patterns and
+  // wrapped as <SlotContentRenderer> elements, destroying the data the consuming
+  // component reads (the platforms-never-render bug).
+  return "type" in record && typeof record.type === "string" && isKnownPattern(record.type);
 }
 
 /**
