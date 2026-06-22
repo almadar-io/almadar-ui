@@ -48,6 +48,8 @@ export interface RoguelikeBoardProps extends DisplayStateProps {
     assetManifest?: RoguelikeAssetManifest;
     scale?: number;
     unitScale?: number;
+    spriteHeightRatio?: number;
+    spriteMaxWidthRatio?: number;
     moveEvent?: EventEmit<{ dx: number; dy: number }>;
     playAgainEvent?: EventEmit<Record<string, never>>;
     gameEndEvent?: EventEmit<{ result: string }>;
@@ -124,6 +126,8 @@ export function RoguelikeBoard({
     assetManifest: propAssetManifest,
     scale = 0.45,
     unitScale = 1,
+    spriteHeightRatio = 1.5,
+    spriteMaxWidthRatio = 0.6,
     moveEvent,
     playAgainEvent,
     gameEndEvent,
@@ -302,6 +306,8 @@ export function RoguelikeBoard({
                     assetBaseUrl={propAssetManifest?.baseUrl ?? CDN}
                     assetManifest={propAssetManifest}
                     unitScale={unitScale}
+                    spriteHeightRatio={spriteHeightRatio}
+                    spriteMaxWidthRatio={spriteMaxWidthRatio}
                 />
             </Box>
 

@@ -129,6 +129,10 @@ export interface IsometricCanvasProps {
     enableCamera?: boolean;
     /** Extra scale multiplier for unit draw size. 1 = default. */
     unitScale?: number;
+    /** Ratio of unit draw height to scaledFloorHeight. Default 1.5. */
+    spriteHeightRatio?: number;
+    /** Max unit draw width as a ratio of scaledTileWidth. Default 0.6. */
+    spriteMaxWidthRatio?: number;
     /** Board width in tiles (overrides tile-derived size) */
     boardWidth?: number;
     /** Board height in tiles (overrides tile-derived size) */
@@ -208,6 +212,8 @@ export function IsometricCanvas({
     showMinimap = true,
     enableCamera = true,
     unitScale = 1,
+    spriteHeightRatio = 1.5,
+    spriteMaxWidthRatio = 0.6,
     // Asset resolution
     getTerrainSprite,
     getFeatureSprite,
@@ -722,8 +728,8 @@ export function IsometricCanvas({
             // Resolve sprite
             const unitSpriteUrl = resolveUnitSpriteUrl(unit);
             const img = unitSpriteUrl ? getImage(unitSpriteUrl) : null;
-            const unitDrawH = scaledFloorHeight * 1.5 * unitScale;
-            const maxUnitW = scaledTileWidth * 0.6 * unitScale;
+            const unitDrawH = scaledFloorHeight * spriteHeightRatio * unitScale;
+            const maxUnitW = scaledTileWidth * spriteMaxWidthRatio * unitScale;
             const ar = img ? img.naturalWidth / img.naturalHeight : 0.5;
             let drawH = unitDrawH;
             let drawW = unitDrawH * ar;

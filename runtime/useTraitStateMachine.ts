@@ -36,6 +36,7 @@ import {
     type BindingContext,
     type EffectContext,
 } from '@almadar/runtime';
+import { evaluateGuard } from '@almadar/evaluator';
 import { createClientEffectHandlers } from './createClientEffectHandlers';
 import type { ResolvedTraitBinding, ResolvedTraitListener } from './types';
 import type { SlotPatternEntry, SlotSource } from './ui/slot-types';
@@ -780,7 +781,14 @@ export function useTraitStateMachine(
             if (binding.config) {
                 guardCtx.config = binding.config as TraitConfig;
             }
-            const passed = interpolateValue(tick.guard, createContextFromBindings(guardCtx));
+            // Use the canonical boolean guard evaluator (same as the event path in
+            // StateMachineCore) — NOT interpolateValue, which resolves bindings but
+            // returns a truthy value, so `(== @entity.result "none")` never went false
+            // and the tick (e.g. game physics/scoring) never stopped on win/lose.
+            const passed = evaluateGuard(
+                tick.guard as Parameters<typeof evaluateGuard>[0],
+                createContextFromBindings(guardCtx),
+            );
             if (!passed) {
                 tickLog.debug('guard-blocked', { traitName, tick: tick.name, state: currentState });
                 return;

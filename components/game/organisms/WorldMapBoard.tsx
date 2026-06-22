@@ -108,6 +108,10 @@ export interface WorldMapBoardProps {
     scale?: number;
     /** Unit draw-size multiplier */
     unitScale?: number;
+    /** Ratio of unit draw height to scaledFloorHeight. Default 1.5. */
+    spriteHeightRatio?: number;
+    /** Max unit draw width as a ratio of scaledTileWidth. Default 0.6. */
+    spriteMaxWidthRatio?: number;
     /** Allow selecting / moving ALL heroes (including enemy). For testing. */
     allowMoveAllHeroes?: boolean;
     /** Custom movement range validator */
@@ -179,6 +183,8 @@ export function WorldMapBoard({
     isLoading,
     scale = 0.4,
     unitScale = 2.5,
+    spriteHeightRatio = 1.5,
+    spriteMaxWidthRatio = 0.6,
     allowMoveAllHeroes = false,
     isInRange = defaultIsInRange,
     heroSelectEvent,
@@ -472,6 +478,8 @@ export function WorldMapBoard({
                         effectSpriteUrls={effectSpriteUrls}
                         resolveUnitFrame={resolveUnitFrame}
                         unitScale={unitScale}
+                        spriteHeightRatio={spriteHeightRatio}
+                        spriteMaxWidthRatio={spriteMaxWidthRatio}
                         diamondTopY={diamondTopY}
                         enableCamera={enableCamera}
                     />

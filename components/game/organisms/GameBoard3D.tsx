@@ -38,6 +38,10 @@ export interface GameBoard3DProps {
     cameraMode?: CameraMode;
     /** Background color forwarded to GameCanvas3D. */
     backgroundColor?: string;
+    /** Unit draw-size multiplier forwarded to GameCanvas3D. Default 1. */
+    unitScale?: number;
+    /** Board zoom/group scale forwarded to GameCanvas3D. Default 0.45. */
+    scale?: number;
     /** Declarative tile click event emitted to the model. */
     tileClickEvent?: EventEmit<{ tileId: string; x: number; z: number }>;
     /** Declarative unit click event emitted to the model. */
@@ -66,6 +70,8 @@ export function GameBoard3D({
     features = [],
     cameraMode = 'perspective',
     backgroundColor = '#2a1a1a',
+    unitScale = 1,
+    scale = 0.45,
     tileClickEvent,
     unitClickEvent,
     attackEvent,
@@ -193,6 +199,8 @@ export function GameBoard3D({
                 selectedUnitId={selectedUnitId}
                 validMoves={validMoves}
                 attackTargets={attackTargets}
+                unitScale={unitScale}
+                scale={scale}
                 className="game-board-3d__canvas w-full min-h-[85vh]"
             />
 

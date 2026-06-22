@@ -28,32 +28,37 @@ import { Typography } from '../../core/atoms/Typography';
 import { cn } from '../../../lib/cn';
 import type { TemplateProps } from '../../core/templates/types';
 
+const CDN = 'https://almadar-kflow-assets.web.app/shared/3d/dungeon/floor';
+const FLOOR_WALL = `${CDN}/template-floor-detail-a.glb`;
+const FLOOR_DIRT = `${CDN}/template-floor-detail.glb`;
+const FLOOR_OPEN = `${CDN}/template-floor.glb`;
+
 const DEFAULT_3D_CASTLE_TILES: IsometricTile[] = [
-    { id: 't00', x: 0, y: 0, z: 0, type: 'wall',  passable: false },
-    { id: 't10', x: 1, y: 0, z: 0, type: 'wall',  passable: false },
-    { id: 't20', x: 2, y: 0, z: 0, type: 'wall',  passable: false },
-    { id: 't30', x: 3, y: 0, z: 0, type: 'wall',  passable: false },
-    { id: 't40', x: 4, y: 0, z: 0, type: 'wall',  passable: false },
-    { id: 't01', x: 0, y: 1, z: 1, type: 'wall',  passable: false },
-    { id: 't11', x: 1, y: 1, z: 1, type: 'floor', passable: true  },
-    { id: 't21', x: 2, y: 1, z: 1, type: 'floor', passable: true  },
-    { id: 't31', x: 3, y: 1, z: 1, type: 'floor', passable: true  },
-    { id: 't41', x: 4, y: 1, z: 1, type: 'wall',  passable: false },
-    { id: 't02', x: 0, y: 2, z: 2, type: 'wall',  passable: false },
-    { id: 't12', x: 1, y: 2, z: 2, type: 'floor', passable: true  },
-    { id: 't22', x: 2, y: 2, z: 2, type: 'floor', passable: true  },
-    { id: 't32', x: 3, y: 2, z: 2, type: 'floor', passable: true  },
-    { id: 't42', x: 4, y: 2, z: 2, type: 'wall',  passable: false },
-    { id: 't03', x: 0, y: 3, z: 3, type: 'wall',  passable: false },
-    { id: 't13', x: 1, y: 3, z: 3, type: 'floor', passable: true  },
-    { id: 't23', x: 2, y: 3, z: 3, type: 'floor', passable: true  },
-    { id: 't33', x: 3, y: 3, z: 3, type: 'floor', passable: true  },
-    { id: 't43', x: 4, y: 3, z: 3, type: 'wall',  passable: false },
-    { id: 't04', x: 0, y: 4, z: 4, type: 'wall',  passable: false },
-    { id: 't14', x: 1, y: 4, z: 4, type: 'wall',  passable: false },
-    { id: 't24', x: 2, y: 4, z: 4, type: 'wall',  passable: false },
-    { id: 't34', x: 3, y: 4, z: 4, type: 'wall',  passable: false },
-    { id: 't44', x: 4, y: 4, z: 4, type: 'wall',  passable: false },
+    { id: 't00', x: 0, y: 0, z: 0, type: 'wall',  passable: false, modelUrl: FLOOR_WALL },
+    { id: 't10', x: 1, y: 0, z: 0, type: 'wall',  passable: false, modelUrl: FLOOR_WALL },
+    { id: 't20', x: 2, y: 0, z: 0, type: 'wall',  passable: false, modelUrl: FLOOR_WALL },
+    { id: 't30', x: 3, y: 0, z: 0, type: 'wall',  passable: false, modelUrl: FLOOR_WALL },
+    { id: 't40', x: 4, y: 0, z: 0, type: 'wall',  passable: false, modelUrl: FLOOR_WALL },
+    { id: 't01', x: 0, y: 1, z: 1, type: 'wall',  passable: false, modelUrl: FLOOR_WALL },
+    { id: 't11', x: 1, y: 1, z: 1, type: 'floor', passable: true,  modelUrl: FLOOR_DIRT },
+    { id: 't21', x: 2, y: 1, z: 1, type: 'floor', passable: true,  modelUrl: FLOOR_OPEN },
+    { id: 't31', x: 3, y: 1, z: 1, type: 'floor', passable: true,  modelUrl: FLOOR_OPEN },
+    { id: 't41', x: 4, y: 1, z: 1, type: 'wall',  passable: false, modelUrl: FLOOR_WALL },
+    { id: 't02', x: 0, y: 2, z: 2, type: 'wall',  passable: false, modelUrl: FLOOR_WALL },
+    { id: 't12', x: 1, y: 2, z: 2, type: 'floor', passable: true,  modelUrl: FLOOR_OPEN },
+    { id: 't22', x: 2, y: 2, z: 2, type: 'floor', passable: true,  modelUrl: FLOOR_DIRT },
+    { id: 't32', x: 3, y: 2, z: 2, type: 'floor', passable: true,  modelUrl: FLOOR_OPEN },
+    { id: 't42', x: 4, y: 2, z: 2, type: 'wall',  passable: false, modelUrl: FLOOR_WALL },
+    { id: 't03', x: 0, y: 3, z: 3, type: 'wall',  passable: false, modelUrl: FLOOR_WALL },
+    { id: 't13', x: 1, y: 3, z: 3, type: 'floor', passable: true,  modelUrl: FLOOR_OPEN },
+    { id: 't23', x: 2, y: 3, z: 3, type: 'floor', passable: true,  modelUrl: FLOOR_OPEN },
+    { id: 't33', x: 3, y: 3, z: 3, type: 'floor', passable: true,  modelUrl: FLOOR_DIRT },
+    { id: 't43', x: 4, y: 3, z: 3, type: 'wall',  passable: false, modelUrl: FLOOR_WALL },
+    { id: 't04', x: 0, y: 4, z: 4, type: 'wall',  passable: false, modelUrl: FLOOR_WALL },
+    { id: 't14', x: 1, y: 4, z: 4, type: 'wall',  passable: false, modelUrl: FLOOR_WALL },
+    { id: 't24', x: 2, y: 4, z: 4, type: 'wall',  passable: false, modelUrl: FLOOR_WALL },
+    { id: 't34', x: 3, y: 4, z: 4, type: 'wall',  passable: false, modelUrl: FLOOR_WALL },
+    { id: 't44', x: 4, y: 4, z: 4, type: 'wall',  passable: false, modelUrl: FLOOR_WALL },
 ];
 
 const DEFAULT_3D_CASTLE_FEATURES: IsometricFeature[] = [
@@ -96,6 +101,10 @@ export interface GameCanvas3DCastleTemplateProps extends TemplateProps {
     exitEvent?: string;
     /** Show castle name header */
     showHeader?: boolean;
+    /** Unit draw-size multiplier forwarded to GameBoard3D. Default 1. */
+    unitScale?: number;
+    /** Board zoom/group scale forwarded to GameBoard3D. Default 0.45. */
+    scale?: number;
 }
 
 /**
@@ -128,6 +137,8 @@ export function GameCanvas3DCastleTemplate({
     playAgainEvent,
     gameEndEvent,
     showHeader = true,
+    unitScale,
+    scale,
     className,
 }: GameCanvas3DCastleTemplateProps): React.JSX.Element | null {
     const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as EntityRow : undefined;
@@ -162,6 +173,8 @@ export function GameCanvas3DCastleTemplate({
                 features={features}
                 cameraMode={cameraMode}
                 backgroundColor={backgroundColor}
+                unitScale={unitScale}
+                scale={scale}
                 tileClickEvent={buildingClickEvent}
                 unitClickEvent={unitClickEvent}
                 endTurnEvent={endTurnEvent}

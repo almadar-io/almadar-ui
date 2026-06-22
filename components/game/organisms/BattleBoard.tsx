@@ -104,6 +104,10 @@ export interface BattleBoardProps extends DisplayStateProps {
     scale?: number;
     /** Unit draw-size multiplier */
     unitScale?: number;
+    /** Ratio of unit draw height to scaledFloorHeight. Default 1.5. */
+    spriteHeightRatio?: number;
+    /** Max unit draw width as a ratio of scaledTileWidth. Default 0.6. */
+    spriteMaxWidthRatio?: number;
 
     // -- Slots --
     /** Header area -- receives battle context */
@@ -164,6 +168,8 @@ export function BattleBoard({
     assetManifest: propAssetManifest,
     scale = 0.45,
     unitScale = 1,
+    spriteHeightRatio = 1.5,
+    spriteMaxWidthRatio = 0.6,
     header,
     sidebar,
     actions,
@@ -533,6 +539,8 @@ export function BattleBoard({
                         effectSpriteUrls={effectSpriteUrls}
                         resolveUnitFrame={resolveUnitFrame}
                         unitScale={unitScale}
+                        spriteHeightRatio={spriteHeightRatio}
+                        spriteMaxWidthRatio={spriteMaxWidthRatio}
                     />
 
                     {/* Overlay slot (damage popups, tooltips, etc.) */}

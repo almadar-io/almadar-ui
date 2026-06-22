@@ -151,6 +151,10 @@ export interface GameCanvas3DProps {
     selectedTileIds?: string[];
     /** Selected unit ID */
     selectedUnitId?: string | null;
+    /** Unit draw-size multiplier. 1 = default tile-proportional size. */
+    unitScale?: number;
+    /** Board zoom/group scale. Applied to the scene group. Default 0.45. */
+    scale?: number;
 }
 
 /** Grid configuration */
@@ -324,6 +328,8 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
             attackTargets = [],
             selectedTileIds = [],
             selectedUnitId = null,
+            unitScale = 1,
+            scale = 0.45,
             children,
         },
         ref
@@ -579,6 +585,10 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
             [selectedTileIds, hoveredTile, validMoves, attackTargets, handleTileClick, handleTileHover]
         );
 
+        const UNIT_BASE_MODEL_SCALE = 0.5;
+        const UNIT_BASE_BILLBOARD_HEIGHT = 1.2;
+        const UNIT_BASE_PRIMITIVE_RADIUS = 0.3;
+
         // Default unit renderer
         const DefaultUnitRenderer = useCallback(
             ({ unit, position }: { unit: IsometricUnit; position: [number, number, number] }) => {
@@ -586,6 +596,10 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                 const color = unit.faction === 'player' ? 0x4488ff : unit.faction === 'enemy' ? 0xff4444 : 0xffff44;
                 const hasAtlas = unitAtlasUrl(unit) !== null;
                 const initialFrame = hasAtlas ? resolveUnitFrame(unit.id) : null;
+
+                const modelScale = UNIT_BASE_MODEL_SCALE * unitScale;
+                const billboardHeight = UNIT_BASE_BILLBOARD_HEIGHT * unitScale;
+                const primitiveRadius = UNIT_BASE_PRIMITIVE_RADIUS * unitScale;
 
                 return (
                     <group
@@ -607,33 +621,34 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                                 <UnitSpriteBillboard
                                     sheetUrl={initialFrame.sheetUrl}
                                     resolveFrame={() => resolveUnitFrame(unit.id)}
+                                    height={billboardHeight}
                                 />
                             </Billboard>
                         ) : unit.modelUrl ? (
                             /* GLB unit model (box fallback while loading / on error) */
                             <ModelLoader
                                 url={unit.modelUrl}
-                                scale={0.5}
+                                scale={modelScale}
                                 fallbackGeometry="box"
                                 castShadow
                             />
                         ) : (
                             <>
                                 {/* Base */}
-                                <mesh position={[0, 0.3, 0]}>
-                                    <cylinderGeometry args={[0.3, 0.3, 0.1, 8]} />
+                                <mesh position={[0, primitiveRadius, 0]}>
+                                    <cylinderGeometry args={[primitiveRadius, primitiveRadius, primitiveRadius * 0.33, 8]} />
                                     <meshStandardMaterial color={color} />
                                 </mesh>
 
                                 {/* Body */}
-                                <mesh position={[0, 0.6, 0]}>
-                                    <capsuleGeometry args={[0.2, 0.4, 4, 8]} />
+                                <mesh position={[0, primitiveRadius * 2, 0]}>
+                                    <capsuleGeometry args={[primitiveRadius * 0.67, primitiveRadius * 1.33, 4, 8]} />
                                     <meshStandardMaterial color={color} />
                                 </mesh>
 
                                 {/* Head */}
-                                <mesh position={[0, 0.9, 0]}>
-                                    <sphereGeometry args={[0.12, 8, 8]} />
+                                <mesh position={[0, primitiveRadius * 3, 0]}>
+                                    <sphereGeometry args={[primitiveRadius * 0.4, 8, 8]} />
                                     <meshStandardMaterial color={color} />
                                 </mesh>
                             </>
@@ -669,7 +684,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                     </group>
                 );
             },
-            [selectedUnitId, handleUnitClick, resolveUnitFrame]
+            [selectedUnitId, handleUnitClick, resolveUnitFrame, unitScale]
         );
 
         // Default feature renderer
@@ -822,38 +837,41 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                             />
                         )}
 
-                        {/* Tiles */}
-                        {tiles.map((tile, index) => {
-                            const position = gridToWorld(
-                                tile.x,
-                                tile.z ?? tile.y ?? 0,
-                                tile.elevation ?? 0
-                            );
-                            const Renderer = CustomTileRenderer || DefaultTileRenderer;
-                            return <Renderer key={tile.id ?? `tile-${index}`} tile={tile} position={position} />;
-                        })}
+                        {/* Board group — scale controls overall zoom/size */}
+                        <group scale={scale}>
+                            {/* Tiles */}
+                            {tiles.map((tile, index) => {
+                                const position = gridToWorld(
+                                    tile.x,
+                                    tile.z ?? tile.y ?? 0,
+                                    tile.elevation ?? 0
+                                );
+                                const Renderer = CustomTileRenderer || DefaultTileRenderer;
+                                return <Renderer key={tile.id ?? `tile-${index}`} tile={tile} position={position} />;
+                            })}
 
-                        {/* Features */}
-                        {features.map((feature, index) => {
-                            const position = gridToWorld(
-                                feature.x,
-                                feature.z ?? feature.y ?? 0,
-                                (feature.elevation ?? 0) + 0.5
-                            );
-                            const Renderer = CustomFeatureRenderer || DefaultFeatureRenderer;
-                            return <Renderer key={feature.id ?? `feature-${index}`} feature={feature} position={position} />;
-                        })}
+                            {/* Features */}
+                            {features.map((feature, index) => {
+                                const position = gridToWorld(
+                                    feature.x,
+                                    feature.z ?? feature.y ?? 0,
+                                    (feature.elevation ?? 0) + 0.5
+                                );
+                                const Renderer = CustomFeatureRenderer || DefaultFeatureRenderer;
+                                return <Renderer key={feature.id ?? `feature-${index}`} feature={feature} position={position} />;
+                            })}
 
-                        {/* Units */}
-                        {units.map((unit) => {
-                            const position = gridToWorld(
-                                unit.x ?? 0,
-                                unit.z ?? unit.y ?? 0,
-                                (unit.elevation ?? 0) + 0.5
-                            );
-                            const Renderer = CustomUnitRenderer || DefaultUnitRenderer;
-                            return <Renderer key={unit.id} unit={unit} position={position} />;
-                        })}
+                            {/* Units */}
+                            {units.map((unit) => {
+                                const position = gridToWorld(
+                                    unit.x ?? 0,
+                                    unit.z ?? unit.y ?? 0,
+                                    (unit.elevation ?? 0) + 0.5
+                                );
+                                const Renderer = CustomUnitRenderer || DefaultUnitRenderer;
+                                return <Renderer key={unit.id} unit={unit} position={position} />;
+                            })}
+                        </group>
 
                         {/* Custom children */}
                         {children}

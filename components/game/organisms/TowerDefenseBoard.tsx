@@ -65,6 +65,9 @@ export interface TowerDefenseBoardProps extends DisplayStateProps {
     waveActive?: boolean;
     towerCost?: number;
     scale?: number;
+    unitScale?: number;
+    spriteHeightRatio?: number;
+    spriteMaxWidthRatio?: number;
     placeTowerEvent?: EventEmit<{ x: number; y: number }>;
     startWaveEvent?: EventEmit<{ wave: number }>;
     playAgainEvent?: EventEmit<Record<string, never>>;
@@ -151,6 +154,9 @@ export function TowerDefenseBoard({
     waveActive: propWaveActive,
     towerCost = 25,
     scale = 0.45,
+    unitScale = 1,
+    spriteHeightRatio = 1.5,
+    spriteMaxWidthRatio = 0.6,
     placeTowerEvent,
     startWaveEvent,
     playAgainEvent,
@@ -278,6 +284,9 @@ export function TowerDefenseBoard({
                     onTileHover={(x: number, y: number) => setHoveredTile({ x, y })}
                     onTileLeave={() => setHoveredTile(null)}
                     scale={scale}
+                    unitScale={unitScale}
+                    spriteHeightRatio={spriteHeightRatio}
+                    spriteMaxWidthRatio={spriteMaxWidthRatio}
                 />
 
                 {/* Tower-cost hint */}
