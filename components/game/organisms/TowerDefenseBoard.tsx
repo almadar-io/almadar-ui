@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -51,6 +51,12 @@ export interface TowerDefenseCreep {
     speed: number;
 }
 
+export interface TowerDefenseHero {
+    id: string;
+    x: number;
+    y: number;
+}
+
 export interface TowerDefenseBoardProps extends DisplayStateProps {
     entity?: EntityRow | readonly EntityRow[];
     tiles?: TowerDefenseTile[];
@@ -63,6 +69,7 @@ export interface TowerDefenseBoardProps extends DisplayStateProps {
     maxWaves?: number;
     result?: 'none' | 'won' | 'lost';
     waveActive?: boolean;
+    hero?: TowerDefenseHero;
     towerCost?: number;
     scale?: number;
     unitScale?: number;
@@ -72,6 +79,7 @@ export interface TowerDefenseBoardProps extends DisplayStateProps {
     startWaveEvent?: EventEmit<{ wave: number }>;
     playAgainEvent?: EventEmit<Record<string, never>>;
     gameEndEvent?: EventEmit<{ result: 'won' | 'lost' }>;
+    moveHeroEvent?: EventEmit<{ dx: number; dy: number }>;
     className?: string;
 }
 
@@ -127,8 +135,9 @@ function buildDefaultTDTiles(): TowerDefenseTile[] {
 
 const DEFAULT_TD_TILES: TowerDefenseTile[] = buildDefaultTDTiles();
 
-const TOWER_SPRITE: AssetUrl = `${CDN}units/guardian.png` as AssetUrl;
-const CREEP_SPRITE: AssetUrl  = `${CDN}units/scrapper.png` as AssetUrl;
+const TOWER_SPRITE: AssetUrl = `${CDN}sprite-sheets/guardian-sprite-sheet-se.png` as AssetUrl;
+const CREEP_SPRITE: AssetUrl  = `${CDN}sprite-sheets/scrapper-sprite-sheet-se.png` as AssetUrl;
+const HERO_SPRITE: AssetUrl   = `${CDN}sprite-sheets/amir-sprite-sheet-se.png` as AssetUrl;
 
 function tilesToIso(tiles: TowerDefenseTile[]): IsometricTile[] {
     return tiles.map(t => ({
@@ -176,6 +185,19 @@ function pathToFeatures(path: TowerDefensePathPoint[]): IsometricFeature[] {
     }));
 }
 
+function heroToUnit(hero: TowerDefenseHero): IsometricUnit {
+    return {
+        id: hero.id,
+        position: { x: hero.x, y: hero.y },
+        name: 'Hero',
+        team: 'player' as const,
+        sprite: HERO_SPRITE,
+        unitType: 'amir',
+        health: 1,
+        maxHealth: 1,
+    };
+}
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -186,6 +208,7 @@ export function TowerDefenseBoard({
     path: propPath,
     towers: propTowers,
     creeps: propCreeps,
+    hero: propHero,
     gold: propGold,
     lives: propLives,
     wave: propWave,
@@ -201,6 +224,7 @@ export function TowerDefenseBoard({
     startWaveEvent,
     playAgainEvent,
     gameEndEvent,
+    moveHeroEvent,
     className,
 }: TowerDefenseBoardProps): React.JSX.Element {
     const board = boardEntity(entity) ?? {};
@@ -213,6 +237,7 @@ export function TowerDefenseBoard({
     const path: TowerDefensePathPoint[] = rawPath.length > 0 ? rawPath : DEFAULT_TD_PATH;
     const towers     = propTowers   ?? (rows(board.towers)  as unknown as TowerDefenseTower[]);
     const creeps     = propCreeps   ?? (rows(board.creeps)  as unknown as TowerDefenseCreep[]);
+    const hero: TowerDefenseHero   = propHero ?? { id: 'hero', x: 8, y: 8 };
     const gold       = propGold     ?? num(board.gold, 100);
     const lives      = propLives    ?? num(board.lives, 20);
     const wave       = propWave     ?? num(board.wave, 1);
@@ -234,6 +259,29 @@ export function TowerDefenseBoard({
         emittedGameEnd.current = false;
     }
 
+    // Arrow-key hero movement: emit MOVE_HERO with {dx, dy} deltas.
+    const moveHeroEventRef = useRef(moveHeroEvent);
+    moveHeroEventRef.current = moveHeroEvent;
+    const resultRef = useRef(result);
+    resultRef.current = result;
+    useEffect(() => {
+        function onKeyDown(e: KeyboardEvent): void {
+            const evt = moveHeroEventRef.current;
+            if (!evt || resultRef.current !== 'none') return;
+            let dx = 0;
+            let dy = 0;
+            if (e.key === 'ArrowUp')    { dy = -1; }
+            else if (e.key === 'ArrowDown')  { dy = 1; }
+            else if (e.key === 'ArrowLeft')  { dx = -1; }
+            else if (e.key === 'ArrowRight') { dx = 1; }
+            else return;
+            e.preventDefault();
+            eventBus.emit(`UI:${evt}`, { dx, dy });
+        }
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [eventBus]);
+
     // Highlight tiles where towers can be placed (passable and not on path/tower)
     const towerPositions = useMemo(() => new Set(towers.map(t => `${t.x},${t.y}`)), [towers]);
     const pathPositions  = useMemo(() => new Set(path.map(p => `${p.x},${p.y}`)),   [path]);
@@ -252,7 +300,8 @@ export function TowerDefenseBoard({
     const isoTiles    = useMemo(() => tilesToIso(tiles), [tiles]);
     const towerUnits  = useMemo(() => towersToUnits(towers), [towers]);
     const creepUnits  = useMemo(() => creepsToUnits(creeps), [creeps]);
-    const isoUnits    = useMemo(() => [...towerUnits, ...creepUnits], [towerUnits, creepUnits]);
+    const heroUnit    = useMemo(() => heroToUnit(hero), [hero]);
+    const isoUnits    = useMemo(() => [...towerUnits, ...creepUnits, heroUnit], [towerUnits, creepUnits, heroUnit]);
     const pathFeatures = useMemo(() => pathToFeatures(path), [path]);
 
     const handleTileClick = useCallback((x: number, y: number) => {
