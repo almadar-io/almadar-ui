@@ -80,12 +80,52 @@ export interface TowerDefenseBoardProps extends DisplayStateProps {
 // =============================================================================
 
 const CDN = 'https://almadar-kflow-assets.web.app/shared/';
+const TD_GRID_W = 16;
+const TD_GRID_H = 16;
 
 const TERRAIN_SPRITES: Record<string, AssetUrl> = {
     ground: `${CDN}isometric-blocks/PNG/Platformer tiles/platformerTile_01.png` as AssetUrl,
     path:   `${CDN}isometric-blocks/PNG/Platformer tiles/platformerTile_09.png` as AssetUrl,
     wall:   `${CDN}isometric-blocks/PNG/Platformer tiles/platformerTile_05.png` as AssetUrl,
+    grass:  `${CDN}isometric-dungeon/Isometric/dirt_E.png` as AssetUrl,
+    dirt:   `${CDN}isometric-dungeon/Isometric/dirtTiles_E.png` as AssetUrl,
 };
+
+// S-shaped creep path traversing the 16×16 grid (mirrors lolo path default)
+const DEFAULT_TD_PATH: TowerDefensePathPoint[] = [
+    { x: 2,  y: 0  }, { x: 2,  y: 1  }, { x: 2,  y: 2  }, { x: 2,  y: 3  },
+    { x: 3,  y: 3  }, { x: 4,  y: 3  }, { x: 5,  y: 3  }, { x: 6,  y: 3  },
+    { x: 7,  y: 3  }, { x: 8,  y: 3  }, { x: 9,  y: 3  }, { x: 10, y: 3  },
+    { x: 11, y: 3  }, { x: 12, y: 3  }, { x: 13, y: 3  },
+    { x: 13, y: 4  }, { x: 13, y: 5  }, { x: 13, y: 6  }, { x: 13, y: 7  },
+    { x: 12, y: 7  }, { x: 11, y: 7  }, { x: 10, y: 7  }, { x: 9,  y: 7  },
+    { x: 8,  y: 7  }, { x: 7,  y: 7  }, { x: 6,  y: 7  }, { x: 5,  y: 7  },
+    { x: 4,  y: 7  }, { x: 3,  y: 7  }, { x: 2,  y: 7  },
+    { x: 2,  y: 8  }, { x: 2,  y: 9  }, { x: 2,  y: 10 }, { x: 2,  y: 11 },
+    { x: 3,  y: 11 }, { x: 4,  y: 11 }, { x: 5,  y: 11 }, { x: 6,  y: 11 },
+    { x: 7,  y: 11 }, { x: 8,  y: 11 }, { x: 9,  y: 11 }, { x: 10, y: 11 },
+    { x: 11, y: 11 }, { x: 12, y: 11 }, { x: 13, y: 11 },
+    { x: 13, y: 12 }, { x: 13, y: 13 }, { x: 13, y: 14 }, { x: 13, y: 15 },
+];
+
+function buildDefaultTDTiles(): TowerDefenseTile[] {
+    const pathSet = new Set(DEFAULT_TD_PATH.map(p => `${p.x},${p.y}`));
+    const tiles: TowerDefenseTile[] = [];
+    for (let y = 0; y < TD_GRID_H; y++) {
+        for (let x = 0; x < TD_GRID_W; x++) {
+            if (pathSet.has(`${x},${y}`)) {
+                tiles.push({ x, y, terrain: 'path', passable: false, terrainSprite: TERRAIN_SPRITES.path });
+            } else {
+                const variant = (x * 3 + y * 5 + (x ^ y)) % 3;
+                const terrainKey = ['ground', 'grass', 'dirt'][variant];
+                tiles.push({ x, y, terrain: terrainKey, passable: true, terrainSprite: TERRAIN_SPRITES[terrainKey] ?? TERRAIN_SPRITES.ground });
+            }
+        }
+    }
+    return tiles;
+}
+
+const DEFAULT_TD_TILES: TowerDefenseTile[] = buildDefaultTDTiles();
 
 const TOWER_SPRITE: AssetUrl = `${CDN}units/guardian.png` as AssetUrl;
 const CREEP_SPRITE: AssetUrl  = `${CDN}units/scrapper.png` as AssetUrl;
@@ -153,7 +193,7 @@ export function TowerDefenseBoard({
     result: propResult,
     waveActive: propWaveActive,
     towerCost = 25,
-    scale = 0.45,
+    scale = 0.25,
     unitScale = 1,
     spriteHeightRatio = 1.5,
     spriteMaxWidthRatio = 0.6,
@@ -167,8 +207,10 @@ export function TowerDefenseBoard({
     const eventBus = useEventBus();
     const { t } = useTranslate();
 
-    const tiles      = propTiles    ?? (rows(board.tiles)   as unknown as TowerDefenseTile[]);
-    const path       = propPath     ?? (rows(board.path)    as unknown as TowerDefensePathPoint[]);
+    const rawTiles = propTiles ?? (rows(board.tiles) as unknown as TowerDefenseTile[]);
+    const tiles: TowerDefenseTile[] = rawTiles.length >= TD_GRID_W * TD_GRID_H ? rawTiles : DEFAULT_TD_TILES;
+    const rawPath = propPath ?? (rows(board.path) as unknown as TowerDefensePathPoint[]);
+    const path: TowerDefensePathPoint[] = rawPath.length > 0 ? rawPath : DEFAULT_TD_PATH;
     const towers     = propTowers   ?? (rows(board.towers)  as unknown as TowerDefenseTower[]);
     const creeps     = propCreeps   ?? (rows(board.creeps)  as unknown as TowerDefenseCreep[]);
     const gold       = propGold     ?? num(board.gold, 100);

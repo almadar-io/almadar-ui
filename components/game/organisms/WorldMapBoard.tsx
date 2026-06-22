@@ -157,6 +157,40 @@ export interface WorldMapBoardProps {
 }
 
 // =============================================================================
+// Procedural tile generation
+// =============================================================================
+
+const WORLD_CDN = 'https://almadar-kflow-assets.web.app/shared';
+const WORLD_GRID_W = 16;
+const WORLD_GRID_H = 16;
+
+// 5 terrain varieties for the world map
+const WORLD_TERRAIN_DEFS: readonly { terrain: string; sprite: string; passable: boolean }[] = [
+    { terrain: 'grass',  sprite: `${WORLD_CDN}/isometric-dungeon/Isometric/dirt_E.png`,      passable: true  },
+    { terrain: 'dirt',   sprite: `${WORLD_CDN}/isometric-dungeon/Isometric/dirtTiles_E.png`, passable: true  },
+    { terrain: 'forest', sprite: `${WORLD_CDN}/isometric-dungeon/Isometric/planks_E.png`,    passable: true  },
+    { terrain: 'stone',  sprite: `${WORLD_CDN}/isometric-dungeon/Isometric/stoneInset_E.png`, passable: false },
+    { terrain: 'castle', sprite: `${WORLD_CDN}/isometric-dungeon/Isometric/stoneTile_E.png`, passable: true  },
+];
+
+function buildDefaultWorldTiles(): IsometricTile[] {
+    const tiles: IsometricTile[] = [];
+    for (let y = 0; y < WORLD_GRID_H; y++) {
+        for (let x = 0; x < WORLD_GRID_W; x++) {
+            // border = stone (impassable), interior = varied
+            const isBorder = x === 0 || y === 0 || x === WORLD_GRID_W - 1 || y === WORLD_GRID_H - 1;
+            const def = isBorder
+                ? WORLD_TERRAIN_DEFS[3]
+                : WORLD_TERRAIN_DEFS[(x * 5 + y * 3 + (x ^ y)) % (WORLD_TERRAIN_DEFS.length - 1)];
+            tiles.push({ x, y, terrain: def.terrain, terrainSprite: def.sprite, passable: def.passable });
+        }
+    }
+    return tiles;
+}
+
+const DEFAULT_WORLD_TILES: IsometricTile[] = buildDefaultWorldTiles();
+
+// =============================================================================
 // Helpers
 // =============================================================================
 
@@ -181,7 +215,7 @@ export function WorldMapBoard({
     features: propFeatures,
     assetManifest: propAssetManifest,
     isLoading,
-    scale = 0.4,
+    scale = 0.25,
     unitScale = 2.5,
     spriteHeightRatio = 1.5,
     spriteMaxWidthRatio = 0.6,
@@ -231,7 +265,10 @@ export function WorldMapBoard({
         })),
         [entityTiles],
     );
-    const tiles: IsometricTile[] = propTiles ?? derivedTiles;
+    const rawTiles = propTiles ?? (derivedTiles.length > 0 ? derivedTiles : null);
+    const tiles: IsometricTile[] = rawTiles != null && rawTiles.length >= WORLD_GRID_W * WORLD_GRID_H
+        ? rawTiles
+        : DEFAULT_WORLD_TILES;
 
     // -- Convert entity units -> IsometricUnit[] (direct prop wins) -----------
     const baseUnits: IsometricUnit[] = useMemo(

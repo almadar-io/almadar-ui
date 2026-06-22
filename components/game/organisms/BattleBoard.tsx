@@ -157,6 +157,42 @@ export interface BattleBoardProps extends DisplayStateProps {
 }
 
 // =============================================================================
+// Procedural tile generation
+// =============================================================================
+
+const BATTLE_CDN = 'https://almadar-kflow-assets.web.app/shared';
+const BATTLE_GRID_W = 16;
+const BATTLE_GRID_H = 16;
+
+// 5 terrain sprites — varied by deterministic (x,y) hash
+const BATTLE_TERRAIN_SPRITES: readonly string[] = [
+    `${BATTLE_CDN}/isometric-dungeon/Isometric/dirt_E.png`,
+    `${BATTLE_CDN}/isometric-dungeon/Isometric/dirtTiles_E.png`,
+    `${BATTLE_CDN}/isometric-dungeon/Isometric/planks_E.png`,
+    `${BATTLE_CDN}/isometric-dungeon/Isometric/stoneTile_E.png`,
+    `${BATTLE_CDN}/isometric-dungeon/Isometric/stoneInset_E.png`,
+];
+
+function buildDefaultBattleTiles(): IsometricTile[] {
+    const tiles: IsometricTile[] = [];
+    for (let y = 0; y < BATTLE_GRID_H; y++) {
+        for (let x = 0; x < BATTLE_GRID_W; x++) {
+            const variant = (x * 3 + y * 7 + (x ^ y)) % BATTLE_TERRAIN_SPRITES.length;
+            tiles.push({
+                x,
+                y,
+                terrain: ['grass', 'dirt', 'planks', 'stone', 'stone'][variant],
+                terrainSprite: BATTLE_TERRAIN_SPRITES[variant],
+                passable: true,
+            });
+        }
+    }
+    return tiles;
+}
+
+const DEFAULT_BATTLE_TILES: IsometricTile[] = buildDefaultBattleTiles();
+
+// =============================================================================
 // Component
 // =============================================================================
 
@@ -166,7 +202,7 @@ export function BattleBoard({
     units: propUnits,
     features: propFeatures,
     assetManifest: propAssetManifest,
-    scale = 0.45,
+    scale = 0.25,
     unitScale = 1,
     spriteHeightRatio = 1.5,
     spriteMaxWidthRatio = 0.6,
@@ -194,10 +230,11 @@ export function BattleBoard({
 }: BattleBoardProps): React.JSX.Element {
     // -- Unpack entity (single board-state row); direct props win --
     const board = boardEntity(entity) ?? {};
-    const tiles = propTiles ?? (Array.isArray(board.tiles) ? board.tiles : []) as unknown as IsometricTile[];
+    const rawTiles = propTiles ?? (Array.isArray(board.tiles) ? board.tiles as unknown as IsometricTile[] : []);
+    const tiles: IsometricTile[] = rawTiles.length === 0 ? DEFAULT_BATTLE_TILES : rawTiles;
     const features = propFeatures ?? (Array.isArray(board.features) ? board.features : []) as unknown as IsometricFeature[];
-    const boardWidth = num(board.gridWidth ?? board.boardWidth, 8);
-    const boardHeight = num(board.gridHeight ?? board.boardHeight, 6);
+    const boardWidth = num(board.gridWidth ?? board.boardWidth, BATTLE_GRID_W);
+    const boardHeight = num(board.gridHeight ?? board.boardHeight, BATTLE_GRID_H);
     const assetManifest = propAssetManifest ?? board.assetManifest as BattleAssetManifest | undefined;
     const backgroundImage = board.backgroundImage as AssetUrl | undefined;
 

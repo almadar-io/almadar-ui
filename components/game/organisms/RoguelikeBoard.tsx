@@ -62,41 +62,55 @@ export interface RoguelikeBoardProps extends DisplayStateProps {
 
 const CDN = 'https://almadar-kflow-assets.web.app/shared';
 
-const DEFAULT_TILES: IsometricTile[] = [
-    { x: 0, y: 0, terrain: 'wall',   passable: false, terrainSprite: `${CDN}/isometric-dungeon/Isometric/stoneInset_E.png` },
-    { x: 1, y: 0, terrain: 'wall',   passable: false, terrainSprite: `${CDN}/isometric-dungeon/Isometric/stoneInset_E.png` },
-    { x: 2, y: 0, terrain: 'wall',   passable: false, terrainSprite: `${CDN}/isometric-dungeon/Isometric/stoneInset_E.png` },
-    { x: 3, y: 0, terrain: 'wall',   passable: false, terrainSprite: `${CDN}/isometric-dungeon/Isometric/stoneInset_E.png` },
-    { x: 4, y: 0, terrain: 'wall',   passable: false, terrainSprite: `${CDN}/isometric-dungeon/Isometric/stoneInset_E.png` },
-    { x: 0, y: 1, terrain: 'wall',   passable: false, terrainSprite: `${CDN}/isometric-dungeon/Isometric/stoneInset_E.png` },
-    { x: 1, y: 1, terrain: 'floor',  passable: true,  terrainSprite: `${CDN}/isometric-dungeon/Isometric/dirt_E.png` },
-    { x: 2, y: 1, terrain: 'floor',  passable: true,  terrainSprite: `${CDN}/isometric-dungeon/Isometric/dirt_E.png` },
-    { x: 3, y: 1, terrain: 'floor',  passable: true,  terrainSprite: `${CDN}/isometric-dungeon/Isometric/dirt_E.png` },
-    { x: 4, y: 1, terrain: 'wall',   passable: false, terrainSprite: `${CDN}/isometric-dungeon/Isometric/stoneInset_E.png` },
-    { x: 0, y: 2, terrain: 'wall',   passable: false, terrainSprite: `${CDN}/isometric-dungeon/Isometric/stoneInset_E.png` },
-    { x: 1, y: 2, terrain: 'floor',  passable: true,  terrainSprite: `${CDN}/isometric-dungeon/Isometric/dirtTiles_E.png` },
-    { x: 2, y: 2, terrain: 'floor',  passable: true,  terrainSprite: `${CDN}/isometric-dungeon/Isometric/dirtTiles_E.png` },
-    { x: 3, y: 2, terrain: 'floor',  passable: true,  terrainSprite: `${CDN}/isometric-dungeon/Isometric/dirt_E.png` },
-    { x: 4, y: 2, terrain: 'wall',   passable: false, terrainSprite: `${CDN}/isometric-dungeon/Isometric/stoneInset_E.png` },
-    { x: 0, y: 3, terrain: 'wall',   passable: false, terrainSprite: `${CDN}/isometric-dungeon/Isometric/stoneInset_E.png` },
-    { x: 1, y: 3, terrain: 'floor',  passable: true,  terrainSprite: `${CDN}/isometric-dungeon/Isometric/dirt_E.png` },
-    { x: 2, y: 3, terrain: 'floor',  passable: true,  terrainSprite: `${CDN}/isometric-dungeon/Isometric/dirtTiles_E.png` },
-    { x: 3, y: 3, terrain: 'stairs', passable: true,  terrainSprite: `${CDN}/isometric-dungeon/Isometric/stairs_E.png` },
-    { x: 4, y: 3, terrain: 'wall',   passable: false, terrainSprite: `${CDN}/isometric-dungeon/Isometric/stoneInset_E.png` },
-    { x: 0, y: 4, terrain: 'wall',   passable: false, terrainSprite: `${CDN}/isometric-dungeon/Isometric/stoneInset_E.png` },
-    { x: 1, y: 4, terrain: 'wall',   passable: false, terrainSprite: `${CDN}/isometric-dungeon/Isometric/stoneInset_E.png` },
-    { x: 2, y: 4, terrain: 'wall',   passable: false, terrainSprite: `${CDN}/isometric-dungeon/Isometric/stoneInset_E.png` },
-    { x: 3, y: 4, terrain: 'wall',   passable: false, terrainSprite: `${CDN}/isometric-dungeon/Isometric/stoneInset_E.png` },
-    { x: 4, y: 4, terrain: 'wall',   passable: false, terrainSprite: `${CDN}/isometric-dungeon/Isometric/stoneInset_E.png` },
-];
+const DUNGEON_GRID_W = 16;
+const DUNGEON_GRID_H = 16;
+
+// Deterministic "room" classification: outer border = wall, inner cross-pillars = wall, else floor
+function dungeonTerrain(x: number, y: number, stairsX: number, stairsY: number): { terrain: string; passable: boolean; terrainSprite: string } {
+    const isBorder = x === 0 || y === 0 || x === DUNGEON_GRID_W - 1 || y === DUNGEON_GRID_H - 1;
+    const isPillar = x % 4 === 0 && y % 4 === 0 && !isBorder;
+    const isWall = isBorder || isPillar;
+    if (x === stairsX && y === stairsY) {
+        return { terrain: 'stairs', passable: true, terrainSprite: `${CDN}/isometric-dungeon/Isometric/stairs_E.png` };
+    }
+    if (isWall) {
+        return { terrain: 'wall', passable: false, terrainSprite: `${CDN}/isometric-dungeon/Isometric/stoneInset_E.png` };
+    }
+    // 5 floor variants cycled by position for visual variety
+    const variant = (x * 3 + y * 7) % 5;
+    const sprites = [
+        `${CDN}/isometric-dungeon/Isometric/dirt_E.png`,
+        `${CDN}/isometric-dungeon/Isometric/dirtTiles_E.png`,
+        `${CDN}/isometric-dungeon/Isometric/planks_E.png`,
+        `${CDN}/isometric-dungeon/Isometric/stoneTile_E.png`,
+        `${CDN}/isometric-dungeon/Isometric/dirt_E.png`,
+    ];
+    return { terrain: 'floor', passable: true, terrainSprite: sprites[variant] };
+}
+
+function buildDefaultDungeonTiles(stairsX: number, stairsY: number): IsometricTile[] {
+    const tiles: IsometricTile[] = [];
+    for (let y = 0; y < DUNGEON_GRID_H; y++) {
+        for (let x = 0; x < DUNGEON_GRID_W; x++) {
+            tiles.push({ x, y, ...dungeonTerrain(x, y, stairsX, stairsY) });
+        }
+    }
+    return tiles;
+}
+
+const DEFAULT_TILES: IsometricTile[] = buildDefaultDungeonTiles(14, 14);
 
 const DEFAULT_ENEMIES: EnemyRow[] = [
-    { id: 'e1', x: 3, y: 1, hp: 5, attack: 2 },
-    { id: 'e2', x: 1, y: 3, hp: 4, attack: 1 },
+    { id: 'e1', x: 5,  y: 2,  hp: 5, attack: 2 },
+    { id: 'e2', x: 9,  y: 6,  hp: 4, attack: 1 },
+    { id: 'e3', x: 3,  y: 10, hp: 6, attack: 2 },
+    { id: 'e4', x: 12, y: 8,  hp: 5, attack: 3 },
 ];
 
 const DEFAULT_ITEMS: ItemRow[] = [
-    { id: 'i1', x: 2, y: 2, kind: 'health_potion' },
+    { id: 'i1', x: 3,  y: 3,  kind: 'health_potion' },
+    { id: 'i2', x: 7,  y: 9,  kind: 'sword' },
+    { id: 'i3', x: 11, y: 5,  kind: 'shield' },
 ];
 
 const FEATURE_SPRITE: Record<string, string> = {
@@ -124,7 +138,7 @@ export function RoguelikeBoard({
     stairsX: propStairsX,
     stairsY: propStairsY,
     assetManifest: propAssetManifest,
-    scale = 0.45,
+    scale = 0.25,
     unitScale = 1,
     spriteHeightRatio = 1.5,
     spriteMaxWidthRatio = 0.6,
@@ -135,7 +149,11 @@ export function RoguelikeBoard({
 }: RoguelikeBoardProps): React.JSX.Element {
     const board = boardEntity(entity) ?? {};
 
-    const tiles    = propTiles     ?? (Array.isArray(board.tiles)   ? (board.tiles   as unknown as IsometricTile[]) : DEFAULT_TILES);
+    const resolvedStairsX = propStairsX ?? num(board.stairsX, 14);
+    const resolvedStairsY = propStairsY ?? num(board.stairsY, 14);
+    const tiles    = propTiles     ?? (Array.isArray(board.tiles) && (board.tiles as unknown as IsometricTile[]).length >= DUNGEON_GRID_W * DUNGEON_GRID_H
+        ? (board.tiles as unknown as IsometricTile[])
+        : buildDefaultDungeonTiles(resolvedStairsX, resolvedStairsY));
     const enemies  = propEnemies   ?? (Array.isArray(board.enemies) ? (board.enemies as unknown as EnemyRow[])      : DEFAULT_ENEMIES);
     const items    = propItems     ?? (Array.isArray(board.items)   ? (board.items   as unknown as ItemRow[])       : DEFAULT_ITEMS);
     const player   = propPlayer    ?? (board.player   as PlayerPos | undefined)  ?? { x: 1, y: 1 };
@@ -145,8 +163,8 @@ export function RoguelikeBoard({
     const depth    = propDepth     ?? num(board.depth, 1);
     const result   = propResult    ?? (str(board.result) || 'none') as 'none' | 'won' | 'lost';
     const phase    = propPhase     ?? (str(board.phase) || 'player_turn');
-    const stairsX  = propStairsX  ?? num(board.stairsX, 3);
-    const stairsY  = propStairsY  ?? num(board.stairsY, 3);
+    const stairsX  = propStairsX  ?? num(board.stairsX, 14);
+    const stairsY  = propStairsY  ?? num(board.stairsY, 14);
 
 
     const eventBus = useEventBus();
