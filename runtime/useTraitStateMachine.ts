@@ -549,6 +549,18 @@ export function useTraitStateMachine(
         const linkedEntity = binding.linkedEntity || '';
         const entityId = payload?.entityId as string | undefined;
 
+        // ONE live `[runtime]`-entity store per trait. The canonical client
+        // `set` (createClientEffectHandlers) writes through to THIS object, the
+        // executor reads `@entity.*` from it during the same `executeAll`, and
+        // the next tick + guards seed from it — no detached binding clone, no
+        // guard-vs-render split. Created once (lazily) and reused thereafter so
+        // every read/write hits the same identity.
+        let liveEntity = traitFieldStatesRef.current.get(traitName);
+        if (!liveEntity) {
+            liveEntity = {} as EntityRow;
+            traitFieldStatesRef.current.set(traitName, liveEntity);
+        }
+
         // Ticks must stay synchronous — drop async effects that can't be
         // awaited inside RAF/setInterval. Deterministic op allow-list.
         const effects = syncOnly
@@ -582,6 +594,11 @@ export function useTraitStateMachine(
             navigate: optionsRef.current?.navigate,
             notify: optionsRef.current?.notify,
             callService: optionsRef.current?.callService,
+            // The canonical client `set` writes `(set @entity.X)` straight into
+            // the trait's one live store — the same object bound below. This is
+            // what makes a [runtime] entity's set (from ticks AND events) reach
+            // the render-ui + next tick + guards.
+            liveEntity,
         });
 
         // Offline-preview mode: when `persistence` is supplied, layer
@@ -599,7 +616,7 @@ export function useTraitStateMachine(
                 // uses below. `@payload.*` resolves from `payload` separately,
                 // so dropping the prior `payload as EntityRow` cast loses
                 // nothing — it just stops mislabelling the payload as an entity.
-                entity: traitFieldStatesRef.current.get(traitName) ?? ({} as EntityRow),
+                entity: liveEntity,
                 payload: payload || {},
                 state: previousState,
             };
@@ -636,36 +653,30 @@ export function useTraitStateMachine(
             };
         }
 
-        // Wrap `set` so `(set @entity.X Y)` writes to the per-trait scalar
-        // state map. Mirrors compiled's `state.fields[X]`. `bindingCtx.entity`
-        // is seeded from this same map below so the NEXT tick reads the
-        // advanced value — this is what makes the physics tick actually move.
+        // Observe each `(set @entity.X)` write for the tick/transition log
+        // without owning the write — the canonical client `set` (and, in
+        // offline-preview, the server `set`) already mutate `liveEntity`.
+        // A second writing wrapper here would be a parallel store; this just
+        // taps the value as it passes through for diagnostics.
         const baseSet = handlers.set;
         handlers = {
             ...handlers,
             set: async (targetId, field, value) => {
-                let fieldState = traitFieldStatesRef.current.get(traitName);
-                if (!fieldState) {
-                    fieldState = {} as EntityRow;
-                    traitFieldStatesRef.current.set(traitName, fieldState);
-                }
-                fieldState[field] = value as EntityRow[string];
+                if (baseSet) await baseSet(targetId, field, value);
                 log.debug('set:write', {
                     traitName,
                     field,
                     value: JSON.stringify(value),
                     transition: `${previousState}->${newState}`,
                 });
-                if (baseSet) await baseSet(targetId, field, value);
             },
         };
 
-        // `@entity.X` resolves against the per-trait scalar state populated
-        // by explicit `(set @entity.X Y)` effects — seeded, NOT `{}`.
-        const entityForBinding: EntityRow =
-            traitFieldStatesRef.current.get(traitName) ?? ({} as EntityRow);
+        // `@entity.X` resolves against the ONE live store the client `set`
+        // writes through to — same object, read live by render-ui in this same
+        // `executeAll` and seeded by the next tick.
         const bindingCtx: BindingContext = {
-            entity: entityForBinding,
+            entity: liveEntity,
             payload: payload || {},
             state: previousState,
         };

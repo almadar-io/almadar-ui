@@ -6,7 +6,7 @@
  * @packageDocumentation
  */
 
-import type { EventPayload, EntityRow, ServiceParams } from '@almadar/core';
+import type { EventPayload, EntityRow, FieldValue, ServiceParams } from '@almadar/core';
 import type { EffectHandlers } from '@almadar/runtime';
 import { createLogger } from '@almadar/logger';
 
@@ -27,6 +27,17 @@ export interface CreateClientEffectHandlersOptions {
     navigate?: (path: string, params?: Record<string, unknown>) => void;
     notify?: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
     /**
+     * Live client-entity write target for `[runtime]` entities. `(set
+     * @entity.<field> value)` runs entirely in the browser for in-memory
+     * entities (game boards, wizards): there is no server row to persist to,
+     * so the canonical client `set` must mutate THIS object — the same object
+     * `EffectExecutor` reads `@entity.*` from for the current `executeAll` and
+     * the next tick seeds from. When omitted, `set` is a no-op (bridge mode:
+     * the server owns persistence). One store, read live by render-ui, guards,
+     * and ticks — no guard-vs-render split.
+     */
+    liveEntity?: EntityRow;
+    /**
      * Optional consumer-supplied call-service handler. When set, it runs
      * instead of the default mock fallback — use to wire the playground
      * to real backends. When omitted, `callService` returns a synthetic
@@ -43,7 +54,7 @@ export interface CreateClientEffectHandlersOptions {
 export function createClientEffectHandlers(
     options: CreateClientEffectHandlersOptions
 ): EffectHandlers {
-    const { eventBus, slotSetter, navigate, notify, callService } = options;
+    const { eventBus, slotSetter, navigate, notify, callService, liveEntity } = options;
 
     return {
         emit: (event: string, payload?: EventPayload) => {
@@ -58,8 +69,17 @@ export function createClientEffectHandlers(
         persist: async () => {
             log.warn('persist is server-side only, ignored on client');
         },
-        set: () => {
-            log.warn('set is server-side only, ignored on client');
+        set: (_entityId: string, field: string, value: unknown) => {
+            // `[runtime]` entities live only in the browser — `(set @entity.X)`
+            // must land in the live client store so the same `executeAll`'s
+            // render-ui, the next tick, and guards all read the advanced value.
+            // Without a `liveEntity` we are in bridge mode (server persists),
+            // so the write is a no-op here.
+            if (!liveEntity) {
+                log.warn('set is server-side only, ignored on client (no live entity)');
+                return;
+            }
+            liveEntity[field] = value as FieldValue;
         },
         callService: async (service: string, action: string, params?: ServiceParams) => {
             // Consumer-supplied handler wins — playgrounds wire real backends here.
