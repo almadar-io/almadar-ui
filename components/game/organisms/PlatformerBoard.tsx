@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useCallback, useEffect, useRef } from 'react';
 import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
+import { createLogger } from '@almadar/logger';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -12,6 +13,8 @@ import { Typography } from '../../core/atoms/Typography';
 import { VStack } from '../../core/atoms/Stack';
 import { PlatformerCanvas } from '../molecules/PlatformerCanvas';
 import type { PlatformerPlatform, PlatformerPlayer } from '../molecules/PlatformerCanvas';
+
+const boardLog = createLogger('almadar:ui:game:platformer-board');
 
 // =============================================================================
 // Types
@@ -125,17 +128,23 @@ export function PlatformerBoard({
         facingRight: true,
     };
 
-    // Platforms: direct prop wins over entity field
-    const entityPlatforms = Array.isArray(row['platforms'])
-        ? (row['platforms'] as unknown as PlatformerPlatform[])
-        : undefined;
-    const platforms = propPlatforms ?? entityPlatforms ?? [
+    // Platforms are static level geometry passed in via the `platforms` prop
+    // (the render-ui reads `@config.platforms` directly — no entity round-trip).
+    const platforms = propPlatforms ?? [
         { x: 0, y: 368, width: 800, height: 32, type: 'ground' as const },
         { x: 150, y: 280, width: 160, height: 16, type: 'platform' as const },
         { x: 420, y: 220, width: 160, height: 16, type: 'platform' as const },
         { x: 580, y: 300, width: 80, height: 16, type: 'hazard' as const },
         { x: 700, y: 340, width: 64, height: 28, type: 'goal' as const },
     ];
+
+    boardLog.debug('platforms-resolve', {
+        propPlatformsCount: Array.isArray(propPlatforms) ? propPlatforms.length : null,
+        usedFallback: propPlatforms === undefined,
+        finalCount: platforms.length,
+        player: { x: player.x, y: player.y, vx: player.vx, vy: player.vy, grounded: player.grounded },
+        result,
+    });
 
     const handleRestart = useCallback(() => {
         if (playAgainEvent) {

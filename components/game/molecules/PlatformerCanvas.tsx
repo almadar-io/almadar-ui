@@ -1,7 +1,10 @@
 import * as React from 'react';
 import { useRef, useEffect, useCallback, useState } from 'react';
 import type { AssetUrl, EventEmit } from '@almadar/core';
+import { createLogger } from '@almadar/logger';
 import { cn } from '../../../lib/cn';
+
+const canvasLog = createLogger('almadar:ui:game:platformer-canvas');
 import { useEventBus } from '../../../hooks/useEventBus';
 import { bindCanvasCapture, updateAssetStatus } from '../../../lib/verificationRegistry';
 import { useRenderInterpolation } from '../../../hooks/useRenderInterpolation';
@@ -103,6 +106,7 @@ export function PlatformerCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const eventBus = useEventBus();
   const keysRef = useRef<Set<string>>(new Set());
+  const lastPlatCountRef = useRef<number>(-1);
   const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
 
@@ -262,6 +266,18 @@ export function PlatformerCanvas({
       if (fc) {
         camX = Math.max(0, Math.min(px - cw / 2, ww - cw));
         camY = Math.max(0, Math.min(py - ch / 2 - 50, wh - ch));
+      }
+
+      // Log once whenever the platform count changes (e.g. seeded → empty or
+      // empty → level) so we can see what reached the canvas, plus the camera.
+      if (plats.length !== lastPlatCountRef.current) {
+        lastPlatCountRef.current = plats.length;
+        canvasLog.debug('draw:platforms', {
+          platformCount: plats.length,
+          camX, camY,
+          player: { x: px, y: py },
+          worldWidth: ww, canvasWidth: cw, followCamera: fc,
+        });
       }
 
       // Background
