@@ -329,7 +329,6 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
             selectedTileIds = [],
             selectedUnitId = null,
             unitScale = 1,
-            scale = 0.45,
             children,
         },
         ref
@@ -837,8 +836,13 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                             />
                         )}
 
-                        {/* Board group — scale controls overall zoom/size */}
-                        <group scale={scale}>
+                        {/* Board group. NOTE: `scale` is NOT applied here — in 3D the
+                            camera auto-frames the grid (distance ∝ grid size), so scaling
+                            the scene group shrinks everything while the camera stays put,
+                            breaking the framing. Unit/board proportion is controlled by
+                            `unitScale` (per-unit). `scale` is a 2D-only concept; in 3D it
+                            is accepted for API parity but zoom is camera-driven. */}
+                        <group>
                             {/* Tiles */}
                             {tiles.map((tile, index) => {
                                 const position = gridToWorld(
