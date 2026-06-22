@@ -119,6 +119,12 @@ const SYNC_TICK_OPERATORS: ReadonlySet<string> = new Set([
     'when',
 ]);
 
+// Lifecycle (mount-time) events. They are NOT user-driven, so the event-bus
+// self-subscription skips them — instead they are fired once per trait on mount
+// (see the mount-init effect) so single-state boards' INIT `set` effects seed
+// the entity before the first user event.
+const LIFECYCLE_EVENTS = ['INIT', 'LOAD', '$MOUNT'] as const;
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -255,6 +261,13 @@ export function useTraitStateMachine(
     // awaiting all effects before processing the next event.
     const eventQueueRef = useRef<Array<{ eventKey: string; payload?: EventPayload }>>([]);
     const processingRef = useRef(false);
+
+    // Trait names whose mount-time lifecycle event (INIT/LOAD/$MOUNT) has
+    // already fired this mount. Single-state game boards seed their entity in
+    // INIT's `set` effects; nothing else dispatches INIT, so it must fire once
+    // on mount. Guard prevents a re-render or repeated bindings-effect run from
+    // re-firing it. Cleared when bindings change (page nav rebuilds the SM).
+    const initedTraitsRef = useRef<Set<string>>(new Set());
 
     // Keep refs for callbacks to avoid stale closures
     const traitBindingsRef = useRef(traitBindings);
@@ -1195,7 +1208,7 @@ export function useTraitStateMachine(
             if (!orbitalName) continue;
             for (const transition of binding.trait.transitions) {
                 const eventKey = transition.event;
-                if (eventKey === 'INIT' || eventKey === 'LOAD' || eventKey === '$MOUNT') {
+                if ((LIFECYCLE_EVENTS as readonly string[]).includes(eventKey)) {
                     continue;
                 }
                 const selfBusKey = `UI:${orbitalName}.${traitName}.${eventKey}`;
@@ -1263,6 +1276,40 @@ export function useTraitStateMachine(
             crossTraitLog.debug('cleanup:done', {});
         };
     }, [traitBindings, eventBus, enqueueAndDrain]);
+
+    // Fire the mount-time lifecycle transition (INIT / LOAD / $MOUNT) once per
+    // trait. The state machine has just been reset to its initial state (the
+    // `resetAll()` effect above runs first — effects fire in declaration order),
+    // so `canHandleEvent` tests whether the trait's INITIAL state declares the
+    // lifecycle transition. Single-state game boards (`initial: playing`,
+    // `INIT -> playing`) DO — their INIT effects (`set @entity.result "none"`,
+    // `set @entity.platforms @config.platforms`) seed `traitFieldStatesRef`
+    // before any user event, so the first guard read sees the seeded values.
+    // Two-state browse behaviors flipped by `prepareSchemaForPreview` to start
+    // in their data state typically DON'T handle INIT there, so they are left
+    // untouched; if their initial state does handle INIT, firing it is correct.
+    // Dispatched through `enqueueAndDrain` — the ONE event path — so INIT's
+    // effects run through `executeTransitionEffects` exactly like a user event.
+    useEffect(() => {
+        const mgr = managerRef.current;
+        const inited = initedTraitsRef.current;
+        for (const binding of traitBindings) {
+            const traitName = binding.trait.name;
+            if (inited.has(traitName)) continue;
+            const lifecycleEvent = LIFECYCLE_EVENTS.find((evt) =>
+                mgr.canHandleEvent(traitName, evt),
+            );
+            if (lifecycleEvent === undefined) continue;
+            inited.add(traitName);
+            stateLog.debug('mount:fire-lifecycle', { traitName, event: lifecycleEvent });
+            enqueueAndDrain(lifecycleEvent, {});
+        }
+        return () => {
+            // New bindings (page nav) rebuild the manager + reset states, so a
+            // re-mounted trait must fire its lifecycle event again.
+            initedTraitsRef.current = new Set();
+        };
+    }, [traitBindings, enqueueAndDrain]);
 
     return {
         traitStates,
