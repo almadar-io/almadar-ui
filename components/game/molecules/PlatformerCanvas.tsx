@@ -270,11 +270,16 @@ export function PlatformerCanvas({
 
       // Log once whenever the platform count changes (e.g. seeded → empty or
       // empty → level) so we can see what reached the canvas, plus the camera.
-      if (plats.length !== lastPlatCountRef.current) {
+      const shouldDiag = plats.length !== lastPlatCountRef.current;
+      if (shouldDiag) {
         lastPlatCountRef.current = plats.length;
         canvasLog.debug('draw:platforms', {
           platformCount: plats.length,
           camX, camY,
+          plat0: JSON.stringify(plats[0]),
+          plat2: JSON.stringify(plats[2]),
+          tSpritesType: tSprites ? (tSprites instanceof Map ? 'Map' : typeof tSprites) : 'none',
+          canvasW: canvas.width, canvasH: canvas.height,
           player: { x: px, y: py },
           worldWidth: ww, canvasWidth: cw, followCamera: fc,
         });
@@ -319,6 +324,15 @@ export function PlatformerCanvas({
         const platType = plat.type ?? 'ground';
         const spriteUrl = tSprites?.[platType];
         const tileImg = spriteUrl ? loadImage(spriteUrl) : null;
+
+        if (shouldDiag) {
+          canvasLog.debug('plat:draw', {
+            platType, platX, platY, w: plat.width, h: plat.height,
+            branch: tileImg ? 'tile' : 'color',
+            natW: tileImg?.naturalWidth, natH: tileImg?.naturalHeight,
+            spriteUrl: spriteUrl ?? null,
+          });
+        }
 
         if (tileImg) {
           const tileW = tileImg.naturalWidth;
