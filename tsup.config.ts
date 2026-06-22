@@ -24,6 +24,22 @@ const dedupeContextPlugin = {
   },
 };
 
+// Same pattern for ThemeContext. components/core/atoms/ThemeToggle.tsx (and other theme
+// consumers) import useTheme from context/ThemeContext; without this the components chunk inlines
+// its own createContext(), so the app's <ThemeProvider> (from @almadar/ui/context) never reaches
+// useTheme()/ThemeToggle in the components chunk and toggleMode() silently no-ops (theme won't flip).
+const dedupeThemePlugin = {
+  name: 'dedupe-theme-context',
+  setup(build: { onResolve: (opts: { filter: RegExp }, cb: (args: { importer: string }) => { path: string; external: boolean } | undefined) => void }) {
+    build.onResolve({ filter: /ThemeContext/ }, (args: { importer: string }) => {
+      if (args.importer && !args.importer.startsWith(contextDir)) {
+        return { path: '@almadar/ui/context', external: true };
+      }
+      return undefined;
+    });
+  },
+};
+
 // Same pattern for EventBusProvider/EventBusContext.
 // hooks/useEventBus.ts imports EventBusContext from providers/EventBusProvider.
 // Without this plugin, the hooks chunk inlines its own createContext() call,
@@ -141,7 +157,7 @@ export default defineConfig([
     treeshake: true,
     external: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query', '@almadar/ui', '@almadar/runtime', '@almadar/core', '@almadar/evaluator', '@almadar/patterns'],
     banner: { js: '"use client";' },
-    esbuildPlugins: [dedupeContextPlugin, dedupeEventBusPlugin, dedupeProvidersPlugin, dedupeI18nPlugin, externalThreeSubpathPlugin],
+    esbuildPlugins: [dedupeContextPlugin, dedupeThemePlugin, dedupeEventBusPlugin, dedupeProvidersPlugin, dedupeI18nPlugin, externalThreeSubpathPlugin],
   },
   // Marketing build: SSR-safe subset for Docusaurus/webpack sites
   // No game engines, no Three.js, no browser globals at module scope
@@ -187,6 +203,6 @@ export default defineConfig([
     external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react'],
     noExternal: ['clsx', 'tailwind-merge'],
     banner: { js: '"use client";' },
-    esbuildPlugins: [dedupeContextPlugin, dedupeEventBusPlugin, dedupeProvidersPlugin, dedupeI18nPlugin, externalThreeSubpathPlugin],
+    esbuildPlugins: [dedupeContextPlugin, dedupeThemePlugin, dedupeEventBusPlugin, dedupeProvidersPlugin, dedupeI18nPlugin, externalThreeSubpathPlugin],
   },
 ]);
