@@ -81,3 +81,28 @@ export interface SpriteSheetUrls {
     /** Southwest-facing sheet URL */
     sw: AssetUrl;
 }
+
+/**
+ * Parsed sprite-sheet atlas JSON (e.g. `guardian-sprite-sheet.json`).
+ * Sits next to the `.png` sheets and drives the frame rect deterministically.
+ */
+export interface SpriteAtlas {
+    /** Unit archetype key */
+    unit?: string;
+    /** Visual type key */
+    type?: string;
+    /** Width of a single frame in pixels */
+    frameWidth: number;
+    /** Height of a single frame in pixels */
+    frameHeight: number;
+    /** Number of columns (frames per row) */
+    columns: number;
+    /** Number of rows (animations) */
+    rows: number;
+    /** Directions present as physical PNG files */
+    directions: SpriteDirection[];
+    /** Relative PNG sheet paths per direction */
+    sheets: Partial<Record<SpriteDirection, string>>;
+    /** Animation row layout keyed by animation name */
+    animations: Partial<Record<AnimationName, AnimationDef>>;
+}

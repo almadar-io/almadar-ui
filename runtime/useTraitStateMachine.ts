@@ -85,6 +85,40 @@ const flushLog = createLogger('almadar:ui:slot-flush');
 // the React DOM.
 const stateLog = createLogger('almadar:ui:state-transitions');
 
+// Tick-loop diagnostic. Records each tick's synchronous effect run —
+// which `set` effects fired, what they wrote into the per-trait field
+// state, and which slots were flushed — so a non-moving game board can
+// be diagnosed from logs ("did the 33ms physics tick's `(set @entity.x)`
+// actually mutate the entity?") instead of by assumption.
+const tickLog = createLogger('almadar:ui:tick-effects');
+
+// Synchronous effect operators a tick may run. `set` / `emit` /
+// `render-ui` (+ navigate/notify/log) resolve without awaiting; the
+// async ops (`fetch`/`persist`/`call-service`/`swap!`/`ref`/`deref`/
+// `atomic`/`spawn`/`despawn`/`os/*`/`watch`) cannot be awaited inside a
+// RAF/setInterval frame, so ticks skip them. This is the fixed tick
+// contract, not a heuristic.
+const SYNC_TICK_OPERATORS: ReadonlySet<string> = new Set([
+    'set',
+    'emit',
+    'render-ui',
+    'render',
+    'navigate',
+    'notify',
+    'log',
+    // Synchronous structural forms that wrap sync effects. A tick authored as
+    // a single top-level `(let ((..)) (do (set ..) (render-ui ..)))` or
+    // `(if cond (set ..) ..)` is one of these at its head — the EffectExecutor
+    // resolves the binding values / condition through the canonical evaluator
+    // and runs the wrapped sync effects. Without these in the allow-list the
+    // whole tick is filtered out (its head op isn't `set`/`emit`/...), so the
+    // physics/gameflow/AI tick never runs.
+    'let',
+    'if',
+    'do',
+    'when',
+]);
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -465,75 +499,280 @@ export function useTraitStateMachine(
     }, [traitBindings]);
 
     /**
-     * Execute a single tick's effects synchronously.
+     * Execute one transition's (or tick's) effects through the canonical
+     * `EffectExecutor` + `createClientEffectHandlers`, against the in-memory
+     * `[runtime]`-entity store `traitFieldStatesRef`.
      *
-     * Mirrors the compiled shell output (orbital-shell-typescript/src/backend.rs lines 5353-5516):
-     * - `set` effects are server-side only
-     * - `render-ui` effects resolve bindings and flush slots
-     * - No EffectExecutor (async) — ticks must be synchronous to work inside RAF
-     * - `@payload` is empty (invalid in tick context per the Rust validator)
+     * This is the SINGLE effect-execution path. Both `processEventQueued`
+     * (events) and `runTickEffects` (RAF/interval ticks) call it so a tick
+     * runs EXACTLY what an event runs for in-memory entities: `set` mutates
+     * the trait's field state, `emit` fires on the bus, `render-ui` flushes
+     * slots.
+     *
+     * `bindingCtx.entity` is seeded from `traitFieldStatesRef` (the trait's
+     * current field state) — NOT `{}` — so `@entity.player` resolves; the
+     * wrapped `set` writes results back into `traitFieldStatesRef` so the
+     * next tick and the render-ui read the advanced state.
+     *
+     * `syncOnly` (tick path) drops async effects up front: they can't be
+     * awaited inside a RAF/setInterval frame. The set/emit/render-ui work a
+     * tick relies on is synchronous and completes within the frame.
+     *
+     * Returns the events this trait's effects emitted (for the event path's
+     * `recordTransition` ServerResponseTrace).
+     */
+    const executeTransitionEffects = useCallback(async (params: {
+        binding: ResolvedTraitBinding;
+        effects: unknown[];
+        previousState: string;
+        newState: string;
+        payload?: EventPayload;
+        flushEvent: string;
+        syncOnly: boolean;
+        log: ReturnType<typeof createLogger>;
+    }): Promise<string[]> => {
+        const { binding, previousState, newState, payload, flushEvent, syncOnly, log } = params;
+        const traitName = binding.trait.name;
+        const linkedEntity = binding.linkedEntity || '';
+        const entityId = payload?.entityId as string | undefined;
+
+        // Ticks must stay synchronous — drop async effects that can't be
+        // awaited inside RAF/setInterval. Deterministic op allow-list.
+        const effects = syncOnly
+            ? params.effects.filter(
+                (e) => Array.isArray(e) && SYNC_TICK_OPERATORS.has(String(e[0])),
+            )
+            : params.effects;
+        if (effects.length === 0) return [];
+
+        const pendingSlots = new Map<string, SlotPatternEntry[]>();
+        const slotSource: SlotSource = {
+            trait: traitName,
+            state: previousState,
+            transition: `${previousState}->${newState}`,
+            effects,
+            traitDefinition: binding.trait,
+        };
+
+        const clientHandlers = createClientEffectHandlers({
+            eventBus,
+            slotSetter: {
+                addPattern: (slot, pattern, props) => {
+                    const existing = pendingSlots.get(slot) || [];
+                    existing.push({ pattern: pattern as PatternConfig, props: props || {} });
+                    pendingSlots.set(slot, existing);
+                },
+                clearSlot: (slot) => {
+                    pendingSlots.set(slot, []);
+                },
+            },
+            navigate: optionsRef.current?.navigate,
+            notify: optionsRef.current?.notify,
+            callService: optionsRef.current?.callService,
+        });
+
+        // Offline-preview mode: when `persistence` is supplied, layer
+        // `createServerEffectHandlers` on top so `fetch` / `persist` /
+        // `set` / `ref` / `deref` / `swap!` / `atomic` / `callService`
+        // run locally with the same semantics as `OrbitalServerRuntime`.
+        // Keep the client `emit` / `renderUI` / `navigate` / `notify`.
+        // Skipped for `syncOnly` ticks (they never run async ops).
+        const persistence = syncOnly ? undefined : optionsRef.current?.persistence;
+        let handlers: EffectHandlers = clientHandlers;
+        if (persistence) {
+            const sharedBindings: BindingContext = {
+                // Seed `@entity` from the trait's scalar field state (a real
+                // EntityRow), the same source the executor's own bindingCtx
+                // uses below. `@payload.*` resolves from `payload` separately,
+                // so dropping the prior `payload as EntityRow` cast loses
+                // nothing — it just stops mislabelling the payload as an entity.
+                entity: traitFieldStatesRef.current.get(traitName) ?? ({} as EntityRow),
+                payload: payload || {},
+                state: previousState,
+            };
+            const sharedDeclared = collectDeclaredConfigDefaults(binding.trait);
+            const sharedCallSite = binding.config as TraitConfig | undefined;
+            if (sharedDeclared || sharedCallSite) {
+                sharedBindings.config = {
+                    ...(sharedDeclared ?? {}),
+                    ...(sharedCallSite ?? {}),
+                } as TraitConfig;
+            }
+            const serverHandlers = createServerEffectHandlers({
+                persistence,
+                eventBus,
+                entityType: linkedEntity,
+                entityId,
+                bindings: sharedBindings,
+                context: {
+                    traitName,
+                    state: previousState,
+                    transition: `${previousState}->${newState}`,
+                    linkedEntity,
+                    entityId,
+                },
+                source: { trait: traitName },
+                callService: optionsRef.current?.callService,
+            });
+            handlers = {
+                ...serverHandlers,
+                emit: clientHandlers.emit,
+                renderUI: clientHandlers.renderUI,
+                navigate: clientHandlers.navigate,
+                notify: clientHandlers.notify,
+            };
+        }
+
+        // Wrap `set` so `(set @entity.X Y)` writes to the per-trait scalar
+        // state map. Mirrors compiled's `state.fields[X]`. `bindingCtx.entity`
+        // is seeded from this same map below so the NEXT tick reads the
+        // advanced value — this is what makes the physics tick actually move.
+        const baseSet = handlers.set;
+        handlers = {
+            ...handlers,
+            set: async (targetId, field, value) => {
+                let fieldState = traitFieldStatesRef.current.get(traitName);
+                if (!fieldState) {
+                    fieldState = {} as EntityRow;
+                    traitFieldStatesRef.current.set(traitName, fieldState);
+                }
+                fieldState[field] = value as EntityRow[string];
+                log.debug('set:write', {
+                    traitName,
+                    field,
+                    value: JSON.stringify(value),
+                    transition: `${previousState}->${newState}`,
+                });
+                if (baseSet) await baseSet(targetId, field, value);
+            },
+        };
+
+        // `@entity.X` resolves against the per-trait scalar state populated
+        // by explicit `(set @entity.X Y)` effects — seeded, NOT `{}`.
+        const entityForBinding: EntityRow =
+            traitFieldStatesRef.current.get(traitName) ?? ({} as EntityRow);
+        const bindingCtx: BindingContext = {
+            entity: entityForBinding,
+            payload: payload || {},
+            state: previousState,
+        };
+        const declaredDefaults = collectDeclaredConfigDefaults(binding.trait);
+        const callSiteConfig = binding.config as TraitConfig | undefined;
+        if (declaredDefaults || callSiteConfig) {
+            bindingCtx.config = {
+                ...(declaredDefaults ?? {}),
+                ...(callSiteConfig ?? {}),
+            } as TraitConfig;
+        }
+
+        const effectContext: EffectContext = {
+            traitName,
+            state: previousState,
+            transition: `${previousState}->${newState}`,
+            linkedEntity,
+            entityId,
+        };
+
+        // Capture every event this trait's effects emit during execution.
+        const emittedDuringExec: string[] = [];
+        const baseEmit = handlers.emit;
+        const trackingHandlers: EffectHandlers = {
+            ...handlers,
+            emit: (event, eventPayload, source) => {
+                emittedDuringExec.push(event);
+                baseEmit(event, eventPayload, source);
+            },
+        };
+
+        const executor = new EffectExecutor({ handlers: trackingHandlers, bindings: bindingCtx, context: effectContext });
+
+        void slotSource;
+        try {
+            await executor.executeAll(effects);
+
+            log.debug('effects:executed', () => ({
+                traitName,
+                transition: `${previousState}->${newState}`,
+                event: flushEvent,
+                effectCount: effects.length,
+                emitted: emittedDuringExec.join(','),
+                entityAfter: JSON.stringify(traitFieldStatesRef.current.get(traitName) ?? {}),
+                slotsTouched: Array.from(pendingSlots.keys()).join(','),
+            }));
+
+            for (const [slot, patterns] of pendingSlots) {
+                log.debug('flush:slot', {
+                    traitName,
+                    slot,
+                    patternCount: patterns.length,
+                    event: flushEvent,
+                    transition: `${previousState}->${newState}`,
+                    cleared: patterns.length === 0,
+                });
+                flushSlot(traitName, slot, patterns, {
+                    event: flushEvent,
+                    state: previousState,
+                    entity: binding.linkedEntity,
+                });
+            }
+        } catch (error: unknown) {
+            log.error('effects:error', {
+                traitName,
+                transition: `${previousState}->${newState}`,
+                event: flushEvent,
+                error: error instanceof Error ? error.message : String(error),
+                effectCount: effects.length,
+            });
+        }
+
+        return emittedDuringExec;
+    }, [eventBus, flushSlot]);
+
+    /**
+     * Execute a single tick's effects through the SAME canonical executor
+     * the event path uses (`executeTransitionEffects`), synchronously.
+     *
+     * `[runtime]` entities live only in memory, so a tick's effects run
+     * client-side exactly like an event's do: `(set @entity.player.x …)`
+     * mutates `traitFieldStatesRef`, the next frame reads it back, things
+     * move. Async effects are skipped (`syncOnly`); guard + appliesTo are
+     * honored.
      */
     const runTickEffects = useCallback((tick: ResolvedTraitTick, binding: ResolvedTraitBinding) => {
-        const currentState = traitStatesRef.current.get(binding.trait.name)?.currentState ?? '';
+        const traitName = binding.trait.name;
+        const currentState = traitStatesRef.current.get(traitName)?.currentState ?? '';
 
         // appliesTo: empty array means fire in all states (same as Rust OirTick default)
         if (tick.appliesTo.length > 0 && !tick.appliesTo.includes(currentState)) return;
 
-        const bindingCtx: BindingContext = { entity: {}, payload: {}, state: currentState };
-        if (binding.config) {
-            bindingCtx.config = binding.config as TraitConfig;
-        }
-        const evalCtx = createContextFromBindings(bindingCtx);
-
-        // Guard: use interpolateValue to evaluate the s-expression (returns truthy/falsy)
+        // Guard: evaluate against the SEEDED entity state so `@entity.X`
+        // guards see the advancing values, not `{}`.
         if (tick.guard !== undefined) {
-            const passed = interpolateValue(tick.guard, evalCtx);
-            if (!passed) return;
-        }
-
-        // Process effects synchronously
-        const pendingSlots = new Map<string, Array<{ pattern: PatternConfig; props: SlotProps }>>();
-
-        const slotSource: SlotSource = {
-            trait: binding.trait.name,
-            state: currentState,
-            transition: `${currentState}->tick:${tick.name}`,
-            effects: tick.effects,
-            traitDefinition: binding.trait,
-        };
-
-        for (const effect of tick.effects) {
-            if (!Array.isArray(effect)) continue;
-            const op = effect[0] as string;
-
-            if (op === 'render-ui' || op === 'render') {
-                const slot = effect[1] as string;
-                const rawPattern = effect[2];
-                if (rawPattern === null || rawPattern === undefined) {
-                    pendingSlots.set(slot, []);
-                    continue;
-                }
-                const updatedCtx = createContextFromBindings(bindingCtx);
-                const resolved = interpolateValue(rawPattern, updatedCtx);
-                const existing = pendingSlots.get(slot) ?? [];
-                existing.push({ pattern: resolved as PatternConfig, props: {} });
-                pendingSlots.set(slot, existing);
+            const guardCtx: BindingContext = {
+                entity: traitFieldStatesRef.current.get(traitName) ?? ({} as EntityRow),
+                payload: {},
+                state: currentState,
+            };
+            if (binding.config) {
+                guardCtx.config = binding.config as TraitConfig;
+            }
+            const passed = interpolateValue(tick.guard, createContextFromBindings(guardCtx));
+            if (!passed) {
+                tickLog.debug('guard-blocked', { traitName, tick: tick.name, state: currentState });
+                return;
             }
         }
 
-        // Flush slots atomically — write directly to useUISlots, with
-        // embed-aware routing applied per trait. `slotSource` carries
-        // the originating-trait metadata; only the trait NAME affects
-        // routing, so it's the only thing we forward.
-        void slotSource;
-        for (const [slot, patterns] of pendingSlots) {
-            flushSlot(binding.trait.name, slot, patterns, {
-                event: `tick:${tick.name}`,
-                state: currentState,
-                entity: binding.linkedEntity,
-            });
-        }
-    }, [flushSlot]);
+        void executeTransitionEffects({
+            binding,
+            effects: tick.effects,
+            previousState: currentState,
+            newState: currentState,
+            flushEvent: `tick:${tick.name}`,
+            syncOnly: true,
+            log: tickLog,
+        });
+    }, [executeTransitionEffects]);
 
     /**
      * RAF loop for frame-interval ticks (interval: "frame").
@@ -721,216 +960,22 @@ export function useTraitStateMachine(
                     effects: JSON.stringify(result.effects),
                 }));
 
-                const linkedEntity = binding.linkedEntity || '';
-                const entityId = payload?.entityId as string | undefined;
-
-                // Accumulator for render-ui effects -- grouped by slot
-                const pendingSlots = new Map<string, SlotPatternEntry[]>();
-                const slotSource: SlotSource = {
-                    trait: binding.trait.name,
-                    state: result.previousState,
-                    transition: `${result.previousState}->${result.newState}`,
+                // Run the transition's effects through the ONE canonical
+                // executor path shared with the tick loop. Full async set
+                // (fetch/persist/emit) is awaited here — the actor model
+                // requires all effects to complete before the next event
+                // is dequeued.
+                const emittedDuringExec = await executeTransitionEffects({
+                    binding,
                     effects: result.effects,
-                    traitDefinition: binding.trait,
-                };
-
-                // Build handlers using factory from @almadar/runtime.
-                // Entity resolution happens in SlotContentRenderer via useEntityRef.
-                const clientHandlers = createClientEffectHandlers({
-                    eventBus,
-                    slotSetter: {
-                        addPattern: (slot, pattern, props) => {
-                            const existing = pendingSlots.get(slot) || [];
-                            existing.push({ pattern: pattern as PatternConfig, props: props || {} });
-                            pendingSlots.set(slot, existing);
-                        },
-                        clearSlot: (slot) => {
-                            pendingSlots.set(slot, []);
-                        },
-                    },
-                    navigate: optionsRef.current?.navigate,
-                    notify: optionsRef.current?.notify,
-                    callService: optionsRef.current?.callService,
+                    previousState: result.previousState,
+                    newState: result.newState,
+                    payload,
+                    flushEvent: eventKey,
+                    syncOnly: false,
+                    log: stateLog,
                 });
-
-                // Offline-preview mode: when `persistence` is supplied, layer
-                // `createServerEffectHandlers` on top so `fetch` / `persist` /
-                // `set` / `ref` / `deref` / `swap!` / `atomic` / `callService`
-                // run locally with the same semantics as `OrbitalServerRuntime`.
-                // Keep the client `emit` / `renderUI` / `navigate` / `notify`
-                // (they own the slot setter + router + toaster).
-                const persistence = optionsRef.current?.persistence;
-                let handlers: EffectHandlers = clientHandlers;
-                if (persistence) {
-                    // Bindings object is mutable — ServerEffectHandlers writes
-                    // fetched rows onto it so downstream render-ui can resolve
-                    // `@entity` bindings without a second round-trip. We alloc
-                    // it BEFORE building the bindingCtx below, then reuse.
-                    const sharedBindings: BindingContext = {
-                        entity: (payload ?? {}) as unknown as EntityRow,
-                        payload: payload || {},
-                        state: result.previousState,
-                    };
-                    const sharedDeclared = collectDeclaredConfigDefaults(
-                        binding.trait,
-                    );
-                    const sharedCallSite = binding.config as TraitConfig | undefined;
-                    if (sharedDeclared || sharedCallSite) {
-                        sharedBindings.config = {
-                            ...(sharedDeclared ?? {}),
-                            ...(sharedCallSite ?? {}),
-                        } as TraitConfig;
-                    }
-                    const serverHandlers = createServerEffectHandlers({
-                        persistence,
-                        eventBus,
-                        entityType: linkedEntity,
-                        entityId,
-                        bindings: sharedBindings,
-                        context: {
-                            traitName: binding.trait.name,
-                            state: result.previousState,
-                            transition: `${result.previousState}->${result.newState}`,
-                            linkedEntity,
-                            entityId,
-                        },
-                        source: { trait: binding.trait.name },
-                        callService: optionsRef.current?.callService,
-                    });
-                    handlers = {
-                        ...serverHandlers,
-                        // Client handlers own UI + emit: keep the slot setter
-                        // and pre-prefixed UI:* emit path intact.
-                        emit: clientHandlers.emit,
-                        renderUI: clientHandlers.renderUI,
-                        navigate: clientHandlers.navigate,
-                        notify: clientHandlers.notify,
-                    };
-                }
-
-                // Wrap `set` so `(set @entity.X Y)` writes to the per-trait
-                // scalar state map. Mirrors compiled's `state.fields[X]`.
-                // `bindingCtx.entity` reads from this map below.
-                const baseSet = handlers.set;
-                handlers = {
-                    ...handlers,
-                    set: async (targetId, field, value) => {
-                        let fieldState = traitFieldStatesRef.current.get(traitName);
-                        if (!fieldState) {
-                            fieldState = {} as EntityRow;
-                            traitFieldStatesRef.current.set(traitName, fieldState);
-                        }
-                        fieldState[field] = value as EntityRow[string];
-                        if (baseSet) await baseSet(targetId, field, value);
-                    },
-                };
-
-                // `@entity.X` resolves against the per-trait scalar state
-                // populated by explicit `(set @entity.X Y)` effects.
-                // No implicit seeding from payload, no reducer-mirror.
-                const entityForBinding: EntityRow =
-                    traitFieldStatesRef.current.get(traitName) ?? ({} as EntityRow);
-                const bindingCtx: BindingContext = {
-                    entity: entityForBinding,
-                    payload: payload || {},
-                    state: result.previousState,
-                };
-                // Declared atom defaults sit behind any call-site override
-                // so unspecified `@config.X` keys resolve to the atom's own
-                // defaults instead of leaking the literal "@config.X" string.
-                const declaredDefaults = collectDeclaredConfigDefaults(
-                    binding.trait,
-                );
-                const callSiteConfig = binding.config as TraitConfig | undefined;
-                if (declaredDefaults || callSiteConfig) {
-                    bindingCtx.config = {
-                        ...(declaredDefaults ?? {}),
-                        ...(callSiteConfig ?? {}),
-                    } as TraitConfig;
-                }
-
-                const effectContext: EffectContext = {
-                    traitName: binding.trait.name,
-                    state: result.previousState,
-                    transition: `${result.previousState}->${result.newState}`,
-                    linkedEntity,
-                    entityId,
-                };
-
-                // Capture every event this trait's effects emit during
-                // execution. The verifier's data-mutation observer reads
-                // them off the per-transition ServerResponseTrace so the
-                // declared persist `emit.success` becomes a verifiable
-                // signal on the runtime path (parity with the compiled
-                // path's recordServerResponse for server-bridge events).
-                const emittedDuringExec: string[] = [];
                 emittedByTrait.set(traitName, emittedDuringExec);
-                const baseEmit = handlers.emit;
-                const trackingHandlers: EffectHandlers = {
-                    ...handlers,
-                    emit: (event, eventPayload, source) => {
-                        emittedDuringExec.push(event);
-                        baseEmit(event, eventPayload, source);
-                    },
-                };
-
-                const executor = new EffectExecutor({ handlers: trackingHandlers, bindings: bindingCtx, context: effectContext });
-
-                // AWAIT effects: the actor model requires all effects (fetch, persist,
-                // emit) to complete before the next event is dequeued. Emitted events
-                // land in eventQueueRef synchronously during executeAll (the bus is sync),
-                // but they won't be processed until this await resolves and the drain
-                // loop picks up the next entry.
-                try {
-                    await executor.executeAll(result.effects);
-
-                    stateLog.debug('transition:render-ui-dispatched', () => ({
-                        traitName,
-                        fromState: result.previousState,
-                        toState: result.newState,
-                        event: eventKey,
-                        slotsTouched: Array.from(pendingSlots.keys()).join(','),
-                        patternTypes: Array.from(pendingSlots.entries()).map(
-                            ([slot, patterns]) => `${slot}:[${patterns.map((p) => p.pattern?.type ?? 'null').join(',')}]`,
-                        ).join(';'),
-                    }));
-
-                    // Flush accumulated slot content atomically — write
-                    // directly to useUISlots with embed-aware routing.
-                    // `slotSource` carries the originating-trait metadata;
-                    // only the trait NAME affects routing, so the rest is
-                    // implicit in `flushSlot`.
-                    void slotSource;
-                    for (const [slot, patterns] of pendingSlots) {
-                        // Trace every slot flush so the verifier's
-                        // `portal: expected slot to be empty` failures
-                        // can be correlated to the exact tick that cleared
-                        // (or didn't clear) the slot. patterns.length===0
-                        // is the (render-ui slot null) clearing case.
-                        stateLog.debug('flush:slot', {
-                            traitName,
-                            slot,
-                            patternCount: patterns.length,
-                            event: eventKey,
-                            transition: `${result.previousState}->${result.newState}`,
-                            cleared: patterns.length === 0,
-                        });
-                        flushSlot(traitName, slot, patterns, {
-                            event: eventKey,
-                            state: result.previousState,
-                            entity: binding.linkedEntity,
-                        });
-                    }
-                } catch (error: unknown) {
-                    stateLog.error('transition:effect-error', {
-                        traitName,
-                        fromState: result.previousState,
-                        toState: result.newState,
-                        event: eventKey,
-                        error: error instanceof Error ? error.message : String(error),
-                        effectCount: result.effects.length,
-                    });
-                }
             } else if (!result.executed) {
                 if (result.guardResult === false) {
                     stateLog.debug('guard-blocked-transition', {

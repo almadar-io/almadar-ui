@@ -25,9 +25,9 @@ import React, {
     useImperativeHandle,
 } from 'react';
 import type { EventEmit } from '@almadar/core';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useThree, useFrame, useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
-import { OrbitControls, Grid } from '@react-three/drei';
+import { OrbitControls, Grid, Billboard } from '@react-three/drei';
 import { AssetLoader, assetLoader } from './three/loaders/AssetLoader';
 import { useAssetLoader } from './three/hooks/useAssetLoader';
 import { useGameCanvas3DEvents, type MinimalMouseEvent } from './three/hooks/useGameCanvas3DEvents';
@@ -35,6 +35,8 @@ import { Canvas3DLoadingState } from './three/components/Canvas3DLoadingState';
 import { Canvas3DErrorBoundary } from './three/components/Canvas3DErrorBoundary';
 import { ModelLoader } from './three/components/ModelLoader';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from '../organisms/types/isometric';
+import type { ResolvedFrame } from '../organisms/types/spriteAnimation';
+import { useUnitSpriteAtlas, unitAtlasUrl } from './useUnitSpriteAtlas';
 import { cn } from '../../../lib/cn';
 import './GameCanvas3D.css';
 
@@ -205,6 +207,62 @@ function CameraController({
 }
 
 /**
+ * Billboarded sprite-sheet plane for a unit. Loads the atlas's PNG sheet as a
+ * texture and crops a SINGLE frame via UV `repeat`/`offset`, advancing per
+ * animation state. Mirrors the 2D canvas: one frame, never the whole sheet.
+ */
+function UnitSpriteBillboard({
+    sheetUrl,
+    resolveFrame,
+    height = 1.2,
+}: {
+    sheetUrl: string;
+    resolveFrame: () => ResolvedFrame | null;
+    height?: number;
+}): React.JSX.Element | null {
+    const texture = useLoader(THREE.TextureLoader, sheetUrl);
+    const meshRef = useRef<THREE.Mesh>(null);
+    const matRef = useRef<THREE.MeshBasicMaterial>(null);
+    const [aspect, setAspect] = useState(1);
+
+    useFrame(() => {
+        const frame = resolveFrame();
+        if (!frame || !texture.image) return;
+        const imgW = texture.image.width as number;
+        const imgH = texture.image.height as number;
+        if (!imgW || !imgH) return;
+
+        // Crop one frame: repeat = frame size / sheet size, offset from top-left.
+        texture.repeat.set((frame.flipX ? -1 : 1) * (frame.sw / imgW), frame.sh / imgH);
+        texture.offset.set(
+            frame.flipX ? (frame.sx + frame.sw) / imgW : frame.sx / imgW,
+            1 - (frame.sy + frame.sh) / imgH,
+        );
+        texture.magFilter = THREE.NearestFilter;
+        texture.minFilter = THREE.NearestFilter;
+        texture.needsUpdate = true;
+
+        const nextAspect = frame.sw / frame.sh;
+        if (Math.abs(nextAspect - aspect) > 0.001) setAspect(nextAspect);
+
+        if (matRef.current) matRef.current.needsUpdate = true;
+    });
+
+    return (
+        <mesh ref={meshRef} position={[0, height / 2, 0]}>
+            <planeGeometry args={[height * aspect, height]} />
+            <meshBasicMaterial
+                ref={matRef}
+                map={texture}
+                transparent
+                alphaTest={0.1}
+                side={THREE.DoubleSide}
+            />
+        </mesh>
+    );
+}
+
+/**
  * GameCanvas3D Component
  *
  * 3D game canvas that mirrors the IsometricCanvas API.
@@ -275,9 +333,13 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
         const [hoveredTile, setHoveredTile] = useState<IsometricTile | null>(null);
         const [internalError, setInternalError] = useState<string | null>(null);
 
+        // Self-contained sprite-sheet animation: load each unit's atlas and crop one frame.
+        const { sheetUrls: atlasSheetUrls, resolveUnitFrame } = useUnitSpriteAtlas(units);
+
         // Asset loading
+        const preloadUrls = useMemo(() => [...preloadAssets, ...atlasSheetUrls], [preloadAssets, atlasSheetUrls]);
         const { isLoading: assetsLoading, progress, loaded, total } = useAssetLoader({
-            preloadUrls: preloadAssets,
+            preloadUrls,
             loader: customAssetLoader,
         });
 
@@ -522,6 +584,8 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
             ({ unit, position }: { unit: IsometricUnit; position: [number, number, number] }) => {
                 const isSelected = selectedUnitId === unit.id;
                 const color = unit.faction === 'player' ? 0x4488ff : unit.faction === 'enemy' ? 0xff4444 : 0xffff44;
+                const hasAtlas = unitAtlasUrl(unit) !== null;
+                const initialFrame = hasAtlas ? resolveUnitFrame(unit.id) : null;
 
                 return (
                     <group
@@ -537,7 +601,15 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                             </mesh>
                         )}
 
-                        {unit.modelUrl ? (
+                        {hasAtlas && initialFrame ? (
+                            /* Animated sprite-sheet billboard — single cropped frame, by state */
+                            <Billboard>
+                                <UnitSpriteBillboard
+                                    sheetUrl={initialFrame.sheetUrl}
+                                    resolveFrame={() => resolveUnitFrame(unit.id)}
+                                />
+                            </Billboard>
+                        ) : unit.modelUrl ? (
                             /* GLB unit model (box fallback while loading / on error) */
                             <ModelLoader
                                 url={unit.modelUrl}
@@ -597,7 +669,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                     </group>
                 );
             },
-            [selectedUnitId, handleUnitClick]
+            [selectedUnitId, handleUnitClick, resolveUnitFrame]
         );
 
         // Default feature renderer

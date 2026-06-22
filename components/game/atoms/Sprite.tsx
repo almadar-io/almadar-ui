@@ -8,6 +8,7 @@
 import React, { useMemo } from 'react';
 import type { EventKey, AssetUrl } from "@almadar/core";
 import { useEventBus } from '../../../hooks/useEventBus';
+import { frameRect } from '../organisms/utils/spriteAnimation';
 
 export interface SpriteProps {
   /** Spritesheet image URL */
@@ -82,12 +83,8 @@ export function Sprite({
   const eventBus = useEventBus();
   // Calculate source position in spritesheet
   const sourcePosition = useMemo(() => {
-    const frameX = frame % columns;
-    const frameY = Math.floor(frame / columns);
-    return {
-      x: frameX * frameWidth,
-      y: frameY * frameHeight,
-    };
+    const { sx, sy } = frameRect(frame, Math.floor(frame / columns), columns, frameWidth, frameHeight);
+    return { x: sx, y: sy };
   }, [frame, columns, frameWidth, frameHeight]);
 
   // Build transform string
@@ -164,8 +161,7 @@ export function drawSprite(
   } = props;
 
   // Calculate source position
-  const sourceX = (frame % columns) * frameWidth;
-  const sourceY = Math.floor(frame / columns) * frameHeight;
+  const { sx: sourceX, sy: sourceY } = frameRect(frame, Math.floor(frame / columns), columns, frameWidth, frameHeight);
 
   // Save context state
   ctx.save();

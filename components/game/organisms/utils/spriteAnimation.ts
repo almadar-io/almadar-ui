@@ -9,6 +9,7 @@
  */
 
 import type {
+    AnimationDef,
     AnimationName,
     FacingDirection,
     SpriteDirection,
@@ -58,17 +59,56 @@ export function resolveSheetDirection(facing: FacingDirection): { sheetDir: Spri
 }
 
 // =============================================================================
+// Frame Rect
+// =============================================================================
+
+/** A source rectangle into a sprite sheet for a single frame. */
+export interface FrameRect {
+    /** Source X in the sheet (pixel offset). */
+    sx: number;
+    /** Source Y in the sheet (pixel offset). */
+    sy: number;
+    /** Source width (frame width). */
+    sw: number;
+    /** Source height (frame height). */
+    sh: number;
+}
+
+/**
+ * Compute the source rect for a single frame within a grid sprite sheet.
+ * Single home for the `sx = (frame % columns) * frameWidth`, `sy = row * frameHeight`
+ * math shared by `Sprite.tsx`, `useUnitSpriteAtlas.ts`, and `resolveFrame`.
+ *
+ * Pass `row` explicitly for atlas-driven layouts (each animation occupies a row);
+ * pass `row = Math.floor(frame / columns)` for flat frame-index sheets.
+ */
+export function frameRect(
+    frame: number,
+    row: number,
+    columns: number,
+    frameWidth: number,
+    frameHeight: number,
+): FrameRect {
+    return {
+        sx: (frame % columns) * frameWidth,
+        sy: row * frameHeight,
+        sw: frameWidth,
+        sh: frameHeight,
+    };
+}
+
+// =============================================================================
 // Frame Computation
 // =============================================================================
 
 /**
- * Compute the current frame index and whether the animation has finished.
+ * Compute the current frame index from an animation definition.
+ * Atlas-driven and constant-driven callers share this one timing core.
  */
-export function getCurrentFrame(
-    animName: AnimationName,
+export function getCurrentFrameFromDef(
+    def: AnimationDef,
     elapsed: number,
 ): { frame: number; finished: boolean } {
-    const def = SPRITE_SHEET_LAYOUT[animName];
     const frameDuration = 1000 / def.frameRate;
     const totalDuration = def.frames * frameDuration;
 
@@ -83,6 +123,16 @@ export function getCurrentFrame(
     }
     const frame = Math.floor(elapsed / frameDuration);
     return { frame, finished: false };
+}
+
+/**
+ * Compute the current frame index and whether the animation has finished.
+ */
+export function getCurrentFrame(
+    animName: AnimationName,
+    elapsed: number,
+): { frame: number; finished: boolean } {
+    return getCurrentFrameFromDef(SPRITE_SHEET_LAYOUT[animName], elapsed);
 }
 
 /**
@@ -103,12 +153,15 @@ export function resolveFrame(
     const def = SPRITE_SHEET_LAYOUT[animState.animation];
     const { frame } = getCurrentFrame(animState.animation, animState.elapsed);
 
+    // Flat frame-index sheet: one row, frame advances horizontally (columns = frames).
+    const rect = frameRect(frame, def.row, def.frames, frameDims.width, frameDims.height);
+
     return {
         sheetUrl,
-        sx: frame * frameDims.width,
-        sy: def.row * frameDims.height,
-        sw: frameDims.width,
-        sh: frameDims.height,
+        sx: rect.sx,
+        sy: rect.sy,
+        sw: rect.sw,
+        sh: rect.sh,
         flipX,
     };
 }

@@ -59,6 +59,10 @@ export type IsometricUnit = {
     z?: number;
     /** Static sprite URL (used when no sprite sheet animation) */
     sprite?: AssetUrl;
+    /** Sprite-sheet atlas JSON URL (e.g. `.../guardian-sprite-sheet.json`).
+     *  When set, the canvas loads the atlas and crops/animates a single frame
+     *  by animation state instead of drawing the whole sheet. */
+    spriteSheet?: AssetUrl;
     /** 3D model URL (GLB format) for GameCanvas3D — rendered via ModelLoader with box fallback */
     modelUrl?: AssetUrl;
     /** Unit archetype key for sprite resolution */

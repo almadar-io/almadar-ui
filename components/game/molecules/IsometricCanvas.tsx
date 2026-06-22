@@ -42,6 +42,7 @@ import type { IsometricTile, IsometricUnit, IsometricFeature } from '../organism
 import type { ResolvedFrame } from '../organisms/types/spriteAnimation';
 import { useImageCache } from '../organisms/hooks/useImageCache';
 import { useCamera } from '../organisms/hooks/useCamera';
+import { useUnitSpriteAtlas } from './useUnitSpriteAtlas';
 import { bindCanvasCapture } from '../../../lib/verificationRegistry';
 import {
     isoToScreen,
@@ -264,6 +265,14 @@ export function IsometricCanvas({
         unitsProp.map(u => u.position ? u : { ...u, position: { x: u.x ?? 0, y: u.y ?? 0 } }),
     [unitsProp]);
 
+    // -- Self-contained sprite-sheet animation (atlas-driven, single-frame crop) --
+    const { sheetUrls: atlasSheetUrls, resolveUnitFrame: resolveUnitFrameInternal, pendingCount: atlasPending } = useUnitSpriteAtlas(units);
+
+    // Prefer an externally supplied resolver; else animate from the unit's own atlas.
+    const resolveFrameForUnit = useCallback((unitId: string): ResolvedFrame | null => {
+        return resolveUnitFrame?.(unitId) ?? resolveUnitFrameInternal(unitId);
+    }, [resolveUnitFrame, resolveUnitFrameInternal]);
+
     // -- Normalize features: accept featureType or type --
     const features = useMemo(() =>
         featuresProp.map(f => {
@@ -373,12 +382,15 @@ export function IsometricCanvas({
         // Effect sprites from explicit list
         if (effectSpriteUrls) urls.push(...effectSpriteUrls);
 
+        // Animated sprite-sheet PNGs resolved from unit atlases
+        if (atlasSheetUrls.length) urls.push(...atlasSheetUrls);
+
         // Background
         if (backgroundImage) urls.push(backgroundImage);
 
         // Deduplicate
         return [...new Set(urls.filter(Boolean))];
-    }, [sortedTiles, features, units, getTerrainSprite, getFeatureSprite, getUnitSprite, effectSpriteUrls, backgroundImage, assetManifest, resolveManifestUrl]);
+    }, [sortedTiles, features, units, getTerrainSprite, getFeatureSprite, getUnitSprite, effectSpriteUrls, atlasSheetUrls, backgroundImage, assetManifest, resolveManifestUrl]);
 
     const { getImage, pendingCount } = useImageCache(spriteUrls);
 
@@ -751,8 +763,9 @@ export function IsometricCanvas({
                 ctx.stroke();
             }
 
-            // Draw unit: sprite sheet frame, static sprite, or fallback
-            const frame = resolveUnitFrame?.(unit.id) ?? null;
+            // Draw unit: sprite sheet frame (single cropped frame), static sprite, or fallback.
+            // A unit with a sprite SHEET must always crop one frame — never draw the whole sheet.
+            const frame = resolveFrameForUnit(unit.id);
             const frameImg = frame ? getImage(frame.sheetUrl) : null;
 
             if (frame && frameImg) {
@@ -872,7 +885,7 @@ export function IsometricCanvas({
         drawMinimap();
     }, [
         sortedTiles, units, features, selectedUnitId,
-        scale, debug, resolveTerrainSpriteUrl, resolveFeatureSpriteUrl, resolveUnitSpriteUrl, resolveUnitFrame, getImage,
+        scale, debug, resolveTerrainSpriteUrl, resolveFeatureSpriteUrl, resolveUnitSpriteUrl, resolveFrameForUnit, getImage,
         gridWidth, gridHeight, baseOffsetX, scaledTileWidth, scaledTileHeight, scaledFloorHeight, scaledDiamondTopY,
         validMoveSet, attackTargetSet, hoveredTile, viewportSize, drawMinimap, onDrawEffects,
         backgroundImage, cameraRef, unitScale,
@@ -898,7 +911,7 @@ export function IsometricCanvas({
     // Animation loop
     // =========================================================================
     useEffect(() => {
-        const hasAnimations = units.length > 0 || validMoves.length > 0 || attackTargets.length > 0 || selectedUnitId != null || targetCameraRef.current != null || hasActiveEffects || pendingCount > 0;
+        const hasAnimations = units.length > 0 || validMoves.length > 0 || attackTargets.length > 0 || selectedUnitId != null || targetCameraRef.current != null || hasActiveEffects || pendingCount > 0 || atlasPending > 0;
 
         // Always draw at least once
         draw(animTimeRef.current);
@@ -919,7 +932,7 @@ export function IsometricCanvas({
             running = false;
             cancelAnimationFrame(rafIdRef.current);
         };
-    }, [draw, units.length, validMoves.length, attackTargets.length, selectedUnitId, hasActiveEffects, pendingCount, lerpToTarget, targetCameraRef]);
+    }, [draw, units.length, validMoves.length, attackTargets.length, selectedUnitId, hasActiveEffects, pendingCount, atlasPending, lerpToTarget, targetCameraRef]);
 
     // =========================================================================
     // Mouse handlers
