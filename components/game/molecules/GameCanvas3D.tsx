@@ -827,7 +827,11 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                             near: 0.1,
                             far: 1000,
                         }}
-                        style={{ background: backgroundColor, height: '100%', width: '100%' }}
+                        // Absolutely fill the definite-height (`85vh`) `relative` container.
+                        // R3F's react-use-measure won't reliably resolve a `height:100%`/`85vh`
+                        // on its own element (canvas stays at the 150px HTML default), but an
+                        // absolute `inset:0` gives it a concrete box from the parent's border-box.
+                        style={{ background: backgroundColor, position: 'absolute', inset: 0 }}
                         onClick={(e) => {
                             if (e.target === e.currentTarget) {
                                 eventHandlers.handleCanvasClick(e);
