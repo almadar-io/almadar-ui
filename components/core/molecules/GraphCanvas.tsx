@@ -72,6 +72,12 @@ export interface GraphCanvasProps {
     onNodeClick?: (node: GraphNode) => void;
     /** Node click event */
     nodeClickEvent?: EventEmit<{ id: string }>;
+    /** Currently selected node id (rendered emphasized) */
+    selectedNodeId?: string;
+    /** Force-sim repulsion strength between nodes (larger ⇒ more spread out) */
+    repulsion?: number;
+    /** Force-sim target edge length (larger ⇒ more spread out) */
+    linkDistance?: number;
     /** Layout algorithm */
     layout?: "force" | "circular" | "grid";
     /** Entity name for schema-driven auto-fetch */
@@ -118,6 +124,9 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     actions,
     onNodeClick,
     nodeClickEvent,
+    selectedNodeId,
+    repulsion = 800,
+    linkDistance = 100,
     layout = "force",
     entity,
     isLoading = false,
@@ -133,6 +142,47 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     const [hoveredNode, setHoveredNode] = useState<string | null>(null);
     const nodesRef = useRef<SimNode[]>([]);
     const [, forceUpdate] = useState(0);
+
+    /** Pointer-interaction state (mutable refs to avoid re-render churn during drag/pan) */
+    const interactionRef = useRef<{
+        mode: "none" | "panning" | "dragging";
+        dragNodeId: string | null;
+        startMouse: { x: number; y: number };
+        startOffset: { x: number; y: number };
+        downPos: { x: number; y: number };
+    }>({
+        mode: "none",
+        dragNodeId: null,
+        startMouse: { x: 0, y: 0 },
+        startOffset: { x: 0, y: 0 },
+        downPos: { x: 0, y: 0 },
+    });
+
+    /** Convert a mouse event to screen-space (relative to canvas) and graph-space coords. */
+    const toCoords = useCallback(
+        (e: React.MouseEvent<HTMLCanvasElement> | React.WheelEvent<HTMLCanvasElement>) => {
+            const canvas = canvasRef.current;
+            if (!canvas) return null;
+            const rect = canvas.getBoundingClientRect();
+            const screenX = e.clientX - rect.left;
+            const screenY = e.clientY - rect.top;
+            return {
+                screenX,
+                screenY,
+                graphX: (screenX - offset.x) / zoom,
+                graphY: (screenY - offset.y) / zoom,
+            };
+        },
+        [offset, zoom],
+    );
+
+    /** Hit-test the topmost node at the given graph coords. */
+    const nodeAt = useCallback((graphX: number, graphY: number): SimNode | undefined => {
+        return nodesRef.current.find((n) => {
+            const dist = Math.sqrt((n.x! - graphX) ** 2 + (n.y! - graphY) ** 2);
+            return dist < (n.size || 8) + 4;
+        });
+    }, []);
 
     const handleAction = useCallback(
         (action: GraphAction) => {
@@ -216,7 +266,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                         const dx = nodes[j].x! - nodes[i].x!;
                         const dy = nodes[j].y! - nodes[i].y!;
                         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                        const force = 800 / (dist * dist);
+                        const force = repulsion / (dist * dist);
                         const fx = (dx / dist) * force;
                         const fy = (dy / dist) * force;
                         nodes[i].fx -= fx;
@@ -235,7 +285,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                     const dx = target.x! - source.x!;
                     const dy = target.y! - source.y!;
                     const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                    const force = (dist - 100) * 0.05;
+                    const force = (dist - linkDistance) * 0.05;
                     const fx = (dx / dist) * force;
                     const fy = (dy / dist) * force;
                     source.fx += fx;
@@ -278,7 +328,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         return () => {
             cancelAnimationFrame(animRef.current);
         };
-    }, [propNodes, propEdges, layout]);
+    }, [propNodes, propEdges, layout, repulsion, linkDistance]);
 
     // Render
     useEffect(() => {
@@ -326,22 +376,30 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
             const size = node.size || 8;
             const color = node.color || getGroupColor(node.group, groups);
             const isHovered = hoveredNode === node.id;
+            const isSelected = selectedNodeId !== undefined && node.id === selectedNodeId;
+
+            const radius = isSelected ? size + 4 : isHovered ? size + 2 : size;
 
             // Node circle
             ctx.beginPath();
-            ctx.arc(node.x!, node.y!, isHovered ? size + 2 : size, 0, Math.PI * 2);
+            ctx.arc(node.x!, node.y!, radius, 0, Math.PI * 2);
             ctx.fillStyle = color;
             ctx.fill();
-            ctx.strokeStyle = isHovered ? "#ffffff" : "#00000020";
-            ctx.lineWidth = isHovered ? 2 : 1;
+            if (isSelected) {
+                ctx.strokeStyle = "var(--color-accent)";
+                ctx.lineWidth = 3;
+            } else {
+                ctx.strokeStyle = isHovered ? "#ffffff" : "#00000020";
+                ctx.lineWidth = isHovered ? 2 : 1;
+            }
             ctx.stroke();
 
             // Label
             if (showLabels && node.label) {
                 ctx.fillStyle = "#666666";
-                ctx.font = `${isHovered ? "bold " : ""}10px system-ui`;
+                ctx.font = `${isSelected || isHovered ? "bold " : ""}10px system-ui`;
                 ctx.textAlign = "center";
-                ctx.fillText(node.label, node.x!, node.y! + size + 12);
+                ctx.fillText(node.label, node.x!, node.y! + radius + 12);
             }
         }
 
@@ -353,6 +411,111 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     const handleReset = useCallback(() => {
         setZoom(1);
         setOffset({ x: 0, y: 0 });
+    }, []);
+
+    const handleWheel = useCallback(
+        (e: React.WheelEvent<HTMLCanvasElement>) => {
+            if (!interactive) return;
+            e.preventDefault();
+            const coords = toCoords(e);
+            if (!coords) return;
+            const oldZoom = zoom;
+            const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
+            const newZoom = Math.max(0.3, Math.min(3, oldZoom * factor));
+            if (newZoom === oldZoom) return;
+            // Keep the graph point under the cursor fixed under the cursor.
+            setOffset((o) => ({
+                x: coords.screenX - (coords.screenX - o.x) * (newZoom / oldZoom),
+                y: coords.screenY - (coords.screenY - o.y) * (newZoom / oldZoom),
+            }));
+            setZoom(newZoom);
+        },
+        [interactive, toCoords, zoom],
+    );
+
+    const handleMouseDown = useCallback(
+        (e: React.MouseEvent<HTMLCanvasElement>) => {
+            const coords = toCoords(e);
+            if (!coords) return;
+            const node = nodeAt(coords.graphX, coords.graphY);
+            const state = interactionRef.current;
+            state.downPos = { x: e.clientX, y: e.clientY };
+            state.startMouse = { x: e.clientX, y: e.clientY };
+            state.startOffset = { ...offset };
+
+            if (draggable && node) {
+                state.mode = "dragging";
+                state.dragNodeId = node.id;
+            } else if (interactive) {
+                state.mode = "panning";
+                state.dragNodeId = null;
+            } else {
+                state.mode = "none";
+                state.dragNodeId = null;
+            }
+        },
+        [toCoords, nodeAt, draggable, interactive, offset],
+    );
+
+    const handleMouseMove = useCallback(
+        (e: React.MouseEvent<HTMLCanvasElement>) => {
+            const state = interactionRef.current;
+
+            if (state.mode === "panning") {
+                const dx = e.clientX - state.startMouse.x;
+                const dy = e.clientY - state.startMouse.y;
+                setOffset({ x: state.startOffset.x + dx, y: state.startOffset.y + dy });
+                return;
+            }
+
+            if (state.mode === "dragging" && state.dragNodeId) {
+                const coords = toCoords(e);
+                if (!coords) return;
+                const node = nodesRef.current.find((n) => n.id === state.dragNodeId);
+                if (node) {
+                    node.x = coords.graphX;
+                    node.y = coords.graphY;
+                    node.vx = 0;
+                    node.vy = 0;
+                    forceUpdate((n) => n + 1);
+                }
+                return;
+            }
+
+            // Hover hit-test when idle
+            const coords = toCoords(e);
+            if (!coords) return;
+            const node = nodeAt(coords.graphX, coords.graphY);
+            setHoveredNode(node?.id ?? null);
+        },
+        [toCoords, nodeAt],
+    );
+
+    const handleMouseUp = useCallback(
+        (e: React.MouseEvent<HTMLCanvasElement>) => {
+            const state = interactionRef.current;
+            const moved =
+                Math.abs(e.clientX - state.downPos.x) + Math.abs(e.clientY - state.downPos.y);
+            state.mode = "none";
+            state.dragNodeId = null;
+
+            // Treat as a click only if the pointer barely moved (not a drag/pan).
+            if (moved < 4) {
+                const coords = toCoords(e);
+                if (!coords) return;
+                const node = nodeAt(coords.graphX, coords.graphY);
+                if (node) {
+                    handleNodeClick(node);
+                }
+            }
+        },
+        [toCoords, nodeAt, handleNodeClick],
+    );
+
+    const handleMouseLeave = useCallback(() => {
+        interactionRef.current.mode = "none";
+        interactionRef.current.dragNodeId = null;
+        setHoveredNode(null);
     }, []);
 
     if (isLoading) {
@@ -425,23 +588,11 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                         height={height}
                         className="w-full cursor-grab active:cursor-grabbing"
                         style={{ height }}
-                        onClick={(e) => {
-                            const canvas = canvasRef.current;
-                            if (!canvas) return;
-                            const rect = canvas.getBoundingClientRect();
-                            const x = (e.clientX - rect.left - offset.x) / zoom;
-                            const y = (e.clientY - rect.top - offset.y) / zoom;
-
-                            // Find clicked node
-                            const clickedNode = nodesRef.current.find((n) => {
-                                const dist = Math.sqrt((n.x! - x) ** 2 + (n.y! - y) ** 2);
-                                return dist < (n.size || 8) + 4;
-                            });
-
-                            if (clickedNode) {
-                                handleNodeClick(clickedNode);
-                            }
-                        }}
+                        onWheel={handleWheel}
+                        onMouseDown={handleMouseDown}
+                        onMouseMove={handleMouseMove}
+                        onMouseUp={handleMouseUp}
+                        onMouseLeave={handleMouseLeave}
                     />
                 </Box>
 
