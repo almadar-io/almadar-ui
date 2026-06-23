@@ -113,6 +113,17 @@ function getGroupColor(group: string | undefined, groups: string[]): string {
     return GROUP_COLORS[idx % GROUP_COLORS.length];
 }
 
+/**
+ * Canvas 2D `fillStyle`/`strokeStyle` cannot resolve CSS custom properties (`var(--x)`),
+ * so resolve them against the element's computed style; pass through literal colors.
+ */
+function resolveColor(color: string, el: Element): string {
+    const m = /^var\((--[^,)]+)(?:,\s*([^)]+))?\)$/.exec(color.trim());
+    if (!m) return color;
+    const resolved = getComputedStyle(el).getPropertyValue(m[1]).trim();
+    return resolved || (m[2]?.trim() ?? '#888888');
+}
+
 export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     title,
     nodes: propNodes = [],
@@ -164,8 +175,12 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
             const canvas = canvasRef.current;
             if (!canvas) return null;
             const rect = canvas.getBoundingClientRect();
-            const screenX = e.clientX - rect.left;
-            const screenY = e.clientY - rect.top;
+            // The canvas backing store is a fixed internal size but is CSS-scaled to fill its box,
+            // so map client px → internal px before undoing pan/zoom, or hit-tests/drag are offset.
+            const scaleX = rect.width > 0 ? canvas.width / rect.width : 1;
+            const scaleY = rect.height > 0 ? canvas.height / rect.height : 1;
+            const screenX = (e.clientX - rect.left) * scaleX;
+            const screenY = (e.clientY - rect.top) * scaleY;
             return {
                 screenX,
                 screenY,
@@ -341,6 +356,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         const w = canvas.width;
         const h = canvas.height;
         const nodes = nodesRef.current;
+        const accentColor = resolveColor("var(--color-accent)", canvas);
 
         ctx.clearRect(0, 0, w, h);
         ctx.save();
@@ -374,7 +390,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         // Draw nodes
         for (const node of nodes) {
             const size = node.size || 8;
-            const color = node.color || getGroupColor(node.group, groups);
+            const color = resolveColor(node.color || getGroupColor(node.group, groups), canvas);
             const isHovered = hoveredNode === node.id;
             const isSelected = selectedNodeId !== undefined && node.id === selectedNodeId;
 
@@ -386,7 +402,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
             ctx.fillStyle = color;
             ctx.fill();
             if (isSelected) {
-                ctx.strokeStyle = "var(--color-accent)";
+                ctx.strokeStyle = accentColor;
                 ctx.lineWidth = 3;
             } else {
                 ctx.strokeStyle = isHovered ? "#ffffff" : "#00000020";
