@@ -144,6 +144,14 @@ export {
     type RoguelikeBoardProps,
 } from './RoguelikeBoard';
 export {
+    TopDownShooterBoard,
+    type TopDownShooterBoardProps,
+} from './TopDownShooterBoard';
+export {
+    CityBuilderBoard,
+    type CityBuilderBoardProps,
+} from './CityBuilderBoard';
+export {
     GameBoard3D,
     type GameBoard3DProps,
 } from './GameBoard3D';

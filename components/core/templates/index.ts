@@ -64,6 +64,16 @@ export {
   type RoguelikeTemplateProps,
 } from '../../game/templates/RoguelikeTemplate';
 
+export {
+  TopDownShooterTemplate,
+  type TopDownShooterTemplateProps,
+} from '../../game/templates/TopDownShooterTemplate';
+
+export {
+  CityBuilderTemplate,
+  type CityBuilderTemplateProps,
+} from '../../game/templates/CityBuilderTemplate';
+
 // Marketing Page Templates
 export {
   LandingPageTemplate,
