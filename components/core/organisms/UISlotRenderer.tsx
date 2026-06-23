@@ -237,6 +237,15 @@ function enrichFormFields(
 // bare so exactly one backdrop paints.
 const SELF_OVERLAY_PATTERNS = new Set(["modal", "confirm-dialog"]);
 
+// Named node-slot props that carry pattern-descriptor arrays (same set as
+// lolo-ui.ts CONTENT_NODE_SLOTS). These must be converted to React elements
+// via renderPatternChildren — the same path children uses — so they never
+// reach the component as raw {type,content} objects regardless of whether
+// isPatternConfig can resolve the type.
+const CONTENT_NODE_SLOTS = new Set([
+  'logo', 'master', 'detail', 'trigger', 'content', 'addons', 'hud', 'fallback',
+]);
+
 // Patterns that support nested children
 const PATTERNS_WITH_CHILDREN = new Set([
   "stack",
@@ -1362,6 +1371,31 @@ function SlotContentRenderer({
       ? { ...restPropsNoChildren, children: incomingChildren }
       : restPropsNoChildren;
 
+    // Node-slot props (hud, logo, master, detail, trigger, content, addons,
+    // fallback) carry pattern-descriptor arrays authored by lolo-ui as
+    // `[{ content: "X", type: typography }]`. Route them through
+    // renderPatternChildren — the same path `children` uses — so they become
+    // React elements before reaching the component. This path is unconditional
+    // and does NOT depend on isPatternConfig resolving the type, closing the
+    // crash where isKnownPattern returned false and the raw objects propagated
+    // through substituteTraitRefsDeep unchanged into the component's JSX.
+    const nodeSlotOverrides: Record<string, React.ReactNode> = {};
+    for (const slotKey of CONTENT_NODE_SLOTS) {
+      const slotVal = restProps[slotKey];
+      if (slotVal === undefined || slotVal === null) continue;
+      if (React.isValidElement(slotVal) || typeof slotVal === 'string' || typeof slotVal === 'number' || typeof slotVal === 'boolean') continue;
+      if (Array.isArray(slotVal) || (typeof slotVal === 'object' && 'type' in (slotVal as object))) {
+        nodeSlotOverrides[slotKey] = renderPatternChildren(
+          slotVal as Parameters<typeof renderPatternChildren>[0],
+          onDismiss,
+          `${content.id}-${slotKey}`,
+          `${myPath}.${slotKey}`,
+          content.sourceTrait,
+          { slot: content.slot, transitionEvent: content.transitionEvent, fromState: content.fromState, entity: content.entity },
+        );
+      }
+    }
+
     // Recursively render any named props that are pattern configs
     const renderedProps = renderPatternProps(restProps, onDismiss);
 
@@ -1423,6 +1457,11 @@ function SlotContentRenderer({
     // V2: entity data flows through content.props.entity directly (pre-resolved
     // from @payload.data or value prop). No more store hydration.
     const finalProps: Record<string, unknown> = renderedProps;
+    // Apply node-slot overrides (hud, logo, master, etc.) — rendered via
+    // renderPatternChildren above, overwrite whatever renderPatternProps produced.
+    for (const [k, v] of Object.entries(nodeSlotOverrides)) {
+      finalProps[k] = v;
+    }
     const resolvedItems: readonly unknown[] | null = Array.isArray(
       finalProps.entity,
     )

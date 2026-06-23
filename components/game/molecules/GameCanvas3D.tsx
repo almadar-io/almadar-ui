@@ -338,6 +338,31 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
         const [hoveredTile, setHoveredTile] = useState<IsometricTile | null>(null);
         const [internalError, setInternalError] = useState<string | null>(null);
 
+        // Diagnostic: log the ancestor height chain on mount so constraint issues are visible.
+        useEffect(() => {
+            const el = containerRef.current;
+            if (!el) return;
+            let node: HTMLElement | null = el;
+            let depth = 0;
+            while (node && depth < 8) {
+                const cs = window.getComputedStyle(node);
+                const rect = node.getBoundingClientRect();
+                console.log('[almadar:ui:game:3d-height]', {
+                    depth,
+                    tag: node.tagName,
+                    id: node.id || undefined,
+                    className: node.className?.slice?.(0, 60) || undefined,
+                    rectHeight: rect.height,
+                    computedHeight: cs.height,
+                    computedMinHeight: cs.minHeight,
+                    computedFlex: cs.flex,
+                    computedOverflow: cs.overflow,
+                });
+                node = node.parentElement;
+                depth++;
+            }
+        }, []);
+
         // Self-contained sprite-sheet animation: load each unit's atlas and crop one frame.
         const { sheetUrls: atlasSheetUrls, resolveUnitFrame } = useUnitSpriteAtlas(units);
 
@@ -786,7 +811,10 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                 <div
                     ref={containerRef}
                     className={cn('game-canvas-3d relative w-full overflow-hidden', className)}
-                    style={{ minHeight: '85vh' }}
+                    // Explicit height (not min-height) so R3F's react-use-measure gets a
+                    // definite containing-block height on first ResizeObserver tick and
+                    // doesn't initialize the canvas at the HTML-default 150 px.
+                    style={{ height: '85vh' }}
                     data-orientation={orientation}
                     data-camera-mode={cameraMode}
                     data-overlay={overlay}
@@ -799,7 +827,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                             near: 0.1,
                             far: 1000,
                         }}
-                        style={{ background: backgroundColor, height: '85vh', width: '100%' }}
+                        style={{ background: backgroundColor, height: '100%', width: '100%' }}
                         onClick={(e) => {
                             if (e.target === e.currentTarget) {
                                 eventHandlers.handleCanvasClick(e);
