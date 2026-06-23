@@ -578,7 +578,15 @@ export function IsometricCanvas({
             const img = spriteUrl ? getImage(spriteUrl) : null;
 
             if (img) {
-                ctx.drawImage(img, pos.x, pos.y, scaledTileWidth, scaledTileHeight);
+                if (img.naturalWidth === 0) {
+                    ctx.drawImage(img, pos.x, pos.y, scaledTileWidth, scaledTileHeight);
+                } else {
+                    const drawW = scaledTileWidth;
+                    const drawH = scaledTileWidth * (img.naturalHeight / img.naturalWidth);
+                    const drawX = pos.x;
+                    const drawY = pos.y + scaledTileHeight - drawH;
+                    ctx.drawImage(img, drawX, drawY, drawW, drawH);
+                }
             } else {
                 // Fallback: draw colored diamond
                 const centerX = pos.x + scaledTileWidth / 2;

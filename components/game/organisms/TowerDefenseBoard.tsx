@@ -18,6 +18,14 @@ import { boardEntity, num, str, rows } from './boardEntity';
 // Types
 // =============================================================================
 
+/** Manifest of asset base-url + per-kind sprite maps (UI value DTO). */
+type TowerDefenseAssetManifest = {
+    baseUrl?: AssetUrl;
+    terrains?: Record<string, AssetUrl>;
+    units?: Record<string, AssetUrl>;
+    features?: Record<string, AssetUrl>;
+};
+
 export interface TowerDefenseTile {
     x: number;
     y: number;
@@ -63,6 +71,8 @@ export interface TowerDefenseBoardProps extends DisplayStateProps {
     path?: TowerDefensePathPoint[];
     towers?: TowerDefenseTower[];
     creeps?: TowerDefenseCreep[];
+    /** Asset base-url + terrain/unit/feature sprite maps (organism owns asset choice). */
+    assetManifest?: TowerDefenseAssetManifest;
     gold?: number;
     lives?: number;
     wave?: number;
@@ -87,17 +97,22 @@ export interface TowerDefenseBoardProps extends DisplayStateProps {
 // Helpers
 // =============================================================================
 
-const CDN = 'https://almadar-kflow-assets.web.app/shared/';
 const TD_GRID_W = 16;
 const TD_GRID_H = 16;
 
-const TERRAIN_SPRITES: Record<string, AssetUrl> = {
-    ground: `${CDN}isometric-blocks/PNG/Platformer tiles/platformerTile_01.png` as AssetUrl,
-    path:   `${CDN}isometric-blocks/PNG/Platformer tiles/platformerTile_09.png` as AssetUrl,
-    wall:   `${CDN}isometric-blocks/PNG/Platformer tiles/platformerTile_05.png` as AssetUrl,
-    grass:  `${CDN}isometric-dungeon/Isometric/dirt_E.png` as AssetUrl,
-    dirt:   `${CDN}isometric-dungeon/Isometric/dirtTiles_E.png` as AssetUrl,
-};
+/** Resolve a manifest-relative path against the manifest baseUrl into an absolute AssetUrl. */
+function resolveManifestUrl(
+    manifest: TowerDefenseAssetManifest | undefined,
+    relative: AssetUrl | undefined,
+): AssetUrl | undefined {
+    if (relative == null) return undefined;
+    if (/^https?:\/\//.test(relative)) return relative;
+    const base = manifest?.baseUrl;
+    if (base == null) return relative;
+    const cleanBase = base.replace(/\/$/, '');
+    const cleanRel = relative.replace(/^\//, '');
+    return `${cleanBase}/${cleanRel}` as AssetUrl;
+}
 
 // S-shaped creep path traversing the 16×16 grid (mirrors lolo path default)
 const DEFAULT_TD_PATH: TowerDefensePathPoint[] = [
@@ -116,17 +131,19 @@ const DEFAULT_TD_PATH: TowerDefensePathPoint[] = [
     { x: 13, y: 12 }, { x: 13, y: 13 }, { x: 13, y: 14 }, { x: 13, y: 15 },
 ];
 
+/** Build the default 16×16 terrain grid; path cells get the `path` terrain so they
+ *  render as a path tile (no floating markers). Terrain sprites resolve from the manifest. */
 function buildDefaultTDTiles(): TowerDefenseTile[] {
     const pathSet = new Set(DEFAULT_TD_PATH.map(p => `${p.x},${p.y}`));
     const tiles: TowerDefenseTile[] = [];
     for (let y = 0; y < TD_GRID_H; y++) {
         for (let x = 0; x < TD_GRID_W; x++) {
             if (pathSet.has(`${x},${y}`)) {
-                tiles.push({ x, y, terrain: 'path', passable: false, terrainSprite: TERRAIN_SPRITES.path });
+                tiles.push({ x, y, terrain: 'path', passable: false });
             } else {
                 const variant = (x * 3 + y * 5 + (x ^ y)) % 3;
-                const terrainKey = ['ground', 'grass', 'dirt'][variant];
-                tiles.push({ x, y, terrain: terrainKey, passable: true, terrainSprite: TERRAIN_SPRITES[terrainKey] ?? TERRAIN_SPRITES.ground });
+                const terrainKey = ['ground', 'grass', 'stone'][variant];
+                tiles.push({ x, y, terrain: terrainKey, passable: true });
             }
         }
     }
@@ -135,67 +152,71 @@ function buildDefaultTDTiles(): TowerDefenseTile[] {
 
 const DEFAULT_TD_TILES: TowerDefenseTile[] = buildDefaultTDTiles();
 
-const TOWER_SPRITE: AssetUrl = `${CDN}sprite-sheets/guardian-sprite-sheet-se.png` as AssetUrl;
-const CREEP_SPRITE: AssetUrl  = `${CDN}sprite-sheets/scrapper-sprite-sheet-se.png` as AssetUrl;
-const HERO_SPRITE: AssetUrl   = `${CDN}sprite-sheets/amir-sprite-sheet-se.png` as AssetUrl;
-
-function tilesToIso(tiles: TowerDefenseTile[]): IsometricTile[] {
-    return tiles.map(t => ({
-        x: t.x,
-        y: t.y,
-        terrain: t.terrain,
-        terrainSprite: (t.terrainSprite ?? TERRAIN_SPRITES[t.terrain ?? 'ground']) as AssetUrl,
-        passable: t.passable,
-    }));
+function tilesToIso(
+    tiles: TowerDefenseTile[],
+    manifest: TowerDefenseAssetManifest | undefined,
+): IsometricTile[] {
+    return tiles.map(t => {
+        const key = t.terrain ?? 'ground';
+        const sprite = t.terrainSprite
+            ?? resolveManifestUrl(manifest, manifest?.terrains?.[key])
+            ?? resolveManifestUrl(manifest, manifest?.terrains?.ground);
+        return {
+            x: t.x,
+            y: t.y,
+            terrain: t.terrain,
+            terrainSprite: sprite,
+            passable: t.passable,
+        };
+    });
 }
 
-function towersToUnits(towers: TowerDefenseTower[]): IsometricUnit[] {
-    return towers.map(t => ({
-        id: t.id,
-        position: { x: t.x, y: t.y },
-        name: 'Tower',
-        team: 'player' as const,
-        sprite: TOWER_SPRITE,
-        unitType: 'guardian',
-        health: 1,
-        maxHealth: 1,
-    }));
-}
-
-function creepsToUnits(creeps: TowerDefenseCreep[]): IsometricUnit[] {
+function creepsToUnits(
+    creeps: TowerDefenseCreep[],
+    manifest: TowerDefenseAssetManifest | undefined,
+): IsometricUnit[] {
+    const sprite = resolveManifestUrl(manifest, manifest?.units?.creep);
     return creeps.map(c => ({
         id: c.id,
         position: { x: c.x, y: c.y },
         name: 'Creep',
         team: 'enemy' as const,
-        sprite: CREEP_SPRITE,
-        unitType: 'scrapper',
+        sprite,
+        unitType: 'creep',
         health: c.hp,
         maxHealth: c.maxHp,
     }));
 }
 
-function pathToFeatures(path: TowerDefensePathPoint[]): IsometricFeature[] {
-    return path.map((p, i) => ({
-        id: `path-${i}`,
-        x: p.x,
-        y: p.y,
-        type: 'path-marker',
-        sprite: `${CDN}world-map/road_straight.png` as AssetUrl,
-    }));
-}
-
-function heroToUnit(hero: TowerDefenseHero): IsometricUnit {
+function heroToUnit(
+    hero: TowerDefenseHero,
+    manifest: TowerDefenseAssetManifest | undefined,
+): IsometricUnit {
     return {
         id: hero.id,
         position: { x: hero.x, y: hero.y },
         name: 'Hero',
         team: 'player' as const,
-        sprite: HERO_SPRITE,
-        unitType: 'amir',
+        sprite: resolveManifestUrl(manifest, manifest?.units?.hero),
+        unitType: 'hero',
         health: 1,
         maxHealth: 1,
     };
+}
+
+/** Towers render as STRUCTURES (features), not character units. */
+function towersToFeatures(
+    towers: TowerDefenseTower[],
+    manifest: TowerDefenseAssetManifest | undefined,
+): IsometricFeature[] {
+    const sprite = resolveManifestUrl(manifest, manifest?.features?.tower);
+    return towers.map(t => ({
+        id: t.id,
+        x: t.x,
+        y: t.y,
+        type: 'tower',
+        sprite,
+    }));
 }
 
 // =============================================================================
@@ -208,6 +229,7 @@ export function TowerDefenseBoard({
     path: propPath,
     towers: propTowers,
     creeps: propCreeps,
+    assetManifest: propAssetManifest,
     hero: propHero,
     gold: propGold,
     lives: propLives,
@@ -231,12 +253,56 @@ export function TowerDefenseBoard({
     const eventBus = useEventBus();
     const { t } = useTranslate();
 
-    const rawTiles = propTiles ?? (rows(board.tiles) as unknown as TowerDefenseTile[]);
+    const assetManifest = propAssetManifest ?? (board.assetManifest as TowerDefenseAssetManifest | undefined);
+
+    const entityTiles: TowerDefenseTile[] = useMemo(
+        () => rows(board.tiles).map(r => ({
+            x: num(r.x),
+            y: num(r.y),
+            terrain: r.terrain == null ? undefined : str(r.terrain),
+            terrainSprite: r.terrainSprite == null ? undefined : (str(r.terrainSprite) as AssetUrl),
+            passable: r.passable !== false,
+        })),
+        [board.tiles],
+    );
+    const rawTiles = propTiles ?? entityTiles;
     const tiles: TowerDefenseTile[] = rawTiles.length >= TD_GRID_W * TD_GRID_H ? rawTiles : DEFAULT_TD_TILES;
-    const rawPath = propPath ?? (rows(board.path) as unknown as TowerDefensePathPoint[]);
+
+    const entityPath: TowerDefensePathPoint[] = useMemo(
+        () => rows(board.path).map(r => ({ x: num(r.x), y: num(r.y) })),
+        [board.path],
+    );
+    const rawPath = propPath ?? entityPath;
     const path: TowerDefensePathPoint[] = rawPath.length > 0 ? rawPath : DEFAULT_TD_PATH;
-    const towers     = propTowers   ?? (rows(board.towers)  as unknown as TowerDefenseTower[]);
-    const creeps     = propCreeps   ?? (rows(board.creeps)  as unknown as TowerDefenseCreep[]);
+
+    const entityTowers: TowerDefenseTower[] = useMemo(
+        () => rows(board.towers).map(r => ({
+            id: str(r.id),
+            x: num(r.x),
+            y: num(r.y),
+            range: num(r.range),
+            damage: num(r.damage),
+            cooldown: num(r.cooldown),
+            lastFiredAt: r.lastFiredAt == null ? undefined : num(r.lastFiredAt),
+        })),
+        [board.towers],
+    );
+    const towers = propTowers ?? entityTowers;
+
+    const entityCreeps: TowerDefenseCreep[] = useMemo(
+        () => rows(board.creeps).map(r => ({
+            id: str(r.id),
+            x: num(r.x),
+            y: num(r.y),
+            hp: num(r.hp),
+            maxHp: num(r.maxHp),
+            pathIndex: num(r.pathIndex),
+            speed: num(r.speed),
+        })),
+        [board.creeps],
+    );
+    const creeps = propCreeps ?? entityCreeps;
+
     const hero: TowerDefenseHero   = propHero ?? { id: 'hero', x: 8, y: 8 };
     const gold       = propGold     ?? num(board.gold, 100);
     const lives      = propLives    ?? num(board.lives, 20);
@@ -297,12 +363,11 @@ export function TowerDefenseBoard({
             .map(t => ({ x: t.x, y: t.y }));
     }, [tiles, towerPositions, pathPositions, result, gold, towerCost]);
 
-    const isoTiles    = useMemo(() => tilesToIso(tiles), [tiles]);
-    const towerUnits  = useMemo(() => towersToUnits(towers), [towers]);
-    const creepUnits  = useMemo(() => creepsToUnits(creeps), [creeps]);
-    const heroUnit    = useMemo(() => heroToUnit(hero), [hero]);
-    const isoUnits    = useMemo(() => [...towerUnits, ...creepUnits, heroUnit], [towerUnits, creepUnits, heroUnit]);
-    const pathFeatures = useMemo(() => pathToFeatures(path), [path]);
+    const isoTiles      = useMemo(() => tilesToIso(tiles, assetManifest), [tiles, assetManifest]);
+    const creepUnits    = useMemo(() => creepsToUnits(creeps, assetManifest), [creeps, assetManifest]);
+    const heroUnit      = useMemo(() => heroToUnit(hero, assetManifest), [hero, assetManifest]);
+    const isoUnits      = useMemo(() => [...creepUnits, heroUnit], [creepUnits, heroUnit]);
+    const towerFeatures = useMemo(() => towersToFeatures(towers, assetManifest), [towers, assetManifest]);
 
     const handleTileClick = useCallback((x: number, y: number) => {
         if (result !== 'none') return;
@@ -368,7 +433,9 @@ export function TowerDefenseBoard({
                 <IsometricCanvas
                     tiles={isoTiles}
                     units={isoUnits}
-                    features={pathFeatures}
+                    features={towerFeatures}
+                    assetBaseUrl={assetManifest?.baseUrl}
+                    assetManifest={assetManifest}
                     validMoves={validMoves}
                     hoveredTile={hoveredTile}
                     onTileClick={handleTileClick}
