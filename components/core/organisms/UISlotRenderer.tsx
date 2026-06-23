@@ -43,7 +43,7 @@ const scopeWrapLog = createLogger("almadar:ui:scope-wrap");
 import { Skeleton, type SkeletonVariant } from "../molecules/Skeleton";
 
 // Shared renderer imports (synced from orbital-shared/design-system/renderer)
-import { isKnownPattern, isPortalSlot, SLOT_DEFINITIONS } from "../../../renderer";
+import { isPortalSlot, SLOT_DEFINITIONS } from "../../../renderer";
 import { getPatternDefinition } from "@almadar/patterns";
 import { wrapCallbackForEvent } from "../../../runtime/wrapCallbackForEvent";
 
@@ -1109,7 +1109,15 @@ function isPatternConfig(
   // registry check those data objects get mistaken for renderable patterns and
   // wrapped as <SlotContentRenderer> elements, destroying the data the consuming
   // component reads (the platforms-never-render bug).
-  return "type" in record && typeof record.type === "string" && isKnownPattern(record.type);
+  //
+  // Use getComponentName (@almadar/patterns, static JSON-backed) instead of the
+  // local isKnownPattern (pattern-resolver.ts, requires initializePatterns() to
+  // have been called). The local resolver starts with componentMapping={} and
+  // returns false for all types until the consumer calls initializePatterns(),
+  // which meant hud/logo/detail descriptor arrays passed through unrendered as
+  // raw objects → React error #31 on game-template and game-shell. Static
+  // JSON-backed getComponentName is always pre-populated at module load time.
+  return "type" in record && typeof record.type === "string" && getComponentName(record.type) !== null;
 }
 
 /**

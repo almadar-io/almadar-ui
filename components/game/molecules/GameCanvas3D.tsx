@@ -494,25 +494,29 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
         const cameraConfig = useMemo(() => {
             const size = Math.max(
                 gridBounds.maxX - gridBounds.minX,
-                gridBounds.maxZ - gridBounds.minZ
+                gridBounds.maxZ - gridBounds.minZ,
+                4  // minimum framing distance so a tiny board isn't zoomed in
             );
-            const distance = size * 1.5;
+            // Offset from the grid centre so all camera modes frame the board correctly.
+            const cx = (gridBounds.minX + gridBounds.maxX) / 2;
+            const cz = (gridBounds.minZ + gridBounds.maxZ) / 2;
+            const d = size * 1.5;
 
             switch (cameraMode) {
                 case 'isometric':
                     return {
-                        position: [distance, distance * 0.8, distance] as [number, number, number],
+                        position: [cx + d, d * 0.8, cz + d] as [number, number, number],
                         fov: 45,
                     };
                 case 'top-down':
                     return {
-                        position: [0, distance * 2, 0] as [number, number, number],
+                        position: [cx, d * 2, cz] as [number, number, number],
                         fov: 45,
                     };
                 case 'perspective':
                 default:
                     return {
-                        position: [distance, distance, distance] as [number, number, number],
+                        position: [cx + d, d, cz + d] as [number, number, number],
                         fov: 45,
                     };
             }
@@ -781,7 +785,8 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
             >
                 <div
                     ref={containerRef}
-                    className={cn('game-canvas-3d relative w-full h-full min-h-[85vh] overflow-hidden', className)}
+                    className={cn('game-canvas-3d relative w-full overflow-hidden', className)}
+                    style={{ minHeight: '85vh' }}
                     data-orientation={orientation}
                     data-camera-mode={cameraMode}
                     data-overlay={overlay}
@@ -794,7 +799,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                             near: 0.1,
                             far: 1000,
                         }}
-                        style={{ background: backgroundColor }}
+                        style={{ background: backgroundColor, height: '85vh', width: '100%' }}
                         onClick={(e) => {
                             if (e.target === e.currentTarget) {
                                 eventHandlers.handleCanvasClick(e);
