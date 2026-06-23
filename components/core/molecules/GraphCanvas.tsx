@@ -70,6 +70,8 @@ export interface GraphCanvasProps {
     actions?: readonly GraphAction[];
     /** On node click */
     onNodeClick?: (node: GraphNode) => void;
+    /** On node double-click (e.g. to drill in) */
+    onNodeDoubleClick?: (node: GraphNode) => void;
     /** Node click event */
     nodeClickEvent?: EventEmit<{ id: string }>;
     /** Currently selected node id (rendered emphasized) */
@@ -134,6 +136,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     draggable = true,
     actions,
     onNodeClick,
+    onNodeDoubleClick,
     nodeClickEvent,
     selectedNodeId,
     repulsion = 800,
@@ -153,6 +156,21 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     const [hoveredNode, setHoveredNode] = useState<string | null>(null);
     const nodesRef = useRef<SimNode[]>([]);
     const [, forceUpdate] = useState(0);
+    // Logical drawing width in CSS px (the canvas backing store is this × devicePixelRatio for crisp text).
+    const [logicalW, setLogicalW] = useState(800);
+
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas || typeof ResizeObserver === "undefined") return;
+        const measure = () => {
+            const width = Math.round(canvas.clientWidth);
+            if (width > 0) setLogicalW(width);
+        };
+        measure();
+        const ro = new ResizeObserver(measure);
+        ro.observe(canvas);
+        return () => ro.disconnect();
+    }, []);
 
     /** Pointer-interaction state (mutable refs to avoid re-render churn during drag/pan) */
     const interactionRef = useRef<{
@@ -175,12 +193,10 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
             const canvas = canvasRef.current;
             if (!canvas) return null;
             const rect = canvas.getBoundingClientRect();
-            // The canvas backing store is a fixed internal size but is CSS-scaled to fill its box,
-            // so map client px → internal px before undoing pan/zoom, or hit-tests/drag are offset.
-            const scaleX = rect.width > 0 ? canvas.width / rect.width : 1;
-            const scaleY = rect.height > 0 ? canvas.height / rect.height : 1;
-            const screenX = (e.clientX - rect.left) * scaleX;
-            const screenY = (e.clientY - rect.top) * scaleY;
+            // Canvas is drawn in CSS-px logical space (the ctx is pre-scaled by devicePixelRatio),
+            // so client px relative to the rect already match the drawing coords — no extra scaling.
+            const screenX = e.clientX - rect.left;
+            const screenY = e.clientY - rect.top;
             return {
                 screenX,
                 screenY,
@@ -228,8 +244,8 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         const canvas = canvasRef.current;
         if (!canvas || propNodes.length === 0) return;
 
-        const w = canvas.width;
-        const h = canvas.height;
+        const w = logicalW;
+        const h = height;
 
         const simNodes: SimNode[] = propNodes.map((n, idx) => {
             let x = n.x ?? 0;
@@ -343,7 +359,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         return () => {
             cancelAnimationFrame(animRef.current);
         };
-    }, [propNodes, propEdges, layout, repulsion, linkDistance]);
+    }, [propNodes, propEdges, layout, repulsion, linkDistance, logicalW, height]);
 
     // Render
     useEffect(() => {
@@ -353,15 +369,28 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
-        const w = canvas.width;
-        const h = canvas.height;
+        const w = logicalW;
+        const h = height;
         const nodes = nodesRef.current;
         const accentColor = resolveColor("var(--color-accent)", canvas);
+        const dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
 
+        // Pre-scale by devicePixelRatio so the backing store renders crisp on HiDPI displays.
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.clearRect(0, 0, w, h);
         ctx.save();
         ctx.translate(offset.x, offset.y);
         ctx.scale(zoom, zoom);
+
+        // When hovering a node, the connected nodes/edges stay lit and the rest dim.
+        const neighbors = new Set<string>();
+        if (hoveredNode) {
+            neighbors.add(hoveredNode);
+            for (const edge of propEdges) {
+                if (edge.source === hoveredNode) neighbors.add(String(edge.target));
+                else if (edge.target === hoveredNode) neighbors.add(String(edge.source));
+            }
+        }
 
         // Draw edges
         for (const edge of propEdges) {
@@ -369,11 +398,13 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
             const target = nodes.find((n) => n.id === edge.target);
             if (!source || !target) continue;
 
+            const incident = !!hoveredNode && (edge.source === hoveredNode || edge.target === hoveredNode);
+            ctx.globalAlpha = hoveredNode ? (incident ? 1 : 0.12) : 1;
             ctx.beginPath();
             ctx.moveTo(source.x!, source.y!);
             ctx.lineTo(target.x!, target.y!);
-            ctx.strokeStyle = edge.color || "#88888866";
-            ctx.lineWidth = edge.weight ? Math.max(1, edge.weight) : 1;
+            ctx.strokeStyle = incident ? accentColor : (edge.color || "#88888866");
+            ctx.lineWidth = incident ? 2 : edge.weight ? Math.max(1, edge.weight) : 1;
             ctx.stroke();
 
             // Edge label
@@ -386,6 +417,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                 ctx.fillText(edge.label, mx, my - 4);
             }
         }
+        ctx.globalAlpha = 1;
 
         // Draw nodes
         for (const node of nodes) {
@@ -394,6 +426,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
             const isHovered = hoveredNode === node.id;
             const isSelected = selectedNodeId !== undefined && node.id === selectedNodeId;
 
+            ctx.globalAlpha = hoveredNode && !neighbors.has(node.id) ? 0.2 : 1;
             const radius = isSelected ? size + 4 : isHovered ? size + 2 : size;
 
             // Node circle
@@ -534,6 +567,16 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         setHoveredNode(null);
     }, []);
 
+    const handleDoubleClick = useCallback(
+        (e: React.MouseEvent<HTMLCanvasElement>) => {
+            const coords = toCoords(e);
+            if (!coords) return;
+            const node = nodeAt(coords.graphX, coords.graphY);
+            if (node) onNodeDoubleClick?.(node);
+        },
+        [toCoords, nodeAt, onNodeDoubleClick],
+    );
+
     if (isLoading) {
         return <LoadingState message={t('common.loading')} className={className} />;
     }
@@ -600,8 +643,8 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                 <Box className="w-full bg-background">
                     <canvas
                         ref={canvasRef}
-                        width={800}
-                        height={height}
+                        width={Math.round(logicalW * ((typeof window !== "undefined" && window.devicePixelRatio) || 1))}
+                        height={Math.round(height * ((typeof window !== "undefined" && window.devicePixelRatio) || 1))}
                         className="w-full cursor-grab active:cursor-grabbing"
                         style={{ height }}
                         onWheel={handleWheel}
@@ -609,6 +652,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                         onMouseMove={handleMouseMove}
                         onMouseUp={handleMouseUp}
                         onMouseLeave={handleMouseLeave}
+                        onDoubleClick={handleDoubleClick}
                     />
                 </Box>
 
