@@ -37,7 +37,7 @@ export function GameCanvas2D({
   drawEvent,
   fps = 60,
   backgroundImage = "",
-  assetBaseUrl = "https://almadar-kflow-assets.web.app/shared/",
+  assetBaseUrl,
   className,
 }: GameCanvas2DProps) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -76,7 +76,9 @@ export function GameCanvas2D({
   heightRef.current = height;
 
   const loadImage = React.useCallback((url: string): HTMLImageElement | null => {
-    const fullUrl = url.startsWith('http') ? url : `${assetBaseUrlRef.current}${url}`;
+    const base = assetBaseUrlRef.current;
+    if (!url.startsWith('http') && !base) return null;
+    const fullUrl = url.startsWith('http') ? url : `${base}${url}`;
     const cached = imageCache.current.get(fullUrl);
     if (cached?.complete && cached.naturalWidth > 0) return cached;
     if (!cached) {

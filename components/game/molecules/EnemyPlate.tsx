@@ -44,11 +44,8 @@ const DEFAULT_ENEMY_EFFECTS: EnemyPlateEffect[] = [
   { icon: 'flame', label: 'Burn', variant: 'debuff' },
 ];
 
-const DEFAULT_ASSET_URL: AssetUrl =
-  'https://almadar-kflow-assets.web.app/shared/portraits/shadow-legion.png';
-
 export function EnemyPlate({
-  assetUrl = DEFAULT_ASSET_URL,
+  assetUrl,
   name = 'Shadow Guard',
   health = 80,
   maxHealth = 100,

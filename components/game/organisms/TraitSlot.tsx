@@ -40,9 +40,7 @@ export type SlotItemData = {
     description?: string;
     /** Emoji or text icon */
     iconEmoji?: string;
-    /** Image URL icon (takes precedence over iconEmoji)
-     * @default https://almadar-kflow-assets.web.app/shared/platformer/items/platformPack_item001.png
-     */
+    /** Image URL icon (takes precedence over iconEmoji); falls back to iconEmoji when absent. */
     iconUrl?: AssetUrl;
     /** Optional state machine for tooltip display */
     stateMachine?: TraitStateMachineDefinition;
@@ -120,9 +118,6 @@ const DRAG_MIME = 'application/x-almadar-slot-item';
 // =============================================================================
 // Component
 // =============================================================================
-
- 
-const DEFAULT_ITEM_ICON_URL = 'https://almadar-kflow-assets.web.app/shared/platformer/items/platformPack_item001.png';
 
 export function TraitSlot({
     slotNumber,

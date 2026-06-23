@@ -356,8 +356,8 @@ function EmojiEffect({
 // =============================================================================
 
 export function CanvasEffect({
-    effectSpriteUrl = "https://almadar-kflow-assets.web.app/shared/effects/gas/gas00.png",
-    assetBaseUrl = "https://almadar-kflow-assets.web.app/shared/effects/",
+    effectSpriteUrl,
+    assetBaseUrl,
     ...props
 }: CanvasEffectProps): React.JSX.Element | null {
     const eventBus = useEventBus();

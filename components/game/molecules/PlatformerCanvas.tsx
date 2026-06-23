@@ -93,10 +93,10 @@ export function PlatformerCanvas({
   canvasHeight = 400,
   followCamera = true,
   bgColor = "#5c94fc",
-  playerSprite = "https://almadar-kflow-assets.web.app/shared/platformer/characters/platformChar_idle.png",
+  playerSprite,
   tileSprites,
   backgroundImage = "",
-  assetBaseUrl = "https://almadar-kflow-assets.web.app/shared/platformer/",
+  assetBaseUrl,
   leftEvent = 'MOVE_LEFT',
   rightEvent = 'MOVE_RIGHT',
   jumpEvent = 'JUMP',
@@ -112,6 +112,7 @@ export function PlatformerCanvas({
 
   // Load an image and cache it; trigger re-render when it loads
   const loadImage = useCallback((url: string): HTMLImageElement | null => {
+    if (!url.startsWith('http') && !assetBaseUrl) return null;
     const fullUrl = url.startsWith('http') ? url : `${assetBaseUrl}${url}`;
     const cached = imageCache.current.get(fullUrl);
     if (cached?.complete && cached.naturalWidth > 0) {

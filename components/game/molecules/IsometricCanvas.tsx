@@ -225,7 +225,7 @@ export function IsometricCanvas({
     // Tuning
     diamondTopY: diamondTopYProp,
     // Remote asset loading
-    assetBaseUrl = "https://almadar-kflow-assets.web.app/shared/",
+    assetBaseUrl,
     assetManifest,
 }: IsometricCanvasProps): React.JSX.Element {
     // Defensive: ensure array props are always iterable even if passed as undefined

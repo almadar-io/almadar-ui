@@ -12,7 +12,7 @@ import { VStack, HStack } from '../../core/atoms/Stack';
 import type { DisplayStateProps } from '../../core/organisms/types';
 import IsometricCanvas from '../molecules/IsometricCanvas';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from './types/isometric';
-import { boardEntity, str, num } from './boardEntity';
+import { boardEntity, str, num, rows, vec2 } from './boardEntity';
 
 // =============================================================================
 // Types
@@ -57,48 +57,61 @@ export interface RoguelikeBoardProps extends DisplayStateProps {
 }
 
 // =============================================================================
-// Constants
+// Constants & manifest resolution
 // =============================================================================
-
-const CDN = 'https://almadar-kflow-assets.web.app/shared';
 
 const DUNGEON_GRID_W = 16;
 const DUNGEON_GRID_H = 16;
 
-// Deterministic "room" classification: outer border = wall, inner cross-pillars = wall, else floor
-function dungeonTerrain(x: number, y: number, stairsX: number, stairsY: number): { terrain: string; passable: boolean; terrainSprite: string } {
+/** Resolve a manifest-relative path against the manifest baseUrl into an absolute AssetUrl. */
+function resolveManifestUrl(
+    manifest: RoguelikeAssetManifest | undefined,
+    relative: AssetUrl | undefined,
+): AssetUrl | undefined {
+    if (relative == null) return undefined;
+    if (/^https?:\/\//.test(relative)) return relative;
+    const base = manifest?.baseUrl;
+    if (base == null) return relative;
+    const cleanBase = base.replace(/\/$/, '');
+    const cleanRel = relative.replace(/^\//, '');
+    return `${cleanBase}/${cleanRel}` as AssetUrl;
+}
+
+// Deterministic "room" classification: outer border = wall, inner cross-pillars = wall, else floor.
+// Terrain sprites resolve from the manifest's `terrains` map; absent slots render no sprite.
+function dungeonTerrain(
+    x: number,
+    y: number,
+    stairsX: number,
+    stairsY: number,
+    manifest: RoguelikeAssetManifest | undefined,
+): { terrain: string; passable: boolean; terrainSprite?: AssetUrl } {
     const isBorder = x === 0 || y === 0 || x === DUNGEON_GRID_W - 1 || y === DUNGEON_GRID_H - 1;
     const isPillar = x % 4 === 0 && y % 4 === 0 && !isBorder;
     const isWall = isBorder || isPillar;
+    const terrains = manifest?.terrains;
     if (x === stairsX && y === stairsY) {
-        return { terrain: 'stairs', passable: true, terrainSprite: `${CDN}/isometric-dungeon/Isometric/stairs_E.png` };
+        return { terrain: 'stairs', passable: true, terrainSprite: resolveManifestUrl(manifest, terrains?.stairs) };
     }
     if (isWall) {
-        return { terrain: 'wall', passable: false, terrainSprite: `${CDN}/isometric-dungeon/Isometric/stoneInset_E.png` };
+        return { terrain: 'wall', passable: false, terrainSprite: resolveManifestUrl(manifest, terrains?.wall) };
     }
-    // 5 floor variants cycled by position for visual variety
-    const variant = (x * 3 + y * 7) % 5;
-    const sprites = [
-        `${CDN}/isometric-dungeon/Isometric/dirt_E.png`,
-        `${CDN}/isometric-dungeon/Isometric/dirtTiles_E.png`,
-        `${CDN}/isometric-dungeon/Isometric/planks_E.png`,
-        `${CDN}/isometric-dungeon/Isometric/stoneTile_E.png`,
-        `${CDN}/isometric-dungeon/Isometric/dirt_E.png`,
-    ];
-    return { terrain: 'floor', passable: true, terrainSprite: sprites[variant] };
+    return { terrain: 'floor', passable: true, terrainSprite: resolveManifestUrl(manifest, terrains?.floor) };
 }
 
-function buildDefaultDungeonTiles(stairsX: number, stairsY: number): IsometricTile[] {
+function buildDefaultDungeonTiles(
+    stairsX: number,
+    stairsY: number,
+    manifest: RoguelikeAssetManifest | undefined,
+): IsometricTile[] {
     const tiles: IsometricTile[] = [];
     for (let y = 0; y < DUNGEON_GRID_H; y++) {
         for (let x = 0; x < DUNGEON_GRID_W; x++) {
-            tiles.push({ x, y, ...dungeonTerrain(x, y, stairsX, stairsY) });
+            tiles.push({ x, y, ...dungeonTerrain(x, y, stairsX, stairsY, manifest) });
         }
     }
     return tiles;
 }
-
-const DEFAULT_TILES: IsometricTile[] = buildDefaultDungeonTiles(14, 14);
 
 const DEFAULT_ENEMIES: EnemyRow[] = [
     { id: 'e1', x: 5,  y: 2,  hp: 5, attack: 2 },
@@ -112,12 +125,6 @@ const DEFAULT_ITEMS: ItemRow[] = [
     { id: 'i2', x: 7,  y: 9,  kind: 'sword' },
     { id: 'i3', x: 11, y: 5,  kind: 'shield' },
 ];
-
-const FEATURE_SPRITE: Record<string, string> = {
-    health_potion: `${CDN}/isometric-dungeon/Isometric/chestClosed_E.png`,
-    sword:         `${CDN}/isometric-dungeon/Isometric/barrel_E.png`,
-    shield:        `${CDN}/isometric-dungeon/Isometric/barrel_E.png`,
-};
 
 // =============================================================================
 // Component
@@ -149,22 +156,56 @@ export function RoguelikeBoard({
 }: RoguelikeBoardProps): React.JSX.Element {
     const board = boardEntity(entity) ?? {};
 
-    const resolvedStairsX = propStairsX ?? num(board.stairsX, 14);
-    const resolvedStairsY = propStairsY ?? num(board.stairsY, 14);
-    const tiles    = propTiles     ?? (Array.isArray(board.tiles) && (board.tiles as unknown as IsometricTile[]).length >= DUNGEON_GRID_W * DUNGEON_GRID_H
-        ? (board.tiles as unknown as IsometricTile[])
-        : buildDefaultDungeonTiles(resolvedStairsX, resolvedStairsY));
-    const enemies  = propEnemies   ?? (Array.isArray(board.enemies) ? (board.enemies as unknown as EnemyRow[])      : DEFAULT_ENEMIES);
-    const items    = propItems     ?? (Array.isArray(board.items)   ? (board.items   as unknown as ItemRow[])       : DEFAULT_ITEMS);
-    const player   = propPlayer    ?? (board.player   as PlayerPos | undefined)  ?? { x: 1, y: 1 };
+    const assetManifest = propAssetManifest ?? (board.assetManifest as RoguelikeAssetManifest | undefined);
+
+    const stairsX  = propStairsX  ?? num(board.stairsX, 14);
+    const stairsY  = propStairsY  ?? num(board.stairsY, 14);
+
+    const entityTiles: IsometricTile[] = useMemo(
+        () => rows(board.tiles).map(r => ({
+            x: num(r.x),
+            y: num(r.y),
+            terrain: r.terrain == null ? undefined : str(r.terrain),
+            terrainSprite: r.terrainSprite == null ? undefined : (str(r.terrainSprite) as AssetUrl),
+            passable: r.passable !== false,
+        })),
+        [board.tiles],
+    );
+    const tiles = propTiles
+        ?? (entityTiles.length >= DUNGEON_GRID_W * DUNGEON_GRID_H
+            ? entityTiles
+            : buildDefaultDungeonTiles(stairsX, stairsY, assetManifest));
+
+    const entityEnemies: EnemyRow[] = useMemo(
+        () => rows(board.enemies).map(r => ({
+            id: str(r.id),
+            x: num(r.x),
+            y: num(r.y),
+            hp: num(r.hp),
+            attack: num(r.attack),
+        })),
+        [board.enemies],
+    );
+    const enemies = propEnemies ?? (entityEnemies.length > 0 ? entityEnemies : DEFAULT_ENEMIES);
+
+    const entityItems: ItemRow[] = useMemo(
+        () => rows(board.items).map(r => ({
+            id: str(r.id),
+            x: num(r.x),
+            y: num(r.y),
+            kind: (str(r.kind) || 'health_potion') as ItemRow['kind'],
+        })),
+        [board.items],
+    );
+    const items = propItems ?? (entityItems.length > 0 ? entityItems : DEFAULT_ITEMS);
+
+    const player   = propPlayer    ?? (board.player == null ? { x: 1, y: 1 } : vec2(board.player));
     const playerHp = propPlayerHp  ?? num(board.playerHp,    10);
     const playerMaxHp  = propPlayerMaxHp  ?? num(board.playerMaxHp,  10);
     const playerAttack = propPlayerAttack ?? num(board.playerAttack,   3);
     const depth    = propDepth     ?? num(board.depth, 1);
     const result   = propResult    ?? (str(board.result) || 'none') as 'none' | 'won' | 'lost';
     const phase    = propPhase     ?? (str(board.phase) || 'player_turn');
-    const stairsX  = propStairsX  ?? num(board.stairsX, 14);
-    const stairsY  = propStairsY  ?? num(board.stairsY, 14);
 
 
     const eventBus = useEventBus();
@@ -210,7 +251,7 @@ export function RoguelikeBoard({
         eventBus.emit(`UI:${playAgainEvent}`, {});
     }, [playAgainEvent, eventBus]);
 
-    // Build isometric units: player + live enemies
+    // Build isometric units: player + live enemies (sprites resolve from the manifest)
     const isoUnits: IsometricUnit[] = useMemo(() => {
         const liveEnemies = enemies.filter(e => e.hp > 0);
         return [
@@ -222,7 +263,7 @@ export function RoguelikeBoard({
                 health: playerHp,
                 maxHealth: playerMaxHp,
                 unitType: 'player',
-                sprite: `${CDN}/isometric-dungeon/Characters/Male/Male_0_Idle0.png`,
+                sprite: resolveManifestUrl(assetManifest, assetManifest?.units?.player),
             },
             ...liveEnemies.map(e => ({
                 id: e.id,
@@ -232,21 +273,21 @@ export function RoguelikeBoard({
                 health: e.hp,
                 maxHealth: 6,
                 unitType: 'enemy',
-                sprite: `${CDN}/sprite-sheets/shadow-legion-sprite-sheet-sw.png`,
+                sprite: resolveManifestUrl(assetManifest, assetManifest?.units?.enemy),
             })),
         ];
-    }, [player, enemies, playerHp, playerMaxHp, t]);
+    }, [player, enemies, playerHp, playerMaxHp, assetManifest, t]);
 
-    // Build isometric features: items on the floor
+    // Build isometric features: items on the floor (sprites resolve from the manifest)
     const isoFeatures: IsometricFeature[] = useMemo(() =>
         items.map(it => ({
             id: it.id,
             x: it.x,
             y: it.y,
             type: it.kind,
-            sprite: FEATURE_SPRITE[it.kind] ?? FEATURE_SPRITE.health_potion,
+            sprite: resolveManifestUrl(assetManifest, assetManifest?.features?.[it.kind]),
         })),
-    [items]);
+    [items, assetManifest]);
 
     // Highlight walkable adjacent tiles as valid moves
     const validMoves = useMemo(() => {
@@ -321,8 +362,8 @@ export function RoguelikeBoard({
                     onTileHover={(x: number, y: number) => setHoveredTile({ x, y })}
                     onTileLeave={() => setHoveredTile(null)}
                     scale={scale}
-                    assetBaseUrl={propAssetManifest?.baseUrl ?? CDN}
-                    assetManifest={propAssetManifest}
+                    assetBaseUrl={assetManifest?.baseUrl}
+                    assetManifest={assetManifest}
                     unitScale={unitScale}
                     spriteHeightRatio={spriteHeightRatio}
                     spriteMaxWidthRatio={spriteMaxWidthRatio}

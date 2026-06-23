@@ -50,11 +50,8 @@ const variantMap = {
   danger: 'bg-error/15 border-error/40 text-foreground',
 };
 
-const DEFAULT_ASSET_URL: AssetUrl =
-  'https://almadar-kflow-assets.web.app/shared/effects/particles/light_01.png';
-
 export function StatBadge({
-  assetUrl = DEFAULT_ASSET_URL,
+  assetUrl,
   label,
   value = 0,
   max,

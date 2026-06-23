@@ -21,54 +21,62 @@
  */
 
 import React from 'react';
-import type { EntityRow } from '@almadar/core';
 import { GameBoard3D } from '../organisms/GameBoard3D';
 import type { IsometricTile, IsometricFeature } from '../organisms/types/isometric';
 import type { TemplateProps } from '../../core/templates/types';
+import {
+    type Game3DAssetManifest,
+    type Tile3DLayout,
+    resolveTilesWithModels,
+    resolveFeaturesWithModels,
+    resolveEntityTiles,
+    resolveEntityFeatures,
+    resolvePropTiles,
+} from './game3dAssetManifest';
+import { boardEntity } from '../organisms/boardEntity';
 
-const CDN = 'https://almadar-kflow-assets.web.app/shared/3d/dungeon/floor';
-const FLOOR_WALL = `${CDN}/template-floor-detail-a.glb`;
-const FLOOR_DIRT = `${CDN}/template-floor-detail.glb`;
-const FLOOR_OPEN = `${CDN}/template-floor.glb`;
-
-const DEFAULT_3D_WORLDMAP_TILES: IsometricTile[] = [
-    { id: 't00', x: 0, y: 0, z: 0, type: 'mountain', passable: false, modelUrl: FLOOR_WALL },
-    { id: 't10', x: 1, y: 0, z: 0, type: 'mountain', passable: false, modelUrl: FLOOR_WALL },
-    { id: 't20', x: 2, y: 0, z: 0, type: 'water',    passable: false, modelUrl: FLOOR_WALL },
-    { id: 't30', x: 3, y: 0, z: 0, type: 'mountain', passable: false, modelUrl: FLOOR_WALL },
-    { id: 't40', x: 4, y: 0, z: 0, type: 'mountain', passable: false, modelUrl: FLOOR_WALL },
-    { id: 't01', x: 0, y: 1, z: 1, type: 'mountain', passable: false, modelUrl: FLOOR_WALL },
-    { id: 't11', x: 1, y: 1, z: 1, type: 'grass',    passable: true,  modelUrl: FLOOR_OPEN },
-    { id: 't21', x: 2, y: 1, z: 1, type: 'grass',    passable: true,  modelUrl: FLOOR_OPEN },
-    { id: 't31', x: 3, y: 1, z: 1, type: 'grass',    passable: true,  modelUrl: FLOOR_OPEN },
-    { id: 't41', x: 4, y: 1, z: 1, type: 'water',    passable: false, modelUrl: FLOOR_WALL },
-    { id: 't02', x: 0, y: 2, z: 2, type: 'water',    passable: false, modelUrl: FLOOR_WALL },
-    { id: 't12', x: 1, y: 2, z: 2, type: 'grass',    passable: true,  modelUrl: FLOOR_OPEN },
-    { id: 't22', x: 2, y: 2, z: 2, type: 'road',     passable: true,  modelUrl: FLOOR_DIRT },
-    { id: 't32', x: 3, y: 2, z: 2, type: 'grass',    passable: true,  modelUrl: FLOOR_OPEN },
-    { id: 't42', x: 4, y: 2, z: 2, type: 'mountain', passable: false, modelUrl: FLOOR_WALL },
-    { id: 't03', x: 0, y: 3, z: 3, type: 'mountain', passable: false, modelUrl: FLOOR_WALL },
-    { id: 't13', x: 1, y: 3, z: 3, type: 'grass',    passable: true,  modelUrl: FLOOR_OPEN },
-    { id: 't23', x: 2, y: 3, z: 3, type: 'grass',    passable: true,  modelUrl: FLOOR_OPEN },
-    { id: 't33', x: 3, y: 3, z: 3, type: 'road',     passable: true,  modelUrl: FLOOR_DIRT },
-    { id: 't43', x: 4, y: 3, z: 3, type: 'mountain', passable: false, modelUrl: FLOOR_WALL },
-    { id: 't04', x: 0, y: 4, z: 4, type: 'mountain', passable: false, modelUrl: FLOOR_WALL },
-    { id: 't14', x: 1, y: 4, z: 4, type: 'water',    passable: false, modelUrl: FLOOR_WALL },
-    { id: 't24', x: 2, y: 4, z: 4, type: 'grass',    passable: true,  modelUrl: FLOOR_OPEN },
-    { id: 't34', x: 3, y: 4, z: 4, type: 'mountain', passable: false, modelUrl: FLOOR_WALL },
-    { id: 't44', x: 4, y: 4, z: 4, type: 'mountain', passable: false, modelUrl: FLOOR_WALL },
+/** Layout-only default (positions + terrain). Model URLs are resolved from the assetManifest — never baked here. */
+const DEFAULT_3D_WORLDMAP_LAYOUT: Tile3DLayout[] = [
+    { id: 't00', x: 0, y: 0, z: 0, type: 'mountain', passable: false, kind: 'wall' },
+    { id: 't10', x: 1, y: 0, z: 0, type: 'mountain', passable: false, kind: 'wall' },
+    { id: 't20', x: 2, y: 0, z: 0, type: 'water',    passable: false, kind: 'wall' },
+    { id: 't30', x: 3, y: 0, z: 0, type: 'mountain', passable: false, kind: 'wall' },
+    { id: 't40', x: 4, y: 0, z: 0, type: 'mountain', passable: false, kind: 'wall' },
+    { id: 't01', x: 0, y: 1, z: 1, type: 'mountain', passable: false, kind: 'wall' },
+    { id: 't11', x: 1, y: 1, z: 1, type: 'grass',    passable: true,  kind: 'open' },
+    { id: 't21', x: 2, y: 1, z: 1, type: 'grass',    passable: true,  kind: 'open' },
+    { id: 't31', x: 3, y: 1, z: 1, type: 'grass',    passable: true,  kind: 'open' },
+    { id: 't41', x: 4, y: 1, z: 1, type: 'water',    passable: false, kind: 'wall' },
+    { id: 't02', x: 0, y: 2, z: 2, type: 'water',    passable: false, kind: 'wall' },
+    { id: 't12', x: 1, y: 2, z: 2, type: 'grass',    passable: true,  kind: 'open' },
+    { id: 't22', x: 2, y: 2, z: 2, type: 'road',     passable: true,  kind: 'dirt' },
+    { id: 't32', x: 3, y: 2, z: 2, type: 'grass',    passable: true,  kind: 'open' },
+    { id: 't42', x: 4, y: 2, z: 2, type: 'mountain', passable: false, kind: 'wall' },
+    { id: 't03', x: 0, y: 3, z: 3, type: 'mountain', passable: false, kind: 'wall' },
+    { id: 't13', x: 1, y: 3, z: 3, type: 'grass',    passable: true,  kind: 'open' },
+    { id: 't23', x: 2, y: 3, z: 3, type: 'grass',    passable: true,  kind: 'open' },
+    { id: 't33', x: 3, y: 3, z: 3, type: 'road',     passable: true,  kind: 'dirt' },
+    { id: 't43', x: 4, y: 3, z: 3, type: 'mountain', passable: false, kind: 'wall' },
+    { id: 't04', x: 0, y: 4, z: 4, type: 'mountain', passable: false, kind: 'wall' },
+    { id: 't14', x: 1, y: 4, z: 4, type: 'water',    passable: false, kind: 'wall' },
+    { id: 't24', x: 2, y: 4, z: 4, type: 'grass',    passable: true,  kind: 'open' },
+    { id: 't34', x: 3, y: 4, z: 4, type: 'mountain', passable: false, kind: 'wall' },
+    { id: 't44', x: 4, y: 4, z: 4, type: 'mountain', passable: false, kind: 'wall' },
 ];
 
+/** Feature layout (positions + type). Model URLs resolve from assetManifest.features. */
 const DEFAULT_3D_WORLDMAP_FEATURES: IsometricFeature[] = [
     { id: 'f1', x: 2, y: 2, z: 2, type: 'capital',    color: '#f4c542' },
     { id: 'f2', x: 4, y: 2, z: 2, type: 'power_node', color: '#8b5cf6' },
 ];
 
 export interface GameCanvas3DWorldMapTemplateProps extends TemplateProps {
-    /** Fallback tile data when no entity is present */
+    /** Fallback tile data when no entity is present (layout only — model URLs resolve from assetManifest) */
     tiles?: IsometricTile[];
     /** Fallback feature data when no entity is present */
     features?: IsometricFeature[];
+    /** GLB model URLs keyed by terrain — owns all asset choice (no hardcoded URLs in this template). */
+    assetManifest?: Game3DAssetManifest;
     /** 3D camera mode */
     cameraMode?: 'isometric' | 'perspective' | 'top-down';
     /** Show grid helper */
@@ -130,8 +138,9 @@ export interface GameCanvas3DWorldMapTemplateProps extends TemplateProps {
  */
 export function GameCanvas3DWorldMapTemplate({
     entity,
-    tiles: propTiles = DEFAULT_3D_WORLDMAP_TILES,
+    tiles: propTiles,
     features: propFeatures = DEFAULT_3D_WORLDMAP_FEATURES,
+    assetManifest,
     cameraMode = 'isometric',
     backgroundColor = '#1a1a2e',
     tileClickEvent,
@@ -145,9 +154,18 @@ export function GameCanvas3DWorldMapTemplate({
     scale,
     className,
 }: GameCanvas3DWorldMapTemplateProps): React.JSX.Element | null {
-    const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as EntityRow : undefined;
-    const tiles = resolved ? (Array.isArray(resolved.tiles) ? resolved.tiles as unknown as IsometricTile[] : []) : propTiles;
-    const features = resolved ? (Array.isArray(resolved.features) ? resolved.features as unknown as IsometricFeature[] : []) : propFeatures;
+    const row = boardEntity(entity);
+    const hasEntityTiles = !!row && Array.isArray(row.tiles) && row.tiles.length > 0;
+
+    const tiles = hasEntityTiles
+        ? resolveEntityTiles(entity, assetManifest)
+        : propTiles
+            ? resolvePropTiles(propTiles, assetManifest)
+            : resolveTilesWithModels(DEFAULT_3D_WORLDMAP_LAYOUT, assetManifest);
+
+    const features = (row && Array.isArray(row.features) && row.features.length > 0)
+        ? resolveEntityFeatures(entity, assetManifest)
+        : resolveFeaturesWithModels(propFeatures, assetManifest);
 
     return (
         /* GameBoard3D reads selectedUnitId/validMoves/attackTargets from entity */
