@@ -74,6 +74,16 @@ export {
   type CityBuilderTemplateProps,
 } from '../../game/templates/CityBuilderTemplate';
 
+export {
+  VisualNovelTemplate,
+  type VisualNovelTemplateProps,
+} from '../../game/templates/VisualNovelTemplate';
+
+export {
+  CardBattlerTemplate,
+  type CardBattlerTemplateProps,
+} from '../../game/templates/CardBattlerTemplate';
+
 // Marketing Page Templates
 export {
   LandingPageTemplate,

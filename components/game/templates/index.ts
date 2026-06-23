@@ -9,3 +9,13 @@ export {
   CityBuilderTemplate,
   type CityBuilderTemplateProps,
 } from './CityBuilderTemplate';
+
+export {
+  VisualNovelTemplate,
+  type VisualNovelTemplateProps,
+} from './VisualNovelTemplate';
+
+export {
+  CardBattlerTemplate,
+  type CardBattlerTemplateProps,
+} from './CardBattlerTemplate';

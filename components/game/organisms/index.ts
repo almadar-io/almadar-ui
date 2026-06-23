@@ -155,6 +155,17 @@ export {
     GameBoard3D,
     type GameBoard3DProps,
 } from './GameBoard3D';
+export {
+    VisualNovelBoard,
+    type VisualNovelBoardProps,
+    type VisualNovelNode,
+    type VisualNovelChoice,
+} from './VisualNovelBoard';
+export {
+    CardBattlerBoard,
+    type CardBattlerBoardProps,
+    type CardBattlerCard,
+} from './CardBattlerBoard';
 
 // ---------------------------------------------------------------------------
 // Trait / State Machine Visualization

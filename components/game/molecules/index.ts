@@ -15,6 +15,7 @@ export { DPad, type DPadProps, type DPadDirection } from './DPad';
 export { ActionButtons, type ActionButtonsProps, type ActionButtonConfig } from './ActionButtons';
 export { StatBadge, type StatBadgeProps } from './StatBadge';
 export { InventoryGrid, type InventoryGridProps, type InventoryGridItem } from './InventoryGrid';
+export { CardHand, type CardHandProps, type CardHandCard } from './CardHand';
 export { QuestTracker, type QuestTrackerProps, type Quest } from './QuestTracker';
 export { CraftingRecipe, type CraftingRecipeProps, type CraftingIngredient } from './CraftingRecipe';
 export { PowerupSlots, type PowerupSlotsProps, type ActivePowerup } from './PowerupSlots';

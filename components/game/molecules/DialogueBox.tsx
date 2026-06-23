@@ -14,7 +14,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import type { EventEmit, EventPayload } from '@almadar/core';
+import type { AssetUrl, EventEmit, EventPayload } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 
@@ -58,6 +58,12 @@ export interface DialogueBoxProps {
   choiceEvent?: EventEmit<{ choice: DialogueChoice }>;
   /** Declarative event: emits UI:{advanceEvent} when dialogue is advanced */
   advanceEvent?: EventEmit<Record<string, never>>;
+  /** Optional full-frame scene image rendered behind the dialogue (visual-novel mode). */
+  backgroundImage?: AssetUrl;
+  /** Optional larger character portrait rendered standing over the scene (visual-novel mode). */
+  portraitUrl?: AssetUrl;
+  /** Multiplier for the large `portraitUrl` height relative to its default (default 1). */
+  portraitScale?: number;
   /** Optional className */
   className?: string;
 }
@@ -103,6 +109,9 @@ export function DialogueBox({
   completeEvent,
   choiceEvent,
   advanceEvent,
+  backgroundImage,
+  portraitUrl,
+  portraitScale = 1,
   className,
 }: DialogueBoxProps): React.JSX.Element {
   const eventBus = useEventBus();
@@ -240,6 +249,33 @@ export function DialogueBox({
   const enabledChoices = dialogue.choices?.filter(c => !c.disabled) ?? [];
 
   return (
+    <>
+      {/* Visual-novel scene background (rendered only when provided) */}
+      {backgroundImage && (
+        <div
+          className="fixed inset-0 z-20 bg-center bg-cover bg-no-repeat"
+          style={{ backgroundImage: `url(${backgroundImage})` }}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Visual-novel large character portrait (rendered only when provided) */}
+      {portraitUrl && (
+        <div
+          className={cn(
+            'fixed left-1/2 -translate-x-1/2 z-30 pointer-events-none flex items-end',
+            position === 'top' ? 'top-0' : 'bottom-0'
+          )}
+          style={{ height: `${60 * portraitScale}vh` }}
+        >
+          <img
+            src={portraitUrl}
+            alt={dialogue.speaker}
+            className="h-full w-auto object-contain drop-shadow-2xl"
+          />
+        </div>
+      )}
+
     <div
       className={cn(
         'fixed left-0 right-0 z-40',
@@ -252,7 +288,12 @@ export function DialogueBox({
       role="dialog"
       aria-label="Dialogue"
     >
-      <div className="mx-4 my-4 bg-[var(--color-card)] bg-opacity-95 border-2 border-border rounded-container overflow-hidden">
+      <div className={cn(
+        'mx-4 my-4 border-2 rounded-container overflow-hidden',
+        backgroundImage
+          ? 'bg-black/80 backdrop-blur-sm text-white border-white/20'
+          : 'bg-[var(--color-card)] bg-opacity-95 border-border'
+      )}>
         <div className="flex">
           {/* Portrait */}
           {dialogue.portrait && (
@@ -274,7 +315,10 @@ export function DialogueBox({
             </div>
 
             {/* Dialogue text */}
-            <div className="text-[var(--color-foreground)] text-lg leading-relaxed min-h-[60px]">
+            <div className={cn(
+              'text-lg leading-relaxed min-h-[60px]',
+              backgroundImage ? 'text-white' : 'text-[var(--color-foreground)]'
+            )}>
               {displayedText}
               {isTyping && (
                 <span className="animate-pulse">▌</span>
@@ -293,7 +337,9 @@ export function DialogueBox({
                       'hover:bg-[var(--color-surface,#374151)] focus:outline-none focus:ring-2 focus:ring-warning',
                       selectedChoice === index
                         ? 'bg-[var(--color-surface,#374151)] text-warning'
-                        : 'bg-[var(--color-card)] text-[var(--color-foreground)]'
+                        : backgroundImage
+                          ? 'bg-white/10 text-white hover:bg-white/20'
+                          : 'bg-[var(--color-card)] text-[var(--color-foreground)]'
                     )}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -318,6 +364,7 @@ export function DialogueBox({
         </div>
       </div>
     </div>
+    </>
   );
 }
 
