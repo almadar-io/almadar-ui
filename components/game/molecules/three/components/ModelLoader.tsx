@@ -157,13 +157,24 @@ export function ModelLoader({
         return cloned;
     }, [loadedModel, castShadow, receiveShadow]);
 
-    // Calculate scale array
+    // Normalize the model to a unit cube (max dimension = 1) so a GLB's intrinsic export
+    // size doesn't blow it up. The `scale` prop then means the model's world-size in cells
+    // (consistent across every asset regardless of how it was exported), instead of a raw
+    // multiplier on whatever arbitrary size the GLB happened to ship with.
+    const normFactor = useMemo(() => {
+        if (!model) return 1;
+        const box = new THREE.Box3().setFromObject(model);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const maxDim = Math.max(size.x, size.y, size.z);
+        return maxDim > 0 && Number.isFinite(maxDim) ? 1 / maxDim : 1;
+    }, [model]);
+
+    // Calculate scale array (world-size in cells × the unit-cube normalization factor).
     const scaleArray: [number, number, number] = useMemo(() => {
-        if (typeof scale === 'number') {
-            return [scale, scale, scale];
-        }
-        return scale;
-    }, [scale]);
+        const base: [number, number, number] = typeof scale === 'number' ? [scale, scale, scale] : scale;
+        return [base[0] * normFactor, base[1] * normFactor, base[2] * normFactor];
+    }, [scale, normFactor]);
 
     // Calculate rotation in radians
     const rotationRad: [number, number, number] = useMemo(() => {
