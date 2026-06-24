@@ -1,22 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import type { EntityWith } from '@almadar/core';
 import React, { useCallback, useState } from 'react';
-import { ReplyTree } from './ReplyTree';
-import type { VoteValue } from './VoteStack';
+import { ReplyTree, type ReplyNodeRow } from './ReplyTree';
 
-// Story-local demo shape. The component itself consumes the canonical
-// `readonly EntityRow[]`; a `type` alias (not interface) carries an implicit
-// index signature so this sample data stays assignable to EntityRow.
-type ReplyNode = {
-    id: string;
-    authorName: string;
-    authorAvatarUrl?: string;
-    content: string;
-    postedAt: string;
-    voteCount?: number;
-    userVote?: VoteValue;
-    replies?: ReplyNode[];
-    collapsed?: boolean;
-};
+type ReplyNode = EntityWith<ReplyNodeRow>;
 
 const meta: Meta<typeof ReplyTree> = {
     title: 'Core/Molecules/ReplyTree',
@@ -262,21 +249,23 @@ const interactiveSeed: ReplyNode[] = [
 ];
 
 function updateVote(
-    nodes: ReplyNode[],
+    nodes: readonly ReplyNode[],
     targetId: string,
     next: 'up' | 'down' | 'none' | null,
 ): ReplyNode[] {
-    return nodes.map((n) => {
+    return nodes.map((n): ReplyNode => {
         if (n.id === targetId) {
             const prev = n.userVote ?? null;
             const base = n.voteCount ?? 0;
             const prevDelta = prev === 'up' ? 1 : prev === 'down' ? -1 : 0;
             const nextDelta = next === 'up' ? 1 : next === 'down' ? -1 : 0;
+            // Spread loses EntityRow's index signature, so the literal isn't
+            // structurally `EntityWith<ReplyNodeRow>`; assert in this story-only mock mutator.
             return {
                 ...n,
                 userVote: next,
                 voteCount: base - prevDelta + nextDelta,
-            };
+            } as ReplyNode;
         }
         if (n.replies) {
             return { ...n, replies: updateVote(n.replies, targetId, next) };

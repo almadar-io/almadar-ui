@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { EntityWith } from '@almadar/core';
-import { FeatureGridOrganism } from './FeatureGridOrganism';
+import { FeatureGridOrganism, type FeatureRow } from './FeatureGridOrganism';
 
-const MOCK_FEATURES: readonly EntityWith<'title'>[] = [
+const MOCK_FEATURES: readonly EntityWith<FeatureRow>[] = [
   {
     id: '1',
     icon: 'shield-check',

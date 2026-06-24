@@ -21,12 +21,32 @@ import { ErrorState } from '../../core/molecules/ErrorState';
 import type { EntityWith } from '@almadar/core';
 import type { DisplayStateProps } from '../../core/organisms/types';
 
-export interface HeroOrganismProps extends DisplayStateProps {
-  entity?: EntityWith<'title'>;
-  children?: React.ReactNode;
+/** A hero CTA: a plain `{ label, href }` object (FieldValue-compatible — a `type`,
+ *  not `interface`, so it's assignable to the entity-row `FieldValue` index sig). */
+export type HeroAction = {
+  label?: string;
+  href?: string;
+};
+
+/** The hero entity fields this organism reads (FieldValue-compatible; `image` is a plain
+ *  `{ src, alt }` object, the action fields plain `{ label, href }` objects). */
+export interface HeroRow {
+  title: string;
+  tag?: string;
+  titleAccent?: string;
+  subtitle?: string;
+  primaryAction?: HeroAction;
+  secondaryAction?: HeroAction;
+  installCommand?: string;
+  image?: { src?: string; alt?: string };
+  imagePosition?: 'below' | 'right' | 'background';
+  background?: 'dark' | 'gradient' | 'subtle';
 }
 
-type ActionLike = { label?: string; href?: string } | undefined;
+export interface HeroOrganismProps extends DisplayStateProps {
+  entity?: EntityWith<HeroRow>;
+  children?: React.ReactNode;
+}
 
 export const HeroOrganism: React.FC<HeroOrganismProps> = ({
   entity,
@@ -48,8 +68,8 @@ export const HeroOrganism: React.FC<HeroOrganismProps> = ({
     [entity],
   );
 
-  const primaryAction = resolved?.primaryAction as ActionLike;
-  const secondaryAction = resolved?.secondaryAction as ActionLike;
+  const primaryAction = resolved?.primaryAction;
+  const secondaryAction = resolved?.secondaryAction;
 
   const handlePrimaryClick = useCallback(() => {
     if (primaryAction) {
@@ -81,7 +101,7 @@ export const HeroOrganism: React.FC<HeroOrganismProps> = ({
     return null;
   }
 
-  const imageRaw = resolved.image as { src?: string; alt?: string } | undefined;
+  const imageRaw = resolved.image;
   const image = imageRaw
     ? { src: String(imageRaw.src ?? ''), alt: String(imageRaw.alt ?? '') }
     : undefined;
@@ -104,8 +124,8 @@ export const HeroOrganism: React.FC<HeroOrganismProps> = ({
       }
       installCommand={resolved.installCommand != null ? String(resolved.installCommand) : undefined}
       image={image}
-      imagePosition={resolved.imagePosition as 'below' | 'right' | 'background' | undefined}
-      background={resolved.background as 'dark' | 'gradient' | 'subtle' | undefined}
+      imagePosition={resolved.imagePosition}
+      background={resolved.background}
       className={cn(className)}
       // Wrap children to intercept button clicks
     >

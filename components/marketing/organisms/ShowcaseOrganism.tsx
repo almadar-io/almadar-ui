@@ -21,11 +21,22 @@ import { SimpleGrid } from '../../core/molecules/SimpleGrid';
 import { ShowcaseCard } from '../molecules/ShowcaseCard';
 import { LoadingState } from '../../core/molecules/LoadingState';
 import { ErrorState } from '../../core/molecules/ErrorState';
-import type { EntityRow, EntityWith } from '@almadar/core';
+import type { EntityWith } from '@almadar/core';
 import type { DisplayStateProps } from '../../core/organisms/types';
 
+/** The per-showcase entity fields this organism reads (FieldValue-compatible; `image`
+ *  is a plain `{ src, alt }` object, `accentColor` a string). */
+export interface ShowcaseRow {
+  title: string;
+  description?: string;
+  image?: { src?: string; alt?: string };
+  href?: string;
+  badge?: string;
+  accentColor?: string;
+}
+
 export interface ShowcaseOrganismProps extends DisplayStateProps {
-  entity?: EntityWith<'title'> | readonly EntityWith<'title'>[];
+  entity?: EntityWith<ShowcaseRow> | readonly EntityWith<ShowcaseRow>[];
   columns?: 2 | 3 | 4;
   heading?: string;
   subtitle?: string;
@@ -43,12 +54,12 @@ export const ShowcaseOrganism: React.FC<ShowcaseOrganismProps> = ({
   const eventBus = useEventBus();
   const { t } = useTranslate();
 
-  const items = useMemo<readonly EntityRow[]>(
+  const items = useMemo<readonly EntityWith<ShowcaseRow>[]>(
     () =>
       Array.isArray(entity)
         ? entity
         : entity && typeof entity === 'object'
-          ? [entity as EntityRow]
+          ? [entity]
           : [],
     [entity],
   );
@@ -79,7 +90,7 @@ export const ShowcaseOrganism: React.FC<ShowcaseOrganismProps> = ({
       )}
       <SimpleGrid cols={columns} gap="lg">
         {items.map((item) => {
-          const imageRaw = item.image as { src?: string; alt?: string } | undefined;
+          const imageRaw = item.image;
           return (
             <ShowcaseCard
               key={String(item.id ?? '')}

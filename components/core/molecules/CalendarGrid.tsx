@@ -27,13 +27,22 @@ import { useTranslate } from "../../../hooks/useTranslate";
  */
 export type CalendarDayWindow = 1 | 3 | 7;
 
+/** The per-event entity fields this grid reads. `startTime`/`endTime` are ISO
+ *  strings; `color` is a Tailwind class string applied to the event chip. */
+export interface CalendarEventRow {
+  title: string;
+  startTime: string;
+  endTime?: string;
+  color?: string;
+}
+
 export interface CalendarGridProps {
   /** Start of the week (defaults to current week's Monday) */
   weekStart?: Date;
   /** Time slot labels (defaults to 09:00-17:00) */
   timeSlots?: string[];
   /** Events to display on the grid */
-  events?: readonly EntityWith<'id' | 'title' | 'startTime'>[];
+  events?: readonly EntityWith<CalendarEventRow>[];
   /** Called when a time slot is clicked */
   onSlotClick?: (day: Date, time: string) => void;
   /** Called when a day header is clicked */

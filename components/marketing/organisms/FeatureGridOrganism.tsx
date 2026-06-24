@@ -24,8 +24,18 @@ import type { EntityRow, EntityWith } from '@almadar/core';
 import type { DisplayStateProps } from '../../core/organisms/types';
 import type { FeatureCardProps } from '../molecules/FeatureCard';
 
+/** The per-feature entity fields this organism reads (FieldValue-compatible; the
+ *  `icon`/`href` are string names/urls, the molecule widens `icon` to `IconInput`). */
+export interface FeatureRow {
+  title: string;
+  icon?: string;
+  description?: string;
+  href?: string;
+  linkLabel?: string;
+}
+
 export interface FeatureGridOrganismProps extends DisplayStateProps {
-  entity?: EntityWith<'title'> | readonly EntityWith<'title'>[];
+  entity?: EntityWith<FeatureRow> | readonly EntityWith<FeatureRow>[];
   columns?: 2 | 3 | 4 | 6;
   heading?: string;
   subtitle?: string;
@@ -48,7 +58,7 @@ export const FeatureGridOrganism: React.FC<FeatureGridOrganismProps> = ({
       Array.isArray(entity)
         ? entity
         : entity && typeof entity === 'object'
-          ? [entity as EntityRow]
+          ? [entity]
           : [],
     [entity],
   );

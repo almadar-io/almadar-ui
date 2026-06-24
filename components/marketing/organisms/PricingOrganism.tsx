@@ -24,8 +24,22 @@ import type { EntityRow, EntityWith } from '@almadar/core';
 import type { DisplayStateProps } from '../../core/organisms/types';
 import type { PricingCardProps } from '../molecules/PricingCard';
 
+/** The per-plan entity fields this organism reads. The organism reads FLAT
+ *  `actionLabel`/`actionHref` (the molecule's PricingCardProps nests them under
+ *  `action`), so this is its own shape, not PricingCardProps. */
+export interface PricingPlanRow {
+  name: string;
+  price: string;
+  description?: string;
+  features?: string[];
+  actionLabel?: string;
+  actionHref?: string;
+  highlighted?: boolean;
+  badge?: string;
+}
+
 export interface PricingOrganismProps extends DisplayStateProps {
-  entity?: EntityWith<'name' | 'price'> | readonly EntityWith<'name' | 'price'>[];
+  entity?: EntityWith<PricingPlanRow> | readonly EntityWith<PricingPlanRow>[];
   heading?: string;
   subtitle?: string;
 }
@@ -46,7 +60,7 @@ export const PricingOrganism: React.FC<PricingOrganismProps> = ({
       Array.isArray(entity)
         ? entity
         : entity && typeof entity === 'object'
-          ? [entity as EntityRow]
+          ? [entity]
           : [],
     [entity],
   );

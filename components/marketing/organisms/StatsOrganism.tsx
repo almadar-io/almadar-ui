@@ -19,8 +19,14 @@ import { ErrorState } from '../../core/molecules/ErrorState';
 import type { EntityRow, EntityWith } from '@almadar/core';
 import type { DisplayStateProps } from '../../core/organisms/types';
 
+/** The per-stat entity fields this organism reads (both required). */
+export interface StatRow {
+  value: string;
+  label: string;
+}
+
 export interface StatsOrganismProps extends DisplayStateProps {
-  entity?: EntityWith<'value' | 'label'> | readonly EntityWith<'value' | 'label'>[];
+  entity?: EntityWith<StatRow> | readonly EntityWith<StatRow>[];
   columns?: 2 | 3 | 4 | 6;
 }
 
@@ -38,7 +44,7 @@ export const StatsOrganism: React.FC<StatsOrganismProps> = ({
       Array.isArray(entity)
         ? entity
         : entity && typeof entity === 'object'
-          ? [entity as EntityRow]
+          ? [entity]
           : [],
     [entity],
   );

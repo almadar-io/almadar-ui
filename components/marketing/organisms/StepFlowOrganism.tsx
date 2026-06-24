@@ -22,8 +22,17 @@ import type { EntityRow, EntityWith } from '@almadar/core';
 import type { DisplayStateProps } from '../../core/organisms/types';
 import type { StepItemProps } from '../molecules/StepFlow';
 
+/** The per-step entity fields this organism reads (FieldValue-compatible; `icon` is a
+ *  string name, the molecule widens it to `IconInput`). */
+export interface StepRow {
+  title: string;
+  number?: number;
+  description?: string;
+  icon?: string;
+}
+
 export interface StepFlowOrganismProps extends DisplayStateProps {
-  entity?: EntityWith<'title'> | readonly EntityWith<'title'>[];
+  entity?: EntityWith<StepRow> | readonly EntityWith<StepRow>[];
   orientation?: 'horizontal' | 'vertical';
   showConnectors?: boolean;
   heading?: string;
@@ -47,7 +56,7 @@ export const StepFlowOrganism: React.FC<StepFlowOrganismProps> = ({
       Array.isArray(entity)
         ? entity
         : entity && typeof entity === 'object'
-          ? [entity as EntityRow]
+          ? [entity]
           : [],
     [entity],
   );

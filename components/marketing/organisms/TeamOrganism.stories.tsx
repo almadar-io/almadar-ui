@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { EntityWith } from '@almadar/core';
-import { TeamOrganism } from './TeamOrganism';
+import { TeamOrganism, type TeamMemberRow } from './TeamOrganism';
 
-const MOCK_TEAM: readonly EntityWith<'name'>[] = [
+const MOCK_TEAM: readonly EntityWith<TeamMemberRow>[] = [
   {
     id: '1',
     name: 'Al-Madari',

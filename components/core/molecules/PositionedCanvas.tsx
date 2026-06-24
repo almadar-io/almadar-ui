@@ -10,12 +10,26 @@ import { Icon } from "../atoms/Icon";
 export type CanvasItemStatus = 'empty' | 'seated' | 'ordered' | 'awaiting-bill' | 'cleaning';
 export type CanvasItemShape = 'round' | 'rectangle' | 'square';
 
+/** The per-item entity fields this canvas reads. `x`/`y` are pixel coordinates
+ *  in the canvas plane; `status`/`shape` are string literal unions widened to
+ *  `string` at the row level. */
+export interface CanvasItemRow {
+    label: string;
+    x: number;
+    y: number;
+    capacity: number;
+    partySize?: number;
+    serverName?: string;
+    status?: CanvasItemStatus;
+    shape?: CanvasItemShape;
+}
+
 export interface PositionedCanvasProps {
     /**
      * Items to render. The molecule narrows non-array values to `[]` and reads
      * each row's `id` / `x` / `y` / `label` fields at render time.
      */
-    items: readonly EntityWith<'id' | 'label' | 'x' | 'y'>[];
+    items: readonly EntityWith<CanvasItemRow>[];
     width?: number;
     height?: number;
     selectedId?: string | null;

@@ -22,6 +22,7 @@ import { ErrorState } from "./ErrorState";
 import { EmptyState } from "./EmptyState";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
+import { useCanvasGestures } from "../../../hooks/useCanvasGestures";
 import { Maximize2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import type { UiError } from '../atoms/types';
 
@@ -159,6 +160,11 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     const animRef = useRef<number>(0);
     const [zoom, setZoom] = useState(1);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
+    // Mirror zoom/offset into refs so gesture handlers read current values without stale closures.
+    const zoomRef = useRef(zoom);
+    zoomRef.current = zoom;
+    const offsetRef = useRef(offset);
+    offsetRef.current = offset;
     const [hoveredNode, setHoveredNode] = useState<string | null>(null);
     const nodesRef = useRef<SimNode[]>([]);
     const [, forceUpdate] = useState(0);
@@ -492,28 +498,34 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         setOffset({ x: 0, y: 0 });
     }, []);
 
-    const handleWheel = useCallback(
-        (e: React.WheelEvent<HTMLCanvasElement>) => {
-            if (!interactive) return;
-            e.preventDefault();
-            const coords = toCoords(e);
-            if (!coords) return;
-            const oldZoom = zoom;
-            const factor = e.deltaY < 0 ? 1.1 : 1 / 1.1;
-            const newZoom = Math.max(0.3, Math.min(3, oldZoom * factor));
-            if (newZoom === oldZoom) return;
-            // Keep the graph point under the cursor fixed under the cursor.
-            setOffset((o) => ({
-                x: coords.screenX - (coords.screenX - o.x) * (newZoom / oldZoom),
-                y: coords.screenY - (coords.screenY - o.y) * (newZoom / oldZoom),
-            }));
-            setZoom(newZoom);
-        },
-        [interactive, toCoords, zoom],
-    );
+    // Zoom by `factor` keeping the canvas point (cx,cy) fixed. Shared by wheel + pinch
+    // (via useCanvasGestures). Refs avoid stale zoom/offset inside the gesture callbacks.
+    const applyZoom = useCallback((factor: number, cx: number, cy: number) => {
+        if (!interactive) return;
+        const oldZoom = zoomRef.current;
+        const newZoom = Math.max(0.3, Math.min(3, oldZoom * factor));
+        if (newZoom === oldZoom) return;
+        const o = offsetRef.current;
+        setOffset({
+            x: cx - (cx - o.x) * (newZoom / oldZoom),
+            y: cy - (cy - o.y) * (newZoom / oldZoom),
+        });
+        setZoom(newZoom);
+    }, [interactive]);
 
-    const handleMouseDown = useCallback(
-        (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const applyPanDelta = useCallback((dx: number, dy: number) => {
+        if (!interactive) return;
+        setOffset((o) => ({ x: o.x + dx, y: o.y + dy }));
+    }, [interactive]);
+
+    // A second finger started a pinch — abandon any single-pointer pan/drag in progress.
+    const cancelSinglePointer = useCallback(() => {
+        interactionRef.current.mode = "none";
+        interactionRef.current.dragNodeId = null;
+    }, []);
+
+    const handlePointerDown = useCallback(
+        (e: React.PointerEvent<HTMLCanvasElement>) => {
             const coords = toCoords(e);
             if (!coords) return;
             const node = nodeAt(coords.graphX, coords.graphY);
@@ -536,8 +548,8 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         [toCoords, nodeAt, draggable, interactive, offset],
     );
 
-    const handleMouseMove = useCallback(
-        (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const handlePointerMove = useCallback(
+        (e: React.PointerEvent<HTMLCanvasElement>) => {
             const state = interactionRef.current;
 
             if (state.mode === "panning") {
@@ -570,8 +582,8 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         [toCoords, nodeAt],
     );
 
-    const handleMouseUp = useCallback(
-        (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const handlePointerUp = useCallback(
+        (e: React.PointerEvent<HTMLCanvasElement>) => {
             const state = interactionRef.current;
             const moved =
                 Math.abs(e.clientX - state.downPos.x) + Math.abs(e.clientY - state.downPos.y);
@@ -591,11 +603,20 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         [toCoords, nodeAt, handleNodeClick],
     );
 
-    const handleMouseLeave = useCallback(() => {
-        interactionRef.current.mode = "none";
-        interactionRef.current.dragNodeId = null;
+    const handlePointerLeave = useCallback(() => {
         setHoveredNode(null);
     }, []);
+
+    const gestureHandlers = useCanvasGestures({
+        canvasRef,
+        enabled: interactive || draggable,
+        onPointerDown: handlePointerDown,
+        onPointerMove: handlePointerMove,
+        onPointerUp: handlePointerUp,
+        onZoom: applyZoom,
+        onPanDelta: applyPanDelta,
+        onMultiTouchStart: cancelSinglePointer,
+    });
 
     const handleDoubleClick = useCallback(
         (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -675,13 +696,14 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                         ref={canvasRef}
                         width={Math.round(logicalW * ((typeof window !== "undefined" && window.devicePixelRatio) || 1))}
                         height={Math.round(height * ((typeof window !== "undefined" && window.devicePixelRatio) || 1))}
-                        className="w-full cursor-grab active:cursor-grabbing"
+                        className="w-full cursor-grab active:cursor-grabbing touch-none"
                         style={{ height }}
-                        onWheel={handleWheel}
-                        onMouseDown={handleMouseDown}
-                        onMouseMove={handleMouseMove}
-                        onMouseUp={handleMouseUp}
-                        onMouseLeave={handleMouseLeave}
+                        onPointerDown={gestureHandlers.onPointerDown}
+                        onPointerMove={gestureHandlers.onPointerMove}
+                        onPointerUp={gestureHandlers.onPointerUp}
+                        onPointerCancel={gestureHandlers.onPointerCancel}
+                        onPointerLeave={handlePointerLeave}
+                        onWheel={gestureHandlers.onWheel}
                         onDoubleClick={handleDoubleClick}
                     />
                 </Box>

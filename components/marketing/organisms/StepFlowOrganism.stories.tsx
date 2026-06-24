@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import type { EntityWith } from '@almadar/core';
-import { StepFlowOrganism } from './StepFlowOrganism';
+import { StepFlowOrganism, type StepRow } from './StepFlowOrganism';
 
-const MOCK_STEPS: readonly EntityWith<'title'>[] = [
+const MOCK_STEPS: readonly EntityWith<StepRow>[] = [
   {
     id: '1',
     number: 1,
@@ -26,7 +26,7 @@ const MOCK_STEPS: readonly EntityWith<'title'>[] = [
   },
 ];
 
-const MOCK_STEPS_VERTICAL: readonly EntityWith<'title'>[] = [
+const MOCK_STEPS_VERTICAL: readonly EntityWith<StepRow>[] = [
   {
     id: '1',
     number: 1,

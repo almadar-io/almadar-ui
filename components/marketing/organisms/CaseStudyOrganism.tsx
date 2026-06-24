@@ -24,8 +24,18 @@ import { ErrorState } from '../../core/molecules/ErrorState';
 import type { EntityRow, EntityWith } from '@almadar/core';
 import type { DisplayStateProps } from '../../core/organisms/types';
 
+/** The per-case-study entity fields this organism reads (FieldValue-compatible). */
+export interface CaseStudyRow {
+  title: string;
+  description?: string;
+  category?: string;
+  categoryColor?: string;
+  href?: string;
+  linkLabel?: string;
+}
+
 export interface CaseStudyOrganismProps extends DisplayStateProps {
-  entity?: EntityWith<'title'> | readonly EntityWith<'title'>[];
+  entity?: EntityWith<CaseStudyRow> | readonly EntityWith<CaseStudyRow>[];
   heading?: string;
   subtitle?: string;
 }
@@ -46,7 +56,7 @@ export const CaseStudyOrganism: React.FC<CaseStudyOrganismProps> = ({
       Array.isArray(entity)
         ? entity
         : entity && typeof entity === 'object'
-          ? [entity as EntityRow]
+          ? [entity]
           : [],
     [entity],
   );

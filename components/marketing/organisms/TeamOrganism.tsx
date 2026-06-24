@@ -22,8 +22,18 @@ import { ErrorState } from '../../core/molecules/ErrorState';
 import type { EntityRow, EntityWith } from '@almadar/core';
 import type { DisplayStateProps } from '../../core/organisms/types';
 
+/** The per-member entity fields this organism reads (FieldValue-compatible;
+ *  `avatar` is a string url/initials). */
+export interface TeamMemberRow {
+  name: string;
+  nameAr?: string;
+  role?: string;
+  bio?: string;
+  avatar?: string;
+}
+
 export interface TeamOrganismProps extends DisplayStateProps {
-  entity?: EntityWith<'name'> | readonly EntityWith<'name'>[];
+  entity?: EntityWith<TeamMemberRow> | readonly EntityWith<TeamMemberRow>[];
   heading?: string;
   subtitle?: string;
 }
@@ -43,7 +53,7 @@ export const TeamOrganism: React.FC<TeamOrganismProps> = ({
       Array.isArray(entity)
         ? entity
         : entity && typeof entity === 'object'
-          ? [entity as EntityRow]
+          ? [entity]
           : [],
     [entity],
   );

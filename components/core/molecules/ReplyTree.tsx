@@ -14,8 +14,21 @@ import { useTranslate } from "../../../hooks/useTranslate";
 import { Avatar, Typography, Button, Box, Input } from "../atoms";
 import { VoteStack, type VoteValue } from "./VoteStack";
 
+/** The per-node entity fields this tree reads. `replies` is the same row shape
+ *  nested recursively; `userVote` carries the `VoteValue` literal union. */
+export interface ReplyNodeRow {
+    authorName: string;
+    content: string;
+    authorAvatarUrl?: string;
+    postedAt?: string;
+    voteCount?: number;
+    userVote?: VoteValue;
+    collapsed?: boolean;
+    replies?: readonly EntityWith<ReplyNodeRow>[];
+}
+
 export interface ReplyTreeProps {
-    nodes: readonly EntityWith<'id' | 'authorName' | 'content'>[];
+    nodes: readonly EntityWith<ReplyNodeRow>[];
     maxDepth?: number;
     onVote?: (nodeId: string, vote: VoteValue) => void;
     onReply?: (parentNodeId: string) => void;
