@@ -21,7 +21,7 @@ import { SimpleGrid } from '../../core/molecules/SimpleGrid';
 import { ShowcaseCard } from '../molecules/ShowcaseCard';
 import { LoadingState } from '../../core/molecules/LoadingState';
 import { ErrorState } from '../../core/molecules/ErrorState';
-import type { EntityWith } from '@almadar/core';
+import type { EntityWith, AssetUrl } from '@almadar/core';
 import type { DisplayStateProps } from '../../core/organisms/types';
 
 /** The per-showcase entity fields this organism reads (FieldValue-compatible; `image`
@@ -29,7 +29,7 @@ import type { DisplayStateProps } from '../../core/organisms/types';
 export interface ShowcaseRow {
   title: string;
   description?: string;
-  image?: { src?: string; alt?: string };
+  image?: { src?: AssetUrl; alt?: string };
   href?: string;
   badge?: string;
   accentColor?: string;

@@ -18,7 +18,7 @@ import { useTranslate } from '../../../hooks/useTranslate';
 import { HeroSection } from '../molecules/HeroSection';
 import { LoadingState } from '../../core/molecules/LoadingState';
 import { ErrorState } from '../../core/molecules/ErrorState';
-import type { EntityWith } from '@almadar/core';
+import type { EntityWith, AssetUrl } from '@almadar/core';
 import type { DisplayStateProps } from '../../core/organisms/types';
 
 /** A hero CTA: a plain `{ label, href }` object (FieldValue-compatible — a `type`,
@@ -38,7 +38,7 @@ export interface HeroRow {
   primaryAction?: HeroAction;
   secondaryAction?: HeroAction;
   installCommand?: string;
-  image?: { src?: string; alt?: string };
+  image?: { src?: AssetUrl; alt?: string };
   imagePosition?: 'below' | 'right' | 'background';
   background?: 'dark' | 'gradient' | 'subtle';
 }
