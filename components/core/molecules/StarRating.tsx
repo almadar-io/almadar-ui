@@ -114,7 +114,7 @@ export const StarRating: React.FC<StarRatingProps> = ({
       aria-valuenow={value}
       tabIndex={readOnly ? undefined : 0}
       onKeyDown={handleKeyDown}
-      onMouseLeave={() => setHoverValue(null)}
+      onPointerLeave={() => setHoverValue(null)}
     >
       {Array.from({ length: max }, (_, i) => {
         const fillLevel = Math.max(0, Math.min(1, displayValue - i));
@@ -126,7 +126,8 @@ export const StarRating: React.FC<StarRatingProps> = ({
             key={i}
             className="relative inline-block"
             onClick={() => handleStarClick(i, false)}
-            onMouseMove={(e) => {
+            onPointerMove={(e) => {
+              // PointerEvent covers mouse, touch and pen — one unified path.
               if (readOnly) return;
               const rect = e.currentTarget.getBoundingClientRect();
               const isLeftHalf = e.clientX - rect.left < rect.width / 2;

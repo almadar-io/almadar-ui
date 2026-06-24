@@ -253,15 +253,22 @@ const TransitionBundleArrow: React.FC<{
       onHover(null, 0, 0);
     };
 
+    // Touch/pen has no hover: a tap reveals the SAME highlight tooltip the mouse hover fires.
+    const handlePointerDown = (e: React.PointerEvent) => {
+      if (e.pointerType === 'mouse') return;
+      handleMouseEnter();
+    };
+
     return (
       <g
         ref={groupRef}
         className="transition-bundle cursor-pointer"
         data-bundle-id={bundle.id}
-         
+
         onClick={() => onClick?.(bundle)}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onPointerDown={handlePointerDown}
         style={{ pointerEvents: 'auto' }}
       >
         <defs>
@@ -387,6 +394,12 @@ const TransitionBundleArrow: React.FC<{
     onHover(null, 0, 0);
   }, [onHover]);
 
+  // Touch/pen has no hover: a tap reveals the SAME highlight tooltip the mouse hover fires.
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    if (e.pointerType === 'mouse') return;
+    handleMouseEnter();
+  }, [handleMouseEnter]);
+
   const uniqueMarkerId = `arrow-${bundle.id}`;
   const hasDetails = bundle.labels.some(l => l.hasDetails);
 
@@ -395,10 +408,11 @@ const TransitionBundleArrow: React.FC<{
       ref={groupRef}
       className="transition-bundle cursor-pointer"
       data-bundle-id={bundle.id}
-       
+
       onClick={() => onClick?.(bundle)}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
+      onPointerDown={handlePointerDown}
       style={{ pointerEvents: 'auto' }}
     >
       <defs>

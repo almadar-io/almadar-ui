@@ -49,23 +49,26 @@ export const SplitPane: React.FC<SplitPaneProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
 
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
       if (!resizable) return;
       e.preventDefault();
       isDragging.current = true;
+      // Pointer Events unify mouse/touch/pen; capture keeps the drag tracking
+      // off the handle even when the pointer leaves it.
+      e.currentTarget.setPointerCapture(e.pointerId);
 
-      const handleMouseMove = (e: MouseEvent) => {
+      const handlePointerMove = (ev: PointerEvent) => {
         if (!isDragging.current || !containerRef.current) return;
 
         const rect = containerRef.current.getBoundingClientRect();
         let newRatio: number;
 
         if (direction === "horizontal") {
-          const x = e.clientX - rect.left;
+          const x = ev.clientX - rect.left;
           newRatio = (x / rect.width) * 100;
         } else {
-          const y = e.clientY - rect.top;
+          const y = ev.clientY - rect.top;
           newRatio = (y / rect.height) * 100;
         }
 
@@ -79,14 +82,16 @@ export const SplitPane: React.FC<SplitPaneProps> = ({
         setRatio(newRatio);
       };
 
-      const handleMouseUp = () => {
+      const handlePointerUp = () => {
         isDragging.current = false;
-        document.removeEventListener("mousemove", handleMouseMove);
-        document.removeEventListener("mouseup", handleMouseUp);
+        document.removeEventListener("pointermove", handlePointerMove);
+        document.removeEventListener("pointerup", handlePointerUp);
+        document.removeEventListener("pointercancel", handlePointerUp);
       };
 
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
+      document.addEventListener("pointermove", handlePointerMove);
+      document.addEventListener("pointerup", handlePointerUp);
+      document.addEventListener("pointercancel", handlePointerUp);
     },
     [direction, minSize, resizable],
   );
@@ -116,9 +121,9 @@ export const SplitPane: React.FC<SplitPaneProps> = ({
       {/* Resize handle */}
       {resizable && (
         <div
-          onMouseDown={handleMouseDown}
+          onPointerDown={handlePointerDown}
           className={cn(
-            "flex-shrink-0 bg-border transition-colors",
+            "flex-shrink-0 bg-border transition-colors touch-none",
             isHorizontal
               ? "w-1 cursor-col-resize hover:w-1.5 hover:bg-muted-foreground"
               : "h-1 cursor-row-resize hover:h-1.5 hover:bg-muted-foreground",

@@ -30,6 +30,19 @@ interface CameraResult {
     handleMouseLeave: () => void;
     /** Wheel handler — zoom in/out */
     handleWheel: (e: React.WheelEvent, drawFn?: () => void) => void;
+    /** Pointer down — starts panning (mouse/touch/pen via Pointer Events). */
+    handlePointerDown: (e: React.PointerEvent) => void;
+    /** Pointer up — stops panning. */
+    handlePointerUp: () => void;
+    /** Pointer move — pans camera if dragging, returns true if panning. */
+    handlePointerMove: (e: React.PointerEvent, drawFn?: () => void) => boolean;
+    /** Apply a two-finger pan delta (screen px) directly to the camera. */
+    panBy: (dx: number, dy: number, drawFn?: () => void) => void;
+    /**
+     * Multiplicative zoom by `factor` keeping the world point under (centerX,centerY)
+     * — screen px relative to the canvas — fixed. Used by wheel + pinch.
+     */
+    zoomAtPoint: (factor: number, centerX: number, centerY: number, viewportSize: { width: number; height: number }, drawFn?: () => void) => void;
     /** Convert screen coordinates to world coordinates (inverse camera transform) */
     screenToWorld: (clientX: number, clientY: number, canvas: HTMLCanvasElement, viewportSize: { width: number; height: number }) => { x: number; y: number };
     /** Lerp camera toward target. Call in animation loop. Returns true if still animating. */
@@ -87,6 +100,51 @@ export function useCamera(): CameraResult {
         drawFn?.();
     }, []);
 
+    // Pointer Events are a superset of MouseEvents for the fields these handlers read
+    // (clientX/clientY/button), so the pan logic is shared — no duplicate gesture code.
+    const handlePointerDown = useCallback((e: React.PointerEvent) => {
+        handleMouseDown(e);
+    }, [handleMouseDown]);
+
+    const handlePointerUp = useCallback(() => {
+        handleMouseUp();
+    }, [handleMouseUp]);
+
+    const handlePointerMove = useCallback((e: React.PointerEvent, drawFn?: () => void): boolean => {
+        return handleMouseMove(e, drawFn);
+    }, [handleMouseMove]);
+
+    const panBy = useCallback((dx: number, dy: number, drawFn?: () => void) => {
+        cameraRef.current.x -= dx;
+        cameraRef.current.y -= dy;
+        targetCameraRef.current = null;
+        drawFn?.();
+    }, []);
+
+    const zoomAtPoint = useCallback((
+        factor: number,
+        centerX: number,
+        centerY: number,
+        viewportSize: { width: number; height: number },
+        drawFn?: () => void,
+    ) => {
+        const cam = cameraRef.current;
+        const oldZoom = cam.zoom;
+        const newZoom = Math.max(0.5, Math.min(3, oldZoom * factor));
+        if (newZoom === oldZoom) {
+            drawFn?.();
+            return;
+        }
+        // Keep the world point under (centerX,centerY) fixed across the zoom change.
+        // screenToWorld: world = (screen - vp/2)/zoom + vp/2 + cam → invert for cam.
+        const inv = 1 / oldZoom - 1 / newZoom;
+        cam.x += (centerX - viewportSize.width / 2) * inv;
+        cam.y += (centerY - viewportSize.height / 2) * inv;
+        cam.zoom = newZoom;
+        targetCameraRef.current = null;
+        drawFn?.();
+    }, []);
+
     const screenToWorld = useCallback((
         clientX: number,
         clientY: number,
@@ -131,6 +189,11 @@ export function useCamera(): CameraResult {
         handleMouseMove,
         handleMouseLeave,
         handleWheel,
+        handlePointerDown,
+        handlePointerUp,
+        handlePointerMove,
+        panBy,
+        zoomAtPoint,
         screenToWorld,
         lerpToTarget,
     };

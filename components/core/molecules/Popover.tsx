@@ -10,6 +10,7 @@ import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../../lib/cn";
+import { useTapReveal } from "../../../hooks/useTapReveal";
 
 export type PopoverPosition = "top" | "bottom" | "left" | "right";
 export type PopoverTrigger = "click" | "hover";
@@ -177,7 +178,17 @@ export const Popover: React.FC<PopoverProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen, trigger]);
 
-  const triggerProps =
+  // Hover popovers are unreachable on touch (no hover). A tap opens through the
+  // SAME open/close path; an outside tap dismisses. Click/controlled modes are
+  // already touch-friendly, so the hook is disabled there.
+  const { triggerProps: tapTriggerProps } = useTapReveal({
+    enabled: trigger === "hover",
+    onReveal: handleOpen,
+    onDismiss: handleClose,
+    refs: [triggerRef, popoverRef],
+  });
+
+  const handlerProps =
     trigger === "click"
       ? {
           onClick: handleToggle,
@@ -185,6 +196,7 @@ export const Popover: React.FC<PopoverProps> = ({
       : {
           onMouseEnter: handleOpen,
           onMouseLeave: handleClose,
+          onPointerDown: tapTriggerProps.onPointerDown,
         };
 
   // Wrap non-element children in a span
@@ -194,11 +206,23 @@ export const Popover: React.FC<PopoverProps> = ({
     <span>{children}</span>
   );
 
+  const childPointerDown = (
+    childElement as React.ReactElement<{ onPointerDown?: (e: React.PointerEvent) => void }>
+  ).props.onPointerDown;
+
   const triggerElement = React.cloneElement(
     childElement as React.ReactElement<any>,
     {
       ref: triggerRef,
-      ...triggerProps,
+      ...handlerProps,
+      ...(trigger === "hover"
+        ? {
+            onPointerDown: (e: React.PointerEvent) => {
+              tapTriggerProps.onPointerDown(e);
+              childPointerDown?.(e);
+            },
+          }
+        : undefined),
     },
   );
 

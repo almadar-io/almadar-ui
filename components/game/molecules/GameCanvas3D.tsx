@@ -923,6 +923,9 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                             target={cameraTarget}
                             enableDamping
                             dampingFactor={0.05}
+                            enableZoom
+                            enablePan
+                            touches={{ ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }}
                             minDistance={2}
                             maxDistance={100}
                             maxPolarAngle={Math.PI / 2 - 0.1}

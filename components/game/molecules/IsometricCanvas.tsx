@@ -42,6 +42,7 @@ import type { IsometricTile, IsometricUnit, IsometricFeature } from '../organism
 import type { ResolvedFrame } from '../organisms/types/spriteAnimation';
 import { useImageCache } from '../organisms/hooks/useImageCache';
 import { useCamera } from '../organisms/hooks/useCamera';
+import { useCanvasGestures } from '../../../hooks/useCanvasGestures';
 import { useUnitSpriteAtlas } from './useUnitSpriteAtlas';
 import { bindCanvasCapture } from '../../../lib/verificationRegistry';
 import {
@@ -414,13 +415,13 @@ export function IsometricCanvas({
     const {
         cameraRef,
         targetCameraRef,
-        isDragging,
         dragDistance,
-        handleMouseDown,
-        handleMouseUp,
-        handleMouseMove,
         handleMouseLeave,
-        handleWheel,
+        handlePointerDown,
+        handlePointerUp,
+        handlePointerMove,
+        panBy,
+        zoomAtPoint,
         screenToWorld,
         lerpToTarget,
     } = useCamera();
@@ -949,14 +950,25 @@ export function IsometricCanvas({
     }, [draw, units.length, validMoves.length, attackTargets.length, selectedUnitId, hasActiveEffects, pendingCount, atlasPending, lerpToTarget, targetCameraRef]);
 
     // =========================================================================
-    // Mouse handlers
+    // Pointer / gesture handlers (mouse + touch + pen via Pointer Events)
     // =========================================================================
-    const handleMouseMoveWithCamera = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-        if (enableCamera) {
-            const wasPanning = handleMouseMove(e, () => draw(animTimeRef.current));
-            if (wasPanning) return;
-        }
+    // True while a single-pointer drag is in flight — suppresses bare-hover work.
+    const singlePointerActiveRef = useRef(false);
 
+    const handleCanvasPointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+        singlePointerActiveRef.current = true;
+        if (enableCamera) handlePointerDown(e);
+    }, [enableCamera, handlePointerDown]);
+
+    // Single-pointer move from the gesture hook → camera pan only.
+    const handleCanvasPointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+        if (enableCamera) handlePointerMove(e, () => draw(animTimeRef.current));
+    }, [enableCamera, handlePointerMove, draw]);
+
+    // Bare hover (no pointer down) — emits UI:TILE_HOVER. Runs on every raw move but
+    // no-ops while a drag/pinch is active (the hook owns those).
+    const handleCanvasHover = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+        if (singlePointerActiveRef.current) return;
         if ((!onTileHover && !tileHoverEvent) || !canvasRef.current) return;
 
         const world = screenToWorld(e.clientX, e.clientY, canvasRef.current, viewportSize);
@@ -969,29 +981,12 @@ export function IsometricCanvas({
             if (tileHoverEvent) eventBus.emit(`UI:${tileHoverEvent}`, { x: isoPos.x, y: isoPos.y });
             onTileHover?.(isoPos.x, isoPos.y);
         }
-    }, [enableCamera, handleMouseMove, draw, onTileHover, screenToWorld, viewportSize, scaledTileWidth, scaledDiamondTopY, scaledFloorHeight, scale, baseOffsetX, tilesProp, tileHoverEvent, eventBus]);
+    }, [onTileHover, screenToWorld, viewportSize, scaledTileWidth, scaledDiamondTopY, scaledFloorHeight, scale, baseOffsetX, tilesProp, tileHoverEvent, eventBus]);
 
-    const handleMouseLeaveWithCamera = useCallback(() => {
-        handleMouseLeave();
-        if (tileLeaveEvent) eventBus.emit(`UI:${tileLeaveEvent}`, {});
-        onTileLeave?.();
-    }, [handleMouseLeave, onTileLeave, tileLeaveEvent, eventBus]);
-
-    const handleWheelWithCamera = useCallback((e: WheelEvent) => {
-        if (enableCamera) {
-            handleWheel(e as unknown as React.WheelEvent, () => draw(animTimeRef.current));
-        }
-    }, [enableCamera, handleWheel, draw]);
-
-    // Attach wheel listener with { passive: false } so preventDefault() works
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        canvas.addEventListener('wheel', handleWheelWithCamera, { passive: false });
-        return () => { canvas.removeEventListener('wheel', handleWheelWithCamera); };
-    }, [handleWheelWithCamera]);
-
-    const handleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const handleCanvasPointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+        singlePointerActiveRef.current = false;
+        if (enableCamera) handlePointerUp();
+        // A pan that moved past threshold is not a click.
         if (dragDistance() > 5) return;
         if (!canvasRef.current) return;
 
@@ -1012,7 +1007,39 @@ export function IsometricCanvas({
                 onTileClick?.(isoPos.x, isoPos.y);
             }
         }
-    }, [dragDistance, screenToWorld, viewportSize, scaledTileWidth, scaledDiamondTopY, scaledFloorHeight, scale, baseOffsetX, units, tilesProp, onUnitClick, onTileClick, unitClickEvent, tileClickEvent, eventBus]);
+    }, [enableCamera, handlePointerUp, dragDistance, screenToWorld, viewportSize, scaledTileWidth, scaledDiamondTopY, scaledFloorHeight, scale, baseOffsetX, units, tilesProp, onUnitClick, onTileClick, unitClickEvent, tileClickEvent, eventBus]);
+
+    const handleCanvasPointerLeave = useCallback(() => {
+        handleMouseLeave();
+        if (tileLeaveEvent) eventBus.emit(`UI:${tileLeaveEvent}`, {});
+        onTileLeave?.();
+    }, [handleMouseLeave, onTileLeave, tileLeaveEvent, eventBus]);
+
+    // Wheel + two-finger pinch zoom-to-point; two-finger pan; multi-touch cancels a pan-drag.
+    const applyZoom = useCallback((factor: number, centerX: number, centerY: number) => {
+        if (enableCamera) zoomAtPoint(factor, centerX, centerY, viewportSize, () => draw(animTimeRef.current));
+    }, [enableCamera, zoomAtPoint, viewportSize, draw]);
+
+    const applyPanDelta = useCallback((dx: number, dy: number) => {
+        // Two-finger pan moves the camera the same direction as a drag (camera.x -= dx).
+        if (enableCamera) panBy(dx, dy, () => draw(animTimeRef.current));
+    }, [enableCamera, panBy, draw]);
+
+    const cancelSinglePointer = useCallback(() => {
+        singlePointerActiveRef.current = false;
+        if (enableCamera) handlePointerUp();
+    }, [enableCamera, handlePointerUp]);
+
+    const gestureHandlers = useCanvasGestures({
+        canvasRef,
+        enabled: enableCamera || !!onTileHover || !!tileHoverEvent || !!onTileClick || !!tileClickEvent || !!onUnitClick || !!unitClickEvent,
+        onPointerDown: handleCanvasPointerDown,
+        onPointerMove: handleCanvasPointerMove,
+        onPointerUp: handleCanvasPointerUp,
+        onZoom: applyZoom,
+        onPanDelta: applyPanDelta,
+        onMultiTouchStart: cancelSinglePointer,
+    });
 
     // =========================================================================
     // Render
@@ -1056,13 +1083,14 @@ export function IsometricCanvas({
             <canvas
                 ref={canvasRef}
                 data-testid="game-canvas"
-                onClick={handleClick}
-                onMouseDown={enableCamera ? handleMouseDown : undefined}
-                onMouseMove={handleMouseMoveWithCamera}
-                onMouseUp={enableCamera ? handleMouseUp : undefined}
-                onMouseLeave={handleMouseLeaveWithCamera}
+                onPointerDown={gestureHandlers.onPointerDown}
+                onPointerMove={(e) => { gestureHandlers.onPointerMove(e); handleCanvasHover(e); }}
+                onPointerUp={gestureHandlers.onPointerUp}
+                onPointerCancel={gestureHandlers.onPointerCancel}
+                onPointerLeave={handleCanvasPointerLeave}
+                onWheel={gestureHandlers.onWheel}
                 onContextMenu={(e) => e.preventDefault()}
-                className="cursor-pointer"
+                className="cursor-pointer touch-none"
                 style={{
                     width: viewportSize.width,
                     height: viewportSize.height,

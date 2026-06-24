@@ -13,6 +13,7 @@ import { Typography } from "./Typography";
 import { Divider } from "./Divider";
 import { cn } from "../../../lib/cn";
 import { useTranslate } from "../../../hooks/useTranslate";
+import { useTapReveal } from "../../../hooks/useTapReveal";
 
 /**
  * Law reference definition
@@ -87,6 +88,7 @@ export const LawReferenceTooltip: React.FC<LawReferenceTooltipProps> = ({
   const { t } = useTranslate();
   const [isVisible, setIsVisible] = React.useState(false);
   const timeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  const triggerRef = React.useRef<HTMLDivElement>(null);
 
   const handleMouseEnter = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -98,6 +100,10 @@ export const LawReferenceTooltip: React.FC<LawReferenceTooltipProps> = ({
     setIsVisible(false);
   };
 
+  // Touch/pen has no hover: a tap reveals the same tooltip; a tap outside dismisses it.
+  const { revealed, triggerProps } = useTapReveal({ refs: [triggerRef] });
+  const open = isVisible || revealed;
+
   React.useEffect(() => {
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -106,6 +112,7 @@ export const LawReferenceTooltip: React.FC<LawReferenceTooltipProps> = ({
 
   return (
     <Box
+      ref={triggerRef}
       as="span"
       position="relative"
       display="inline-block"
@@ -114,9 +121,10 @@ export const LawReferenceTooltip: React.FC<LawReferenceTooltipProps> = ({
       onMouseLeave={handleMouseLeave}
       onFocus={handleMouseEnter}
       onBlur={handleMouseLeave}
+      onPointerDown={triggerProps.onPointerDown}
     >
       {children}
-      {isVisible && (
+      {open && (
         <Box
           padding="sm"
           rounded="lg"

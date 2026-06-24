@@ -9,6 +9,7 @@ import React, { useCallback } from "react";
 import type { EventKey, EventPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
+import { useTapReveal } from "../../../hooks/useTapReveal";
 
 export type BoxPadding = "none" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
 export type BoxMargin =
@@ -78,6 +79,8 @@ export interface BoxProps extends React.HTMLAttributes<HTMLDivElement> {
   actionPayload?: EventPayload;
   /** Declarative hover event — emits UI:{hoverEvent} with { hovered: true/false } on mouseEnter/mouseLeave */
   hoverEvent?: EventKey;
+  /** When true (default), a touch/pen tap also fires `hoverEvent` (toggling hovered) so hover-only reveals work on touch. */
+  tapReveal?: boolean;
   /** Maximum width (CSS value, e.g., "550px", "80rem") */
   maxWidth?: string;
   /** Children elements */
@@ -227,10 +230,12 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
       action,
       actionPayload,
       hoverEvent,
+      tapReveal = true,
       maxWidth,
       onClick,
       onMouseEnter,
       onMouseLeave,
+      onPointerDown,
       ...rest
     },
     ref,
@@ -258,6 +263,23 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
       }
       onMouseLeave?.(e);
     }, [hoverEvent, eventBus, onMouseLeave]);
+
+    // On touch there is no hover, so a `hoverEvent`-bound reveal never fires.
+    // A touch/pen tap emits the SAME UI:{hoverEvent} the mouse path emits.
+    const { triggerProps } = useTapReveal({
+      enabled: tapReveal && !!hoverEvent,
+      onReveal: useCallback(() => {
+        if (hoverEvent) eventBus.emit(`UI:${hoverEvent}`, { hovered: true });
+      }, [hoverEvent, eventBus]),
+      onDismiss: useCallback(() => {
+        if (hoverEvent) eventBus.emit(`UI:${hoverEvent}`, { hovered: false });
+      }, [hoverEvent, eventBus]),
+    });
+
+    const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+      if (hoverEvent && tapReveal) triggerProps.onPointerDown(e);
+      onPointerDown?.(e);
+    }, [hoverEvent, tapReveal, triggerProps, onPointerDown]);
 
     const isClickable = action || onClick;
     // Polymorphic render via React.createElement — `as: React.ElementType`
@@ -291,6 +313,7 @@ export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
         onClick: isClickable ? handleClick : undefined,
         onMouseEnter: (hoverEvent || onMouseEnter) ? handleMouseEnter : undefined,
         onMouseLeave: (hoverEvent || onMouseLeave) ? handleMouseLeave : undefined,
+        onPointerDown: ((hoverEvent && tapReveal) || onPointerDown) ? handlePointerDown : undefined,
         style: maxWidth ? { maxWidth, ...rest.style } : rest.style,
         ...rest,
       },

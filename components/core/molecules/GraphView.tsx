@@ -313,6 +313,16 @@ export const GraphView: React.FC<GraphViewProps> = ({
     [onNodeClick],
   );
 
+  // Touch/pen has no hover: a tap fires the SAME hover + click callbacks the mouse path uses.
+  const handleNodePointerDown = useCallback(
+    (e: React.PointerEvent, node: SimNode) => {
+      if (e.pointerType === 'mouse') return;
+      handleNodeMouseEnter(node);
+      handleNodeClickInternal(node);
+    },
+    [handleNodeMouseEnter, handleNodeClickInternal],
+  );
+
   if (nodes.length === 0) {
     return (
       <Box className={cn('flex items-center justify-center', className)} style={{ width: w, height: h }}>
@@ -382,6 +392,7 @@ export const GraphView: React.FC<GraphViewProps> = ({
               onMouseEnter={() => handleNodeMouseEnter(node)}
               onMouseLeave={handleNodeMouseLeave}
               onClick={() => handleNodeClickInternal(node)}
+              onPointerDown={(e) => handleNodePointerDown(e, node)}
             >
               <circle
                 cx={node.x}

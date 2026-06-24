@@ -200,7 +200,7 @@ export const PositionedCanvas: React.FC<PositionedCanvasProps> = ({
         <Box
             ref={containerRef}
             data-testid="positioned-canvas"
-            className="relative bg-background border border-border rounded-container overflow-hidden"
+            className="relative bg-background border border-border rounded-container overflow-hidden touch-none"
             style={{ width, height }}
             onClick={handleContainerClick}
         >

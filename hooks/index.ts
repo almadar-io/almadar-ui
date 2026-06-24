@@ -178,6 +178,17 @@ export {
   type PinchZoomOptions,
   type PinchZoomResult,
 } from './usePinchZoom';
+export {
+  useCanvasGestures,
+  type UseCanvasGesturesOptions,
+  type CanvasGestureCallbacks,
+  type CanvasGestureHandlers,
+} from './useCanvasGestures';
+export {
+  useTapReveal,
+  type TapRevealOptions,
+  type TapRevealResult,
+} from './useTapReveal';
 
 // Drag & Drop hooks (HTML5 DnD with structured payloads)
 export {

@@ -8,6 +8,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useTapReveal } from "../../../hooks/useTapReveal";
 import { Box } from "../atoms/Box";
 import type { IconInput } from "../atoms";
 import { Icon } from "../atoms/Icon";
@@ -198,6 +199,100 @@ function SubMenu({
   return typeof document !== "undefined" ? createPortal(panel, document.body) : panel;
 }
 
+// One menu row. Submenus open on hover, which never fires on touch — so a tap
+// opens the submenu through the SAME open path (`openSubMenu`) via `useTapReveal`.
+function MenuItemRow({
+  item,
+  itemId,
+  hasSubMenu,
+  isDanger,
+  direction,
+  isSubMenuOpen,
+  activeSubMenuRef,
+  eventBus,
+  onItemClick,
+  openSubMenu,
+}: {
+  item: MenuItem;
+  itemId: string;
+  hasSubMenu: boolean;
+  isDanger: boolean;
+  direction: string;
+  isSubMenuOpen: boolean;
+  activeSubMenuRef: HTMLElement | null;
+  eventBus: ReturnType<typeof useEventBus>;
+  onItemClick: (item: MenuItem, itemId: string) => void;
+  openSubMenu: (itemId: string, el: HTMLElement | null) => void;
+}) {
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  const { triggerProps } = useTapReveal({
+    enabled: hasSubMenu,
+    onReveal: () => openSubMenu(itemId, rowRef.current),
+    refs: [rowRef],
+  });
+
+  return (
+    <Box>
+      <Box
+        ref={rowRef}
+        as="button"
+        onClick={() => onItemClick({ ...item, id: itemId }, itemId)}
+        aria-disabled={item.disabled || undefined}
+        onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
+          if (hasSubMenu) openSubMenu(itemId, e.currentTarget);
+        }}
+        onPointerDown={hasSubMenu ? triggerProps.onPointerDown : undefined}
+        data-testid={item.event ? `action-${item.event}` : undefined}
+        className={cn(
+          "w-full flex items-center justify-between gap-3 px-4 py-2 text-start",
+          "text-sm transition-colors",
+          "hover:bg-muted",
+          "focus:outline-none focus:bg-muted",
+          "disabled:opacity-50 disabled:cursor-not-allowed",
+          item.disabled && "cursor-not-allowed",
+          isDanger && "text-error hover:bg-error/10",
+        )}
+      >
+        <Box className="flex items-center gap-3 flex-1 min-w-0">
+          {item.icon &&
+            (typeof item.icon === "string" ? (
+              <Icon name={item.icon} size="sm" className="flex-shrink-0" />
+            ) : (
+              <Icon icon={item.icon} size="sm" className="flex-shrink-0" />
+            ))}
+          <Typography
+            variant="small"
+            className={cn("flex-1", isDanger && "text-red-600")}
+          >
+            {item.label}
+          </Typography>
+          {item.badge !== undefined && (
+            <Badge variant="default" size="sm">
+              {item.badge}
+            </Badge>
+          )}
+          {hasSubMenu && (
+            <Icon
+              name={direction === "rtl" ? "chevron-left" : "chevron-right"}
+              size="sm"
+              className="flex-shrink-0"
+            />
+          )}
+        </Box>
+      </Box>
+      {hasSubMenu && isSubMenuOpen && item.subMenu && (
+        <SubMenu
+          items={item.subMenu}
+          itemRef={activeSubMenuRef}
+          direction={direction}
+          eventBus={eventBus}
+        />
+      )}
+    </Box>
+  );
+}
+
 export const Menu: React.FC<MenuProps> = ({
   trigger,
   items,
@@ -240,6 +335,11 @@ export const Menu: React.FC<MenuProps> = ({
       item.onClick?.();
       setIsOpen(false);
     }
+  };
+
+  const openSubMenu = (itemId: string, el: HTMLElement | null) => {
+    setActiveSubMenu(itemId);
+    setActiveSubMenuRef(el);
   };
 
   useEffect(() => {
@@ -306,64 +406,19 @@ export const Menu: React.FC<MenuProps> = ({
       }
 
       return (
-        <Box key={itemId}>
-          <Box
-            as="button"
-            onClick={() => handleItemClick({ ...item, id: itemId }, itemId)}
-            aria-disabled={item.disabled || undefined}
-            onMouseEnter={(e: React.MouseEvent<HTMLElement>) => {
-              if (hasSubMenu) {
-                setActiveSubMenu(itemId);
-                setActiveSubMenuRef(e.currentTarget);
-              }
-            }}
-            data-testid={item.event ? `action-${item.event}` : undefined}
-            className={cn(
-              "w-full flex items-center justify-between gap-3 px-4 py-2 text-start",
-              "text-sm transition-colors",
-              "hover:bg-muted",
-              "focus:outline-none focus:bg-muted",
-              "disabled:opacity-50 disabled:cursor-not-allowed",
-              item.disabled && "cursor-not-allowed",
-              isDanger && "text-error hover:bg-error/10",
-            )}
-          >
-            <Box className="flex items-center gap-3 flex-1 min-w-0">
-              {item.icon &&
-                (typeof item.icon === "string" ? (
-                  <Icon name={item.icon} size="sm" className="flex-shrink-0" />
-                ) : (
-                  <Icon icon={item.icon} size="sm" className="flex-shrink-0" />
-                ))}
-              <Typography
-                variant="small"
-                className={cn("flex-1", isDanger && "text-red-600")}
-              >
-                {item.label}
-              </Typography>
-              {item.badge !== undefined && (
-                <Badge variant="default" size="sm">
-                  {item.badge}
-                </Badge>
-              )}
-              {hasSubMenu && (
-                <Icon
-                  name={direction === "rtl" ? "chevron-left" : "chevron-right"}
-                  size="sm"
-                  className="flex-shrink-0"
-                />
-              )}
-            </Box>
-          </Box>
-          {hasSubMenu && activeSubMenu === itemId && item.subMenu && (
-            <SubMenu
-              items={item.subMenu}
-              itemRef={activeSubMenuRef}
-              direction={direction}
-              eventBus={eventBus}
-            />
-          )}
-        </Box>
+        <MenuItemRow
+          key={itemId}
+          item={item}
+          itemId={itemId}
+          hasSubMenu={hasSubMenu}
+          isDanger={isDanger}
+          direction={direction}
+          isSubMenuOpen={activeSubMenu === itemId}
+          activeSubMenuRef={activeSubMenuRef}
+          eventBus={eventBus}
+          onItemClick={handleItemClick}
+          openSubMenu={openSubMenu}
+        />
       );
     });
 

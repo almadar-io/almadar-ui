@@ -10,6 +10,7 @@ import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Typography } from '../atoms/Typography';
 import { cn } from '../../../lib/cn';
+import { useTapReveal } from '../../../hooks/useTapReveal';
 
 export type TooltipPosition = 'top' | 'bottom' | 'left' | 'right';
 
@@ -118,6 +119,14 @@ export const Tooltip: React.FC<TooltipProps> = ({
     }, hideDelay);
   };
 
+  // Touch has no hover, so the tooltip is unreachable on mobile. A tap reveals
+  // it through the SAME show/hide path; an outside tap dismisses it.
+  const { triggerProps } = useTapReveal({
+    onReveal: handleMouseEnter,
+    onDismiss: handleMouseLeave,
+    refs: [triggerRef, tooltipRef],
+  });
+
   useLayoutEffect(() => {
     if (isVisible) {
       updatePosition();
@@ -134,12 +143,18 @@ export const Tooltip: React.FC<TooltipProps> = ({
   // Wrap non-element children in a span
   const triggerElement = React.isValidElement(children) ? children : <span>{children}</span>;
 
+  const childPointerDown = (triggerElement as React.ReactElement<{ onPointerDown?: (e: React.PointerEvent) => void }>).props.onPointerDown;
+
   const trigger = React.cloneElement(triggerElement as React.ReactElement<any>, {
     ref: triggerRef,
     onMouseEnter: handleMouseEnter,
     onMouseLeave: handleMouseLeave,
     onFocus: handleMouseEnter,
     onBlur: handleMouseLeave,
+    onPointerDown: (e: React.PointerEvent) => {
+      triggerProps.onPointerDown(e);
+      childPointerDown?.(e);
+    },
   });
 
   const tooltipContent = isVisible && triggerRect ? (

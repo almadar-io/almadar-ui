@@ -115,6 +115,12 @@ export const TextHighlight: React.FC<TextHighlightProps> = ({
         if (hoverEvent) eventBus.emit(`UI:${hoverEvent}`, { hovered: false, annotationId });
         onMouseLeave?.();
       }}
+      onPointerDown={(e) => {
+        // Touch/pen has no hover: a tap emits the SAME hover event the mouse-enter path fires.
+        if (e.pointerType === "mouse") return;
+        if (hoverEvent) eventBus.emit(`UI:${hoverEvent}`, { hovered: true, annotationId });
+        onMouseEnter?.();
+      }}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
