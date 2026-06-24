@@ -47,20 +47,37 @@ export const FEATURE_COLORS: Record<string, string> = {
 };
 
 // =============================================================================
+// Layout
+// =============================================================================
+
+/**
+ * Tile layout mode. 'isometric' = 2:1 diamond projection (default).
+ * 'hex' = pointy-top offset-row hex grid.
+ *
+ * Hex constants (at scale=1):
+ *   w = TILE_WIDTH (256)   — horizontal cell width
+ *   h = FLOOR_HEIGHT (128) — vertical row stride (= w/2; hex row-to-row = h*0.75 = 96)
+ * Forward:  screenX = col*w + (row&1)*(w/2) + baseOffsetX
+ *           screenY = row * (h * 0.75)
+ * Inverse: row = round(screenY / (h*0.75)); col = round((screenX - (row&1)*(w/2) - baseOffsetX) / w)
+ */
+export type TileLayout = 'isometric' | 'hex';
+
+// =============================================================================
 // Coordinate Conversion
 // =============================================================================
 
 /**
  * Convert tile grid coordinates to screen pixel coordinates.
  *
- * Uses 2:1 diamond isometric projection:
- * - X increases to the lower-right
- * - Y increases to the lower-left
+ * For 'isometric' (default): 2:1 diamond projection.
+ * For 'hex': pointy-top offset-row projection (odd rows shifted right by w/2).
  *
- * @param tileX - Grid X coordinate
- * @param tileY - Grid Y coordinate
+ * @param tileX - Grid X (col) coordinate
+ * @param tileY - Grid Y (row) coordinate
  * @param scale - Render scale factor
  * @param baseOffsetX - Horizontal offset to center the grid
+ * @param layout - Tile layout mode (default: 'isometric')
  * @returns Screen position { x, y } of the tile's top-left corner
  */
 export function isoToScreen(
@@ -68,9 +85,16 @@ export function isoToScreen(
     tileY: number,
     scale: number,
     baseOffsetX: number,
+    layout: TileLayout = 'isometric',
 ): { x: number; y: number } {
     const scaledTileWidth = TILE_WIDTH * scale;
     const scaledFloorHeight = FLOOR_HEIGHT * scale;
+
+    if (layout === 'hex') {
+        const screenX = tileX * scaledTileWidth + (tileY & 1) * (scaledTileWidth / 2) + baseOffsetX;
+        const screenY = tileY * (scaledFloorHeight * 0.75);
+        return { x: screenX, y: screenY };
+    }
 
     const screenX = (tileX - tileY) * (scaledTileWidth / 2) + baseOffsetX;
     const screenY = (tileX + tileY) * (scaledFloorHeight / 2);
@@ -87,6 +111,7 @@ export function isoToScreen(
  * @param screenY - Screen Y in pixels
  * @param scale - Render scale factor
  * @param baseOffsetX - Horizontal offset used in isoToScreen
+ * @param layout - Tile layout mode (default: 'isometric')
  * @returns Snapped grid position { x, y }
  */
 export function screenToIso(
@@ -94,9 +119,16 @@ export function screenToIso(
     screenY: number,
     scale: number,
     baseOffsetX: number,
+    layout: TileLayout = 'isometric',
 ): { x: number; y: number } {
     const scaledTileWidth = TILE_WIDTH * scale;
     const scaledFloorHeight = FLOOR_HEIGHT * scale;
+
+    if (layout === 'hex') {
+        const row = Math.round(screenY / (scaledFloorHeight * 0.75));
+        const col = Math.round((screenX - (row & 1) * (scaledTileWidth / 2) - baseOffsetX) / scaledTileWidth);
+        return { x: col, y: row };
+    }
 
     const adjustedX = screenX - baseOffsetX;
 

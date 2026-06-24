@@ -34,4 +34,5 @@ export { GameMenu, type GameMenuProps, type MenuOption } from './GameMenu';
 export { GameOverScreen, type GameOverScreenProps, type GameOverStat, type GameOverAction } from './GameOverScreen';
 export { PlatformerCanvas, type PlatformerCanvasProps, type PlatformerPlatform, type PlatformerPlayer } from './PlatformerCanvas';
 export { IsometricCanvas, type IsometricCanvasProps } from './IsometricCanvas';
+export type { TileLayout } from '../organisms/utils/isometric';
 export type { IsometricTile, IsometricUnit, IsometricFeature } from '../organisms/types/isometric';

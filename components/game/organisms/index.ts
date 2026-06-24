@@ -91,6 +91,7 @@ export {
     DIAMOND_TOP_Y,
     FEATURE_COLORS,
 } from './utils/isometric';
+export type { TileLayout } from './utils/isometric';
 export {
     inferDirection,
     resolveSheetDirection,
@@ -166,6 +167,10 @@ export {
     type CardBattlerBoardProps,
     type CardBattlerCard,
 } from './CardBattlerBoard';
+export {
+    HexStrategyBoard,
+    type HexStrategyBoardProps,
+} from './HexStrategyBoard';
 
 // ---------------------------------------------------------------------------
 // Trait / State Machine Visualization
