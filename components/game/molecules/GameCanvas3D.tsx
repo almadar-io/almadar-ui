@@ -625,9 +625,11 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                 const hasAtlas = unitAtlasUrl(unit) !== null;
                 const initialFrame = hasAtlas ? resolveUnitFrame(unit.id) : null;
 
-                const modelScale = UNIT_BASE_MODEL_SCALE * unitScale;
-                const billboardHeight = UNIT_BASE_BILLBOARD_HEIGHT * unitScale;
-                const primitiveRadius = UNIT_BASE_PRIMITIVE_RADIUS * unitScale;
+                const modelScale = UNIT_BASE_MODEL_SCALE * unitScale * gridConfig.cellSize;
+                // Billboard height is proportional to one cell so units stay
+                // tile-sized regardless of board dimensions or cellSize.
+                const billboardHeight = UNIT_BASE_BILLBOARD_HEIGHT * unitScale * gridConfig.cellSize;
+                const primitiveRadius = UNIT_BASE_PRIMITIVE_RADIUS * unitScale * gridConfig.cellSize;
 
                 return (
                     <group
@@ -684,7 +686,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
 
                         {/* Health bar */}
                         {unit.health !== undefined && unit.maxHealth !== undefined && (
-                            <group position={[0, 1.2, 0]}>
+                            <group position={[0, billboardHeight, 0]}>
                                 <mesh position={[-0.25, 0, 0]}>
                                     <planeGeometry args={[0.5, 0.05]} />
                                     <meshBasicMaterial color={0x333333} />
@@ -712,7 +714,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                     </group>
                 );
             },
-            [selectedUnitId, handleUnitClick, resolveUnitFrame, unitScale]
+            [selectedUnitId, handleUnitClick, resolveUnitFrame, unitScale, gridConfig]
         );
 
         // Default feature renderer
@@ -811,10 +813,10 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                 <div
                     ref={containerRef}
                     className={cn('game-canvas-3d relative w-full overflow-hidden', className)}
-                    // Explicit height (not min-height) so R3F's react-use-measure gets a
-                    // definite containing-block height on first ResizeObserver tick and
-                    // doesn't initialize the canvas at the HTML-default 150 px.
-                    style={{ height: '85vh' }}
+                    // Fill available flex/grid space from the parent; fall back to a
+                    // 400 px floor so R3F's react-use-measure always gets a non-zero
+                    // containing-block height on the first ResizeObserver tick.
+                    style={{ flex: '1 1 0', minHeight: '400px' }}
                     data-orientation={orientation}
                     data-camera-mode={cameraMode}
                     data-overlay={overlay}

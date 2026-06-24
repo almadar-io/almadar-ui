@@ -1,11 +1,17 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
+import { resolveIcon, type IconInput } from '../../core/atoms/Icon';
+import type { AssetUrl } from '@almadar/core';
 
 export interface ChoiceButtonProps {
   /** Choice text content */
   text: string;
   /** Choice index number (displayed as prefix) */
   index?: number;
+  /** Sprite image URL — takes precedence over icon when provided */
+  assetUrl?: AssetUrl;
+  /** Icon displayed before the text */
+  icon?: IconInput;
   /** Whether the choice is disabled */
   disabled?: boolean;
   /** Whether the choice is currently selected */
@@ -19,6 +25,8 @@ export interface ChoiceButtonProps {
 export function ChoiceButton({
   text = 'Charge forward into the fray',
   index,
+  assetUrl,
+  icon,
   disabled = false,
   selected = false,
   onClick,
@@ -49,6 +57,22 @@ export function ChoiceButton({
           {index}.
         </span>
       )}
+      {assetUrl ? (
+        <img
+          src={assetUrl}
+          alt=""
+          width={16}
+          height={16}
+          style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
+          className="flex-shrink-0"
+        />
+      ) : icon ? (
+        <span className="flex-shrink-0 text-sm">
+          {typeof icon === 'string'
+            ? (() => { const I = resolveIcon(icon); return I ? <I className="w-4 h-4" /> : null; })()
+            : (() => { const I = icon; return <I className="w-4 h-4" />; })()}
+        </span>
+      ) : null}
       <span className="text-sm leading-snug">{text}</span>
     </button>
   );

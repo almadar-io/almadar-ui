@@ -6,10 +6,13 @@ import { Box } from '../../core/atoms/Box';
 import { HStack } from '../../core/atoms/Stack';
 import { Typography } from '../../core/atoms/Typography';
 import type { IconInput } from '../../core/atoms';
+import type { AssetUrl } from '@almadar/core';
 
 export interface ActivePowerup {
   /** Unique powerup ID */
   id: string;
+  /** Sprite image URL — takes precedence over icon when provided */
+  assetUrl?: AssetUrl;
   /** Icon component or emoji */
   icon?: IconInput;
   /** Powerup label */
@@ -53,6 +56,7 @@ export function PowerupSlots({
       {active.map((powerup) => (
         <Box key={powerup.id} className="relative">
           <ItemSlot
+            assetUrl={powerup.assetUrl}
             icon={powerup.icon}
             label={powerup.label}
             rarity="uncommon"

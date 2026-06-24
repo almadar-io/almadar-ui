@@ -6,9 +6,12 @@ import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 import { Badge } from '../../core/atoms/Badge';
 import type { IconInput } from '../../core/atoms';
+import type { AssetUrl } from '@almadar/core';
 
 export interface HealthEffect {
   icon: IconInput;
+  /** Sprite image URL — takes precedence over icon when provided */
+  assetUrl?: AssetUrl;
   label?: string;
   variant?: 'buff' | 'debuff' | 'neutral';
 }
@@ -133,8 +136,18 @@ export function HealthPanel({
                 key={i}
                 variant={effectVariantMap[effect.variant ?? 'neutral']}
                 size="sm"
-                icon={effect.icon}
+                icon={effect.assetUrl ? undefined : effect.icon}
               >
+                {effect.assetUrl && (
+                  <img
+                    src={effect.assetUrl}
+                    alt=""
+                    width={12}
+                    height={12}
+                    style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
+                    className="flex-shrink-0 inline-block"
+                  />
+                )}
                 {effect.label}
               </Badge>
             ))}

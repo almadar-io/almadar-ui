@@ -6,10 +6,13 @@ import { Button } from '../../core/atoms/Button';
 import { Box } from '../../core/atoms/Box';
 import { useEventBus } from '../../../hooks/useEventBus';
 import type { IconInput } from '../../core/atoms';
+import type { AssetUrl } from '@almadar/core';
 
 export interface TurnPanelAction {
   /** Action button label */
   label: string;
+  /** Sprite image URL — takes precedence over icon when provided */
+  assetUrl?: AssetUrl;
   /** Icon for the button */
   icon?: IconInput;
   /** Event name to emit when clicked */
@@ -79,9 +82,19 @@ export function TurnPanel({
               variant="ghost"
               size="sm"
               disabled={action.disabled}
-              leftIcon={action.icon}
+              leftIcon={action.assetUrl ? undefined : action.icon}
               onClick={() => handleAction(action.event)}
             >
+              {action.assetUrl && (
+                <img
+                  src={action.assetUrl}
+                  alt=""
+                  width={14}
+                  height={14}
+                  style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
+                  className="flex-shrink-0"
+                />
+              )}
               {action.label}
             </Button>
           ))}

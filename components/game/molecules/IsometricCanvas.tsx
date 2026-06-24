@@ -471,7 +471,10 @@ export function IsometricCanvas({
         const minX = Math.min(...allScreenPos.map(p => p.x));
         const maxX = Math.max(...allScreenPos.map(p => p.x + scaledTileWidth));
         const minY = Math.min(...allScreenPos.map(p => p.y));
-        const maxY = Math.max(...allScreenPos.map(p => p.y + scaledTileHeight));
+        // Hex tile height = scaledTileWidth (square sprites, top-anchored at pos.y).
+        // ISO tile height = scaledTileHeight (tall sprite, bottom-anchored).
+        const tileBottomExtent = tileLayout === 'hex' ? scaledTileWidth : scaledTileHeight;
+        const maxY = Math.max(...allScreenPos.map(p => p.y + tileBottomExtent));
 
         const worldW = maxX - minX;
         const worldH = maxY - minY;
@@ -594,7 +597,12 @@ export function IsometricCanvas({
                     const drawW = scaledTileWidth;
                     const drawH = scaledTileWidth * (img.naturalHeight / img.naturalWidth);
                     const drawX = pos.x;
-                    const drawY = pos.y + scaledTileHeight - drawH;
+                    // Hex: pos.y is the top of the hex cell; anchor sprite top there so the
+                    // hex row pitch (scaledFloorHeight*0.75) controls row spacing, not the ISO
+                    // bounding-box height (scaledTileHeight). ISO keeps the bottom-anchor formula.
+                    const drawY = tileLayout === 'hex'
+                        ? pos.y
+                        : pos.y + scaledTileHeight - drawH;
                     ctx.drawImage(img, drawX, drawY, drawW, drawH);
                 }
             } else {

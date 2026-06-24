@@ -18,6 +18,39 @@ import { cn } from "../../../lib/cn";
 import { Box } from "../../core/atoms/Box";
 import { HStack } from "../../core/atoms/Stack";
 import { Typography } from "../../core/atoms/Typography";
+import { getComponentForPattern } from "@almadar/patterns";
+import type { SlotContent } from "../../../hooks/useUISlots";
+
+type SlotContentRendererCmp = React.ComponentType<{ content: SlotContent; onDismiss: () => void }>;
+let _scr: SlotContentRendererCmp | null = null;
+function getSlotContentRenderer(): SlotContentRendererCmp {
+  if (_scr) return _scr;
+  const mod = require("../../core/organisms/UISlotRenderer") as { SlotContentRenderer: SlotContentRendererCmp };
+  _scr = mod.SlotContentRenderer;
+  return _scr;
+}
+
+function resolveDescriptor(value: React.ReactNode, idPrefix: string): React.ReactNode {
+  if (value === null || value === undefined) return value;
+  if (React.isValidElement(value)) return value;
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return value;
+  if (Array.isArray(value)) {
+    return value.map((item, i) => (
+      <React.Fragment key={i}>{resolveDescriptor(item as React.ReactNode, `${idPrefix}-${i}`)}</React.Fragment>
+    ));
+  }
+  if (typeof value === "object") {
+    const rec = (value as unknown) as Record<string, unknown>;
+    if (typeof rec.type === "string" && getComponentForPattern(rec.type) !== null) {
+      const { type, props: nestedProps, _id, ...flatProps } = rec as { type: string; props?: Record<string, unknown>; _id?: string; [k: string]: unknown };
+      const resolvedProps = (nestedProps !== undefined ? nestedProps : flatProps) as SlotContent["props"];
+      const content: SlotContent = { id: _id ?? idPrefix, pattern: type, props: resolvedProps, priority: 0 };
+      const SCR = getSlotContentRenderer();
+      return <SCR content={content} onDismiss={() => undefined} />;
+    }
+  }
+  return null;
+}
 
 export interface GameShellProps {
     /** Application / game title shown in the HUD bar */
@@ -83,7 +116,7 @@ export const GameShell: React.FC<GameShellProps> = ({
                     >
                         {appName}
                     </Typography>
-                    {hud && <Box className="game-shell__hud">{hud}</Box>}
+                    {hud && <Box className="game-shell__hud">{resolveDescriptor(hud, "gs-hud")}</Box>}
                 </HStack>
             )}
 
@@ -96,7 +129,7 @@ export const GameShell: React.FC<GameShellProps> = ({
                     position: "relative",
                 }}
             >
-                {children}
+                {resolveDescriptor(children, "gs-children")}
             </Box>
         </Box>
     );
