@@ -80,6 +80,10 @@ export interface GraphCanvasProps {
     repulsion?: number;
     /** Force-sim target edge length (larger ⇒ more spread out) */
     linkDistance?: number;
+    /** Minimum empty gap (px) enforced between node edges so nodes never overlap. */
+    nodeSpacing?: number;
+    /** Base opacity for links when nothing is hovered (kept faint so dense graphs stay readable; incident links brighten on hover). */
+    linkOpacity?: number;
     /** Layout algorithm */
     layout?: "force" | "circular" | "grid";
     /** Entity name for schema-driven auto-fetch */
@@ -141,6 +145,8 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     selectedNodeId,
     repulsion = 800,
     linkDistance = 100,
+    nodeSpacing = 28,
+    linkOpacity = 0.18,
     layout = "force",
     entity,
     isLoading = false,
@@ -344,6 +350,28 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                     node.y = Math.max(30, Math.min(h - 30, node.y!));
                 }
 
+                // Collision separation — hard constraint so node circles (and their
+                // immediate spacing) never overlap, regardless of how the soft forces settle.
+                for (let i = 0; i < nodes.length; i++) {
+                    for (let j = i + 1; j < nodes.length; j++) {
+                        const a = nodes[i];
+                        const b = nodes[j];
+                        const dx = b.x! - a.x!;
+                        const dy = b.y! - a.y!;
+                        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                        const minDist = (a.size || 8) + (b.size || 8) + nodeSpacing;
+                        if (dist < minDist) {
+                            const push = (minDist - dist) / 2;
+                            const ux = dx / dist;
+                            const uy = dy / dist;
+                            a.x = Math.max(30, Math.min(w - 30, a.x! - ux * push));
+                            a.y = Math.max(30, Math.min(h - 30, a.y! - uy * push));
+                            b.x = Math.max(30, Math.min(w - 30, b.x! + ux * push));
+                            b.y = Math.max(30, Math.min(h - 30, b.y! + uy * push));
+                        }
+                    }
+                }
+
                 iterations++;
                 forceUpdate((n) => n + 1);
                 if (iterations < maxIterations) {
@@ -359,7 +387,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         return () => {
             cancelAnimationFrame(animRef.current);
         };
-    }, [propNodes, propEdges, layout, repulsion, linkDistance, logicalW, height]);
+    }, [propNodes, propEdges, layout, repulsion, linkDistance, nodeSpacing, logicalW, height]);
 
     // Render
     useEffect(() => {
@@ -399,11 +427,13 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
             if (!source || !target) continue;
 
             const incident = !!hoveredNode && (edge.source === hoveredNode || edge.target === hoveredNode);
-            ctx.globalAlpha = hoveredNode ? (incident ? 1 : 0.12) : 1;
+            // Links stay faint by default so a dense graph reads as a backdrop; the edges
+            // incident to a hovered node light up while the rest drop further back.
+            ctx.globalAlpha = hoveredNode ? (incident ? 1 : 0.05) : linkOpacity;
             ctx.beginPath();
             ctx.moveTo(source.x!, source.y!);
             ctx.lineTo(target.x!, target.y!);
-            ctx.strokeStyle = incident ? accentColor : (edge.color || "#88888866");
+            ctx.strokeStyle = incident ? accentColor : (edge.color || "#888888");
             ctx.lineWidth = incident ? 2 : edge.weight ? Math.max(1, edge.weight) : 1;
             ctx.stroke();
 
