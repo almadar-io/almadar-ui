@@ -11,6 +11,7 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils';
 import { createLogger } from '@almadar/logger';
 
 const log = createLogger('almadar:ui:game:model-loader');
@@ -144,7 +145,13 @@ export function ModelLoader({
     // Clone and prepare the model
     const model = useMemo(() => {
         if (!loadedModel) return null;
-        const cloned = loadedModel.clone();
+        // SkeletonUtils.clone — plain Object3D.clone() rebinds a SkinnedMesh's bones to the
+        // ORIGINAL skeleton, which collapses the clone's geometry to the bind pose at the
+        // origin. That degenerate bounding box then drives normFactor → 1/≈0 and the model
+        // renders gigantic. SkeletonUtils.clone deep-copies the skeleton so skinned character
+        // GLBs keep their real extent.
+        const cloned = cloneSkeleton(loadedModel) as THREE.Group;
+        cloned.updateMatrixWorld(true);
 
         // Apply shadow settings
         cloned.traverse((child) => {
@@ -167,7 +174,11 @@ export function ModelLoader({
         const size = new THREE.Vector3();
         box.getSize(size);
         const maxDim = Math.max(size.x, size.y, size.z);
-        return maxDim > 0 && Number.isFinite(maxDim) ? 1 / maxDim : 1;
+        // Guard a degenerate bounding box (a model that loaded with no measurable extent):
+        // 1/≈0 would blow the model up to fill the canvas. Below this floor we decline to
+        // normalize (factor 1) rather than upscale by a wild factor.
+        if (!Number.isFinite(maxDim) || maxDim < 0.05) return 1;
+        return 1 / maxDim;
     }, [model]);
 
     // Calculate scale array (world-size in cells × the unit-cube normalization factor).
