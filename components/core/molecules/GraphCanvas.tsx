@@ -112,6 +112,18 @@ interface SimNode extends GraphNode {
     vy: number;
     fx: number;
     fy: number;
+    /** Cached rendered width of the label (measured once) so collision can keep text from overlapping. */
+    labelW?: number;
+}
+
+/** Offscreen 2D context reused to measure label widths (matches the label font below). */
+let labelMeasureCtx: CanvasRenderingContext2D | null = null;
+function measureLabelWidth(text: string): number {
+    if (typeof document === "undefined") return text.length * 6;
+    if (!labelMeasureCtx) labelMeasureCtx = document.createElement("canvas").getContext("2d");
+    if (!labelMeasureCtx) return text.length * 6;
+    labelMeasureCtx.font = "10px system-ui";
+    return labelMeasureCtx.measureText(text).width;
 }
 
 function getGroupColor(group: string | undefined, groups: string[]): string {
@@ -356,24 +368,40 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                     node.y = Math.max(30, Math.min(h - 30, node.y!));
                 }
 
-                // Collision separation — hard constraint so node circles (and their
-                // immediate spacing) never overlap, regardless of how the soft forces settle.
+                // Collision separation — hard constraint via axis-aligned boxes that cover the
+                // node circle AND its label (drawn centered below), so neither circles nor text
+                // overlap. Push apart along the axis of least penetration each iteration.
+                const LABEL_GAP = 12; // label baseline offset below the circle (matches render)
+                const LABEL_H = 12; // one line of 10px text
+                const pad = nodeSpacing / 2;
                 for (let i = 0; i < nodes.length; i++) {
                     for (let j = i + 1; j < nodes.length; j++) {
                         const a = nodes[i];
                         const b = nodes[j];
-                        const dx = b.x! - a.x!;
-                        const dy = b.y! - a.y!;
-                        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                        const minDist = (a.size || 8) + (b.size || 8) + nodeSpacing;
-                        if (dist < minDist) {
-                            const push = (minDist - dist) / 2;
-                            const ux = dx / dist;
-                            const uy = dy / dist;
-                            a.x = Math.max(30, Math.min(w - 30, a.x! - ux * push));
-                            a.y = Math.max(30, Math.min(h - 30, a.y! - uy * push));
-                            b.x = Math.max(30, Math.min(w - 30, b.x! + ux * push));
-                            b.y = Math.max(30, Math.min(h - 30, b.y! + uy * push));
+                        const ar = a.size || 8;
+                        const br = b.size || 8;
+                        if (showLabels) {
+                            if (a.labelW === undefined) a.labelW = a.label ? measureLabelWidth(a.label) : 0;
+                            if (b.labelW === undefined) b.labelW = b.label ? measureLabelWidth(b.label) : 0;
+                        }
+                        const labelBelow = showLabels ? LABEL_GAP + LABEL_H : 0;
+                        const aHalfW = Math.max(ar, (a.labelW ?? 0) / 2) + pad;
+                        const bHalfW = Math.max(br, (b.labelW ?? 0) / 2) + pad;
+                        const aTop = a.y! - ar - pad, aBot = a.y! + ar + labelBelow + pad;
+                        const bTop = b.y! - br - pad, bBot = b.y! + br + labelBelow + pad;
+                        const overlapX =
+                            Math.min(a.x! + aHalfW, b.x! + bHalfW) - Math.max(a.x! - aHalfW, b.x! - bHalfW);
+                        const overlapY = Math.min(aBot, bBot) - Math.max(aTop, bTop);
+                        if (overlapX > 0 && overlapY > 0) {
+                            if (overlapX <= overlapY) {
+                                const push = (overlapX / 2) * (b.x! >= a.x! ? 1 : -1);
+                                a.x = Math.max(30, Math.min(w - 30, a.x! - push));
+                                b.x = Math.max(30, Math.min(w - 30, b.x! + push));
+                            } else {
+                                const push = (overlapY / 2) * ((bTop + bBot) >= (aTop + aBot) ? 1 : -1);
+                                a.y = Math.max(30, Math.min(h - 30, a.y! - push));
+                                b.y = Math.max(30, Math.min(h - 30, b.y! + push));
+                            }
                         }
                     }
                 }
@@ -393,7 +421,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         return () => {
             cancelAnimationFrame(animRef.current);
         };
-    }, [propNodes, propEdges, layout, repulsion, linkDistance, nodeSpacing, logicalW, height]);
+    }, [propNodes, propEdges, layout, repulsion, linkDistance, nodeSpacing, showLabels, logicalW, height]);
 
     // Render
     useEffect(() => {
