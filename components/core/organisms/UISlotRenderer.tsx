@@ -1322,6 +1322,12 @@ function SlotContentRenderer({
     }
   }
 
+  // Owning orbital, resolved deterministically from the source trait via the
+  // schema context (same lookup as MaybeTraitScope). Omitted when unresolvable.
+  const orbitalName = schemaCtx && content.sourceTrait !== undefined
+    ? schemaCtx.orbitalsByTrait.get(content.sourceTrait)
+    : undefined;
+
   const PatternComponent = getComponentForPattern(content.pattern);
 
   // If we have a registered component, render it with props
@@ -1512,6 +1518,7 @@ function SlotContentRenderer({
         data-orb-entity={content.entity}
         data-orb-path={myPath}
         data-orb-pattern={content.pattern}
+        data-orb-orbital={orbitalName}
       >
         {renderedChildren !== undefined ? (
           <PatternComponent {...finalProps}>{renderedChildren}</PatternComponent>
@@ -1537,6 +1544,7 @@ function SlotContentRenderer({
       data-orb-entity={content.entity}
       data-orb-path={patternPath ?? 'root'}
       data-orb-pattern={content.pattern}
+      data-orb-orbital={orbitalName}
     >
       {(content.props.children as React.ReactNode) ?? (
         <Box className="p-4 text-sm text-muted-foreground border border-dashed border-border rounded">

@@ -87,6 +87,11 @@ export { schemaToOverviewGraph, orbitalToExpandedGraph } from '../components/avl
 export { OrbPreviewNode } from '../components/avl/molecules/OrbPreviewNode';
 export { EventFlowEdge } from '../components/avl/molecules/EventFlowEdge';
 
+// DOM → EditFocus (inspect primitive). Reads `data-orb-*` (incl. `data-orb-orbital`
+// stamped by UISlotRenderer) off a clicked element so consumers (runtime-verify
+// catalog, studio chatbox) can turn a rendered node into an EditFocus.
+export { deriveEditFocusFromElement } from '../components/avl/derive-edit-focus';
+
 // Canvas DnD (mirrors useDataDnd; pointer-sensor based so it works inside
 // React Flow nodes — the HTML5 DnD path was swallowed by RF's pan/zoom).
 export {

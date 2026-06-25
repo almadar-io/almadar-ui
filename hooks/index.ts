@@ -212,6 +212,16 @@ export {
   type RenderInterpolationHandle,
 } from './useRenderInterpolation';
 
+// Agent-trace accumulation hook — pure view-model reducer (no transport).
+export {
+  useAgentTrace,
+  type UseAgentTraceResult,
+  type AgentTraceState,
+  type TraceStatus,
+  type TraceUpdate,
+  type SubagentUpsert,
+} from './useAgentTrace';
+
 // GitHub integration hooks
 export {
   useGitHubStatus,

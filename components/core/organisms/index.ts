@@ -136,6 +136,19 @@ export {
   type SegmentRendererProps,
 } from './SegmentRenderer';
 
+// Agent-trace organisms (promoted from apps/builder). Read the agent-trace
+// view-model (Trace* types) from @almadar/core; own no transport.
+export { ChatBar, type ChatBarProps, type ChatBarStatus } from './ChatBar';
+export {
+  ELEMENT_SELECTED_EVENT,
+  parseEditFocus,
+} from './trace-edit-focus';
+export {
+  SubagentTracePanel,
+  type SubagentTracePanelProps,
+  type TraceDisclosureLevel,
+} from './SubagentTracePanel';
+
 // Phase 10: organisms moved to molecules (no entity binding) or expressed in std render-ui (domain-shaped).
 
 // FeatureRenderer is three.js-backed (imports @react-three/fiber at module top)

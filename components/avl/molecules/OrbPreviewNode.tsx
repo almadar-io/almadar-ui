@@ -20,7 +20,6 @@ import type {
   Trait,
   Transition,
   Effect,
-  EditFocus,
   EntityData,
   EntityRow,
   EventPayloadField,
@@ -46,6 +45,7 @@ import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { useCanvasDroppable, type CanvasDropTarget } from './useCanvasDnd';
 import { formatPayloadTooltip } from './wire-validation';
+import { deriveEditFocusFromElement } from '../derive-edit-focus';
 import { createLogger } from '@almadar/logger';
 
 const eventHandleLog = createLogger('almadar:ui:nan-coord');
@@ -528,35 +528,6 @@ function rectRelativeTo(el: Element, container: Element, zoom: number): RectLike
   };
 }
 
-/**
- * Build an `EditFocus` from a clicked `[data-pattern]` element's `data-orb-*`
- * address (emitted by UISlotRenderer) plus the node's own orbital name. This
- * feeds the studio chatbox's contextual-edit flow via `UI:ELEMENT_SELECTED`.
- */
-function buildFocus(el: HTMLElement, orbitalName: string): EditFocus | null {
-  if (!orbitalName) return null;
-  const path = el.getAttribute('data-orb-path') ?? el.getAttribute('data-pattern-path');
-  const patternType = el.getAttribute('data-orb-pattern') ?? el.getAttribute('data-pattern');
-  const trait = el.getAttribute('data-orb-trait') ?? el.getAttribute('data-source-trait');
-  const focus: EditFocus = {
-    level: 'node',
-    orbital: orbitalName,
-    label: patternType ?? trait ?? 'element',
-  };
-  if (path !== null) focus.path = path;
-  if (trait !== null) focus.trait = trait;
-  if (patternType !== null) focus.patternType = patternType;
-  const transition = el.getAttribute('data-orb-transition');
-  if (transition !== null) focus.transition = transition;
-  const state = el.getAttribute('data-orb-state');
-  if (state !== null) focus.state = state;
-  const slot = el.getAttribute('data-orb-slot');
-  if (slot !== null) focus.slot = slot;
-  const entity = el.getAttribute('data-orb-entity');
-  if (entity !== null) focus.entity = entity;
-  return focus;
-}
-
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -661,9 +632,10 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       });
 
       // Feed the studio chatbox's contextual-edit flow with the element's
-      // address. The node knows its own orbital — more reliable than a
-      // client-side trait→orbital lookup.
-      const focus = buildFocus(patternEl, data.orbitalName);
+      // address. The orbital is read from the DOM (`data-orb-orbital`, stamped
+      // by UISlotRenderer from the schema context) rather than the node's own
+      // name, so a click correctly attributes to whichever of N orbitals it hit.
+      const focus = deriveEditFocusFromElement(patternEl);
       if (focus) eventBus.emit('UI:ELEMENT_SELECTED', { focus: { ...focus } });
     } else {
       setSelectedRect(null);
