@@ -119,7 +119,7 @@ export interface IsometricCanvasProps {
     tileLeaveEvent?: EventEmit<Record<string, never>>;
 
     // --- Rendering options ---
-    /** Tile layout projection: 'isometric' (default 2:1 diamond) or 'hex' (pointy-top offset rows) */
+    /** Tile layout projection: 'isometric' (default 2:1 diamond), 'hex' (pointy-top offset rows), or 'flat' (orthographic top-down square grid) */
     tileLayout?: TileLayout;
     /** Render scale (0.4 = 40% zoom) */
     scale?: number;
@@ -296,8 +296,8 @@ export function IsometricCanvas({
     // -- Tiles default sort (stable for painter's algorithm) --
     const sortedTiles = useMemo(() => {
         const tiles = [...tilesProp];
-        if (tileLayout === 'hex') {
-            // Hex: top-to-bottom row order, then left-to-right within each row.
+        if (tileLayout === 'hex' || tileLayout === 'flat') {
+            // Hex/flat: top-to-bottom row order, then left-to-right within each row.
             tiles.sort((a, b) => a.y !== b.y ? a.y - b.y : a.x - b.x);
         } else {
             tiles.sort((a, b) => {
@@ -471,9 +471,9 @@ export function IsometricCanvas({
         const minX = Math.min(...allScreenPos.map(p => p.x));
         const maxX = Math.max(...allScreenPos.map(p => p.x + scaledTileWidth));
         const minY = Math.min(...allScreenPos.map(p => p.y));
-        // Hex tile height = scaledTileWidth (square sprites, top-anchored at pos.y).
+        // Hex/flat tile height = scaledTileWidth (square sprites, top-anchored at pos.y).
         // ISO tile height = scaledTileHeight (tall sprite, bottom-anchored).
-        const tileBottomExtent = tileLayout === 'hex' ? scaledTileWidth : scaledTileHeight;
+        const tileBottomExtent = (tileLayout === 'hex' || tileLayout === 'flat') ? scaledTileWidth : scaledTileHeight;
         const maxY = Math.max(...allScreenPos.map(p => p.y + tileBottomExtent));
 
         const worldW = maxX - minX;
@@ -597,10 +597,9 @@ export function IsometricCanvas({
                     const drawW = scaledTileWidth;
                     const drawH = scaledTileWidth * (img.naturalHeight / img.naturalWidth);
                     const drawX = pos.x;
-                    // Hex: pos.y is the top of the hex cell; anchor sprite top there so the
-                    // hex row pitch (scaledFloorHeight*0.75) controls row spacing, not the ISO
-                    // bounding-box height (scaledTileHeight). ISO keeps the bottom-anchor formula.
-                    const drawY = tileLayout === 'hex'
+                    // Hex/flat: pos.y is the top of the cell; anchor sprite top there so the
+                    // row pitch controls spacing, not the ISO bounding-box height (scaledTileHeight).
+                    const drawY = (tileLayout === 'hex' || tileLayout === 'flat')
                         ? pos.y
                         : pos.y + scaledTileHeight - drawH;
                     ctx.drawImage(img, drawX, drawY, drawW, drawH);
@@ -683,7 +682,7 @@ export function IsometricCanvas({
 
         // =========== FEATURES ===========
         const sortedFeatures = [...features].sort((a, b) => {
-            if (tileLayout === 'hex') return a.y !== b.y ? a.y - b.y : a.x - b.x;
+            if (tileLayout === 'hex' || tileLayout === 'flat') return a.y !== b.y ? a.y - b.y : a.x - b.x;
             const depthA = a.x + a.y;
             const depthB = b.x + b.y;
             return depthA !== depthB ? depthA - depthB : a.y - b.y;
@@ -732,7 +731,7 @@ export function IsometricCanvas({
         // =========== UNITS ===========
         const unitsWithPosition = units.filter((u): u is typeof u & { position: { x: number; y: number } } => !!u.position);
         const sortedUnits = [...unitsWithPosition].sort((a, b) => {
-            if (tileLayout === 'hex') return a.position.y !== b.position.y ? a.position.y - b.position.y : a.position.x - b.position.x;
+            if (tileLayout === 'hex' || tileLayout === 'flat') return a.position.y !== b.position.y ? a.position.y - b.position.y : a.position.x - b.position.x;
             const depthA = a.position.x + a.position.y;
             const depthB = b.position.x + b.position.y;
             return depthA !== depthB ? depthA - depthB : a.position.y - b.position.y;

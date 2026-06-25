@@ -53,6 +53,7 @@ export const FEATURE_COLORS: Record<string, string> = {
 /**
  * Tile layout mode. 'isometric' = 2:1 diamond projection (default).
  * 'hex' = pointy-top offset-row hex grid.
+ * 'flat' = orthographic top-down square grid (sokoban/tanks/sports/etc.).
  *
  * Hex constants (at scale=1):
  *   w = TILE_WIDTH (256)   — horizontal cell width
@@ -60,8 +61,15 @@ export const FEATURE_COLORS: Record<string, string> = {
  * Forward:  screenX = col*w + (row&1)*(w/2) + baseOffsetX
  *           screenY = row * (h * 0.75)
  * Inverse: row = round(screenY / (h*0.75)); col = round((screenX - (row&1)*(w/2) - baseOffsetX) / w)
+ *
+ * Flat constants (at scale=1):
+ *   cellW = TILE_WIDTH (256) — horizontal cell pitch
+ *   cellH = FLOOR_HEIGHT (128) — vertical cell pitch (= cellW/2; keeps same visual scale as hex rows)
+ * Forward:  screenX = col*cellW + baseOffsetX
+ *           screenY = row * cellH
+ * Inverse:  col = round((screenX - baseOffsetX) / cellW); row = round(screenY / cellH)
  */
-export type TileLayout = 'isometric' | 'hex';
+export type TileLayout = 'isometric' | 'hex' | 'flat';
 
 // =============================================================================
 // Coordinate Conversion
@@ -72,6 +80,7 @@ export type TileLayout = 'isometric' | 'hex';
  *
  * For 'isometric' (default): 2:1 diamond projection.
  * For 'hex': pointy-top offset-row projection (odd rows shifted right by w/2).
+ * For 'flat': orthographic top-down square grid; col maps to X, row maps to Y.
  *
  * @param tileX - Grid X (col) coordinate
  * @param tileY - Grid Y (row) coordinate
@@ -93,6 +102,12 @@ export function isoToScreen(
     if (layout === 'hex') {
         const screenX = tileX * scaledTileWidth + (tileY & 1) * (scaledTileWidth / 2) + baseOffsetX;
         const screenY = tileY * (scaledFloorHeight * 0.75);
+        return { x: screenX, y: screenY };
+    }
+
+    if (layout === 'flat') {
+        const screenX = tileX * scaledTileWidth + baseOffsetX;
+        const screenY = tileY * scaledFloorHeight;
         return { x: screenX, y: screenY };
     }
 
@@ -127,6 +142,12 @@ export function screenToIso(
     if (layout === 'hex') {
         const row = Math.round(screenY / (scaledFloorHeight * 0.75));
         const col = Math.round((screenX - (row & 1) * (scaledTileWidth / 2) - baseOffsetX) / scaledTileWidth);
+        return { x: col, y: row };
+    }
+
+    if (layout === 'flat') {
+        const col = Math.round((screenX - baseOffsetX) / scaledTileWidth);
+        const row = Math.round(screenY / scaledFloorHeight);
         return { x: col, y: row };
     }
 

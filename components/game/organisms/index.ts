@@ -280,3 +280,18 @@ export type {
     CombatEventType,
     CombatEventData,
 } from './utils/combatEffects';
+
+// New genre boards (G6) — flat TileCanvas (grid) + GameCanvas2D (continuous) + iso
+export { RacingBoard, type RacingBoardProps } from './RacingBoard';
+export { TanksBoard, type TanksBoardProps } from './TanksBoard';
+export { SpaceShmupBoard, type SpaceShmupBoardProps } from './SpaceShmupBoard';
+export { SportsBoard, type SportsBoardProps } from './SportsBoard';
+export { SokobanBoard, type SokobanBoardProps } from './SokobanBoard';
+export { BoardgameBoard, type BoardgameBoardProps } from './BoardgameBoard';
+export { PirateBoard, type PirateBoardProps } from './PirateBoard';
+export { PinballBoard, type PinballBoardProps } from './PinballBoard';
+export { FishingBoard, type FishingBoardProps } from './FishingBoard';
+export { MatchPuzzleBoard, type MatchPuzzleBoardProps } from './MatchPuzzleBoard';
+export { HolidayRunnerBoard, type HolidayRunnerBoardProps } from './HolidayRunnerBoard';
+export { MinigolfBoard, type MinigolfBoardProps } from './MinigolfBoard';
+export { SpaceStationBoard, type SpaceStationBoardProps } from './SpaceStationBoard';
