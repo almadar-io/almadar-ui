@@ -54,6 +54,7 @@ import {
     DIAMOND_TOP_Y,
     FEATURE_COLORS,
 } from '../organisms/utils/isometric';
+import { SHEET_COLUMNS } from '../organisms/utils/spriteSheetConstants';
 import type { TileLayout } from '../organisms/utils/isometric';
 import type { UiError } from '../../core/atoms/types';
 
@@ -757,7 +758,17 @@ export function IsometricCanvas({
             const img = unitSpriteUrl ? getImage(unitSpriteUrl) : null;
             const unitDrawH = scaledFloorHeight * spriteHeightRatio * unitScale;
             const maxUnitW = scaledTileWidth * spriteMaxWidthRatio * unitScale;
-            const ar = img ? img.naturalWidth / img.naturalHeight : 0.5;
+            // Detect sprite-sheet: 8-col grid where each cell is square (w/8 === h/5).
+            // For these images use one frame's rect instead of the whole image.
+            const SHEET_ROWS = 5;
+            const sheetFrameW = img ? img.naturalWidth / SHEET_COLUMNS : 0;
+            const sheetFrameH = img ? img.naturalHeight / SHEET_ROWS : 0;
+            const imgIsSheet = img
+                ? (img.naturalWidth % SHEET_COLUMNS === 0 && img.naturalHeight % SHEET_ROWS === 0 && Math.abs(sheetFrameW - sheetFrameH) < 2)
+                : false;
+            const frameW = imgIsSheet ? sheetFrameW : (img?.naturalWidth ?? 1);
+            const frameH = imgIsSheet ? sheetFrameH : (img?.naturalHeight ?? 1);
+            const ar = frameW / (frameH || 1);
             let drawH = unitDrawH;
             let drawW = unitDrawH * ar;
             if (drawW > maxUnitW) {
@@ -774,7 +785,11 @@ export function IsometricCanvas({
                 ctx.save();
                 ctx.globalAlpha = 0.25;
                 if (img) {
-                    ctx.drawImage(img, ghostCenterX - drawW / 2, ghostGroundY - drawH, drawW, drawH);
+                    if (imgIsSheet) {
+                        ctx.drawImage(img, 0, 0, sheetFrameW, sheetFrameH, ghostCenterX - drawW / 2, ghostGroundY - drawH, drawW, drawH);
+                    } else {
+                        ctx.drawImage(img, ghostCenterX - drawW / 2, ghostGroundY - drawH, drawW, drawH);
+                    }
                 } else {
                     const color = unit.team === 'player' ? '#3b82f6' :
                         unit.team === 'enemy' ? '#ef4444' : '#6b7280';
@@ -825,15 +840,25 @@ export function IsometricCanvas({
                 }
                 ctx.restore();
             } else if (img) {
+                // Static sprite or sprite-sheet without a resolved atlas.
+                // When the image is a sprite-sheet, crop frame 0 (idle/front) instead of
+                // drawing the whole multi-frame grid into a tiny cell — that was the "garbled blob".
                 const spriteY = groundY - drawH - breatheOffset;
+                const drawUnit = (x: number) => {
+                    if (imgIsSheet) {
+                        ctx.drawImage(img, 0, 0, sheetFrameW, sheetFrameH, x, spriteY, drawW, drawH);
+                    } else {
+                        ctx.drawImage(img, x, spriteY, drawW, drawH);
+                    }
+                };
                 if (unit.team) {
                     ctx.save();
                     ctx.shadowColor = unit.team === 'player' ? 'rgba(0, 150, 255, 0.6)' : 'rgba(255, 50, 50, 0.6)';
                     ctx.shadowBlur = 12 * scale;
-                    ctx.drawImage(img, centerX - drawW / 2, spriteY, drawW, drawH);
+                    drawUnit(centerX - drawW / 2);
                     ctx.restore();
                 } else {
-                    ctx.drawImage(img, centerX - drawW / 2, spriteY, drawW, drawH);
+                    drawUnit(centerX - drawW / 2);
                 }
             } else {
                 // Fallback circle
