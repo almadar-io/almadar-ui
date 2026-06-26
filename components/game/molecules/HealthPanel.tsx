@@ -2,9 +2,9 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import { HealthBar } from '../atoms/HealthBar';
+import { StatusEffect } from '../atoms/StatusEffect';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
-import { Badge } from '../../core/atoms/Badge';
 import type { IconInput } from '../../core/atoms';
 import type { AssetUrl } from '@almadar/core';
 
@@ -42,8 +42,8 @@ const sizeMap = {
 };
 
 const effectVariantMap = {
-  buff: 'success' as const,
-  debuff: 'danger' as const,
+  buff: 'buff' as const,
+  debuff: 'debuff' as const,
   neutral: 'neutral' as const,
 };
 
@@ -132,24 +132,14 @@ export function HealthPanel({
         {effects && effects.length > 0 && (
           <Box className="flex items-center gap-1 flex-wrap">
             {effects.map((effect, i) => (
-              <Badge
+              <StatusEffect
                 key={i}
+                assetUrl={effect.assetUrl}
+                icon={effect.icon}
+                label={effect.label}
                 variant={effectVariantMap[effect.variant ?? 'neutral']}
                 size="sm"
-                icon={effect.assetUrl ? undefined : effect.icon}
-              >
-                {effect.assetUrl && (
-                  <img
-                    src={effect.assetUrl}
-                    alt=""
-                    width={12}
-                    height={12}
-                    style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
-                    className="flex-shrink-0 inline-block"
-                  />
-                )}
-                {effect.label}
-              </Badge>
+              />
             ))}
           </Box>
         )}

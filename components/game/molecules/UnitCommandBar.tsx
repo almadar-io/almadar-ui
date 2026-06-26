@@ -1,9 +1,8 @@
 'use client';
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
-import { Button } from '../../core/atoms/Button';
+import { ActionButton } from '../atoms/ActionButton';
 import { Box } from '../../core/atoms/Box';
-import { Typography } from '../../core/atoms/Typography';
 import { useEventBus } from '../../../hooks/useEventBus';
 import type { IconInput } from '../../core/atoms';
 
@@ -61,23 +60,15 @@ export function UnitCommandBar({
     >
       {commands.map((command, i) => (
         <Box key={i} className="flex flex-col items-center gap-0.5">
-          <Button
-            variant="ghost"
-            size="sm"
+          <ActionButton
+            label={command.label}
+            icon={command.icon}
             disabled={command.disabled}
-            leftIcon={command.icon}
+            hotkey={command.hotkey}
+            variant="secondary"
+            size="sm"
             onClick={() => handleCommand(command.event)}
-          >
-            {command.label}
-          </Button>
-          {command.hotkey && (
-            <Typography
-              variant="caption"
-              className="text-muted-foreground text-xs font-mono"
-            >
-              {command.hotkey}
-            </Typography>
-          )}
+          />
         </Box>
       ))}
     </Box>

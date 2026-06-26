@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import { WaypointMarker } from '../atoms/WaypointMarker';
-import { ProgressBar } from '../../core/atoms/ProgressBar';
+import { HealthBar } from '../atoms/HealthBar';
 import { Typography } from '../../core/atoms/Typography';
 import { Box } from '../../core/atoms/Box';
 import { VStack } from '../../core/atoms/Stack';
@@ -74,11 +74,13 @@ export function QuestTracker({
               </Typography>
 
               <Box className="mt-1.5">
-                <ProgressBar
-                  value={quest.progress}
+                <HealthBar
+                  current={quest.progress}
                   max={quest.maxProgress}
-                  variant={isCompleted ? 'success' : isActive ? 'primary' : 'default'}
+                  format="bar"
                   size="sm"
+                  animated
+                  className={isCompleted ? '[--health-color:var(--color-success)]' : isActive ? '' : 'opacity-60'}
                 />
               </Box>
 

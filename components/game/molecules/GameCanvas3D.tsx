@@ -28,6 +28,7 @@ import type { EventEmit } from '@almadar/core';
 import { Canvas, useThree, useFrame, useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
 import { OrbitControls, Grid, Billboard } from '@react-three/drei';
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { AssetLoader, assetLoader } from './three/loaders/AssetLoader';
 import { useAssetLoader } from './three/hooks/useAssetLoader';
 import { useGameCanvas3DEvents, type MinimalMouseEvent } from './three/hooks/useGameCanvas3DEvents';
@@ -73,8 +74,6 @@ export interface GameCanvas3DProps {
     isLoading?: boolean;
     /** Error state */
     error?: string | null;
-    /** Entity name for schema-driven auto-fetch */
-    entity?: string;
     /** Array of tiles to render */
     tiles?: IsometricTile[];
     /** Array of units to render */
@@ -312,7 +311,6 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
             className,
             isLoading: externalLoading,
             error: externalError,
-            entity,
             preloadAssets = [],
             tileClickEvent,
             unitClickEvent,
@@ -334,7 +332,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
         ref
     ) => {
         const containerRef = useRef<HTMLDivElement>(null);
-        const controlsRef = useRef<any>(null);
+        const controlsRef = useRef<OrbitControlsImpl | null>(null);
         const [hoveredTile, setHoveredTile] = useState<IsometricTile | null>(null);
         const [internalError, setInternalError] = useState<string | null>(null);
 

@@ -1,4 +1,3 @@
-'use client';
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
 
@@ -13,7 +12,7 @@ export interface XPBarProps {
   showLabel?: boolean;
   /** Size variant */
   size?: 'sm' | 'md' | 'lg';
-  /** Animate the fill bar */
+  /** Animate the fill bar with a CSS transition */
   animated?: boolean;
   /** Additional CSS classes */
   className?: string;
@@ -36,26 +35,6 @@ export function XPBar({
 }: XPBarProps) {
   const sizes = sizeMap[size];
   const percentage = max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0;
-
-  // Start at 0 when animated so the CSS transition has something to move from.
-  // A single rAF isn't enough in all browsers — use a two-frame flush so the
-  // browser has committed the 0% paint before the value changes.
-  const [fillWidth, setFillWidth] = React.useState(animated ? 0 : percentage);
-
-  React.useEffect(() => {
-    if (!animated) {
-      setFillWidth(percentage);
-      return;
-    }
-    let frame2: number;
-    const frame1 = requestAnimationFrame(() => {
-      frame2 = requestAnimationFrame(() => setFillWidth(percentage));
-    });
-    return () => {
-      cancelAnimationFrame(frame1);
-      cancelAnimationFrame(frame2);
-    };
-  }, [animated, percentage]);
 
   return (
     <div className={cn('flex items-center gap-2', className)}>
@@ -84,7 +63,7 @@ export function XPBar({
               'bg-gradient-to-r from-accent to-info',
               animated && 'transition-all duration-500 ease-out'
             )}
-            style={{ width: `${fillWidth}%` }}
+            style={{ width: `${percentage}%` }}
           />
         </div>
 

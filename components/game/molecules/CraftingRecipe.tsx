@@ -4,7 +4,7 @@ import type { EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { ItemSlot } from '../atoms/ItemSlot';
-import { Button } from '../../core/atoms/Button';
+import { ActionButton } from '../atoms/ActionButton';
 import { Box } from '../../core/atoms/Box';
 import { HStack } from '../../core/atoms/Stack';
 import { Icon, type IconInput } from '../../core/atoms/Icon';
@@ -124,14 +124,13 @@ export function CraftingRecipe({
       />
 
       {/* Craft button */}
-      <Button
+      <ActionButton
+        label="Craft"
         onClick={handleCraft}
         disabled={!canCraft}
         variant={canCraft ? 'primary' : 'secondary'}
         size="sm"
-      >
-        Craft
-      </Button>
+      />
     </Box>
   );
 }

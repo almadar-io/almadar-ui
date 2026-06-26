@@ -8,7 +8,7 @@
 import React, { useRef, useEffect } from 'react';
 import { Sword, Shield, Heart, Move, Zap } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { Box, Typography, Badge, Card } from '../../core/atoms';
+import { Box, Typography } from '../../core/atoms';
 import { cn } from '../../../lib/cn';
 
 export type CombatLogEventType = 'attack' | 'defend' | 'heal' | 'move' | 'special' | 'death' | 'spawn';
@@ -53,14 +53,14 @@ const eventColors: Record<CombatLogEventType, string> = {
     spawn: 'text-accent',
 };
 
-const eventBadgeVariants: Record<CombatLogEventType, 'danger' | 'primary' | 'success' | 'warning' | 'secondary'> = {
-    attack: 'danger',
-    defend: 'primary',
-    heal: 'success',
-    move: 'warning',
-    special: 'secondary',
-    death: 'secondary',
-    spawn: 'secondary',
+const eventValueColors: Record<CombatLogEventType, string> = {
+    attack: 'text-error bg-error/10 border-error/30',
+    defend: 'text-info bg-info/10 border-info/30',
+    heal: 'text-success bg-success/10 border-success/30',
+    move: 'text-warning bg-warning/10 border-warning/30',
+    special: 'text-accent bg-accent/10 border-accent/30',
+    death: 'text-muted-foreground bg-muted/30 border-border',
+    spawn: 'text-accent bg-accent/10 border-accent/30',
 };
 
 const DEFAULT_COMBAT_EVENTS: CombatEvent[] = [
@@ -91,11 +91,13 @@ export function CombatLog({
     const visibleEvents = safeEvents.slice(-maxVisible);
 
     return (
-        <Card variant="default" className={cn('flex flex-col', className)}>
+        <Box className={cn('flex flex-col rounded-container border border-border bg-card shadow-elevation-card', className)}>
             <Box padding="sm" border className="border-b-2 border-x-0 border-t-0 border-border">
                 <Box display="flex" className="items-center justify-between">
                     <Typography variant="body2" className="font-bold">{title}</Typography>
-                    <Badge variant="neutral" size="sm">{safeEvents.length} events</Badge>
+                    <span className="text-xs text-muted-foreground bg-muted/60 rounded px-1.5 py-0.5 border border-border/50 font-mono">
+                        {safeEvents.length} events
+                    </span>
                 </Box>
             </Box>
             <Box ref={scrollRef} overflow="auto" className="flex-1 max-h-64">
@@ -118,9 +120,9 @@ export function CombatLog({
                                     <Box className="flex-1 min-w-0">
                                         <Typography variant="caption" className="block">{event.message}</Typography>
                                         {event.value !== undefined && (
-                                            <Badge variant={eventBadgeVariants[eventType]} size="sm" className="mt-1">
+                                            <span className={cn('inline-block mt-1 text-xs font-bold rounded px-1.5 py-0.5 border', eventValueColors[eventType])}>
                                                 {eventType === 'heal' ? '+' : eventType === 'attack' ? '-' : ''}{event.value}
-                                            </Badge>
+                                            </span>
                                         )}
                                     </Box>
                                     {(event.turn || showTimestamps) && (
@@ -136,7 +138,7 @@ export function CombatLog({
                     </Box>
                 )}
             </Box>
-        </Card>
+        </Box>
     );
 }
 

@@ -1,4 +1,3 @@
-'use client';
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import { Icon, type IconInput } from '../../core/atoms/Icon';
@@ -19,8 +18,6 @@ export interface ScoreDisplayProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   /** Additional CSS classes */
   className?: string;
-  /** Animation on value change */
-  animated?: boolean;
   /** Number formatting locale */
   locale?: string;
 }
@@ -43,7 +40,6 @@ export function ScoreDisplay({
   icon,
   size = 'md',
   className,
-  animated = true,
   locale = 'en-US',
 }: ScoreDisplayProps) {
   // Accept "score" as alias for "value" (common schema binding)
@@ -52,45 +48,14 @@ export function ScoreDisplay({
     : typeof score === 'number' && !Number.isNaN(score)
       ? score
       : 0;
-  const [displayValue, setDisplayValue] = React.useState(resolvedValue);
-  const [isAnimating, setIsAnimating] = React.useState(false);
 
-  React.useEffect(() => {
-    if (!animated || displayValue === resolvedValue) {
-      setDisplayValue(resolvedValue);
-      return;
-    }
-
-    setIsAnimating(true);
-    const diff = resolvedValue - displayValue;
-    const steps = Math.min(Math.abs(diff), 20);
-    const increment = diff / steps;
-    let current = displayValue;
-    let step = 0;
-
-    const timer = setInterval(() => {
-      step++;
-      current += increment;
-      setDisplayValue(Math.round(current));
-
-      if (step >= steps) {
-        clearInterval(timer);
-        setDisplayValue(resolvedValue);
-        setIsAnimating(false);
-      }
-    }, 50);
-
-    return () => clearInterval(timer);
-  }, [resolvedValue, animated]);
-
-  const formattedValue = new Intl.NumberFormat(locale).format(displayValue);
+  const formattedValue = new Intl.NumberFormat(locale).format(resolvedValue);
 
   return (
     <div
       className={cn(
         'flex items-center gap-2 font-bold',
         sizeMap[size],
-        isAnimating && 'animate-pulse',
         className
       )}
     >

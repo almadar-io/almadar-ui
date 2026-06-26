@@ -3,7 +3,6 @@ import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import { ComboCounter } from '../atoms/ComboCounter';
 import { StatBadge } from './StatBadge';
-import { Card, CardContent } from '../../core/atoms/Card';
 import { Box } from '../../core/atoms/Box';
 
 export interface ScoreBoardProps {
@@ -35,15 +34,14 @@ export function ScoreBoard({
   const multiplier = rawMultiplier ?? 1;
   const level = rawLevel ?? 1;
   return (
-    <Card
+    <Box
       className={cn(
-        'bg-[var(--color-card)]/90 border-border backdrop-blur-sm',
+        'rounded-container border border-border bg-[var(--color-card)]/90 backdrop-blur-sm p-3',
         className
       )}
     >
-      <CardContent className="p-3">
-        <Box className="flex items-center gap-3 flex-wrap">
-          <StatBadge
+      <Box className="flex items-center gap-3 flex-wrap">
+        <StatBadge
             label="Score"
             value={score}
             format="number"
@@ -85,8 +83,7 @@ export function ScoreBoard({
             <ComboCounter combo={combo} multiplier={multiplier} size="sm" />
           )}
         </Box>
-      </CardContent>
-    </Card>
+    </Box>
   );
 }
 

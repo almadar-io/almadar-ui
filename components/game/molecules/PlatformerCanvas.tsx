@@ -3,6 +3,7 @@ import { useRef, useEffect, useCallback, useState } from 'react';
 import type { AssetUrl, EventEmit } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 import { cn } from '../../../lib/cn';
+import type { ActiveEffect } from '../organisms/types/isometric';
 
 const canvasLog = createLogger('almadar:ui:game:platformer-canvas');
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -58,6 +59,8 @@ export interface PlatformerCanvasProps {
   rightEvent?: EventEmit<{ direction: number }>;
   jumpEvent?: EventEmit<Record<string, never>>;
   stopEvent?: EventEmit<Record<string, never>>;
+  /** Active visual effects (key, world x/y, ttl) — drawn after the player */
+  effects?: ActiveEffect[];
   /** Additional CSS classes */
   className?: string;
 }
@@ -101,6 +104,7 @@ export function PlatformerCanvas({
   rightEvent = 'MOVE_RIGHT',
   jumpEvent = 'JUMP',
   stopEvent = 'STOP',
+  effects = [],
   className,
 }: PlatformerCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -168,17 +172,16 @@ export function PlatformerCanvas({
   // Push a new snapshot whenever the authoritative player position changes.
   useEffect(() => {
     interp.onSnapshot([{ id: 'player', x: resolvedPlayer.x, y: resolvedPlayer.y }]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolvedPlayer.x, resolvedPlayer.y]);
 
   // Stable refs for props consumed inside the rAF draw closure.
   const propsRef = useRef({
     platforms, worldWidth, worldHeight, canvasWidth, canvasHeight,
-    followCamera, bgColor, playerSprite, tileSprites, backgroundImage, assetBaseUrl,
+    followCamera, bgColor, playerSprite, tileSprites, backgroundImage, assetBaseUrl, effects,
   });
   propsRef.current = {
     platforms, worldWidth, worldHeight, canvasWidth, canvasHeight,
-    followCamera, bgColor, playerSprite, tileSprites, backgroundImage, assetBaseUrl,
+    followCamera, bgColor, playerSprite, tileSprites, backgroundImage, assetBaseUrl, effects,
   };
 
   // ── Keyboard handler ───────────────────────────────────────────
@@ -253,7 +256,7 @@ export function PlatformerCanvas({
         platforms: plats, worldWidth: ww, worldHeight: wh,
         canvasWidth: cw, canvasHeight: ch, followCamera: fc,
         bgColor: bg, playerSprite: pSprite, tileSprites: tSprites,
-        backgroundImage: bgImg,
+        backgroundImage: bgImg, effects: fxList,
       } = propsRef.current;
 
       const auth = playerRef.current;
@@ -416,12 +419,25 @@ export function PlatformerCanvas({
         ctx.arc(ppx + eyeOffsetX + 7, eyeY, eyeSize, 0, Math.PI * 2);
         ctx.fill();
       }
+
+      // Draw ActiveEffect[] — world-space coords, faded by ttl
+      for (const fx of fxList) {
+        const fxScreenX = fx.x - camX;
+        const fxScreenY = fx.y - camY;
+        const alpha = Math.min(1, fx.ttl / 4);
+        const prev = ctx.globalAlpha;
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = '#ffe066';
+        ctx.beginPath();
+        ctx.arc(fxScreenX, fxScreenY, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = prev;
+      }
     };
 
     return interp.startLoop(drawFrame);
   // startLoop is stable (memoized with useCallback); loadImage changes when
   // loadedImages state flips, which re-starts the loop to pick up new sprites.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [interp.startLoop, loadImage]);
 
   return (

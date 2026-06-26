@@ -14,6 +14,8 @@ import type { AssetUrl } from '@almadar/core';
 export interface StatBadgeProps {
   /** Sprite image URL — takes precedence over icon when provided */
   assetUrl?: AssetUrl;
+  /** Asset-image icon URL (board ui/ PNG); takes precedence over the Lucide icon. */
+  iconUrl?: AssetUrl;
   /** Stat label */
   label: string;
   /** Current value (defaults to 0 if not provided) */
@@ -52,6 +54,7 @@ const variantMap = {
 
 export function StatBadge({
   assetUrl,
+  iconUrl,
   label,
   value = 0,
   max,
@@ -65,6 +68,7 @@ export function StatBadge({
   field: _field,
 }: StatBadgeProps) {
   const numValue = typeof value === 'number' ? value : parseInt(String(value), 10) || 0;
+  const resolvedAsset = iconUrl ?? assetUrl;
 
   return (
     <div
@@ -75,9 +79,9 @@ export function StatBadge({
         className
       )}
     >
-      {assetUrl ? (
+      {resolvedAsset ? (
         <img
-          src={assetUrl}
+          src={resolvedAsset}
           alt=""
           width={16}
           height={16}
@@ -87,9 +91,9 @@ export function StatBadge({
       ) : icon ? (
         <span className="flex-shrink-0 text-lg">{typeof icon === 'string' ? <Icon name={icon} className="w-4 h-4" /> : <Icon icon={icon} className="w-4 h-4" />}</span>
       ) : null}
-      
+
       <span className="text-muted-foreground font-medium">{label}</span>
-      
+
       {format === 'hearts' && max && (
         <HealthBar
           current={numValue}
@@ -98,7 +102,7 @@ export function StatBadge({
           size={size === 'lg' ? 'md' : 'sm'}
         />
       )}
-      
+
       {format === 'bar' && max && (
         <HealthBar
           current={numValue}
@@ -107,12 +111,11 @@ export function StatBadge({
           size={size === 'lg' ? 'md' : 'sm'}
         />
       )}
-      
+
       {format === 'number' && (
         <ScoreDisplay
           value={numValue}
           size={size === 'lg' ? 'md' : 'sm'}
-          animated
         />
       )}
       

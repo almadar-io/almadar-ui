@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import { TurnIndicator } from '../atoms/TurnIndicator';
-import { Button } from '../../core/atoms/Button';
+import { ActionButton } from '../atoms/ActionButton';
 import { Box } from '../../core/atoms/Box';
 import { useEventBus } from '../../../hooks/useEventBus';
 import type { IconInput } from '../../core/atoms';
@@ -77,26 +77,16 @@ export function TurnPanel({
       {actions && actions.length > 0 && (
         <Box className="flex items-center gap-1.5 ml-auto">
           {actions.map((action, i) => (
-            <Button
+            <ActionButton
               key={i}
-              variant="ghost"
-              size="sm"
+              label={action.label}
+              icon={action.assetUrl ? undefined : action.icon}
+              assetUrl={action.assetUrl}
               disabled={action.disabled}
-              leftIcon={action.assetUrl ? undefined : action.icon}
+              variant="secondary"
+              size="sm"
               onClick={() => handleAction(action.event)}
-            >
-              {action.assetUrl && (
-                <img
-                  src={action.assetUrl}
-                  alt=""
-                  width={14}
-                  height={14}
-                  style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
-                  className="flex-shrink-0"
-                />
-              )}
-              {action.label}
-            </Button>
+            />
           ))}
         </Box>
       )}
