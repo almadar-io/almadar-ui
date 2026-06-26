@@ -307,8 +307,8 @@
      * ====================================================================== */
 
     /* Primary — Deep gold (darker for contrast on light surfaces) */
-    --color-primary: #9e7e1e;
-    --color-primary-hover: #b8940f;
+    --color-primary: #785c12;
+    --color-primary-hover: #5c4a0d;
     --color-primary-foreground: #faf6ee;
 
     /* Secondary — Light parchment */

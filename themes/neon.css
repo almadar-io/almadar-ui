@@ -37,8 +37,8 @@
     --border-width-thick: 3px;
 
     /* Colors - Teal-tinted light mode */
-    --color-primary: #0891b2;
-    --color-primary-hover: #0e7490;
+    --color-primary: #0e7490;
+    --color-primary-hover: #155e75;
     --color-primary-foreground: #ffffff;
 
     --color-secondary: #ccfbf1;

@@ -1,26 +1,38 @@
 'use client';
 
 import React from 'react';
-import type { AssetUrl } from '@almadar/core';
+import type { AssetUrl, EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
-import { GameCanvas2D } from '../molecules/GameCanvas2D';
+import IsometricCanvas from '../molecules/IsometricCanvas';
+import type { IsometricTile, IsometricUnit, IsometricFeature } from './types/isometric';
 import type { DisplayStateProps } from '../../core/organisms/types';
+import type { IsometricCanvasProps } from '../molecules/IsometricCanvas';
 
 // =============================================================================
 // Types
 // =============================================================================
 
 export interface SpaceShmupBoardProps extends DisplayStateProps {
-    /** Background image URL (starfield / space scene) */
-    backgroundImage?: AssetUrl;
-    /** Base URL prefix for asset URLs */
+    /** Space terrain tiles filling the grid */
+    tiles?: IsometricTile[];
+    /** Player ship and enemy ships on the board */
+    units?: IsometricUnit[];
+    /** Features (asteroids, power-ups, etc.) on the board */
+    features?: IsometricFeature[];
+    /** Asset sprite manifest (same shape as IsometricCanvas.assetManifest) */
+    assetManifest?: IsometricCanvasProps['assetManifest'];
+    /** Base URL prepended to manifest sprite paths */
     assetBaseUrl?: AssetUrl;
-    /** Canvas width in pixels */
-    width?: number;
-    /** Canvas height in pixels */
-    height?: number;
-    /** Target frames per second */
-    fps?: number;
+    /** Render scale */
+    scale?: number;
+    /** Show minimap overlay */
+    showMinimap?: boolean;
+    /** Enable camera pan/zoom controls */
+    enableCamera?: boolean;
+    /** Declarative event: emits UI:{tileClickEvent} with { x, y } on tile click */
+    tileClickEvent?: EventEmit<{ x: number; y: number }>;
+    /** Declarative event: emits UI:{unitClickEvent} with { unitId } on unit click */
+    unitClickEvent?: EventEmit<{ unitId: string }>;
 }
 
 // =============================================================================
@@ -28,33 +40,36 @@ export interface SpaceShmupBoardProps extends DisplayStateProps {
 // =============================================================================
 
 export function SpaceShmupBoard({
-    backgroundImage,
+    tiles,
+    units,
+    features,
+    assetManifest,
     assetBaseUrl,
-    width = 800,
-    height = 600,
-    fps = 60,
+    scale = 0.45,
+    showMinimap = false,
+    enableCamera = true,
+    tileClickEvent,
+    unitClickEvent,
     isLoading,
     error,
     className,
 }: SpaceShmupBoardProps): React.ReactElement {
     return (
         <div className={cn('space-shmup-board relative w-full h-full', className)}>
-            {isLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-10">
-                    <span className="text-white text-sm">Loading…</span>
-                </div>
-            )}
-            {error && (
-                <div className="absolute inset-0 flex items-center justify-center bg-red-900/60 z-10">
-                    <span className="text-white text-sm">{error.message}</span>
-                </div>
-            )}
-            <GameCanvas2D
-                backgroundImage={backgroundImage}
+            <IsometricCanvas
+                tileLayout="flat"
+                tiles={tiles}
+                units={units}
+                features={features}
+                assetManifest={assetManifest}
                 assetBaseUrl={assetBaseUrl}
-                width={width}
-                height={height}
-                fps={fps}
+                scale={scale}
+                showMinimap={showMinimap}
+                enableCamera={enableCamera}
+                tileClickEvent={tileClickEvent}
+                unitClickEvent={unitClickEvent}
+                isLoading={isLoading}
+                error={error}
             />
         </div>
     );

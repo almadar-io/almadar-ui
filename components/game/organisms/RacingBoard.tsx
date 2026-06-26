@@ -3,28 +3,36 @@
 import React from 'react';
 import type { AssetUrl, EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
-import { GameCanvas2D } from '../molecules/GameCanvas2D';
+import IsometricCanvas from '../molecules/IsometricCanvas';
+import type { IsometricTile, IsometricUnit, IsometricFeature } from './types/isometric';
 import type { DisplayStateProps } from '../../core/organisms/types';
+import type { IsometricCanvasProps } from '../molecules/IsometricCanvas';
 
 // =============================================================================
 // Types
 // =============================================================================
 
 export interface RacingBoardProps extends DisplayStateProps {
-    /** Race track background image URL */
-    backgroundImage?: AssetUrl;
-    /** Base URL prepended to asset paths */
+    /** Road + grass terrain tiles forming the race circuit */
+    tiles?: IsometricTile[];
+    /** Car units on the track */
+    units?: IsometricUnit[];
+    /** Track features (pit lane markers, start/finish line, etc.) */
+    features?: IsometricFeature[];
+    /** Asset sprite manifest (same shape as IsometricCanvas.assetManifest) */
+    assetManifest?: IsometricCanvasProps['assetManifest'];
+    /** Base URL prepended to manifest sprite paths */
     assetBaseUrl?: AssetUrl;
-    /** Canvas width in pixels */
-    width?: number;
-    /** Canvas height in pixels */
-    height?: number;
-    /** Target frames per second */
-    fps?: number;
-    /** Declarative event: emits UI:{tickEvent} with { dt, frame } each tick */
-    tickEvent?: EventEmit<{ dt: number; frame: number }>;
-    /** Declarative event: emits UI:{drawEvent} with { frame } each draw frame */
-    drawEvent?: EventEmit<{ frame: number }>;
+    /** Render scale */
+    scale?: number;
+    /** Show minimap overlay */
+    showMinimap?: boolean;
+    /** Enable camera pan/zoom controls */
+    enableCamera?: boolean;
+    /** Declarative event: emits UI:{tileClickEvent} with { x, y } on tile click */
+    tileClickEvent?: EventEmit<{ x: number; y: number }>;
+    /** Declarative event: emits UI:{unitClickEvent} with { unitId } on unit click */
+    unitClickEvent?: EventEmit<{ unitId: string }>;
 }
 
 // =============================================================================
@@ -32,25 +40,36 @@ export interface RacingBoardProps extends DisplayStateProps {
 // =============================================================================
 
 export function RacingBoard({
-    backgroundImage,
+    tiles,
+    units,
+    features,
+    assetManifest,
     assetBaseUrl,
-    width = 800,
-    height = 600,
-    fps = 60,
-    tickEvent,
-    drawEvent,
+    scale = 0.45,
+    showMinimap = true,
+    enableCamera = true,
+    tileClickEvent,
+    unitClickEvent,
+    isLoading,
+    error,
     className,
 }: RacingBoardProps): React.ReactElement {
     return (
         <div className={cn('racing-board relative w-full h-full', className)}>
-            <GameCanvas2D
-                backgroundImage={backgroundImage}
+            <IsometricCanvas
+                tileLayout="flat"
+                tiles={tiles}
+                units={units}
+                features={features}
+                assetManifest={assetManifest}
                 assetBaseUrl={assetBaseUrl}
-                width={width}
-                height={height}
-                fps={fps}
-                tickEvent={typeof tickEvent === 'string' ? tickEvent : undefined}
-                drawEvent={typeof drawEvent === 'string' ? drawEvent : undefined}
+                scale={scale}
+                showMinimap={showMinimap}
+                enableCamera={enableCamera}
+                tileClickEvent={tileClickEvent}
+                unitClickEvent={unitClickEvent}
+                isLoading={isLoading}
+                error={error}
             />
         </div>
     );
