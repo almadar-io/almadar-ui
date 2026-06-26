@@ -1,4 +1,5 @@
 import type { AssetUrl } from '@almadar/core';
+import type { AnimationName } from './spriteAnimation';
 
 /**
  * Isometric Game Types
@@ -8,6 +9,18 @@ import type { AssetUrl } from '@almadar/core';
  *
  * @packageDocumentation
  */
+
+/** An active visual effect on the board. x,y are grid tile coords; ttl = remaining ticks. */
+export interface ActiveEffect {
+    /** Unique key — matched against assetManifest.effects for sprite lookup */
+    key: string;
+    /** Grid x coordinate */
+    x: number;
+    /** Grid y coordinate */
+    y: number;
+    /** Remaining ticks — used as a fade/scale hint (alpha = min(1, ttl/4)) */
+    ttl: number;
+}
 
 // =============================================================================
 // Tile Types
@@ -90,6 +103,10 @@ export type IsometricUnit = {
     previousPosition?: { x: number; y: number };
     /** Elevation offset for 3D rendering */
     elevation?: number;
+    /** Animation name — driven by the LOLO state machine; renderer defaults to 'idle' */
+    animation?: AnimationName;
+    /** Frame index within the animation — driven by the LOLO state machine; renderer defaults to 0 */
+    frame?: number;
 };
 
 // =============================================================================

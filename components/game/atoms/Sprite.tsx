@@ -7,6 +7,7 @@
 
 import React, { useMemo } from 'react';
 import type { EventKey, AssetUrl } from "@almadar/core";
+import type { AnimationName } from '../organisms/types/spriteAnimation';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { frameRect } from '../organisms/utils/spriteAnimation';
 
@@ -37,6 +38,10 @@ export interface SpriteProps {
   zIndex?: number;
   /** Number of columns in spritesheet (for frame calculation) */
   columns?: number;
+  /** Animation state name — drives lolo-ui config knob for animation selection */
+  animState?: AnimationName;
+  /** Frames per second — drives lolo-ui config knob for animation speed */
+  frameRate?: number;
   /** Optional className */
   className?: string;
   /** Optional onClick handler */
@@ -76,6 +81,8 @@ export function Sprite({
   opacity = 1,
   zIndex = 0,
   columns = 16,
+  animState: _animState,
+  frameRate: _frameRate,
   className,
   onClick,
   action,

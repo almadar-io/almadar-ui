@@ -35,10 +35,10 @@ import { Box } from '../../core/atoms/Box';
 import { Stack } from '../../core/atoms/Stack';
 import { Icon } from '../../core/atoms/Icon';
 import { Typography } from '../../core/atoms/Typography';
-import { LoadingState } from '../../core/molecules/LoadingState';
-import { ErrorState } from '../../core/molecules/ErrorState';
 // Molecule-level: no EntityDisplayProps, no entity prop
-import type { IsometricTile, IsometricUnit, IsometricFeature } from '../organisms/types/isometric';
+import type { IsometricTile, IsometricUnit, IsometricFeature, ActiveEffect } from '../organisms/types/isometric';
+import { MiniMap } from '../atoms/MiniMap';
+import { HealthBar } from '../atoms/HealthBar';
 import type { ResolvedFrame } from '../organisms/types/spriteAnimation';
 import { useImageCache } from '../organisms/hooks/useImageCache';
 import { useCamera } from '../organisms/hooks/useCamera';
@@ -88,6 +88,8 @@ export interface IsometricCanvasProps {
     units?: IsometricUnit[];
     /** Array of features (resources, portals, buildings, etc.) */
     features?: IsometricFeature[];
+    /** Active visual effects to draw after units. Sprite URLs resolved via assetManifest.effects[fx.key]. */
+    effects?: ActiveEffect[];
 
     // --- Interaction state ---
     /** Currently selected unit ID */
@@ -195,6 +197,7 @@ export function IsometricCanvas({
     tiles: _tilesPropRaw = [],
     units: _unitsPropRaw = [],
     features: _featuresPropRaw = [],
+    effects: _effectsPropRaw = [],
     // Interaction state
     selectedUnitId = null,
     validMoves = [],
@@ -227,7 +230,7 @@ export function IsometricCanvas({
     resolveUnitFrame,
     effectSpriteUrls = [],
     onDrawEffects,
-    hasActiveEffects = false,
+    hasActiveEffects: _hasActiveEffects = false,
     // Tuning
     diamondTopY: diamondTopYProp,
     // Remote asset loading
@@ -238,6 +241,7 @@ export function IsometricCanvas({
     const tilesProp = Array.isArray(_tilesPropRaw) ? _tilesPropRaw : [];
     const unitsProp = Array.isArray(_unitsPropRaw) ? _unitsPropRaw : [];
     const featuresProp = Array.isArray(_featuresPropRaw) ? _featuresPropRaw : [];
+    const effects = Array.isArray(_effectsPropRaw) ? _effectsPropRaw : [];
 
     const eventBus = useEventBus();
     const { t } = useTranslate();
@@ -245,9 +249,7 @@ export function IsometricCanvas({
     // -- Refs --
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    const minimapRef = useRef<HTMLCanvasElement>(null);
-    const animTimeRef = useRef(0);
-    const rafIdRef = useRef(0);
+    const lerpRafRef = useRef(0);
 
     // -- Viewport size --
     const [viewportSize, setViewportSize] = useState({ width: 800, height: 600 });
@@ -278,7 +280,7 @@ export function IsometricCanvas({
     [unitsProp]);
 
     // -- Self-contained sprite-sheet animation (atlas-driven, single-frame crop) --
-    const { sheetUrls: atlasSheetUrls, resolveUnitFrame: resolveUnitFrameInternal, pendingCount: atlasPending } = useUnitSpriteAtlas(units);
+    const { sheetUrls: atlasSheetUrls, resolveUnitFrame: resolveUnitFrameInternal } = useUnitSpriteAtlas(units);
 
     // Prefer an externally supplied resolver; else animate from the unit's own atlas.
     const resolveFrameForUnit = useCallback((unitId: string): ResolvedFrame | null => {
@@ -409,7 +411,7 @@ export function IsometricCanvas({
         return [...new Set(urls.filter(Boolean))];
     }, [sortedTiles, features, units, getTerrainSprite, getFeatureSprite, getUnitSprite, effectSpriteUrls, atlasSheetUrls, backgroundImage, assetManifest, resolveManifestUrl]);
 
-    const { getImage, pendingCount } = useImageCache(spriteUrls);
+    const { getImage, pendingCount: _imagePendingCount } = useImageCache(spriteUrls);
 
     // -- Verification bridge: register canvas frame capture --
     // Asset status tracking is handled by useImageCache automatically.
@@ -449,87 +451,33 @@ export function IsometricCanvas({
         return unit.sprite || getUnitSprite?.(unit) || (unit.unitType ? resolveManifestUrl(assetManifest?.units?.[unit.unitType]) : undefined);
     }, [getUnitSprite, assetManifest, resolveManifestUrl]);
 
-    // =========================================================================
-    // Minimap
-    // =========================================================================
-    const drawMinimap = useCallback(() => {
-        if (!showMinimap) return;
-        const miniCanvas = minimapRef.current;
-        if (!miniCanvas || sortedTiles.length === 0) return;
+    // Minimap data derived for the MiniMap atom
+    const miniMapTiles = useMemo(() => {
+        if (!showMinimap) return [];
+        return sortedTiles.map(t => ({
+            x: t.x,
+            y: t.y,
+            color: t.terrain === 'water' ? '#3b82f6' : t.terrain === 'mountain' ? '#78716c' : '#4ade80',
+        }));
+    }, [showMinimap, sortedTiles]);
 
-        const mCtx = miniCanvas.getContext('2d');
-        if (!mCtx) return;
+    const miniMapUnits = useMemo(() => {
+        if (!showMinimap) return [];
+        return units.filter(u => u.position).map(u => ({
+            x: u.position!.x,
+            y: u.position!.y,
+            color: u.team === 'player' ? '#60a5fa' : u.team === 'enemy' ? '#f87171' : '#9ca3af',
+            isPlayer: u.team === 'player',
+        }));
+    }, [showMinimap, units]);
 
-        const mW = 150;
-        const mH = 100;
-        miniCanvas.width = mW;
-        miniCanvas.height = mH;
-
-        mCtx.clearRect(0, 0, mW, mH);
-
-        // Compute bounding box of all tiles in screen space
-        const allScreenPos = sortedTiles.map(t => isoToScreen(t.x, t.y, scale, baseOffsetX, tileLayout));
-        const minX = Math.min(...allScreenPos.map(p => p.x));
-        const maxX = Math.max(...allScreenPos.map(p => p.x + scaledTileWidth));
-        const minY = Math.min(...allScreenPos.map(p => p.y));
-        // Hex/flat tile height = scaledTileWidth (square sprites, top-anchored at pos.y).
-        // ISO tile height = scaledTileHeight (tall sprite, bottom-anchored).
-        const tileBottomExtent = (tileLayout === 'hex' || tileLayout === 'flat') ? scaledTileWidth : scaledTileHeight;
-        const maxY = Math.max(...allScreenPos.map(p => p.y + tileBottomExtent));
-
-        const worldW = maxX - minX;
-        const worldH = maxY - minY;
-        const scaleM = Math.min(mW / worldW, mH / worldH) * 0.9;
-        const offsetMx = (mW - worldW * scaleM) / 2;
-        const offsetMy = (mH - worldH * scaleM) / 2;
-
-        // Draw tiles
-        for (const tile of sortedTiles) {
-            const pos = isoToScreen(tile.x, tile.y, scale, baseOffsetX, tileLayout);
-            const mx = (pos.x - minX) * scaleM + offsetMx;
-            const my = (pos.y - minY) * scaleM + offsetMy;
-            const mTileW = scaledTileWidth * scaleM;
-            const mFloorH = scaledFloorHeight * scaleM;
-
-            mCtx.fillStyle = tile.terrain === 'water' ? '#3b82f6' :
-                tile.terrain === 'mountain' ? '#78716c' : '#4ade80';
-            mCtx.beginPath();
-            mCtx.moveTo(mx + mTileW / 2, my);
-            mCtx.lineTo(mx + mTileW, my + mFloorH / 2);
-            mCtx.lineTo(mx + mTileW / 2, my + mFloorH);
-            mCtx.lineTo(mx, my + mFloorH / 2);
-            mCtx.closePath();
-            mCtx.fill();
-        }
-
-        // Draw units as dots
-        for (const unit of units) {
-            if (!unit.position) continue;
-            const pos = isoToScreen(unit.position.x, unit.position.y, scale, baseOffsetX, tileLayout);
-            const mx = (pos.x + scaledTileWidth / 2 - minX) * scaleM + offsetMx;
-            const my = (pos.y + scaledTileHeight / 2 - minY) * scaleM + offsetMy;
-            mCtx.fillStyle = unit.team === 'player' ? '#60a5fa' :
-                unit.team === 'enemy' ? '#f87171' : '#9ca3af';
-            mCtx.beginPath();
-            mCtx.arc(mx, my, 3, 0, Math.PI * 2);
-            mCtx.fill();
-        }
-
-        // Draw viewport rectangle
-        const cam = cameraRef.current;
-        const vLeft = (cam.x - minX) * scaleM + offsetMx;
-        const vTop = (cam.y - minY) * scaleM + offsetMy;
-        const vW = viewportSize.width / cam.zoom * scaleM;
-        const vH = viewportSize.height / cam.zoom * scaleM;
-        mCtx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-        mCtx.lineWidth = 1;
-        mCtx.strokeRect(vLeft, vTop, vW, vH);
-    }, [showMinimap, sortedTiles, units, tileLayout, scale, baseOffsetX, scaledTileWidth, scaledTileHeight, scaledFloorHeight, viewportSize, cameraRef]);
+    const miniMapWidth = gridWidth || 10;
+    const miniMapHeight = gridHeight || 10;
 
     // =========================================================================
-    // Main draw function
+    // Main draw function — pure function of props; no internal clock
     // =========================================================================
-    const draw = useCallback((animTime: number) => {
+    const draw = useCallback(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
@@ -644,8 +592,7 @@ export function IsometricCanvas({
             if (validMoveSet.has(tileKey)) {
                 const centerX = pos.x + scaledTileWidth / 2;
                 const topY = pos.y + scaledDiamondTopY;
-                const pulse = 0.15 + 0.1 * Math.sin(animTime * 0.004);
-                ctx.fillStyle = `rgba(74, 222, 128, ${pulse})`;
+                ctx.fillStyle = 'rgba(74, 222, 128, 0.25)';
                 ctx.beginPath();
                 ctx.moveTo(centerX, topY);
                 ctx.lineTo(pos.x + scaledTileWidth, topY + scaledFloorHeight / 2);
@@ -659,8 +606,7 @@ export function IsometricCanvas({
             if (attackTargetSet.has(tileKey)) {
                 const centerX = pos.x + scaledTileWidth / 2;
                 const topY = pos.y + scaledDiamondTopY;
-                const pulse = 0.2 + 0.15 * Math.sin(animTime * 0.005);
-                ctx.fillStyle = `rgba(239, 68, 68, ${pulse})`;
+                ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';
                 ctx.beginPath();
                 ctx.moveTo(centerX, topY);
                 ctx.lineTo(pos.x + scaledTileWidth, topY + scaledFloorHeight / 2);
@@ -750,8 +696,8 @@ export function IsometricCanvas({
             const centerX = pos.x + scaledTileWidth / 2;
             const groundY = pos.y + scaledDiamondTopY + scaledFloorHeight * 0.50;
 
-            // Idle breathing animation
-            const breatheOffset = 0.8 * scale * (1 + Math.sin(animTime * 0.002 + (unit.position.x * 3.7 + unit.position.y * 5.3)));
+            // Breathing offset is static — LOLO state machine drives animation externally.
+            const breatheOffset = 0;
 
             // Resolve sprite
             const unitSpriteUrl = resolveUnitSpriteUrl(unit);
@@ -803,10 +749,9 @@ export function IsometricCanvas({
 
             // Selection ring
             if (isSelected) {
-                const ringAlpha = 0.6 + 0.3 * Math.sin(animTime * 0.004);
                 ctx.beginPath();
                 ctx.ellipse(centerX, groundY, drawW / 2 + 4 * scale, 12 * scale, 0, 0, Math.PI * 2);
-                ctx.strokeStyle = `rgba(0, 200, 255, ${ringAlpha})`;
+                ctx.strokeStyle = 'rgba(0, 200, 255, 0.8)';
                 ctx.lineWidth = 3;
                 ctx.stroke();
             }
@@ -873,80 +818,36 @@ export function IsometricCanvas({
                 ctx.stroke();
             }
 
-            // Unit name label
-            if (unit.name) {
-                const labelBg = unit.team === 'player' ? 'rgba(59, 130, 246, 0.9)' :
-                    unit.team === 'enemy' ? 'rgba(239, 68, 68, 0.9)' : 'rgba(107, 114, 128, 0.9)';
-                ctx.font = `bold ${10 * scale * 2.5}px system-ui`;
-                ctx.textAlign = 'center';
-                const textWidth = ctx.measureText(unit.name).width;
-                const labelY = groundY + 14 * scale - breatheOffset;
-                ctx.fillStyle = labelBg;
-                ctx.beginPath();
-                ctx.roundRect(centerX - textWidth / 2 - 6 * scale, labelY - 8 * scale, textWidth + 12 * scale, 16 * scale, 4 * scale);
-                ctx.fill();
-                ctx.fillStyle = 'white';
-                ctx.fillText(unit.name, centerX, labelY + 4 * scale);
-            }
-
-            // Health bar
-            if (unit.health !== undefined && unit.maxHealth !== undefined) {
-                const barWidth = 40 * scale;
-                const barHeight = 6 * scale;
-                const barX = centerX - barWidth / 2;
-                const barY = groundY - drawH - 2 * scale - breatheOffset;
-                const healthRatio = unit.health / unit.maxHealth;
-                const barRadius = barHeight / 2;
-
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                ctx.beginPath();
-                ctx.roundRect(barX, barY, barWidth, barHeight, barRadius);
-                ctx.fill();
-
-                if (healthRatio > 0) {
-                    const fillWidth = barWidth * healthRatio;
-                    const gradient = ctx.createLinearGradient(barX, barY, barX, barY + barHeight);
-                    if (healthRatio > 0.6) {
-                        gradient.addColorStop(0, '#4ade80');
-                        gradient.addColorStop(1, '#22c55e');
-                    } else if (healthRatio > 0.3) {
-                        gradient.addColorStop(0, '#fde047');
-                        gradient.addColorStop(1, '#eab308');
-                    } else {
-                        gradient.addColorStop(0, '#f87171');
-                        gradient.addColorStop(1, '#ef4444');
-                    }
-                    ctx.fillStyle = gradient;
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.roundRect(barX, barY, fillWidth, barHeight, barRadius);
-                    ctx.clip();
-                    ctx.fillRect(barX, barY, fillWidth, barHeight);
-                    ctx.restore();
-                }
-
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                ctx.roundRect(barX, barY, barWidth, barHeight, barRadius);
-                ctx.stroke();
-            }
+            // Name label and health bar are rendered as DOM overlays — see JSX below.
         }
 
-        // Draw canvas effects
-        onDrawEffects?.(ctx, animTime, getImage);
+        // Draw ActiveEffect[] sprites after units
+        for (const fx of effects) {
+            const spriteUrl = resolveManifestUrl(assetManifest?.effects?.[fx.key]);
+            if (!spriteUrl) continue;
+            const img = getImage(spriteUrl);
+            if (!img) continue;
+            const pos = isoToScreen(fx.x, fx.y, scale, baseOffsetX, tileLayout);
+            const cx = pos.x + scaledTileWidth / 2;
+            const cy = pos.y + scaledDiamondTopY + scaledFloorHeight * 0.5;
+            const alpha = Math.min(1, fx.ttl / 4);
+            const prev = ctx.globalAlpha;
+            ctx.globalAlpha = alpha;
+            ctx.drawImage(img, cx - img.naturalWidth / 2, cy - img.naturalHeight / 2);
+            ctx.globalAlpha = prev;
+        }
+
+        // Legacy effects callback (for boards that pass onDrawEffects directly)
+        onDrawEffects?.(ctx, 0, getImage);
 
         // Restore camera transform
         ctx.restore();
-
-        // Draw minimap
-        drawMinimap();
     }, [
-        sortedTiles, units, features, selectedUnitId,
+        sortedTiles, units, features, selectedUnitId, effects,
         tileLayout, scale, debug, resolveTerrainSpriteUrl, resolveFeatureSpriteUrl, resolveUnitSpriteUrl, resolveFrameForUnit, getImage,
         gridWidth, gridHeight, baseOffsetX, scaledTileWidth, scaledTileHeight, scaledFloorHeight, scaledDiamondTopY,
-        validMoveSet, attackTargetSet, hoveredTile, viewportSize, drawMinimap, onDrawEffects,
-        backgroundImage, cameraRef, unitScale,
+        validMoveSet, attackTargetSet, hoveredTile, viewportSize, onDrawEffects,
+        backgroundImage, cameraRef, unitScale, resolveManifestUrl, assetManifest,
     ]);
 
     // =========================================================================
@@ -966,31 +867,33 @@ export function IsometricCanvas({
     }, [selectedUnitId, units, tileLayout, scale, baseOffsetX, scaledTileWidth, scaledDiamondTopY, scaledFloorHeight, viewportSize, targetCameraRef]);
 
     // =========================================================================
-    // Animation loop
+    // Redraw on data change — pure, no internal clock
     // =========================================================================
     useEffect(() => {
-        const hasAnimations = units.length > 0 || validMoves.length > 0 || attackTargets.length > 0 || selectedUnitId != null || targetCameraRef.current != null || hasActiveEffects || pendingCount > 0 || atlasPending > 0;
+        draw();
+    }, [draw]);
 
-        // Always draw at least once
-        draw(animTimeRef.current);
+    // Redraw when images finish loading (getImage is a stable ref, so we track pending separately)
+    useEffect(() => {
+        draw();
+    }, [_imagePendingCount]);
 
-        if (!hasAnimations) return;
-
+    // Camera-lerp RAF: runs only while a programmatic camera target is active (unit selection centering).
+    useEffect(() => {
+        if (selectedUnitId == null) return;
         let running = true;
-        const animate = (timestamp: number) => {
+        const tick = () => {
             if (!running) return;
-            animTimeRef.current = timestamp;
-            lerpToTarget();
-            draw(timestamp);
-            rafIdRef.current = requestAnimationFrame(animate);
+            const stillLerping = lerpToTarget();
+            draw();
+            if (stillLerping) lerpRafRef.current = requestAnimationFrame(tick);
         };
-        rafIdRef.current = requestAnimationFrame(animate);
-
+        lerpRafRef.current = requestAnimationFrame(tick);
         return () => {
             running = false;
-            cancelAnimationFrame(rafIdRef.current);
+            cancelAnimationFrame(lerpRafRef.current);
         };
-    }, [draw, units.length, validMoves.length, attackTargets.length, selectedUnitId, hasActiveEffects, pendingCount, atlasPending, lerpToTarget, targetCameraRef]);
+    }, [selectedUnitId, lerpToTarget, draw]);
 
     // =========================================================================
     // Pointer / gesture handlers (mouse + touch + pen via Pointer Events)
@@ -1005,7 +908,7 @@ export function IsometricCanvas({
 
     // Single-pointer move from the gesture hook → camera pan only.
     const handleCanvasPointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-        if (enableCamera) handlePointerMove(e, () => draw(animTimeRef.current));
+        if (enableCamera) handlePointerMove(e, () => draw());
     }, [enableCamera, handlePointerMove, draw]);
 
     // Bare hover (no pointer down) — emits UI:TILE_HOVER. Runs on every raw move but
@@ -1060,12 +963,12 @@ export function IsometricCanvas({
 
     // Wheel + two-finger pinch zoom-to-point; two-finger pan; multi-touch cancels a pan-drag.
     const applyZoom = useCallback((factor: number, centerX: number, centerY: number) => {
-        if (enableCamera) zoomAtPoint(factor, centerX, centerY, viewportSize, () => draw(animTimeRef.current));
+        if (enableCamera) zoomAtPoint(factor, centerX, centerY, viewportSize, () => draw());
     }, [enableCamera, zoomAtPoint, viewportSize, draw]);
 
     const applyPanDelta = useCallback((dx: number, dy: number) => {
         // Two-finger pan moves the camera the same direction as a drag (camera.x -= dx).
-        if (enableCamera) panBy(dx, dy, () => draw(animTimeRef.current));
+        if (enableCamera) panBy(dx, dy, () => draw());
     }, [enableCamera, panBy, draw]);
 
     const cancelSinglePointer = useCallback(() => {
@@ -1085,17 +988,49 @@ export function IsometricCanvas({
     });
 
     // =========================================================================
+    // DOM overlay data — health bars and name labels positioned over canvas
+    // =========================================================================
+    const unitOverlays = useMemo(() => {
+        if (sortedTiles.length === 0) return [];
+        return units
+            .filter((u): u is typeof u & { position: { x: number; y: number } } => !!u.position)
+            .map(u => {
+                const pos = isoToScreen(u.position!.x, u.position!.y, scale, baseOffsetX, tileLayout);
+                const cam = cameraRef.current;
+                const screenX = (pos.x + scaledTileWidth / 2 - (cam.x + viewportSize.width / 2)) * cam.zoom + viewportSize.width / 2;
+                const screenY = (pos.y + scaledDiamondTopY + scaledFloorHeight * 0.5 - (cam.y + viewportSize.height / 2)) * cam.zoom + viewportSize.height / 2;
+                return { unit: u, screenX, screenY };
+            });
+    }, [units, sortedTiles.length, scale, baseOffsetX, tileLayout, scaledTileWidth, scaledDiamondTopY, scaledFloorHeight, viewportSize, cameraRef]);
+
+    // =========================================================================
     // Render
     // =========================================================================
 
-    // Closed-circuit: error state
+    // Inline error state — game molecules must not import core/molecules
     if (error) {
-        return <ErrorState title={t('canvas.errorTitle')} message={error.message} className={className} />;
+        return (
+            <Box className={cn('flex items-center justify-center w-full h-full bg-[var(--color-card)] rounded-container', className)}>
+                <Stack direction="vertical" gap="md" align="center">
+                    <Icon name="alert-circle" size="xl" />
+                    <Typography variant="body" className="text-error">{error.message}</Typography>
+                </Stack>
+            </Box>
+        );
     }
 
-    // Closed-circuit: loading state
+    // Inline loading state
     if (isLoading) {
-        return <LoadingState className={className} />;
+        return (
+            <Box className={cn('flex items-center justify-center w-full h-full bg-[var(--color-card)] rounded-container', className)}>
+                <Stack direction="vertical" gap="md" align="center">
+                    <Icon name="loader" size="xl" className="animate-spin" />
+                    <Typography variant="body" className="text-muted-foreground">
+                        {t('canvas.loadingMessage') || 'Loading…'}
+                    </Typography>
+                </Stack>
+            </Box>
+        );
     }
 
     // Empty state: no tiles provided — render a meaningful dark canvas placeholder
@@ -1163,12 +1098,37 @@ export function IsometricCanvas({
                     )}
                 </div>
             )}
+            {/* DOM overlays: health bars and name labels per unit */}
+            {unitOverlays.map(({ unit, screenX, screenY }) => (
+                <div
+                    key={unit.id}
+                    className="absolute pointer-events-none"
+                    style={{ left: Math.round(screenX), top: Math.round(screenY), transform: 'translate(-50%, 0)', zIndex: 5 }}
+                >
+                    {unit.name && (
+                        <div
+                            className="text-white text-xs font-bold px-1.5 py-0.5 rounded mb-0.5 whitespace-nowrap"
+                            style={{ background: unit.team === 'player' ? 'rgba(59,130,246,0.9)' : unit.team === 'enemy' ? 'rgba(239,68,68,0.9)' : 'rgba(107,114,128,0.9)' }}
+                        >
+                            {unit.name}
+                        </div>
+                    )}
+                    {unit.health !== undefined && unit.maxHealth !== undefined && unit.maxHealth > 0 && (
+                        <HealthBar current={unit.health} max={unit.maxHealth} format="bar" size="sm" />
+                    )}
+                </div>
+            ))}
             {showMinimap && (
-                <canvas
-                    ref={minimapRef}
-                    className="absolute bottom-2 right-2 border border-border rounded bg-background/80 pointer-events-none"
-                    style={{ width: 150, height: 100, zIndex: 10 }}
-                />
+                <div className="absolute bottom-2 right-2 pointer-events-none" style={{ zIndex: 10 }}>
+                    <MiniMap
+                        tiles={miniMapTiles}
+                        units={miniMapUnits}
+                        width={150}
+                        height={100}
+                        mapWidth={miniMapWidth}
+                        mapHeight={miniMapHeight}
+                    />
+                </div>
             )}
         </Box>
     );
