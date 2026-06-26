@@ -13,7 +13,7 @@
  * chapter's schema by id and pass it as its own non-entity prop.
  */
 
-import type { EntityRow, OrbitalSchema } from '@almadar/core';
+import type { EntityRow, FieldValue, OrbitalSchema } from '@almadar/core';
 
 /** A normalised book: cover fields + part rows + a chapter→schema side-table. */
 export interface NormalizedBook {
@@ -99,11 +99,11 @@ export function resolveFieldMap(
 }
 
 /** Get a field value from a raw entity record */
-function get(obj: Record<string, unknown>, key: string): unknown {
+function get(obj: EntityRow, key: string): FieldValue | undefined {
   return obj[key];
 }
 
-function asStr(v: unknown): string {
+function asStr(v: FieldValue | undefined): string {
   return v == null ? '' : String(v);
 }
 
@@ -113,10 +113,10 @@ function asStr(v: unknown): string {
  * lifted off into `schemaByChapterId`.
  */
 export function mapBookData(
-  raw: Record<string, unknown>,
+  raw: EntityRow,
   fields: BookFieldMap = IDENTITY_BOOK_FIELDS,
 ): NormalizedBook {
-  const rawParts = (get(raw, fields.parts) ?? []) as Record<string, unknown>[];
+  const rawParts = (get(raw, fields.parts) ?? []) as EntityRow[];
   const direction = (get(raw, fields.direction) as 'rtl' | 'ltr') ?? 'ltr';
 
   const cover: EntityRow = {
@@ -131,7 +131,7 @@ export function mapBookData(
   const chapters: EntityRow[] = [];
 
   const parts: EntityRow[] = rawParts.map((part) => {
-    const rawChapters = (get(part, fields.chapters) ?? []) as Record<string, unknown>[];
+    const rawChapters = (get(part, fields.chapters) ?? []) as EntityRow[];
     const chapterRows: EntityRow[] = rawChapters.map((ch) => {
       const id = asStr(get(ch, fields.chapterId));
       const schema = get(ch, fields.chapterOrbitalSchema) as OrbitalSchema | undefined;

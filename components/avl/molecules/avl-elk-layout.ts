@@ -7,6 +7,7 @@
  */
 
 import ELK from 'elkjs/lib/elk.bundled.js';
+import type { ElkNode, ElkExtendedEdge, ElkEdgeSection, ElkLabel } from 'elkjs/lib/elk-api.js';
 import { getStateRole, type StateRole } from '../atoms/types';
 import type { TraitLevelData } from '../organisms/avl-schema-parser';
 
@@ -123,55 +124,53 @@ export async function computeTraitLayout(data: TraitLevelData): Promise<ElkLayou
     }),
   };
 
-  const layout = await elk.layout(elkGraph) as Record<string, unknown>;
-  const layoutChildren = (layout.children ?? []) as Array<Record<string, unknown>>;
-  const layoutEdges = (layout.edges ?? []) as Array<Record<string, unknown>>;
+  const layout: ElkNode = await elk.layout(elkGraph);
+  const layoutChildren: ElkNode[] = layout.children ?? [];
+  const layoutEdges: ElkExtendedEdge[] = layout.edges ?? [];
 
   const nodeXMap: Record<string, number> = {};
   for (const n of layoutChildren) {
-    nodeXMap[n.id as string] = (n.x as number) ?? 0;
+    nodeXMap[n.id] = n.x ?? 0;
   }
 
   const nodes: LayoutNode[] = layoutChildren.map(n => {
-    const name = n.id as string;
+    const name = n.id;
     const stateInfo = data.states.find(s => s.name === name);
     const tc = transitionCounts[name] ?? 0;
     return {
       id: name,
-      x: (n.x as number) ?? 0,
-      y: (n.y as number) ?? 0,
-      width: (n.width as number) ?? 110,
-      height: (n.height as number) ?? STATE_H,
-      isInitial: stateInfo?.isInitial,
-      isTerminal: stateInfo?.isTerminal,
-      role: getStateRole(name, stateInfo?.isInitial, stateInfo?.isTerminal, tc, maxTC),
+      x: n.x ?? 0,
+      y: n.y ?? 0,
+      width: n.width ?? 110,
+      height: n.height ?? STATE_H,
+      isInitial: stateInfo?.isInitial ?? undefined,
+      isTerminal: stateInfo?.isTerminal ?? undefined,
+      role: getStateRole(name, stateInfo?.isInitial ?? undefined, stateInfo?.isTerminal ?? undefined, tc, maxTC),
       transitionCount: tc,
     };
   });
 
-  const edges: LayoutEdge[] = layoutEdges.map((e, i) => {
+  const edges: LayoutEdge[] = layoutEdges.map((e: ElkExtendedEdge, i: number) => {
     const t = data.transitions[i];
-    const labels = (e.labels ?? []) as Array<Record<string, unknown>>;
-    const label = labels[0];
-    const sections = (e.sections ?? []) as Array<Record<string, unknown>>;
+    const labels: ElkLabel[] = e.labels ?? [];
+    const label: ElkLabel | undefined = labels[0];
+    const sections: ElkEdgeSection[] = e.sections ?? [];
     const points: Array<{ x: number; y: number }> = [];
 
     for (const section of sections) {
-      const startPoint = section.startPoint as { x: number; y: number };
-      const endPoint = section.endPoint as { x: number; y: number };
-      const bendPoints = (section.bendPoints ?? []) as Array<{ x: number; y: number }>;
-      points.push({ x: startPoint.x, y: startPoint.y });
+      const bendPoints = section.bendPoints ?? [];
+      points.push({ x: section.startPoint.x, y: section.startPoint.y });
       for (const bp of bendPoints) points.push({ x: bp.x, y: bp.y });
-      points.push({ x: endPoint.x, y: endPoint.y });
+      points.push({ x: section.endPoint.x, y: section.endPoint.y });
     }
 
     const isSelf = t.from === t.to;
     const isBackward = !isSelf && (nodeXMap[t.to] ?? 0) <= (nodeXMap[t.from] ?? 0);
-    const lw = (label?.width as number) ?? LABEL_BASE_W;
-    const lh = (label?.height as number) ?? LABEL_H;
+    const lw = label?.width ?? LABEL_BASE_W;
+    const lh = label?.height ?? LABEL_H;
 
     return {
-      id: e.id as string,
+      id: e.id,
       from: t.from,
       to: t.to,
       event: t.event,
@@ -179,8 +178,8 @@ export async function computeTraitLayout(data: TraitLevelData): Promise<ElkLayou
       guard: !!t.guard,
       guardExpr: typeof t.guard === 'string' ? t.guard : undefined,
       index: t.index,
-      labelX: (label?.x as number) ?? 0,
-      labelY: (label?.y as number) ?? 0,
+      labelX: label?.x ?? 0,
+      labelY: label?.y ?? 0,
       labelW: lw,
       labelH: lh,
       points,
@@ -192,8 +191,8 @@ export async function computeTraitLayout(data: TraitLevelData): Promise<ElkLayou
   return {
     nodes,
     edges,
-    width: (layout.width as number) ?? 600,
-    height: (layout.height as number) ?? 400,
+    width: layout.width ?? 600,
+    height: layout.height ?? 400,
   };
 }
 

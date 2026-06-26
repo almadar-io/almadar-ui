@@ -12,7 +12,7 @@
  * Uses atoms only internally: Box, VStack, HStack, Typography, Badge, Button, Icon.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import type { EntityRow, EventKey } from '@almadar/core';
+import type { EntityRow, EventKey, FieldValue } from '@almadar/core';
 import type { ItemActionPayload, SelectionChangePayload } from '@almadar/patterns';
 import { cn } from '../../../lib/cn';
 import { createLogger } from '@almadar/logger';
@@ -182,14 +182,14 @@ function resolveBadgeVariant(field: DataGridField, value: string): BadgeVariant 
   return statusVariant(value);
 }
 
-function formatDate(value: unknown): string {
+function formatDate(value: FieldValue | undefined): string {
   if (!value) return '';
   const d = new Date(String(value));
   if (isNaN(d.getTime())) return String(value);
   return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-function formatValue(value: unknown, format?: DataGridField['format']): string {
+function formatValue(value: FieldValue | undefined, format?: DataGridField['format']): string {
   if (value === undefined || value === null) return '';
   switch (format) {
     case 'date': return formatDate(value);
@@ -278,7 +278,7 @@ export function DataGrid({
     dndItemIdField,
     dndRoot,
   });
-  const allData = dnd.orderedItems as readonly Record<string, unknown>[];
+  const allData = dnd.orderedItems;
   const data = pageSize > 0 ? allData.slice(0, visibleCount) : allData;
   const hasMoreLocal = pageSize > 0 && visibleCount < allData.length;
 
@@ -297,7 +297,7 @@ export function DataGrid({
 
   const toggleAll = useCallback(() => {
     setSelectedIds((prev) => {
-      const allIds = data.map((item, i) => ((item as Record<string, unknown>).id as string) || String(i));
+      const allIds = data.map((item, i) => (item.id as string) || String(i));
       const allSelected = allIds.length > 0 && allIds.every((id) => prev.has(id));
       const next = allSelected ? new Set<string>() : new Set(allIds);
       if (selectionEvent) {
@@ -317,11 +317,11 @@ export function DataGrid({
   const primaryActions = itemActions?.filter((a) => a.variant !== 'danger') ?? [];
   const dangerActions = itemActions?.filter((a) => a.variant === 'danger') ?? [];
 
-  const handleActionClick = (action: DataGridItemAction, itemData: Record<string, unknown>) => (e: React.MouseEvent) => {
+  const handleActionClick = (action: DataGridItemAction, itemData: EntityRow) => (e: React.MouseEvent) => {
     e.stopPropagation();
     const payload: ItemActionPayload = {
       id: itemData.id as string | number,
-      row: itemData as ItemActionPayload['row'],
+      row: itemData,
     };
     eventBus.emit(`UI:${action.event}`, payload);
   };
@@ -334,11 +334,11 @@ export function DataGrid({
   // populated across renders (e.g. search-as-you-type refetches).
   useEffect(() => {
     if (data.length > 0 && !hasRenderProp && fieldDefs.length === 0) {
-      const renderItemRaw: unknown = schemaRenderItem;
+      const schemaArr = Array.isArray(schemaRenderItem) ? (schemaRenderItem as readonly string[]) : null;
       const isFnLambda =
-        Array.isArray(renderItemRaw) &&
-        renderItemRaw.length >= 3 &&
-        (renderItemRaw[0] === 'fn' || renderItemRaw[0] === 'lambda');
+        schemaArr !== null &&
+        schemaArr.length >= 3 &&
+        (schemaArr[0] === 'fn' || schemaArr[0] === 'lambda');
       dataGridLog.warn('renderItem-unresolved', {
         rowCount: data.length,
         renderItemIsFnLambda: isFnLambda,
@@ -406,7 +406,7 @@ export function DataGrid({
     return dnd.enabled ? <>{dnd.wrapContainer(emptyNode)}</> : emptyNode;
   }
 
-  const allIds = data.map((item, i) => ((item as Record<string, unknown>).id as string) || String(i));
+  const allIds = data.map((item, i) => (item.id as string) || String(i));
   const allSelected = allIds.length > 0 && allIds.every((id) => selectedIds.has(id));
   const someSelected = selectedIds.size > 0;
 
@@ -440,8 +440,8 @@ export function DataGrid({
         }
       >
         {data.map((item, index) => {
-          const itemData = item as Record<string, unknown>;
-          const id = (itemData.id as string) || String(index);
+          const itemData: EntityRow = item;
+          const id = itemData.id || String(index);
           const isSelected = selectedIds.has(id);
           const dndId = (itemData[idFieldName] as string | number | undefined) ?? `__idx_${index}`;
           const wrapDnd = (node: React.ReactNode): React.ReactNode =>
@@ -456,7 +456,7 @@ export function DataGrid({
                 data-entity-id={id}
                 className={cn(isSelected && 'ring-2 ring-primary rounded-lg')}
               >
-                {children(itemData as EntityRow, index)}
+                {children(itemData, index)}
               </Box>
             );
           }

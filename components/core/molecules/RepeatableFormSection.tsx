@@ -13,7 +13,7 @@
  */
 
 import React, { useCallback } from "react";
-import type { EventPayload } from "@almadar/core";
+import type { EventPayload, JsonValue } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Box } from "../atoms/Box";
 import { VStack, HStack } from "../atoms/Stack";
@@ -27,10 +27,10 @@ import { useTranslate } from "../../../hooks/useTranslate";
 export type RepeatableItem = {
   id: string;
   /** State in which this item was added (for audit trails) */
-  addedInState?: string;
+  addedInState: string | null;
   /** Timestamp when item was added */
-  addedAt?: string;
-  [key: string]: unknown;
+  addedAt: string | null;
+  [key: string]: JsonValue;
 };
 
 export interface RepeatableFormSectionProps {

@@ -10,6 +10,7 @@
 
 import * as React from 'react';
 import { createPortal } from 'react-dom';
+import type { OrbitalSchema } from '@almadar/core';
 import { cn } from '../../../../lib/cn';
 import type { EffectTrace, ServerResponseTrace, TransitionTrace } from '../../../../lib/verificationRegistry';
 import { useDebugData } from './hooks/useDebugData';
@@ -260,7 +261,7 @@ export interface RuntimeDebuggerProps {
     /** Default active tab id */
     defaultTab?: string;
     /** Raw schema for EventDispatcherTab payload extraction */
-    schema?: Record<string, unknown>;
+    schema?: OrbitalSchema;
 }
 
 export function RuntimeDebugger({

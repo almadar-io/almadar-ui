@@ -12,7 +12,26 @@
 import type {
   OrbitalSchema,
   OrbitalDefinition,
+  Entity,
+  EntityCall,
+  EntityField,
+  OrbitalPage,
+  Trait,
+  StateMachine,
+  State,
+  Transition,
+  Event,
+  TraitEventContract,
+  TraitEventListener,
+  JsonValue,
+  JsonObject,
 } from '@almadar/core';
+
+// Internal serialized effect record — all fields are JsonValue-compatible.
+interface SerializedEffect extends JsonObject {
+  type: string;
+  args: JsonValue[];
+}
 
 // ---------------------------------------------------------------------------
 // Output types (view-model for each zoom level)
@@ -41,14 +60,14 @@ export interface ApplicationLevelData {
   crossLinks: CrossLink[];
 }
 
-export interface FieldInfo {
+export interface FieldInfo extends JsonObject {
   name: string;
   type: string;
   required: boolean;
   hasDefault: boolean;
 }
 
-export interface OrbitalTraitInfo {
+export interface OrbitalTraitInfo extends JsonObject {
   name: string;
   stateCount: number;
   eventCount: number;
@@ -57,15 +76,15 @@ export interface OrbitalTraitInfo {
   listens: string[];
 }
 
-export interface OrbitalPageInfo {
+export interface OrbitalPageInfo extends JsonObject {
   name: string;
   route: string;
 }
 
-export interface ExternalLink {
+export interface ExternalLink extends JsonObject {
   targetOrbital: string;
   eventName: string;
-  direction: 'out' | 'in';
+  direction: string;
   traitName: string;
 }
 
@@ -81,22 +100,22 @@ export interface OrbitalLevelData {
   externalLinks: ExternalLink[];
 }
 
-export interface TraitStateInfo {
+export interface TraitStateInfo extends JsonObject {
   name: string;
-  isInitial?: boolean;
-  isTerminal?: boolean;
+  isInitial: boolean | null;
+  isTerminal: boolean | null;
 }
 
-export interface TraitTransitionInfo {
+export interface TraitTransitionInfo extends JsonObject {
   from: string;
   to: string;
   event: string;
-  guard?: unknown;
-  effects: Array<{ type: string; args: unknown[] }>;
+  guard: JsonValue | null;
+  effects: SerializedEffect[];
   index: number;
 }
 
-export interface TraitLevelData {
+export interface TraitLevelData extends JsonObject {
   name: string;
   linkedEntity: string;
   states: TraitStateInfo[];
@@ -129,64 +148,74 @@ export interface TransitionLevelData {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function getEntity(orbital: OrbitalDefinition): { name: string; fields: Array<Record<string, unknown>>; persistence: string } {
+function getEntity(orbital: OrbitalDefinition): { name: string; fields: EntityField[]; persistence: string } {
   const entity = orbital.entity;
   if (typeof entity === 'string') {
     return { name: entity, fields: [], persistence: 'runtime' };
   }
-  const e = entity as unknown as Record<string, unknown>;
+  if ('extends' in entity) {
+    const ec = entity as EntityCall;
+    return {
+      name: ec.name ?? orbital.name,
+      fields: ec.fields ?? [],
+      persistence: ec.persistence ?? 'runtime',
+    };
+  }
+  const e = entity as Entity;
   return {
-    name: (e.name as string) ?? orbital.name,
-    fields: (e.fields as Array<Record<string, unknown>>) ?? [],
-    persistence: (e.persistence as string) ?? 'runtime',
+    name: e.name,
+    fields: e.fields ?? [],
+    persistence: e.persistence ?? 'runtime',
   };
 }
 
-function getTraits(orbital: OrbitalDefinition): Array<Record<string, unknown>> {
+function getTraits(orbital: OrbitalDefinition): Trait[] {
   if (!orbital.traits) return [];
   return orbital.traits.map(t => {
-    if (typeof t === 'string') return { name: t };
-    return t as Record<string, unknown>;
+    if (typeof t === 'string') return { name: t } as Trait;
+    if ('ref' in t && !('stateMachine' in t)) return { name: t.name ?? t.ref } as Trait;
+    return t as Trait;
   });
 }
 
-function getPages(orbital: OrbitalDefinition): Array<Record<string, unknown>> {
+function getPages(orbital: OrbitalDefinition): OrbitalPage[] {
   if (!orbital.pages) return [];
   return orbital.pages.map(p => {
-    if (typeof p === 'string') return { name: p, path: `/${p.toLowerCase()}` };
-    return p as unknown as Record<string, unknown>;
+    if (typeof p === 'string') return { name: p, path: `/${p.toLowerCase()}` } as OrbitalPage;
+    if ('ref' in p && !('path' in p)) return { name: p.ref, path: `/${p.ref.toLowerCase()}` } as OrbitalPage;
+    return p as OrbitalPage;
   });
 }
 
-function getStateMachine(trait: Record<string, unknown>): Record<string, unknown> | null {
-  return (trait.stateMachine as Record<string, unknown>) ?? null;
+function getStateMachine(trait: Trait): StateMachine | null {
+  return trait.stateMachine ?? null;
 }
 
-function getStates(sm: Record<string, unknown>): Array<Record<string, unknown>> {
-  return (sm.states as Array<Record<string, unknown>>) ?? [];
+function getStates(sm: StateMachine): State[] {
+  return sm.states ?? [];
 }
 
-function getTransitions(sm: Record<string, unknown>): Array<Record<string, unknown>> {
-  return (sm.transitions as Array<Record<string, unknown>>) ?? [];
+function getTransitions(sm: StateMachine): Transition[] {
+  return sm.transitions ?? [];
 }
 
-function getEvents(sm: Record<string, unknown>): Array<Record<string, unknown>> {
-  return (sm.events as Array<Record<string, unknown>>) ?? [];
+function getEvents(sm: StateMachine): Event[] {
+  return sm.events ?? [];
 }
 
-function getEmits(trait: Record<string, unknown>): string[] {
-  const emits = trait.emits as Array<Record<string, unknown> | string> | undefined;
+function getEmits(trait: Trait): string[] {
+  const emits: TraitEventContract[] | undefined = trait.emits;
   if (!emits) return [];
-  return emits.map(e => typeof e === 'string' ? e : (e.event as string) ?? (e.name as string) ?? '');
+  return emits.map(e => e.event ?? '');
 }
 
-function getListens(trait: Record<string, unknown>): string[] {
-  const listens = trait.listens as Array<Record<string, unknown> | string> | undefined;
+function getListens(trait: Trait): string[] {
+  const listens: TraitEventListener[] | undefined = trait.listens;
   if (!listens) return [];
-  return listens.map(l => typeof l === 'string' ? l : (l.event as string) ?? '');
+  return listens.map(l => l.event ?? '');
 }
 
-function parseEffectType(effect: unknown): { type: string; args: unknown[] } {
+function parseEffectType(effect: JsonValue): SerializedEffect {
   if (Array.isArray(effect)) {
     const [type, ...args] = effect;
     return { type: String(type), args };
@@ -194,7 +223,7 @@ function parseEffectType(effect: unknown): { type: string; args: unknown[] } {
   return { type: 'unknown', args: [] };
 }
 
-function exprToTree(expr: unknown): ExprTreeNode {
+function exprToTree(expr: JsonValue): ExprTreeNode {
   if (Array.isArray(expr)) {
     const [op, ...args] = expr;
     return {
@@ -251,8 +280,8 @@ export function parseApplicationLevel(schema: OrbitalSchema): ApplicationLevelDa
       entityName: entity.name,
       fieldCount: entity.fields.length,
       persistence: entity.persistence,
-      traitNames: traits.map(t => (t.name as string) ?? ''),
-      pageNames: pages.map(p => (p.name as string) ?? ''),
+      traitNames: traits.map(t => t.name ?? ''),
+      pageNames: pages.map(p => p.name ?? ''),
       position: {
         x: originX + (i % cols) * spacing,
         y: originY + Math.floor(i / cols) * spacing,
@@ -266,7 +295,7 @@ export function parseApplicationLevel(schema: OrbitalSchema): ApplicationLevelDa
 
   for (const orbital of schema.orbitals) {
     for (const traitRef of getTraits(orbital)) {
-      const traitName = (traitRef.name as string) ?? '';
+      const traitName = traitRef.name ?? '';
       for (const event of getEmits(traitRef)) {
         emitMap.push({ orbital: orbital.name, trait: traitName, event });
       }
@@ -313,16 +342,16 @@ export function parseOrbitalLevel(schema: OrbitalSchema, orbitalName: string): O
   const pages = getPages(orbital);
 
   const fields: FieldInfo[] = entity.fields.map(f => ({
-    name: (f.name as string) ?? '',
-    type: (f.type as string) ?? 'string',
-    required: (f.required as boolean) ?? false,
+    name: f.name ?? '',
+    type: f.type ?? 'string',
+    required: f.required ?? false,
     hasDefault: f.default !== undefined,
   }));
 
   const traitInfos: OrbitalTraitInfo[] = traits.map(t => {
     const sm = getStateMachine(t);
     return {
-      name: (t.name as string) ?? '',
+      name: t.name ?? '',
       stateCount: sm ? getStates(sm).length : 0,
       eventCount: sm ? getEvents(sm).length : 0,
       transitionCount: sm ? getTransitions(sm).length : 0,
@@ -332,14 +361,14 @@ export function parseOrbitalLevel(schema: OrbitalSchema, orbitalName: string): O
   });
 
   const pageInfos: OrbitalPageInfo[] = pages.map(p => ({
-    name: (p.name as string) ?? '',
-    route: (p.path as string) ?? `/${(p.name as string ?? '').toLowerCase()}`,
+    name: p.name ?? '',
+    route: p.path ?? `/${(p.name ?? '').toLowerCase()}`,
   }));
 
   // Compute external links
   const externalLinks: ExternalLink[] = [];
-  const thisTraitEmits = traits.flatMap(t => getEmits(t).map(e => ({ trait: (t.name as string) ?? '', event: e })));
-  const thisTraitListens = traits.flatMap(t => getListens(t).map(e => ({ trait: (t.name as string) ?? '', event: e })));
+  const thisTraitEmits = traits.flatMap(t => getEmits(t).map(e => ({ trait: t.name ?? '', event: e })));
+  const thisTraitListens = traits.flatMap(t => getListens(t).map(e => ({ trait: t.name ?? '', event: e })));
 
   for (const other of schema.orbitals) {
     if (other.name === orbitalName) continue;
@@ -392,24 +421,24 @@ export function parseTraitLevel(schema: OrbitalSchema, orbitalName: string, trai
   if (!orbital) return null;
 
   const traits = getTraits(orbital);
-  const trait = traits.find(t => (t.name as string) === traitName);
+  const trait = traits.find(t => t.name === traitName);
   if (!trait) return null;
 
   const sm = getStateMachine(trait);
   if (!sm) return null;
 
   const states: TraitStateInfo[] = getStates(sm).map(s => ({
-    name: (s.name as string) ?? '',
-    isInitial: (s.isInitial as boolean) ?? false,
-    isTerminal: (s.isTerminal as boolean) ?? false,
+    name: s.name ?? '',
+    isInitial: s.isInitial ?? null,
+    isTerminal: s.isTerminal ?? null,
   }));
 
   const transitions: TraitTransitionInfo[] = getTransitions(sm).map((t, i) => ({
-    from: (t.from as string) ?? '',
-    to: (t.to as string) ?? '',
-    event: (t.event as string) ?? '',
-    guard: t.guard,
-    effects: ((t.effects as unknown[]) ?? []).map(parseEffectType),
+    from: t.from ?? '',
+    to: t.to ?? '',
+    event: t.event ?? '',
+    guard: (t.guard as JsonValue | null | undefined) ?? null,
+    effects: ((t.effects ?? []) as JsonValue[]).map(parseEffectType),
     index: i,
   }));
 
@@ -440,7 +469,8 @@ export function parseTransitionLevel(
   const transition = traitData.transitions[transitionIndex];
   if (!transition) return null;
 
-  const guard = transition.guard ? exprToTree(transition.guard) : null;
+  const guardVal = transition.guard;
+  const guard = guardVal != null ? exprToTree(guardVal) : null;
 
   const effects: ExprTreeNode[] = transition.effects.map(e =>
     exprToTree([e.type, ...e.args]),
@@ -450,8 +480,8 @@ export function parseTransitionLevel(
     .filter(e => e.type === 'render-ui')
     .map(e => ({
       name: String(e.args[0] ?? 'main'),
-      pattern: typeof e.args[1] === 'object' && e.args[1] !== null
-        ? ((e.args[1] as Record<string, unknown>).type as string) ?? 'unknown'
+      pattern: typeof e.args[1] === 'object' && e.args[1] !== null && !Array.isArray(e.args[1])
+        ? ((e.args[1] as JsonObject).type as string) ?? 'unknown'
         : String(e.args[1] ?? 'unknown'),
     }));
 

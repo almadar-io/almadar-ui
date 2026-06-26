@@ -126,18 +126,20 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
     );
 
     // Normalize entity data
-    const entityData = Array.isArray(entity) ? entity as readonly Record<string, unknown>[] : [];
+    const entityData = Array.isArray(entity) ? entity : [];
     const items: readonly MediaItem[] = React.useMemo(() => {
         if (propItems) return propItems;
         if (entityData.length === 0) return [];
 
-        return entityData.map((record, idx): MediaItem => ({
-            id: String(record.id ?? idx),
-            src: String(record.src ?? record.url ?? record.image ?? ""),
-            alt: record.alt ? String(record.alt) : undefined,
-            thumbnail: record.thumbnail ? String(record.thumbnail) : undefined,
-            caption: record.caption ? String(record.caption) : record.title ? String(record.title) : undefined,
-        }));
+        return entityData.map((record, idx): MediaItem => {
+            return {
+                id: String(record.id ?? idx),
+                src: String(record.src ?? ('url' in record ? record.url : '') ?? ('image' in record ? record.image : '') ?? ""),
+                alt: (record.alt ? String(record.alt) : undefined),
+                thumbnail: (record.thumbnail ? String(record.thumbnail) : undefined),
+                caption: (record.caption ? String(record.caption) : ('title' in record ? String(record.title) : undefined)),
+            };
+        });
     }, [propItems, entityData]);
 
     if (isLoading) {

@@ -10,7 +10,7 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import type { EventEmit, EntityRow } from '@almadar/core';
+import type { EventEmit, EntityRow, FieldValue } from '@almadar/core';
 import { VStack, HStack, Box, Typography, Button } from '../../../../core/atoms';
 import { cn } from '../../../../../lib/cn';
 import { useEventBus } from '../../../../../hooks/useEventBus';
@@ -120,8 +120,25 @@ export function StateArchitectBoard({
     const initialState = str(resolved?.initialState);
     const entityName = str(resolved?.entityName);
     const availableEvents = (Array.isArray(resolved?.availableEvents) ? resolved.availableEvents : []) as string[];
-    const testCases = (Array.isArray(resolved?.testCases) ? resolved.testCases : []) as unknown as TestCase[];
-    const entityTransitions = (Array.isArray(resolved?.transitions) ? resolved.transitions : []) as unknown as StateArchitectTransition[];
+    const testCases: TestCase[] = (Array.isArray(resolved?.testCases) ? resolved.testCases : []).map((item: FieldValue) => {
+        const o: Record<string, FieldValue | undefined> = (typeof item === 'object' && item !== null && !Array.isArray(item)) ? item as Record<string, FieldValue | undefined> : {};
+        const eventsField = o['events'];
+        return {
+            events: Array.isArray(eventsField) ? eventsField as string[] : [],
+            expectedState: str(o['expectedState']),
+            label: str(o['label']),
+        };
+    });
+    const entityTransitions: StateArchitectTransition[] = (Array.isArray(resolved?.transitions) ? resolved.transitions : []).map((item: FieldValue) => {
+        const o: Record<string, FieldValue | undefined> = (typeof item === 'object' && item !== null && !Array.isArray(item)) ? item as Record<string, FieldValue | undefined> : {};
+        return {
+            id: str(o['id']),
+            from: str(o['from']),
+            to: str(o['to']),
+            event: str(o['event']),
+            ...(o['guardHint'] ? { guardHint: str(o['guardHint']) } : {}),
+        };
+    });
     const entityVariables = rows(resolved?.variables);
     const transitions = entityTransitions;
     const attempts = typeof resolved?.attempts === 'number' ? resolved.attempts : 0;

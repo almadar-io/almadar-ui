@@ -14,7 +14,7 @@
  */
 
 import React from "react";
-import type { EntityRow, EventKey, EventPayload, FieldValue } from "@almadar/core";
+import type { EntityRow, EventKey, EventPayload, FieldValue, JsonObject } from "@almadar/core";
 import type { FormSubmitPayload } from "@almadar/patterns";
 import { cn } from "../../../lib/cn";
 import { Input } from "../atoms/Input";
@@ -58,10 +58,10 @@ export type SExpression = SExpr;
  * Form-specific evaluation context
  */
 export interface FormEvaluationContext {
-  formValues: Record<string, unknown>;
-  globalVariables: Record<string, unknown>;
-  localVariables?: Record<string, unknown>;
-  entity?: Record<string, unknown>;
+  formValues: EntityRow;
+  globalVariables: Record<string, FieldValue>;
+  localVariables?: Record<string, FieldValue>;
+  entity?: EntityRow;
 }
 
 /**
@@ -88,7 +88,7 @@ function toSharedContext(
 function evaluateFormExpression(
   expr: SExpression,
   formCtx: FormEvaluationContext,
-): unknown {
+) {
   const ctx = toSharedContext(formCtx);
   return evaluate(expr, ctx);
 }
@@ -185,7 +185,7 @@ export interface SchemaField {
   /** Whether field is required */
   required?: boolean;
   /** Default value */
-  defaultValue?: unknown;
+  defaultValue?: FieldValue;
   /** Options for select/enum fields - accepts readonly for generated const arrays */
   options?: readonly SelectOption[];
   /** Enum values (alternative to options, just strings) - accepts readonly for generated const arrays */
@@ -199,7 +199,7 @@ export interface SchemaField {
   /** Pattern for validation */
   pattern?: string;
   /** Validation rules */
-  validation?: Record<string, unknown>;
+  validation?: JsonObject;
   /** Whether field is readonly (displays value but cannot edit) */
   readonly?: boolean;
   /** Whether field is disabled (alternative to readonly for compatibility) */
@@ -231,7 +231,7 @@ export interface FormProps extends Omit<
   // Schema-based props
   /** Entity type name or schema object. When OrbitalEntity, fields are auto-derived if not provided. */
    
-  entity?: string | OrbitalEntity | readonly Record<string, unknown>[];
+  entity?: string | OrbitalEntity | EntityRow | readonly EntityRow[];
   /**
    * Form mode — 'create' for new records, 'edit' for updating existing.
    * Accepts `string` so schema-driven callers (whose `config.mode` is typed
@@ -242,7 +242,7 @@ export interface FormProps extends Omit<
   /** Fields definition (schema format) - accepts readonly for generated const arrays */
   fields: readonly Readonly<SchemaField>[];
   /** Initial form data */
-  initialData?: Record<string, unknown> | unknown;
+  initialData?: EntityRow;
   /** Loading state */
   isLoading?: boolean;
   /** Error state */
@@ -277,8 +277,8 @@ export interface FormProps extends Omit<
   hiddenCalculations?: HiddenCalculation[] | boolean;
   /** Violation conditions that emit VIOLATION_DETECTED when met (boolean true means enabled but config loaded separately) */
   violationTriggers?: ViolationTrigger[] | boolean;
-  /** Context for S-expression evaluation - accepts flexible types from generated code */
-  evaluationContext?: FormEvaluationContext | Record<string, unknown>;
+  /** Context for S-expression evaluation */
+  evaluationContext?: FormEvaluationContext;
   /** Nested form sections with optional conditions */
   sections?: FormSection[];
   /** Callback when any field value changes */
@@ -300,15 +300,15 @@ export interface FormProps extends Omit<
  * `entity: @payload.row`). The schema and row shapes are both objects
  * but only the schema carries `fields[]`.
  */
-function isOrbitalEntitySchema(value: unknown): value is OrbitalEntity {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
-  const fields = (value as { fields?: unknown }).fields;
+function isOrbitalEntitySchema(value: string | OrbitalEntity | EntityRow | readonly EntityRow[] | undefined): value is OrbitalEntity {
+  if (value === null || value === undefined || typeof value !== 'object' || Array.isArray(value)) return false;
+  const fields = (value as { fields?: FieldValue }).fields;
   return Array.isArray(fields);
 }
 
-function isPlainEntityRow(value: unknown): value is Record<string, unknown> {
-  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
-  const fields = (value as { fields?: unknown }).fields;
+function isPlainEntityRow(value: string | OrbitalEntity | EntityRow | readonly EntityRow[] | undefined): value is EntityRow {
+  if (value === null || value === undefined || typeof value !== 'object' || Array.isArray(value)) return false;
+  const fields = (value as { fields?: FieldValue }).fields;
   return !Array.isArray(fields);
 }
 
@@ -343,7 +343,7 @@ function getEnumOptions(field: SchemaField): SelectOption[] {
   }
 
   // Check for validation.enum
-  const validation = field.validation as Record<string, unknown> | undefined;
+  const validation = field.validation;
   if (validation?.enum && Array.isArray(validation.enum)) {
     return (validation.enum as string[]).map((v) => ({
       value: v,
@@ -497,7 +497,8 @@ export const Form: React.FC<FormProps> = ({
           name: f.name,
           type: f.type,
           required: f.required,
-          defaultValue: f.default,
+          // EntityField.default is typed `unknown` upstream — safe cast: schema defaults are always FieldValues.
+          defaultValue: f.default as FieldValue | undefined,
           // EntityField is a discriminated union — `values` lives on Scalar/Enum, `relation` lives on Relation.
           values: 'values' in f ? f.values : undefined,
           min: f.min,
@@ -544,15 +545,9 @@ export const Form: React.FC<FormProps> = ({
   const evalContext: FormEvaluationContext = React.useMemo(
     () => ({
       formValues: formData,
-      globalVariables: (externalContext?.globalVariables ?? {}) as Record<
-        string,
-        unknown
-      >,
-      localVariables: (externalContext?.localVariables ?? {}) as Record<
-        string,
-        unknown
-      >,
-      entity: (externalContext?.entity ?? {}) as Record<string, unknown>,
+      globalVariables: externalContext?.globalVariables ?? {},
+      localVariables: externalContext?.localVariables ?? {},
+      entity: externalContext?.entity ?? {},
     }),
     [formData, externalContext],
   );
@@ -575,20 +570,14 @@ export const Form: React.FC<FormProps> = ({
    * Process hidden calculations when triggered fields change
    */
   const processCalculations = React.useCallback(
-    (changedFieldId: string, newFormData: Record<string, unknown>) => {
+    (changedFieldId: string, newFormData: EntityRow) => {
       if (!hiddenCalculations.length) return;
 
       const context: FormEvaluationContext = {
         formValues: newFormData,
-        globalVariables: (externalContext?.globalVariables ?? {}) as Record<
-          string,
-          unknown
-        >,
-        localVariables: (externalContext?.localVariables ?? {}) as Record<
-          string,
-          unknown
-        >,
-        entity: (externalContext?.entity ?? {}) as Record<string, unknown>,
+        globalVariables: externalContext?.globalVariables ?? {},
+        localVariables: externalContext?.localVariables ?? {},
+        entity: externalContext?.entity ?? {},
       };
 
       hiddenCalculations.forEach((calc) => {
@@ -612,20 +601,14 @@ export const Form: React.FC<FormProps> = ({
    * Check violation triggers when form data changes
    */
   const checkViolations = React.useCallback(
-    (changedFieldId: string, newFormData: Record<string, unknown>) => {
+    (changedFieldId: string, newFormData: EntityRow) => {
       if (!violationTriggers.length) return;
 
       const context: FormEvaluationContext = {
         formValues: newFormData,
-        globalVariables: (externalContext?.globalVariables ?? {}) as Record<
-          string,
-          unknown
-        >,
-        localVariables: (externalContext?.localVariables ?? {}) as Record<
-          string,
-          unknown
-        >,
-        entity: (externalContext?.entity ?? {}) as Record<string, unknown>,
+        globalVariables: externalContext?.globalVariables ?? {},
+        localVariables: externalContext?.localVariables ?? {},
+        entity: externalContext?.entity ?? {},
       };
 
       violationTriggers.forEach((trigger: ViolationTrigger) => {
@@ -730,11 +713,11 @@ export const Form: React.FC<FormProps> = ({
     // fields are preserved while non-rendered keys (like `id`) carry
     // through. This is the hidden-id pattern, applied at the form's
     // call site per the "emit call site is the source of truth" rule.
-    const mergedData: Record<string, unknown> = {
+    const mergedData: EntityRow = {
       ...normalizedInitialData,
       ...formData,
     };
-    const payload: FormSubmitPayload = { data: mergedData as FormSubmitPayload['data'] };
+    const payload: FormSubmitPayload = { data: mergedData };
     debug('forms', 'submit-emit', { mode: formMode, submitEvent: `UI:${submitEvent}`, payloadData: payload.data });
     eventBus.emit(`UI:${submitEvent}`, payload);
     // Handle onSubmit - event name string for additional trait dispatch
@@ -852,7 +835,8 @@ export const Form: React.FC<FormProps> = ({
             name: field,
             type: entityField.type,
             required: entityField.required,
-            defaultValue: entityField.default,
+            // EntityField.default is typed `unknown` upstream — safe cast: schema defaults are always FieldValues.
+            defaultValue: entityField.default as FieldValue | undefined,
             // EntityField is a discriminated union — `values` lives on Scalar/Enum, `relation` lives on Relation.
             values: 'values' in entityField ? entityField.values : undefined,
             min: entityField.min,
@@ -943,7 +927,7 @@ export const Form: React.FC<FormProps> = ({
     field: SchemaField,
     fieldName: string,
     inputType: string,
-    currentValue: unknown,
+    currentValue: FieldValue,
     label: string,
   ): React.ReactNode {
     // Thread every HTML5 validation attribute the schema declares so the
@@ -1178,7 +1162,7 @@ export const Form: React.FC<FormProps> = ({
 /**
  * Format date value for date input
  */
-function formatDateValue(value: unknown): string {
+function formatDateValue(value: FieldValue): string {
   if (!value) return "";
 
   if (value instanceof Date) {
@@ -1200,7 +1184,7 @@ function formatDateValue(value: unknown): string {
 /**
  * Format datetime value for datetime-local input
  */
-function formatDateTimeValue(value: unknown): string {
+function formatDateTimeValue(value: FieldValue): string {
   if (!value) return "";
 
   if (value instanceof Date) {

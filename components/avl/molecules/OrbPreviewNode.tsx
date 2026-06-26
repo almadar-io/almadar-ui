@@ -672,7 +672,7 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   // Listen for drag start/end from PatternPalette to toggle container highlighting
   useEffect(() => {
     const unsub1 = eventBus.on('UI:DRAG_START', (e) => {
-      const kind = (e.payload as Record<string, unknown>)?.kind;
+      const kind = e.payload?.kind;
       if (kind === 'pattern') setDragActive(true);
     });
     const unsub2 = eventBus.on('UI:DRAG_END', () => setDragActive(false));

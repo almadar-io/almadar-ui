@@ -20,15 +20,16 @@ import { Box } from "../atoms/Box";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../../lib/cn";
 import type { UiError } from '../atoms/types';
+import type { JsonValue } from '@almadar/core';
 
 // ============ Types ============
 
 export interface OrbitalVisualizationProps {
   /** Full KFlow schema object */
   schema?: {
-    dataEntities?: unknown[];
-    ui?: { pages?: { sections?: unknown[] }[] };
-    traits?: unknown[];
+    dataEntities?: JsonValue[];
+    ui?: { pages?: { sections?: JsonValue[] }[] };
+    traits?: JsonValue[];
   };
   /** Direct complexity override (1-100+) */
   complexity?: number;

@@ -43,7 +43,7 @@ export const AvlTraitScene: React.FC<AvlTraitSceneProps> = ({
   const dataKey = useMemo(() => JSON.stringify(data), [data]);
 
   useEffect(() => {
-    computeTraitLayout(data).then(setLayout).catch((error: unknown) => {
+    computeTraitLayout(data).then(setLayout).catch((error) => {
       log.error('computeTraitLayout failed', { error: error instanceof Error ? error : String(error) });
     });
   }, [dataKey]);

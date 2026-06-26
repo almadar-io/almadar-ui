@@ -12,7 +12,7 @@
  * Uses atoms only internally: Box, VStack, HStack, Typography, Badge, Button, Icon.
  */
 import React from 'react';
-import type { EntityRow, EventKey } from "@almadar/core";
+import type { EntityRow, EventKey, FieldValue } from "@almadar/core";
 import type { ItemActionPayload } from '@almadar/patterns';
 import { cn } from '../../../lib/cn';
 import { createLogger } from '@almadar/logger';
@@ -177,7 +177,7 @@ function statusVariant(value: string): 'success' | 'warning' | 'error' | 'info' 
   return 'default';
 }
 
-function formatDate(value: unknown): string {
+function formatDate(value: FieldValue | undefined): string {
   if (!value) return '';
   const d = new Date(String(value));
   if (isNaN(d.getTime())) return String(value);
@@ -185,7 +185,7 @@ function formatDate(value: unknown): string {
 }
 
 function formatValue(
-  value: unknown,
+  value: FieldValue | undefined,
   format?: DataListField['format'],
   boolLabels?: { yes: string; no: string },
 ): string {
@@ -201,10 +201,10 @@ function formatValue(
 }
 
 function groupData(
-  items: Record<string, unknown>[],
+  items: EntityRow[],
   field: string,
-): { label: string; items: Record<string, unknown>[] }[] {
-  const groups = new Map<string, Record<string, unknown>[]>();
+): { label: string; items: EntityRow[] }[] {
+  const groups = new Map<string, EntityRow[]>();
   for (const item of items) {
     const key = String(getNestedValue(item, field) ?? '');
     const group = groups.get(key);
@@ -291,7 +291,7 @@ export function DataList({
     dndItemIdField,
     dndRoot,
   });
-  const allData = dnd.orderedItems as readonly Record<string, unknown>[];
+  const allData = dnd.orderedItems as readonly EntityRow[];
   const data = pageSize > 0 ? allData.slice(0, visibleCount) : allData;
   const hasMoreLocal = pageSize > 0 && visibleCount < allData.length;
   const hasRenderProp = typeof children === 'function';
@@ -305,20 +305,19 @@ export function DataList({
     const renderItemTypeOf = typeof schemaRenderItem;
     const childrenTypeOf = typeof children;
     if (data.length > 0 && !hasRenderProp) {
-      const firstRow = data[0] as Record<string, unknown> | undefined;
+      const firstRow: EntityRow | undefined = data[0];
       const sampleKeys = firstRow ? Object.keys(firstRow).slice(0, 6) : [];
-      const renderItemRaw = schemaRenderItem as unknown;
       const isFnLambda =
-        Array.isArray(renderItemRaw) &&
-        renderItemRaw.length >= 3 &&
-        (renderItemRaw[0] === 'fn' || renderItemRaw[0] === 'lambda');
+        Array.isArray(schemaRenderItem) &&
+        (schemaRenderItem as FieldValue[]).length >= 3 &&
+        ((schemaRenderItem as FieldValue[])[0] === 'fn' || (schemaRenderItem as FieldValue[])[0] === 'lambda');
       dataListLog.warn('renderItem-unresolved', {
         rowCount: data.length,
         fieldsCount: fieldDefs.length,
         renderItemTypeOf,
-        renderItemIsArray: Array.isArray(renderItemRaw),
+        renderItemIsArray: Array.isArray(schemaRenderItem),
         renderItemIsFnLambda: isFnLambda,
-        renderItemHead: Array.isArray(renderItemRaw) ? String(renderItemRaw[0]) : undefined,
+        renderItemHead: Array.isArray(schemaRenderItem) ? String((schemaRenderItem as FieldValue[])[0]) : undefined,
         childrenTypeOf,
         sampleRowKeys: sampleKeys,
       });
@@ -333,7 +332,7 @@ export function DataList({
     (f) => f !== titleField && !badgeFields.includes(f) && !progressFields.includes(f)
   );
 
-  const handleActionClick = (action: DataListItemAction, itemData: Record<string, unknown>) => (e: React.MouseEvent) => {
+  const handleActionClick = (action: DataListItemAction, itemData: EntityRow) => (e: React.MouseEvent) => {
     e.stopPropagation();
     const payload: ItemActionPayload = {
       id: itemData.id as string | number,
@@ -343,7 +342,7 @@ export function DataList({
   };
 
   // Inline up to `maxInlineActions` row actions; collapse the rest into a "⋯" overflow menu.
-  const renderItemActions = (itemData: Record<string, unknown>) => {
+  const renderItemActions = (itemData: EntityRow) => {
     if (!itemActions || itemActions.length === 0) return null;
     const inline = maxInlineActions != null ? itemActions.slice(0, maxInlineActions) : itemActions;
     const overflow = maxInlineActions != null ? itemActions.slice(maxInlineActions) : [];
@@ -388,7 +387,7 @@ export function DataList({
     );
   };
 
-  const handleRowClick = (itemData: Record<string, unknown>) => () => {
+  const handleRowClick = (itemData: EntityRow) => () => {
     if (!itemClickEvent) return;
     const payload: ItemActionPayload = {
       id: itemData.id as string | number,
@@ -447,7 +446,7 @@ export function DataList({
 
   // ── Message variant ──────────────────────────────────────────────
   if (isMessage) {
-    const items = data.map((item) => item as Record<string, unknown>);
+    const items = [...data];
     const groups = groupBy ? groupData(items, groupBy) : [{ label: '', items }];
     const contentField = titleField?.name ?? fieldDefs[0]?.name ?? '';
 
@@ -464,7 +463,7 @@ export function DataList({
               const isSent = Boolean(currentUser && sender === currentUser);
               const content = getNestedValue(itemData, contentField);
               const timestampField = fieldDefs.find((f) => f.format === 'date');
-              const timestamp = timestampField ? getNestedValue(itemData, timestampField.name) : null;
+              const timestamp = (timestampField ? getNestedValue(itemData, timestampField.name) : null) as FieldValue | null;
 
               return (
                 <Box
@@ -512,11 +511,11 @@ export function DataList({
   }
 
   // ── Grouped rendering (non-message variants) ─────────────────────
-  const items = data.map((item) => item as Record<string, unknown>);
+  const items = [...data];
   const groups = groupBy ? groupData(items, groupBy) : [{ label: '', items }];
 
   const idFieldName = dndItemIdField ?? 'id';
-  const renderItem = (itemData: Record<string, unknown>, index: number, isLast: boolean) => {
+  const renderItem = (itemData: EntityRow, index: number, isLast: boolean) => {
     const dndId = (itemData[idFieldName] as string | number | undefined) ?? `__idx_${index}`;
     const wrapDnd = (node: React.ReactNode): React.ReactNode =>
       dnd.isZone ? <dnd.SortableItem key={dndId} id={dndId}>{node}</dnd.SortableItem> : node;
@@ -584,7 +583,7 @@ export function DataList({
             {bodyFields.length > 0 && !isCompact && (
               <HStack gap="md" className="mt-1.5 flex-wrap">
                 {bodyFields.map((field) => {
-                  const value = getNestedValue(itemData, field.name);
+                  const value = getNestedValue(itemData, field.name) as FieldValue | undefined;
                   if (value === undefined || value === null || value === '') return null;
 
                   return (

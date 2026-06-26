@@ -39,7 +39,7 @@ export interface ModalSlotProps {
 function extractTitle(children: React.ReactNode): string | undefined {
   if (!React.isValidElement(children)) return undefined;
 
-  const props = children.props as Record<string, unknown>;
+  const props = children.props as { title?: string | number | boolean | null };
   if (typeof props.title === 'string') {
     return props.title;
   }

@@ -12,6 +12,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import type { EventPayload } from '@almadar/core';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { Toast, type ToastVariant } from '../molecules/Toast';
 import { Box } from '../atoms/Box';
@@ -46,15 +47,15 @@ export function NotifyListener(): React.ReactElement | null {
 
   useEffect(() => {
     const unsubscribe = eventBus.on('UI:NOTIFY', (event) => {
-      const payload = (event.payload ?? event) as Record<string, unknown>;
-      const message = typeof payload.message === 'string' ? payload.message : 'Notification';
+      const payload = event.payload;
+      const message = (payload && typeof payload.message === 'string') ? payload.message : 'Notification';
       const severityMap: Record<string, ToastVariant> = {
         success: 'success',
         error: 'error',
         warning: 'warning',
         info: 'info',
       };
-      const variant = severityMap[String(payload.severity)] || 'info';
+      const variant = (payload && String(payload.severity) in severityMap) ? severityMap[String(payload.severity)] : 'info';
       const id = ++nextId;
       setItems(prev => {
         // Deduplicate: skip if last toast has same message and variant

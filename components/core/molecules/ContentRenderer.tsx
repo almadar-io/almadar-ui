@@ -26,6 +26,8 @@ import { cn } from '../../../lib/cn';
 import type { DisplayStateProps } from '../organisms/types';
 import type { OrbitalSchema, StateMachine, Trait } from '@almadar/core';
 
+type OrbitalOrMachine = OrbitalSchema | StateMachine;
+
 export interface ContentRendererProps extends DisplayStateProps {
   /** Raw content string — auto-parsed into segments */
   content?: string;
@@ -78,14 +80,16 @@ export const ContentRenderer: React.FC<ContentRendererProps> = ({
             // Normalize both bare traits ({states, transitions}) and full
             // schemas ({orbitals}) into a schema object so JazariStateMachine
             // always receives the same prop shape (the `schema` prop path).
-            const parsed = segment.schema as Record<string, unknown>;
+            const parsed = segment.schema as OrbitalOrMachine;
+            const isFullSchema = (v: OrbitalOrMachine): v is OrbitalSchema =>
+              Array.isArray((v as OrbitalSchema).orbitals);
             const inlineTrait: Trait = {
               name: 'inline',
               scope: 'instance',
-              stateMachine: parsed as unknown as StateMachine,
+              stateMachine: parsed as StateMachine,
             };
-            const schema: OrbitalSchema = Array.isArray(parsed.orbitals)
-              ? (parsed as unknown as OrbitalSchema)
+            const schema: OrbitalSchema = isFullSchema(parsed)
+              ? parsed
               : {
                   name: 'inline',
                   orbitals: [{

@@ -86,8 +86,8 @@ export function schemaToFlowGraph(schema: OrbitalSchema): {
       data: {
         edgeKind: 'eventWire',
         event: link.eventName,
-        fromTrait: link.emitterTrait,
-        toTrait: link.listenerTrait,
+        fromTrait: link.emitterTrait ?? null,
+        toTrait: link.listenerTrait ?? null,
       },
     });
   }

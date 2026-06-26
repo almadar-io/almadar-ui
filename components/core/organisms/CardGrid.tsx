@@ -10,7 +10,7 @@
  * for pagination, filtering, or search. All state is owned by the trait state machine.
  */
 import React from 'react';
-import type { EventKey, EventPayload } from "@almadar/core";
+import type { EventKey, EventPayload, FieldValue } from "@almadar/core";
 import type { ItemActionPayload } from '@almadar/patterns';
 import { cn } from '../../../lib/cn';
 import { getNestedValue } from '../../../lib/getNestedValue';
@@ -38,7 +38,7 @@ export interface CardItemAction {
   /** Navigation URL - supports template interpolation like "/products/{{row.id}}" */
   navigatesTo?: string;
   /** Callback on click */
-  onClick?: (item: unknown) => void;
+  onClick?: (item: EventPayload) => void;
   /** Action used by generated code - alternative to event */
   action?: EventKey;
   /** Action placement - accepts string for compatibility with generated code */
@@ -75,7 +75,7 @@ function fieldLabel(key: string): string {
  * Detect boolean values (actual booleans or "true"/"false" strings)
  * and return the boolean, or null if the value is not boolean-like.
  */
-function asBooleanValue(value: unknown): boolean | null {
+function asBooleanValue(value: FieldValue): boolean | null {
   if (typeof value === 'boolean') return value;
   if (value === 'true') return true;
   if (value === 'false') return false;
@@ -98,7 +98,7 @@ function isDateField(key: string): boolean {
 /**
  * Format a date value for display
  */
-function formatDate(value: unknown): string {
+function formatDate(value: FieldValue): string {
   if (!value) return '';
   const d = new Date(String(value));
   if (isNaN(d.getTime())) return String(value);
@@ -366,8 +366,10 @@ export const CardGrid: React.FC<CardGridProps> = ({
                   const value = getNestedValue(itemData, field);
                   if (value === undefined || value === null || value === '') return null;
 
+                  const fieldValue = value as FieldValue;
+
                   // Boolean fields render as badges
-                  const boolVal = asBooleanValue(value);
+                  const boolVal = asBooleanValue(fieldValue);
                   if (boolVal !== null) {
                     return (
                       <HStack key={field} gap="sm" className="justify-between">
@@ -384,7 +386,7 @@ export const CardGrid: React.FC<CardGridProps> = ({
                   }
 
                   const displayValue = isDateField(field)
-                    ? formatDate(value)
+                    ? formatDate(fieldValue)
                     : STATUS_FIELDS.has(field.toLowerCase())
                       ? undefined
                       : String(value);

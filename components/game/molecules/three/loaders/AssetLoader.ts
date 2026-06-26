@@ -17,6 +17,8 @@ export interface LoadedModel {
     animations: THREE.AnimationClip[];
 }
 
+type LoaderPromise = Promise<LoadedModel> | Promise<THREE.Texture>;
+
 /**
  * Detect the 3D asset root from a model URL.
  * Looks for "/3d/" segment and returns everything up to and including it.
@@ -45,7 +47,7 @@ export class AssetLoader {
     private textureLoader: THREE.TextureLoader;
     private modelCache: Map<string, LoadedModel>;
     private textureCache: Map<string, THREE.Texture>;
-    private loadingPromises: Map<string, Promise<unknown>>;
+    private loadingPromises: Map<string, LoaderPromise>;
 
     constructor() {
         this.objLoader = new OBJLoader();

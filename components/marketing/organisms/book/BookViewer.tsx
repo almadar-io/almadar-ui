@@ -78,7 +78,7 @@ export const BookViewer: React.FC<BookViewerProps> = ({
     const entityArray = Array.isArray(entity) ? entity : entity ? [entity] : [];
     const raw = entityArray[0];
     if (!raw) return null;
-    return mapBookData(raw as Record<string, unknown>, resolvedFieldMap);
+    return mapBookData(raw, resolvedFieldMap);
   }, [entity, resolvedFieldMap]);
 
   const direction = book?.direction ?? 'ltr';

@@ -15,6 +15,7 @@ import { Button } from "../../core/atoms/Button";
 import type { TemplateProps } from "../../core/templates/types";
 import { getComponentForPattern } from "@almadar/patterns";
 import type { SlotContent } from "../../../hooks/useUISlots";
+import type { JsonObject } from "@almadar/core";
 
 // Lazy-require to avoid a module-graph cycle:
 // component-registry.generated.ts imports GameTemplate, and UISlotRenderer
@@ -46,10 +47,15 @@ function resolveDescriptor(value: React.ReactNode, idPrefix: string): React.Reac
     ));
   }
   if (typeof value === "object") {
-    const rec = (value as unknown) as Record<string, unknown>;
+    const rec = (value as object) as JsonObject;
     if (typeof rec.type === "string" && getComponentForPattern(rec.type) !== null) {
-      const { type, props: nestedProps, _id, ...flatProps } = rec as { type: string; props?: Record<string, unknown>; _id?: string; [k: string]: unknown };
-      const resolvedProps = (nestedProps !== undefined ? nestedProps : flatProps) as SlotContent["props"];
+      const type = rec.type;
+      const _id = typeof rec._id === "string" ? rec._id : undefined;
+      const nestedProps = rec.props !== undefined && typeof rec.props === "object" && !Array.isArray(rec.props) && rec.props !== null
+        ? (rec.props as SlotContent["props"])
+        : undefined;
+      const { type: _t, props: _p, _id: _d, ...flatRest } = rec;
+      const resolvedProps = nestedProps !== undefined ? nestedProps : (flatRest as SlotContent["props"]);
       const content: SlotContent = { id: _id ?? idPrefix, pattern: type, props: resolvedProps, priority: 0 };
       const SCR = getSlotContentRenderer();
       return <SCR content={content} onDismiss={() => undefined} />;

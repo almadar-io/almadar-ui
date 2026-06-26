@@ -13,6 +13,7 @@ import type {
   BehaviorCanvasEntry,
   BehaviorComposeNodeData,
   BehaviorWireEdgeData,
+  SerializedPayloadField,
 } from './avl-behavior-compose-types';
 
 // ---------------------------------------------------------------------------
@@ -56,17 +57,17 @@ export function behaviorsToComposeGraph(
       data: {
         behaviorName: entry.behaviorName,
         level: entry.level,
-        domain: entry.domain,
-        layer: entry.layer,
+        domain: entry.domain ?? null,
+        layer: entry.layer ?? null,
         entityName: entry.entityName,
         stateCount: entry.stateCount,
-        fieldCount: entry.fieldCount,
-        persistence: entry.persistence,
-        effectTypes: entry.effectTypes,
-        children: entry.children,
-        connections: entry.connections,
+        fieldCount: entry.fieldCount ?? null,
+        persistence: entry.persistence ?? null,
+        effectTypes: entry.effectTypes ?? null,
+        children: entry.children ?? null,
+        connections: entry.connections ?? null,
         connectableEvents: entry.connectableEvents,
-        composableWith: entry.composableWith,
+        composableWith: entry.composableWith ?? null,
         orbitalNames: entry.orbitalNames,
       },
     });
@@ -104,7 +105,7 @@ export interface BehaviorRegistryRecord {
     fields: Array<{ name: string; type: string; required?: boolean }>;
   };
   connectableEvents: string[];
-  eventPayloads: Record<string, Array<{ name: string; type: string; required?: boolean }>>;
+  eventPayloads: { [k: string]: Array<{ name: string; type: string; required?: boolean }> };
   composableWith: string[];
 }
 
@@ -117,13 +118,24 @@ export function registryEntryToCanvasEntry(
   orbitalNames: string[],
 ): BehaviorCanvasEntry {
   const events = entry.connectableEvents;
-  const connectableEvents: BehaviorCanvasEntry['connectableEvents'] = events.map((eventName, i) => ({
-    event: eventName,
-    payloadFields: entry.eventPayloads[eventName] as BehaviorCanvasEntry['connectableEvents'][0]['payloadFields'],
-    positionHint: events.length > 1
-      ? 0.1 + (i * 0.8) / (events.length - 1)
-      : 0.5,
-  }));
+  const connectableEvents: BehaviorCanvasEntry['connectableEvents'] = events.map((eventName, i) => {
+    const rawFields = entry.eventPayloads[eventName];
+    const payloadFields: SerializedPayloadField[] | null = rawFields
+      ? rawFields.map(f => ({
+          name: f.name,
+          type: f.type,
+          required: f.required ?? null,
+          description: null,
+        }))
+      : null;
+    return {
+      event: eventName,
+      payloadFields,
+      positionHint: events.length > 1
+        ? 0.1 + (i * 0.8) / (events.length - 1)
+        : 0.5,
+    };
+  });
 
   return {
     behaviorName: entry.name,
@@ -133,7 +145,7 @@ export function registryEntryToCanvasEntry(
     entityName: entry.defaultEntity.name,
     stateCount: entry.complexity.states,
     fieldCount: entry.defaultEntity.fields.length,
-    persistence: entry.defaultEntity.persistence as BehaviorCanvasEntry['persistence'],
+    persistence: entry.defaultEntity.persistence,
     connectableEvents,
     composableWith: entry.composableWith,
     orbitalNames,

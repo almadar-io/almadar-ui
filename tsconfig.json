@@ -22,6 +22,7 @@
       "@almadar/ui": ["./components/index.ts"],
       "@almadar/ui/components": ["./components/index.ts"],
       "@almadar/ui/components/organisms/game/three": ["./components/game/molecules/three/index.ts"],
+      "@almadar/ui/components/molecules/game/three": ["./components/game/molecules/three/index.ts"],
       "@almadar/ui/providers": ["./providers/index.ts"],
       "@almadar/ui/context": ["./context/index.ts"],
       "@almadar/ui/runtime": ["./runtime/index.ts"],

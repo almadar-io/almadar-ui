@@ -53,7 +53,7 @@ export const MiniStateMachine: React.FC<MiniStateMachineProps> = ({ data, classN
       {states.map((s, i) => {
         const x = 2 + i * (NODE_W + GAP + ARROW_W + GAP);
         const tc = transitionCounts[s.name] ?? 0;
-        const role = getStateRole(s.name, s.isInitial, s.isTerminal, tc, maxTC);
+        const role = getStateRole(s.name, s.isInitial ?? undefined, s.isTerminal ?? undefined, tc, maxTC);
 
         return (
           <React.Fragment key={s.name}>
@@ -64,8 +64,8 @@ export const MiniStateMachine: React.FC<MiniStateMachineProps> = ({ data, classN
               height={NODE_H}
               name=""
               role={role}
-              isInitial={s.isInitial}
-              isTerminal={s.isTerminal}
+              isInitial={s.isInitial ?? undefined}
+              isTerminal={s.isTerminal ?? undefined}
             />
             {/* Arrow to next state */}
             {i < states.length - 1 && (

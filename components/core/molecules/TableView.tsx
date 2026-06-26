@@ -13,7 +13,7 @@
  * Icon, Checkbox, Divider.
  */
 import React from 'react';
-import type { EntityRow, EventKey } from '@almadar/core';
+import type { EntityRow, EntityWith, FieldValue, EventKey } from '@almadar/core';
 import type { ItemActionPayload, SelectionChangePayload } from '@almadar/patterns';
 import { cn } from '../../../lib/cn';
 import { createLogger } from '@almadar/logger';
@@ -152,6 +152,16 @@ function columnLabel(col: TableViewColumn): string {
   );
 }
 
+function asFieldValue(v: ReturnType<typeof getNestedValue>): FieldValue | undefined {
+  if (v === undefined || v === null) return v as null | undefined;
+  const t = typeof v;
+  if (t === 'string' || t === 'number' || t === 'boolean') return v as FieldValue;
+  if (v instanceof Date) return v;
+  if (Array.isArray(v)) return v as FieldValue;
+  if (t === 'object') return v as FieldValue;
+  return undefined;
+}
+
 function statusVariant(value: string): 'success' | 'warning' | 'error' | 'info' | 'default' {
   const v = value.toLowerCase();
   if (['active', 'completed', 'done', 'approved', 'published', 'resolved', 'open', 'online', 'ok'].includes(v)) return 'success';
@@ -161,7 +171,7 @@ function statusVariant(value: string): 'success' | 'warning' | 'error' | 'info' 
   return 'default';
 }
 
-function formatCell(value: unknown, format?: TableViewColumn['format']): string {
+function formatCell(value: FieldValue | undefined, format?: TableViewColumn['format']): string {
   if (value === undefined || value === null) return '';
   switch (format) {
     case 'date': {
@@ -179,10 +189,10 @@ function formatCell(value: unknown, format?: TableViewColumn['format']): string 
 }
 
 function groupData(
-  items: Record<string, unknown>[],
+  items: EntityRow[],
   field: string,
-): { label: string; items: Record<string, unknown>[] }[] {
-  const groups = new Map<string, Record<string, unknown>[]>();
+): { label: string; items: EntityRow[] }[] {
+  const groups = new Map<string, EntityRow[]>();
   for (const item of items) {
     const key = String(getNestedValue(item, field) ?? '');
     const group = groups.get(key);
@@ -276,7 +286,7 @@ export function TableView({
     dndItemIdField,
     dndRoot,
   });
-  const ordered = dnd.orderedItems as readonly Record<string, unknown>[];
+  const ordered = dnd.orderedItems;
   const data = pageSize > 0 ? ordered.slice(0, visibleCount) : ordered;
   const hasMore = pageSize > 0 && visibleCount < ordered.length;
   const hasRenderProp = typeof children === 'function';
@@ -310,7 +320,7 @@ export function TableView({
   };
 
   const handleActionClick =
-    (action: TableViewItemAction, row: Record<string, unknown>) => (e: React.MouseEvent) => {
+    (action: TableViewItemAction, row: EntityRow) => (e: React.MouseEvent) => {
       e.stopPropagation();
       const payload: ItemActionPayload = {
         id: row.id as string | number,
@@ -412,7 +422,7 @@ export function TableView({
   );
 
   // ── A single body row ───────────────────────────────────────────
-  const renderRow = (row: Record<string, unknown>, index: number) => {
+  const renderRow = (row: EntityRow, index: number) => {
     const id = String(row[idField] ?? index);
     const rowInner = (
       <Box
@@ -440,10 +450,10 @@ export function TableView({
           </Box>
         )}
         {hasRenderProp ? (
-          <Box className="flex-1 min-w-0">{children(row as EntityRow, index)}</Box>
+          <Box className="flex-1 min-w-0">{children(row, index)}</Box>
         ) : (
           colDefs.map((col) => {
-            const raw = getNestedValue(row, col.field ?? col.key);
+            const raw = asFieldValue(getNestedValue(row, col.field ?? col.key));
             const cellBase = cn(
               'flex items-center min-w-0',
               alignClass[col.align ?? 'left'],
@@ -512,7 +522,7 @@ export function TableView({
     );
   };
 
-  const items = data.map((row) => row as Record<string, unknown>);
+  const items = Array.from(data);
   const groups = groupBy ? groupData(items, groupBy) : [{ label: '', items }];
 
   let runningIndex = 0;

@@ -48,8 +48,8 @@ export const DetailView: React.FC<DetailViewProps> = ({ data }) => {
   }
   const maxTC = Math.max(...Object.values(transitionCounts), 0);
 
-  const fromRole = getStateRole(transition.from, fromState?.isInitial, fromState?.isTerminal, transitionCounts[transition.from] ?? 0, maxTC);
-  const toRole = getStateRole(transition.to, toState?.isInitial, toState?.isTerminal, transitionCounts[transition.to] ?? 0, maxTC);
+  const fromRole = getStateRole(transition.from, fromState?.isInitial ?? undefined, fromState?.isTerminal ?? undefined, transitionCounts[transition.from] ?? 0, maxTC);
+  const toRole = getStateRole(transition.to, toState?.isInitial ?? undefined, toState?.isTerminal ?? undefined, transitionCounts[transition.to] ?? 0, maxTC);
 
   const hasGuard = transition.guard != null;
 
@@ -59,14 +59,14 @@ export const DetailView: React.FC<DetailViewProps> = ({ data }) => {
       <div className="px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-background)]">
         <div className="flex items-center gap-3">
           <svg width={90} height={32} viewBox="0 0 90 32">
-            <AvlState x={0} y={0} width={80} height={28} name={transition.from} role={fromRole} isInitial={fromState?.isInitial} isTerminal={fromState?.isTerminal} />
+            <AvlState x={0} y={0} width={80} height={28} name={transition.from} role={fromRole} isInitial={fromState?.isInitial ?? undefined} isTerminal={fromState?.isTerminal ?? undefined} />
           </svg>
           <svg width={24} height={16} viewBox="0 0 24 16">
             <line x1={0} y1={8} x2={18} y2={8} stroke="var(--color-muted-foreground)" strokeWidth={2} />
             <polygon points="18,4 24,8 18,12" fill="var(--color-muted-foreground)" />
           </svg>
           <svg width={90} height={32} viewBox="0 0 90 32">
-            <AvlState x={0} y={0} width={80} height={28} name={transition.to} role={toRole} isInitial={toState?.isInitial} isTerminal={toState?.isTerminal} />
+            <AvlState x={0} y={0} width={80} height={28} name={transition.to} role={toRole} isInitial={toState?.isInitial ?? undefined} isTerminal={toState?.isTerminal ?? undefined} />
           </svg>
         </div>
       </div>

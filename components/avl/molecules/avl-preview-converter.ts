@@ -21,7 +21,12 @@ import type {
   Transition,
   State,
   Effect,
+  Entity,
+  EntityCall,
+  EntityData,
+  JsonObject,
 } from '@almadar/core';
+import type { AnyPatternConfig } from '@almadar/patterns';
 import type {
   PreviewNodeData,
   EventEdgeData,
@@ -91,7 +96,7 @@ function getTraits(orbital: OrbitalDefinition): Trait[] {
   if (!orbital.traits) return [];
   return orbital.traits.map(t => {
     if (typeof t === 'string') return { name: t } as Trait;
-    if ('ref' in (t as Record<string, unknown>)) return { name: (t as { ref: string }).ref } as Trait;
+    if (typeof t === 'object' && t !== null && 'ref' in t) return { name: (t as { ref: string }).ref } as Trait;
     return t as Trait;
   });
 }
@@ -110,11 +115,11 @@ function getEntityInfo(orbital: OrbitalDefinition): { name: string; persistence:
   if (typeof entity === 'string') {
     return { name: entity, persistence: 'runtime', fieldCount: 0 };
   }
-  const e = entity as unknown as Record<string, unknown>;
-  const fields = (e.fields as unknown[]) ?? [];
+  const e = entity as Entity | EntityCall;
+  const fields = e.fields ?? [];
   return {
-    name: (e.name as string) ?? orbital.name,
-    persistence: (e.persistence as string) ?? 'runtime',
+    name: e.name ?? orbital.name,
+    persistence: e.persistence ?? 'runtime',
     fieldCount: fields.length,
   };
 }
@@ -123,8 +128,8 @@ function getPages(orbital: OrbitalDefinition): string[] {
   if (!orbital.pages) return [];
   return orbital.pages.map(p => {
     if (typeof p === 'string') return `/${p.toLowerCase()}`;
-    const po = p as unknown as Record<string, unknown>;
-    return (po.path as string) ?? `/${(po.name as string) ?? ''}`.toLowerCase();
+    if ('ref' in p) return p.path ?? `/${p.ref}`.toLowerCase();
+    return p.path ?? `/${p.name}`.toLowerCase();
   });
 }
 
@@ -149,13 +154,11 @@ function extractRenderUI(effects: Effect[]): RenderUIEntry[] {
   const patterns: RenderUIEntry[] = [];
   for (const eff of effects) {
     if (!Array.isArray(eff)) continue;
-    const [type, ...args] = eff as [string, ...unknown[]];
-    if (type === 'render-ui' && args.length >= 2) {
-      const slot = args[0] as string;
-      const pattern = args[1];
-      if (pattern !== null && pattern !== undefined && typeof pattern === 'object') {
-        patterns.push({ slot, pattern: pattern as Record<string, unknown> });
-      }
+    if (eff[0] !== 'render-ui' || eff.length < 3) continue;
+    const slot = eff[1] as string;
+    const pattern = eff[2];
+    if (pattern !== null && pattern !== undefined && typeof pattern === 'object' && !Array.isArray(pattern)) {
+      patterns.push({ slot, pattern: pattern as AnyPatternConfig });
     }
   }
   return patterns;
@@ -184,7 +187,7 @@ function extractEffectTypes(effects: Effect[]): string[] {
  * → PatternEventSource { event: "CHECKOUT", patternType: "button", label: "Checkout" }
  */
 function findEventSources(
-  config: Record<string, unknown>,
+  config: JsonObject,
   path = 'root',
   depth = 0,
   totalSiblings = 1,
@@ -193,11 +196,11 @@ function findEventSources(
   const sources: PatternEventSource[] = [];
   if (depth > 10) return sources; // Prevent infinite recursion
 
-  const patternType = config.type as string | undefined;
-  const event = config.event as string | undefined;
+  const patternType = typeof config.type === 'string' ? config.type : undefined;
+  const event = typeof config.event === 'string' ? config.event : undefined;
 
   // Check if this element fires an event
-  if (patternType && event && typeof event === 'string') {
+  if (patternType && event) {
     // Compute a vertical position hint based on the element's depth and index
     // This helps position the source handle near the trigger element
     const positionHint = totalSiblings > 1
@@ -207,20 +210,20 @@ function findEventSources(
     sources.push({
       event,
       patternType,
-      label: (config.label as string) ?? (config.content as string) ?? (config.text as string),
+      label: typeof config.label === 'string' ? config.label : typeof config.content === 'string' ? config.content : typeof config.text === 'string' ? config.text : undefined,
       path,
       positionHint: Math.min(Math.max(positionHint, 0.1), 0.9),
     });
   }
 
   // Recurse into children
-  const children = config.children as Array<Record<string, unknown>> | undefined;
+  const children = config.children;
   if (Array.isArray(children)) {
     for (let i = 0; i < children.length; i++) {
       const child = children[i];
-      if (child && typeof child === 'object') {
+      if (child !== null && typeof child === 'object' && !Array.isArray(child)) {
         sources.push(
-          ...findEventSources(child, `${path}.children.${i}`, depth + 1, children.length, i),
+          ...findEventSources(child as JsonObject, `${path}.children.${i}`, depth + 1, children.length, i),
         );
       }
     }
@@ -229,9 +232,9 @@ function findEventSources(
   // Recurse into named props that might be pattern configs (e.g., flip-card front/back)
   for (const [key, value] of Object.entries(config)) {
     if (key === 'children' || key === 'type' || key === 'event') continue;
-    if (value && typeof value === 'object' && !Array.isArray(value) && 'type' in (value as Record<string, unknown>)) {
+    if (value !== null && typeof value === 'object' && !Array.isArray(value) && 'type' in value) {
       sources.push(
-        ...findEventSources(value as Record<string, unknown>, `${path}.${key}`, depth + 1, totalSiblings, siblingIndex),
+        ...findEventSources(value as JsonObject, `${path}.${key}`, depth + 1, totalSiblings, siblingIndex),
       );
     }
   }
@@ -243,7 +246,7 @@ function findEventSources(
 function collectEventSources(patterns: RenderUIEntry[]): PatternEventSource[] {
   const allSources: PatternEventSource[] = [];
   for (const entry of patterns) {
-    allSources.push(...findEventSources(entry.pattern));
+    allSources.push(...findEventSources(entry.pattern as JsonObject));
   }
   // Deduplicate by event name (keep first occurrence)
   const seen = new Set<string>();
@@ -371,7 +374,7 @@ function findCrossLinks(orbitals: OrbitalDefinition[]): TraitWire[] {
  */
 export function schemaToOverviewGraph(
   schema: OrbitalSchema,
-  mockData?: Record<string, unknown[]>,
+  mockData?: EntityData,
   behaviorMeta?: Record<string, { layer: string }>,
   layoutHint?: 'pipeline' | 'grid',
   orbitalStatus?: Record<string, PreviewNodeData['status']>,
@@ -439,12 +442,12 @@ export function schemaToOverviewGraph(
       for (const trait of traits) {
         const sm = getStateMachine(trait);
         if (!sm) continue;
-        const smEvents = (trait.stateMachine?.events ?? []) as unknown as Array<Record<string, unknown>>;
+        const smEvents = trait.stateMachine?.events ?? [];
         const matchingEvent = smEvents.find(ev => ev.key === source.event);
-        if (matchingEvent?.payload && Array.isArray(matchingEvent.payload)) {
-          source.payloadFields = (matchingEvent.payload as Array<Record<string, unknown>>).map(p => ({
-            name: String(p.name ?? ''),
-            type: String(p.type ?? 'string'),
+        if (matchingEvent?.payloadSchema && Array.isArray(matchingEvent.payloadSchema)) {
+          source.payloadFields = matchingEvent.payloadSchema.map(p => ({
+            name: p.name ?? '',
+            type: p.type ?? 'string',
             ...(p.required ? { required: true as const } : {}),
           }));
           break;
@@ -575,7 +578,7 @@ function buildScreenGraph(
     representative: UITransitionEntry;
     transitionCount: number;
   }>,
-  mockData?: Record<string, unknown[]>,
+  mockData?: EntityData,
   screenSize?: ScreenSize,
 ): { nodes: Node<PreviewNodeData>[]; edges: Edge<EventEdgeData>[] } {
   const nodes: Node<PreviewNodeData>[] = [];
@@ -729,7 +732,7 @@ function buildScreenGraph(
 export function orbitalToExpandedGraph(
   schema: OrbitalSchema,
   orbitalName: string,
-  mockData?: Record<string, unknown[]>,
+  mockData?: EntityData,
   screenSize?: ScreenSize,
 ): {
   nodes: Node<PreviewNodeData>[];
@@ -801,7 +804,7 @@ export function orbitalAliasToExpandedGraph(
   schema: OrbitalSchema,
   orbitalName: string,
   alias: string,
-  mockData?: Record<string, unknown[]>,
+  mockData?: EntityData,
   screenSize?: ScreenSize,
 ): {
   nodes: Node<PreviewNodeData>[];
@@ -854,7 +857,7 @@ export function orbitalToTraitGraph(
   // mockData is reserved for parity with the other converters — the trait
   // card currently doesn't render mock rows but accepting the same prop
   // keeps consumer call sites uniform.
-  _mockData?: Record<string, unknown[]>,
+  _mockData?: EntityData,
 ): {
   nodes: Node<PreviewNodeData>[];
   edges: Edge<EventEdgeData>[];

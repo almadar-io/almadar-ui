@@ -172,7 +172,7 @@ export const Avl3DViewer: React.FC<Avl3DViewerProps> = ({
   const schema: OrbitalSchema = useMemo(() => {
     if (typeof schemaProp === 'string') {
       try { return JSON.parse(schemaProp); }
-      catch { return { name: 'Error', orbitals: [] } as unknown as OrbitalSchema; }
+      catch { return { name: 'Error', orbitals: [] } as OrbitalSchema; }
     }
     return schemaProp;
   }, [schemaProp]);

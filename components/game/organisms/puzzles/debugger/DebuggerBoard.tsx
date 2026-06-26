@@ -12,13 +12,31 @@
  
 
 import React, { useState, useCallback } from 'react';
-import type { EventEmit, EntityRow } from '@almadar/core';
+import type { EventEmit, EntityRow, EntityWith, FieldValue } from '@almadar/core';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../core/atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
 import type { DisplayStateProps } from '../../../../core/organisms/types';
 import { boardEntity, str, num } from '../../boardEntity';
 import { CheckCircle, XCircle, RotateCcw, Bug, Send } from 'lucide-react';
+
+/** Narrow a raw FieldValue to a DebuggerLine, returning null when the shape doesn't match. */
+function toDebuggerLine(v: FieldValue): DebuggerLine | null {
+  if (v === null || typeof v !== 'object' || Array.isArray(v) || v instanceof Date) return null;
+  const id = v['id'];
+  const content = v['content'];
+  const isBug = v['isBug'];
+  if (typeof id !== 'string' || typeof content !== 'string' || typeof isBug !== 'boolean') return null;
+  const isFlagged = v['isFlagged'];
+  const explanation = v['explanation'];
+  return {
+    id,
+    content,
+    isBug,
+    isFlagged: typeof isFlagged === 'boolean' ? isFlagged : undefined,
+    explanation: typeof explanation === 'string' ? explanation : undefined,
+  };
+}
 
 /** A reviewable code line (UI value DTO read off the entity). */
 export interface DebuggerLine {
@@ -33,7 +51,18 @@ export interface DebuggerBoardProps extends DisplayStateProps {
   /** Puzzle board-state entity (single row or array). The board reads
    *  `lines` array (each with `isFlagged`), `result`, `attempts`, plus
    *  title/description/bugCount/hint off the row. */
-  entity?: EntityRow | readonly EntityRow[];
+  entity?: EntityWith<{
+    lines?: DebuggerLine[];
+    result?: string;
+    attempts?: number;
+    title?: string;
+    description?: string;
+    bugCount?: number;
+    hint?: string;
+    headerImage?: string;
+    theme?: { background?: string; accentColor?: string };
+    successMessage?: string;
+  }> | readonly EntityRow[];
   completeEvent?: EventEmit<{ success: boolean; attempts: number }>;
   /** Emits UI:{toggleFlagEvent} with { lineId } when a line's bug-flag is toggled. */
   toggleFlagEvent?: EventEmit<{ lineId: string }>;
@@ -57,7 +86,9 @@ export function DebuggerBoard({
 
   const [headerError, setHeaderError] = useState(false);
 
-  const lines = (Array.isArray(resolved?.lines) ? resolved.lines : []) as unknown as DebuggerLine[];
+  const lines: DebuggerLine[] = Array.isArray(resolved?.lines)
+    ? (resolved.lines as FieldValue[]).flatMap((v) => { const l = toDebuggerLine(v); return l ? [l] : []; })
+    : [];
   // Model sets result to "win" on correct check; "none" otherwise (never null after INIT)
   const result = str(resolved?.result) || 'none';
   const attempts = num(resolved?.attempts);

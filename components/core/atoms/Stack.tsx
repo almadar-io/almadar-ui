@@ -133,10 +133,10 @@ export const Stack: React.FC<StackProps> = ({
         : reverse
           ? "flex-col-reverse"
           : "flex-col";
-  const Comp = Component as React.FC<Record<string, unknown>>;
-  return (
-    <Comp
-      className={cn(
+  return React.createElement(
+    Component,
+    {
+      className: cn(
         "flex",
         directionClass,
         gapStyles[gap],
@@ -145,15 +145,14 @@ export const Stack: React.FC<StackProps> = ({
         wrap && "flex-wrap",
         flex && "flex-1",
         className,
-      )}
-      style={style}
-      onClick={(action || onClick) ? handleClick : undefined}
-      onKeyDown={onKeyDown}
-      role={role}
-      tabIndex={tabIndex}
-    >
-      {children}
-    </Comp>
+      ),
+      style,
+      onClick: (action || onClick) ? handleClick : undefined,
+      onKeyDown,
+      role,
+      tabIndex,
+    },
+    children
   );
 };
 

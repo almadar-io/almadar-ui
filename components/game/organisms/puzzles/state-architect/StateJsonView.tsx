@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { VStack, HStack, Box, Typography, Button } from '../../../../core/atoms';
+import { JsonObject } from '@almadar/core';
 import { cn } from '../../../../../lib/cn';
 import { useTranslate } from '../../../../../hooks/useTranslate';
 
 export interface StateJsonViewProps {
     /** JSON data to display */
-    data: Record<string, unknown>;
+    data: JsonObject;
     /** Label */
     label?: string;
     /** Whether the code is expanded by default */

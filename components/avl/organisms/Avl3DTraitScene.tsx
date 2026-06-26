@@ -92,8 +92,8 @@ export const Avl3DTraitScene: React.FC<Avl3DTraitSceneProps> = ({
           <Avl3DStateNode
             key={state.name}
             name={state.name}
-            isInitial={state.isInitial}
-            isTerminal={state.isTerminal}
+            isInitial={state.isInitial ?? undefined}
+            isTerminal={state.isTerminal ?? undefined}
             position={pos}
             incomingCount={transitionCounts.incoming.get(state.name) ?? 0}
             outgoingCount={transitionCounts.outgoing.get(state.name) ?? 0}

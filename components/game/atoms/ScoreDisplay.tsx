@@ -9,6 +9,8 @@ export interface ScoreDisplayProps {
   assetUrl?: AssetUrl;
   /** Current score value */
   value: number;
+  /** Alias for value — common schema binding name */
+  score?: number;
   /** Label to display before score */
   label?: string;
   /** Icon component or emoji */
@@ -36,19 +38,19 @@ const DEFAULT_ASSET_URL: AssetUrl =
 export function ScoreDisplay({
   assetUrl = DEFAULT_ASSET_URL,
   value,
+  score,
   label,
   icon,
   size = 'md',
   className,
   animated = true,
   locale = 'en-US',
-  ...rest
-}: ScoreDisplayProps & Record<string, unknown>) {
+}: ScoreDisplayProps) {
   // Accept "score" as alias for "value" (common schema binding)
   const resolvedValue = typeof value === 'number' && !Number.isNaN(value)
     ? value
-    : typeof (rest as Record<string, unknown>).score === 'number' && !Number.isNaN((rest as Record<string, unknown>).score)
-      ? (rest as Record<string, unknown>).score as number
+    : typeof score === 'number' && !Number.isNaN(score)
+      ? score
       : 0;
   const [displayValue, setDisplayValue] = React.useState(resolvedValue);
   const [isAnimating, setIsAnimating] = React.useState(false);

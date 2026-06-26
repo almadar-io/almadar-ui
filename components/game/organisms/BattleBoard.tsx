@@ -21,7 +21,7 @@
  */
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
+import type { AssetUrl, EventEmit, EntityRow, FieldValue } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -230,9 +230,44 @@ export function BattleBoard({
 }: BattleBoardProps): React.JSX.Element {
     // -- Unpack entity (single board-state row); direct props win --
     const board = boardEntity(entity) ?? {};
-    const rawTiles = propTiles ?? (Array.isArray(board.tiles) ? board.tiles as unknown as IsometricTile[] : []);
+
+    /** Narrow a FieldValue to an object map (excludes scalars, arrays, Date, null). */
+    function asFieldObj(v: FieldValue): { [key: string]: FieldValue | undefined } | null {
+        if (v === null || typeof v !== 'object' || Array.isArray(v) || v instanceof Date) return null;
+        return v as { [key: string]: FieldValue | undefined };
+    }
+
+    const rawTiles: IsometricTile[] = propTiles ?? (Array.isArray(board.tiles)
+        ? (board.tiles as FieldValue[]).flatMap(v => {
+            const o = asFieldObj(v);
+            if (o === null || typeof o.x !== 'number' || typeof o.y !== 'number') return [];
+            const tile: IsometricTile = { x: o.x, y: o.y };
+            if (typeof o.terrain === 'string') tile.terrain = o.terrain;
+            if (typeof o.terrainSprite === 'string') tile.terrainSprite = o.terrainSprite;
+            if (typeof o.passable === 'boolean') tile.passable = o.passable;
+            if (typeof o.movementCost === 'number') tile.movementCost = o.movementCost;
+            if (typeof o.elevation === 'number') tile.elevation = o.elevation;
+            if (typeof o.type === 'string') tile.type = o.type;
+            if (typeof o.tileType === 'string') tile.tileType = o.tileType;
+            if (typeof o.id === 'string') tile.id = o.id;
+            if (typeof o.modelUrl === 'string') tile.modelUrl = o.modelUrl;
+            return [tile];
+        })
+        : []);
     const tiles: IsometricTile[] = rawTiles.length === 0 ? DEFAULT_BATTLE_TILES : rawTiles;
-    const features = propFeatures ?? (Array.isArray(board.features) ? board.features : []) as unknown as IsometricFeature[];
+    const features: IsometricFeature[] = propFeatures ?? (Array.isArray(board.features)
+        ? (board.features as FieldValue[]).flatMap(v => {
+            const o = asFieldObj(v);
+            if (o === null || typeof o.type !== 'string' || typeof o.x !== 'number' || typeof o.y !== 'number') return [];
+            const feat: IsometricFeature = { type: o.type, x: o.x, y: o.y };
+            if (typeof o.id === 'string') feat.id = o.id;
+            if (typeof o.sprite === 'string') feat.sprite = o.sprite;
+            if (typeof o.color === 'string') feat.color = o.color;
+            if (typeof o.elevation === 'number') feat.elevation = o.elevation;
+            if (typeof o.assetUrl === 'string') feat.assetUrl = o.assetUrl;
+            return [feat];
+        })
+        : []);
     const boardWidth = num(board.gridWidth ?? board.boardWidth, BATTLE_GRID_W);
     const boardHeight = num(board.gridHeight ?? board.boardHeight, BATTLE_GRID_H);
     const assetManifest = propAssetManifest ?? board.assetManifest as BattleAssetManifest | undefined;
@@ -380,7 +415,12 @@ export function BattleBoard({
                 const id = str(unit.id);
                 const pos = movingPositions.get(id) ?? unitPosition(unit);
                 const unitTraits = Array.isArray(unit.traits)
-                    ? (unit.traits as unknown as TeamUnitTraits[])
+                    ? (unit.traits as FieldValue[]).flatMap((v): TeamUnitTraits[] => {
+                        const o = asFieldObj(v);
+                        if (o === null || typeof o.name !== 'string' || typeof o.currentState !== 'string' || !Array.isArray(o.states)) return [];
+                        const stateNames: string[] = Array.from(o.states).flatMap(s => typeof s === 'string' ? [s] : []);
+                        return [{ name: o.name, currentState: o.currentState, states: stateNames, cooldown: typeof o.cooldown === 'number' ? o.cooldown : undefined }];
+                    })
                     : undefined;
                 return {
                     id,

@@ -92,10 +92,10 @@ export const SystemNode: React.FC<SystemNodeProps> = ({ data }) => {
           <svg width={stateChain.length * 14 + 2} height={10} viewBox={`0 0 ${stateChain.length * 14 + 2} 10`}>
             {stateChain.map((s, i) => {
               const tc = transitionCounts[s.name] ?? 0;
-              const role = getStateRole(s.name, s.isInitial, s.isTerminal, tc, maxTC);
+              const role = getStateRole(s.name, s.isInitial ?? undefined, s.isTerminal ?? undefined, tc, maxTC);
               return (
                 <React.Fragment key={s.name}>
-                  <AvlState x={i * 14 + 1} y={1} width={10} height={8} name="" role={role} isInitial={s.isInitial} isTerminal={s.isTerminal} />
+                  <AvlState x={i * 14 + 1} y={1} width={10} height={8} name="" role={role} isInitial={s.isInitial ?? undefined} isTerminal={s.isTerminal ?? undefined} />
                   {i < stateChain.length - 1 && (
                     <line x1={i * 14 + 12} y1={5} x2={i * 14 + 15} y2={5} stroke="var(--color-border)" strokeWidth={0.5} />
                   )}

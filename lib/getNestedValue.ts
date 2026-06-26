@@ -1,3 +1,5 @@
+import type { FieldValue } from '@almadar/core';
+
 /**
  * Get Nested Value Utility
  *
@@ -7,6 +9,14 @@
  * @packageDocumentation
  */
 
+export function getNestedValue(
+  obj: Record<string, FieldValue | undefined> | null | undefined,
+  path: string
+): FieldValue | undefined;
+export function getNestedValue(
+  obj: Record<string, unknown> | null | undefined,
+  path: string
+): unknown;
 /**
  * Get a nested value from an object using dot-notation path.
  *

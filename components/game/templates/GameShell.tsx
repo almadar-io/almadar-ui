@@ -19,7 +19,21 @@ import { Box } from "../../core/atoms/Box";
 import { HStack } from "../../core/atoms/Stack";
 import { Typography } from "../../core/atoms/Typography";
 import { getComponentForPattern } from "@almadar/patterns";
-import type { SlotContent } from "../../../hooks/useUISlots";
+import type { SlotContent, SlotPropValue } from "../../../hooks/useUISlots";
+
+
+type DescriptorObject = { type: string; props?: SlotContent["props"]; _id?: string };
+
+function asDescriptor(v: object): DescriptorObject | null {
+  if (Array.isArray(v) || React.isValidElement(v)) return null;
+  const o = v as { type?: SlotPropValue; props?: SlotPropValue; _id?: SlotPropValue };
+  if (typeof o.type !== "string") return null;
+  const props = o.props !== undefined && typeof o.props === "object" && !Array.isArray(o.props) && o.props !== null
+    ? (o.props as SlotContent["props"])
+    : undefined;
+  const _id = typeof o._id === "string" ? o._id : undefined;
+  return { type: o.type, props, _id };
+}
 
 type SlotContentRendererCmp = React.ComponentType<{ content: SlotContent; onDismiss: () => void }>;
 let _scr: SlotContentRendererCmp | null = null;
@@ -39,12 +53,11 @@ function resolveDescriptor(value: React.ReactNode, idPrefix: string): React.Reac
       <React.Fragment key={i}>{resolveDescriptor(item as React.ReactNode, `${idPrefix}-${i}`)}</React.Fragment>
     ));
   }
-  if (typeof value === "object") {
-    const rec = (value as unknown) as Record<string, unknown>;
-    if (typeof rec.type === "string" && getComponentForPattern(rec.type) !== null) {
-      const { type, props: nestedProps, _id, ...flatProps } = rec as { type: string; props?: Record<string, unknown>; _id?: string; [k: string]: unknown };
-      const resolvedProps = (nestedProps !== undefined ? nestedProps : flatProps) as SlotContent["props"];
-      const content: SlotContent = { id: _id ?? idPrefix, pattern: type, props: resolvedProps, priority: 0 };
+  if (typeof value === "object" && value !== null) {
+    const desc = asDescriptor(value as object);
+    if (desc !== null && getComponentForPattern(desc.type) !== null) {
+      const resolvedProps: SlotContent["props"] = desc.props ?? {};
+      const content: SlotContent = { id: desc._id ?? idPrefix, pattern: desc.type, props: resolvedProps, priority: 0 };
       const SCR = getSlotContentRenderer();
       return <SCR content={content} onDismiss={() => undefined} />;
     }

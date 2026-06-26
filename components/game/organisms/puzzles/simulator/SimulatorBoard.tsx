@@ -14,12 +14,12 @@
  */
 
 import React, { useState } from 'react';
-import type { EventEmit, EntityRow } from '@almadar/core';
+import type { EventEmit, EntityRow, FieldValue } from '@almadar/core';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../core/atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
 import type { DisplayStateProps } from '../../../../core/organisms/types';
-import { boardEntity, str, num } from '../../boardEntity';
+import { boardEntity, str, num, vec2 } from '../../boardEntity';
 import { Play, RotateCcw, CheckCircle, XCircle } from 'lucide-react';
 
 /** A tunable simulation parameter slider descriptor (UI value DTO read off the entity). */
@@ -33,6 +33,31 @@ export interface SimulatorParameter {
   initial: number;
   correct: number;
   tolerance: number;
+}
+
+/** Read a parameters array from an entity field and narrow to SimulatorParameter[]. */
+function readSimulatorParameters(v: FieldValue | undefined): SimulatorParameter[] {
+  if (!Array.isArray(v)) return [];
+  const result: SimulatorParameter[] = [];
+  for (const item of v) {
+    if (typeof item === 'object' && item !== null && !Array.isArray(item) && !(item instanceof Date)) {
+      const param = item as { id?: FieldValue; label?: FieldValue; unit?: FieldValue; min?: FieldValue; max?: FieldValue; step?: FieldValue; initial?: FieldValue; correct?: FieldValue; tolerance?: FieldValue };
+      if ('id' in item && 'label' in item && 'unit' in item && 'min' in item && 'max' in item && 'step' in item) {
+        result.push({
+          id: str(param.id),
+          label: str(param.label),
+          unit: str(param.unit),
+          min: num(param.min),
+          max: num(param.max),
+          step: num(param.step),
+          initial: num(param.initial),
+          correct: num(param.correct),
+          tolerance: num(param.tolerance),
+        });
+      }
+    }
+  }
+  return result;
 }
 
 export interface SimulatorBoardProps extends DisplayStateProps {
@@ -64,7 +89,7 @@ export function SimulatorBoard({
   const { t } = useTranslate();
   const resolved = boardEntity(entity);
 
-  const parameters = (Array.isArray(resolved?.parameters) ? resolved.parameters : []) as unknown as SimulatorParameter[];
+  const parameters = readSimulatorParameters(resolved?.parameters);
   const [headerError, setHeaderError] = useState(false);
 
   if (!resolved) return null;
@@ -100,8 +125,15 @@ export function SimulatorBoard({
     if (playAgainEvent) emit(`UI:${playAgainEvent}`, {});
   };
 
-  const theme = (resolved.theme ?? undefined) as { background?: string; accentColor?: string } | undefined;
-  const themeBackground = theme?.background;
+  // Read theme object from entity (it's a FieldValue, which can be an object).
+  const themeBackground = (() => {
+    const t = resolved.theme;
+    if (typeof t === 'object' && t !== null && !Array.isArray(t) && !(t instanceof Date)) {
+      const bg = (t as { background?: FieldValue; accentColor?: FieldValue }).background;
+      return str(bg);
+    }
+    return '';
+  })();
   const headerImage = str(resolved.headerImage);
   const hint = str(resolved.hint);
   const showHint = isComplete && !isWin && attempts >= 2 && Boolean(hint);

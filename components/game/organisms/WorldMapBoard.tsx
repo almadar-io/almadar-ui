@@ -247,7 +247,7 @@ export function WorldMapBoard({
     // lolo sets @entity.units and @entity.tiles (not hexes/heroes)
     const entityUnits = rows(resolved?.units);
     const entityTiles = rows(resolved?.tiles);
-    const features = propFeatures ?? (Array.isArray(resolved?.features) ? resolved.features : []) as unknown as IsometricFeature[];
+    const features = propFeatures ?? (rows(resolved?.features) as IsometricFeature[]);
     const selectedHeroId = (resolved?.selectedHeroId as string | null | undefined) ?? null;
     const assetManifest = propAssetManifest ?? resolved?.assetManifest as WorldMapAssetManifest | undefined;
     const backgroundImage = resolved?.backgroundImage as AssetUrl | undefined;
@@ -423,9 +423,10 @@ export function WorldMapBoard({
                     eventBus.emit(`UI:${heroMoveEvent}`, { heroId, toX: x, toY: y });
                 }
                 // feature on a tile row (EntityRow from entity path)
-                const feature = tile ? str((tile as unknown as EntityRow).feature) : '';
+                const tileWithFeature = tile as (IsometricTile & { feature?: string }) | undefined;
+                const feature = tileWithFeature ? str(tileWithFeature.feature) : '';
                 if (feature && feature !== 'none') {
-                    const tileRow = tile as unknown as EntityRow;
+                    const tileRow = tile as (IsometricTile & EntityRow);
                     onFeatureEnter?.(heroId, tileRow);
                     if (featureEnterEvent) {
                         eventBus.emit(`UI:${featureEnterEvent}`, { heroId, feature, hex: tileRow });

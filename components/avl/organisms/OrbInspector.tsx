@@ -18,17 +18,23 @@
 
 import React, { useContext, useMemo, useCallback, useState } from 'react';
 import type {
+  Effect,
+  Entity,
+  EntityCall,
+  EntityField,
   EventPayload,
   EventPayloadValue,
   Expression,
   FieldType,
   OrbitalDefinition,
   OrbitalSchema,
+  PatternNode,
   ThemeDefinition,
   Trait,
   Transition,
 } from '@almadar/core';
 import { FieldTypeSchema } from '@almadar/core';
+import type { PatternPropDef } from '@almadar/patterns';
 import { Box } from '../../core/atoms/Box';
 import { Button } from '../../core/atoms/Button';
 import { Typography } from '../../core/atoms/Typography';
@@ -59,7 +65,7 @@ const inspectorLog = createLogger('almadar:ui:inspector');
 // Helpers
 // ---------------------------------------------------------------------------
 
-function formatExpression(expr: unknown): string {
+function formatExpression(expr: Expression | null | undefined): string {
   if (!expr) return '';
   if (typeof expr === 'string') return expr;
   if (Array.isArray(expr)) return `(${expr.map(formatExpression).join(' ')})`;
@@ -83,13 +89,13 @@ const FIELD_TYPE_MAP: Record<string, AvlFieldTypeKind> = {
 function findEntity(schema: OrbitalSchema, orbitalName: string): { name: string; persistence: string; fields: Array<{ name: string; type: string; required?: boolean }> } | null {
   const orbital = (schema.orbitals ?? []).find((o: OrbitalDefinition) => o.name === orbitalName);
   if (!orbital || typeof orbital.entity === 'string') return null;
-  const e = orbital.entity as unknown as Record<string, unknown>;
-  const fields = ((e.fields ?? []) as unknown as Array<Record<string, unknown>>).map(f => ({
-    name: (f.name as string) ?? '',
-    type: (f.type as string) ?? 'string',
-    required: f.required as boolean,
+  const e = orbital.entity as Entity | EntityCall;
+  const fields = (e.fields ?? []).map((f: EntityField) => ({
+    name: f.name ?? '',
+    type: f.type ?? 'string',
+    required: f.required,
   }));
-  return { name: (e.name as string) ?? orbitalName, persistence: (e.persistence as string) ?? 'runtime', fields };
+  return { name: e.name ?? orbitalName, persistence: e.persistence ?? 'runtime', fields };
 }
 
 function findTransition(schema: OrbitalSchema, orbitalName: string, traitName: string, event: string): Transition | null {
@@ -108,7 +114,7 @@ function findTraits(schema: OrbitalSchema, orbitalName: string): Array<{ name: s
   if (!orbital) return [];
   return ((orbital.traits ?? []) as Trait[]).filter((t: Trait) => typeof t !== 'string').map((t: Trait) => ({
     name: t.name,
-    stateCount: (t.stateMachine?.states as unknown[])?.length ?? 0,
+    stateCount: t.stateMachine?.states?.length ?? 0,
   }));
 }
 
@@ -123,7 +129,7 @@ function findTraits(schema: OrbitalSchema, orbitalName: string): Array<{ name: s
  * this walker has to look in both places to keep path → node lookup
  * symmetric with the renderer's emission.
  */
-function findPatternInTree(root: Record<string, unknown>, path: string): Record<string, unknown> | null {
+function findPatternInTree(root: PatternNode, path: string): PatternNode | null {
   if (!path || path === 'root') return root;
   // UISlotRenderer emits paths starting with 'root' as the entry-point
   // name (UISlotRenderer.tsx:1249). `root.children.0.children.0` means
@@ -133,33 +139,36 @@ function findPatternInTree(root: Record<string, unknown>, path: string): Record<
   // returns null → inspector renders every prop as '—'.
   const cleanPath = path.startsWith('root.') ? path.slice('root.'.length) : path;
   const parts = cleanPath.split('.');
-  let current: unknown = root;
+  let current: PatternNode | PatternNode[] | null = root;
   for (const part of parts) {
-    if (current === null || current === undefined || typeof current !== 'object') return null;
-    const record = current as Record<string, unknown>;
-    if (part === 'children') {
-      // Prefer flat `.children`; fall back to `.props.children` for nested
-      // pattern nodes.
-      if (Array.isArray(record.children)) {
-        current = record.children;
-      } else {
-        const nestedProps = record.props;
-        if (nestedProps && typeof nestedProps === 'object' && !Array.isArray(nestedProps)
-            && Array.isArray((nestedProps as Record<string, unknown>).children)) {
-          current = (nestedProps as Record<string, unknown>).children;
-        } else {
-          return null;
-        }
-      }
-    } else if (Array.isArray(current)) {
+    if (current === null) return null;
+    if (Array.isArray(current)) {
       const idx = parseInt(part, 10);
-      if (isNaN(idx) || idx < 0 || idx >= (current as unknown[]).length) return null;
-      current = (current as unknown[])[idx];
+      if (isNaN(idx) || idx < 0 || idx >= current.length) return null;
+      const item: PatternNode = current[idx];
+      current = (item && typeof item === 'object' && !Array.isArray(item)) ? item : null;
     } else {
-      current = record[part];
+      if (part === 'children') {
+        // Prefer flat `.children`; fall back to `.props.children` for nested
+        // pattern nodes.
+        if (Array.isArray(current.children)) {
+          current = current.children;
+        } else {
+          const nestedProps = current.props;
+          if (nestedProps && typeof nestedProps === 'object' && !Array.isArray(nestedProps)
+              && Array.isArray((nestedProps as PatternNode).children)) {
+            current = (nestedProps as PatternNode).children as PatternNode[];
+          } else {
+            return null;
+          }
+        }
+      } else {
+        const rawVal: PatternNode[string] = current[part];
+        current = (rawVal && typeof rawVal === 'object' && !Array.isArray(rawVal)) ? (rawVal as PatternNode) : null;
+      }
     }
   }
-  return typeof current === 'object' && current !== null ? current as Record<string, unknown> : null;
+  return Array.isArray(current) ? null : current;
 }
 
 // Derived from @almadar/core FieldTypeSchema (canonical source)
@@ -255,10 +264,12 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
     if (!selectedPattern) return null;
     const patternId = selectedPattern.patternId ?? 'root';
 
-    const tryEffects = (effects: unknown[]): Record<string, unknown> | null => {
-      for (const eff of effects as unknown[][]) {
+    const tryEffects = (effects: Effect[]): PatternNode | null => {
+      for (const eff of effects) {
         if (!Array.isArray(eff) || eff[0] !== 'render-ui' || !eff[2]) continue;
-        const found = findPatternInTree(eff[2] as Record<string, unknown>, patternId);
+        const root = eff[2];
+        if (typeof root !== 'object' || root === null || Array.isArray(root)) continue;
+        const found = findPatternInTree(root as PatternNode, patternId);
         if (!found) continue;
         // Type-discriminate so two transitions whose render-ui trees share
         // a path but differ in the node at that path don't silently swap.
@@ -273,7 +284,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
         if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
           const { props: _stripped, ...rest } = found;
           void _stripped;
-          return { ...(nested as Record<string, unknown>), ...rest };
+          return { ...(nested as PatternNode), ...rest };
         }
         return found;
       }
@@ -312,7 +323,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
         const traitTransitions = sm?.transitions;
         if (!Array.isArray(traitTransitions)) continue;
         for (const tx of traitTransitions) {
-          const hit = tryEffects((tx as { effects?: unknown[] }).effects ?? []);
+          const hit = tryEffects((tx as { effects?: Effect[] }).effects ?? []);
           if (hit) return hit;
         }
       }
@@ -499,7 +510,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
                 <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">{t('avl.props')}</Typography>
                 <Box className="flex flex-col gap-1.5">
                   {Object.entries(patternDef.propsSchema).slice(0, 12).map(([propName, propSchema]) => {
-                    const ps = propSchema as Record<string, unknown>;
+                    const ps: PatternPropDef = propSchema;
                     const explicitValue = patternConfig ? patternConfig[propName] : undefined;
                     const defaultValue = ps.default;
                     const isImplicit = explicitValue === undefined && defaultValue !== undefined;
@@ -750,7 +761,7 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
                   {patterns.map((entry, i) => (
                     <Box key={i}>
                       <Typography variant="small" className="text-muted-foreground text-xs">slot: {entry.slot}</Typography>
-                      <OrbPatternTree config={entry.pattern as Record<string, unknown>} depth={0} />
+                      <OrbPatternTree config={entry.pattern as PatternNode} depth={0} />
                     </Box>
                   ))}
                 </Box>
@@ -806,7 +817,7 @@ function AddEffectButton({ onAdd }: { onAdd: (type: string) => void }): React.Re
 // Pattern tree renderer
 // ---------------------------------------------------------------------------
 
-function OrbPatternTree({ config, depth }: { config: Record<string, unknown>; depth: number }): React.ReactElement | null {
+function OrbPatternTree({ config, depth }: { config: PatternNode; depth: number }): React.ReactElement | null {
   if (!config || typeof config !== 'object') return null;
   const { type, children, ...props } = config;
   if (typeof type !== 'string') return null;
@@ -819,8 +830,8 @@ function OrbPatternTree({ config, depth }: { config: Record<string, unknown>; de
       {propEntries.slice(0, 5).map(([key, val]) => {
         const display = typeof val === 'string'
           ? val.startsWith('@') ? <span className="text-purple-500">{val}</span> : `"${val}"`
-          : Array.isArray(val) && typeof val[0] === 'string' && val[0].includes('/')
-            ? <span className="text-amber-600">({val.join(' ')})</span>
+          : Array.isArray(val) && val.length > 0 && typeof val[0] === 'string' && (val[0] as string).includes('/')
+            ? <span className="text-amber-600">({val.map(String).join(' ')})</span>
             : String(val);
         return (
           <Box key={key} className="flex gap-1 text-xs">
@@ -830,7 +841,7 @@ function OrbPatternTree({ config, depth }: { config: Record<string, unknown>; de
         );
       })}
       {Array.isArray(children) && children.map((child, i) => (
-        <OrbPatternTree key={i} config={child as Record<string, unknown>} depth={depth + 1} />
+        <OrbPatternTree key={i} config={child as PatternNode} depth={depth + 1} />
       ))}
     </Box>
   );
@@ -866,7 +877,7 @@ const PHASE_2_TOKEN_FALLBACK: Record<string, string[]> = {
 interface StylesTabProps {
   patternType: string | undefined;
   patternDef: ReturnType<typeof getPatternDefinition>;
-  patternConfig: Record<string, unknown> | null;
+  patternConfig: PatternNode | null;
   editable: boolean;
   onPropChange: (propName: string, value: EventPayloadValue) => void;
   themeManifest?: ThemeDefinition;

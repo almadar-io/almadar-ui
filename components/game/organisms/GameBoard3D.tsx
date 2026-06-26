@@ -86,7 +86,7 @@ export function GameBoard3D({
 
     // All gameplay state comes from the model entity.
     const entityUnits = row ? rows(row.units) : [];
-    const units = entityUnits as unknown as IsometricUnit[];
+    const units = entityUnits as IsometricUnit[];
     const selectedUnitId = row ? str(row.selectedUnitId) || null : null;
     const phase = row ? str(row.phase) : 'observation';
     const result = row ? str(row.result) : 'none';

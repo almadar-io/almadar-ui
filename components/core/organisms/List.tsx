@@ -19,7 +19,7 @@
  */
 
 import React, { useMemo } from "react";
-import type { AssetUrl, EventKey, EventPayload } from "@almadar/core";
+import type { AssetUrl, EventKey, EventPayload, FieldValue, EntityRow } from "@almadar/core";
 import type { IconInput } from "../atoms/Icon";
 import {
   Calendar,
@@ -41,7 +41,6 @@ import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import type { DisplayStateProps } from "./types";
 import { EntityDisplayEvents } from "./types";
-import type { EntityRow } from "@almadar/core";
 
 export type ListItem = {
   id: string;
@@ -58,8 +57,7 @@ export type ListItem = {
   onClick?: () => void;
   disabled?: boolean;
   completed?: boolean;
-  [key: string]: unknown;
-  _fields?: Record<string, unknown>;
+  _fields?: Record<string, FieldValue | undefined>;
 };
 
 export interface SchemaItemAction {
@@ -73,7 +71,7 @@ export interface SchemaItemAction {
   action?: EventKey;
   variant?: "primary" | "secondary" | "ghost" | "danger" | "default";
   /** Click handler from generated code */
-  onClick?: (row: unknown) => void;
+  onClick?: (row: EntityRow) => void;
 }
 
 /**
@@ -223,7 +221,7 @@ function getStatusStyle(fieldName: string, value: string) {
   return STATUS_STYLES.default;
 }
 
-function formatValue(value: unknown, fieldName: string): string {
+function formatValue(value: FieldValue | undefined, fieldName: string): string {
   if (typeof value === "number") {
     if (
       fieldName.toLowerCase().includes("progress") ||
@@ -423,26 +421,25 @@ export const List: React.FC<ListProps> = ({
 
         if (effectiveFieldNames && effectiveFieldNames.length > 0) {
           const firstField = effectiveFieldNames[0];
-          const itemRecord = item as Record<string, unknown>;
 
           if (
             !normalizedItem.title &&
-            getNestedValue(itemRecord, firstField)
+            getNestedValue(item, firstField)
           ) {
             normalizedItem.title = String(
-              getNestedValue(itemRecord, firstField),
+              getNestedValue(item, firstField),
             );
           }
 
           normalizedItem._fields = effectiveFieldNames.reduce(
             (acc, field) => {
-              const value = getNestedValue(itemRecord, field);
+              const value = getNestedValue(item, field);
               if (value !== undefined && value !== null) {
-                acc[field] = value;
+                acc[field] = value as FieldValue;
               }
               return acc;
             },
-            {} as Record<string, unknown>,
+            {} as Record<string, FieldValue | undefined>,
           );
         }
 

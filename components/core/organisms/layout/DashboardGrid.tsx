@@ -21,8 +21,6 @@ export interface DashboardGridCell {
   colSpan?: 1 | 2 | 3 | 4;
   /** Number of rows this cell spans (1-2) */
   rowSpan?: 1 | 2;
-  /** Allow additional schema-driven properties */
-  [key: string]: unknown;
 }
 
 export interface DashboardGridProps extends DisplayStateProps {

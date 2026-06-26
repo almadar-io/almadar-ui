@@ -12,9 +12,36 @@
  *   Expanded: One node per UI state within an orbital (OrbPreviewNode)
  */
 
-import type { EntityPersistence, EventPayloadField } from '@almadar/core';
-import type { BehaviorLevel, BehaviorGlyphChild, BehaviorGlyphConnection } from './AvlBehaviorGlyph';
-import type { AvlEffectType } from '../atoms/types';
+import type { JsonObject } from '@almadar/core';
+import type { BehaviorLevel } from './AvlBehaviorGlyph';
+
+// ---------------------------------------------------------------------------
+// Local JSON-serializable types (mirror upstream shapes as plain JsonObject)
+// ---------------------------------------------------------------------------
+
+/** Serializable payload field — mirrors EventPayloadField from @almadar/core. */
+export interface SerializedPayloadField extends JsonObject {
+  name: string;
+  type: string;
+  required: boolean | null;
+  description: string | null;
+}
+
+/** Serializable behavior glyph child — mirrors BehaviorGlyphChild from AvlBehaviorGlyph. */
+export interface SerializedGlyphChild extends JsonObject {
+  name: string;
+  fieldCount: number | null;
+  stateCount: number | null;
+  persistence: string | null;
+  effectTypes: string[];
+}
+
+/** Serializable behavior glyph connection — mirrors BehaviorGlyphConnection from AvlBehaviorGlyph. */
+export interface SerializedGlyphConnection extends JsonObject {
+  from: string;
+  to: string;
+  event: string;
+}
 
 // ---------------------------------------------------------------------------
 // View levels
@@ -28,11 +55,11 @@ export type ComposeViewLevel = 'behavior' | 'overview' | 'expanded';
 // ---------------------------------------------------------------------------
 
 /** An event that can be wired between behaviors. */
-export interface ConnectableEvent {
+export interface ConnectableEvent extends JsonObject {
   /** Event name (e.g., "ADD_TO_CART"). */
   event: string;
   /** Typed payload fields if declared. */
-  payloadFields?: EventPayloadField[];
+  payloadFields: SerializedPayloadField[] | null;
   /** Vertical position hint (0..1) for handle placement on the node. */
   positionHint: number;
 }
@@ -42,33 +69,33 @@ export interface ConnectableEvent {
 // ---------------------------------------------------------------------------
 
 /** Data for a BehaviorComposeNode in React Flow. */
-export interface BehaviorComposeNodeData extends Record<string, unknown> {
+export interface BehaviorComposeNodeData extends JsonObject {
   /** Behavior name from registry (e.g., "std-cart"). */
   behaviorName: string;
   /** Composition level: atom, molecule, organism. */
-  level: BehaviorLevel;
+  level: string;
   /** Domain for color coding (e.g., "commerce"). */
-  domain?: string;
+  domain: string | null;
   /** Layer classification (e.g., "Domain", "UI Patterns"). */
-  layer?: string;
+  layer: string | null;
   /** Primary entity name (e.g., "CartItem"). */
   entityName: string;
   /** Number of states in the behavior. */
   stateCount: number;
   /** Number of entity fields. */
-  fieldCount?: number;
+  fieldCount: number | null;
   /** Persistence kind. */
-  persistence?: EntityPersistence;
+  persistence: string | null;
   /** Effect types used by this behavior. */
-  effectTypes?: AvlEffectType[];
+  effectTypes: string[] | null;
   /** Child behaviors for molecule/organism glyphs. */
-  children?: BehaviorGlyphChild[];
+  children: SerializedGlyphChild[] | null;
   /** Connections between children (for organism glyphs). */
-  connections?: BehaviorGlyphConnection[];
+  connections: SerializedGlyphConnection[] | null;
   /** Events this behavior can emit (source handles). */
   connectableEvents: ConnectableEvent[];
   /** Behaviors this is composable with (for palette hints). */
-  composableWith?: string[];
+  composableWith: string[] | null;
   /** Names of orbitals produced by this behavior (for drill-down). */
   orbitalNames: string[];
 }
@@ -78,7 +105,7 @@ export interface BehaviorComposeNodeData extends Record<string, unknown> {
 // ---------------------------------------------------------------------------
 
 /** Edge data for behavior-level wiring. */
-export interface BehaviorWireEdgeData extends Record<string, unknown> {
+export interface BehaviorWireEdgeData extends JsonObject {
   /** The event name displayed on the edge. */
   event: string;
   /** Source behavior name. */
@@ -86,7 +113,7 @@ export interface BehaviorWireEdgeData extends Record<string, unknown> {
   /** Target behavior name. */
   targetBehavior: string;
   /** Typed payload fields if declared. */
-  payloadFields?: EventPayloadField[];
+  payloadFields: SerializedPayloadField[] | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -110,13 +137,13 @@ export interface BehaviorCanvasEntry {
   /** Number of entity fields. */
   fieldCount?: number;
   /** Persistence kind. */
-  persistence?: EntityPersistence;
+  persistence?: string;
   /** Effect types used. */
-  effectTypes?: AvlEffectType[];
+  effectTypes?: string[];
   /** Child behaviors (molecule/organism). */
-  children?: BehaviorGlyphChild[];
+  children?: SerializedGlyphChild[];
   /** Connections between children (organism). */
-  connections?: BehaviorGlyphConnection[];
+  connections?: SerializedGlyphConnection[];
   /** Events available for wiring. */
   connectableEvents: ConnectableEvent[];
   /** Compatible behavior names. */

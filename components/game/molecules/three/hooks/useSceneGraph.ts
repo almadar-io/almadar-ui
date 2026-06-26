@@ -10,6 +10,7 @@
 
 import { useRef, useCallback } from 'react';
 import * as THREE from 'three';
+import type { JsonObject } from '@almadar/core';
 
 export type NodeType = 'tile' | 'unit' | 'feature' | 'highlight' | 'effect';
 
@@ -25,7 +26,7 @@ export interface SceneGraphNode {
     /** Grid position */
     gridPosition: { x: number; z: number };
     /** Optional metadata */
-    metadata?: Record<string, unknown>;
+    metadata?: JsonObject;
 }
 
 export interface UseSceneGraphReturn {

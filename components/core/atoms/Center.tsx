@@ -45,22 +45,18 @@ export const Center: React.FC<CenterProps> = ({
   as: Component = 'div',
 }) => {
   const mergedStyle = minHeight ? { minHeight, ...style } : style;
-  const Comp = Component as React.FC<Record<string, unknown>>;
-  return (
-    <Comp
-      className={cn(
-        inline ? 'inline-flex' : 'flex',
-        horizontal && 'justify-center',
-        vertical && 'items-center',
-        fullHeight && 'h-full',
-        fullWidth && 'w-full',
-        className
-      )}
-      style={mergedStyle}
-    >
-      {children}
-    </Comp>
-  );
+  return React.createElement(Component, {
+    className: cn(
+      inline ? 'inline-flex' : 'flex',
+      horizontal && 'justify-center',
+      vertical && 'items-center',
+      fullHeight && 'h-full',
+      fullWidth && 'w-full',
+      className
+    ),
+    style: mergedStyle,
+    children,
+  });
 };
 
 export default Center;

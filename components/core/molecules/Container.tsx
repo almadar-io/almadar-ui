@@ -59,19 +59,18 @@ export const Container: React.FC<ContainerProps> = ({
 }) => {
   // Use maxWidth if provided, otherwise fall back to size, then default to 'lg'
   const resolvedSize = maxWidth ?? size ?? 'lg';
-  const Comp = Component as React.FC<Record<string, unknown>>;
-  return (
-    <Comp
-      className={cn(
+  return React.createElement(
+    Component,
+    {
+      className: cn(
         'w-full',
         sizeStyles[resolvedSize],
         paddingStyles[padding],
         center && 'mx-auto',
         className
-      )}
-    >
-      {children}
-    </Comp>
+      ),
+    },
+    children
   );
 };
 

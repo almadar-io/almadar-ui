@@ -38,6 +38,8 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   label?: string;
   /** Disable the button (greys out, blocks click events) */
   disabled?: boolean;
+  /** Test identifier for automated tests */
+  'data-testid'?: string;
 }
 
 // Using CSS variables for theme-aware styling with hover/active effects
@@ -106,6 +108,12 @@ const iconSizeStyles = {
   lg: "h-icon-default w-icon-default",
 };
 
+type IconLike = React.ComponentType<{ className?: string }>;
+
+function isIconLike(v: object): v is IconLike {
+  return typeof (v as { render?: (...args: never[]) => React.ReactNode }).render === 'function';
+}
+
 /** Resolve an icon prop that can be a string name, LucideIcon component, or ReactNode */
 function resolveIconProp(
   value: React.ReactNode | LucideIcon | string | undefined,
@@ -125,8 +133,8 @@ function resolveIconProp(
     return value;
   }
   // Handle React.forwardRef components (e.g., Lucide icons passed as component references)
-  if (typeof value === 'object' && value !== null && 'render' in (value as unknown as Record<string, unknown>)) {
-    const IconComp = value as unknown as LucideIcon;
+  if (typeof value === 'object' && value !== null && isIconLike(value)) {
+    const IconComp = value;
     return <IconComp className={sizeClass} />;
   }
   // Fallback: treat as ReactNode
@@ -150,6 +158,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       label,
       children,
       onClick,
+      'data-testid': dataTestId,
       ...props
     },
     ref,
@@ -188,7 +197,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         )}
         onClick={handleClick}
         {...props}
-        data-testid={(props as Record<string, unknown>)['data-testid'] as string ?? (action ? `action-${action}` : undefined)}
+        data-testid={dataTestId ?? (action ? `action-${action}` : undefined)}
       >
         {isLoading ? (
           <Loader2 className="h-icon-default w-icon-default animate-spin" />

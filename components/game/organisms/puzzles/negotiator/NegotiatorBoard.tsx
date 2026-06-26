@@ -13,7 +13,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import type { EventEmit, EntityRow } from '@almadar/core';
+import type { EventEmit, EntityRow, FieldValue } from '@almadar/core';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../core/atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
@@ -88,8 +88,20 @@ export function NegotiatorBoard({
   const lastOpponentAction = str(resolved?.lastOpponentAction);
   const lastPayoff = num(resolved?.lastPayoff);
 
-  const actions = (Array.isArray(resolved?.actions) ? resolved.actions : []) as unknown as NegotiatorAction[];
-  const payoffMatrix = (Array.isArray(resolved?.payoffMatrix) ? resolved.payoffMatrix : []) as unknown as PayoffEntry[];
+  const actions: NegotiatorAction[] = Array.isArray(resolved?.actions)
+    ? (resolved.actions as FieldValue[]).flatMap((item) => {
+        if (item !== null && typeof item === 'object' && !Array.isArray(item) && !(item instanceof Date) && typeof item.id === 'string' && typeof item.label === 'string')
+          return [{ id: item.id, label: item.label, description: typeof item.description === 'string' ? item.description : undefined }];
+        return [];
+      })
+    : [];
+  const payoffMatrix: PayoffEntry[] = Array.isArray(resolved?.payoffMatrix)
+    ? (resolved.payoffMatrix as FieldValue[]).flatMap((item) => {
+        if (item !== null && typeof item === 'object' && !Array.isArray(item) && !(item instanceof Date) && typeof item.playerAction === 'string' && typeof item.opponentAction === 'string')
+          return [{ playerAction: item.playerAction, opponentAction: item.opponentAction, playerPayoff: typeof item.playerPayoff === 'number' ? item.playerPayoff : 0, opponentPayoff: typeof item.opponentPayoff === 'number' ? item.opponentPayoff : 0 }];
+        return [];
+      })
+    : [];
 
   // Append a display-history entry each time the model advances a round.
   // The model is the single source for opponent action + payoff; we read them back.

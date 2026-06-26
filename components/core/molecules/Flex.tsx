@@ -109,23 +109,19 @@ export const Flex: React.FC<FlexProps> = ({
     }
   }
 
-  const Comp = Component as React.FC<Record<string, unknown>>;
-  return (
-    <Comp
-      className={cn(
-        inline ? 'inline-flex' : 'flex',
-        directionStyles[direction],
-        wrapStyles[wrap],
-        alignStyles[align],
-        justifyStyles[justify],
-        gapStyles[gap],
-        className
-      )}
-      style={Object.keys(flexStyle).length > 0 ? flexStyle : undefined}
-    >
-      {children}
-    </Comp>
-  );
+  return React.createElement(Component, {
+    className: cn(
+      inline ? 'inline-flex' : 'flex',
+      directionStyles[direction],
+      wrapStyles[wrap],
+      alignStyles[align],
+      justifyStyles[justify],
+      gapStyles[gap],
+      className
+    ),
+    style: Object.keys(flexStyle).length > 0 ? flexStyle : undefined,
+    children,
+  });
 };
 
 Flex.displayName = 'Flex';

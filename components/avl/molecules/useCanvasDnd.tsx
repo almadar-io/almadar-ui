@@ -217,7 +217,7 @@ export interface CanvasDndProviderProps {
 function defaultEmit(eventBus: ReturnType<typeof useEventBus>, drop: CanvasDropEvent): void {
   const { payload, target, resolved } = drop;
   if (payload.kind === 'pattern') {
-    const patternType = (payload.data as { type?: unknown }).type;
+    const patternType = payload.data['type'];
     if (typeof patternType !== 'string') {
       log.warn('default-emit:pattern:missing-type');
       return;
@@ -232,7 +232,7 @@ function defaultEmit(eventBus: ReturnType<typeof useEventBus>, drop: CanvasDropE
     return;
   }
   if (payload.kind === 'behavior') {
-    const behaviorName = (payload.data as { name?: unknown }).name;
+    const behaviorName = payload.data['name'];
     if (typeof behaviorName !== 'string') {
       log.warn('default-emit:behavior:missing-name');
       return;

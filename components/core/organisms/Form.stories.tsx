@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import React, { useState, useEffect } from 'react';
+import type { EntityRow } from '@almadar/core';
 import { Form, type SchemaField, type FormSection, type HiddenCalculation, type ViolationTrigger } from './Form';
 import { VStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
@@ -123,7 +124,7 @@ const vehicleFields: SchemaField[] = [
 
 export const WithConditionalFields: Story = {
   render: function ConditionalFieldsDemo() {
-    const [formValues, setFormValues] = useState<Record<string, unknown>>({
+    const [formValues, setFormValues] = useState<EntityRow>({
       vehicleType: 'personal',
     });
 
@@ -187,7 +188,7 @@ const hiddenCalculations: HiddenCalculation[] = [
 export const WithHiddenCalculations: Story = {
   render: function HiddenCalculationsDemo() {
     const [events, setEvents] = useState<Array<{ type: string; payload: unknown; time: string }>>([]);
-    const [formValues, setFormValues] = useState<Record<string, unknown>>({});
+    const [formValues, setFormValues] = useState<EntityRow>({});
     const eventBus = useEventBus();
 
     useEffect(() => {
@@ -312,7 +313,7 @@ export const WithViolationTriggers: Story = {
       actionType: string;
       message: string;
     } | null>(null);
-    const [formValues, setFormValues] = useState<Record<string, unknown>>({});
+    const [formValues, setFormValues] = useState<EntityRow>({});
     const eventBus = useEventBus();
 
     useEffect(() => {
@@ -424,7 +425,7 @@ const formSections: FormSection[] = [
 
 export const WithSections: Story = {
   render: function SectionsDemo() {
-    const [formValues, setFormValues] = useState<Record<string, unknown>>({});
+    const [formValues, setFormValues] = useState<EntityRow>({});
 
     return (
       <VStack gap="md" className="max-w-lg">
@@ -506,7 +507,7 @@ const completeHiddenCalcs: HiddenCalculation[] = [
 
 export const CompleteInspectionForm: Story = {
   render: function CompleteInspectionDemo() {
-    const [formValues, setFormValues] = useState<Record<string, unknown>>({});
+    const [formValues, setFormValues] = useState<EntityRow>({});
 
     return (
       <VStack gap="md" className="max-w-2xl">

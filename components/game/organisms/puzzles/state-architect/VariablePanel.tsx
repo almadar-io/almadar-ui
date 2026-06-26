@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import type { EntityRow } from '@almadar/core';
+import type { EntityRow, FieldValue } from '@almadar/core';
 import { VStack, HStack, Typography, ProgressBar } from '../../../../core/atoms';
 import { cn } from '../../../../../lib/cn';
 import { useTranslate } from '../../../../../hooks/useTranslate';
@@ -21,7 +21,7 @@ export interface VariablePanelProps {
     className?: string;
 }
 
-const numField = (v: unknown, fallback = 0): number => {
+const numField = (v: FieldValue | undefined, fallback = 0): number => {
     const n = Number(v);
     return Number.isFinite(n) ? n : fallback;
 };

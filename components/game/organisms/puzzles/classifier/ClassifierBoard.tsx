@@ -17,12 +17,12 @@
  */
 
 import React, { useState } from 'react';
-import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
+import type { AssetUrl, EventEmit, EntityRow, EntityWith } from '@almadar/core';
 import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../../core/atoms';
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
 import type { DisplayStateProps } from '../../../../core/organisms/types';
-import { boardEntity, str, num } from '../../boardEntity';
+import { boardEntity, str, num, rows } from '../../boardEntity';
 import { CheckCircle, XCircle, RotateCcw, Send } from 'lucide-react';
 
 /** A sortable item (UI value DTO read off the entity). */
@@ -75,8 +75,8 @@ export function ClassifierBoard({
 
   const [headerError, setHeaderError] = useState(false);
 
-  const items = (Array.isArray(resolved?.items) ? resolved.items : []) as unknown as ClassifierItem[];
-  const categories = (Array.isArray(resolved?.categories) ? resolved.categories : []) as unknown as ClassifierCategory[];
+  const items = rows(resolved?.items) as EntityWith<ClassifierItem>[];
+  const categories = rows(resolved?.categories) as EntityWith<ClassifierCategory>[];
 
   // All state is model-owned; read directly from the entity.
   const result = str(resolved?.result);

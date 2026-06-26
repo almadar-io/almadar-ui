@@ -146,19 +146,13 @@ export const Timeline: React.FC<TimelineProps> = ({
     const { t } = useTranslate();
 
     // Normalize entity data to TimelineItem[] if schema data is provided
-    const entityData = Array.isArray(entity) ? entity as readonly Record<string, unknown>[] : [];
+    const entityData: readonly EntityRow[] = entity ?? [];
     const items: readonly TimelineItem[] = React.useMemo(() => {
         if (propItems) return propItems;
         if (entityData.length === 0) return [];
 
         return entityData.map((record, idx) => {
-            // Handle both string[] and {name: string}[] field formats from compiler
-            const resolveField = (f: unknown): string => {
-                if (typeof f === 'string') return f;
-                if (f && typeof f === 'object' && 'name' in (f as Record<string, unknown>)) return String((f as Record<string, unknown>).name);
-                return '';
-            };
-            const resolvedFields = fields?.map(resolveField) ?? [];
+            const resolvedFields = fields ?? [];
             const titleField = resolvedFields[0] || "title";
             const descField = resolvedFields[1] || "description";
             const dateField = resolvedFields.find((f) =>

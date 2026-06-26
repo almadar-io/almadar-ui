@@ -51,6 +51,12 @@ interface CoveredEdge {
   phase: string;
 }
 
+interface OrbitalWalkWindow {
+  __orbitalWalkStep?: WalkStepInfo;
+  __orbitalWalkTraits?: WalkTraitInfo[];
+  __orbitalCoveredEdges?: CoveredEdge[];
+}
+
 // ---------------------------------------------------------------------------
 // Layout: simple layered positioning for small state graphs
 // ---------------------------------------------------------------------------
@@ -133,10 +139,10 @@ export function WalkMinimap(): React.ReactElement | null {
   // Poll for walk data from window globals
   React.useEffect(() => {
     const interval = setInterval(() => {
-      const w = window as unknown as Record<string, unknown>;
-      const step = w.__orbitalWalkStep as WalkStepInfo | undefined;
-      const traitConfigs = w.__orbitalWalkTraits as WalkTraitInfo[] | undefined;
-      const edges = w.__orbitalCoveredEdges as CoveredEdge[] | undefined;
+      const w = window as Window & OrbitalWalkWindow;
+      const step = w.__orbitalWalkStep;
+      const traitConfigs = w.__orbitalWalkTraits;
+      const edges = w.__orbitalCoveredEdges;
 
       if (step) setWalkStep(step);
       if (traitConfigs) setTraits(traitConfigs);

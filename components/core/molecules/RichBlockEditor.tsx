@@ -149,14 +149,14 @@ function normalizeBlocks(
   // against runtime-seeding drift.
   if (!Array.isArray(raw) || raw.length === 0) return [createBlock("paragraph")];
   return raw.map((row): RichBlock => {
-    const r = row as Record<string, unknown>;
-    const rawType = r.type;
+    const entity = row as EntityRow;
+    const rawType = entity.type;
     const type: BlockType =
       typeof rawType === "string" && BLOCK_TYPES.has(rawType as BlockType)
         ? (rawType as BlockType)
         : "paragraph";
-    const id = typeof r.id === "string" && r.id ? r.id : nextBlockId(type);
-    return { ...(r as Record<string, EventPayloadValue>), id, type };
+    const id = typeof entity.id === "string" && entity.id ? entity.id : nextBlockId(type);
+    return { ...entity, id, type };
   });
 }
 

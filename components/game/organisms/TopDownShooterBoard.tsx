@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
+import type { AssetUrl, EventEmit, EntityRow, FieldValue } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -96,9 +96,9 @@ function resolveManifestUrl(
     return `${cleanBase}/${cleanRel}` as AssetUrl;
 }
 
-function readPlayer(v: unknown): ShooterPlayer | undefined {
+function readPlayer(v: FieldValue | undefined): ShooterPlayer | undefined {
     if (v == null || typeof v !== 'object') return undefined;
-    const o = v as { x?: unknown; y?: unknown };
+    const o = v as { x?: FieldValue; y?: FieldValue };
     return { x: num(o.x), y: num(o.y) };
 }
 

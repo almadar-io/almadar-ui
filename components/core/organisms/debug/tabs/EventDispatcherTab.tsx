@@ -8,7 +8,8 @@
 'use client';
 
 import * as React from 'react';
-import type { EventPayload } from '@almadar/core';
+import type { Event, EventPayload, OrbitalSchema, PayloadField, StateMachine, Trait, TraitRef } from '@almadar/core';
+import { isInlineTrait } from '@almadar/core';
 import type { TraitDebugInfo, TraitTransition } from '../../../../../lib/traitRegistry';
 import { Badge } from '../../../atoms/Badge';
 import { Button } from '../../../atoms/Button';
@@ -20,7 +21,7 @@ import { useTranslate } from '../../../../../hooks/useTranslate';
 
 interface EventDispatcherTabProps {
     traits: TraitDebugInfo[];
-    schema?: Record<string, unknown>;
+    schema?: OrbitalSchema;
 }
 
 interface TransitionLogEntry {
@@ -33,25 +34,25 @@ interface TransitionLogEntry {
 
 /** Extract payload fields from schema event declarations for a given event name */
 function extractPayloadFields(
-    schema: Record<string, unknown> | undefined,
+    schema: OrbitalSchema | undefined,
     eventName: string,
 ): Array<{ name: string; type: string }> {
     if (!schema) return [];
-    const orbitals = schema.orbitals as Record<string, unknown>[] | undefined;
-    if (!orbitals) return [];
 
-    for (const orbital of orbitals) {
-        const traits = (orbital.traits as Record<string, unknown>[]) ?? [];
-        for (const trait of traits) {
-            const sm = trait.stateMachine as Record<string, unknown> | undefined;
+    for (const orbital of schema.orbitals) {
+        const traitRefs: TraitRef[] = orbital.traits ?? [];
+        for (const traitRef of traitRefs) {
+            if (!isInlineTrait(traitRef)) continue;
+            const inlineTrait: Trait = traitRef;
+            const sm: StateMachine | undefined = inlineTrait.stateMachine;
             if (!sm) continue;
-            const events = (sm.events as Record<string, unknown>[]) ?? [];
+            const events: Event[] = sm.events ?? [];
             for (const evt of events) {
                 if (evt.name !== eventName) continue;
-                const payload = (evt.payload as Record<string, unknown>[]) ?? [];
-                return payload.map((f) => ({
-                    name: f.name as string,
-                    type: (f.type as string) ?? 'string',
+                const payloadFields: PayloadField[] = evt.payloadSchema ?? [];
+                return payloadFields.map((f) => ({
+                    name: f.name,
+                    type: f.type ?? 'string',
                 }));
             }
         }

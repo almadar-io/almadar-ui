@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import type { AssetUrl, EventEmit } from '@almadar/core';
+import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { GameCanvas2D } from '../molecules/GameCanvas2D';
 import type { DisplayStateProps } from '../../core/organisms/types';
@@ -12,11 +12,11 @@ import type { DisplayStateProps } from '../../core/organisms/types';
 
 export interface PinballBoardProps extends DisplayStateProps {
     /** Playfield tiles */
-    tiles?: unknown[];
+    tiles?: readonly EntityRow[];
     /** Ball units on the board */
-    units?: unknown[];
+    units?: readonly EntityRow[];
     /** Features (bumpers, paddles, etc.) on the board */
-    features?: unknown[];
+    features?: readonly EntityRow[];
     /** Asset sprite manifest */
     assetManifest?: string;
     /** Base URL prepended to manifest sprite paths */

@@ -11,7 +11,7 @@
  * @packageDocumentation
  */
 
-import type { EntityRow } from '@almadar/core';
+import type { EntityRow, FieldValue } from '@almadar/core';
 
 /** A 2D grid position read off an entity row. */
 export interface Vec2 {
@@ -37,29 +37,29 @@ export function boardEntity(
 }
 
 /** Coerce a field value to a string (empty string when absent). */
-export function str(v: unknown): string {
+export function str(v: FieldValue | undefined): string {
     return v == null ? '' : String(v);
 }
 
 /** Coerce a field value to a number (0 when absent / non-numeric). */
-export function num(v: unknown, fallback = 0): number {
+export function num(v: FieldValue | undefined, fallback = 0): number {
     const n = Number(v);
     return Number.isFinite(n) ? n : fallback;
 }
 
 /** Coerce a field value to a boolean. */
-export function bool(v: unknown): boolean {
+export function bool(v: FieldValue | undefined): boolean {
     return Boolean(v);
 }
 
 /** Coerce a nested array field to a readonly array of entity rows. */
-export function rows(v: unknown): readonly EntityRow[] {
+export function rows(v: FieldValue | undefined): readonly EntityRow[] {
     return Array.isArray(v) ? (v as readonly EntityRow[]) : [];
 }
 
 /** Read an `{ x, y }` position off an entity row's named field. */
-export function vec2(v: unknown): Vec2 {
-    const o = (v ?? {}) as { x?: unknown; y?: unknown };
+export function vec2(v: FieldValue | undefined): Vec2 {
+    const o = (v ?? {}) as { x?: FieldValue; y?: FieldValue };
     return { x: num(o.x), y: num(o.y) };
 }
 

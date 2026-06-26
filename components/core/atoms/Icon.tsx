@@ -95,11 +95,12 @@ function doResolve(name: string): LucideIcon {
 
   // Convert kebab-case name to PascalCase and look up in lucide-react exports
   const pascalName = kebabToPascal(name);
-  const directLookup = (LucideIcons as unknown as Record<string, LucideIcon>)[pascalName];
+  const lucideMap = LucideIcons as object as Record<string, LucideIcon>;
+  const directLookup = lucideMap[pascalName];
   if (directLookup && typeof directLookup === 'object') return directLookup;
 
   // Try the name as-is (already PascalCase)
-  const asIs = (LucideIcons as unknown as Record<string, LucideIcon>)[name];
+  const asIs = lucideMap[name];
   if (asIs && typeof asIs === 'object') return asIs;
 
   // Fallback

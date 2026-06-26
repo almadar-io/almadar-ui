@@ -24,12 +24,12 @@ const generateId = () => `item-${++idCounter}`;
 export const Default: Story = {
   render: function DefaultDemo() {
     const [items, setItems] = useState<RepeatableItem[]>([
-      { id: 'item-1', name: 'John Doe' },
-      { id: 'item-2', name: 'Jane Smith' },
+      { id: 'item-1', name: 'John Doe', addedInState: null, addedAt: null },
+      { id: 'item-2', name: 'Jane Smith', addedInState: null, addedAt: null },
     ]);
 
     const handleAdd = () => {
-      setItems(prev => [...prev, { id: generateId(), name: '' }]);
+      setItems(prev => [...prev, { id: generateId(), name: '', addedInState: null, addedAt: null }]);
     };
 
     const handleRemove = (itemId: string) => {
@@ -70,11 +70,11 @@ export const Empty: Story = {
 export const WithMinMax: Story = {
   render: function MinMaxDemo() {
     const [items, setItems] = useState<RepeatableItem[]>([
-      { id: 'item-1', value: 'First item' },
+      { id: 'item-1', value: 'First item', addedInState: null, addedAt: null },
     ]);
 
     const handleAdd = () => {
-      setItems(prev => [...prev, { id: generateId(), value: '' }]);
+      setItems(prev => [...prev, { id: generateId(), value: '', addedInState: null, addedAt: null }]);
     };
 
     const handleRemove = (itemId: string) => {
@@ -207,8 +207,8 @@ export const ReadOnly: Story = {
     sectionType: 'violations',
     title: 'Recorded Violations',
     items: [
-      { id: 'v1', description: 'ZVPOT-1 Art. 14/1 - Missing price tags' },
-      { id: 'v2', description: 'ZVPOT-1 Art. 23/2 - Incorrect labeling' },
+      { id: 'v1', description: 'ZVPOT-1 Art. 14/1 - Missing price tags', addedInState: null, addedAt: null },
+      { id: 'v2', description: 'ZVPOT-1 Art. 23/2 - Incorrect labeling', addedInState: null, addedAt: null },
     ],
     renderItem: (item: RepeatableItem) => (
       <Typography variant="body">{item.description as string}</Typography>
@@ -220,13 +220,13 @@ export const ReadOnly: Story = {
 export const WithReorder: Story = {
   render: function ReorderDemo() {
     const [items, setItems] = useState<RepeatableItem[]>([
-      { id: 'item-1', step: 'Check entrance area' },
-      { id: 'item-2', step: 'Inspect main floor' },
-      { id: 'item-3', step: 'Review storage room' },
+      { id: 'item-1', step: 'Check entrance area', addedInState: null, addedAt: null },
+      { id: 'item-2', step: 'Inspect main floor', addedInState: null, addedAt: null },
+      { id: 'item-3', step: 'Review storage room', addedInState: null, addedAt: null },
     ]);
 
     const handleAdd = () => {
-      setItems(prev => [...prev, { id: generateId(), step: '' }]);
+      setItems(prev => [...prev, { id: generateId(), step: '', addedInState: null, addedAt: null }]);
     };
 
     const handleRemove = (itemId: string) => {

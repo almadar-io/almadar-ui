@@ -13,7 +13,8 @@ import { BaseEdge, EdgeLabelRenderer, getBezierPath, type Edge, type EdgeProps }
 import { CONNECTION_COLORS } from '../atoms/types';
 import { useTranslate } from '../../../hooks/useTranslate';
 
-export interface AvlTransitionEdgeData extends Record<string, unknown> {
+export interface AvlTransitionEdgeData {
+  [key: string]: string | boolean | undefined;
   event: string;
   hasGuard?: boolean;
   hasEffects?: boolean;

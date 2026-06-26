@@ -50,6 +50,8 @@ export interface ViolationAlertProps {
   compact?: boolean;
   /** Additional CSS classes */
   className?: string;
+  /** Fallback message from playground render-ui */
+  message?: string;
 }
 
 const actionTypeLabelKeys: Record<string, string> = {
@@ -72,15 +74,16 @@ export const ViolationAlert: React.FC<ViolationAlertProps> = ({
   onNavigateToField,
   compact = false,
   className,
-  ...flatProps
+  message,
 }) => {
   const { t } = useTranslate();
-  // Support flat props from playground render-ui (message, category passed directly)
+  // Support fallback message from playground render-ui
+  const fallbackMessage = message ?? t('violationAlert.fallbackMessage');
   const resolvedViolation: ViolationRecord = violation ?? {
     id: "unknown",
     law: "",
     article: "",
-    message: (flatProps as Record<string, unknown>).message as string ?? t('violationAlert.fallbackMessage'),
+    message: fallbackMessage,
     actionType: "measure",
   };
 

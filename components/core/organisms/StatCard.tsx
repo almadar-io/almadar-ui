@@ -38,8 +38,8 @@ export interface StatCardProps extends DisplayStateProps {
   label?: string;
   /** Title (alias for label) */
   title?: string;
-  /** Primary value - accepts array/unknown from generated code (will use first element or length) */
-  value?: string | number | (string | number | undefined)[] | unknown;
+  /** Primary value - accepts array from generated code (will use first element or length) */
+  value?: string | number | (string | number | undefined)[];
   /** Previous value for comparison */
   previousValue?: number;
   /** Current value as number for trend calculation */
@@ -117,10 +117,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   }, [action, eventBus]);
 
   // Normalize entity data to array
-  const data = (Array.isArray(entity) ? entity : entity ? [entity] : []) as readonly Record<
-    string,
-    unknown
-  >[];
+  const data: readonly EntityRow[] = Array.isArray(entity) ? entity : entity ? [entity] : [];
 
   // Determine loading and error state
   const isLoading = externalLoading ?? false;
@@ -128,7 +125,7 @@ export const StatCard: React.FC<StatCardProps> = ({
 
   // Helper to compute a single metric value
   const computeMetricValue = React.useCallback(
-    (metric: MetricDefinition, items: readonly Record<string, unknown>[]) => {
+    (metric: MetricDefinition, items: readonly EntityRow[]) => {
       // If static value is provided, use it directly
       if (metric.value !== undefined) {
         return metric.value;

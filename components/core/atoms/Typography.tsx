@@ -163,11 +163,11 @@ export const Typography: React.FC<TypographyProps> = ({
     variantProp ?? (level ? (`h${level}` as TypographyVariant) : "body1");
   const Component = as || defaultElements[variant];
 
-  const Comp = Component as unknown as React.FC<Record<string, unknown>>;
-  return (
-    <Comp
-      id={id}
-      className={cn(
+  return React.createElement(
+    Component,
+    {
+      id,
+      className: cn(
         variantStyles[variant],
         colorStyles[color],
         weight && weightStyles[weight],
@@ -176,11 +176,10 @@ export const Typography: React.FC<TypographyProps> = ({
         truncate && "truncate overflow-hidden text-ellipsis",
         overflow && overflowStyles[overflow],
         className,
-      )}
-      style={style}
-    >
-      {children ?? content}
-    </Comp>
+      ),
+      style,
+    },
+    children ?? content,
   );
 };
 

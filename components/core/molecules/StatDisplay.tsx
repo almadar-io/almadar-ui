@@ -80,7 +80,7 @@ export interface StatDisplayProps {
   error?: UiError | null;
 }
 
-function formatNumber(value: unknown, format?: string): string {
+function formatNumber(value: number | string | null | undefined, format?: string): string {
   if (value == null) return '0';
   const v = typeof value === 'number' ? value : value;
   switch (format) {
@@ -99,7 +99,7 @@ function formatNumber(value: unknown, format?: string): string {
 // is the lolo default for std-stats's optional denominator and means "no max"
 // — we hide the divider so plain count cards don't render "10 / 0".
 function composeDisplayValue(
-  value: unknown,
+  value: number | string | null | undefined,
   format?: string,
   max?: number,
   prefix?: string,

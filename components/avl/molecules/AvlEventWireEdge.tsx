@@ -11,7 +11,8 @@ import React from 'react';
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, type Edge, type EdgeProps } from '@xyflow/react';
 import { CONNECTION_COLORS } from '../atoms/types';
 
-export interface AvlEventWireEdgeData extends Record<string, unknown> {
+export interface AvlEventWireEdgeData {
+  [key: string]: string | boolean | undefined;
   event: string;
   compatible?: boolean;
 }

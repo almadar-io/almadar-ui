@@ -16,9 +16,10 @@ import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 import { Badge } from '../../core/atoms/Badge';
-import { AvlBehaviorGlyph } from './AvlBehaviorGlyph';
+import { AvlBehaviorGlyph, type BehaviorGlyphChild, type BehaviorGlyphConnection, type BehaviorLevel } from './AvlBehaviorGlyph';
 import type { BehaviorComposeNodeData, ConnectableEvent } from './avl-behavior-compose-types';
-import { formatPayloadTooltip } from './wire-validation';
+import { formatPayloadTooltip, type PayloadField } from './wire-validation';
+import type { AvlEffectType, AvlPersistenceKind } from '../atoms/types';
 import { createLogger } from '@almadar/logger';
 
 const behaviorHandleLog = createLogger('almadar:ui:nan-coord');
@@ -92,7 +93,7 @@ const BehaviorComposeNodeInner: React.FC<NodeProps> = (props) => {
       {layerColor && (
         <Box
           style={{ height: 3, backgroundColor: layerColor }}
-          title={data.layer}
+          title={data.layer ?? undefined}
         />
       )}
 
@@ -117,14 +118,14 @@ const BehaviorComposeNodeInner: React.FC<NodeProps> = (props) => {
       <Box className="flex items-center justify-center py-3">
         <AvlBehaviorGlyph
           name={data.behaviorName}
-          level={data.level}
-          domain={data.domain}
+          level={data.level as BehaviorLevel | undefined}
+          domain={data.domain ?? undefined}
           stateCount={data.stateCount}
-          fieldCount={data.fieldCount}
-          persistence={data.persistence as 'persistent' | 'runtime' | 'singleton' | undefined}
-          effectTypes={data.effectTypes}
-          children={data.children}
-          connections={data.connections}
+          fieldCount={data.fieldCount ?? undefined}
+          persistence={data.persistence as AvlPersistenceKind | undefined}
+          effectTypes={data.effectTypes as AvlEffectType[] | undefined}
+          children={data.children as BehaviorGlyphChild[] | undefined}
+          connections={data.connections as BehaviorGlyphConnection[] | undefined}
           size="sm"
           showLabels={false}
         />
@@ -142,7 +143,7 @@ const BehaviorComposeNodeInner: React.FC<NodeProps> = (props) => {
                 color: '#F97316',
                 border: '1px solid #F9731630',
               }}
-              title={`${ev.event}${ev.payloadFields?.length ? ` ${formatPayloadTooltip(ev.payloadFields)}` : ''}`}
+              title={`${ev.event}${ev.payloadFields?.length ? ` ${formatPayloadTooltip(ev.payloadFields as PayloadField[])}` : ''}`}
             >
               {ev.event}
             </Box>
@@ -187,7 +188,7 @@ const BehaviorComposeNodeInner: React.FC<NodeProps> = (props) => {
           type="source"
           position={Position.Right}
           style={eventHandleStyle(ev)}
-          title={`${ev.event}${ev.payloadFields?.length ? ` ${formatPayloadTooltip(ev.payloadFields)}` : ''}`}
+          title={`${ev.event}${ev.payloadFields?.length ? ` ${formatPayloadTooltip(ev.payloadFields as PayloadField[])}` : ''}`}
         />
       ))}
     </Box>

@@ -5,6 +5,7 @@
  * for React Flow nodes and edges that render AVL primitives.
  */
 
+import type { JsonObject } from '@almadar/core';
 import type {
   FieldInfo,
   OrbitalTraitInfo,
@@ -33,14 +34,14 @@ export const ZOOM_BAND_THRESHOLDS = {
 // ---------------------------------------------------------------------------
 
 /** Data carried by every orbital node in the unified canvas. */
-export interface AvlNodeData extends Record<string, unknown> {
+export interface AvlNodeData extends JsonObject {
   orbitalName: string;
   entityName: string;
   persistence: string;
   fields: FieldInfo[];
   traits: OrbitalTraitInfo[];
   pages: OrbitalPageInfo[];
-  traitDetails: Record<string, TraitLevelData>;
+  traitDetails: { [k: string]: TraitLevelData };
   externalLinks: ExternalLink[];
 }
 
@@ -52,9 +53,9 @@ export interface AvlNodeData extends Record<string, unknown> {
 export type AvlEdgeKind = 'eventWire' | 'page';
 
 /** Data carried by edges in the unified canvas. */
-export interface AvlEdgeData extends Record<string, unknown> {
-  edgeKind: AvlEdgeKind;
-  event?: string;
-  fromTrait?: string;
-  toTrait?: string;
+export interface AvlEdgeData extends JsonObject {
+  edgeKind: string;
+  event: string | null;
+  fromTrait: string | null;
+  toTrait: string | null;
 }

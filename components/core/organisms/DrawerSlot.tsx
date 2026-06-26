@@ -17,6 +17,10 @@ import { Drawer, DrawerPosition, DrawerSize } from '../molecules/Drawer';
 import { useEventBus } from '../../../hooks/useEventBus';
 import type { UiError } from '../atoms/types';
 
+interface ComponentWithTitle {
+  title?: string;
+}
+
 export interface DrawerSlotProps {
   /** Content to display in the drawer */
   children?: React.ReactNode;
@@ -42,7 +46,7 @@ export interface DrawerSlotProps {
 function extractTitle(children: React.ReactNode): string | undefined {
   if (!React.isValidElement(children)) return undefined;
 
-  const props = children.props as Record<string, unknown>;
+  const props = children.props as ComponentWithTitle;
   if (typeof props.title === 'string') {
     return props.title;
   }

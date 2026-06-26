@@ -24,6 +24,7 @@ import { Badge } from '../../core/atoms/Badge';
 import { Accordion, type AccordionItem } from '../../core/molecules/Accordion';
 import { CodeBlock } from '../../core/molecules/markdown/CodeBlock';
 import type { TransitionLevelData, ExprTreeNode } from './avl-schema-parser';
+import type { JsonValue } from '@almadar/core';
 
 export interface AvlTransitionDetailProps {
   data: TransitionLevelData;
@@ -162,7 +163,7 @@ AvlTransitionDetail.displayName = 'AvlTransitionDetail';
 // JSON-stringified objects. Parse them back to native values so the
 // effect's outer `JSON.stringify(..., null, 2)` produces nested,
 // readable JSON instead of a stringified-string with escaped quotes.
-function safeParseLabel(label: string): unknown {
+function safeParseLabel(label: string): JsonValue {
   if (typeof label !== 'string') return label;
   const trimmed = label.trim();
   if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return label;

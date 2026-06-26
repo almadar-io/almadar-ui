@@ -85,54 +85,55 @@ export const Section: React.FC<SectionProps> = ({
   as: Component = 'section',
 }) => {
   const hasHeader = title || description || action;
-  const Comp = Component as React.FC<Record<string, unknown>>;
-  return (
-    <Comp
-      className={cn(
+  // Polymorphic render via React.createElement — `as: React.ElementType`
+  // collapses JSX children prop inference to `never`; createElement avoids this.
+  return React.createElement(
+    Component,
+    {
+      className: cn(
         paddingStyles[padding],
         variantStyles[variant],
         className
-      )}
-    >
-      {hasHeader && (
-        <Box
-          className={cn(
-            'flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4',
-            divider && 'pb-4 mb-4 border-b-[length:var(--border-width)] border-border',
-            !divider && 'mb-4',
-            headerClassName
+      ),
+    },
+    hasHeader && (
+      <Box
+        className={cn(
+          'flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4',
+          divider && 'pb-4 mb-4 border-b-[length:var(--border-width)] border-border',
+          !divider && 'mb-4',
+          headerClassName
+        )}
+      >
+        <Box className="flex-1 min-w-0">
+          {title && (
+            <Typography
+              variant="h4"
+              className="text-foreground font-semibold"
+            >
+              {title}
+            </Typography>
           )}
-        >
-          <Box className="flex-1 min-w-0">
-            {title && (
-              <Typography
-                variant="h4"
-                className="text-foreground font-semibold"
-              >
-                {title}
-              </Typography>
-            )}
-            {description && (
-              <Typography
-                variant="body"
-                color="muted"
-                className="mt-1"
-              >
-                {description}
-              </Typography>
-            )}
-          </Box>
-          {action && (
-            <Box className="flex-shrink-0 flex items-center gap-2">
-              {action}
-            </Box>
+          {description && (
+            <Typography
+              variant="body"
+              color="muted"
+              className="mt-1"
+            >
+              {description}
+            </Typography>
           )}
         </Box>
-      )}
-      <Box className={contentClassName}>
-        {children}
+        {action && (
+          <Box className="flex-shrink-0 flex items-center gap-2">
+            {action}
+          </Box>
+        )}
       </Box>
-    </Comp>
+    ),
+    <Box className={contentClassName}>
+      {children}
+    </Box>,
   );
 };
 

@@ -8,7 +8,8 @@
  * Uses @almadar/core types for schema-level constructs.
  */
 
-import type { Expression, UISlot } from '@almadar/core';
+import type { Expression, EntityData, OrbitalSchema, UISlot } from '@almadar/core';
+import type { AnyPatternConfig } from '@almadar/patterns';
 
 // ---------------------------------------------------------------------------
 // View levels
@@ -113,7 +114,7 @@ export interface PatternEventSource {
 /** A slot + pattern config pair extracted from a render-ui effect. */
 export interface RenderUIEntry {
   slot: UISlot | string;
-  pattern: Record<string, unknown>;
+  pattern: AnyPatternConfig;
 }
 
 // ---------------------------------------------------------------------------
@@ -121,7 +122,9 @@ export interface RenderUIEntry {
 // ---------------------------------------------------------------------------
 
 /** Data for a preview node (used at both overview and expanded levels). */
-export interface PreviewNodeData extends Record<string, unknown> {
+export interface PreviewNodeData {
+  [key: string]: string | number | boolean | string[] | Expression | null | RenderUIEntry[] | PatternEventSource[] | Array<{ event: string; fromState: string; toState: string }> | OrbitalSchema | EntityData | undefined;
+
   /** Orbital this node belongs to. */
   orbitalName: string;
 
@@ -255,6 +258,12 @@ export interface PreviewNodeData extends Record<string, unknown> {
    * trait operates on. Mirrors `Trait.linkedEntity` from the resolved schema.
    */
   linkedEntity?: string;
+
+  /** Full parsed schema threaded to node renderers (e.g. TraitCardNode). */
+  _fullSchema?: OrbitalSchema;
+
+  /** Mock entity data for the orbital preview. */
+  _mockData?: EntityData;
 }
 
 // ---------------------------------------------------------------------------
@@ -262,7 +271,9 @@ export interface PreviewNodeData extends Record<string, unknown> {
 // ---------------------------------------------------------------------------
 
 /** Data for event flow edges. */
-export interface EventEdgeData extends Record<string, unknown> {
+export interface EventEdgeData {
+  [key: string]: string | boolean | undefined;
+
   /** The event name displayed on the edge. */
   event: string;
 

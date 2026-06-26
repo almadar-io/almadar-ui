@@ -25,18 +25,20 @@ import {
   useNodesState,
   useEdgesState,
   useReactFlow,
+  type Node,
+  type Edge,
   type NodeTypes,
   type EdgeTypes,
   type Connection,
 } from '@xyflow/react';
-import type { OrbitalSchema, ThemeDefinition } from '@almadar/core';
+import type { OrbitalSchema, ThemeDefinition, EntityData } from '@almadar/core';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 import { OrbPreviewNode, ScreenSizeContext, PatternSelectionContext, type SelectedPattern } from '../molecules/OrbPreviewNode';
 import { TraitCardNode, TraitCardSelectionContext, type TraitCardTransitionClick } from '../molecules/TraitCardNode';
 import { EventFlowEdge } from '../molecules/EventFlowEdge';
 import { schemaToOverviewGraph, orbitalToExpandedGraph, orbitalAliasToExpandedGraph, orbitalToTraitGraph } from '../molecules/avl-preview-converter';
-import type { ViewLevel, PreviewNodeData, ScreenSize } from '../molecules/avl-preview-types';
+import type { ViewLevel, PreviewNodeData, EventEdgeData, ScreenSize } from '../molecules/avl-preview-types';
 import { SCREEN_SIZE_PRESETS, detectScreenSize } from '../molecules/avl-preview-types';
 import { OrbInspector } from './OrbInspector';
 import { validateWire } from '../molecules/wire-validation';
@@ -86,7 +88,7 @@ const DEFAULT_EDGE_OPTIONS = {
 
 export interface FlowCanvasProps {
   schema: OrbitalSchema | string;
-  mockData?: Record<string, unknown[]>;
+  mockData?: EntityData;
   className?: string;
   width?: number | string;
   height?: number | string;
@@ -346,10 +348,8 @@ function FlowCanvasInner({
     };
   }, [parsedSchema, expandedOrbital, expandedBehaviorAlias, behaviorMeta, layoutHint, composeLevel, behaviorEntries, behaviorWires, mockData, orbitalStatus, screenSize]);
 
-  // Both compose and orbital nodes flow through the same React Flow instance.
-  // Cast to Node<Record<string, unknown>> for the union.
-  type AnyNode = import('@xyflow/react').Node<Record<string, unknown>>;
-  type AnyEdge = import('@xyflow/react').Edge<Record<string, unknown>>;
+  type AnyNode = Node<PreviewNodeData> | Node<BehaviorComposeNodeData>;
+  type AnyEdge = Edge<EventEdgeData> | Edge<BehaviorWireEdgeData>;
 
   const activeNodes: AnyNode[] = (atBehaviorLevel && composeNodes.length > 0)
     ? composeNodes
@@ -393,7 +393,7 @@ function FlowCanvasInner({
   }, [nodes, edges]);
 
   // Double-click at overview → expand orbital
-  const handleNodeDoubleClick = useCallback((_: React.MouseEvent, node: { id: string; data: Record<string, unknown> }) => {
+  const handleNodeDoubleClick = useCallback((_: React.MouseEvent, node: Node) => {
     // Drill from behavior level → orbital overview
     if (atBehaviorLevel && composeLevel === 'behavior') {
       const d = node.data as BehaviorComposeNodeData;
@@ -462,7 +462,7 @@ function FlowCanvasInner({
   // select an orbital on the canvas without losing the overview, and any
   // stray click toggled the level. Mirror standard desktop semantics:
   // single-click selects, double-click opens.
-  const handleNodeClick = useCallback((_: React.MouseEvent, node: { id: string; data: Record<string, unknown> }) => {
+  const handleNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
     const nodeData = node.data as PreviewNodeData;
     if (level === 'expanded') {
       setSelectedNode(nodeData);

@@ -15,7 +15,7 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
-import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
+import type { AssetUrl, EventEmit, EntityRow, EntityWith } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -43,6 +43,22 @@ type CastleAssetManifest = {
     units?: Record<string, AssetUrl>;
     features?: Record<string, AssetUrl>;
 };
+
+/** Typed entity row for the castle board — fields this board reads off the entity. */
+type CastleBoardEntity = EntityWith<{
+    tiles?: IsometricTile[];
+    features?: IsometricFeature[];
+    units?: IsometricUnit[];
+    assetManifest?: CastleAssetManifest;
+    backgroundImage?: string;
+    gold?: number;
+    health?: number;
+    maxHealth?: number;
+    wave?: number;
+    tickCount?: number;
+    buildings?: EntityRow[];
+    result?: string;
+}>;
 
 /** Context exposed to render-prop slots */
 export type CastleSlotContext = {
@@ -145,12 +161,12 @@ export function CastleBoard({
 
     // Resolve the single board-state row, then read defensively so a missing
     // entity yields empty collections rather than throwing. Direct props win.
-    const resolved = boardEntity(entity);
-    const tiles = propTiles ?? (Array.isArray(resolved?.tiles) ? resolved.tiles : []) as unknown as IsometricTile[];
-    const features = propFeatures ?? (Array.isArray(resolved?.features) ? resolved.features : []) as unknown as IsometricFeature[];
-    const units = propUnits ?? (Array.isArray(resolved?.units) ? resolved.units : []) as unknown as IsometricUnit[];
-    const assetManifest = propAssetManifest ?? resolved?.assetManifest as CastleAssetManifest | undefined;
-    const backgroundImage = resolved?.backgroundImage as string | undefined;
+    const resolved = boardEntity(entity) as CastleBoardEntity | undefined;
+    const tiles = propTiles ?? (resolved?.tiles ?? []);
+    const features = propFeatures ?? (resolved?.features ?? []);
+    const units = propUnits ?? (resolved?.units ?? []);
+    const assetManifest = propAssetManifest ?? resolved?.assetManifest;
+    const backgroundImage = resolved?.backgroundImage;
 
     // -- Model-owned resource state (set by lolo on every TICK/BUILD/etc) ------
     const gold = num(resolved?.gold);

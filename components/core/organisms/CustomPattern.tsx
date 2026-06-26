@@ -10,7 +10,7 @@
  */
 
 import React from "react";
-import type { AssetUrl, EventKey, EventPayload } from "@almadar/core";
+import type { AssetUrl, EventKey, EventPayload, JsonValue } from "@almadar/core";
 import type { UiError } from "../atoms/types";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { cn } from "../../../lib/cn";
@@ -125,7 +125,7 @@ export interface CustomPatternProps {
   /** Disabled state */
   disabled?: boolean;
   /** Additional HTML attributes */
-  htmlProps?: Record<string, unknown>;
+  htmlProps?: React.HTMLAttributes<HTMLElement>;
   /** Loading state */
   isLoading?: boolean;
   /** Error state */
@@ -206,7 +206,7 @@ export function CustomPattern({
   const renderContent = children ?? content;
 
   // Build common props
-  const commonProps: Record<string, unknown> = {
+  const commonProps: React.HTMLAttributes<HTMLElement> & { disabled?: boolean } = {
     className: classes || undefined,
     ...htmlProps,
   };
@@ -233,7 +233,7 @@ export function CustomPattern({
           className={classes}
           disabled={disabled}
           onClick={handleClick}
-          {...(htmlProps as Record<string, unknown>)}
+          {...htmlProps}
         >
           {renderContent}
         </Button>
@@ -267,7 +267,7 @@ export function CustomPattern({
         <Input
           className={classes}
           disabled={disabled}
-          {...(htmlProps as Record<string, unknown>)}
+          {...htmlProps}
         />
       );
 
@@ -276,7 +276,8 @@ export function CustomPattern({
         <Typography
           as="label"
           className={classes}
-          {...(htmlProps as Record<string, unknown>)}
+          id={htmlProps?.id}
+          style={htmlProps?.style}
         >
           {renderContent}
         </Typography>
@@ -309,7 +310,8 @@ export function CustomPattern({
         <Typography
           variant={HEADING_VARIANT_MAP[component]}
           className={classes}
-          {...(htmlProps as Record<string, unknown>)}
+          id={htmlProps?.id}
+          style={htmlProps?.style}
         >
           {renderContent}
         </Typography>
@@ -382,13 +384,13 @@ export function CustomPattern({
     // Text elements
     case "span":
       return (
-        <Typography variant="body" as="span" className={classes} {...(htmlProps as Record<string, unknown>)}>
+        <Typography variant="body" as="span" className={classes} id={htmlProps?.id} style={htmlProps?.style}>
           {renderContent}
         </Typography>
       );
     case "p":
       return (
-        <Typography variant="body" className={classes} {...(htmlProps as Record<string, unknown>)}>
+        <Typography variant="body" className={classes} id={htmlProps?.id} style={htmlProps?.style}>
           {renderContent}
         </Typography>
       );
@@ -424,19 +426,20 @@ export interface CustomPatternConfig {
   href?: string;
   external?: boolean;
   disabled?: boolean;
-  [key: string]: unknown;
 }
 
 /**
  * Check if a pattern config is a custom pattern.
  */
 export function isCustomPatternConfig(
-  config: unknown,
+  config: JsonValue | CustomPatternConfig,
 ): config is CustomPatternConfig {
   return (
     typeof config === "object" &&
     config !== null &&
-    (config as Record<string, unknown>).type === "custom"
+    !Array.isArray(config) &&
+    "type" in config &&
+    config["type"] === "custom"
   );
 }
 
@@ -450,6 +453,7 @@ export function renderCustomPattern(
   key?: string | number,
 ): React.ReactElement {
   const {
+    type: _type,
     component,
     className,
     token,
@@ -462,7 +466,6 @@ export function renderCustomPattern(
     href,
     external,
     disabled,
-    ...rest
   } = config;
 
   // Recursively render children
@@ -484,7 +487,6 @@ export function renderCustomPattern(
       href={href}
       external={external}
       disabled={disabled}
-      htmlProps={rest}
     >
       {renderedChildren}
     </CustomPattern>

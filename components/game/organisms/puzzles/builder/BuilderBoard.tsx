@@ -17,7 +17,7 @@ import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../.
 import { useEventBus } from '../../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../../hooks/useTranslate';
 import type { DisplayStateProps } from '../../../../core/organisms/types';
-import { boardEntity, str, num } from '../../boardEntity';
+import { boardEntity, str, num, rows } from '../../boardEntity';
 import { CheckCircle, XCircle, RotateCcw, Wrench } from 'lucide-react';
 
 /** A draggable build component (UI value DTO read off the entity). */
@@ -72,8 +72,21 @@ export function BuilderBoard({
   // UI-only: which available component is currently picked up for placement.
   const [selectedComponent, setSelectedComponent] = useState<string | null>(null);
 
-  const components = (Array.isArray(resolved?.components) ? resolved.components : []) as unknown as BuilderComponent[];
-  const slots = (Array.isArray(resolved?.slots) ? resolved.slots : []) as unknown as BuilderSlot[];
+  const components: readonly BuilderComponent[] = rows(resolved?.components).map((r) => ({
+    id: str(r.id),
+    label: str(r.label),
+    description: str(r.description) || undefined,
+    iconEmoji: str(r.iconEmoji) || undefined,
+    iconUrl: str(r.iconUrl) || undefined,
+    category: str(r.category) || undefined,
+  }));
+  const slots: readonly BuilderSlot[] = rows(resolved?.slots).map((r) => ({
+    id: str(r.id),
+    label: str(r.label) || undefined,
+    description: str(r.description) || undefined,
+    requiredComponentId: str(r.requiredComponentId),
+    placedComponentId: str(r.placedComponentId) || undefined,
+  }));
 
   // ── Board state read off the entity (machine-owned source of truth) ──────
   const placements: Record<string, string> = {};

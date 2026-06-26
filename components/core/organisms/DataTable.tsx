@@ -22,7 +22,7 @@ import {
   MoreHorizontal,
 } from "lucide-react";
 import { DisplayStateProps, EntityDisplayEvents } from "./types";
-import type { EntityRow } from "@almadar/core";
+import type { EntityRow, FieldValue } from "@almadar/core";
 
 export type EntityTableLook =
   | "dense"
@@ -40,7 +40,7 @@ export interface Column<T> {
   label?: string;
   width?: string;
   sortable?: boolean;
-  render?: (value: unknown, row: T, index: number) => React.ReactNode;
+  render?: (value: FieldValue | undefined, row: T, index: number) => React.ReactNode;
 }
 
 /**
@@ -87,7 +87,7 @@ function normalizeColumns<T>(
  * Detect boolean values (actual booleans or "true"/"false" strings)
  * and return the boolean, or null if the value is not boolean-like.
  */
-function asBooleanValue(value: unknown): boolean | null {
+function asBooleanValue(value: FieldValue | undefined): boolean | null {
   if (typeof value === "boolean") return value;
   if (value === "true") return true;
   if (value === "false") return false;
@@ -548,7 +548,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
                   )}
                   {normalizedColumns.map((col) => {
                     const cellValue = getNestedValue(
-                      row as Record<string, unknown>,
+                      row,
                       String(col.key),
                     );
                     return (

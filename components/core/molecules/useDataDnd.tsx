@@ -193,15 +193,15 @@ export function useDataDnd(
   // array each render means infinite measure loops on multi-list pages.
   const itemIdsSignature = orderedItems
     .map((it, idx) => {
-      const raw = (it as Record<string, unknown>)[dndItemIdField];
-      return String((raw as string | number | undefined) ?? `__idx_${idx}`);
+      const raw = it[dndItemIdField];
+      return raw != null ? String(raw) : `__idx_${idx}`;
     })
     .join('|');
   const itemIds = React.useMemo<UniqueIdentifier[]>(
     () =>
       orderedItems.map((it, idx) => {
-        const raw = (it as Record<string, unknown>)[dndItemIdField];
-        return (raw as string | number | undefined) ?? `__idx_${idx}`;
+        const raw = it[dndItemIdField];
+        return raw != null ? String(raw) : `__idx_${idx}`;
       }),
     [itemIdsSignature],
   );
@@ -210,8 +210,11 @@ export function useDataDnd(
   // data), drop this zone's optimistic order so we fall back to the new items.
   // Watch the underlying items' signature, NOT the items reference (which
   // changes every render in DataList/DataGrid).
-  const itemsContentSig = (items as readonly EntityRow[])
-    .map((it, idx) => String((it as Record<string, unknown>)[dndItemIdField] ?? `__${idx}`))
+  const itemsContentSig = items
+    .map((it, idx) => {
+      const raw = it[dndItemIdField];
+      return raw != null ? String(raw) : `__${idx}`;
+    })
     .join('|');
   React.useEffect(() => {
     const root = isRoot ? null : parentRoot;
@@ -307,13 +310,13 @@ export function useDataDnd(
       let targetMeta: ZoneMeta | undefined;
       let newIndex = -1;
       for (const m of zonesRef.current.values()) {
-        const rawIdx = m.rawItems.findIndex((it) => String((it as Record<string, unknown>)[m.idField]) === activeIdStr);
+        const rawIdx = m.rawItems.findIndex((it) => String(it[m.idField]) === activeIdStr);
         if (rawIdx >= 0) {
           sourceMeta = m;
           oldIndex = rawIdx;
         }
         const currentItems = optimisticOrdersRef.current.get(m.group) ?? m.rawItems;
-        const curIdx = currentItems.findIndex((it) => String((it as Record<string, unknown>)[m.idField]) === activeIdStr);
+        const curIdx = currentItems.findIndex((it) => String(it[m.idField]) === activeIdStr);
         if (curIdx >= 0) {
           targetMeta = m;
           newIndex = curIdx;
@@ -336,7 +339,7 @@ export function useDataDnd(
         const evt = `UI:${zoneMeta.positionEvent}`;
         const order = optimisticOrdersRef.current.get(zoneMeta.group) ?? zoneMeta.rawItems;
         order.forEach((it, idx) => {
-          const id = String((it as Record<string, unknown>)[zoneMeta.idField]);
+          const id = String(it[zoneMeta.idField]);
           const position = idx * 1000;
           eventBus.emit(evt, { id, position });
         });
@@ -524,7 +527,7 @@ export function useDataDnd(
     let sourceGroup: string | undefined;
     for (const m of zonesRef.current.values()) {
       const currentItems = optimisticOrdersRef.current.get(m.group) ?? m.rawItems;
-      const found = currentItems.find((it) => String((it as Record<string, unknown>)[m.idField]) === activeIdStr);
+      const found = currentItems.find((it) => String(it[m.idField]) === activeIdStr);
       if (found) {
         sourceMeta = m;
         sourceGroup = m.group;
@@ -552,8 +555,8 @@ export function useDataDnd(
       // Same-zone reorder: arrayMove items at indices [activeIdx, overIdx].
       setOptimisticOrders((prev) => {
         const currentItems = prev.get(sourceGroup!) ?? sourceMeta!.rawItems;
-        const oldIndex = currentItems.findIndex((it) => String((it as Record<string, unknown>)[sourceMeta!.idField]) === activeIdStr);
-        const newIndex = currentItems.findIndex((it) => String((it as Record<string, unknown>)[sourceMeta!.idField]) === String(over.id));
+        const oldIndex = currentItems.findIndex((it) => String(it[sourceMeta!.idField]) === activeIdStr);
+        const newIndex = currentItems.findIndex((it) => String(it[sourceMeta!.idField]) === String(over.id));
         if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return prev;
         const reordered = arrayMove([...currentItems] as EntityRow[], oldIndex, newIndex);
         const next = new Map(prev);
@@ -568,15 +571,15 @@ export function useDataDnd(
     setOptimisticOrders((prev) => {
       const currentSource = prev.get(sourceGroup!) ?? sourceMeta!.rawItems;
       const currentTarget = prev.get(overGroup) ?? targetMeta!.rawItems;
-      const activeItem = currentSource.find((it) => String((it as Record<string, unknown>)[sourceMeta!.idField]) === activeIdStr);
+      const activeItem = currentSource.find((it) => String(it[sourceMeta!.idField]) === activeIdStr);
       if (!activeItem) return prev;
       // Already in target? (multi-fire onDragOver) — skip if active already in target.
-      if (currentTarget.some((it) => String((it as Record<string, unknown>)[targetMeta!.idField]) === activeIdStr)) {
+      if (currentTarget.some((it) => String(it[targetMeta!.idField]) === activeIdStr)) {
         return prev;
       }
-      const newSource = currentSource.filter((it) => String((it as Record<string, unknown>)[sourceMeta!.idField]) !== activeIdStr);
+      const newSource = currentSource.filter((it) => String(it[sourceMeta!.idField]) !== activeIdStr);
       const overIdStr = String(over.id);
-      const overIndex = currentTarget.findIndex((it) => String((it as Record<string, unknown>)[targetMeta!.idField]) === overIdStr);
+      const overIndex = currentTarget.findIndex((it) => String(it[targetMeta!.idField]) === overIdStr);
       const insertAt = overIndex >= 0 ? overIndex : currentTarget.length;
       const newTarget: EntityRow[] = [
         ...(currentTarget.slice(0, insertAt) as EntityRow[]),

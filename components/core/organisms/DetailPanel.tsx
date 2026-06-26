@@ -9,7 +9,7 @@
  */
 
 import React, { useCallback, Suspense, lazy } from "react";
-import type { EventPayload, EntityRow } from "@almadar/core";
+import type { EventPayload, EntityRow, FieldValue } from "@almadar/core";
 import type { ItemActionPayload } from "@almadar/patterns";
 import {
   Calendar,
@@ -111,7 +111,7 @@ function formatFieldLabel(fieldName: string): string {
     .replace(/^./, (str) => str.toUpperCase());
 }
 
-function formatFieldValue(value: unknown, fieldName: string): string {
+function formatFieldValue(value: FieldValue | undefined, fieldName: string): string {
   if (typeof value === "number") {
     if (
       fieldName.toLowerCase().includes("progress") ||
@@ -147,7 +147,7 @@ interface TypedFieldDef {
  * Uses the schema-declared type (not regex heuristics) to decide rendering.
  */
 function renderRichFieldValue(
-  value: unknown,
+  value: FieldValue | undefined,
   fieldName: string,
   fieldType?: string,
 ): React.ReactNode {
@@ -333,7 +333,7 @@ export interface DetailPanelProps extends DisplayStateProps {
   /** Alias for fields - backwards compatibility */
   fieldNames?: readonly string[];
   /** Initial data for edit mode (passed by compiler) */
-  initialData?: Record<string, unknown> | unknown;
+  initialData?: EntityRow;
   /** Display mode (passed by compiler) */
   mode?: string;
   /** Panel position (for drawer/sidebar placement) */
@@ -369,7 +369,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   // Support fields and fieldNames (alias) - normalize to string array
   // Check if propFields contains FieldDef (string or {key}) or DetailField (has label/value)
   const isFieldDefArray = (
-    arr: readonly unknown[] | undefined,
+    arr: readonly (FieldDef | DetailField)[] | undefined,
   ): arr is readonly FieldDef[] => {
     if (!arr || arr.length === 0) return false;
     const first = arr[0];
@@ -439,7 +439,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
       ...section,
       fields: section.fields.map((field) => {
         if (typeof field === "string") {
-          const value = getNestedValue(normalizedData, field);
+          const value = getNestedValue(normalizedData, field) as FieldValue | undefined;
           return {
             label: formatFieldLabel(field),
             value: formatFieldValue(value, field),
@@ -502,7 +502,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
       const overviewFields: DetailField[] = [];
 
       [...statusFields, ...otherFields.slice(0, 3)].forEach((field) => {
-        const value = getNestedValue(normalizedData, field);
+        const value = getNestedValue(normalizedData, field) as FieldValue | undefined;
         if (value !== undefined && value !== null) {
           overviewFields.push({
             label: formatFieldLabel(field),
@@ -522,7 +522,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
       const metricsFields: DetailField[] = [];
 
       [...progressFields, ...metricFields].forEach((field) => {
-        const value = getNestedValue(normalizedData, field);
+        const value = getNestedValue(normalizedData, field) as FieldValue | undefined;
         if (value !== undefined && value !== null) {
           metricsFields.push({
             label: formatFieldLabel(field),
@@ -542,7 +542,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
       const timelineFields: DetailField[] = [];
 
       dateFields.forEach((field) => {
-        const value = getNestedValue(normalizedData, field);
+        const value = getNestedValue(normalizedData, field) as FieldValue | undefined;
         if (value !== undefined && value !== null) {
           timelineFields.push({
             label: formatFieldLabel(field),
@@ -562,7 +562,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
       const descFields: DetailField[] = [];
 
       descriptionFields.forEach((field) => {
-        const value = getNestedValue(normalizedData, field);
+        const value = getNestedValue(normalizedData, field) as FieldValue | undefined;
         if (value !== undefined && value !== null) {
           descFields.push({
             label: formatFieldLabel(field),
@@ -619,7 +619,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     for (const section of sections) {
       for (const field of section.fields) {
         if (typeof field === "string") {
-          const value = normalizedData ? getNestedValue(normalizedData, field) : undefined;
+          const value = (normalizedData ? getNestedValue(normalizedData, field) : undefined) as FieldValue | undefined;
           allFields.push({
             label: formatFieldLabel(field),
             value: renderRichFieldValue(value, field, fieldTypeMap[field]),

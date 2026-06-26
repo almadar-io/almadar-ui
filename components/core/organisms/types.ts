@@ -8,7 +8,7 @@
  * This is the ONE allowed exception — documented here.
  */
 
-import type { EntityRow } from '@almadar/core';
+import type { EntityRow, FieldValue } from '@almadar/core';
 import type { UiError } from '../atoms/types';
 
 export type { UiError };
@@ -44,7 +44,7 @@ export interface SearchPayload {
 export interface FilterPayload {
   field: string;
   operator: string;
-  value: unknown;
+  value: FieldValue;
 }
 
 export interface SelectPayload {
@@ -84,7 +84,7 @@ export interface DisplayStateProps {
   /** Total number of items (for pagination display) */
   totalCount?: number;
   /** Active filters */
-  activeFilters?: Record<string, unknown>;
+  activeFilters?: Record<string, FieldValue>;
   /** Currently selected item IDs */
   selectedIds?: readonly (string | number)[];
 }

@@ -39,10 +39,10 @@ export interface PageHeaderStatus {
 }
 
 export interface PageHeaderProps {
-  /** Page title - accepts unknown to handle generated code accessing dynamic entity data */
-  title?: string | number | unknown;
+  /** Page title - accepts string or number from generated code accessing dynamic entity data */
+  title?: string | number;
   /** Optional subtitle/description */
-  subtitle?: string | number | unknown;
+  subtitle?: string | number;
   /** Show back button */
   showBack?: boolean;
   /** Event to emit when back is clicked (default: BACK) */

@@ -147,12 +147,7 @@ function getComponentForPattern(
   if (!mapping) {
     return null;
   }
-  // Extract the component name from the mapping entry
-  const name = typeof mapping === 'string'
-    ? mapping
-    : (mapping as unknown as { component: string }).component;
-  if (!name) return null;
-  return COMPONENT_REGISTRY[name] ?? null;
+  return COMPONENT_REGISTRY[mapping] ?? null;
 }
 
 // Form patterns whose `fields` should be enriched with entity field types
@@ -169,9 +164,9 @@ const FORM_PATTERNS = new Set([
  * At runtime, we read the entity schema from EntitySchemaContext.
  */
 function enrichFormFields(
-  fields: unknown[],
+  fields: SlotPropValue[],
   entityDef: ResolvedEntity,
-): unknown[] {
+): SlotPropValue[] {
   const fieldMap = new Map(entityDef.fields.map((f) => [f.name, f]));
 
   return fields.map((field) => {
@@ -179,28 +174,28 @@ function enrichFormFields(
       // Simple string field name — look up entity field and build SchemaField
       const entityField = fieldMap.get(field);
       if (entityField) {
-        const enriched: Record<string, unknown> = {
+        const enriched: SlotProps = {
           name: field,
           label: field.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\b\w/g, (c) => c.toUpperCase()),
           type: entityField.type,
-          required: entityField.required,
+          required: entityField.required ?? false,
         };
         if (entityField.values && entityField.values.length > 0) {
-          enriched.values = entityField.values;
+          enriched.values = entityField.values as SlotPropValue[];
         } else if (entityField.enumValues && entityField.enumValues.length > 0) {
-          enriched.values = entityField.enumValues;
+          enriched.values = entityField.enumValues as SlotPropValue[];
         }
         if (entityField.relation) {
-          enriched.relation = entityField.relation;
+          enriched.relation = entityField.relation.entity;
         }
         return enriched;
       }
       return { name: field, label: field.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\b\w/g, (c) => c.toUpperCase()) };
     }
 
-    if (field && typeof field === 'object' && !Array.isArray(field)) {
-      const obj = field as Record<string, unknown>;
-      const fieldName = (obj.name ?? obj.field) as string | undefined;
+    if (field && typeof field === 'object' && !Array.isArray(field) && !React.isValidElement(field) && !(field instanceof Date)) {
+      const obj = field as SlotProps;
+      const fieldName = (typeof obj.name === 'string' ? obj.name : typeof obj.field === 'string' ? obj.field : undefined);
       if (!fieldName) return field;
 
       // Only enrich if type is not already specified
@@ -209,19 +204,19 @@ function enrichFormFields(
       const entityField = fieldMap.get(fieldName);
       if (!entityField) return field;
 
-      const enriched: Record<string, unknown> = { ...obj, type: entityField.type };
+      const enriched: SlotProps = { ...obj, type: entityField.type };
       if (entityField.required && !('required' in obj)) {
         enriched.required = true;
       }
       if (!obj.values && !obj.options) {
         if (entityField.values && entityField.values.length > 0) {
-          enriched.values = entityField.values;
+          enriched.values = entityField.values as SlotPropValue[];
         } else if (entityField.enumValues && entityField.enumValues.length > 0) {
-          enriched.values = entityField.enumValues;
+          enriched.values = entityField.enumValues as SlotPropValue[];
         }
       }
       if (!obj.relation && entityField.relation) {
-        enriched.relation = entityField.relation;
+        enriched.relation = entityField.relation.entity;
       }
       return enriched;
     }
@@ -1385,7 +1380,7 @@ function SlotContentRenderer({
     // and does NOT depend on isPatternConfig resolving the type, closing the
     // crash where isKnownPattern returned false and the raw objects propagated
     // through substituteTraitRefsDeep unchanged into the component's JSX.
-    const nodeSlotOverrides: Record<string, React.ReactNode> = {};
+    const nodeSlotOverrides: SlotProps = {};
     for (const slotKey of CONTENT_NODE_SLOTS) {
       const slotVal = restProps[slotKey];
       if (slotVal === undefined || slotVal === null) continue;
@@ -1398,7 +1393,7 @@ function SlotContentRenderer({
           `${myPath}.${slotKey}`,
           content.sourceTrait,
           { slot: content.slot, transitionEvent: content.transitionEvent, fromState: content.fromState, entity: content.entity },
-        );
+        ) as SlotPropValue;
       }
     }
 
@@ -1462,25 +1457,25 @@ function SlotContentRenderer({
     // field definitions.
     // V2: entity data flows through content.props.entity directly (pre-resolved
     // from @payload.data or value prop). No more store hydration.
-    const finalProps: Record<string, unknown> = renderedProps;
+    const finalProps: SlotProps = renderedProps;
     // Apply node-slot overrides (hud, logo, master, etc.) — rendered via
     // renderPatternChildren above, overwrite whatever renderPatternProps produced.
     for (const [k, v] of Object.entries(nodeSlotOverrides)) {
       finalProps[k] = v;
     }
-    const resolvedItems: readonly unknown[] | null = Array.isArray(
-      finalProps.entity,
-    )
-      ? (finalProps.entity as readonly unknown[])
-      : null;
+    const entityVal = finalProps.entity;
+    const resolvedItems: ReadonlyArray<SlotPropValue> | null =
+      Array.isArray(entityVal) && entityVal[0] !== 'fn'
+        ? (entityVal as ReadonlyArray<SlotPropValue>)
+        : null;
     if (
       resolvedItems &&
       resolvedItems.length > 0 &&
       !finalProps.fields &&
       !finalProps.columns
     ) {
-      const sample = resolvedItems[0] as Record<string, unknown>;
-      if (sample && typeof sample === 'object') {
+      const sample = resolvedItems[0];
+      if (sample && typeof sample === 'object' && !Array.isArray(sample) && !React.isValidElement(sample) && !(sample instanceof Date)) {
         const keys = Object.keys(sample).filter((k) => k !== 'id' && k !== '_id');
         finalProps.fields = keys.map((k, i) => ({ name: k, variant: i === 0 ? 'h4' : 'body' }));
       }
@@ -1490,8 +1485,8 @@ function SlotContentRenderer({
     // Mirrors what the compiler does at build time (EntityFieldInfo injection).
     const isFormPattern = FORM_PATTERNS.has(content.pattern)
       || content.pattern.includes('form');
-    if (isFormPattern && entityDef && Array.isArray(finalProps.fields)) {
-      finalProps.fields = enrichFormFields(finalProps.fields as unknown[], entityDef);
+    if (isFormPattern && entityDef && Array.isArray(finalProps.fields) && finalProps.fields[0] !== 'fn') {
+      finalProps.fields = enrichFormFields([...finalProps.fields] as SlotPropValue[], entityDef);
       // V2: edit-form initialData comes pre-bound via `initialData: @payload.data`
       // instead of being hydrated from the entity store.
     }

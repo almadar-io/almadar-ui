@@ -9,7 +9,7 @@
  */
 
 import React, { useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
-import { useThree, useFrame } from '@react-three/fiber';
+import { useThree, useFrame, type RootState } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 
@@ -85,7 +85,7 @@ export const Camera3D = forwardRef<Camera3DHandle, Camera3DProps>(
 
         // Configure camera based on mode
         useEffect(() => {
-            let newCamera: THREE.Camera;
+            let newCamera: THREE.OrthographicCamera | THREE.PerspectiveCamera;
 
             if (mode === 'isometric') {
                 // Orthographic camera for isometric view
@@ -107,8 +107,7 @@ export const Camera3D = forwardRef<Camera3DHandle, Camera3DProps>(
             newCamera.position.copy(initialPosition.current);
             newCamera.lookAt(initialTarget.current.x, initialTarget.current.y, initialTarget.current.z);
 
-            // Cast needed: project @types/three version differs from @react-three/fiber's bundled three types
-            (set as (state: Record<string, unknown>) => void)({ camera: newCamera });
+            (set as (partial: Partial<RootState>) => void)({ camera: newCamera });
 
             // For top-down mode
             if (mode === 'top-down') {
@@ -124,13 +123,13 @@ export const Camera3D = forwardRef<Camera3DHandle, Camera3DProps>(
         // Update camera on changes
         useFrame(() => {
             if (onChange) {
-                onChange(camera as unknown as THREE.Camera);
+                onChange(camera);
             }
         });
 
         // Imperative handle
         useImperativeHandle(ref, () => ({
-            getCamera: () => camera as unknown as THREE.Camera,
+            getCamera: () => camera,
             setPosition: (x: number, y: number, z: number) => {
                 camera.position.set(x, y, z);
                 if (controlsRef.current) {
@@ -146,7 +145,7 @@ export const Camera3D = forwardRef<Camera3DHandle, Camera3DProps>(
             },
             reset: () => {
                 camera.position.copy(initialPosition.current);
-                (camera as unknown as THREE.Camera).lookAt(initialTarget.current.x, initialTarget.current.y, initialTarget.current.z);
+                camera.lookAt(initialTarget.current.x, initialTarget.current.y, initialTarget.current.z);
                 if (controlsRef.current) {
                     controlsRef.current.target.copy(initialTarget.current);
                     controlsRef.current.update();

@@ -8,7 +8,7 @@
  */
 
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import type { AssetUrl, EventEmit } from '@almadar/core';
+import type { AssetUrl, EventEmit, JsonObject } from '@almadar/core';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -57,7 +57,7 @@ export interface CarouselProps<T = CarouselItem> {
   /** Declarative event name for slide change */
   slideChangeEvent?: EventEmit<{ index: number }>;
   /** Payload to include with the slide change event */
-  slideChangePayload?: Record<string, unknown>;
+  slideChangePayload?: JsonObject;
   /** Additional CSS classes */
   className?: string;
 }

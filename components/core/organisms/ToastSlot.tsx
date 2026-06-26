@@ -17,6 +17,13 @@ import { Box } from '../atoms/Box';
 import { useEventBus } from '../../../hooks/useEventBus';
 import type { UiError } from '../atoms/types';
 
+/** Props extracted from a React element for toast content */
+interface ToastElementProps {
+  message?: string;
+  variant?: ToastVariant;
+  title?: string;
+}
+
 export interface ToastSlotProps {
   /** Content to display in the toast (message or ReactNode) */
   children?: React.ReactNode;
@@ -52,7 +59,7 @@ function extractToastProps(children: React.ReactNode): {
     return {};
   }
 
-  const props = children.props as Record<string, unknown>;
+  const props = children.props as ToastElementProps;
   return {
     message: typeof props.message === 'string' ? props.message : undefined,
     variant: props.variant as ToastVariant | undefined,

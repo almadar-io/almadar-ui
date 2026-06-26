@@ -9,6 +9,7 @@
  */
 import React, { useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
+import type { JsonValue, JsonObject } from "@almadar/core";
 import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
 import { Box } from "../atoms/Box";
@@ -26,30 +27,30 @@ export interface WizardField {
   required?: boolean;
   repeatable?: boolean;
   options?: Array<{ value: string; label: string; isDefault?: boolean }>;
-  defaultValue?: unknown;
-  condition?: unknown[];
+  defaultValue?: JsonValue;
+  condition?: JsonValue[];
   placeholder?: string;
   entityField?: string;
   minLength?: number;
   maxLength?: number;
-  dataSource?: Record<string, unknown>;
+  dataSource?: JsonObject;
   displayFields?: string[];
-  searchConfig?: Record<string, unknown>;
+  searchConfig?: JsonObject;
   hiddenCalculations?: Array<{
     variable: string;
-    expression: unknown;
+    expression: string;
     scope?: string;
   }>;
-  signatureConfig?: Record<string, unknown>;
-  displayTemplate?: Record<string, unknown>;
-  lawReference?: Record<string, unknown>;
+  signatureConfig?: JsonObject;
+  displayTemplate?: JsonObject;
+  lawReference?: JsonObject;
   contextMenu?: string[];
-  calculated?: Record<string, unknown>;
+  calculated?: JsonObject;
   readOnly?: boolean;
-  minDate?: unknown;
-  stats?: Array<{ label: string; value: unknown; icon?: string }>;
-  items?: Array<{ id: string; label: string; autoCheck?: unknown }>;
-  [key: string]: unknown;
+  minDate?: JsonValue;
+  stats?: Array<{ label: string; value: JsonValue; icon?: string }>;
+  items?: Array<{ id: string; label: string; autoCheck?: JsonValue }>;
+  [key: string]: JsonValue | undefined;
 }
 
 /** Section within a wizard step */
@@ -59,18 +60,18 @@ export interface WizardSection {
   description?: string;
   fields?: WizardField[];
   subsections?: WizardSection[];
-  condition?: unknown[];
+  condition?: JsonValue[];
   repeatable?: boolean;
   minItems?: number;
   addButtonLabel?: string;
   hiddenCalculations?: Array<{
     variable: string;
-    expression: unknown;
+    expression: string;
     scope?: string;
   }>;
-  dataSource?: Record<string, unknown>;
+  dataSource?: JsonObject;
   readOnly?: boolean;
-  [key: string]: unknown;
+  [key: string]: JsonValue | WizardField[] | WizardSection[] | undefined;
 }
 
 /** Entity mapping configuration */
@@ -84,12 +85,12 @@ export interface WizardEntityMapping {
     | string;
   parentField?: string;
   idField?: string;
-  [key: string]: unknown;
+  [key: string]: JsonValue | undefined;
 }
 
 /** Validation rule for wizard steps */
 export interface WizardValidationRule {
-  condition: unknown[];
+  condition: JsonValue[];
   message: string;
 }
 
@@ -139,14 +140,14 @@ export interface WizardStep {
   contextMenu?: string[];
 
   /** Allow additional properties from schema */
-  [key: string]: unknown;
+  [key: string]: JsonValue | React.ReactNode | WizardSection[] | WizardEntityMapping | WizardValidationRule[] | WizardLawReference[] | (() => boolean) | undefined;
 }
 
 export interface WizardContainerProps {
   /** Wizard steps */
   steps: WizardStep[];
-  /** Current step index (controlled) - accepts unknown for generated code compatibility */
-  currentStep?: number | string | unknown;
+  /** Current step index (controlled) - accepts number or string for generated code compatibility */
+  currentStep?: number | string;
   /** Callback when step changes */
   onStepChange?: (stepIndex: number) => void;
   /** Callback when wizard is completed */
