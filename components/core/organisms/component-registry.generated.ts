@@ -11,7 +11,7 @@ import React from 'react';
 import { AboutPageTemplate } from '../../marketing/templates/AboutPageTemplate';
 import { Accordion } from '../molecules/Accordion';
 import { ActionButton } from '../../game/atoms/ActionButton';
-import { ActionButtons } from '../../game/molecules/ActionButtons';
+import { ControlGrid } from '../../game/molecules/ControlGrid';
 import { ActionPalette } from '../../game/organisms/puzzles/sequencer/ActionPalette';
 import { ActionTile } from '../../game/organisms/puzzles/sequencer/ActionTile';
 import { ActivationBlock } from '../molecules/ActivationBlock';
@@ -77,7 +77,7 @@ import { ControlButton } from '../../game/atoms/ControlButton';
 import { CounterTemplate } from '../templates/CounterTemplate';
 import { CraftingRecipe } from '../../game/molecules/CraftingRecipe';
 import { CustomPattern } from './CustomPattern';
-import { DPad } from '../../game/molecules/DPad';
+// DPad merged into ControlGrid (kind="dpad")
 import { DamageNumber } from '../../game/atoms/DamageNumber';
 import { DashboardGrid } from './layout/DashboardGrid';
 import { DashboardLayout } from '../templates/DashboardLayout';
@@ -321,7 +321,7 @@ import { WizardNavigation } from '../molecules/WizardNavigation';
 import { WizardProgress } from '../molecules/WizardProgress';
 import { WorldMapBoard } from '../../game/organisms/WorldMapBoard';
 import { WorldMapTemplate } from '../../game/templates/WorldMapTemplate';
-import { XPBar } from '../../game/atoms/XPBar';
+// XPBar merged into HealthBar (format="progress") — registry entry updated to HealthBar
 
 // ---------------------------------------------------------------------------
 // Three.js components — code-split behind the optional
@@ -405,7 +405,8 @@ export const COMPONENT_REGISTRY: Record<string, React.ComponentType<any>> = {
   'AboutPageTemplate': AboutPageTemplate,
   'Accordion': Accordion,
   'ActionButton': ActionButton,
-  'ActionButtons': ActionButtons,
+  'ActionButtons': ControlGrid,
+  'ControlGrid': ControlGrid,
   'ActionPalette': ActionPalette,
   'ActionTile': ActionTile,
   'ActivationBlock': ActivationBlock,
@@ -474,7 +475,7 @@ export const COMPONENT_REGISTRY: Record<string, React.ComponentType<any>> = {
   'ControlButton': ControlButton,
   'CounterTemplate': CounterTemplate,
   'CraftingRecipe': CraftingRecipe,
-  'DPad': DPad,
+  'DPad': ControlGrid,
   'DamageNumber': DamageNumber,
   'DashboardGrid': DashboardGrid,
   'DashboardLayout': DashboardLayout,
@@ -731,7 +732,7 @@ export const COMPONENT_REGISTRY: Record<string, React.ComponentType<any>> = {
   'WizardProgress': WizardProgress,
   'WorldMapBoard': WorldMapBoard,
   'WorldMapTemplate': WorldMapTemplate,
-  'XPBar': XPBar,
+  'XPBar': HealthBar,
 
   // Semantic aliases
   'Text': TextPattern,

@@ -11,8 +11,7 @@
 // `@almadar/ui/components/molecules/game/three` subpath (see ./three/patterns.ts).
 // The pattern scanner reads that subpath directly, so no shadow export is needed.
 
-export { DPad, type DPadProps, type DPadDirection } from './DPad';
-export { ActionButtons, type ActionButtonsProps, type ActionButtonConfig } from './ActionButtons';
+export { ControlGrid, type ControlGridProps, type ControlGridButton, type ControlGridKind, type DPadDirection } from './ControlGrid';
 export { StatBadge, type StatBadgeProps } from './StatBadge';
 export { InventoryGrid, type InventoryGridProps, type InventoryGridItem } from './InventoryGrid';
 export { CardHand, type CardHandProps, type CardHandCard } from './CardHand';

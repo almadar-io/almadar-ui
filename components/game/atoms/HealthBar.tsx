@@ -1,13 +1,22 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
 
+// Generic ratio/progress bar — covers health (hearts/bar/numeric) and XP/progress (progress format with optional level badge).
 export interface HealthBarProps {
-  /** Current health value */
+  /** Current value */
   current: number;
-  /** Maximum health value */
+  /** Maximum value */
   max: number;
-  /** Display format */
-  format?: 'hearts' | 'bar' | 'numeric';
+  /** Display format.
+   * - `hearts` / `bar` / `numeric` — health display
+   * - `progress` — XP / generic progress bar with optional level badge and value label */
+  format?: 'hearts' | 'bar' | 'numeric' | 'progress';
+  /** Current level — shown as "Lv.N" badge when format="progress" */
+  level?: number;
+  /** Show value label below bar when format="progress" */
+  showLabel?: boolean;
+  /** Label suffix shown next to the value (e.g. "XP") when showLabel=true */
+  labelSuffix?: string;
   /** Size variant */
   size?: 'sm' | 'md' | 'lg';
   /** Additional CSS classes */
@@ -29,21 +38,24 @@ const heartIcon = (filled: boolean, size: string) => (
 );
 
 const sizeMap = {
-  sm: { heart: 'w-4 h-4', bar: 'h-2', text: 'text-sm' },
-  md: { heart: 'w-6 h-6', bar: 'h-3', text: 'text-base' },
-  lg: { heart: 'w-8 h-8', bar: 'h-4', text: 'text-lg' },
+  sm: { heart: 'w-4 h-4', bar: 'h-2', text: 'text-sm', label: 'text-xs', badge: 'text-xs px-1.5 py-0.5' },
+  md: { heart: 'w-6 h-6', bar: 'h-3', text: 'text-base', label: 'text-xs', badge: 'text-xs px-2 py-0.5' },
+  lg: { heart: 'w-8 h-8', bar: 'h-4', text: 'text-lg', label: 'text-sm', badge: 'text-sm px-2.5 py-1' },
 };
 
 export function HealthBar({
   current = 3,
   max = 5,
   format = 'hearts',
+  level,
+  showLabel = true,
+  labelSuffix,
   size = 'md',
   className,
   animated = true,
 }: HealthBarProps) {
   const sizes = sizeMap[size];
-  const percentage = Math.max(0, Math.min(100, (current / max) * 100));
+  const percentage = max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0;
 
   if (format === 'hearts') {
     return (
@@ -78,6 +90,46 @@ export function HealthBar({
           )}
           style={{ width: `${percentage}%` }}
         />
+      </div>
+    );
+  }
+
+  if (format === 'progress') {
+    return (
+      <div className={cn('flex items-center gap-2', className)}>
+        {level != null && (
+          <span
+            className={cn(
+              'flex-shrink-0 rounded-interactive font-bold',
+              'bg-accent text-accent-foreground border border-accent',
+              sizes.badge,
+            )}
+          >
+            Lv.{level}
+          </span>
+        )}
+        <div className="flex-1 flex flex-col gap-0.5">
+          <div
+            className={cn(
+              'relative w-full overflow-hidden rounded-full bg-muted border border-muted',
+              sizes.bar,
+            )}
+          >
+            <div
+              className={cn(
+                'absolute inset-y-0 left-0 rounded-full',
+                'bg-gradient-to-r from-accent to-info',
+                animated && 'transition-all duration-500 ease-out',
+              )}
+              style={{ width: `${percentage}%` }}
+            />
+          </div>
+          {showLabel && (
+            <span className={cn('text-foreground/70 tabular-nums', sizes.label)}>
+              {current} / {max}{labelSuffix ? ` ${labelSuffix}` : ''}
+            </span>
+          )}
+        </div>
       </div>
     );
   }

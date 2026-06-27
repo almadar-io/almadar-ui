@@ -6,6 +6,7 @@
  * @packageDocumentation
  */
 
+export { GameCard, type GameCardProps } from './GameCard';
 export { HealthBar, type HealthBarProps } from './HealthBar';
 export { ScoreDisplay, type ScoreDisplayProps } from './ScoreDisplay';
 export { ControlButton, type ControlButtonProps } from './ControlButton';
@@ -16,7 +17,6 @@ export { ResourceCounter, type ResourceCounterProps } from './ResourceCounter';
 export { ItemSlot, type ItemSlotProps } from './ItemSlot';
 export { TurnIndicator, type TurnIndicatorProps } from './TurnIndicator';
 export { ComboCounter, type ComboCounterProps } from './ComboCounter';
-export { XPBar, type XPBarProps } from './XPBar';
 export { WaypointMarker, type WaypointMarkerProps } from './WaypointMarker';
 export { StatusEffect, type StatusEffectProps } from './StatusEffect';
 export { DamageNumber, type DamageNumberProps } from './DamageNumber';

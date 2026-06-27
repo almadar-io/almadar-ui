@@ -6,6 +6,7 @@ import {
   useEventBus,
   type EventBusContextType,
 } from "../../../hooks/useEventBus";
+import { ChoiceButton } from "../atoms/ChoiceButton";
 
 export type MenuOption = EventPayload & {
   /** Optional ID (generated from index if not provided) */
@@ -46,13 +47,6 @@ export interface GameMenuProps {
   /** Additional CSS classes */
   className?: string;
 }
-
-const variantMap = {
-  primary:
-    "bg-[var(--color-primary)] hover:bg-info text-[var(--color-primary-foreground)] border-info shadow-lg shadow-info/25",
-  secondary: "bg-[var(--color-surface,#374151)] hover:bg-muted text-[var(--color-foreground)] border-muted",
-  ghost: "bg-transparent hover:bg-foreground/10 text-[var(--color-foreground)] border-foreground/20",
-};
 
 const DEFAULT_MENU_OPTIONS: MenuOption[] = [
   { label: 'New Game', event: 'NEW_GAME', variant: 'primary' },
@@ -142,27 +136,14 @@ export function GameMenu({
       {/* Menu Options */}
       <div className="flex flex-col gap-4 w-full max-w-md">
         {resolvedOptions.map((option, index) => (
-          <button
+          <ChoiceButton
             key={index}
-            onClick={() => handleOptionClick(option)}
+            text={option.label}
+            index={index + 1}
             disabled={option.disabled}
-            className={cn(
-              "w-full py-4 px-8 rounded-container border-2 font-bold text-lg",
-              "transition-all duration-200 transform",
-              "hover:scale-105 active:scale-95",
-              "focus:outline-none focus:ring-4 focus:ring-foreground/25",
-              variantMap[
-                (option.variant ?? "secondary") as keyof typeof variantMap
-              ] ?? variantMap.secondary,
-              option.disabled &&
-                "opacity-50 cursor-not-allowed hover:scale-100",
-            )}
-            style={{
-              animationDelay: `${index * 100}ms`,
-            }}
-          >
-            {option.label}
-          </button>
+            onClick={() => handleOptionClick(option)}
+            className="text-lg py-4 px-8"
+          />
         ))}
       </div>
 
