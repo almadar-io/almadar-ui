@@ -691,8 +691,10 @@ export function IsometricCanvas({
             const img = unitSpriteUrl ? getImage(unitSpriteUrl) : null;
             const unitDrawH = scaledFloorHeight * spriteHeightRatio * unitScale;
             const maxUnitW = scaledTileWidth * spriteMaxWidthRatio * unitScale;
-            // A unit is animated (sprite-sheet) iff its Asset metadata says so — no pixel probing.
-            const unitIsSheet = unit.sprite?.dimension === '2d' && (unit.sprite?.animations?.length ?? 0) > 0;
+            // Crop `unit.sprite.url` as an 8×5 sheet ONLY with a real `spriteSheet`
+            // atlas to crop from — `sprite.animations` metadata on a static
+            // `sprite.url` would otherwise draw a 1/8×1/5 sliver (GR-1).
+            const unitIsSheet = unit.spriteSheet?.url !== undefined;
             // Frame dimensions: fixed 8-col layout (SHEET_COLUMNS) for the crop math — same as before,
             // but detection is now metadata-driven, not pixel-dimension guessing.
             const SHEET_ROWS = 5;
