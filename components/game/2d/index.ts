@@ -102,29 +102,6 @@ export {
 // 2D Hooks
 // ---------------------------------------------------------------------------
 export { useCamera } from './useCamera';
-export {
-    useSpriteAnimations,
-    type UseSpriteAnimationsResult,
-    type UseSpriteAnimationsOptions,
-    type SheetUrlResolver,
-    type FrameDimsResolver,
-} from './useSpriteAnimations';
-export {
-    usePhysics2D,
-    type UsePhysics2DOptions,
-    type UsePhysics2DReturn,
-} from './usePhysics2D';
-
-// ---------------------------------------------------------------------------
-// Physics Managers
-// ---------------------------------------------------------------------------
-export {
-    PhysicsManager,
-    type Physics2DState,
-    type PhysicsBounds,
-    type PhysicsConfig,
-} from './PhysicsManager';
-
 // ---------------------------------------------------------------------------
 // Board Organisms (game-logic containers — templates are thin wrappers)
 // ---------------------------------------------------------------------------
