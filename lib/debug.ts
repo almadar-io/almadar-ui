@@ -34,7 +34,7 @@ export function isDebugEnabled(): boolean {
  * Variadic legacy debug. The first arg is the message; the rest is
  * stringified into the LogData. Routes through the shared gate.
  */
-export function debug(...args: unknown[]): void {
+export function debug(...args: LogMetaValue[]): void {
   if (!gateEnabled('DEBUG')) return;
   const [first, ...rest] = args;
   const message = typeof first === 'string' ? first : '<debug>';
@@ -55,21 +55,21 @@ export function debugGroupEnd(): void {
   if (gateEnabled('DEBUG')) console.groupEnd();
 }
 
-export function debugWarn(...args: unknown[]): void {
+export function debugWarn(...args: LogMetaValue[]): void {
   if (!gateEnabled('WARN')) return;
   const [first, ...rest] = args;
   const message = typeof first === 'string' ? first : '<warn>';
   log.warn(message, rest.length > 0 ? { args: formatArgs(rest) } : undefined);
 }
 
-export function debugError(...args: unknown[]): void {
+export function debugError(...args: LogMetaValue[]): void {
   if (!gateEnabled('ERROR')) return;
   const [first, ...rest] = args;
   const message = typeof first === 'string' ? first : '<error>';
   log.error(message, rest.length > 0 ? { args: formatArgs(rest) } : undefined);
 }
 
-export function debugTable(data: unknown): void {
+export function debugTable(data: LogMetaValue): void {
   // console.table has no logger equivalent; gate then pass through.
   if (gateEnabled('DEBUG')) console.table(data);
 }
@@ -87,14 +87,14 @@ export function debugTimeEnd(label: string): void {
 // `setNamespaceLevel('almadar:ui:debug:input', 'WARN')` can quiet just one.
 // =============================================================================
 
-export function debugInput(inputType: string, data: unknown): void {
+export function debugInput(inputType: string, data: LogMetaValue): void {
   inputLog.debug(inputType, { data: formatArgs([data]) });
 }
 
 export function debugCollision(
   entityA: { id?: string; type?: string },
   entityB: { id?: string; type?: string },
-  details?: unknown,
+  details?: LogMetaValue,
 ): void {
   collisionLog.debug('collision', () => ({
     a: entityA.type ?? entityA.id ?? null,
@@ -103,11 +103,11 @@ export function debugCollision(
   }));
 }
 
-export function debugPhysics(entityId: string, physics: unknown): void {
+export function debugPhysics(entityId: string, physics: LogMetaValue): void {
   physicsLog.debug('physics', { entityId, data: formatArgs([physics]) });
 }
 
-export function debugGameState(stateName: string, value: unknown): void {
+export function debugGameState(stateName: string, value: LogMetaValue): void {
   gameStateLog.debug(stateName, { value: formatArgs([value]) });
 }
 
@@ -124,11 +124,12 @@ type LogMetaValue =
   | { [k: string]: LogMetaValue }
   | readonly LogMetaValue[];
 
-function formatArgs(values: readonly unknown[]): LogMetaValue {
+function formatArgs(values: readonly LogMetaValue[]): LogMetaValue {
   if (values.length === 1) return toLogMetaValue(values[0]);
   return values.map(toLogMetaValue);
 }
 
+// eslint-disable-next-line almadar/no-unknown-type
 function toLogMetaValue(v: unknown): LogMetaValue {
   if (v === null || v === undefined) return v;
   if (v instanceof Error) return v;
@@ -137,7 +138,7 @@ function toLogMetaValue(v: unknown): LogMetaValue {
   if (Array.isArray(v)) return v.map(toLogMetaValue);
   if (t === 'object') {
     const out: Record<string, LogMetaValue> = {};
-    for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+    for (const [k, val] of Object.entries(v as Record<string, LogMetaValue>)) {
       out[k] = toLogMetaValue(val);
     }
     return out;

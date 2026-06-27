@@ -87,8 +87,6 @@ export interface GraphCanvasProps {
     linkOpacity?: number;
     /** Layout algorithm */
     layout?: "force" | "circular" | "grid";
-    /** Entity name for schema-driven auto-fetch */
-    entity?: string;
     /** Loading state */
     isLoading?: boolean;
     /** Error state */
@@ -161,7 +159,6 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     nodeSpacing = 28,
     linkOpacity = 0.18,
     layout = "force",
-    entity,
     isLoading = false,
     error,
     className,

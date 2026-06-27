@@ -129,8 +129,6 @@ export interface ChartProps {
     drillEvent?: string;
     /** Top-level chart actions (export, refresh, etc.) */
     actions?: readonly ChartAction[];
-    /** Entity name for schema-driven auto-fetch */
-    entity?: string;
     /** Loading state */
     isLoading?: boolean;
     /** Error state */
@@ -777,7 +775,6 @@ export const Chart: React.FC<ChartProps> = ({
     timeAxis = false,
     drillEvent,
     actions,
-    entity,
     isLoading = false,
     error,
     className,

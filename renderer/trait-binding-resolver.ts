@@ -24,6 +24,7 @@
  */
 
 import React from "react";
+import type { FieldValue } from "@almadar/core";
 import { TraitFrame } from "../components/core/atoms/TraitFrame";
 import { createLogger } from "@almadar/logger";
 
@@ -62,10 +63,12 @@ const DEFAULT_DEPTH = 8;
  * `content.props` with `currentSlot` bound to the slot whose render-ui
  * is being composed.
  */
+type PatternTreeNode = FieldValue | React.ReactElement | undefined;
+
 export function resolveTraitBindingsInPattern(
-  value: unknown,
+  value: PatternTreeNode,
   ctx: ResolveTraitBindingsContext,
-): unknown {
+): PatternTreeNode {
   const depth = ctx.depth ?? DEFAULT_DEPTH;
   if (depth <= 0) {
     log.warn("Depth cap hit; truncating pattern tree walk.");
@@ -87,20 +90,20 @@ export function resolveTraitBindingsInPattern(
 
   if (Array.isArray(value)) {
     return value.map((item) =>
-      resolveTraitBindingsInPattern(item, { ...ctx, depth: depth - 1 }),
-    );
+      resolveTraitBindingsInPattern(item as PatternTreeNode, { ...ctx, depth: depth - 1 }),
+    ) as FieldValue[];
   }
 
-  if (value && typeof value === "object") {
-    const source = value as Record<string, unknown>;
-    const out: Record<string, unknown> = {};
+  if (value && typeof value === "object" && !("type" in value && "props" in value && "key" in value)) {
+    const source = value as Record<string, PatternTreeNode>;
+    const out: Record<string, PatternTreeNode> = {};
     for (const key of Object.keys(source)) {
       out[key] = resolveTraitBindingsInPattern(source[key], {
         ...ctx,
         depth: depth - 1,
       });
     }
-    return out;
+    return out as FieldValue;
   }
 
   return value;
@@ -111,6 +114,6 @@ export function resolveTraitBindingsInPattern(
  * would handle? Useful for consumers that need to treat the trait case
  * specially before handing the string back to the walker.
  */
-export function isTraitBinding(value: unknown): value is string {
+export function isTraitBinding(value: PatternTreeNode): value is string {
   return typeof value === "string" && TRAIT_BINDING_RE.test(value);
 }

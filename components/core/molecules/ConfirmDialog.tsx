@@ -50,8 +50,6 @@ export interface ConfirmDialogProps {
   isLoading?: boolean;
   /** Error state */
   error?: UiError | null;
-  /** Entity name for schema-driven auto-fetch */
-  entity?: string;
   /** Additional CSS classes */
   className?: string;
 }
@@ -101,7 +99,6 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   size = "sm",
   isLoading = false,
   error: _error,
-  entity: _entity,
   className,
 }) => {
   const config = variantConfig[variant];

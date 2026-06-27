@@ -18,7 +18,7 @@
  */
 
 import React, { useEffect, useRef, type ReactNode } from 'react';
-import type { BusEvent } from '@almadar/core';
+import type { BusEvent, FieldValue, EventPayload } from '@almadar/core';
 import { useEventBus } from '../hooks/useEventBus';
 import {
   recordTransition,
@@ -48,7 +48,7 @@ interface TransitionObserver {
     guardResult?: boolean;
     effects: Array<{
       type: string;
-      args: unknown[];
+      args: FieldValue[];
       status: 'executed' | 'failed' | 'skipped';
       error?: string;
       durationMs?: number;
@@ -191,7 +191,7 @@ export function VerificationProvider({
 
         // Extract client effects from payload
         const clientEffectsArr = Array.isArray(payload['clientEffects'])
-          ? payload['clientEffects'] as Array<Record<string, unknown>>
+          ? payload['clientEffects'] as Array<EventPayload>
           : [];
         const effects: EffectTrace[] = clientEffectsArr.map((e) => ({
           type: String(e['type'] ?? 'unknown'),
@@ -201,7 +201,7 @@ export function VerificationProvider({
 
         // Extract effectResults (persist, fetch, call-service results from server)
         const effectResults = Array.isArray(payload['effectResults'])
-          ? payload['effectResults'] as Array<Record<string, unknown>>
+          ? payload['effectResults'] as Array<EventPayload>
           : [];
         for (const er of effectResults) {
           effects.push({
@@ -214,7 +214,7 @@ export function VerificationProvider({
 
         // Build data entity counts from response data
         const dataEntities: Record<string, number> = {};
-        const responseData = payload['data'] as Record<string, unknown[]> | undefined;
+        const responseData = payload['data'] as Record<string, FieldValue[]> | undefined;
         if (responseData && typeof responseData === 'object') {
           for (const [entityName, records] of Object.entries(responseData)) {
             dataEntities[entityName] = Array.isArray(records) ? records.length : 0;
@@ -227,7 +227,7 @@ export function VerificationProvider({
         // returns these as `Array<{event, payload, source}>`; verifiers
         // consume them as `string[]` (just the event name).
         const emittedEventsRaw = Array.isArray(payload['emittedEvents'])
-          ? (payload['emittedEvents'] as Array<{ event?: unknown }>)
+          ? (payload['emittedEvents'] as Array<EventPayload>)
           : [];
         const emittedEvents: string[] = emittedEventsRaw
           .map((e) => (typeof e.event === 'string' ? e.event : null))

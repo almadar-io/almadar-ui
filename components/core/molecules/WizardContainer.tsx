@@ -164,8 +164,6 @@ export interface WizardContainerProps {
   isLoading?: boolean;
   /** Error state */
   error?: UiError | null;
-  /** Entity type name (schema-driven) */
-  entity?: string;
 }
 
 /**
@@ -180,7 +178,6 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
   allowBack = true,
   compact = false,
   className,
-  entity: _entity, // Accept but don't use directly yet
 }) => {
   const { t } = useTranslate();
   const [internalStep, setInternalStep] = useState(0);

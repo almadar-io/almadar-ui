@@ -47,8 +47,6 @@ export interface OrbitalVisualizationProps {
   isLoading?: boolean;
   /** Error state */
   error?: UiError | null;
-  /** Entity name for schema-driven auto-fetch */
-  entity?: string;
 }
 
 interface OrbitalConfig {
@@ -182,7 +180,6 @@ interface OrbitalSphereProps {
   className?: string;
   isLoading?: boolean;
   error?: UiError | null;
-  entity?: string;
 }
 
 /** Renders a single sphere lobe */
@@ -225,7 +222,6 @@ interface DumbbellOrbitalProps {
   className?: string;
   isLoading?: boolean;
   error?: UiError | null;
-  entity?: string;
 }
 
 /** Renders a p-orbital dumbbell shape */
@@ -303,7 +299,6 @@ interface CloverleafOrbitalProps {
   className?: string;
   isLoading?: boolean;
   error?: UiError | null;
-  entity?: string;
 }
 
 /** Renders a d-orbital cloverleaf shape */

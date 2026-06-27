@@ -132,14 +132,15 @@ function kebabToPascal(name: string): string {
 // Each resolved icon is a Suspense-wrapped React.lazy that loads the library,
 // picks the component, and falls back to lucide when the family lacks the icon.
 
-const libPromises = new Map<string, Promise<Record<string, unknown>>>();
+type IconModuleNamespace = Record<string, React.ComponentType>;
+const libPromises = new Map<string, Promise<IconModuleNamespace>>();
 function loadLib(
   key: string,
-  importer: () => Promise<unknown>,
-): Promise<Record<string, unknown>> {
+  importer: () => Promise<IconModuleNamespace>,
+): Promise<IconModuleNamespace> {
   let p = libPromises.get(key);
   if (!p) {
-    p = importer().then((m) => m as Record<string, unknown>);
+    p = importer();
     libPromises.set(key, p);
   }
   return p;
@@ -147,8 +148,8 @@ function loadLib(
 
 function lazyFamilyIcon(
   libKey: string,
-  importer: () => Promise<unknown>,
-  pick: (lib: Record<string, unknown>) => React.ComponentType<RenderedIconProps> | null,
+  importer: () => Promise<IconModuleNamespace>,
+  pick: (lib: IconModuleNamespace) => React.ComponentType<RenderedIconProps> | null,
   fallbackName: string,
   family: IconFamily,
 ): React.ComponentType<RenderedIconProps> {
@@ -198,7 +199,7 @@ const lucideAliases: Record<string, LucideIcon> = {
 function resolveLucide(name: string): LucideIcon {
   if (lucideAliases[name]) return lucideAliases[name];
   const pascal = kebabToPascal(name);
-  const lucideMap = LucideIcons as unknown as Record<string, LucideIcon>;
+  const lucideMap = LucideIcons as Record<string, LucideIcon>;
   const direct = lucideMap[pascal];
   if (direct && typeof direct === 'object') return direct;
   const asIs = lucideMap[name];
@@ -394,10 +395,10 @@ function resolvePhosphor(
   const target = phosphorAliases[name] ?? kebabToPascal(name);
   return lazyFamilyIcon(
     'phosphor',
-    () => import('@phosphor-icons/react'),
+    () => import('@phosphor-icons/react') as Promise<IconModuleNamespace>,
     (lib) => {
       const PhosphorComp = lib[target];
-      if (!PhosphorComp || typeof PhosphorComp !== 'object') return null;
+      if (!PhosphorComp) return null;
       const Component = PhosphorComp as React.ComponentType<{
         weight?: PhosphorWeight;
         size?: number | string;
@@ -604,10 +605,10 @@ function resolveTabler(
   const target = `Icon${suffix}`;
   return lazyFamilyIcon(
     'tabler',
-    () => import('@tabler/icons-react'),
+    () => import('@tabler/icons-react') as Promise<IconModuleNamespace>,
     (lib) => {
       const TablerComp = lib[target];
-      if (!TablerComp || typeof TablerComp !== 'object') return null;
+      if (!TablerComp) return null;
       const Component = TablerComp as React.ComponentType<{
         stroke?: number;
         size?: number | string;
@@ -816,10 +817,10 @@ function resolveFa(
   const target = `Fa${suffix}`;
   return lazyFamilyIcon(
     'fa',
-    () => import('react-icons/fa'),
+    () => import('react-icons/fa') as Promise<IconModuleNamespace>,
     (lib) => {
       const FaComp = lib[target];
-      if (!FaComp || typeof FaComp !== 'function') return null;
+      if (!FaComp) return null;
       const Component = FaComp as React.ComponentType<{
         size?: number | string;
         className?: string;

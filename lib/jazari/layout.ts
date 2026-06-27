@@ -8,6 +8,7 @@
  * 4. Guard icons at 30% along arm, effect icons at 70%.
  */
 
+import type { FieldValue } from '@almadar/core';
 import type {
   JazariLayout,
   JazariGearLayout,
@@ -43,8 +44,8 @@ export interface LayoutTransition {
   from: string;
   to: string;
   event: string;
-  guard?: unknown;
-  effects?: unknown[];
+  guard?: FieldValue;
+  effects?: FieldValue[];
 }
 
 export interface LayoutInput {

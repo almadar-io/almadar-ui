@@ -6,7 +6,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import type { OrbitalSchema } from '@almadar/core';
+import type { OrbitalSchema, FieldValue } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 
 const log = createLogger('almadar:ui:deep-agent');
@@ -19,7 +19,7 @@ export interface DeepAgentActionRequest {
   id: string;
   type: string;
   tool: string;
-  args: Record<string, unknown>;
+  args: Record<string, FieldValue>;
   description?: string;
   allowedDecisions: ('approve' | 'edit' | 'reject')[];
   status: 'pending' | 'approved' | 'rejected' | 'edited';
@@ -58,10 +58,10 @@ export interface UseDeepAgentGenerationResult {
   error: string | null;
   interrupt: DeepAgentInterrupt | null;
   generate: (prompt: string) => Promise<OrbitalSchema | null>;
-  startGeneration: (skill: string, prompt: string, options?: Record<string, unknown>) => Promise<void>;
+  startGeneration: (skill: string, prompt: string, options?: Record<string, FieldValue>) => Promise<void>;
   cancelGeneration: () => void;
   clearRequests: () => void;
-  submitInterruptDecisions: (decisions: unknown[]) => void;
+  submitInterruptDecisions: (decisions: FieldValue[]) => void;
 }
 
 // =============================================================================
@@ -118,7 +118,7 @@ export function useDeepAgentGeneration(): UseDeepAgentGenerationResult {
     }
   }, []);
 
-  const startGeneration = useCallback(async (skill: string, prompt: string, _options?: Record<string, unknown>): Promise<void> => {
+  const startGeneration = useCallback(async (skill: string, prompt: string, _options?: Record<string, FieldValue>): Promise<void> => {
     log.debug('Starting generation with skill', { skill });
     await generate(prompt);
   }, [generate]);
@@ -143,7 +143,7 @@ export function useDeepAgentGeneration(): UseDeepAgentGenerationResult {
     setIsComplete(false);
   }, []);
 
-  const submitInterruptDecisions = useCallback((decisions: unknown[]) => {
+  const submitInterruptDecisions = useCallback((decisions: FieldValue[]) => {
     log.debug('Submitting interrupt decisions', () => ({ decisions: JSON.stringify(decisions), count: decisions.length }));
     setInterrupt(null);
   }, []);

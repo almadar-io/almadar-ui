@@ -8,6 +8,7 @@
  * when using useSyncExternalStore.
  */
 
+import type { FieldValue } from '@almadar/core';
 import {
     type EntityFilterValue,
     type FilterOperator,
@@ -23,7 +24,7 @@ export { applyFilters, createFilter };
 export interface Entity {
   id: string;
   type: string;
-  [key: string]: unknown;
+  [key: string]: FieldValue | undefined;
 }
 
 type Listener = () => void;
@@ -88,7 +89,7 @@ export function getSingleton(type: string): Entity | undefined {
 /**
  * Spawn a new entity
  */
-export function spawnEntity(config: { type: string; id?: string; [key: string]: unknown }): string {
+export function spawnEntity(config: { type: string; id?: string; [key: string]: FieldValue | undefined }): string {
   const id = config.id ?? `entity_${++idCounter}`;
   const entity: Entity = { ...config, id };
   // Create new Map to trigger React rerender
@@ -157,7 +158,7 @@ export function clearEntities(): void {
 export function setFilter(
   entityType: string,
   field: string,
-  value: unknown,
+  value: FieldValue,
   operator: FilterOperator = 'eq',
   targetField?: string
 ): void {

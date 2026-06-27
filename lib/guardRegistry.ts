@@ -4,13 +4,15 @@
  * @packageDocumentation
  */
 
+import type { FieldValue } from '@almadar/core';
+
 export interface GuardContext {
   traitName?: string;
   type?: "transition" | "tick";
   transitionFrom?: string;
   transitionTo?: string;
   tickName?: string;
-  [key: string]: unknown;
+  [key: string]: FieldValue;
 }
 
 export interface GuardEvaluation {
@@ -22,7 +24,7 @@ export interface GuardEvaluation {
   context: GuardContext;
   timestamp: number;
   /** Input values used in guard evaluation */
-  inputs: Record<string, unknown>;
+  inputs: Record<string, FieldValue>;
 }
 
 type ChangeListener = () => void;

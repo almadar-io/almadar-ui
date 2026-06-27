@@ -13,6 +13,7 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
+import type { FieldValue } from '@almadar/core';
 import { useEventBus } from './useEventBus';
 import { ALMADAR_DND_MIME, type DraggablePayload } from './useDraggable';
 
@@ -48,9 +49,9 @@ function parsePayload(e: React.DragEvent): DraggablePayload | null {
   try {
     const raw = e.dataTransfer.getData(ALMADAR_DND_MIME);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const parsed = JSON.parse(raw) as { kind?: string; data?: FieldValue };
     if (typeof parsed.kind !== 'string' || !parsed.data) return null;
-    return parsed as unknown as DraggablePayload;
+    return parsed as DraggablePayload;
   } catch {
     return null;
   }

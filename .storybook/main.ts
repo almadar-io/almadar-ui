@@ -54,7 +54,8 @@ const config: StorybookConfig = {
       ],
       resolve: {
         alias: {
-          // Self-referencing tsconfig path alias for lazy three.js imports
+          // Self-referencing subpath alias for lazy three.js imports (both legacy and current paths)
+          '@almadar/ui/components/molecules/game/three': path.resolve(__dirname, '../components/game/3d/index.ts'),
           '@almadar/ui/components/organisms/game/three': path.resolve(__dirname, '../components/game/3d/index.ts'),
         },
         // Dedupe these packages to fix version conflicts

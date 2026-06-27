@@ -10,6 +10,7 @@
  * @packageDocumentation
  */
 
+import type { FieldValue } from '@almadar/core';
 import type {
   ClientEffect,
   ClientEffectExecutorConfig,
@@ -89,7 +90,7 @@ function executeEffect(
     }
 
     case 'navigate': {
-      const [path, params] = args as [string, Record<string, unknown>?];
+      const [path, params] = args as [string, Record<string, FieldValue>?];
       executeNavigate(path, params, config);
       break;
     }
@@ -101,7 +102,7 @@ function executeEffect(
     }
 
     case 'emit': {
-      const [event, payload] = args as [string, unknown?];
+      const [event, payload] = args as [string, FieldValue?];
       executeEmit(event, payload, config);
       break;
     }
@@ -133,7 +134,7 @@ function executeRenderUI(
  */
 function executeNavigate(
   path: string,
-  params: Record<string, unknown> | undefined,
+  params: Record<string, FieldValue> | undefined,
   config: ClientEffectExecutorConfig
 ): void {
   config.navigate(path, params);
@@ -155,7 +156,7 @@ function executeNotify(
  */
 function executeEmit(
   event: string,
-  payload: unknown | undefined,
+  payload: FieldValue | undefined,
   config: ClientEffectExecutorConfig
 ): void {
   config.eventBus.emit(event, payload);
@@ -170,7 +171,7 @@ function executeEmit(
  * Handles unknown effect formats gracefully.
  */
 export function parseClientEffect(
-  raw: unknown[]
+  raw: FieldValue[]
 ): ClientEffect | null {
   if (!Array.isArray(raw) || raw.length < 1) {
     log.warn('Invalid effect format', () => ({ raw: JSON.stringify(raw) }));
@@ -188,7 +189,7 @@ export function parseClientEffect(
     case 'render-ui':
       return ['render-ui', args[0] as string, args[1] as PatternConfig | null];
     case 'navigate':
-      return ['navigate', args[0] as string, args[1] as Record<string, unknown>];
+      return ['navigate', args[0] as string, args[1] as Record<string, FieldValue>];
     case 'notify':
       return ['notify', args[0] as string, args[1] as NotifyOptions];
     case 'emit':
@@ -204,14 +205,14 @@ export function parseClientEffect(
  * Filters out invalid effects.
  */
 export function parseClientEffects(
-  raw: unknown[] | undefined
+  raw: FieldValue[] | undefined
 ): ClientEffect[] {
   if (!raw || !Array.isArray(raw)) {
     return [];
   }
 
   return raw
-    .map((effect) => parseClientEffect(effect as unknown[]))
+    .map((effect) => parseClientEffect(effect as FieldValue[]))
     .filter((effect): effect is ClientEffect => effect !== null);
 }
 
@@ -225,9 +226,9 @@ export function parseClientEffects(
 export function filterEffectsByType<T extends ClientEffect[0]>(
   effects: ClientEffect[],
   type: T
-): Extract<ClientEffect, [T, ...unknown[]]>[] {
+): Extract<ClientEffect, [T, ...FieldValue[]]>[] {
   return effects.filter(
-    (effect): effect is Extract<ClientEffect, [T, ...unknown[]]> =>
+    (effect): effect is Extract<ClientEffect, [T, ...FieldValue[]]> =>
       effect[0] === type
   );
 }
@@ -246,7 +247,7 @@ export function getRenderUIEffects(
  */
 export function getNavigateEffects(
   effects: ClientEffect[]
-): Array<['navigate', string, Record<string, unknown>?]> {
+): Array<['navigate', string, Record<string, FieldValue>?]> {
   return filterEffectsByType(effects, 'navigate');
 }
 
@@ -264,6 +265,6 @@ export function getNotifyEffects(
  */
 export function getEmitEffects(
   effects: ClientEffect[]
-): Array<['emit', string, unknown?]> {
+): Array<['emit', string, FieldValue?]> {
   return filterEffectsByType(effects, 'emit');
 }

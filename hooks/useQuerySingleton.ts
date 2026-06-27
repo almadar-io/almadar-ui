@@ -10,13 +10,14 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
+import type { FieldValue } from '@almadar/core';
 
 /**
  * Query state for filters and search
  */
 export interface QueryState {
   search?: string;
-  filters?: Record<string, unknown>;
+  filters?: Record<string, FieldValue>;
   sortField?: string;
   sortDirection?: 'asc' | 'desc';
 }
@@ -26,7 +27,7 @@ export interface QueryState {
  */
 export interface QuerySingletonEntity {
   name: string;
-  fields: Record<string, unknown>;
+  fields: Record<string, FieldValue>;
 }
 
 /**
@@ -44,9 +45,9 @@ export interface QuerySingletonState {
   /** Set search term */
   setSearch: (value: string) => void;
   /** Current filters */
-  filters: Record<string, unknown>;
+  filters: Record<string, FieldValue>;
   /** Set a filter value */
-  setFilter: (key: string, value: unknown) => void;
+  setFilter: (key: string, value: FieldValue) => void;
   /** Clear all filters */
   clearFilters: () => void;
   /** Current sort field */
@@ -60,7 +61,7 @@ export interface QuerySingletonState {
 // In-memory store for query singletons (keyed by query name)
 const queryStores = new Map<string, {
   search: string;
-  filters: Record<string, unknown>;
+  filters: Record<string, FieldValue>;
   sortField?: string;
   sortDirection?: 'asc' | 'desc';
   listeners: Set<() => void>;
@@ -122,7 +123,7 @@ export function useQuerySingleton(query?: string): QuerySingletonState | null {
     notifyListeners();
   }, [store, notifyListeners]);
 
-  const setFilter = useCallback((key: string, value: unknown) => {
+  const setFilter = useCallback((key: string, value: FieldValue) => {
     store.filters = { ...store.filters, [key]: value };
     notifyListeners();
   }, [store, notifyListeners]);

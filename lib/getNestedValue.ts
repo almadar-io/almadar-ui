@@ -9,14 +9,6 @@ import type { FieldValue } from '@almadar/core';
  * @packageDocumentation
  */
 
-export function getNestedValue(
-  obj: Record<string, FieldValue | undefined> | null | undefined,
-  path: string
-): FieldValue | undefined;
-export function getNestedValue(
-  obj: Record<string, unknown> | null | undefined,
-  path: string
-): unknown;
 /**
  * Get a nested value from an object using dot-notation path.
  *
@@ -31,9 +23,9 @@ export function getNestedValue(
  * getNestedValue(data, "company.missing");      // => undefined
  */
 export function getNestedValue(
-  obj: Record<string, unknown> | null | undefined,
+  obj: Record<string, FieldValue | undefined> | null | undefined,
   path: string
-): unknown {
+): FieldValue | undefined {
   if (obj === null || obj === undefined || !path) {
     return undefined;
   }
@@ -44,7 +36,7 @@ export function getNestedValue(
   }
 
   const parts = path.split('.');
-  let value: unknown = obj;
+  let value: FieldValue | Record<string, FieldValue> = obj as Record<string, FieldValue>;
 
   for (const part of parts) {
     if (value === null || value === undefined) {
@@ -53,7 +45,7 @@ export function getNestedValue(
     if (typeof value !== 'object') {
       return undefined;
     }
-    value = (value as Record<string, unknown>)[part];
+    value = (value as Record<string, FieldValue>)[part];
   }
 
   return value;

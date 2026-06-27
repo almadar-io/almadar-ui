@@ -12,6 +12,7 @@
  * @packageDocumentation
  */
 
+import type { EntityRow, FieldValue } from '@almadar/core';
 import type { DataContext, DataResolution } from './types';
 import { createLogger } from '@almadar/logger';
 
@@ -128,9 +129,9 @@ export function resolveEntityDataWithQuery(
  * Simple equality-based filtering.
  */
 function applyFilters(
-  data: unknown[],
-  filters: Record<string, unknown>
-): unknown[] {
+  data: EntityRow[],
+  filters: Record<string, FieldValue>
+): EntityRow[] {
   if (!filters || Object.keys(filters).length === 0) {
     return data;
   }
@@ -140,7 +141,6 @@ function applyFilters(
       return false;
     }
 
-    const record = item as Record<string, unknown>;
     return Object.entries(filters).every(([key, value]) => {
       // Handle undefined/null filter values (match all)
       if (value === undefined || value === null) {
@@ -148,7 +148,7 @@ function applyFilters(
       }
 
       // Get the record value
-      const recordValue = record[key];
+      const recordValue = item[key];
 
       // Handle array values (check if recordValue is in the array)
       if (Array.isArray(value)) {
@@ -180,16 +180,10 @@ export function resolveEntityById(
   entityName: string,
   id: string | number,
   context: DataContext
-): unknown | null {
+): EntityRow | null {
   const { data } = resolveEntityData(entityName, context);
 
-  return data.find((item) => {
-    if (typeof item !== 'object' || item === null) {
-      return false;
-    }
-    const record = item as Record<string, unknown>;
-    return record.id === id || record._id === id;
-  }) ?? null;
+  return data.find((item) => item.id === id || item['_id'] === id) ?? null;
 }
 
 /**
@@ -198,7 +192,7 @@ export function resolveEntityById(
 export function resolveEntityCount(
   entityName: string,
   context: DataContext,
-  filters?: Record<string, unknown>
+  filters?: Record<string, FieldValue>
 ): number {
   const { data } = resolveEntityData(entityName, context);
 
@@ -225,7 +219,7 @@ export function hasEntities(
  * Convenience function for compiled shells.
  */
 export function createFetchedDataContext(
-  data: Record<string, unknown[]>
+  data: Record<string, EntityRow[]>
 ): DataContext {
   return { fetchedData: data };
 }

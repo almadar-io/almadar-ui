@@ -7,6 +7,7 @@
 
 import { useState, useCallback } from 'react';
 import type { DeepAgentInterrupt } from './useDeepAgentGeneration';
+import type { FieldValue, OrbitalSchema } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 
 const log = createLogger('almadar:ui:agent-chat');
@@ -24,8 +25,8 @@ export type FileOperation = 'ls' | 'read_file' | 'write_file' | 'edit_file';
 // Activity type matches ActivityItem from AgentActivityFeed
 export type Activity =
   | { type: 'message'; role: AvatarRole; content: string; timestamp: number; isStreaming?: boolean }
-  | { type: 'tool_call'; tool: string; args: Record<string, unknown>; timestamp: number; isExecuting?: boolean }
-  | { type: 'tool_result'; tool: string; result: unknown; success: boolean; timestamp: number }
+  | { type: 'tool_call'; tool: string; args: Record<string, FieldValue>; timestamp: number; isExecuting?: boolean }
+  | { type: 'tool_result'; tool: string; result: FieldValue | null; success: boolean; timestamp: number }
   | { type: 'file_operation'; operation: FileOperation; path: string; success?: boolean; timestamp: number }
   | { type: 'schema_diff'; filePath: string; hunks: DiffHunk[]; timestamp: number }
   | { type: 'error'; message: string; code?: string; timestamp: number };
@@ -72,8 +73,8 @@ export type AgentStatus = 'idle' | 'running' | 'complete' | 'error' | 'interrupt
 
 export interface UseAgentChatOptions {
   appId?: string;
-  onComplete?: (schema?: unknown) => void;
-  onSchemaChange?: (diff?: unknown) => void;
+  onComplete?: (schema?: OrbitalSchema) => void;
+  onSchemaChange?: (diff?: OrbitalSchema) => void;
   onError?: (error: Error | string) => void;
 }
 
@@ -88,9 +89,9 @@ export interface UseAgentChatResult {
   threadId: string | null;
   interrupt: DeepAgentInterrupt | null;
   sendMessage: (content: string) => Promise<void>;
-  startGeneration: (skill: string | string[], prompt: string, options?: Record<string, unknown>) => Promise<void>;
+  startGeneration: (skill: string | string[], prompt: string, options?: Record<string, FieldValue>) => Promise<void>;
   continueConversation: (message: string | string[]) => Promise<void>;
-  resumeWithDecision: (decisions: unknown[]) => Promise<void>;
+  resumeWithDecision: (decisions: FieldValue[]) => Promise<void>;
   cancel: () => void;
   clearMessages: () => void;
   clearHistory: () => void;
@@ -144,7 +145,7 @@ export function useAgentChat(options?: UseAgentChatOptions): UseAgentChatResult 
     }
   }, [options]);
 
-  const startGeneration = useCallback(async (skill: string | string[], prompt: string, genOptions?: Record<string, unknown>) => {
+  const startGeneration = useCallback(async (skill: string | string[], prompt: string, genOptions?: Record<string, FieldValue>) => {
     setStatus('running');
     setIsLoading(true);
     setError(null);
@@ -169,7 +170,7 @@ export function useAgentChat(options?: UseAgentChatOptions): UseAgentChatResult 
     // TODO: Implement actual continue conversation
   }, []);
 
-  const resumeWithDecision = useCallback(async (decisions: unknown[]) => {
+  const resumeWithDecision = useCallback(async (decisions: FieldValue[]) => {
     log.debug('Resume with decision', () => ({ decisions: JSON.stringify(decisions), count: decisions.length }));
     setInterrupt(null);
     // TODO: Implement actual resume with decision

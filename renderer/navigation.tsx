@@ -19,7 +19,7 @@
  */
 
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
-import type { OrbitalSchema, OrbitalPage, Orbital } from '@almadar/core';
+import type { OrbitalSchema, OrbitalPage, Orbital, FieldValue } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 
 const log = createLogger('almadar:ui:navigation');
@@ -114,12 +114,12 @@ function isInlineOrbital(orbital: Orbital): orbital is Orbital & { pages?: Orbit
 /**
  * Type guard for inline page (not a reference)
  */
-function isInlinePage(page: unknown): page is OrbitalPage {
+function isInlinePage(page: OrbitalPage | null | undefined): page is OrbitalPage {
     return (
         typeof page === 'object' &&
         page !== null &&
         'name' in page &&
-        typeof (page as Record<string, unknown>).name === 'string'
+        typeof (page as OrbitalPage).name === 'string'
     );
 }
 
@@ -236,7 +236,7 @@ export interface NavigationState {
     /** Current path (for URL sync) */
     currentPath: string;
     /** Payload to pass to INIT when page loads */
-    initPayload: Record<string, unknown>;
+    initPayload: Record<string, FieldValue>;
     /** Navigation counter (increments on each navigation) */
     navigationId: number;
 }
@@ -245,9 +245,9 @@ export interface NavigationContextValue {
     /** Current navigation state */
     state: NavigationState;
     /** Navigate to a path with optional payload */
-    navigateTo: (path: string, payload?: Record<string, unknown>) => void;
+    navigateTo: (path: string, payload?: Record<string, FieldValue>) => void;
     /** Navigate to a page by name with optional payload */
-    navigateToPage: (pageName: string, payload?: Record<string, unknown>) => void;
+    navigateToPage: (pageName: string, payload?: Record<string, FieldValue>) => void;
     /** The schema being navigated */
     schema: OrbitalSchema;
     /** Whether navigation is ready (schema loaded) */
@@ -268,7 +268,7 @@ export interface NavigationProviderProps {
     /** Whether to update browser URL on navigation (default: true) */
     updateUrl?: boolean;
     /** Callback when navigation occurs */
-    onNavigate?: (pageName: string, path: string, payload: Record<string, unknown>) => void;
+    onNavigate?: (pageName: string, path: string, payload: Record<string, FieldValue>) => void;
     /** Children */
     children: React.ReactNode;
 }
@@ -326,7 +326,7 @@ export function NavigationProvider({
      */
     const navigateTo = useCallback((
         path: string,
-        payload?: Record<string, unknown>
+        payload?: Record<string, FieldValue>
     ) => {
         const result = findPageByPath(schema, path);
 
@@ -377,7 +377,7 @@ export function NavigationProvider({
      */
     const navigateToPage = useCallback((
         pageName: string,
-        payload?: Record<string, unknown>
+        payload?: Record<string, FieldValue>
     ) => {
         const result = findPageByName(schema, pageName);
 
@@ -446,10 +446,10 @@ export function useNavigation(): NavigationContextValue | null {
  * Hook to get the navigateTo function.
  * Returns a no-op function if not within NavigationProvider.
  */
-export function useNavigateTo(): (path: string, payload?: Record<string, unknown>) => void {
+export function useNavigateTo(): (path: string, payload?: Record<string, FieldValue>) => void {
     const context = useContext(NavigationContext);
 
-    const noOp = useCallback((path: string, _payload?: Record<string, unknown>) => {
+    const noOp = useCallback((path: string, _payload?: Record<string, FieldValue>) => {
         log.warn('navigateTo called outside NavigationProvider', { path });
     }, []);
 
@@ -467,7 +467,7 @@ export function useNavigationState(): NavigationState | null {
 /**
  * Hook to get the current INIT payload (for passing to trait INIT events).
  */
-export function useInitPayload(): Record<string, unknown> {
+export function useInitPayload(): Record<string, FieldValue> {
     const context = useContext(NavigationContext);
     return context?.state.initPayload || {};
 }

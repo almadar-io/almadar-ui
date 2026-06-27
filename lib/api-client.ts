@@ -7,6 +7,8 @@
  * @packageDocumentation
  */
 
+import type { FieldValue } from '@almadar/core';
+
 const API_BASE_URL = (typeof process !== 'undefined' && process.env?.VITE_API_URL)
   ? process.env.VITE_API_URL
   : '/api';
@@ -86,7 +88,7 @@ export const apiClient = {
   /**
    * POST request
    */
-  async post<T>(endpoint: string, data?: unknown): Promise<T> {
+  async post<T>(endpoint: string, data?: Record<string, FieldValue>): Promise<T> {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'POST',
       headers: getHeaders(),
@@ -98,7 +100,7 @@ export const apiClient = {
   /**
    * PUT request
    */
-  async put<T>(endpoint: string, data?: unknown): Promise<T> {
+  async put<T>(endpoint: string, data?: Record<string, FieldValue>): Promise<T> {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'PUT',
       headers: getHeaders(),
@@ -110,7 +112,7 @@ export const apiClient = {
   /**
    * PATCH request
    */
-  async patch<T>(endpoint: string, data?: unknown): Promise<T> {
+  async patch<T>(endpoint: string, data?: Record<string, FieldValue>): Promise<T> {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'PATCH',
       headers: getHeaders(),

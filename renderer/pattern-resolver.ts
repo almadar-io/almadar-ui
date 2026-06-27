@@ -10,6 +10,7 @@
  * @packageDocumentation
  */
 
+import type { FieldValue } from '@almadar/core';
 import type { PatternPropDef } from '@almadar/patterns';
 import type { PatternConfig, ResolvedPattern } from './types';
 import { createLogger } from '@almadar/logger';
@@ -135,8 +136,8 @@ export function resolvePattern(config: PatternConfig): ResolvedPattern {
  */
 function validatePatternProps(
   patternType: string,
-  props: Record<string, unknown>
-): Record<string, unknown> {
+  props: Record<string, FieldValue>
+): Record<string, FieldValue> {
   const definition = patternRegistry[patternType];
 
   // If no definition, return props as-is (allow unknown patterns)
@@ -144,7 +145,7 @@ function validatePatternProps(
     return props;
   }
 
-  const validated: Record<string, unknown> = { ...props };
+  const validated: Record<string, FieldValue> = { ...props };
   const schema = definition.propsSchema;
 
   // Check required props

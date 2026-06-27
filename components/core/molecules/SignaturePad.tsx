@@ -45,8 +45,6 @@ export interface SignaturePadProps {
     signEvent?: EventEmit<{ signature: string }>;
     /** Event to emit on clear */
     clearEvent?: EventEmit<Record<string, never>>;
-    /** Entity name for schema-driven context */
-    entity?: string;
     /** Loading state */
     isLoading?: boolean;
     /** Error state */
@@ -66,7 +64,6 @@ export const SignaturePad: React.FC<SignaturePadProps> = ({
     onChange,
     signEvent,
     clearEvent,
-    entity,
     isLoading = false,
     error,
     className,

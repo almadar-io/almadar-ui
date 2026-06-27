@@ -6,6 +6,7 @@
  */
 
 import { useState, useCallback } from 'react';
+import type { OrbitalSchema } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 
 const log = createLogger('almadar:ui:compile');
@@ -13,14 +14,6 @@ const log = createLogger('almadar:ui:compile');
 // =============================================================================
 // Types
 // =============================================================================
-
-// Accept any schema-like object to avoid type conflicts between
-// client's local OrbitalSchema type and shared package's type
-export interface SchemaLike {
-  name: string;
-  version?: string;
-  [key: string]: unknown;
-}
 
 export type CompileStage = 'idle' | 'compiling' | 'done' | 'error';
 
@@ -35,7 +28,7 @@ export interface UseCompileResult {
   stage: CompileStage;
   lastResult: CompileResult | null;
   error: string | null;
-  compileSchema: (schema: SchemaLike) => Promise<CompileResult | null>;
+  compileSchema: (schema: OrbitalSchema) => Promise<CompileResult | null>;
 }
 
 // =============================================================================
@@ -48,7 +41,7 @@ export function useCompile(): UseCompileResult {
   const [lastResult, setLastResult] = useState<CompileResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const compileSchema = useCallback(async (schema: SchemaLike): Promise<CompileResult | null> => {
+  const compileSchema = useCallback(async (schema: OrbitalSchema): Promise<CompileResult | null> => {
     setIsCompiling(true);
     setStage('compiling');
     setError(null);

@@ -22,6 +22,7 @@
  */
 
 import React, { createContext, useContext, useMemo, useCallback } from 'react';
+import type { FieldValue } from '@almadar/core';
 
 // ============================================================================
 // Types
@@ -43,7 +44,7 @@ export interface UserData {
   /** User's permissions */
   permissions?: string[];
   /** Additional custom profile fields */
-  [key: string]: unknown;
+  [key: string]: FieldValue | undefined;
 }
 
 /**
@@ -63,7 +64,7 @@ export interface UserContextValue {
   /** Check if user has all of the specified permissions */
   hasAllPermissions: (permissions: string[]) => boolean;
   /** Get a user field by path (for @user.field bindings) */
-  getUserField: (path: string) => unknown;
+  getUserField: (path: string) => FieldValue | undefined;
 }
 
 // ============================================================================
@@ -143,23 +144,23 @@ export function UserProvider({
 
   // Field access for @user.field bindings
   const getUserField = useCallback(
-    (path: string): unknown => {
+    (path: string): FieldValue | undefined => {
       const userData = user ?? ANONYMOUS_USER;
       const parts = path.split('.');
-      let value: unknown = userData;
+      let value: FieldValue | UserData = userData;
 
       for (const segment of parts) {
         if (value === null || value === undefined) {
           return undefined;
         }
         if (typeof value === 'object') {
-          value = (value as Record<string, unknown>)[segment];
+          value = (value as Record<string, FieldValue>)[segment];
         } else {
           return undefined;
         }
       }
 
-      return value;
+      return value as FieldValue | undefined;
     },
     [user]
   );
@@ -215,7 +216,7 @@ export function useUser(): UserContextValue {
       hasPermission: () => false,
       hasAnyRole: (roles) => roles.includes('anonymous'),
       hasAllPermissions: () => false,
-      getUserField: () => undefined,
+      getUserField: (): FieldValue | undefined => undefined,
     };
   }
 

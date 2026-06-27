@@ -9,6 +9,10 @@
 import { useState, useCallback } from 'react';
 import { createLogger } from '@almadar/logger';
 
+interface FileSystemTree {
+  [name: string]: { file: { contents: string } } | { directory: FileSystemTree };
+}
+
 const log = createLogger('almadar:ui:filesystem');
 
 // =============================================================================
@@ -49,7 +53,7 @@ export interface UseFileSystemResult {
   selectedPath: string | null;
   previewUrl: string | null;
   boot: () => Promise<void>;
-  mountFiles: (files: FileSystemFile[] | Record<string, unknown>) => Promise<void>;
+  mountFiles: (files: FileSystemFile[] | FileSystemTree) => Promise<void>;
   readFile: (path: string) => Promise<string>;
   writeFile: (path: string, content: string) => Promise<void>;
   selectFile: (path: string) => Promise<void>;
@@ -92,7 +96,7 @@ export function useFileSystem(): UseFileSystemResult {
     }
   }, []);
 
-  const mountFiles = useCallback(async (filesToMount: FileSystemFile[] | Record<string, unknown>) => {
+  const mountFiles = useCallback(async (filesToMount: FileSystemFile[] | FileSystemTree) => {
     setIsLoading(true);
     try {
       // Convert object format to array if needed
@@ -102,15 +106,13 @@ export function useFileSystem(): UseFileSystemResult {
       } else {
         // Convert FileSystemTree object to array
         filesArray = [];
-        const flattenTree = (obj: Record<string, unknown>, basePath = '') => {
+        const flattenTree = (obj: FileSystemTree, basePath = '') => {
           for (const [key, value] of Object.entries(obj)) {
             const path = basePath ? `${basePath}/${key}` : key;
-            if (value && typeof value === 'object' && 'file' in value) {
-              const fileObj = value as { file: { contents: string } };
-              filesArray.push({ path, content: fileObj.file.contents || '' });
-            } else if (value && typeof value === 'object' && 'directory' in value) {
-              const dirObj = value as { directory: Record<string, unknown> };
-              flattenTree(dirObj.directory, path);
+            if (value && 'file' in value) {
+              filesArray.push({ path, content: value.file.contents || '' });
+            } else if (value && 'directory' in value) {
+              flattenTree(value.directory, path);
             }
           }
         };

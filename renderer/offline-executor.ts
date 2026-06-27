@@ -13,6 +13,7 @@
  * @packageDocumentation
  */
 
+import type { FieldValue } from '@almadar/core';
 import type {
   ClientEffect,
   ClientEffectExecutorConfig,
@@ -39,7 +40,7 @@ export interface PendingSyncEffect {
   /** Effect type (persist, call-service, etc.) */
   type: string;
   /** Effect payload */
-  payload: unknown;
+  payload: Record<string, FieldValue>;
   /** Number of retry attempts */
   retries: number;
   /** Maximum retries before giving up */
@@ -54,7 +55,7 @@ export interface OfflineExecutorConfig extends ClientEffectExecutorConfig {
    * Mock data provider for simulating fetch responses.
    * Returns data for a given entity name.
    */
-  mockDataProvider?: (entityName: string) => unknown[];
+  mockDataProvider?: (entityName: string) => FieldValue[];
 
   /**
    * Whether to queue server effects for sync when online.
@@ -223,7 +224,7 @@ export class OfflineExecutor {
   /**
    * Add an effect to the sync queue
    */
-  private queueForSync(type: string, payload: unknown): void {
+  private queueForSync(type: string, payload: Record<string, FieldValue>): void {
     if (!this.config.enableSyncQueue) return;
 
     const effect: PendingSyncEffect = {
@@ -267,18 +268,18 @@ export class OfflineExecutor {
    */
   processEventOffline(
     event: string,
-    payload?: Record<string, unknown>,
-    effects?: Array<unknown[]>
+    payload?: Record<string, FieldValue>,
+    effects?: Array<FieldValue[]>
   ): EventResponse {
     const clientEffects: ClientEffect[] = [];
-    const fetchedData: Record<string, unknown[]> = {};
+    const fetchedData: Record<string, FieldValue[]> = {};
 
     // Process effects
     if (effects) {
       for (const effect of effects) {
         if (!Array.isArray(effect) || effect.length < 1) continue;
 
-        const [type, ...args] = effect as [string, ...unknown[]];
+        const [type, ...args] = effect as [string, ...FieldValue[]];
 
         switch (type) {
           // Client effects - execute immediately
@@ -486,8 +487,8 @@ export interface UseOfflineExecutorResult {
   /** Process event offline */
   processEventOffline: (
     event: string,
-    payload?: Record<string, unknown>,
-    effects?: Array<unknown[]>
+    payload?: Record<string, FieldValue>,
+    effects?: Array<FieldValue[]>
   ) => EventResponse;
   /** Manually trigger sync */
   sync: () => Promise<number>;
@@ -575,7 +576,7 @@ export function useOfflineExecutor(
   }, []);
 
   const processEventOffline = useCallback(
-    (event: string, payload?: Record<string, unknown>, effects?: Array<unknown[]>) => {
+    (event: string, payload?: Record<string, FieldValue>, effects?: Array<FieldValue[]>) => {
       const result = executorRef.current?.processEventOffline(event, payload, effects);
       if (executorRef.current) {
         setState(executorRef.current.getState());

@@ -17,6 +17,7 @@
  */
 
 import React, { type ReactNode, useMemo } from 'react';
+import type { EntityRow } from '@almadar/core';
 import { ThemeProvider, type ThemeProviderProps, type ThemeDefinition } from '../context/ThemeContext';
 import { EventBusProvider } from './EventBusProvider';
 import { SelectionProvider } from './SelectionProvider';
@@ -49,7 +50,7 @@ export interface OrbitalProviderProps {
   // Data options
   /** Initial fetched data */
   /** @deprecated No longer used. Entity data flows through server response props. */
-  initialData?: Record<string, unknown[]>;
+  initialData?: Record<string, EntityRow[]>;
 
   // Suspense options
   /**

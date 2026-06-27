@@ -19,7 +19,7 @@ import type {
   Unsubscribe,
   EventBusContextType,
 } from '../hooks/event-bus-types';
-import type { EventPayload } from '@almadar/core';
+import type { EventPayload, EntityRow } from '@almadar/core';
 import { setGlobalEventBus } from '../hooks/useEventBus';
 import { createLogger } from '@almadar/logger';
 
@@ -38,7 +38,7 @@ const subLog = createLogger('almadar:eventbus:subscribe');
  */
 export interface EventBusContextTypeExtended extends EventBusContextType {
   /** @deprecated Use useSelection from SelectionProvider instead. */
-  getSelectedEntity: () => unknown | null;
+  getSelectedEntity: () => EntityRow | null;
   /** @deprecated Use useSelection from SelectionProvider instead. */
   clearSelectedEntity: () => void;
 }

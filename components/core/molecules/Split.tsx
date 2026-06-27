@@ -37,8 +37,6 @@ export interface SplitProps {
   isLoading?: boolean;
   /** Error state */
   error?: UiError | null;
-  /** Entity name for schema-driven auto-fetch */
-  entity?: string;
 }
 
 const gapStyles: Record<SplitGap, string> = {

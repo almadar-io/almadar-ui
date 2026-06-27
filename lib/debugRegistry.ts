@@ -4,6 +4,8 @@
  * @packageDocumentation
  */
 
+import type { FieldValue } from '@almadar/core';
+
 export type DebugEventType =
   | 'state-change'
   | 'event-fired'
@@ -18,7 +20,7 @@ export interface DebugEvent {
   type: DebugEventType;
   source: string;
   message: string;
-  data?: Record<string, unknown>;
+  data?: Record<string, FieldValue>;
   timestamp: number;
 }
 
@@ -36,7 +38,7 @@ export function logDebugEvent(
   type: DebugEventType,
   source: string,
   message: string,
-  data?: Record<string, unknown>
+  data?: Record<string, FieldValue>
 ): void {
   const event: DebugEvent = {
     id: `event-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
@@ -61,23 +63,23 @@ export function logStateChange(source: string, from: string, to: string, event?:
   logDebugEvent('state-change', source, `${from} → ${to}`, { from, to, event });
 }
 
-export function logEventFired(source: string, eventName: string, payload?: unknown): void {
-  logDebugEvent('event-fired', source, eventName, { eventName, payload });
+export function logEventFired(source: string, eventName: string, payload?: FieldValue): void {
+  logDebugEvent('event-fired', source, eventName, { eventName, payload: payload ?? null });
 }
 
-export function logEffectExecuted(source: string, effectType: string, details?: unknown): void {
-  logDebugEvent('effect-executed', source, effectType, { effectType, details });
+export function logEffectExecuted(source: string, effectType: string, details?: FieldValue): void {
+  logDebugEvent('effect-executed', source, effectType, { effectType, details: details ?? null });
 }
 
-export function logError(source: string, message: string, error?: unknown): void {
-  logDebugEvent('error', source, message, { error });
+export function logError(source: string, message: string, error?: Error | null): void {
+  logDebugEvent('error', source, message, { error: error?.message ?? null });
 }
 
-export function logWarning(source: string, message: string, data?: Record<string, unknown>): void {
+export function logWarning(source: string, message: string, data?: Record<string, FieldValue>): void {
   logDebugEvent('warning', source, message, data);
 }
 
-export function logInfo(source: string, message: string, data?: Record<string, unknown>): void {
+export function logInfo(source: string, message: string, data?: Record<string, FieldValue>): void {
   logDebugEvent('info', source, message, data);
 }
 

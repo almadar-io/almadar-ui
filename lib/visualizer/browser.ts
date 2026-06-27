@@ -22,6 +22,7 @@ import {
   type DomStateNode,
   type DomTransitionLabel,
 } from './index.js';
+import type { OrbitalSchema } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 
 const log = createLogger('almadar:ui:visualizer');
@@ -112,7 +113,7 @@ let currentStateMachine: StateMachineDefinition | null = null;
  */
 function render(
   container: HTMLElement,
-  data: unknown,
+  data: OrbitalSchema | object,
   options: BrowserRenderOptions = {}
 ): void {
   const config = { ...DEFAULT_CONFIG, ...options.config };
@@ -129,12 +130,12 @@ function render(
   // Determine title
   let title = options.title || '';
   if (!title && typeof data === 'object' && data !== null) {
-    const obj = data as Record<string, unknown>;
+    const obj = data as OrbitalSchema;
     if (obj.name) title = String(obj.name);
   }
 
   // Get entity from options or data
-  const entity = options.entity || (typeof data === 'object' && data !== null ? (data as Record<string, unknown>).entity as EntityDefinition : undefined);
+  const entity = options.entity || (typeof data === 'object' && data !== null ? (data as OrbitalSchema).entity as EntityDefinition : undefined);
 
   // Generate SVG
   const svgString = renderStateMachineToSvg(stateMachine, { title, entity }, config);
@@ -596,7 +597,7 @@ let pinnedTooltip: { element: HTMLElement; bundleId: string } | null = null;
  */
 function renderDom(
   container: HTMLElement,
-  data: unknown,
+  data: OrbitalSchema | object,
   options: BrowserRenderOptions = {}
 ): void {
   const config = { ...DEFAULT_CONFIG, ...options.config };
@@ -613,12 +614,12 @@ function renderDom(
   // Determine title
   let title = options.title || '';
   if (!title && typeof data === 'object' && data !== null) {
-    const obj = data as Record<string, unknown>;
+    const obj = data as OrbitalSchema;
     if (obj.name) title = String(obj.name);
   }
 
   // Get entity from options or data
-  const entity = options.entity || (typeof data === 'object' && data !== null ? (data as Record<string, unknown>).entity as EntityDefinition : undefined);
+  const entity = options.entity || (typeof data === 'object' && data !== null ? (data as OrbitalSchema).entity as EntityDefinition : undefined);
 
   // Generate DOM layout data
   const layoutData = renderStateMachineToDomData(stateMachine, { title, entity }, config);

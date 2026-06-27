@@ -5,6 +5,8 @@
  * Used by EntityStore and can be imported by runtime preview.
  */
 
+import type { FieldValue } from '@almadar/core';
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -15,7 +17,7 @@ export interface EntityFilterValue {
     field: string;
     /** The actual record field to compare against (defaults to field if not specified) */
     targetField?: string;
-    value: unknown;
+    value: FieldValue;
     /** Comparison operator for filtering
      * - eq: exact match (default)
      * - contains: substring match for strings
@@ -36,7 +38,7 @@ export type EntityFilters = Map<string, EntityFilterValue>;
 /** Record type that can be filtered */
 export interface FilterableRecord {
     id: string;
-    [key: string]: unknown;
+    [key: string]: FieldValue | undefined;
 }
 
 // ============================================================================
@@ -47,7 +49,7 @@ export interface FilterableRecord {
  * Extract date part from ISO string or Date object.
  * Returns format: "YYYY-MM-DD"
  */
-export function getDateString(value: unknown): string | null {
+export function getDateString(value: FieldValue): string | null {
     if (!value) return null;
     if (typeof value === 'string') {
         // Handle ISO dates "2024-01-15T00:00:00.000Z" -> "2024-01-15"
@@ -167,7 +169,7 @@ export function applyFilters<T extends FilterableRecord>(
  */
 export function createFilter(
     field: string,
-    value: unknown,
+    value: FieldValue,
     operator: FilterOperator = 'eq',
     targetField?: string
 ): EntityFilterValue {

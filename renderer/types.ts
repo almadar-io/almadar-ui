@@ -8,6 +8,8 @@
  * @packageDocumentation
  */
 
+import type { EntityRow, FieldValue } from '@almadar/core';
+
 // ============================================================================
 // Client Effect Types
 // ============================================================================
@@ -24,9 +26,9 @@
  */
 export type ClientEffect =
   | ['render-ui', string, PatternConfig | null]
-  | ['navigate', string, Record<string, unknown>?]
+  | ['navigate', string, Record<string, FieldValue>?]
   | ['notify', string, NotifyOptions?]
-  | ['emit', string, unknown?];
+  | ['emit', string, FieldValue?];
 
 /**
  * Options for notify effect
@@ -50,7 +52,7 @@ export interface PatternConfig {
   /** Entity name for data binding */
   entity?: string;
   /** Additional props for the pattern component */
-  [key: string]: unknown;
+  [key: string]: FieldValue | undefined;
 }
 
 /**
@@ -64,7 +66,7 @@ export interface ResolvedPattern {
   /** Pattern category (e.g., 'display', 'form') */
   category: string;
   /** Validated and normalized props */
-  validatedProps: Record<string, unknown>;
+  validatedProps: Record<string, FieldValue>;
 }
 
 // ============================================================================
@@ -81,14 +83,14 @@ export interface EventResponse {
   /** New state after transition (if transition occurred) */
   newState?: string;
   /** Data fetched by server effects (e.g., { Task: [...] }) */
-  data?: Record<string, unknown[]>;
+  data?: Record<string, EntityRow[]>;
   /** Client effects to execute (render-ui, navigate, notify, emit) */
   clientEffects?: ClientEffect[];
   /** Results of individual effect executions (for debugging) */
   effectResults?: Array<{
     effect: string;
     success: boolean;
-    data?: unknown;
+    data?: FieldValue;
     error?: string;
   }>;
   /** Error message if success is false */
@@ -114,7 +116,7 @@ export interface ClientEffectExecutorConfig {
    * Navigate to a route.
    * Called for 'navigate' effects.
    */
-  navigate: (path: string, params?: Record<string, unknown>) => void;
+  navigate: (path: string, params?: Record<string, FieldValue>) => void;
 
   /**
    * Show a notification.
@@ -127,14 +129,14 @@ export interface ClientEffectExecutorConfig {
    * Called for 'emit' effects.
    */
   eventBus: {
-    emit: (event: string, payload?: unknown) => void;
+    emit: (event: string, payload?: FieldValue) => void;
   };
 
   /**
    * Optional: Data from server response for render-ui.
    * Components can use this to access fetched entity data.
    */
-  data?: Record<string, unknown[]>;
+  data?: Record<string, EntityRow[]>;
 
   /**
    * Optional: Callback when all effects have been executed.
@@ -190,14 +192,14 @@ export interface SlotDefinition {
  */
 export interface DataContext {
   /** Server-provided data (highest priority) */
-  fetchedData?: Record<string, unknown[]>;
+  fetchedData?: Record<string, EntityRow[]>;
   /** In-memory mock data (for Builder preview) */
   entityStore?: {
-    getRecords: (entityName: string) => unknown[];
+    getRecords: (entityName: string) => EntityRow[];
   };
   /** Query singleton for filtering */
   querySingleton?: {
-    getFilters: (queryRef: string) => Record<string, unknown>;
+    getFilters: (queryRef: string) => Record<string, FieldValue>;
   };
 }
 
@@ -206,7 +208,7 @@ export interface DataContext {
  */
 export interface DataResolution {
   /** Resolved data array */
-  data: unknown[];
+  data: EntityRow[];
   /** Whether data is still loading */
   loading: boolean;
   /** Error if resolution failed */

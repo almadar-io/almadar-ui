@@ -23,6 +23,7 @@ import React, {
 } from 'react';
 import { useEventBus, type BusEvent } from '../hooks/useEventBus';
 import { createLogger } from '@almadar/logger';
+import type { EntityRow } from '@almadar/core';
 
 const log = createLogger('almadar:ui:selection');
 
@@ -30,7 +31,7 @@ const log = createLogger('almadar:ui:selection');
 // Types
 // ============================================================================
 
-export interface SelectionContextType<T = unknown> {
+export interface SelectionContextType<T = EntityRow> {
   /** The currently selected entity */
   selected: T | null;
   /** Manually set the selected entity */
@@ -56,21 +57,16 @@ interface SelectionProviderProps {
   /** Enable debug logging */
   debug?: boolean;
   /** Custom comparison function for isSelected */
-  compareEntities?: (a: unknown, b: unknown) => boolean;
+  compareEntities?: (a: EntityRow, b: EntityRow) => boolean;
 }
 
 /**
  * Default entity comparison - compares by id field
  */
-const defaultCompareEntities = (a: unknown, b: unknown): boolean => {
+const defaultCompareEntities = (a: EntityRow, b: EntityRow): boolean => {
   if (a === b) return true;
   if (!a || !b) return false;
-  if (typeof a === 'object' && typeof b === 'object') {
-    const aId = (a as Record<string, unknown>).id;
-    const bId = (b as Record<string, unknown>).id;
-    return aId !== undefined && aId === bId;
-  }
-  return false;
+  return a.id !== undefined && a.id === b.id;
 };
 
 /**
@@ -98,20 +94,18 @@ export function SelectionProvider({
   compareEntities = defaultCompareEntities,
 }: SelectionProviderProps) {
   const eventBus = useEventBus();
-  const [selected, setSelectedState] = useState<unknown | null>(null);
+  const [selected, setSelectedState] = useState<EntityRow | null>(null);
 
   /**
    * Set the selected entity
    */
   const setSelected = useCallback(
-    (entity: unknown | null) => {
+    (entity: EntityRow | null) => {
       setSelectedState(entity);
       if (debug) {
         log.debug('Selection set', () => ({
           hasEntity: entity !== null && entity !== undefined,
-          entityId: entity && typeof entity === 'object'
-            ? String((entity as Record<string, unknown>).id ?? '')
-            : '',
+          entityId: entity ? String(entity.id ?? '') : '',
         }));
       }
     },
@@ -132,8 +126,8 @@ export function SelectionProvider({
    * Check if an entity is selected
    */
   const isSelected = useCallback(
-    (entity: unknown): boolean => {
-      return compareEntities(selected, entity);
+    (entity: EntityRow): boolean => {
+      return selected !== null ? compareEntities(selected, entity) : false;
     },
     [selected, compareEntities]
   );
@@ -150,9 +144,7 @@ export function SelectionProvider({
         if (debug) {
           log.debug('event received', () => ({
             type: event.type,
-            rowId: row && typeof row === 'object'
-              ? String((row as Record<string, unknown>).id ?? '')
-              : '',
+            rowId: row && typeof row === 'object' ? String((row as EntityRow).id ?? '') : '',
           }));
         }
       }
@@ -222,7 +214,7 @@ export function SelectionProvider({
  * }
  * ```
  */
-export function useSelection<T = unknown>(): SelectionContextType<T> {
+export function useSelection<T = EntityRow>(): SelectionContextType<T> {
   const context = useContext(SelectionContext);
 
   if (!context) {
@@ -238,7 +230,7 @@ export function useSelection<T = unknown>(): SelectionContextType<T> {
  *
  * Returns null if no SelectionProvider is found.
  */
-export function useSelectionOptional<T = unknown>(): SelectionContextType<T> | null {
+export function useSelectionOptional<T = EntityRow>(): SelectionContextType<T> | null {
   const context = useContext(SelectionContext);
   return context as SelectionContextType<T> | null;
 }

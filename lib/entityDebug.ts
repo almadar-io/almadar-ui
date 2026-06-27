@@ -4,17 +4,19 @@
  * @packageDocumentation
  */
 
+import type { FieldValue, EntityRow } from '@almadar/core';
+
 export interface EntityState {
   id: string;
   type: string;
-  fields: Record<string, unknown>;
+  fields: Record<string, FieldValue>;
   lastUpdated: number;
 }
 
 export interface RuntimeEntity {
   id: string;
   type: string;
-  data: Record<string, unknown>;
+  data: Record<string, FieldValue>;
 }
 
 export interface PersistentEntityInfo {
@@ -27,7 +29,7 @@ export interface EntitySnapshot {
   timestamp: number;
   totalCount: number;
   /** Singleton entities by name */
-  singletons: Record<string, unknown>;
+  singletons: Record<string, EntityRow>;
   /** Runtime entities (in-memory) */
   runtime: RuntimeEntity[];
   /** Persistent entities info by type */

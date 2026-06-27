@@ -78,7 +78,7 @@ interface RegistryState {
 
 function getState(): RegistryState {
   if (typeof window !== 'undefined') {
-    const w = window as unknown as { __verificationRegistryState?: RegistryState };
+    const w = window as Window & { __verificationRegistryState?: RegistryState };
     if (!w.__verificationRegistryState) {
       w.__verificationRegistryState = {
         checks: new Map(),

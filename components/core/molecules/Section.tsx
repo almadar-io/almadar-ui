@@ -40,8 +40,6 @@ export interface SectionProps {
   isLoading?: boolean;
   /** Error state */
   error?: UiError | null;
-  /** Entity name for schema-driven auto-fetch */
-  entity?: string;
 }
 
 const paddingStyles: Record<SectionPadding, string> = {

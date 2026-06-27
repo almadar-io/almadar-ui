@@ -6,11 +6,13 @@
  * and marks them for JazariStateMachine rendering.
  */
 
+import type { OrbitalSchema } from '@almadar/core';
+
 /** Segment types for content rendering */
 export type ContentSegment =
   | { type: 'markdown'; content: string }
   | { type: 'code'; language: string; content: string }
-  | { type: 'orbital'; language: string; content: string; schema: unknown }
+  | { type: 'orbital'; language: string; content: string; schema: OrbitalSchema }
   | { type: 'quiz'; question: string; answer: string };
 
 /**
@@ -18,9 +20,9 @@ export type ContentSegment =
  * Returns the parsed object if it looks like a trait (has states+transitions)
  * or a full schema (has orbitals array), otherwise null.
  */
-function tryParseOrbitalSchema(code: string): unknown | null {
+function tryParseOrbitalSchema(code: string): OrbitalSchema | null {
   try {
-    const parsed = JSON.parse(code) as Record<string, unknown>;
+    const parsed = JSON.parse(code) as OrbitalSchema;
     if (
       (parsed.states && parsed.transitions) ||
       (Array.isArray(parsed.orbitals))

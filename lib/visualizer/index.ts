@@ -5,8 +5,10 @@
  * Can be used in documentation, IDE previews, and other tools.
  */
 
+import type { FieldValue, OrbitalSchema } from '@almadar/core';
+
 // Simple formatters for visualization - just basic string representation
-function formatSExprGuardToDomain(guard: unknown, _entityName: string): string {
+function formatSExprGuardToDomain(guard: FieldValue, _entityName: string): string {
     if (Array.isArray(guard)) {
         const [op, ...args] = guard;
         return `${op}(${args.map(a => JSON.stringify(a)).join(', ')})`;
@@ -14,7 +16,7 @@ function formatSExprGuardToDomain(guard: unknown, _entityName: string): string {
     return JSON.stringify(guard);
 }
 
-function formatSExprEffectToDomain(effect: unknown, _entityName: string): string {
+function formatSExprEffectToDomain(effect: FieldValue, _entityName: string): string {
     if (Array.isArray(effect)) {
         const [op, ...args] = effect;
         return `${op}(${args.map(a => JSON.stringify(a)).join(', ')})`;
@@ -22,7 +24,7 @@ function formatSExprEffectToDomain(effect: unknown, _entityName: string): string
     return JSON.stringify(effect);
 }
 
-function isArraySExpr(expr: unknown): boolean {
+function isArraySExpr(expr: FieldValue): boolean {
     return Array.isArray(expr);
 }
 
@@ -66,8 +68,8 @@ export interface TransitionDefinition {
     from: string;
     to: string;
     event: string;
-    guard?: unknown;
-    effects?: unknown[];
+    guard?: FieldValue;
+    effects?: FieldValue[];
 }
 
 export interface StateMachineDefinition {
@@ -213,7 +215,7 @@ export const DEFAULT_CONFIG: VisualizerConfig = {
 
 const EFFECT_OPERATORS = ['set', 'emit', 'persist', 'navigate', 'notify', 'spawn', 'despawn', 'render-ui', 'call-service'];
 
-function isBinding(val: unknown): val is string {
+function isBinding(val: FieldValue): val is string {
     return typeof val === 'string' && val.startsWith('@');
 }
 
@@ -234,7 +236,7 @@ function parseBinding(binding: string): ParsedBinding | null {
     };
 }
 
-function formatGuard(guard: unknown): string {
+function formatGuard(guard: FieldValue): string {
     let text = '';
     if (typeof guard === 'string') {
         text = guard;
@@ -247,7 +249,7 @@ function formatGuard(guard: unknown): string {
 /**
  * Format guard as human-readable domain language text
  */
-function formatGuardHuman(guard: unknown, entityName?: string): string {
+function formatGuardHuman(guard: FieldValue, entityName?: string): string {
     if (!guard) return '';
     if (typeof guard === 'string') {
         return `if ${guard}`;
@@ -261,7 +263,7 @@ function formatGuardHuman(guard: unknown, entityName?: string): string {
 /**
  * Format effects array as human-readable domain language text
  */
-function formatEffectsHuman(effects: unknown[], entityName?: string): string[] {
+function formatEffectsHuman(effects: FieldValue[], entityName?: string): string[] {
     if (!Array.isArray(effects) || effects.length === 0) return [];
     return effects.map(effect => {
         if (isArraySExpr(effect)) {
@@ -271,7 +273,7 @@ function formatEffectsHuman(effects: unknown[], entityName?: string): string[] {
     }).filter(Boolean);
 }
 
-function formatSExprCompact(expr: unknown[]): string {
+function formatSExprCompact(expr: FieldValue[]): string {
     if (!Array.isArray(expr) || expr.length === 0) return '[]';
     const op = expr[0];
     const args = expr.slice(1);
@@ -294,7 +296,7 @@ function formatSExprCompact(expr: unknown[]): string {
 /**
  * Format S-expression with full detail for tooltips
  */
-function formatSExprFull(expr: unknown): string {
+function formatSExprFull(expr: FieldValue): string {
     if (expr === null || expr === undefined) return '';
     if (typeof expr === 'string') return `"${expr}"`;
     if (typeof expr === 'number' || typeof expr === 'boolean') return String(expr);
@@ -320,7 +322,7 @@ function formatSExprFull(expr: unknown): string {
 /**
  * Format effects array with full S-expressions
  */
-function formatEffectsFull(effects: unknown[]): string[] {
+function formatEffectsFull(effects: FieldValue[]): string[] {
     if (!Array.isArray(effects) || effects.length === 0) return [];
     return effects.map(effect => {
         if (Array.isArray(effect)) {
@@ -330,11 +332,11 @@ function formatEffectsFull(effects: unknown[]): string[] {
     });
 }
 
-export function getEffectSummary(effects: unknown[]): string {
+export function getEffectSummary(effects: FieldValue[]): string {
     if (!Array.isArray(effects) || effects.length === 0) return '';
 
     const setFields: string[] = [];
-    const otherEffects: unknown[][] = [];
+    const otherEffects: FieldValue[][] = [];
 
     effects.forEach((effect) => {
         if (!Array.isArray(effect)) return;
@@ -348,7 +350,7 @@ export function getEffectSummary(effects: unknown[]): string {
                 setFields.push('field');
             }
         } else {
-            otherEffects.push(effect as unknown[]);
+            otherEffects.push(effect as FieldValue[]);
         }
     });
 
@@ -931,14 +933,14 @@ export function renderStateMachineToSvg(
 /**
  * Extract state machine from various data formats (Trait, Orbital, or raw)
  */
-export function extractStateMachine(data: unknown): StateMachineDefinition | null {
+export function extractStateMachine(data: OrbitalSchema | object): StateMachineDefinition | null {
     if (!data || typeof data !== 'object') return null;
 
-    const obj = data as Record<string, unknown>;
+    const obj = data as OrbitalSchema;
 
     // Direct state machine
     if (obj.states && obj.transitions) {
-        return obj as unknown as StateMachineDefinition;
+        return obj as StateMachineDefinition;
     }
 
     // Trait with stateMachine
