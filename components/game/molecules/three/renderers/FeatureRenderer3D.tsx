@@ -8,8 +8,7 @@
  * @packageDocumentation
  */
 
-import React, { useRef, useMemo, useState, useEffect } from 'react';
-import { useFrame } from '@react-three/fiber';
+import React, { useMemo, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { createLogger } from '@almadar/logger';
@@ -105,19 +104,22 @@ function FeatureModel({
     onClick,
     onHover,
 }: FeatureModelProps): React.JSX.Element | null {
-    const groupRef = useRef<THREE.Group>(null);
-    
     // Load GLB model if assetUrl is provided (without Suspense)
     const { model: loadedModel, isLoading } = useGLTFModel(feature.assetUrl?.url);
-    
+
+    // Static base rotation derived from feature.rotation (degrees → radians, iso-offset)
+    const baseRotationY = feature.rotation !== undefined
+        ? (feature.rotation * Math.PI / 180) - Math.PI / 4
+        : -Math.PI / 4;
+
     // Clone and prepare the scene for this instance
     const model = useMemo(() => {
         if (!loadedModel) return null;
         const cloned = loadedModel.clone();
-        
+
         // Adjust model scale - many Kenny assets are large, scale down to fit grid
-        cloned.scale.setScalar(0.3); // Adjust based on model size
-        
+        cloned.scale.setScalar(0.3);
+
         // Enable shadows
         cloned.traverse((child) => {
             if (child instanceof THREE.Mesh) {
@@ -125,24 +127,9 @@ function FeatureModel({
                 child.receiveShadow = true;
             }
         });
-        
+
         return cloned;
     }, [loadedModel]);
-
-    // Idle animation and apply rotation
-    useFrame((state) => {
-        if (groupRef.current) {
-            // Apply base rotation
-            const featureRotation = feature.rotation;
-            const baseRotation = featureRotation !== undefined 
-                ? (featureRotation * Math.PI / 180) - Math.PI / 4 
-                : -Math.PI / 4;
-            
-            // Add idle wobble when selected
-            const wobble = isSelected ? Math.sin(state.clock.elapsedTime * 2) * 0.1 : 0;
-            groupRef.current.rotation.y = baseRotation + wobble;
-        }
-    });
 
     // Show loading indicator
     if (isLoading) {
@@ -184,8 +171,8 @@ function FeatureModel({
 
     return (
         <group
-            ref={groupRef as React.RefObject<never>}
             position={position}
+            rotation={[0, baseRotationY, 0]}
             onClick={onClick}
             onPointerEnter={() => onHover(true)}
             onPointerLeave={() => onHover(false)}

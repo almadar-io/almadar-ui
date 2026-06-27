@@ -8,9 +8,7 @@
  * @packageDocumentation
  */
 
-import React, { useRef, useEffect, useState, useMemo } from 'react';
-import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
+import React, { useState, useMemo } from 'react';
 import type { IsometricUnit } from '../../../organisms/types/isometric';
 import type { AnimationName } from '../../../organisms/types/spriteAnimation';
 
@@ -44,8 +42,6 @@ interface UnitVisualProps {
  * Individual unit visual component
  */
 function UnitVisual({ unit, position, isSelected, onClick }: UnitVisualProps): React.JSX.Element {
-    const groupRef = useRef<THREE.Group>(null);
-    const [animationState, setAnimationState] = useState<AnimationName>('idle');
     const [isHovered, setIsHovered] = useState(false);
 
     // Determine team color
@@ -55,15 +51,6 @@ function UnitVisual({ unit, position, isSelected, onClick }: UnitVisualProps): R
         if (unit.faction === 'neutral' || unit.team === 'neutral') return 0xffff44;
         return 0x888888;
     }, [unit.faction, unit.team]);
-
-    // Idle animation
-    useFrame((state) => {
-        if (groupRef.current && animationState === 'idle') {
-            // Subtle bobbing animation
-            const y = position[1] + Math.sin(state.clock.elapsedTime * 2 + position[0]) * 0.05;
-            groupRef.current.position.y = y;
-        }
-    });
 
     // Calculate health percentage
     const healthPercent = useMemo(() => {
@@ -80,7 +67,6 @@ function UnitVisual({ unit, position, isSelected, onClick }: UnitVisualProps): R
 
     return (
         <group
-            ref={groupRef as React.RefObject<never>}
             position={position}
             onClick={onClick}
             onPointerEnter={() => setIsHovered(true)}
