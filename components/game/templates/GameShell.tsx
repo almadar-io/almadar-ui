@@ -14,12 +14,16 @@
  */
 
 import React from "react";
+import { createLogger } from "@almadar/logger";
 import { cn } from "../../../lib/cn";
 import { Box } from "../../core/atoms/Box";
 import { HStack } from "../../core/atoms/Stack";
 import { Typography } from "../../core/atoms/Typography";
 import { getComponentForPattern } from "@almadar/patterns";
 import type { SlotContent, SlotPropValue } from "../../../hooks/useUISlots";
+
+const shellLog = createLogger('almadar:ui:game:game-shell');
+let _shellMountCount = 0;
 
 
 type DescriptorObject = { type: string; props?: SlotContent["props"]; _id?: string };
@@ -55,12 +59,16 @@ function resolveDescriptor(value: React.ReactNode, idPrefix: string): React.Reac
   }
   if (typeof value === "object" && value !== null) {
     const desc = asDescriptor(value as object);
-    if (desc !== null && getComponentForPattern(desc.type) !== null) {
-      const resolvedProps: SlotContent["props"] = desc.props ?? {};
-      const content: SlotContent = { id: desc._id ?? idPrefix, pattern: desc.type, props: resolvedProps, priority: 0 };
+    const hasComp = desc !== null && getComponentForPattern(desc.type) !== null;
+    shellLog.debug('resolve', { idPrefix, type: desc?.type ?? null, hasDesc: desc !== null, render: hasComp });
+    if (hasComp) {
+      const resolvedProps: SlotContent["props"] = desc!.props ?? {};
+      const content: SlotContent = { id: desc!._id ?? idPrefix, pattern: desc!.type, props: resolvedProps, priority: 0 };
       const SCR = getSlotContentRenderer();
-      return <SCR content={content} onDismiss={() => undefined} />;
+      return <SCR key={content.id} content={content} onDismiss={() => undefined} />;
     }
+  } else {
+    shellLog.debug('resolve', { idPrefix, type: null, hasDesc: false, render: false, branch: typeof value });
   }
   return null;
 }
