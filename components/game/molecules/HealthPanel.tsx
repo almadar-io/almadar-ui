@@ -6,12 +6,12 @@ import { StatusEffect } from '../atoms/StatusEffect';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 import type { IconInput } from '../../core/atoms';
-import type { AssetUrl } from '@almadar/core';
+import type { Asset } from '@almadar/core';
 
 export interface HealthEffect {
   icon: IconInput;
-  /** Sprite image URL — takes precedence over icon when provided */
-  assetUrl?: AssetUrl;
+  /** Sprite asset — takes precedence over icon when provided */
+  assetUrl?: Asset;
   label?: string;
   variant?: 'buff' | 'debuff' | 'neutral';
 }

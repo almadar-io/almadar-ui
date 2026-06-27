@@ -10,18 +10,17 @@
  * @packageDocumentation
  */
 
-import type { AssetUrl, EntityRow } from '@almadar/core';
+import type { Asset, EntityRole, EntityRow } from '@almadar/core';
+import { makeAsset } from '../organisms/utils/makeAsset';
 import type { IsometricTile, IsometricFeature } from '../organisms/types/isometric';
 import { boardEntity, rows, num, str } from '../organisms/boardEntity';
 
-/** GLB model URLs for a 3D board, keyed by terrain "kind" and (optionally) feature type. */
+/** GLB model assets for a 3D board, keyed by terrain "kind" and (optionally) feature type. */
 export interface Game3DAssetManifest {
-    /** Base URL prepended to manifest-relative model paths (absolute paths pass through). */
-    baseUrl?: AssetUrl;
-    /** Floor model URLs by terrain kind ('wall' | 'dirt' | 'open'). */
-    models?: Record<string, AssetUrl>;
-    /** Feature/structure model URLs by feature type ('gold_mine', 'portal', …). */
-    features?: Record<string, AssetUrl>;
+    /** Floor model assets by terrain kind ('wall' | 'dirt' | 'open'). */
+    models?: Record<string, Asset>;
+    /** Feature/structure model assets by feature type ('gold_mine', 'portal', …). */
+    features?: Record<string, Asset>;
 }
 
 /** Layout-only tile (no model URL): position + terrain kind. */
@@ -34,20 +33,6 @@ export interface Tile3DLayout {
     passable?: boolean;
     /** Terrain kind that maps into `assetManifest.models` (wall | dirt | open). */
     kind: string;
-}
-
-/** Resolve a manifest-relative model path against the manifest baseUrl into an absolute AssetUrl. */
-function resolveManifestUrl(
-    manifest: Game3DAssetManifest | undefined,
-    relative: AssetUrl | undefined,
-): AssetUrl | undefined {
-    if (relative == null) return undefined;
-    if (/^https?:\/\//.test(relative)) return relative;
-    const base = manifest?.baseUrl;
-    if (base == null) return relative;
-    const cleanBase = base.replace(/\/$/, '');
-    const cleanRel = relative.replace(/^\//, '');
-    return `${cleanBase}/${cleanRel}` as AssetUrl;
 }
 
 /** The terrain kind a tile maps to in `assetManifest.models`. Impassable = wall, road/dirt = dirt, else open. */
@@ -75,7 +60,7 @@ export function resolveTilesWithModels(
             z: t.z,
             type: t.type,
             passable: t.passable,
-            modelUrl: resolveManifestUrl(manifest, manifest?.models?.[kind]),
+            modelUrl: manifest?.models?.[kind],
         };
     });
 }
@@ -92,7 +77,7 @@ export function resolvePropTiles(
         const kind = tileKind(t.type ?? '', t.passable);
         return {
             ...t,
-            modelUrl: t.modelUrl ?? resolveManifestUrl(manifest, manifest?.models?.[kind]),
+            modelUrl: t.modelUrl ?? manifest?.models?.[kind],
         };
     });
 }
@@ -108,7 +93,10 @@ export function resolveEntityTiles(
         const type = str(r.type) || str(r.terrain);
         const passable = r.passable !== false;
         const kind = tileKind(type, passable);
-        const explicitModel = r.modelUrl == null ? undefined : (str(r.modelUrl) as AssetUrl);
+        const explicitModelUrl = r.modelUrl == null ? undefined : str(r.modelUrl);
+        const explicitModel: Asset | undefined = explicitModelUrl
+            ? makeAsset(explicitModelUrl, 'decoration' as EntityRole, { dimension: '3d' })
+            : undefined;
         return {
             id: r.id == null ? undefined : str(r.id),
             x: num(r.x),
@@ -116,7 +104,7 @@ export function resolveEntityTiles(
             z: r.z == null ? undefined : num(r.z),
             type,
             passable,
-            modelUrl: explicitModel ?? resolveManifestUrl(manifest, manifest?.models?.[kind]),
+            modelUrl: explicitModel ?? manifest?.models?.[kind],
         };
     });
 }
@@ -128,7 +116,7 @@ export function resolveFeaturesWithModels(
 ): IsometricFeature[] {
     return features.map((f) => ({
         ...f,
-        assetUrl: f.assetUrl ?? resolveManifestUrl(manifest, manifest?.features?.[f.type]),
+        assetUrl: f.assetUrl ?? manifest?.features?.[f.type],
     }));
 }
 
@@ -141,7 +129,10 @@ export function resolveEntityFeatures(
     if (!row) return [];
     return rows(row.features).map((r) => {
         const type = str(r.type);
-        const explicit = r.assetUrl == null ? undefined : (str(r.assetUrl) as AssetUrl);
+        const explicitUrl = r.assetUrl == null ? undefined : str(r.assetUrl);
+        const explicit: Asset | undefined = explicitUrl
+            ? makeAsset(explicitUrl, 'decoration' as EntityRole, { dimension: '3d' })
+            : undefined;
         return {
             id: r.id == null ? undefined : str(r.id),
             x: num(r.x),
@@ -149,7 +140,7 @@ export function resolveEntityFeatures(
             z: r.z == null ? undefined : num(r.z),
             type,
             color: r.color == null ? undefined : str(r.color),
-            assetUrl: explicit ?? resolveManifestUrl(manifest, manifest?.features?.[type]),
+            assetUrl: explicit ?? manifest?.features?.[type],
         };
     });
 }

@@ -1,6 +1,6 @@
 'use client';
 import * as React from 'react';
-import type { AssetUrl } from '@almadar/core';
+import type { Asset, AssetUrl } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { Box } from '../../core/atoms/Box';
 import { useEmitEvent } from '../../../hooks/useEventBus';
@@ -20,8 +20,8 @@ export interface GameCanvas2DProps {
   drawEvent?: string;
   /** Target frames per second */
   fps?: number;
-  /** Background image URL */
-  backgroundImage?: AssetUrl;
+  /** Background image asset */
+  backgroundImage?: Asset;
   /** Base URL prefix for asset URLs */
   assetBaseUrl?: AssetUrl;
   /** Additional CSS classes */
@@ -36,7 +36,7 @@ export function GameCanvas2D({
   tickEvent,
   drawEvent,
   fps = 60,
-  backgroundImage = "",
+  backgroundImage,
   assetBaseUrl,
   className,
 }: GameCanvas2DProps) {
@@ -120,7 +120,7 @@ export function GameCanvas2D({
         }
 
         if (backgroundImageRef.current) {
-          const bgImg = loadImage(backgroundImageRef.current);
+          const bgImg = loadImage(backgroundImageRef.current.url);
           if (bgImg) {
             ctx.drawImage(bgImg, 0, 0, widthRef.current, heightRef.current);
           } else {

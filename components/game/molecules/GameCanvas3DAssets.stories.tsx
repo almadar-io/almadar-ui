@@ -12,6 +12,7 @@ import React from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { GameCanvas3D } from './GameCanvas3D';
 import type { IsometricTile, IsometricFeature, IsometricUnit } from '../organisms/types/isometric';
+import { makeAsset } from '../organisms/utils/makeAsset';
 
 // ── Inline 3D asset helpers (mirrors projects/trait-wars/design-system/assets-3d) ──
 
@@ -76,9 +77,9 @@ const DEFAULT_3D_ASSET_MANIFEST = {
 
 type Manifest = typeof DEFAULT_3D_ASSET_MANIFEST;
 
-function getUrl(category: Partial<Record<string, string>>, key: string): string | undefined {
+function getUrl(category: Partial<Record<string, string>>, key: string) {
     const p = category[key];
-    return p ? `${DEFAULT_3D_ASSET_MANIFEST.baseUrl}/${p}` : undefined;
+    return p ? makeAsset(`${DEFAULT_3D_ASSET_MANIFEST.baseUrl}/${p}`, 'decoration', { dimension: '3d' }) : undefined;
 }
 function get3DCorridorUrl(m: Manifest, key: string) { return getUrl(m.corridors, key); }
 function get3DRoomUrl(m: Manifest, key: string) { return getUrl(m.rooms, key); }
@@ -386,11 +387,11 @@ export const GraveyardTheme: Story = {
         shadows: true,
         backgroundColor: '#2d1b2e', // Dark purple for graveyard
         preloadAssets: [
-            ASSETS_3D.coffin,
-            ASSETS_3D.coffinOld,
-            ASSETS_3D.crossColumn,
-            ASSETS_3D.altarStone,
-            ASSETS_3D.candle,
+            ASSETS_3D.coffin.url,
+            ASSETS_3D.coffinOld.url,
+            ASSETS_3D.crossColumn.url,
+            ASSETS_3D.altarStone.url,
+            ASSETS_3D.candle.url,
         ],
     },
     parameters: {
@@ -417,7 +418,7 @@ export const SiegeWeapons: Story = {
         cameraMode: 'isometric',
         showGrid: true,
         shadows: true,
-        preloadAssets: [ASSETS_3D.ballista, ASSETS_3D.catapult],
+        preloadAssets: [ASSETS_3D.ballista.url, ASSETS_3D.catapult.url],
     },
 };
 
@@ -448,7 +449,7 @@ export const SingleAssetTest: Story = {
         cameraMode: 'isometric',
         showGrid: true,
         shadows: true,
-        preloadAssets: [ASSETS_3D.corridor],
+        preloadAssets: [ASSETS_3D.corridor.url],
     },
 };
 
@@ -477,11 +478,11 @@ export const PerformanceTest: Story = {
         shadows: true,
         useInstancing: true,
         preloadAssets: [
-            ASSETS_3D.barrels,
-            ASSETS_3D.crate,
-            ASSETS_3D.column,
-            ASSETS_3D.columnDamaged,
-            ASSETS_3D.ladder,
+            ASSETS_3D.barrels.url,
+            ASSETS_3D.crate.url,
+            ASSETS_3D.column.url,
+            ASSETS_3D.columnDamaged.url,
+            ASSETS_3D.ladder.url,
         ],
     },
 };
@@ -496,12 +497,12 @@ export const InvalidAssetHandling: Story = {
             // Valid asset
             { id: 'valid', x: 1, y: 1, z: 0, type: 'corridor', assetUrl: ASSETS_3D.corridor } as StoryFeature,
             // Invalid asset (will show fallback)
-            { id: 'invalid', x: 2, y: 1, z: 0, type: 'prop', assetUrl: 'https://invalid-url.glb' } as StoryFeature,
+            { id: 'invalid', x: 2, y: 1, z: 0, type: 'prop', assetUrl: makeAsset('https://invalid-url.glb', 'decoration', { dimension: '3d' }) } as StoryFeature,
         ],
         cameraMode: 'isometric',
         showGrid: true,
         shadows: true,
-        preloadAssets: [ASSETS_3D.corridor],
+        preloadAssets: [ASSETS_3D.corridor.url],
     },
     parameters: {
         docs: {

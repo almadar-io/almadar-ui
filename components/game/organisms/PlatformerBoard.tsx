@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useCallback, useEffect, useRef } from 'react';
-import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
+import type { Asset, EventEmit, EntityRow } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -40,10 +40,10 @@ export interface PlatformerBoardProps {
     worldHeight?: number;
     canvasWidth?: number;
     canvasHeight?: number;
-    /** Player sprite URL */
-    playerSprite?: AssetUrl;
-    /** Map of platform type to tile sprite URL */
-    tileSprites?: Record<string, AssetUrl>;
+    /** Player sprite */
+    playerSprite?: Asset;
+    /** Map of platform type to tile sprite */
+    tileSprites?: Record<string, Asset>;
     /** Canvas background color */
     bgColor?: string;
     /** Event names forwarded to PlatformerCanvas */
@@ -183,8 +183,8 @@ export function PlatformerBoard({
                     canvasHeight={canvasHeight}
                     followCamera
                     bgColor={bgColor}
-                    playerSprite={playerSprite}
-                    tileSprites={tileSprites}
+                    playerSprite={playerSprite?.url}
+                    tileSprites={tileSprites ? Object.fromEntries(Object.entries(tileSprites).map(([k, a]) => [k, a.url])) : undefined}
                     leftEvent={leftEvent}
                     rightEvent={rightEvent}
                     jumpEvent={jumpEvent}

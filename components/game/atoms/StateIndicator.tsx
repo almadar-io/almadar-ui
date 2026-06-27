@@ -2,19 +2,22 @@ import React from 'react';
 import { Box } from '../../core/atoms/Box';
 import { Icon, type IconInput } from '../../core/atoms/Icon';
 import { cn } from '../../../lib/cn';
-import type { AssetUrl } from '@almadar/core';
+import type { Asset } from '@almadar/core';
 
 export interface StateStyle {
     icon: IconInput;
     bgClass: string;
 }
 
-const DEFAULT_ASSET_URL: AssetUrl =
-  'https://almadar-kflow-assets.web.app/shared/isometric-dungeon/Isometric/chestClosed_E.png';
+const DEFAULT_ASSET_URL: Asset = {
+  url: 'https://almadar-kflow-assets.web.app/shared/isometric-dungeon/Isometric/chestClosed_E.png',
+  role: 'effect',
+  category: 'item',
+};
 
 export interface StateIndicatorProps {
     /** Sprite image URL — takes precedence over the state icon when provided */
-    assetUrl?: AssetUrl;
+    assetUrl?: Asset;
     /** The current state name */
     state: string;
     /** Optional label override (defaults to capitalized state name) */
@@ -81,7 +84,7 @@ export function StateIndicator({
             <Box as="span">
               {assetUrl ? (
                 <img
-                  src={assetUrl}
+                  src={assetUrl.url}
                   alt={displayLabel}
                   width={16}
                   height={16}

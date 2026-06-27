@@ -585,7 +585,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                             userData={{ type: 'tile', tileId: tile.id, gridX: tile.x, gridZ: tile.z ?? tile.y }}
                         >
                             <ModelLoader
-                                url={tile.modelUrl}
+                                url={tile.modelUrl.url}
                                 scale={0.95}
                                 fallbackGeometry="box"
                                 castShadow
@@ -655,7 +655,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                         ) : unit.modelUrl ? (
                             /* GLB unit model (box fallback while loading / on error) */
                             <ModelLoader
-                                url={unit.modelUrl}
+                                url={unit.modelUrl.url}
                                 scale={modelScale}
                                 fallbackGeometry="box"
                                 castShadow
@@ -729,7 +729,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                     return (
                         <ModelLoader
                             key={feature.id}
-                            url={feature.assetUrl}
+                            url={feature.assetUrl.url}
                             position={position}
                             scale={0.5}
                             rotation={[0, (feature as { rotation?: number }).rotation ?? 0, 0]}

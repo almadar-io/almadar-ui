@@ -1,11 +1,11 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import { resolveIcon, type IconInput } from '../../core/atoms/Icon';
-import type { AssetUrl } from '@almadar/core';
+import type { Asset } from '@almadar/core';
 
 export interface ActionButtonProps {
-  /** Sprite image URL — takes precedence over icon when provided */
-  assetUrl?: AssetUrl;
+  /** Sprite asset — takes precedence over icon when provided */
+  assetUrl?: Asset;
   /** Button label text */
   label: string;
   /** Icon displayed before the label */
@@ -38,8 +38,11 @@ const variantStyles = {
   danger: 'bg-error text-error-foreground hover:bg-error/90 border-error',
 };
 
-const DEFAULT_ASSET_URL: AssetUrl =
-  'https://almadar-kflow-assets.web.app/shared/effects/particles/slash_01.png';
+const DEFAULT_ASSET_URL: Asset = {
+  url: 'https://almadar-kflow-assets.web.app/shared/effects/particles/slash_01.png',
+  role: 'effect',
+  category: 'effect',
+};
 
 export function ActionButton({
   assetUrl = DEFAULT_ASSET_URL,
@@ -83,7 +86,7 @@ export function ActionButton({
       )}
       {assetUrl ? (
         <img
-          src={assetUrl}
+          src={assetUrl.url}
           alt=""
           width={16}
           height={16}

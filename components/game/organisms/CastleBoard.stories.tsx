@@ -72,12 +72,8 @@ const MOCK_UNITS: IsometricUnit[] = [
     { id: 'unit-3', position: { x: 2, y: 3 }, name: 'Theron', unitType: 'cavalry', team: 'player', health: 110, maxHealth: 120 },
 ];
 
-const MOCK_ENTITY: EntityRow = {
-    id: 'castle-001',
-    tiles: generateCastleTiles(8, 8).map((t) => ({ ...t })),
-    features: MOCK_FEATURES,
-    units: MOCK_UNITS,
-};
+const MOCK_ENTITY_ID: import('@almadar/core').EntityRow = { id: 'castle-001' };
+const MOCK_TILES = generateCastleTiles(8, 8).map((t) => ({ ...t }));
 
 // =============================================================================
 // Meta
@@ -103,7 +99,7 @@ type Story = StoryObj<typeof meta>;
 /** Simple CastleBoard with mock entity at default scale. */
 export const Default: Story = {
     args: {
-        entity: MOCK_ENTITY,
+        entity: MOCK_ENTITY_ID, tiles: MOCK_TILES, features: MOCK_FEATURES, units: MOCK_UNITS,
     },
 };
 
@@ -114,7 +110,7 @@ export const Default: Story = {
 function WithSlotsRender() {
     return (
         <CastleBoard
-            entity={MOCK_ENTITY}
+            entity={MOCK_ENTITY_ID} tiles={MOCK_TILES} features={MOCK_FEATURES} units={MOCK_UNITS}
             scale={0.45}
             header={(ctx: CastleSlotContext) => (
                 <HStack
@@ -349,12 +345,8 @@ function EditorRender() {
         }
     }, []);
 
-    const entity: EntityRow = useMemo(() => ({
-        id: 'editor-castle',
-        tiles: tiles.map((t) => ({ ...t })),
-        features,
-        units,
-    }), [tiles, features, units]);
+    const entityId: EntityRow = { id: 'editor-castle' };
+    const entityTiles = useMemo(() => tiles.map((t) => ({ ...t })), [tiles]);
 
     const featureOptions = BUILDING_TYPES.map((t) => ({
         value: t,
@@ -576,7 +568,10 @@ function EditorRender() {
             {/* CastleBoard */}
             <Box className="flex-1 min-w-0">
                 <CastleBoard
-                    entity={entity}
+                    entity={entityId}
+                    tiles={entityTiles}
+                    features={features}
+                    units={units}
                     scale={scale}
                     onTileClick={handleTileClick}
                     footer={(ctx: CastleSlotContext) => (

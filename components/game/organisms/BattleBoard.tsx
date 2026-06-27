@@ -21,7 +21,7 @@
  */
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import type { AssetUrl, EventEmit, EntityRow, FieldValue } from '@almadar/core';
+import type { Asset, AssetUrl, EventEmit, EntityRow, FieldValue } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -48,6 +48,7 @@ import {
     unitHealth,
 } from './boardEntity';
 import { isoToScreen, TILE_WIDTH, FLOOR_HEIGHT } from './utils/isometric';
+import { makeAsset } from './utils/makeAsset';
 
 // =============================================================================
 // Types
@@ -81,11 +82,10 @@ export type BattleSlotContext = {
 
 /** Asset manifest shape for BattleBoard. */
 type BattleAssetManifest = {
-    baseUrl?: AssetUrl;
-    terrains?: Record<string, AssetUrl>;
-    units?: Record<string, AssetUrl>;
-    features?: Record<string, AssetUrl>;
-    effects?: Record<string, AssetUrl>;
+    terrains?: Record<string, Asset>;
+    units?: Record<string, Asset>;
+    features?: Record<string, Asset>;
+    effects?: Record<string, Asset>;
 };
 
 export interface BattleBoardProps extends DisplayStateProps {
@@ -165,12 +165,12 @@ const BATTLE_GRID_W = 16;
 const BATTLE_GRID_H = 16;
 
 // 5 terrain sprites — varied by deterministic (x,y) hash
-const BATTLE_TERRAIN_SPRITES: readonly string[] = [
-    `${BATTLE_CDN}/isometric-dungeon/Isometric/dirt_E.png`,
-    `${BATTLE_CDN}/isometric-dungeon/Isometric/dirtTiles_E.png`,
-    `${BATTLE_CDN}/isometric-dungeon/Isometric/planks_E.png`,
-    `${BATTLE_CDN}/isometric-dungeon/Isometric/stoneTile_E.png`,
-    `${BATTLE_CDN}/isometric-dungeon/Isometric/stoneInset_E.png`,
+const BATTLE_TERRAIN_SPRITES: readonly Asset[] = [
+    makeAsset(`${BATTLE_CDN}/isometric-dungeon/Isometric/dirt_E.png`, 'tile'),
+    makeAsset(`${BATTLE_CDN}/isometric-dungeon/Isometric/dirtTiles_E.png`, 'tile'),
+    makeAsset(`${BATTLE_CDN}/isometric-dungeon/Isometric/planks_E.png`, 'tile'),
+    makeAsset(`${BATTLE_CDN}/isometric-dungeon/Isometric/stoneTile_E.png`, 'tile'),
+    makeAsset(`${BATTLE_CDN}/isometric-dungeon/Isometric/stoneInset_E.png`, 'tile'),
 ];
 
 function buildDefaultBattleTiles(): IsometricTile[] {
@@ -243,14 +243,14 @@ export function BattleBoard({
             if (o === null || typeof o.x !== 'number' || typeof o.y !== 'number') return [];
             const tile: IsometricTile = { x: o.x, y: o.y };
             if (typeof o.terrain === 'string') tile.terrain = o.terrain;
-            if (typeof o.terrainSprite === 'string') tile.terrainSprite = o.terrainSprite;
+            if (typeof o.terrainSprite === 'string') tile.terrainSprite = makeAsset(o.terrainSprite, 'tile');
             if (typeof o.passable === 'boolean') tile.passable = o.passable;
             if (typeof o.movementCost === 'number') tile.movementCost = o.movementCost;
             if (typeof o.elevation === 'number') tile.elevation = o.elevation;
             if (typeof o.type === 'string') tile.type = o.type;
             if (typeof o.tileType === 'string') tile.tileType = o.tileType;
             if (typeof o.id === 'string') tile.id = o.id;
-            if (typeof o.modelUrl === 'string') tile.modelUrl = o.modelUrl;
+            if (typeof o.modelUrl === 'string') tile.modelUrl = makeAsset(o.modelUrl, 'decoration', { dimension: '3d' });
             return [tile];
         })
         : []);
@@ -261,10 +261,10 @@ export function BattleBoard({
             if (o === null || typeof o.type !== 'string' || typeof o.x !== 'number' || typeof o.y !== 'number') return [];
             const feat: IsometricFeature = { type: o.type, x: o.x, y: o.y };
             if (typeof o.id === 'string') feat.id = o.id;
-            if (typeof o.sprite === 'string') feat.sprite = o.sprite;
+            if (typeof o.sprite === 'string') feat.sprite = makeAsset(o.sprite, 'decoration');
             if (typeof o.color === 'string') feat.color = o.color;
             if (typeof o.elevation === 'number') feat.elevation = o.elevation;
-            if (typeof o.assetUrl === 'string') feat.assetUrl = o.assetUrl;
+            if (typeof o.assetUrl === 'string') feat.assetUrl = makeAsset(o.assetUrl, 'decoration', { dimension: '3d' });
             return [feat];
         })
         : []);
@@ -431,7 +431,7 @@ export function BattleBoard({
                     maxHealth: num(unit.maxHealth),
                     unitType: unit.unitType == null ? undefined : str(unit.unitType),
                     heroId: unit.heroId == null ? undefined : str(unit.heroId),
-                    sprite: unit.sprite == null ? undefined : str(unit.sprite),
+                    sprite: unit.sprite == null ? undefined : makeAsset(str(unit.sprite), 'npc'),
                     traits: unitTraits?.map(tr => ({
                         name: tr.name,
                         currentState: tr.currentState,
@@ -608,7 +608,6 @@ export function BattleBoard({
                         onTileHover={(x: number, y: number) => setHoveredTile({ x, y })}
                         onTileLeave={() => setHoveredTile(null)}
                         scale={scale}
-                        assetBaseUrl={assetManifest?.baseUrl}
                         assetManifest={assetManifest}
                         backgroundImage={backgroundImage}
                         onDrawEffects={onDrawEffects}

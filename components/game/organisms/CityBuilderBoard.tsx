@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useRef } from 'react';
-import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
+import type { Asset, EventEmit, EntityRow } from '@almadar/core';
+import { makeAsset } from './utils/makeAsset';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -18,19 +19,18 @@ import { boardEntity, num, str, rows } from './boardEntity';
 // Types
 // =============================================================================
 
-/** Manifest of asset base-url + per-kind sprite maps (UI value DTO). */
+/** Manifest of per-kind sprite maps (UI value DTO). */
 type CityBuilderAssetManifest = {
-    baseUrl?: AssetUrl;
-    terrains?: Record<string, AssetUrl>;
-    units?: Record<string, AssetUrl>;
-    features?: Record<string, AssetUrl>;
+    terrains?: Record<string, Asset>;
+    units?: Record<string, Asset>;
+    features?: Record<string, Asset>;
 };
 
 export interface CityBuilderTile {
     x: number;
     y: number;
     terrain?: string;
-    terrainSprite?: AssetUrl;
+    terrainSprite?: Asset;
     passable?: boolean;
 }
 
@@ -85,20 +85,6 @@ const DEFAULT_BUILD_TYPES: CityBuilderBuildType[] = [
     { type: 'barracks', label: 'Barracks', cost: 40 },
 ];
 
-/** Resolve a manifest-relative path against the manifest baseUrl into an absolute AssetUrl. */
-function resolveManifestUrl(
-    manifest: CityBuilderAssetManifest | undefined,
-    relative: AssetUrl | undefined,
-): AssetUrl | undefined {
-    if (relative == null) return undefined;
-    if (/^https?:\/\//.test(relative)) return relative;
-    const base = manifest?.baseUrl;
-    if (base == null) return relative;
-    const cleanBase = base.replace(/\/$/, '');
-    const cleanRel = relative.replace(/^\//, '');
-    return `${cleanBase}/${cleanRel}` as AssetUrl;
-}
-
 /** Build the default 12×12 terrain grid (alternating grass/stone/dirt variants). */
 function buildDefaultCBTiles(): CityBuilderTile[] {
     const tiles: CityBuilderTile[] = [];
@@ -120,14 +106,12 @@ function tilesToIso(
 ): IsometricTile[] {
     return tiles.map(t => {
         const key = t.terrain ?? 'grass';
-        const sprite = t.terrainSprite
-            ?? resolveManifestUrl(manifest, manifest?.terrains?.[key])
-            ?? resolveManifestUrl(manifest, manifest?.terrains?.grass);
+        const terrainSprite = t.terrainSprite ?? manifest?.terrains?.[key] ?? manifest?.terrains?.grass;
         return {
             x: t.x,
             y: t.y,
             terrain: t.terrain,
-            terrainSprite: sprite,
+            terrainSprite,
             passable: t.passable,
         };
     });
@@ -143,7 +127,7 @@ function buildingsToFeatures(
         x: b.x,
         y: b.y,
         type: b.type,
-        sprite: resolveManifestUrl(manifest, manifest?.features?.[b.type]),
+        sprite: manifest?.features?.[b.type],
     }));
 }
 
@@ -182,7 +166,7 @@ export function CityBuilderBoard({
             x: num(r.x),
             y: num(r.y),
             terrain: r.terrain == null ? undefined : str(r.terrain),
-            terrainSprite: r.terrainSprite == null ? undefined : (str(r.terrainSprite) as AssetUrl),
+            terrainSprite: r.terrainSprite == null ? undefined : makeAsset(str(r.terrainSprite), 'tile'),
             passable: r.passable !== false,
         })),
         [board.tiles],
@@ -306,7 +290,6 @@ export function CityBuilderBoard({
                 <IsometricCanvas
                     tiles={isoTiles}
                     features={buildingFeatures}
-                    assetBaseUrl={assetManifest?.baseUrl}
                     assetManifest={assetManifest}
                     validMoves={validMoves}
                     hoveredTile={hoveredTile}

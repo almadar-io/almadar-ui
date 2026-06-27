@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo, useRef, useCallback } from 'react';
-import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
+import type { Asset, EventEmit, EntityRow } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -17,10 +17,9 @@ import { boardEntity, num, str, rows } from './boardEntity';
 // Types
 // =============================================================================
 
-/** Manifest of asset base-url + per-card sprite map (UI value DTO). */
+/** Manifest of per-card sprite map (UI value DTO). */
 type CardBattlerAssetManifest = {
-    baseUrl?: AssetUrl;
-    cards?: Record<string, AssetUrl>;
+    cards?: Record<string, Asset>;
 };
 
 /** One card as carried on the entity / passed as a prop. */
@@ -58,20 +57,6 @@ export interface CardBattlerBoardProps extends DisplayStateProps {
 // Helpers
 // =============================================================================
 
-/** Resolve a manifest-relative path against the manifest baseUrl into an absolute AssetUrl. */
-function resolveManifestUrl(
-    manifest: CardBattlerAssetManifest | undefined,
-    relative: AssetUrl | undefined,
-): AssetUrl | undefined {
-    if (relative == null) return undefined;
-    if (/^https?:\/\//.test(relative)) return relative;
-    const base = manifest?.baseUrl;
-    if (base == null) return relative;
-    const cleanBase = base.replace(/\/$/, '');
-    const cleanRel = relative.replace(/^\//, '');
-    return `${cleanBase}/${cleanRel}` as AssetUrl;
-}
-
 /** Coerce a weakly-typed entity row into a CardBattlerCard. */
 function rowToCard(r: EntityRow): CardBattlerCard {
     return {
@@ -100,7 +85,7 @@ function toHandCards(
 ): CardHandCard[] {
     return cards.map((c) => {
         const key = c.iconKey ?? c.id;
-        const iconUrl = resolveManifestUrl(manifest, manifest?.cards?.[key]);
+        const iconUrl = manifest?.cards?.[key];
         return {
             id: c.id,
             iconUrl,

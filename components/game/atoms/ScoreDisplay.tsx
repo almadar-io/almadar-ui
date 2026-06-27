@@ -1,11 +1,11 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import { Icon, type IconInput } from '../../core/atoms/Icon';
-import type { AssetUrl } from '@almadar/core';
+import type { Asset } from '@almadar/core';
 
 export interface ScoreDisplayProps {
-  /** Sprite image URL — takes precedence over icon when provided */
-  assetUrl?: AssetUrl;
+  /** Sprite asset — takes precedence over icon when provided */
+  assetUrl?: Asset;
   /** Current score value */
   value: number;
   /** Alias for value — common schema binding name */
@@ -29,8 +29,11 @@ const sizeMap = {
   xl: 'text-4xl',
 };
 
-const DEFAULT_ASSET_URL: AssetUrl =
-  'https://almadar-kflow-assets.web.app/shared/effects/particles/star_01.png';
+const DEFAULT_ASSET_URL: Asset = {
+  url: 'https://almadar-kflow-assets.web.app/shared/effects/particles/star_01.png',
+  role: 'effect',
+  category: 'effect',
+};
 
 export function ScoreDisplay({
   assetUrl = DEFAULT_ASSET_URL,
@@ -61,7 +64,7 @@ export function ScoreDisplay({
     >
       {assetUrl ? (
         <img
-          src={assetUrl}
+          src={assetUrl.url}
           alt=""
           width={20}
           height={20}

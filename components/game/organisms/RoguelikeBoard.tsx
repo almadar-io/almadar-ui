@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
+import type { Asset, EventEmit, EntityRow } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -13,6 +13,7 @@ import type { DisplayStateProps } from '../../core/organisms/types';
 import IsometricCanvas from '../molecules/IsometricCanvas';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from './types/isometric';
 import { boardEntity, str, num, rows, vec2 } from './boardEntity';
+import { makeAsset } from './utils/makeAsset';
 
 // =============================================================================
 // Types
@@ -25,10 +26,9 @@ type EnemyRow = { id: string; x: number; y: number; hp: number; attack: number }
 type ItemRow = { id: string; x: number; y: number; kind: 'health_potion' | 'sword' | 'shield' };
 
 type RoguelikeAssetManifest = {
-    baseUrl?: AssetUrl;
-    terrains?: Record<string, AssetUrl>;
-    units?: Record<string, AssetUrl>;
-    features?: Record<string, AssetUrl>;
+    terrains?: Record<string, Asset>;
+    units?: Record<string, Asset>;
+    features?: Record<string, Asset>;
 };
 
 export interface RoguelikeBoardProps extends DisplayStateProps {
@@ -63,20 +63,6 @@ export interface RoguelikeBoardProps extends DisplayStateProps {
 const DUNGEON_GRID_W = 16;
 const DUNGEON_GRID_H = 16;
 
-/** Resolve a manifest-relative path against the manifest baseUrl into an absolute AssetUrl. */
-function resolveManifestUrl(
-    manifest: RoguelikeAssetManifest | undefined,
-    relative: AssetUrl | undefined,
-): AssetUrl | undefined {
-    if (relative == null) return undefined;
-    if (/^https?:\/\//.test(relative)) return relative;
-    const base = manifest?.baseUrl;
-    if (base == null) return relative;
-    const cleanBase = base.replace(/\/$/, '');
-    const cleanRel = relative.replace(/^\//, '');
-    return `${cleanBase}/${cleanRel}` as AssetUrl;
-}
-
 // Deterministic "room" classification: outer border = wall, inner cross-pillars = wall, else floor.
 // Terrain sprites resolve from the manifest's `terrains` map; absent slots render no sprite.
 function dungeonTerrain(
@@ -85,18 +71,18 @@ function dungeonTerrain(
     stairsX: number,
     stairsY: number,
     manifest: RoguelikeAssetManifest | undefined,
-): { terrain: string; passable: boolean; terrainSprite?: AssetUrl } {
+): { terrain: string; passable: boolean; terrainSprite?: Asset } {
     const isBorder = x === 0 || y === 0 || x === DUNGEON_GRID_W - 1 || y === DUNGEON_GRID_H - 1;
     const isPillar = x % 4 === 0 && y % 4 === 0 && !isBorder;
     const isWall = isBorder || isPillar;
     const terrains = manifest?.terrains;
     if (x === stairsX && y === stairsY) {
-        return { terrain: 'stairs', passable: true, terrainSprite: resolveManifestUrl(manifest, terrains?.stairs) };
+        return { terrain: 'stairs', passable: true, terrainSprite: terrains?.stairs };
     }
     if (isWall) {
-        return { terrain: 'wall', passable: false, terrainSprite: resolveManifestUrl(manifest, terrains?.wall) };
+        return { terrain: 'wall', passable: false, terrainSprite: terrains?.wall };
     }
-    return { terrain: 'floor', passable: true, terrainSprite: resolveManifestUrl(manifest, terrains?.floor) };
+    return { terrain: 'floor', passable: true, terrainSprite: terrains?.floor };
 }
 
 function buildDefaultDungeonTiles(
@@ -166,7 +152,7 @@ export function RoguelikeBoard({
             x: num(r.x),
             y: num(r.y),
             terrain: r.terrain == null ? undefined : str(r.terrain),
-            terrainSprite: r.terrainSprite == null ? undefined : (str(r.terrainSprite) as AssetUrl),
+            terrainSprite: r.terrainSprite == null ? undefined : makeAsset(str(r.terrainSprite), 'tile'),
             passable: r.passable !== false,
         })),
         [board.tiles],
@@ -263,7 +249,7 @@ export function RoguelikeBoard({
                 health: playerHp,
                 maxHealth: playerMaxHp,
                 unitType: 'player',
-                sprite: resolveManifestUrl(assetManifest, assetManifest?.units?.player),
+                sprite: assetManifest?.units?.player,
             },
             ...liveEnemies.map(e => ({
                 id: e.id,
@@ -273,7 +259,7 @@ export function RoguelikeBoard({
                 health: e.hp,
                 maxHealth: 6,
                 unitType: 'enemy',
-                sprite: resolveManifestUrl(assetManifest, assetManifest?.units?.enemy),
+                sprite: assetManifest?.units?.enemy,
             })),
         ];
     }, [player, enemies, playerHp, playerMaxHp, assetManifest, t]);
@@ -285,7 +271,7 @@ export function RoguelikeBoard({
             x: it.x,
             y: it.y,
             type: it.kind,
-            sprite: resolveManifestUrl(assetManifest, assetManifest?.features?.[it.kind]),
+            sprite: assetManifest?.features?.[it.kind],
         })),
     [items, assetManifest]);
 
@@ -362,7 +348,6 @@ export function RoguelikeBoard({
                     onTileHover={(x: number, y: number) => setHoveredTile({ x, y })}
                     onTileLeave={() => setHoveredTile(null)}
                     scale={scale}
-                    assetBaseUrl={assetManifest?.baseUrl}
                     assetManifest={assetManifest}
                     unitScale={unitScale}
                     spriteHeightRatio={spriteHeightRatio}

@@ -1,10 +1,10 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
-import type { AssetUrl } from '@almadar/core';
+import type { Asset } from '@almadar/core';
 
 export interface TurnIndicatorProps {
-  /** Sprite image URL — takes precedence over the dot indicator when provided */
-  assetUrl?: AssetUrl;
+  /** Sprite asset — takes precedence over the dot indicator when provided */
+  assetUrl?: Asset;
   /** Current turn number */
   currentTurn: number;
   /** Maximum number of turns */
@@ -25,8 +25,11 @@ const sizeMap = {
   lg: { wrapper: 'text-base gap-2.5 px-4 py-1.5', dot: 'w-2.5 h-2.5' },
 };
 
-const DEFAULT_ASSET_URL: AssetUrl =
-  'https://almadar-kflow-assets.web.app/shared/effects/particles/symbol_01.png';
+const DEFAULT_ASSET_URL: Asset = {
+  url: 'https://almadar-kflow-assets.web.app/shared/effects/particles/symbol_01.png',
+  role: 'effect',
+  category: 'effect',
+};
 
 export function TurnIndicator({
   assetUrl = DEFAULT_ASSET_URL,
@@ -65,7 +68,7 @@ export function TurnIndicator({
           <span className="text-muted-foreground">|</span>
           {assetUrl ? (
             <img
-              src={assetUrl}
+              src={assetUrl.url}
               alt=""
               width={12}
               height={12}

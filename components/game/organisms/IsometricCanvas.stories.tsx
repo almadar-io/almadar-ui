@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { IsometricCanvas } from '../molecules/IsometricCanvas';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from './types/isometric';
+import { makeAsset } from './utils/makeAsset';
 
 // =============================================================================
 // Helpers: generate tile grids
@@ -247,21 +248,20 @@ export const RemoteAssets: Story = {
             { x: 1, y: 1, type: 'town_hall' },
             { x: 4, y: 1, type: 'barracks' },
         ],
-        assetBaseUrl: 'https://trait-wars-assets.web.app',
         assetManifest: {
             terrains: {
-                grass: '/isometric-dungeon/Isometric/stone_N.png',
-                water: '/isometric-dungeon/Isometric/bridgeBroken_N.png',
-                stone: '/isometric-dungeon/Isometric/barrel_N.png',
+                grass: makeAsset('https://trait-wars-assets.web.app/isometric-dungeon/Isometric/stone_N.png', 'tile'),
+                water: makeAsset('https://trait-wars-assets.web.app/isometric-dungeon/Isometric/bridgeBroken_N.png', 'tile'),
+                stone: makeAsset('https://trait-wars-assets.web.app/isometric-dungeon/Isometric/barrel_N.png', 'tile'),
             },
             units: {
-                archivist: '/units/archivist.png',
-                guardian: '/units/guardian.png',
-                glitch: '/units/glitch.png',
+                archivist: makeAsset('https://trait-wars-assets.web.app/units/archivist.png', 'npc'),
+                guardian: makeAsset('https://trait-wars-assets.web.app/units/guardian.png', 'player'),
+                glitch: makeAsset('https://trait-wars-assets.web.app/units/glitch.png', 'enemy'),
             },
             features: {
-                town_hall: '/buildings/town_hall.png',
-                barracks: '/buildings/barracks.png',
+                town_hall: makeAsset('https://trait-wars-assets.web.app/buildings/town_hall.png', 'decoration'),
+                barracks: makeAsset('https://trait-wars-assets.web.app/buildings/barracks.png', 'decoration'),
             },
         },
         scale: 0.5,

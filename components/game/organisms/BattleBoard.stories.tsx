@@ -128,11 +128,12 @@ const MOCK_UNITS: EntityRow[] = [
     },
 ];
 
+const MOCK_BATTLE_TILES = generateBattleTiles(8, 8, 'grass').map((t) => ({ ...t }));
+
 /** Mock entity for uncontrolled stories (uses initialUnits). */
 const MOCK_UNCONTROLLED_ENTITY: EntityRow = {
     id: 'battle-001',
-    initialUnits: MOCK_UNITS,
-    tiles: generateBattleTiles(8, 8, 'grass').map((t) => ({ ...t })),
+    initialUnits: MOCK_UNITS as EntityRow['initialUnits'],
     features: [],
     boardWidth: 8,
     boardHeight: 8,
@@ -141,12 +142,11 @@ const MOCK_UNCONTROLLED_ENTITY: EntityRow = {
 /** Mock entity for controlled stories (uses required game-state fields). */
 const MOCK_CONTROLLED_ENTITY: EntityRow = {
     id: 'battle-001',
-    units: MOCK_UNITS,
+    units: MOCK_UNITS as EntityRow['units'],
     phase: 'observation',
     turn: 1,
     gameResult: null,
     selectedUnitId: null,
-    tiles: generateBattleTiles(8, 8, 'grass').map((t) => ({ ...t })),
     features: [],
     boardWidth: 8,
     boardHeight: 8,
@@ -183,7 +183,7 @@ type Story = StoryObj<typeof meta>;
 /** Interactive BattleBoard with self-managed game state. */
 export const Default: Story = {
     args: {
-        entity: MOCK_UNCONTROLLED_ENTITY,
+        entity: MOCK_UNCONTROLLED_ENTITY, tiles: MOCK_BATTLE_TILES,
     },
 };
 
@@ -331,7 +331,7 @@ function ActionsSlot(ctx: BattleSlotContext) {
 /** UncontrolledBattleBoard with render-prop slots: header, sidebar, overlay, and actions. */
 export const WithSlots: Story = {
     args: {
-        entity: MOCK_UNCONTROLLED_ENTITY,
+        entity: MOCK_UNCONTROLLED_ENTITY, tiles: MOCK_BATTLE_TILES,
         header: HeaderSlot,
         sidebar: SidebarSlot,
         overlay: OverlaySlot,
@@ -392,12 +392,12 @@ function EditorStory() {
     // Build entity from editor state (uncontrolled — uses initialUnits)
     const entity: EntityRow = {
         id: 'editor-battle',
-        initialUnits: placedUnits.map((u) => ({ ...u })),
-        tiles: tiles.map((t) => ({ ...t })),
+        initialUnits: placedUnits.map((u) => ({ ...u })) as EntityRow['initialUnits'],
         features: [],
         boardWidth: gridWidth,
         boardHeight: gridHeight,
     };
+    const editorTiles = tiles.map((t) => ({ ...t }));
 
     // Handle tile click based on mode
     const handleTileClick = useCallback((x: number, y: number) => {
@@ -683,6 +683,7 @@ function EditorStory() {
             <Box className="flex-1 h-full overflow-hidden">
                 <UncontrolledBattleBoard
                     entity={entity}
+                    tiles={editorTiles}
                     scale={scale}
                     tileClickEvent={undefined}
                     header={(ctx) => (
@@ -738,6 +739,6 @@ export const Editor: Story = {
 export const Controlled: StoryObj<typeof BattleBoard> = {
     render: (args) => <BattleBoard {...args} />,
     args: {
-        entity: MOCK_CONTROLLED_ENTITY,
+        entity: MOCK_CONTROLLED_ENTITY, tiles: MOCK_BATTLE_TILES,
     },
 };

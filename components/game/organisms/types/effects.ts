@@ -1,5 +1,3 @@
-import type { AssetUrl } from '@almadar/core';
-
 /**
  * Canvas Effect Types
  *
@@ -18,7 +16,7 @@ import type { AssetUrl } from '@almadar/core';
  */
 export interface CanvasParticle {
     /** Sprite URL (white-on-transparent particle) */
-    spriteUrl: AssetUrl;
+    spriteUrl: string;
     /** Current position in screen pixels */
     x: number;
     y: number;
@@ -54,7 +52,7 @@ export interface CanvasParticle {
  */
 export interface ParticleEmitterConfig {
     /** Array of sprite URLs to randomly pick from */
-    spriteUrls: AssetUrl[];
+    spriteUrls: string[];
     /** Number of particles to spawn */
     count: number;
     /** Spawn origin in screen pixels */
@@ -96,7 +94,7 @@ export interface ParticleEmitterConfig {
  */
 export interface CanvasSequence {
     /** Ordered array of frame sprite URLs */
-    frameUrls: AssetUrl[];
+    frameUrls: string[];
     /** Position in screen pixels (top-left of sprite) */
     x: number;
     y: number;
@@ -120,7 +118,7 @@ export interface CanvasSequence {
  * Configuration for spawning a frame sequence.
  */
 export interface SequenceConfig {
-    frameUrls: AssetUrl[];
+    frameUrls: string[];
     originX: number;
     originY: number;
     frameDuration: number;
@@ -136,7 +134,7 @@ export interface SequenceConfig {
  */
 export interface CanvasOverlay {
     /** Sprite URL */
-    spriteUrl: AssetUrl;
+    spriteUrl: string;
     /** Center position in screen pixels */
     x: number;
     y: number;
@@ -162,7 +160,7 @@ export interface CanvasOverlay {
  * Configuration for spawning an overlay.
  */
 export interface OverlayConfig {
-    spriteUrl: AssetUrl;
+    spriteUrl: string;
     originX: number;
     originY: number;
     alpha?: number;
@@ -235,7 +233,7 @@ export interface CombatPreset {
  */
 export interface EffectAssetManifest {
     /** Base URL for all asset paths */
-    baseUrl: AssetUrl;
+    baseUrl: string;
     /** Particle sprite groups (white-on-transparent, tinted at runtime) */
     particles?: {
         slash?: string[];

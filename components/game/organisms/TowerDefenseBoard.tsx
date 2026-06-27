@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
+import type { Asset, AssetUrl, EventEmit, EntityRow } from '@almadar/core';
+import { makeAsset } from './utils/makeAsset';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -18,12 +19,11 @@ import { boardEntity, num, str, rows } from './boardEntity';
 // Types
 // =============================================================================
 
-/** Manifest of asset base-url + per-kind sprite maps (UI value DTO). */
+/** Manifest of per-kind sprite maps (UI value DTO). */
 type TowerDefenseAssetManifest = {
-    baseUrl?: AssetUrl;
-    terrains?: Record<string, AssetUrl>;
-    units?: Record<string, AssetUrl>;
-    features?: Record<string, AssetUrl>;
+    terrains?: Record<string, Asset>;
+    units?: Record<string, Asset>;
+    features?: Record<string, Asset>;
 };
 
 export interface TowerDefenseTile {
@@ -100,20 +100,6 @@ export interface TowerDefenseBoardProps extends DisplayStateProps {
 const TD_GRID_W = 16;
 const TD_GRID_H = 16;
 
-/** Resolve a manifest-relative path against the manifest baseUrl into an absolute AssetUrl. */
-function resolveManifestUrl(
-    manifest: TowerDefenseAssetManifest | undefined,
-    relative: AssetUrl | undefined,
-): AssetUrl | undefined {
-    if (relative == null) return undefined;
-    if (/^https?:\/\//.test(relative)) return relative;
-    const base = manifest?.baseUrl;
-    if (base == null) return relative;
-    const cleanBase = base.replace(/\/$/, '');
-    const cleanRel = relative.replace(/^\//, '');
-    return `${cleanBase}/${cleanRel}` as AssetUrl;
-}
-
 // S-shaped creep path traversing the 16×16 grid (mirrors lolo path default)
 const DEFAULT_TD_PATH: TowerDefensePathPoint[] = [
     { x: 2,  y: 0  }, { x: 2,  y: 1  }, { x: 2,  y: 2  }, { x: 2,  y: 3  },
@@ -158,14 +144,14 @@ function tilesToIso(
 ): IsometricTile[] {
     return tiles.map(t => {
         const key = t.terrain ?? 'ground';
-        const sprite = t.terrainSprite
-            ?? resolveManifestUrl(manifest, manifest?.terrains?.[key])
-            ?? resolveManifestUrl(manifest, manifest?.terrains?.ground);
+        const terrainSprite = t.terrainSprite != null
+            ? makeAsset(t.terrainSprite, 'tile')
+            : manifest?.terrains?.[key] ?? manifest?.terrains?.ground;
         return {
             x: t.x,
             y: t.y,
             terrain: t.terrain,
-            terrainSprite: sprite,
+            terrainSprite,
             passable: t.passable,
         };
     });
@@ -175,7 +161,7 @@ function creepsToUnits(
     creeps: TowerDefenseCreep[],
     manifest: TowerDefenseAssetManifest | undefined,
 ): IsometricUnit[] {
-    const sprite = resolveManifestUrl(manifest, manifest?.units?.creep);
+    const sprite = manifest?.units?.creep;
     return creeps.map(c => ({
         id: c.id,
         position: { x: c.x, y: c.y },
@@ -197,7 +183,7 @@ function heroToUnit(
         position: { x: hero.x, y: hero.y },
         name: 'Hero',
         team: 'player' as const,
-        sprite: resolveManifestUrl(manifest, manifest?.units?.hero),
+        sprite: manifest?.units?.hero,
         unitType: 'hero',
         health: 1,
         maxHealth: 1,
@@ -209,7 +195,7 @@ function towersToFeatures(
     towers: TowerDefenseTower[],
     manifest: TowerDefenseAssetManifest | undefined,
 ): IsometricFeature[] {
-    const sprite = resolveManifestUrl(manifest, manifest?.features?.tower);
+    const sprite = manifest?.features?.tower;
     return towers.map(t => ({
         id: t.id,
         x: t.x,
@@ -434,7 +420,6 @@ export function TowerDefenseBoard({
                     tiles={isoTiles}
                     units={isoUnits}
                     features={towerFeatures}
-                    assetBaseUrl={assetManifest?.baseUrl}
                     assetManifest={assetManifest}
                     validMoves={validMoves}
                     hoveredTile={hoveredTile}

@@ -3,7 +3,7 @@ import { cn } from '../../../lib/cn';
 import { Icon, type IconInput } from '../../core/atoms/Icon';
 import { HealthBar } from '../atoms/HealthBar';
 import { ScoreDisplay } from '../atoms/ScoreDisplay';
-import type { AssetUrl } from '@almadar/core';
+import type { Asset } from '@almadar/core';
 
 /**
  * StatBadge — game stat display molecule (distinct from core Badge atom).
@@ -12,10 +12,10 @@ import type { AssetUrl } from '@almadar/core';
  * a named label — purpose-built for HUD stat rows, not general status tags.
  */
 export interface StatBadgeProps {
-  /** Sprite image URL — takes precedence over icon when provided */
-  assetUrl?: AssetUrl;
-  /** Asset-image icon URL (board ui/ PNG); takes precedence over the Lucide icon. */
-  iconUrl?: AssetUrl;
+  /** Sprite asset — takes precedence over icon when provided */
+  assetUrl?: Asset;
+  /** Asset image (board ui/ PNG); takes precedence over the Lucide icon. */
+  iconUrl?: Asset;
   /** Stat label */
   label: string;
   /** Current value (defaults to 0 if not provided) */
@@ -81,7 +81,7 @@ export function StatBadge({
     >
       {resolvedAsset ? (
         <img
-          src={resolvedAsset}
+          src={resolvedAsset.url}
           alt=""
           width={16}
           height={16}

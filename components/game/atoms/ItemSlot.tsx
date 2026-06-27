@@ -2,11 +2,11 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import { Icon, type IconInput } from '../../core/atoms/Icon';
-import type { AssetUrl } from '@almadar/core';
+import type { Asset } from '@almadar/core';
 
 export interface ItemSlotProps {
-  /** Sprite image URL — takes precedence over icon when provided */
-  assetUrl?: AssetUrl;
+  /** Sprite asset — takes precedence over icon when provided */
+  assetUrl?: Asset;
   /** Icon component or emoji — shown only when assetUrl is absent */
   icon?: IconInput;
   /** Item label */
@@ -49,8 +49,11 @@ const rarityGlowMap = {
   legendary: 'shadow-lg',
 };
 
-const DEFAULT_ASSET_URL: AssetUrl =
-  'https://almadar-kflow-assets.web.app/shared/isometric-dungeon/Isometric/chestClosed_E.png';
+const DEFAULT_ASSET_URL: Asset = {
+  url: 'https://almadar-kflow-assets.web.app/shared/isometric-dungeon/Isometric/chestClosed_E.png',
+  role: 'effect',
+  category: 'item',
+};
 
 const assetSizeMap = {
   sm: 28,
@@ -100,7 +103,7 @@ export function ItemSlot({
         <>
           {assetUrl ? (
             <img
-              src={assetUrl}
+              src={assetUrl?.url}
               alt={label}
               width={px}
               height={px}

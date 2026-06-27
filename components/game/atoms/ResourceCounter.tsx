@@ -2,7 +2,7 @@ import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import type { ColorToken } from '../../core/atoms/types';
 import { Icon, type IconInput } from '../../core/atoms/Icon';
-import type { AssetUrl } from '@almadar/core';
+import type { Asset } from '@almadar/core';
 
 const colorTokenClasses: Record<ColorToken, string> = {
   primary: 'text-primary',
@@ -14,8 +14,8 @@ const colorTokenClasses: Record<ColorToken, string> = {
 };
 
 export interface ResourceCounterProps {
-  /** Sprite image URL — takes precedence over icon when provided */
-  assetUrl?: AssetUrl;
+  /** Sprite asset — takes precedence over icon when provided */
+  assetUrl?: Asset;
   /** Icon component or emoji */
   icon?: IconInput;
   /** Resource label */
@@ -32,8 +32,11 @@ export interface ResourceCounterProps {
   className?: string;
 }
 
-const DEFAULT_ASSET_URL: AssetUrl =
-  'https://almadar-kflow-assets.web.app/shared/world-map/gold_mine.png';
+const DEFAULT_ASSET_URL: Asset = {
+  url: 'https://almadar-kflow-assets.web.app/shared/world-map/gold_mine.png',
+  role: 'effect',
+  category: 'world',
+};
 
 const sizeMap = {
   sm: { wrapper: 'text-xs gap-1 px-1.5 py-0.5', icon: 'text-sm', img: 16 },
@@ -64,7 +67,7 @@ export function ResourceCounter({
     >
       {assetUrl ? (
         <img
-          src={assetUrl}
+          src={assetUrl.url}
           alt={label}
           width={sizes.img}
           height={sizes.img}

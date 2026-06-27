@@ -214,7 +214,7 @@ export function TileRenderer({
                         onPointerLeave={() => onTileHover?.(null)}
                     >
                         <ModelLoader
-                            url={tile.modelUrl}
+                            url={tile.modelUrl?.url}
                             position={position}
                             scale={cellSize * 0.9}
                             fallbackGeometry="box"

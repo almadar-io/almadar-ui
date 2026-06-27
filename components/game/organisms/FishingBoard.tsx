@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import type { AssetUrl, EventEmit } from '@almadar/core';
+import type { Asset, EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { GameCanvas2D } from '../molecules/GameCanvas2D';
 import type { DisplayStateProps } from '../../core/organisms/types';
@@ -11,10 +11,8 @@ import type { DisplayStateProps } from '../../core/organisms/types';
 // =============================================================================
 
 export interface FishingBoardProps extends DisplayStateProps {
-    /** Background image URL for the fishing scene */
-    backgroundImage?: AssetUrl;
-    /** Base URL prepended to asset paths */
-    assetBaseUrl?: AssetUrl;
+    /** Background image asset for the fishing scene */
+    backgroundImage?: Asset;
     /** Render scale */
     scale?: number;
     /** Show minimap overlay */
@@ -37,7 +35,6 @@ export interface FishingBoardProps extends DisplayStateProps {
 
 export function FishingBoard({
     backgroundImage,
-    assetBaseUrl,
     scale = 1,
     showMinimap = false,
     enableCamera = true,
@@ -62,8 +59,7 @@ export function FishingBoard({
             <GameCanvas2D
                 width={width}
                 height={height}
-                backgroundImage={backgroundImage ?? ""}
-                assetBaseUrl={assetBaseUrl}
+                backgroundImage={backgroundImage}
                 fps={60}
                 className="w-full h-full"
             />

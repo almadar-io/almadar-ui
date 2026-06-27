@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import type { AssetUrl, EventEmit, EntityRow, FieldValue } from '@almadar/core';
+import type { Asset, AssetUrl, EventEmit, EntityRow, FieldValue } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -21,12 +21,11 @@ const boardLog = createLogger('almadar:ui:game:top-down-shooter-board');
 // Types
 // =============================================================================
 
-/** Asset base-url + per-kind sprite maps (organism owns asset choice; UI value DTO). */
+/** Per-kind sprite maps (organism owns asset choice; UI value DTO). */
 type ShooterAssetManifest = {
-    baseUrl?: AssetUrl;
-    units?: Record<string, AssetUrl>;
-    features?: Record<string, AssetUrl>;
-    background?: AssetUrl;
+    units?: Record<string, Asset>;
+    features?: Record<string, Asset>;
+    background?: Asset;
 };
 
 export interface ShooterPlayer {
@@ -81,20 +80,6 @@ export interface TopDownShooterBoardProps {
 
 const DEFAULT_WIDTH = 640;
 const DEFAULT_HEIGHT = 480;
-
-/** Resolve a manifest-relative path against the manifest baseUrl into an absolute AssetUrl. */
-function resolveManifestUrl(
-    manifest: ShooterAssetManifest | undefined,
-    relative: AssetUrl | undefined,
-): AssetUrl | undefined {
-    if (relative == null || relative === '') return undefined;
-    if (/^https?:\/\//.test(relative)) return relative;
-    const base = manifest?.baseUrl;
-    if (base == null) return relative;
-    const cleanBase = base.replace(/\/$/, '');
-    const cleanRel = relative.replace(/^\//, '');
-    return `${cleanBase}/${cleanRel}` as AssetUrl;
-}
 
 function readPlayer(v: FieldValue | undefined): ShooterPlayer | undefined {
     if (v == null || typeof v !== 'object') return undefined;
@@ -167,10 +152,10 @@ export function TopDownShooterBoard({
     const result = (propResult ?? (str(board.result) || 'none')) as 'none' | 'won' | 'lost';
 
     // ── Sprite asset resolution + preload ─────────────────────────────────────
-    const playerSprite = resolveManifestUrl(assetManifest, assetManifest?.units?.player);
-    const enemySprite = resolveManifestUrl(assetManifest, assetManifest?.units?.enemy);
-    const projectileSprite = resolveManifestUrl(assetManifest, assetManifest?.features?.projectile);
-    const backgroundSprite = resolveManifestUrl(assetManifest, assetManifest?.background);
+    const playerSprite = assetManifest?.units?.player?.url;
+    const enemySprite = assetManifest?.units?.enemy?.url;
+    const projectileSprite = assetManifest?.features?.projectile?.url;
+    const backgroundSprite = assetManifest?.background;
 
     const spriteUrls = useMemo(
         () => [playerSprite, enemySprite, projectileSprite].filter((u): u is AssetUrl => u != null),
@@ -351,7 +336,6 @@ export function TopDownShooterBoard({
                     width={width}
                     height={height}
                     backgroundImage={backgroundSprite}
-                    assetBaseUrl={assetManifest?.baseUrl}
                     onDraw={onDraw}
                 />
 

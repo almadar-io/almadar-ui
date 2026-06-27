@@ -1,13 +1,13 @@
 'use client';
 import * as React from 'react';
-import type { EventKey, AssetUrl } from "@almadar/core";
+import type { EventKey, Asset } from "@almadar/core";
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { resolveIcon, type IconInput } from '../../core/atoms/Icon';
 
 export interface ControlButtonProps {
-  /** Sprite image URL — takes precedence over icon when provided */
-  assetUrl?: AssetUrl;
+  /** Sprite asset — takes precedence over icon when provided */
+  assetUrl?: Asset;
   /** Button label text */
   label?: string;
   /** Icon component or emoji */
@@ -53,8 +53,11 @@ const variantMap = {
   ghost: 'bg-transparent text-foreground border-border hover:bg-muted',
 };
 
-const DEFAULT_ASSET_URL: AssetUrl =
-  'https://almadar-kflow-assets.web.app/shared/effects/particles/circle_01.png';
+const DEFAULT_ASSET_URL: Asset = {
+  url: 'https://almadar-kflow-assets.web.app/shared/effects/particles/circle_01.png',
+  role: 'effect',
+  category: 'effect',
+};
 
 export function ControlButton({
   assetUrl = DEFAULT_ASSET_URL,
@@ -131,7 +134,7 @@ export function ControlButton({
     >
       {assetUrl ? (
         <img
-          src={assetUrl}
+          src={assetUrl.url}
           alt=""
           width={24}
           height={24}

@@ -6,13 +6,13 @@ import { ActionButton } from '../atoms/ActionButton';
 import { Box } from '../../core/atoms/Box';
 import { useEventBus } from '../../../hooks/useEventBus';
 import type { IconInput } from '../../core/atoms';
-import type { AssetUrl } from '@almadar/core';
+import type { Asset } from '@almadar/core';
 
 export interface TurnPanelAction {
   /** Action button label */
   label: string;
-  /** Sprite image URL — takes precedence over icon when provided */
-  assetUrl?: AssetUrl;
+  /** Sprite asset — takes precedence over icon when provided */
+  assetUrl?: Asset;
   /** Icon for the button */
   icon?: IconInput;
   /** Event name to emit when clicked */

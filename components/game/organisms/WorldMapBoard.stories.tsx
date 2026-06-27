@@ -123,9 +123,8 @@ const MOCK_FEATURES: IsometricFeature[] = [
 
 const MOCK_ENTITY: EntityRow = {
     id: 'world-map-1',
-    hexes: generateWorldHexes(12, 10),
-    heroes: MOCK_HEROES,
-    features: MOCK_FEATURES,
+    hexes: generateWorldHexes(12, 10) as EntityRow['hexes'],
+    heroes: MOCK_HEROES as EntityRow['heroes'],
     selectedHeroId: null,
 };
 
@@ -154,6 +153,7 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
     args: {
         entity: MOCK_ENTITY,
+        features: MOCK_FEATURES,
         allowMoveAllHeroes: true,
     },
 };
@@ -173,6 +173,7 @@ function WithSlotsRender() {
     return (
         <WorldMapBoard
             entity={entity}
+            features={MOCK_FEATURES}
             scale={0.4}
             allowMoveAllHeroes
             onHeroSelect={(id) => setSelectedHeroId(id)}
@@ -361,11 +362,10 @@ function EditorRender() {
 
     const entity: EntityRow = useMemo(() => ({
         id: 'editor-map',
-        hexes,
-        heroes: mapHeroes,
-        features,
+        hexes: hexes as EntityRow['hexes'],
+        heroes: mapHeroes as EntityRow['heroes'],
         selectedHeroId,
-    }), [hexes, mapHeroes, features, selectedHeroId]);
+    }), [hexes, mapHeroes, selectedHeroId]);
 
     // -- Handle tile click based on mode --
     const handleHeroSelect = useCallback((id: string) => {
@@ -740,6 +740,7 @@ function EditorRender() {
             <Box className="flex-1 overflow-hidden">
                 <WorldMapBoard
                     entity={entity}
+                    features={features}
                     scale={scale}
                     unitScale={unitScale}
                     allowMoveAllHeroes

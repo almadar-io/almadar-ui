@@ -1,15 +1,15 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import { resolveIcon, type IconInput } from '../../core/atoms/Icon';
-import type { AssetUrl } from '@almadar/core';
+import type { Asset } from '@almadar/core';
 
 export interface ChoiceButtonProps {
   /** Choice text content */
   text: string;
   /** Choice index number (displayed as prefix) */
   index?: number;
-  /** Sprite image URL — takes precedence over icon when provided */
-  assetUrl?: AssetUrl;
+  /** Sprite asset — takes precedence over icon when provided */
+  assetUrl?: Asset;
   /** Icon displayed before the text */
   icon?: IconInput;
   /** Whether the choice is disabled */
@@ -59,7 +59,7 @@ export function ChoiceButton({
       )}
       {assetUrl ? (
         <img
-          src={assetUrl}
+          src={assetUrl.url}
           alt=""
           width={16}
           height={16}

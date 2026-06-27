@@ -1,4 +1,4 @@
-import type { AssetUrl } from '@almadar/core';
+import type { Asset } from '@almadar/core';
 import type { AnimationName } from './spriteAnimation';
 
 /**
@@ -41,7 +41,7 @@ export interface IsometricTile {
     /** Tile type for visual rendering (3D) */
     type?: string;
     /** Direct sprite URL override (bypasses getTerrainSprite resolver) */
-    terrainSprite?: AssetUrl;
+    terrainSprite?: Asset;
     /** Whether units can traverse this tile (default true) */
     passable?: boolean;
     /** Movement cost for pathfinding (default 1) */
@@ -51,7 +51,7 @@ export interface IsometricTile {
     /** Elevation offset for 3D rendering */
     elevation?: number;
     /** 3D model URL (GLB format) for GameCanvas3D — rendered via ModelLoader with box fallback */
-    modelUrl?: AssetUrl;
+    modelUrl?: Asset;
 }
 
 // =============================================================================
@@ -71,13 +71,13 @@ export type IsometricUnit = {
     /** Grid z coordinate (3D format) */
     z?: number;
     /** Static sprite URL (used when no sprite sheet animation) */
-    sprite?: AssetUrl;
+    sprite?: Asset;
     /** Sprite-sheet atlas JSON URL (e.g. `.../guardian-sprite-sheet.json`).
      *  When set, the canvas loads the atlas and crops/animates a single frame
      *  by animation state instead of drawing the whole sheet. */
-    spriteSheet?: AssetUrl;
+    spriteSheet?: Asset;
     /** 3D model URL (GLB format) for GameCanvas3D — rendered via ModelLoader with box fallback */
-    modelUrl?: AssetUrl;
+    modelUrl?: Asset;
     /** Unit archetype key for sprite resolution */
     unitType?: string;
     /** Hero identifier for sprite sheet lookup */
@@ -126,9 +126,9 @@ export type IsometricFeature = {
     /** Feature type key (e.g., 'goldMine', 'castle', 'portal') */
     type: string;
     /** Direct sprite URL override (bypasses getFeatureSprite resolver) */
-    sprite?: AssetUrl;
+    sprite?: Asset;
     /** 3D model URL (GLB format) for GameCanvas3D */
-    assetUrl?: AssetUrl;
+    assetUrl?: Asset;
     /** Color override for 3D rendering */
     color?: string;
     /** Elevation offset for 3D rendering */

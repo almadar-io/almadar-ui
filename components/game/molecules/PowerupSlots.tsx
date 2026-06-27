@@ -6,13 +6,13 @@ import { Box } from '../../core/atoms/Box';
 import { HStack } from '../../core/atoms/Stack';
 import { Typography } from '../../core/atoms/Typography';
 import type { IconInput } from '../../core/atoms';
-import type { AssetUrl } from '@almadar/core';
+import type { Asset } from '@almadar/core';
 
 export interface ActivePowerup {
   /** Unique powerup ID */
   id: string;
-  /** Sprite image URL — takes precedence over icon when provided */
-  assetUrl?: AssetUrl;
+  /** Sprite asset — takes precedence over icon when provided */
+  assetUrl?: Asset;
   /** Icon component or emoji */
   icon?: IconInput;
   /** Powerup label */

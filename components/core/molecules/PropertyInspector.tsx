@@ -6,6 +6,7 @@ import type {
   TraitConfig,
   TraitConfigValue,
   AssetCatalog,
+  Asset,
 } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { VStack, HStack } from '../atoms/Stack';
@@ -94,12 +95,17 @@ function TextLikeControl({
   );
 }
 
-const SCALAR_TYPES = new Set(['string', 'number', 'boolean', 'icon', 'asset']);
+const SCALAR_TYPES = new Set(['string', 'number', 'boolean', 'icon', 'asset', 'Asset']);
 
 function isTraitConfigObject(
   v: TraitConfigValue | undefined,
 ): v is Record<string, TraitConfigValue> {
   return v !== null && v !== undefined && typeof v === 'object' && !Array.isArray(v);
+}
+
+/** Narrows a TraitConfigValue to an Asset-shaped object (has a `url` string field). */
+function isAssetObject(v: TraitConfigValue | undefined): v is Asset & Record<string, TraitConfigValue> {
+  return isTraitConfigObject(v) && typeof (v as Record<string, TraitConfigValue>).url === 'string';
 }
 
 export function FieldControl({
@@ -131,6 +137,20 @@ export function FieldControl({
         assets={assets ?? []}
         value={stringValue}
         onChange={(url) => onChange(name, url)}
+      />
+    );
+  } else if (decl.type === 'Asset') {
+    // Unified Asset struct: the user picks only the `url`; all other slot-fixed
+    // fields (role/dimension/animations/aspect) are preserved from the current value.
+    const assetUrl = isAssetObject(effectiveValue) ? effectiveValue.url : '';
+    const baseAsset: Record<string, TraitConfigValue> = isAssetObject(effectiveValue)
+      ? (effectiveValue as Record<string, TraitConfigValue>)
+      : {};
+    control = (
+      <AssetPicker
+        assets={assets ?? []}
+        value={assetUrl}
+        onChange={(url) => onChange(name, { ...baseAsset, url })}
       />
     );
   } else if (decl.type === 'boolean') {

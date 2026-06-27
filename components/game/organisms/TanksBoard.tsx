@@ -62,7 +62,6 @@ export function TanksBoard({
                 units={units}
                 features={features}
                 assetManifest={assetManifest}
-                assetBaseUrl={assetBaseUrl}
                 scale={scale}
                 showMinimap={showMinimap}
                 enableCamera={enableCamera}

@@ -86,7 +86,18 @@ export function GameBoard3D({
 
     // All gameplay state comes from the model entity.
     const entityUnits = row ? rows(row.units) : [];
-    const units = entityUnits as IsometricUnit[];
+    const units: IsometricUnit[] = entityUnits.map(r => ({
+        id: str(r.id),
+        x: num(r.x),
+        y: num(r.y),
+        z: num(r.z),
+        faction: (str(r.faction) || 'neutral') as 'player' | 'enemy' | 'neutral',
+        team: (str(r.team) || str(r.faction) || 'neutral') as 'player' | 'enemy' | 'neutral',
+        unitType: r.unitType == null ? undefined : str(r.unitType),
+        name: r.name == null ? undefined : str(r.name),
+        health: r.health == null ? undefined : num(r.health),
+        maxHealth: r.maxHealth == null ? undefined : num(r.maxHealth),
+    }));
     const selectedUnitId = row ? str(row.selectedUnitId) || null : null;
     const phase = row ? str(row.phase) : 'observation';
     const result = row ? str(row.result) : 'none';

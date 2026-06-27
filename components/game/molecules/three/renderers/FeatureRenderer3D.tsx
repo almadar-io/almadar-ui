@@ -108,7 +108,7 @@ function FeatureModel({
     const groupRef = useRef<THREE.Group>(null);
     
     // Load GLB model if assetUrl is provided (without Suspense)
-    const { model: loadedModel, isLoading } = useGLTFModel(feature.assetUrl);
+    const { model: loadedModel, isLoading } = useGLTFModel(feature.assetUrl?.url);
     
     // Clone and prepare the scene for this instance
     const model = useMemo(() => {

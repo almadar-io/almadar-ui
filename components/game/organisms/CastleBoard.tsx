@@ -15,7 +15,8 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
-import type { AssetUrl, EventEmit, EntityRow, EntityWith } from '@almadar/core';
+import type { Asset, EventEmit, EntityRow, EntityWith } from '@almadar/core';
+import { makeAsset } from './utils/makeAsset';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -36,12 +37,11 @@ import { isoToScreen, TILE_WIDTH, FLOOR_HEIGHT } from './utils/isometric';
 // Types
 // =============================================================================
 
-/** Manifest of asset base-url + per-kind sprite maps (UI value DTO). */
+/** Manifest of per-kind sprite maps (UI value DTO). */
 type CastleAssetManifest = {
-    baseUrl?: AssetUrl;
-    terrains?: Record<string, AssetUrl>;
-    units?: Record<string, AssetUrl>;
-    features?: Record<string, AssetUrl>;
+    terrains?: Record<string, Asset>;
+    units?: Record<string, Asset>;
+    features?: Record<string, Asset>;
 };
 
 /** Typed entity row for the castle board — fields this board reads off the entity. */
@@ -281,7 +281,6 @@ export function CastleBoard({
                         onTileHover={(x, y) => setHoveredTile({ x, y })}
                         onTileLeave={() => setHoveredTile(null)}
                         scale={scale}
-                        assetBaseUrl={assetManifest?.baseUrl}
                         assetManifest={assetManifest}
                         backgroundImage={backgroundImage}
                     />

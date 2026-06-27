@@ -1,11 +1,11 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import { Icon, type IconInput } from '../../core/atoms/Icon';
-import type { AssetUrl } from '@almadar/core';
+import type { Asset } from '@almadar/core';
 
 export interface StatusEffectProps {
-  /** Sprite image URL — takes precedence over icon when provided */
-  assetUrl?: AssetUrl;
+  /** Sprite asset — takes precedence over icon when provided */
+  assetUrl?: Asset;
   /** Lucide icon name or component */
   icon: IconInput;
   /** Label describing the effect */
@@ -22,8 +22,11 @@ export interface StatusEffectProps {
   className?: string;
 }
 
-const DEFAULT_ASSET_URL: AssetUrl =
-  'https://almadar-kflow-assets.web.app/shared/effects/particles/flame_01.png';
+const DEFAULT_ASSET_URL: Asset = {
+  url: 'https://almadar-kflow-assets.web.app/shared/effects/particles/flame_01.png',
+  role: 'effect',
+  category: 'effect',
+};
 
 const sizeMap = {
   sm: { container: 'w-8 h-8', icon: 'text-sm', badge: 'text-xs -top-1 -right-1 w-4 h-4', timer: 'text-[9px]', img: 20 },
@@ -69,7 +72,7 @@ export function StatusEffect({
         <span className={cn('flex items-center justify-center', sizes.icon)}>
           {assetUrl ? (
             <img
-              src={assetUrl}
+              src={assetUrl.url}
               alt={label}
               width={sizes.img}
               height={sizes.img}

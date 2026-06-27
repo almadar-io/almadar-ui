@@ -6,7 +6,7 @@ import { StatusEffect } from '../atoms/StatusEffect';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 import type { IconInput } from '../../core/atoms';
-import type { AssetUrl } from '@almadar/core';
+import type { Asset } from '@almadar/core';
 
 export interface EnemyPlateEffect {
   /** Effect icon */
@@ -18,8 +18,8 @@ export interface EnemyPlateEffect {
 }
 
 export interface EnemyPlateProps {
-  /** Portrait sprite URL — takes precedence over the default avatar slot */
-  assetUrl?: AssetUrl;
+  /** Portrait sprite asset — takes precedence over the default avatar slot */
+  assetUrl?: Asset;
   /** Enemy name */
   name: string;
   /** Current health */
@@ -66,7 +66,7 @@ export function EnemyPlate({
         <Box className="flex items-center gap-1.5 min-w-0">
           {assetUrl && (
             <img
-              src={assetUrl}
+              src={assetUrl.url}
               alt={name}
               width={24}
               height={24}

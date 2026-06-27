@@ -169,7 +169,6 @@ export function SimulationCanvas({
     useEffect(() => {
         if (!externalBodies) return;
         interp.onSnapshot(externalBodies.map((b) => ({ id: b.id, x: b.x, y: b.y })));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [externalBodies]);
 
     // Stable refs so the interpolated draw closure doesn't go stale.
@@ -236,7 +235,6 @@ export function SimulationCanvas({
         };
 
         return interp.startLoop(drawInterpolated);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [externalBodies !== undefined, interp.startLoop]);
 
     // Self-simulation animation loop — only when externalBodies is absent.

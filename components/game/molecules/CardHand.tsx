@@ -1,6 +1,6 @@
 'use client';
 import * as React from 'react';
-import type { AssetUrl, EventEmit } from '@almadar/core';
+import type { Asset, EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { Box } from '../../core/atoms/Box';
@@ -9,7 +9,7 @@ import { Typography } from '../../core/atoms/Typography';
 /** One playable card (icon + title + a few stat numbers). UI value DTO. */
 export interface CardHandCard {
   id: string;
-  iconUrl?: AssetUrl;
+  iconUrl?: Asset;
   title?: string;
   cost?: number;
   attack?: number;
@@ -122,7 +122,7 @@ export function CardHand({
             <Box className="flex-1 flex items-center justify-center w-full">
               {card.iconUrl ? (
                 <img
-                  src={card.iconUrl}
+                  src={card.iconUrl.url}
                   alt={card.title ?? card.id}
                   width={art}
                   height={art}

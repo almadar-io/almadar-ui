@@ -6,14 +6,14 @@
  */
 
 import React, { useMemo } from 'react';
-import type { EventKey, AssetUrl } from "@almadar/core";
+import type { EventKey, Asset } from "@almadar/core";
 import type { AnimationName } from '../organisms/types/spriteAnimation';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { frameRect } from '../organisms/utils/spriteAnimation';
 
 export interface SpriteProps {
-  /** Spritesheet image URL */
-  spritesheet: AssetUrl;
+  /** Spritesheet asset */
+  spritesheet: Asset;
   /** Width of each frame in pixels */
   frameWidth: number;
   /** Height of each frame in pixels */
@@ -67,8 +67,14 @@ export interface SpriteProps {
  * />
  * ```
  */
+const DEFAULT_SPRITESHEET: Asset = {
+  url: 'https://almadar-kflow-assets.web.app/shared/isometric-blocks/Spritesheet/allTiles_sheet.png',
+  role: 'tile',
+  category: 'tile',
+};
+
 export function Sprite({
-  spritesheet = "https://almadar-kflow-assets.web.app/shared/isometric-blocks/Spritesheet/allTiles_sheet.png",
+  spritesheet = DEFAULT_SPRITESHEET,
   frameWidth = 64,
   frameHeight = 64,
   frame = 0,
@@ -131,7 +137,7 @@ export function Sprite({
         position: 'absolute',
         width: frameWidth,
         height: frameHeight,
-        backgroundImage: `url(${spritesheet})`,
+        backgroundImage: `url(${spritesheet.url})`,
         backgroundPosition,
         backgroundRepeat: 'no-repeat',
         imageRendering: 'pixelated',

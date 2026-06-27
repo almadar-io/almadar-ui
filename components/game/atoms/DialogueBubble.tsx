@@ -1,14 +1,20 @@
 import * as React from 'react';
-import type { AssetUrl } from '@almadar/core';
+import type { Asset } from '@almadar/core';
 import { cn } from '../../../lib/cn';
+
+const DEFAULT_PORTRAIT: Asset = {
+  url: 'https://almadar-kflow-assets.web.app/shared/characters/archetypes/04_hero.png',
+  role: 'effect',
+  category: 'character',
+};
 
 export interface DialogueBubbleProps {
   /** Speaker name displayed at the top */
   speaker?: string;
   /** Dialogue text content */
   text: string;
-  /** URL for the speaker portrait image */
-  portrait?: AssetUrl;
+  /** Speaker portrait asset */
+  portrait?: Asset;
   /** Position of the bubble on screen */
   position?: 'top' | 'bottom';
   /** Additional CSS classes */
@@ -18,7 +24,7 @@ export interface DialogueBubbleProps {
 export function DialogueBubble({
   speaker = 'Hero',
   text = 'The dungeon awaits. Choose your path wisely.',
-  portrait = "https://almadar-kflow-assets.web.app/shared/characters/archetypes/04_hero.png",
+  portrait = DEFAULT_PORTRAIT,
   position = 'bottom',
   className,
 }: DialogueBubbleProps) {
@@ -33,7 +39,7 @@ export function DialogueBubble({
       {portrait && (
         <div className="flex-shrink-0 w-12 h-12 rounded-full overflow-hidden border-2 border-warning/60">
           <img
-            src={portrait}
+            src={portrait?.url}
             alt={speaker ?? 'speaker'}
             className="w-full h-full object-cover"
           />

@@ -14,7 +14,7 @@
  */
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import type { AssetUrl, EventEmit, EventPayload } from '@almadar/core';
+import type { Asset, EventEmit, EventPayload } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 
@@ -59,9 +59,9 @@ export interface DialogueBoxProps {
   /** Declarative event: emits UI:{advanceEvent} when dialogue is advanced */
   advanceEvent?: EventEmit<Record<string, never>>;
   /** Optional full-frame scene image rendered behind the dialogue (visual-novel mode). */
-  backgroundImage?: AssetUrl;
+  backgroundImage?: Asset;
   /** Optional larger character portrait rendered standing over the scene (visual-novel mode). */
-  portraitUrl?: AssetUrl;
+  portraitUrl?: Asset;
   /** Multiplier for the large `portraitUrl` height relative to its default (default 1). */
   portraitScale?: number;
   /** Optional className */
@@ -254,7 +254,7 @@ export function DialogueBox({
       {backgroundImage && (
         <div
           className="fixed inset-0 z-20 bg-center bg-cover bg-no-repeat"
-          style={{ backgroundImage: `url(${backgroundImage})` }}
+          style={{ backgroundImage: `url(${backgroundImage?.url})` }}
           aria-hidden="true"
         />
       )}
@@ -269,7 +269,7 @@ export function DialogueBox({
           style={{ height: `${60 * portraitScale}vh` }}
         >
           <img
-            src={portraitUrl}
+            src={portraitUrl?.url}
             alt={dialogue.speaker}
             className="h-full w-auto object-contain drop-shadow-2xl"
           />

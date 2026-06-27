@@ -27,7 +27,7 @@
 
 import * as React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { AssetUrl, EventEmit } from '@almadar/core';
+import type { Asset, AssetUrl, EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -170,17 +170,13 @@ export interface IsometricCanvasProps {
     hasActiveEffects?: boolean;
 
     // --- Remote asset loading ---
-    /** Base URL for remote asset resolution. When set, manifest paths
-     *  are prefixed with this URL. Example: "https://trait-wars-assets.web.app" */
-    assetBaseUrl?: AssetUrl;
-    /** Manifest mapping entity keys to relative sprite paths.
-     *  Combined with assetBaseUrl to produce full URLs.
-     *  Used as a fallback when inline URLs and callbacks don't resolve. */
+    /** Manifest mapping entity keys to resolved Asset objects.
+     *  Used as a fallback when inline assets and callbacks don't resolve. */
     assetManifest?: {
-        terrains?: Record<string, string>;
-        units?: Record<string, string>;
-        features?: Record<string, string>;
-        effects?: Record<string, string>;
+        terrains?: Record<string, Asset>;
+        units?: Record<string, Asset>;
+        features?: Record<string, Asset>;
+        effects?: Record<string, Asset>;
     };
 }
 
@@ -234,7 +230,6 @@ export function IsometricCanvas({
     // Tuning
     diamondTopY: diamondTopYProp,
     // Remote asset loading
-    assetBaseUrl,
     assetManifest,
 }: IsometricCanvasProps): React.JSX.Element {
     // Defensive: ensure array props are always iterable even if passed as undefined
@@ -343,58 +338,50 @@ export function IsometricCanvas({
         return new Set(attackTargets.map(p => `${p.x},${p.y}`));
     }, [attackTargets]);
 
-    // -- Helper: resolve a manifest path with optional base URL --
-    const resolveManifestUrl = useCallback((relativePath: string | undefined): string | undefined => {
-        if (!relativePath) return undefined;
-        if (assetBaseUrl) return `${assetBaseUrl.replace(/\/$/, '')}${relativePath.startsWith('/') ? '' : '/'}${relativePath}`;
-        return relativePath;
-    }, [assetBaseUrl]);
-
     // -- Collect all sprite URLs for preloading --
     const spriteUrls = useMemo(() => {
         const urls: string[] = [];
 
         // Tile sprites
         for (const tile of sortedTiles) {
-            if (tile.terrainSprite) urls.push(tile.terrainSprite);
+            if (tile.terrainSprite) urls.push(tile.terrainSprite.url);
             else if (getTerrainSprite) {
                 const url = getTerrainSprite(tile.terrain ?? '');
                 if (url) urls.push(url);
             } else {
-                const url = resolveManifestUrl(assetManifest?.terrains?.[tile.terrain ?? '']);
+                const url = assetManifest?.terrains?.[tile.terrain ?? '']?.url;
                 if (url) urls.push(url);
             }
         }
 
         // Feature sprites
         for (const feature of features) {
-            if (feature.sprite) urls.push(feature.sprite);
+            if (feature.sprite) urls.push(feature.sprite.url);
             else if (getFeatureSprite) {
                 const url = getFeatureSprite(feature.type);
                 if (url) urls.push(url);
             } else {
-                const url = resolveManifestUrl(assetManifest?.features?.[feature.type]);
+                const url = assetManifest?.features?.[feature.type]?.url;
                 if (url) urls.push(url);
             }
         }
 
         // Unit sprites
         for (const unit of units) {
-            if (unit.sprite) urls.push(unit.sprite);
+            if (unit.sprite) urls.push(unit.sprite.url);
             else if (getUnitSprite) {
                 const url = getUnitSprite(unit);
                 if (url) urls.push(url);
             } else if (unit.unitType) {
-                const url = resolveManifestUrl(assetManifest?.units?.[unit.unitType]);
+                const url = assetManifest?.units?.[unit.unitType]?.url;
                 if (url) urls.push(url);
             }
         }
 
         // Effect sprites from manifest
         if (assetManifest?.effects) {
-            for (const path of Object.values(assetManifest.effects)) {
-                const url = resolveManifestUrl(path);
-                if (url) urls.push(url);
+            for (const asset of Object.values(assetManifest.effects)) {
+                if (asset.url) urls.push(asset.url);
             }
         }
 
@@ -409,7 +396,7 @@ export function IsometricCanvas({
 
         // Deduplicate
         return [...new Set(urls.filter(Boolean))];
-    }, [sortedTiles, features, units, getTerrainSprite, getFeatureSprite, getUnitSprite, effectSpriteUrls, atlasSheetUrls, backgroundImage, assetManifest, resolveManifestUrl]);
+    }, [sortedTiles, features, units, getTerrainSprite, getFeatureSprite, getUnitSprite, effectSpriteUrls, atlasSheetUrls, backgroundImage, assetManifest]);
 
     const { getImage, pendingCount: _imagePendingCount } = useImageCache(spriteUrls);
 
@@ -440,16 +427,16 @@ export function IsometricCanvas({
 
     // -- Sprite resolvers --
     const resolveTerrainSpriteUrl = useCallback((tile: IsometricTile): string | undefined => {
-        return tile.terrainSprite || getTerrainSprite?.(tile.terrain ?? '') || resolveManifestUrl(assetManifest?.terrains?.[tile.terrain ?? '']);
-    }, [getTerrainSprite, assetManifest, resolveManifestUrl]);
+        return tile.terrainSprite?.url || getTerrainSprite?.(tile.terrain ?? '') || assetManifest?.terrains?.[tile.terrain ?? '']?.url;
+    }, [getTerrainSprite, assetManifest]);
 
     const resolveFeatureSpriteUrl = useCallback((featureType: string): string | undefined => {
-        return getFeatureSprite?.(featureType) || resolveManifestUrl(assetManifest?.features?.[featureType]);
-    }, [getFeatureSprite, assetManifest, resolveManifestUrl]);
+        return getFeatureSprite?.(featureType) || assetManifest?.features?.[featureType]?.url;
+    }, [getFeatureSprite, assetManifest]);
 
     const resolveUnitSpriteUrl = useCallback((unit: IsometricUnit): string | undefined => {
-        return unit.sprite || getUnitSprite?.(unit) || (unit.unitType ? resolveManifestUrl(assetManifest?.units?.[unit.unitType]) : undefined);
-    }, [getUnitSprite, assetManifest, resolveManifestUrl]);
+        return unit.sprite?.url || getUnitSprite?.(unit) || (unit.unitType ? assetManifest?.units?.[unit.unitType]?.url : undefined);
+    }, [getUnitSprite, assetManifest]);
 
     // Minimap data derived for the MiniMap atom
     const miniMapTiles = useMemo(() => {
@@ -643,7 +630,7 @@ export function IsometricCanvas({
                 continue;
             }
 
-            const spriteUrl = feature.sprite || resolveFeatureSpriteUrl(feature.type);
+            const spriteUrl = feature.sprite?.url || resolveFeatureSpriteUrl(feature.type);
             const img = spriteUrl ? getImage(spriteUrl) : null;
 
             const centerX = pos.x + scaledTileWidth / 2;
@@ -704,16 +691,15 @@ export function IsometricCanvas({
             const img = unitSpriteUrl ? getImage(unitSpriteUrl) : null;
             const unitDrawH = scaledFloorHeight * spriteHeightRatio * unitScale;
             const maxUnitW = scaledTileWidth * spriteMaxWidthRatio * unitScale;
-            // Detect sprite-sheet: 8-col grid where each cell is square (w/8 === h/5).
-            // For these images use one frame's rect instead of the whole image.
+            // A unit is animated (sprite-sheet) iff its Asset metadata says so — no pixel probing.
+            const unitIsSheet = unit.sprite?.dimension === '2d' && (unit.sprite?.animations?.length ?? 0) > 0;
+            // Frame dimensions: fixed 8-col layout (SHEET_COLUMNS) for the crop math — same as before,
+            // but detection is now metadata-driven, not pixel-dimension guessing.
             const SHEET_ROWS = 5;
             const sheetFrameW = img ? img.naturalWidth / SHEET_COLUMNS : 0;
             const sheetFrameH = img ? img.naturalHeight / SHEET_ROWS : 0;
-            const imgIsSheet = img
-                ? (img.naturalWidth % SHEET_COLUMNS === 0 && img.naturalHeight % SHEET_ROWS === 0 && Math.abs(sheetFrameW - sheetFrameH) < 2)
-                : false;
-            const frameW = imgIsSheet ? sheetFrameW : (img?.naturalWidth ?? 1);
-            const frameH = imgIsSheet ? sheetFrameH : (img?.naturalHeight ?? 1);
+            const frameW = unitIsSheet ? sheetFrameW : (img?.naturalWidth ?? 1);
+            const frameH = unitIsSheet ? sheetFrameH : (img?.naturalHeight ?? 1);
             const ar = frameW / (frameH || 1);
             let drawH = unitDrawH;
             let drawW = unitDrawH * ar;
@@ -731,7 +717,7 @@ export function IsometricCanvas({
                 ctx.save();
                 ctx.globalAlpha = 0.25;
                 if (img) {
-                    if (imgIsSheet) {
+                    if (unitIsSheet) {
                         ctx.drawImage(img, 0, 0, sheetFrameW, sheetFrameH, ghostCenterX - drawW / 2, ghostGroundY - drawH, drawW, drawH);
                     } else {
                         ctx.drawImage(img, ghostCenterX - drawW / 2, ghostGroundY - drawH, drawW, drawH);
@@ -790,7 +776,7 @@ export function IsometricCanvas({
                 // drawing the whole multi-frame grid into a tiny cell — that was the "garbled blob".
                 const spriteY = groundY - drawH - breatheOffset;
                 const drawUnit = (x: number) => {
-                    if (imgIsSheet) {
+                    if (unitIsSheet) {
                         ctx.drawImage(img, 0, 0, sheetFrameW, sheetFrameH, x, spriteY, drawW, drawH);
                     } else {
                         ctx.drawImage(img, x, spriteY, drawW, drawH);
@@ -823,7 +809,7 @@ export function IsometricCanvas({
 
         // Draw ActiveEffect[] sprites after units
         for (const fx of effects) {
-            const spriteUrl = resolveManifestUrl(assetManifest?.effects?.[fx.key]);
+            const spriteUrl = assetManifest?.effects?.[fx.key]?.url;
             if (!spriteUrl) continue;
             const img = getImage(spriteUrl);
             if (!img) continue;
@@ -847,7 +833,7 @@ export function IsometricCanvas({
         tileLayout, scale, debug, resolveTerrainSpriteUrl, resolveFeatureSpriteUrl, resolveUnitSpriteUrl, resolveFrameForUnit, getImage,
         gridWidth, gridHeight, baseOffsetX, scaledTileWidth, scaledTileHeight, scaledFloorHeight, scaledDiamondTopY,
         validMoveSet, attackTargetSet, hoveredTile, viewportSize, onDrawEffects,
-        backgroundImage, cameraRef, unitScale, resolveManifestUrl, assetManifest,
+        backgroundImage, cameraRef, unitScale, assetManifest,
     ]);
 
     // =========================================================================

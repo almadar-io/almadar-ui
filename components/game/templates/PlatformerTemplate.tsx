@@ -1,5 +1,5 @@
 import React from 'react';
-import type { EntityRow } from '@almadar/core';
+import type { Asset, EntityRow } from '@almadar/core';
 import type { TemplateProps } from '../../core/templates/types';
 import { cn } from '../../../lib/cn';
 import { Box } from '../../core/atoms/Box';
@@ -8,15 +8,16 @@ import { PlatformerBoard } from '../organisms/PlatformerBoard';
 import type { PlatformerBoardProps } from '../organisms/PlatformerBoard';
 import { GameHud } from '../molecules/GameHud';
 import { ScoreBoard } from '../molecules/ScoreBoard';
+import { makeAsset, makeAssetMap } from '../organisms/utils/makeAsset';
 
 const CDN = 'https://almadar-kflow-assets.web.app/shared/platformer';
 
-const DEFAULT_TILE_SPRITES: Record<string, string> = {
+const DEFAULT_TILE_SPRITES: Record<string, Asset> = makeAssetMap({
     ground:   `${CDN}/tiles/platformPack_tile001.png`,
     platform: `${CDN}/tiles/platformPack_tile004.png`,
     hazard:   `${CDN}/tiles/platformPack_tile017.png`,
     goal:     `${CDN}/tiles/platformPack_tile007.png`,
-};
+}, 'tile');
 
 const DEFAULT_PLATFORMS: PlatformerBoardProps['platforms'] = [
     { x: 0,   y: 368, width: 800, height: 32, type: 'ground' },
@@ -39,10 +40,10 @@ export interface PlatformerTemplateProps extends TemplateProps {
     /** Canvas display size */
     canvasWidth?: number;
     canvasHeight?: number;
-    /** Player sprite URL */
-    playerSprite?: string;
-    /** Map of platform type to tile sprite URL */
-    tileSprites?: Record<string, string>;
+    /** Player sprite asset */
+    playerSprite?: Asset;
+    /** Map of platform type to tile sprite asset */
+    tileSprites?: Record<string, Asset>;
     /** Canvas background color */
     bgColor?: string;
     /** Forwarded to PlatformerBoard to emit GAME_END into the FSM */
@@ -60,7 +61,7 @@ export function PlatformerTemplate({
     worldHeight = 400,
     canvasWidth = 800,
     canvasHeight = 400,
-    playerSprite = `${CDN}/characters/platformChar_idle.png`,
+    playerSprite = makeAsset(`${CDN}/characters/platformChar_idle.png`, 'player'),
     tileSprites = DEFAULT_TILE_SPRITES,
     bgColor = '#5c94fc',
     gameEndEvent = 'GAME_END',

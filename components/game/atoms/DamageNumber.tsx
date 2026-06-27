@@ -1,10 +1,10 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
-import type { AssetUrl } from '@almadar/core';
+import type { Asset } from '@almadar/core';
 
 export interface DamageNumberProps {
-  /** Sprite image URL — displayed as a hit-effect icon alongside the number */
-  assetUrl?: AssetUrl;
+  /** Sprite asset — displayed as a hit-effect icon alongside the number */
+  assetUrl?: Asset;
   /** The damage/heal value to display */
   value: number;
   /** Type of number display */
@@ -36,8 +36,11 @@ const floatKeyframes = `
 }
 `;
 
-const DEFAULT_ASSET_URL: AssetUrl =
-  'https://almadar-kflow-assets.web.app/shared/effects/particles/spark_01.png';
+const DEFAULT_ASSET_URL: Asset = {
+  url: 'https://almadar-kflow-assets.web.app/shared/effects/particles/spark_01.png',
+  role: 'effect',
+  category: 'effect',
+};
 
 export function DamageNumber({
   assetUrl = DEFAULT_ASSET_URL,
@@ -62,7 +65,7 @@ export function DamageNumber({
       >
         {assetUrl && (
           <img
-            src={assetUrl}
+            src={assetUrl.url}
             alt=""
             width={14}
             height={14}

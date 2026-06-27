@@ -10,7 +10,7 @@
  */
 
 import React, { useMemo, useCallback } from 'react';
-import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
+import type { Asset, EventEmit, EntityRow } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { Box } from '../../core/atoms/Box';
@@ -25,11 +25,10 @@ import { boardEntity, num, str, rows } from './boardEntity';
 // Types
 // =============================================================================
 
-/** Manifest of asset base-url + per-key scene + portrait maps (UI value DTO). */
+/** Manifest of per-key scene + portrait maps (UI value DTO). */
 type VisualNovelAssetManifest = {
-    baseUrl?: AssetUrl;
-    backgrounds?: Record<string, AssetUrl>;
-    portraits?: Record<string, AssetUrl>;
+    backgrounds?: Record<string, Asset>;
+    portraits?: Record<string, Asset>;
 };
 
 export interface VisualNovelChoice {
@@ -108,20 +107,6 @@ const DEFAULT_NODES: VisualNovelNode[] = [
     },
 ];
 
-/** Resolve a manifest-relative path against the manifest baseUrl into an absolute AssetUrl. */
-function resolveManifestUrl(
-    manifest: VisualNovelAssetManifest | undefined,
-    relative: AssetUrl | undefined,
-): AssetUrl | undefined {
-    if (relative == null) return undefined;
-    if (/^https?:\/\//.test(relative)) return relative;
-    const base = manifest?.baseUrl;
-    if (base == null) return relative;
-    const cleanBase = base.replace(/\/$/, '');
-    const cleanRel = relative.replace(/^\//, '');
-    return `${cleanBase}/${cleanRel}` as AssetUrl;
-}
-
 // =============================================================================
 // Component
 // =============================================================================
@@ -166,11 +151,11 @@ export function VisualNovelBoard({
     const currentNode = nodes.find(n => n.id === currentNodeId) ?? nodes[0];
 
     const backgroundImage = useMemo(
-        () => resolveManifestUrl(assetManifest, assetManifest?.backgrounds?.[currentNode?.backgroundKey ?? '']),
+        () => assetManifest?.backgrounds?.[currentNode?.backgroundKey ?? ''],
         [assetManifest, currentNode?.backgroundKey],
     );
     const portraitUrl = useMemo(
-        () => resolveManifestUrl(assetManifest, assetManifest?.portraits?.[currentNode?.portraitKey ?? '']),
+        () => assetManifest?.portraits?.[currentNode?.portraitKey ?? ''],
         [assetManifest, currentNode?.portraitKey],
     );
 

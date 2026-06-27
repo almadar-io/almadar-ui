@@ -22,7 +22,8 @@
 
  
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
+import type { Asset, AssetUrl, EventEmit, EntityRow } from '@almadar/core';
+import { makeAsset } from './utils/makeAsset';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { VStack, HStack, Stack } from '../../core/atoms/Stack';
@@ -42,12 +43,11 @@ import type { UiError } from '../../core/atoms/types';
 // Types
 // =============================================================================
 
-/** Manifest of asset base-url + per-kind sprite maps (UI value DTO). */
+/** Manifest of per-kind sprite maps (UI value DTO). */
 type WorldMapAssetManifest = {
-    baseUrl?: AssetUrl;
-    terrains?: Record<string, AssetUrl>;
-    units?: Record<string, AssetUrl>;
-    features?: Record<string, AssetUrl>;
+    terrains?: Record<string, Asset>;
+    units?: Record<string, Asset>;
+    features?: Record<string, Asset>;
 };
 
 /** Context exposed to render-prop slots. Hex / hero rows are `EntityRow`. */
@@ -182,7 +182,7 @@ function buildDefaultWorldTiles(): IsometricTile[] {
             const def = isBorder
                 ? WORLD_TERRAIN_DEFS[3]
                 : WORLD_TERRAIN_DEFS[(x * 5 + y * 3 + (x ^ y)) % (WORLD_TERRAIN_DEFS.length - 1)];
-            tiles.push({ x, y, terrain: def.terrain, terrainSprite: def.sprite, passable: def.passable });
+            tiles.push({ x, y, terrain: def.terrain, terrainSprite: makeAsset(def.sprite, 'tile'), passable: def.passable });
         }
     }
     return tiles;
@@ -247,7 +247,12 @@ export function WorldMapBoard({
     // lolo sets @entity.units and @entity.tiles (not hexes/heroes)
     const entityUnits = rows(resolved?.units);
     const entityTiles = rows(resolved?.tiles);
-    const features = propFeatures ?? (rows(resolved?.features) as IsometricFeature[]);
+    const features: IsometricFeature[] = propFeatures ?? rows(resolved?.features).map(r => ({
+        id: r.id == null ? undefined : str(r.id),
+        x: num(r.x),
+        y: num(r.y),
+        type: str(r.type),
+    }));
     const selectedHeroId = (resolved?.selectedHeroId as string | null | undefined) ?? null;
     const assetManifest = propAssetManifest ?? resolved?.assetManifest as WorldMapAssetManifest | undefined;
     const backgroundImage = resolved?.backgroundImage as AssetUrl | undefined;
@@ -260,7 +265,7 @@ export function WorldMapBoard({
             x: num(t.x),
             y: num(t.y),
             terrain: str(t.terrain),
-            terrainSprite: t.terrainSprite == null ? undefined : str(t.terrainSprite),
+            terrainSprite: t.terrainSprite == null ? undefined : makeAsset(str(t.terrainSprite), 'tile'),
             passable: t.passable !== false,
         })),
         [entityTiles],
@@ -280,7 +285,7 @@ export function WorldMapBoard({
             team: (str(u.team) === 'enemy' ? 'enemy' : 'player') as 'player' | 'enemy',
             health: num(u.health) || 100,
             maxHealth: num(u.maxHealth) || 100,
-            sprite: u.sprite == null ? undefined : str(u.sprite),
+            sprite: u.sprite == null ? undefined : makeAsset(str(u.sprite), 'player'),
         })),
         [entityUnits, propUnits],
     );
@@ -475,7 +480,7 @@ export function WorldMapBoard({
             hoveredTile,
             hoveredHex,
             hoveredHero,
-            selectedHero,
+            selectedHero: selectedHero as EntityRow | null,
             validMoves,
             selectHero,
             tileToScreen,
@@ -510,7 +515,6 @@ export function WorldMapBoard({
                         onTileHover={(x, y) => setHoveredTile({ x, y })}
                         onTileLeave={() => setHoveredTile(null)}
                         scale={scale}
-                        assetBaseUrl={assetManifest?.baseUrl}
                         assetManifest={assetManifest}
                         backgroundImage={backgroundImage}
                         effectSpriteUrls={effectSpriteUrls}

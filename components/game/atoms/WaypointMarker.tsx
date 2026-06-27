@@ -1,14 +1,17 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import { Icon, type IconInput } from '../../core/atoms/Icon';
-import type { AssetUrl } from '@almadar/core';
+import type { Asset } from '@almadar/core';
 
-const DEFAULT_ASSET_URL: AssetUrl =
-  'https://almadar-kflow-assets.web.app/shared/world-map/battle_marker.png';
+const DEFAULT_ASSET_URL: Asset = {
+  url: 'https://almadar-kflow-assets.web.app/shared/world-map/battle_marker.png',
+  role: 'effect',
+  category: 'world',
+};
 
 export interface WaypointMarkerProps {
-  /** Sprite image URL — takes precedence over icon when provided */
-  assetUrl?: AssetUrl;
+  /** Sprite asset — takes precedence over icon when provided */
+  assetUrl?: Asset;
   /** Label text below the marker */
   label?: string;
   /** Custom icon to render inside the marker */
@@ -76,7 +79,7 @@ export function WaypointMarker({
         >
           {completed ? checkIcon : assetUrl ? (
             <img
-              src={assetUrl}
+              src={assetUrl.url}
               alt={label}
               width={sizes.img}
               height={sizes.img}

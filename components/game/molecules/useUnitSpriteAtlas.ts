@@ -11,7 +11,6 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { AssetUrl } from '@almadar/core';
 import type { IsometricUnit } from '../organisms/types/isometric';
 import type {
     ResolvedFrame,
@@ -25,22 +24,11 @@ import {
 /**
  * Resolve the sprite-sheet atlas-JSON URL for a unit.
  *
- * An explicit `unit.spriteSheet` wins. Otherwise, when the unit's static
- * `sprite` points at a directional sheet PNG, derive its sibling atlas JSON by
- * the deterministic naming convention used in `shared/sprite-sheets/`:
- * the shared atlas drops the `-se` / `-sw` direction suffix and any `-vN`
- * variant suffix, then swaps `.png` → `.json`
- * (`amir-sprite-sheet-se.png` → `amir-sprite-sheet.json`).
- *
- * Returns null when no atlas can be resolved (the unit keeps its static draw).
+ * A unit has an atlas iff `unit.spriteSheet.url` is set (explicit metadata wins).
+ * No filename-pattern matching — a unit without a `spriteSheet` Asset keeps its static draw.
  */
-export function unitAtlasUrl(unit: Pick<IsometricUnit, 'spriteSheet' | 'sprite'>): AssetUrl | null {
-    if (unit.spriteSheet) return unit.spriteSheet;
-    const sprite = unit.sprite;
-    if (!sprite) return null;
-    const match = /^(.*-sprite-sheet)(?:-(?:se|sw))?(?:-v\d+)?\.png$/.exec(sprite);
-    if (!match) return null;
-    return `${match[1]}.json`;
+export function unitAtlasUrl(unit: Pick<IsometricUnit, 'spriteSheet'>): string | null {
+    return unit.spriteSheet?.url ?? null;
 }
 
 /** Resolve the absolute atlas `.png` sheet URL from the atlas JSON URL + relative sheet path. */
