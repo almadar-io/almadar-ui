@@ -26,11 +26,15 @@ import { useTranslate } from "../../../hooks/useTranslate";
 
 export type RepeatableItem = {
   id: string;
-  /** State in which this item was added (for audit trails) */
-  addedInState: string | null;
-  /** Timestamp when item was added */
-  addedAt: string | null;
-  [key: string]: JsonValue;
+  /** State in which this item was added (for audit trails). Optional — only
+   *  consumers using `trackAddedInState`/`showAuditInfo` populate it. */
+  addedInState?: string | null;
+  /** Timestamp when item was added. Optional — see `addedInState`. */
+  addedAt?: string | null;
+  // Dynamic per-item fields (the consumer's spread payload). `| undefined`
+  // admits the optional audit fields above and reflects that arbitrary-key
+  // access may be absent.
+  [key: string]: JsonValue | undefined;
 };
 
 export interface RepeatableFormSectionProps {
