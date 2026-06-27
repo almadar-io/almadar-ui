@@ -300,11 +300,6 @@ const DEFAULT_SOURCES: Record<UISlot, SlotSources> = ALL_SLOTS.reduce(
 // ID Generator
 // ============================================================================
 
-let idCounter = 0;
-function generateId(): string {
-  return `slot-content-${++idCounter}-${Date.now()}`;
-}
-
 // ============================================================================
 // Aggregation
 // ============================================================================
@@ -439,8 +434,16 @@ export function useUISlotManager(): UISlotManager {
   // Render content to a slot
   const render = useCallback(
     (config: RenderUIConfig): string => {
-      const id = generateId();
       const sourceKey = config.sourceTrait ?? DEFAULT_SOURCE_KEY;
+      // STABLE, deterministic React identity for "this trait's render into this slot".
+      // Re-emitting the SAME trait's `render-ui` into the SAME slot (e.g. every 100ms from
+      // an `animTick`, or repeatedly from any source) yields the SAME `id`, so the renderer's
+      // child keys (`childId = `${content.id}-${index}`` in UISlotRenderer) stay stable and
+      // React RECONCILES the existing slot subtree — feeding it the new props — instead of
+      // unmounting + remounting it. Minting a fresh counter+timestamp id per emission here is
+      // what made EVERY ticking behavior remount its slot subtree every tick (GAP-R1: the
+      // canvas/HUD flicker). This is pattern-agnostic — it holds for any slot + any pattern.
+      const id = `slot-content-${config.target}-${sourceKey}`;
       const content: SlotContent = {
         id,
         pattern: config.pattern,
@@ -458,10 +461,18 @@ export function useUISlotManager(): UISlotManager {
       // Set auto-dismiss timer if specified
       if (config.autoDismissMs && config.autoDismissMs > 0) {
         content.autoDismissAt = Date.now() + config.autoDismissMs;
+        // The id is now stable per slot+source, so a re-emission reuses this timer key —
+        // clear any prior timer first so re-rendering RESETS the dismiss window instead of
+        // leaking a stale timer.
+        const prevTimer = timersRef.current.get(id);
+        if (prevTimer) clearTimeout(prevTimer);
         const timer = setTimeout(() => {
           setSources((prev) => {
             const slotSources = prev[config.target];
-            if (slotSources && slotSources[sourceKey]?.id === id) {
+            // Match by content-object IDENTITY, not id: with a stable id, only the EXACT
+            // content this timer was created for should auto-dismiss — a newer re-emission
+            // replaces the object (same id) and must NOT be dismissed by this old timer.
+            if (slotSources && slotSources[sourceKey] === content) {
               content.onDismiss?.();
               const next = { ...slotSources };
               delete next[sourceKey];
@@ -697,7 +708,10 @@ export function useUISlotManager(): UISlotManager {
   // embed-aware slot routing — see the JSDoc on UISlotManager.
   const updateTraitContent = useCallback(
     (traitName: string, content: Omit<SlotContent, 'id' | 'sourceTrait'>): string => {
-      const id = generateId();
+      // Deterministic per-trait id (same rationale as `render()` above): re-emitting an
+      // embedded `@trait.X` sidecar reuses the SAME id so React reconciles the embedded
+      // subtree instead of remounting it.
+      const id = `slot-content-trait-${traitName}`;
       const fullContent: SlotContent = { ...content, id, sourceTrait: traitName };
       indexTraitRender(traitName, fullContent);
       notifyTraitSubscribers(traitName, fullContent);
