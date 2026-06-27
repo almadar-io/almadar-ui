@@ -1262,6 +1262,11 @@ function SlotContentRenderer({
   onDismiss,
   patternPath,
 }: SlotContentRendererProps): React.ReactElement {
+  // [flicker-probe] which SlotContentRenderer remounts? tagged by pattern.
+  useEffect(() => {
+    scopeWrapLog.debug('scr:mount', { pattern: content.pattern, slot: content.slot });
+    return () => { scopeWrapLog.debug('scr:unmount', { pattern: content.pattern, slot: content.slot }); };
+  }, []);
   // V2 (post-Phase-6): entity data arrives pre-resolved in `content.props.entity`
   // as a value (array or record). String-entity bindings — the EntityStore
   // fallback path — are gone; the compiler + runtime resolve bindings via

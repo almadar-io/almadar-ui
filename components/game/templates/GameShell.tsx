@@ -14,16 +14,12 @@
  */
 
 import React from "react";
-import { createLogger } from "@almadar/logger";
 import { cn } from "../../../lib/cn";
 import { Box } from "../../core/atoms/Box";
 import { HStack } from "../../core/atoms/Stack";
 import { Typography } from "../../core/atoms/Typography";
 import { getComponentForPattern } from "@almadar/patterns";
 import type { SlotContent, SlotPropValue } from "../../../hooks/useUISlots";
-
-const shellLog = createLogger('almadar:ui:game:game-shell');
-let _shellMountCount = 0;
 
 
 type DescriptorObject = { type: string; props?: SlotContent["props"]; _id?: string };
@@ -59,16 +55,16 @@ function resolveDescriptor(value: React.ReactNode, idPrefix: string): React.Reac
   }
   if (typeof value === "object" && value !== null) {
     const desc = asDescriptor(value as object);
-    const hasComp = desc !== null && getComponentForPattern(desc.type) !== null;
-    shellLog.debug('resolve', { idPrefix, type: desc?.type ?? null, hasDesc: desc !== null, render: hasComp });
-    if (hasComp) {
-      const resolvedProps: SlotContent["props"] = desc!.props ?? {};
-      const content: SlotContent = { id: desc!._id ?? idPrefix, pattern: desc!.type, props: resolvedProps, priority: 0 };
+    if (desc !== null && getComponentForPattern(desc.type) !== null) {
+      const resolvedProps: SlotContent["props"] = desc.props ?? {};
+      const content: SlotContent = { id: desc._id ?? idPrefix, pattern: desc.type, props: resolvedProps, priority: 0 };
       const SCR = getSlotContentRenderer();
+      // Stable key tied to the slot/pattern identity (idPrefix) so a per-tick render-ui
+      // re-emission RECONCILES this child instead of remounting it — without it the canvas
+      // + HUD remounted ~574×/run (proven via instrumentation), recreating + clearing the
+      // canvas every tick = the board flicker.
       return <SCR key={content.id} content={content} onDismiss={() => undefined} />;
     }
-  } else {
-    shellLog.debug('resolve', { idPrefix, type: null, hasDesc: false, render: false, branch: typeof value });
   }
   return null;
 }
