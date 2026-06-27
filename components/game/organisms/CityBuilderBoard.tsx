@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useId } from 'react';
 import type { Asset, EventEmit, EntityRow } from '@almadar/core';
 import { makeAsset } from './utils/makeAsset';
 import { cn } from '../../../lib/cn';
@@ -11,7 +11,8 @@ import { Button } from '../../core/atoms/Button';
 import { Typography } from '../../core/atoms/Typography';
 import { VStack, HStack } from '../../core/atoms/Stack';
 import type { DisplayStateProps } from '../../core/organisms/types';
-import IsometricCanvas from '../molecules/IsometricCanvas';
+import { Canvas2D } from '../molecules/Canvas2D';
+import { useEventListener } from '../../../hooks/useEventBus';
 import type { IsometricTile, IsometricFeature } from './types/isometric';
 import { boardEntity, num, str, rows } from './boardEntity';
 
@@ -159,6 +160,12 @@ export function CityBuilderBoard({
     const eventBus = useEventBus();
     const { t } = useTranslate();
 
+    // Synthetic internal event names (Canvas2D emits; board listens).
+    const boardId = useId();
+    const internalTileClickEvent = `citybuilder.tileClick.${boardId}`;
+    const internalTileHoverEvent = `citybuilder.tileHover.${boardId}`;
+    const internalTileLeaveEvent = `citybuilder.tileLeave.${boardId}`;
+
     const assetManifest = propAssetManifest ?? (board.assetManifest as CityBuilderAssetManifest | undefined);
 
     const entityTiles: CityBuilderTile[] = useMemo(
@@ -231,14 +238,39 @@ export function CityBuilderBoard({
     const isoTiles         = useMemo(() => tilesToIso(tiles, assetManifest), [tiles, assetManifest]);
     const buildingFeatures = useMemo(() => buildingsToFeatures(buildings, assetManifest), [buildings, assetManifest]);
 
-    const handleTileClick = useCallback((x: number, y: number) => {
-        if (result !== 'none') return;
-        if (buildingPositions.has(`${x},${y}`)) return;
-        if (gold < pendingCost) return;
+    // Live refs so listeners always see fresh values.
+    const resultRef = useRef(result);
+    resultRef.current = result;
+    const buildingPositionsRef = useRef(buildingPositions);
+    buildingPositionsRef.current = buildingPositions;
+    const goldRef = useRef(gold);
+    goldRef.current = gold;
+    const pendingCostRef = useRef(pendingCost);
+    pendingCostRef.current = pendingCost;
+
+    // Tile-click: Canvas2D emits internalTileClickEvent; board listens for placement logic.
+    useEventListener(`UI:${internalTileClickEvent}`, useCallback((evt) => {
+        const x = (evt.payload as { x?: number; y?: number })?.x;
+        const y = (evt.payload as { x?: number; y?: number })?.y;
+        if (x == null || y == null) return;
+        if (resultRef.current !== 'none') return;
+        if (buildingPositionsRef.current.has(`${x},${y}`)) return;
+        if (goldRef.current < pendingCostRef.current) return;
         if (placeBuildingEvent) {
             eventBus.emit(`UI:${placeBuildingEvent}`, { x, y });
         }
-    }, [result, buildingPositions, gold, pendingCost, placeBuildingEvent, eventBus]);
+    }, [placeBuildingEvent, eventBus]));
+
+    // Hover/leave listeners for local hover state.
+    useEventListener(`UI:${internalTileHoverEvent}`, useCallback((evt) => {
+        const x = (evt.payload as { x?: number; y?: number })?.x;
+        const y = (evt.payload as { x?: number; y?: number })?.y;
+        if (x != null && y != null) setHoveredTile({ x, y });
+    }, []));
+
+    useEventListener(`UI:${internalTileLeaveEvent}`, useCallback(() => {
+        setHoveredTile(null);
+    }, []));
 
     const handleSelectBuildType = useCallback((buildType: string) => {
         if (selectBuildTypeEvent) {
@@ -287,15 +319,16 @@ export function CityBuilderBoard({
 
             {/* Canvas */}
             <Box className="relative flex-1">
-                <IsometricCanvas
+                <Canvas2D
+                    projection="isometric"
                     tiles={isoTiles}
                     features={buildingFeatures}
                     assetManifest={assetManifest}
                     validMoves={validMoves}
                     hoveredTile={hoveredTile}
-                    onTileClick={handleTileClick}
-                    onTileHover={(x: number, y: number) => setHoveredTile({ x, y })}
-                    onTileLeave={() => setHoveredTile(null)}
+                    tileClickEvent={internalTileClickEvent}
+                    tileHoverEvent={internalTileHoverEvent}
+                    tileLeaveEvent={internalTileLeaveEvent}
                     scale={scale}
                     unitScale={unitScale}
                     spriteHeightRatio={spriteHeightRatio}

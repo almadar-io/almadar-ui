@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useId, useRef } from 'react';
 import type { Asset, EventEmit, EntityRow } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -10,7 +10,8 @@ import { Button } from '../../core/atoms/Button';
 import { Typography } from '../../core/atoms/Typography';
 import { VStack, HStack } from '../../core/atoms/Stack';
 import type { DisplayStateProps } from '../../core/organisms/types';
-import IsometricCanvas from '../molecules/IsometricCanvas';
+import { Canvas2D } from '../molecules/Canvas2D';
+import { useEventListener } from '../../../hooks/useEventBus';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from './types/isometric';
 import { boardEntity, str, num, rows, vec2 } from './boardEntity';
 import { makeAsset } from './utils/makeAsset';
@@ -197,6 +198,13 @@ export function RoguelikeBoard({
     const eventBus = useEventBus();
     const { t } = useTranslate();
 
+    // Synthetic internal event names for canvas hover/leave.
+    const boardId = useId();
+    const internalTileHoverEvent = `roguelike.tileHover.${boardId}`;
+    const internalTileLeaveEvent = `roguelike.tileLeave.${boardId}`;
+    // Synthetic tile-click event name (Canvas2D emits this; board listens for move logic).
+    const internalTileClickEvent = `roguelike.tileClick.${boardId}`;
+
     // Keyboard navigation
     const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
 
@@ -223,14 +231,36 @@ export function RoguelikeBoard({
         }
     }, [result, gameEndEvent, eventBus]);
 
-    const handleTileClick = useCallback((x: number, y: number) => {
-        if (result !== 'none' || phase !== 'player_turn') return;
-        const dx = x - player.x;
-        const dy = y - player.y;
+    // Tile-click: Canvas2D emits internalTileClickEvent; we listen for move logic.
+    const resultRef = useRef(result);
+    resultRef.current = result;
+    const phaseRef = useRef(phase);
+    phaseRef.current = phase;
+    const playerRef = useRef(player);
+    playerRef.current = player;
+
+    useEventListener(`UI:${internalTileClickEvent}`, useCallback((evt) => {
+        const x = (evt.payload as { x?: number; y?: number })?.x;
+        const y = (evt.payload as { x?: number; y?: number })?.y;
+        if (x == null || y == null) return;
+        if (resultRef.current !== 'none' || phaseRef.current !== 'player_turn') return;
+        const dx = x - playerRef.current.x;
+        const dy = y - playerRef.current.y;
         if (Math.abs(dx) + Math.abs(dy) === 1) {
             emitMove(dx, dy);
         }
-    }, [result, phase, player, emitMove]);
+    }, [emitMove]));
+
+    // Hover/leave listeners for local hover state.
+    useEventListener(`UI:${internalTileHoverEvent}`, useCallback((evt) => {
+        const x = (evt.payload as { x?: number; y?: number })?.x;
+        const y = (evt.payload as { x?: number; y?: number })?.y;
+        if (x != null && y != null) setHoveredTile({ x, y });
+    }, []));
+
+    useEventListener(`UI:${internalTileLeaveEvent}`, useCallback(() => {
+        setHoveredTile(null);
+    }, []));
 
     const handleReset = useCallback(() => {
         if (!playAgainEvent) return;
@@ -335,7 +365,8 @@ export function RoguelikeBoard({
 
             {/* Canvas */}
             <Box className="relative flex-1">
-                <IsometricCanvas
+                <Canvas2D
+                    projection="isometric"
                     tiles={tiles}
                     units={isoUnits}
                     features={isoFeatures}
@@ -343,10 +374,9 @@ export function RoguelikeBoard({
                     validMoves={validMoves}
                     attackTargets={[]}
                     hoveredTile={hoveredTile}
-                    onTileClick={handleTileClick}
-                    onUnitClick={() => undefined}
-                    onTileHover={(x: number, y: number) => setHoveredTile({ x, y })}
-                    onTileLeave={() => setHoveredTile(null)}
+                    tileClickEvent={internalTileClickEvent}
+                    tileHoverEvent={internalTileHoverEvent}
+                    tileLeaveEvent={internalTileLeaveEvent}
                     scale={scale}
                     assetManifest={assetManifest}
                     unitScale={unitScale}

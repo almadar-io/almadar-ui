@@ -3,7 +3,7 @@
 import React from 'react';
 import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
 import { cn } from '../../../lib/cn';
-import { GameCanvas2D } from '../molecules/GameCanvas2D';
+import { Canvas2D } from '../molecules/Canvas2D';
 import type { DisplayStateProps } from '../../core/organisms/types';
 
 // =============================================================================
@@ -37,44 +37,34 @@ export interface PinballBoardProps extends DisplayStateProps {
 // Component
 // =============================================================================
 
+// NOTE: assetBaseUrl is not forwarded — Canvas2D has no assetBaseUrl prop.
+// NOTE: width/height (computed from scale) are dropped — Canvas2D auto-sizes via ResizeObserver.
 export function PinballBoard({
     tiles: _tiles,
     units: _units,
     features: _features,
     assetManifest: _assetManifest,
-    assetBaseUrl,
-    scale = 1,
-    showMinimap: _showMinimap = false,
-    enableCamera: _enableCamera = false,
-    tileClickEvent: _tileClickEvent,
-    unitClickEvent: _unitClickEvent,
+    assetBaseUrl: _assetBaseUrl,
+    scale: _scale = 1,
+    showMinimap = false,
+    enableCamera = false,
+    tileClickEvent,
+    unitClickEvent,
     isLoading,
     error,
     className,
 }: PinballBoardProps): React.ReactElement {
-    if (isLoading) {
-        return (
-            <div className={cn('pinball-board relative w-full h-full flex items-center justify-center', className)}>
-                <span className="text-sm text-muted-foreground">Loading...</span>
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className={cn('pinball-board relative w-full h-full flex items-center justify-center', className)}>
-                <span className="text-sm text-destructive">{error.message}</span>
-            </div>
-        );
-    }
-
     return (
         <div className={cn('pinball-board relative w-full h-full', className)}>
-            <GameCanvas2D
-                width={Math.round(400 * scale)}
-                height={Math.round(800 * scale)}
-                assetBaseUrl={assetBaseUrl}
-                fps={60}
+            <Canvas2D
+                projection="free"
+                showMinimap={showMinimap}
+                camera={enableCamera ? 'pan-zoom' : 'fixed'}
+                tileClickEvent={tileClickEvent}
+                unitClickEvent={unitClickEvent}
+                animate={{ fps: 60 }}
+                isLoading={isLoading}
+                error={error}
             />
         </div>
     );

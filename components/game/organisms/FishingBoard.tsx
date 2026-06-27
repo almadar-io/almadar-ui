@@ -3,7 +3,7 @@
 import React from 'react';
 import type { Asset, EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
-import { GameCanvas2D } from '../molecules/GameCanvas2D';
+import { Canvas2D } from '../molecules/Canvas2D';
 import type { DisplayStateProps } from '../../core/organisms/types';
 
 // =============================================================================
@@ -38,29 +38,25 @@ export function FishingBoard({
     scale = 1,
     showMinimap = false,
     enableCamera = true,
-    width = 800,
-    height = 600,
+    tileClickEvent,
+    unitClickEvent,
     isLoading,
     error,
     className,
 }: FishingBoardProps): React.ReactElement {
     return (
         <div className={cn('fishing-board relative w-full h-full', className)}>
-            {isLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10">
-                    <span className="text-white text-sm">Loading…</span>
-                </div>
-            )}
-            {error && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-10">
-                    <span className="text-red-400 text-sm">{error.message}</span>
-                </div>
-            )}
-            <GameCanvas2D
-                width={width}
-                height={height}
+            <Canvas2D
+                projection="free"
                 backgroundImage={backgroundImage}
-                fps={60}
+                scale={scale}
+                showMinimap={showMinimap}
+                camera={enableCamera ? 'pan-zoom' : 'fixed'}
+                tileClickEvent={tileClickEvent}
+                unitClickEvent={unitClickEvent}
+                animate={{ fps: 60 }}
+                isLoading={isLoading}
+                error={error}
                 className="w-full h-full"
             />
         </div>

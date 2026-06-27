@@ -21,14 +21,15 @@
  */
 
  
-import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef, useId } from 'react';
 import type { Asset, AssetUrl, EventEmit, EntityRow } from '@almadar/core';
 import { makeAsset } from './utils/makeAsset';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { VStack, HStack, Stack } from '../../core/atoms/Stack';
 import { LoadingState } from '../../core/molecules/LoadingState';
-import IsometricCanvas from '../molecules/IsometricCanvas';
+import { Canvas2D } from '../molecules/Canvas2D';
+import { useEventListener } from '../../../hooks/useEventBus';
 import type {
     IsometricTile,
     IsometricUnit,
@@ -242,6 +243,13 @@ export function WorldMapBoard({
 }: WorldMapBoardProps): React.JSX.Element {
     const eventBus = useEventBus();
 
+    // Synthetic internal event names (Canvas2D emits; board listens).
+    const boardId = useId();
+    const internalTileClickEvent = `worldmap.tileClick.${boardId}`;
+    const internalUnitClickEvent = `worldmap.unitClick.${boardId}`;
+    const internalTileHoverEvent = `worldmap.tileHover.${boardId}`;
+    const internalTileLeaveEvent = `worldmap.tileLeave.${boardId}`;
+
     // Resolve the single board-state row (handles undefined, array, or row)
     const resolved = boardEntity(entity);
     // lolo sets @entity.units and @entity.tiles (not hexes/heroes)
@@ -410,24 +418,38 @@ export function WorldMapBoard({
         [hoveredTile, gameUnits],
     );
 
-    // -- Handle tile click ----------------------------------------------------
-    const handleTileClick = useCallback((x: number, y: number) => {
-        if (movementAnimRef.current) return;
-        const tile = tiles.find(t => t.x === x && t.y === y);
+    // Live refs so event listeners always see current values.
+    const tilesRef = useRef(tiles);
+    tilesRef.current = tiles;
+    const gameUnitsRef = useRef(gameUnits);
+    gameUnitsRef.current = gameUnits;
+    const selectedHeroRef = useRef(selectedHero);
+    selectedHeroRef.current = selectedHero;
+    const validMovesRef = useRef(validMoves);
+    validMovesRef.current = validMoves;
+    const attackTargetsRef = useRef(attackTargets);
+    attackTargetsRef.current = attackTargets;
 
-        // Emit declarative tile click event
+    // -- Handle tile click ----------------------------------------------------
+    useEventListener(`UI:${internalTileClickEvent}`, useCallback((evt) => {
+        const x = (evt.payload as { x?: number; y?: number })?.x;
+        const y = (evt.payload as { x?: number; y?: number })?.y;
+        if (x == null || y == null) return;
+        if (movementAnimRef.current) return;
+        const tile = tilesRef.current.find(t => t.x === x && t.y === y);
+
         if (tileClickEvent) {
             eventBus.emit(`UI:${tileClickEvent}`, { x, y });
         }
 
-        if (selectedHero && validMoves.some(m => m.x === x && m.y === y)) {
-            const heroId = str(selectedHero.id);
-            startMoveAnimation(heroId, { ...heroPosition(selectedHero) }, { x, y }, () => {
+        const curHero = selectedHeroRef.current;
+        if (curHero && validMovesRef.current.some(m => m.x === x && m.y === y)) {
+            const heroId = str(curHero.id);
+            startMoveAnimation(heroId, { ...heroPosition(curHero) }, { x, y }, () => {
                 onHeroMove?.(heroId, x, y);
                 if (heroMoveEvent) {
                     eventBus.emit(`UI:${heroMoveEvent}`, { heroId, toX: x, toY: y });
                 }
-                // feature on a tile row (EntityRow from entity path)
                 const tileWithFeature = tile as (IsometricTile & { feature?: string }) | undefined;
                 const feature = tileWithFeature ? str(tileWithFeature.feature) : '';
                 if (feature && feature !== 'none') {
@@ -441,31 +463,43 @@ export function WorldMapBoard({
             return;
         }
 
-        // Check for battle encounter
-        const enemy = gameUnits.find(u => {
+        const enemy = gameUnitsRef.current.find(u => {
             const up = u.position ?? { x: u.x ?? -1, y: u.y ?? -1 };
             return up.x === x && up.y === y && str(u.team) === 'enemy';
         });
-        if (selectedHero && enemy && attackTargets.some((t: { x: number; y: number }) => t.x === x && t.y === y)) {
-            const attackerId = str(selectedHero.id);
+        if (curHero && enemy && attackTargetsRef.current.some((t: { x: number; y: number }) => t.x === x && t.y === y)) {
+            const attackerId = str(curHero.id);
             const defenderId = enemy.id;
             onBattleEncounter?.(attackerId, defenderId);
             if (battleEncounterEvent) {
                 eventBus.emit(`UI:${battleEncounterEvent}`, { attackerId, defenderId });
             }
         }
-    }, [tiles, gameUnits, selectedHero, validMoves, attackTargets, startMoveAnimation, onHeroMove, onFeatureEnter, onBattleEncounter, eventBus, tileClickEvent, heroMoveEvent, featureEnterEvent, battleEncounterEvent]);
+    }, [tileClickEvent, eventBus, startMoveAnimation, onHeroMove, onFeatureEnter, onBattleEncounter, heroMoveEvent, featureEnterEvent, battleEncounterEvent, internalTileClickEvent]));
 
     // -- Handle unit click ----------------------------------------------------
-    const handleUnitClick = useCallback((unitId: string) => {
-        const unit = gameUnits.find(u => u.id === unitId);
+    useEventListener(`UI:${internalUnitClickEvent}`, useCallback((evt) => {
+        const unitId = (evt.payload as { unitId?: string })?.unitId;
+        if (!unitId) return;
+        const unit = gameUnitsRef.current.find(u => u.id === unitId);
         if (unit && (str(unit.team) === 'player' || allowMoveAllHeroes)) {
             onHeroSelect?.(unitId);
             if (heroSelectEvent) {
                 eventBus.emit(`UI:${heroSelectEvent}`, { heroId: unitId });
             }
         }
-    }, [gameUnits, onHeroSelect, allowMoveAllHeroes, eventBus, heroSelectEvent]);
+    }, [allowMoveAllHeroes, onHeroSelect, eventBus, heroSelectEvent, internalUnitClickEvent]));
+
+    // -- Hover/leave listeners for local hover state --------------------------
+    useEventListener(`UI:${internalTileHoverEvent}`, useCallback((evt) => {
+        const x = (evt.payload as { x?: number; y?: number })?.x;
+        const y = (evt.payload as { x?: number; y?: number })?.y;
+        if (x != null && y != null) setHoveredTile({ x, y });
+    }, []));
+
+    useEventListener(`UI:${internalTileLeaveEvent}`, useCallback(() => {
+        setHoveredTile(null);
+    }, []));
 
     const selectHero = useCallback((id: string) => {
         onHeroSelect?.(id);
@@ -502,7 +536,8 @@ export function WorldMapBoard({
             <HStack className="flex-1 overflow-hidden" gap="none">
                 {/* Canvas column */}
                 <Stack className="flex-1 overflow-auto p-4 relative">
-                    <IsometricCanvas
+                    <Canvas2D
+                        projection="isometric"
                         tiles={tiles}
                         units={isoUnits}
                         features={features}
@@ -510,20 +545,20 @@ export function WorldMapBoard({
                         validMoves={validMoves}
                         attackTargets={attackTargets}
                         hoveredTile={hoveredTile}
-                        onTileClick={handleTileClick}
-                        onUnitClick={handleUnitClick}
-                        onTileHover={(x, y) => setHoveredTile({ x, y })}
-                        onTileLeave={() => setHoveredTile(null)}
+                        tileClickEvent={internalTileClickEvent}
+                        unitClickEvent={internalUnitClickEvent}
+                        tileHoverEvent={internalTileHoverEvent}
+                        tileLeaveEvent={internalTileLeaveEvent}
                         scale={scale}
                         assetManifest={assetManifest}
-                        backgroundImage={backgroundImage}
+                        backgroundImage={backgroundImage ? makeAsset(backgroundImage, 'decoration') : undefined}
                         effectSpriteUrls={effectSpriteUrls}
                         resolveUnitFrame={resolveUnitFrame}
                         unitScale={unitScale}
                         spriteHeightRatio={spriteHeightRatio}
                         spriteMaxWidthRatio={spriteMaxWidthRatio}
                         diamondTopY={diamondTopY}
-                        enableCamera={enableCamera}
+                        camera={enableCamera ? 'pan-zoom' : 'fixed'}
                     />
 
                     {/* Overlay slot */}

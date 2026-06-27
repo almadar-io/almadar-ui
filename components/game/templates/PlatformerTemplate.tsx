@@ -98,10 +98,7 @@ export function PlatformerTemplate({
                 playerSprite={playerSprite}
                 tileSprites={tileSprites}
                 bgColor={bgColor}
-                leftEvent="LEFT"
-                rightEvent="RIGHT"
-                jumpEvent="JUMP"
-                stopEvent="STOP"
+                keyEvent="KEY"
                 playAgainEvent="PLAY_AGAIN"
                 gameEndEvent={gameEndEvent}
             />

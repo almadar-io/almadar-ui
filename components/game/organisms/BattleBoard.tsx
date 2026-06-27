@@ -20,7 +20,7 @@
  * @packageDocumentation
  */
 
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect, useId } from 'react';
 import type { Asset, AssetUrl, EventEmit, EntityRow, FieldValue } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -30,7 +30,8 @@ import { Button } from '../../core/atoms/Button';
 import { Typography } from '../../core/atoms/Typography';
 import { VStack, HStack } from '../../core/atoms/Stack';
 import type { DisplayStateProps } from '../../core/organisms/types';
-import IsometricCanvas from '../molecules/IsometricCanvas';
+import { Canvas2D } from '../molecules/Canvas2D';
+import { useEventListener } from '../../../hooks/useEventBus';
 import type {
     IsometricTile,
     IsometricUnit,
@@ -284,6 +285,11 @@ export function BattleBoard({
     const eventBus = useEventBus();
     const { t } = useTranslate();
 
+    // Synthetic internal event names for canvas hover/leave (board-instance-scoped).
+    const boardId = useId();
+    const internalTileHoverEvent = `battle.tileHover.${boardId}`;
+    const internalTileLeaveEvent = `battle.tileLeave.${boardId}`;
+
     // ── Rendering-only state (always local) ──────────────────────────────
     const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);
     const [isShaking, setIsShaking] = useState(false);
@@ -468,33 +474,39 @@ export function BattleBoard({
         }
     }, [units, onGameEnd, gameEndEvent, eventBus]);
 
-    // ── Handle unit click (emit only — state managed by parent) ────────────
-    const handleUnitClick = useCallback((unitId: string) => {
-        const unit = units.find(u => str(u.id) === unitId);
+    // ── Unit-click: Canvas2D emits unitClickEvent; we listen for local attack/shake logic ──
+    const currentPhaseRef = useRef(currentPhase);
+    currentPhaseRef.current = currentPhase;
+    const selectedUnitRef = useRef(selectedUnit);
+    selectedUnitRef.current = selectedUnit;
+    const attackTargetsRef = useRef(attackTargets);
+    attackTargetsRef.current = attackTargets;
+    const unitsRef = useRef(units);
+    unitsRef.current = units;
+
+    useEventListener(unitClickEvent ? `UI:${unitClickEvent}` : '__battle_unit_click_noop__', useCallback((evt) => {
+        const unitId = (evt.payload as { unitId?: string })?.unitId;
+        if (!unitId) return;
+        const unit = unitsRef.current.find(u => str(u.id) === unitId);
         if (!unit) return;
 
-        if (unitClickEvent) {
-            eventBus.emit(`UI:${unitClickEvent}`, { unitId });
-        }
-
-        // Screen shake on attack hit (rendering-only state)
-        if (currentPhase === 'action' && selectedUnit) {
+        if (currentPhaseRef.current === 'action' && selectedUnitRef.current) {
             const up = unitPosition(unit);
             if (
                 unitTeam(unit) === 'enemy' &&
-                attackTargets.some(t => t.x === up.x && t.y === up.y)
+                attackTargetsRef.current.some(t => t.x === up.x && t.y === up.y)
             ) {
                 const damage = calculateDamage
-                    ? calculateDamage(selectedUnit, unit)
-                    : Math.max(1, num(selectedUnit.attack) - num(unit.defense));
+                    ? calculateDamage(selectedUnitRef.current, unit)
+                    : Math.max(1, num(selectedUnitRef.current.attack) - num(unit.defense));
 
                 setIsShaking(true);
                 setTimeout(() => setIsShaking(false), 300);
 
-                onAttack?.(selectedUnit, unit, damage);
+                onAttack?.(selectedUnitRef.current, unit, damage);
                 if (attackEvent) {
                     eventBus.emit(`UI:${attackEvent}`, {
-                        attackerId: str(selectedUnit.id),
+                        attackerId: str(selectedUnitRef.current.id),
                         targetId: str(unit.id),
                         damage,
                     });
@@ -503,25 +515,39 @@ export function BattleBoard({
                 setTimeout(checkGameEnd, 100);
             }
         }
-    }, [currentPhase, selectedUnit, attackTargets, units, checkGameEnd, onAttack, calculateDamage, unitClickEvent, attackEvent, eventBus]);
+    }, [calculateDamage, onAttack, attackEvent, eventBus, checkGameEnd]));
 
-    // ── Handle tile click (emit + animation — no state mutation) ───────────
-    const handleTileClick = useCallback((x: number, y: number) => {
-        if (tileClickEvent) {
-            eventBus.emit(`UI:${tileClickEvent}`, { x, y });
-        }
+    // ── Tile-click: Canvas2D emits tileClickEvent; we listen for movement animation ──
+    const validMovesRef = useRef(validMoves);
+    validMovesRef.current = validMoves;
 
-        if (currentPhase === 'movement' && selectedUnit) {
-            if (movementAnimRef.current) return; // block during animation
-            if (validMoves.some(m => m.x === x && m.y === y)) {
-                const from = { ...unitPosition(selectedUnit) };
+    useEventListener(tileClickEvent ? `UI:${tileClickEvent}` : '__battle_tile_click_noop__', useCallback((evt) => {
+        const x = (evt.payload as { x?: number; y?: number })?.x;
+        const y = (evt.payload as { x?: number; y?: number })?.y;
+        if (x == null || y == null) return;
+
+        if (currentPhaseRef.current === 'movement' && selectedUnitRef.current) {
+            if (movementAnimRef.current) return;
+            if (validMovesRef.current.some(m => m.x === x && m.y === y)) {
+                const from = { ...unitPosition(selectedUnitRef.current) };
                 const to = { x, y };
-                startMoveAnimation(str(selectedUnit.id), from, to, () => {
-                    onUnitMove?.(selectedUnit, to);
+                startMoveAnimation(str(selectedUnitRef.current.id), from, to, () => {
+                    onUnitMove?.(selectedUnitRef.current!, to);
                 });
             }
         }
-    }, [currentPhase, selectedUnit, validMoves, startMoveAnimation, onUnitMove, tileClickEvent, eventBus]);
+    }, [startMoveAnimation, onUnitMove]));
+
+    // ── Hover/leave: synthetic internal events ─────────────────────────────
+    useEventListener(`UI:${internalTileHoverEvent}`, useCallback((evt) => {
+        const x = (evt.payload as { x?: number; y?: number })?.x;
+        const y = (evt.payload as { x?: number; y?: number })?.y;
+        if (x != null && y != null) setHoveredTile({ x, y });
+    }, []));
+
+    useEventListener(`UI:${internalTileLeaveEvent}`, useCallback(() => {
+        setHoveredTile(null);
+    }, []));
 
     // ── Phase controls (emit only — state managed by parent) ───────────────
     const handleEndTurn = useCallback(() => {
@@ -595,7 +621,8 @@ export function BattleBoard({
             <HStack className="flex-1 gap-4 p-4 pt-0" gap="none">
                 {/* Canvas column */}
                 <Box className="relative flex-1" style={shakeStyle}>
-                    <IsometricCanvas
+                    <Canvas2D
+                        projection="isometric"
                         tiles={tiles}
                         units={isoUnits}
                         features={features}
@@ -603,15 +630,14 @@ export function BattleBoard({
                         validMoves={validMoves}
                         attackTargets={attackTargets}
                         hoveredTile={hoveredTile}
-                        onTileClick={handleTileClick}
-                        onUnitClick={handleUnitClick}
-                        onTileHover={(x: number, y: number) => setHoveredTile({ x, y })}
-                        onTileLeave={() => setHoveredTile(null)}
+                        tileClickEvent={tileClickEvent}
+                        unitClickEvent={unitClickEvent}
+                        tileHoverEvent={internalTileHoverEvent}
+                        tileLeaveEvent={internalTileLeaveEvent}
                         scale={scale}
                         assetManifest={assetManifest}
-                        backgroundImage={backgroundImage}
+                        backgroundImage={backgroundImage ? makeAsset(backgroundImage, 'decoration') : undefined}
                         onDrawEffects={onDrawEffects}
-                        hasActiveEffects={hasActiveEffects}
                         effectSpriteUrls={effectSpriteUrls}
                         resolveUnitFrame={resolveUnitFrame}
                         unitScale={unitScale}

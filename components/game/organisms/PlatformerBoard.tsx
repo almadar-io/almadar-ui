@@ -11,8 +11,11 @@ import { Box } from '../../core/atoms/Box';
 import { Button } from '../../core/atoms/Button';
 import { Typography } from '../../core/atoms/Typography';
 import { VStack } from '../../core/atoms/Stack';
-import { PlatformerCanvas } from '../molecules/PlatformerCanvas';
-import type { PlatformerPlatform, PlatformerPlayer } from '../molecules/PlatformerCanvas';
+import { Canvas2D } from '../molecules/Canvas2D';
+import type { Platform, SidePlayer } from '../molecules/Canvas2D';
+// NOTE: leftEvent/rightEvent/jumpEvent/stopEvent cannot map to Canvas2D — Canvas2D
+// emits a single keyEvent({ key: code }). Pass keyEvent; LOLO model must be updated
+// to handle KeyboardEvent codes instead of per-direction events.
 
 const boardLog = createLogger('almadar:ui:game:platformer-board');
 
@@ -24,9 +27,9 @@ export interface PlatformerBoardProps {
     /** Entity containing all board state (result, lives, score, level, player, platforms) */
     entity?: EntityRow | readonly EntityRow[];
     /** Direct player state — takes priority over entity-derived player */
-    player?: PlatformerPlayer;
+    player?: SidePlayer;
     /** Direct platform data — takes priority over entity-derived platforms */
-    platforms?: PlatformerPlatform[];
+    platforms?: Platform[];
     /** Game result read from entity */
     result?: 'none' | 'won' | 'lost';
     /** Lives remaining */
@@ -35,7 +38,7 @@ export interface PlatformerBoardProps {
     score?: number;
     /** Current level */
     level?: number;
-    /** World/canvas dimensions */
+    /** World/canvas dimensions (kept for entity resolution; not forwarded to Canvas2D) */
     worldWidth?: number;
     worldHeight?: number;
     canvasWidth?: number;
@@ -44,13 +47,10 @@ export interface PlatformerBoardProps {
     playerSprite?: Asset;
     /** Map of platform type to tile sprite */
     tileSprites?: Record<string, Asset>;
-    /** Canvas background color */
+    /** Canvas background color (not supported by Canvas2D; kept for API compat) */
     bgColor?: string;
-    /** Event names forwarded to PlatformerCanvas */
-    leftEvent?: EventEmit<{ direction: number }>;
-    rightEvent?: EventEmit<{ direction: number }>;
-    jumpEvent?: EventEmit<Record<string, never>>;
-    stopEvent?: EventEmit<Record<string, never>>;
+    /** Emits UI:{keyEvent} with { key } on keydown (replaces per-direction events) */
+    keyEvent?: EventEmit<{ key: string }>;
     /** Emits UI:{playAgainEvent} on restart */
     playAgainEvent?: EventEmit<Record<string, never>>;
     /** Emits UI:{gameEndEvent} with { result } when result becomes won/lost */
@@ -92,15 +92,12 @@ export function PlatformerBoard({
     level: propLevel,
     worldWidth = 800,
     worldHeight = 400,
-    canvasWidth = 800,
-    canvasHeight = 400,
+    canvasWidth: _canvasWidth = 800,
+    canvasHeight: _canvasHeight = 400,
     playerSprite,
     tileSprites,
-    bgColor,
-    leftEvent = 'LEFT',
-    rightEvent = 'RIGHT',
-    jumpEvent = 'JUMP',
-    stopEvent = 'STOP',
+    bgColor: _bgColor,
+    keyEvent = 'KEY',
     playAgainEvent = 'PLAY_AGAIN',
     gameEndEvent = 'GAME_END',
     className,
@@ -116,8 +113,8 @@ export function PlatformerBoard({
     const level = propLevel ?? numField(row, 'level', 1);
 
     // Player state: direct prop wins over entity field
-    const entityPlayer = row['player'] as PlatformerPlayer | undefined;
-    const player: PlatformerPlayer = propPlayer ?? entityPlayer ?? {
+    const entityPlayer = row['player'] as SidePlayer | undefined;
+    const player: SidePlayer = propPlayer ?? entityPlayer ?? {
         x: 80,
         y: 320,
         width: 32,
@@ -174,21 +171,16 @@ export function PlatformerBoard({
         >
             {/* Canvas */}
             <Box className="relative">
-                <PlatformerCanvas
+                <Canvas2D
+                    projection="side"
                     player={player}
                     platforms={platforms}
                     worldWidth={worldWidth}
                     worldHeight={worldHeight}
-                    canvasWidth={canvasWidth}
-                    canvasHeight={canvasHeight}
-                    followCamera
-                    bgColor={bgColor}
-                    playerSprite={playerSprite?.url}
-                    tileSprites={tileSprites ? Object.fromEntries(Object.entries(tileSprites).map(([k, a]) => [k, a.url])) : undefined}
-                    leftEvent={leftEvent}
-                    rightEvent={rightEvent}
-                    jumpEvent={jumpEvent}
-                    stopEvent={stopEvent}
+                    playerSprite={playerSprite}
+                    tileSprites={tileSprites}
+                    camera="follow"
+                    keyEvent={keyEvent}
                 />
 
                 {/* Win / Lost overlay */}

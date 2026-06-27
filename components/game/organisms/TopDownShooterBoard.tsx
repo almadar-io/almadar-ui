@@ -11,7 +11,8 @@ import { Box } from '../../core/atoms/Box';
 import { Button } from '../../core/atoms/Button';
 import { Typography } from '../../core/atoms/Typography';
 import { VStack, HStack } from '../../core/atoms/Stack';
-import { GameCanvas2D } from '../molecules/GameCanvas2D';
+import { Canvas2D } from '../molecules/Canvas2D';
+// NOTE: width/height props are kept in props + onDraw fill but not forwarded to Canvas2D (auto-sizes).
 import { useImageCache } from './hooks/useImageCache';
 import { boardEntity, num, str, rows } from './boardEntity';
 
@@ -330,13 +331,13 @@ export function TopDownShooterBoard({
                 </HStack>
             </HStack>
 
-            {/* Arena canvas — composes the pure GameCanvas2D molecule */}
+            {/* Arena canvas — composes Canvas2D with free projection */}
             <Box className="relative" onClick={handleFireClick}>
-                <GameCanvas2D
-                    width={width}
-                    height={height}
+                <Canvas2D
+                    projection="free"
                     backgroundImage={backgroundSprite}
-                    onDraw={onDraw}
+                    onDrawEffects={onDraw}
+                    animate={{ fps: 60 }}
                 />
 
                 {isGameOver && (

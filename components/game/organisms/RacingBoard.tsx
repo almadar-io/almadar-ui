@@ -3,10 +3,10 @@
 import React from 'react';
 import type { AssetUrl, EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
-import IsometricCanvas from '../molecules/IsometricCanvas';
+import { Canvas2D } from '../molecules/Canvas2D';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from './types/isometric';
 import type { DisplayStateProps } from '../../core/organisms/types';
-import type { IsometricCanvasProps } from '../molecules/IsometricCanvas';
+import type { Canvas2DProps } from '../molecules/Canvas2D';
 
 // =============================================================================
 // Types
@@ -19,8 +19,8 @@ export interface RacingBoardProps extends DisplayStateProps {
     units?: IsometricUnit[];
     /** Track features (pit lane markers, start/finish line, etc.) */
     features?: IsometricFeature[];
-    /** Asset sprite manifest (same shape as IsometricCanvas.assetManifest) */
-    assetManifest?: IsometricCanvasProps['assetManifest'];
+    /** Asset sprite manifest (same shape as Canvas2D.assetManifest) */
+    assetManifest?: Canvas2DProps['assetManifest'];
     /** Base URL prepended to manifest sprite paths */
     assetBaseUrl?: AssetUrl;
     /** Render scale */
@@ -56,15 +56,15 @@ export function RacingBoard({
 }: RacingBoardProps): React.ReactElement {
     return (
         <div className={cn('racing-board relative w-full h-full', className)}>
-            <IsometricCanvas
-                tileLayout="flat"
+            <Canvas2D
+                projection="flat"
                 tiles={tiles}
                 units={units}
                 features={features}
                 assetManifest={assetManifest}
                 scale={scale}
                 showMinimap={showMinimap}
-                enableCamera={enableCamera}
+                camera={enableCamera ? 'pan-zoom' : 'fixed'}
                 tileClickEvent={tileClickEvent}
                 unitClickEvent={unitClickEvent}
                 isLoading={isLoading}

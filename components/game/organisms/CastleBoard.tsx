@@ -14,7 +14,7 @@
  * @packageDocumentation
  */
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useId } from 'react';
 import type { Asset, EventEmit, EntityRow, EntityWith } from '@almadar/core';
 import { makeAsset } from './utils/makeAsset';
 import { cn } from '../../../lib/cn';
@@ -24,7 +24,8 @@ import { Box } from '../../core/atoms/Box';
 import { Button } from '../../core/atoms/Button';
 import { Typography } from '../../core/atoms/Typography';
 import { VStack } from '../../core/atoms/Stack';
-import IsometricCanvas from '../molecules/IsometricCanvas';
+import { Canvas2D } from '../molecules/Canvas2D';
+import { useEventListener } from '../../../hooks/useEventBus';
 import type {
     IsometricTile,
     IsometricUnit,
@@ -159,6 +160,11 @@ export function CastleBoard({
     const eventBus = useEventBus();
     const { t } = useTranslate();
 
+    // Synthetic internal event names for canvas hover/leave.
+    const boardId = useId();
+    const internalTileHoverEvent = `castle.tileHover.${boardId}`;
+    const internalTileLeaveEvent = `castle.tileLeave.${boardId}`;
+
     // Resolve the single board-state row, then read defensively so a missing
     // entity yields empty collections rather than throwing. Direct props win.
     const resolved = boardEntity(entity) as CastleBoardEntity | undefined;
@@ -201,10 +207,18 @@ export function CastleBoard({
         [scale, baseOffsetX],
     );
 
-    // -- Handlers -----------------------------------------------------------
-    const handleTileClick = useCallback((x: number, y: number) => {
-        // Check if a feature sits at this tile
-        const feature = features.find(f => f.x === x && f.y === y);
+    // Live refs to avoid stale closures in event listeners.
+    const featuresRef = useRef(features);
+    featuresRef.current = features;
+    const unitsRef = useRef(units);
+    unitsRef.current = units;
+
+    // -- Tile-click: Canvas2D emits tileClickEvent; listen for feature detection + callbacks ──
+    useEventListener(tileClickEvent ? `UI:${tileClickEvent}` : '__castle_tile_click_noop__', useCallback((evt) => {
+        const x = (evt.payload as { x?: number; y?: number })?.x;
+        const y = (evt.payload as { x?: number; y?: number })?.y;
+        if (x == null || y == null) return;
+        const feature = featuresRef.current.find(f => f.x === x && f.y === y);
         if (feature) {
             setSelectedFeature(feature);
             onFeatureClick?.(feature);
@@ -218,20 +232,28 @@ export function CastleBoard({
             }
         }
         onTileClick?.(x, y);
-        if (tileClickEvent) {
-            eventBus.emit(`UI:${tileClickEvent}`, { x, y });
-        }
-    }, [features, onFeatureClick, onTileClick, featureClickEvent, tileClickEvent, eventBus]);
+    }, [onFeatureClick, featureClickEvent, onTileClick, eventBus]));
 
-    const handleUnitClick = useCallback((unitId: string) => {
-        const unit = units.find(u => u.id === unitId);
+    // -- Unit-click: Canvas2D emits unitClickEvent; listen for onUnitClick callback ──
+    useEventListener(unitClickEvent ? `UI:${unitClickEvent}` : '__castle_unit_click_noop__', useCallback((evt) => {
+        const unitId = (evt.payload as { unitId?: string })?.unitId;
+        if (!unitId) return;
+        const unit = unitsRef.current.find(u => u.id === unitId);
         if (unit) {
             onUnitClick?.(unit);
-            if (unitClickEvent) {
-                eventBus.emit(`UI:${unitClickEvent}`, { unitId: unit.id });
-            }
         }
-    }, [units, onUnitClick, unitClickEvent, eventBus]);
+    }, [onUnitClick]));
+
+    // -- Hover/leave listeners for local hover state ──
+    useEventListener(`UI:${internalTileHoverEvent}`, useCallback((evt) => {
+        const x = (evt.payload as { x?: number; y?: number })?.x;
+        const y = (evt.payload as { x?: number; y?: number })?.y;
+        if (x != null && y != null) setHoveredTile({ x, y });
+    }, []));
+
+    useEventListener(`UI:${internalTileLeaveEvent}`, useCallback(() => {
+        setHoveredTile(null);
+    }, []));
 
     const clearSelection = useCallback(() => setSelectedFeature(null), []);
 
@@ -271,18 +293,19 @@ export function CastleBoard({
             <div className="flex flex-1 overflow-hidden">
                 {/* Canvas area */}
                 <div className="flex-1 overflow-auto p-4 relative">
-                    <IsometricCanvas
+                    <Canvas2D
+                        projection="isometric"
                         tiles={tiles}
                         units={units}
                         features={features}
                         hoveredTile={hoveredTile}
-                        onTileClick={handleTileClick}
-                        onUnitClick={handleUnitClick}
-                        onTileHover={(x, y) => setHoveredTile({ x, y })}
-                        onTileLeave={() => setHoveredTile(null)}
+                        tileClickEvent={tileClickEvent}
+                        unitClickEvent={unitClickEvent}
+                        tileHoverEvent={internalTileHoverEvent}
+                        tileLeaveEvent={internalTileLeaveEvent}
                         scale={scale}
                         assetManifest={assetManifest}
-                        backgroundImage={backgroundImage}
+                        backgroundImage={backgroundImage ? makeAsset(backgroundImage, 'decoration') : undefined}
                     />
 
                     {/* Canvas overlay slot (tooltips, popups) */}
