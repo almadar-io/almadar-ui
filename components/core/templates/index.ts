@@ -17,7 +17,7 @@ export {
 export {
   GameTemplate,
   type GameTemplateProps
-} from '../../game/templates/GameTemplate';
+} from '../../game/2d/GameTemplate';
 
 export {
   GenericAppTemplate,
@@ -27,7 +27,7 @@ export {
 export {
   GameShell,
   type GameShellProps
-} from '../../game/templates/GameShell';
+} from '../../game/2d/GameShell';
 
 // Game View Templates (thin wrappers — logic in Board organisms)
 export {
@@ -35,54 +35,54 @@ export {
   type BattleTemplateProps,
   type BattlePhase,
   type BattleSlotContext,
-} from '../../game/templates/BattleTemplate';
+} from '../../game/2d/BattleTemplate';
 
 export {
   CastleTemplate,
   type CastleTemplateProps,
   type CastleSlotContext,
-} from '../../game/templates/CastleTemplate';
+} from '../../game/2d/CastleTemplate';
 
 export {
   WorldMapTemplate,
   type WorldMapTemplateProps,
   type WorldMapSlotContext,
-} from '../../game/templates/WorldMapTemplate';
+} from '../../game/2d/WorldMapTemplate';
 
 export {
   PlatformerTemplate,
   type PlatformerTemplateProps,
-} from '../../game/templates/PlatformerTemplate';
+} from '../../game/2d/PlatformerTemplate';
 
 export {
   TowerDefenseTemplate,
   type TowerDefenseTemplateProps,
-} from '../../game/templates/TowerDefenseTemplate';
+} from '../../game/2d/TowerDefenseTemplate';
 
 export {
   RoguelikeTemplate,
   type RoguelikeTemplateProps,
-} from '../../game/templates/RoguelikeTemplate';
+} from '../../game/2d/RoguelikeTemplate';
 
 export {
   TopDownShooterTemplate,
   type TopDownShooterTemplateProps,
-} from '../../game/templates/TopDownShooterTemplate';
+} from '../../game/2d/TopDownShooterTemplate';
 
 export {
   CityBuilderTemplate,
   type CityBuilderTemplateProps,
-} from '../../game/templates/CityBuilderTemplate';
+} from '../../game/2d/CityBuilderTemplate';
 
 export {
   VisualNovelTemplate,
   type VisualNovelTemplateProps,
-} from '../../game/templates/VisualNovelTemplate';
+} from '../../game/2d/VisualNovelTemplate';
 
 export {
   CardBattlerTemplate,
   type CardBattlerTemplateProps,
-} from '../../game/templates/CardBattlerTemplate';
+} from '../../game/2d/CardBattlerTemplate';
 
 // Marketing Page Templates
 export {
@@ -113,5 +113,5 @@ export {
 // 3D Game Canvas Templates are three.js-backed and intentionally NOT exported
 // here — they ship code-split behind the optional
 // `@almadar/ui/components/molecules/game/three` subpath (see
-// ../../game/molecules/three/patterns.ts). The pattern scanner reads that
+// ../../game/3d/patterns.ts). The pattern scanner reads that
 // subpath directly, so no shadow export is needed.

@@ -91,7 +91,7 @@ export { LineChart, type LineChartProps, type ChartDataPoint } from './LineChart
 export { ProgressDots, type ProgressDotsProps, type DotState, type DotSize } from './ProgressDots';
 
 // Game molecules
-export * from '../../game/molecules';
+export * from '../../game/2d';
 
 // Graph visualization
 export { GraphView, type GraphViewProps, type GraphViewNode, type GraphViewEdge } from './GraphView';

@@ -57,22 +57,22 @@
       "require": "./dist/lib/index.cjs"
     },
     "./components/organisms/game/three": {
-      "types": "./dist/components/game/molecules/three/index.d.ts",
-      "import": "./dist/components/game/molecules/three/index.js",
-      "require": "./dist/components/game/molecules/three/index.cjs"
+      "types": "./dist/components/game/3d/index.d.ts",
+      "import": "./dist/components/game/3d/index.js",
+      "require": "./dist/components/game/3d/index.cjs"
     },
     "./components/molecules/game/three": {
-      "types": "./dist/components/game/molecules/three/index.d.ts",
-      "import": "./dist/components/game/molecules/three/index.js",
-      "require": "./dist/components/game/molecules/three/index.cjs"
+      "types": "./dist/components/game/3d/index.d.ts",
+      "import": "./dist/components/game/3d/index.js",
+      "require": "./dist/components/game/3d/index.cjs"
     },
     "./components/organisms/game/TraitStateViewer": {
-      "import": "./components/game/organisms/TraitStateViewer.tsx",
-      "types": "./components/game/organisms/TraitStateViewer.tsx"
+      "import": "./components/game/2d/TraitStateViewer.tsx",
+      "types": "./components/game/2d/TraitStateViewer.tsx"
     },
     "./components/organisms/game/TraitSlot": {
-      "import": "./components/game/organisms/TraitSlot.tsx",
-      "types": "./components/game/organisms/TraitSlot.tsx"
+      "import": "./components/game/2d/TraitSlot.tsx",
+      "types": "./components/game/2d/TraitSlot.tsx"
     },
     "./templates": {
       "import": "./templates/index.ts",

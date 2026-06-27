@@ -57,7 +57,7 @@ export * from "./book";
 export * from "./layout";
 
 // Game organisms
-export * from "../../game/organisms";
+export * from "../../game/2d";
 
 // UI Slot system
 export {
@@ -156,5 +156,5 @@ export {
 // barrel statically hoists @react-three/fiber into the main bundle for every app.
 // It ships code-split behind the optional
 // `@almadar/ui/components/molecules/game/three` subpath (see
-// ../../game/molecules/three/patterns.ts) and renders lazily via the component
+// ../../game/3d/patterns.ts) and renders lazily via the component
 // registry. The pattern scanner reads that subpath, so no shadow export is needed.

@@ -135,7 +135,7 @@ export { AnimatedGraphic, type AnimatedGraphicProps, type GraphicAnimation } fro
 export { TraitFrame, type TraitFrameProps } from "./TraitFrame";
 
 // Game atom components
-export * from "../../game/atoms";
+export * from "../../game/2d";
 
 // Cross-cutting shared prop shapes
 export {

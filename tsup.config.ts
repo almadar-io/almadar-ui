@@ -146,7 +146,7 @@ export default defineConfig([
       'runtime/index.ts',
       'stores/index.ts',
       'lib/index.ts',
-      'components/game/molecules/three/index.ts',
+      'components/game/3d/index.ts',
       'locales/index.ts',
     ],
     format: ['esm', 'cjs'],

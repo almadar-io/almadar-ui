@@ -1,0 +1,151 @@
+'use client';
+import * as React from 'react';
+import { cn } from '../../../lib/cn';
+import { HealthBar } from './HealthBar';
+import { StatusEffect } from './StatusEffect';
+import { Box } from '../../core/atoms/Box';
+import { Typography } from '../../core/atoms/Typography';
+import type { IconInput } from '../../core/atoms';
+import type { Asset } from '@almadar/core';
+
+export interface HealthEffect {
+  icon: IconInput;
+  /** Sprite asset — takes precedence over icon when provided */
+  assetUrl?: Asset;
+  label?: string;
+  variant?: 'buff' | 'debuff' | 'neutral';
+}
+
+export interface HealthPanelProps {
+  /** Current health value */
+  current: number;
+  /** Maximum health value */
+  max: number;
+  /** Shield/armor points */
+  shield?: number;
+  /** Label shown above the bar */
+  label?: string;
+  /** Active status effects displayed as small badges */
+  effects?: HealthEffect[];
+  /** Whether to display numeric HP values */
+  showNumbers?: boolean;
+  /** Size variant */
+  size?: 'sm' | 'md' | 'lg';
+  /** Additional CSS classes */
+  className?: string;
+}
+
+const sizeMap = {
+  sm: { gap: 'gap-1', padding: 'px-2 py-1.5', text: 'text-xs' as const, barSize: 'sm' as const },
+  md: { gap: 'gap-1.5', padding: 'px-3 py-2', text: 'text-sm' as const, barSize: 'md' as const },
+  lg: { gap: 'gap-2', padding: 'px-4 py-3', text: 'text-base' as const, barSize: 'lg' as const },
+};
+
+const effectVariantMap = {
+  buff: 'buff' as const,
+  debuff: 'debuff' as const,
+  neutral: 'neutral' as const,
+};
+
+export function HealthPanel({
+  current = 75,
+  max = 100,
+  shield = 20,
+  label = 'Player HP',
+  effects,
+  showNumbers = true,
+  size = 'md',
+  className,
+}: HealthPanelProps) {
+  const sizes = sizeMap[size];
+
+  return (
+    <Box
+      className={cn(
+        'rounded-container bg-[var(--color-card)]/90 border border-border backdrop-blur-sm',
+        sizes.padding,
+        className
+      )}
+    >
+      <Box className={cn('flex flex-col', sizes.gap)}>
+        {/* Header row: label + numbers */}
+        {(label || showNumbers) && (
+          <Box className="flex items-center justify-between">
+            {label && (
+              <Typography
+                variant="caption"
+                weight="bold"
+                className="text-muted-foreground uppercase tracking-wider"
+              >
+                {label}
+              </Typography>
+            )}
+            {showNumbers && (
+              <Typography
+                variant="caption"
+                weight="bold"
+                className={cn('font-mono tabular-nums', sizes.text)}
+                color="primary"
+              >
+                {current}/{max}
+                {shield != null && shield > 0 && (
+                  <Typography
+                    as="span"
+                    variant="caption"
+                    weight="bold"
+                    className="text-info ml-1"
+                  >
+                    +{shield}
+                  </Typography>
+                )}
+              </Typography>
+            )}
+          </Box>
+        )}
+
+        {/* Health bar */}
+        <HealthBar
+          current={current}
+          max={max}
+          format="bar"
+          size={sizes.barSize}
+          animated
+        />
+
+        {/* Shield bar (if present) */}
+        {shield != null && shield > 0 && (
+          <Box
+            className={cn(
+              'relative overflow-hidden rounded-container bg-muted',
+              size === 'sm' ? 'h-1' : size === 'md' ? 'h-1.5' : 'h-2',
+              'w-full'
+            )}
+          >
+            <Box
+              className="absolute inset-y-0 left-0 rounded-container bg-info transition-all duration-300"
+              style={{ width: `${Math.min(100, (shield / max) * 100)}%` }}
+            />
+          </Box>
+        )}
+
+        {/* Effects row */}
+        {effects && effects.length > 0 && (
+          <Box className="flex items-center gap-1 flex-wrap">
+            {effects.map((effect, i) => (
+              <StatusEffect
+                key={i}
+                assetUrl={effect.assetUrl}
+                icon={effect.icon}
+                label={effect.label}
+                variant={effectVariantMap[effect.variant ?? 'neutral']}
+                size="sm"
+              />
+            ))}
+          </Box>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
+HealthPanel.displayName = 'HealthPanel';
