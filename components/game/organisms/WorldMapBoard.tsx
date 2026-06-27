@@ -282,7 +282,7 @@ export function WorldMapBoard({
             position: heroPosition(u),
             name: str(u.name),
             // lolo uses `team` field (not `owner`)
-            team: (str(u.team) === 'enemy' ? 'enemy' : 'player') as 'player' | 'enemy',
+            team: (str(u.team) === 'enemy' ? 'enemy' : str(u.team) === 'neutral' ? 'neutral' : 'player') as 'player' | 'enemy' | 'neutral',
             health: num(u.health) || 100,
             maxHealth: num(u.maxHealth) || 100,
             sprite: u.sprite == null ? undefined : makeAsset(str(u.sprite), 'player'),

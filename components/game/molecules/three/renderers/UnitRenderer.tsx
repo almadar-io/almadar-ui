@@ -12,8 +12,7 @@ import React, { useRef, useEffect, useState, useMemo } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import type { IsometricUnit } from '../../../organisms/types/isometric';
-
-export type UnitAnimationState = 'idle' | 'walk' | 'attack' | 'hurt' | 'die';
+import type { AnimationName } from '../../../organisms/types/spriteAnimation';
 
 export interface UnitRendererProps {
     /** Array of units to render */
@@ -29,7 +28,7 @@ export interface UnitRendererProps {
     /** Called when unit is clicked */
     onUnitClick?: (unit: IsometricUnit) => void;
     /** Called when unit animation state changes */
-    onAnimationStateChange?: (unitId: string, state: UnitAnimationState) => void;
+    onAnimationStateChange?: (unitId: string, state: AnimationName) => void;
     /** Animation speed multiplier */
     animationSpeed?: number;
 }
@@ -46,7 +45,7 @@ interface UnitVisualProps {
  */
 function UnitVisual({ unit, position, isSelected, onClick }: UnitVisualProps): React.JSX.Element {
     const groupRef = useRef<THREE.Group>(null);
-    const [animationState, setAnimationState] = useState<UnitAnimationState>('idle');
+    const [animationState, setAnimationState] = useState<AnimationName>('idle');
     const [isHovered, setIsHovered] = useState(false);
 
     // Determine team color

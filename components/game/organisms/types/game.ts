@@ -14,7 +14,7 @@ export interface GameUnit {
     id: string;
     name: string;
     characterType: string;
-    team: 'player' | 'enemy';
+    team: 'player' | 'enemy' | 'neutral';
     position: Position;
     health: number;
     maxHealth: number;
@@ -44,7 +44,7 @@ export interface GameState {
     units: Record<string, GameUnit>;
     currentPhase: GamePhase;
     currentTurn: number;
-    activeTeam: 'player' | 'enemy';
+    activeTeam: 'player' | 'enemy' | 'neutral';
     selectedUnitId?: string;
     validMoves: Position[];
     attackTargets: Position[];

@@ -96,8 +96,8 @@ export {
     type UnitRendererProps,
     type FeatureRendererProps,
     type FeatureRenderer3DProps,
-    type UnitAnimationState,
 } from './renderers';
+export type { UnitAnimationState } from '../../organisms/types/spriteAnimation';
 
 // ---------------------------------------------------------------------------
 // GameCanvas3D + Templates (re-exported here so the component registry can

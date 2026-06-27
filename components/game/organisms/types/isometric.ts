@@ -1,5 +1,6 @@
 import type { Asset } from '@almadar/core';
 import type { AnimationName } from './spriteAnimation';
+import type { UnitTrait } from './game';
 
 /**
  * Isometric Game Types
@@ -93,12 +94,7 @@ export type IsometricUnit = {
     /** Maximum health */
     maxHealth?: number;
     /** Trait attachments for state display */
-    traits?: {
-        name: string;
-        currentState: string;
-        states: string[];
-        cooldown: number;
-    }[];
+    traits?: UnitTrait[];
     /** Previous position for movement trail ghost */
     previousPosition?: { x: number; y: number };
     /** Elevation offset for 3D rendering */

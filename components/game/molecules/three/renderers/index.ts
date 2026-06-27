@@ -14,7 +14,6 @@ export {
 export {
     UnitRenderer,
     type UnitRendererProps,
-    type UnitAnimationState,
 } from './UnitRenderer';
 
 export {
