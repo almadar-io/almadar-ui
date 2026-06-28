@@ -16,7 +16,7 @@ const log = createLogger('almadar:ui:orbital-history');
 // Types
 // =============================================================================
 
-export interface ChangeSummary {
+export interface HistoryChangeSummary {
   added: number;
   modified: number;
   removed: number;
@@ -29,7 +29,7 @@ export interface HistoryTimelineItem {
   timestamp: number;
   description: string;
   source?: string;
-  summary?: ChangeSummary;
+  summary?: HistoryChangeSummary;
   reason?: string;
 }
 
@@ -114,7 +114,7 @@ export function useOrbitalHistory(options: UseOrbitalHistoryOptions): UseOrbital
         version: number;
         timestamp: number;
         source?: string;
-        summary?: ChangeSummary;
+        summary?: HistoryChangeSummary;
       }) => ({
         id: cs.id,
         type: 'changeset' as const,

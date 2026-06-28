@@ -29,7 +29,7 @@ export type ColorMode = "light" | "dark" | "system";
 export type ResolvedMode = "light" | "dark";
 
 /** Theme definition */
-export interface ThemeDefinition {
+export interface UIThemeDefinition {
   /** Theme identifier (e.g., "ocean", "wireframe") */
   name: string;
   /** Display name for UI (e.g., "Ocean Blue") */
@@ -41,7 +41,7 @@ export interface ThemeDefinition {
 }
 
 /** Built-in themes available in the design system */
-export const BUILT_IN_THEMES: ThemeDefinition[] = [
+export const BUILT_IN_THEMES: UIThemeDefinition[] = [
   {
     name: "wireframe",
     displayName: "Wireframe",
@@ -205,7 +205,7 @@ interface ThemeContextValue {
   /** Toggle between light and dark modes */
   toggleMode: () => void;
   /** Available themes */
-  availableThemes: ThemeDefinition[];
+  availableThemes: UIThemeDefinition[];
   /** The full theme string applied to data-theme (e.g., "ocean-light") */
   appliedTheme: string;
 }
@@ -239,7 +239,7 @@ function resolveMode(mode: ColorMode): ResolvedMode {
 export interface ThemeProviderProps {
   children: React.ReactNode;
   /** Available themes (will be merged with built-in themes) */
-  themes?: readonly ThemeDefinition[] | ThemeDefinition[];
+  themes?: readonly UIThemeDefinition[] | UIThemeDefinition[];
   /** Default theme name */
   defaultTheme?: string;
   /** Default color mode */
@@ -274,7 +274,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
 }) => {
   // Merge built-in themes with custom themes
   const availableThemes = useMemo(() => {
-    const themeMap = new Map<string, ThemeDefinition>();
+    const themeMap = new Map<string, UIThemeDefinition>();
     // Add built-in themes first
     BUILT_IN_THEMES.forEach((t) => themeMap.set(t.name, t));
     // Custom themes override built-in if same name
@@ -464,6 +464,6 @@ export function useTheme(): ThemeContextValue {
 // Legacy exports for backward compatibility
 export type Theme = ColorMode;
 export type ResolvedTheme = ResolvedMode;
-export type DesignTheme = ThemeDefinition;
+export type DesignTheme = UIThemeDefinition;
 
 export default ThemeContext;

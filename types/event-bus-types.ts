@@ -16,7 +16,8 @@ import type {
   Unsubscribe,
 } from "@almadar/core";
 
-export type { BusEvent, BusEventSource, EventPayload, Unsubscribe };
+export type { BusEvent, BusEventSource, BusEventListener, EventPayload, Unsubscribe };
+/** @deprecated Use BusEventListener from @almadar/core directly. */
 export type EventListener = BusEventListener;
 
 /**

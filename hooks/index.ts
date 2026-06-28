@@ -7,7 +7,7 @@ export {
   useOrbitalHistory,
   type HistoryTimelineItem,
   type RevertResult,
-  type ChangeSummary,
+  type HistoryChangeSummary,
   type UseOrbitalHistoryOptions,
   type UseOrbitalHistoryResult,
 } from './useOrbitalHistory';
@@ -63,10 +63,12 @@ export { useEventBus, useEventListener, useEmitEvent } from './useEventBus';
 export type {
   BusEvent,
   BusEventSource,
-  EventListener,
+  BusEventListener,
   Unsubscribe,
   EventBusContextType,
 } from '../types/event-bus-types';
+/** @deprecated Use BusEventListener. */
+export type { BusEventListener as EventListener } from '../types/event-bus-types';
 
 // UI Slot hooks for trait-driven UI rendering
 export {
@@ -75,7 +77,7 @@ export {
   type UISlot,
   type SlotAnimation,
   type SlotContent,
-  type RenderUIConfig,
+  type SlotRenderConfig,
   type SlotChangeCallback,
   type UISlotManager,
 } from './useUISlots';

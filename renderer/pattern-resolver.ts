@@ -11,8 +11,8 @@
  */
 
 import type { FieldValue } from '@almadar/core';
-import type { PatternPropDef } from '@almadar/patterns';
-import type { PatternConfig, ResolvedPattern } from './types';
+import type { PatternPropDef, AnyPatternConfig } from '@almadar/patterns';
+import type { PatternConfig, MappedPattern } from './types';
 import { createLogger } from '@almadar/logger';
 
 const log = createLogger('almadar:ui:pattern-resolver');
@@ -98,8 +98,8 @@ export function setPatternRegistry(
  * // resolved.importPath === '@/components/organisms/DataTable'
  * ```
  */
-export function resolvePattern(config: PatternConfig): ResolvedPattern {
-  const { type, ...props } = config;
+export function resolvePattern(config: PatternConfig): MappedPattern {
+  const { type } = config;
 
   // Look up component mapping
   const mapping = componentMapping[type];
@@ -119,8 +119,8 @@ export function resolvePattern(config: PatternConfig): ResolvedPattern {
     });
   }
 
-  // Validate props against registry schema
-  const validatedProps = validatePatternProps(type, props);
+  // validatePatternProps receives the full config and extracts serializable props
+  const validatedProps = validatePatternProps(config);
 
   return {
     component: mapping.component,
@@ -134,15 +134,17 @@ export function resolvePattern(config: PatternConfig): ResolvedPattern {
  * Validate pattern props against the registry schema.
  * Returns normalized props with defaults applied.
  */
-function validatePatternProps(
-  patternType: string,
-  props: Record<string, FieldValue | undefined>
-): Record<string, FieldValue> {
+function validatePatternProps(config: AnyPatternConfig): Record<string, FieldValue> {
+  const { type: patternType, ...rest } = config;
   const definition = patternRegistry[patternType];
 
-  // Strip undefined values — the index signature allows undefined but the return type does not.
+  // Strip undefined and non-serializable values (callbacks, typed arrays of unknown).
   const definedProps: Record<string, FieldValue> = Object.fromEntries(
-    Object.entries(props).filter((entry): entry is [string, FieldValue] => entry[1] !== undefined)
+    Object.entries(rest).filter((entry): entry is [string, FieldValue] => {
+      const v = entry[1];
+      if (v === undefined || typeof v === 'function') return false;
+      return true;
+    })
   );
 
   // If no definition, return props as-is (allow unknown patterns)

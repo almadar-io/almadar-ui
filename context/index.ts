@@ -11,7 +11,7 @@ export {
   type UISlotManager,
   type UISlot,
   type SlotContent,
-  type RenderUIConfig,
+  type SlotRenderConfig,
   type SlotAnimation,
   type SlotChangeCallback,
 } from "./UISlotContext";
@@ -20,7 +20,7 @@ export {
   ThemeProvider,
   useTheme,
   BUILT_IN_THEMES,
-  type ThemeDefinition,
+  type UIThemeDefinition,
   type ThemeProviderProps,
   type ColorMode,
   type ResolvedMode,

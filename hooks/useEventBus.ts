@@ -15,7 +15,7 @@ import { useTraitScope } from '../providers/TraitScopeProvider';
 import type {
   BusEvent,
   BusEventSource,
-  EventListener,
+  BusEventListener,
   Unsubscribe,
   EventBusContextType,
 } from '../types/event-bus-types';
@@ -27,7 +27,9 @@ const subLog = createLogger('almadar:eventbus:subscribe');
 const scopeLog = createLogger('almadar:ui:trait-scope');
 
 // Re-export types for convenience
-export type { BusEvent, BusEventSource, EventListener, Unsubscribe, EventBusContextType };
+export type { BusEvent, BusEventSource, BusEventListener, Unsubscribe, EventBusContextType };
+/** @deprecated Use BusEventListener from @almadar/core. */
+export type { BusEventListener as EventListener };
 
 // ============================================================================
 // Global Event Bus Bridge (Window-Level for Cross-Package Communication)
@@ -85,8 +87,8 @@ export function getGlobalEventBus(): EventBusContextType | null {
 // Fallback Event Bus (for use outside EventBusProvider)
 // ============================================================================
 
-const fallbackListeners = new Map<string, Set<EventListener>>();
-const fallbackAnyListeners = new Set<EventListener>();
+const fallbackListeners = new Map<string, Set<BusEventListener>>();
+const fallbackAnyListeners = new Set<BusEventListener>();
 
 const fallbackEventBus: EventBusContextType = {
   emit: (type: string, payload?: EventPayload, source?: BusEventSource) => {
@@ -116,7 +118,7 @@ const fallbackEventBus: EventBusContextType = {
       }
     });
   },
-  on: (type: string, listener: EventListener): Unsubscribe => {
+  on: (type: string, listener: BusEventListener): Unsubscribe => {
     if (!fallbackListeners.has(type)) {
       fallbackListeners.set(type, new Set());
     }
@@ -132,8 +134,8 @@ const fallbackEventBus: EventBusContextType = {
       }
     };
   },
-  once: (type: string, listener: EventListener): Unsubscribe => {
-    const wrappedListener: EventListener = (event) => {
+  once: (type: string, listener: BusEventListener): Unsubscribe => {
+    const wrappedListener: BusEventListener = (event) => {
       fallbackListeners.get(type)?.delete(wrappedListener);
       listener(event);
     };
@@ -143,7 +145,7 @@ const fallbackEventBus: EventBusContextType = {
     const handlers = fallbackListeners.get(type);
     return handlers !== undefined && handlers.size > 0;
   },
-  onAny: (listener: EventListener): Unsubscribe => {
+  onAny: (listener: BusEventListener): Unsubscribe => {
     fallbackAnyListeners.add(listener);
     subLog.debug('subscribe:any', { totalAnyListeners: fallbackAnyListeners.size });
     return () => { fallbackAnyListeners.delete(listener); };
@@ -268,14 +270,14 @@ export function useEventBus(): EventBusContextType {
  */
 export function useEventListener(
   event: string,
-  handler: EventListener
+  handler: BusEventListener
 ): void {
   const eventBus = useEventBus();
   const handlerRef = useRef(handler);
   handlerRef.current = handler;
 
   useEffect(() => {
-    const wrappedHandler: EventListener = (evt) => {
+    const wrappedHandler: BusEventListener = (evt) => {
       handlerRef.current(evt);
     };
     const unsub = eventBus.on(event, wrappedHandler);

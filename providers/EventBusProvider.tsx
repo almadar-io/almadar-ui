@@ -15,7 +15,7 @@ import React, { createContext, useCallback, useRef, useMemo, useEffect, type Rea
 import type {
   BusEvent,
   BusEventSource,
-  EventListener,
+  BusEventListener,
   Unsubscribe,
   EventBusContextType,
 } from '../types/event-bus-types';
@@ -92,8 +92,8 @@ interface EventBusProviderProps {
 // Per-listener identity tags. Captured at subscribe-time from the call
 // stack so we can answer "who reacted to this emit?" without renaming
 // every subscriber. Used by the per-listener emit log below.
-const listenerTags = new WeakMap<EventListener, string>();
-function captureSubscriberTag(listener: EventListener): string {
+const listenerTags = new WeakMap<BusEventListener, string>();
+function captureSubscriberTag(listener: BusEventListener): string {
     // Prefer the listener's function.name (preserved through bundling
     // when the source declares a named function or assigns a name via
     // `Object.defineProperty(fn, 'name', ...)` — much more durable
@@ -122,10 +122,10 @@ function captureSubscriberTag(listener: EventListener): string {
 
 export function EventBusProvider({ children, isolated = false }: EventBusProviderProps) {
   // Store listeners by event type
-  const listenersRef = useRef<Map<string, Set<EventListener>>>(new Map());
+  const listenersRef = useRef<Map<string, Set<BusEventListener>>>(new Map());
 
   // Store wildcard listeners (onAny)
-  const anyListenersRef = useRef<Set<EventListener>>(new Set());
+  const anyListenersRef = useRef<Set<BusEventListener>>(new Set());
 
   // Track if deprecation warning has been shown
   const deprecationWarningShown = useRef(false);
@@ -221,7 +221,7 @@ export function EventBusProvider({ children, isolated = false }: EventBusProvide
    * Subscribe to an event type.
    * Returns an unsubscribe function.
    */
-  const on = useCallback((type: string, listener: EventListener): Unsubscribe => {
+  const on = useCallback((type: string, listener: BusEventListener): Unsubscribe => {
     if (!listenersRef.current.has(type)) {
       listenersRef.current.set(type, new Set());
     }
@@ -243,8 +243,8 @@ export function EventBusProvider({ children, isolated = false }: EventBusProvide
   /**
    * Subscribe to an event type, but only fire once.
    */
-  const once = useCallback((type: string, listener: EventListener): Unsubscribe => {
-    const wrappedListener: EventListener = (event) => {
+  const once = useCallback((type: string, listener: BusEventListener): Unsubscribe => {
+    const wrappedListener: BusEventListener = (event) => {
       // Remove self before calling listener
       listenersRef.current.get(type)?.delete(wrappedListener);
       listener(event);
@@ -264,7 +264,7 @@ export function EventBusProvider({ children, isolated = false }: EventBusProvide
   /**
    * Subscribe to ALL events regardless of type.
    */
-  const onAny = useCallback((listener: EventListener): Unsubscribe => {
+  const onAny = useCallback((listener: BusEventListener): Unsubscribe => {
     anyListenersRef.current.add(listener);
     if (!listenerTags.has(listener)) listenerTags.set(listener, captureSubscriberTag(listener));
     subLog.debug('subscribe:any', { totalAnyListeners: anyListenersRef.current.size, tag: listenerTags.get(listener) });

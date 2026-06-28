@@ -18,7 +18,7 @@
 
 import React, { type ReactNode, useMemo } from 'react';
 import type { EntityRow } from '@almadar/core';
-import { ThemeProvider, type ThemeProviderProps, type ThemeDefinition } from '../context/ThemeContext';
+import { ThemeProvider, type ThemeProviderProps, type UIThemeDefinition } from '../context/ThemeContext';
 import { EventBusProvider } from './EventBusProvider';
 import { SelectionProvider } from './SelectionProvider';
 import { SuspenseConfigProvider, type SuspenseConfig } from '../components/core/organisms/UISlotRenderer';
@@ -33,7 +33,7 @@ export interface OrbitalProviderProps {
 
   // Theme options
   /** Custom themes (merged with built-in themes) */
-  themes?: ThemeDefinition[];
+  themes?: UIThemeDefinition[];
   /** Default theme name */
   defaultTheme?: string;
   /** Default color mode */

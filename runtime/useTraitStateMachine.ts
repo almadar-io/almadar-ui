@@ -1268,12 +1268,17 @@ export function useTraitStateMachine(
                 trait: binding.trait.name,
                 ownOrbital,
                 listenCount: listens.length,
-                listens: listens.map((l) => `${l.source?.trait ?? '?'}.${l.event}->${l.triggers}`).join(','),
+                listens: listens.map((l) => {
+                  const src = l.source;
+                  const t = src && src.kind !== 'any' ? src.trait : '?';
+                  return `${t}.${l.event}->${l.triggers}`;
+                }).join(','),
             });
             for (const listen of listens) {
-                const sourceTrait = listen.source?.trait;
+                const src = listen.source;
+                const sourceTrait = src && src.kind !== 'any' ? src.trait : undefined;
                 if (!sourceTrait) continue; // wildcard listens are out-of-scope post-unification
-                const sourceOrbital = listen.source?.orbital ?? ownOrbital;
+                const sourceOrbital = (src?.kind === 'orbital' ? src.orbital : undefined) ?? ownOrbital;
                 if (!sourceOrbital) continue;
                 const busKey = `UI:${sourceOrbital}.${sourceTrait}.${listen.event}`;
                 crossTraitLog.debug('listen:subscribed', { busKey, targetTrait: binding.trait.name, sourceOrbital, sourceTrait, listenEvent: listen.event, triggers: listen.triggers });

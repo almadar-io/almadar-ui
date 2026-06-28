@@ -33,7 +33,7 @@
 
 import type React from 'react';
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import type { EventPayloadValue, RenderItemLambda } from '@almadar/core';
+import type { EventPayloadValue, RenderItemLambda, UISlot } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 
 // Slot lifecycle diagnostic. Records every render-write + clear so a
@@ -46,22 +46,7 @@ const log = createLogger('almadar:ui:ui-slots');
 // Types
 // ============================================================================
 
-/**
- * Valid UI slot names
- */
-export type UISlot =
-  | 'main'
-  | 'sidebar'
-  | 'modal'
-  | 'drawer'
-  | 'overlay'
-  | 'center'
-  | 'toast'
-  | 'hud-top'
-  | 'hud-bottom'
-  | 'hud-left'
-  | 'hud-right'
-  | 'floating';
+export type { UISlot };
 
 /**
  * Animation types for slot transitions
@@ -136,7 +121,7 @@ export interface SlotContent {
   sourceTrait?: string;
   /** Stable node ID from the schema pattern tree (for edit mode overlay targeting) */
   nodeId?: string;
-  /** Slot this content was rendered into (= RenderUIConfig.target) — contextual-edit address. */
+  /** Slot this content was rendered into (= SlotRenderConfig.target) — contextual-edit address. */
   slot?: string;
   /** Transition event key that produced this render (raw, as fired). */
   transitionEvent?: string;
@@ -149,7 +134,7 @@ export interface SlotContent {
 /**
  * Configuration for render_ui effect
  */
-export interface RenderUIConfig {
+export interface SlotRenderConfig {
   /** Target slot */
   target: UISlot;
   /** Pattern/component to render */
@@ -201,9 +186,9 @@ export interface UISlotManager {
    * pattern configs in insertion order. Single consumers can continue
    * to read `slots[slot]` without knowing the slot is multi-source.
    */
-  slots: Record<UISlot, SlotContent | null>;
+  slots: Partial<Record<UISlot, SlotContent | null>>;
   /** Render content to a slot */
-  render: (config: RenderUIConfig) => string;
+  render: (config: SlotRenderConfig) => string;
   /** Clear all source entries from a slot */
   clear: (slot: UISlot) => void;
   /** Clear a single source's contribution from a slot, keeping others */
@@ -275,25 +260,23 @@ const ALL_SLOTS: readonly UISlot[] = [
   'toast',
   'hud-top',
   'hud-bottom',
-  'hud-left',
-  'hud-right',
   'floating',
 ];
 
-const DEFAULT_SLOTS: Record<UISlot, SlotContent | null> = ALL_SLOTS.reduce(
+const DEFAULT_SLOTS: Partial<Record<UISlot, SlotContent | null>> = ALL_SLOTS.reduce(
   (acc, slot) => {
     acc[slot] = null;
     return acc;
   },
-  {} as Record<UISlot, SlotContent | null>,
+  {} as Partial<Record<UISlot, SlotContent | null>>,
 );
 
-const DEFAULT_SOURCES: Record<UISlot, SlotSources> = ALL_SLOTS.reduce(
+const DEFAULT_SOURCES: Partial<Record<UISlot, SlotSources>> = ALL_SLOTS.reduce(
   (acc, slot) => {
     acc[slot] = {};
     return acc;
   },
-  {} as Record<UISlot, SlotSources>,
+  {} as Partial<Record<UISlot, SlotSources>>,
 );
 
 // ============================================================================
@@ -355,7 +338,7 @@ export function useUISlotManager(): UISlotManager {
   // Canonical state: per-slot, per-source SlotContent. Everything else
   // (the exposed `slots` aggregate map, trait reverse index, etc.) is
   // derived from this.
-  const [sources, setSources] = useState<Record<UISlot, SlotSources>>(DEFAULT_SOURCES);
+  const [sources, setSources] = useState<Partial<Record<UISlot, SlotSources>>>(DEFAULT_SOURCES);
   const subscribersRef = useRef<Set<SlotChangeCallback>>(new Set());
   const timersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
@@ -369,8 +352,8 @@ export function useUISlotManager(): UISlotManager {
 
   // Computed aggregate `slots` — memoised so React consumers only see
   // identity changes when a slot's actual content changes.
-  const slots = useMemo<Record<UISlot, SlotContent | null>>(() => {
-    const out: Record<UISlot, SlotContent | null> = { ...DEFAULT_SLOTS };
+  const slots = useMemo<Partial<Record<UISlot, SlotContent | null>>>(() => {
+    const out: Partial<Record<UISlot, SlotContent | null>> = { ...DEFAULT_SLOTS };
     for (const slot of ALL_SLOTS) {
       out[slot] = aggregateSlot(sources[slot]);
     }
@@ -433,7 +416,7 @@ export function useUISlotManager(): UISlotManager {
 
   // Render content to a slot
   const render = useCallback(
-    (config: RenderUIConfig): string => {
+    (config: SlotRenderConfig): string => {
       const sourceKey = config.sourceTrait ?? DEFAULT_SOURCE_KEY;
       // STABLE, deterministic React identity for "this trait's render into this slot".
       // Re-emitting the SAME trait's `render-ui` into the SAME slot (e.g. every 100ms from
@@ -670,7 +653,7 @@ export function useUISlotManager(): UISlotManager {
 
   // Get aggregated content for a slot.
   const getContent = useCallback(
-    (slot: UISlot): SlotContent | null => slots[slot],
+    (slot: UISlot): SlotContent | null => slots[slot] ?? null,
     [slots],
   );
 

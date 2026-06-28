@@ -27,7 +27,7 @@ export type {
 
   // Pattern types
   PatternConfig,
-  ResolvedPattern,
+  MappedPattern,
 
   // Response types
   EventResponse,

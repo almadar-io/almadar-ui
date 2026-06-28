@@ -12,7 +12,7 @@ import {
   useTheme,
   ThemeProvider,
   BUILT_IN_THEMES,
-  type ThemeDefinition,
+  type UIThemeDefinition,
 } from "./ThemeContext";
 
 /** @deprecated Use ThemeDefinition from ThemeContext */

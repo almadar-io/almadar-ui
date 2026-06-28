@@ -20,7 +20,7 @@ import type { UISlot, SlotDefinition, SlotType } from './types';
  * Inline slots render within the component hierarchy.
  * Portal slots render to document.body, breaking out of overflow containers.
  */
-export const SLOT_DEFINITIONS: Record<UISlot, SlotDefinition> = {
+export const SLOT_DEFINITIONS: Partial<Record<UISlot, SlotDefinition>> & Record<'main' | 'sidebar' | 'modal' | 'drawer' | 'overlay' | 'center' | 'toast' | 'hud-top' | 'hud-bottom' | 'floating', SlotDefinition> = {
   // -------------------------------------------------------------------------
   // Inline Slots - Render in place within the component tree
   // -------------------------------------------------------------------------
@@ -107,7 +107,7 @@ export const SLOT_DEFINITIONS: Record<UISlot, SlotDefinition> = {
 /**
  * Get the slot definition for a slot name.
  */
-export function getSlotDefinition(slot: UISlot): SlotDefinition {
+export function getSlotDefinition(slot: UISlot): SlotDefinition | undefined {
   return SLOT_DEFINITIONS[slot];
 }
 
@@ -130,7 +130,7 @@ export function isInlineSlot(slot: UISlot): boolean {
  */
 export function getSlotsByType(type: SlotType): UISlot[] {
   return Object.entries(SLOT_DEFINITIONS)
-    .filter(([, def]) => def.type === type)
+    .filter(([, def]) => def?.type === type)
     .map(([name]) => name as UISlot);
 }
 

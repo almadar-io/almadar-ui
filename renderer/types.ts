@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import type { EntityRow, FieldValue } from '@almadar/core';
+import type { EntityRow, FieldValue, UISlot, PatternConfig } from '@almadar/core';
 
 // ============================================================================
 // Client Effect Types
@@ -24,6 +24,8 @@ import type { EntityRow, FieldValue } from '@almadar/core';
  * ['notify', 'Task created!', { type: 'success' }]
  * ['emit', 'TASK_CREATED', { id: '123' }]
  */
+export type { UISlot, PatternConfig };
+
 export type ClientEffect =
   | ['render-ui', string, PatternConfig | null]
   | ['navigate', string, Record<string, FieldValue>?]
@@ -43,22 +45,9 @@ export interface NotifyOptions {
 // ============================================================================
 
 /**
- * Configuration for a pattern to render in a slot.
- * This is what render-ui effects carry as their payload.
- */
-export interface PatternConfig {
-  /** Pattern type from registry (e.g., 'entity-table', 'form-section') */
-  type: string;
-  /** Entity name for data binding */
-  entity?: string;
-  /** Additional props for the pattern component */
-  [key: string]: FieldValue | undefined;
-}
-
-/**
  * Resolved pattern with component information from component-mapping.json
  */
-export interface ResolvedPattern {
+export interface MappedPattern {
   /** Component name (e.g., 'DataTable') */
   component: string;
   /** Import path for the component */
@@ -147,21 +136,6 @@ export interface ClientEffectExecutorConfig {
 // ============================================================================
 // Slot Types (re-exported from useUISlots for convenience)
 // ============================================================================
-
-/**
- * Valid UI slot names
- */
-export type UISlot =
-  | 'main'
-  | 'sidebar'
-  | 'modal'
-  | 'drawer'
-  | 'overlay'
-  | 'center'
-  | 'toast'
-  | 'hud-top'
-  | 'hud-bottom'
-  | 'floating';
 
 /**
  * Slot type classification
