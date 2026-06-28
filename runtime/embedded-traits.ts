@@ -21,7 +21,7 @@
  *
  * @packageDocumentation
  */
-import type { OrbitalSchema, ResolvedTrait } from '@almadar/core';
+import type { OrbitalDefinition, OrbitalSchema, ResolvedTrait, SExpr, SExprAtom, Trait, TraitRef, Transition, TraitTick } from '@almadar/core';
 
 /**
  * Bare-trait reference prefix. Author writes `"@trait.FilteredItemBrowse"`
@@ -29,7 +29,7 @@ import type { OrbitalSchema, ResolvedTrait } from '@almadar/core';
  */
 const TRAIT_BINDING_PREFIX = '@trait.';
 
-function collectTraitRefsFromValue(value: unknown, into: Set<string>): void {
+function collectTraitRefsFromValue(value: SExpr, into: Set<string>): void {
   if (value === null || value === undefined) return;
   if (typeof value === 'string') {
     if (value.startsWith(TRAIT_BINDING_PREFIX)) {
@@ -46,14 +46,14 @@ function collectTraitRefsFromValue(value: unknown, into: Set<string>): void {
     return;
   }
   if (typeof value === 'object') {
-    for (const v of Object.values(value as Record<string, unknown>)) {
+    for (const v of Object.values(value as SExprAtom & Record<string, SExpr>)) {
       collectTraitRefsFromValue(v, into);
     }
   }
 }
 
 function collectTraitRefsFromEffects(
-  effects: readonly unknown[] | undefined,
+  effects: readonly SExpr[] | undefined,
   into: Set<string>,
 ): void {
   if (!effects) return;
@@ -101,33 +101,28 @@ export function collectTraitRefsFromResolvedTrait(trait: ResolvedTrait): Set<str
 export function collectEmbeddedTraits(schema: OrbitalSchema | undefined | null): ReadonlySet<string> {
   const out = new Set<string>();
   if (!schema?.orbitals) return out;
-  for (const orbital of schema.orbitals) {
-    if (!orbital || typeof orbital !== 'object') continue;
-    const traits = (orbital as { traits?: unknown[] }).traits;
+  for (const orbital of schema.orbitals as OrbitalDefinition[]) {
+    const traits: TraitRef[] = orbital.traits;
     if (!Array.isArray(traits)) continue;
-    for (const trait of traits) {
-      if (!trait || typeof trait !== 'object') continue;
+    for (const traitRef of traits) {
+      if (!traitRef || typeof traitRef !== 'object') continue;
       // The runtime's `preprocessSchema` may wrap a resolved trait as
       // `{ ref, _resolved: <full trait> }` for ref-style entries. Read
       // the `_resolved` shape if present, otherwise the trait itself.
-      const resolved = (trait as { _resolved?: unknown })._resolved;
-      const target = (resolved && typeof resolved === 'object') ? resolved : trait;
-      const stateMachine = (target as { stateMachine?: { transitions?: unknown[] } }).stateMachine;
-      const transitions = stateMachine?.transitions;
+      const resolved = (traitRef as TraitRef & { _resolved?: Trait })._resolved;
+      const target: Trait = (resolved && typeof resolved === 'object') ? resolved : traitRef as Trait;
+      const transitions: Transition[] | undefined = target.stateMachine?.transitions;
       if (!Array.isArray(transitions)) continue;
       for (const t of transitions) {
-        if (!t || typeof t !== 'object') continue;
-        const effects = (t as { effects?: unknown[] }).effects;
-        collectTraitRefsFromEffects(effects, out);
+        collectTraitRefsFromEffects(t.effects as SExpr[] | undefined, out);
       }
       // Initial effects (run on trait mount) — same shape.
-      const initialEffects = (target as { initialEffects?: unknown[] }).initialEffects;
-      collectTraitRefsFromEffects(initialEffects, out);
+      collectTraitRefsFromEffects(target.initialEffects as SExpr[] | undefined, out);
       // Tick effects.
-      const ticks = (target as { ticks?: Array<{ effects?: unknown[] }> }).ticks;
+      const ticks: TraitTick[] | undefined = target.ticks;
       if (Array.isArray(ticks)) {
         for (const tick of ticks) {
-          collectTraitRefsFromEffects(tick?.effects, out);
+          collectTraitRefsFromEffects(tick.effects as SExpr[] | undefined, out);
         }
       }
     }

@@ -129,7 +129,8 @@
   "scripts": {
     "build": "tsup && tsc -p tsconfig.build.json",
     "build:watch": "tsup --watch",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint --no-warn-ignored --max-warnings 0 ."
   },
   "dependencies": {
     "@almadar/core": "^10.8.0",

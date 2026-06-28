@@ -19,6 +19,7 @@ export interface PerfEntry {
   readonly name: string;
   readonly durationMs: number;
   readonly ts: number;
+  // eslint-disable-next-line almadar/no-record-string-unknown, almadar/no-unknown-type -- open-ended perf metadata (durationMs, baseDuration, caller-supplied context); no @almadar/core type covers arbitrary timing breakdown fields
   readonly detail?: Readonly<Record<string, unknown>>;
 }
 
@@ -80,6 +81,7 @@ export function perfStart(name: string): number {
   return now();
 }
 
+// eslint-disable-next-line almadar/no-record-string-unknown, almadar/no-unknown-type -- open-ended perf metadata; no @almadar/core type covers arbitrary timing breakdown fields
 export function perfEnd(name: string, startToken: number, detail?: Record<string, unknown>): void {
   if (startToken < 0 || !isEnabled()) return;
   const endTs = now();
@@ -95,6 +97,7 @@ export function perfEnd(name: string, startToken: number, detail?: Record<string
 }
 
 /** Synchronous wrapper that times a fn end-to-end. */
+// eslint-disable-next-line almadar/no-record-string-unknown, almadar/no-unknown-type -- open-ended perf metadata; no @almadar/core type covers arbitrary timing breakdown fields
 export function perfTime<T>(name: string, fn: () => T, detail?: Record<string, unknown>): T {
   const t = perfStart(name);
   try {
