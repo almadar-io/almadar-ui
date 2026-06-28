@@ -19,8 +19,8 @@
 import { useState, useCallback } from 'react';
 import type { EventEmit, EntityRow } from '@almadar/core';
 import { useEventBus } from '../../../../hooks/useEventBus';
-import type { BattlePhase } from './BattleBoard';
-import { str, num, unitPosition, unitTeam, unitHealth } from '../../shared/boardEntity';
+import type { BattlePhase } from '../../2d/organisms/BattleBoard';
+import { str, num, unitPosition, unitTeam, unitHealth } from '../boardEntity';
 
 // =============================================================================
 // Types

@@ -18,7 +18,7 @@ import * as React from 'react';
 import type { EntityRow, EventEmit } from '@almadar/core';
 import { BattleBoard, type BattleBoardProps } from './BattleBoard';
 import { boardEntity, rows } from '../../shared/boardEntity';
-import { useBattleState } from './useBattleState';
+import { useBattleState } from '../../shared/hooks/useBattleState';
 import type {
     IsometricTile,
     IsometricUnit,

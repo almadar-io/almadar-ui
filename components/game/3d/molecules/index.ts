@@ -44,21 +44,21 @@ export {
     useThree,
     type UseThreeOptions,
     type UseThreeReturn,
-} from './useThree';
+} from '../../shared/hooks/useThree';
 
 export {
     useAssetLoader,
     type UseAssetLoaderOptions,
     type UseAssetLoaderReturn,
     type AssetLoadingState,
-} from './useAssetLoader';
+} from '../../shared/hooks/useAssetLoader';
 
 export {
     useSceneGraph,
     type UseSceneGraphReturn,
     type SceneGraphNode,
     type NodeType,
-} from './useSceneGraph';
+} from '../../shared/hooks/useSceneGraph';
 
 export {
     useRaycaster,
@@ -66,14 +66,14 @@ export {
     type UseRaycasterReturn,
     type RaycastHit,
     type GridHit,
-} from './useRaycaster';
+} from '../../shared/hooks/useRaycaster';
 
 export {
     useGameCanvas3DEvents,
     type UseGameCanvas3DEventsOptions,
     type UseGameCanvas3DEventsReturn,
     type GameCanvas3DEventConfig,
-} from './useGameCanvas3DEvents';
+} from '../../shared/hooks/useGameCanvas3DEvents';
 
 // ---------------------------------------------------------------------------
 // Loaders
@@ -82,7 +82,7 @@ export {
     AssetLoader,
     assetLoader,
     type LoadedModel,
-} from './AssetLoader';
+} from '../../shared/lib/AssetLoader';
 
 // ---------------------------------------------------------------------------
 // Renderers
@@ -133,7 +133,7 @@ export {
     normalizeMouseCoordinates,
     type Grid3DConfig,
     type GridCoordinate,
-} from './grid3D';
+} from '../../shared/lib/grid3D';
 
 // ---------------------------------------------------------------------------
 // AVL 3D (exported here because Three.js-dependent, not from avl/index.ts)
@@ -171,4 +171,4 @@ export {
     type CullingOptions,
     type LODLevel,
     type LODConfig,
-} from './culling';
+} from '../../shared/lib/culling';

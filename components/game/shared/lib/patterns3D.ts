@@ -13,8 +13,8 @@
  * the lazy loader but are intentionally absent here so they don't become
  * render-ui targets.
  */
-export { GameCanvas3D } from './GameCanvas3D';
-export { GameCanvas3DBattleTemplate } from '../templates/GameCanvas3DBattleTemplate';
-export { GameCanvas3DCastleTemplate } from '../templates/GameCanvas3DCastleTemplate';
-export { GameCanvas3DWorldMapTemplate } from '../templates/GameCanvas3DWorldMapTemplate';
-export { FeatureRenderer } from './FeatureRenderer';
+export { GameCanvas3D } from '../../3d/molecules/GameCanvas3D';
+export { GameCanvas3DBattleTemplate } from '../../3d/templates/GameCanvas3DBattleTemplate';
+export { GameCanvas3DCastleTemplate } from '../../3d/templates/GameCanvas3DCastleTemplate';
+export { GameCanvas3DWorldMapTemplate } from '../../3d/templates/GameCanvas3DWorldMapTemplate';
+export { FeatureRenderer } from '../../3d/molecules/FeatureRenderer';

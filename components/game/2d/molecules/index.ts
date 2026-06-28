@@ -66,13 +66,13 @@ export {
     type SidePlayer,
     type TileCoord,
 } from './Canvas2D';
-export { useUnitSpriteAtlas } from './useUnitSpriteAtlas';
+export { useUnitSpriteAtlas } from '../../shared/hooks/useUnitSpriteAtlas';
 
 // ---------------------------------------------------------------------------
 // Canvas effects organism + hook
 // ---------------------------------------------------------------------------
 export { CanvasEffect, type CanvasEffectProps } from '../organisms/CanvasEffect';
-export * from '../organisms/useCanvasEffects';
+export * from '../../shared/hooks/useCanvasEffects';
 
 // ---------------------------------------------------------------------------
 // Audio System
@@ -99,7 +99,7 @@ export {
 // ---------------------------------------------------------------------------
 // 2D Hooks
 // ---------------------------------------------------------------------------
-export { useCamera } from '../hooks/useCamera';
+export { useCamera } from '../../shared/hooks/useCamera';
 // ---------------------------------------------------------------------------
 // Board Organisms (game-logic containers — templates are thin wrappers)
 // ---------------------------------------------------------------------------
@@ -118,7 +118,7 @@ export {
     type BattleStateEventConfig,
     type BattleStateCallbacks,
     type BattleStateResult,
-} from '../organisms/useBattleState';
+} from '../../shared/hooks/useBattleState';
 export {
     WorldMapBoard,
     type WorldMapBoardProps,
@@ -231,7 +231,7 @@ export { RuleEditor, type RuleEditorProps, type RuleDefinition } from '../organi
 export { EventLog, type EventLogProps, type EventLogEntry } from '../organisms/EventLog';
 export { ObjectRulePanel, type ObjectRulePanelProps } from '../organisms/ObjectRulePanel';
 export { EventHandlerBoard, type EventHandlerBoardProps } from '../organisms/EventHandlerBoard';
-export * from '../organisms/puzzleObject';
+export * from '../../shared/lib/puzzleObject';
 // State Architect (ages 13+)
 export { StateNode, type StateNodeProps } from '../organisms/StateNode';
 export { TransitionArrow, type TransitionArrowProps } from '../organisms/TransitionArrow';
@@ -260,8 +260,8 @@ export { NegotiatorBoard, type NegotiatorBoardProps, type NegotiatorAction, type
 export { SimulationCanvas, type SimulationCanvasProps } from '../organisms/SimulationCanvas';
 export { SimulationControls, type SimulationControlsProps } from '../organisms/SimulationControls';
 export { SimulationGraph, type SimulationGraphProps, type MeasurementPoint } from '../organisms/SimulationGraph';
-export type { PhysicsPreset, PhysicsBody, PhysicsConstraint } from '../organisms/types';
-export { projectileMotion, pendulum, springOscillator, ALL_PRESETS } from '../organisms/physicsPresets';
+export type { PhysicsPreset, PhysicsBody, PhysicsConstraint } from '../../shared/lib/physicsTypes';
+export { projectileMotion, pendulum, springOscillator, ALL_PRESETS } from '../../shared/lib/physicsPresets';
 
 // ---------------------------------------------------------------------------
 // Templates (thin wrappers — header + Board organism)

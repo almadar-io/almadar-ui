@@ -11,8 +11,8 @@ import React, { useRef, useEffect, useCallback, useMemo } from 'react';
 import { cn } from '../../../../lib/cn';
 import { Box } from '../../../core/atoms/index';
 import { bindCanvasCapture } from '../../../../lib/verificationRegistry';
-import type { PhysicsPreset, PhysicsBody } from './types';
-import { ALL_PRESETS, projectileMotion } from './physicsPresets';
+import type { PhysicsPreset, PhysicsBody } from '../../shared/lib/physicsTypes';
+import { ALL_PRESETS, projectileMotion } from '../../shared/lib/physicsPresets';
 import { useRenderInterpolation } from '../../../../hooks/useRenderInterpolation';
 
 function resolvePreset(preset: string | PhysicsPreset): PhysicsPreset {

@@ -31,7 +31,7 @@ import {
     objStates,
     objCurrentState,
     objRules,
-} from './puzzleObject';
+} from '../../shared/lib/puzzleObject';
 import { boardEntity, str, rows } from '../../shared/boardEntity';
 
 // =============================================================================

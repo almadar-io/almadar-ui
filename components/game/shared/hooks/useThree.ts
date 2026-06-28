@@ -11,7 +11,7 @@
 import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { AssetLoader } from './AssetLoader';
+import { AssetLoader } from '../lib/AssetLoader';
 
 export type CameraMode = 'isometric' | 'perspective' | 'top-down';
 

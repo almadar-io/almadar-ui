@@ -10,7 +10,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import * as THREE from 'three';
-import { AssetLoader, LoadedModel } from './AssetLoader';
+import { AssetLoader, LoadedModel } from '../lib/AssetLoader';
 
 export interface UseAssetLoaderOptions {
     /** URLs to preload on mount */

@@ -1,8 +1,8 @@
-export type { PhysicsPreset, PhysicsBody, PhysicsConstraint } from './types';
+export type { PhysicsPreset, PhysicsBody, PhysicsConstraint } from './physicsTypes';
 export { projectileMotion, pendulum, springOscillator } from './mechanics';
 
 import { projectileMotion, pendulum, springOscillator } from './mechanics';
-import type { PhysicsPreset } from './types';
+import type { PhysicsPreset } from './physicsTypes';
 
 export const ALL_PRESETS: PhysicsPreset[] = [
     projectileMotion,

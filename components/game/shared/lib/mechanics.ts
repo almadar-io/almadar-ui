@@ -1,4 +1,4 @@
-import type { PhysicsPreset } from './types';
+import type { PhysicsPreset } from './physicsTypes';
 
 export const projectileMotion: PhysicsPreset = {
     id: 'mechanics-projectile',

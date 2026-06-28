@@ -37,10 +37,10 @@ import { MiniMap } from '../atoms/MiniMap';
 import { HealthBar } from '../atoms/HealthBar';
 import type { ResolvedFrame } from '../../shared/spriteAnimationTypes';
 import { useImageCache } from '../../shared/useImageCache';
-import { useCamera } from '../hooks/useCamera';
+import { useCamera } from '../../shared/hooks/useCamera';
 import { useCanvasGestures } from '../../../../hooks/useCanvasGestures';
 import { useRenderInterpolation } from '../../../../hooks/useRenderInterpolation';
-import { useUnitSpriteAtlas } from './useUnitSpriteAtlas';
+import { useUnitSpriteAtlas } from '../../shared/hooks/useUnitSpriteAtlas';
 import { bindCanvasCapture } from '../../../../lib/verificationRegistry';
 import {
     isoToScreen,

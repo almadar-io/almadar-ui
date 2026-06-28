@@ -16,8 +16,8 @@
 
 import { useRef, useMemo, useCallback, useState } from 'react';
 import type { AssetUrl } from '@almadar/core';
-import type { CanvasEffectState, CombatActionType, EffectAssetManifest } from '../../shared/effects';
-import { EMPTY_EFFECT_STATE } from '../../shared/effects';
+import type { CanvasEffectState, CombatActionType, EffectAssetManifest } from '../effects';
+import { EMPTY_EFFECT_STATE } from '../effects';
 import {
     spawnParticles,
     spawnSequence,
@@ -26,8 +26,8 @@ import {
     drawEffectState,
     hasActiveEffects as checkActive,
     getAllEffectSpriteUrls,
-} from '../../shared/canvasEffects';
-import { createCombatPresets } from '../../shared/combatPresets';
+} from '../canvasEffects';
+import { createCombatPresets } from '../combatPresets';
 
 export interface UseCanvasEffectsOptions {
     /** Effect asset manifest (baseUrl + particles + animations) */

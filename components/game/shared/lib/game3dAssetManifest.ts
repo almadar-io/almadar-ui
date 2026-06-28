@@ -11,9 +11,9 @@
  */
 
 import type { Asset, EntityRole, EntityRow } from '@almadar/core';
-import { makeAsset } from '../../shared/makeAsset';
-import type { IsometricTile, IsometricFeature } from '../../shared/isometricTypes';
-import { boardEntity, rows, num, str } from '../../shared/boardEntity';
+import { makeAsset } from '../makeAsset';
+import type { IsometricTile, IsometricFeature } from '../isometricTypes';
+import { boardEntity, rows, num, str } from '../boardEntity';
 
 /** GLB model assets for a 3D board, keyed by terrain "kind" and (optionally) feature type. */
 export interface Game3DAssetManifest {
