@@ -25,7 +25,7 @@
  */
 
 import React, { useEffect, useState } from "react";
-import { useUISlots } from "../../../context/UISlotContext";
+import { useUISlots } from "../../../providers/UISlotContext";
 import type { SlotContent } from "../../../hooks/useUISlots";
 import { TraitScopeProvider } from "../../../providers/TraitScopeProvider";
 import { useEntitySchemaOptional } from "../../../providers/EntitySchemaContext";

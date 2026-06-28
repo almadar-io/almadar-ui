@@ -26,7 +26,7 @@ import type {
   ThemeVariant,
   TypeScaleTokens,
 } from '@almadar/core';
-import { themeTokensToCssVars } from '../context/themeTokens';
+import { themeTokensToCssVars } from '../lib/themeTokens';
 
 describe('themeTokensToCssVars — Density axis', () => {
   it('emits --space-N for each populated spacing step', () => {

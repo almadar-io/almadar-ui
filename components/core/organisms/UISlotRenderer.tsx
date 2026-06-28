@@ -26,7 +26,7 @@ import {
   type SlotContent,
   type SlotProps,
   type SlotPropValue,
-} from "../../../context/UISlotContext";
+} from "../../../providers/UISlotContext";
 import { Modal } from "../molecules/Modal";
 import { Drawer } from "../molecules/Drawer";
 import { Toast } from "../molecules/Toast";

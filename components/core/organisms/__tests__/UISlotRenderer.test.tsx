@@ -12,7 +12,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
 import { UISlotRenderer, UISlotComponent, SlotContentRenderer } from '../UISlotRenderer';
-import { UISlotProvider } from '../../../../context/UISlotContext';
+import { UISlotProvider } from '../../../../providers/UISlotContext';
 
 // Wrapper component with provider
 function TestWrapper({ children }: { children: React.ReactNode }) {

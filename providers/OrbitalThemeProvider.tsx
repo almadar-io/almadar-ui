@@ -30,7 +30,7 @@
 import React, { type CSSProperties, type ReactElement, type ReactNode } from 'react';
 import type { ThemeRef } from '@almadar/core';
 import { useTheme } from './ThemeContext';
-import { themeTokensToCssVars, resolveThemeForRuntime } from './themeTokens';
+import { themeTokensToCssVars, resolveThemeForRuntime } from '../lib/themeTokens';
 
 export interface OrbitalThemeProviderProps {
   /** The `OrbitalDefinition.theme` value (inline definition or string ref). */

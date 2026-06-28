@@ -12,7 +12,7 @@
 
 import { describe, it, expect } from 'vitest';
 import type { ThemeTokens, ThemeVariant } from '@almadar/core';
-import { themeTokensToCssVars, resolveThemeForRuntime } from '../context/themeTokens';
+import { themeTokensToCssVars, resolveThemeForRuntime } from '../lib/themeTokens';
 
 describe('themeTokensToCssVars', () => {
   it('maps colors keys to --color-<k>', () => {

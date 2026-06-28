@@ -41,7 +41,7 @@ import { evaluateGuard } from '@almadar/evaluator';
 import { createClientEffectHandlers } from '../lib/createClientEffectHandlers';
 import type { ResolvedTraitBinding, ResolvedTraitListener } from '../types/runtime-types';
 import type { SlotPatternEntry, SlotSource } from '../types/slot-types';
-import type { useUISlots, SlotProps } from '../context/UISlotContext';
+import type { useUISlots, SlotProps } from '../providers/UISlotContext';
 import { convertFnFormLambdasInProps } from '../lib/fn-form-lambda';
 import { useEntitySchema } from '../providers/EntitySchemaContext';
 import {

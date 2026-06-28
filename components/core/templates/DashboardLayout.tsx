@@ -11,7 +11,7 @@ import { Icon as AlmadarIcon } from "../atoms/Icon";
 import { useAuthContext } from "../../../hooks/useAuthContext";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
-import { useCurrentPagePath } from "../../../context/CurrentPagePathContext";
+import { useCurrentPagePath } from "../../../providers/CurrentPagePathContext";
 import type { AssetUrl, EventEmit, EventKey } from "@almadar/core";
 
 export interface NavItem {

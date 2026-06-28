@@ -14,7 +14,7 @@ export {
   type SlotRenderConfig,
   type SlotAnimation,
   type SlotChangeCallback,
-} from "./UISlotContext";
+} from "../providers/UISlotContext";
 
 export {
   ThemeProvider,
@@ -25,28 +25,28 @@ export {
   type ColorMode,
   type ResolvedMode,
   type DesignTheme,
-} from "./ThemeContext";
-export { default as ThemeContext } from "./ThemeContext";
+} from "../providers/ThemeContext";
+export { default as ThemeContext } from "../providers/ThemeContext";
 
 export {
   themeTokensToCssVars,
   resolveThemeForRuntime,
   type ThemeMode,
-} from "./themeTokens";
+} from "../lib/themeTokens";
 
 export {
   OrbitalThemeProvider,
   type OrbitalThemeProviderProps,
-} from "./OrbitalThemeProvider";
+} from "../providers/OrbitalThemeProvider";
 
-export { DesignThemeProvider, useDesignTheme } from "./DesignThemeContext";
+export { DesignThemeProvider, useDesignTheme } from "../providers/DesignThemeContext";
 
 export {
   CurrentPagePathProvider,
   CurrentPagePathContext,
   useCurrentPagePath,
   type CurrentPagePathProviderProps,
-} from "./CurrentPagePathContext";
+} from "../providers/CurrentPagePathContext";
 
 export {
   UserProvider,
@@ -59,4 +59,4 @@ export {
   type UserData,
   type UserContextValue,
   type UserProviderProps,
-} from "./UserContext";
+} from "../providers/UserContext";

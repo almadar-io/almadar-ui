@@ -9,7 +9,7 @@
 export { OrbitalProvider, type OrbitalProviderProps } from './OrbitalProvider';
 
 // Re-export UIThemeDefinition for generated theme configs
-export type { UIThemeDefinition } from '../context/ThemeContext';
+export type { UIThemeDefinition } from './ThemeContext';
 
 // Individual providers (for advanced use cases)
 export { EventBusProvider, EventBusContext } from './EventBusProvider';

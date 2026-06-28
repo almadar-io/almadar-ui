@@ -11,7 +11,7 @@
 import React from "react";
 import { Icon } from "./Icon";
 import { cn } from "../../../lib/cn";
-import { useTheme } from "../../../context/ThemeContext";
+import { useTheme } from "../../../providers/ThemeContext";
 
 export interface ThemeToggleProps {
   /** Additional CSS classes */

@@ -18,7 +18,7 @@
 
 import React, { type ReactNode, useMemo } from 'react';
 import type { EntityRow } from '@almadar/core';
-import { ThemeProvider, type ThemeProviderProps, type UIThemeDefinition } from '../context/ThemeContext';
+import { ThemeProvider, type ThemeProviderProps, type UIThemeDefinition } from './ThemeContext';
 import { EventBusProvider } from './EventBusProvider';
 import { SelectionProvider } from './SelectionProvider';
 import { SuspenseConfigProvider, type SuspenseConfig } from '../components/core/organisms/UISlotRenderer';
@@ -180,6 +180,6 @@ OrbitalProvider.displayName = 'OrbitalProvider';
 // Re-exports for convenience
 // ============================================================================
 
-export { ThemeProvider } from '../context/ThemeContext';
+export { ThemeProvider } from './ThemeContext';
 export { EventBusProvider } from './EventBusProvider';
 export { SelectionProvider } from './SelectionProvider';
