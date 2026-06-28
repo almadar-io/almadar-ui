@@ -81,7 +81,7 @@ export function createClientEffectHandlers(
                 return;
             }
             liveEntity[field] = value;
-        }) as EffectHandlers['set'],
+        }),
         callService: async (service: string, action: string, params?: ServiceParams) => {
             // Consumer-supplied handler wins — playgrounds wire real backends here.
             if (callService) return callService(service, action, params);

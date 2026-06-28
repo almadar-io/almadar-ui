@@ -645,7 +645,7 @@ export function useTraitStateMachine(
                 },
                 source: { trait: traitName },
                 // @almadar/runtime callService types params:unknown/Promise<unknown> — should be ServiceParams/EventPayload (upstream fix queued)
-                callService: optionsRef.current?.callService as CreateServerEffectHandlersOptions['callService'],
+                callService: optionsRef.current?.callService,
             });
             handlers = {
                 ...serverHandlers,
@@ -1002,7 +1002,7 @@ export function useTraitStateMachine(
                 const emittedDuringExec = await executeTransitionEffects({
                     binding,
                     // upstream gap: /runtime TransitionResult.effects is unknown[] — they are SExpr at runtime (see Almadar_UI_Gaps.md)
-                    effects: result.effects as SExpr[],
+                    effects: result.effects,
                     previousState: result.previousState,
                     newState: result.newState,
                     payload,
@@ -1042,7 +1042,7 @@ export function useTraitStateMachine(
             if (result.executed) {
                 updateTraitState(traitName, result.newState);
                 // upstream gap: /runtime TransitionResult.effects is unknown[] — they are SExpr at runtime (see Almadar_UI_Gaps.md)
-                const effectTraces: EffectTrace[] = (result.effects as SExpr[]).map(
+                const effectTraces: EffectTrace[] = result.effects.map(
                     (e: SExpr): EffectTrace => {
                         if (Array.isArray(e)) {
                             return {
