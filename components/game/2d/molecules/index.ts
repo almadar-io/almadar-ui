@@ -83,7 +83,7 @@ export {
     useGameAudioContext,
     type GameAudioProviderProps,
     type GameAudioContextValue,
-} from './GameAudioProvider';
+} from '../../shared/providers/GameAudioProvider';
 export {
     GameAudioToggle,
     type GameAudioToggleProps,

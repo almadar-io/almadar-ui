@@ -30,12 +30,6 @@ export {
     ModelLoader,
     type ModelLoaderProps,
 } from './ModelLoader';
-export {
-    PhysicsObject3D,
-    usePhysics3DController,
-    type PhysicsObject3DProps,
-    type Physics3DState,
-} from './PhysicsObject3D';
 
 // ---------------------------------------------------------------------------
 // Hooks
@@ -84,26 +78,6 @@ export {
     type LoadedModel,
 } from '../../shared/lib/AssetLoader';
 
-// ---------------------------------------------------------------------------
-// Renderers
-// ---------------------------------------------------------------------------
-export {
-    TileRenderer,
-    type TileRendererProps,
-} from './TileRenderer';
-export {
-    UnitRenderer,
-    type UnitRendererProps,
-} from './UnitRenderer';
-export {
-    FeatureRenderer,
-    type FeatureRendererProps,
-} from './FeatureRenderer';
-export {
-    FeatureRenderer3D,
-    preloadFeatures,
-    type FeatureRenderer3DProps,
-} from './FeatureRenderer3D';
 export type { UnitAnimationState } from '../../shared/spriteAnimationTypes';
 
 // ---------------------------------------------------------------------------

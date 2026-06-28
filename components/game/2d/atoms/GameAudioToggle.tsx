@@ -15,7 +15,7 @@
 import React, { useCallback, useState } from 'react';
 import { Button } from '../../../core/atoms/index';
 import { cn } from '../../../../lib/cn';
-import { useGameAudioContextOptional } from '../molecules/GameAudioProvider';
+import { useGameAudioContextOptional } from '../../shared/providers/GameAudioProvider';
 import type { UiError } from '../../../core/atoms/types';
 
 // =============================================================================

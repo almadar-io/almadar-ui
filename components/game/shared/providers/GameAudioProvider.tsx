@@ -20,7 +20,7 @@
 
 import React, { createContext, useContext, useEffect } from 'react';
 import { useEventBus } from '../../../../hooks/useEventBus';
-import { useGameAudio, type AudioManifest, type GameAudioControls } from '../../shared/hooks/useGameAudio';
+import { useGameAudio, type AudioManifest, type GameAudioControls } from '../hooks/useGameAudio';
 import type { UiError } from '../../../core/atoms/types';
 
 // =============================================================================
