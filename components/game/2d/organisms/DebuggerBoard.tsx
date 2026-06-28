@@ -12,13 +12,14 @@
  
 
 import React, { useState, useCallback } from 'react';
-import type { EventEmit, EntityRow, EntityWith, FieldValue } from '@almadar/core';
-import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../core/atoms/index';
+import type { EventEmit, EntityRow, EntityWith, FieldValue, Asset } from '@almadar/core';
+import { Box, VStack, HStack, Card, Button, Typography, Badge } from '../../../core/atoms/index';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../hooks/useTranslate';
 import type { DisplayStateProps } from '../../../core/organisms/types';
 import { boardEntity, str, num } from '../../shared/boardEntity';
 import { CheckCircle, XCircle, RotateCcw, Bug, Send } from 'lucide-react';
+import { GameIcon } from '../atoms/GameIcon';
 
 /** Narrow a raw FieldValue to a DebuggerLine, returning null when the shape doesn't match. */
 function toDebuggerLine(v: FieldValue): DebuggerLine | null {
@@ -70,6 +71,8 @@ export interface DebuggerBoardProps extends DisplayStateProps {
   checkEvent?: EventEmit<Record<string, never>>;
   /** Emits UI:{playAgainEvent} with {} on play again / reset. */
   playAgainEvent?: EventEmit<Record<string, never>>;
+  /** Optional per-semantic-key asset overrides for icons (correct/incorrect/reset/bug/send). */
+  assetManifest?: { ui?: Record<string, Asset> };
 }
 
 export function DebuggerBoard({
@@ -78,8 +81,10 @@ export function DebuggerBoard({
   toggleFlagEvent,
   checkEvent,
   playAgainEvent,
+  assetManifest,
   className,
 }: DebuggerBoardProps): React.JSX.Element | null {
+  const ui = assetManifest?.ui;
   const { emit } = useEventBus();
   const { t } = useTranslate();
   const resolved = boardEntity(entity);
@@ -146,7 +151,7 @@ export function DebuggerBoard({
         <Card className="p-4">
           <VStack gap="sm">
             <HStack gap="xs" align="center">
-              <Icon icon={Bug} size="sm" />
+              <GameIcon icon={Bug} assetUrl={ui?.['bug']} size="sm" />
               <Typography variant="h4" weight="bold">{str(resolved.title)}</Typography>
             </HStack>
             <Typography variant="body">{str(resolved.description)}</Typography>
@@ -185,8 +190,8 @@ export function DebuggerBoard({
                     <Typography variant="body" className="font-mono text-sm">{line.content}</Typography>
                   </Box>
                   <Box className="w-8 flex-shrink-0 flex items-center justify-center">
-                    {isFlagged && <Icon icon={Bug} size="xs" className="text-error" />}
-                    {submitted && line.isBug && !isFlagged && <Icon icon={Bug} size="xs" className="text-warning" />}
+                    {isFlagged && <GameIcon icon={Bug} assetUrl={ui?.['bug']} size="sm" className="text-error" />}
+                    {submitted && line.isBug && !isFlagged && <GameIcon icon={Bug} assetUrl={ui?.['bug']} size="sm" className="text-warning" />}
                   </Box>
                 </HStack>
               );
@@ -205,9 +210,10 @@ export function DebuggerBoard({
               </Typography>
               {bugLines.map((line) => (
                 <HStack key={line.id} gap="xs" align="start">
-                  <Icon
+                  <GameIcon
                     icon={line.isFlagged ? CheckCircle : XCircle}
-                    size="xs"
+                    assetUrl={line.isFlagged ? ui?.['correct'] : ui?.['incorrect']}
+                    size="sm"
                     className={line.isFlagged ? 'text-success mt-0.5' : 'text-warning mt-0.5'}
                   />
                   <VStack gap="none">
@@ -231,12 +237,12 @@ export function DebuggerBoard({
         <HStack gap="sm" justify="center">
           {!submitted && (
             <Button variant="primary" onClick={handleSubmit} disabled={flaggedLines.length === 0}>
-              <Icon icon={Send} size="sm" />
+              <GameIcon icon={Send} assetUrl={ui?.['send']} size="sm" />
               {t('debugger.submit')}
             </Button>
           )}
           <Button variant="secondary" onClick={handleReset}>
-            <Icon icon={RotateCcw} size="sm" />
+            <GameIcon icon={RotateCcw} assetUrl={ui?.['reset']} size="sm" />
             {t('debugger.reset')}
           </Button>
         </HStack>

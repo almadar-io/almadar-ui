@@ -12,13 +12,14 @@
  
 
 import React, { useState } from 'react';
-import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
-import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../core/atoms/index';
+import type { AssetUrl, EventEmit, EntityRow, Asset } from '@almadar/core';
+import { Box, VStack, HStack, Card, Button, Typography, Badge } from '../../../core/atoms/index';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../hooks/useTranslate';
 import type { DisplayStateProps } from '../../../core/organisms/types';
 import { boardEntity, str, num, rows } from '../../shared/boardEntity';
 import { CheckCircle, XCircle, RotateCcw, Wrench } from 'lucide-react';
+import { GameIcon } from '../atoms/GameIcon';
 
 /** A draggable build component (UI value DTO read off the entity). */
 export interface BuilderComponent {
@@ -54,6 +55,8 @@ export interface BuilderBoardProps extends DisplayStateProps {
   checkEvent?: EventEmit<Record<string, never>>;
   /** Emits UI:{playAgainEvent} with {} on play again / reset. */
   playAgainEvent?: EventEmit<Record<string, never>>;
+  /** Optional per-semantic-key asset overrides for icons (correct/incorrect/reset/build). */
+  assetManifest?: { ui?: Record<string, Asset> };
 }
 
 export function BuilderBoard({
@@ -62,8 +65,10 @@ export function BuilderBoard({
   placeEvent,
   checkEvent,
   playAgainEvent,
+  assetManifest,
   className,
 }: BuilderBoardProps): React.JSX.Element | null {
+  const ui = assetManifest?.ui;
   const { emit } = useEventBus();
   const { t } = useTranslate();
   const resolved = boardEntity(entity);
@@ -245,7 +250,12 @@ export function BuilderBoard({
                           ) : null}{placedComp.label}
                         </Badge>
                         {result && (
-                          <Icon icon={result.correct ? CheckCircle : XCircle} size="sm" className={result.correct ? 'text-success' : 'text-error'} />
+                          <GameIcon
+                            icon={result.correct ? CheckCircle : XCircle}
+                            assetUrl={result.correct ? ui?.['correct'] : ui?.['incorrect']}
+                            size="sm"
+                            className={result.correct ? 'text-success' : 'text-error'}
+                          />
                         )}
                       </HStack>
                     ) : (
@@ -264,7 +274,7 @@ export function BuilderBoard({
         {submitted && (
           <Card className="p-4">
             <VStack gap="sm" align="center">
-              <Icon icon={CheckCircle} size="lg" className="text-success" />
+              <GameIcon icon={CheckCircle} assetUrl={ui?.['correct']} size="lg" className="text-success" />
               <Typography variant="body" weight="bold">
                 {str(resolved.successMessage) || t('builder.success')}
               </Typography>
@@ -281,12 +291,12 @@ export function BuilderBoard({
         <HStack gap="sm" justify="center">
           {!submitted && (
             <Button variant="primary" onClick={handleSubmit} disabled={!allPlaced}>
-              <Icon icon={Wrench} size="sm" />
+              <GameIcon icon={Wrench} assetUrl={ui?.['build']} size="sm" />
               {t('builder.build')}
             </Button>
           )}
           <Button variant="secondary" onClick={handlePlayAgain}>
-            <Icon icon={RotateCcw} size="sm" />
+            <GameIcon icon={RotateCcw} assetUrl={ui?.['reset']} size="sm" />
             {t('builder.reset')}
           </Button>
         </HStack>

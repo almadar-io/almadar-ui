@@ -14,13 +14,14 @@
  */
 
 import React, { useState } from 'react';
-import type { EventEmit, EntityRow, FieldValue } from '@almadar/core';
-import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../core/atoms/index';
+import type { EventEmit, EntityRow, FieldValue, Asset } from '@almadar/core';
+import { Box, VStack, HStack, Card, Button, Typography, Badge } from '../../../core/atoms/index';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../hooks/useTranslate';
 import type { DisplayStateProps } from '../../../core/organisms/types';
 import { boardEntity, str, num, vec2 } from '../../shared/boardEntity';
 import { Play, RotateCcw, CheckCircle, XCircle } from 'lucide-react';
+import { GameIcon } from '../atoms/GameIcon';
 
 /** A tunable simulation parameter slider descriptor (UI value DTO read off the entity). */
 export interface SimulatorParameter {
@@ -74,6 +75,8 @@ export interface SimulatorBoardProps extends DisplayStateProps {
   checkEvent?: EventEmit<Record<string, never>>;
   /** Emits UI:{playAgainEvent} with {} on reset / play again. */
   playAgainEvent?: EventEmit<Record<string, never>>;
+  /** Optional per-semantic-key asset overrides for icons (correct/incorrect/play/reset). */
+  assetManifest?: { ui?: Record<string, Asset> };
 }
 
 export function SimulatorBoard({
@@ -83,8 +86,10 @@ export function SimulatorBoard({
   setBEvent,
   checkEvent,
   playAgainEvent,
+  assetManifest,
   className,
 }: SimulatorBoardProps): React.JSX.Element | null {
+  const ui = assetManifest?.ui;
   const { emit } = useEventBus();
   const { t } = useTranslate();
   const resolved = boardEntity(entity);
@@ -210,7 +215,12 @@ export function SimulatorBoard({
             </Typography>
             {isComplete && (
               <HStack gap="xs" align="center">
-                <Icon icon={isWin ? CheckCircle : XCircle} size="sm" className={isWin ? 'text-success' : 'text-error'} />
+                <GameIcon
+                  icon={isWin ? CheckCircle : XCircle}
+                  assetUrl={isWin ? ui?.['correct'] : ui?.['incorrect']}
+                  size="sm"
+                  className={isWin ? 'text-success' : 'text-error'}
+                />
                 <Typography variant="body" className={isWin ? 'text-success' : 'text-error'}>
                   {isWin
                     ? (str(resolved.successMessage) || t('simulator.correct'))
@@ -235,12 +245,12 @@ export function SimulatorBoard({
         <HStack gap="sm" justify="center">
           {!isComplete ? (
             <Button variant="primary" onClick={handleCheck}>
-              <Icon icon={Play} size="sm" />
+              <GameIcon icon={Play} assetUrl={ui?.['play']} size="sm" />
               {t('simulator.simulate')}
             </Button>
           ) : null}
           <Button variant="secondary" onClick={handlePlayAgain}>
-            <Icon icon={RotateCcw} size="sm" />
+            <GameIcon icon={RotateCcw} assetUrl={ui?.['reset']} size="sm" />
             {t('simulator.reset')}
           </Button>
         </HStack>

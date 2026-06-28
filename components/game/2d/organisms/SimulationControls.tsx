@@ -5,8 +5,10 @@
  */
 
 import React from 'react';
-import { HStack, VStack, Button, Typography, Icon } from '../../../core/atoms/index';
+import type { Asset } from '@almadar/core';
+import { HStack, VStack, Button, Typography } from '../../../core/atoms/index';
 import { Play, Pause, SkipForward, RotateCcw } from 'lucide-react';
+import { GameIcon } from '../atoms/GameIcon';
 
 export interface SimulationParameter {
     value: number;
@@ -26,6 +28,8 @@ export interface SimulationControlsProps {
     onReset: () => void;
     onSpeedChange: (speed: number) => void;
     onParameterChange: (name: string, value: number) => void;
+    /** Optional per-semantic-key asset overrides for icons (play/pause/step/reset). */
+    assetManifest?: { ui?: Record<string, Asset> };
     className?: string;
 }
 
@@ -39,24 +43,30 @@ export function SimulationControls({
     onReset,
     onSpeedChange,
     onParameterChange,
+    assetManifest,
     className,
 }: SimulationControlsProps): React.JSX.Element {
+    const ui = assetManifest?.ui;
     return (
         <VStack gap="md" className={className}>
             <HStack gap="sm" align="center">
                 {running ? (
-                    <Button size="sm" variant="secondary" onClick={onPause} icon={Pause}>
+                    <Button size="sm" variant="secondary" onClick={onPause}>
+                        <GameIcon icon={Pause} assetUrl={ui?.['pause']} size="sm" />
                         Pause
                     </Button>
                 ) : (
-                    <Button size="sm" variant="primary" onClick={onPlay} icon={Play}>
+                    <Button size="sm" variant="primary" onClick={onPlay}>
+                        <GameIcon icon={Play} assetUrl={ui?.['play']} size="sm" />
                         Play
                     </Button>
                 )}
-                <Button size="sm" variant="ghost" onClick={onStep} icon={SkipForward} disabled={running}>
+                <Button size="sm" variant="ghost" onClick={onStep} disabled={running}>
+                    <GameIcon icon={SkipForward} assetUrl={ui?.['step']} size="sm" />
                     Step
                 </Button>
-                <Button size="sm" variant="ghost" onClick={onReset} icon={RotateCcw}>
+                <Button size="sm" variant="ghost" onClick={onReset}>
+                    <GameIcon icon={RotateCcw} assetUrl={ui?.['reset']} size="sm" />
                     Reset
                 </Button>
             </HStack>

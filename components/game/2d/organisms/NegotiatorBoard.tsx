@@ -13,13 +13,14 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import type { EventEmit, EntityRow, FieldValue } from '@almadar/core';
-import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../core/atoms/index';
+import type { EventEmit, EntityRow, FieldValue, Asset } from '@almadar/core';
+import { Box, VStack, HStack, Card, Button, Typography, Badge } from '../../../core/atoms/index';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../hooks/useTranslate';
 import type { DisplayStateProps } from '../../../core/organisms/types';
 import { boardEntity, str, num } from '../../shared/boardEntity';
 import { CheckCircle, ArrowRight } from 'lucide-react';
+import { GameIcon } from '../atoms/GameIcon';
 
 /** A selectable round action (UI value DTO read off the entity). */
 export interface NegotiatorAction {
@@ -49,6 +50,8 @@ export interface NegotiatorBoardProps extends DisplayStateProps {
   finishEvent?: EventEmit<Record<string, never>>;
   /** Emits UI:{playAgainEvent} with {} on play again / reset. */
   playAgainEvent?: EventEmit<Record<string, never>>;
+  /** Optional per-semantic-key asset overrides for icons (correct/arrow). */
+  assetManifest?: { ui?: Record<string, Asset> };
 }
 
 interface RoundResult {
@@ -65,8 +68,10 @@ export function NegotiatorBoard({
   playRoundEvent,
   finishEvent,
   playAgainEvent,
+  assetManifest,
   className,
 }: NegotiatorBoardProps): React.JSX.Element | null {
+  const ui = assetManifest?.ui;
   const { emit } = useEventBus();
   const { t } = useTranslate();
   const resolved = boardEntity(entity);
@@ -255,7 +260,7 @@ export function NegotiatorBoard({
                   <Typography variant="caption">{getActionLabel(round.playerAction)}</Typography>
                   <Typography variant="caption" className="text-muted-foreground">vs</Typography>
                   <Typography variant="caption">{getActionLabel(round.opponentAction)}</Typography>
-                  <Icon icon={ArrowRight} size="xs" />
+                  <GameIcon icon={ArrowRight} assetUrl={ui?.['arrow']} size="sm" />
                   <Typography variant="caption" weight="bold" className="text-success">+{round.playerPayoff}</Typography>
                   <Typography variant="caption" className="text-muted-foreground">/ +{round.opponentPayoff}</Typography>
                 </HStack>
@@ -268,7 +273,7 @@ export function NegotiatorBoard({
         {isComplete && (
           <Card className="p-4">
             <VStack gap="sm" align="center">
-              <Icon icon={CheckCircle} size="lg" className={won ? 'text-success' : 'text-error'} />
+              <GameIcon icon={CheckCircle} assetUrl={ui?.['correct']} size="lg" className={won ? 'text-success' : 'text-error'} />
               <Typography variant="body" weight="bold">
                 {won
                   ? (str(resolved.successMessage) || t('negotiator.success'))

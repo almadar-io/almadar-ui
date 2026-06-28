@@ -33,6 +33,7 @@ export { DialogueBubble, type DialogueBubbleProps } from '../atoms/DialogueBubbl
 export { ChoiceButton, type ChoiceButtonProps } from '../atoms/ChoiceButton';
 export { ActionButton, type ActionButtonProps } from '../atoms/ActionButton';
 export { MiniMap, type MiniMapProps } from '../atoms/MiniMap';
+export { GameIcon, type GameIconProps } from '../atoms/GameIcon';
 
 // ---------------------------------------------------------------------------
 // Molecules

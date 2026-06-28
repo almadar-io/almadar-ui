@@ -9,12 +9,14 @@
  */
 
 import React from 'react';
+import type { Asset } from '@almadar/core';
 import { Box } from '../../../core/atoms/Box';
 import { VStack, HStack } from '../../../core/atoms/Stack';
 import { Typography } from '../../../core/atoms/Typography';
 import { Button } from '../../../core/atoms/Button';
 import { Badge } from '../../../core/atoms/Badge';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import { GameIcon } from '../../2d/atoms/GameIcon';
 
 // =============================================================================
 // Types
@@ -55,11 +57,13 @@ export interface CollapsibleSectionProps {
     expanded: boolean;
     onToggle: () => void;
     children: React.ReactNode;
+    /** Optional per-semantic-key asset overrides for icons (expand/collapse). */
+    assetManifest?: { ui?: Record<string, Asset> };
     className?: string;
 }
 
-export function CollapsibleSection({ title, expanded, onToggle, children, className }: CollapsibleSectionProps) {
-    const Icon = expanded ? ChevronDown : ChevronRight;
+export function CollapsibleSection({ title, expanded, onToggle, children, assetManifest, className }: CollapsibleSectionProps) {
+    const ui = assetManifest?.ui;
     return (
         <VStack gap="xs" className={className}>
             <Button
@@ -69,7 +73,11 @@ export function CollapsibleSection({ title, expanded, onToggle, children, classN
                 className="w-full justify-start text-left"
             >
                 <HStack gap="xs" align="center">
-                    <Icon size={14} />
+                    <GameIcon
+                        icon={expanded ? ChevronDown : ChevronRight}
+                        assetUrl={expanded ? ui?.['collapse'] : ui?.['expand']}
+                        size={14}
+                    />
                     <Typography variant="label" weight="semibold">{title}</Typography>
                 </HStack>
             </Button>

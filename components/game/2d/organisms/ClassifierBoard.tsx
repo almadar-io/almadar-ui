@@ -17,13 +17,14 @@
  */
 
 import React, { useState } from 'react';
-import type { AssetUrl, EventEmit, EntityRow, EntityWith } from '@almadar/core';
-import { Box, VStack, HStack, Card, Button, Typography, Badge, Icon } from '../../../core/atoms/index';
+import type { AssetUrl, EventEmit, EntityRow, EntityWith, Asset } from '@almadar/core';
+import { Box, VStack, HStack, Card, Button, Typography, Badge } from '../../../core/atoms/index';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../hooks/useTranslate';
 import type { DisplayStateProps } from '../../../core/organisms/types';
 import { boardEntity, str, num, rows } from '../../shared/boardEntity';
 import { CheckCircle, XCircle, RotateCcw, Send } from 'lucide-react';
+import { GameIcon } from '../atoms/GameIcon';
 
 /** A sortable item (UI value DTO read off the entity). */
 export interface ClassifierItem {
@@ -59,6 +60,8 @@ export interface ClassifierBoardProps extends DisplayStateProps {
   checkEvent?: EventEmit<Record<string, never>>;
   /** Emits UI:{playAgainEvent} with {} on reset / play again. */
   playAgainEvent?: EventEmit<Record<string, never>>;
+  /** Optional per-semantic-key asset overrides for icons (correct/incorrect/reset/send). */
+  assetManifest?: { ui?: Record<string, Asset> };
 }
 
 export function ClassifierBoard({
@@ -67,8 +70,10 @@ export function ClassifierBoard({
   assignEvent,
   checkEvent,
   playAgainEvent,
+  assetManifest,
   className,
 }: ClassifierBoardProps): React.JSX.Element | null {
+  const ui = assetManifest?.ui;
   const { emit } = useEventBus();
   const { t } = useTranslate();
   const resolved = boardEntity(entity);
@@ -219,7 +224,12 @@ export function ClassifierBoard({
                           )}
                           {item.label}
                           {result && (
-                            <Icon icon={result.correct ? CheckCircle : XCircle} size="xs" className={result.correct ? 'text-success' : 'text-error'} />
+                            <GameIcon
+                              icon={result.correct ? CheckCircle : XCircle}
+                              assetUrl={result.correct ? ui?.['correct'] : ui?.['incorrect']}
+                              size="sm"
+                              className={result.correct ? 'text-success' : 'text-error'}
+                            />
                           )}
                         </Badge>
                       );
@@ -251,7 +261,12 @@ export function ClassifierBoard({
         {submitted && (
           <Card className="p-4">
             <VStack gap="sm" align="center">
-              <Icon icon={allCorrect ? CheckCircle : XCircle} size="lg" className={allCorrect ? 'text-success' : 'text-error'} />
+              <GameIcon
+              icon={allCorrect ? CheckCircle : XCircle}
+              assetUrl={allCorrect ? ui?.['correct'] : ui?.['incorrect']}
+              size="lg"
+              className={allCorrect ? 'text-success' : 'text-error'}
+            />
               <Typography variant="body" weight="bold">
                 {allCorrect
                   ? (str(resolved.successMessage) || t('classifier.allCorrect'))
@@ -275,12 +290,12 @@ export function ClassifierBoard({
         <HStack gap="sm" justify="center">
           {!submitted && (
             <Button variant="primary" onClick={handleSubmit} disabled={!allAssigned}>
-              <Icon icon={Send} size="sm" />
+              <GameIcon icon={Send} assetUrl={ui?.['send']} size="sm" />
               {t('classifier.check')}
             </Button>
           )}
           <Button variant="secondary" onClick={handleFullReset}>
-            <Icon icon={RotateCcw} size="sm" />
+            <GameIcon icon={RotateCcw} assetUrl={ui?.['reset']} size="sm" />
             {t('classifier.reset')}
           </Button>
         </HStack>
