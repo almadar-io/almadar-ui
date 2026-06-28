@@ -83,11 +83,6 @@
       "import": "./dist/marketing/index.js",
       "require": "./dist/marketing/index.cjs"
     },
-    "./docs": {
-      "types": "./dist/docs/index.d.ts",
-      "import": "./dist/docs/index.js",
-      "require": "./dist/docs/index.cjs"
-    },
     "./avl": {
       "types": "./dist/avl/index.d.ts",
       "import": "./dist/avl/index.js",

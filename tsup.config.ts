@@ -175,21 +175,6 @@ export default defineConfig([
     banner: { js: '"use client";' },
     esbuildPlugins: [externalThreeSubpathPlugin],
   },
-  // Docs build: SSR-safe doc components for Docusaurus swizzles
-  {
-    entry: { 'docs/index': 'docs/index.ts' },
-    format: ['esm', 'cjs'],
-    dts: true,
-    outDir: 'dist',
-    clean: true,
-    sourcemap: false,
-    splitting: false,
-    treeshake: true,
-    external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react'],
-    noExternal: ['clsx', 'tailwind-merge'],
-    banner: { js: '"use client";' },
-    esbuildPlugins: [externalThreeSubpathPlugin],
-  },
   // AVL build: Almadar Visual Language formal notation
   {
     entry: { 'avl/index': 'avl/index.ts' },
