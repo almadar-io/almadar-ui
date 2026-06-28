@@ -11,8 +11,10 @@ const contextDir = resolve(__dirname, 'context');
 const dedupeContextPlugin = {
   name: 'dedupe-ui-slot-context',
   setup(build: { onResolve: (opts: { filter: RegExp }, cb: (args: { importer: string }) => { path: string; external: boolean } | undefined) => void }) {
-    // For any file outside context/ that imports UISlotContext, redirect to the package export
-    build.onResolve({ filter: /UISlotContext/ }, (args: { importer: string }) => {
+    // For any file outside context/ that imports UISlotContext, redirect to the package export.
+    // Anchor on the module basename so sibling modules whose names merely contain
+    // "UISlotContext" as a substring aren't caught.
+    build.onResolve({ filter: /(^|\/)UISlotContext$/ }, (args: { importer: string }) => {
       // Only redirect if the importer is NOT inside the context/ directory itself
       // (context/index.ts must bundle UISlotContext normally)
       if (args.importer && !args.importer.startsWith(contextDir)) {
@@ -30,7 +32,15 @@ const dedupeContextPlugin = {
 const dedupeThemePlugin = {
   name: 'dedupe-theme-context',
   setup(build: { onResolve: (opts: { filter: RegExp }, cb: (args: { importer: string }) => { path: string; external: boolean } | undefined) => void }) {
-    build.onResolve({ filter: /ThemeContext/ }, (args: { importer: string }) => {
+    // Anchor on the module basename. DesignThemeContext is a thin deprecated
+    // alias layer over ThemeContext (DesignThemeProvider = ThemeProvider), so it
+    // shares ThemeContext's canonical home at @almadar/ui/context. Routing it
+    // there keeps the alias and its target (ThemeProvider) in the SAME chunk;
+    // otherwise the alias const-assignment captures ThemeProvider across the
+    // context<->providers module cycle before it initializes (undefined at the
+    // context subpath). The basename anchor also keeps a bare /ThemeContext/
+    // from over-matching unrelated modules.
+    build.onResolve({ filter: /(^|\/)(ThemeContext|DesignThemeContext)$/ }, (args: { importer: string }) => {
       if (args.importer && !args.importer.startsWith(contextDir)) {
         return { path: '@almadar/ui/context', external: true };
       }
@@ -104,9 +114,26 @@ const providersIndexFile = resolve(__dirname, 'providers/index.ts');
 
 const dedupeProvidersPlugin = {
   name: 'dedupe-providers',
-  setup(build: { onResolve: (opts: { filter: RegExp }, cb: (args: { importer: string; path: string }) => { path: string; external: boolean } | undefined) => void }) {
-    build.onResolve({ filter: /(^|\/)providers\// }, (args: { importer: string; path: string }) => {
+  setup(build: { onResolve: (opts: { filter: RegExp }, cb: (args: { importer: string; path: string; resolveDir: string }) => { path: string; external: boolean } | undefined) => void }) {
+    build.onResolve({ filter: /(^|\/)providers\// }, (args: { importer: string; path: string; resolveDir: string }) => {
       if (!args.importer) return undefined;
+      // Only dedupe the TOP-LEVEL providers/ barrel members. The bare
+      // /providers\// path match also catches nested directories like
+      // components/game/shared/providers/GameAudioProvider — those are
+      // component-tree providers, not members of the @almadar/ui/providers
+      // barrel, so redirecting them to that subpath dangles (the barrel never
+      // exports them). Resolve the import to an absolute file and bail unless it
+      // lands directly inside the top-level providersDir.
+      const resolved = resolve(args.resolveDir || __dirname, args.path);
+      if (!resolved.startsWith(providersDir + '/')) return undefined;
+      // ThemeContext, UISlotContext and DesignThemeContext have their OWN
+      // canonical home at @almadar/ui/context (dedupeThemePlugin /
+      // dedupeContextPlugin own that routing). Redirecting them here to
+      // @almadar/ui/providers instead would (a) fight those plugins and
+      // (b) create a self-referential re-export cycle: context/index re-exports
+      // them from providers, while providers/index re-exports them back from
+      // context. Leave them to the dedicated plugins.
+      if (/(^|\/)providers\/(ThemeContext|UISlotContext|DesignThemeContext)$/.test(args.path)) return undefined;
       // Don't redirect imports made by providers/index.ts itself — that's the
       // file we're trying to bundle. Every other importer (including other
       // files inside providers/ when bundled into a non-providers chunk) gets

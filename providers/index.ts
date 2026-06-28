@@ -8,33 +8,12 @@
 // Main unified provider
 export { OrbitalProvider, type OrbitalProviderProps } from './OrbitalProvider';
 
-// Theme provider (value + type exports consumed by context/index.ts shim)
-export {
-  ThemeProvider,
-  useTheme,
-  BUILT_IN_THEMES,
-  type UIThemeDefinition,
-  type ThemeProviderProps,
-  type ColorMode,
-  type ResolvedMode,
-  type DesignTheme,
-} from './ThemeContext';
-export { default as ThemeContext } from './ThemeContext';
-
-// UI slot provider (value + type exports consumed by context/index.ts shim)
-export {
-  UISlotProvider,
-  useUISlots,
-  useSlotContent,
-  useSlotHasContent,
-  UISlotContext,
-  type UISlotManager,
-  type UISlot,
-  type SlotContent,
-  type SlotRenderConfig,
-  type SlotAnimation,
-  type SlotChangeCallback,
-} from './UISlotContext';
+// Re-export UIThemeDefinition for generated theme configs.
+// (The ThemeContext/UISlotContext VALUE API is owned by @almadar/ui/context —
+// the tsup dedupe plugins make that subpath the single concrete runtime home,
+// so re-exporting those values here would round-trip through context and create
+// a self-referential re-export. Only the pure type is safe to surface.)
+export type { UIThemeDefinition } from './ThemeContext';
 
 // Orbital theme provider
 export { OrbitalThemeProvider, type OrbitalThemeProviderProps } from './OrbitalThemeProvider';
@@ -63,6 +42,62 @@ export {
   type UserContextValue,
   type UserProviderProps,
 } from './UserContext';
+
+// Entity schema provider (its hooks are pulled into the providers chunk via
+// OrbitalProvider → UISlotRenderer, and the dedupe redirect routes every other
+// chunk's import of them through this barrel, so they must be re-exported here).
+export {
+  EntitySchemaProvider,
+  useEntitySchema,
+  useEntitySchemaOptional,
+  type EntitySchemaContextValue,
+  type EntitySchemaProviderProps,
+} from './EntitySchemaContext';
+
+// Navigation, server bridge and trait providers are top-level providers/*
+// modules: dedupeProvidersPlugin redirects every other chunk's import of them
+// to @almadar/ui/providers, so the barrel must surface their full public API or
+// those redirected imports dangle (renderer/runtime/avl chunks consume these).
+export {
+  NavigationProvider,
+  useNavigation,
+  useNavigateTo,
+  useNavigationState,
+  useInitPayload,
+  useActivePage,
+  useNavigationId,
+  matchPath,
+  extractRouteParams,
+  pathMatches,
+  findPageByPath,
+  findPageByName,
+  getDefaultPage,
+  getAllPages,
+  type NavigationState,
+  type NavigationContextValue,
+  type NavigationProviderProps,
+} from './navigation';
+
+export {
+  ServerBridgeProvider,
+  useServerBridge,
+  type ServerClientEffect,
+  type ServerResponseMeta,
+  type SendEventResult,
+  type ServerBridgeContextValue,
+  type ServerBridgeTransport,
+  type ServerBridgeProviderProps,
+} from './ServerBridge';
+
+export {
+  TraitProvider,
+  TraitContext,
+  useTraitContext,
+  useTrait,
+  type TraitInstance,
+  type TraitContextValue,
+  type TraitProviderProps,
+} from './TraitProvider';
 
 // Individual providers (for advanced use cases)
 export { EventBusProvider, EventBusContext } from './EventBusProvider';
