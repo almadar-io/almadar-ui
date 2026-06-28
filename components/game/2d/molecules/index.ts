@@ -216,7 +216,7 @@ export {
     type StatusBarProps,
     type TerrainPaletteProps,
     type EditorToolbarProps,
-} from '../organisms/editorUtils';
+} from '../../shared/lib/editorUtils';
 
 // ---------------------------------------------------------------------------
 // Puzzle Board Organisms
