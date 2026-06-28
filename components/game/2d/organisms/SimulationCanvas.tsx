@@ -12,19 +12,24 @@ import { cn } from '../../../../lib/cn';
 import { Box } from '../../../core/atoms/index';
 import { bindCanvasCapture } from '../../../../lib/verificationRegistry';
 import type { PhysicsPreset, PhysicsBody } from '../../shared/lib/physicsTypes';
-import { ALL_PRESETS, projectileMotion } from '../../shared/lib/physicsPresets';
+import { projectileMotion, pendulum, springOscillator } from '../../shared/lib/physicsPresets';
 import { useRenderInterpolation } from '../../../../hooks/useRenderInterpolation';
 
-function resolvePreset(preset: string | PhysicsPreset): PhysicsPreset {
+export type PhysicsPresetId = 'mechanics-projectile' | 'mechanics-pendulum' | 'mechanics-spring';
+
+const PRESET_BY_ID: Record<PhysicsPresetId, PhysicsPreset> = {
+    'mechanics-projectile': projectileMotion,
+    'mechanics-pendulum':   pendulum,
+    'mechanics-spring':     springOscillator,
+};
+
+function resolvePreset(preset: PhysicsPresetId | PhysicsPreset): PhysicsPreset {
     if (typeof preset !== 'string') return preset;
-    const needle = preset.toLowerCase();
-    return ALL_PRESETS.find(
-        (p) => p.id === preset || p.id.includes(needle) || p.name.toLowerCase().includes(needle),
-    ) ?? projectileMotion;
+    return PRESET_BY_ID[preset] ?? projectileMotion;
 }
 
 export interface SimulationCanvasProps {
-    preset: string | PhysicsPreset;
+    preset: PhysicsPresetId | PhysicsPreset;
     width?: number;
     height?: number;
     running: boolean;

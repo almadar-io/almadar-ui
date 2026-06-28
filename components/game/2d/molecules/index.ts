@@ -43,7 +43,6 @@ export { InventoryGrid, type InventoryGridProps, type InventoryGridItem } from '
 export { ResourceBar, type ResourceBarProps, type ResourceBarResource } from './ResourceBar';
 export { GameHud, type GameHudProps, type GameHudStat, type GameHudElement } from './GameHud';
 export { GameMenu, type GameMenuProps, type MenuOption } from './GameMenu';
-export { PlatformerCanvas, type PlatformerCanvasProps, type PlatformerPlatform, type PlatformerPlayer } from './PlatformerCanvas';
 export {
     Canvas2D,
     type Canvas2DProps,

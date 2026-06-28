@@ -15,12 +15,26 @@ const DEFAULT_ASSET_URL: Asset = {
   category: 'item',
 };
 
+export type StateIndicatorState =
+    | 'idle'
+    | 'active'
+    | 'sleeping'
+    | 'moving'
+    | 'eating'
+    | 'waiting'
+    | 'happy'
+    | 'scared'
+    | 'done'
+    | 'error'
+    | 'ready'
+    | 'cooldown';
+
 export interface StateIndicatorProps {
     /** Sprite image URL — takes precedence over the state icon when provided */
     assetUrl?: Asset;
-    /** The current state name */
-    state: string;
-    /** Optional label override (defaults to capitalized state name) */
+    /** The current state — known values get a styled indicator, unknown values fall back to default */
+    state: StateIndicatorState | string;
+    /** Optional label override */
     label?: string;
     /** Size variant */
     size?: 'sm' | 'md' | 'lg';
@@ -32,24 +46,30 @@ export interface StateIndicatorProps {
     className?: string;
 }
 
-const DEFAULT_STATE_STYLES: Record<string, StateStyle> = {
-    idle: { icon: '\u23F8', bgClass: 'bg-muted' },
-    active: { icon: '\u25B6', bgClass: 'bg-success' },
-    sleeping: { icon: '\uD83D\uDCA4', bgClass: 'bg-muted' },
-    moving: { icon: '\uD83D\uDEB6', bgClass: 'bg-info' },
-    eating: { icon: '\uD83C\uDF7D\uFE0F', bgClass: 'bg-success' },
-    waiting: { icon: '\u23F3', bgClass: 'bg-warning' },
-    happy: { icon: '\uD83D\uDE0A', bgClass: 'bg-success' },
-    scared: { icon: '\uD83D\uDE28', bgClass: 'bg-error' },
-    done: { icon: '\u2713', bgClass: 'bg-success' },
-    error: { icon: '\u2717', bgClass: 'bg-error' },
-    ready: { icon: '\u2713', bgClass: 'bg-success' },
-    cooldown: { icon: '\uD83D\uDD04', bgClass: 'bg-warning' },
+const DEFAULT_STATE_STYLES: Record<StateIndicatorState, StateStyle> = {
+    idle:     { icon: '⏸', bgClass: 'bg-muted' },
+    active:   { icon: '▶', bgClass: 'bg-success' },
+    sleeping: { icon: '💤', bgClass: 'bg-muted' },
+    moving:   { icon: '🚶', bgClass: 'bg-info' },
+    eating:   { icon: '🍽️', bgClass: 'bg-success' },
+    waiting:  { icon: '⏳', bgClass: 'bg-warning' },
+    happy:    { icon: '😊', bgClass: 'bg-success' },
+    scared:   { icon: '😨', bgClass: 'bg-error' },
+    done:     { icon: '✓', bgClass: 'bg-success' },
+    error:    { icon: '✗', bgClass: 'bg-error' },
+    ready:    { icon: '✓', bgClass: 'bg-success' },
+    cooldown: { icon: '🔄', bgClass: 'bg-warning' },
 };
 
 const DEFAULT_STYLE: StateStyle = { icon: '?', bgClass: 'bg-muted' };
 
-const SIZE_CLASSES = {
+const STATIC_STATES = new Set<StateIndicatorState>(['idle', 'done']);
+
+function isKnownState(s: string): s is StateIndicatorState {
+    return s in DEFAULT_STATE_STYLES;
+}
+
+const SIZE_CLASSES: Record<'sm' | 'md' | 'lg', string> = {
     sm: 'text-xs px-1.5 py-0.5',
     md: 'text-sm px-2 py-1',
     lg: 'text-base px-3 py-1.5',
@@ -64,11 +84,12 @@ export function StateIndicator({
     stateStyles,
     className,
 }: StateIndicatorProps): React.JSX.Element {
-    const mergedStyles = stateStyles
+    const mergedStyles: Record<string, StateStyle> = stateStyles
         ? { ...DEFAULT_STATE_STYLES, ...stateStyles }
         : DEFAULT_STATE_STYLES;
-    const config = mergedStyles[state.toLowerCase()] || DEFAULT_STYLE;
-    const displayLabel = label || state.charAt(0).toUpperCase() + state.slice(1);
+    const knownState = isKnownState(state) ? state : null;
+    const config = knownState !== null ? (mergedStyles[knownState] ?? DEFAULT_STYLE) : DEFAULT_STYLE;
+    const displayLabel = label ?? (state.charAt(0).toUpperCase() + state.slice(1));
 
     return (
         <Box
@@ -77,7 +98,7 @@ export function StateIndicator({
                 'items-center gap-1 rounded-full text-foreground font-medium',
                 config.bgClass,
                 SIZE_CLASSES[size],
-                animated && state.toLowerCase() !== 'idle' && state.toLowerCase() !== 'done' && 'animate-pulse',
+                animated && (knownState === null || !STATIC_STATES.has(knownState)) && 'animate-pulse',
                 className,
             )}
         >
