@@ -24,7 +24,7 @@ import { OrbitalServerRuntime } from '@almadar/runtime/OrbitalServerRuntime';
 import type { EventPayload, OrbitalSchema } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 import { OrbPreview } from './OrbPreview';
-import type { ServerBridgeTransport } from './ServerBridge';
+import type { ServerBridgeTransport } from '../providers/ServerBridge';
 
 const playgroundLog = createLogger('almadar:ui:browser-playground');
 

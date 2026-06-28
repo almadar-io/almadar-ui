@@ -23,17 +23,17 @@ import { UISlotProvider, useUISlots, type SlotProps } from '../context/UISlotCon
 import { UISlotRenderer } from '../components/core/organisms/UISlotRenderer';
 import { useEventBus } from '../hooks/useEventBus';
 import type { OrbitalSchema, EntityData, ResolvedTraitBinding, EventPayload, PatternNode, Orbital, TraitRef } from '@almadar/core';
-import { useResolvedSchema } from './useResolvedSchema';
-import { collectEmbeddedTraits, collectTraitRefsFromResolvedTrait } from './embedded-traits';
-import { convertFnFormLambdasInProps } from './fn-form-lambda';
-import { useTraitStateMachine } from './useTraitStateMachine';
-import { buildOrbitalsByTrait, type OrbitalsByTraitSchema } from './orbitalsByTrait';
-import { EntitySchemaProvider } from './EntitySchemaContext';
-import { ServerBridgeProvider, useServerBridge, type ServerBridgeTransport } from './ServerBridge';
+import { useResolvedSchema } from '../hooks/useResolvedSchema';
+import { collectEmbeddedTraits, collectTraitRefsFromResolvedTrait } from '../lib/embedded-traits';
+import { convertFnFormLambdasInProps } from '../lib/fn-form-lambda';
+import { useTraitStateMachine } from '../hooks/useTraitStateMachine';
+import { buildOrbitalsByTrait, type OrbitalsByTraitSchema } from '../lib/orbitalsByTrait';
+import { EntitySchemaProvider } from '../providers/EntitySchemaContext';
+import { ServerBridgeProvider, useServerBridge, type ServerBridgeTransport } from '../providers/ServerBridge';
 import { OrbitalThemeProvider } from '../context/OrbitalThemeProvider';
 import { getAllPages } from '../providers/navigation';
 import { recordTransition, recordServerResponse, type EffectTrace } from '../lib/verificationRegistry';
-import { prepareSchemaForPreview } from './prepareSchemaForPreview';
+import { prepareSchemaForPreview } from '../lib/prepareSchemaForPreview';
 import { InMemoryPersistence, type PersistenceAdapter } from '@almadar/runtime';
 import { createLogger } from '@almadar/logger';
 
@@ -92,7 +92,7 @@ function normalizeChild(child: PatternNode | string | null | readonly PatternNod
  * `<TraitFrame>` uses to embed atom frames.
  */
 function applyServerEffects(
-  effects: ReadonlyArray<import('./ServerBridge').ServerClientEffect>,
+  effects: ReadonlyArray<import('../providers/ServerBridge').ServerClientEffect>,
   uiSlots: ReturnType<typeof useUISlots>,
   onNavigate?: (path: string, params?: Record<string, string>) => void,
   embeddedTraits?: ReadonlySet<string>,

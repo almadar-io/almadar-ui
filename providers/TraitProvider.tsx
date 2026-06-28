@@ -13,7 +13,7 @@ import type {
     ResolvedTrait,
     ResolvedTraitBinding,
     ResolvedEntity,
-} from './types';
+} from '../types/runtime-types';
 
 const log = createLogger('almadar:ui:trait-provider');
 

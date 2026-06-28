@@ -48,7 +48,7 @@ import { BehaviorComposeNode } from '../molecules/BehaviorComposeNode';
 import { behaviorsToComposeGraph } from '../molecules/avl-behavior-compose-converter';
 import type { ComposeViewLevel, BehaviorCanvasEntry, BehaviorWireEdgeData, BehaviorComposeNodeData } from '../molecules/avl-behavior-compose-types';
 import { createLogger } from '@almadar/logger';
-import { perfStart, perfEnd, profilerOnRender } from '../../../runtime/perf';
+import { perfStart, perfEnd, profilerOnRender } from '../../../lib/perf';
 
 // ---------------------------------------------------------------------------
 // Node & edge type registries

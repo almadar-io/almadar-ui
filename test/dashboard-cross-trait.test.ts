@@ -21,7 +21,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import { resolveLambdaBindings, isFnFormLambda } from '../runtime/fn-form-lambda';
+import { resolveLambdaBindings, isFnFormLambda } from '../lib/fn-form-lambda';
 
 // Minimal pub/sub mirroring the EventBusProvider contract: the cross-trait
 // path in `useTraitStateMachine` only relies on `on(busKey, cb)` + `emit`.

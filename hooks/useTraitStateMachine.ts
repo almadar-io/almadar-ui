@@ -19,7 +19,7 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 // Use hooks from @almadar/ui
-import { useEventBus } from '../hooks/index';
+import { useEventBus } from './index';
 import { createLogger } from '@almadar/logger';
 import { isCircuitEvent } from '@almadar/core';
 import type { PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, TraitConfig, SExpr, ServiceParams } from '@almadar/core';
@@ -38,12 +38,12 @@ import {
     type CreateServerEffectHandlersOptions,
 } from '@almadar/runtime';
 import { evaluateGuard } from '@almadar/evaluator';
-import { createClientEffectHandlers } from './createClientEffectHandlers';
-import type { ResolvedTraitBinding, ResolvedTraitListener } from './types';
+import { createClientEffectHandlers } from '../lib/createClientEffectHandlers';
+import type { ResolvedTraitBinding, ResolvedTraitListener } from '../types/runtime-types';
 import type { SlotPatternEntry, SlotSource } from '../types/slot-types';
 import type { useUISlots, SlotProps } from '../context/UISlotContext';
-import { convertFnFormLambdasInProps } from './fn-form-lambda';
-import { useEntitySchema } from './EntitySchemaContext';
+import { convertFnFormLambdasInProps } from '../lib/fn-form-lambda';
+import { useEntitySchema } from '../providers/EntitySchemaContext';
 import {
     registerTrait,
     unregisterTrait,

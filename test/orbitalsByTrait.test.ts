@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildOrbitalsByTrait } from '../runtime/orbitalsByTrait';
+import { buildOrbitalsByTrait } from '../lib/orbitalsByTrait';
 
 // Regression for the multi-orbital "stuck loading" bug: a trait auto-pulled
 // into an orbital by the compiler's sibling-pull (e.g. an embedded @trait

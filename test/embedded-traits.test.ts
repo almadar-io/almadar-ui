@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { ResolvedTrait } from '@almadar/core';
-import { collectTraitRefsFromResolvedTrait } from '../runtime/embedded-traits';
+import { collectTraitRefsFromResolvedTrait } from '../lib/embedded-traits';
 
 // Minimal valid ResolvedTrait with a render-ui transition + tick that reference
 // embedded `@trait.X` siblings. Regression for the multi-orbital "stuck loading"

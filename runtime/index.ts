@@ -8,8 +8,8 @@
  */
 
 // Core runtime hooks
-export { useTraitStateMachine, type UseTraitStateMachineOptions, type TraitStateMachineResult } from './useTraitStateMachine';
-export { useResolvedSchema, type ResolvedSchemaResult, clearSchemaCache } from './useResolvedSchema';
+export { useTraitStateMachine, type UseTraitStateMachineOptions, type TraitStateMachineResult } from '../hooks/useTraitStateMachine';
+export { useResolvedSchema, type ResolvedSchemaResult, clearSchemaCache } from '../hooks/useResolvedSchema';
 
 // Context providers
 export {
@@ -18,7 +18,7 @@ export {
     useEntitySchemaOptional,
     type EntitySchemaContextValue,
     type EntitySchemaProviderProps,
-} from './EntitySchemaContext';
+} from '../providers/EntitySchemaContext';
 
 export {
     TraitProvider,
@@ -28,7 +28,7 @@ export {
     type TraitContextValue,
     type TraitInstance,
     type TraitProviderProps,
-} from './TraitProvider';
+} from '../providers/TraitProvider';
 
 // Slot pattern types — the runtime now writes directly to `useUISlots`
 // (re-exported from `../context/UISlotContext`); the previous
@@ -38,7 +38,7 @@ export type { SlotPatternEntry, SlotSource } from '../types/slot-types';
 // C2 callback-prop wrap helper — single-source the named-arg → object-payload
 // shape across the runtime path here and the codegen path in
 // orbital-shell-typescript.
-export { wrapCallbackForEvent } from './wrapCallbackForEvent';
+export { wrapCallbackForEvent } from '../lib/wrapCallbackForEvent';
 
 // Effect handlers
 export {
@@ -46,7 +46,7 @@ export {
     type ClientEventBus,
     type SlotSetter,
     type CreateClientEffectHandlersOptions,
-} from './createClientEffectHandlers';
+} from '../lib/createClientEffectHandlers';
 
 // OrbPreview — live orbital schema renderer
 export { OrbPreview, type OrbPreviewProps } from './OrbPreview';
@@ -60,10 +60,10 @@ export {
     buildMockData,
     adjustSchemaForMockData,
     type PreparedPreviewSchema,
-} from './prepareSchemaForPreview';
+} from '../lib/prepareSchemaForPreview';
 
 // ServerBridge — client-server bridge for dual execution
-export { ServerBridgeProvider, useServerBridge, type ServerBridgeContextValue, type ServerBridgeTransport, type ServerClientEffect } from './ServerBridge';
+export { ServerBridgeProvider, useServerBridge, type ServerBridgeContextValue, type ServerBridgeTransport, type ServerClientEffect } from '../providers/ServerBridge';
 
 // Types
 export type {
@@ -72,7 +72,7 @@ export type {
     ResolvedEntity,
     ResolvedPage,
     ResolvedIR,
-} from './types';
+} from '../types/runtime-types';
 
 // Perf instrumentation (workstream 2 of Almadar_Studio_Performance.md).
 // Gated behind createLogger('almadar:perf:canvas'); production strips the work.
@@ -85,4 +85,4 @@ export {
     usePerfBuffer,
     clearPerf,
     type PerfEntry,
-} from './perf';
+} from '../lib/perf';

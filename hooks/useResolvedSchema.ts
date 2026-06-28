@@ -29,7 +29,7 @@ import type {
     ResolvedEntity,
     ResolvedTraitBinding,
     ResolvedTraitListener,
-} from './types';
+} from '../types/runtime-types';
 
 import { createLogger } from '@almadar/logger';
 

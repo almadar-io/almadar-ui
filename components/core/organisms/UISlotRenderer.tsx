@@ -15,7 +15,7 @@
  */
 
 import React, { Suspense, createContext, useContext, useEffect, useState } from "react";
-import { useEntitySchemaOptional } from "../../../runtime/EntitySchemaContext";
+import { useEntitySchemaOptional } from "../../../providers/EntitySchemaContext";
 import { TraitScopeProvider } from "../../../providers/TraitScopeProvider";
 import type { EntityRow, EventPayload, EventPayloadValue, RenderItemLambda, ResolvedEntity } from "@almadar/core";
 import type { AnyPatternConfig } from "@almadar/patterns";
@@ -45,7 +45,7 @@ import { Skeleton, type SkeletonVariant } from "../molecules/Skeleton";
 // Shared renderer imports (synced from orbital-shared/design-system/renderer)
 import { isPortalSlot, SLOT_DEFINITIONS } from "../../../renderer/index";
 import { getPatternDefinition } from "@almadar/patterns";
-import { wrapCallbackForEvent } from "../../../runtime/wrapCallbackForEvent";
+import { wrapCallbackForEvent } from "../../../lib/wrapCallbackForEvent";
 
 // Pattern registry — single source of truth for pattern → component name resolution
 import { getComponentForPattern as getComponentName } from "@almadar/patterns";
