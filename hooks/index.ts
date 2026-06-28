@@ -66,7 +66,7 @@ export type {
   EventListener,
   Unsubscribe,
   EventBusContextType,
-} from './event-bus-types';
+} from '../types/event-bus-types';
 
 // UI Slot hooks for trait-driven UI rendering
 export {

@@ -18,7 +18,7 @@ import type {
   EventListener,
   Unsubscribe,
   EventBusContextType,
-} from '../hooks/event-bus-types';
+} from '../types/event-bus-types';
 import type { EventPayload, EntityRow } from '@almadar/core';
 import { setGlobalEventBus } from '../hooks/useEventBus';
 import { createLogger } from '@almadar/logger';
