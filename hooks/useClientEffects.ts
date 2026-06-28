@@ -12,8 +12,8 @@
  */
 
 import { useEffect, useRef, useCallback } from 'react';
-import { executeClientEffects } from './client-effect-executor';
-import type { ClientEffect, ClientEffectExecutorConfig } from './types';
+import { executeClientEffects } from '../lib/client-effect-executor';
+import type { ClientEffect, ClientEffectExecutorConfig } from '../types/renderer-types';
 import { createLogger } from '@almadar/logger';
 
 const log = createLogger('almadar:ui:effects:client-hook');

@@ -12,7 +12,7 @@
 
 import type { FieldValue } from '@almadar/core';
 import type { PatternPropDef, AnyPatternConfig } from '@almadar/patterns';
-import type { PatternConfig, MappedPattern } from './types';
+import type { PatternConfig, MappedPattern } from '../types/renderer-types';
 import { createLogger } from '@almadar/logger';
 
 const log = createLogger('almadar:ui:pattern-resolver');

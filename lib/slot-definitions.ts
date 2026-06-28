@@ -8,7 +8,7 @@
  * @packageDocumentation
  */
 
-import type { UISlot, SlotDefinition, SlotType } from './types';
+import type { UISlot, SlotDefinition, SlotType } from '../types/renderer-types';
 
 // ============================================================================
 // Slot Definitions

@@ -40,7 +40,7 @@ export type {
   // Data types
   DataContext,
   DataResolution,
-} from './types';
+} from '../types/renderer-types';
 
 // ============================================================================
 // Pattern Resolution
@@ -56,7 +56,7 @@ export {
   initializePatternResolver,
   setComponentMapping,
   setPatternRegistry,
-} from './pattern-resolver';
+} from '../lib/pattern-resolver';
 
 // ============================================================================
 // Client Effect Execution
@@ -68,7 +68,7 @@ export {
   parseClientEffects,
   getRenderUIEffects,
   getNotifyEffects,
-} from './client-effect-executor';
+} from '../lib/client-effect-executor';
 
 // ============================================================================
 // React Hooks
@@ -80,12 +80,12 @@ export {
   useClientEffectConfigOptional,
   ClientEffectConfigProvider,
   ClientEffectConfigContext,
-} from './useClientEffects';
+} from '../hooks/useClientEffects';
 
 export type {
   UseClientEffectsOptions,
   UseClientEffectsResult,
-} from './useClientEffects';
+} from '../hooks/useClientEffects';
 
 // ============================================================================
 // Data Resolution
@@ -96,7 +96,7 @@ export {
   resolveEntityDataWithQuery,
   resolveEntityById,
   hasEntities,
-} from './data-resolver';
+} from '../lib/data-resolver';
 
 // ============================================================================
 // Slot Definitions
@@ -108,7 +108,7 @@ export {
   isPortalSlot,
   getInlineSlots,
   ALL_SLOTS,
-} from './slot-definitions';
+} from '../lib/slot-definitions';
 
 // ============================================================================
 // Offline Executor
@@ -118,7 +118,7 @@ export {
   OfflineExecutor,
   createOfflineExecutor,
   useOfflineExecutor,
-} from './offline-executor';
+} from '../lib/offline-executor';
 
 export type {
   PendingSyncEffect,
@@ -126,7 +126,7 @@ export type {
   OfflineExecutorState,
   UseOfflineExecutorOptions,
   UseOfflineExecutorResult,
-} from './offline-executor';
+} from '../lib/offline-executor';
 
 // ============================================================================
 // Schema-Driven Navigation
@@ -150,16 +150,16 @@ export {
     findPageByName,
     getDefaultPage,
     getAllPages,
-} from './navigation';
+} from '../providers/navigation';
 
 export type {
     NavigationState,
     NavigationContextValue,
     NavigationProviderProps,
-} from './navigation';
+} from '../providers/navigation';
 
 // ============================================================================
 // Initialization
 // ============================================================================
 
-export { initializePatterns } from './init';
+export { initializePatterns } from '../lib/init';

@@ -14,7 +14,7 @@ import {
   type UseOfflineExecutorOptions,
   type UseOfflineExecutorResult,
   type OfflineExecutorState,
-} from '../renderer/offline-executor';
+} from '../lib/offline-executor';
 
 // ============================================================================
 // Types

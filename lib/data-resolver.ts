@@ -13,7 +13,7 @@
  */
 
 import type { EntityRow, FieldValue } from '@almadar/core';
-import type { DataContext, DataResolution } from './types';
+import type { DataContext, DataResolution } from '../types/renderer-types';
 import { createLogger } from '@almadar/logger';
 
 const log = createLogger('almadar:ui:data-resolver');

@@ -6,7 +6,7 @@ import { Select } from '../atoms/Select';
 import { Typography } from '../atoms/Typography';
 import { JsonTreeEditor } from './JsonTreeEditor';
 import { FieldControl } from './PropertyInspector';
-import { getKnownPatterns, getPatternDefinition } from '../../../renderer/pattern-resolver';
+import { getKnownPatterns, getPatternDefinition } from '../../../lib/pattern-resolver';
 import { cn } from '../../../lib/cn';
 
 const isObj = (v: TraitConfigValue | undefined): v is TraitConfigObject =>

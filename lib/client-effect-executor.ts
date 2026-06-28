@@ -16,7 +16,7 @@ import type {
   ClientEffectExecutorConfig,
   PatternConfig,
   NotifyOptions,
-} from './types';
+} from '../types/renderer-types';
 import { createLogger } from '@almadar/logger';
 
 const log = createLogger('almadar:ui:effects:client');

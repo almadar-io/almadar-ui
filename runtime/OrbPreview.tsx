@@ -31,7 +31,7 @@ import { buildOrbitalsByTrait, type OrbitalsByTraitSchema } from './orbitalsByTr
 import { EntitySchemaProvider } from './EntitySchemaContext';
 import { ServerBridgeProvider, useServerBridge, type ServerBridgeTransport } from './ServerBridge';
 import { OrbitalThemeProvider } from '../context/OrbitalThemeProvider';
-import { getAllPages } from '../renderer/navigation';
+import { getAllPages } from '../providers/navigation';
 import { recordTransition, recordServerResponse, type EffectTrace } from '../lib/verificationRegistry';
 import { prepareSchemaForPreview } from './prepareSchemaForPreview';
 import { InMemoryPersistence, type PersistenceAdapter } from '@almadar/runtime';

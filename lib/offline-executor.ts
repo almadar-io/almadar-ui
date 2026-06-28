@@ -19,7 +19,7 @@ import type {
   ClientEffectExecutorConfig,
   PatternConfig,
   EventResponse,
-} from './types';
+} from '../types/renderer-types';
 import { executeClientEffects } from './client-effect-executor';
 import { createLogger } from '@almadar/logger';
 
