@@ -27,7 +27,7 @@ import { Typography } from '../atoms/Typography';
 import { Badge } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
 import { Icon } from '../atoms/Icon';
-import type { IconInput } from '../atoms';
+import type { IconInput } from '../atoms/index';
 import { ProgressBar } from '../atoms/ProgressBar';
 import { Divider } from '../atoms/Divider';
 import { InfiniteScrollSentinel } from '../atoms/InfiniteScrollSentinel';

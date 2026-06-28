@@ -1,7 +1,7 @@
 'use client';
 import React from "react";
 import { cn } from "../../../lib/cn";
-import { Spinner } from "../atoms";
+import { Spinner } from "../atoms/index";
 import { VStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { useTranslate } from "../../../hooks/useTranslate";

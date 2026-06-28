@@ -8,7 +8,7 @@
 
 import React, { useMemo, useId } from 'react';
 import { cn } from '../../../lib/cn';
-import { Box } from '../atoms';
+import { Box } from '../atoms/index';
 import { useTranslate } from '../../../hooks/useTranslate';
 
 export interface ChartDataPoint {

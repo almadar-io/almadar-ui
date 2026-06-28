@@ -2,10 +2,10 @@
 import React from "react";
 import type { EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
-import { Button } from "../atoms";
+import { Button } from "../atoms/index";
 import { Box } from "../atoms/Box";
 import { Icon } from "../atoms/Icon";
-import type { IconInput } from "../atoms";
+import type { IconInput } from "../atoms/index";
 import { Typography } from "../atoms/Typography";
 import { ArrowLeft } from "lucide-react";
 import { useEventBus } from "../../../hooks/useEventBus";

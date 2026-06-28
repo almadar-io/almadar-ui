@@ -36,7 +36,7 @@ export * from './verificationRegistry';
 export * from './getNestedValue';
 
 // Visualizer
-export * from './visualizer';
+export * from './visualizer/index';
 
 // Content parsing
 export * from './parseContentSegments';

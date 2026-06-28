@@ -10,7 +10,7 @@ import { Menu, MenuItem } from './Menu';
 import { Button } from '../atoms/Button';
 import { Badge } from '../atoms/Badge';
 import { Box } from '../atoms/Box';
-import type { IconInput } from '../atoms';
+import type { IconInput } from '../atoms/index';
 import { cn } from '../../../lib/cn';
 import type { UiError } from '../atoms/types';
 

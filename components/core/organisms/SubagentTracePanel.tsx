@@ -21,7 +21,7 @@ import { Icon } from '../atoms/Icon';
 import { Button } from '../atoms/Button';
 import { Modal } from '../molecules/Modal';
 import { Accordion, type AccordionItem } from '../molecules/Accordion';
-import { CodeBlock, MarkdownContent } from '../molecules/markdown';
+import { CodeBlock, MarkdownContent } from '../molecules/markdown/index';
 import { useTranslate } from '../../../hooks/useTranslate';
 import type { DisplayStateProps } from './types';
 import type {

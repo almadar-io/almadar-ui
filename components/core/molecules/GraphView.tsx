@@ -11,7 +11,7 @@
 
 import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { cn } from '../../../lib/cn';
-import { Box } from '../atoms';
+import { Box } from '../atoms/index';
 import { useTranslate } from '../../../hooks/useTranslate';
 
 export type GraphViewNode = {

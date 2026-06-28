@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { EventEmit, EventPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
-import { Box, Typography, Button } from "../atoms";
+import { Box, Typography, Button } from "../atoms/index";
 import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";

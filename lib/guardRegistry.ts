@@ -12,7 +12,7 @@ export interface GuardContext {
   transitionFrom?: string;
   transitionTo?: string;
   tickName?: string;
-  [key: string]: FieldValue;
+  [key: string]: FieldValue | undefined;
 }
 
 export interface GuardEvaluation {

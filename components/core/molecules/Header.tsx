@@ -15,7 +15,7 @@ import { Badge } from "../atoms/Badge";
 import { Button } from "../atoms/Button";
 import { Box } from "../atoms/Box";
 import { Icon } from "../atoms/Icon";
-import type { IconInput } from "../atoms";
+import type { IconInput } from "../atoms/index";
 import { HStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../../lib/cn";

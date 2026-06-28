@@ -6,30 +6,30 @@
  */
 
 // AVL Atoms - Tier 1: Structural Primitives
-export { AvlOrbital, type AvlOrbitalProps } from '../components/avl/atoms';
-export { AvlEntity, type AvlEntityProps } from '../components/avl/atoms';
-export { AvlTrait, type AvlTraitProps } from '../components/avl/atoms';
-export { AvlPage, type AvlPageProps } from '../components/avl/atoms';
-export { AvlApplication, type AvlApplicationProps } from '../components/avl/atoms';
+export { AvlOrbital, type AvlOrbitalProps } from '../components/avl/atoms/index';
+export { AvlEntity, type AvlEntityProps } from '../components/avl/atoms/index';
+export { AvlTrait, type AvlTraitProps } from '../components/avl/atoms/index';
+export { AvlPage, type AvlPageProps } from '../components/avl/atoms/index';
+export { AvlApplication, type AvlApplicationProps } from '../components/avl/atoms/index';
 
 // AVL Atoms - Tier 2: Behavioral Primitives
-export { AvlState, type AvlStateProps } from '../components/avl/atoms';
-export { AvlTransition, type AvlTransitionProps } from '../components/avl/atoms';
-export { AvlEvent, type AvlEventProps } from '../components/avl/atoms';
-export { AvlGuard, type AvlGuardProps } from '../components/avl/atoms';
-export { AvlEffect, type AvlEffectProps } from '../components/avl/atoms';
+export { AvlState, type AvlStateProps } from '../components/avl/atoms/index';
+export { AvlTransition, type AvlTransitionProps } from '../components/avl/atoms/index';
+export { AvlEvent, type AvlEventProps } from '../components/avl/atoms/index';
+export { AvlGuard, type AvlGuardProps } from '../components/avl/atoms/index';
+export { AvlEffect, type AvlEffectProps } from '../components/avl/atoms/index';
 
 // AVL Atoms - Tier 3: Data Primitives
-export { AvlField, type AvlFieldProps } from '../components/avl/atoms';
-export { AvlFieldType, type AvlFieldTypeProps } from '../components/avl/atoms';
-export { AvlBinding, type AvlBindingProps } from '../components/avl/atoms';
-export { AvlPersistence, type AvlPersistenceProps } from '../components/avl/atoms';
+export { AvlField, type AvlFieldProps } from '../components/avl/atoms/index';
+export { AvlFieldType, type AvlFieldTypeProps } from '../components/avl/atoms/index';
+export { AvlBinding, type AvlBindingProps } from '../components/avl/atoms/index';
+export { AvlPersistence, type AvlPersistenceProps } from '../components/avl/atoms/index';
 
 // AVL Atoms - Tier 4: Expression Primitives
-export { AvlOperator, type AvlOperatorProps } from '../components/avl/atoms';
-export { AvlSExpr, type AvlSExprProps } from '../components/avl/atoms';
-export { AvlLiteral, type AvlLiteralProps } from '../components/avl/atoms';
-export { AvlBindingRef, type AvlBindingRefProps } from '../components/avl/atoms';
+export { AvlOperator, type AvlOperatorProps } from '../components/avl/atoms/index';
+export { AvlSExpr, type AvlSExprProps } from '../components/avl/atoms/index';
+export { AvlLiteral, type AvlLiteralProps } from '../components/avl/atoms/index';
+export { AvlBindingRef, type AvlBindingRefProps } from '../components/avl/atoms/index';
 
 // AVL Types + Constants
 export type {
@@ -38,25 +38,25 @@ export type {
   AvlFieldTypeKind,
   AvlPersistenceKind,
   AvlOperatorNamespace,
-} from '../components/avl/atoms';
-export { AVL_OPERATOR_COLORS, AVL_FIELD_TYPE_SHAPES } from '../components/avl/atoms';
+} from '../components/avl/atoms/index';
+export { AVL_OPERATOR_COLORS, AVL_FIELD_TYPE_SHAPES } from '../components/avl/atoms/index';
 // V2 color system
-export type { StateRole, EffectCategory } from '../components/avl/atoms';
-export { STATE_COLORS, EFFECT_CATEGORY_COLORS, EFFECT_TYPE_TO_CATEGORY, CONNECTION_COLORS, getStateRole } from '../components/avl/atoms';
+export type { StateRole, EffectCategory } from '../components/avl/atoms/index';
+export { STATE_COLORS, EFFECT_CATEGORY_COLORS, EFFECT_TYPE_TO_CATEGORY, CONNECTION_COLORS, getStateRole } from '../components/avl/atoms/index';
 
 // AVL Molecules (SVG composites)
-export { AvlStateMachine, type AvlStateMachineProps, type AvlStateMachineState, type AvlStateMachineTransition } from '../components/avl/molecules';
-export { AvlOrbitalUnit, type AvlOrbitalUnitProps, type AvlOrbitalUnitTrait, type AvlOrbitalUnitPage } from '../components/avl/molecules';
-export { AvlClosedCircuit, type AvlClosedCircuitProps, type AvlClosedCircuitState, type AvlClosedCircuitTransition } from '../components/avl/molecules';
-export { AvlEmitListen, type AvlEmitListenProps } from '../components/avl/molecules';
-export { AvlSlotMap, type AvlSlotMapProps, type AvlSlotMapSlot } from '../components/avl/molecules';
-export { AvlExprTree, type AvlExprTreeProps, type AvlExprTreeNode } from '../components/avl/molecules';
-export { AvlBehaviorGlyph, type AvlBehaviorGlyphProps, type BehaviorLevel, type GlyphSize, type BehaviorGlyphChild, type BehaviorGlyphConnection, DOMAIN_COLORS } from '../components/avl/molecules';
-export { AvlTransitionLane, type AvlTransitionLaneProps } from '../components/avl/molecules';
-export { AvlSwimLane, type AvlSwimLaneProps } from '../components/avl/molecules';
+export { AvlStateMachine, type AvlStateMachineProps, type AvlStateMachineState, type AvlStateMachineTransition } from '../components/avl/molecules/index';
+export { AvlOrbitalUnit, type AvlOrbitalUnitProps, type AvlOrbitalUnitTrait, type AvlOrbitalUnitPage } from '../components/avl/molecules/index';
+export { AvlClosedCircuit, type AvlClosedCircuitProps, type AvlClosedCircuitState, type AvlClosedCircuitTransition } from '../components/avl/molecules/index';
+export { AvlEmitListen, type AvlEmitListenProps } from '../components/avl/molecules/index';
+export { AvlSlotMap, type AvlSlotMapProps, type AvlSlotMapSlot } from '../components/avl/molecules/index';
+export { AvlExprTree, type AvlExprTreeProps, type AvlExprTreeNode } from '../components/avl/molecules/index';
+export { AvlBehaviorGlyph, type AvlBehaviorGlyphProps, type BehaviorLevel, type GlyphSize, type BehaviorGlyphChild, type BehaviorGlyphConnection, DOMAIN_COLORS } from '../components/avl/molecules/index';
+export { AvlTransitionLane, type AvlTransitionLaneProps } from '../components/avl/molecules/index';
+export { AvlSwimLane, type AvlSwimLaneProps } from '../components/avl/molecules/index';
 
 // Layout utilities
-export { ringPositions, arcPath, radialPositions, gridPositions, curveControlPoint } from '../components/avl/molecules';
+export { ringPositions, arcPath, radialPositions, gridPositions, curveControlPoint } from '../components/avl/molecules/index';
 
 // V3: Canvas types
 export { type ZoomBand, type AvlNodeData, type AvlEdgeData, ZOOM_BAND_THRESHOLDS } from '../components/avl/molecules/avl-canvas-types';
@@ -146,4 +146,4 @@ export {
   type TransitionLevelData,
   type CrossLink,
   type ZoomLevel,
-} from '../components/avl/organisms';
+} from '../components/avl/organisms/index';

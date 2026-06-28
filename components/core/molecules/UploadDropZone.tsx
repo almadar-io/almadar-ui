@@ -4,7 +4,7 @@ import React, { useCallback, useRef, useState } from "react";
 import type { EventKey, EventPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Icon } from "../atoms/Icon";
-import type { IconInput } from "../atoms";
+import type { IconInput } from "../atoms/index";
 import { Typography } from "../atoms/Typography";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";

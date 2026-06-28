@@ -13,7 +13,7 @@
  * @packageDocumentation
  */
 
-import type { FieldValue } from '@almadar/core';
+import type { EntityRow, FieldValue } from '@almadar/core';
 import type {
   ClientEffect,
   ClientEffectExecutorConfig,
@@ -55,7 +55,7 @@ export interface OfflineExecutorConfig extends ClientEffectExecutorConfig {
    * Mock data provider for simulating fetch responses.
    * Returns data for a given entity name.
    */
-  mockDataProvider?: (entityName: string) => FieldValue[];
+  mockDataProvider?: (entityName: string) => EntityRow[];
 
   /**
    * Whether to queue server effects for sync when online.
@@ -272,7 +272,7 @@ export class OfflineExecutor {
     effects?: Array<FieldValue[]>
   ): EventResponse {
     const clientEffects: ClientEffect[] = [];
-    const fetchedData: Record<string, FieldValue[]> = {};
+    const fetchedData: Record<string, EntityRow[]> = {};
 
     // Process effects
     if (effects) {
@@ -304,7 +304,7 @@ export class OfflineExecutor {
           case 'call-service':
           case 'spawn':
           case 'despawn':
-            this.queueForSync(type, { args, event, payload });
+            this.queueForSync(type, { args, event, ...(payload ?? {}) });
             break;
 
           default:

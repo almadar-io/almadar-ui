@@ -6,7 +6,7 @@
  * and marks them for JazariStateMachine rendering.
  */
 
-import type { OrbitalSchema } from '@almadar/core';
+import type { FieldValue, OrbitalSchema } from '@almadar/core';
 
 /** Segment types for content rendering */
 export type ContentSegment =
@@ -22,10 +22,11 @@ export type ContentSegment =
  */
 function tryParseOrbitalSchema(code: string): OrbitalSchema | null {
   try {
-    const parsed = JSON.parse(code) as OrbitalSchema;
+    const parsed = JSON.parse(code) as OrbitalSchema & { states?: FieldValue; transitions?: FieldValue };
+    if (typeof parsed !== 'object' || parsed === null) return null;
     if (
-      (parsed.states && parsed.transitions) ||
-      (Array.isArray(parsed.orbitals))
+      ('states' in parsed && 'transitions' in parsed) ||
+      Array.isArray(parsed.orbitals)
     ) {
       return parsed;
     }

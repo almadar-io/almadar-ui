@@ -1,0 +1,959 @@
+'use client';
+/**
+ * GameCanvas3D
+ *
+ * 3D game canvas component using Three.js.
+ * Mirrors the IsometricCanvas API for easy migration.
+ *
+ * **State categories (closed-circuit compliant):**
+ * - All game data (tiles, units, features, selection, validMoves) → received via props
+ * - Rendering state (hoveredTile, internalError, asset loading, camera) → local only
+ * - Events → emitted via `useGameCanvas3DEvents()` hook for trait integration
+ *
+ * This component is a **pure 3D renderer** — it holds no game logic state.
+ *
+ * @packageDocumentation
+ */
+
+import React, {
+    useEffect,
+    useRef,
+    useCallback,
+    useState,
+    useMemo,
+    forwardRef,
+    useImperativeHandle,
+} from 'react';
+import type { EventEmit } from '@almadar/core';
+import { Canvas, useThree, useFrame, useLoader } from '@react-three/fiber';
+import * as THREE from 'three';
+import { OrbitControls, Grid, Billboard } from '@react-three/drei';
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
+import { AssetLoader, assetLoader } from './AssetLoader';
+import { useAssetLoader } from './useAssetLoader';
+import { useGameCanvas3DEvents, type MinimalMouseEvent } from './useGameCanvas3DEvents';
+import { Canvas3DLoadingState } from './Canvas3DLoadingState';
+import { Canvas3DErrorBoundary } from './Canvas3DErrorBoundary';
+import { ModelLoader } from './ModelLoader';
+import type { IsometricTile, IsometricUnit, IsometricFeature } from '../../shared/isometricTypes';
+import type { ResolvedFrame } from '../../shared/spriteAnimationTypes';
+import { useUnitSpriteAtlas, unitAtlasUrl } from '../../2d/molecules/useUnitSpriteAtlas';
+import { cn } from '../../../../lib/cn';
+import './GameCanvas3D.css';
+
+// Re-export types for convenience
+export type { IsometricTile, IsometricUnit, IsometricFeature };
+
+/** Game event for canvas display */
+export interface GameEvent {
+    id: string;
+    type: string;
+    x: number;
+    z?: number;
+    y?: number;
+    message?: string;
+}
+
+/** Camera mode for 3D view */
+export type CameraMode = 'isometric' | 'perspective' | 'top-down';
+
+/** Map orientation */
+export type MapOrientation = 'standard' | 'rotated';
+
+/** Overlay control */
+export type OverlayControl = 'default' | 'hidden' | 'minimap';
+
+/** Props for GameCanvas3D component */
+export interface GameCanvas3DProps {
+    // --- Closed-circuit props (MANDATORY) ---
+    /** Additional CSS classes */
+    className?: string;
+    /** Children to render inside the 3D canvas (e.g., physics objects, custom meshes) */
+    children?: React.ReactNode;
+    /** Loading state indicator */
+    isLoading?: boolean;
+    /** Error state */
+    error?: string | null;
+    /** Array of tiles to render */
+    tiles?: IsometricTile[];
+    /** Array of units to render */
+    units?: IsometricUnit[];
+    /** Array of features to render */
+    features?: IsometricFeature[];
+    /** Array of events to display */
+    events?: Array<GameEvent>;
+    /** Fog of war data */
+    fogOfWar?: boolean[][];
+    /** Map orientation */
+    orientation?: MapOrientation;
+    /** Camera mode */
+    cameraMode?: CameraMode;
+    /** Show grid */
+    showGrid?: boolean;
+    /** Show coordinates overlay */
+    showCoordinates?: boolean;
+    /** Show tile information */
+    showTileInfo?: boolean;
+    /** Overlay control mode */
+    overlay?: OverlayControl;
+    /** Enable shadows */
+    shadows?: boolean;
+    /** Background color */
+    backgroundColor?: string;
+    /** Callback when a tile is clicked */
+    onTileClick?: (tile: IsometricTile, event: MinimalMouseEvent) => void;
+    /** Callback when a unit is clicked */
+    onUnitClick?: (unit: IsometricUnit, event: MinimalMouseEvent) => void;
+    /** Callback when a feature is clicked */
+    onFeatureClick?: (feature: IsometricFeature, event: MinimalMouseEvent) => void;
+    /** Callback when canvas is clicked (background) */
+    onCanvasClick?: (event: MinimalMouseEvent) => void;
+    /** Callback when mouse moves over a tile */
+    onTileHover?: (tile: IsometricTile | null, event: MinimalMouseEvent) => void;
+    /** Callback for unit animation state change */
+    onUnitAnimation?: (unitId: string, state: string) => void;
+    /** Asset loader instance (uses global singleton if not provided) */
+    assetLoader?: AssetLoader;
+    /** Custom tile renderer component */
+    tileRenderer?: React.FC<{ tile: IsometricTile; position: [number, number, number] }>;
+    /** Custom unit renderer component */
+    unitRenderer?: React.FC<{ unit: IsometricUnit; position: [number, number, number] }>;
+    /** Custom feature renderer component */
+    featureRenderer?: React.FC<{ feature: IsometricFeature; position: [number, number, number] }>;
+    /** URLs to preload */
+    preloadAssets?: string[];
+    /** Declarative event: tile click */
+    tileClickEvent?: EventEmit<{ tileId: string; x: number; z: number; type?: string; terrain?: string; elevation?: number }>;
+    /** Declarative event: unit click */
+    unitClickEvent?: EventEmit<{ unitId: string; x: number; z: number; unitType?: string; name?: string; team?: string; faction?: string; health?: number; maxHealth?: number }>;
+    /** Declarative event: feature click */
+    featureClickEvent?: EventEmit<{ featureId: string; x: number; z: number; type?: string; elevation?: number }>;
+    /** Declarative event: canvas click */
+    canvasClickEvent?: EventEmit<{ clientX: number; clientY: number; button: number }>;
+    /** Declarative event: tile hover */
+    tileHoverEvent?: EventEmit<{ tileId: string; x: number; z: number; type?: string }>;
+    /** Declarative event: tile leave */
+    tileLeaveEvent?: EventEmit<Record<string, never>>;
+    /** Declarative event: unit animation */
+    unitAnimationEvent?: EventEmit<{ unitId: string; state: string; timestamp: number }>;
+    /** Declarative event: camera change */
+    cameraChangeEvent?: EventEmit<{ position: { x: number; y: number; z: number }; timestamp: number }>;
+    /** Loading message */
+    loadingMessage?: string;
+    /** Whether to use instancing for tiles */
+    useInstancing?: boolean;
+    /** Valid move positions */
+    validMoves?: Array<{ x: number; z: number }>;
+    /** Attack target positions */
+    attackTargets?: Array<{ x: number; z: number }>;
+    /** Selected tile IDs */
+    selectedTileIds?: string[];
+    /** Selected unit ID */
+    selectedUnitId?: string | null;
+    /** Unit draw-size multiplier. 1 = default tile-proportional size. */
+    unitScale?: number;
+    /** Board zoom/group scale. Applied to the scene group. Default 0.45. */
+    scale?: number;
+}
+
+/** Grid configuration */
+interface GridConfig {
+    cellSize: number;
+    offsetX: number;
+    offsetZ: number;
+}
+
+/** Default grid config */
+const DEFAULT_GRID_CONFIG: GridConfig = {
+    cellSize: 1,
+    offsetX: 0,
+    offsetZ: 0,
+};
+
+/** Imperative handle for GameCanvas3D */
+export interface GameCanvas3DHandle {
+    /** Get current camera position */
+    getCameraPosition: () => THREE.Vector3 | null;
+    /** Set camera position */
+    setCameraPosition: (x: number, y: number, z: number) => void;
+    /** Look at a specific point */
+    lookAt: (x: number, y: number, z: number) => void;
+    /** Reset camera to default position */
+    resetCamera: () => void;
+    /** Take a screenshot */
+    screenshot: () => string | null;
+    /** Export current view as data */
+    export: () => { tiles: IsometricTile[]; units: IsometricUnit[]; features: IsometricFeature[] };
+}
+
+/**
+ * Camera controller component for imperative handle integration
+ */
+function CameraController({
+    onCameraChange,
+}: {
+    onCameraChange?: (pos: { x: number; y: number; z: number }) => void;
+}): null {
+    const { camera } = useThree();
+
+    useEffect(() => {
+        if (onCameraChange) {
+            onCameraChange({
+                x: camera.position.x,
+                y: camera.position.y,
+                z: camera.position.z,
+            });
+        }
+    }, [camera.position, onCameraChange]);
+
+    return null;
+}
+
+/**
+ * Billboarded sprite-sheet plane for a unit. Loads the atlas's PNG sheet as a
+ * texture and crops a SINGLE frame via UV `repeat`/`offset`, advancing per
+ * animation state. Mirrors the 2D canvas: one frame, never the whole sheet.
+ */
+function UnitSpriteBillboard({
+    sheetUrl,
+    resolveFrame,
+    height = 1.2,
+}: {
+    sheetUrl: string;
+    resolveFrame: () => ResolvedFrame | null;
+    height?: number;
+}): React.JSX.Element | null {
+    const texture = useLoader(THREE.TextureLoader, sheetUrl);
+    const meshRef = useRef<THREE.Mesh>(null);
+    const matRef = useRef<THREE.MeshBasicMaterial>(null);
+    const [aspect, setAspect] = useState(1);
+
+    useFrame(() => {
+        const frame = resolveFrame();
+        if (!frame || !texture.image) return;
+        const imgW = texture.image.width as number;
+        const imgH = texture.image.height as number;
+        if (!imgW || !imgH) return;
+
+        // Crop one frame: repeat = frame size / sheet size, offset from top-left.
+        texture.repeat.set((frame.flipX ? -1 : 1) * (frame.sw / imgW), frame.sh / imgH);
+        texture.offset.set(
+            frame.flipX ? (frame.sx + frame.sw) / imgW : frame.sx / imgW,
+            1 - (frame.sy + frame.sh) / imgH,
+        );
+        texture.magFilter = THREE.NearestFilter;
+        texture.minFilter = THREE.NearestFilter;
+        texture.needsUpdate = true;
+
+        const nextAspect = frame.sw / frame.sh;
+        if (Math.abs(nextAspect - aspect) > 0.001) setAspect(nextAspect);
+
+        if (matRef.current) matRef.current.needsUpdate = true;
+    });
+
+    return (
+        <mesh ref={meshRef} position={[0, height / 2, 0]}>
+            <planeGeometry args={[height * aspect, height]} />
+            <meshBasicMaterial
+                ref={matRef}
+                map={texture}
+                transparent
+                alphaTest={0.1}
+                side={THREE.DoubleSide}
+            />
+        </mesh>
+    );
+}
+
+/**
+ * GameCanvas3D Component
+ *
+ * 3D game canvas that mirrors the IsometricCanvas API.
+ * Uses Three.js and React Three Fiber for rendering.
+ *
+ * @example
+ * ```tsx
+ * <GameCanvas3D
+ *   tiles={tiles}
+ *   units={units}
+ *   features={features}
+ *   cameraMode="isometric"
+ *   tileClickEvent="TILE_SELECTED"
+ *   onTileClick={(tile) => console.log('Clicked:', tile)}
+ * />
+ * ```
+ */
+export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
+    (
+        {
+            tiles = [],
+            units = [],
+            features = [],
+            events = [],
+            orientation = 'standard',
+            cameraMode = 'isometric',
+            showGrid = true,
+            showCoordinates = false,
+            showTileInfo = false,
+            overlay = 'default',
+            shadows = true,
+            backgroundColor = '#1a1a2e',
+            onTileClick,
+            onUnitClick,
+            onFeatureClick,
+            onCanvasClick,
+            onTileHover,
+            onUnitAnimation,
+            assetLoader: customAssetLoader,
+            tileRenderer: CustomTileRenderer,
+            unitRenderer: CustomUnitRenderer,
+            featureRenderer: CustomFeatureRenderer,
+            className,
+            isLoading: externalLoading,
+            error: externalError,
+            preloadAssets = [],
+            tileClickEvent,
+            unitClickEvent,
+            featureClickEvent,
+            canvasClickEvent,
+            tileHoverEvent,
+            tileLeaveEvent,
+            unitAnimationEvent,
+            cameraChangeEvent,
+            loadingMessage = 'Loading 3D Scene...',
+            useInstancing = true,
+            validMoves = [],
+            attackTargets = [],
+            selectedTileIds = [],
+            selectedUnitId = null,
+            unitScale = 1,
+            children,
+        },
+        ref
+    ) => {
+        const containerRef = useRef<HTMLDivElement>(null);
+        const controlsRef = useRef<OrbitControlsImpl | null>(null);
+        const [hoveredTile, setHoveredTile] = useState<IsometricTile | null>(null);
+        const [internalError, setInternalError] = useState<string | null>(null);
+
+        // Diagnostic: log the ancestor height chain on mount so constraint issues are visible.
+        useEffect(() => {
+            const el = containerRef.current;
+            if (!el) return;
+            let node: HTMLElement | null = el;
+            let depth = 0;
+            while (node && depth < 8) {
+                const cs = window.getComputedStyle(node);
+                const rect = node.getBoundingClientRect();
+                console.log('[almadar:ui:game:3d-height]', {
+                    depth,
+                    tag: node.tagName,
+                    id: node.id || undefined,
+                    className: node.className?.slice?.(0, 60) || undefined,
+                    rectHeight: rect.height,
+                    computedHeight: cs.height,
+                    computedMinHeight: cs.minHeight,
+                    computedFlex: cs.flex,
+                    computedOverflow: cs.overflow,
+                });
+                node = node.parentElement;
+                depth++;
+            }
+        }, []);
+
+        // Self-contained sprite-sheet animation: load each unit's atlas and crop one frame.
+        const { sheetUrls: atlasSheetUrls, resolveUnitFrame } = useUnitSpriteAtlas(units);
+
+        // Asset loading
+        const preloadUrls = useMemo(() => [...preloadAssets, ...atlasSheetUrls], [preloadAssets, atlasSheetUrls]);
+        const { isLoading: assetsLoading, progress, loaded, total } = useAssetLoader({
+            preloadUrls,
+            loader: customAssetLoader,
+        });
+
+        // Event handlers with event bus integration
+        const eventHandlers = useGameCanvas3DEvents({
+            tileClickEvent,
+            unitClickEvent,
+            featureClickEvent,
+            canvasClickEvent,
+            tileHoverEvent,
+            tileLeaveEvent,
+            unitAnimationEvent,
+            cameraChangeEvent,
+            onTileClick,
+            onUnitClick,
+            onFeatureClick,
+            onCanvasClick,
+            onTileHover,
+            onUnitAnimation,
+        });
+
+        // Use custom or global asset loader
+        const loader = customAssetLoader || assetLoader;
+
+        // Calculate grid bounds
+        const gridBounds = useMemo(() => {
+            if (tiles.length === 0) {
+                return { minX: 0, maxX: 10, minZ: 0, maxZ: 10 };
+            }
+            const xs = tiles.map((t) => t.x);
+            const zs = tiles.map((t) => t.z || t.y || 0);
+            return {
+                minX: Math.min(...xs),
+                maxX: Math.max(...xs),
+                minZ: Math.min(...zs),
+                maxZ: Math.max(...zs),
+            };
+        }, [tiles]);
+
+        // Calculate camera target (center of grid)
+        const cameraTarget = useMemo(() => {
+            return [
+                (gridBounds.minX + gridBounds.maxX) / 2,
+                0,
+                (gridBounds.minZ + gridBounds.maxZ) / 2,
+            ] as [number, number, number];
+        }, [gridBounds]);
+
+        // Grid config
+        const gridConfig = useMemo(
+            () => ({
+                ...DEFAULT_GRID_CONFIG,
+                offsetX: -(gridBounds.maxX - gridBounds.minX) / 2,
+                offsetZ: -(gridBounds.maxZ - gridBounds.minZ) / 2,
+            }),
+            [gridBounds]
+        );
+
+        // Convert grid coordinates to world position
+        const gridToWorld = useCallback(
+            (x: number, z: number, y: number = 0): [number, number, number] => {
+                const worldX = (x - gridBounds.minX) * gridConfig.cellSize;
+                const worldZ = (z - gridBounds.minZ) * gridConfig.cellSize;
+                return [worldX, y * gridConfig.cellSize, worldZ];
+            },
+            [gridBounds, gridConfig]
+        );
+
+        // Imperative handle
+        useImperativeHandle(ref, () => ({
+            getCameraPosition: () => {
+                if (controlsRef.current) {
+                    const pos = controlsRef.current.object.position;
+                    return new THREE.Vector3(pos.x, pos.y, pos.z);
+                }
+                return null;
+            },
+            setCameraPosition: (x: number, y: number, z: number) => {
+                if (controlsRef.current) {
+                    controlsRef.current.object.position.set(x, y, z);
+                    controlsRef.current.update();
+                }
+            },
+            lookAt: (x: number, y: number, z: number) => {
+                if (controlsRef.current) {
+                    controlsRef.current.target.set(x, y, z);
+                    controlsRef.current.update();
+                }
+            },
+            resetCamera: () => {
+                if (controlsRef.current) {
+                    controlsRef.current.reset();
+                }
+            },
+            screenshot: () => {
+                const canvas = containerRef.current?.querySelector('canvas');
+                if (canvas) {
+                    return canvas.toDataURL('image/png');
+                }
+                return null;
+            },
+            export: () => ({
+                tiles,
+                units,
+                features,
+            }),
+        }));
+
+        // Handle tile click with event bus
+        const handleTileClick = useCallback(
+            (tile: IsometricTile, event: MinimalMouseEvent) => {
+                eventHandlers.handleTileClick(tile, event);
+            },
+            [eventHandlers]
+        );
+
+        // Handle unit click with event bus
+        const handleUnitClick = useCallback(
+            (unit: IsometricUnit, event: MinimalMouseEvent) => {
+                eventHandlers.handleUnitClick(unit, event);
+            },
+            [eventHandlers]
+        );
+
+        // Handle feature click with event bus
+        const handleFeatureClick = useCallback(
+            (feature: IsometricFeature, event: MinimalMouseEvent | null) => {
+                if (event) {
+                    eventHandlers.handleFeatureClick(feature, event);
+                }
+            },
+            [eventHandlers]
+        );
+
+        // Handle tile hover with event bus
+        const handleTileHover = useCallback(
+            (tile: IsometricTile | null, event: MinimalMouseEvent | null) => {
+                setHoveredTile(tile);
+                if (event) {
+                    eventHandlers.handleTileHover(tile, event);
+                }
+            },
+            [eventHandlers]
+        );
+
+        // Camera configuration based on mode
+        const cameraConfig = useMemo(() => {
+            const size = Math.max(
+                gridBounds.maxX - gridBounds.minX,
+                gridBounds.maxZ - gridBounds.minZ,
+                4  // minimum framing distance so a tiny board isn't zoomed in
+            );
+            // Offset from the grid centre so all camera modes frame the board correctly.
+            const cx = (gridBounds.minX + gridBounds.maxX) / 2;
+            const cz = (gridBounds.minZ + gridBounds.maxZ) / 2;
+            const d = size * 1.5;
+
+            switch (cameraMode) {
+                case 'isometric':
+                    return {
+                        position: [cx + d, d * 0.8, cz + d] as [number, number, number],
+                        fov: 45,
+                    };
+                case 'top-down':
+                    return {
+                        position: [cx, d * 2, cz] as [number, number, number],
+                        fov: 45,
+                    };
+                case 'perspective':
+                default:
+                    return {
+                        position: [cx + d, d, cz + d] as [number, number, number],
+                        fov: 45,
+                    };
+            }
+        }, [cameraMode, gridBounds]);
+
+        // Default tile renderer
+        const DefaultTileRenderer = useCallback(
+            ({ tile, position }: { tile: IsometricTile; position: [number, number, number] }) => {
+                const isSelected = tile.id ? selectedTileIds.includes(tile.id) : false;
+                const isHovered = hoveredTile?.id === tile.id;
+                const isValidMove = validMoves.some(
+                    (m) => m.x === tile.x && m.z === (tile.z ?? tile.y ?? 0)
+                );
+                const isAttackTarget = attackTargets.some(
+                    (m) => m.x === tile.x && m.z === (tile.z ?? tile.y ?? 0)
+                );
+
+                // Determine color based on tile type
+                let color = 0x808080;
+                if (tile.type === 'water') color = 0x4488cc;
+                else if (tile.type === 'grass') color = 0x44aa44;
+                else if (tile.type === 'sand') color = 0xddcc88;
+                else if (tile.type === 'rock') color = 0x888888;
+                else if (tile.type === 'snow') color = 0xeeeeee;
+
+                // Apply highlights
+                let emissive = 0x000000;
+                if (isSelected) emissive = 0x444444;
+                else if (isAttackTarget) emissive = 0x440000;
+                else if (isValidMove) emissive = 0x004400;
+                else if (isHovered) emissive = 0x222222;
+
+                // GLB tile — load the model (box fallback while loading / on error).
+                // The GLB's own materials provide coloring; the procedural color/
+                // emissive path below is only for tiles without a model.
+                if (tile.modelUrl) {
+                    return (
+                        <group
+                            position={position}
+                            onClick={(e) => handleTileClick(tile, e)}
+                            onPointerEnter={(e) => handleTileHover(tile, e)}
+                            onPointerLeave={(e) => handleTileHover(null, e)}
+                            userData={{ type: 'tile', tileId: tile.id, gridX: tile.x, gridZ: tile.z ?? tile.y }}
+                        >
+                            <ModelLoader
+                                url={tile.modelUrl.url}
+                                scale={0.95}
+                                fallbackGeometry="box"
+                                castShadow
+                                receiveShadow
+                            />
+                        </group>
+                    );
+                }
+
+                return (
+                    <mesh
+                        position={position}
+                        onClick={(e) => handleTileClick(tile, e)}
+                        onPointerEnter={(e) => handleTileHover(tile, e)}
+                        onPointerLeave={(e) => handleTileHover(null, e)}
+                        userData={{ type: 'tile', tileId: tile.id, gridX: tile.x, gridZ: tile.z ?? tile.y }}
+                    >
+                        <boxGeometry args={[0.95, 0.2, 0.95]} />
+                        <meshStandardMaterial color={color} emissive={emissive} />
+                    </mesh>
+                );
+            },
+            [selectedTileIds, hoveredTile, validMoves, attackTargets, handleTileClick, handleTileHover]
+        );
+
+        const UNIT_BASE_MODEL_SCALE = 0.5;
+        const UNIT_BASE_BILLBOARD_HEIGHT = 1.2;
+        const UNIT_BASE_PRIMITIVE_RADIUS = 0.3;
+
+        // Default unit renderer
+        const DefaultUnitRenderer = useCallback(
+            ({ unit, position }: { unit: IsometricUnit; position: [number, number, number] }) => {
+                const isSelected = selectedUnitId === unit.id;
+                const color = unit.faction === 'player' ? 0x4488ff : unit.faction === 'enemy' ? 0xff4444 : 0xffff44;
+                const hasAtlas = unitAtlasUrl(unit) !== null;
+                const initialFrame = hasAtlas ? resolveUnitFrame(unit.id) : null;
+
+                const modelScale = UNIT_BASE_MODEL_SCALE * unitScale * gridConfig.cellSize;
+                // Billboard height is proportional to one cell so units stay
+                // tile-sized regardless of board dimensions or cellSize.
+                const billboardHeight = UNIT_BASE_BILLBOARD_HEIGHT * unitScale * gridConfig.cellSize;
+                const primitiveRadius = UNIT_BASE_PRIMITIVE_RADIUS * unitScale * gridConfig.cellSize;
+
+                return (
+                    <group
+                        position={position}
+                        onClick={(e) => handleUnitClick(unit, e)}
+                        userData={{ type: 'unit', unitId: unit.id }}
+                    >
+                        {/* Selection ring */}
+                        {isSelected && (
+                            <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                                <ringGeometry args={[0.4, 0.5, 32]} />
+                                <meshBasicMaterial color="#ffff00" transparent opacity={0.8} />
+                            </mesh>
+                        )}
+
+                        {hasAtlas && initialFrame ? (
+                            /* Animated sprite-sheet billboard — single cropped frame, by state */
+                            <Billboard>
+                                <UnitSpriteBillboard
+                                    sheetUrl={initialFrame.sheetUrl}
+                                    resolveFrame={() => resolveUnitFrame(unit.id)}
+                                    height={billboardHeight}
+                                />
+                            </Billboard>
+                        ) : unit.modelUrl ? (
+                            /* GLB unit model (box fallback while loading / on error) */
+                            <ModelLoader
+                                url={unit.modelUrl.url}
+                                scale={modelScale}
+                                fallbackGeometry="box"
+                                castShadow
+                            />
+                        ) : (
+                            <>
+                                {/* Base */}
+                                <mesh position={[0, primitiveRadius, 0]}>
+                                    <cylinderGeometry args={[primitiveRadius, primitiveRadius, primitiveRadius * 0.33, 8]} />
+                                    <meshStandardMaterial color={color} />
+                                </mesh>
+
+                                {/* Body */}
+                                <mesh position={[0, primitiveRadius * 2, 0]}>
+                                    <capsuleGeometry args={[primitiveRadius * 0.67, primitiveRadius * 1.33, 4, 8]} />
+                                    <meshStandardMaterial color={color} />
+                                </mesh>
+
+                                {/* Head */}
+                                <mesh position={[0, primitiveRadius * 3, 0]}>
+                                    <sphereGeometry args={[primitiveRadius * 0.4, 8, 8]} />
+                                    <meshStandardMaterial color={color} />
+                                </mesh>
+                            </>
+                        )}
+
+                        {/* Health bar */}
+                        {unit.health !== undefined && unit.maxHealth !== undefined && (
+                            <group position={[0, billboardHeight, 0]}>
+                                <mesh position={[-0.25, 0, 0]}>
+                                    <planeGeometry args={[0.5, 0.05]} />
+                                    <meshBasicMaterial color={0x333333} />
+                                </mesh>
+                                <mesh
+                                    position={[
+                                        -0.25 + (0.5 * (unit.health / unit.maxHealth)) / 2,
+                                        0,
+                                        0.01,
+                                    ]}
+                                >
+                                    <planeGeometry args={[0.5 * (unit.health / unit.maxHealth), 0.05]} />
+                                    <meshBasicMaterial
+                                        color={
+                                            unit.health / unit.maxHealth > 0.5
+                                                ? 0x44aa44
+                                                : unit.health / unit.maxHealth > 0.25
+                                                  ? 0xaaaa44
+                                                  : 0xff4444
+                                        }
+                                    />
+                                </mesh>
+                            </group>
+                        )}
+                    </group>
+                );
+            },
+            [selectedUnitId, handleUnitClick, resolveUnitFrame, unitScale, gridConfig]
+        );
+
+        // Default feature renderer
+        const DefaultFeatureRenderer = useCallback(
+            ({
+                feature,
+                position,
+            }: {
+                feature: IsometricFeature;
+                position: [number, number, number];
+            }) => {
+                // If feature has assetUrl, use ModelLoader to render GLB model
+                if (feature.assetUrl) {
+                    return (
+                        <ModelLoader
+                            key={feature.id}
+                            url={feature.assetUrl.url}
+                            position={position}
+                            scale={0.5}
+                            rotation={[0, (feature as { rotation?: number }).rotation ?? 0, 0]}
+                            onClick={() => handleFeatureClick(feature, null)}
+                            fallbackGeometry="box"
+                        />
+                    );
+                }
+
+                // Simple tree representation
+                if (feature.type === 'tree') {
+                    return (
+                        <group
+                            position={position}
+                            onClick={(e) => handleFeatureClick(feature, e)}
+                            userData={{ type: 'feature', featureId: feature.id }}
+                        >
+                            <mesh position={[0, 0.4, 0]}>
+                                <cylinderGeometry args={[0.1, 0.15, 0.8, 6]} />
+                                <meshStandardMaterial color={0x8b4513} />
+                            </mesh>
+                            <mesh position={[0, 0.9, 0]}>
+                                <coneGeometry args={[0.5, 0.8, 8]} />
+                                <meshStandardMaterial color={0x228b22} />
+                            </mesh>
+                        </group>
+                    );
+                }
+
+                // Simple rock representation
+                if (feature.type === 'rock') {
+                    return (
+                        <mesh
+                            position={[position[0], position[1] + 0.3, position[2]]}
+                            onClick={(e) => handleFeatureClick(feature, e)}
+                            userData={{ type: 'feature', featureId: feature.id }}
+                        >
+                            <dodecahedronGeometry args={[0.3, 0]} />
+                            <meshStandardMaterial color={0x808080} />
+                        </mesh>
+                    );
+                }
+
+                return null;
+            },
+            [handleFeatureClick]
+        );
+
+        // Loading state
+        if (externalLoading || (assetsLoading && preloadAssets.length > 0)) {
+            return (
+                <Canvas3DLoadingState
+                    progress={progress}
+                    loaded={loaded}
+                    total={total}
+                    message={loadingMessage}
+                    className={className}
+                />
+            );
+        }
+
+        // Error state
+        const displayError = externalError || internalError;
+        if (displayError) {
+            return (
+                <Canvas3DErrorBoundary>
+                    <div className="game-canvas-3d game-canvas-3d--error">
+                        <div className="game-canvas-3d__error">Error: {displayError}</div>
+                    </div>
+                </Canvas3DErrorBoundary>
+            );
+        }
+
+        return (
+            <Canvas3DErrorBoundary
+                onError={(err) => setInternalError(err.message)}
+                onReset={() => setInternalError(null)}
+            >
+                <div
+                    ref={containerRef}
+                    className={cn('game-canvas-3d relative w-full overflow-hidden', className)}
+                    // Fill available flex/grid space from the parent; fall back to a
+                    // 400 px floor so R3F's react-use-measure always gets a non-zero
+                    // containing-block height on the first ResizeObserver tick.
+                    style={{ flex: '1 1 0', minHeight: '400px' }}
+                    data-orientation={orientation}
+                    data-camera-mode={cameraMode}
+                    data-overlay={overlay}
+                >
+                    <Canvas
+                        shadows={shadows}
+                        camera={{
+                            position: cameraConfig.position,
+                            fov: cameraConfig.fov,
+                            near: 0.1,
+                            far: 1000,
+                        }}
+                        // Absolutely fill the definite-height (`85vh`) `relative` container.
+                        // R3F's react-use-measure won't reliably resolve a `height:100%`/`85vh`
+                        // on its own element (canvas stays at the 150px HTML default), but an
+                        // absolute `inset:0` gives it a concrete box from the parent's border-box.
+                        style={{ background: backgroundColor, position: 'absolute', inset: 0 }}
+                        onClick={(e) => {
+                            if (e.target === e.currentTarget) {
+                                eventHandlers.handleCanvasClick(e);
+                            }
+                        }}
+                    >
+                        <CameraController onCameraChange={eventHandlers.handleCameraChange} />
+
+                        {/* Lighting */}
+                        <ambientLight intensity={0.6} />
+                        <directionalLight
+                            position={[10, 20, 10]}
+                            intensity={0.8}
+                            castShadow={shadows}
+                            shadow-mapSize={[2048, 2048]}
+                        />
+                        <hemisphereLight intensity={0.3} color="#87ceeb" groundColor="#362d1d" />
+
+                        {/* Grid */}
+                        {showGrid && (
+                            <Grid
+                                args={[
+                                    Math.max(gridBounds.maxX - gridBounds.minX + 2, 10),
+                                    Math.max(gridBounds.maxZ - gridBounds.minZ + 2, 10),
+                                ]}
+                                position={[
+                                    (gridBounds.maxX - gridBounds.minX) / 2 - 0.5,
+                                    0,
+                                    (gridBounds.maxZ - gridBounds.minZ) / 2 - 0.5,
+                                ]}
+                                cellSize={1}
+                                cellThickness={1}
+                                cellColor="#444444"
+                                sectionSize={5}
+                                sectionThickness={1.5}
+                                sectionColor="#666666"
+                                fadeDistance={50}
+                                fadeStrength={1}
+                            />
+                        )}
+
+                        {/* Board group. NOTE: `scale` is NOT applied here — in 3D the
+                            camera auto-frames the grid (distance ∝ grid size), so scaling
+                            the scene group shrinks everything while the camera stays put,
+                            breaking the framing. Unit/board proportion is controlled by
+                            `unitScale` (per-unit). `scale` is a 2D-only concept; in 3D it
+                            is accepted for API parity but zoom is camera-driven. */}
+                        <group>
+                            {/* Tiles */}
+                            {tiles.map((tile, index) => {
+                                const position = gridToWorld(
+                                    tile.x,
+                                    tile.z ?? tile.y ?? 0,
+                                    tile.elevation ?? 0
+                                );
+                                const Renderer = CustomTileRenderer || DefaultTileRenderer;
+                                return <Renderer key={tile.id ?? `tile-${index}`} tile={tile} position={position} />;
+                            })}
+
+                            {/* Features */}
+                            {features.map((feature, index) => {
+                                const position = gridToWorld(
+                                    feature.x,
+                                    feature.z ?? feature.y ?? 0,
+                                    (feature.elevation ?? 0) + 0.5
+                                );
+                                const Renderer = CustomFeatureRenderer || DefaultFeatureRenderer;
+                                return <Renderer key={feature.id ?? `feature-${index}`} feature={feature} position={position} />;
+                            })}
+
+                            {/* Units */}
+                            {units.map((unit) => {
+                                const position = gridToWorld(
+                                    unit.x ?? 0,
+                                    unit.z ?? unit.y ?? 0,
+                                    (unit.elevation ?? 0) + 0.5
+                                );
+                                const Renderer = CustomUnitRenderer || DefaultUnitRenderer;
+                                return <Renderer key={unit.id} unit={unit} position={position} />;
+                            })}
+                        </group>
+
+                        {/* Custom children */}
+                        {children}
+
+                        {/* Camera controls */}
+                        <OrbitControls
+                            ref={controlsRef}
+                            target={cameraTarget}
+                            enableDamping
+                            dampingFactor={0.05}
+                            enableZoom
+                            enablePan
+                            touches={{ ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }}
+                            minDistance={2}
+                            maxDistance={100}
+                            maxPolarAngle={Math.PI / 2 - 0.1}
+                        />
+                    </Canvas>
+
+                    {/* Coordinate overlay */}
+                    {showCoordinates && hoveredTile && (
+                        <div className="game-canvas-3d__coordinates">
+                            X: {hoveredTile.x}, Z: {hoveredTile.z ?? hoveredTile.y ?? 0}
+                        </div>
+                    )}
+
+                    {/* Tile info overlay */}
+                    {showTileInfo && hoveredTile && (
+                        <div className="game-canvas-3d__tile-info">
+                            <div className="tile-info__type">{hoveredTile.type}</div>
+                            {hoveredTile.terrain && (
+                                <div className="tile-info__terrain">{hoveredTile.terrain}</div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </Canvas3DErrorBoundary>
+        );
+    }
+);
+
+GameCanvas3D.displayName = 'GameCanvas3D';
+
+export default GameCanvas3D;

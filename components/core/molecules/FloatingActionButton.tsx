@@ -15,7 +15,7 @@ import React, { useState, useRef, useEffect } from "react";
 import type { EventKey, EventPayload } from "@almadar/core";
 import { Button } from "../atoms/Button";
 import { Box } from "../atoms/Box";
-import type { IconInput } from "../atoms";
+import type { IconInput } from "../atoms/index";
 import { HStack, VStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../../lib/cn";

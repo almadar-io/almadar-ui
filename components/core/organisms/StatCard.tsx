@@ -1,7 +1,7 @@
 'use client';
 import React from "react";
 import { cn } from "../../../lib/cn";
-import { Card, Typography } from "../atoms";
+import { Card, Typography } from "../atoms/index";
 import { Box } from "../atoms/Box";
 import { HStack, VStack } from "../atoms/Stack";
 import { Button } from "../atoms/Button";

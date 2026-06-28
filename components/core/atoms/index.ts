@@ -1,4 +1,4 @@
-export * from "./svg";
+export * from "./svg/index";
 export { Button, type ButtonProps } from "./Button";
 export { Input, type InputProps } from "./Input";
 export { Label, type LabelProps } from "./Label";
@@ -135,7 +135,7 @@ export { AnimatedGraphic, type AnimatedGraphicProps, type GraphicAnimation } fro
 export { TraitFrame, type TraitFrameProps } from "./TraitFrame";
 
 // Game atom components
-export * from "../../game/2d";
+export * from "../../game/2d/molecules/index";
 
 // Cross-cutting shared prop shapes
 export {

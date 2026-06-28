@@ -29,7 +29,7 @@ import {
   Pencil,
   Eye,
 } from "lucide-react";
-import { Typography, Checkbox, Divider, Box, Button } from "../atoms";
+import { Typography, Checkbox, Divider, Box, Button } from "../atoms/index";
 import { HStack, VStack } from "../atoms/Stack";
 import { Menu, type MenuItem } from "../molecules/Menu";
 import { EmptyState } from "../molecules/EmptyState";

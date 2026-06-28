@@ -19,7 +19,7 @@ import {
   AvlSExpr,
   AvlLiteral,
   AvlBindingRef,
-} from '../atoms';
+} from '../atoms/index';
 
 const Gallery: React.FC<{ color?: string }> = ({ color: _color }) => {
   const color = 'var(--color-primary)';

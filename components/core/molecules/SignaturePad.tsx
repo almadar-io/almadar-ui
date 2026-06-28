@@ -15,7 +15,7 @@
 import React, { useRef, useState, useCallback, useEffect } from "react";
 import type { EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
-import { Card, Typography, Button, Box } from "../atoms";
+import { Card, Typography, Button, Box } from "../atoms/index";
 import { VStack, HStack } from "../atoms/Stack";
 import { LoadingState } from "./LoadingState";
 import { ErrorState } from "./ErrorState";

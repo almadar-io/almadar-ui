@@ -43,7 +43,7 @@ const scopeWrapLog = createLogger("almadar:ui:scope-wrap");
 import { Skeleton, type SkeletonVariant } from "../molecules/Skeleton";
 
 // Shared renderer imports (synced from orbital-shared/design-system/renderer)
-import { isPortalSlot, SLOT_DEFINITIONS } from "../../../renderer";
+import { isPortalSlot, SLOT_DEFINITIONS } from "../../../renderer/index";
 import { getPatternDefinition } from "@almadar/patterns";
 import { wrapCallbackForEvent } from "../../../runtime/wrapCallbackForEvent";
 

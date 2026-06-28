@@ -34,7 +34,7 @@ import {
   Button,
   Divider,
   ProgressBar,
-} from "../atoms";
+} from "../atoms/index";
 import { Box } from "../atoms/Box";
 import { VStack, HStack } from "../atoms/Stack";
 import { SimpleGrid } from "../molecules/SimpleGrid";

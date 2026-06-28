@@ -1,4 +1,4 @@
-import type { FieldValue } from '@almadar/core';
+import type { EventPayload, FieldValue } from '@almadar/core';
 
 /**
  * Get Nested Value Utility
@@ -23,7 +23,7 @@ import type { FieldValue } from '@almadar/core';
  * getNestedValue(data, "company.missing");      // => undefined
  */
 export function getNestedValue(
-  obj: Record<string, FieldValue | undefined> | null | undefined,
+  obj: EventPayload | Record<string, FieldValue | undefined> | null | undefined,
   path: string
 ): FieldValue | undefined {
   if (obj === null || obj === undefined || !path) {
@@ -32,23 +32,23 @@ export function getNestedValue(
 
   // Fast path: no dots means simple property access
   if (!path.includes('.')) {
-    return obj[path];
+    return (obj as Record<string, FieldValue | undefined>)[path];
   }
 
   const parts = path.split('.');
-  let value: FieldValue | Record<string, FieldValue> = obj as Record<string, FieldValue>;
+  let value: Record<string, FieldValue> | FieldValue = obj as Record<string, FieldValue>;
 
   for (const part of parts) {
     if (value === null || value === undefined) {
       return undefined;
     }
-    if (typeof value !== 'object') {
+    if (typeof value !== 'object' || Array.isArray(value)) {
       return undefined;
     }
     value = (value as Record<string, FieldValue>)[part];
   }
 
-  return value;
+  return value as FieldValue | undefined;
 }
 
 /**

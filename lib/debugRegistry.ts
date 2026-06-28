@@ -60,7 +60,7 @@ export function logDebugEvent(
 }
 
 export function logStateChange(source: string, from: string, to: string, event?: string): void {
-  logDebugEvent('state-change', source, `${from} → ${to}`, { from, to, event });
+  logDebugEvent('state-change', source, `${from} → ${to}`, { from, to, event: event ?? null });
 }
 
 export function logEventFired(source: string, eventName: string, payload?: FieldValue): void {

@@ -11,7 +11,7 @@ import type { EventEmit, EntityRow, EntityWith } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
-import { Avatar, Typography, Button, Box, Input } from "../atoms";
+import { Avatar, Typography, Button, Box, Input } from "../atoms/index";
 import { VoteStack, type VoteValue } from "./VoteStack";
 
 /** The per-node entity fields this tree reads. `replies` is the same row shape

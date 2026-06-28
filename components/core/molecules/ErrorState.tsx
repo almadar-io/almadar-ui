@@ -2,7 +2,7 @@
 import React from "react";
 import type { EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
-import { Button } from "../atoms";
+import { Button } from "../atoms/index";
 import { Box } from "../atoms/Box";
 import { VStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";

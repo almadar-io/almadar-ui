@@ -152,7 +152,7 @@ function applyFilters(
 
       // Handle array values (check if recordValue is in the array)
       if (Array.isArray(value)) {
-        return value.includes(recordValue);
+        return (value as FieldValue[]).includes(recordValue ?? null);
       }
 
       // Handle string patterns (simple contains)

@@ -18,7 +18,7 @@
 
 import React, { useMemo, useCallback } from "react";
 import { cn } from "../../../lib/cn";
-import { Card, Typography, Badge, Box } from "../atoms";
+import { Card, Typography, Badge, Box } from "../atoms/index";
 import { VStack, HStack } from "../atoms/Stack";
 import { LoadingState } from "./LoadingState";
 import { ErrorState } from "./ErrorState";

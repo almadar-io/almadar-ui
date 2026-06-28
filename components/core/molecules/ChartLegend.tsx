@@ -8,7 +8,7 @@
 
 import React from 'react';
 import { cn } from '../../../lib/cn';
-import { Box, HStack, VStack, Typography } from '../atoms';
+import { Box, HStack, VStack, Typography } from '../atoms/index';
 
 export interface ChartLegendItem {
   label: string;

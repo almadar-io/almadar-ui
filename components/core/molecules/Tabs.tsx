@@ -9,7 +9,7 @@
 import React, { useState, useRef } from 'react';
 import type { EventEmit } from '@almadar/core';
 import { Icon } from '../atoms/Icon';
-import type { IconInput } from '../atoms';
+import type { IconInput } from '../atoms/index';
 import { Badge } from '../atoms/Badge';
 import { Typography } from '../atoms/Typography';
 import { Box } from '../atoms/Box';

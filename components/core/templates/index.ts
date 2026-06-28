@@ -17,7 +17,7 @@ export {
 export {
   GameTemplate,
   type GameTemplateProps
-} from '../../game/2d/GameTemplate';
+} from '../../game/2d/templates/GameTemplate';
 
 export {
   GenericAppTemplate,
@@ -27,7 +27,7 @@ export {
 export {
   GameShell,
   type GameShellProps
-} from '../../game/2d/GameShell';
+} from '../../game/2d/templates/GameShell';
 
 // Game View Templates (thin wrappers — logic in Board organisms)
 export {
@@ -35,54 +35,54 @@ export {
   type BattleTemplateProps,
   type BattlePhase,
   type BattleSlotContext,
-} from '../../game/2d/BattleTemplate';
+} from '../../game/2d/templates/BattleTemplate';
 
 export {
   CastleTemplate,
   type CastleTemplateProps,
   type CastleSlotContext,
-} from '../../game/2d/CastleTemplate';
+} from '../../game/2d/templates/CastleTemplate';
 
 export {
   WorldMapTemplate,
   type WorldMapTemplateProps,
   type WorldMapSlotContext,
-} from '../../game/2d/WorldMapTemplate';
+} from '../../game/2d/templates/WorldMapTemplate';
 
 export {
   PlatformerTemplate,
   type PlatformerTemplateProps,
-} from '../../game/2d/PlatformerTemplate';
+} from '../../game/2d/templates/PlatformerTemplate';
 
 export {
   TowerDefenseTemplate,
   type TowerDefenseTemplateProps,
-} from '../../game/2d/TowerDefenseTemplate';
+} from '../../game/2d/templates/TowerDefenseTemplate';
 
 export {
   RoguelikeTemplate,
   type RoguelikeTemplateProps,
-} from '../../game/2d/RoguelikeTemplate';
+} from '../../game/2d/templates/RoguelikeTemplate';
 
 export {
   TopDownShooterTemplate,
   type TopDownShooterTemplateProps,
-} from '../../game/2d/TopDownShooterTemplate';
+} from '../../game/2d/templates/TopDownShooterTemplate';
 
 export {
   CityBuilderTemplate,
   type CityBuilderTemplateProps,
-} from '../../game/2d/CityBuilderTemplate';
+} from '../../game/2d/templates/CityBuilderTemplate';
 
 export {
   VisualNovelTemplate,
   type VisualNovelTemplateProps,
-} from '../../game/2d/VisualNovelTemplate';
+} from '../../game/2d/templates/VisualNovelTemplate';
 
 export {
   CardBattlerTemplate,
   type CardBattlerTemplateProps,
-} from '../../game/2d/CardBattlerTemplate';
+} from '../../game/2d/templates/CardBattlerTemplate';
 
 // Marketing Page Templates
 export {

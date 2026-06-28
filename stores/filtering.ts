@@ -99,28 +99,28 @@ export function matchesFilter(record: FilterableRecord, filter: EntityFilterValu
                 );
                 const normalizedRecordValue = typeof recordValue === 'string'
                     ? recordValue.toLowerCase()
-                    : recordValue;
+                    : (recordValue ?? null);
                 return normalizedFilterValues.includes(normalizedRecordValue);
             }
             return false;
 
         case 'date_eq': {
             // Compare dates ignoring time
-            const recordDate = getDateString(recordValue);
+            const recordDate = getDateString(recordValue ?? null);
             const filterDate = getDateString(filterValue);
             return Boolean(recordDate && filterDate && recordDate === filterDate);
         }
 
         case 'date_gte': {
             // Record date >= filter date
-            const recordDate = getDateString(recordValue);
+            const recordDate = getDateString(recordValue ?? null);
             const filterDate = getDateString(filterValue);
             return Boolean(recordDate && filterDate && recordDate >= filterDate);
         }
 
         case 'date_lte': {
             // Record date <= filter date
-            const recordDate = getDateString(recordValue);
+            const recordDate = getDateString(recordValue ?? null);
             const filterDate = getDateString(filterValue);
             return Boolean(recordDate && filterDate && recordDate <= filterDate);
         }

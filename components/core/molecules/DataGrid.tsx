@@ -27,7 +27,7 @@ import { Typography } from '../atoms/Typography';
 import { Badge, type BadgeVariant } from '../atoms/Badge';
 import { Button } from '../atoms/Button';
 import { Icon } from '../atoms/Icon';
-import type { IconInput } from '../atoms';
+import type { IconInput } from '../atoms/index';
 import { InfiniteScrollSentinel } from '../atoms/InfiniteScrollSentinel';
 import { Menu } from './Menu';
 import { useDataDnd, type DataDndProps } from './useDataDnd';

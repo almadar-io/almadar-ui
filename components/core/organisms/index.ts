@@ -51,13 +51,13 @@ export {
 // Content rendering
 
 // Book viewer
-export * from "./book";
+export * from "./book/index";
 
 // Layout organisms
-export * from "./layout";
+export * from "./layout/index";
 
 // Game organisms
-export * from "../../game/2d";
+export * from "../../game/2d/molecules/index";
 
 // UI Slot system
 export {
@@ -89,7 +89,7 @@ export {
 export {
   RuntimeDebugger,
   type RuntimeDebuggerProps,
-} from "./debug";
+} from "./debug/index";
 
 // Marketing organisms
 export {

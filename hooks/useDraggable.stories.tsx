@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import React, { useState } from 'react';
-import { Box, Typography, VStack, HStack, Badge } from '../components';
+import { Box, Typography, VStack, HStack, Badge } from '../components/index';
 import { useDraggable } from './useDraggable';
 import { useDropZone } from './useDropZone';
 import type { DraggablePayload } from './useDraggable';

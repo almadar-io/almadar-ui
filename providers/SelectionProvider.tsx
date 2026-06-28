@@ -139,8 +139,8 @@ export function SelectionProvider({
     // Handle selection events
     const handleSelect = (event: BusEvent) => {
       const row = event.payload?.row;
-      if (row) {
-        setSelected(row);
+      if (row && typeof row === 'object' && !Array.isArray(row)) {
+        setSelected(row as EntityRow);
         if (debug) {
           log.debug('event received', () => ({
             type: event.type,
@@ -221,7 +221,7 @@ export function useSelection<T = EntityRow>(): SelectionContextType<T> {
     throw new Error('useSelection must be used within a SelectionProvider');
   }
 
-  return context as SelectionContextType<T>;
+  return context as SelectionContextType & SelectionContextType<T>;
 }
 
 /**

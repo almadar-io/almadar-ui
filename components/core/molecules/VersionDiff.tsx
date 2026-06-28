@@ -12,7 +12,7 @@ import type { EventPayloadValue, EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
-import { Card, Typography, Button, Badge, Icon, Box, Select } from "../atoms";
+import { Card, Typography, Button, Badge, Icon, Box, Select } from "../atoms/index";
 import { VStack, HStack } from "../atoms/Stack";
 
 export interface DiffRevision {

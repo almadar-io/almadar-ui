@@ -8,7 +8,7 @@
 
 import React, { useCallback } from 'react';
 import { cn } from '../../../lib/cn';
-import { Box, HStack } from '../atoms';
+import { Box, HStack } from '../atoms/index';
 
 export type DotState = 'active' | 'complete' | 'pending';
 export type DotSize = 'sm' | 'md' | 'lg';

@@ -132,7 +132,9 @@ function kebabToPascal(name: string): string {
 // Each resolved icon is a Suspense-wrapped React.lazy that loads the library,
 // picks the component, and falls back to lucide when the family lacks the icon.
 
-type IconModuleNamespace = Record<string, React.ComponentType>;
+// Icon library namespaces export a mix of ComponentType values, arrays, and type helpers.
+// Record<string, object> is the widest supertype that all module namespaces are assignable to.
+type IconModuleNamespace = Record<string, object>;
 const libPromises = new Map<string, Promise<IconModuleNamespace>>();
 function loadLib(
   key: string,
@@ -199,11 +201,11 @@ const lucideAliases: Record<string, LucideIcon> = {
 function resolveLucide(name: string): LucideIcon {
   if (lucideAliases[name]) return lucideAliases[name];
   const pascal = kebabToPascal(name);
-  const lucideMap = LucideIcons as Record<string, LucideIcon>;
+  const lucideMap = LucideIcons as IconModuleNamespace;
   const direct = lucideMap[pascal];
-  if (direct && typeof direct === 'object') return direct;
+  if (direct && typeof direct === 'function') return direct as LucideIcon;
   const asIs = lucideMap[name];
-  if (asIs && typeof asIs === 'object') return asIs;
+  if (asIs && typeof asIs === 'function') return asIs as LucideIcon;
   return LucideIcons.HelpCircle;
 }
 

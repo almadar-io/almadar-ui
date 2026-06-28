@@ -16,7 +16,7 @@ import { cn } from '../../../lib/cn';
 import { getNestedValue } from '../../../lib/getNestedValue';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
-import { Button } from '../atoms';
+import { Button } from '../atoms/index';
 import { Badge } from '../atoms/Badge';
 import { Box } from '../atoms/Box';
 import { Typography } from '../atoms/Typography';

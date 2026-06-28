@@ -15,7 +15,7 @@
 import React, { useState, useCallback } from "react";
 import type { AssetUrl } from "@almadar/core";
 import { cn } from "../../../lib/cn";
-import { Card, Typography, Button, Badge, Icon, Box } from "../atoms";
+import { Card, Typography, Button, Badge, Icon, Box } from "../atoms/index";
 import { VStack, HStack } from "../atoms/Stack";
 import { LoadingState } from "./LoadingState";
 import { ErrorState } from "./ErrorState";

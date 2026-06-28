@@ -14,7 +14,7 @@ import { Box } from '../atoms/Box';
 import { HStack, VStack } from '../atoms/Stack';
 import { Sparkline } from '../atoms/Sparkline';
 import { resolveIcon } from '../atoms/Icon';
-import type { IconInput } from '../atoms';
+import type { IconInput } from '../atoms/index';
 import { useEventBus } from '../../../hooks/useEventBus';
 import type { UiError } from '../atoms/types';
 

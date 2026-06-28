@@ -14,7 +14,7 @@ type Story = StoryObj<typeof meta>;
 
 const sampleCode = `import React from 'react';
 import { VStack, HStack, Box } from '../atoms/Stack';
-import { Card, Typography, Button } from '../atoms';
+import { Card, Typography, Button } from '../atoms/index';
 
 export interface DashboardProps {
     title: string;

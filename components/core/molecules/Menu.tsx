@@ -10,7 +10,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useTapReveal } from "../../../hooks/useTapReveal";
 import { Box } from "../atoms/Box";
-import type { IconInput } from "../atoms";
+import type { IconInput } from "../atoms/index";
 import { Icon } from "../atoms/Icon";
 import { Divider } from "../atoms/Divider";
 import { Typography } from "../atoms/Typography";

@@ -12,7 +12,7 @@ import { HStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";
 import { Badge } from "../atoms/Badge";
 import { Icon } from "../atoms/Icon";
-import type { IconInput } from "../atoms";
+import type { IconInput } from "../atoms/index";
 
 export interface FormSectionHeaderProps {
   /** Section title */

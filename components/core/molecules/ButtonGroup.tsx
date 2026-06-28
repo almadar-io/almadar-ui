@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { cn } from '../../../lib/cn';
-import { Button } from '../atoms';
+import { Button } from '../atoms/index';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { createLogger } from '@almadar/logger';
 

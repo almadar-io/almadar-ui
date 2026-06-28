@@ -10,7 +10,7 @@
 
 import React, { useCallback } from "react";
 import type { AssetUrl, EventEmit, EventKey, EventPayload } from "@almadar/core";
-import type { IconInput } from "../atoms";
+import type { IconInput } from "../atoms/index";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { useLongPress } from "../../../hooks/useLongPress";

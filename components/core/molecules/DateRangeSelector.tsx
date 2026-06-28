@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { cn } from '../../../lib/cn';
-import { Button, HStack } from '../atoms';
+import { Button, HStack } from '../atoms/index';
 
 export interface DateRangeSelectorOption {
   label: string;

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "../../../lib/cn";
 import type { IconInput } from "../atoms/Icon";
-import { Button, Input, Badge, ThemeToggle, Avatar } from "../atoms";
+import { Button, Input, Badge, ThemeToggle, Avatar } from "../atoms/index";
 import { Box } from "../atoms/Box";
 import { HStack, VStack } from "../atoms/Stack";
 import { Typography } from "../atoms/Typography";

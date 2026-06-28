@@ -15,7 +15,7 @@ import { Box } from '../atoms/Box';
 import { HStack } from '../atoms/Stack';
 import { Button } from '../atoms/Button';
 import { Icon } from '../atoms/Icon';
-import type { IconInput } from '../atoms';
+import type { IconInput } from '../atoms/index';
 import type { ButtonVariant } from '../atoms/Button';
 
 export interface SwipeAction {

@@ -1,0 +1,155 @@
+/**
+ * GameShell
+ *
+ * A full-screen layout wrapper for game applications.
+ * Replaces DashboardLayout for game clients — no sidebar nav, just full-viewport
+ * rendering with an optional HUD overlay bar.
+ *
+ * Wrap game page content directly as children:
+ *   <GameShell appName="TraitWars">
+ *     <WorldMapPage />
+ *   </GameShell>
+ *
+ * @generated pattern — can be customised per-game via props
+ */
+
+import React from "react";
+import { cn } from "../../../../lib/cn";
+import { Box } from "../../../core/atoms/Box";
+import { HStack } from "../../../core/atoms/Stack";
+import { Typography } from "../../../core/atoms/Typography";
+import { getComponentForPattern } from "@almadar/patterns";
+import type { SlotContent, SlotPropValue } from "../../../../hooks/useUISlots";
+
+
+type DescriptorObject = { type: string; props?: SlotContent["props"]; _id?: string };
+
+function asDescriptor(v: object): DescriptorObject | null {
+  if (Array.isArray(v) || React.isValidElement(v)) return null;
+  const o = v as { type?: SlotPropValue; props?: SlotPropValue; _id?: SlotPropValue };
+  if (typeof o.type !== "string") return null;
+  const props = o.props !== undefined && typeof o.props === "object" && !Array.isArray(o.props) && o.props !== null
+    ? (o.props as SlotContent["props"])
+    : undefined;
+  const _id = typeof o._id === "string" ? o._id : undefined;
+  return { type: o.type, props, _id };
+}
+
+type SlotContentRendererCmp = React.ComponentType<{ content: SlotContent; onDismiss: () => void }>;
+let _scr: SlotContentRendererCmp | null = null;
+function getSlotContentRenderer(): SlotContentRendererCmp {
+  if (_scr) return _scr;
+  const mod = require("../../../core/organisms/UISlotRenderer") as { SlotContentRenderer: SlotContentRendererCmp };
+  _scr = mod.SlotContentRenderer;
+  return _scr;
+}
+
+function resolveDescriptor(value: React.ReactNode, idPrefix: string): React.ReactNode {
+  if (value === null || value === undefined) return value;
+  if (React.isValidElement(value)) return value;
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return value;
+  if (Array.isArray(value)) {
+    return value.map((item, i) => (
+      <React.Fragment key={i}>{resolveDescriptor(item as React.ReactNode, `${idPrefix}-${i}`)}</React.Fragment>
+    ));
+  }
+  if (typeof value === "object" && value !== null) {
+    const desc = asDescriptor(value as object);
+    if (desc !== null && getComponentForPattern(desc.type) !== null) {
+      const resolvedProps: SlotContent["props"] = desc.props ?? {};
+      const content: SlotContent = { id: desc._id ?? idPrefix, pattern: desc.type, props: resolvedProps, priority: 0 };
+      const SCR = getSlotContentRenderer();
+      // Stable key tied to the slot/pattern identity (idPrefix) so a per-tick render-ui
+      // re-emission RECONCILES this child instead of remounting it — without it the canvas
+      // + HUD remounted ~574×/run (proven via instrumentation), recreating + clearing the
+      // canvas every tick = the board flicker.
+      return <SCR key={content.id} content={content} onDismiss={() => undefined} />;
+    }
+  }
+  return null;
+}
+
+export interface GameShellProps {
+    /** Application / game title shown in the HUD bar */
+    appName?: string;
+    /** Optional HUD content rendered above the main area */
+    hud?: React.ReactNode;
+    /** Extra class name on the root container */
+    className?: string;
+    /** Whether to show the minimal top bar (default: true) */
+    showTopBar?: boolean;
+    /** Game content rendered inside the full-screen area */
+    children?: React.ReactNode;
+}
+
+/**
+ * Full-viewport game shell layout.
+ *
+ * Renders children inside a full-height flex container.
+ * An optional top bar shows the game title and can host HUD widgets.
+ */
+export const GameShell: React.FC<GameShellProps> = ({
+    appName = "Game",
+    hud,
+    className,
+    showTopBar = true,
+    children,
+}) => {
+    return (
+        <Box
+            display="flex"
+            className={cn(
+                "game-shell",
+                "flex-col w-full h-screen overflow-hidden",
+                className
+            )}
+            style={{
+                width: "100vw",
+                height: "100vh",
+                overflow: "hidden",
+                background: "var(--color-background, #0a0a0f)",
+                color: "var(--color-text, #e0e0e0)",
+            }}
+        >
+            {/* Minimal top bar */}
+            {showTopBar && (
+                <HStack
+                    align="center"
+                    justify="between"
+                    className="game-shell__header"
+                    style={{
+                        padding: "0.5rem 1rem",
+                        borderBottom: "1px solid var(--color-border, #2a2a3a)",
+                        background: "var(--color-surface, #12121f)",
+                        flexShrink: 0,
+                    }}
+                >
+                    <Typography
+                        variant="h6"
+                        style={{
+                            fontWeight: 700,
+                            letterSpacing: "0.02em",
+                        }}
+                    >
+                        {appName}
+                    </Typography>
+                    {hud && <Box className="game-shell__hud">{resolveDescriptor(hud, "gs-hud")}</Box>}
+                </HStack>
+            )}
+
+            {/* Main game area */}
+            <Box
+                className="game-shell__content"
+                style={{
+                    flex: 1,
+                    overflow: "hidden",
+                    position: "relative",
+                }}
+            >
+                {resolveDescriptor(children, "gs-children")}
+            </Box>
+        </Box>
+    );
+};
+
+GameShell.displayName = "GameShell";

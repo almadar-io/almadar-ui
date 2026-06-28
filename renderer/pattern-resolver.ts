@@ -136,16 +136,21 @@ export function resolvePattern(config: PatternConfig): ResolvedPattern {
  */
 function validatePatternProps(
   patternType: string,
-  props: Record<string, FieldValue>
+  props: Record<string, FieldValue | undefined>
 ): Record<string, FieldValue> {
   const definition = patternRegistry[patternType];
 
+  // Strip undefined values — the index signature allows undefined but the return type does not.
+  const definedProps: Record<string, FieldValue> = Object.fromEntries(
+    Object.entries(props).filter((entry): entry is [string, FieldValue] => entry[1] !== undefined)
+  );
+
   // If no definition, return props as-is (allow unknown patterns)
   if (!definition || !definition.propsSchema) {
-    return props;
+    return definedProps;
   }
 
-  const validated: Record<string, FieldValue> = { ...props };
+  const validated: Record<string, FieldValue> = { ...definedProps };
   const schema = definition.propsSchema;
 
   // Check required props

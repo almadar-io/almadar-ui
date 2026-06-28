@@ -5,10 +5,10 @@
  * Can be used in documentation, IDE previews, and other tools.
  */
 
-import type { FieldValue, OrbitalSchema } from '@almadar/core';
+import type { Effect, OrbitalSchema, SExpr } from '@almadar/core';
 
 // Simple formatters for visualization - just basic string representation
-function formatSExprGuardToDomain(guard: FieldValue, _entityName: string): string {
+function formatSExprGuardToDomain(guard: SExpr, _entityName: string): string {
     if (Array.isArray(guard)) {
         const [op, ...args] = guard;
         return `${op}(${args.map(a => JSON.stringify(a)).join(', ')})`;
@@ -16,7 +16,7 @@ function formatSExprGuardToDomain(guard: FieldValue, _entityName: string): strin
     return JSON.stringify(guard);
 }
 
-function formatSExprEffectToDomain(effect: FieldValue, _entityName: string): string {
+function formatSExprEffectToDomain(effect: SExpr | Effect, _entityName: string): string {
     if (Array.isArray(effect)) {
         const [op, ...args] = effect;
         return `${op}(${args.map(a => JSON.stringify(a)).join(', ')})`;
@@ -24,7 +24,7 @@ function formatSExprEffectToDomain(effect: FieldValue, _entityName: string): str
     return JSON.stringify(effect);
 }
 
-function isArraySExpr(expr: FieldValue): boolean {
+function isArraySExpr(expr: SExpr | Effect | null | undefined): boolean {
     return Array.isArray(expr);
 }
 
@@ -68,8 +68,8 @@ export interface TransitionDefinition {
     from: string;
     to: string;
     event: string;
-    guard?: FieldValue;
-    effects?: FieldValue[];
+    guard?: SExpr | null;
+    effects?: Effect[];
 }
 
 export interface StateMachineDefinition {
@@ -215,7 +215,7 @@ export const DEFAULT_CONFIG: VisualizerConfig = {
 
 const EFFECT_OPERATORS = ['set', 'emit', 'persist', 'navigate', 'notify', 'spawn', 'despawn', 'render-ui', 'call-service'];
 
-function isBinding(val: FieldValue): val is string {
+function isBinding(val: SExpr): val is string {
     return typeof val === 'string' && val.startsWith('@');
 }
 
@@ -236,7 +236,7 @@ function parseBinding(binding: string): ParsedBinding | null {
     };
 }
 
-function formatGuard(guard: FieldValue): string {
+function formatGuard(guard: SExpr | null | undefined): string {
     let text = '';
     if (typeof guard === 'string') {
         text = guard;
@@ -249,7 +249,7 @@ function formatGuard(guard: FieldValue): string {
 /**
  * Format guard as human-readable domain language text
  */
-function formatGuardHuman(guard: FieldValue, entityName?: string): string {
+function formatGuardHuman(guard: SExpr | null | undefined, entityName?: string): string {
     if (!guard) return '';
     if (typeof guard === 'string') {
         return `if ${guard}`;
@@ -263,7 +263,7 @@ function formatGuardHuman(guard: FieldValue, entityName?: string): string {
 /**
  * Format effects array as human-readable domain language text
  */
-function formatEffectsHuman(effects: FieldValue[], entityName?: string): string[] {
+function formatEffectsHuman(effects: Effect[], entityName?: string): string[] {
     if (!Array.isArray(effects) || effects.length === 0) return [];
     return effects.map(effect => {
         if (isArraySExpr(effect)) {
@@ -273,7 +273,7 @@ function formatEffectsHuman(effects: FieldValue[], entityName?: string): string[
     }).filter(Boolean);
 }
 
-function formatSExprCompact(expr: FieldValue[]): string {
+function formatSExprCompact(expr: SExpr[]): string {
     if (!Array.isArray(expr) || expr.length === 0) return '[]';
     const op = expr[0];
     const args = expr.slice(1);
@@ -296,7 +296,7 @@ function formatSExprCompact(expr: FieldValue[]): string {
 /**
  * Format S-expression with full detail for tooltips
  */
-function formatSExprFull(expr: FieldValue): string {
+function formatSExprFull(expr: SExpr | null | undefined): string {
     if (expr === null || expr === undefined) return '';
     if (typeof expr === 'string') return `"${expr}"`;
     if (typeof expr === 'number' || typeof expr === 'boolean') return String(expr);
@@ -322,21 +322,21 @@ function formatSExprFull(expr: FieldValue): string {
 /**
  * Format effects array with full S-expressions
  */
-function formatEffectsFull(effects: FieldValue[]): string[] {
+function formatEffectsFull(effects: Effect[]): string[] {
     if (!Array.isArray(effects) || effects.length === 0) return [];
     return effects.map(effect => {
         if (Array.isArray(effect)) {
-            return formatSExprFull(effect);
+            return formatSExprFull(effect as SExpr[]);
         }
         return String(effect);
     });
 }
 
-export function getEffectSummary(effects: FieldValue[]): string {
+export function getEffectSummary(effects: Effect[]): string {
     if (!Array.isArray(effects) || effects.length === 0) return '';
 
     const setFields: string[] = [];
-    const otherEffects: FieldValue[][] = [];
+    const otherEffects: SExpr[][] = [];
 
     effects.forEach((effect) => {
         if (!Array.isArray(effect)) return;
@@ -350,7 +350,7 @@ export function getEffectSummary(effects: FieldValue[]): string {
                 setFields.push('field');
             }
         } else {
-            otherEffects.push(effect as FieldValue[]);
+            otherEffects.push(effect as SExpr[]);
         }
     });
 
@@ -704,7 +704,7 @@ function drawTransitionLabelsSvg(
 
         // Calculate tooltip content
         const hasGuard = !!transition.guard;
-        const guardText = hasGuard ? formatGuardHuman(transition.guard) : '';
+        const guardText = hasGuard && transition.guard !== undefined ? formatGuardHuman(transition.guard) : '';
         const effectLines = transition.effects ? formatEffectsHuman(transition.effects) : [];
         const hasEffects = effectLines.length > 0;
 
@@ -936,25 +936,29 @@ export function renderStateMachineToSvg(
 export function extractStateMachine(data: OrbitalSchema | object): StateMachineDefinition | null {
     if (!data || typeof data !== 'object') return null;
 
-    const obj = data as OrbitalSchema;
+    type AnySchemaShape = {
+        states?: StateDefinition[];
+        transitions?: TransitionDefinition[];
+        stateMachine?: StateMachineDefinition;
+        traits?: Array<{ stateMachine?: StateMachineDefinition }>;
+    };
+    const obj = data as AnySchemaShape;
 
     // Direct state machine
     if (obj.states && obj.transitions) {
-        return obj as StateMachineDefinition;
+        return { states: obj.states, transitions: obj.transitions };
     }
 
     // Trait with stateMachine
     if (obj.stateMachine) {
-        return obj.stateMachine as StateMachineDefinition;
+        return obj.stateMachine;
     }
 
     // Orbital with traits
     if (Array.isArray(obj.traits)) {
-        const traitWithSM = obj.traits.find(
-            (t) => typeof t === 'object' && t !== null && 'stateMachine' in t
-        );
-        if (traitWithSM && typeof traitWithSM === 'object' && 'stateMachine' in traitWithSM) {
-            return (traitWithSM as { stateMachine: StateMachineDefinition }).stateMachine;
+        const traitWithSM = obj.traits.find((t) => t.stateMachine != null);
+        if (traitWithSM?.stateMachine) {
+            return traitWithSM.stateMachine;
         }
     }
 

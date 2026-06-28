@@ -135,7 +135,7 @@ function render(
   }
 
   // Get entity from options or data
-  const entity = options.entity || (typeof data === 'object' && data !== null ? (data as OrbitalSchema).entity as EntityDefinition : undefined);
+  const entity = options.entity || (typeof data === 'object' && data !== null ? (data as OrbitalSchema & { entity?: EntityDefinition }).entity : undefined);
 
   // Generate SVG
   const svgString = renderStateMachineToSvg(stateMachine, { title, entity }, config);
@@ -619,7 +619,7 @@ function renderDom(
   }
 
   // Get entity from options or data
-  const entity = options.entity || (typeof data === 'object' && data !== null ? (data as OrbitalSchema).entity as EntityDefinition : undefined);
+  const entity = options.entity || (typeof data === 'object' && data !== null ? (data as OrbitalSchema & { entity?: EntityDefinition }).entity : undefined);
 
   // Generate DOM layout data
   const layoutData = renderStateMachineToDomData(stateMachine, { title, entity }, config);

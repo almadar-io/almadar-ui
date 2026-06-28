@@ -4,7 +4,7 @@ import React, { useCallback, useRef, useState } from "react";
 import type { EventEmit, EntityRow, EntityWith } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
-import { Typography, Badge, Box } from "../atoms";
+import { Typography, Badge, Box } from "../atoms/index";
 import { Icon } from "../atoms/Icon";
 
 export type CanvasItemStatus = 'empty' | 'seated' | 'ordered' | 'awaiting-bill' | 'cleaning';

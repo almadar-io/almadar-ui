@@ -10,7 +10,7 @@
 
 import React, { useState, useRef, useLayoutEffect, useEffect, useMemo, useCallback } from 'react';
 import { cn } from '../../../../lib/cn';
-import { Card, Typography } from '../../atoms';
+import { Card, Typography } from '../../atoms/index';
 import { Tabs, type TabItem } from '../Tabs';
 import { LoadingState } from '../LoadingState';
 import { ErrorState } from '../ErrorState';
