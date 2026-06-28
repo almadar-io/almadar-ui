@@ -87,19 +87,5 @@ export { SPRITE_SHEET_LAYOUT, SHEET_COLUMNS } from './spriteSheetConstants';
 // ---------------------------------------------------------------------------
 // Combat Effects (CSS animations)
 // ---------------------------------------------------------------------------
-export {
-    combatAnimations,
-    combatClasses,
-    combatEffects,
-    applyTemporaryEffect,
-    calculateDamage,
-    generateCombatMessage,
-} from './combatEffects';
-export type {
-    CombatEffect,
-    DamageResult,
-    CombatEventType,
-    CombatEventData,
-} from './combatEffects';
 export * from './combatPresets';
 export * from './canvasEffects';

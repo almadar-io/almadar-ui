@@ -176,11 +176,6 @@ export {
   type PullToRefreshResult,
 } from './usePullToRefresh';
 export {
-  usePinchZoom,
-  type PinchZoomOptions,
-  type PinchZoomResult,
-} from './usePinchZoom';
-export {
   useCanvasGestures,
   type UseCanvasGesturesOptions,
   type CanvasGestureCallbacks,
@@ -215,14 +210,6 @@ export {
 } from './useRenderInterpolation';
 
 // Agent-trace accumulation hook — pure view-model reducer (no transport).
-export {
-  useAgentTrace,
-  type UseAgentTraceResult,
-  type AgentTraceState,
-  type TraceStatus,
-  type TraceUpdate,
-  type SubagentUpsert,
-} from './useAgentTrace';
 
 // GitHub integration hooks
 export {
