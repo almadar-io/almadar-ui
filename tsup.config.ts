@@ -6,7 +6,6 @@ import { resolve } from 'node:path';
 // contexts (components/index.js gets one, context/index.js gets another).
 // This plugin rewrites the relative import to the @almadar/ui/context
 // package subpath so the context module is shared at runtime.
-const contextPath = resolve(__dirname, 'context/UISlotContext.tsx');
 const contextDir = resolve(__dirname, 'context');
 
 const dedupeContextPlugin = {

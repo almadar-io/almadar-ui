@@ -8,8 +8,61 @@
 // Main unified provider
 export { OrbitalProvider, type OrbitalProviderProps } from './OrbitalProvider';
 
-// Re-export UIThemeDefinition for generated theme configs
-export type { UIThemeDefinition } from './ThemeContext';
+// Theme provider (value + type exports consumed by context/index.ts shim)
+export {
+  ThemeProvider,
+  useTheme,
+  BUILT_IN_THEMES,
+  type UIThemeDefinition,
+  type ThemeProviderProps,
+  type ColorMode,
+  type ResolvedMode,
+  type DesignTheme,
+} from './ThemeContext';
+export { default as ThemeContext } from './ThemeContext';
+
+// UI slot provider (value + type exports consumed by context/index.ts shim)
+export {
+  UISlotProvider,
+  useUISlots,
+  useSlotContent,
+  useSlotHasContent,
+  UISlotContext,
+  type UISlotManager,
+  type UISlot,
+  type SlotContent,
+  type SlotRenderConfig,
+  type SlotAnimation,
+  type SlotChangeCallback,
+} from './UISlotContext';
+
+// Orbital theme provider
+export { OrbitalThemeProvider, type OrbitalThemeProviderProps } from './OrbitalThemeProvider';
+
+// Design theme provider
+export { DesignThemeProvider, useDesignTheme } from './DesignThemeContext';
+
+// Current page path provider
+export {
+  CurrentPagePathProvider,
+  CurrentPagePathContext,
+  useCurrentPagePath,
+  type CurrentPagePathProviderProps,
+} from './CurrentPagePathContext';
+
+// User provider
+export {
+  UserProvider,
+  UserContext,
+  useUser,
+  useHasRole,
+  useHasPermission,
+  useUserForEvaluation,
+  ANONYMOUS_USER,
+  type UserData,
+  type UserContextValue,
+  type UserProviderProps,
+} from './UserContext';
 
 // Individual providers (for advanced use cases)
 export { EventBusProvider, EventBusContext } from './EventBusProvider';
@@ -41,4 +94,3 @@ export type {
 } from './OfflineModeProvider';
 
 // Note: EventBusContextType is exported from hooks/event-bus-types to avoid duplicate exports
-// Note: ThemeProvider and UISlotProvider are exported from context/ directory
