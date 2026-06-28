@@ -11,7 +11,7 @@
 import React from 'react';
 import type { OrbitalSchema } from '@almadar/core';
 import { FlowCanvas } from './FlowCanvas';
-import type { ZoomLevel } from './avl-zoom-state';
+import type { ZoomLevel } from '../lib/avl-zoom-state';
 
 // ---------------------------------------------------------------------------
 // Props (preserved from V2)

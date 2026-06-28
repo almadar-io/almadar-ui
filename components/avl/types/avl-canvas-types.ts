@@ -12,7 +12,7 @@ import type {
   OrbitalPageInfo,
   ExternalLink,
   TraitLevelData,
-} from '../organisms/avl-schema-parser';
+} from '../lib/avl-schema-parser';
 
 // ---------------------------------------------------------------------------
 // Zoom bands — continuous semantic zoom

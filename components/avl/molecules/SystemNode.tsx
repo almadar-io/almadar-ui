@@ -13,9 +13,9 @@ import { AvlEntity } from '../atoms/AvlEntity';
 import { AvlFieldType } from '../atoms/AvlFieldType';
 import { AvlState } from '../atoms/AvlState';
 import { AvlPage } from '../atoms/AvlPage';
-import { getStateRole } from '../atoms/types';
-import type { AvlFieldTypeKind } from '../atoms/types';
-import type { AvlNodeData } from './avl-canvas-types';
+import { getStateRole } from '../types/avl-atom-types';
+import type { AvlFieldTypeKind } from '../types/avl-atom-types';
+import type { AvlNodeData } from '../types/avl-canvas-types';
 
 export interface SystemNodeProps {
   data: AvlNodeData;

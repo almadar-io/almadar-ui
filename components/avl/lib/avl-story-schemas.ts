@@ -17,7 +17,7 @@ import { stdConfirmation } from '@almadar/std/behaviors/functions';
 // params (entityName/fields/persistence/pagePath) so the story schema stays a
 // valid 3-orbital OrbitalSchema.
 import { schemaToFlowGraph } from './avl-flow-converter';
-import { parseOrbitalLevel, parseTraitLevel } from '../organisms/avl-schema-parser';
+import { parseOrbitalLevel, parseTraitLevel } from './avl-schema-parser';
 
 /**
  * Clinic schema: 2 orbitals with real state machines.

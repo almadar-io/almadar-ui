@@ -38,7 +38,7 @@ export {
   type TransitionLevelData,
   type CrossLink,
   type ExprTreeNode,
-} from './avl-schema-parser';
+} from '../lib/avl-schema-parser';
 
 // Zoom state
 export {
@@ -49,4 +49,4 @@ export {
   type ZoomState,
   type ZoomAction,
   type BreadcrumbSegment,
-} from './avl-zoom-state';
+} from '../lib/avl-zoom-state';

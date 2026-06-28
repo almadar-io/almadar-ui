@@ -8,8 +8,8 @@
 
 import ELK from 'elkjs/lib/elk.bundled.js';
 import type { ElkNode, ElkExtendedEdge, ElkEdgeSection, ElkLabel } from 'elkjs/lib/elk-api.js';
-import { getStateRole, type StateRole } from '../atoms/types';
-import type { TraitLevelData } from '../organisms/avl-schema-parser';
+import { getStateRole, type StateRole } from '../types/avl-atom-types';
+import type { TraitLevelData } from './avl-schema-parser';
 
 // ---------------------------------------------------------------------------
 // Layout types

@@ -10,7 +10,7 @@
 
 import React from 'react';
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, type Edge, type EdgeProps } from '@xyflow/react';
-import { CONNECTION_COLORS } from '../atoms/types';
+import { CONNECTION_COLORS } from '../types/avl-atom-types';
 import { useTranslate } from '../../../hooks/useTranslate';
 
 export interface AvlTransitionEdgeData {

@@ -33,8 +33,8 @@ import type {
   RenderUIEntry,
   PatternEventSource,
   ScreenSize,
-} from './avl-preview-types';
-import { SCREEN_SIZE_PRESETS } from './avl-preview-types';
+} from '../types/avl-preview-types';
+import { SCREEN_SIZE_PRESETS } from '../types/avl-preview-types';
 
 // ---------------------------------------------------------------------------
 // Constants

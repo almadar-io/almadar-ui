@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { AvlEffect } from '../atoms/AvlEffect';
-import { CONNECTION_COLORS, type AvlEffectType } from '../atoms/types';
+import { CONNECTION_COLORS, type AvlEffectType } from '../types/avl-atom-types';
 
 export interface AvlTransitionLaneEffect {
   type: AvlEffectType | string;

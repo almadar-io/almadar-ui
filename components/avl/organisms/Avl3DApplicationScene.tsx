@@ -12,8 +12,8 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Group } from 'three';
-import type { ApplicationLevelData } from './avl-schema-parser';
-import { goldenSpiralPositions, forceDirectedPositions } from './avl-3d-layout';
+import type { ApplicationLevelData } from '../lib/avl-schema-parser';
+import { goldenSpiralPositions, forceDirectedPositions } from '../lib/avl-3d-layout';
 import { Avl3DOrbitalNode } from '../molecules/Avl3DOrbitalNode';
 import { Avl3DCrossWire } from '../molecules/Avl3DCrossWire';
 

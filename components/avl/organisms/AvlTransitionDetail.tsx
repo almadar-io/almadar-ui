@@ -23,7 +23,7 @@ import { Typography } from '../../core/atoms/Typography';
 import { Badge } from '../../core/atoms/Badge';
 import { Accordion, type AccordionItem } from '../../core/molecules/Accordion';
 import { CodeBlock } from '../../core/molecules/markdown/CodeBlock';
-import type { TransitionLevelData, ExprTreeNode } from './avl-schema-parser';
+import type { TransitionLevelData, ExprTreeNode } from '../lib/avl-schema-parser';
 import type { JsonValue } from '@almadar/core';
 
 export interface AvlTransitionDetailProps {

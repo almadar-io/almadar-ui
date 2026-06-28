@@ -12,8 +12,8 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import type { Group } from 'three';
-import type { OrbitalLevelData } from './avl-schema-parser';
-import { AVL_3D_COLORS } from './avl-3d-layout';
+import type { OrbitalLevelData } from '../lib/avl-schema-parser';
+import { AVL_3D_COLORS } from '../lib/avl-3d-layout';
 import { Avl3DEntityCore } from '../molecules/Avl3DEntityCore';
 import { Avl3DLabel } from '../atoms/Avl3DLabel';
 import { Avl3DTooltip } from '../atoms/Avl3DTooltip';

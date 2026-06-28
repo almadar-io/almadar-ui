@@ -22,17 +22,17 @@ import {
   parseApplicationLevel,
   parseTransitionLevel,
   type CrossLink,
-} from './avl-schema-parser';
+} from '../lib/avl-schema-parser';
 import {
   zoomReducer,
   initialZoomState,
   getBreadcrumbs,
   type ZoomLevel,
-} from './avl-zoom-state';
+} from '../lib/avl-zoom-state';
 import { AvlTransitionDetail } from './AvlTransitionDetail';
 import { AvlOrbitalUnit } from '../molecules/AvlOrbitalUnit';
-import type { AvlPersistenceKind } from '../atoms/types';
-import { curveControlPoint } from '../molecules/avl-layout';
+import type { AvlPersistenceKind } from '../types/avl-atom-types';
+import { curveControlPoint } from '../lib/avl-layout';
 import { createLogger } from '@almadar/logger';
 import { Box } from '../../core/atoms/Box';
 import { HStack } from '../../core/atoms/Stack';
@@ -41,7 +41,7 @@ import { Button } from '../../core/atoms/Button';
 import { Icon } from '../../core/atoms/Icon';
 import { FlowCanvas } from './FlowCanvas';
 import { useTranslate } from '../../../hooks/useTranslate';
-import type { ViewLevel } from '../molecules/avl-preview-types';
+import type { ViewLevel } from '../types/avl-preview-types';
 
 // ---------------------------------------------------------------------------
 // Props

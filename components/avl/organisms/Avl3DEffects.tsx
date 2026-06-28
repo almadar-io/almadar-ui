@@ -13,8 +13,8 @@
 import React, { useMemo } from 'react';
 import { EffectComposer, Bloom, DepthOfField, Vignette } from '@react-three/postprocessing';
 import { Sparkles, Stars } from '@react-three/drei';
-import { AVL_3D_COLORS } from './avl-3d-layout';
-import type { ZoomLevel } from './avl-zoom-state';
+import { AVL_3D_COLORS } from '../lib/avl-3d-layout';
+import type { ZoomLevel } from '../lib/avl-zoom-state';
 
 // ---------------------------------------------------------------------------
 // Props

@@ -6,8 +6,8 @@ import { AvlTransition } from '../atoms/AvlTransition';
 import { AvlEvent } from '../atoms/AvlEvent';
 import { AvlGuard } from '../atoms/AvlGuard';
 import { AvlEffect } from '../atoms/AvlEffect';
-import type { AvlEffectType } from '../atoms/types';
-import { ringPositions } from './avl-layout';
+import type { AvlEffectType } from '../types/avl-atom-types';
+import { ringPositions } from '../lib/avl-layout';
 
 export interface AvlStateMachineState {
   name: string;

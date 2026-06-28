@@ -13,7 +13,7 @@
  */
 
 import type { JsonObject } from '@almadar/core';
-import type { BehaviorLevel } from './AvlBehaviorGlyph';
+import type { BehaviorLevel } from '../molecules/AvlBehaviorGlyph';
 
 // ---------------------------------------------------------------------------
 // Local JSON-serializable types (mirror upstream shapes as plain JsonObject)

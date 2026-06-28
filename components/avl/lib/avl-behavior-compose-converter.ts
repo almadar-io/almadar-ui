@@ -14,7 +14,7 @@ import type {
   BehaviorComposeNodeData,
   BehaviorWireEdgeData,
   SerializedPayloadField,
-} from './avl-behavior-compose-types';
+} from '../types/avl-behavior-compose-types';
 
 // ---------------------------------------------------------------------------
 // Constants

@@ -17,9 +17,9 @@ import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 import { Badge } from '../../core/atoms/Badge';
 import { AvlBehaviorGlyph, type BehaviorGlyphChild, type BehaviorGlyphConnection, type BehaviorLevel } from './AvlBehaviorGlyph';
-import type { BehaviorComposeNodeData, ConnectableEvent } from './avl-behavior-compose-types';
-import { formatPayloadTooltip, type PayloadField } from './wire-validation';
-import type { AvlEffectType, AvlPersistenceKind } from '../atoms/types';
+import type { BehaviorComposeNodeData, ConnectableEvent } from '../types/avl-behavior-compose-types';
+import { formatPayloadTooltip, type PayloadField } from '../lib/wire-validation';
+import type { AvlEffectType, AvlPersistenceKind } from '../types/avl-atom-types';
 import { createLogger } from '@almadar/logger';
 
 const behaviorHandleLog = createLogger('almadar:ui:nan-coord');

@@ -10,8 +10,8 @@
  */
 
 import React, { useMemo } from 'react';
-import type { TraitLevelData } from './avl-schema-parser';
-import { fibonacciSpherePositions } from './avl-3d-layout';
+import type { TraitLevelData } from '../lib/avl-schema-parser';
+import { fibonacciSpherePositions } from '../lib/avl-3d-layout';
 import { Avl3DStateNode } from '../molecules/Avl3DStateNode';
 import { Avl3DTransitionArc } from '../molecules/Avl3DTransitionArc';
 import { Avl3DLabel } from '../atoms/Avl3DLabel';

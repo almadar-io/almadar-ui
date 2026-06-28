@@ -12,9 +12,9 @@ import { useTranslate } from '../../../hooks/useTranslate';
 import { AvlState } from '../atoms/AvlState';
 import { AvlTransitionLane } from './AvlTransitionLane';
 import { AvlSwimLane } from './AvlSwimLane';
-import { CONNECTION_COLORS, type AvlEffectType } from '../atoms/types';
-import { computeTraitLayout, edgePath, type ElkLayout } from './avl-elk-layout';
-import type { AvlNodeData } from './avl-canvas-types';
+import { CONNECTION_COLORS, type AvlEffectType } from '../types/avl-atom-types';
+import { computeTraitLayout, edgePath, type ElkLayout } from '../lib/avl-elk-layout';
+import type { AvlNodeData } from '../types/avl-canvas-types';
 import { createLogger } from '@almadar/logger';
 
 const log = createLogger('almadar:ui:avl:behavior-view');

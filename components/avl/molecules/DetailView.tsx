@@ -14,8 +14,8 @@ import { AvlState } from '../atoms/AvlState';
 import { AvlEvent } from '../atoms/AvlEvent';
 import { AvlGuard } from '../atoms/AvlGuard';
 import { AvlEffect } from '../atoms/AvlEffect';
-import { getStateRole, type AvlEffectType } from '../atoms/types';
-import type { AvlNodeData } from './avl-canvas-types';
+import { getStateRole, type AvlEffectType } from '../types/avl-atom-types';
+import type { AvlNodeData } from '../types/avl-canvas-types';
 
 export interface DetailViewProps {
   data: AvlNodeData;

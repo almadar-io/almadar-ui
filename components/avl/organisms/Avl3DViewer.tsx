@@ -23,23 +23,23 @@ import {
   parseOrbitalLevel,
   parseTraitLevel,
   parseTransitionLevel,
-} from './avl-schema-parser';
+} from '../lib/avl-schema-parser';
 import {
   zoomReducer,
   initialZoomState,
   getBreadcrumbs,
   type ZoomLevel,
-} from './avl-zoom-state';
+} from '../lib/avl-zoom-state';
 import { Scene3D } from '../../game/3d/molecules/Scene3D';
 import { Camera3D } from '../../game/3d/molecules/Camera3D';
 import { Lighting3D } from '../../game/3d/molecules/Lighting3D';
-import { AVL_3D_COLORS, CAMERA_POSITIONS } from './avl-3d-layout';
+import { AVL_3D_COLORS, CAMERA_POSITIONS } from '../lib/avl-3d-layout';
 import { Avl3DApplicationScene } from './Avl3DApplicationScene';
 import { Avl3DOrbitalScene } from './Avl3DOrbitalScene';
 import { Avl3DTraitScene } from './Avl3DTraitScene';
 import { Avl3DTransitionScene } from './Avl3DTransitionScene';
 import { Avl3DEffects } from './Avl3DEffects';
-import { Avl3DContext, type Avl3DModelOverrides } from './avl-3d-context';
+import { Avl3DContext, type Avl3DModelOverrides } from '../providers/avl-3d-context';
 import { useTranslate } from '../../../hooks/useTranslate';
 
 // ---------------------------------------------------------------------------

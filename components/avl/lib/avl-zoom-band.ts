@@ -7,7 +7,7 @@
  */
 
 import { createContext, useContext } from 'react';
-import { type ZoomBand, ZOOM_BAND_THRESHOLDS } from './avl-canvas-types';
+import { type ZoomBand, ZOOM_BAND_THRESHOLDS } from '../types/avl-canvas-types';
 
 // ---------------------------------------------------------------------------
 // Band computation

@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import type { ZoomLevel } from './avl-zoom-state';
+import type { ZoomLevel } from '../lib/avl-zoom-state';
 
 export interface AvlLegendProps {
   level: ZoomLevel;

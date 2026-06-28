@@ -51,8 +51,8 @@ import { AvlFieldType } from '../atoms/AvlFieldType';
 import {
   getStateRole, type StateRole, type AvlEffectType, type AvlFieldTypeKind,
   EFFECT_TYPE_TO_CATEGORY, EFFECT_CATEGORY_COLORS,
-} from '../atoms/types';
-import type { PreviewNodeData } from '../molecules/avl-preview-types';
+} from '../types/avl-atom-types';
+import type { PreviewNodeData } from '../types/avl-preview-types';
 import { PatternSelectionContext } from '../molecules/OrbPreviewNode';
 import { getPatternDefinition, isEntityAwarePattern } from '@almadar/patterns';
 import { createLogger } from '@almadar/logger';

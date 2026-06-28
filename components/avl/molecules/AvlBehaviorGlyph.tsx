@@ -14,8 +14,8 @@
 
 import React, { useMemo } from 'react';
 import { cn } from '../../../lib/cn';
-import type { AvlEffectType, AvlPersistenceKind, EffectCategory } from '../atoms/types';
-import { EFFECT_TYPE_TO_CATEGORY, EFFECT_CATEGORY_COLORS } from '../atoms/types';
+import type { AvlEffectType, AvlPersistenceKind, EffectCategory } from '../types/avl-atom-types';
+import { EFFECT_TYPE_TO_CATEGORY, EFFECT_CATEGORY_COLORS } from '../types/avl-atom-types';
 
 // ─── Domain Colors ────────────────────────────────────────────
 export const DOMAIN_COLORS: Record<string, string> = {

@@ -11,7 +11,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { Quaternion, Vector3 } from 'three';
-import { AVL_3D_COLORS, arcCurve3D, selfLoopCurve3D } from '../organisms/avl-3d-layout';
+import { AVL_3D_COLORS, arcCurve3D, selfLoopCurve3D } from '../lib/avl-3d-layout';
 
 // V4: Effect type color mapping
 function effectTypeColor(type: string): string {

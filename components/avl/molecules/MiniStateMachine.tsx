@@ -11,8 +11,8 @@
 import React from 'react';
 import { AvlState } from '../atoms/AvlState';
 import { AvlEffect } from '../atoms/AvlEffect';
-import { getStateRole, type AvlEffectType } from '../atoms/types';
-import type { TraitLevelData } from '../organisms/avl-schema-parser';
+import { getStateRole, type AvlEffectType } from '../types/avl-atom-types';
+import type { TraitLevelData } from '../lib/avl-schema-parser';
 
 export interface MiniStateMachineProps {
   data: TraitLevelData;

@@ -11,9 +11,9 @@
 
 import React, { useMemo } from 'react';
 import { Vector3 } from 'three';
-import { AVL_OPERATOR_COLORS } from '../atoms/types';
-import type { ExprTreeNode } from '../organisms/avl-schema-parser';
-import { treeLayout3D, type Position3D } from '../organisms/avl-3d-layout';
+import { AVL_OPERATOR_COLORS } from '../types/avl-atom-types';
+import type { ExprTreeNode } from '../lib/avl-schema-parser';
+import { treeLayout3D, type Position3D } from '../lib/avl-3d-layout';
 import { Avl3DLabel } from '../atoms/Avl3DLabel';
 
 // ---------------------------------------------------------------------------

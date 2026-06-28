@@ -59,9 +59,9 @@ export { AvlSwimLane, type AvlSwimLaneProps } from '../components/avl/molecules/
 export { ringPositions, arcPath, radialPositions, gridPositions, curveControlPoint } from '../components/avl/molecules/index';
 
 // V3: Canvas types
-export { type ZoomBand, type AvlNodeData, type AvlEdgeData, ZOOM_BAND_THRESHOLDS } from '../components/avl/molecules/avl-canvas-types';
-export { computeZoomBand, zoomProgress, useZoomBand, ZoomBandContext } from '../components/avl/molecules/avl-zoom-band';
-export { schemaToFlowGraph } from '../components/avl/molecules/avl-flow-converter';
+export { type ZoomBand, type AvlNodeData, type AvlEdgeData, ZOOM_BAND_THRESHOLDS } from '../components/avl/types/avl-canvas-types';
+export { computeZoomBand, zoomProgress, useZoomBand, ZoomBandContext } from '../components/avl/lib/avl-zoom-band';
+export { schemaToFlowGraph } from '../components/avl/lib/avl-flow-converter';
 
 // V3: React Flow node types
 export { SystemNode } from '../components/avl/molecules/SystemNode';
@@ -79,11 +79,11 @@ export { AvlPageEdge } from '../components/avl/molecules/AvlPageEdge';
 export { AvlBindingEdge } from '../components/avl/molecules/AvlBindingEdge';
 
 // V3: ELK layout (shared)
-export { computeTraitLayout, edgePath, type LayoutNode, type LayoutEdge, type ElkLayout } from '../components/avl/molecules/avl-elk-layout';
+export { computeTraitLayout, edgePath, type LayoutNode, type LayoutEdge, type ElkLayout } from '../components/avl/lib/avl-elk-layout';
 
 // V3 Revised: UI Projection components
-export { type ViewLevel, type PreviewNodeData, type EventEdgeData, type PatternEventSource, type RenderUIEntry } from '../components/avl/molecules/avl-preview-types';
-export { schemaToOverviewGraph, orbitalToExpandedGraph } from '../components/avl/molecules/avl-preview-converter';
+export { type ViewLevel, type PreviewNodeData, type EventEdgeData, type PatternEventSource, type RenderUIEntry } from '../components/avl/types/avl-preview-types';
+export { schemaToOverviewGraph, orbitalToExpandedGraph } from '../components/avl/lib/avl-preview-converter';
 export { OrbPreviewNode } from '../components/avl/molecules/OrbPreviewNode';
 export { EventFlowEdge } from '../components/avl/molecules/EventFlowEdge';
 
@@ -108,12 +108,12 @@ export {
   type UseCanvasDraggableResult,
   type UseCanvasDroppableArgs,
   type UseCanvasDroppableResult,
-} from '../components/avl/molecules/useCanvasDnd';
+} from '../components/avl/hooks/useCanvasDnd';
 
 // V3 Revised: Behavior Compose
-export { type ComposeViewLevel, type BehaviorComposeNodeData, type BehaviorWireEdgeData, type BehaviorCanvasEntry, type ConnectableEvent } from '../components/avl/molecules/avl-behavior-compose-types';
+export { type ComposeViewLevel, type BehaviorComposeNodeData, type BehaviorWireEdgeData, type BehaviorCanvasEntry, type ConnectableEvent } from '../components/avl/types/avl-behavior-compose-types';
 export { BehaviorComposeNode } from '../components/avl/molecules/BehaviorComposeNode';
-export { behaviorsToComposeGraph, registryEntryToCanvasEntry, type BehaviorRegistryRecord } from '../components/avl/molecules/avl-behavior-compose-converter';
+export { behaviorsToComposeGraph, registryEntryToCanvasEntry, type BehaviorRegistryRecord } from '../components/avl/lib/avl-behavior-compose-converter';
 
 // OrbInspector
 export { OrbInspector, type OrbInspectorProps } from '../components/avl/organisms/OrbInspector';

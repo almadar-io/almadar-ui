@@ -5,7 +5,7 @@ import { AvlEntity } from '../atoms/AvlEntity';
 import { AvlTrait } from '../atoms/AvlTrait';
 import { AvlPage } from '../atoms/AvlPage';
 import { AvlOrbital } from '../atoms/AvlOrbital';
-import type { AvlPersistenceKind } from '../atoms/types';
+import type { AvlPersistenceKind } from '../types/avl-atom-types';
 
 export interface AvlOrbitalUnitTrait {
   name: string;

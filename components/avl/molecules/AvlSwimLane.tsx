@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { CONNECTION_COLORS } from '../atoms/types';
+import { CONNECTION_COLORS } from '../types/avl-atom-types';
 
 export interface AvlSwimLaneProps {
   listenedEvents: string[];

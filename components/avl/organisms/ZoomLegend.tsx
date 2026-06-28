@@ -6,7 +6,7 @@
  */
 
 import React, { useState } from 'react';
-import type { ZoomBand } from '../molecules/avl-canvas-types';
+import type { ZoomBand } from '../types/avl-canvas-types';
 
 export interface ZoomLegendProps {
   band: ZoomBand;

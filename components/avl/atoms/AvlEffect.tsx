@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import type { AvlBaseProps, AvlEffectType } from './types';
-import { EFFECT_TYPE_TO_CATEGORY, EFFECT_CATEGORY_COLORS } from './types';
+import type { AvlBaseProps, AvlEffectType } from '../types/avl-atom-types';
+import { EFFECT_TYPE_TO_CATEGORY, EFFECT_CATEGORY_COLORS } from '../types/avl-atom-types';
 
 export interface AvlEffectProps extends AvlBaseProps {
   effectType: AvlEffectType;

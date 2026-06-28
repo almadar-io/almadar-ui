@@ -39,12 +39,12 @@ function entityNameOf(ref: EntityRef | undefined): string | undefined {
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
 import { BrowserPlayground } from '../../../runtime/BrowserPlayground';
-import type { PreviewNodeData, PatternEventSource, ScreenSize } from './avl-preview-types';
-import { SCREEN_SIZE_PRESETS } from './avl-preview-types';
+import type { PreviewNodeData, PatternEventSource, ScreenSize } from '../types/avl-preview-types';
+import { SCREEN_SIZE_PRESETS } from '../types/avl-preview-types';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
-import { useCanvasDroppable, type CanvasDropTarget } from './useCanvasDnd';
-import { formatPayloadTooltip } from './wire-validation';
+import { useCanvasDroppable, type CanvasDropTarget } from '../hooks/useCanvasDnd';
+import { formatPayloadTooltip } from '../lib/wire-validation';
 import { deriveEditFocusFromElement } from '../derive-edit-focus';
 import { createLogger } from '@almadar/logger';
 

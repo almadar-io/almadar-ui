@@ -7,13 +7,13 @@ export { AvlExprTree, type AvlExprTreeProps, type AvlExprTreeNode } from './AvlE
 export { AvlTransitionLane, type AvlTransitionLaneProps, type AvlTransitionLaneEffect } from './AvlTransitionLane';
 export { AvlSwimLane, type AvlSwimLaneProps } from './AvlSwimLane';
 export { AvlBehaviorGlyph, type AvlBehaviorGlyphProps, type BehaviorLevel, type GlyphSize, type BehaviorGlyphChild, type BehaviorGlyphConnection, DOMAIN_COLORS } from './AvlBehaviorGlyph';
-export { ringPositions, arcPath, radialPositions, gridPositions, curveControlPoint } from './avl-layout';
+export { ringPositions, arcPath, radialPositions, gridPositions, curveControlPoint } from '../lib/avl-layout';
 
 // V3: Canvas types + utilities
-export { type ZoomBand, type AvlNodeData, type AvlEdgeData, type AvlEdgeKind, ZOOM_BAND_THRESHOLDS } from './avl-canvas-types';
-export { computeZoomBand, zoomProgress, useZoomBand, ZoomBandContext } from './avl-zoom-band';
-export { schemaToFlowGraph } from './avl-flow-converter';
-export { computeTraitLayout, edgePath, stateWidth, STATE_H, type LayoutNode, type LayoutEdge, type ElkLayout } from './avl-elk-layout';
+export { type ZoomBand, type AvlNodeData, type AvlEdgeData, type AvlEdgeKind, ZOOM_BAND_THRESHOLDS } from '../types/avl-canvas-types';
+export { computeZoomBand, zoomProgress, useZoomBand, ZoomBandContext } from '../lib/avl-zoom-band';
+export { schemaToFlowGraph } from '../lib/avl-flow-converter';
+export { computeTraitLayout, edgePath, stateWidth, STATE_H, type LayoutNode, type LayoutEdge, type ElkLayout } from '../lib/avl-elk-layout';
 
 // V3: React Flow node components
 export { SystemNode, type SystemNodeProps } from './SystemNode';
@@ -31,15 +31,15 @@ export { AvlPageEdge } from './AvlPageEdge';
 export { AvlBindingEdge } from './AvlBindingEdge';
 
 // V3 Revised: UI Projection components
-export { type ViewLevel, type PreviewNodeData, type EventEdgeData, type PatternEventSource, type RenderUIEntry, type ScreenSize, SCREEN_SIZE_PRESETS } from './avl-preview-types';
-export { schemaToOverviewGraph, orbitalToExpandedGraph } from './avl-preview-converter';
+export { type ViewLevel, type PreviewNodeData, type EventEdgeData, type PatternEventSource, type RenderUIEntry, type ScreenSize, SCREEN_SIZE_PRESETS } from '../types/avl-preview-types';
+export { schemaToOverviewGraph, orbitalToExpandedGraph } from '../lib/avl-preview-converter';
 export { OrbPreviewNode, ScreenSizeContext } from './OrbPreviewNode';
 export { EventFlowEdge } from './EventFlowEdge';
 
 // V3 Revised: Behavior Compose components
-export { type ComposeViewLevel, type BehaviorComposeNodeData, type BehaviorWireEdgeData, type BehaviorCanvasEntry, type ConnectableEvent } from './avl-behavior-compose-types';
+export { type ComposeViewLevel, type BehaviorComposeNodeData, type BehaviorWireEdgeData, type BehaviorCanvasEntry, type ConnectableEvent } from '../types/avl-behavior-compose-types';
 export { BehaviorComposeNode } from './BehaviorComposeNode';
-export { behaviorsToComposeGraph, registryEntryToCanvasEntry, type BehaviorRegistryRecord } from './avl-behavior-compose-converter';
+export { behaviorsToComposeGraph, registryEntryToCanvasEntry, type BehaviorRegistryRecord } from '../lib/avl-behavior-compose-converter';
 
 // 3D Molecules (Three.js dependent - import via game/three barrel for SSR safety)
 export { Avl3DOrbitalNode, type Avl3DOrbitalNodeProps } from './Avl3DOrbitalNode';

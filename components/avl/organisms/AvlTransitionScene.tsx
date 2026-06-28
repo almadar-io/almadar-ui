@@ -9,8 +9,8 @@
 
 import React from 'react';
 import { AvlEffect } from '../atoms/AvlEffect';
-import { getStateRole, STATE_COLORS, type AvlEffectType } from '../atoms/types';
-import type { TransitionLevelData, ExprTreeNode } from './avl-schema-parser';
+import { getStateRole, STATE_COLORS, type AvlEffectType } from '../types/avl-atom-types';
+import type { TransitionLevelData, ExprTreeNode } from '../lib/avl-schema-parser';
 
 export interface AvlTransitionSceneProps {
   data: TransitionLevelData;

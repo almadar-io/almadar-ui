@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import type { AvlBaseProps, AvlFieldTypeKind } from './types';
+import type { AvlBaseProps, AvlFieldTypeKind } from '../types/avl-atom-types';
 
 export interface AvlFieldTypeProps extends AvlBaseProps {
   kind: AvlFieldTypeKind;

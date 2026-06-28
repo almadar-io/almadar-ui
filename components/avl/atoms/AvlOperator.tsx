@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import type { AvlBaseProps, AvlOperatorNamespace } from './types';
-import { AVL_OPERATOR_COLORS } from './types';
+import type { AvlBaseProps, AvlOperatorNamespace } from '../types/avl-atom-types';
+import { AVL_OPERATOR_COLORS } from '../types/avl-atom-types';
 
 export interface AvlOperatorProps extends AvlBaseProps {
   name: string;

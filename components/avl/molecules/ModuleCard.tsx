@@ -14,9 +14,9 @@ import { Handle, Position, useNodeId, ReactFlowProvider } from '@xyflow/react';
 import { AvlEntity } from '../atoms/AvlEntity';
 import { AvlFieldType } from '../atoms/AvlFieldType';
 import { AvlPage } from '../atoms/AvlPage';
-import { CONNECTION_COLORS, type AvlFieldTypeKind, type AvlPersistenceKind } from '../atoms/types';
+import { CONNECTION_COLORS, type AvlFieldTypeKind, type AvlPersistenceKind } from '../types/avl-atom-types';
 import { MiniStateMachine } from './MiniStateMachine';
-import type { AvlNodeData } from './avl-canvas-types';
+import type { AvlNodeData } from '../types/avl-canvas-types';
 
 export interface ModuleCardProps {
   data: AvlNodeData;

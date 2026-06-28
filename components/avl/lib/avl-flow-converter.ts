@@ -12,8 +12,8 @@ import {
   parseOrbitalLevel,
   parseTraitLevel,
   type TraitLevelData,
-} from '../organisms/avl-schema-parser';
-import type { AvlNodeData, AvlEdgeData } from './avl-canvas-types';
+} from './avl-schema-parser';
+import type { AvlNodeData, AvlEdgeData } from '../types/avl-canvas-types';
 
 // ---------------------------------------------------------------------------
 // Constants

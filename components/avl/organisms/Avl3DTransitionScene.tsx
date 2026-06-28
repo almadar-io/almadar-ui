@@ -10,8 +10,8 @@
  */
 
 import React from 'react';
-import type { TransitionLevelData } from './avl-schema-parser';
-import { AVL_3D_COLORS } from './avl-3d-layout';
+import type { TransitionLevelData } from '../lib/avl-schema-parser';
+import { AVL_3D_COLORS } from '../lib/avl-3d-layout';
 import { Avl3DStateNode } from '../molecules/Avl3DStateNode';
 import { Avl3DExprTree } from '../molecules/Avl3DExprTree';
 import { Avl3DLabel } from '../atoms/Avl3DLabel';

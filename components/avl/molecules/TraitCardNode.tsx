@@ -22,13 +22,13 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import type { OrbitalSchema } from '@almadar/core';
-import type { PreviewNodeData } from './avl-preview-types';
+import type { PreviewNodeData } from '../types/avl-preview-types';
 import { Box } from '../../core/atoms/Box';
 import { HStack, VStack } from '../../core/atoms/Stack';
 import { Typography } from '../../core/atoms/Typography';
 import { Badge } from '../../core/atoms/Badge';
 import { AvlTraitScene } from '../organisms/AvlTraitScene';
-import { parseTraitLevel } from '../organisms/avl-schema-parser';
+import { parseTraitLevel } from '../lib/avl-schema-parser';
 import { useTranslate } from '../../../hooks/useTranslate';
 
 // ---------------------------------------------------------------------------

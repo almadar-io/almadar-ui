@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import type { AvlBaseProps, AvlPersistenceKind } from './types';
+import type { AvlBaseProps, AvlPersistenceKind } from '../types/avl-atom-types';
 
 export interface AvlPersistenceProps extends AvlBaseProps {
   kind: AvlPersistenceKind;

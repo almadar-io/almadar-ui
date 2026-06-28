@@ -13,7 +13,7 @@
 import React, { useRef, useState, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { MathUtils, type Group } from 'three';
-import { AVL_3D_COLORS } from '../organisms/avl-3d-layout';
+import { AVL_3D_COLORS } from '../lib/avl-3d-layout';
 import { Avl3DLabel } from '../atoms/Avl3DLabel';
 import { Avl3DTooltip } from '../atoms/Avl3DTooltip';
 

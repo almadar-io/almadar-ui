@@ -12,12 +12,12 @@
 
 import React from 'react';
 import type { NodeProps } from '@xyflow/react';
-import { useZoomBand } from './avl-zoom-band';
+import { useZoomBand } from '../lib/avl-zoom-band';
 import { SystemNode } from './SystemNode';
 import { ModuleCard } from './ModuleCard';
 import { BehaviorView } from './BehaviorView';
 import { DetailView } from './DetailView';
-import type { AvlNodeData } from './avl-canvas-types';
+import type { AvlNodeData } from '../types/avl-canvas-types';
 
 export const AvlOrbitalNode: React.FC<NodeProps> = (props) => {
   const band = useZoomBand();

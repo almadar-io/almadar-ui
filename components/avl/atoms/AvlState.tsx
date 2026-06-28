@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import type { AvlBaseProps } from './types';
-import { STATE_COLORS, type StateRole } from './types';
+import type { AvlBaseProps } from '../types/avl-atom-types';
+import { STATE_COLORS, type StateRole } from '../types/avl-atom-types';
 
 export interface AvlStateProps extends AvlBaseProps {
   name?: string;

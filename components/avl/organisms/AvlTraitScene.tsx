@@ -16,9 +16,9 @@ const log = createLogger('almadar:ui:avl:trait-scene');
 import { AvlTransitionLane } from '../molecules/AvlTransitionLane';
 import { AvlSwimLane } from '../molecules/AvlSwimLane';
 import { AvlClickTarget } from './AvlClickTarget';
-import { CONNECTION_COLORS, type AvlEffectType } from '../atoms/types';
-import { computeTraitLayout, edgePath, type ElkLayout } from '../molecules/avl-elk-layout';
-import type { TraitLevelData } from './avl-schema-parser';
+import { CONNECTION_COLORS, type AvlEffectType } from '../types/avl-atom-types';
+import { computeTraitLayout, edgePath, type ElkLayout } from '../lib/avl-elk-layout';
+import type { TraitLevelData } from '../lib/avl-schema-parser';
 
 export interface AvlTraitSceneProps {
   data: TraitLevelData;
