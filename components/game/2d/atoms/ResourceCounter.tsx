@@ -34,8 +34,8 @@ export interface ResourceCounterProps {
 
 const DEFAULT_ASSET_URL: Asset = {
   url: 'https://almadar-kflow-assets.web.app/shared/world-map/gold_mine.png',
-  role: 'effect',
-  category: 'world',
+  role: 'ui',
+  category: 'coin',
 };
 
 const sizeMap = {

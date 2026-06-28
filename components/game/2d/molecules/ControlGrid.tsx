@@ -1,6 +1,6 @@
 'use client';
 import * as React from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { EventEmit, Asset } from '@almadar/core';
 import { cn } from '../../../../lib/cn';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { ControlButton } from '../atoms/ControlButton';
@@ -16,6 +16,7 @@ export interface ControlGridButton {
   id: string;
   label?: string;
   icon?: IconInput;
+  assetUrl?: Asset;
   variant?: 'primary' | 'secondary' | 'ghost' | string;
 }
 
@@ -148,16 +149,16 @@ export function ControlGrid({
     return (
       <div className={cn(layoutClass.diamond, className)}>
         <div />
-        <ControlButton icon={top.icon} label={top.label} size={sizeKey[size]} variant={top.variant}
+        <ControlButton icon={top.icon} assetUrl={top.assetUrl} label={top.label} size={sizeKey[size]} variant={top.variant}
           pressed={active.has(top.id)} onPress={() => handlePress(top.id)} onRelease={() => handleRelease(top.id)} disabled={disabled} />
         <div />
-        <ControlButton icon={left.icon} label={left.label} size={sizeKey[size]} variant={left.variant}
+        <ControlButton icon={left.icon} assetUrl={left.assetUrl} label={left.label} size={sizeKey[size]} variant={left.variant}
           pressed={active.has(left.id)} onPress={() => handlePress(left.id)} onRelease={() => handleRelease(left.id)} disabled={disabled} />
         <div />
-        <ControlButton icon={right.icon} label={right.label} size={sizeKey[size]} variant={right.variant}
+        <ControlButton icon={right.icon} assetUrl={right.assetUrl} label={right.label} size={sizeKey[size]} variant={right.variant}
           pressed={active.has(right.id)} onPress={() => handlePress(right.id)} onRelease={() => handleRelease(right.id)} disabled={disabled} />
         <div />
-        <ControlButton icon={bottom.icon} label={bottom.label} size={sizeKey[size]} variant={bottom.variant}
+        <ControlButton icon={bottom.icon} assetUrl={bottom.assetUrl} label={bottom.label} size={sizeKey[size]} variant={bottom.variant}
           pressed={active.has(bottom.id)} onPress={() => handlePress(bottom.id)} onRelease={() => handleRelease(bottom.id)} disabled={disabled} />
         <div />
       </div>
@@ -170,6 +171,7 @@ export function ControlGrid({
         <ControlButton
           key={button.id}
           icon={button.icon}
+          assetUrl={button.assetUrl}
           label={button.label}
           size={sizeKey[size]}
           variant={button.variant}

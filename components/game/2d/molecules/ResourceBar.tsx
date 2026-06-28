@@ -3,11 +3,13 @@ import * as React from 'react';
 import { cn } from '../../../../lib/cn';
 import { StatBadge } from './StatBadge';
 import { Box } from '../../../core/atoms/Box';
+import type { Asset } from '@almadar/core';
 import type { IconInput } from '../../../core/atoms/index';
 
 export interface ResourceBarResource {
   /** Icon for the resource */
   icon?: IconInput;
+  assetUrl?: Asset;
   /** Resource name */
   label: string;
   /** Current amount */
@@ -51,6 +53,7 @@ export function ResourceBar({
           max={resource.max}
           format={resource.max != null ? 'bar' : 'number'}
           icon={resource.icon}
+          assetUrl={resource.assetUrl}
           size={size}
         />
       ))}

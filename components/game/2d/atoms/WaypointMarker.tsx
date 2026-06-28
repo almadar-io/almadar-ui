@@ -5,8 +5,8 @@ import type { Asset } from '@almadar/core';
 
 const DEFAULT_ASSET_URL: Asset = {
   url: 'https://almadar-kflow-assets.web.app/shared/world-map/battle_marker.png',
-  role: 'effect',
-  category: 'world',
+  role: 'ui',
+  category: 'waypoint',
 };
 
 export interface WaypointMarkerProps {

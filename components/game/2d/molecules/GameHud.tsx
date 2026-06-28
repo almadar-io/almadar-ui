@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cn } from "../../../../lib/cn";
 import { StatBadge, type StatBadgeProps } from "./StatBadge";
+import type { Asset } from "@almadar/core";
 import type { IconInput } from "../../../core/atoms/index";
 
 export interface GameHudStat extends Omit<StatBadgeProps, "size"> {
@@ -23,6 +24,7 @@ export interface GameHudElement {
   value?: number | string;
   /** Lucide icon name or component */
   icon?: IconInput;
+  assetUrl?: Asset;
   /** Display format */
   format?: string;
   /** Max value (for bars/hearts) */
@@ -80,6 +82,7 @@ function convertElementsToStats(
       // Pass through direct values from compiled render-ui effects
       ...(el.value !== undefined && { value: el.value }),
       ...(el.icon !== undefined && { icon: el.icon }),
+      ...(el.assetUrl !== undefined && { assetUrl: el.assetUrl }),
       ...(el.format !== undefined && { format: el.format }),
       ...(el.max !== undefined && { max: el.max }),
     };

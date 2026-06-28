@@ -27,8 +27,8 @@ const sizeMap = {
 
 const DEFAULT_ASSET_URL: Asset = {
   url: 'https://almadar-kflow-assets.web.app/shared/effects/particles/symbol_01.png',
-  role: 'effect',
-  category: 'effect',
+  role: 'ui',
+  category: 'turn',
 };
 
 export function TurnIndicator({

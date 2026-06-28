@@ -1,6 +1,6 @@
 'use client';
 import * as React from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { EventEmit, Asset } from '@almadar/core';
 import { cn } from '../../../../lib/cn';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { ItemSlot } from '../atoms/ItemSlot';
@@ -10,6 +10,7 @@ import type { IconInput } from '../../../core/atoms/index';
 export interface InventoryGridItem {
   id: string;
   icon?: IconInput;
+  assetUrl?: Asset;
   label?: string;
   quantity?: number;
   rarity?: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
@@ -87,6 +88,7 @@ export function InventoryGrid({
         <ItemSlot
           key={item.id}
           icon={item.icon}
+          assetUrl={item.assetUrl}
           label={item.label}
           quantity={item.quantity}
           rarity={item.rarity}

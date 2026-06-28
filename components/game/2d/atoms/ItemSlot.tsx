@@ -51,7 +51,7 @@ const rarityGlowMap = {
 
 const DEFAULT_ASSET_URL: Asset = {
   url: 'https://almadar-kflow-assets.web.app/shared/isometric-dungeon/Isometric/chestClosed_E.png',
-  role: 'effect',
+  role: 'item',
   category: 'item',
 };
 

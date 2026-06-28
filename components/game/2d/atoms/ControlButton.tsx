@@ -55,8 +55,8 @@ const variantMap = {
 
 const DEFAULT_ASSET_URL: Asset = {
   url: 'https://almadar-kflow-assets.web.app/shared/effects/particles/circle_01.png',
-  role: 'effect',
-  category: 'effect',
+  role: 'ui',
+  category: 'control',
 };
 
 export function ControlButton({

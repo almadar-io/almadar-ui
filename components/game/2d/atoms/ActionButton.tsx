@@ -40,8 +40,8 @@ const variantStyles = {
 
 const DEFAULT_ASSET_URL: Asset = {
   url: 'https://almadar-kflow-assets.web.app/shared/effects/particles/slash_01.png',
-  role: 'effect',
-  category: 'effect',
+  role: 'ui',
+  category: 'action',
 };
 
 export function ActionButton({

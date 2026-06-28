@@ -7,7 +7,7 @@ export interface StatusEffectProps {
   /** Sprite asset — takes precedence over icon when provided */
   assetUrl?: Asset;
   /** Lucide icon name or component */
-  icon: IconInput;
+  icon?: IconInput;
   /** Label describing the effect */
   label?: string;
   /** Remaining duration in seconds */
@@ -24,7 +24,7 @@ export interface StatusEffectProps {
 
 const DEFAULT_ASSET_URL: Asset = {
   url: 'https://almadar-kflow-assets.web.app/shared/effects/particles/flame_01.png',
-  role: 'effect',
+  role: 'ui',
   category: 'effect',
 };
 
@@ -49,7 +49,7 @@ function formatDuration(seconds: number): string {
 
 export function StatusEffect({
   assetUrl = DEFAULT_ASSET_URL,
-  icon = 'shield',
+  icon,
   label = 'Shield',
   duration = 30,
   stacks,
@@ -79,11 +79,11 @@ export function StatusEffect({
               style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
               className="flex-shrink-0"
             />
-          ) : typeof icon === 'string' ? (
+          ) : icon != null && typeof icon === 'string' ? (
             <Icon name={icon} size="sm" />
-          ) : (
+          ) : icon != null ? (
             <Icon icon={icon} size="sm" />
-          )}
+          ) : null}
         </span>
         {duration !== undefined && (
           <span
