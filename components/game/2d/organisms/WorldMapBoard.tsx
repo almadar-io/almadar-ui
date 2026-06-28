@@ -49,6 +49,7 @@ type WorldMapAssetManifest = {
     terrains?: Record<string, Asset>;
     units?: Record<string, Asset>;
     features?: Record<string, Asset>;
+    ui?: Record<string, Asset>;
 };
 
 /** Context exposed to render-prop slots. Hex / hero rows are `EntityRow`. */
@@ -191,6 +192,14 @@ function buildDefaultWorldTiles(): IsometricTile[] {
 
 const DEFAULT_WORLD_TILES: IsometricTile[] = buildDefaultWorldTiles();
 
+const DEFAULT_WORLD_MAP_ASSET_MANIFEST: WorldMapAssetManifest = {
+    ui: {
+        coin:   makeAsset(`${WORLD_CDN}/ui-world-map-board/default/ui/coin.png`,   'ui', { category: 'coin' }),
+        health: makeAsset(`${WORLD_CDN}/ui-world-map-board/default/ui/health.png`, 'ui', { category: 'health' }),
+        star:   makeAsset(`${WORLD_CDN}/ui-world-map-board/default/ui/star.png`,   'ui', { category: 'star' }),
+    },
+};
+
 // =============================================================================
 // Helpers
 // =============================================================================
@@ -262,7 +271,7 @@ export function WorldMapBoard({
         type: str(r.type),
     }));
     const selectedHeroId = (resolved?.selectedHeroId as string | null | undefined) ?? null;
-    const assetManifest = propAssetManifest ?? resolved?.assetManifest as WorldMapAssetManifest | undefined;
+    const assetManifest = propAssetManifest ?? resolved?.assetManifest as WorldMapAssetManifest | undefined ?? DEFAULT_WORLD_MAP_ASSET_MANIFEST;
     const backgroundImage = resolved?.backgroundImage as AssetUrl | undefined;
 
     const [hoveredTile, setHoveredTile] = useState<{ x: number; y: number } | null>(null);

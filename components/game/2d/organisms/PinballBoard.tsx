@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import type { AssetUrl, EventEmit, EntityRow } from '@almadar/core';
+import type { Asset, AssetUrl, EventEmit, EntityRow } from '@almadar/core';
+import { makeAsset } from '../../shared/makeAsset';
 import { cn } from '../../../../lib/cn';
 import { Canvas2D } from '../molecules/Canvas2D';
 import type { DisplayStateProps } from '../../../core/organisms/types';
@@ -9,6 +10,29 @@ import type { DisplayStateProps } from '../../../core/organisms/types';
 // =============================================================================
 // Types
 // =============================================================================
+
+/** Asset manifest shape for PinballBoard. */
+type PinballAssetManifest = {
+    terrains?: Record<string, Asset>;
+    units?: Record<string, Asset>;
+    features?: Record<string, Asset>;
+    effects?: Record<string, Asset>;
+    ui?: Record<string, Asset>;
+};
+
+// =============================================================================
+// Default manifest
+// =============================================================================
+
+const PINBALL_CDN = 'https://almadar-kflow-assets.web.app/shared';
+
+const DEFAULT_PINBALL_ASSET_MANIFEST: PinballAssetManifest = {
+    ui: {
+        'ball-count': makeAsset(`${PINBALL_CDN}/ui-pinball-board/default/ui/ball-count.png`, 'ui', { category: 'ball-count' }),
+        key:          makeAsset(`${PINBALL_CDN}/ui-pinball-board/default/ui/key.png`,         'ui', { category: 'key' }),
+        star:         makeAsset(`${PINBALL_CDN}/ui-pinball-board/default/ui/star.png`,        'ui', { category: 'star' }),
+    },
+};
 
 export interface PinballBoardProps extends DisplayStateProps {
     /** Playfield tiles */
@@ -18,7 +42,7 @@ export interface PinballBoardProps extends DisplayStateProps {
     /** Features (bumpers, paddles, etc.) on the board */
     features?: readonly EntityRow[];
     /** Asset sprite manifest */
-    assetManifest?: string;
+    assetManifest?: PinballAssetManifest;
     /** Base URL prepended to manifest sprite paths */
     assetBaseUrl?: AssetUrl;
     /** Render scale */
@@ -43,7 +67,7 @@ export function PinballBoard({
     tiles: _tiles,
     units: _units,
     features: _features,
-    assetManifest: _assetManifest,
+    assetManifest = DEFAULT_PINBALL_ASSET_MANIFEST,
     assetBaseUrl: _assetBaseUrl,
     scale: _scale = 1,
     showMinimap = false,
@@ -58,6 +82,7 @@ export function PinballBoard({
         <div className={cn('pinball-board relative w-full h-full', className)}>
             <Canvas2D
                 projection="free"
+                assetManifest={assetManifest}
                 showMinimap={showMinimap}
                 camera={enableCamera ? 'pan-zoom' : 'fixed'}
                 tileClickEvent={tileClickEvent}

@@ -87,6 +87,7 @@ type BattleAssetManifest = {
     units?: Record<string, Asset>;
     features?: Record<string, Asset>;
     effects?: Record<string, Asset>;
+    ui?: Record<string, Asset>;
 };
 
 export interface BattleBoardProps extends DisplayStateProps {
@@ -193,6 +194,14 @@ function buildDefaultBattleTiles(): IsometricTile[] {
 
 const DEFAULT_BATTLE_TILES: IsometricTile[] = buildDefaultBattleTiles();
 
+const DEFAULT_BATTLE_ASSET_MANIFEST: BattleAssetManifest = {
+    ui: {
+        coin:   makeAsset(`${BATTLE_CDN}/ui-battle-board/default/ui/coin.png`,   'ui', { category: 'coin' }),
+        health: makeAsset(`${BATTLE_CDN}/ui-battle-board/default/ui/health.png`, 'ui', { category: 'health' }),
+        star:   makeAsset(`${BATTLE_CDN}/ui-battle-board/default/ui/star.png`,   'ui', { category: 'star' }),
+    },
+};
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -271,7 +280,7 @@ export function BattleBoard({
         : []);
     const boardWidth = num(board.gridWidth ?? board.boardWidth, BATTLE_GRID_W);
     const boardHeight = num(board.gridHeight ?? board.boardHeight, BATTLE_GRID_H);
-    const assetManifest = propAssetManifest ?? board.assetManifest as BattleAssetManifest | undefined;
+    const assetManifest = propAssetManifest ?? board.assetManifest as BattleAssetManifest | undefined ?? DEFAULT_BATTLE_ASSET_MANIFEST;
     const backgroundImage = board.backgroundImage as AssetUrl | undefined;
 
     // ── Game state (read from entity — controlled by parent) ─────────────

@@ -1,16 +1,39 @@
 'use client';
 
 import React from 'react';
-import type { AssetUrl, EventEmit } from '@almadar/core';
+import type { Asset, AssetUrl, EventEmit } from '@almadar/core';
+import { makeAsset } from '../../shared/makeAsset';
 import { cn } from '../../../../lib/cn';
 import { Canvas2D } from '../molecules/Canvas2D';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from '../../shared/isometricTypes';
 import type { DisplayStateProps } from '../../../core/organisms/types';
-import type { Canvas2DProps } from '../molecules/Canvas2D';
 
 // =============================================================================
 // Types
 // =============================================================================
+
+/** Asset manifest shape for HexStrategyBoard. */
+type HexStrategyAssetManifest = {
+    terrains?: Record<string, Asset>;
+    units?: Record<string, Asset>;
+    features?: Record<string, Asset>;
+    effects?: Record<string, Asset>;
+    ui?: Record<string, Asset>;
+};
+
+// =============================================================================
+// Default manifest
+// =============================================================================
+
+const HEX_CDN = 'https://almadar-kflow-assets.web.app/shared';
+
+const DEFAULT_HEX_STRATEGY_ASSET_MANIFEST: HexStrategyAssetManifest = {
+    ui: {
+        coin:   makeAsset(`${HEX_CDN}/ui-hex-strategy-board/default/ui/coin.png`,   'ui', { category: 'coin' }),
+        health: makeAsset(`${HEX_CDN}/ui-hex-strategy-board/default/ui/health.png`, 'ui', { category: 'health' }),
+        star:   makeAsset(`${HEX_CDN}/ui-hex-strategy-board/default/ui/star.png`,   'ui', { category: 'star' }),
+    },
+};
 
 export interface HexStrategyBoardProps extends DisplayStateProps {
     /** Hex grid tiles */
@@ -19,8 +42,8 @@ export interface HexStrategyBoardProps extends DisplayStateProps {
     units?: IsometricUnit[];
     /** Features (resources, structures, etc.) on the board */
     features?: IsometricFeature[];
-    /** Asset sprite manifest (same shape as Canvas2D.assetManifest) */
-    assetManifest?: Canvas2DProps['assetManifest'];
+    /** Asset sprite manifest */
+    assetManifest?: HexStrategyAssetManifest;
     /** Base URL prepended to manifest sprite paths */
     assetBaseUrl?: AssetUrl;
     /** Render scale */
@@ -43,7 +66,7 @@ export function HexStrategyBoard({
     tiles,
     units,
     features,
-    assetManifest,
+    assetManifest = DEFAULT_HEX_STRATEGY_ASSET_MANIFEST,
     assetBaseUrl,
     scale = 0.45,
     showMinimap = true,

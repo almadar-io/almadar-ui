@@ -1,16 +1,37 @@
 'use client';
 
 import React from 'react';
-import type { AssetUrl, EventEmit } from '@almadar/core';
+import type { Asset, AssetUrl, EventEmit } from '@almadar/core';
+import { makeAsset } from '../../shared/makeAsset';
 import { cn } from '../../../../lib/cn';
 import { Canvas2D } from '../molecules/Canvas2D';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from '../../shared/isometricTypes';
 import type { DisplayStateProps } from '../../../core/organisms/types';
-import type { Canvas2DProps } from '../molecules/Canvas2D';
 
 // =============================================================================
 // Types
 // =============================================================================
+
+/** Asset manifest shape for PirateBoard. */
+type PirateAssetManifest = {
+    terrains?: Record<string, Asset>;
+    units?: Record<string, Asset>;
+    features?: Record<string, Asset>;
+    effects?: Record<string, Asset>;
+    ui?: Record<string, Asset>;
+};
+
+// =============================================================================
+// Default manifest
+// =============================================================================
+
+const PIRATE_CDN = 'https://almadar-kflow-assets.web.app/shared';
+
+const DEFAULT_PIRATE_ASSET_MANIFEST: PirateAssetManifest = {
+    ui: {
+        cannon: makeAsset(`${PIRATE_CDN}/ui-pirate-board/default/ui/cannon.png`, 'ui', { category: 'cannon' }),
+    },
+};
 
 export interface PirateBoardProps extends DisplayStateProps {
     /** Sea/island grid tiles */
@@ -19,8 +40,8 @@ export interface PirateBoardProps extends DisplayStateProps {
     units?: IsometricUnit[];
     /** Features (ports, treasures, etc.) on the board */
     features?: IsometricFeature[];
-    /** Asset sprite manifest (same shape as Canvas2D.assetManifest) */
-    assetManifest?: Canvas2DProps['assetManifest'];
+    /** Asset sprite manifest */
+    assetManifest?: PirateAssetManifest;
     /** Base URL prepended to manifest sprite paths */
     assetBaseUrl?: AssetUrl;
     /** Render scale */
@@ -43,7 +64,7 @@ export function PirateBoard({
     tiles,
     units,
     features,
-    assetManifest,
+    assetManifest = DEFAULT_PIRATE_ASSET_MANIFEST,
     assetBaseUrl,
     scale = 0.45,
     showMinimap = true,

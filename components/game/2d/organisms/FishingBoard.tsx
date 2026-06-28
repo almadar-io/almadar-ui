@@ -2,6 +2,7 @@
 
 import React from 'react';
 import type { Asset, EventEmit } from '@almadar/core';
+import { makeAsset } from '../../shared/makeAsset';
 import { cn } from '../../../../lib/cn';
 import { Canvas2D } from '../molecules/Canvas2D';
 import type { DisplayStateProps } from '../../../core/organisms/types';
@@ -10,9 +11,34 @@ import type { DisplayStateProps } from '../../../core/organisms/types';
 // Types
 // =============================================================================
 
+/** Asset manifest shape for FishingBoard. */
+type FishingAssetManifest = {
+    terrains?: Record<string, Asset>;
+    units?: Record<string, Asset>;
+    features?: Record<string, Asset>;
+    effects?: Record<string, Asset>;
+    ui?: Record<string, Asset>;
+};
+
+// =============================================================================
+// Default manifest
+// =============================================================================
+
+const FISHING_CDN = 'https://almadar-kflow-assets.web.app/shared';
+
+const DEFAULT_FISHING_ASSET_MANIFEST: FishingAssetManifest = {
+    ui: {
+        'catch-count': makeAsset(`${FISHING_CDN}/ui-fishing-board/default/ui/catch-count.png`, 'ui', { category: 'catch-count' }),
+        depth:         makeAsset(`${FISHING_CDN}/ui-fishing-board/default/ui/depth.png`,       'ui', { category: 'depth' }),
+        score:         makeAsset(`${FISHING_CDN}/ui-fishing-board/default/ui/score.png`,       'ui', { category: 'score' }),
+    },
+};
+
 export interface FishingBoardProps extends DisplayStateProps {
     /** Background image asset for the fishing scene */
     backgroundImage?: Asset;
+    /** Asset sprite manifest */
+    assetManifest?: FishingAssetManifest;
     /** Render scale */
     scale?: number;
     /** Show minimap overlay */
@@ -35,6 +61,7 @@ export interface FishingBoardProps extends DisplayStateProps {
 
 export function FishingBoard({
     backgroundImage,
+    assetManifest = DEFAULT_FISHING_ASSET_MANIFEST,
     scale = 1,
     showMinimap = false,
     enableCamera = true,
@@ -49,6 +76,7 @@ export function FishingBoard({
             <Canvas2D
                 projection="free"
                 backgroundImage={backgroundImage}
+                assetManifest={assetManifest}
                 scale={scale}
                 showMinimap={showMinimap}
                 camera={enableCamera ? 'pan-zoom' : 'fixed'}

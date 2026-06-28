@@ -43,6 +43,7 @@ type CastleAssetManifest = {
     terrains?: Record<string, Asset>;
     units?: Record<string, Asset>;
     features?: Record<string, Asset>;
+    ui?: Record<string, Asset>;
 };
 
 /** Typed entity row for the castle board — fields this board reads off the entity. */
@@ -134,6 +135,20 @@ export interface CastleBoardProps {
 }
 
 // =============================================================================
+// Default manifest
+// =============================================================================
+
+const CASTLE_CDN = 'https://almadar-kflow-assets.web.app/shared';
+
+const DEFAULT_CASTLE_ASSET_MANIFEST: CastleAssetManifest = {
+    ui: {
+        coin:   makeAsset(`${CASTLE_CDN}/ui-castle-board/default/ui/coin.png`,   'ui', { category: 'coin' }),
+        health: makeAsset(`${CASTLE_CDN}/ui-castle-board/default/ui/health.png`, 'ui', { category: 'health' }),
+        star:   makeAsset(`${CASTLE_CDN}/ui-castle-board/default/ui/star.png`,   'ui', { category: 'star' }),
+    },
+};
+
+// =============================================================================
 // Component
 // =============================================================================
 
@@ -171,7 +186,7 @@ export function CastleBoard({
     const tiles = propTiles ?? (resolved?.tiles ?? []);
     const features = propFeatures ?? (resolved?.features ?? []);
     const units = propUnits ?? (resolved?.units ?? []);
-    const assetManifest = propAssetManifest ?? resolved?.assetManifest;
+    const assetManifest = propAssetManifest ?? resolved?.assetManifest ?? DEFAULT_CASTLE_ASSET_MANIFEST;
     const backgroundImage = resolved?.backgroundImage;
 
     // -- Model-owned resource state (set by lolo on every TICK/BUILD/etc) ------

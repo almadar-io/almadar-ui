@@ -1,16 +1,37 @@
 'use client';
 
 import React from 'react';
-import type { AssetUrl, EventEmit } from '@almadar/core';
+import type { Asset, AssetUrl, EventEmit } from '@almadar/core';
+import { makeAsset } from '../../shared/makeAsset';
 import { cn } from '../../../../lib/cn';
 import { Canvas2D } from '../molecules/Canvas2D';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from '../../shared/isometricTypes';
 import type { DisplayStateProps } from '../../../core/organisms/types';
-import type { Canvas2DProps } from '../molecules/Canvas2D';
 
 // =============================================================================
 // Types
 // =============================================================================
+
+/** Asset manifest shape for SpaceShmupBoard. */
+type SpaceShmupAssetManifest = {
+    terrains?: Record<string, Asset>;
+    units?: Record<string, Asset>;
+    features?: Record<string, Asset>;
+    effects?: Record<string, Asset>;
+    ui?: Record<string, Asset>;
+};
+
+// =============================================================================
+// Default manifest
+// =============================================================================
+
+const SPACE_SHMUP_CDN = 'https://almadar-kflow-assets.web.app/shared';
+
+const DEFAULT_SPACE_SHMUP_ASSET_MANIFEST: SpaceShmupAssetManifest = {
+    ui: {
+        life: makeAsset(`${SPACE_SHMUP_CDN}/ui-space-shmup-board/default/ui/life.png`, 'ui', { category: 'life' }),
+    },
+};
 
 export interface SpaceShmupBoardProps extends DisplayStateProps {
     /** Space terrain tiles filling the grid */
@@ -19,8 +40,8 @@ export interface SpaceShmupBoardProps extends DisplayStateProps {
     units?: IsometricUnit[];
     /** Features (asteroids, power-ups, etc.) on the board */
     features?: IsometricFeature[];
-    /** Asset sprite manifest (same shape as Canvas2D.assetManifest) */
-    assetManifest?: Canvas2DProps['assetManifest'];
+    /** Asset sprite manifest */
+    assetManifest?: SpaceShmupAssetManifest;
     /** Base URL prepended to manifest sprite paths */
     assetBaseUrl?: AssetUrl;
     /** Render scale */
@@ -43,7 +64,7 @@ export function SpaceShmupBoard({
     tiles,
     units,
     features,
-    assetManifest,
+    assetManifest = DEFAULT_SPACE_SHMUP_ASSET_MANIFEST,
     assetBaseUrl,
     scale = 0.45,
     showMinimap = false,
