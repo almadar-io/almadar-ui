@@ -46,11 +46,6 @@
       "import": "./dist/runtime/index.js",
       "require": "./dist/runtime/index.cjs"
     },
-    "./stores": {
-      "types": "./dist/stores/index.d.ts",
-      "import": "./dist/stores/index.js",
-      "require": "./dist/stores/index.cjs"
-    },
     "./lib": {
       "types": "./dist/lib/index.d.ts",
       "import": "./dist/lib/index.js",

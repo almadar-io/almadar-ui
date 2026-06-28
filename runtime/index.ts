@@ -15,7 +15,6 @@ export { useResolvedSchema, type ResolvedSchemaResult, clearSchemaCache } from '
 export {
     EntitySchemaProvider,
     useEntitySchema,
-    useEntityDefinition,
     useEntitySchemaOptional,
     type EntitySchemaContextValue,
     type EntitySchemaProviderProps,
@@ -83,7 +82,6 @@ export {
     perfEnd,
     perfTime,
     profilerOnRender,
-    getPerfSnapshot,
     usePerfBuffer,
     clearPerf,
     type PerfEntry,

@@ -130,7 +130,7 @@ export const profilerOnRender: ProfilerOnRenderCallback = (
 };
 
 /** Snapshot in insertion order (oldest first). Stable identity until next push. */
-export function getPerfSnapshot(): readonly PerfEntry[] {
+function getPerfSnapshot(): readonly PerfEntry[] {
   if (ring.length < RING_SIZE) return ring.slice();
   return [...ring.slice(writeIdx), ...ring.slice(0, writeIdx)];
 }

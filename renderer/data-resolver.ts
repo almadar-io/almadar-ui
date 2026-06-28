@@ -187,23 +187,6 @@ export function resolveEntityById(
 }
 
 /**
- * Get the count of entities matching criteria.
- */
-export function resolveEntityCount(
-  entityName: string,
-  context: DataContext,
-  filters?: Record<string, FieldValue>
-): number {
-  const { data } = resolveEntityData(entityName, context);
-
-  if (filters) {
-    return applyFilters(data, filters).length;
-  }
-
-  return data.length;
-}
-
-/**
  * Check if any entities exist for a given entity name.
  */
 export function hasEntities(
@@ -214,37 +197,3 @@ export function hasEntities(
   return data.length > 0;
 }
 
-/**
- * Create a data context from fetched data only.
- * Convenience function for compiled shells.
- */
-export function createFetchedDataContext(
-  data: Record<string, EntityRow[]>
-): DataContext {
-  return { fetchedData: data };
-}
-
-/**
- * Merge multiple data contexts.
- * Later contexts take precedence.
- */
-export function mergeDataContexts(...contexts: DataContext[]): DataContext {
-  const merged: DataContext = {};
-
-  for (const context of contexts) {
-    if (context.fetchedData) {
-      merged.fetchedData = {
-        ...merged.fetchedData,
-        ...context.fetchedData,
-      };
-    }
-    if (context.entityStore) {
-      merged.entityStore = context.entityStore;
-    }
-    if (context.querySingleton) {
-      merged.querySingleton = context.querySingleton;
-    }
-  }
-
-  return merged;
-}

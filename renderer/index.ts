@@ -66,11 +66,8 @@ export {
   executeClientEffects,
   parseClientEffect,
   parseClientEffects,
-  filterEffectsByType,
   getRenderUIEffects,
-  getNavigateEffects,
   getNotifyEffects,
-  getEmitEffects,
 } from './client-effect-executor';
 
 // ============================================================================
@@ -98,10 +95,7 @@ export {
   resolveEntityData,
   resolveEntityDataWithQuery,
   resolveEntityById,
-  resolveEntityCount,
   hasEntities,
-  createFetchedDataContext,
-  mergeDataContexts,
 } from './data-resolver';
 
 // ============================================================================
@@ -112,10 +106,7 @@ export {
   SLOT_DEFINITIONS,
   getSlotDefinition,
   isPortalSlot,
-  isInlineSlot,
-  getSlotsByType,
   getInlineSlots,
-  getPortalSlots,
   ALL_SLOTS,
 } from './slot-definitions';
 

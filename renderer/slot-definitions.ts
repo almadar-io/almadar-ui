@@ -119,16 +119,9 @@ export function isPortalSlot(slot: string): boolean {
 }
 
 /**
- * Check if a slot is an inline slot.
- */
-export function isInlineSlot(slot: UISlot): boolean {
-  return SLOT_DEFINITIONS[slot]?.type === 'inline';
-}
-
-/**
  * Get all slots of a specific type.
  */
-export function getSlotsByType(type: SlotType): UISlot[] {
+function getSlotsByType(type: SlotType): UISlot[] {
   return Object.entries(SLOT_DEFINITIONS)
     .filter(([, def]) => def?.type === type)
     .map(([name]) => name as UISlot);
@@ -139,13 +132,6 @@ export function getSlotsByType(type: SlotType): UISlot[] {
  */
 export function getInlineSlots(): UISlot[] {
   return getSlotsByType('inline');
-}
-
-/**
- * Get all portal slots.
- */
-export function getPortalSlots(): UISlot[] {
-  return getSlotsByType('portal');
 }
 
 /**

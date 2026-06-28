@@ -109,25 +109,6 @@ export {
 } from './useQuerySingleton';
 
 // Entity store hooks (for game/runtime entities)
-export {
-  useEntities,
-  useEntity as useEntityById,
-  useEntitiesByType,
-  useSingletonEntity,
-  usePlayer,
-  usePhysics,
-  useInput,
-  spawnEntity,
-  updateEntity,
-  updateSingleton,
-  removeEntity,
-  clearEntities,
-  getEntity,
-  getByType,
-  getAllEntities,
-  getSingleton,
-  type Entity,
-} from './useEntities';
 
 // i18n — translation hook + provider
 export {

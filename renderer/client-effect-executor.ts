@@ -223,7 +223,7 @@ export function parseClientEffects(
 /**
  * Filter effects by type.
  */
-export function filterEffectsByType<T extends ClientEffect[0]>(
+function filterEffectsByType<T extends ClientEffect[0]>(
   effects: ClientEffect[],
   type: T
 ): Extract<ClientEffect, [T, ...FieldValue[]]>[] {
@@ -243,15 +243,6 @@ export function getRenderUIEffects(
 }
 
 /**
- * Get all navigate effects.
- */
-export function getNavigateEffects(
-  effects: ClientEffect[]
-): Array<['navigate', string, Record<string, FieldValue>?]> {
-  return filterEffectsByType(effects, 'navigate');
-}
-
-/**
  * Get all notify effects.
  */
 export function getNotifyEffects(
@@ -260,11 +251,3 @@ export function getNotifyEffects(
   return filterEffectsByType(effects, 'notify');
 }
 
-/**
- * Get all emit effects.
- */
-export function getEmitEffects(
-  effects: ClientEffect[]
-): Array<['emit', string, FieldValue?]> {
-  return filterEffectsByType(effects, 'emit');
-}

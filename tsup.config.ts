@@ -144,7 +144,6 @@ export default defineConfig([
       'context/index.ts',
       'renderer/index.ts',
       'runtime/index.ts',
-      'stores/index.ts',
       'lib/index.ts',
       'components/game/3d/index.ts',
       'locales/index.ts',
