@@ -426,8 +426,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
                 <th className="w-12 px-4 py-3">
                   <Checkbox
                     checked={allSelected}
-                    // @ts-ignore - indeterminate not in types
-                    indeterminate={someSelected}
+                    ref={(el) => { if (el) el.indeterminate = someSelected; }}
                     onChange={handleSelectAll}
                   />
                 </th>

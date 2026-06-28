@@ -6,7 +6,7 @@
  * @packageDocumentation
  */
 
-import type { EventPayload, EntityRow, FieldValue, ServiceParams } from '@almadar/core';
+import type { EventPayload, EntityRow, FieldValue, ServiceParams, PatternConfig } from '@almadar/core';
 import type { EffectHandlers } from '@almadar/runtime';
 import { createLogger } from '@almadar/logger';
 
@@ -17,14 +17,14 @@ export interface ClientEventBus {
 }
 
 export interface SlotSetter {
-    addPattern: (slot: string, pattern: unknown, props?: Record<string, FieldValue | undefined>) => void;
+    addPattern: (slot: string, pattern: PatternConfig | null, props?: Record<string, FieldValue | undefined>) => void;
     clearSlot: (slot: string) => void;
 }
 
 export interface CreateClientEffectHandlersOptions {
     eventBus: ClientEventBus;
     slotSetter: SlotSetter;
-    navigate?: (path: string, params?: Record<string, unknown>) => void;
+    navigate?: (path: string, params?: Record<string, string>) => void;
     notify?: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
     /**
      * Live client-entity write target for `[runtime]` entities. `(set
@@ -48,7 +48,7 @@ export interface CreateClientEffectHandlersOptions {
         service: string,
         action: string,
         params?: ServiceParams
-    ) => Promise<unknown>;
+    ) => Promise<EventPayload>;
 }
 
 export function createClientEffectHandlers(
@@ -69,7 +69,8 @@ export function createClientEffectHandlers(
         persist: async () => {
             log.warn('persist is server-side only, ignored on client');
         },
-        set: (_entityId: string, field: string, value: unknown) => {
+        // @almadar/runtime EffectHandlers.set types value:unknown — should be FieldValue (upstream fix queued)
+        set: ((_entityId: string, field: string, value: FieldValue) => {
             // `[runtime]` entities live only in the browser — `(set @entity.X)`
             // must land in the live client store so the same `executeAll`'s
             // render-ui, the next tick, and guards all read the advanced value.
@@ -79,8 +80,8 @@ export function createClientEffectHandlers(
                 log.warn('set is server-side only, ignored on client (no live entity)');
                 return;
             }
-            liveEntity[field] = value as FieldValue;
-        },
+            liveEntity[field] = value;
+        }) as EffectHandlers['set'],
         callService: async (service: string, action: string, params?: ServiceParams) => {
             // Consumer-supplied handler wins — playgrounds wire real backends here.
             if (callService) return callService(service, action, params);
@@ -109,7 +110,7 @@ export function createClientEffectHandlers(
                 ...paramsEcho,
             };
         },
-        renderUI: (slot: string, pattern: unknown, props?: Record<string, FieldValue | undefined>) => {
+        renderUI: (slot: string, pattern: PatternConfig | null, props?: Record<string, FieldValue | undefined>) => {
             if (pattern === null) {
                 slotSetter.clearSlot(slot);
                 return;

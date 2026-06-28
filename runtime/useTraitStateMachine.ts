@@ -22,7 +22,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useEventBus } from '../hooks/index';
 import { createLogger } from '@almadar/logger';
 import { isCircuitEvent } from '@almadar/core';
-import type { PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, TraitConfig, SExpr } from '@almadar/core';
+import type { PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, TraitConfig, SExpr, ServiceParams } from '@almadar/core';
 import {
     StateMachineManager,
     EffectExecutor,
@@ -35,6 +35,7 @@ import {
     type EffectHandlers,
     type BindingContext,
     type EffectContext,
+    type CreateServerEffectHandlersOptions,
 } from '@almadar/runtime';
 import { evaluateGuard } from '@almadar/evaluator';
 import { createClientEffectHandlers } from './createClientEffectHandlers';
@@ -171,7 +172,7 @@ export interface UseTraitStateMachineOptions {
         dispatchedOrbitals?: Set<string>,
     ) => void | Promise<void>;
     /** Router navigate function for navigate effects */
-    navigate?: (path: string, params?: Record<string, unknown>) => void;
+    navigate?: (path: string, params?: Record<string, string>) => void;
     /** Notification function for notify effects */
     notify?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
     /**
@@ -184,7 +185,7 @@ export interface UseTraitStateMachineOptions {
      */
     persistence?: import('@almadar/runtime').PersistenceAdapter;
     /** Optional consumer `call-service` hook forwarded to the mock server handlers. */
-    callService?: (service: string, action: string, params: unknown) => Promise<unknown>;
+    callService?: (service: string, action: string, params?: ServiceParams) => Promise<EventPayload>;
     /**
      * Trait configs keyed by trait name. Threaded into setTraitConfig so
      * `@config.X` resolves inside guard expressions on the client. Page-level
@@ -643,7 +644,8 @@ export function useTraitStateMachine(
                     entityId,
                 },
                 source: { trait: traitName },
-                callService: optionsRef.current?.callService,
+                // @almadar/runtime callService types params:unknown/Promise<unknown> — should be ServiceParams/EventPayload (upstream fix queued)
+                callService: optionsRef.current?.callService as CreateServerEffectHandlersOptions['callService'],
             });
             handlers = {
                 ...serverHandlers,
@@ -962,7 +964,7 @@ export function useTraitStateMachine(
                         (e) => e.key === normalizedEvent,
                     ) ?? false;
                     if (ownsEvent) {
-                        const payloadData = (payload as { data?: unknown } | undefined)?.data;
+                        const payloadData = payload?.data;
                         if (Array.isArray(payloadData)) {
                             snap.data[binding.linkedEntity] = payloadData as EntityRow[];
                         }
@@ -1039,9 +1041,9 @@ export function useTraitStateMachine(
         for (const { traitName, result } of results) {
             if (result.executed) {
                 updateTraitState(traitName, result.newState);
-                const effectTraces: EffectTrace[] = result.effects.map(
-                    (e: unknown) => {
-                        // Effects are s-expression arrays: ["fetch", "Entity"], ["render-ui", "slot", {...}], etc.
+                // upstream gap: /runtime TransitionResult.effects is unknown[] — they are SExpr at runtime (see Almadar_UI_Gaps.md)
+                const effectTraces: EffectTrace[] = (result.effects as SExpr[]).map(
+                    (e: SExpr): EffectTrace => {
                         if (Array.isArray(e)) {
                             return {
                                 type: String(e[0] ?? 'unknown'),
@@ -1049,10 +1051,9 @@ export function useTraitStateMachine(
                                 status: 'executed' as const,
                             };
                         }
-                        const eff = e as Record<string, unknown>;
                         return {
-                            type: String(eff.type ?? 'unknown'),
-                            args: Array.isArray(eff.args) ? eff.args : [],
+                            type: String(e),
+                            args: [],
                             status: 'executed' as const,
                         };
                     }

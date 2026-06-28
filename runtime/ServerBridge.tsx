@@ -20,9 +20,16 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import type { ReactNode } from 'react';
-import type { BusEventSource, EventPayload } from '@almadar/core';
+import type { BusEventSource, EntityRow, EventPayload, OrbitalSchema, SExpr } from '@almadar/core';
+import type { AnyPatternConfig } from '@almadar/patterns';
 import { useEventBus } from '../hooks/useEventBus';
 import { createLogger } from '@almadar/logger';
+
+/** Wire-format client effect tuple from the server response. */
+type ClientEffectTuple =
+  | ['render-ui', string, AnyPatternConfig | null, ...SExpr[]]
+  | ['navigate', string, ...SExpr[]]
+  | ['notify', string, ...SExpr[]];
 
 // Gap #11 (Almadar_Std_Verification.md): cross-orbital re-broadcast
 // tracing. Each server response's `emittedEvents[]` is re-emitted on the
@@ -52,23 +59,23 @@ interface OrbitalEventResponse {
     payload?: EventPayload;
     source?: BusEventSource;
   }>;
-  data?: Record<string, unknown[]>;
-  clientEffects?: unknown[];
+  data?: Record<string, EntityRow[]>;
+  clientEffects?: ClientEffectTuple[];
   /**
    * Same effects as `clientEffects`, paired with the trait that produced
    * each one. When present, prefer this for trait attribution. Falls back
    * to legacy `clientEffects` parsing on older servers.
    */
-  clientEffectsByTrait?: Array<{ traitName: string; effect: unknown[] }>;
+  clientEffectsByTrait?: Array<{ traitName: string; effect: ClientEffectTuple }>;
   error?: string;
 }
 
 export interface ServerClientEffect {
   type: 'render-ui' | 'navigate' | 'notify';
   slot?: string;
-  pattern?: Record<string, unknown>;
+  pattern?: AnyPatternConfig;
   route?: string;
-  params?: Record<string, unknown>;
+  params?: EventPayload;
   message?: string;
   /**
    * Trait that emitted this effect. Used by `<TraitFrame>` to resolve
@@ -84,7 +91,7 @@ export interface ServerResponseMeta {
   clientEffects: number;
   dataEntities: Record<string, number>;
   /** Raw entity data from server response (for EntityStore advancement) */
-  data?: Record<string, unknown[]>;
+  data?: Record<string, EntityRow[]>;
   emittedEvents: string[];
   error?: string;
 }
@@ -96,7 +103,7 @@ export interface SendEventResult {
 
 export interface ServerBridgeContextValue {
   connected: boolean;
-  sendEvent: (orbitalName: string, event: string, payload?: Record<string, unknown>) => Promise<SendEventResult>;
+  sendEvent: (orbitalName: string, event: string, payload?: EventPayload) => Promise<SendEventResult>;
 }
 
 /**
@@ -114,9 +121,9 @@ export interface ServerBridgeContextValue {
  *   cascade-rebroadcast logic is identical downstream.
  */
 export interface ServerBridgeTransport {
-  register: (schema: unknown) => Promise<boolean>;
+  register: (schema: OrbitalSchema) => Promise<boolean>;
   unregister: () => Promise<void>;
-  sendEvent: (orbitalName: string, event: string, payload?: Record<string, unknown>) => Promise<OrbitalEventResponse>;
+  sendEvent: (orbitalName: string, event: string, payload?: EventPayload) => Promise<OrbitalEventResponse>;
 }
 
 /** HTTP transport — POSTs to a server speaking the canonical playground-runtime contract. */
@@ -185,7 +192,7 @@ export function useServerBridge(): ServerBridgeContextValue {
 // ---------------------------------------------------------------------------
 
 export interface ServerBridgeProviderProps {
-  schema: unknown;
+  schema: OrbitalSchema;
   /** HTTP server URL (canonical playground-runtime / apps/builder-server). */
   serverUrl?: string;
   /**
@@ -236,7 +243,7 @@ export function ServerBridgeProvider({
   const sendEvent = useCallback(async (
     orbitalName: string,
     event: string,
-    payload?: Record<string, unknown>,
+    payload?: EventPayload,
   ): Promise<SendEventResult> => {
     const emptyMeta: ServerResponseMeta = { success: false, clientEffects: 0, dataEntities: {}, emittedEvents: [] };
     if (!connected) return { effects: [], meta: emptyMeta };
@@ -268,20 +275,37 @@ export function ServerBridgeProvider({
         // bindings correctly. Fall back to the legacy flat array for older
         // servers (effects arrive without trait attribution).
         const tagged = result.clientEffectsByTrait;
-        const tuples: Array<{ effect: unknown[]; traitName?: string }> = tagged
+        const tuples: Array<{ effect: ClientEffectTuple; traitName?: string }> = tagged
           ? tagged.map((entry) => ({ effect: entry.effect, traitName: entry.traitName }))
-          : (result.clientEffects ?? []).map((eff) => ({ effect: eff as unknown[] }));
+          : (result.clientEffects ?? []).map((eff) => ({ effect: eff }));
 
         for (const { effect, traitName } of tuples) {
-          const effectType = effect[0] as string;
+          const effectType = effect[0];
           if (effectType === 'render-ui') {
-            const slot = effect[1] as string;
-            const pattern = effect[2] as Record<string, unknown> | undefined;
-            effects.push({ type: 'render-ui', slot, pattern: pattern ?? undefined, traitName });
+            const slot = effect[1];
+            const pattern = effect[2];
+            effects.push({
+              type: 'render-ui',
+              slot,
+              pattern: (pattern !== null && typeof pattern === 'object')
+                ? (pattern as AnyPatternConfig)
+                : undefined,
+              traitName,
+            });
           } else if (effectType === 'navigate') {
-            effects.push({ type: 'navigate', route: effect[1] as string, params: effect[2] as Record<string, unknown>, traitName });
+            const route = effect[1];
+            const rawParams = (effect as ['navigate', string, ...SExpr[]])[2];
+            effects.push({
+              type: 'navigate',
+              route,
+              params: (rawParams !== null && rawParams !== undefined && typeof rawParams === 'object' && !Array.isArray(rawParams))
+                ? (rawParams as EventPayload)
+                : undefined,
+              traitName,
+            });
           } else if (effectType === 'notify') {
-            effects.push({ type: 'notify', message: effect[1] as string, traitName });
+            const message = effect[1];
+            effects.push({ type: 'notify', message: typeof message === 'string' ? message : undefined, traitName });
           }
         }
 

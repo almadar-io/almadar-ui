@@ -117,12 +117,10 @@ export const ConfettiEffect: React.FC<ConfettiEffectProps> = ({
               backgroundColor: p.color,
               animation: `confetti-burst ${duration - p.delay}ms ease-out ${p.delay}ms forwards`,
               opacity: 0,
-              // Use CSS custom properties for the animation endpoint
-              // @ts-expect-error -- CSS custom properties are not typed in CSSProperties
               '--confetti-tx': `${tx}px`,
               '--confetti-ty': `${ty}px`,
               '--confetti-rotate': `${p.rotation}deg`,
-            }}
+            } as React.CSSProperties & Record<`--${string}`, string>}
           />
         );
       })}

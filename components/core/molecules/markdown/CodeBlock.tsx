@@ -23,46 +23,27 @@ import type { UiError } from '../../atoms/types';
 // loader) can't resolve `.../prism-light` without the extension. Vite/dev mode
 // handles it via legacy directory resolution but vitest doesn't. Adding the
 // extensions here makes both code paths work.
-// @ts-expect-error — @types/react-syntax-highlighter declares the module
-// without the `.js` suffix; the JS resolution succeeds either way.
 import SyntaxHighlighter from 'react-syntax-highlighter/dist/esm/prism-light.js';
-// @ts-expect-error — same as above for the styles module.
 import dark from 'react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus.js';
 import { orbLanguage, loloLanguage, ORB_COLORS } from '@almadar/syntax';
 
 // PrismLight requires explicit language registration.
 // Import common languages used in markdown code blocks.
-// @ts-expect-error — language modules are untyped at the deep `.js` path.
 import langJson from 'react-syntax-highlighter/dist/esm/languages/prism/json.js';
-// @ts-expect-error — language modules are untyped at the deep `.js` path.
 import langJavascript from 'react-syntax-highlighter/dist/esm/languages/prism/javascript.js';
-// @ts-expect-error — language modules are untyped at the deep `.js` path.
 import langTypescript from 'react-syntax-highlighter/dist/esm/languages/prism/typescript.js';
-// @ts-expect-error — language modules are untyped at the deep `.js` path.
 import langJsx from 'react-syntax-highlighter/dist/esm/languages/prism/jsx.js';
-// @ts-expect-error — language modules are untyped at the deep `.js` path.
 import langTsx from 'react-syntax-highlighter/dist/esm/languages/prism/tsx.js';
-// @ts-expect-error — language modules are untyped at the deep `.js` path.
 import langCss from 'react-syntax-highlighter/dist/esm/languages/prism/css.js';
-// @ts-expect-error — language modules are untyped at the deep `.js` path.
 import langMarkdown from 'react-syntax-highlighter/dist/esm/languages/prism/markdown.js';
-// @ts-expect-error — language modules are untyped at the deep `.js` path.
 import langBash from 'react-syntax-highlighter/dist/esm/languages/prism/bash.js';
-// @ts-expect-error — language modules are untyped at the deep `.js` path.
 import langYaml from 'react-syntax-highlighter/dist/esm/languages/prism/yaml.js';
-// @ts-expect-error — language modules are untyped at the deep `.js` path.
 import langRust from 'react-syntax-highlighter/dist/esm/languages/prism/rust.js';
-// @ts-expect-error — language modules are untyped at the deep `.js` path.
 import langPython from 'react-syntax-highlighter/dist/esm/languages/prism/python.js';
-// @ts-expect-error — language modules are untyped at the deep `.js` path.
 import langSql from 'react-syntax-highlighter/dist/esm/languages/prism/sql.js';
-// @ts-expect-error — language modules are untyped at the deep `.js` path.
 import langDiff from 'react-syntax-highlighter/dist/esm/languages/prism/diff.js';
-// @ts-expect-error — language modules are untyped at the deep `.js` path.
 import langToml from 'react-syntax-highlighter/dist/esm/languages/prism/toml.js';
-// @ts-expect-error — language modules are untyped at the deep `.js` path.
 import langGo from 'react-syntax-highlighter/dist/esm/languages/prism/go.js';
-// @ts-expect-error — language modules are untyped at the deep `.js` path.
 import langGraphql from 'react-syntax-highlighter/dist/esm/languages/prism/graphql.js';
 
 // Register built-in languages

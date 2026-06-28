@@ -142,9 +142,8 @@ export function buildMockData(schema: OrbitalSchema): EntityData {
   // un-rebound consumers still find data there.
   for (const orbital of schema.orbitals) {
     for (const traitRef of orbital.traits ?? []) {
-      if (typeof traitRef === 'string') continue;
-      if (!('stateMachine' in (traitRef as Record<string, unknown>))) continue;
-      const trait = traitRef as Trait;
+      if (!isInlineTrait(traitRef)) continue;
+      const trait = traitRef;
       const sourceEntity = trait.sourceEntityDefinition;
       if (!sourceEntity || isEntityCall(sourceEntity)) continue;
       const sourceName = sourceEntity.name;

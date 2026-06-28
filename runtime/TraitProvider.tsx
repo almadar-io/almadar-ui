@@ -8,6 +8,7 @@
 
 import React, { createContext, useContext, useMemo } from 'react';
 import { createLogger } from '@almadar/logger';
+import type { EventPayload } from '@almadar/core';
 import type {
     ResolvedTrait,
     ResolvedTraitBinding,
@@ -28,7 +29,7 @@ export interface TraitInstance {
     /** Available events (can be triggered) */
     availableEvents: string[];
     /** Dispatch an event to the state machine */
-    dispatch: (eventKey: string, payload?: Record<string, unknown>) => void;
+    dispatch: (eventKey: string, payload?: EventPayload) => void;
     /** Check if an event can be dispatched */
     canDispatch: (eventKey: string) => boolean;
     /** Get the full trait definition */
@@ -41,7 +42,7 @@ export interface TraitContextValue {
     /** Get a trait instance by name */
     getTrait: (name: string) => TraitInstance | undefined;
     /** Dispatch an event to a specific trait */
-    dispatchToTrait: (traitName: string, eventKey: string, payload?: Record<string, unknown>) => void;
+    dispatchToTrait: (traitName: string, eventKey: string, payload?: EventPayload) => void;
     /** Check if an event can be dispatched to a trait */
     canDispatch: (traitName: string, eventKey: string) => boolean;
 }

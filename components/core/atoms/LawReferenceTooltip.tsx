@@ -170,18 +170,15 @@ export const LawReferenceTooltip: React.FC<LawReferenceTooltipProps> = ({
 
             {/* Link to full text */}
             {reference.link && (
-              <Typography
-                as="a"
-                variant="caption"
-                className="text-info hover:text-info/80 underline cursor-pointer"
-                // @ts-expect-error - anchor props
+              <a
                 href={reference.link}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                className="text-xs text-info hover:text-info/80 underline cursor-pointer"
               >
                 {t('lawReference.viewFullText')}
-              </Typography>
+              </a>
             )}
           </VStack>
 

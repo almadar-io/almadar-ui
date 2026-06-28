@@ -106,7 +106,7 @@ export function BrowserPlayground({
     unregister: async () => {
       runtime.unregisterAll();
     },
-    sendEvent: async (orbitalName, event, payload) => {
+    sendEvent: async (orbitalName, event, payload?) => {
       // Gate every dispatch on registration completing. TraitInitializer's
       // INIT useEffect runs before our parent register useMemo's promise
       // resolves; without this await, INIT lands in an empty runtime and
@@ -125,7 +125,9 @@ export function BrowserPlayground({
       return runtime.processOrbitalEvent(orbitalName, {
         event,
         payload: payload as EventPayload | undefined,
-      });
+        // @almadar/runtime OrbitalEventResponse.clientEffects uses a wider ClientEffectTuple than
+        // ServerBridge's local definition — cast at this boundary (upstream fix queued).
+      }) as ReturnType<ServerBridgeTransport['sendEvent']>;
     },
   }), [runtime, registrationReady]);
 

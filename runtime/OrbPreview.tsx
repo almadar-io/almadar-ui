@@ -22,7 +22,7 @@ import { VerificationProvider } from '../providers/VerificationProvider';
 import { UISlotProvider, useUISlots, type SlotProps } from '../context/UISlotContext';
 import { UISlotRenderer } from '../components/core/organisms/UISlotRenderer';
 import { useEventBus } from '../hooks/useEventBus';
-import type { OrbitalSchema, EntityData, ResolvedTraitBinding } from '@almadar/core';
+import type { OrbitalSchema, EntityData, ResolvedTraitBinding, EventPayload, PatternNode, Orbital, TraitRef } from '@almadar/core';
 import { useResolvedSchema } from './useResolvedSchema';
 import { collectEmbeddedTraits, collectTraitRefsFromResolvedTrait } from './embedded-traits';
 import { convertFnFormLambdasInProps } from './fn-form-lambda';
@@ -60,19 +60,20 @@ const navLog = createLogger('almadar:runtime:navigation');
  * (`{0:"@",1:"t",…}`) with `type: undefined`, which then hits the
  * "Unknown pattern" fallback in UISlotRenderer.
  */
-function normalizeChild(child: unknown): unknown {
+function normalizeChild(child: PatternNode | string | null | readonly PatternNode[]): PatternNode | string | null | readonly PatternNode[] {
   if (typeof child === "string") return child;
-  if (child === null || typeof child !== "object" || Array.isArray(child)) {
-    return child;
-  }
-  const { type, children, ...rest } = child as Record<string, unknown>;
+  if (child === null || typeof child !== "object") return child;
+  if (Array.isArray(child)) return child;
+  // child is PatternNode (non-array object); cast to resolve index-sig narrowing gap
+  const node = child as PatternNode;
+  const { type, children, ...rest } = node;
   const normalizedChildren = Array.isArray(children)
     ? children.map((c) => normalizeChild(c))
     : children;
   return {
     type,
     props: { ...rest, ...(normalizedChildren !== undefined ? { children: normalizedChildren } : {}) },
-  };
+  } as PatternNode;
 }
 
 /**
@@ -93,7 +94,7 @@ function normalizeChild(child: unknown): unknown {
 function applyServerEffects(
   effects: ReadonlyArray<import('./ServerBridge').ServerClientEffect>,
   uiSlots: ReturnType<typeof useUISlots>,
-  onNavigate?: (path: string, params?: Record<string, unknown>) => void,
+  onNavigate?: (path: string, params?: Record<string, string>) => void,
   embeddedTraits?: ReadonlySet<string>,
 ): void {
   // Call uiSlots.render() once per effect. useUISlots is multi-source
@@ -110,7 +111,7 @@ function applyServerEffects(
   // inside the layout's pattern, never writing a shared slot).
   for (const eff of effects) {
     if (eff.type === 'render-ui' && eff.slot && eff.pattern) {
-      const patternRecord = eff.pattern as Record<string, unknown>;
+      const patternRecord = eff.pattern as PatternNode;
       const { type: patternType, children, ...inlineProps } = patternRecord;
       const normalizedChildren = Array.isArray(children)
         ? children.map((c) => normalizeChild(c))
@@ -152,7 +153,7 @@ function applyServerEffects(
         });
       }
     } else if (eff.type === 'navigate' && eff.route && onNavigate) {
-      onNavigate(eff.route, eff.params as Record<string, unknown> | undefined);
+      onNavigate(eff.route, eff.params as Record<string, string> | undefined);
     }
   }
 }
@@ -166,12 +167,12 @@ function applyServerEffects(
  * patterns with entity data resolved reactively via useEntityRef.
  */
 function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits }: {
-  traits: unknown[];
+  traits: ResolvedTraitBinding[];
   orbitalNames?: string[];
   traitConfigsByName?: Record<string, import('@almadar/core').TraitConfig>;
   /** Trait → orbital map; gap #13 qualified bus key. */
   orbitalsByTrait?: Record<string, string>;
-  onNavigate?: (path: string, params?: Record<string, unknown>) => void;
+  onNavigate?: (path: string, params?: Record<string, string>) => void;
   /**
    * GAP-19: Called when the 5s server-bridge fallback fires (the preview server
    * never connected, so the preview is running locally instead). Lets the parent
@@ -220,7 +221,7 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
   // actually executed; only those need a server round-trip.
   const onEventProcessed = useCallback(async (
     event: string,
-    payload?: Record<string, unknown>,
+    payload?: EventPayload,
     dispatchedOrbitals?: Set<string>,
   ) => {
     if (!bridge.connected || !orbitalNames?.length) return;
@@ -243,7 +244,7 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
   const opts = orbitalNames
     ? { onEventProcessed, navigate: onNavigate, traitConfigsByName, orbitalsByTrait, embeddedTraits }
     : { navigate: onNavigate, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits };
-  const { sendEvent } = useTraitStateMachine(traits as Parameters<typeof useTraitStateMachine>[0], uiSlots, opts);
+  const { sendEvent } = useTraitStateMachine(traits, uiSlots, opts);
 
   const initSentRef = useRef(false);
 
@@ -254,7 +255,7 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
   // Requires `schemaToIR` to be called with `useCache: false` upstream;
   // the @almadar/core cache keys on name+version and would otherwise
   // return the same IR (and same traits array) across mutations.
-  const prevTraitsRef = useRef<unknown>(undefined);
+  const prevTraitsRef = useRef<ResolvedTraitBinding[] | undefined>(undefined);
   useEffect(() => {
     const refChanged = prevTraitsRef.current !== undefined && prevTraitsRef.current !== traits;
     navLog.debug('page:traits-effect', () => ({
@@ -333,18 +334,18 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
  * forwards events to the server after local processing.
  */
 function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavigate, onLocalFallback, persistence }: {
-  schema: unknown;
+  schema: OrbitalSchema;
   serverUrl?: string;
   transport?: ServerBridgeTransport;
-  mockData?: Record<string, unknown[]>;
+  mockData?: EntityData;
   pageName?: string;
-  onNavigate?: (path: string, params?: Record<string, unknown>) => void;
+  onNavigate?: (path: string, params?: Record<string, string>) => void;
   /** GAP-19: forwarded to TraitInitializer to surface server-bridge fallback. */
   onLocalFallback?: () => void;
   /** Offline-preview persistence layer. */
   persistence?: PersistenceAdapter;
 }) {
-  const { traits, allEntities, allTraits, ir } = useResolvedSchema(schema as Parameters<typeof useResolvedSchema>[0], pageName);
+  const { traits, allEntities, allTraits, ir } = useResolvedSchema(schema, pageName);
 
   // Gap #13: orbitals are bound to pages, so trait subscriptions must be
   // route-scoped. Pre-fix, this branch collected traits from every page on
@@ -416,12 +417,9 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavi
 
   // Extract orbital names from schema for server event forwarding
   const orbitalNames = useMemo(() => {
-    const parsed = schema as Record<string, unknown>;
-    const orbitals = parsed?.orbitals as Array<Record<string, unknown>> | undefined;
+    const orbitals: Orbital[] | undefined = schema?.orbitals;
     if (!orbitals) return [];
-    return orbitals
-      .filter((o) => typeof o.name === 'string')
-      .map((o) => o.name as string);
+    return orbitals.map((o) => o.name);
   }, [schema]);
 
   // Gap #13: trait-name → owning-orbital-name map. Built from
@@ -516,15 +514,15 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavi
   // reject the create flow.
   const traitConfigsByName = useMemo(() => {
     const map: Record<string, import('@almadar/core').TraitConfig> = {};
-    const parsed = schema as Record<string, unknown>;
-    const orbitals = parsed?.orbitals as Array<Record<string, unknown>> | undefined;
+    const orbitals: Orbital[] | undefined = schema?.orbitals;
     if (!orbitals) return map;
     for (const orb of orbitals) {
-      const traits = orb.traits as Array<Record<string, unknown>> | undefined;
-      if (!traits) continue;
-      for (const t of traits) {
-        const name = (t.name ?? t.ref) as string | undefined;
-        const config = t.config as import('@almadar/core').TraitConfig | undefined;
+      const traitRefs: TraitRef[] | undefined = orb.traits;
+      if (!traitRefs) continue;
+      for (const t of traitRefs) {
+        if (typeof t === 'string') continue;
+        const name = (t as { name?: string; ref?: string }).name ?? (t as { ref?: string }).ref;
+        const config = (t as { config?: import('@almadar/core').TraitConfig }).config;
         if (typeof name === 'string' && config !== undefined) {
           map[name] = config;
         }
@@ -548,7 +546,7 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavi
   // Mirrors compiled-path codegen which inlines atom views as JSX
   // inside the layout's pattern rather than writing a shared slot.
   const embeddedTraits = useMemo(() => {
-    const set = collectEmbeddedTraits(schema as OrbitalSchema | undefined);
+    const set = collectEmbeddedTraits(schema);
     xOrbitalLog.info('SchemaRunner:embeddedTraits', {
       pageName,
       embedded: Array.from(set),
@@ -565,10 +563,9 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavi
   // for undefined themes. Mirrors compile-time scoping: each orbital's pages
   // resolve against THAT orbital's `theme` in the generated CSS.
   const activeOrbitalTheme = useMemo(() => {
-    const parsed = schema as OrbitalSchema | undefined;
-    if (!parsed?.orbitals?.length) return undefined;
+    if (!schema?.orbitals?.length) return undefined;
     if (pageName) {
-      for (const orb of parsed.orbitals) {
+      for (const orb of schema.orbitals) {
         for (const pageRef of orb.pages ?? []) {
           const name = typeof pageRef === 'object' && pageRef !== null
             ? (pageRef as { name?: string }).name
@@ -577,7 +574,7 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavi
         }
       }
     }
-    return parsed.orbitals[0]?.theme;
+    return schema.orbitals[0]?.theme;
   }, [schema, pageName]);
 
   const inner = (
@@ -787,7 +784,7 @@ export function OrbPreview({
     if (!parsedSchema || serverUrl || transport) return undefined;
     if (!autoMock) return undefined;
     const adapter = new InMemoryPersistence();
-    adapter.seed(effectiveMockData as Record<string, import('@almadar/core').EntityRow[]>);
+    adapter.seed(effectiveMockData);
     return adapter;
   }, [parsedSchema, serverUrl, transport, autoMock, effectiveMockData]);
 
@@ -921,7 +918,7 @@ export function OrbPreview({
       <OrbitalProvider initialData={effectiveMockData} skipTheme verification isolated={isolated}>
         <UISlotProvider>
           <SchemaRunner
-            schema={parsedSchema}
+            schema={parseResult.schema}
             serverUrl={serverUrl}
             transport={transport}
             mockData={effectiveMockData}
