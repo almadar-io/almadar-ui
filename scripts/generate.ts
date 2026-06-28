@@ -248,7 +248,7 @@ function copyDirectory(
       // Check category filter
       if (
         filter?.categories &&
-        !filter.categories.includes(entry.name as any)
+        !filter.categories.some((c) => c === entry.name)
       ) {
         continue;
       }

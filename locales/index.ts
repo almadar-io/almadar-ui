@@ -42,7 +42,7 @@ export function mergeMessages(
 }
 
 /** Remove $meta and $extends keys from a messages object */
-function stripMeta(obj: Record<string, unknown>): Record<string, string> {
+function stripMeta(obj: Record<string, string | object>): Record<string, string> {
   const result: Record<string, string> = {};
   for (const [key, value] of Object.entries(obj)) {
     if (key.startsWith('$')) continue;
