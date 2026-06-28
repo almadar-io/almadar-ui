@@ -45,7 +45,7 @@ import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { useCanvasDroppable, type CanvasDropTarget } from '../hooks/useCanvasDnd';
 import { formatPayloadTooltip } from '../lib/wire-validation';
-import { deriveEditFocusFromElement } from '../derive-edit-focus';
+import { deriveEditFocusFromElement } from '../lib/derive-edit-focus';
 import { createLogger } from '@almadar/logger';
 
 const eventHandleLog = createLogger('almadar:ui:nan-coord');
