@@ -7,7 +7,7 @@ import { VStack } from '../../../core/atoms/Stack';
 import { PlatformerBoard } from '../organisms/PlatformerBoard';
 import type { PlatformerBoardProps } from '../organisms/PlatformerBoard';
 import { GameHud } from '../molecules/GameHud';
-import { ScoreBoard } from '../molecules/ScoreBoard';
+import { StatBadge } from '../molecules/StatBadge';
 import { makeAsset, makeAssetMap } from '../../shared/makeAsset';
 
 const CDN = 'https://almadar-kflow-assets.web.app/shared/platformer';
@@ -105,7 +105,10 @@ export function PlatformerTemplate({
 
             {/* Score bar */}
             <Box className="px-4 py-2">
-                <ScoreBoard score={score} level={level} />
+                <div className="inline-flex items-center gap-3 flex-wrap rounded-container border border-border bg-card/90 backdrop-blur-sm p-3">
+                    <StatBadge label="Score" value={score} format="number" variant="primary" size="md" />
+                    <StatBadge label="Level" value={level} format="number" variant="default" size="sm" />
+                </div>
             </Box>
         </VStack>
     );

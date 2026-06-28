@@ -10,7 +10,7 @@ import { Button } from '../../../core/atoms/Button';
 import { Typography } from '../../../core/atoms/Typography';
 import { VStack, HStack } from '../../../core/atoms/Stack';
 import type { DisplayStateProps } from '../../../core/organisms/types';
-import { CardHand, type CardHandCard } from '../molecules/CardHand';
+import { GameCard } from '../atoms/GameCard';
 import { boardEntity, num, str, rows } from '../../shared/boardEntity';
 
 // =============================================================================
@@ -77,25 +77,10 @@ const DEFAULT_HAND: CardBattlerCard[] = [
     { id: 'c5', iconKey: 'snake',   title: 'Snake',   cost: 2, attack: 4, defense: 1 },
 ];
 
-/** Map a domain card to the pure CardHand DTO, resolving its icon from the manifest. */
-function toHandCards(
-    cards: CardBattlerCard[],
-    manifest: CardBattlerAssetManifest | undefined,
-    mana: number,
-): CardHandCard[] {
-    return cards.map((c) => {
-        const key = c.iconKey ?? c.id;
-        const iconUrl = manifest?.cards?.[key];
-        return {
-            id: c.id,
-            iconUrl,
-            title: c.title,
-            cost: c.cost,
-            attack: c.attack,
-            defense: c.defense,
-            disabled: c.cost != null && c.cost > mana,
-        };
-    });
+/** Resolve the icon asset for a card from the manifest. */
+function resolveCardArt(card: CardBattlerCard, manifest: CardBattlerAssetManifest | undefined) {
+    const key = card.iconKey ?? card.id;
+    return manifest?.cards?.[key];
 }
 
 // =============================================================================
@@ -139,8 +124,8 @@ export function CardBattlerBoard({
     const turn    = propTurn    ?? num(board.turn, 1);
     const result  = (propResult ?? (str(board.result) || 'none')) as 'none' | 'won' | 'lost';
 
-    const handCards   = useMemo(() => toHandCards(hand, assetManifest, mana), [hand, assetManifest, mana]);
-    const boardCards  = useMemo(() => toHandCards(playedCards, assetManifest, mana), [playedCards, assetManifest, mana]);
+    const handCards   = hand;
+    const boardCards  = playedCards;
 
     // Emit GAME_END once when result leaves 'none' so the orbital GAME_END -> gameover fires.
     const emittedGameEnd = useRef(false);
@@ -209,11 +194,21 @@ export function CardBattlerBoard({
                     {t('cb.battlefield') ?? 'Battlefield'}
                 </Typography>
                 {boardCards.length > 0 ? (
-                    <CardHand
-                        cards={boardCards}
-                        size="md"
-                        className="justify-start"
-                    />
+                    <div className="flex flex-wrap gap-2 items-end justify-start">
+                        {boardCards.map((card) => (
+                            <GameCard
+                                key={card.id}
+                                id={card.id}
+                                cost={card.cost}
+                                art={resolveCardArt(card, assetManifest)}
+                                attack={card.attack}
+                                defense={card.defense}
+                                name={card.title}
+                                disabled={card.cost != null && card.cost > mana}
+                                size="md"
+                            />
+                        ))}
+                    </div>
                 ) : (
                     <Box className="flex items-center justify-center h-32 rounded-interactive border-2 border-dashed border-border">
                         <Typography variant="small" color="muted">
@@ -228,12 +223,28 @@ export function CardBattlerBoard({
                 <Typography variant="small" color="muted" className="mb-2 uppercase tracking-wide">
                     {t('cb.hand') ?? 'Your Hand'}
                 </Typography>
-                <CardHand
-                    cards={handCards}
-                    size="lg"
-                    onCardClick={handlePlayCard}
-                    emptyLabel={t('cb.emptyHand') ?? 'No cards in hand'}
-                />
+                {handCards.length === 0 ? (
+                    <div className="flex items-center justify-center p-4">
+                        <Typography variant="small" color="muted">{t('cb.emptyHand') ?? 'No cards in hand'}</Typography>
+                    </div>
+                ) : (
+                    <div className="flex flex-wrap gap-2 items-end justify-center">
+                        {handCards.map((card) => (
+                            <GameCard
+                                key={card.id}
+                                id={card.id}
+                                cost={card.cost}
+                                art={resolveCardArt(card, assetManifest)}
+                                attack={card.attack}
+                                defense={card.defense}
+                                name={card.title}
+                                disabled={card.cost != null && card.cost > mana}
+                                size="lg"
+                                onClick={handlePlayCard}
+                            />
+                        ))}
+                    </div>
+                )}
             </Box>
 
             {/* Game-over overlay */}

@@ -1,15 +1,6 @@
 'use client';
 
-/**
- * VisualNovelBoard
- *
- * Dialogue-scene game board: walks a dialogue graph node-by-node, rendering each
- * node's scene background + character portrait + speaker text + branching choices.
- * Composes the extended `DialogueBox` molecule; resolves every asset key against
- * the `assetManifest` prop (organism owns asset choice — no hardcoded URLs).
- */
-
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import type { Asset, EventEmit, EntityRow } from '@almadar/core';
 import { cn } from '../../../../lib/cn';
 import { useEventBus } from '../../../../hooks/useEventBus';
@@ -18,8 +9,9 @@ import { Typography } from '../../../core/atoms/Typography';
 import { VStack } from '../../../core/atoms/Stack';
 import { Button } from '../../../core/atoms/Button';
 import type { DisplayStateProps } from '../../../core/organisms/types';
-import { DialogueBox, type DialogueChoice } from '../molecules/DialogueBox';
-import { boardEntity, num, str, rows } from '../../shared/boardEntity';
+import { DialogueBubble } from '../atoms/DialogueBubble';
+import { ChoiceButton } from '../atoms/ChoiceButton';
+import { boardEntity, str, rows } from '../../shared/boardEntity';
 
 // =============================================================================
 // Types
@@ -154,24 +146,59 @@ export function VisualNovelBoard({
         () => assetManifest?.backgrounds?.[currentNode?.backgroundKey ?? ''],
         [assetManifest, currentNode?.backgroundKey],
     );
-    const portraitUrl = useMemo(
+    const portraitAsset = useMemo(
         () => assetManifest?.portraits?.[currentNode?.portraitKey ?? ''],
         [assetManifest, currentNode?.portraitKey],
     );
 
-    const dialogueChoices: DialogueChoice[] = useMemo(
-        () => (currentNode?.choices ?? []).map(c => ({ text: c.label, next: c.nextId })),
-        [currentNode?.choices],
-    );
+    // Typewriter state
+    const [displayedText, setDisplayedText] = useState('');
+    const [isTyping, setIsTyping] = useState(false);
+    const textRef = useRef(currentNode?.text ?? '');
+    const charIndexRef = useRef(0);
+
+    useEffect(() => {
+        const fullText = currentNode?.text ?? '';
+        textRef.current = fullText;
+        charIndexRef.current = 0;
+        if (typewriterSpeed === 0) {
+            setDisplayedText(fullText);
+            setIsTyping(false);
+        } else {
+            setDisplayedText('');
+            setIsTyping(true);
+        }
+    }, [currentNode?.id, typewriterSpeed]);
+
+    useEffect(() => {
+        if (!isTyping || typewriterSpeed === 0) return;
+        const interval = setInterval(() => {
+            if (charIndexRef.current < textRef.current.length) {
+                charIndexRef.current++;
+                setDisplayedText(textRef.current.slice(0, charIndexRef.current));
+            } else {
+                setIsTyping(false);
+                clearInterval(interval);
+            }
+        }, typewriterSpeed);
+        return () => clearInterval(interval);
+    }, [isTyping, typewriterSpeed]);
+
+    const skipTypewriter = useCallback(() => {
+        if (isTyping) {
+            charIndexRef.current = textRef.current.length;
+            setDisplayedText(textRef.current);
+            setIsTyping(false);
+        }
+    }, [isTyping]);
 
     const handleChoice = useCallback(
-        (choice: DialogueChoice) => {
-            const index = dialogueChoices.findIndex(c => c.next === choice.next && c.text === choice.text);
+        (index: number) => {
             if (chooseEvent) {
                 eventBus.emit(`UI:${chooseEvent}`, { choiceIndex: index });
             }
         },
-        [dialogueChoices, chooseEvent, eventBus],
+        [chooseEvent, eventBus],
     );
 
     const handleAdvance = useCallback(() => {
@@ -186,6 +213,14 @@ export function VisualNovelBoard({
         }
     }, [restartEvent, eventBus]);
 
+    const handleContainerClick = useCallback(() => {
+        if (isTyping) {
+            skipTypewriter();
+        } else if (!currentNode?.choices?.length) {
+            handleAdvance();
+        }
+    }, [isTyping, skipTypewriter, currentNode?.choices, handleAdvance]);
+
     if (!currentNode) {
         return (
             <VStack className={cn('visual-novel-board relative min-h-[600px] bg-background items-center justify-center', className)} gap="lg">
@@ -196,21 +231,71 @@ export function VisualNovelBoard({
     }
 
     return (
-        <Box className={cn('visual-novel-board relative min-h-[600px] bg-background overflow-hidden', className)}>
-            <DialogueBox
-                dialogue={{
-                    speaker: currentNode.speaker,
-                    text: currentNode.text,
-                    choices: dialogueChoices,
-                }}
-                typewriterSpeed={typewriterSpeed}
-                position="bottom"
-                backgroundImage={backgroundImage}
-                portraitUrl={portraitUrl}
-                portraitScale={portraitScale}
-                onChoice={handleChoice}
-                onAdvance={handleAdvance}
-            />
+        <Box
+            className={cn('visual-novel-board relative min-h-[600px] bg-background overflow-hidden', className)}
+            onClick={handleContainerClick}
+        >
+            {/* Scene background */}
+            {backgroundImage && (
+                <div
+                    className="absolute inset-0 z-0 bg-center bg-cover bg-no-repeat"
+                    style={{ backgroundImage: `url(${backgroundImage.url})` }}
+                    aria-hidden="true"
+                />
+            )}
+
+            {/* Large character portrait */}
+            {portraitAsset && (
+                <div
+                    className="absolute left-1/2 -translate-x-1/2 bottom-0 z-10 pointer-events-none flex items-end"
+                    style={{ height: `${60 * portraitScale}vh` }}
+                >
+                    <img
+                        src={portraitAsset.url}
+                        alt={currentNode.speaker}
+                        className="h-full w-auto object-contain drop-shadow-2xl"
+                    />
+                </div>
+            )}
+
+            {/* Dialogue panel at bottom */}
+            <div className="absolute left-0 right-0 bottom-0 z-20 mx-4 mb-4">
+                <div className={cn(
+                    'rounded-container border-2 overflow-hidden',
+                    backgroundImage
+                        ? 'bg-black/80 backdrop-blur-sm border-white/20'
+                        : 'bg-card/95 border-border',
+                )}>
+                    <DialogueBubble
+                        speaker={currentNode.speaker}
+                        text={displayedText + (isTyping ? '▌' : '')}
+                        portrait={portraitAsset}
+                        position="bottom"
+                        className="border-0 rounded-none bg-transparent backdrop-blur-none"
+                    />
+
+                    {/* Choices */}
+                    {!isTyping && (currentNode.choices?.length ?? 0) > 0 && (
+                        <div className="px-4 pb-4 space-y-2" onClick={(e) => e.stopPropagation()}>
+                            {currentNode.choices!.map((choice, index) => (
+                                <ChoiceButton
+                                    key={choice.nextId}
+                                    text={choice.label}
+                                    index={index + 1}
+                                    onClick={() => handleChoice(index)}
+                                />
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Continue indicator (no choices) */}
+                    {!isTyping && !currentNode.choices?.length && (
+                        <div className="px-4 pb-3 text-muted-foreground text-sm animate-pulse">
+                            Press click to continue...
+                        </div>
+                    )}
+                </div>
+            </div>
         </Box>
     );
 }
