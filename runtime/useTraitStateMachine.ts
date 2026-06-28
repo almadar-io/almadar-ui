@@ -22,7 +22,7 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useEventBus } from '../hooks/index';
 import { createLogger } from '@almadar/logger';
 import { isCircuitEvent } from '@almadar/core';
-import type { PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, TraitConfig } from '@almadar/core';
+import type { PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, TraitConfig, SExpr } from '@almadar/core';
 import {
     StateMachineManager,
     EffectExecutor,
@@ -39,7 +39,7 @@ import {
 import { evaluateGuard } from '@almadar/evaluator';
 import { createClientEffectHandlers } from './createClientEffectHandlers';
 import type { ResolvedTraitBinding, ResolvedTraitListener } from './types';
-import type { SlotPatternEntry, SlotSource } from './ui/slot-types';
+import type { SlotPatternEntry, SlotSource } from '../types/slot-types';
 import type { useUISlots, SlotProps } from '../context/UISlotContext';
 import { convertFnFormLambdasInProps } from './fn-form-lambda';
 import { useEntitySchema } from './EntitySchemaContext';
@@ -537,7 +537,7 @@ export function useTraitStateMachine(
      */
     const executeTransitionEffects = useCallback(async (params: {
         binding: ResolvedTraitBinding;
-        effects: unknown[];
+        effects: SExpr[];
         previousState: string;
         newState: string;
         payload?: EventPayload;
@@ -999,7 +999,8 @@ export function useTraitStateMachine(
                 // is dequeued.
                 const emittedDuringExec = await executeTransitionEffects({
                     binding,
-                    effects: result.effects,
+                    // upstream gap: /runtime TransitionResult.effects is unknown[] — they are SExpr at runtime (see Almadar_UI_Gaps.md)
+                    effects: result.effects as SExpr[],
                     previousState: result.previousState,
                     newState: result.newState,
                     payload,

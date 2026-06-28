@@ -34,7 +34,7 @@ import { Box } from "../atoms/Box";
 import { Typography } from "../atoms/Typography";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
-import { slotLog, refId } from "../../../runtime/ui/slot-types";
+import { slotLog, refId } from "../../../types/slot-types";
 import { cn } from "../../../lib/cn";
 import { ErrorBoundary } from "../molecules/ErrorBoundary";
 import { createLogger } from '@almadar/logger';

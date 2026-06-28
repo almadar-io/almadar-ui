@@ -11,7 +11,8 @@
  * @packageDocumentation
  */
 
-import type { PatternConfig, EventSource, ResolvedTrait } from '@almadar/core';
+import type { PatternConfig, EventSource, ResolvedTrait, FieldValue, SExpr } from '@almadar/core';
+import type { SlotPropValue } from '../hooks/useUISlots';
 import { createLogger } from '@almadar/logger';
 
 /**
@@ -31,7 +32,7 @@ let nextRefId = 1;
  * references across renders (e.g. spotting the form-reset bug where
  * the same logical row arrives with a fresh ref id every transition).
  */
-export function refId(obj: unknown): number | null {
+export function refId(obj: SlotPropValue | null | undefined): number | null {
   if (obj === null || obj === undefined || typeof obj !== 'object') return null;
   const existing = refIds.get(obj as object);
   if (existing !== undefined) return existing;
@@ -46,7 +47,7 @@ export function refId(obj: unknown): number | null {
  */
 export interface SlotPatternEntry {
   pattern: PatternConfig;
-  props: Record<string, unknown>;
+  props: Record<string, FieldValue | undefined>;
 }
 
 /**
@@ -59,6 +60,6 @@ export interface SlotSource extends EventSource {
   trait: string;
   state: string;
   transition: string;
-  effects: unknown[];
+  effects: SExpr[];
   traitDefinition: ResolvedTrait;
 }

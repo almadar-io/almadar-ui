@@ -17,7 +17,7 @@ export interface ClientEventBus {
 }
 
 export interface SlotSetter {
-    addPattern: (slot: string, pattern: unknown, props?: Record<string, unknown>) => void;
+    addPattern: (slot: string, pattern: unknown, props?: Record<string, FieldValue | undefined>) => void;
     clearSlot: (slot: string) => void;
 }
 
@@ -109,7 +109,7 @@ export function createClientEffectHandlers(
                 ...paramsEcho,
             };
         },
-        renderUI: (slot: string, pattern: unknown, props?: Record<string, unknown>) => {
+        renderUI: (slot: string, pattern: unknown, props?: Record<string, FieldValue | undefined>) => {
             if (pattern === null) {
                 slotSetter.clearSlot(slot);
                 return;
