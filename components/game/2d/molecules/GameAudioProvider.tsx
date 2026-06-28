@@ -12,7 +12,7 @@
  * The provider also exposes `muted`/`setMuted` and `masterVolume`/
  * `setMasterVolume` via the `GameAudioContext` for toggle buttons.
  *
- * Closed-circuit props (`className`, `isLoading`, `error`, `entity`) are
+ * Closed-circuit props (`className`, `isLoading`, `error`) are
  * accepted but intentionally unused — the provider renders only its children.
  *
  * @packageDocumentation
@@ -20,7 +20,7 @@
 
 import React, { createContext, useContext, useEffect } from 'react';
 import { useEventBus } from '../../../../hooks/useEventBus';
-import { useGameAudio, type AudioManifest, type GameAudioControls } from './useGameAudio';
+import { useGameAudio, type AudioManifest, type GameAudioControls } from '../../shared/hooks/useGameAudio';
 import type { UiError } from '../../../core/atoms/types';
 
 // =============================================================================
@@ -73,7 +73,6 @@ export interface GameAudioProviderProps {
     className?: string;
     isLoading?: boolean;
     error?: UiError | null;
-    entity?: string;
 }
 
 // =============================================================================

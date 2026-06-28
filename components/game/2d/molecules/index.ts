@@ -44,7 +44,6 @@ export { CardHand, type CardHandProps, type CardHandCard } from './CardHand';
 export { QuestTracker, type QuestTrackerProps, type Quest } from './QuestTracker';
 export { CraftingRecipe, type CraftingRecipeProps, type CraftingIngredient } from './CraftingRecipe';
 export { PowerupSlots, type PowerupSlotsProps, type ActivePowerup } from './PowerupSlots';
-export { GameCanvas2D, type GameCanvas2DProps } from './GameCanvas2D';
 export { HealthPanel, type HealthPanelProps } from './HealthPanel';
 export { ScoreBoard, type ScoreBoardProps } from './ScoreBoard';
 export { ResourceBar, type ResourceBarProps, type ResourceBarResource } from './ResourceBar';
@@ -58,7 +57,6 @@ export { InventoryPanel, type InventoryPanelProps, type InventoryItem } from './
 export { GameMenu, type GameMenuProps, type MenuOption } from './GameMenu';
 export { GameOverScreen, type GameOverScreenProps, type GameOverStat, type GameOverAction } from './GameOverScreen';
 export { PlatformerCanvas, type PlatformerCanvasProps, type PlatformerPlatform, type PlatformerPlayer } from './PlatformerCanvas';
-export { IsometricCanvas, type IsometricCanvasProps } from './IsometricCanvas';
 export {
     Canvas2D,
     type Canvas2DProps,
@@ -85,23 +83,23 @@ export {
     useGameAudioContext,
     type GameAudioProviderProps,
     type GameAudioContextValue,
-} from '../organisms/GameAudioProvider';
+} from './GameAudioProvider';
 export {
     GameAudioToggle,
     type GameAudioToggleProps,
-} from '../organisms/GameAudioToggle';
+} from '../atoms/GameAudioToggle';
 export {
     useGameAudio,
     type AudioManifest,
     type SoundEntry,
     type GameAudioControls,
     type UseGameAudioOptions,
-} from '../organisms/useGameAudio';
+} from '../../shared/hooks/useGameAudio';
 
 // ---------------------------------------------------------------------------
 // 2D Hooks
 // ---------------------------------------------------------------------------
-export { useCamera } from '../organisms/useCamera';
+export { useCamera } from '../hooks/useCamera';
 // ---------------------------------------------------------------------------
 // Board Organisms (game-logic containers — templates are thin wrappers)
 // ---------------------------------------------------------------------------

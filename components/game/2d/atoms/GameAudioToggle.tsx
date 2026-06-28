@@ -15,7 +15,7 @@
 import React, { useCallback, useState } from 'react';
 import { Button } from '../../../core/atoms/index';
 import { cn } from '../../../../lib/cn';
-import { useGameAudioContextOptional } from './GameAudioProvider';
+import { useGameAudioContextOptional } from '../molecules/GameAudioProvider';
 import type { UiError } from '../../../core/atoms/types';
 
 // =============================================================================
@@ -32,7 +32,6 @@ export interface GameAudioToggleProps {
     /** Error state (passed through) */
     error?: UiError | null;
     /** Entity name for schema-driven auto-fetch */
-    entity?: string;
 }
 
 // =============================================================================

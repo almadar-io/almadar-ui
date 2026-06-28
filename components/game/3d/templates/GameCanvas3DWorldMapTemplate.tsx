@@ -32,7 +32,7 @@ import {
     resolveEntityTiles,
     resolveEntityFeatures,
     resolvePropTiles,
-} from '../../2d/templates/game3dAssetManifest';
+} from '../lib/game3dAssetManifest';
 import { boardEntity } from '../../shared/boardEntity';
 
 /** Layout-only default (positions + terrain). Model URLs are resolved from the assetManifest — never baked here. */
