@@ -198,14 +198,23 @@ const lucideAliases: Record<string, LucideIcon> = {
   'sort-desc': LucideIcons.ArrowDownNarrowWide,
 };
 
+/** lucide-react icons are `React.forwardRef` objects (`{$$typeof: Symbol(react.forward_ref), ...}`),
+ *  NOT plain functions — so a `typeof === 'function'` guard rejects every icon
+ *  and silently falls through to HelpCircle. Accept any non-null object/function
+ *  (the valid React component-type shapes lucide ships). The namespace value
+ *  type is `object` (IconModuleNamespace), already non-primitive. */
+function isComponentLike(v: object | undefined): v is LucideIcon {
+  return v != null && (typeof v === 'function' || typeof v === 'object');
+}
+
 function resolveLucide(name: string): LucideIcon {
   if (lucideAliases[name]) return lucideAliases[name];
   const pascal = kebabToPascal(name);
   const lucideMap = LucideIcons as IconModuleNamespace;
   const direct = lucideMap[pascal];
-  if (direct && typeof direct === 'function') return direct as LucideIcon;
+  if (isComponentLike(direct)) return direct;
   const asIs = lucideMap[name];
-  if (asIs && typeof asIs === 'function') return asIs as LucideIcon;
+  if (isComponentLike(asIs)) return asIs;
   return LucideIcons.HelpCircle;
 }
 

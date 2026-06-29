@@ -93,15 +93,19 @@ function doResolve(name: string): LucideIcon {
   // Check aliases first (non-standard mappings)
   if (iconAliases[name]) return iconAliases[name];
 
-  // Convert kebab-case name to PascalCase and look up in lucide-react exports
+  // Convert kebab-case name to PascalCase and look up in lucide-react exports.
+  // lucide icons are `forwardRef` objects (not functions), so accept any
+  // non-null object/function — the valid React component-type shapes.
+  const isComponentLike = (v: LucideIcon | undefined): v is LucideIcon =>
+    v != null && (typeof v === 'function' || typeof v === 'object');
   const pascalName = kebabToPascal(name);
   const lucideMap = LucideIcons as object as Record<string, LucideIcon>;
   const directLookup = lucideMap[pascalName];
-  if (directLookup && typeof directLookup === 'object') return directLookup;
+  if (isComponentLike(directLookup)) return directLookup;
 
   // Try the name as-is (already PascalCase)
   const asIs = lucideMap[name];
-  if (asIs && typeof asIs === 'object') return asIs;
+  if (isComponentLike(asIs)) return asIs;
 
   // Fallback
   return LucideIcons.HelpCircle;
