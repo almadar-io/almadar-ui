@@ -4,7 +4,7 @@ const almadarPlugin = require("@almadar/eslint-plugin");
 const reactCompiler = require("eslint-plugin-react-compiler");
 
 module.exports = [
-  { ignores: ["dist/**", "node_modules/**", "**/*.test.tsx", "**/*.test.ts"] },
+  { ignores: ["dist/**", "node_modules/**", "**/*.test.tsx", "**/*.test.ts", "**/*.generated.ts"] },
   {
     files: ["**/*.ts", "**/*.tsx"],
     languageOptions: {

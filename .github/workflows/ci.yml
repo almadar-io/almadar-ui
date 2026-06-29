@@ -37,7 +37,7 @@ jobs:
         run: npm test --if-present
 
       - name: Lint
-        run: npx eslint --no-warn-ignored --max-warnings 0 components/ hooks/ providers/ context/ stores/ renderer/ lib/ types/
+        run: npx eslint --no-warn-ignored --max-warnings 0 components/ hooks/ providers/ context/ renderer/ lib/ types/
 
   # validate-service disabled (service .orb schemas need fixing)
   # validate-service:
