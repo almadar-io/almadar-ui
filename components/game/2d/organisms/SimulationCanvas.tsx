@@ -1,10 +1,10 @@
 /**
  * SimulationCanvas
  *
- * Self-contained 2D physics canvas for educational presets.
- * Runs its own Euler integration loop — no external physics hook needed.
- * When `bodies` prop is provided, an external model drives positions at ~30Hz
- * and the interpolation bridge smooths them to 60fps.
+ * Pure renderer: paints the initial preset bodies and, when the `bodies` prop
+ * is provided, interpolates externally-driven snapshots to 60fps.
+ * Physics integration is owned by the LOLO animTick — this canvas does NOT
+ * self-advance positions.
  */
 
 import React, { useRef, useEffect, useCallback, useMemo } from 'react';
@@ -45,8 +45,6 @@ export function SimulationCanvas({
     preset: presetProp,
     width = 600,
     height = 400,
-    running,
-    speed = 1,
     bodies: externalBodies,
     className,
 }: SimulationCanvasProps): React.JSX.Element {
@@ -61,64 +59,6 @@ export function SimulationCanvas({
     useEffect(() => {
         bodiesRef.current = structuredClone(preset.bodies);
     }, [preset]);
-
-    const step = useCallback(() => {
-        const dt = Math.min((1 / 60) * speed, 1 / 15); // clamp to prevent spiral
-        const gx = preset.gravity?.x ?? 0;
-        const gy = preset.gravity?.y ?? 9.81;
-        const bodies = bodiesRef.current;
-        const maxVel = Math.max(width, height) * 5; // velocity cap
-
-        for (const body of bodies) {
-            if (body.fixed) continue;
-
-            // Euler integration
-            body.vx += gx * dt;
-            body.vy += gy * dt;
-
-            // Velocity capping
-            body.vx = Math.max(-maxVel, Math.min(maxVel, body.vx));
-            body.vy = Math.max(-maxVel, Math.min(maxVel, body.vy));
-
-            body.x += body.vx * dt;
-            body.y += body.vy * dt;
-
-            // Boundary bounce (all 4 edges)
-            if (body.y + body.radius > height) {
-                body.y = height - body.radius;
-                body.vy = -body.vy * 0.8;
-            }
-            if (body.y - body.radius < 0) {
-                body.y = body.radius;
-                body.vy = -body.vy * 0.8;
-            }
-            if (body.x + body.radius > width) {
-                body.x = width - body.radius;
-                body.vx = -body.vx * 0.8;
-            }
-            if (body.x - body.radius < 0) {
-                body.x = body.radius;
-                body.vx = -body.vx * 0.8;
-            }
-        }
-
-        // Spring constraints
-        if (preset.constraints) {
-            for (const c of preset.constraints) {
-                const a = bodies[c.bodyA];
-                const b = bodies[c.bodyB];
-                if (!a || !b) continue;
-                const dx = b.x - a.x;
-                const dy = b.y - a.y;
-                const dist = Math.sqrt(dx * dx + dy * dy) || 0.001;
-                const diff = (dist - c.length) / dist;
-                const fx = dx * diff * c.stiffness;
-                const fy = dy * diff * c.stiffness;
-                if (!a.fixed) { a.vx += fx * dt; a.vy += fy * dt; }
-                if (!b.fixed) { b.vx -= fx * dt; b.vy -= fy * dt; }
-            }
-        }
-    }, [preset, width, height, speed]);
 
     const draw = useCallback(() => {
         const canvas = canvasRef.current;
@@ -242,25 +182,10 @@ export function SimulationCanvas({
         return interp.startLoop(drawInterpolated);
     }, [externalBodies !== undefined, interp.startLoop]);
 
-    // Self-simulation animation loop — only when externalBodies is absent.
+    // Paint the initial preset bodies so the canvas is never blank on mount.
     useEffect(() => {
-        if (externalBodies !== undefined) return;
-        if (!running) return;
-        let raf: number;
-        const loop = () => {
-            step();
-            draw();
-            raf = requestAnimationFrame(loop);
-        };
-        raf = requestAnimationFrame(loop);
-        return () => cancelAnimationFrame(raf);
-    }, [running, step, draw, externalBodies]);
-
-    // Initial draw (self-simulation path only)
-    useEffect(() => {
-        if (externalBodies !== undefined) return;
         draw();
-    }, [draw, externalBodies]);
+    }, [draw]);
 
     // -- Verification bridge: register canvas frame capture --
     useEffect(() => {

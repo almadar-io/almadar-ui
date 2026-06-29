@@ -228,7 +228,7 @@ export function toCodeLanguage(value: string | undefined): CodeLanguage {
 export type CodeViewerMode = 'code' | 'diff';
 
 export interface DiffLine {
-  type: 'add' | 'remove' | 'context';
+  type: 'add' | 'added' | 'remove' | 'removed' | 'context' | 'unchanged';
   content: string;
   lineNumber?: number;
 }
@@ -334,10 +334,14 @@ function generateDiff(oldVal: string, newVal: string): DiffLine[] {
 }
 
 const DIFF_STYLES: Record<DiffLine['type'], { bg: string; prefix: string; text: string }> = {
-  add:     { bg: 'bg-success/10', prefix: '+', text: 'text-success' },
-  remove:  { bg: 'bg-error/10',   prefix: '-', text: 'text-error' },
-  context: { bg: '',              prefix: ' ', text: 'text-foreground' },
+  add:       { bg: 'bg-success/10', prefix: '+', text: 'text-success' },
+  added:     { bg: 'bg-success/10', prefix: '+', text: 'text-success' },
+  remove:    { bg: 'bg-error/10',   prefix: '-', text: 'text-error' },
+  removed:   { bg: 'bg-error/10',   prefix: '-', text: 'text-error' },
+  context:   { bg: '',              prefix: ' ', text: 'text-foreground' },
+  unchanged: { bg: '',              prefix: ' ', text: 'text-foreground' },
 };
+const DIFF_STYLE_FALLBACK: { bg: string; prefix: string; text: string } = { bg: '', prefix: ' ', text: 'text-foreground' };
 
 // Stable lineProps function (never changes, safe for memoized element)
 const LINE_PROPS_FN = (n: number): React.HTMLProps<HTMLElement> => ({ 'data-line': String(n - 1) } as React.HTMLProps<HTMLElement>);
@@ -778,7 +782,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
               {diffLines ? (
                 <div style={{ display: 'flex', flexDirection: 'column' }} className="font-mono text-xs">
                   {diffLines.map((line, idx) => {
-                    const style = DIFF_STYLES[line.type];
+                    const style = DIFF_STYLES[line.type] ?? DIFF_STYLE_FALLBACK;
                     return (
                       <HStack key={idx} gap="none" align="start" className={cn(style.bg, 'px-4 py-0.5')}>
                         {showLineNumbers && (

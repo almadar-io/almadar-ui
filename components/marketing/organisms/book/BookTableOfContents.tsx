@@ -45,7 +45,7 @@ export const BookTableOfContents: React.FC<BookTableOfContentsProps> = ({
         {t('book.tableOfContents')}
       </Typography>
 
-      {parts.map((part, partIdx) => {
+      {(Array.isArray(parts) ? parts : []).map((part, partIdx) => {
         const chapters = (Array.isArray(part.chapters) ? part.chapters : []) as readonly EntityRow[];
         return (
         <VStack key={partIdx} gap="sm">

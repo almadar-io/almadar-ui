@@ -753,7 +753,7 @@ export const RichBlockEditor: React.FC<RichBlockEditorProps> = ({
   changeEvent,
   readOnly = false,
   placeholder,
-  enableBlocks = false,
+  enableBlocks = true,
   showToolbar = true,
   className,
 }) => {
