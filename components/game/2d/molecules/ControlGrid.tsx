@@ -39,6 +39,11 @@ export interface ControlGridProps {
   onDirection?: (direction: DPadDirection, pressed: boolean) => void;
   /** Event-bus event emitted with `{ direction, pressed }` (kind="dpad") */
   directionEvent?: EventEmit<{ direction: DPadDirection; pressed: boolean }>;
+  /** Per-direction PRESS → the board's SEMANTIC event (kind="dpad"), e.g. `{ left: "LEFT", right: "RIGHT", up: "JUMP" }`.
+   *  Lets the d-pad emit the SAME intent events as the keyboard so the FSM stays device-agnostic. */
+  directionEvents?: Partial<Record<DPadDirection, string>>;
+  /** Per-direction RELEASE → semantic event, e.g. `{ left: "STOP", right: "STOP" }`. Omit a direction to ignore its release. */
+  directionReleaseEvents?: Partial<Record<DPadDirection, string>>;
   /** Per-direction sprite assets for kind="dpad" buttons (e.g. Kenny arrow PNGs). Falls back to arrow emoji. */
   directionAssets?: Partial<Record<DPadDirection, Asset>>;
   size?: 'sm' | 'md' | 'lg';
@@ -82,6 +87,8 @@ export function ControlGrid({
   actionEvent,
   onDirection,
   directionEvent,
+  directionEvents,
+  directionReleaseEvents,
   directionAssets,
   size = 'md',
   disabled,
@@ -96,11 +103,13 @@ export function ControlGrid({
       if (actionEvent) eventBus.emit(`UI:${actionEvent}`, { id, pressed: true });
       onAction?.(id, true);
       if (kind === 'dpad') {
+        const semantic = directionEvents?.[id as DPadDirection];
+        if (semantic) eventBus.emit(`UI:${semantic}`, {});
         if (directionEvent) eventBus.emit(`UI:${directionEvent}`, { direction: id as DPadDirection, pressed: true });
         onDirection?.(id as DPadDirection, true);
       }
     },
-    [kind, actionEvent, directionEvent, eventBus, onAction, onDirection],
+    [kind, actionEvent, directionEvent, directionEvents, eventBus, onAction, onDirection],
   );
 
   const handleRelease = React.useCallback(
@@ -113,11 +122,13 @@ export function ControlGrid({
       if (actionEvent) eventBus.emit(`UI:${actionEvent}`, { id, pressed: false });
       onAction?.(id, false);
       if (kind === 'dpad') {
+        const semantic = directionReleaseEvents?.[id as DPadDirection];
+        if (semantic) eventBus.emit(`UI:${semantic}`, {});
         if (directionEvent) eventBus.emit(`UI:${directionEvent}`, { direction: id as DPadDirection, pressed: false });
         onDirection?.(id as DPadDirection, false);
       }
     },
-    [kind, actionEvent, directionEvent, eventBus, onAction, onDirection],
+    [kind, actionEvent, directionEvent, directionReleaseEvents, eventBus, onAction, onDirection],
   );
 
   if (kind === 'dpad') {

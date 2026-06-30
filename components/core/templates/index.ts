@@ -29,60 +29,7 @@ export {
   type GameShellProps
 } from '../../game/2d/templates/GameShell';
 
-// Game View Templates (thin wrappers — logic in Board organisms)
-export {
-  BattleTemplate,
-  type BattleTemplateProps,
-  type BattlePhase,
-  type BattleSlotContext,
-} from '../../game/2d/templates/BattleTemplate';
-
-export {
-  CastleTemplate,
-  type CastleTemplateProps,
-  type CastleSlotContext,
-} from '../../game/2d/templates/CastleTemplate';
-
-export {
-  WorldMapTemplate,
-  type WorldMapTemplateProps,
-  type WorldMapSlotContext,
-} from '../../game/2d/templates/WorldMapTemplate';
-
-export {
-  PlatformerTemplate,
-  type PlatformerTemplateProps,
-} from '../../game/2d/templates/PlatformerTemplate';
-
-export {
-  TowerDefenseTemplate,
-  type TowerDefenseTemplateProps,
-} from '../../game/2d/templates/TowerDefenseTemplate';
-
-export {
-  RoguelikeTemplate,
-  type RoguelikeTemplateProps,
-} from '../../game/2d/templates/RoguelikeTemplate';
-
-export {
-  TopDownShooterTemplate,
-  type TopDownShooterTemplateProps,
-} from '../../game/2d/templates/TopDownShooterTemplate';
-
-export {
-  CityBuilderTemplate,
-  type CityBuilderTemplateProps,
-} from '../../game/2d/templates/CityBuilderTemplate';
-
-export {
-  VisualNovelTemplate,
-  type VisualNovelTemplateProps,
-} from '../../game/2d/templates/VisualNovelTemplate';
-
-export {
-  CardBattlerTemplate,
-  type CardBattlerTemplateProps,
-} from '../../game/2d/templates/CardBattlerTemplate';
+// Game-genre view templates removed — boards are now .lolo game-shell compositions, not React components.
 
 // Marketing Page Templates
 export {

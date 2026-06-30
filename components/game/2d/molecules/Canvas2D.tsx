@@ -141,8 +141,11 @@ export interface Canvas2DProps {
     tileHoverEvent?: EventEmit<{ x: number; y: number }>;
     /** Emits UI:{tileLeaveEvent} with {} on tile leave */
     tileLeaveEvent?: EventEmit<Record<string, never>>;
-    /** Emits UI:{keyEvent} with { key } on keydown — for side/free keyboard control */
-    keyEvent?: EventEmit<{ key: string }>;
+    /** Maps a keydown `e.code` → the board's SEMANTIC event, e.g. `{ ArrowLeft: "LEFT", KeyA: "LEFT", Space: "JUMP" }`.
+     *  The input layer emits `UI:<event>` so the FSM stays device-agnostic — keyboard and d-pad converge on the same events. */
+    keyMap?: Record<string, string>;
+    /** Maps a keyup `e.code` → the board's SEMANTIC event, e.g. `{ ArrowLeft: "STOP" }`. Omit a key to ignore its release (e.g. jump). */
+    keyUpMap?: Record<string, string>;
 
     // --- View config (pure render) ---
     /** Camera behavior (default 'pan-zoom'). */
@@ -241,14 +244,15 @@ interface SideViewProps {
     playerSprite?: Asset;
     tileSprites?: Record<string, Asset>;
     effects: ActiveEffect[];
-    keyEvent?: EventEmit<{ key: string }>;
+    keyMap?: Record<string, string>;
+    keyUpMap?: Record<string, string>;
     className?: string;
 }
 
 /**
  * Side-view renderer — ported verbatim from PlatformerCanvas. Physics is NOT here
  * (it lives in the LOLO model); this only interpolates+draws the authoritative
- * `player`/`platforms` props and emits `keyEvent` on keydown.
+ * `player`/`platforms` props and translates keyboard input into the board's semantic events via keyMap/keyUpMap.
  */
 function SideView({
     player,
@@ -263,7 +267,8 @@ function SideView({
     playerSprite,
     tileSprites,
     effects,
-    keyEvent,
+    keyMap,
+    keyUpMap,
     className,
 }: SideViewProps): React.JSX.Element {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -320,17 +325,22 @@ function SideView({
         follow, bgColor, playerSprite, tileSprites, backgroundImage, effects,
     };
 
-    // Keyboard → keyEvent (declarative, code-named keys for the LOLO model to map).
+    // Keyboard → the board's SEMANTIC events via the declarative keyMap/keyUpMap.
+    // The component only translates a device keycode into the board's own intent event
+    // (LEFT/RIGHT/JUMP/STOP); it never decides game logic. The FSM stays device-agnostic
+    // and keyboard + d-pad converge on the same events.
     const handleKeyDown = useCallback((e: KeyboardEvent) => {
         if (keysRef.current.has(e.code)) return;
         keysRef.current.add(e.code);
-        if (keyEvent) eventBus.emit(`UI:${keyEvent}`, { key: e.code });
-        if (e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'Space') e.preventDefault();
-    }, [eventBus, keyEvent]);
+        const ev = keyMap?.[e.code];
+        if (ev) { eventBus.emit(`UI:${ev}`, {}); e.preventDefault(); }
+    }, [eventBus, keyMap]);
 
     const handleKeyUp = useCallback((e: KeyboardEvent) => {
         keysRef.current.delete(e.code);
-    }, []);
+        const ev = keyUpMap?.[e.code];
+        if (ev) eventBus.emit(`UI:${ev}`, {});
+    }, [keyUpMap, eventBus]);
 
     useEffect(() => {
         window.addEventListener('keydown', handleKeyDown);
@@ -561,7 +571,8 @@ export function Canvas2D({
     unitClickEvent,
     tileHoverEvent,
     tileLeaveEvent,
-    keyEvent,
+    keyMap,
+    keyUpMap,
     // View config
     camera = 'pan-zoom',
     scale = 0.4,
@@ -1294,13 +1305,26 @@ export function Canvas2D({
         onMultiTouchStart: cancelSinglePointer,
     });
 
-    // Keyboard for `free` projection (top-down shooters etc.).
+    // Keyboard for any NON-side projection (free/flat/iso/hex) → semantic events via keyMap/keyUpMap.
+    // Gated on keyMap presence, NOT on projection — keyboard support is independent of how the board
+    // renders. (`side` has its own SideView listener above.)
     useEffect(() => {
-        if (isSide || !isFree || !keyEvent) return;
-        const onKey = (e: KeyboardEvent) => eventBus.emit(`UI:${keyEvent}`, { key: e.code });
-        window.addEventListener('keydown', onKey);
-        return () => window.removeEventListener('keydown', onKey);
-    }, [isSide, isFree, keyEvent, eventBus]);
+        if (isSide || (!keyMap && !keyUpMap)) return;
+        const onDown = (e: KeyboardEvent) => {
+            const ev = keyMap?.[e.code];
+            if (ev) { eventBus.emit(`UI:${ev}`, {}); e.preventDefault(); }
+        };
+        const onUp = (e: KeyboardEvent) => {
+            const ev = keyUpMap?.[e.code];
+            if (ev) eventBus.emit(`UI:${ev}`, {});
+        };
+        window.addEventListener('keydown', onDown);
+        window.addEventListener('keyup', onUp);
+        return () => {
+            window.removeEventListener('keydown', onDown);
+            window.removeEventListener('keyup', onUp);
+        };
+    }, [isSide, keyMap, keyUpMap, eventBus]);
 
     // =========================================================================
     // DOM overlay data — health bars + name labels positioned over canvas
@@ -1363,7 +1387,8 @@ export function Canvas2D({
                     playerSprite={playerSprite}
                     tileSprites={tileSprites}
                     effects={effects}
-                    keyEvent={keyEvent}
+                    keyMap={keyMap}
+                    keyUpMap={keyUpMap}
                     className={className}
                 />
             </Box>

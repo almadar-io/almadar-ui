@@ -90,52 +90,7 @@ export { useCamera } from '../../shared/hooks/useCamera';
 // ---------------------------------------------------------------------------
 // Board Organisms (game-logic containers — templates are thin wrappers)
 // ---------------------------------------------------------------------------
-export {
-    BattleBoard,
-    type BattleBoardProps,
-    type BattlePhase,
-    type BattleSlotContext,
-} from '../organisms/BattleBoard';
-export {
-    UncontrolledBattleBoard,
-    type UncontrolledBattleBoardProps,
-} from '../organisms/UncontrolledBattleBoard';
-export {
-    useBattleState,
-    type BattleStateEventConfig,
-    type BattleStateCallbacks,
-    type BattleStateResult,
-} from '../../shared/hooks/useBattleState';
-export {
-    WorldMapBoard,
-    type WorldMapBoardProps,
-    type WorldMapSlotContext,
-} from '../organisms/WorldMapBoard';
-export {
-    CastleBoard,
-    type CastleBoardProps,
-    type CastleSlotContext,
-} from '../organisms/CastleBoard';
-export {
-    PlatformerBoard,
-    type PlatformerBoardProps,
-} from '../organisms/PlatformerBoard';
-export {
-    TowerDefenseBoard,
-    type TowerDefenseBoardProps,
-} from '../organisms/TowerDefenseBoard';
-export {
-    RoguelikeBoard,
-    type RoguelikeBoardProps,
-} from '../organisms/RoguelikeBoard';
-export {
-    TopDownShooterBoard,
-    type TopDownShooterBoardProps,
-} from '../organisms/TopDownShooterBoard';
-export {
-    CityBuilderBoard,
-    type CityBuilderBoardProps,
-} from '../organisms/CityBuilderBoard';
+// Still-live React boards (non-game-shell layouts) — to be converted to .lolo game-shell, then removed.
 export {
     VisualNovelBoard,
     type VisualNovelBoardProps,
@@ -147,23 +102,6 @@ export {
     type CardBattlerBoardProps,
     type CardBattlerCard,
 } from '../organisms/CardBattlerBoard';
-export {
-    HexStrategyBoard,
-    type HexStrategyBoardProps,
-} from '../organisms/HexStrategyBoard';
-export { RacingBoard, type RacingBoardProps } from '../organisms/RacingBoard';
-export { TanksBoard, type TanksBoardProps } from '../organisms/TanksBoard';
-export { SpaceShmupBoard, type SpaceShmupBoardProps } from '../organisms/SpaceShmupBoard';
-export { SportsBoard, type SportsBoardProps } from '../organisms/SportsBoard';
-export { SokobanBoard, type SokobanBoardProps } from '../organisms/SokobanBoard';
-export { BoardgameBoard, type BoardgameBoardProps } from '../organisms/BoardgameBoard';
-export { PirateBoard, type PirateBoardProps } from '../organisms/PirateBoard';
-export { PinballBoard, type PinballBoardProps } from '../organisms/PinballBoard';
-export { FishingBoard, type FishingBoardProps } from '../organisms/FishingBoard';
-export { MatchPuzzleBoard, type MatchPuzzleBoardProps } from '../organisms/MatchPuzzleBoard';
-export { HolidayRunnerBoard, type HolidayRunnerBoardProps } from '../organisms/HolidayRunnerBoard';
-export { MinigolfBoard, type MinigolfBoardProps } from '../organisms/MinigolfBoard';
-export { SpaceStationBoard, type SpaceStationBoardProps } from '../organisms/SpaceStationBoard';
 
 // ---------------------------------------------------------------------------
 // Trait / State Machine Visualization
@@ -255,13 +193,4 @@ export { projectileMotion, pendulum, springOscillator, ALL_PRESETS } from '../..
 // ---------------------------------------------------------------------------
 export { GameTemplate, type GameTemplateProps } from '../templates/GameTemplate';
 export { GameShell, type GameShellProps } from '../templates/GameShell';
-export { BattleTemplate, type BattleTemplateProps } from '../templates/BattleTemplate';
-export { CastleTemplate, type CastleTemplateProps } from '../templates/CastleTemplate';
-export { WorldMapTemplate, type WorldMapTemplateProps } from '../templates/WorldMapTemplate';
-export { PlatformerTemplate, type PlatformerTemplateProps } from '../templates/PlatformerTemplate';
-export { TowerDefenseTemplate, type TowerDefenseTemplateProps } from '../templates/TowerDefenseTemplate';
-export { RoguelikeTemplate, type RoguelikeTemplateProps } from '../templates/RoguelikeTemplate';
-export { TopDownShooterTemplate, type TopDownShooterTemplateProps } from '../templates/TopDownShooterTemplate';
-export { CityBuilderTemplate, type CityBuilderTemplateProps } from '../templates/CityBuilderTemplate';
-export { VisualNovelTemplate, type VisualNovelTemplateProps } from '../templates/VisualNovelTemplate';
-export { CardBattlerTemplate, type CardBattlerTemplateProps } from '../templates/CardBattlerTemplate';
+// Game-genre templates removed — boards are now .lolo game-shell compositions, not React components.
