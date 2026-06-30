@@ -52,8 +52,6 @@ export interface GameHudProps {
 }
 
 const positionMap: Record<string, string> = {
-  top: "top-0 left-0 right-0 flex justify-between items-start p-4",
-  bottom: "bottom-0 left-0 right-0 flex justify-between items-end p-4",
   corners: "inset-0 pointer-events-none",
 };
 
@@ -112,7 +110,7 @@ export function GameHud({
   const stats = Array.isArray(rawStats) ? rawStats : [];
 
   // Determine position from props or derive from elements
-  const position = propPosition ?? "corners";
+  const position = propPosition ?? "top";
 
   if (position === "corners") {
     // Split stats between corners
@@ -138,22 +136,59 @@ export function GameHud({
     );
   }
 
+  if (position === "top" || position === "bottom") {
+    // Split stats into left (first half) and right (second half) groups
+    const mid = Math.ceil(stats.length / 2);
+    const leftStats = stats.slice(0, mid);
+    const rightStats = stats.slice(mid);
+
+    const isTop = position === "top";
+
+    return (
+      <div
+        className={cn(
+          "flex items-center justify-between w-full",
+          "px-4 py-2 gap-4",
+          !transparent && (isTop
+            ? "border-b border-border/40 bg-surface/90 backdrop-blur-sm"
+            : "border-t border-border/40 bg-surface/90 backdrop-blur-sm"),
+          transparent && (isTop
+            ? "border-b border-white/10 bg-black/40 backdrop-blur-sm"
+            : "border-t border-white/10 bg-black/40 backdrop-blur-sm"),
+          className,
+        )}
+      >
+        {/* Left stat group */}
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {leftStats.map((stat, i) => (
+            <StatBadge key={i} {...stat} size={size} />
+          ))}
+        </div>
+        {/* Right stat group */}
+        {rightStats.length > 0 && (
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {rightStats.map((stat, i) => (
+              <StatBadge key={i} {...stat} size={size} />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
-        "relative z-10",
-        positionMap[position],
-        transparent && "bg-gradient-to-b from-background/50 to-transparent",
-        position === "bottom" &&
-          "bg-gradient-to-t from-background/50 to-transparent",
+        "relative z-10 flex items-center gap-4 px-4 py-2",
+        transparent
+          ? "bg-black/30 backdrop-blur-sm"
+          : "bg-surface/90 backdrop-blur-sm",
         className,
       )}
     >
-      <div className="flex gap-4">
-        {stats.map((stat, i) => (
-          <StatBadge key={i} {...stat} size={size} />
-        ))}
-      </div>
+      {stats.map((stat, i) => (
+        <StatBadge key={i} {...stat} size={size} />
+      ))}
     </div>
   );
 }

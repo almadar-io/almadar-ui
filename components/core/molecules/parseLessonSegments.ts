@@ -14,6 +14,15 @@ import { parseMarkdownWithCodeBlocks, type MixedSegment } from './lessonSegmentU
 
 // ── Segment types ─────────────────────────────────────────────────────────────
 
+export type InteractiveOrbitalType =
+  | 'chart'
+  | 'simulation'
+  | 'math'
+  | 'physics'
+  | 'biology'
+  | 'chemistry'
+  | 'probability';
+
 export type LessonSegment =
   | MixedSegment
   | { type: 'quiz'; question: string; answer: string }
@@ -21,7 +30,7 @@ export type LessonSegment =
   | { type: 'connect'; content: string }
   | { type: 'reflect'; prompt: string }
   | { type: 'bloom'; level: BloomLevel; question: string; answer: string }
-  | { type: 'visualization'; visualizationType: 'chart' | 'simulation'; description: string };
+  | { type: 'visualization'; visualizationType: InteractiveOrbitalType; description: string };
 
 /** User progress state passed into SegmentRenderer. */
 export interface LessonUserProgress {
@@ -81,7 +90,7 @@ export function parseLessonSegments(lesson: string | undefined): LessonSegment[]
       '(?<bloom><bloom\\s+level="(?<bloomLevel>remember|understand|apply|analyze|evaluate|create)">(?<bloomClosed>[\\s\\S]*?)<\\/bloom>)|' +
       '(?<bloomUnclosed><bloom\\s+level="(?<bloomLevelUn>remember|understand|apply|analyze|evaluate|create)">(?<bloomOpen>[\\s\\S]*?)(?=<(?:activate|connect|reflect|bloom|prq|question|answer|visualize)|\\n\\n#|$))|' +
       '(?<quiz><question>(?<quizQuestion>[\\s\\S]*?)<\\/question>\\s*<answer>(?<quizAnswer>[\\s\\S]*?)<\\/answer>)|' +
-      '(?<visualize><visualize\\s+type="(?<vizType>chart|simulation)"\\s+description="(?<vizDesc>[^"]*?)"\\s*\\/?>)',
+      '(?<visualize><visualize\\s+type="(?<vizType>chart|simulation|math|physics|biology|chemistry|probability)"\\s+description="(?<vizDesc>[^"]*?)"\\s*\\/?>)',
     'gi',
   );
 
@@ -124,7 +133,7 @@ export function parseLessonSegments(lesson: string | undefined): LessonSegment[]
     } else if (g.visualize) {
       segments.push({
         type: 'visualization',
-        visualizationType: g.vizType as 'chart' | 'simulation',
+        visualizationType: g.vizType as InteractiveOrbitalType,
         description: g.vizDesc ?? '',
       });
     }

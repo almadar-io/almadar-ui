@@ -22,7 +22,7 @@ import { ReflectionBlock } from '../molecules/ReflectionBlock';
 import { BloomQuizBlock } from '../molecules/BloomQuizBlock';
 import { CodeRunnerPanel, type CodeSimulationOutput } from './CodeRunnerPanel';
 import { cn } from '../../../lib/cn';
-import type { LessonSegment, LessonUserProgress } from '../molecules/parseLessonSegments';
+import type { LessonSegment, LessonUserProgress, InteractiveOrbitalType } from '../molecules/parseLessonSegments';
 import type { CodeLanguage } from '../molecules/markdown/CodeBlock';
 
 export type { LessonSegment, LessonUserProgress, CodeSimulationOutput };
@@ -46,7 +46,7 @@ export interface SegmentRendererProps {
    * visualization segments are silently skipped. Callers can wire this to any
    * custom component or orbital generator.
    */
-  onRenderVisualization?: (type: 'chart' | 'simulation', description: string, index: number) => React.ReactNode;
+  onRenderVisualization?: (type: InteractiveOrbitalType, description: string, index: number) => React.ReactNode;
 }
 
 export const SegmentRenderer: React.FC<SegmentRendererProps> = ({
