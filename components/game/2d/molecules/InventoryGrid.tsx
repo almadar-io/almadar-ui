@@ -71,7 +71,7 @@ export function InventoryGrid({
     (id: string) => {
       onSelect?.(id);
       if (selectEvent) {
-        eventBus.emit(selectEvent, { id });
+        eventBus.emit(`UI:${selectEvent}`, { id });
       }
     },
     [onSelect, selectEvent, eventBus],

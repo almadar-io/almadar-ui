@@ -30,6 +30,8 @@ type RoguelikeAssetManifest = {
     terrains?: Record<string, Asset>;
     units?: Record<string, Asset>;
     features?: Record<string, Asset>;
+    /** HUD chrome assets (panel backgrounds, stat icons, etc.) keyed by role. */
+    ui?: Record<string, Asset>;
 };
 
 export interface RoguelikeBoardProps extends DisplayStateProps {

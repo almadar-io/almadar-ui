@@ -7,62 +7,13 @@
  */
 
 import React from "react";
+import type { Asset } from "@almadar/core";
 import { cn } from "../../../../lib/cn";
 import { Box } from "../../../core/atoms/Box";
 import { HStack } from "../../../core/atoms/Stack";
 import { Typography } from "../../../core/atoms/Typography";
 import { Button } from "../../../core/atoms/Button";
 import type { TemplateProps } from "../../../core/templates/types";
-import { getComponentForPattern } from "@almadar/patterns";
-import type { SlotContent } from "../../../../hooks/useUISlots";
-import type { JsonObject } from "@almadar/core";
-
-// Lazy-require to avoid a module-graph cycle:
-// component-registry.generated.ts imports GameTemplate, and UISlotRenderer
-// imports component-registry.generated.ts. Requiring UISlotRenderer at the
-// top of this file would close the cycle.
-type SlotContentRendererCmp = React.ComponentType<{ content: SlotContent; onDismiss: () => void }>;
-let _scr: SlotContentRendererCmp | null = null;
-function getSlotContentRenderer(): SlotContentRendererCmp {
-  if (_scr) return _scr;
-  const mod = require("../../../core/organisms/UISlotRenderer") as { SlotContentRenderer: SlotContentRendererCmp };
-  _scr = mod.SlotContentRenderer;
-  return _scr;
-}
-
-/**
- * Guard that converts a plain `{ type, props? }` descriptor object into a
- * React element via the canonical SlotContentRenderer. If the value is
- * already a valid React element or a primitive, it passes through untouched.
- * Arrays are mapped element-by-element. This prevents React error #31 when
- * a runtime effect delivers descriptor objects instead of React elements.
- */
-function resolveDescriptor(value: React.ReactNode, idPrefix: string): React.ReactNode {
-  if (value === null || value === undefined) return value;
-  if (React.isValidElement(value)) return value;
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return value;
-  if (Array.isArray(value)) {
-    return value.map((item, i) => (
-      <React.Fragment key={i}>{resolveDescriptor(item as React.ReactNode, `${idPrefix}-${i}`)}</React.Fragment>
-    ));
-  }
-  if (typeof value === "object") {
-    const rec = (value as object) as JsonObject;
-    if (typeof rec.type === "string" && getComponentForPattern(rec.type) !== null) {
-      const type = rec.type;
-      const _id = typeof rec._id === "string" ? rec._id : undefined;
-      const nestedProps = rec.props !== undefined && typeof rec.props === "object" && !Array.isArray(rec.props) && rec.props !== null
-        ? (rec.props as SlotContent["props"])
-        : undefined;
-      const { type: _t, props: _p, _id: _d, ...flatRest } = rec;
-      const resolvedProps = nestedProps !== undefined ? nestedProps : (flatRest as SlotContent["props"]);
-      const content: SlotContent = { id: _id ?? idPrefix, pattern: type, props: resolvedProps, priority: 0 };
-      const SCR = getSlotContentRenderer();
-      return <SCR content={content} onDismiss={() => undefined} />;
-    }
-  }
-  return null;
-}
 
 export interface GameControls {
   onPlay?: () => void;
@@ -86,6 +37,8 @@ export interface GameTemplateProps extends TemplateProps {
   controls?: GameControls;
   /** Additional class name */
   className?: string;
+  /** Background image for the canvas area. Falls back to bg-muted flat color. */
+  backgroundAsset?: Asset;
 }
 
 export const GameTemplate: React.FC<GameTemplateProps> = ({
@@ -97,6 +50,7 @@ export const GameTemplate: React.FC<GameTemplateProps> = ({
   showDebugPanel = false,
   controls,
   className,
+  backgroundAsset,
 }) => {
   return (
     <Box
@@ -151,10 +105,11 @@ export const GameTemplate: React.FC<GameTemplateProps> = ({
         <Box
           position="relative"
           fullWidth
-          className="flex-1 bg-muted"
+          className={backgroundAsset ? "flex-1" : "flex-1 bg-muted"}
+          style={backgroundAsset ? { backgroundImage: `url(${backgroundAsset.url})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
         >
           {/* Main game content */}
-          {resolveDescriptor(children, "gt-children")}
+          {children}
 
           {/* HUD Overlay */}
           {hud && (
@@ -163,7 +118,7 @@ export const GameTemplate: React.FC<GameTemplateProps> = ({
               className="top-0 left-0 right-0 pointer-events-none"
             >
               <Box padding="md" className="pointer-events-auto w-fit">
-                {resolveDescriptor(hud, "gt-hud")}
+                {hud}
               </Box>
             </Box>
           )}
@@ -186,7 +141,7 @@ export const GameTemplate: React.FC<GameTemplateProps> = ({
           >
             <Typography variant="h6">Debug Panel</Typography>
           </Box>
-          <Box padding="md">{resolveDescriptor(debugPanel, "gt-debug")}</Box>
+          <Box padding="md">{debugPanel}</Box>
         </Box>
       )}
     </Box>

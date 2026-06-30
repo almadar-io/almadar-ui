@@ -15,6 +15,7 @@
 import React from 'react';
 import { Drawer, DrawerPosition, DrawerSize } from '../molecules/Drawer';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useEntitySchemaOptional } from '../../../providers/EntitySchemaContext';
 import type { UiError } from '../atoms/types';
 
 interface ComponentWithTitle {
@@ -38,6 +39,8 @@ export interface DrawerSlotProps {
   error?: UiError | null;
   /** Entity name for schema-driven auto-fetch */
   entity?: string;
+  /** Source trait name for qualified event emission */
+  sourceTrait?: string;
 }
 
 /**
@@ -66,17 +69,24 @@ export const DrawerSlot: React.FC<DrawerSlotProps> = ({
   position = 'right',
   size = 'md',
   className,
+  sourceTrait,
 }) => {
   const eventBus = useEventBus();
+  const schemaCtx = useEntitySchemaOptional();
   const isOpen = Boolean(children);
 
   // Extract title from children if not explicitly provided
   const title = overrideTitle || extractTitle(children);
 
   const handleClose = () => {
-    // Dispatch close events - trait hooks listen for these
-    eventBus.emit('UI:CLOSE');
-    eventBus.emit('UI:CANCEL');
+    const orbital = sourceTrait !== undefined && schemaCtx !== null
+      ? schemaCtx.orbitalsByTrait.get(sourceTrait)
+      : undefined;
+    const prefix = orbital !== undefined && sourceTrait !== undefined
+      ? `UI:${orbital}.${sourceTrait}.`
+      : 'UI:';
+    eventBus.emit(`${prefix}CLOSE`);
+    eventBus.emit(`${prefix}CANCEL`);
   };
 
   if (!isOpen) return null;

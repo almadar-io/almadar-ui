@@ -257,6 +257,7 @@ const PATTERNS_WITH_CHILDREN = new Set([
   "custom",
   "dashboard-layout",
   "game-shell",
+  "game-template",
   "scaled-diagram",
   "master-detail",
   "form-field",
@@ -538,6 +539,7 @@ function UISlotComponent({
   const { t } = useTranslate();
   const suspenseConfig = useContext(SuspenseConfigContext);
   const contained = useContext(SlotContainedContext);
+  const schemaCtx = useEntitySchemaOptional();
   const content = slots[slot];
 
   // Compiled mode: children provided directly, skip context resolution
@@ -605,8 +607,15 @@ function UISlotComponent({
   // Mirrors `ModalSlot.handleClose` (which has done it right all along).
   const handleDismiss = () => {
     if (slot === 'modal' || slot === 'drawer') {
-      eventBus.emit('UI:CLOSE');
-      eventBus.emit('UI:CANCEL');
+      const trait = content?.sourceTrait;
+      const orbital = trait !== undefined && schemaCtx !== null
+        ? schemaCtx.orbitalsByTrait.get(trait)
+        : undefined;
+      const prefix = orbital !== undefined && trait !== undefined
+        ? `UI:${orbital}.${trait}.`
+        : 'UI:';
+      eventBus.emit(`${prefix}CLOSE`);
+      eventBus.emit(`${prefix}CANCEL`);
     }
     clear(slot);
   };
@@ -710,6 +719,7 @@ function CompiledPortal({ slot, className, pattern, sourceTrait, children }: Com
   const slotsBus = useUISlots();
   const eventBus = useEventBus();
   const { t } = useTranslate();
+  const compiledPortalSchemaCtx = useEntitySchemaOptional();
 
   useEffect(() => {
     setPortalRoot(getOrCreatePortalRoot());
@@ -728,8 +738,14 @@ function CompiledPortal({ slot, className, pattern, sourceTrait, children }: Com
   // transition. See std-modal G27 / VG3 click-path "no state advanced".
   const handleDismiss = () => {
     if (slot === 'modal' || slot === 'drawer') {
-      eventBus.emit('UI:CLOSE');
-      eventBus.emit('UI:CANCEL');
+      const orbital = sourceTrait !== undefined && compiledPortalSchemaCtx !== null
+        ? compiledPortalSchemaCtx.orbitalsByTrait.get(sourceTrait)
+        : undefined;
+      const prefix = orbital !== undefined && sourceTrait !== undefined
+        ? `UI:${orbital}.${sourceTrait}.`
+        : 'UI:';
+      eventBus.emit(`${prefix}CLOSE`);
+      eventBus.emit(`${prefix}CANCEL`);
     }
     slotsBus.clear(slot);
   };

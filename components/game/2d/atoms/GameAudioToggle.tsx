@@ -13,6 +13,7 @@
  */
 
 import React, { useCallback, useState } from 'react';
+import type { Asset } from '@almadar/core';
 import { Button } from '../../../core/atoms/index';
 import { cn } from '../../../../lib/cn';
 import { useGameAudioContextOptional } from '../../shared/providers/GameAudioProvider';
@@ -31,6 +32,10 @@ export interface GameAudioToggleProps {
     isLoading?: boolean;
     /** Error state (passed through) */
     error?: UiError | null;
+    /** Asset rendered when sound is ON. Falls back to 🔊 emoji. */
+    onAsset?: Asset;
+    /** Asset rendered when sound is OFF (muted). Falls back to 🔇 emoji. */
+    offAsset?: Asset;
     /** Entity name for schema-driven auto-fetch */
 }
 
@@ -38,10 +43,12 @@ export interface GameAudioToggleProps {
 // Component
 // =============================================================================
 
- 
+
 export function GameAudioToggle({
     size = 'sm',
     className,
+    onAsset,
+    offAsset,
 }: GameAudioToggleProps): React.JSX.Element {
     const ctx = useGameAudioContextOptional();
     const [localMuted, setLocalMuted] = useState(false);
@@ -52,6 +59,8 @@ export function GameAudioToggle({
         setMuted(!muted);
     }, [muted, setMuted]);
 
+    const activeAsset = muted ? offAsset : onAsset;
+
     return (
         <Button
             variant="ghost"
@@ -60,7 +69,11 @@ export function GameAudioToggle({
             className={cn('text-lg leading-none px-2', className)}
             aria-pressed={muted}
         >
-            {muted ? '\uD83D\uDD07' : '\uD83D\uDD0A'}
+            {activeAsset ? (
+                <img src={activeAsset.url} alt={muted ? 'Muted' : 'Sound on'} className="w-5 h-5 object-contain" />
+            ) : (
+                muted ? '\uD83D\uDD07' : '\uD83D\uDD0A'
+            )}
         </Button>
     );
 }

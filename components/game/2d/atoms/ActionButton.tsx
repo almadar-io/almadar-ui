@@ -1,7 +1,8 @@
 import * as React from 'react';
 import { cn } from '../../../../lib/cn';
 import { resolveIcon, type IconInput } from '../../../core/atoms/Icon';
-import type { Asset } from '@almadar/core';
+import { useEventBus } from '../../../../hooks/useEventBus';
+import type { Asset, EventKey } from '@almadar/core';
 
 export interface ActionButtonProps {
   /** Sprite asset — takes precedence over icon when provided */
@@ -22,6 +23,8 @@ export interface ActionButtonProps {
   variant?: 'primary' | 'secondary' | 'danger';
   /** Click handler */
   onClick?: () => void;
+  /** Declarative event name — emits UI:{action} via eventBus on click */
+  action?: EventKey;
   /** Additional CSS classes */
   className?: string;
 }
@@ -54,8 +57,10 @@ export function ActionButton({
   size = 'md',
   variant = 'primary',
   onClick,
+  action,
   className,
 }: ActionButtonProps) {
+  const eventBus = useEventBus();
   const sizes = sizeMap[size];
   const onCooldown = cooldown > 0;
   const isDisabled = disabled || onCooldown;
@@ -65,7 +70,7 @@ export function ActionButton({
     <button
       type="button"
       disabled={isDisabled}
-      onClick={onClick}
+      onClick={(e) => { if (action) eventBus.emit(`UI:${action}`, {}); onClick?.(); }}
       className={cn(
         'relative inline-flex items-center gap-1.5 rounded-interactive border font-medium overflow-hidden transition-colors duration-150',
         sizes.button,

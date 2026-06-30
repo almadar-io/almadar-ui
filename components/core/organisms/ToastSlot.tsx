@@ -15,6 +15,7 @@ import React from 'react';
 import { Toast, ToastVariant } from '../molecules/Toast';
 import { Box } from '../atoms/Box';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useEntitySchemaOptional } from '../../../providers/EntitySchemaContext';
 import type { UiError } from '../atoms/types';
 
 /** Props extracted from a React element for toast content */
@@ -41,6 +42,8 @@ export interface ToastSlotProps {
   error?: UiError | null;
   /** Entity name for schema-driven auto-fetch */
   entity?: string;
+  /** Source trait name for qualified event emission */
+  sourceTrait?: string;
 }
 
 /**
@@ -79,8 +82,10 @@ export const ToastSlot: React.FC<ToastSlotProps> = ({
   title: overrideTitle,
   duration = 5000,
   className,
+  sourceTrait,
 }) => {
   const eventBus = useEventBus();
+  const schemaCtx = useEntitySchemaOptional();
   const isVisible = Boolean(children);
 
   // Extract props from children if not explicitly provided
@@ -90,9 +95,14 @@ export const ToastSlot: React.FC<ToastSlotProps> = ({
   const message = extracted.message || (typeof children === 'string' ? children : '');
 
   const handleDismiss = () => {
-    // Dispatch dismiss event - trait hooks listen for this
-    eventBus.emit('UI:DISMISS');
-    eventBus.emit('UI:CLOSE');
+    const orbital = sourceTrait !== undefined && schemaCtx !== null
+      ? schemaCtx.orbitalsByTrait.get(sourceTrait)
+      : undefined;
+    const prefix = orbital !== undefined && sourceTrait !== undefined
+      ? `UI:${orbital}.${sourceTrait}.`
+      : 'UI:';
+    eventBus.emit(`${prefix}DISMISS`);
+    eventBus.emit(`${prefix}CLOSE`);
   };
 
   if (!isVisible) return null;

@@ -47,6 +47,8 @@ export interface PlatformerBoardProps {
     playerSprite?: Asset;
     /** Map of platform type to tile sprite */
     tileSprites?: Record<string, Asset>;
+    /** HUD chrome assets (panel backgrounds, stat icons, etc.) keyed by role. */
+    ui?: Record<string, Asset>;
     /** Canvas background color (not supported by Canvas2D; kept for API compat) */
     bgColor?: string;
     /** Emits UI:{keyEvent} with { key } on keydown (replaces per-direction events) */
@@ -96,6 +98,7 @@ export function PlatformerBoard({
     canvasHeight: _canvasHeight = 400,
     playerSprite,
     tileSprites,
+    ui: _ui,
     bgColor: _bgColor,
     keyEvent = 'KEY',
     playAgainEvent = 'PLAY_AGAIN',

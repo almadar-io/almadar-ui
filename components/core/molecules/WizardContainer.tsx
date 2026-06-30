@@ -9,7 +9,7 @@
  */
 import React, { useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
-import type { JsonValue, JsonObject } from "@almadar/core";
+import type { JsonValue, JsonObject, EventKey } from "@almadar/core";
 import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
 import { Box } from "../atoms/Box";
@@ -17,6 +17,7 @@ import { HStack } from "../atoms/Stack";
 import { Icon } from "../atoms/Icon";
 import { cn } from "../../../lib/cn";
 import { useTranslate } from "../../../hooks/useTranslate";
+import { useEventBus } from "../../../hooks/useEventBus";
 import type { UiError } from '../atoms/types';
 
 /** Form field definition for wizard sections */
@@ -164,6 +165,12 @@ export interface WizardContainerProps {
   isLoading?: boolean;
   /** Error state */
   error?: UiError | null;
+  /** Emits UI:{nextEvent} when advancing to next step */
+  nextEvent?: EventKey;
+  /** Emits UI:{backEvent} when going to previous step */
+  backEvent?: EventKey;
+  /** Emits UI:{completeEvent} when wizard completes */
+  completeEvent?: EventKey;
 }
 
 /**
@@ -178,8 +185,12 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
   allowBack = true,
   compact = false,
   className,
+  nextEvent,
+  backEvent,
+  completeEvent,
 }) => {
   const { t } = useTranslate();
+  const eventBus = useEventBus();
   const [internalStep, setInternalStep] = useState(0);
 
   // Normalize controlledStep to number (handles string/unknown from generated code)
@@ -220,14 +231,17 @@ export const WizardContainer: React.FC<WizardContainerProps> = ({
     }
 
     if (isLastStep) {
+      if (completeEvent) eventBus.emit(`UI:${completeEvent}`, { step: currentStep });
       onComplete?.();
     } else {
+      if (nextEvent) eventBus.emit(`UI:${nextEvent}`, { step: currentStep + 1 });
       goToStep(currentStep + 1);
     }
   };
 
   const handleBack = () => {
     if (!isFirstStep && allowBack) {
+      if (backEvent) eventBus.emit(`UI:${backEvent}`, { step: currentStep - 1 });
       goToStep(currentStep - 1);
     }
   };

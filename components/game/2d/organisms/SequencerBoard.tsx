@@ -20,7 +20,7 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import type { EventEmit, EntityRow } from '@almadar/core';
+import type { EventEmit, EntityRow, FieldValue, Asset } from '@almadar/core';
 import { VStack, HStack, Box, Typography, Button } from '../../../core/atoms/index';
 import { cn } from '../../../../lib/cn';
 import { useEventBus } from '../../../../hooks/useEventBus';
@@ -59,6 +59,8 @@ export interface SequencerBoardProps extends DisplayStateProps {
     checkEvent?: EventEmit<{ sequence: string[] }>;
     /** Emits UI:{playAgainEvent} with {} on reset */
     playAgainEvent?: EventEmit<Record<string, never>>;
+    /** Emits UI:{stepEvent} with { step } during playback animation advancement */
+    stepEvent?: EventEmit<{ step: number }>;
 }
 
 type PlayState = 'idle' | 'playing' | 'success';
@@ -100,6 +102,49 @@ function computeSlotFeedback(
     );
 }
 
+/** Narrows a FieldValue to a plain record object (excludes arrays, Dates, and primitives). */
+function isFieldRecord(v: FieldValue | undefined): v is { [key: string]: FieldValue | undefined } {
+    return typeof v === 'object' && v !== null && !Array.isArray(v) && !(v instanceof Date);
+}
+
+/** Builds an Asset from a FieldValue object when the required `url` and `role` fields are present. */
+function assetFromField(v: FieldValue | undefined): Asset | undefined {
+    if (!isFieldRecord(v)) return undefined;
+    const url = typeof v.url === 'string' ? v.url : undefined;
+    const role = typeof v.role === 'string' ? v.role : undefined;
+    const category = typeof v.category === 'string' ? v.category : '';
+    if (!url || !role) return undefined;
+    return {
+        url,
+        role: role as Asset['role'],
+        category,
+        name: typeof v.name === 'string' ? v.name : undefined,
+        thumbnailUrl: typeof v.thumbnailUrl === 'string' ? v.thumbnailUrl : undefined,
+        style: typeof v.style === 'string' ? (v.style as Asset['style']) : undefined,
+        variant: typeof v.variant === 'string' ? v.variant : undefined,
+        dimension: typeof v.dimension === 'string' ? (v.dimension as Asset['dimension']) : undefined,
+        aspect: typeof v.aspect === 'string' ? (v.aspect as Asset['aspect']) : undefined,
+    };
+}
+
+/** Maps one FieldValue element from the `availableActions` entity field to a SlotItemData.
+ *  Returns undefined when the element is not a record with the required `id`, `name`, and `category` strings. */
+function slotItemFromField(fv: FieldValue): SlotItemData | undefined {
+    if (!isFieldRecord(fv)) return undefined;
+    const id = typeof fv.id === 'string' ? fv.id : undefined;
+    const name = typeof fv.name === 'string' ? fv.name : undefined;
+    const category = typeof fv.category === 'string' ? fv.category : undefined;
+    if (!id || !name || !category) return undefined;
+    return {
+        id,
+        name,
+        category,
+        description: typeof fv.description === 'string' ? fv.description : undefined,
+        iconEmoji: typeof fv.iconEmoji === 'string' ? fv.iconEmoji : undefined,
+        iconUrl: assetFromField(fv.iconUrl),
+    };
+}
+
 // =============================================================================
 // Component
 // =============================================================================
@@ -114,6 +159,7 @@ export function SequencerBoard({
     removeEvent,
     checkEvent,
     playAgainEvent,
+    stepEvent,
     className,
 }: SequencerBoardProps): React.JSX.Element | null {
     const { emit } = useEventBus();
@@ -121,7 +167,12 @@ export function SequencerBoard({
     const resolved = boardEntity(entity);
     const maxSlots = num(resolved?.maxSlots) || 3;
     const solutions = (Array.isArray(resolved?.solutions) ? resolved.solutions : []) as string[][];
-    const availableActions = (Array.isArray(resolved?.availableActions) ? resolved.availableActions : []) as SlotItemData[];
+    const availableActions: SlotItemData[] = (Array.isArray(resolved?.availableActions) ? resolved.availableActions : [])
+        .reduce<SlotItemData[]>((acc, fv) => {
+            const item = slotItemFromField(fv as FieldValue);
+            if (item) acc.push(item);
+            return acc;
+        }, []);
     const allowDuplicates = resolved?.allowDuplicates !== false;
 
     // -- Model-owned state (read from entity) ----------------------------------
@@ -209,7 +260,7 @@ export function SequencerBoard({
         const advance = () => {
             step++;
             // Emit STEP to advance the model's currentStep
-            emit('UI:STEP', { step });
+            if (stepEvent) emit(`UI:${stepEvent}`, { step });
             if (step >= maxSlots) {
                 if (checkEvent) emit(`UI:${checkEvent}`, { sequence: playerIds });
                 // Compute display feedback for failed attempt (model drives win/lose)

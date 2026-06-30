@@ -1,4 +1,5 @@
 import * as React from 'react';
+import type { Asset } from '@almadar/core';
 import { cn } from '../../../../lib/cn';
 
 // Generic ratio/progress bar — covers health (hearts/bar/numeric) and XP/progress (progress format with optional level badge).
@@ -23,6 +24,10 @@ export interface HealthBarProps {
   className?: string;
   /** Animation on change */
   animated?: boolean;
+  /** Sprite image used as the bar track/frame border for bar/progress formats. Falls back to CSS rounded bg-muted. */
+  frameAsset?: Asset;
+  /** Sprite image tiled across the filled portion of bar/progress formats. Falls back to CSS color gradient. */
+  fillAsset?: Asset;
 }
 
 const heartIcon = (filled: boolean, size: string) => (
@@ -53,6 +58,8 @@ export function HealthBar({
   size = 'md',
   className,
   animated = true,
+  frameAsset,
+  fillAsset,
 }: HealthBarProps) {
   const sizes = sizeMap[size];
   const percentage = max > 0 ? Math.max(0, Math.min(100, (current / max) * 100)) : 0;
@@ -76,19 +83,24 @@ export function HealthBar({
     return (
       <div
         className={cn(
-          'relative overflow-hidden rounded-full bg-muted',
+          'relative overflow-hidden rounded-full',
+          !frameAsset && 'bg-muted',
           sizes.bar,
           'w-24',
           className
         )}
+        style={frameAsset ? { backgroundImage: `url(${frameAsset.url})`, backgroundSize: '100% 100%' } : undefined}
       >
         <div
           className={cn(
             'absolute inset-y-0 left-0 rounded-full',
-            percentage > 66 ? 'bg-success' : percentage > 33 ? 'bg-warning' : 'bg-error',
+            !fillAsset && (percentage > 66 ? 'bg-success' : percentage > 33 ? 'bg-warning' : 'bg-error'),
             animated && 'transition-all duration-300'
           )}
-          style={{ width: `${percentage}%` }}
+          style={{
+            width: `${percentage}%`,
+            ...(fillAsset ? { backgroundImage: `url(${fillAsset.url})`, backgroundSize: 'auto 100%' } : {}),
+          }}
         />
       </div>
     );
@@ -111,17 +123,22 @@ export function HealthBar({
         <div className="flex-1 flex flex-col gap-0.5">
           <div
             className={cn(
-              'relative w-full overflow-hidden rounded-full bg-muted border border-muted',
+              'relative w-full overflow-hidden rounded-full',
+              !frameAsset && 'bg-muted border border-muted',
               sizes.bar,
             )}
+            style={frameAsset ? { backgroundImage: `url(${frameAsset.url})`, backgroundSize: '100% 100%' } : undefined}
           >
             <div
               className={cn(
                 'absolute inset-y-0 left-0 rounded-full',
-                'bg-gradient-to-r from-accent to-info',
+                !fillAsset && 'bg-gradient-to-r from-accent to-info',
                 animated && 'transition-all duration-500 ease-out',
               )}
-              style={{ width: `${percentage}%` }}
+              style={{
+                width: `${percentage}%`,
+                ...(fillAsset ? { backgroundImage: `url(${fillAsset.url})`, backgroundSize: 'auto 100%' } : {}),
+              }}
             />
           </div>
           {showLabel && (

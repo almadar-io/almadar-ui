@@ -1,4 +1,5 @@
 import * as React from 'react';
+import type { Asset } from '@almadar/core';
 import { cn } from '../../../../lib/cn';
 
 export interface TimerDisplayProps {
@@ -14,6 +15,8 @@ export interface TimerDisplayProps {
   className?: string;
   /** Seconds below which to pulse red */
   lowThreshold?: number;
+  /** Icon asset rendered to the left of the time value. Falls back to no icon. */
+  iconAsset?: Asset;
 }
 
 const sizeMap = {
@@ -48,13 +51,14 @@ export function TimerDisplay({
   size = 'md',
   className,
   lowThreshold,
+  iconAsset,
 }: TimerDisplayProps) {
   const isLow = lowThreshold != null && seconds <= lowThreshold && seconds > 0;
 
   return (
     <div
       className={cn(
-        'inline-flex items-center justify-center rounded-container',
+        'inline-flex items-center gap-1 justify-center rounded-container',
         'bg-card/80 border border-muted font-mono font-bold tabular-nums',
         sizeMap[size],
         running && 'border-success/50',
@@ -63,6 +67,9 @@ export function TimerDisplay({
         className
       )}
     >
+      {iconAsset && (
+        <img src={iconAsset.url} alt="" className="w-4 h-4 object-contain flex-shrink-0" />
+      )}
       {formatTime(seconds, format)}
     </div>
   );

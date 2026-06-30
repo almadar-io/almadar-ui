@@ -38,6 +38,8 @@ export interface ControlGridProps {
   onDirection?: (direction: DPadDirection, pressed: boolean) => void;
   /** Event-bus event emitted with `{ direction, pressed }` (kind="dpad") */
   directionEvent?: EventEmit<{ direction: DPadDirection; pressed: boolean }>;
+  /** Per-direction sprite assets for kind="dpad" buttons (e.g. Kenny arrow PNGs). Falls back to arrow emoji. */
+  directionAssets?: Partial<Record<DPadDirection, Asset>>;
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
   className?: string;
@@ -79,6 +81,7 @@ export function ControlGrid({
   actionEvent,
   onDirection,
   directionEvent,
+  directionAssets,
   size = 'md',
   disabled,
   className,
@@ -121,7 +124,8 @@ export function ControlGrid({
     const dir = (d: DPadDirection) => (
       <ControlButton
         key={d}
-        icon={arrowIcons[d]}
+        icon={directionAssets?.[d] ? undefined : arrowIcons[d]}
+        assetUrl={directionAssets?.[d]}
         size={sizeKey[size]}
         variant="secondary"
         pressed={active.has(d)}

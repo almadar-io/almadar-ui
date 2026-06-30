@@ -14,67 +14,11 @@
  */
 
 import React from "react";
+import type { Asset } from "@almadar/core";
 import { cn } from "../../../../lib/cn";
 import { Box } from "../../../core/atoms/Box";
 import { HStack } from "../../../core/atoms/Stack";
 import { Typography } from "../../../core/atoms/Typography";
-import { getComponentForPattern } from "@almadar/patterns";
-import type { SlotContent, SlotPropValue } from "../../../../hooks/useUISlots";
-
-
-type DescriptorObject = { type: string; props?: SlotContent["props"]; _id?: string; sourceTrait?: string };
-
-function asDescriptor(v: object): DescriptorObject | null {
-  if (Array.isArray(v) || React.isValidElement(v)) return null;
-  const o = v as { type?: SlotPropValue; props?: SlotPropValue; _id?: SlotPropValue; sourceTrait?: SlotPropValue };
-  if (typeof o.type !== "string") return null;
-  const props = o.props !== undefined && typeof o.props === "object" && !Array.isArray(o.props) && o.props !== null
-    ? (o.props as SlotContent["props"])
-    : undefined;
-  const _id = typeof o._id === "string" ? o._id : undefined;
-  const sourceTrait = typeof o.sourceTrait === "string" ? o.sourceTrait : undefined;
-  return { type: o.type, props, _id, sourceTrait };
-}
-
-type SlotContentRendererCmp = React.ComponentType<{ content: SlotContent; onDismiss: () => void }>;
-let _scr: SlotContentRendererCmp | null = null;
-function getSlotContentRenderer(): SlotContentRendererCmp {
-  if (_scr) return _scr;
-  const mod = require("../../../core/organisms/UISlotRenderer") as { SlotContentRenderer: SlotContentRendererCmp };
-  _scr = mod.SlotContentRenderer;
-  return _scr;
-}
-
-function resolveDescriptor(value: React.ReactNode, idPrefix: string): React.ReactNode {
-  if (value === null || value === undefined) return value;
-  if (React.isValidElement(value)) return value;
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return value;
-  if (Array.isArray(value)) {
-    return value.map((item, i) => (
-      <React.Fragment key={i}>{resolveDescriptor(item as React.ReactNode, `${idPrefix}-${i}`)}</React.Fragment>
-    ));
-  }
-  if (typeof value === "object" && value !== null) {
-    const desc = asDescriptor(value as object);
-    if (desc !== null && getComponentForPattern(desc.type) !== null) {
-      const resolvedProps: SlotContent["props"] = desc.props ?? {};
-      const content: SlotContent = {
-        id: desc._id ?? idPrefix,
-        pattern: desc.type,
-        props: resolvedProps,
-        priority: 0,
-        ...(desc.sourceTrait !== undefined && { sourceTrait: desc.sourceTrait }),
-      };
-      const SCR = getSlotContentRenderer();
-      // Stable key tied to the slot/pattern identity (idPrefix) so a per-tick render-ui
-      // re-emission RECONCILES this child instead of remounting it — without it the canvas
-      // + HUD remounted ~574×/run (proven via instrumentation), recreating + clearing the
-      // canvas every tick = the board flicker.
-      return <SCR key={content.id} content={content} onDismiss={() => undefined} />;
-    }
-  }
-  return null;
-}
 
 export interface GameShellProps {
     /** Application / game title shown in the HUD bar */
@@ -87,6 +31,10 @@ export interface GameShellProps {
     showTopBar?: boolean;
     /** Game content rendered inside the full-screen area */
     children?: React.ReactNode;
+    /** Background image for the shell/main area (e.g. Kenny panel frame). Falls back to CSS #0a0a0f. */
+    backgroundAsset?: Asset;
+    /** Background image for the HUD bar. Falls back to CSS #12121f surface color. */
+    hudBackgroundAsset?: Asset;
 }
 
 /**
@@ -101,6 +49,8 @@ export const GameShell: React.FC<GameShellProps> = ({
     className,
     showTopBar = true,
     children,
+    backgroundAsset,
+    hudBackgroundAsset,
 }) => {
     return (
         <Box
@@ -114,7 +64,9 @@ export const GameShell: React.FC<GameShellProps> = ({
                 width: "100vw",
                 height: "100vh",
                 overflow: "hidden",
-                background: "var(--color-background, #0a0a0f)",
+                background: backgroundAsset
+                    ? `url(${backgroundAsset.url}) center/cover no-repeat`
+                    : "var(--color-background, #0a0a0f)",
                 color: "var(--color-text, #e0e0e0)",
             }}
         >
@@ -124,7 +76,9 @@ export const GameShell: React.FC<GameShellProps> = ({
                     className="game-shell__header"
                     style={{
                         flexShrink: 0,
-                        background: "var(--color-surface, #12121f)",
+                        background: hudBackgroundAsset
+                            ? `url(${hudBackgroundAsset.url}) center/cover no-repeat`
+                            : "var(--color-surface, #12121f)",
                         borderBottom: "1px solid var(--color-border, #2a2a3a)",
                     }}
                 >
@@ -147,7 +101,7 @@ export const GameShell: React.FC<GameShellProps> = ({
                     {/* HUD bar — full-width row below the title, stays in normal flow */}
                     {hud && (
                         <Box className="game-shell__hud" style={{ width: "100%" }}>
-                            {resolveDescriptor(hud, "gs-hud")}
+                            {hud}
                         </Box>
                     )}
                 </Box>
@@ -162,7 +116,7 @@ export const GameShell: React.FC<GameShellProps> = ({
                     position: "relative",
                 }}
             >
-                {resolveDescriptor(children, "gs-children")}
+                {children}
             </Box>
         </Box>
     );

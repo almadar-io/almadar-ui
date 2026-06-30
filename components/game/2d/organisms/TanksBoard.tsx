@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import type { AssetUrl, EventEmit } from '@almadar/core';
+import type { Asset, AssetUrl, EventEmit } from '@almadar/core';
 import { cn } from '../../../../lib/cn';
 import { Canvas2D } from '../molecules/Canvas2D';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from '../../shared/isometricTypes';
@@ -23,6 +23,8 @@ export interface TanksBoardProps extends DisplayStateProps {
     assetManifest?: Canvas2DProps['assetManifest'];
     /** Base URL prepended to manifest sprite paths */
     assetBaseUrl?: AssetUrl;
+    /** HUD chrome assets (panel backgrounds, stat icons, etc.) keyed by role. */
+    ui?: Record<string, Asset>;
     /** Render scale */
     scale?: number;
     /** Show minimap overlay */
@@ -45,6 +47,7 @@ export function TanksBoard({
     features,
     assetManifest,
     assetBaseUrl,
+    ui: _ui,
     scale = 0.45,
     showMinimap = true,
     enableCamera = true,

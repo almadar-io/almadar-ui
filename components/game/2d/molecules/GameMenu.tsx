@@ -1,11 +1,8 @@
 'use client';
 import * as React from "react";
-import type { EventKey, EventPayload } from "@almadar/core";
+import type { EventKey, EventPayload, Asset } from "@almadar/core";
 import { cn } from "../../../../lib/cn";
-import {
-  useEventBus,
-  type EventBusContextType,
-} from "../../../../hooks/useEventBus";
+import { useEventBus } from "../../../../hooks/useEventBus";
 import { ChoiceButton } from "../atoms/ChoiceButton";
 
 export type MenuOption = EventPayload & {
@@ -38,12 +35,10 @@ export interface GameMenuProps {
   menuItems?: readonly MenuOption[];
   /** Called when an option is selected (legacy callback, prefer event bus) */
   onSelect?: (option: MenuOption) => void;
-  /** Event bus for emitting UI events (optional, uses hook if not provided) */
-  eventBus?: EventBusContextType;
   /** Background image or gradient */
   background?: string;
-  /** Logo image URL */
-  logo?: string;
+  /** Logo asset */
+  logo?: Asset;
   /** Additional CSS classes */
   className?: string;
 }
@@ -60,27 +55,19 @@ export function GameMenu({
   options,
   menuItems,
   onSelect,
-  eventBus: eventBusProp,
   background,
-  logo = '',
+  logo,
   className,
 }: GameMenuProps) {
   // Resolve alias: menuItems → options
   const resolvedOptions = options ?? menuItems ?? DEFAULT_MENU_OPTIONS;
 
-  // Use provided eventBus or get from context (with fallback for outside provider)
-  let eventBusFromHook: EventBusContextType | null = null;
-  try {
-    eventBusFromHook = useEventBus();
-  } catch {
-    // Outside EventBusProvider context - will use prop or skip emission
-  }
-  const eventBus = eventBusProp || eventBusFromHook;
+  const eventBus = useEventBus();
 
   const handleOptionClick = React.useCallback(
     (option: MenuOption) => {
       // Emit event to event bus for closed circuit pattern
-      if (option.event && eventBus) {
+      if (option.event) {
         eventBus.emit(`UI:${option.event}`, { option });
       }
 
@@ -90,7 +77,7 @@ export function GameMenu({
       }
 
       // Handle navigation if navigatesTo is specified
-      if (option.navigatesTo && eventBus) {
+      if (option.navigatesTo) {
         eventBus.emit('UI:NAVIGATE', { url: option.navigatesTo, option });
       }
     },
@@ -113,7 +100,7 @@ export function GameMenu({
       <div className="text-center mb-12 animate-fade-in">
         {logo && (
           <img
-            src={logo}
+            src={logo.url}
             alt={title}
             className="h-24 w-auto mx-auto mb-6 drop-shadow-2xl"
           />

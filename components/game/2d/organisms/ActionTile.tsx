@@ -74,7 +74,7 @@ export function ActionTile({
             onDragStart={handleDragStart}
         >
             {action.iconUrl ? (
-                <img src={action.iconUrl} alt="" className="w-8 h-8 object-contain" />
+                <img src={action.iconUrl.url} alt="" className="w-8 h-8 object-contain" />
             ) : (
                 <Typography variant="body1" className={cn(config.icon, 'leading-none')}>
                     {action.iconEmoji || '\u2726'}

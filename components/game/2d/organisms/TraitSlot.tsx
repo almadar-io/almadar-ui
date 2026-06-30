@@ -20,7 +20,7 @@
  */
 
 import React, { useState, useRef, useCallback } from 'react';
-import type { AssetUrl, EventEmit } from '@almadar/core';
+import type { Asset, EventEmit } from '@almadar/core';
 import { cn } from '../../../../lib/cn';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { Box } from '../../../core/atoms/Box';
@@ -40,8 +40,8 @@ export type SlotItemData = {
     description?: string;
     /** Emoji or text icon */
     iconEmoji?: string;
-    /** Image URL icon (takes precedence over iconEmoji); falls back to iconEmoji when absent. */
-    iconUrl?: AssetUrl;
+    /** Asset icon (takes precedence over iconEmoji); falls back to iconEmoji when absent. */
+    iconUrl?: Asset;
     /** Optional state machine for tooltip display */
     stateMachine?: TraitStateMachineDefinition;
 };
@@ -67,8 +67,8 @@ export interface TraitSlotProps {
     showTooltip?: boolean;
     /** Category → color mapping */
     categoryColors?: Record<string, { bg: string; border: string }>;
-    /** Optional tooltip frame image URL */
-    tooltipFrameUrl?: AssetUrl;
+    /** Optional tooltip frame image asset */
+    tooltipFrameUrl?: Asset;
     /** Additional CSS classes */
     className?: string;
     /** Loading state */
@@ -128,7 +128,7 @@ export function TraitSlot({
     size = 'md',
     showTooltip = true,
     categoryColors,
-    tooltipFrameUrl = '',
+    tooltipFrameUrl,
     className,
     feedback,
     onItemDrop,
@@ -301,7 +301,7 @@ export function TraitSlot({
                             as="img"
                             className="object-contain"
                             style={{ width: config.icon, height: config.icon }}
-                            {...{ src: equippedItem.iconUrl, alt: equippedItem.name }}
+                            {...{ src: equippedItem.iconUrl.url, alt: equippedItem.name }}
                         />
                     ) : (
                         <Typography variant="body1" className="text-center leading-none" style={{ fontSize: config.icon }}>
@@ -342,7 +342,7 @@ export function TraitSlot({
                         ...getTooltipStyle(),
                         minWidth: 200,
                         ...(tooltipFrameUrl ? {
-                            borderImage: `url(${tooltipFrameUrl}) 60 fill / 15px / 0 stretch`,
+                            borderImage: `url(${tooltipFrameUrl.url}) 60 fill / 15px / 0 stretch`,
                             border: 'none',
                         } : {}),
                     }}

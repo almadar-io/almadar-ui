@@ -27,6 +27,8 @@ type ShooterAssetManifest = {
     units?: Record<string, Asset>;
     features?: Record<string, Asset>;
     background?: Asset;
+    /** HUD chrome assets (panel backgrounds, stat icons, etc.) keyed by role. */
+    ui?: Record<string, Asset>;
 };
 
 export interface ShooterPlayer {

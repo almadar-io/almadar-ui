@@ -6,6 +6,7 @@
  */
 
 import React from "react";
+import type { EventKey } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Container } from "../molecules/Container";
 import { VStack, HStack } from "../atoms/Stack";
@@ -40,6 +41,12 @@ export interface CounterTemplateProps extends TemplateProps<CounterEntity> {
   onDecrement?: () => void;
   /** Called when reset is clicked */
   onReset?: () => void;
+  /** Declarative event key — emits UI:{incrementEvent} via bus on increment */
+  incrementEvent?: EventKey;
+  /** Declarative event key — emits UI:{decrementEvent} via bus on decrement */
+  decrementEvent?: EventKey;
+  /** Declarative event key — emits UI:{resetEvent} via bus on reset */
+  resetEvent?: EventKey;
   /** Title displayed above the counter */
   title?: string;
   /** Show reset button */
@@ -64,6 +71,8 @@ function CounterMinimal({
   size = "md",
   onDecrement,
   onIncrement,
+  decrementEvent,
+  incrementEvent,
   className,
 }: CounterTemplateProps): React.JSX.Element | null {
   const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as CounterEntity : undefined;
@@ -73,6 +82,7 @@ function CounterMinimal({
       <Button
         variant="secondary"
         size={sizeStyles[size].button}
+        action={decrementEvent}
         onClick={onDecrement}
         disabled={resolved.decrementDisabled}
         icon="minus"
@@ -91,6 +101,7 @@ function CounterMinimal({
       <Button
         variant="secondary"
         size={sizeStyles[size].button}
+        action={incrementEvent}
         onClick={onIncrement}
         disabled={resolved.incrementDisabled}
         icon="plus"
@@ -110,6 +121,9 @@ function CounterStandard({
   onDecrement,
   onIncrement,
   onReset,
+  decrementEvent,
+  incrementEvent,
+  resetEvent,
   className,
 }: CounterTemplateProps): React.JSX.Element | null {
   const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as CounterEntity : undefined;
@@ -136,6 +150,7 @@ function CounterStandard({
           <Button
             variant="secondary"
             size={sizeStyles[size].button}
+            action={decrementEvent}
             onClick={onDecrement}
             disabled={resolved.decrementDisabled}
             icon="minus"
@@ -143,6 +158,7 @@ function CounterStandard({
           <Button
             variant="primary"
             size={sizeStyles[size].button}
+            action={incrementEvent}
             onClick={onIncrement}
             disabled={resolved.incrementDisabled}
             icon="plus"
@@ -152,6 +168,7 @@ function CounterStandard({
           <Button
             variant="ghost"
             size="sm"
+            action={resetEvent}
             onClick={onReset}
             icon="rotate-ccw"
           >
@@ -172,6 +189,9 @@ function CounterFull({
   onDecrement,
   onIncrement,
   onReset,
+  decrementEvent,
+  incrementEvent,
+  resetEvent,
   className,
 }: CounterTemplateProps): React.JSX.Element | null {
   const resolved = (entity && typeof entity === 'object' && !Array.isArray(entity)) ? entity as CounterEntity : undefined;
@@ -205,6 +225,7 @@ function CounterFull({
           <Button
             variant="secondary"
             size={sizeStyles[size].button}
+            action={decrementEvent}
             onClick={onDecrement}
             disabled={resolved.decrementDisabled}
             icon="minus"
@@ -214,6 +235,7 @@ function CounterFull({
           <Button
             variant="primary"
             size={sizeStyles[size].button}
+            action={incrementEvent}
             onClick={onIncrement}
             disabled={resolved.incrementDisabled}
             icon="plus"
@@ -225,6 +247,7 @@ function CounterFull({
           <Button
             variant="ghost"
             size="sm"
+            action={resetEvent}
             onClick={onReset}
             icon="rotate-ccw"
           >

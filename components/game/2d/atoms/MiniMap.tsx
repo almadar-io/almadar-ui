@@ -1,5 +1,6 @@
 'use client';
 import * as React from 'react';
+import type { Asset } from '@almadar/core';
 import { cn } from '../../../../lib/cn';
 import type { Rect } from '../../../core/atoms/types';
 
@@ -33,6 +34,10 @@ export interface MiniMapProps {
   viewportRect?: Rect;
   /** Additional CSS classes */
   className?: string;
+  /** Map of terrain key → Asset; when present, draws sprites instead of flat hex colors for tiles. */
+  tileAssets?: Record<string, Asset>;
+  /** Map of unit id or unit type → Asset; when present, draws sprites instead of flat dots for units. */
+  unitAssets?: Record<string, Asset>;
 }
 
 const DEFAULT_TILES: MiniMapTile[] = [
@@ -59,8 +64,29 @@ export function MiniMap({
   mapHeight = 100,
   viewportRect = DEFAULT_VIEWPORT,
   className,
+  tileAssets,
+  unitAssets,
 }: MiniMapProps) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
+
+  // Cache loaded Image objects so we don't reload on every frame.
+  const imgCacheRef = React.useRef<Map<string, HTMLImageElement>>(new Map());
+
+  function loadImg(url: string): HTMLImageElement | null {
+    const cached = imgCacheRef.current.get(url);
+    if (cached) return cached.complete ? cached : null;
+    const img = new Image();
+    img.src = url;
+    img.onload = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      // Force a repaint once the image has loaded
+      const ctx = canvas.getContext('2d');
+      if (ctx) ctx.clearRect(0, 0, 0, 0);
+    };
+    imgCacheRef.current.set(url, img);
+    return null;
+  }
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -76,21 +102,32 @@ export function MiniMap({
     ctx.fillRect(0, 0, width, height);
 
     for (const tile of tiles) {
-      ctx.fillStyle = tile.color;
-      ctx.fillRect(
-        Math.floor(tile.x * scaleX),
-        Math.floor(tile.y * scaleY),
-        Math.max(1, Math.ceil(scaleX)),
-        Math.max(1, Math.ceil(scaleY))
-      );
+      const tileAsset = tileAssets?.[tile.color] ?? tileAssets?.['default'];
+      const tileImg = tileAsset ? loadImg(tileAsset.url) : null;
+      const tx = Math.floor(tile.x * scaleX);
+      const ty = Math.floor(tile.y * scaleY);
+      const tw = Math.max(1, Math.ceil(scaleX));
+      const th = Math.max(1, Math.ceil(scaleY));
+      if (tileImg) {
+        ctx.drawImage(tileImg, tx, ty, tw, th);
+      } else {
+        ctx.fillStyle = tile.color;
+        ctx.fillRect(tx, ty, tw, th);
+      }
     }
 
     for (const unit of units) {
       if (unit.isPlayer) continue; // player marker rendered as DOM overlay
-      ctx.fillStyle = unit.color;
+      const unitAsset = unitAssets?.[unit.color] ?? unitAssets?.['default'];
+      const unitImg = unitAsset ? loadImg(unitAsset.url) : null;
       const ux = Math.floor(unit.x * scaleX) - 1;
       const uy = Math.floor(unit.y * scaleY) - 1;
-      ctx.fillRect(ux, uy, 3, 3);
+      if (unitImg) {
+        ctx.drawImage(unitImg, ux, uy, 5, 5);
+      } else {
+        ctx.fillStyle = unit.color;
+        ctx.fillRect(ux, uy, 3, 3);
+      }
     }
 
     if (viewportRect) {
@@ -103,7 +140,7 @@ export function MiniMap({
         Math.floor(viewportRect.h * scaleY)
       );
     }
-  }, [tiles, units, width, height, mapWidth, mapHeight, viewportRect]);
+  }, [tiles, units, width, height, mapWidth, mapHeight, viewportRect, tileAssets, unitAssets]);
 
   const scaleX = width / mapWidth;
   const scaleY = height / mapHeight;

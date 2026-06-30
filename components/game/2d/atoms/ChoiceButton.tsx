@@ -1,7 +1,8 @@
 import * as React from 'react';
 import { cn } from '../../../../lib/cn';
 import { resolveIcon, type IconInput } from '../../../core/atoms/Icon';
-import type { Asset } from '@almadar/core';
+import { useEventBus } from '../../../../hooks/useEventBus';
+import type { Asset, EventKey } from '@almadar/core';
 
 export interface ChoiceButtonProps {
   /** Choice text content */
@@ -18,6 +19,8 @@ export interface ChoiceButtonProps {
   selected?: boolean;
   /** Click handler */
   onClick?: () => void;
+  /** Declarative event name — emits UI:{action} via eventBus on click */
+  action?: EventKey;
   /** Additional CSS classes */
   className?: string;
 }
@@ -30,13 +33,15 @@ export function ChoiceButton({
   disabled = false,
   selected = false,
   onClick,
+  action,
   className,
 }: ChoiceButtonProps) {
+  const eventBus = useEventBus();
   return (
     <button
       type="button"
       disabled={disabled}
-      onClick={onClick}
+      onClick={(e) => { if (action) eventBus.emit(`UI:${action}`, {}); onClick?.(); }}
       className={cn(
         'w-full text-left px-4 py-2.5 rounded-interactive border transition-all duration-150',
         'flex items-center gap-2',

@@ -14,6 +14,7 @@
 import React from 'react';
 import { Modal } from '../molecules/Modal';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useEntitySchemaOptional } from '../../../providers/EntitySchemaContext';
 import type { UiError } from '../atoms/types';
 
 export interface ModalSlotProps {
@@ -31,6 +32,8 @@ export interface ModalSlotProps {
   error?: UiError | null;
   /** Entity name for schema-driven auto-fetch */
   entity?: string;
+  /** Source trait name for qualified event emission */
+  sourceTrait?: string;
 }
 
 /**
@@ -58,17 +61,24 @@ export const ModalSlot: React.FC<ModalSlotProps> = ({
   title: overrideTitle,
   size = 'md',
   className,
+  sourceTrait,
 }) => {
   const eventBus = useEventBus();
+  const schemaCtx = useEntitySchemaOptional();
   const isOpen = Boolean(children);
 
   // Extract title from children if not explicitly provided
   const title = overrideTitle || extractTitle(children);
 
   const handleClose = () => {
-    // Dispatch close events - trait hooks listen for these
-    eventBus.emit('UI:CLOSE');
-    eventBus.emit('UI:CANCEL');
+    const orbital = sourceTrait !== undefined && schemaCtx !== null
+      ? schemaCtx.orbitalsByTrait.get(sourceTrait)
+      : undefined;
+    const prefix = orbital !== undefined && sourceTrait !== undefined
+      ? `UI:${orbital}.${sourceTrait}.`
+      : 'UI:';
+    eventBus.emit(`${prefix}CLOSE`);
+    eventBus.emit(`${prefix}CANCEL`);
   };
 
   if (!isOpen) return null;

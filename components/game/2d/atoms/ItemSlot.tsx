@@ -2,7 +2,8 @@
 import * as React from 'react';
 import { cn } from '../../../../lib/cn';
 import { Icon, type IconInput } from '../../../core/atoms/Icon';
-import type { Asset } from '@almadar/core';
+import { useEventBus } from '../../../../hooks/useEventBus';
+import type { Asset, EventKey } from '@almadar/core';
 
 export interface ItemSlotProps {
   /** Sprite asset — takes precedence over icon when provided */
@@ -23,6 +24,8 @@ export interface ItemSlotProps {
   selected?: boolean;
   /** Click handler */
   onClick?: () => void;
+  /** Declarative event name — emits UI:{action} via eventBus on select */
+  action?: EventKey;
   /** Additional CSS classes */
   className?: string;
 }
@@ -71,15 +74,17 @@ export function ItemSlot({
   size = 'md',
   selected,
   onClick,
+  action,
   className,
 }: ItemSlotProps) {
-  const isClickable = onClick != null;
+  const eventBus = useEventBus();
+  const isClickable = onClick != null || action != null;
   const px = assetSizeMap[size];
 
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={() => { if (action) eventBus.emit(`UI:${action}`, {}); onClick?.(); }}
       disabled={!isClickable}
       title={label}
       className={cn(
