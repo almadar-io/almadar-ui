@@ -1,6 +1,9 @@
 import * as React from 'react';
 import { cn } from '../../../../lib/cn';
 import { Icon, type IconInput } from '../../../core/atoms/Icon';
+import { Box } from '../../../core/atoms/Box';
+import { Typography } from '../../../core/atoms/Typography';
+import { GameIcon } from './GameIcon';
 import type { Asset } from '@almadar/core';
 
 export interface StatusEffectProps {
@@ -60,58 +63,54 @@ export function StatusEffect({
   const sizes = sizeMap[size];
 
   return (
-    <div className={cn('relative inline-flex flex-col items-center', className)}>
-      <div
+    <Box position="relative" className={cn('inline-flex flex-col items-center', className)}>
+      <Box
+        position="relative"
         className={cn(
-          'relative flex items-center justify-center rounded-interactive border-2',
+          'flex items-center justify-center rounded-interactive border-2',
           sizes.container,
           variantStyles[variant]
         )}
         title={label}
       >
-        <span className={cn('flex items-center justify-center', sizes.icon)}>
+        <Box as="span" className={cn('flex items-center justify-center', sizes.icon)}>
           {assetUrl ? (
-            <img
-              src={assetUrl.url}
-              alt={label}
-              width={sizes.img}
-              height={sizes.img}
-              style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
-              className="flex-shrink-0"
-            />
+            <GameIcon assetUrl={assetUrl} icon="image" size={sizes.img} alt={label} className="flex-shrink-0" />
           ) : icon != null && typeof icon === 'string' ? (
             <Icon name={icon} size="sm" />
           ) : icon != null ? (
             <Icon icon={icon} size="sm" />
           ) : null}
-        </span>
+        </Box>
         {duration !== undefined && (
-          <span
+          <Typography
+            as="span"
             className={cn(
               'absolute bottom-0 left-0 right-0 text-center font-mono font-bold text-foreground bg-background/60 leading-tight',
               sizes.timer
             )}
           >
             {formatDuration(duration)}
-          </span>
+          </Typography>
         )}
-      </div>
+      </Box>
       {stacks !== undefined && stacks > 1 && (
-        <span
+        <Typography
+          as="span"
           className={cn(
             'absolute flex items-center justify-center rounded-full bg-card text-foreground font-bold leading-none',
             sizes.badge
           )}
         >
           {stacks}
-        </span>
+        </Typography>
       )}
       {label && (
-        <span className="text-xs text-muted-foreground mt-0.5 text-center whitespace-nowrap">
+        <Typography as="span" className="text-xs text-muted-foreground mt-0.5 text-center whitespace-nowrap">
           {label}
-        </span>
+        </Typography>
       )}
-    </div>
+    </Box>
   );
 }
 

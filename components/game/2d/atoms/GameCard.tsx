@@ -4,7 +4,9 @@ import type { Asset, EventEmit } from '@almadar/core';
 import { cn } from '../../../../lib/cn';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { Box } from '../../../core/atoms/Box';
+import { Button } from '../../../core/atoms/Button';
 import { Typography } from '../../../core/atoms/Typography';
+import { GameIcon } from './GameIcon';
 
 export interface GameCardProps {
   id: string;
@@ -58,8 +60,8 @@ export function GameCard({
   const artPx = artPxMap[size];
 
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
       onClick={handleClick}
       disabled={disabled}
       title={name}
@@ -75,7 +77,8 @@ export function GameCard({
       )}
     >
       {cost != null && (
-        <span
+        <Typography
+          as="span"
           className={cn(
             'absolute -top-2 -left-2 flex items-center justify-center',
             'min-w-[22px] h-[22px] rounded-full px-1',
@@ -83,19 +86,12 @@ export function GameCard({
           )}
         >
           {cost}
-        </span>
+        </Typography>
       )}
 
       <Box className="flex-1 flex items-center justify-center w-full">
         {art ? (
-          <img
-            src={art.url}
-            alt={name ?? id}
-            width={artPx}
-            height={artPx}
-            style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
-            className="flex-shrink-0"
-          />
+          <GameIcon assetUrl={art} icon="image" size={artPx} alt={name ?? id} className="flex-shrink-0" />
         ) : (
           <Box className="rounded bg-muted/40" style={{ width: artPx, height: artPx }} />
         )}
@@ -112,11 +108,11 @@ export function GameCard({
 
       {(attack != null || defense != null) && (
         <Box className="flex w-full items-center justify-between px-0.5 text-[10px] font-bold leading-none">
-          <span className="text-error">{attack != null ? `⚔${attack}` : ''}</span>
-          <span className="text-info">{defense != null ? `🛡${defense}` : ''}</span>
+          <Typography as="span" className="text-error">{attack != null ? `⚔${attack}` : ''}</Typography>
+          <Typography as="span" className="text-info">{defense != null ? `🛡${defense}` : ''}</Typography>
         </Box>
       )}
-    </button>
+    </Button>
   );
 }
 

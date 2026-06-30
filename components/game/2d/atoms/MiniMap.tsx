@@ -2,6 +2,7 @@
 import * as React from 'react';
 import type { Asset } from '@almadar/core';
 import { cn } from '../../../../lib/cn';
+import { Box } from '../../../core/atoms/Box';
 import type { Rect } from '../../../core/atoms/types';
 
 export interface MiniMapTile {
@@ -151,12 +152,15 @@ export function MiniMap({
   return (
     <>
       <style>{`@keyframes minimap-blink{0%,49%{opacity:1}50%,100%{opacity:0}}`}</style>
-      <div
+      <Box
+        position="relative"
+        display="inline-block"
         className={cn(
-          'relative inline-block border border-border/20 rounded-container',
+          'border border-border/20 rounded-container',
           className
         )}
       >
+        {/* canvas is the rendering surface — not chrome */}
         <canvas
           ref={canvasRef}
           width={width}
@@ -165,9 +169,9 @@ export function MiniMap({
           style={{ width, height }}
         />
         {playerLeft !== null && playerTop !== null && (
-          <div
+          <Box
+            position="absolute"
             style={{
-              position: 'absolute',
               left: playerLeft,
               top: playerTop,
               width: 3,
@@ -178,7 +182,7 @@ export function MiniMap({
             }}
           />
         )}
-      </div>
+      </Box>
     </>
   );
 }

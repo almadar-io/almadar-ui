@@ -1,5 +1,7 @@
 import * as React from 'react';
 import { cn } from '../../../../lib/cn';
+import { Typography } from '../../../core/atoms/Typography';
+import { GameIcon } from './GameIcon';
 import type { Asset } from '@almadar/core';
 
 export interface DamageNumberProps {
@@ -54,7 +56,8 @@ export function DamageNumber({
   return (
     <>
       <style>{floatKeyframes}</style>
-      <span
+      <Typography
+        as="span"
         className={cn(
           'inline-flex items-center gap-0.5 font-mono select-none pointer-events-none',
           sizeMap[size],
@@ -64,17 +67,10 @@ export function DamageNumber({
         style={{ animation: 'damageFloat 1s ease-out forwards' }}
       >
         {assetUrl && (
-          <img
-            src={assetUrl.url}
-            alt=""
-            width={14}
-            height={14}
-            style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
-            className="flex-shrink-0"
-          />
+          <GameIcon assetUrl={assetUrl} icon="image" size={14} className="flex-shrink-0" />
         )}
         {displayText}
-      </span>
+      </Typography>
     </>
   );
 }

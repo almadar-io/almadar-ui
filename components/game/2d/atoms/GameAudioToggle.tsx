@@ -17,6 +17,7 @@ import type { Asset } from '@almadar/core';
 import { Button } from '../../../core/atoms/index';
 import { cn } from '../../../../lib/cn';
 import { useGameAudioContextOptional } from '../../shared/providers/GameAudioProvider';
+import { GameIcon } from './GameIcon';
 import type { UiError } from '../../../core/atoms/types';
 
 // =============================================================================
@@ -70,7 +71,7 @@ export function GameAudioToggle({
             aria-pressed={muted}
         >
             {activeAsset ? (
-                <img src={activeAsset.url} alt={muted ? 'Muted' : 'Sound on'} className="w-5 h-5 object-contain" />
+                <GameIcon assetUrl={activeAsset} icon="image" size={20} alt={muted ? 'Muted' : 'Sound on'} className="w-5 h-5 object-contain" />
             ) : (
                 muted ? '\uD83D\uDD07' : '\uD83D\uDD0A'
             )}

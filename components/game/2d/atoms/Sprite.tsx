@@ -9,6 +9,7 @@ import React, { useMemo } from 'react';
 import type { EventKey, Asset } from "@almadar/core";
 import type { AnimationName } from '../../shared/spriteAnimationTypes';
 import { useEventBus } from '../../../../hooks/useEventBus';
+import { Box } from '../../../core/atoms/Box';
 import { frameRect } from '../../shared/spriteAnimation';
 
 export interface SpriteProps {
@@ -130,11 +131,11 @@ export function Sprite({
   };
 
   return (
-    <div
+    <Box
+      position="absolute"
       className={className}
       onClick={(action || onClick) ? handleClick : undefined}
       style={{
-        position: 'absolute',
         width: frameWidth,
         height: frameHeight,
         backgroundImage: `url(${spritesheet.url})`,

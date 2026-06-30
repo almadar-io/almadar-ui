@@ -2,6 +2,10 @@ import * as React from 'react';
 import { cn } from '../../../../lib/cn';
 import { resolveIcon, type IconInput } from '../../../core/atoms/Icon';
 import { useEventBus } from '../../../../hooks/useEventBus';
+import { Button } from '../../../core/atoms/Button';
+import { Box } from '../../../core/atoms/Box';
+import { Typography } from '../../../core/atoms/Typography';
+import { GameIcon } from './GameIcon';
 import type { Asset, EventKey } from '@almadar/core';
 
 export interface ChoiceButtonProps {
@@ -38,10 +42,10 @@ export function ChoiceButton({
 }: ChoiceButtonProps) {
   const eventBus = useEventBus();
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
       disabled={disabled}
-      onClick={(e) => { if (action) eventBus.emit(`UI:${action}`, {}); onClick?.(); }}
+      onClick={() => { if (action) eventBus.emit(`UI:${action}`, {}); onClick?.(); }}
       className={cn(
         'w-full text-left px-4 py-2.5 rounded-interactive border transition-all duration-150',
         'flex items-center gap-2',
@@ -53,33 +57,27 @@ export function ChoiceButton({
       )}
     >
       {index !== undefined && (
-        <span
+        <Typography
+          as="span"
           className={cn(
             'flex-shrink-0 font-mono font-bold text-sm',
             selected ? 'text-accent' : 'text-muted-foreground'
           )}
         >
           {index}.
-        </span>
+        </Typography>
       )}
       {assetUrl ? (
-        <img
-          src={assetUrl.url}
-          alt=""
-          width={16}
-          height={16}
-          style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
-          className="flex-shrink-0"
-        />
+        <GameIcon assetUrl={assetUrl} icon="image" size={16} className="flex-shrink-0" />
       ) : icon ? (
-        <span className="flex-shrink-0 text-sm">
+        <Box as="span" className="flex-shrink-0 text-sm">
           {typeof icon === 'string'
             ? (() => { const I = resolveIcon(icon); return I ? <I className="w-4 h-4" /> : null; })()
             : (() => { const I = icon; return <I className="w-4 h-4" />; })()}
-        </span>
+        </Box>
       ) : null}
-      <span className="text-sm leading-snug">{text}</span>
-    </button>
+      <Typography as="span" className="text-sm leading-snug">{text}</Typography>
+    </Button>
   );
 }
 

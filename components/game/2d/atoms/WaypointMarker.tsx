@@ -1,6 +1,9 @@
 import * as React from 'react';
 import { cn } from '../../../../lib/cn';
 import { Icon, type IconInput } from '../../../core/atoms/Icon';
+import { Box } from '../../../core/atoms/Box';
+import { Typography } from '../../../core/atoms/Typography';
+import { GameIcon } from './GameIcon';
 import type { Asset } from '@almadar/core';
 
 const DEFAULT_ASSET_URL: Asset = {
@@ -50,27 +53,30 @@ export function WaypointMarker({
   const sizes = sizeMap[size];
 
   return (
-    <div className={cn('flex flex-col items-center', className)}>
-      <div className="relative flex items-center justify-center">
+    <Box className={cn('flex flex-col items-center', className)}>
+      <Box className="relative flex items-center justify-center">
         {active && (
-          <div
+          <Box
+            position="absolute"
             className={cn(
-              'absolute rounded-full border-2 border-info animate-ping opacity-50',
+              'rounded-full border-2 border-info animate-ping opacity-50',
               sizes.ring
             )}
           />
         )}
         {active && (
-          <div
+          <Box
+            position="absolute"
             className={cn(
-              'absolute rounded-full border-2 border-info',
+              'rounded-full border-2 border-info',
               sizes.ring
             )}
           />
         )}
-        <div
+        <Box
+          position="relative"
           className={cn(
-            'relative flex items-center justify-center rounded-full transition-all duration-200',
+            'flex items-center justify-center rounded-full transition-all duration-200',
             sizes.dot,
             completed && 'bg-success text-foreground',
             active && !completed && 'bg-info text-foreground',
@@ -78,19 +84,13 @@ export function WaypointMarker({
           )}
         >
           {completed ? checkIcon : assetUrl ? (
-            <img
-              src={assetUrl.url}
-              alt={label}
-              width={sizes.img}
-              height={sizes.img}
-              style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
-              className="flex-shrink-0"
-            />
+            <GameIcon assetUrl={assetUrl} icon="image" size={sizes.img} alt={label} className="flex-shrink-0" />
           ) : icon ? (typeof icon === 'string' ? <Icon name={icon} /> : <Icon icon={icon} />) : null}
-        </div>
-      </div>
+        </Box>
+      </Box>
       {label && (
-        <span
+        <Typography
+          as="span"
           className={cn(
             'text-center whitespace-nowrap',
             sizes.label,
@@ -98,9 +98,9 @@ export function WaypointMarker({
           )}
         >
           {label}
-        </span>
+        </Typography>
       )}
-    </div>
+    </Box>
   );
 }
 

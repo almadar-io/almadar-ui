@@ -1,6 +1,9 @@
 import * as React from 'react';
 import { cn } from '../../../../lib/cn';
 import { Icon, type IconInput } from '../../../core/atoms/Icon';
+import { Box } from '../../../core/atoms/Box';
+import { Typography } from '../../../core/atoms/Typography';
+import { GameIcon } from '../atoms/GameIcon';
 import { HealthBar } from '../atoms/HealthBar';
 import { ScoreDisplay } from '../atoms/ScoreDisplay';
 import type { Asset } from '@almadar/core';
@@ -71,7 +74,7 @@ export function StatBadge({
   const resolvedAsset = iconUrl ?? assetUrl;
 
   return (
-    <div
+    <Box
       className={cn(
         'inline-flex items-center gap-2 rounded-container border backdrop-blur-sm',
         sizeMap[size as keyof typeof sizeMap] ?? sizeMap.md,
@@ -80,19 +83,12 @@ export function StatBadge({
       )}
     >
       {resolvedAsset ? (
-        <img
-          src={resolvedAsset.url}
-          alt=""
-          width={16}
-          height={16}
-          style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
-          className="flex-shrink-0"
-        />
+        <GameIcon assetUrl={resolvedAsset} icon="image" size={16} className="flex-shrink-0" />
       ) : icon ? (
-        <span className="flex-shrink-0 text-lg">{typeof icon === 'string' ? <Icon name={icon} className="w-4 h-4" /> : <Icon icon={icon} className="w-4 h-4" />}</span>
+        <Box as="span" className="flex-shrink-0 text-lg">{typeof icon === 'string' ? <Icon name={icon} className="w-4 h-4" /> : <Icon icon={icon} className="w-4 h-4" />}</Box>
       ) : null}
 
-      <span className="text-muted-foreground font-medium">{label}</span>
+      <Typography as="span" className="text-muted-foreground font-medium">{label}</Typography>
 
       {format === 'hearts' && max && (
         <HealthBar
@@ -118,11 +114,11 @@ export function StatBadge({
           size={size === 'lg' ? 'md' : 'sm'}
         />
       )}
-      
+
       {format === 'text' && (
-        <span className="font-bold text-foreground">{value}</span>
+        <Typography as="span" className="font-bold text-foreground">{value}</Typography>
       )}
-    </div>
+    </Box>
   );
 }
 

@@ -1,5 +1,8 @@
 import * as React from 'react';
 import { cn } from '../../../../lib/cn';
+import { Box } from '../../../core/atoms/Box';
+import { Typography } from '../../../core/atoms/Typography';
+import { GameIcon } from './GameIcon';
 import type { Asset } from '@almadar/core';
 
 const DEFAULT_ASSET_URL: Asset = {
@@ -55,7 +58,7 @@ export function ComboCounter({
   if (combo <= 0) return null;
 
   return (
-    <div
+    <Box
       className={cn(
         'inline-flex flex-col items-center justify-center',
         'rounded-container bg-card/80 border border-muted px-3 py-1.5',
@@ -65,34 +68,27 @@ export function ComboCounter({
       )}
     >
       {assetUrl && (
-        <img
-          src={assetUrl.url}
-          alt="combo"
-          width={24}
-          height={24}
-          style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
-          className="flex-shrink-0 mb-0.5"
-        />
+        <GameIcon assetUrl={assetUrl} icon="image" size={24} className="flex-shrink-0 mb-0.5" />
       )}
-      <span className={cn('font-black tabular-nums leading-none', sizes.combo, getComboIntensity(combo))}>
+      <Typography as="span" className={cn('font-black tabular-nums leading-none', sizes.combo, getComboIntensity(combo))}>
         {combo}
-      </span>
-      <span className={cn('font-bold uppercase tracking-wider text-muted-foreground', sizes.label)}>
+      </Typography>
+      <Typography as="span" className={cn('font-bold uppercase tracking-wider text-muted-foreground', sizes.label)}>
         combo
-      </span>
+      </Typography>
 
       {multiplier != null && multiplier > 1 && (
-        <span className={cn('font-bold text-warning tabular-nums', sizes.multiplier)}>
+        <Typography as="span" className={cn('font-bold text-warning tabular-nums', sizes.multiplier)}>
           x{multiplier.toFixed(1)}
-        </span>
+        </Typography>
       )}
 
       {streak != null && streak > 0 && (
-        <span className={cn('text-muted-foreground tabular-nums', sizes.label)}>
+        <Typography as="span" className={cn('text-muted-foreground tabular-nums', sizes.label)}>
           {streak} streak
-        </span>
+        </Typography>
       )}
-    </div>
+    </Box>
   );
 }
 

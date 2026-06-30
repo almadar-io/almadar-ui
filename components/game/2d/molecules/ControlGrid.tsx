@@ -3,6 +3,7 @@ import * as React from 'react';
 import type { EventEmit, Asset } from '@almadar/core';
 import { cn } from '../../../../lib/cn';
 import { useEventBus } from '../../../../hooks/useEventBus';
+import { Box } from '../../../core/atoms/Box';
 import { ControlButton } from '../atoms/ControlButton';
 import type { IconInput } from '../../../core/atoms/index';
 
@@ -135,15 +136,15 @@ export function ControlGrid({
       />
     );
     return (
-      <div className={cn('inline-grid grid-cols-3', ds.gap, ds.container, className)}>
-        <div />{dir('up')}<div />
+      <Box className={cn('inline-grid grid-cols-3', ds.gap, ds.container, className)}>
+        <Box />{dir('up')}<Box />
         {dir('left')}
-        <div className="flex items-center justify-center">
-          <div className="w-6 h-6 rounded-interactive bg-muted border-2 border-muted-foreground" />
-        </div>
+        <Box className="flex items-center justify-center">
+          <Box className="w-6 h-6 rounded-interactive bg-muted border-2 border-muted-foreground" />
+        </Box>
         {dir('right')}
-        <div />{dir('down')}<div />
-      </div>
+        <Box />{dir('down')}<Box />
+      </Box>
     );
   }
 
@@ -151,26 +152,26 @@ export function ControlGrid({
   if (layout === 'diamond' && buttons.length === 4) {
     const [top, right, bottom, left] = buttons;
     return (
-      <div className={cn(layoutClass.diamond, className)}>
-        <div />
+      <Box className={cn(layoutClass.diamond, className)}>
+        <Box />
         <ControlButton icon={top.icon} assetUrl={top.assetUrl} label={top.label} size={sizeKey[size]} variant={top.variant}
           pressed={active.has(top.id)} onPress={() => handlePress(top.id)} onRelease={() => handleRelease(top.id)} disabled={disabled} />
-        <div />
+        <Box />
         <ControlButton icon={left.icon} assetUrl={left.assetUrl} label={left.label} size={sizeKey[size]} variant={left.variant}
           pressed={active.has(left.id)} onPress={() => handlePress(left.id)} onRelease={() => handleRelease(left.id)} disabled={disabled} />
-        <div />
+        <Box />
         <ControlButton icon={right.icon} assetUrl={right.assetUrl} label={right.label} size={sizeKey[size]} variant={right.variant}
           pressed={active.has(right.id)} onPress={() => handlePress(right.id)} onRelease={() => handleRelease(right.id)} disabled={disabled} />
-        <div />
+        <Box />
         <ControlButton icon={bottom.icon} assetUrl={bottom.assetUrl} label={bottom.label} size={sizeKey[size]} variant={bottom.variant}
           pressed={active.has(bottom.id)} onPress={() => handlePress(bottom.id)} onRelease={() => handleRelease(bottom.id)} disabled={disabled} />
-        <div />
-      </div>
+        <Box />
+      </Box>
     );
   }
 
   return (
-    <div className={cn(layoutClass[layout], className)}>
+    <Box className={cn(layoutClass[layout], className)}>
       {buttons.map((button) => (
         <ControlButton
           key={button.id}
@@ -185,7 +186,7 @@ export function ControlGrid({
           disabled={disabled}
         />
       ))}
-    </div>
+    </Box>
   );
 }
 

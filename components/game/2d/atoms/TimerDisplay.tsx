@@ -1,6 +1,8 @@
 import * as React from 'react';
 import type { Asset } from '@almadar/core';
 import { cn } from '../../../../lib/cn';
+import { Box } from '../../../core/atoms/Box';
+import { GameIcon } from './GameIcon';
 
 export interface TimerDisplayProps {
   /** Time in seconds */
@@ -56,7 +58,7 @@ export function TimerDisplay({
   const isLow = lowThreshold != null && seconds <= lowThreshold && seconds > 0;
 
   return (
-    <div
+    <Box
       className={cn(
         'inline-flex items-center gap-1 justify-center rounded-container',
         'bg-card/80 border border-muted font-mono font-bold tabular-nums',
@@ -68,10 +70,10 @@ export function TimerDisplay({
       )}
     >
       {iconAsset && (
-        <img src={iconAsset.url} alt="" className="w-4 h-4 object-contain flex-shrink-0" />
+        <GameIcon assetUrl={iconAsset} icon="image" size={16} className="w-4 h-4 object-contain flex-shrink-0" />
       )}
       {formatTime(seconds, format)}
-    </div>
+    </Box>
   );
 }
 

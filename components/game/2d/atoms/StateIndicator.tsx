@@ -2,6 +2,7 @@ import React from 'react';
 import { Box } from '../../../core/atoms/Box';
 import { Icon, type IconInput } from '../../../core/atoms/Icon';
 import { cn } from '../../../../lib/cn';
+import { GameIcon } from './GameIcon';
 import type { Asset } from '@almadar/core';
 
 export interface StateStyle {
@@ -104,14 +105,7 @@ export function StateIndicator({
         >
             <Box as="span">
               {assetUrl ? (
-                <img
-                  src={assetUrl.url}
-                  alt={displayLabel}
-                  width={16}
-                  height={16}
-                  style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
-                  className="flex-shrink-0"
-                />
+                <GameIcon assetUrl={assetUrl} icon="image" size={16} alt={displayLabel} className="flex-shrink-0" />
               ) : typeof config.icon === 'string'
                 ? /^[a-zA-Z0-9-]+$/.test(config.icon)
                   ? <Icon name={config.icon} />

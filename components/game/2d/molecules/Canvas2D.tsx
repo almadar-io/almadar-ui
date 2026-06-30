@@ -29,6 +29,7 @@ import { cn } from '../../../../lib/cn';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../hooks/useTranslate';
 import { Box } from '../../../core/atoms/Box';
+import { Button } from '../../../core/atoms/Button';
 import { Stack } from '../../../core/atoms/Stack';
 import { Icon } from '../../../core/atoms/Icon';
 import { Typography } from '../../../core/atoms/Typography';
@@ -1413,50 +1414,54 @@ export function Canvas2D({
             />
             {/* Test bridge: hidden action buttons for Playwright to discover and trigger game events */}
             {process.env.NODE_ENV !== 'production' && (
-                <div data-game-actions="" className="sr-only" aria-hidden="true">
+                <Box data-game-actions="" className="sr-only" aria-hidden="true">
                     {tileClickEvent && (
-                        <button
+                        <Button
+                            variant="ghost"
                             data-event={tileClickEvent}
                             data-x="0"
                             data-y="0"
                             onClick={() => eventBus.emit(`UI:${tileClickEvent}`, { x: 0, y: 0 })}
                         >
                             {tileClickEvent}
-                        </button>
+                        </Button>
                     )}
                     {unitClickEvent && units && units.length > 0 && (
-                        <button
+                        <Button
+                            variant="ghost"
                             data-event={unitClickEvent}
                             data-unit-id={units[0].id}
                             onClick={() => eventBus.emit(`UI:${unitClickEvent}`, { unitId: units[0].id })}
                         >
                             {unitClickEvent}
-                        </button>
+                        </Button>
                     )}
-                </div>
+                </Box>
             )}
             {/* DOM overlays: health bars and name labels per unit */}
             {unitOverlays.map(({ unit, screenX, screenY }) => (
-                <div
+                <Box
                     key={unit.id}
-                    className="absolute pointer-events-none"
+                    position="absolute"
+                    className="pointer-events-none"
                     style={{ left: Math.round(screenX), top: Math.round(screenY), transform: 'translate(-50%, 0)', zIndex: 5 }}
                 >
                     {unit.name && (
-                        <div
-                            className="text-white text-xs font-bold px-1.5 py-0.5 rounded mb-0.5 whitespace-nowrap"
+                        <Typography
+                            as="span"
+                            className="text-white text-xs font-bold px-1.5 py-0.5 rounded mb-0.5 whitespace-nowrap block"
                             style={{ background: unit.team === 'player' ? 'rgba(59,130,246,0.9)' : unit.team === 'enemy' ? 'rgba(239,68,68,0.9)' : 'rgba(107,114,128,0.9)' }}
                         >
                             {unit.name}
-                        </div>
+                        </Typography>
                     )}
                     {unit.health !== undefined && unit.maxHealth !== undefined && unit.maxHealth > 0 && (
                         <HealthBar current={unit.health} max={unit.maxHealth} format="bar" size="sm" />
                     )}
-                </div>
+                </Box>
             ))}
             {showMinimap && (
-                <div className="absolute bottom-2 right-2 pointer-events-none" style={{ zIndex: 10 }}>
+                <Box position="absolute" className="bottom-2 right-2 pointer-events-none" style={{ zIndex: 10 }}>
                     <MiniMap
                         tiles={miniMapTiles}
                         units={miniMapUnits}
@@ -1465,7 +1470,7 @@ export function Canvas2D({
                         mapWidth={miniMapWidth}
                         mapHeight={miniMapHeight}
                     />
-                </div>
+                </Box>
             )}
         </Box>
     );

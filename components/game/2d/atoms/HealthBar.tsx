@@ -1,6 +1,8 @@
 import * as React from 'react';
 import type { Asset } from '@almadar/core';
 import { cn } from '../../../../lib/cn';
+import { Box } from '../../../core/atoms/Box';
+import { Typography } from '../../../core/atoms/Typography';
 
 // Generic ratio/progress bar — covers health (hearts/bar/numeric) and XP/progress (progress format with optional level badge).
 export interface HealthBarProps {
@@ -66,24 +68,27 @@ export function HealthBar({
 
   if (format === 'hearts') {
     return (
-      <div className={cn('flex items-center gap-1', className)}>
+      <Box className={cn('flex items-center gap-1', className)}>
         {Array.from({ length: max }).map((_, i) => (
-          <span
+          <Box
+            as="span"
             key={i}
             className={cn(animated && 'transition-transform hover:scale-110')}
           >
             {heartIcon(i < current, sizes.heart)}
-          </span>
+          </Box>
         ))}
-      </div>
+      </Box>
     );
   }
 
   if (format === 'bar') {
     return (
-      <div
+      <Box
+        position="relative"
+        overflow="hidden"
         className={cn(
-          'relative overflow-hidden rounded-full',
+          'rounded-full',
           !frameAsset && 'bg-muted',
           sizes.bar,
           'w-24',
@@ -91,9 +96,10 @@ export function HealthBar({
         )}
         style={frameAsset ? { backgroundImage: `url(${frameAsset.url})`, backgroundSize: '100% 100%' } : undefined}
       >
-        <div
+        <Box
+          position="absolute"
           className={cn(
-            'absolute inset-y-0 left-0 rounded-full',
+            'inset-y-0 left-0 rounded-full',
             !fillAsset && (percentage > 66 ? 'bg-success' : percentage > 33 ? 'bg-warning' : 'bg-error'),
             animated && 'transition-all duration-300'
           )}
@@ -102,15 +108,16 @@ export function HealthBar({
             ...(fillAsset ? { backgroundImage: `url(${fillAsset.url})`, backgroundSize: 'auto 100%' } : {}),
           }}
         />
-      </div>
+      </Box>
     );
   }
 
   if (format === 'progress') {
     return (
-      <div className={cn('flex items-center gap-2', className)}>
+      <Box className={cn('flex items-center gap-2', className)}>
         {level != null && (
-          <span
+          <Typography
+            as="span"
             className={cn(
               'flex-shrink-0 rounded-interactive font-bold',
               'bg-accent text-accent-foreground border border-accent',
@@ -118,20 +125,22 @@ export function HealthBar({
             )}
           >
             Lv.{level}
-          </span>
+          </Typography>
         )}
-        <div className="flex-1 flex flex-col gap-0.5">
-          <div
+        <Box className="flex-1 flex flex-col gap-0.5">
+          <Box
+            position="relative"
             className={cn(
-              'relative w-full overflow-hidden rounded-full',
+              'w-full overflow-hidden rounded-full',
               !frameAsset && 'bg-muted border border-muted',
               sizes.bar,
             )}
             style={frameAsset ? { backgroundImage: `url(${frameAsset.url})`, backgroundSize: '100% 100%' } : undefined}
           >
-            <div
+            <Box
+              position="absolute"
               className={cn(
-                'absolute inset-y-0 left-0 rounded-full',
+                'inset-y-0 left-0 rounded-full',
                 !fillAsset && 'bg-gradient-to-r from-accent to-info',
                 animated && 'transition-all duration-500 ease-out',
               )}
@@ -140,22 +149,22 @@ export function HealthBar({
                 ...(fillAsset ? { backgroundImage: `url(${fillAsset.url})`, backgroundSize: 'auto 100%' } : {}),
               }}
             />
-          </div>
+          </Box>
           {showLabel && (
-            <span className={cn('text-foreground/70 tabular-nums', sizes.label)}>
+            <Typography as="span" className={cn('text-foreground/70 tabular-nums', sizes.label)}>
               {current} / {max}{labelSuffix ? ` ${labelSuffix}` : ''}
-            </span>
+            </Typography>
           )}
-        </div>
-      </div>
+        </Box>
+      </Box>
     );
   }
 
   // Numeric format
   return (
-    <span className={cn('font-mono font-bold', sizes.text, className)}>
+    <Typography as="span" className={cn('font-mono font-bold', sizes.text, className)}>
       {current}/{max}
-    </span>
+    </Typography>
   );
 }
 

@@ -2,6 +2,9 @@ import * as React from 'react';
 import { cn } from '../../../../lib/cn';
 import type { ColorToken } from '../../../core/atoms/types';
 import { Icon, type IconInput } from '../../../core/atoms/Icon';
+import { Box } from '../../../core/atoms/Box';
+import { Typography } from '../../../core/atoms/Typography';
+import { GameIcon } from './GameIcon';
 import type { Asset } from '@almadar/core';
 
 const colorTokenClasses: Record<ColorToken, string> = {
@@ -57,7 +60,7 @@ export function ResourceCounter({
   const sizes = sizeMap[size];
 
   return (
-    <div
+    <Box
       className={cn(
         'inline-flex items-center rounded-container',
         'bg-card/80 border border-muted font-medium text-foreground',
@@ -66,25 +69,18 @@ export function ResourceCounter({
       )}
     >
       {assetUrl ? (
-        <img
-          src={assetUrl.url}
-          alt={label}
-          width={sizes.img}
-          height={sizes.img}
-          style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
-          className="flex-shrink-0"
-        />
+        <GameIcon assetUrl={assetUrl} icon="image" size={sizes.img} alt={label} className="flex-shrink-0" />
       ) : icon ? (
-        <span className={cn('flex-shrink-0', sizes.icon)}>
+        <Box as="span" className={cn('flex-shrink-0', sizes.icon)}>
           {typeof icon === 'string' ? <Icon name={icon} /> : <Icon icon={icon} />}
-        </span>
+        </Box>
       ) : null}
-      <span className="text-muted-foreground">{label}</span>
-      <span className={cn('font-bold tabular-nums', color && (color in colorTokenClasses ? colorTokenClasses[color as ColorToken] : color))}>
+      <Typography as="span" className="text-muted-foreground">{label}</Typography>
+      <Typography as="span" className={cn('font-bold tabular-nums', color && (color in colorTokenClasses ? colorTokenClasses[color as ColorToken] : color))}>
         {value}
-        {max != null && <span className="text-muted-foreground">/{max}</span>}
-      </span>
-    </div>
+        {max != null && <Typography as="span" className="text-muted-foreground">/{max}</Typography>}
+      </Typography>
+    </Box>
   );
 }
 

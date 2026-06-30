@@ -2,6 +2,10 @@ import * as React from 'react';
 import { cn } from '../../../../lib/cn';
 import { resolveIcon, type IconInput } from '../../../core/atoms/Icon';
 import { useEventBus } from '../../../../hooks/useEventBus';
+import { Button } from '../../../core/atoms/Button';
+import { Box } from '../../../core/atoms/Box';
+import { Typography } from '../../../core/atoms/Typography';
+import { GameIcon } from './GameIcon';
 import type { Asset, EventKey } from '@almadar/core';
 
 export interface ActionButtonProps {
@@ -67,10 +71,10 @@ export function ActionButton({
   const cooldownDeg = Math.round(cooldown * 360);
 
   return (
-    <button
-      type="button"
+    <Button
+      variant={variant === 'danger' ? 'danger' : variant === 'secondary' ? 'secondary' : 'primary'}
       disabled={isDisabled}
-      onClick={(e) => { if (action) eventBus.emit(`UI:${action}`, {}); onClick?.(); }}
+      onClick={() => { if (action) eventBus.emit(`UI:${action}`, {}); onClick?.(); }}
       className={cn(
         'relative inline-flex items-center gap-1.5 rounded-interactive border font-medium overflow-hidden transition-colors duration-150',
         sizes.button,
@@ -80,43 +84,38 @@ export function ActionButton({
       )}
     >
       {onCooldown && (
-        <div
-          className="absolute inset-0 bg-foreground/40 pointer-events-none"
+        <Box
+          position="absolute"
+          className="inset-0 bg-foreground/40 pointer-events-none"
           style={{
             clipPath: `conic-gradient(from 0deg, transparent ${360 - cooldownDeg}deg, black ${360 - cooldownDeg}deg)`,
             WebkitClipPath: `conic-gradient(from 0deg, transparent ${360 - cooldownDeg}deg, black ${360 - cooldownDeg}deg)`,
             background: `conic-gradient(from 0deg, transparent ${360 - cooldownDeg}deg, rgba(0,0,0,0.6) ${360 - cooldownDeg}deg)`,
-          }}
+          } as React.CSSProperties}
         />
       )}
       {assetUrl ? (
-        <img
-          src={assetUrl.url}
-          alt=""
-          width={16}
-          height={16}
-          style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
-          className={cn('flex-shrink-0', sizes.icon)}
-        />
+        <GameIcon assetUrl={assetUrl} icon="image" size={16} className={cn('flex-shrink-0', sizes.icon)} />
       ) : icon ? (
-        <span className={cn('flex-shrink-0', sizes.icon)}>
+        <Box as="span" className={cn('flex-shrink-0', sizes.icon)}>
           {typeof icon === 'string'
             ? (() => { const I = resolveIcon(icon); return I ? <I className="w-4 h-4" /> : null; })()
             : (() => { const I = icon; return <I className="w-4 h-4" />; })()}
-        </span>
+        </Box>
       ) : null}
-      <span className="relative z-10">{label}</span>
+      <Typography as="span" className="relative z-10">{label}</Typography>
       {hotkey && (
-        <span
+        <Typography
+          as="span"
           className={cn(
             'absolute top-0.5 right-0.5 bg-foreground/30 text-primary-foreground rounded font-mono leading-tight',
             sizes.hotkey
           )}
         >
           {hotkey}
-        </span>
+        </Typography>
       )}
-    </button>
+    </Button>
   );
 }
 

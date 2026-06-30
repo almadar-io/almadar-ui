@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "../../../../lib/cn";
+import { Box } from "../../../core/atoms/Box";
 import { StatBadge, type StatBadgeProps } from "./StatBadge";
 import type { Asset } from "@almadar/core";
 import type { IconInput } from "../../../core/atoms/index";
@@ -118,21 +119,21 @@ export function GameHud({
     const rightStats = stats.slice(Math.ceil(stats.length / 2));
 
     return (
-      <div className={cn("relative", positionMap[position], className)}>
+      <Box position="relative" className={cn(positionMap[position], className)}>
         {/* Top-left */}
-        <div className="absolute top-4 left-4 flex flex-col gap-2 pointer-events-auto">
+        <Box position="absolute" className="top-4 left-4 flex flex-col gap-2 pointer-events-auto">
           {leftStats.map((stat, i) => (
             <StatBadge key={i} {...stat} size={size} />
           ))}
-        </div>
+        </Box>
 
         {/* Top-right */}
-        <div className="absolute top-4 right-4 flex flex-col gap-2 items-end pointer-events-auto">
+        <Box position="absolute" className="top-4 right-4 flex flex-col gap-2 items-end pointer-events-auto">
           {rightStats.map((stat, i) => (
             <StatBadge key={i} {...stat} size={size} />
           ))}
-        </div>
-      </div>
+        </Box>
+      </Box>
     );
   }
 
@@ -145,7 +146,7 @@ export function GameHud({
     const isTop = position === "top";
 
     return (
-      <div
+      <Box
         className={cn(
           "flex items-center justify-between w-full",
           "px-4 py-2 gap-4",
@@ -159,27 +160,28 @@ export function GameHud({
         )}
       >
         {/* Left stat group */}
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <Box className="flex items-center gap-3 flex-shrink-0">
           {leftStats.map((stat, i) => (
             <StatBadge key={i} {...stat} size={size} />
           ))}
-        </div>
+        </Box>
         {/* Right stat group */}
         {rightStats.length > 0 && (
-          <div className="flex items-center gap-3 flex-shrink-0">
+          <Box className="flex items-center gap-3 flex-shrink-0">
             {rightStats.map((stat, i) => (
               <StatBadge key={i} {...stat} size={size} />
             ))}
-          </div>
+          </Box>
         )}
-      </div>
+      </Box>
     );
   }
 
   return (
-    <div
+    <Box
+      position="relative"
       className={cn(
-        "relative z-10 flex items-center gap-4 px-4 py-2",
+        "z-10 flex items-center gap-4 px-4 py-2",
         transparent
           ? "bg-black/30 backdrop-blur-sm"
           : "bg-surface/90 backdrop-blur-sm",
@@ -189,7 +191,7 @@ export function GameHud({
       {stats.map((stat, i) => (
         <StatBadge key={i} {...stat} size={size} />
       ))}
-    </div>
+    </Box>
   );
 }
 

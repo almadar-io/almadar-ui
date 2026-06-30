@@ -3,6 +3,9 @@ import * as React from "react";
 import type { EventKey, EventPayload, Asset } from "@almadar/core";
 import { cn } from "../../../../lib/cn";
 import { useEventBus } from "../../../../hooks/useEventBus";
+import { Box } from "../../../core/atoms/Box";
+import { Typography } from "../../../core/atoms/Typography";
+import { GameIcon } from "../atoms/GameIcon";
 import { ChoiceButton } from "../atoms/ChoiceButton";
 
 export type MenuOption = EventPayload & {
@@ -85,7 +88,7 @@ export function GameMenu({
   );
 
   return (
-    <div
+    <Box
       className={cn(
         "min-h-screen w-full flex flex-col items-center justify-center p-8",
         className,
@@ -97,31 +100,28 @@ export function GameMenu({
       }}
     >
       {/* Logo/Title Section */}
-      <div className="text-center mb-12 animate-fade-in">
+      <Box className="text-center mb-12 animate-fade-in">
         {logo && (
-          <img
-            src={logo.url}
-            alt={title}
-            className="h-24 w-auto mx-auto mb-6 drop-shadow-2xl"
-          />
+          <GameIcon assetUrl={logo} icon="image" size={96} alt={title} className="h-24 w-auto mx-auto mb-6 drop-shadow-2xl" />
         )}
-        <h1
+        <Typography
+          variant="h1"
           className="text-5xl md:text-7xl font-bold text-[var(--color-foreground)] tracking-tight"
           style={{
             textShadow: "0 4px 12px rgba(0,0,0,0.5)",
           }}
         >
           {title}
-        </h1>
+        </Typography>
         {subtitle && (
-          <p className="mt-2 text-lg text-muted-foreground tracking-widest uppercase">
+          <Typography variant="body" className="mt-2 text-lg text-muted-foreground tracking-widest uppercase">
             {subtitle}
-          </p>
+          </Typography>
         )}
-      </div>
+      </Box>
 
       {/* Menu Options */}
-      <div className="flex flex-col gap-4 w-full max-w-md">
+      <Box className="flex flex-col gap-4 w-full max-w-md">
         {resolvedOptions.map((option, index) => (
           <ChoiceButton
             key={index}
@@ -132,14 +132,14 @@ export function GameMenu({
             className="text-lg py-4 px-8"
           />
         ))}
-      </div>
+      </Box>
 
       {/* Decorative Elements */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-info/10 rounded-container blur-3xl" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent/10 rounded-container blur-3xl" />
-      </div>
-    </div>
+      <Box position="absolute" className="inset-0 pointer-events-none overflow-hidden">
+        <Box position="absolute" className="top-1/4 left-1/4 w-64 h-64 bg-info/10 rounded-container blur-3xl" />
+        <Box position="absolute" className="bottom-1/4 right-1/4 w-96 h-96 bg-accent/10 rounded-container blur-3xl" />
+      </Box>
+    </Box>
   );
 }
 

@@ -3,6 +3,10 @@ import * as React from 'react';
 import { cn } from '../../../../lib/cn';
 import { Icon, type IconInput } from '../../../core/atoms/Icon';
 import { useEventBus } from '../../../../hooks/useEventBus';
+import { Button } from '../../../core/atoms/Button';
+import { Box } from '../../../core/atoms/Box';
+import { Typography } from '../../../core/atoms/Typography';
+import { GameIcon } from './GameIcon';
 import type { Asset, EventKey } from '@almadar/core';
 
 export interface ItemSlotProps {
@@ -82,8 +86,8 @@ export function ItemSlot({
   const px = assetSizeMap[size];
 
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
       onClick={() => { if (action) eventBus.emit(`UI:${action}`, {}); onClick?.(); }}
       disabled={!isClickable}
       title={label}
@@ -103,25 +107,19 @@ export function ItemSlot({
       )}
     >
       {empty ? (
-        <span className="text-muted-foreground text-base">+</span>
+        <Typography as="span" className="text-muted-foreground text-base">+</Typography>
       ) : (
         <>
           {assetUrl ? (
-            <img
-              src={assetUrl?.url}
-              alt={label}
-              width={px}
-              height={px}
-              style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
-              className="flex-shrink-0"
-            />
+            <GameIcon assetUrl={assetUrl} icon="image" size={px} alt={label} className="flex-shrink-0" />
           ) : icon ? (
-            <span className="flex-shrink-0">
+            <Box as="span" className="flex-shrink-0">
               {typeof icon === 'string' ? <Icon name={icon} /> : <Icon icon={icon} />}
-            </span>
+            </Box>
           ) : null}
           {quantity != null && quantity > 1 && (
-            <span
+            <Typography
+              as="span"
               className={cn(
                 'absolute -bottom-1 -right-1 flex items-center justify-center',
                 'min-w-[18px] h-[18px] rounded-full px-1',
@@ -129,11 +127,11 @@ export function ItemSlot({
               )}
             >
               {quantity}
-            </span>
+            </Typography>
           )}
         </>
       )}
-    </button>
+    </Button>
   );
 }
 

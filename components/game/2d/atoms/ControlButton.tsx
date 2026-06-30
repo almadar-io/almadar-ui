@@ -4,6 +4,10 @@ import type { EventKey, Asset } from "@almadar/core";
 import { cn } from '../../../../lib/cn';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { resolveIcon, type IconInput } from '../../../core/atoms/Icon';
+import { Button } from '../../../core/atoms/Button';
+import { Box } from '../../../core/atoms/Box';
+import { Typography } from '../../../core/atoms/Typography';
+import { GameIcon } from './GameIcon';
 
 export interface ControlButtonProps {
   /** Sprite asset — takes precedence over icon when provided */
@@ -112,8 +116,8 @@ export function ControlButton({
   );
 
   return (
-    <button
-      type="button"
+    <Button
+      variant={variant as 'primary' | 'secondary' | 'ghost'}
       disabled={disabled}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
@@ -133,26 +137,19 @@ export function ControlButton({
       )}
     >
       {assetUrl ? (
-        <img
-          src={assetUrl.url}
-          alt=""
-          width={24}
-          height={24}
-          style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
-          className="flex-shrink-0"
-        />
+        <GameIcon assetUrl={assetUrl} icon="image" size={24} className="flex-shrink-0" />
       ) : icon ? (
-        <span className="text-2xl">
+        <Box as="span" className="text-2xl">
           {typeof icon === 'string'
             ? /^[a-zA-Z0-9-]+$/.test(icon)
               ? (() => { const I = resolveIcon(icon); return I ? <I className="w-6 h-6" /> : null; })()
               : icon
             : (() => { const I = icon; return <I className="w-6 h-6" />; })()}
-        </span>
+        </Box>
       ) : label ? (
-        <span>{label}</span>
+        <Typography as="span">{label}</Typography>
       ) : null}
-    </button>
+    </Button>
   );
 }
 

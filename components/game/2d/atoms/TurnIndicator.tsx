@@ -1,5 +1,8 @@
 import * as React from 'react';
 import { cn } from '../../../../lib/cn';
+import { Box } from '../../../core/atoms/Box';
+import { Typography } from '../../../core/atoms/Typography';
+import { GameIcon } from './GameIcon';
 import type { Asset } from '@almadar/core';
 
 export interface TurnIndicatorProps {
@@ -43,7 +46,7 @@ export function TurnIndicator({
   const sizes = sizeMap[size];
 
   return (
-    <div
+    <Box
       className={cn(
         'inline-flex items-center rounded-container',
         'bg-card/80 border border-muted font-medium text-foreground',
@@ -51,37 +54,30 @@ export function TurnIndicator({
         className
       )}
     >
-      <span className="font-bold tabular-nums">
+      <Typography as="span" className="font-bold tabular-nums">
         Turn {currentTurn}
-        {maxTurns != null && <span className="text-muted-foreground">/{maxTurns}</span>}
-      </span>
+        {maxTurns != null && <Typography as="span" className="text-muted-foreground">/{maxTurns}</Typography>}
+      </Typography>
 
       {phase && (
         <>
-          <span className="text-muted-foreground">|</span>
-          <span className="text-muted-foreground">{phase}</span>
+          <Typography as="span" className="text-muted-foreground">|</Typography>
+          <Typography as="span" className="text-muted-foreground">{phase}</Typography>
         </>
       )}
 
       {activeTeam && (
         <>
-          <span className="text-muted-foreground">|</span>
+          <Typography as="span" className="text-muted-foreground">|</Typography>
           {assetUrl ? (
-            <img
-              src={assetUrl.url}
-              alt=""
-              width={12}
-              height={12}
-              style={{ imageRendering: 'pixelated', objectFit: 'contain' }}
-              className="flex-shrink-0"
-            />
+            <GameIcon assetUrl={assetUrl} icon="image" size={12} className="flex-shrink-0" />
           ) : (
-            <span className={cn('rounded-full bg-success/20', sizes.dot)} />
+            <Box as="span" className={cn('rounded-full bg-success/20', sizes.dot)} />
           )}
-          <span className="text-success">{activeTeam}</span>
+          <Typography as="span" className="text-success">{activeTeam}</Typography>
         </>
       )}
-    </div>
+    </Box>
   );
 }
 
