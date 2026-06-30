@@ -115,7 +115,7 @@ export { TypewriterText, type TypewriterTextProps } from "./TypewriterText";
 
 // Landing page atoms
 export { SectionHeader, type SectionHeaderProps } from "./SectionHeader";
-export { MarketingStatCard, type StatCardProps as MarketingStatCardProps, type StatCardSize } from "../../marketing/atoms/MarketingStatCard";
+export { MarketingStatCard, type MarketingStatCardProps, type StatCardSize } from "../../marketing/atoms/MarketingStatCard";
 export {
   ContentSection,
   type ContentSectionProps,
@@ -135,6 +135,15 @@ export { TraitFrame, type TraitFrameProps } from "./TraitFrame";
 
 // Game atom components
 export * from "../../game/2d/molecules/index";
+
+// Learning canvas atom
+export {
+  LearningCanvas,
+  type LearningCanvasProps,
+  type LearningShape,
+  type LearningPoint,
+  type LearningShapeType,
+} from "../../learning/atoms/LearningCanvas";
 
 // Cross-cutting shared prop shapes
 export {

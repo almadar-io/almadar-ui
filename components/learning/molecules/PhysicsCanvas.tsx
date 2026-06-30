@@ -18,7 +18,7 @@ import { LearningCanvas } from '../atoms/LearningCanvas';
 import type { LearningShape } from '../atoms/LearningCanvas';
 import type { UiError } from '../../core/atoms/types';
 
-export interface PhysicsBody {
+export interface LearningPhysicsBody {
   id?: string;
   x: number;
   y: number;
@@ -31,7 +31,7 @@ export interface PhysicsBody {
   fy?: number;
 }
 
-export interface PhysicsConstraint {
+export interface LearningPhysicsConstraint {
   from: string;
   to: string;
   color?: string;
@@ -43,8 +43,8 @@ export interface PhysicsCanvasProps {
   height?: number;
   title?: string;
   backgroundColor?: string;
-  bodies?: PhysicsBody[];
-  constraints?: PhysicsConstraint[];
+  bodies?: LearningPhysicsBody[];
+  constraints?: LearningPhysicsConstraint[];
   showVelocity?: boolean;
   showForces?: boolean;
   velocityScale?: number;
@@ -79,7 +79,7 @@ export const PhysicsCanvas: React.FC<PhysicsCanvasProps> = ({
 }) => {
   const derivedShapes: LearningShape[] = useMemo(() => {
     const out: LearningShape[] = [];
-    const bodyById = new Map<string, PhysicsBody>();
+    const bodyById = new Map<string, LearningPhysicsBody>();
     for (const b of bodies) {
       if (b.id) bodyById.set(b.id, b);
     }

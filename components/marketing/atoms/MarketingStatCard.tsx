@@ -5,7 +5,7 @@ import { Typography } from "../../core/atoms/Typography";
 
 export type StatCardSize = "sm" | "md" | "lg";
 
-export interface StatCardProps {
+export interface MarketingStatCardProps {
   /** The stat value to display prominently */
   value: string;
   /** Label describing the value */
@@ -22,7 +22,7 @@ const sizeClasses: Record<StatCardSize, string> = {
   lg: "text-5xl",
 };
 
-export const MarketingStatCard: React.FC<StatCardProps> = (
+export const MarketingStatCard: React.FC<MarketingStatCardProps> = (
   { value, label, size = "md", className },
 ) => {
     return (

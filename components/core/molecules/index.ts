@@ -93,6 +93,34 @@ export { ProgressDots, type ProgressDotsProps, type DotState, type DotSize } fro
 // Game molecules
 export * from '../../game/2d/molecules/index';
 
+// Learning canvas molecules
+export {
+  MathCanvas,
+  type MathCanvasProps,
+  type MathCurve,
+  type MathPoint,
+  type MathVector,
+} from '../../learning/molecules/MathCanvas';
+export {
+  PhysicsCanvas,
+  type PhysicsCanvasProps,
+  type LearningPhysicsBody,
+  type LearningPhysicsConstraint,
+} from '../../learning/molecules/PhysicsCanvas';
+export {
+  BiologyCanvas,
+  type BiologyCanvasProps,
+  type BiologyNode,
+  type BiologyEdge,
+} from '../../learning/molecules/BiologyCanvas';
+export {
+  ChemistryCanvas,
+  type ChemistryCanvasProps,
+  type ChemistryAtom,
+  type ChemistryBond,
+  type ChemistryArrow,
+} from '../../learning/molecules/ChemistryCanvas';
+
 // Graph visualization
 export { GraphView, type GraphViewProps, type GraphViewNode, type GraphViewEdge } from './GraphView';
 
