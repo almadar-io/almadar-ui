@@ -46,6 +46,8 @@ export interface PropertyInspectorProps extends DisplayStateProps {
   title?: string;
   /** Browsable asset catalog supplied to `asset`-typed fields' AssetPicker. */
   assets?: AssetCatalog;
+  /** If provided, only fields whose `@tier` is in this list are rendered. */
+  tiers?: ReadonlyArray<string>;
 }
 
 const TIER_ORDER = ['presentation', 'domain', 'policy', 'infra', 'internal'];
@@ -208,8 +210,13 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({
   title,
   className,
   assets,
+  tiers,
 }) => {
-  const fields = Object.entries(config);
+  const allowedTiers = tiers ? new Set(tiers) : null;
+  const fields = Object.entries(config).filter(([, decl]) => {
+    if (!allowedTiers) return true;
+    return allowedTiers.has(decl.tier ?? 'presentation');
+  });
 
   const byTier = new Map<string, Array<[string, ConfigFieldDeclaration]>>();
   for (const [name, decl] of fields) {
@@ -218,7 +225,7 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({
     arr.push([name, decl]);
     byTier.set(tier, arr);
   }
-  const tiers = [...byTier.keys()].sort((a, b) => {
+  const tierList = [...byTier.keys()].sort((a, b) => {
     const ia = TIER_ORDER.indexOf(a);
     const ib = TIER_ORDER.indexOf(b);
     return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
@@ -241,7 +248,7 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({
         </Typography>
       )}
 
-      {tiers.map((tier) => (
+      {tierList.map((tier) => (
         <FormSection key={tier} title={tier} collapsible defaultCollapsed={tier !== 'presentation'}>
           <VStack gap="sm">
             {byTier.get(tier)?.map(([name, decl]) => (
