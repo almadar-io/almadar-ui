@@ -3,6 +3,10 @@ src/
 __tests__/
 test/
 
+# Ensure dist is never ignored by inherited .gitignore rules
+!dist/
+!dist/**
+
 # Service schema and deployment — never published to npm
 service/
 deploy/

@@ -22,17 +22,18 @@ import { getComponentForPattern } from "@almadar/patterns";
 import type { SlotContent, SlotPropValue } from "../../../../hooks/useUISlots";
 
 
-type DescriptorObject = { type: string; props?: SlotContent["props"]; _id?: string };
+type DescriptorObject = { type: string; props?: SlotContent["props"]; _id?: string; sourceTrait?: string };
 
 function asDescriptor(v: object): DescriptorObject | null {
   if (Array.isArray(v) || React.isValidElement(v)) return null;
-  const o = v as { type?: SlotPropValue; props?: SlotPropValue; _id?: SlotPropValue };
+  const o = v as { type?: SlotPropValue; props?: SlotPropValue; _id?: SlotPropValue; sourceTrait?: SlotPropValue };
   if (typeof o.type !== "string") return null;
   const props = o.props !== undefined && typeof o.props === "object" && !Array.isArray(o.props) && o.props !== null
     ? (o.props as SlotContent["props"])
     : undefined;
   const _id = typeof o._id === "string" ? o._id : undefined;
-  return { type: o.type, props, _id };
+  const sourceTrait = typeof o.sourceTrait === "string" ? o.sourceTrait : undefined;
+  return { type: o.type, props, _id, sourceTrait };
 }
 
 type SlotContentRendererCmp = React.ComponentType<{ content: SlotContent; onDismiss: () => void }>;
@@ -57,7 +58,13 @@ function resolveDescriptor(value: React.ReactNode, idPrefix: string): React.Reac
     const desc = asDescriptor(value as object);
     if (desc !== null && getComponentForPattern(desc.type) !== null) {
       const resolvedProps: SlotContent["props"] = desc.props ?? {};
-      const content: SlotContent = { id: desc._id ?? idPrefix, pattern: desc.type, props: resolvedProps, priority: 0 };
+      const content: SlotContent = {
+        id: desc._id ?? idPrefix,
+        pattern: desc.type,
+        props: resolvedProps,
+        priority: 0,
+        ...(desc.sourceTrait !== undefined && { sourceTrait: desc.sourceTrait }),
+      };
       const SCR = getSlotContentRenderer();
       // Stable key tied to the slot/pattern identity (idPrefix) so a per-tick render-ui
       // re-emission RECONCILES this child instead of remounting it — without it the canvas
@@ -111,30 +118,39 @@ export const GameShell: React.FC<GameShellProps> = ({
                 color: "var(--color-text, #e0e0e0)",
             }}
         >
-            {/* Minimal top bar */}
+            {/* Header region: title bar + HUD — both in normal flow, never overlapping the canvas */}
             {showTopBar && (
-                <HStack
-                    align="center"
-                    justify="between"
+                <Box
                     className="game-shell__header"
                     style={{
-                        padding: "0.5rem 1rem",
-                        borderBottom: "1px solid var(--color-border, #2a2a3a)",
-                        background: "var(--color-surface, #12121f)",
                         flexShrink: 0,
+                        background: "var(--color-surface, #12121f)",
+                        borderBottom: "1px solid var(--color-border, #2a2a3a)",
                     }}
                 >
-                    <Typography
-                        variant="h6"
-                        style={{
-                            fontWeight: 700,
-                            letterSpacing: "0.02em",
-                        }}
+                    {/* Title strip */}
+                    <HStack
+                        align="center"
+                        justify="between"
+                        style={{ padding: "0.375rem 1rem" }}
                     >
-                        {appName}
-                    </Typography>
-                    {hud && <Box className="game-shell__hud">{resolveDescriptor(hud, "gs-hud")}</Box>}
-                </HStack>
+                        <Typography
+                            variant="h6"
+                            style={{
+                                fontWeight: 700,
+                                letterSpacing: "0.02em",
+                            }}
+                        >
+                            {appName}
+                        </Typography>
+                    </HStack>
+                    {/* HUD bar — full-width row below the title, stays in normal flow */}
+                    {hud && (
+                        <Box className="game-shell__hud" style={{ width: "100%" }}>
+                            {resolveDescriptor(hud, "gs-hud")}
+                        </Box>
+                    )}
+                </Box>
             )}
 
             {/* Main game area */}
