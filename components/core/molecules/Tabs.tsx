@@ -1,13 +1,13 @@
 'use client';
 /**
  * Tabs Molecule Component
- * 
+ *
  * A tabbed interface component with keyboard navigation and badge support.
  * Uses theme-aware CSS variables for styling.
  */
 
 import React, { useState, useRef } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { Asset, EventEmit } from '@almadar/core';
 import { Icon } from '../atoms/Icon';
 import type { IconInput } from '../atoms/index';
 import { Badge } from '../atoms/Badge';
@@ -34,6 +34,8 @@ export interface TabItem {
   content?: React.ReactNode;
   /** Tab icon — pass either a Lucide component or its registry name (e.g. "file-text") */
   icon?: IconInput;
+  /** Asset image rendered as the tab icon; takes precedence over icon when provided. */
+  iconAsset?: Asset;
   /** Tab badge */
   badge?: string | number;
   /** Disable tab */
@@ -220,10 +222,13 @@ export const Tabs: React.FC<TabsProps> = ({
                   : 'text-muted-foreground hover:text-foreground'
               )}
             >
-              {item.icon && (typeof item.icon === 'string'
-                ? <Icon name={item.icon} size="sm" />
-                : <Icon icon={item.icon} size="sm" />
-              )}
+              {item.iconAsset?.url
+                ? <img src={item.iconAsset.url} alt={item.iconAsset.name ?? item.iconAsset.category ?? ''} width={16} height={16} style={{ imageRendering: 'pixelated', objectFit: 'contain', width: 16, height: 16 }} className="flex-shrink-0" />
+                : item.icon && (typeof item.icon === 'string'
+                    ? <Icon name={item.icon} size="sm" />
+                    : <Icon icon={item.icon} size="sm" />
+                  )
+              }
               <Typography variant="small" weight={isActive ? 'semibold' : 'normal'} className="!text-inherit">
                 {item.label}
               </Typography>

@@ -1,6 +1,6 @@
 'use client';
 import React from "react";
-import type { EventKey, EventPayload } from "@almadar/core";
+import type { Asset, EventKey, EventPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Loader2, type LucideIcon } from "lucide-react";
 import { useEventBus } from "../../../hooks/useEventBus";
@@ -30,6 +30,8 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   icon?: IconInput;
   /** Alias for rightIcon */
   iconRight?: IconInput;
+  /** Asset image rendered as the leading icon; takes precedence over icon/leftIcon when provided. */
+  iconAsset?: Asset;
   /** Declarative event name — emits UI:{action} via eventBus on click */
   action?: EventKey;
   /** Payload to include with the action event */
@@ -153,6 +155,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       rightIcon,
       icon: iconProp,
       iconRight: iconRightProp,
+      iconAsset,
       action,
       actionPayload,
       label,
@@ -169,7 +172,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const leftIconValue = leftIcon || iconProp;
     const rightIconValue = rightIcon || iconRightProp;
 
-    const resolvedLeftIcon = resolveIconProp(leftIconValue, iconSizeStyles[size]);
+    const px = size === 'sm' ? 16 : size === 'lg' ? 20 : 16;
+    const resolvedLeftIcon = iconAsset?.url
+      ? <img src={iconAsset.url} alt={iconAsset.name ?? iconAsset.category ?? ''} width={px} height={px} style={{ imageRendering: 'pixelated', objectFit: 'contain', width: px, height: px }} className="flex-shrink-0" />
+      : resolveIconProp(leftIconValue, iconSizeStyles[size]);
     const resolvedRightIcon = resolveIconProp(rightIconValue, iconSizeStyles[size]);
 
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {

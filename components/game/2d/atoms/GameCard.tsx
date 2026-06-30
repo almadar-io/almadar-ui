@@ -13,6 +13,8 @@ export interface GameCardProps {
   cost?: number;
   /** Card art asset */
   art?: Asset;
+  /** Asset rendered as the card border/frame via backgroundImage; falls back to CSS border styling when absent. */
+  frameAsset?: Asset;
   attack?: number;
   defense?: number;
   name?: string;
@@ -39,6 +41,7 @@ export function GameCard({
   id,
   cost,
   art,
+  frameAsset,
   attack,
   defense,
   name,
@@ -59,15 +62,21 @@ export function GameCard({
 
   const artPx = artPxMap[size];
 
+  const frameStyle: React.CSSProperties = frameAsset?.url
+    ? { backgroundImage: `url(${frameAsset.url})`, backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat' }
+    : {};
+
   return (
     <Button
       variant="ghost"
       onClick={handleClick}
       disabled={disabled}
       title={name}
+      style={frameStyle}
       className={cn(
-        'relative flex flex-col items-center rounded-interactive border-2',
+        'relative flex flex-col items-center rounded-interactive',
         'bg-card/90 px-1.5 pt-1.5 pb-1 transition-all duration-150',
+        frameAsset?.url ? 'border-0' : 'border-2',
         cardSizeMap[size],
         disabled
           ? 'border-border opacity-50 cursor-not-allowed'

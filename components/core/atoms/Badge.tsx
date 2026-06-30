@@ -2,6 +2,7 @@ import React from "react";
 import { X } from "lucide-react";
 import { cn } from "../../../lib/cn";
 import { Icon, type IconInput } from "./Icon";
+import type { Asset } from "@almadar/core";
 
 export type BadgeVariant =
   | "default"
@@ -28,6 +29,8 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   label?: string | number;
   /** Lucide icon component or canonical kebab-case icon name string */
   icon?: IconInput;
+  /** Asset image rendered as the badge icon; takes precedence over icon when provided. */
+  iconAsset?: Asset;
   /** When set, renders a small X button on the right of the badge that
    *  invokes this handler — turns the badge into a removable chip.
    *  Used by the TagInput molecule and other "list of removable values"
@@ -79,15 +82,18 @@ const sizeStyles: Record<BadgeSize, string> = {
 };
 
 export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
-  ({ className, variant = "default", size = "sm", amount, label, icon, children, onRemove, removeLabel, ...props }, ref) => {
+  ({ className, variant = "default", size = "sm", amount, label, icon, iconAsset, children, onRemove, removeLabel, ...props }, ref) => {
     const iconSizes: Record<BadgeSize, string> = {
       sm: "h-icon-default w-icon-default",
       md: "h-icon-default w-icon-default",
       lg: "h-icon-default w-icon-default",
     };
-    const resolvedIcon = typeof icon === "string"
-      ? <Icon name={icon} className={iconSizes[size]} />
-      : icon ? <Icon icon={icon} className={iconSizes[size]} /> : null;
+    const iconPx = size === 'lg' ? 20 : 16;
+    const resolvedIcon = iconAsset?.url
+      ? <img src={iconAsset.url} alt={iconAsset.name ?? iconAsset.category ?? ''} width={iconPx} height={iconPx} style={{ imageRendering: 'pixelated', objectFit: 'contain', width: iconPx, height: iconPx }} className="flex-shrink-0" />
+      : typeof icon === "string"
+        ? <Icon name={icon} className={iconSizes[size]} />
+        : icon ? <Icon icon={icon} className={iconSizes[size]} /> : null;
     return (
       <span
         ref={ref}
