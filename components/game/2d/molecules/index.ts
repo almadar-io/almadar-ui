@@ -94,12 +94,12 @@ export {
     type TraitStateViewerProps,
     type TraitStateMachineDefinition,
     type TraitTransition,
-} from './TraitStateViewer';
+} from '../organisms/TraitStateViewer';
 export {
     TraitSlot,
     type TraitSlotProps,
     type SlotItemData,
-} from './TraitSlot';
+} from '../organisms/TraitSlot';
 
 // ---------------------------------------------------------------------------
 // Editor Utilities (Storybook map editor components)
@@ -130,31 +130,44 @@ export {
 // Puzzle Board Organisms
 // ---------------------------------------------------------------------------
 // Sequencer (ages 5-8)
-export { ActionTile, type ActionTileProps } from './ActionTile';
-export { ActionPalette, type ActionPaletteProps } from './ActionPalette';
-export { SequenceBar, type SequenceBarProps } from './SequenceBar';
+export { ActionTile, type ActionTileProps } from '../organisms/ActionTile';
+export { ActionPalette, type ActionPaletteProps } from '../organisms/ActionPalette';
+export { SequenceBar, type SequenceBarProps } from '../organisms/SequenceBar';
+export { SequencerBoard, type SequencerBoardProps } from '../organisms/SequencerBoard';
 // Event Handler (ages 9-12)
-export { RuleEditor, type RuleEditorProps, type RuleDefinition } from './RuleEditor';
-export { EventLog, type EventLogProps, type EventLogEntry } from './EventLog';
-export { ObjectRulePanel, type ObjectRulePanelProps } from './ObjectRulePanel';
+export { RuleEditor, type RuleEditorProps, type RuleDefinition } from '../organisms/RuleEditor';
+export { EventLog, type EventLogProps, type EventLogEntry } from '../organisms/EventLog';
+export { ObjectRulePanel, type ObjectRulePanelProps } from '../organisms/ObjectRulePanel';
+export { EventHandlerBoard, type EventHandlerBoardProps } from '../organisms/EventHandlerBoard';
 export * from '../../shared/lib/puzzleObject';
 // State Architect (ages 13+)
-export { StateNode, type StateNodeProps } from './StateNode';
-export { TransitionArrow, type TransitionArrowProps } from './TransitionArrow';
-export { VariablePanel, type VariablePanelProps } from './VariablePanel';
-export { StateJsonView, type StateJsonViewProps } from './StateJsonView';
+export { StateNode, type StateNodeProps } from '../organisms/StateNode';
+export { TransitionArrow, type TransitionArrowProps } from '../organisms/TransitionArrow';
+export { VariablePanel, type VariablePanelProps } from '../organisms/VariablePanel';
+export { StateJsonView, type StateJsonViewProps } from '../organisms/StateJsonView';
+export {
+    StateArchitectBoard,
+    type StateArchitectBoardProps,
+    type StateArchitectTransition,
+    type TestCase,
+} from '../organisms/StateArchitectBoard';
 // Simulator
+export { SimulatorBoard, type SimulatorBoardProps, type SimulatorParameter } from '../organisms/SimulatorBoard';
 // Classifier
+export { ClassifierBoard, type ClassifierBoardProps, type ClassifierItem, type ClassifierCategory } from '../organisms/ClassifierBoard';
 // Builder
+export { BuilderBoard, type BuilderBoardProps, type BuilderComponent, type BuilderSlot } from '../organisms/BuilderBoard';
 // Debugger
+export { DebuggerBoard, type DebuggerBoardProps, type DebuggerLine } from '../organisms/DebuggerBoard';
 // Negotiator
+export { NegotiatorBoard, type NegotiatorBoardProps, type NegotiatorAction, type PayoffEntry } from '../organisms/NegotiatorBoard';
 
 // ---------------------------------------------------------------------------
 // Physics Simulation (educational presets)
 // ---------------------------------------------------------------------------
-export { SimulationCanvas, type SimulationCanvasProps } from './SimulationCanvas';
-export { SimulationControls, type SimulationControlsProps } from './SimulationControls';
-export { SimulationGraph, type SimulationGraphProps, type MeasurementPoint } from './SimulationGraph';
+export { SimulationCanvas, type SimulationCanvasProps } from '../organisms/SimulationCanvas';
+export { SimulationControls, type SimulationControlsProps } from '../organisms/SimulationControls';
+export { SimulationGraph, type SimulationGraphProps, type MeasurementPoint } from '../organisms/SimulationGraph';
 export type { PhysicsPreset, PhysicsBody, PhysicsConstraint } from '../../shared/lib/physicsTypes';
 export { projectileMotion, pendulum, springOscillator, ALL_PRESETS } from '../../shared/lib/physicsPresets';
 

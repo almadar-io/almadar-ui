@@ -11,8 +11,6 @@
 import React, { useCallback } from 'react';
 import { HStack, Typography } from '../../../core/atoms/index';
 import { cn } from '../../../../lib/cn';
-import { useEventBus } from '../../../../hooks/useEventBus';
-import type { EventKey } from '@almadar/core';
 import { TraitSlot } from './TraitSlot';
 import type { SlotItemData } from './TraitSlot';
 
@@ -22,13 +20,9 @@ export interface SequenceBarProps {
     /** Max number of slots */
     maxSlots: number;
     /** Called when an item is dropped into slot at index */
-    onSlotDrop?: (index: number, item: SlotItemData) => void;
+    onSlotDrop: (index: number, item: SlotItemData) => void;
     /** Called when a slot is cleared */
-    onSlotRemove?: (index: number) => void;
-    /** Declarative event — emits UI:{slotDropEvent} with { slotIndex, actionId } on drop */
-    slotDropEvent?: EventKey;
-    /** Declarative event — emits UI:{slotRemoveEvent} with { slotIndex } on clear */
-    slotRemoveEvent?: EventKey;
+    onSlotRemove: (index: number) => void;
     /** Whether the sequence is currently playing (disable interaction) */
     playing?: boolean;
     /** Current step index during playback (-1 = not playing) */
@@ -48,8 +42,6 @@ export function SequenceBar({
     maxSlots,
     onSlotDrop,
     onSlotRemove,
-    slotDropEvent,
-    slotRemoveEvent,
     playing = false,
     currentStep = -1,
     categoryColors,
@@ -57,18 +49,15 @@ export function SequenceBar({
     size = 'lg',
     className,
 }: SequenceBarProps): React.JSX.Element {
-    const { emit } = useEventBus();
     const handleDrop = useCallback((index: number) => (item: SlotItemData) => {
         if (playing) return;
-        if (slotDropEvent) emit(`UI:${slotDropEvent}`, { slotIndex: index, actionId: item.id });
-        onSlotDrop?.(index, item);
-    }, [onSlotDrop, slotDropEvent, emit, playing]);
+        onSlotDrop(index, item);
+    }, [onSlotDrop, playing]);
 
     const handleRemove = useCallback((index: number) => () => {
         if (playing) return;
-        if (slotRemoveEvent) emit(`UI:${slotRemoveEvent}`, { slotIndex: index });
-        onSlotRemove?.(index);
-    }, [onSlotRemove, slotRemoveEvent, emit, playing]);
+        onSlotRemove(index);
+    }, [onSlotRemove, playing]);
 
     // Pad slots to maxSlots
     const paddedSlots = Array.from({ length: maxSlots }, (_, i) => slots[i]);
