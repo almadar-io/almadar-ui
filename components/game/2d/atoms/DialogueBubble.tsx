@@ -11,6 +11,14 @@ const DEFAULT_PORTRAIT: Asset = {
   category: 'character',
 };
 
+/** Portrait-ring accent per mood — a plain CSS-driven pose, same idiom as `HealthBar.animated`. */
+const MOOD_RING_CLASS: Record<string, string> = {
+  neutral: 'border-warning/60',
+  happy: 'border-success/70',
+  concerned: 'border-info/70',
+  angry: 'border-error/70',
+};
+
 export interface DialogueBubbleProps {
   /** Speaker name displayed at the top */
   speaker?: string;
@@ -20,6 +28,14 @@ export interface DialogueBubbleProps {
   portrait?: Asset;
   /** Position of the bubble on screen */
   position?: 'top' | 'bottom';
+  /** Speaker mood — drives a portrait-ring accent; LOLO sets this per dialogue node/transition. */
+  mood?: 'neutral' | 'happy' | 'concerned' | 'angry';
+  /**
+   * Number of `text` characters to reveal (typewriter effect). Omit to show
+   * the full string — LOLO drives this from `@entity.revealedChars` via a
+   * tick, incrementing it until it reaches `text.length`.
+   */
+  revealedChars?: number;
   /** Additional CSS classes */
   className?: string;
 }
@@ -29,8 +45,12 @@ export function DialogueBubble({
   text = 'The dungeon awaits. Choose your path wisely.',
   portrait = DEFAULT_PORTRAIT,
   position = 'bottom',
+  mood = 'neutral',
+  revealedChars,
   className,
 }: DialogueBubbleProps) {
+  const visibleText = revealedChars === undefined ? text : text.slice(0, revealedChars);
+
   return (
     <Box
       className={cn(
@@ -40,7 +60,7 @@ export function DialogueBubble({
       )}
     >
       {portrait && (
-        <Box className="flex-shrink-0 w-12 h-12 rounded-full overflow-hidden border-2 border-warning/60">
+        <Box className={cn('flex-shrink-0 w-12 h-12 rounded-full overflow-hidden border-2 transition-colors duration-300', MOOD_RING_CLASS[mood])}>
           <GameIcon assetUrl={portrait} icon="image" size={48} alt={speaker ?? 'speaker'} className="w-full h-full object-cover" />
         </Box>
       )}
@@ -51,7 +71,7 @@ export function DialogueBubble({
           </Typography>
         )}
         <Typography as="span" className="text-sm text-foreground leading-relaxed">
-          {text}
+          {visibleText}
         </Typography>
       </Box>
     </Box>

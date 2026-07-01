@@ -30,6 +30,7 @@ import {
     createContextFromBindings,
     createServerEffectHandlers,
     collectDeclaredConfigDefaults,
+    createTickScheduler,
     type TraitState,
     type TraitDefinition,
     type EffectHandlers,
@@ -809,59 +810,24 @@ export function useTraitStateMachine(
     }, [executeTransitionEffects]);
 
     /**
-     * RAF loop for frame-interval ticks (interval: "frame").
-     * Reads traitBindingsRef.current every frame so it never needs to restart
-     * when bindings change — mirrors the generated shell's requestAnimationFrame pattern.
+     * One coalesced tick clock for every binding's ticks — frame-interval
+     * ("every pass") and numeric-ms ticks alike — via the shared
+     * `@almadar/runtime` `TickScheduler`. Replaces two separate loops (a RAF
+     * pass for frame ticks, one `setInterval` per numeric-ms tick) with a
+     * single accumulator so ticks due in the same pass fire together instead
+     * of on independent, uncoordinated timers. Re-built when bindings change.
      */
     useEffect(() => {
-        // Check if any binding has frame ticks before starting the loop
-        const hasFrameTicks = traitBindingsRef.current.some(b =>
-            b.trait.ticks?.some(t => t.interval === 'frame')
-        );
-        if (!hasFrameTicks) return;
-
-        let running = true;
-        let rafId = 0;
-
-        const frame = () => {
-            if (!running) return;
-            for (const binding of traitBindingsRef.current) {
-                for (const tick of binding.trait.ticks ?? []) {
-                    if (tick.interval !== 'frame') continue;
-                    runTickEffects(tick, binding);
-                }
-            }
-            rafId = requestAnimationFrame(frame);
-        };
-
-        rafId = requestAnimationFrame(frame);
-        return () => {
-            running = false;
-            cancelAnimationFrame(rafId);
-        };
-    // Re-run when bindings change (new behaviors may add/remove frame ticks)
-    }, [traitBindings, runTickEffects]);
-
-    /**
-     * Interval loops for time-based ticks (interval: number ms).
-     * One setInterval per tick. Re-created when bindings change.
-     */
-    useEffect(() => {
-        const intervals: ReturnType<typeof setInterval>[] = [];
+        const scheduler = createTickScheduler();
 
         for (const binding of traitBindings) {
             for (const tick of binding.trait.ticks ?? []) {
-                if (tick.interval === 'frame') continue;
-                const ms = tick.interval as number;
-                intervals.push(setInterval(() => {
-                    runTickEffects(tick, binding);
-                }, ms));
+                const intervalMs = tick.interval === 'frame' ? 0 : (tick.interval as number);
+                scheduler.add(intervalMs, () => runTickEffects(tick, binding));
             }
         }
 
-        return () => {
-            for (const id of intervals) clearInterval(id);
-        };
+        return () => scheduler.stopAll();
     }, [traitBindings, runTickEffects]);
 
     /**

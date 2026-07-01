@@ -4,29 +4,20 @@
  * Type definitions for frame-based sprite sheet animation system.
  * Supports standard 8-column × 5-row character sheets.
  *
+ * `AnimationName`, `AnimationDef`, and `SpriteDirection` are canonically owned
+ * by `@almadar/core` (they travel with a `spriteSheet`-role `Asset.url`'s
+ * resolved atlas contract) — re-exported here so existing call sites in this
+ * package don't need to change their import path.
+ *
  * @packageDocumentation
  */
 
-/** Animation names matching sprite sheet row layout */
-export type AnimationName = 'idle' | 'walk' | 'attack' | 'hit' | 'death';
+import type { AnimationName } from '@almadar/core';
 
-/** Sheet file directions (physical PNG files) */
-export type SpriteDirection = 'se' | 'sw';
+export type { AnimationName, AnimationDef, SpriteDirection } from '@almadar/core';
 
 /** Unit facing direction on screen (4 isometric directions) */
 export type FacingDirection = 'se' | 'sw' | 'ne' | 'nw';
-
-/** Definition for a single animation row in the sprite sheet */
-export interface AnimationDef {
-    /** Row index in the sprite sheet (0-4) */
-    row: number;
-    /** Number of frames in this animation */
-    frames: number;
-    /** Frames per second */
-    frameRate: number;
-    /** Whether the animation loops */
-    loop: boolean;
-}
 
 /** A resolved frame ready to draw on canvas */
 export interface ResolvedFrame {
@@ -83,24 +74,7 @@ export interface SpriteSheetUrls {
 /**
  * Parsed sprite-sheet atlas JSON (e.g. `guardian-sprite-sheet.json`).
  * Sits next to the `.png` sheets and drives the frame rect deterministically.
+ * Canonically `@almadar/core`'s `SpriteSheetAtlas` — re-exported under this
+ * package's existing name so call sites don't need to change.
  */
-export interface SpriteAtlas {
-    /** Unit archetype key */
-    unit?: string;
-    /** Visual type key */
-    type?: string;
-    /** Width of a single frame in pixels */
-    frameWidth: number;
-    /** Height of a single frame in pixels */
-    frameHeight: number;
-    /** Number of columns (frames per row) */
-    columns: number;
-    /** Number of rows (animations) */
-    rows: number;
-    /** Directions present as physical PNG files */
-    directions: SpriteDirection[];
-    /** Relative PNG sheet paths per direction */
-    sheets: Partial<Record<SpriteDirection, string>>;
-    /** Animation row layout keyed by animation name */
-    animations: Partial<Record<AnimationName, AnimationDef>>;
-}
+export type { SpriteSheetAtlas as SpriteAtlas } from '@almadar/core';

@@ -22,6 +22,12 @@ export interface GameCardProps {
   disabled?: boolean;
   /** Size variant — controls card dimensions and art pixel size */
   size?: 'sm' | 'md' | 'lg';
+  /**
+   * One-shot pose LOLO drives on a transition (`DRAW`/`PLAY`), auto-reverted
+   * to `'idle'` by a short tick — same idiom as `HealthBar.animated`, plain
+   * CSS transform driven off a prop, no internal timer here.
+   */
+  animState?: 'idle' | 'drawn' | 'played' | 'flipped';
   /** Direct click callback */
   onClick?: (id: string) => void;
   /** Event-bus event emitted with `{ cardId }` on click */
@@ -37,6 +43,14 @@ const cardSizeMap = {
 
 const artPxMap = { sm: 40, md: 52, lg: 64 };
 
+/** One-shot pose classes for `animState` — plain CSS transform, no new deps. */
+const ANIM_STATE_CLASS: Record<string, string> = {
+  idle: '',
+  drawn: 'scale-105',
+  played: '-translate-y-2 opacity-80',
+  flipped: 'scale-x-0',
+};
+
 export function GameCard({
   id,
   cost,
@@ -48,6 +62,7 @@ export function GameCard({
   selected = false,
   disabled = false,
   size = 'md',
+  animState = 'idle',
   onClick,
   clickEvent,
   className,
@@ -82,6 +97,7 @@ export function GameCard({
           ? 'border-border opacity-50 cursor-not-allowed'
           : 'border-accent hover:brightness-125 hover:-translate-y-1 cursor-pointer',
         selected && 'ring-2 ring-foreground ring-offset-1 ring-offset-background -translate-y-1',
+        ANIM_STATE_CLASS[animState],
         className,
       )}
     >

@@ -158,6 +158,14 @@ export interface Canvas2DProps {
     showMinimap?: boolean;
     /** Opt-in internal RAF clock. DEFAULT OFF — the LOLO state machine drives the clock. */
     animate?: { fps: number };
+    /**
+     * Opt-in: smooth-interpolate unit positions between LOLO tick snapshots
+     * via a `requestAnimationFrame` loop (same fixed-timestep technique
+     * `SideView` already uses for the player), instead of the default
+     * tick-rate-cadence redraw. DEFAULT OFF — for continuous-movement boards
+     * only; tile-snapped boards see no behavior change.
+     */
+    interpolateUnits?: boolean;
 
     // --- Tuning (iso/hex/flat/free) ---
     /** Show debug grid lines and coordinates. */
@@ -579,6 +587,7 @@ export function Canvas2D({
     unitScale = 1,
     showMinimap = true,
     animate,
+    interpolateUnits = false,
     // Tuning
     debug = false,
     spriteHeightRatio = 1.5,
@@ -619,6 +628,11 @@ export function Canvas2D({
     const containerRef = useRef<HTMLDivElement>(null);
     const lerpRafRef = useRef(0);
     const animRafRef = useRef(0);
+    // Opt-in unit-position interpolation (grid projections) — same fixed-timestep
+    // technique `SideView` already uses for the player. Empty/unread when
+    // `interpolateUnits` is off, so default behavior is byte-for-byte unchanged.
+    const unitInterp = useRenderInterpolation<{ id: string; x: number; y: number }>();
+    const interpolatedUnitPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
 
     // -- Viewport size --
     const [viewportSize, setViewportSize] = useState({ width: 800, height: 600 });
@@ -1007,7 +1021,8 @@ export function Canvas2D({
         });
 
         for (const unit of sortedUnits) {
-            const pos = project(unit.position.x, unit.position.y, baseOffsetX);
+            const interpolated = interpolateUnits ? interpolatedUnitPositionsRef.current.get(unit.id) : undefined;
+            const pos = project(interpolated?.x ?? unit.position.x, interpolated?.y ?? unit.position.y, baseOffsetX);
 
             if (pos.x + scaledTileWidth < visLeft || pos.x > visRight ||
                 pos.y + scaledTileHeight < visTop || pos.y > visBottom) {
@@ -1155,6 +1170,7 @@ export function Canvas2D({
         baseOffsetX, scaledTileWidth, scaledTileHeight, scaledFloorHeight, scaledDiamondTopY,
         validMoveSet, attackTargetSet, hoveredTile, viewportSize, onDrawEffects,
         backgroundImage, cameraRef, unitScale, assetManifest, spriteHeightRatio, spriteMaxWidthRatio,
+        interpolateUnits,
     ]);
 
     // =========================================================================
@@ -1173,6 +1189,28 @@ export function Canvas2D({
             y: centerY - viewportSize.height / 2,
         };
     }, [camera, selectedUnitId, units, project, baseOffsetX, scaledTileWidth, scaledDiamondTopY, scaledFloorHeight, viewportSize, targetCameraRef]);
+
+    // =========================================================================
+    // Opt-in unit-position interpolation (grid projections). DEFAULT OFF —
+    // when `interpolateUnits` is false these effects are no-ops (never feed
+    // a snapshot, never start the loop), so the "pure, no internal clock"
+    // redraw below stays exactly as before for every board that doesn't ask.
+    // =========================================================================
+    useEffect(() => {
+        if (isSide || !interpolateUnits) return;
+        unitInterp.onSnapshot(
+            units.filter((u): u is typeof u & { position: { x: number; y: number } } => !!u.position)
+                .map((u) => ({ id: u.id, x: u.position.x, y: u.position.y })),
+        );
+    }, [isSide, interpolateUnits, units, unitInterp]);
+
+    useEffect(() => {
+        if (isSide || !interpolateUnits) return;
+        return unitInterp.startLoop((positions) => {
+            interpolatedUnitPositionsRef.current = positions;
+            draw();
+        });
+    }, [isSide, interpolateUnits, unitInterp, draw]);
 
     // =========================================================================
     // Redraw on data change — pure, no internal clock
