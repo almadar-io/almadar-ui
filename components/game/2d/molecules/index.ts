@@ -44,6 +44,7 @@ export { InventoryGrid, type InventoryGridProps, type InventoryGridItem } from '
 export { ResourceBar, type ResourceBarProps, type ResourceBarResource } from './ResourceBar';
 export { GameHud, type GameHudProps, type GameHudStat, type GameHudElement } from './GameHud';
 export { GameMenu, type GameMenuProps, type MenuOption } from './GameMenu';
+export { StateGraph, type StateGraphProps, type StateGraphTransition } from './StateGraph';
 export {
     Canvas2D,
     type Canvas2DProps,

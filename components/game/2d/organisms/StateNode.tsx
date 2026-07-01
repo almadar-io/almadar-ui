@@ -1,3 +1,4 @@
+// 📦 MOVE-TO-MOLECULES-67 — genuinely reused (StateGraph / rpg+strategy games). Move organisms/ → molecules/ after verify, do NOT delete. See docs/Almadar_Std_Game_Board_Deletion_Manifest.md
 /**
  * StateNode Component
  *
