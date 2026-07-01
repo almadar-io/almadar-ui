@@ -1,5 +1,4 @@
 'use client';
-// ⛔ SLATED-FOR-DELETION-67 — orphaned by the .lolo board decomposition. Delete after runtime-verify confirms the ui-*-board.lolo compositions render. See docs/Almadar_Std_Game_Board_Deletion_Manifest.md
 /**
  * TraitSlot Component
  *
@@ -76,8 +75,6 @@ export interface TraitSlotProps {
     isLoading?: boolean;
     /** Error state */
     error?: UiError | null;
-    /** Entity name for schema-driven auto-fetch */
-    entity?: string;
 
     // -- Drag and drop --
     /** Called when an item is dropped on this slot */
@@ -101,6 +98,8 @@ export interface TraitSlotProps {
     clickEvent?: EventEmit<{ slotNumber: number }>;
     /** Emits UI:{removeEvent} with { slotNumber } */
     removeEvent?: EventEmit<{ slotNumber: number }>;
+    /** Emits UI:{dropEvent} with { slotNumber, itemId } when an item is dropped into this slot */
+    dropEvent?: EventEmit<{ slotNumber: number; itemId: string }>;
 }
 
 // =============================================================================
@@ -139,6 +138,7 @@ export function TraitSlot({
     onRemove,
     clickEvent,
     removeEvent,
+    dropEvent,
 }: TraitSlotProps): React.JSX.Element {
     const { emit } = useEventBus();
     const [isHovered, setIsHovered] = useState(false);
@@ -183,7 +183,7 @@ export function TraitSlot({
     // -- Drop handlers (target — dropping INTO this slot) ---------------------
 
     const handleDragOver = useCallback((e: React.DragEvent) => {
-        if (locked || !onItemDrop) return;
+        if (locked || (!onItemDrop && !dropEvent)) return;
         if (e.dataTransfer.types.includes(DRAG_MIME)) {
             e.preventDefault();
             // Let the browser pick a compatible dropEffect based on the source's effectAllowed
@@ -192,7 +192,7 @@ export function TraitSlot({
             e.dataTransfer.dropEffect = allowed === 'copy' ? 'copy' : 'move';
             setIsDragOver(true);
         }
-    }, [locked, onItemDrop]);
+    }, [locked, onItemDrop, dropEvent]);
 
     const handleDragLeave = useCallback(() => {
         setIsDragOver(false);
@@ -201,16 +201,17 @@ export function TraitSlot({
     const handleDrop = useCallback((e: React.DragEvent) => {
         e.preventDefault();
         setIsDragOver(false);
-        if (locked || !onItemDrop) return;
+        if (locked || (!onItemDrop && !dropEvent)) return;
         const raw = e.dataTransfer.getData(DRAG_MIME);
         if (!raw) return;
         try {
             const item = JSON.parse(raw) as SlotItemData;
-            onItemDrop(item);
+            if (dropEvent) emit(`UI:${dropEvent}`, { slotNumber, itemId: item.id });
+            else onItemDrop?.(item);
         } catch {
             // ignore malformed data
         }
-    }, [locked, onItemDrop]);
+    }, [locked, onItemDrop, dropEvent, emit, slotNumber]);
 
     // -- Tooltip position -----------------------------------------------------
 

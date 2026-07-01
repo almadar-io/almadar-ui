@@ -11,8 +11,8 @@ import { Box, type Point } from '../../../core/atoms/index';
 import { cn } from '../../../../lib/cn';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import type { EventKey } from '@almadar/core';
-import { StateNode } from '../organisms/StateNode';
-import { TransitionArrow } from '../organisms/TransitionArrow';
+import { StateNode } from './StateNode';
+import { TransitionArrow } from './TransitionArrow';
 
 export interface StateGraphTransition {
     from: string;

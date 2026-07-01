@@ -26,13 +26,13 @@ import { VStack, HStack, Box, Typography, Button } from '../../../core/atoms/ind
 import { cn } from '../../../../lib/cn';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../hooks/useTranslate';
-import { TraitStateViewer } from './TraitStateViewer';
-import type { TraitStateMachineDefinition } from './TraitStateViewer';
-import type { SlotItemData } from './TraitSlot';
+import { TraitStateViewer } from '../molecules/TraitStateViewer';
+import type { TraitStateMachineDefinition } from '../molecules/TraitStateViewer';
+import type { SlotItemData } from '../molecules/TraitSlot';
 import type { DisplayStateProps } from '../../../core/organisms/types';
 import { boardEntity, str, num } from '../../shared/boardEntity';
 import { SequenceBar } from './SequenceBar';
-import { ActionPalette } from './ActionPalette';
+import { ActionPalette } from '../molecules/ActionPalette';
 
 // =============================================================================
 // Types

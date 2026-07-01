@@ -1,4 +1,3 @@
-// ⛔ SLATED-FOR-DELETION-67 — orphaned by the .lolo board decomposition. Delete after runtime-verify confirms the ui-*-board.lolo compositions render. See docs/Almadar_Std_Game_Board_Deletion_Manifest.md
 /**
  * ObjectRulePanel Component
  *
@@ -10,10 +9,11 @@
  */
 
 import React, { useCallback } from 'react';
-import type { EntityRow } from '@almadar/core';
+import type { EntityRow, EventEmit } from '@almadar/core';
 import { VStack, HStack, Typography, Button } from '../../../core/atoms/index';
 import { cn } from '../../../../lib/cn';
 import { useTranslate } from '../../../../hooks/useTranslate';
+import { useEventBus } from '../../../../hooks/useEventBus';
 import { TraitStateViewer } from './TraitStateViewer';
 import type { TraitStateMachineDefinition } from './TraitStateViewer';
 import { RuleEditor, type RuleDefinition, type RuleOption } from './RuleEditor';
@@ -32,8 +32,10 @@ import {
 export interface ObjectRulePanelProps {
     /** The selected puzzle-object row (`EntityRow` carrying the editable object data) */
     object: EntityRow;
-    /** Called when rules change */
-    onRulesChange: (objectId: string, rules: RuleDefinition[]) => void;
+    /** Called when rules change (callback path) */
+    onRulesChange?: (objectId: string, rules: RuleDefinition[]) => void;
+    /** Emits UI:{rulesChangeEvent} with { objectId, rules } when rules change (declarative path) */
+    rulesChangeEvent?: EventEmit<{ objectId: string; rules: RuleDefinition[] }>;
     /** Whether editing is disabled */
     disabled?: boolean;
     /** Additional CSS classes */
@@ -45,10 +47,12 @@ let nextRuleId = 1;
 export function ObjectRulePanel({
     object,
     onRulesChange,
+    rulesChangeEvent,
     disabled = false,
     className,
 }: ObjectRulePanelProps): React.JSX.Element {
     const { t } = useTranslate();
+    const { emit } = useEventBus();
     const id = objId(object);
     const name = objName(object);
     const icon = objIcon(object);
@@ -60,16 +64,21 @@ export function ObjectRulePanel({
     const maxRules = objMaxRules(object);
     const canAdd = rules.length < maxRules;
 
+    const emitRules = useCallback((newRules: RuleDefinition[]) => {
+        if (rulesChangeEvent) emit(`UI:${rulesChangeEvent}`, { objectId: id, rules: newRules });
+        else onRulesChange?.(id, newRules);
+    }, [rulesChangeEvent, emit, id, onRulesChange]);
+
     const handleRuleChange = useCallback((index: number, updatedRule: RuleDefinition) => {
         const newRules = [...rules];
         newRules[index] = updatedRule;
-        onRulesChange(id, newRules);
-    }, [id, rules, onRulesChange]);
+        emitRules(newRules);
+    }, [rules, emitRules]);
 
     const handleRuleRemove = useCallback((index: number) => {
         const newRules = rules.filter((_, i) => i !== index);
-        onRulesChange(id, newRules);
-    }, [id, rules, onRulesChange]);
+        emitRules(newRules);
+    }, [rules, emitRules]);
 
     const handleAddRule = useCallback(() => {
         if (!canAdd || disabled) return;
@@ -80,8 +89,8 @@ export function ObjectRulePanel({
             whenEvent: firstEvent,
             thenAction: firstAction,
         };
-        onRulesChange(id, [...rules, newRule]);
-    }, [canAdd, disabled, id, rules, availableEvents, availableActions, onRulesChange]);
+        emitRules([...rules, newRule]);
+    }, [canAdd, disabled, rules, availableEvents, availableActions, emitRules]);
 
     // Build a simple state machine for the viewer
     const machine: TraitStateMachineDefinition = {

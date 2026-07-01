@@ -1,5 +1,4 @@
 'use client';
-// ⛔ SLATED-FOR-DELETION-67 — orphaned by the .lolo board decomposition. Delete after runtime-verify confirms the ui-*-board.lolo compositions render. See docs/Almadar_Std_Game_Board_Deletion_Manifest.md
 /**
  * TraitStateViewer Component
  *
@@ -59,8 +58,6 @@ export interface TraitStateViewerProps {
     isLoading?: boolean;
     /** Error state */
     error?: UiError | null;
-    /** Entity name for schema-driven auto-fetch */
-    entity?: string;
 }
 
 const SIZE_CONFIG = {

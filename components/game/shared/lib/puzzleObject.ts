@@ -1,4 +1,3 @@
-// ⛔ SLATED-FOR-DELETION-67 — orphaned by the .lolo board decomposition. Delete after runtime-verify confirms the ui-*-board.lolo compositions render. See docs/Almadar_Std_Game_Board_Deletion_Manifest.md
 /**
  * puzzleObject — field accessors for reading Event-Handler puzzle-object data
  * off an `EntityRow`.
@@ -11,7 +10,7 @@
  */
 
 import type { EntityWith } from '@almadar/core';
-import type { RuleDefinition, RuleOption } from '../../2d/organisms/RuleEditor';
+import type { RuleDefinition, RuleOption } from '../../2d/molecules/RuleEditor';
 
 type PuzzleObjectRow = EntityWith<{
     name?: string;

@@ -19,12 +19,12 @@ import { VStack, HStack, Box, Typography, Button } from '../../../core/atoms/ind
 import { cn } from '../../../../lib/cn';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../hooks/useTranslate';
-import { TraitStateViewer } from './TraitStateViewer';
-import type { TraitStateMachineDefinition } from './TraitStateViewer';
+import { TraitStateViewer } from '../molecules/TraitStateViewer';
+import type { TraitStateMachineDefinition } from '../molecules/TraitStateViewer';
 import type { DisplayStateProps } from '../../../core/organisms/types';
-import { ObjectRulePanel } from './ObjectRulePanel';
-import { EventLog, type EventLogEntry } from './EventLog';
-import type { RuleDefinition } from './RuleEditor';
+import { ObjectRulePanel } from '../molecules/ObjectRulePanel';
+import { EventLog, type EventLogEntry } from '../molecules/EventLog';
+import type { RuleDefinition } from '../molecules/RuleEditor';
 import {
     objId,
     objName,

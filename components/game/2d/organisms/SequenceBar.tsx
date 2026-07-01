@@ -12,8 +12,8 @@
 import React, { useCallback } from 'react';
 import { HStack, Typography } from '../../../core/atoms/index';
 import { cn } from '../../../../lib/cn';
-import { TraitSlot } from './TraitSlot';
-import type { SlotItemData } from './TraitSlot';
+import { TraitSlot } from '../molecules/TraitSlot';
+import type { SlotItemData } from '../molecules/TraitSlot';
 
 export interface SequenceBarProps {
     /** The current sequence (sparse — undefined means empty slot) */

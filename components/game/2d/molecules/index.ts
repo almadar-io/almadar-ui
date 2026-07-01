@@ -95,12 +95,12 @@ export {
     type TraitStateViewerProps,
     type TraitStateMachineDefinition,
     type TraitTransition,
-} from '../organisms/TraitStateViewer';
+} from './TraitStateViewer';
 export {
     TraitSlot,
     type TraitSlotProps,
     type SlotItemData,
-} from '../organisms/TraitSlot';
+} from './TraitSlot';
 
 // ---------------------------------------------------------------------------
 // Editor Utilities (Storybook map editor components)
@@ -131,21 +131,21 @@ export {
 // Puzzle Board Organisms
 // ---------------------------------------------------------------------------
 // Sequencer (ages 5-8)
-export { ActionTile, type ActionTileProps } from '../organisms/ActionTile';
-export { ActionPalette, type ActionPaletteProps } from '../organisms/ActionPalette';
+export { ActionTile, type ActionTileProps } from './ActionTile';
+export { ActionPalette, type ActionPaletteProps } from './ActionPalette';
 export { SequenceBar, type SequenceBarProps } from '../organisms/SequenceBar';
 export { SequencerBoard, type SequencerBoardProps } from '../organisms/SequencerBoard';
 // Event Handler (ages 9-12)
-export { RuleEditor, type RuleEditorProps, type RuleDefinition } from '../organisms/RuleEditor';
-export { EventLog, type EventLogProps, type EventLogEntry } from '../organisms/EventLog';
-export { ObjectRulePanel, type ObjectRulePanelProps } from '../organisms/ObjectRulePanel';
+export { RuleEditor, type RuleEditorProps, type RuleDefinition } from './RuleEditor';
+export { EventLog, type EventLogProps, type EventLogEntry } from './EventLog';
+export { ObjectRulePanel, type ObjectRulePanelProps } from './ObjectRulePanel';
 export { EventHandlerBoard, type EventHandlerBoardProps } from '../organisms/EventHandlerBoard';
 export * from '../../shared/lib/puzzleObject';
 // State Architect (ages 13+)
-export { StateNode, type StateNodeProps } from '../organisms/StateNode';
-export { TransitionArrow, type TransitionArrowProps } from '../organisms/TransitionArrow';
-export { VariablePanel, type VariablePanelProps } from '../organisms/VariablePanel';
-export { StateJsonView, type StateJsonViewProps } from '../organisms/StateJsonView';
+export { StateNode, type StateNodeProps } from './StateNode';
+export { TransitionArrow, type TransitionArrowProps } from './TransitionArrow';
+export { VariablePanel, type VariablePanelProps } from './VariablePanel';
+export { StateJsonView, type StateJsonViewProps } from './StateJsonView';
 export {
     StateArchitectBoard,
     type StateArchitectBoardProps,

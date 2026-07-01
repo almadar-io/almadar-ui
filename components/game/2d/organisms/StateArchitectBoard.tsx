@@ -16,13 +16,13 @@ import { VStack, HStack, Box, Typography, Button } from '../../../core/atoms/ind
 import { cn } from '../../../../lib/cn';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../hooks/useTranslate';
-import { TraitStateViewer } from './TraitStateViewer';
-import type { TraitStateMachineDefinition } from './TraitStateViewer';
+import { TraitStateViewer } from '../molecules/TraitStateViewer';
+import type { TraitStateMachineDefinition } from '../molecules/TraitStateViewer';
 import type { DisplayStateProps } from '../../../core/organisms/types';
-import { StateNode } from './StateNode';
-import { TransitionArrow } from './TransitionArrow';
-import { VariablePanel } from './VariablePanel';
-import { StateJsonView } from './StateJsonView';
+import { StateNode } from '../molecules/StateNode';
+import { TransitionArrow } from '../molecules/TransitionArrow';
+import { VariablePanel } from '../molecules/VariablePanel';
+import { StateJsonView } from '../molecules/StateJsonView';
 import { boardEntity, str, rows } from '../../shared/boardEntity';
 
 // =============================================================================
@@ -468,7 +468,7 @@ export function StateArchitectBoard({
                     {/* Variables */}
                     <VariablePanel
                         entityName={entityName}
-                        variables={variables}
+                        variables={variables.map(v => ({ name: String(v.name ?? ''), value: String(v.value ?? '') }))}
                     />
 
                     {/* Test results */}
@@ -497,7 +497,13 @@ export function StateArchitectBoard({
 
                     {/* Code view */}
                     {resolved.showCodeView !== false && (
-                        <StateJsonView data={codeData} label="View Code" />
+                        <StateJsonView
+                            name={entityName}
+                            initialState={initialState}
+                            states={entityStates}
+                            transitions={transitions.map(tr => ({ from: tr.from, to: tr.to, event: tr.event }))}
+                            label="View Code"
+                        />
                     )}
                 </VStack>
             </HStack>
