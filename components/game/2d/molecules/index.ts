@@ -90,18 +90,7 @@ export { useCamera } from '../../shared/hooks/useCamera';
 // ---------------------------------------------------------------------------
 // Board Organisms (game-logic containers — templates are thin wrappers)
 // ---------------------------------------------------------------------------
-// Still-live React boards (non-game-shell layouts) — to be converted to .lolo game-shell, then removed.
-export {
-    VisualNovelBoard,
-    type VisualNovelBoardProps,
-    type VisualNovelNode,
-    type VisualNovelChoice,
-} from '../organisms/VisualNovelBoard';
-export {
-    CardBattlerBoard,
-    type CardBattlerBoardProps,
-    type CardBattlerCard,
-} from '../organisms/CardBattlerBoard';
+// All hand-authored game boards are now .lolo game-shell compositions — no React board organisms remain here.
 
 // ---------------------------------------------------------------------------
 // Trait / State Machine Visualization
