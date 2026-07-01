@@ -83,9 +83,3 @@ export {
     tickAnimationState,
 } from './spriteAnimation';
 export { SPRITE_SHEET_LAYOUT, SHEET_COLUMNS } from './spriteSheetConstants';
-
-// ---------------------------------------------------------------------------
-// Combat Effects (CSS animations)
-// ---------------------------------------------------------------------------
-export * from './combatPresets';
-export * from './canvasEffects';

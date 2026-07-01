@@ -10,7 +10,7 @@
  */
 
 import type { EntityWith } from '@almadar/core';
-import type { RuleDefinition, RuleOption } from '../../2d/organisms/RuleEditor';
+import type { RuleDefinition, RuleOption } from '../../2d/molecules/RuleEditor';
 
 type PuzzleObjectRow = EntityWith<{
     name?: string;
