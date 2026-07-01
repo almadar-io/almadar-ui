@@ -1,4 +1,3 @@
-// ⛔ SLATED-FOR-DELETION-67 — orphaned by the .lolo board decomposition. Delete after runtime-verify confirms the ui-*-board.lolo compositions render. See docs/Almadar_Std_Game_Board_Deletion_Manifest.md
 /**
  * SequenceBar Component
  *
@@ -10,20 +9,26 @@
  */
 
 import React, { useCallback } from 'react';
+import type { EventEmit } from '@almadar/core';
 import { HStack, Typography } from '../../../core/atoms/index';
 import { cn } from '../../../../lib/cn';
-import { TraitSlot } from '../molecules/TraitSlot';
-import type { SlotItemData } from '../molecules/TraitSlot';
+import { useEventBus } from '../../../../hooks/useEventBus';
+import { TraitSlot } from './TraitSlot';
+import type { SlotItemData } from './TraitSlot';
 
 export interface SequenceBarProps {
     /** The current sequence (sparse — undefined means empty slot) */
     slots: Array<SlotItemData | undefined>;
     /** Max number of slots */
     maxSlots: number;
-    /** Called when an item is dropped into slot at index */
-    onSlotDrop: (index: number, item: SlotItemData) => void;
-    /** Called when a slot is cleared */
-    onSlotRemove: (index: number) => void;
+    /** Called when an item is dropped into slot at index (callback path) */
+    onSlotDrop?: (index: number, item: SlotItemData) => void;
+    /** Called when a slot is cleared (callback path) */
+    onSlotRemove?: (index: number) => void;
+    /** Emits UI:{slotDropEvent} with { slotNumber, itemId } when an item is dropped (declarative path) */
+    slotDropEvent?: EventEmit<{ slotNumber: number; itemId: string }>;
+    /** Emits UI:{slotRemoveEvent} with { slotNumber } when a slot is cleared (declarative path) */
+    slotRemoveEvent?: EventEmit<{ slotNumber: number }>;
     /** Whether the sequence is currently playing (disable interaction) */
     playing?: boolean;
     /** Current step index during playback (-1 = not playing) */
@@ -43,6 +48,8 @@ export function SequenceBar({
     maxSlots,
     onSlotDrop,
     onSlotRemove,
+    slotDropEvent,
+    slotRemoveEvent,
     playing = false,
     currentStep = -1,
     categoryColors,
@@ -50,15 +57,19 @@ export function SequenceBar({
     size = 'lg',
     className,
 }: SequenceBarProps): React.JSX.Element {
+    const { emit } = useEventBus();
+
     const handleDrop = useCallback((index: number) => (item: SlotItemData) => {
         if (playing) return;
-        onSlotDrop(index, item);
-    }, [onSlotDrop, playing]);
+        if (slotDropEvent) emit(`UI:${slotDropEvent}`, { slotNumber: index, itemId: item.id });
+        else onSlotDrop?.(index, item);
+    }, [emit, slotDropEvent, onSlotDrop, playing]);
 
     const handleRemove = useCallback((index: number) => () => {
         if (playing) return;
-        onSlotRemove(index);
-    }, [onSlotRemove, playing]);
+        if (slotRemoveEvent) emit(`UI:${slotRemoveEvent}`, { slotNumber: index });
+        else onSlotRemove?.(index);
+    }, [emit, slotRemoveEvent, onSlotRemove, playing]);
 
     // Pad slots to maxSlots
     const paddedSlots = Array.from({ length: maxSlots }, (_, i) => slots[i]);

@@ -133,7 +133,7 @@ export {
 // Sequencer (ages 5-8)
 export { ActionTile, type ActionTileProps } from './ActionTile';
 export { ActionPalette, type ActionPaletteProps } from './ActionPalette';
-export { SequenceBar, type SequenceBarProps } from '../organisms/SequenceBar';
+export { SequenceBar, type SequenceBarProps } from './SequenceBar';
 export { SequencerBoard, type SequencerBoardProps } from '../organisms/SequencerBoard';
 // Event Handler (ages 9-12)
 export { RuleEditor, type RuleEditorProps, type RuleDefinition } from './RuleEditor';
@@ -163,13 +163,6 @@ export { DebuggerBoard, type DebuggerBoardProps, type DebuggerLine } from '../or
 // Negotiator
 export { NegotiatorBoard, type NegotiatorBoardProps, type NegotiatorAction, type PayoffEntry } from '../organisms/NegotiatorBoard';
 
-// ---------------------------------------------------------------------------
-// Physics Simulation (educational presets)
-// ---------------------------------------------------------------------------
-export { SimulationCanvas, type SimulationCanvasProps } from '../organisms/SimulationCanvas';
-export { SimulationControls, type SimulationControlsProps } from '../organisms/SimulationControls';
-export { SimulationGraph, type SimulationGraphProps, type MeasurementPoint } from '../organisms/SimulationGraph';
-export type { PhysicsPreset, PhysicsBody, PhysicsConstraint } from '../../shared/lib/physicsTypes';
 export { projectileMotion, pendulum, springOscillator, ALL_PRESETS } from '../../shared/lib/physicsPresets';
 
 // ---------------------------------------------------------------------------

@@ -527,7 +527,7 @@ export function registerTraitSnapshot(
 
 /**
  * Register a canvas frame capture function.
- * Called by game organisms (IsometricCanvas, PlatformerCanvas, SimulationCanvas)
+ * Called by game organisms (IsometricCanvas, PlatformerCanvas)
  * so the verifier can snapshot canvas content at checkpoints.
  */
 export function bindCanvasCapture(

@@ -31,7 +31,7 @@ import type { TraitStateMachineDefinition } from '../molecules/TraitStateViewer'
 import type { SlotItemData } from '../molecules/TraitSlot';
 import type { DisplayStateProps } from '../../../core/organisms/types';
 import { boardEntity, str, num } from '../../shared/boardEntity';
-import { SequenceBar } from './SequenceBar';
+import { SequenceBar } from '../molecules/SequenceBar';
 import { ActionPalette } from '../molecules/ActionPalette';
 
 // =============================================================================
