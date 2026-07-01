@@ -25,6 +25,8 @@ export interface ChoiceButtonProps {
   onClick?: () => void;
   /** Declarative event name — emits UI:{action} via eventBus on click */
   action?: EventKey;
+  /** Semantic payload emitted with the action (e.g. `{ nextId, choiceIndex }` for a branching choice). */
+  payload?: Record<string, string | number | boolean>;
   /** Additional CSS classes */
   className?: string;
 }
@@ -38,6 +40,7 @@ export function ChoiceButton({
   selected = false,
   onClick,
   action,
+  payload,
   className,
 }: ChoiceButtonProps) {
   const eventBus = useEventBus();
@@ -45,7 +48,7 @@ export function ChoiceButton({
     <Button
       variant="ghost"
       disabled={disabled}
-      onClick={() => { if (action) eventBus.emit(`UI:${action}`, {}); onClick?.(); }}
+      onClick={() => { if (action) eventBus.emit(`UI:${action}`, payload ?? {}); onClick?.(); }}
       className={cn(
         'w-full text-left px-4 py-2.5 rounded-interactive border transition-all duration-150',
         'flex items-center gap-2',
