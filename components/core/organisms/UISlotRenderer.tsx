@@ -239,6 +239,7 @@ const SELF_OVERLAY_PATTERNS = new Set(["modal", "confirm-dialog"]);
 // isPatternConfig can resolve the type.
 const CONTENT_NODE_SLOTS = new Set([
   'logo', 'master', 'detail', 'trigger', 'content', 'addons', 'hud', 'fallback',
+  'controls', 'overlay',
 ]);
 
 // Patterns that support nested children

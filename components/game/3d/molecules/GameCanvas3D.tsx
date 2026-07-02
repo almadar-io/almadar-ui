@@ -24,7 +24,9 @@ import React, {
     forwardRef,
     useImperativeHandle,
 } from 'react';
-import type { EventEmit } from '@almadar/core';
+import type { EventEmit, Asset } from '@almadar/core';
+import type { Platform, SidePlayer } from '../../2d/molecules/Canvas2D';
+import { useEventBus } from '../../../../hooks/useEventBus';
 import { Canvas, useThree, useFrame, useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
 import { OrbitControls, Grid, Billboard } from '@react-three/drei';
@@ -54,8 +56,16 @@ export interface GameEvent {
     message?: string;
 }
 
-/** Camera mode for 3D view */
-export type CameraMode = 'isometric' | 'perspective' | 'top-down';
+/** Camera mode for 3D view. `follow` tracks the side-view player (or the selected unit). */
+export type CameraMode = 'isometric' | 'perspective' | 'top-down' | 'follow';
+
+/** Per-role model manifest — the 3D analogue of Canvas2D's assetManifest (values are GLB Assets). */
+export interface GameCanvas3DAssetManifest {
+    terrains?: Record<string, Asset>;
+    units?: Record<string, Asset>;
+    features?: Record<string, Asset>;
+    effects?: Record<string, Asset>;
+}
 
 /** Map orientation */
 export type MapOrientation = 'standard' | 'rotated';
@@ -154,6 +164,29 @@ export interface GameCanvas3DProps {
     unitScale?: number;
     /** Board zoom/group scale. Applied to the scene group. Default 0.45. */
     scale?: number;
+    /** Maps a keydown `e.code` → the board's SEMANTIC event, e.g. `{ ArrowLeft: "LEFT", Space: "JUMP" }`.
+     *  The input layer emits `UI:<event>` so the FSM stays device-agnostic — keyboard and d-pad converge. */
+    keyMap?: Record<string, string>;
+    /** Maps a keyup `e.code` → the board's SEMANTIC event, e.g. `{ ArrowLeft: "STOP" }`. */
+    keyUpMap?: Record<string, string>;
+    /** Side-view player (pixel coords, LOLO-owned physics) — presence switches to side-scroller rendering. */
+    player?: SidePlayer;
+    /** Side-view level geometry (pixel AABBs, same contract as Canvas2D). */
+    platforms?: Platform[];
+    /** Side-view world size in pixels. */
+    worldWidth?: number;
+    /** Side-view world size in pixels. */
+    worldHeight?: number;
+    /** Pixel→world-unit divisor for side view (default 32 = one 2D tile per 3D cell). */
+    pixelsPerUnit?: number;
+    /** Player model — named for 2D parity; in 3D the Asset's url is a GLB. */
+    playerSprite?: Asset;
+    /** Platform-type → model map — named for 2D parity; values are GLB Assets. */
+    tileSprites?: Record<string, Asset>;
+    /** Per-role model manifest; resolves tiles/units/features without explicit modelUrl/assetUrl. */
+    assetManifest?: GameCanvas3DAssetManifest;
+    /** Opt-in: smooth-lerp unit positions between LOLO tick snapshots. DEFAULT OFF. */
+    interpolateUnits?: boolean;
 }
 
 /** Grid configuration */
@@ -266,6 +299,151 @@ function UnitSpriteBillboard({
 }
 
 /**
+ * Camera that smooth-tracks a world-space target (side-view player or selected unit).
+ * OrbitControls is disabled while following — the camera is authoritative.
+ */
+function FollowCamera({
+    target,
+    offset,
+}: {
+    target: [number, number, number];
+    offset: [number, number, number];
+}): null {
+    const { camera } = useThree();
+    const look = useRef(new THREE.Vector3(target[0], target[1], target[2]));
+    const goal = useRef(new THREE.Vector3());
+    useFrame((_, delta) => {
+        const t = Math.min(1, delta * 5);
+        goal.current.set(target[0] + offset[0], target[1] + offset[1], target[2] + offset[2]);
+        camera.position.lerp(goal.current, t);
+        look.current.lerp(goal.current.set(target[0], target[1], target[2]), t);
+        camera.lookAt(look.current);
+    });
+    return null;
+}
+
+/**
+ * Group that smooth-lerps toward its target position between LOLO tick snapshots
+ * (the 3D analogue of Canvas2D's `interpolateUnits`). Disabled → snaps.
+ */
+function LerpedGroup({
+    target,
+    enabled,
+    children,
+}: {
+    target: [number, number, number];
+    enabled: boolean;
+    children: React.ReactNode;
+}): React.JSX.Element {
+    const ref = useRef<THREE.Group>(null);
+    const goal = useRef(new THREE.Vector3());
+    useFrame((_, delta) => {
+        const g = ref.current;
+        if (!g) return;
+        goal.current.set(target[0], target[1], target[2]);
+        if (enabled) g.position.lerp(goal.current, Math.min(1, delta * 10));
+        else g.position.copy(goal.current);
+    });
+    return (
+        <group ref={ref} position={target}>
+            {children}
+        </group>
+    );
+}
+
+/** Fallback platform colors by type — mirrors the 2D SideView palette. */
+const SIDE_PLATFORM_COLORS: Record<string, string> = {
+    ground: '#5b8c3e',
+    platform: '#8b5a2b',
+    hazard: '#cc4444',
+    goal: '#4488cc',
+};
+
+/**
+ * Side-scroller scene: renders the LOLO-owned pixel-space `player`/`platforms`
+ * as 3D geometry. Physics stays in the board's tick (same contract as Canvas2D's
+ * SideView) — this only maps px → world units and draws.
+ */
+function SideScene({
+    player,
+    platforms,
+    worldHeight,
+    ppu,
+    playerSprite,
+    tileSprites,
+    interpolate,
+}: {
+    player: SidePlayer;
+    platforms: Platform[];
+    worldHeight: number;
+    ppu: number;
+    playerSprite?: Asset;
+    tileSprites?: Record<string, Asset>;
+    interpolate: boolean;
+}): React.JSX.Element {
+    const pw = player.width ?? 32;
+    const ph = player.height ?? 48;
+    const playerPos: [number, number, number] = [
+        (player.x + pw / 2) / ppu,
+        (worldHeight - player.y - ph) / ppu,
+        0,
+    ];
+    const playerH = Math.max(ph / ppu, 0.5);
+    return (
+        <group>
+            {platforms.map((p, i) => {
+                const platformType = p.type ?? 'platform';
+                const model = tileSprites?.[platformType]?.url;
+                const topY = (worldHeight - p.y) / ppu;
+                if (model) {
+                    // Tile the platform with unit blocks, top edge on the AABB top.
+                    const cells = Math.max(1, Math.round(p.width / ppu));
+                    const x0 = p.x / ppu;
+                    return (
+                        <group key={`plat-${i}`}>
+                            {Array.from({ length: cells }, (_, c) => (
+                                <group key={c} position={[x0 + c + 0.5, topY - 0.475, 0]}>
+                                    <ModelLoader url={model} scale={0.95} fallbackGeometry="box" castShadow receiveShadow />
+                                </group>
+                            ))}
+                        </group>
+                    );
+                }
+                // No model — exact AABB box in the 2D palette color.
+                return (
+                    <mesh
+                        key={`plat-${i}`}
+                        position={[(p.x + p.width / 2) / ppu, topY - p.height / 2 / ppu, 0]}
+                    >
+                        <boxGeometry args={[p.width / ppu, p.height / ppu, 1]} />
+                        <meshStandardMaterial color={SIDE_PLATFORM_COLORS[platformType] ?? '#888888'} />
+                    </mesh>
+                );
+            })}
+            <LerpedGroup target={playerPos} enabled={interpolate}>
+                {playerSprite?.url ? (
+                    <group position={[0, playerH / 2, 0]}>
+                        <ModelLoader
+                            url={playerSprite.url}
+                            scale={playerH}
+                            rotation={[0, player.facingRight ? 90 : -90, 0]}
+                            animation={player.animation ?? 'idle'}
+                            fallbackGeometry="box"
+                            castShadow
+                        />
+                    </group>
+                ) : (
+                    <mesh position={[0, playerH / 2, 0]}>
+                        <capsuleGeometry args={[playerH * 0.25, playerH * 0.5, 4, 8]} />
+                        <meshStandardMaterial color="#4488ff" />
+                    </mesh>
+                )}
+            </LerpedGroup>
+        </group>
+    );
+}
+
+/**
  * GameCanvas3D Component
  *
  * 3D game canvas that mirrors the IsometricCanvas API.
@@ -327,6 +505,16 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
             selectedTileIds = [],
             selectedUnitId = null,
             unitScale = 1,
+            keyMap,
+            keyUpMap,
+            player,
+            platforms = [],
+            worldHeight = 400,
+            pixelsPerUnit = 32,
+            playerSprite,
+            tileSprites,
+            assetManifest,
+            interpolateUnits = false,
             children,
         },
         ref
@@ -335,6 +523,35 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
         const controlsRef = useRef<OrbitControlsImpl | null>(null);
         const [hoveredTile, setHoveredTile] = useState<IsometricTile | null>(null);
         const [internalError, setInternalError] = useState<string | null>(null);
+        const eventBus = useEventBus();
+        const keysRef = useRef<Set<string>>(new Set());
+
+        // Keyboard → the board's SEMANTIC events via the declarative keyMap/keyUpMap.
+        // Same contract as Canvas2D: the input layer only translates device keycodes;
+        // the FSM stays device-agnostic and keyboard + d-pad converge on one event set.
+        useEffect(() => {
+            if (!keyMap && !keyUpMap) return;
+            const down = (e: KeyboardEvent): void => {
+                if (keysRef.current.has(e.code)) return;
+                keysRef.current.add(e.code);
+                const ev = keyMap?.[e.code];
+                if (ev) {
+                    eventBus.emit(`UI:${ev}`, {});
+                    e.preventDefault();
+                }
+            };
+            const up = (e: KeyboardEvent): void => {
+                keysRef.current.delete(e.code);
+                const ev = keyUpMap?.[e.code];
+                if (ev) eventBus.emit(`UI:${ev}`, {});
+            };
+            window.addEventListener('keydown', down);
+            window.addEventListener('keyup', up);
+            return () => {
+                window.removeEventListener('keydown', down);
+                window.removeEventListener('keyup', up);
+            };
+        }, [keyMap, keyUpMap, eventBus]);
 
         // Diagnostic: log the ancestor height chain on mount so constraint issues are visible.
         useEffect(() => {
@@ -536,6 +753,12 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                         position: [cx, d * 2, cz] as [number, number, number],
                         fov: 45,
                     };
+                case 'follow':
+                    // Initial framing only — FollowCamera takes over per-frame.
+                    return {
+                        position: [cx, d * 0.5, cz + d] as [number, number, number],
+                        fov: 45,
+                    };
                 case 'perspective':
                 default:
                     return {
@@ -544,6 +767,29 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                     };
             }
         }, [cameraMode, gridBounds]);
+
+        // Follow target: the side-view player when present, else the selected unit,
+        // else the grid centre.
+        const followTarget = useMemo((): [number, number, number] => {
+            if (player) {
+                return [
+                    (player.x + (player.width ?? 32) / 2) / pixelsPerUnit,
+                    (worldHeight - player.y - (player.height ?? 48) / 2) / pixelsPerUnit,
+                    0,
+                ];
+            }
+            const selected = units.find((u) => u.id === selectedUnitId);
+            if (selected) {
+                const sx = selected.x ?? selected.position?.x ?? 0;
+                const sz = selected.z ?? selected.y ?? selected.position?.y ?? 0;
+                return [
+                    (sx - gridBounds.minX) * gridConfig.cellSize,
+                    0,
+                    (sz - gridBounds.minZ) * gridConfig.cellSize,
+                ];
+            }
+            return cameraTarget;
+        }, [player, pixelsPerUnit, worldHeight, units, selectedUnitId, gridBounds, gridConfig, cameraTarget]);
 
         // Default tile renderer
         const DefaultTileRenderer = useCallback(
@@ -572,10 +818,12 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                 else if (isValidMove) emissive = 0x004400;
                 else if (isHovered) emissive = 0x222222;
 
-                // GLB tile — load the model (box fallback while loading / on error).
-                // The GLB's own materials provide coloring; the procedural color/
-                // emissive path below is only for tiles without a model.
-                if (tile.modelUrl) {
+                // GLB tile — explicit modelUrl wins, else resolve the terrain key against
+                // the assetManifest (box fallback while loading / on error). The GLB's own
+                // materials provide coloring; the procedural color/emissive path below is
+                // only for tiles without a model.
+                const tileModel = tile.modelUrl ?? assetManifest?.terrains?.[tile.terrain ?? tile.type ?? ''];
+                if (tileModel?.url) {
                     return (
                         <group
                             position={position}
@@ -585,7 +833,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                             userData={{ type: 'tile', tileId: tile.id, gridX: tile.x, gridZ: tile.z ?? tile.y }}
                         >
                             <ModelLoader
-                                url={tile.modelUrl.url}
+                                url={tileModel.url}
                                 scale={0.95}
                                 fallbackGeometry="box"
                                 castShadow
@@ -608,7 +856,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                     </mesh>
                 );
             },
-            [selectedTileIds, hoveredTile, validMoves, attackTargets, handleTileClick, handleTileHover]
+            [selectedTileIds, hoveredTile, validMoves, attackTargets, handleTileClick, handleTileHover, assetManifest]
         );
 
         const UNIT_BASE_MODEL_SCALE = 0.5;
@@ -622,6 +870,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                 const color = unit.faction === 'player' ? 0x4488ff : unit.faction === 'enemy' ? 0xff4444 : 0xffff44;
                 const hasAtlas = unitAtlasUrl(unit) !== null;
                 const initialFrame = hasAtlas ? resolveUnitFrame(unit.id) : null;
+                const unitModel = unit.modelUrl ?? assetManifest?.units?.[unit.unitType ?? ''];
 
                 const modelScale = UNIT_BASE_MODEL_SCALE * unitScale * gridConfig.cellSize;
                 // Billboard height is proportional to one cell so units stay
@@ -652,11 +901,12 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                                     height={billboardHeight}
                                 />
                             </Billboard>
-                        ) : unit.modelUrl ? (
-                            /* GLB unit model (box fallback while loading / on error) */
+                        ) : unitModel?.url ? (
+                            /* GLB unit model — LOLO's `animation` field drives the named clip */
                             <ModelLoader
-                                url={unit.modelUrl.url}
+                                url={unitModel.url}
                                 scale={modelScale}
+                                animation={unit.animation ?? 'idle'}
                                 fallbackGeometry="box"
                                 castShadow
                             />
@@ -712,7 +962,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                     </group>
                 );
             },
-            [selectedUnitId, handleUnitClick, resolveUnitFrame, unitScale, gridConfig]
+            [selectedUnitId, handleUnitClick, resolveUnitFrame, unitScale, gridConfig, assetManifest]
         );
 
         // Default feature renderer
@@ -724,12 +974,13 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                 feature: IsometricFeature;
                 position: [number, number, number];
             }) => {
-                // If feature has assetUrl, use ModelLoader to render GLB model
-                if (feature.assetUrl) {
+                // Explicit assetUrl wins, else resolve the feature type against the manifest.
+                const featureModel = feature.assetUrl ?? assetManifest?.features?.[feature.type];
+                if (featureModel?.url) {
                     return (
                         <ModelLoader
                             key={feature.id}
-                            url={feature.assetUrl.url}
+                            url={featureModel.url}
                             position={position}
                             scale={0.5}
                             rotation={[0, (feature as { rotation?: number }).rotation ?? 0, 0]}
@@ -775,7 +1026,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
 
                 return null;
             },
-            [handleFeatureClick]
+            [handleFeatureClick, assetManifest]
         );
 
         // Loading state
@@ -839,14 +1090,22 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                         }}
                     >
                         <CameraController onCameraChange={eventHandlers.handleCameraChange} />
+                        {cameraMode === 'follow' && (
+                            <FollowCamera
+                                target={followTarget}
+                                offset={player ? [0, 2, 9] : [5, 7, 5]}
+                            />
+                        )}
 
-                        {/* Lighting */}
+                        {/* Lighting — bias tuned against shadow acne on flat low-poly faces */}
                         <ambientLight intensity={0.6} />
                         <directionalLight
                             position={[10, 20, 10]}
                             intensity={0.8}
                             castShadow={shadows}
                             shadow-mapSize={[2048, 2048]}
+                            shadow-bias={-0.0004}
+                            shadow-normalBias={0.04}
                         />
                         <hemisphereLight intensity={0.3} color="#87ceeb" groundColor="#362d1d" />
 
@@ -879,6 +1138,18 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                             breaking the framing. Unit/board proportion is controlled by
                             `unitScale` (per-unit). `scale` is a 2D-only concept; in 3D it
                             is accepted for API parity but zoom is camera-driven. */}
+                        {player ? (
+                            /* Side-scroller mode — LOLO-owned pixel space mapped to world units */
+                            <SideScene
+                                player={player}
+                                platforms={platforms}
+                                worldHeight={worldHeight}
+                                ppu={pixelsPerUnit}
+                                playerSprite={playerSprite}
+                                tileSprites={tileSprites}
+                                interpolate={interpolateUnits}
+                            />
+                        ) : (
                         <group>
                             {/* Tiles */}
                             {tiles.map((tile, index) => {
@@ -902,24 +1173,31 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                                 return <Renderer key={feature.id ?? `feature-${index}`} feature={feature} position={position} />;
                             })}
 
-                            {/* Units */}
+                            {/* Units — 2D-format `position:{x,y}` is the tactics-board contract;
+                                explicit x/z (3D format) wins when present. */}
                             {units.map((unit) => {
                                 const position = gridToWorld(
-                                    unit.x ?? 0,
-                                    unit.z ?? unit.y ?? 0,
+                                    unit.x ?? unit.position?.x ?? 0,
+                                    unit.z ?? unit.y ?? unit.position?.y ?? 0,
                                     (unit.elevation ?? 0) + 0.5
                                 );
                                 const Renderer = CustomUnitRenderer || DefaultUnitRenderer;
-                                return <Renderer key={unit.id} unit={unit} position={position} />;
+                                return (
+                                    <LerpedGroup key={unit.id} target={position} enabled={interpolateUnits}>
+                                        <Renderer unit={unit} position={[0, 0, 0]} />
+                                    </LerpedGroup>
+                                );
                             })}
                         </group>
+                        )}
 
                         {/* Custom children */}
                         {children}
 
-                        {/* Camera controls */}
+                        {/* Camera controls — disabled while FollowCamera is authoritative */}
                         <OrbitControls
                             ref={controlsRef}
+                            enabled={cameraMode !== 'follow'}
                             target={cameraTarget}
                             enableDamping
                             dampingFactor={0.05}

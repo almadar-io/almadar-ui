@@ -38,7 +38,7 @@ import { MiniMap } from '../atoms/MiniMap';
 import { HealthBar } from '../atoms/HealthBar';
 import type { ResolvedFrame } from '../../shared/spriteAnimationTypes';
 import { useImageCache } from '../../shared/useImageCache';
-import { resolveAssetSource, blit, type SpriteRef } from '../../shared/atlasSlice';
+import { resolveAssetSource, blit, type SpriteRef } from '../../../../lib/atlasSlice';
 import { useCamera } from '../../shared/hooks/useCamera';
 import { useCanvasGestures } from '../../../../hooks/useCanvasGestures';
 import { useRenderInterpolation } from '../../../../hooks/useRenderInterpolation';
@@ -92,6 +92,10 @@ export interface SidePlayer {
     vy?: number;
     grounded?: boolean;
     facingRight?: boolean;
+    /** Animation state name — driven by the LOLO state machine (e.g. "idle", "walk", "jump"). */
+    animation?: string;
+    /** Frame index within the animation — driven by the LOLO state machine. */
+    frame?: number;
 }
 
 export interface Canvas2DProps {
@@ -406,7 +410,10 @@ function SideView({
 
             // Background.
             const bgImage = bgImg ? loadImage(bgImg.url) : null;
-            if (bgImage) {
+            const bgSrc = bgImage ? resolveAssetSource(bgImage, bgImg, NOOP) : null;
+            if (bgSrc) {
+                blit(ctx, bgSrc, 0, 0, cw, ch);
+            } else if (bgImage) {
                 ctx.drawImage(bgImage, 0, 0, cw, ch);
             } else if (bg) {
                 ctx.fillStyle = bg;
@@ -623,6 +630,8 @@ export function Canvas2D({
     const isFree = projection === 'free';
     // iso/hex/flat painter ordering treats free like flat (row-major, no depth sort).
     const flatLike = projection === 'hex' || projection === 'flat' || isFree;
+    // 'flat' is a true square grid (pitch == tile width, square cells); hex/iso keep diamond metrics.
+    const squareGrid = projection === 'flat';
 
     // Defensive: array props always iterable.
     const tilesProp = Array.isArray(_tilesPropRaw) ? _tilesPropRaw : [];
@@ -733,11 +742,12 @@ export function Canvas2D({
     const effectiveDiamondTopY = diamondTopYProp ?? DIAMOND_TOP_Y;
     const scaledDiamondTopY = effectiveDiamondTopY * scale;
 
-    // In `free` mode tiles are at literal pixels — no centering offset.
+    // In `free` mode tiles are at literal pixels — no centering offset. A square flat grid maps
+    // col→x directly, so the iso skew offset must be zero there too.
     const baseOffsetX = useMemo(() => {
-        if (isFree) return 0;
+        if (isFree || projection === 'flat') return 0;
         return (gridHeight - 1) * (scaledTileWidth / 2);
-    }, [isFree, gridHeight, scaledTileWidth]);
+    }, [isFree, projection, gridHeight, scaledTileWidth]);
 
     // -- Lookup sets for highlights --
     const validMoveSet = useMemo(() => new Set(validMoves.map(p => `${p.x},${p.y}`)), [validMoves]);
@@ -884,7 +894,14 @@ export function Canvas2D({
         // Background.
         if (backgroundImage) {
             const bgImg = getImage(backgroundImage.url);
-            if (bgImg) {
+            const bgSrc = bgImg ? resolveAssetSource(bgImg, backgroundImage, bumpAtlas) : null;
+            if (bgSrc?.rect) {
+                // Atlas slice = one scene image, cover-scaled to the viewport — never tiled.
+                const k = Math.max(viewportSize.width / bgSrc.rect.sw, viewportSize.height / bgSrc.rect.sh);
+                const dw = bgSrc.rect.sw * k;
+                const dh = bgSrc.rect.sh * k;
+                blit(ctx, bgSrc, (viewportSize.width - dw) / 2, (viewportSize.height - dh) / 2, dw, dh);
+            } else if (bgImg) {
                 const cam = cameraRef.current;
                 const patW = bgImg.naturalWidth;
                 const patH = bgImg.naturalHeight;
@@ -931,7 +948,8 @@ export function Canvas2D({
 
             if (src) {
                 const drawW = scaledTileWidth;
-                const drawH = scaledTileWidth / src.aspect;
+                // Square flat grid: the cell IS scaledTileWidth² — fill it exactly.
+                const drawH = squareGrid ? scaledTileWidth : scaledTileWidth / src.aspect;
                 const drawX = pos.x;
                 // Flat-like (hex/flat/free): anchor sprite top at pos.y so the row
                 // pitch controls spacing, not the ISO bounding-box height.
@@ -939,6 +957,14 @@ export function Canvas2D({
                 blit(ctx, src, drawX, drawY, drawW, drawH);
             } else if (img && img.naturalWidth === 0) {
                 ctx.drawImage(img, pos.x, pos.y, scaledTileWidth, scaledTileHeight);
+            } else if (squareGrid) {
+                ctx.fillStyle = tile.terrain === 'water' ? '#3b82f6' :
+                    tile.terrain === 'mountain' ? '#78716c' :
+                        tile.terrain === 'stone' ? '#9ca3af' : '#4ade80';
+                ctx.fillRect(pos.x, pos.y, scaledTileWidth, scaledTileWidth);
+                ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(pos.x, pos.y, scaledTileWidth, scaledTileWidth);
             } else {
                 const centerX = pos.x + scaledTileWidth / 2;
                 const topY = pos.y + scaledDiamondTopY;
@@ -958,9 +984,13 @@ export function Canvas2D({
             }
 
             const drawHighlight = (color: string) => {
+                ctx.fillStyle = color;
+                if (squareGrid) {
+                    ctx.fillRect(pos.x, pos.y, scaledTileWidth, scaledTileWidth);
+                    return;
+                }
                 const centerX = pos.x + scaledTileWidth / 2;
                 const topY = pos.y + scaledDiamondTopY;
-                ctx.fillStyle = color;
                 ctx.beginPath();
                 ctx.moveTo(centerX, topY);
                 ctx.lineTo(pos.x + scaledTileWidth, topY + scaledFloorHeight / 2);
@@ -979,7 +1009,7 @@ export function Canvas2D({
 
             if (debug) {
                 const centerX = pos.x + scaledTileWidth / 2;
-                const centerY = pos.y + scaledFloorHeight / 2 + scaledDiamondTopY;
+                const centerY = squareGrid ? pos.y + scaledTileWidth / 2 : pos.y + scaledFloorHeight / 2 + scaledDiamondTopY;
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
                 ctx.font = `${12 * scale * 2}px monospace`;
                 ctx.textAlign = 'center';
@@ -1008,9 +1038,13 @@ export function Canvas2D({
             const src = img ? resolveAssetSource(img, featureAsset, bumpAtlas) : null;
 
             const centerX = pos.x + scaledTileWidth / 2;
-            const featureGroundY = pos.y + scaledDiamondTopY + scaledFloorHeight * 0.50;
+            const featureGroundY = squareGrid
+                ? pos.y + scaledTileWidth * 0.92
+                : pos.y + scaledDiamondTopY + scaledFloorHeight * 0.50;
             const isCastle = feature.type === 'castle';
-            const featureDrawH = isCastle ? scaledFloorHeight * 3.5 : scaledFloorHeight * 1.6;
+            const featureDrawH = squareGrid
+                ? (isCastle ? scaledTileWidth * 1.4 : scaledTileWidth * 0.8)
+                : (isCastle ? scaledFloorHeight * 3.5 : scaledFloorHeight * 1.6);
             const maxFeatureW = isCastle ? scaledTileWidth * 1.8 : scaledTileWidth * 0.7;
 
             if (src) {
@@ -1056,14 +1090,18 @@ export function Canvas2D({
 
             const isSelected = unit.id === selectedUnitId;
             const centerX = pos.x + scaledTileWidth / 2;
-            const groundY = pos.y + scaledDiamondTopY + scaledFloorHeight * 0.50;
+            const groundY = squareGrid
+                ? pos.y + scaledTileWidth * 0.92
+                : pos.y + scaledDiamondTopY + scaledFloorHeight * 0.50;
 
             // Breathing offset is static — LOLO state machine drives animation externally.
             const breatheOffset = 0;
 
             const unitAsset = resolveUnitAsset(unit);
             const img = unitAsset?.url ? getImage(unitAsset.url) : null;
-            const unitDrawH = scaledFloorHeight * spriteHeightRatio * unitScale;
+            const unitDrawH = squareGrid
+                ? scaledTileWidth * 0.55 * spriteHeightRatio * unitScale
+                : scaledFloorHeight * spriteHeightRatio * unitScale;
             const maxUnitW = scaledTileWidth * spriteMaxWidthRatio * unitScale;
             // Crop `unit.sprite.url` as a sheet ONLY with a real `spriteSheet` atlas (GR-1).
             const unitIsSheet = unit.spriteSheet?.url !== undefined;
@@ -1087,7 +1125,9 @@ export function Canvas2D({
             if (unit.previousPosition && (unit.previousPosition.x !== unit.position.x || unit.previousPosition.y !== unit.position.y)) {
                 const ghostPos = project(unit.previousPosition.x, unit.previousPosition.y, baseOffsetX);
                 const ghostCenterX = ghostPos.x + scaledTileWidth / 2;
-                const ghostGroundY = ghostPos.y + scaledDiamondTopY + scaledFloorHeight * 0.50;
+                const ghostGroundY = squareGrid
+                    ? ghostPos.y + scaledTileWidth * 0.92
+                    : ghostPos.y + scaledDiamondTopY + scaledFloorHeight * 0.50;
 
                 ctx.save();
                 ctx.globalAlpha = 0.25;
@@ -1179,17 +1219,25 @@ export function Canvas2D({
 
         // Draw ActiveEffect[] sprites after units.
         for (const fx of effects) {
-            const spriteUrl = assetManifest?.effects?.[fx.key]?.url;
-            if (!spriteUrl) continue;
-            const img = getImage(spriteUrl);
+            const fxAsset = assetManifest?.effects?.[fx.key];
+            if (!fxAsset?.url) continue;
+            const img = getImage(fxAsset.url);
             if (!img) continue;
+            const src = resolveAssetSource(img, fxAsset, bumpAtlas);
             const pos = project(fx.x, fx.y, baseOffsetX);
             const cx = pos.x + scaledTileWidth / 2;
-            const cy = pos.y + scaledDiamondTopY + scaledFloorHeight * 0.5;
+            const cy = squareGrid ? pos.y + scaledTileWidth / 2 : pos.y + scaledDiamondTopY + scaledFloorHeight * 0.5;
             const alpha = Math.min(1, fx.ttl / 4);
             const prev = ctx.globalAlpha;
             ctx.globalAlpha = alpha;
-            ctx.drawImage(img, cx - img.naturalWidth / 2, cy - img.naturalHeight / 2);
+            if (src?.rect) {
+                // Atlas frame: one named sub-rect, scaled to the tile footprint.
+                const dw = scaledTileWidth;
+                const dh = dw / src.aspect;
+                blit(ctx, src, cx - dw / 2, cy - dh / 2, dw, dh);
+            } else {
+                ctx.drawImage(img, cx - img.naturalWidth / 2, cy - img.naturalHeight / 2);
+            }
             ctx.globalAlpha = prev;
         }
 
@@ -1198,7 +1246,7 @@ export function Canvas2D({
         ctx.restore();
     }, [
         sortedTiles, units, features, selectedUnitId, effects,
-        project, flatLike, scale, debug, resolveTerrainAsset, resolveFeatureAsset, resolveUnitAsset, resolveFrameForUnit, getImage, bumpAtlas,
+        project, flatLike, squareGrid, scale, debug, resolveTerrainAsset, resolveFeatureAsset, resolveUnitAsset, resolveFrameForUnit, getImage, bumpAtlas,
         baseOffsetX, scaledTileWidth, scaledTileHeight, scaledFloorHeight, scaledDiamondTopY,
         validMoveSet, attackTargetSet, hoveredTile, viewportSize, onDrawEffects,
         backgroundImage, cameraRef, unitScale, assetManifest, spriteHeightRatio, spriteMaxWidthRatio,
@@ -1215,12 +1263,12 @@ export function Canvas2D({
         if (!unit?.position) return;
         const pos = project(unit.position.x, unit.position.y, baseOffsetX);
         const centerX = pos.x + scaledTileWidth / 2;
-        const centerY = pos.y + scaledDiamondTopY + scaledFloorHeight / 2;
+        const centerY = squareGrid ? pos.y + scaledTileWidth / 2 : pos.y + scaledDiamondTopY + scaledFloorHeight / 2;
         targetCameraRef.current = {
             x: centerX - viewportSize.width / 2,
             y: centerY - viewportSize.height / 2,
         };
-    }, [camera, selectedUnitId, units, project, baseOffsetX, scaledTileWidth, scaledDiamondTopY, scaledFloorHeight, viewportSize, targetCameraRef]);
+    }, [camera, selectedUnitId, units, project, baseOffsetX, scaledTileWidth, squareGrid, scaledDiamondTopY, scaledFloorHeight, viewportSize, targetCameraRef]);
 
     // =========================================================================
     // Opt-in unit-position interpolation (grid projections). DEFAULT OFF —
@@ -1319,12 +1367,12 @@ export function Canvas2D({
 
         const world = screenToWorld(e.clientX, e.clientY, canvasRef.current, viewportSize);
         const adjustedX = world.x - scaledTileWidth / 2;
-        const adjustedY = world.y - scaledDiamondTopY - scaledFloorHeight / 2;
+        const adjustedY = squareGrid ? world.y - scaledTileWidth / 2 : world.y - scaledDiamondTopY - scaledFloorHeight / 2;
         const isoPos = unproject(adjustedX, adjustedY, baseOffsetX);
 
         const tileExists = tilesProp.some(t => t.x === isoPos.x && t.y === isoPos.y);
         if (tileExists) eventBus.emit(`UI:${tileHoverEvent}`, { x: isoPos.x, y: isoPos.y });
-    }, [screenToWorld, viewportSize, scaledTileWidth, scaledDiamondTopY, scaledFloorHeight, unproject, baseOffsetX, tilesProp, tileHoverEvent, eventBus]);
+    }, [screenToWorld, viewportSize, scaledTileWidth, squareGrid, scaledDiamondTopY, scaledFloorHeight, unproject, baseOffsetX, tilesProp, tileHoverEvent, eventBus]);
 
     const handleCanvasPointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
         singlePointerActiveRef.current = false;
@@ -1334,7 +1382,7 @@ export function Canvas2D({
 
         const world = screenToWorld(e.clientX, e.clientY, canvasRef.current, viewportSize);
         const adjustedX = world.x - scaledTileWidth / 2;
-        const adjustedY = world.y - scaledDiamondTopY - scaledFloorHeight / 2;
+        const adjustedY = squareGrid ? world.y - scaledTileWidth / 2 : world.y - scaledDiamondTopY - scaledFloorHeight / 2;
         const isoPos = unproject(adjustedX, adjustedY, baseOffsetX);
 
         const clickedUnit = units.find(u => u.position?.x === isoPos.x && u.position?.y === isoPos.y);
@@ -1344,7 +1392,7 @@ export function Canvas2D({
             const tileExists = tilesProp.some(t => t.x === isoPos.x && t.y === isoPos.y);
             if (tileExists) eventBus.emit(`UI:${tileClickEvent}`, { x: isoPos.x, y: isoPos.y });
         }
-    }, [enableCamera, handlePointerUp, dragDistance, screenToWorld, viewportSize, scaledTileWidth, scaledDiamondTopY, scaledFloorHeight, unproject, baseOffsetX, units, tilesProp, unitClickEvent, tileClickEvent, eventBus]);
+    }, [enableCamera, handlePointerUp, dragDistance, screenToWorld, viewportSize, scaledTileWidth, squareGrid, scaledDiamondTopY, scaledFloorHeight, unproject, baseOffsetX, units, tilesProp, unitClickEvent, tileClickEvent, eventBus]);
 
     const handleCanvasPointerLeave = useCallback(() => {
         handleMouseLeave();
@@ -1406,11 +1454,12 @@ export function Canvas2D({
             .map(u => {
                 const pos = project(u.position!.x, u.position!.y, baseOffsetX);
                 const cam = cameraRef.current;
+                const anchorY = squareGrid ? pos.y + scaledTileWidth * 0.92 : pos.y + scaledDiamondTopY + scaledFloorHeight * 0.5;
                 const screenX = (pos.x + scaledTileWidth / 2 - (cam.x + viewportSize.width / 2)) * cam.zoom + viewportSize.width / 2;
-                const screenY = (pos.y + scaledDiamondTopY + scaledFloorHeight * 0.5 - (cam.y + viewportSize.height / 2)) * cam.zoom + viewportSize.height / 2;
+                const screenY = (anchorY - (cam.y + viewportSize.height / 2)) * cam.zoom + viewportSize.height / 2;
                 return { unit: u, screenX, screenY };
             });
-    }, [units, project, baseOffsetX, scaledTileWidth, scaledDiamondTopY, scaledFloorHeight, viewportSize, cameraRef]);
+    }, [units, project, baseOffsetX, scaledTileWidth, squareGrid, scaledDiamondTopY, scaledFloorHeight, viewportSize, cameraRef]);
 
     // =========================================================================
     // Render

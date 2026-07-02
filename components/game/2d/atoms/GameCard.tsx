@@ -6,6 +6,7 @@ import { useEventBus } from '../../../../hooks/useEventBus';
 import { Box } from '../../../core/atoms/Box';
 import { Button } from '../../../core/atoms/Button';
 import { Typography } from '../../../core/atoms/Typography';
+import { AtlasImage } from '../../../core/atoms/AtlasImage';
 import { GameIcon } from './GameIcon';
 
 export interface GameCardProps {
@@ -77,21 +78,16 @@ export function GameCard({
 
   const artPx = artPxMap[size];
 
-  const frameStyle: React.CSSProperties = frameAsset?.url
-    ? { backgroundImage: `url(${frameAsset.url})`, backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat' }
-    : {};
-
   return (
     <Button
       variant="ghost"
       onClick={handleClick}
       disabled={disabled}
       title={name}
-      style={frameStyle}
       className={cn(
-        'relative flex flex-col items-center rounded-interactive',
-        'bg-card/90 px-1.5 pt-1.5 pb-1 transition-all duration-150',
-        frameAsset?.url ? 'border-0' : 'border-2',
+        'relative isolate flex flex-col items-center rounded-interactive',
+        'px-1.5 pt-1.5 pb-1 transition-all duration-150',
+        frameAsset?.url ? 'border-0' : 'border-2 bg-card/90',
         cardSizeMap[size],
         disabled
           ? 'border-border opacity-50 cursor-not-allowed'
@@ -101,6 +97,9 @@ export function GameCard({
         className,
       )}
     >
+      {frameAsset?.url && (
+        <AtlasImage asset={frameAsset} fill fit="fill" aria-hidden style={{ zIndex: -1 }} />
+      )}
       {cost != null && (
         <Typography
           as="span"

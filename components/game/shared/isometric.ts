@@ -106,8 +106,10 @@ export function isoToScreen(
     }
 
     if (layout === 'flat') {
+        // True top-down square grid: vertical pitch == horizontal pitch. (The old FLOOR_HEIGHT
+        // pitch made every square tile overlap the next row by 50% — the woven-strip artifact.)
         const screenX = tileX * scaledTileWidth + baseOffsetX;
-        const screenY = tileY * scaledFloorHeight;
+        const screenY = tileY * scaledTileWidth;
         return { x: screenX, y: screenY };
     }
 
@@ -147,7 +149,7 @@ export function screenToIso(
 
     if (layout === 'flat') {
         const col = Math.round((screenX - baseOffsetX) / scaledTileWidth);
-        const row = Math.round(screenY / scaledFloorHeight);
+        const row = Math.round(screenY / scaledTileWidth);
         return { x: col, y: row };
     }
 

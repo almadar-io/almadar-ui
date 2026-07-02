@@ -3,6 +3,7 @@ import * as React from 'react';
 import type { Asset } from '@almadar/core';
 import { cn } from '../../../../lib/cn';
 import { resolveIcon, type IconInput } from '../../../core/atoms/Icon';
+import { AtlasImage } from '../../../core/atoms/AtlasImage';
 
 const sizeMap = {
   sm: 16,
@@ -28,12 +29,10 @@ export function GameIcon({ assetUrl, icon, size = 'md', alt, className }: GameIc
 
   if (assetUrl?.url) {
     return (
-      <img
-        src={assetUrl.url}
+      <AtlasImage
+        asset={assetUrl}
+        size={px}
         alt={alt ?? assetUrl.category ?? ''}
-        width={px}
-        height={px}
-        style={{ imageRendering: 'pixelated', objectFit: 'contain', width: px, height: px }}
         className={cn('flex-shrink-0', className)}
       />
     );

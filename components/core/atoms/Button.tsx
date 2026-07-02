@@ -5,6 +5,7 @@ import { cn } from "../../../lib/cn";
 import { Loader2, type LucideIcon } from "lucide-react";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { Icon, type IconInput } from "./Icon";
+import { AtlasImage } from "./AtlasImage";
 
 export type ButtonVariant =
   | "primary"
@@ -174,7 +175,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 
     const px = size === 'sm' ? 16 : size === 'lg' ? 20 : 16;
     const resolvedLeftIcon = iconAsset?.url
-      ? <img src={iconAsset.url} alt={iconAsset.name ?? iconAsset.category ?? ''} width={px} height={px} style={{ imageRendering: 'pixelated', objectFit: 'contain', width: px, height: px }} className="flex-shrink-0" />
+      ? <AtlasImage asset={iconAsset} size={px} alt={iconAsset.name ?? iconAsset.category ?? ''} className="flex-shrink-0" />
       : resolveIconProp(leftIconValue, iconSizeStyles[size]);
     const resolvedRightIcon = resolveIconProp(rightIconValue, iconSizeStyles[size]);
 

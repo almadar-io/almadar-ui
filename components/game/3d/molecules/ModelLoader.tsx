@@ -10,6 +10,7 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import * as THREE from 'three';
+import { useFrame } from '@react-three/fiber';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils';
 import { createLogger } from '@almadar/logger';
@@ -35,6 +36,12 @@ export interface ModelLoaderProps {
     onHover?: (hovered: boolean) => void;
     /** Fallback geometry type */
     fallbackGeometry?: 'box' | 'sphere' | 'cylinder' | 'none';
+    /**
+     * Named GLB animation clip to play (e.g. "idle", "walk") — the LOLO state machine
+     * drives this from the unit's `animation` field. Matched case-insensitively; an
+     * unknown or absent name leaves the model static (bind pose).
+     */
+    animation?: string;
     /** Enable shadows */
     castShadow?: boolean;
     /** Receive shadows */
@@ -49,6 +56,7 @@ export interface ModelLoaderProps {
 
 interface ModelLoadState {
     model: THREE.Group | null;
+    clips: THREE.AnimationClip[];
     isLoading: boolean;
     error: Error | null;
 }
@@ -75,13 +83,14 @@ function detectAssetRoot(modelUrl: string): string {
 function useGLTFModel(url: string, resourceBasePath?: string): ModelLoadState {
     const [state, setState] = useState<ModelLoadState>({
         model: null,
+        clips: [],
         isLoading: false,
         error: null,
     });
 
     useEffect(() => {
         if (!url) {
-            setState({ model: null, isLoading: false, error: null });
+            setState({ model: null, clips: [], isLoading: false, error: null });
             return;
         }
 
@@ -101,9 +110,10 @@ function useGLTFModel(url: string, resourceBasePath?: string): ModelLoadState {
         loader.load(
             url,
             (gltf) => {
-                log.debug('Loaded', { url });
+                log.debug('Loaded', { url, clips: gltf.animations.length });
                 setState({
                     model: gltf.scene,
+                    clips: gltf.animations,
                     isLoading: false,
                     error: null,
                 });
@@ -113,6 +123,7 @@ function useGLTFModel(url: string, resourceBasePath?: string): ModelLoadState {
                 log.warn('Failed', { url, error: err instanceof Error ? err : String(err) });
                 setState({
                     model: null,
+                    clips: [],
                     isLoading: false,
                     error: err instanceof Error ? err : new Error(String(err)),
                 });
@@ -139,8 +150,9 @@ export function ModelLoader({
     castShadow = true,
     receiveShadow = true,
     resourceBasePath,
+    animation,
 }: ModelLoaderProps): React.JSX.Element {
-    const { model: loadedModel, isLoading, error } = useGLTFModel(url, resourceBasePath);
+    const { model: loadedModel, clips, isLoading, error } = useGLTFModel(url, resourceBasePath);
 
     // Clone and prepare the model
     const model = useMemo(() => {
@@ -163,6 +175,25 @@ export function ModelLoader({
 
         return cloned;
     }, [loadedModel, castShadow, receiveShadow]);
+
+    // Clip playback — the LOLO state machine drives `animation` (a named GLB clip);
+    // clip tracks bind by node NAME so they play on the SkeletonUtils clone as-is.
+    const mixer = useMemo(() => (model ? new THREE.AnimationMixer(model) : null), [model]);
+    useEffect(() => {
+        if (!mixer || !animation || clips.length === 0) return;
+        const wanted = animation.toLowerCase();
+        const clip = clips.find((c) => c.name === animation)
+            ?? clips.find((c) => c.name.toLowerCase() === wanted);
+        if (!clip) return;
+        const action = mixer.clipAction(clip);
+        action.reset().fadeIn(0.15).play();
+        return () => {
+            action.fadeOut(0.15);
+        };
+    }, [mixer, clips, animation]);
+    useFrame((_, delta) => {
+        mixer?.update(delta);
+    });
 
     // Normalize the model to a unit cube (max dimension = 1) so a GLB's intrinsic export
     // size doesn't blow it up. The `scale` prop then means the model's world-size in cells

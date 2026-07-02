@@ -32,14 +32,8 @@ const sizeMap = {
   xl: 'text-4xl',
 };
 
-const DEFAULT_ASSET_URL: Asset = {
-  url: 'https://almadar-kflow-assets.web.app/shared/effects/particles/star_01.png',
-  role: 'effect',
-  category: 'effect',
-};
-
 export function ScoreDisplay({
-  assetUrl = DEFAULT_ASSET_URL,
+  assetUrl,
   value,
   score,
   label,

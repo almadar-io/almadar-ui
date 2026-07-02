@@ -2,6 +2,7 @@ import React from "react";
 import { X } from "lucide-react";
 import { cn } from "../../../lib/cn";
 import { Icon, type IconInput } from "./Icon";
+import { AtlasImage } from "./AtlasImage";
 import type { Asset } from "@almadar/core";
 
 export type BadgeVariant =
@@ -90,7 +91,7 @@ export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
     };
     const iconPx = size === 'lg' ? 20 : 16;
     const resolvedIcon = iconAsset?.url
-      ? <img src={iconAsset.url} alt={iconAsset.name ?? iconAsset.category ?? ''} width={iconPx} height={iconPx} style={{ imageRendering: 'pixelated', objectFit: 'contain', width: iconPx, height: iconPx }} className="flex-shrink-0" />
+      ? <AtlasImage asset={iconAsset} size={iconPx} alt={iconAsset.name ?? iconAsset.category ?? ''} className="flex-shrink-0" />
       : typeof icon === "string"
         ? <Icon name={icon} className={iconSizes[size]} />
         : icon ? <Icon icon={icon} className={iconSizes[size]} /> : null;
