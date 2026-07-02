@@ -40,3 +40,6 @@ export * from './visualizer/index';
 
 // Content parsing
 export * from './parseContentSegments';
+
+// Al-Jazari state-machine diagram layout (framework-free — server-side SVG renderers use this)
+export * from './jazari/index';
