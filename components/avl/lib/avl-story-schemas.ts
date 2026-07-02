@@ -48,7 +48,6 @@ export const CLINIC_SCHEMA: OrbitalSchema = {
         { name: 'status', type: 'string', default: 'waiting' },
         { name: 'arrivalTime', type: 'string' },
       ],
-      persistence: 'runtime',
     }),
   ],
 };
@@ -73,7 +72,6 @@ export const TASK_SCHEMA: OrbitalSchema = {
         { name: 'dueDate', type: 'string' },
         { name: 'assignee', type: 'string' },
       ],
-      persistence: 'persistent',
     }),
     stdList({
       entityName: 'FocusTimer',
@@ -91,7 +89,6 @@ export const TASK_SCHEMA: OrbitalSchema = {
         { name: 'itemId', type: 'string' },
         { name: 'reason', type: 'string' },
       ],
-      persistence: 'runtime',
       pagePath: '/archive',
     }),
   ],

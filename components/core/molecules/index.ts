@@ -120,6 +120,13 @@ export {
   type ChemistryBond,
   type ChemistryArrow,
 } from '../../learning/molecules/ChemistryCanvas';
+export {
+  AlgorithmCanvas,
+  type AlgorithmCanvasProps,
+  type AlgorithmBar,
+  type AlgorithmCell,
+  type AlgorithmPointer,
+} from '../../learning/molecules/AlgorithmCanvas';
 
 // Graph visualization
 export { GraphView, type GraphViewProps, type GraphViewNode, type GraphViewEdge } from './GraphView';

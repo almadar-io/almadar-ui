@@ -38,6 +38,7 @@ import { MiniMap } from '../atoms/MiniMap';
 import { HealthBar } from '../atoms/HealthBar';
 import type { ResolvedFrame } from '../../shared/spriteAnimationTypes';
 import { useImageCache } from '../../shared/useImageCache';
+import { resolveAssetSource, blit, type SpriteRef } from '../../shared/atlasSlice';
 import { useCamera } from '../../shared/hooks/useCamera';
 import { useCanvasGestures } from '../../../../hooks/useCanvasGestures';
 import { useRenderInterpolation } from '../../../../hooks/useRenderInterpolation';
@@ -178,12 +179,12 @@ export interface Canvas2DProps {
     diamondTopY?: number;
 
     // --- Asset resolution (project-agnostic) ---
-    /** Resolve terrain sprite URL from terrain key */
-    getTerrainSprite?: (terrain: string) => string | undefined;
-    /** Resolve feature sprite URL from feature type key */
-    getFeatureSprite?: (featureType: string) => string | undefined;
-    /** Resolve unit static sprite URL */
-    getUnitSprite?: (unit: IsometricUnit) => string | undefined;
+    /** Resolve terrain sprite from terrain key — a bare URL or an Asset (atlas sub-texture ref). */
+    getTerrainSprite?: (terrain: string) => string | Asset | undefined;
+    /** Resolve feature sprite from feature type key — a bare URL or an Asset. */
+    getFeatureSprite?: (featureType: string) => string | Asset | undefined;
+    /** Resolve unit static sprite — a bare URL or an Asset. */
+    getUnitSprite?: (unit: IsometricUnit) => string | Asset | undefined;
     /** Resolve animated sprite sheet frame for a unit */
     resolveUnitFrame?: (unitId: string) => ResolvedFrame | null;
     /** Additional sprite URLs to preload (e.g., effect sprites) */
@@ -226,6 +227,10 @@ const PLATFORM_COLORS: Record<string, string> = {
     hazard: '#c0392b',
     goal: '#f1c40f',
 };
+/** SideView runs a continuous rAF loop, so a lazily-fetched atlas is picked up on the next
+ *  frame — no re-render trigger needed. */
+const NOOP = (): void => { /* continuous loop re-reads the atlas cache next frame */ };
+
 const PLAYER_COLOR = '#3498db';
 const PLAYER_EYE_COLOR = '#ffffff';
 const SKY_GRADIENT_TOP = '#1a1a2e';
@@ -438,16 +443,20 @@ function SideView({
                 const platType = plat.type ?? 'ground';
                 const spriteAsset = tSprites?.[platType];
                 const tileImg = spriteAsset ? loadImage(spriteAsset.url) : null;
+                const tileSrc = tileImg ? resolveAssetSource(tileImg, spriteAsset, NOOP) : null;
 
-                if (tileImg) {
-                    const tileW = tileImg.naturalWidth;
-                    const tileH = tileImg.naturalHeight;
+                if (tileSrc) {
+                    // Repeat the (whole image OR atlas sub-rect) horizontally across the platform.
+                    const originX = tileSrc.rect ? tileSrc.rect.sx : 0;
+                    const originY = tileSrc.rect ? tileSrc.rect.sy : 0;
+                    const tileW = tileSrc.rect ? tileSrc.rect.sw : tileImg!.naturalWidth;
+                    const tileH = tileSrc.rect ? tileSrc.rect.sh : tileImg!.naturalHeight;
                     const scaleH = plat.height / tileH;
                     const scaledW = tileW * scaleH;
                     for (let tx = 0; tx < plat.width; tx += scaledW) {
                         const drawW = Math.min(scaledW, plat.width - tx);
                         const srcW = drawW / scaleH;
-                        ctx.drawImage(tileImg, 0, 0, srcW, tileH, platX + tx, platY, drawW, plat.height);
+                        ctx.drawImage(tileImg!, originX, originY, srcW, tileH, platX + tx, platY, drawW, plat.height);
                     }
                 } else {
                     const color = PLATFORM_COLORS[platType] ?? PLATFORM_COLORS.ground;
@@ -483,15 +492,16 @@ function SideView({
             const ppy = py - camY;
             const facingRight = auth.facingRight ?? true;
             const playerImg = pSprite ? loadImage(pSprite.url) : null;
+            const playerSrc = playerImg ? resolveAssetSource(playerImg, pSprite, NOOP) : null;
 
-            if (playerImg) {
+            if (playerSrc) {
                 ctx.save();
                 if (!facingRight) {
                     ctx.translate(ppx + pw, ppy);
                     ctx.scale(-1, 1);
-                    ctx.drawImage(playerImg, 0, 0, pw, ph);
+                    blit(ctx, playerSrc, 0, 0, pw, ph);
                 } else {
-                    ctx.drawImage(playerImg, ppx, ppy, pw, ph);
+                    blit(ctx, playerSrc, ppx, ppy, pw, ph);
                 }
                 ctx.restore();
             } else {
@@ -736,10 +746,11 @@ export function Canvas2D({
     // -- Collect all sprite URLs for preloading --
     const spriteUrls = useMemo(() => {
         const urls: string[] = [];
+        const toUrl = (x: string | Asset | undefined): string | undefined => (typeof x === 'string' ? x : x?.url);
         for (const tile of sortedTiles) {
             if (tile.terrainSprite) urls.push(tile.terrainSprite.url);
             else if (getTerrainSprite) {
-                const url = getTerrainSprite(tile.terrain ?? '');
+                const url = toUrl(getTerrainSprite(tile.terrain ?? ''));
                 if (url) urls.push(url);
             } else {
                 const url = assetManifest?.terrains?.[tile.terrain ?? '']?.url;
@@ -749,7 +760,7 @@ export function Canvas2D({
         for (const feature of features) {
             if (feature.sprite) urls.push(feature.sprite.url);
             else if (getFeatureSprite) {
-                const url = getFeatureSprite(feature.type);
+                const url = toUrl(getFeatureSprite(feature.type));
                 if (url) urls.push(url);
             } else {
                 const url = assetManifest?.features?.[feature.type]?.url;
@@ -759,7 +770,7 @@ export function Canvas2D({
         for (const unit of units) {
             if (unit.sprite) urls.push(unit.sprite.url);
             else if (getUnitSprite) {
-                const url = getUnitSprite(unit);
+                const url = toUrl(getUnitSprite(unit));
                 if (url) urls.push(url);
             } else if (unit.unitType) {
                 const url = assetManifest?.units?.[unit.unitType]?.url;
@@ -804,17 +815,31 @@ export function Canvas2D({
         lerpToTarget,
     } = useCamera();
 
-    // -- Sprite resolvers --
-    const resolveTerrainSpriteUrl = useCallback((tile: IsometricTile): string | undefined => {
-        return tile.terrainSprite?.url || getTerrainSprite?.(tile.terrain ?? '') || assetManifest?.terrains?.[tile.terrain ?? '']?.url;
+    // Re-render when a lazily-fetched atlas JSON lands (see atlasSlice.getAtlas).
+    const [, setAtlasVersion] = useState(0);
+    const bumpAtlas = useCallback(() => setAtlasVersion((v) => v + 1), []);
+
+    // -- Sprite resolvers — return the full Asset (may carry an atlas sub-texture ref). A bare
+    //    URL from a legacy string resolver is normalized to `{ url }`. --
+    const resolveTerrainAsset = useCallback((tile: IsometricTile): SpriteRef | undefined => {
+        if (tile.terrainSprite) return tile.terrainSprite;
+        const s = getTerrainSprite?.(tile.terrain ?? '');
+        if (s) return typeof s === 'string' ? { url: s } : s;
+        return assetManifest?.terrains?.[tile.terrain ?? ''];
     }, [getTerrainSprite, assetManifest]);
 
-    const resolveFeatureSpriteUrl = useCallback((featureType: string): string | undefined => {
-        return getFeatureSprite?.(featureType) || assetManifest?.features?.[featureType]?.url;
+    const resolveFeatureAsset = useCallback((feature: IsometricFeature): SpriteRef | undefined => {
+        if (feature.sprite) return feature.sprite;
+        const s = getFeatureSprite?.(feature.type);
+        if (s) return typeof s === 'string' ? { url: s } : s;
+        return assetManifest?.features?.[feature.type];
     }, [getFeatureSprite, assetManifest]);
 
-    const resolveUnitSpriteUrl = useCallback((unit: IsometricUnit): string | undefined => {
-        return unit.sprite?.url || getUnitSprite?.(unit) || (unit.unitType ? assetManifest?.units?.[unit.unitType]?.url : undefined);
+    const resolveUnitAsset = useCallback((unit: IsometricUnit): SpriteRef | undefined => {
+        if (unit.sprite) return unit.sprite;
+        const s = getUnitSprite?.(unit);
+        if (s) return typeof s === 'string' ? { url: s } : s;
+        return unit.unitType ? assetManifest?.units?.[unit.unitType] : undefined;
     }, [getUnitSprite, assetManifest]);
 
     // -- Minimap data --
@@ -900,21 +925,20 @@ export function Canvas2D({
                 continue;
             }
 
-            const spriteUrl = resolveTerrainSpriteUrl(tile);
-            const img = spriteUrl ? getImage(spriteUrl) : null;
+            const terrainAsset = resolveTerrainAsset(tile);
+            const img = terrainAsset?.url ? getImage(terrainAsset.url) : null;
+            const src = img ? resolveAssetSource(img, terrainAsset, bumpAtlas) : null;
 
-            if (img) {
-                if (img.naturalWidth === 0) {
-                    ctx.drawImage(img, pos.x, pos.y, scaledTileWidth, scaledTileHeight);
-                } else {
-                    const drawW = scaledTileWidth;
-                    const drawH = scaledTileWidth * (img.naturalHeight / img.naturalWidth);
-                    const drawX = pos.x;
-                    // Flat-like (hex/flat/free): anchor sprite top at pos.y so the row
-                    // pitch controls spacing, not the ISO bounding-box height.
-                    const drawY = flatLike ? pos.y : pos.y + scaledTileHeight - drawH;
-                    ctx.drawImage(img, drawX, drawY, drawW, drawH);
-                }
+            if (src) {
+                const drawW = scaledTileWidth;
+                const drawH = scaledTileWidth / src.aspect;
+                const drawX = pos.x;
+                // Flat-like (hex/flat/free): anchor sprite top at pos.y so the row
+                // pitch controls spacing, not the ISO bounding-box height.
+                const drawY = flatLike ? pos.y : pos.y + scaledTileHeight - drawH;
+                blit(ctx, src, drawX, drawY, drawW, drawH);
+            } else if (img && img.naturalWidth === 0) {
+                ctx.drawImage(img, pos.x, pos.y, scaledTileWidth, scaledTileHeight);
             } else {
                 const centerX = pos.x + scaledTileWidth / 2;
                 const topY = pos.y + scaledDiamondTopY;
@@ -979,8 +1003,9 @@ export function Canvas2D({
                 continue;
             }
 
-            const spriteUrl = feature.sprite?.url || resolveFeatureSpriteUrl(feature.type);
-            const img = spriteUrl ? getImage(spriteUrl) : null;
+            const featureAsset = resolveFeatureAsset(feature);
+            const img = featureAsset?.url ? getImage(featureAsset.url) : null;
+            const src = img ? resolveAssetSource(img, featureAsset, bumpAtlas) : null;
 
             const centerX = pos.x + scaledTileWidth / 2;
             const featureGroundY = pos.y + scaledDiamondTopY + scaledFloorHeight * 0.50;
@@ -988,8 +1013,8 @@ export function Canvas2D({
             const featureDrawH = isCastle ? scaledFloorHeight * 3.5 : scaledFloorHeight * 1.6;
             const maxFeatureW = isCastle ? scaledTileWidth * 1.8 : scaledTileWidth * 0.7;
 
-            if (img) {
-                const ar = img.naturalWidth / img.naturalHeight;
+            if (src) {
+                const ar = src.aspect;
                 let drawH = featureDrawH;
                 let drawW = featureDrawH * ar;
                 if (drawW > maxFeatureW) {
@@ -998,7 +1023,7 @@ export function Canvas2D({
                 }
                 const drawX = centerX - drawW / 2;
                 const drawY = featureGroundY - drawH;
-                ctx.drawImage(img, drawX, drawY, drawW, drawH);
+                blit(ctx, src, drawX, drawY, drawW, drawH);
             } else {
                 const color = FEATURE_COLORS[feature.type] || FEATURE_COLORS.default;
                 ctx.beginPath();
@@ -1036,18 +1061,21 @@ export function Canvas2D({
             // Breathing offset is static — LOLO state machine drives animation externally.
             const breatheOffset = 0;
 
-            const unitSpriteUrl = resolveUnitSpriteUrl(unit);
-            const img = unitSpriteUrl ? getImage(unitSpriteUrl) : null;
+            const unitAsset = resolveUnitAsset(unit);
+            const img = unitAsset?.url ? getImage(unitAsset.url) : null;
             const unitDrawH = scaledFloorHeight * spriteHeightRatio * unitScale;
             const maxUnitW = scaledTileWidth * spriteMaxWidthRatio * unitScale;
             // Crop `unit.sprite.url` as a sheet ONLY with a real `spriteSheet` atlas (GR-1).
             const unitIsSheet = unit.spriteSheet?.url !== undefined;
+            // Static atlas sub-texture (a packed sheet + named/indexed sprite), distinct from the
+            // animated `spriteSheet` grid path above.
+            const unitSrc = (img && !unitIsSheet) ? resolveAssetSource(img, unitAsset, bumpAtlas) : null;
             const SHEET_ROWS = 5;
             const sheetFrameW = img ? img.naturalWidth / SHEET_COLUMNS : 0;
             const sheetFrameH = img ? img.naturalHeight / SHEET_ROWS : 0;
             const frameW = unitIsSheet ? sheetFrameW : (img?.naturalWidth ?? 1);
             const frameH = unitIsSheet ? sheetFrameH : (img?.naturalHeight ?? 1);
-            const ar = frameW / (frameH || 1);
+            const ar = unitIsSheet ? (sheetFrameW / (sheetFrameH || 1)) : (unitSrc ? unitSrc.aspect : (frameW / (frameH || 1)));
             let drawH = unitDrawH;
             let drawW = unitDrawH * ar;
             if (drawW > maxUnitW) {
@@ -1066,6 +1094,8 @@ export function Canvas2D({
                 if (img) {
                     if (unitIsSheet) {
                         ctx.drawImage(img, 0, 0, sheetFrameW, sheetFrameH, ghostCenterX - drawW / 2, ghostGroundY - drawH, drawW, drawH);
+                    } else if (unitSrc) {
+                        blit(ctx, unitSrc, ghostCenterX - drawW / 2, ghostGroundY - drawH, drawW, drawH);
                     } else {
                         ctx.drawImage(img, ghostCenterX - drawW / 2, ghostGroundY - drawH, drawW, drawH);
                     }
@@ -1119,6 +1149,8 @@ export function Canvas2D({
                 const drawUnit = (x: number) => {
                     if (unitIsSheet) {
                         ctx.drawImage(img, 0, 0, sheetFrameW, sheetFrameH, x, spriteY, drawW, drawH);
+                    } else if (unitSrc) {
+                        blit(ctx, unitSrc, x, spriteY, drawW, drawH);
                     } else {
                         ctx.drawImage(img, x, spriteY, drawW, drawH);
                     }
@@ -1166,7 +1198,7 @@ export function Canvas2D({
         ctx.restore();
     }, [
         sortedTiles, units, features, selectedUnitId, effects,
-        project, flatLike, scale, debug, resolveTerrainSpriteUrl, resolveFeatureSpriteUrl, resolveUnitSpriteUrl, resolveFrameForUnit, getImage,
+        project, flatLike, scale, debug, resolveTerrainAsset, resolveFeatureAsset, resolveUnitAsset, resolveFrameForUnit, getImage, bumpAtlas,
         baseOffsetX, scaledTileWidth, scaledTileHeight, scaledFloorHeight, scaledDiamondTopY,
         validMoveSet, attackTargetSet, hoveredTile, viewportSize, onDrawEffects,
         backgroundImage, cameraRef, unitScale, assetManifest, spriteHeightRatio, spriteMaxWidthRatio,
