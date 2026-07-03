@@ -56,8 +56,10 @@ export interface GameEvent {
     message?: string;
 }
 
-/** Camera mode for 3D view. `follow` tracks the side-view player (or the selected unit). */
-export type CameraMode = 'isometric' | 'perspective' | 'top-down' | 'follow';
+/** Camera mode for 3D view.
+ *  - `follow` tracks the side-view player (or the selected unit) from a fixed offset.
+ *  - `chase` sits behind + above the followed unit relative to its `heading` (driving). */
+export type CameraMode = 'isometric' | 'perspective' | 'top-down' | 'follow' | 'chase';
 
 /** Per-role model manifest — the 3D analogue of Canvas2D's assetManifest (values are GLB Assets). */
 export interface GameCanvas3DAssetManifest {
@@ -476,6 +478,11 @@ function SideScene({
 const UNIT_BASE_MODEL_SCALE = 0.5;
 const UNIT_BASE_BILLBOARD_HEIGHT = 1.2;
 const UNIT_BASE_PRIMITIVE_RADIUS = 0.3;
+// Y offset that seats a base-pivoted unit/feature model on the tile surface.
+// Tiles render flush at grid-Y (primitive plate is 0.2 tall → top ≈ 0.1; GLB
+// terrain plates are similarly thin), so units/features sit just above that.
+// NOT the old hardcoded +0.5, which floated Kenney GLBs ~½ cell above the board.
+const TILE_TOP_OFFSET = 0.1;
 
 /** Feedback colors by GameEvent.type — hit/damage red, heal/pickup green/gold, death dark, else white. */
 const EVENT_COLORS: Record<string, string> = {
@@ -648,10 +655,12 @@ function DefaultUnit({
                     />
                 </Billboard>
             ) : model?.url ? (
-                /* GLB unit model — LOLO's `animation` field drives the named clip */
+                /* GLB unit model — LOLO's `animation` field drives the named clip;
+                   `heading` (radians) faces the model along its travel direction (driving). */
                 <ModelLoader
                     url={model.url}
                     scale={modelScale}
+                    rotation={[0, unit.heading ?? 0, 0]}
                     animation={unit.animation ?? 'idle'}
                     fallbackGeometry="box"
                     castShadow
@@ -726,7 +735,7 @@ function DefaultFeature({
                 url={model.url}
                 position={position}
                 scale={0.5}
-                rotation={[0, (feature as { rotation?: number }).rotation ?? 0, 0]}
+                rotation={[0, feature.rotation ?? 0, 0]}
                 tint={feature.color}
                 onClick={() => onFeatureClick(feature, null)}
                 fallbackGeometry="box"
@@ -1117,6 +1126,21 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
             return cameraTarget;
         }, [player, pixelsPerUnit, worldHeight, units, selectedUnitId, gridBounds, gridConfig, cameraTarget]);
 
+        // Camera offset from the follow target. `chase` rotates the offset by the
+        // followed unit's heading so the camera sits behind + above the vehicle
+        // (forward = [sin h, 0, cos h]; behind = -forward). `follow` keeps a fixed
+        // offset (side player, or a 3/4 view of the selected unit).
+        const followOffset = useMemo((): [number, number, number] => {
+            if (cameraMode === 'chase') {
+                const selected = units.find((u) => u.id === selectedUnitId);
+                const h = selected?.heading ?? 0;
+                const dist = 7;
+                const height = 4;
+                return [-Math.sin(h) * dist, height, -Math.cos(h) * dist];
+            }
+            return player ? [0, 2, 9] : [5, 7, 5];
+        }, [cameraMode, units, selectedUnitId, player]);
+
         // Default tile renderer
 
         // Loading state
@@ -1180,10 +1204,10 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                         }}
                     >
                         <CameraController onCameraChange={eventHandlers.handleCameraChange} />
-                        {cameraMode === 'follow' && (
+                        {(cameraMode === 'follow' || cameraMode === 'chase') && (
                             <FollowCamera
                                 target={followTarget}
-                                offset={player ? [0, 2, 9] : [5, 7, 5]}
+                                offset={followOffset}
                             />
                         )}
 
@@ -1276,7 +1300,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                                 const position = gridToWorld(
                                     feature.x,
                                     feature.z ?? feature.y ?? 0,
-                                    (feature.elevation ?? 0) + 0.5
+                                    (feature.elevation ?? 0) + TILE_TOP_OFFSET
                                 );
                                 const key = feature.id ?? `feature-${index}`;
                                 if (CustomFeatureRenderer) {
@@ -1299,7 +1323,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                                 const position = gridToWorld(
                                     unit.x ?? unit.position?.x ?? 0,
                                     unit.z ?? unit.y ?? unit.position?.y ?? 0,
-                                    (unit.elevation ?? 0) + 0.5
+                                    (unit.elevation ?? 0) + TILE_TOP_OFFSET
                                 );
                                 return (
                                     <LerpedGroup key={unit.id} target={position} enabled={interpolateUnits}>
@@ -1341,7 +1365,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                         {/* Camera controls — disabled while FollowCamera is authoritative */}
                         <OrbitControls
                             ref={controlsRef}
-                            enabled={cameraMode !== 'follow'}
+                            enabled={cameraMode !== 'follow' && cameraMode !== 'chase'}
                             target={cameraTarget}
                             enableDamping
                             dampingFactor={0.05}

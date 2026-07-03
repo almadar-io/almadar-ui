@@ -105,6 +105,9 @@ export type IsometricUnit = {
     animation?: AnimationName;
     /** Frame index within the animation — driven by the LOLO state machine; renderer defaults to 0 */
     frame?: number;
+    /** Y-axis heading in radians (3D) — travel/facing direction. Orients the unit model and
+     *  drives the `chase` camera (behind + above, looking along heading). Driving boards set this. */
+    heading?: number;
 };
 
 // =============================================================================
@@ -131,6 +134,8 @@ export type IsometricFeature = {
     color?: string;
     /** Elevation offset for 3D rendering */
     elevation?: number;
+    /** Y-axis rotation in radians (3D) — orients directional features (arches, signs, docks). */
+    rotation?: number;
 };
 
 // =============================================================================
