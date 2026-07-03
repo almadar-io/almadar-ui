@@ -1084,8 +1084,11 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                         fov: 45,
                     };
                 case 'top-down':
+                    // Slight forward offset: an EXACTLY-overhead camera gimbal-locks
+                    // OrbitControls (undefined azimuth at polar 0) → the board renders
+                    // as a rotated diamond. A small tilt gives a steep angled top-down.
                     return {
-                        position: [cx, d * 2, cz] as [number, number, number],
+                        position: [cx, d * 2, cz + d * 0.35] as [number, number, number],
                         fov: 45,
                     };
                 case 'follow':
