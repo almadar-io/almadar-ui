@@ -160,11 +160,20 @@ export function recordTransition(trace: Omit<TransitionTrace, "id">): void {
   // Auto-validate: check INIT transitions for fetch effects
   if (entry.event === "INIT") {
     const hasFetch = entry.effects.some((e) => e.type === "fetch");
+    // A tick-driven or config-seeded entity is also validly populated by
+    // `(set @entity.<field> ...)` on INIT, not just `fetch` — e.g. the
+    // learning-* engine family seeds `bodies`/`units` from `@config`.
+    const hasEntitySeed = entry.effects.some(
+      (e) =>
+        e.type === "set" &&
+        typeof e.args[0] === "string" &&
+        e.args[0].startsWith("@entity."),
+    );
     const checkId = `init-fetch-${entry.traitName}`;
-    if (hasFetch) {
+    if (hasFetch || hasEntitySeed) {
       registerCheck(
         checkId,
-        `INIT transition for "${entry.traitName}" has fetch effect`,
+        `INIT transition for "${entry.traitName}" has fetch or entity-seed effect`,
         "pass",
       );
     } else {

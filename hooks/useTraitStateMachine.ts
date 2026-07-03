@@ -20,7 +20,7 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 // Use hooks from @almadar/ui
 import { useEventBus } from './index';
-import { createLogger } from '@almadar/logger';
+import { createLogger, setNamespaceLevel } from '@almadar/logger';
 import { isCircuitEvent } from '@almadar/core';
 import type { PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, TraitConfig, SExpr, ServiceParams } from '@almadar/core';
 import {
@@ -31,6 +31,8 @@ import {
     createServerEffectHandlers,
     collectDeclaredConfigDefaults,
     createTickScheduler,
+    isValidCronExpression,
+    parseDurationString,
     type TraitState,
     type TraitDefinition,
     type EffectHandlers,
@@ -94,6 +96,10 @@ const stateLog = createLogger('almadar:ui:state-transitions');
 // be diagnosed from logs ("did the 33ms physics tick's `(set @entity.x)`
 // actually mutate the entity?") instead of by assumption.
 const tickLog = createLogger('almadar:ui:tick-effects');
+// Per-tick-set firehose: `set:write` fires for every field write of every
+// tick, so a running `ticks` loop floods the console. Default its floor to
+// WARN; opt back in with setNamespaceLevel('almadar:ui:tick-effects', 'DEBUG').
+setNamespaceLevel('almadar:ui:tick-effects', 'WARN');
 
 // Synchronous effect operators a tick may run. `set` / `emit` /
 // `render-ui` (+ navigate/notify/log) resolve without awaiting; the
@@ -822,8 +828,20 @@ export function useTraitStateMachine(
 
         for (const binding of traitBindings) {
             for (const tick of binding.trait.ticks ?? []) {
-                const intervalMs = tick.interval === 'frame' ? 0 : (tick.interval as number);
-                scheduler.add(intervalMs, () => runTickEffects(tick, binding));
+                if (tick.interval === 'frame') {
+                    scheduler.add(0, () => runTickEffects(tick, binding));
+                } else if (typeof tick.interval === 'number') {
+                    scheduler.add(tick.interval, () => runTickEffects(tick, binding));
+                } else if (isValidCronExpression(tick.interval)) {
+                    scheduler.addCron(tick.interval, () => runTickEffects(tick, binding));
+                } else {
+                    // Not 'frame', not a number, not a valid cron expression —
+                    // must be a duration string ('5s'/'1m'/'1h'). Throws
+                    // loudly if it's none of the above, rather than the old
+                    // `as number` cast silently producing NaN (which
+                    // TickScheduler's `add()` then busy-fired on every pass).
+                    scheduler.add(parseDurationString(tick.interval), () => runTickEffects(tick, binding));
+                }
             }
         }
 

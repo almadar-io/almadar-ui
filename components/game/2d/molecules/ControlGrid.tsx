@@ -146,15 +146,22 @@ export function ControlGrid({
         disabled={disabled}
       />
     );
+    // Render a directional cell only when that direction is actionable. With a
+    // `directionEvents` map, that means the direction is present in it — so a
+    // steer-only board (left/right) shows a 2-button pad, not a 4-cross with
+    // dead up/down cells. Legacy generic handlers (no map) keep the full cross.
+    const usesSemantic = !!directionEvents;
+    const cell = (d: DPadDirection) =>
+      !usesSemantic || directionEvents?.[d] ? dir(d) : <Box key={d} />;
     return (
       <Box className={cn('inline-grid grid-cols-3', ds.gap, ds.container, className)}>
-        <Box />{dir('up')}<Box />
-        {dir('left')}
+        <Box />{cell('up')}<Box />
+        {cell('left')}
         <Box className="flex items-center justify-center">
           <Box className="w-6 h-6 rounded-interactive bg-muted border-2 border-muted-foreground" />
         </Box>
-        {dir('right')}
-        <Box />{dir('down')}<Box />
+        {cell('right')}
+        <Box />{cell('down')}<Box />
       </Box>
     );
   }

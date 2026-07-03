@@ -57,14 +57,8 @@ const variantMap = {
   ghost: 'bg-transparent text-foreground border-border hover:bg-muted',
 };
 
-const DEFAULT_ASSET_URL: Asset = {
-  url: 'https://almadar-kflow-assets.web.app/shared/effects/particles/circle_01.png',
-  role: 'ui',
-  category: 'control',
-};
-
 export function ControlButton({
-  assetUrl = DEFAULT_ASSET_URL,
+  assetUrl,
   label,
   icon,
   size = 'md',
