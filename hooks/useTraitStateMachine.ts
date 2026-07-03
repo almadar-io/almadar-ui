@@ -17,12 +17,12 @@
  * @packageDocumentation
  */
 
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo, type MutableRefObject } from 'react';
 // Use hooks from @almadar/ui
-import { useEventBus } from './index';
+import { useEventBus, useSharedEntityStore, runTickFrame, type SharedEntityWriter } from './index';
 import { createLogger, setNamespaceLevel } from '@almadar/logger';
-import { isCircuitEvent } from '@almadar/core';
-import type { PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, TraitConfig, SExpr, ServiceParams } from '@almadar/core';
+import { isCircuitEvent, walkSExpr } from '@almadar/core';
+import type { PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, TraitConfig, SExpr, ServiceParams, ResolvedTrait, FieldValue, EntityFieldWrite, EntityFrameState } from '@almadar/core';
 import {
     StateMachineManager,
     EffectExecutor,
@@ -40,7 +40,7 @@ import {
     type EffectContext,
     type CreateServerEffectHandlersOptions,
 } from '@almadar/runtime';
-import { evaluateGuard } from '@almadar/evaluator';
+import { evaluateGuard, executeEffects, createMinimalContext, type EvaluationContext } from '@almadar/evaluator';
 import { createClientEffectHandlers } from '../lib/createClientEffectHandlers';
 import type { ResolvedTraitBinding, ResolvedTraitListener } from '../types/runtime-types';
 import type { SlotPatternEntry, SlotSource } from '../types/slot-types';
@@ -158,6 +158,130 @@ function normalizeEventKey(eventKey: string): string {
 }
 
 // ============================================================================
+// Shared-entity tick folding
+//
+// A `[shared]` entity's state is co-mutated by several bound traits (each
+// contributing writes on its own ticks/transitions) and painted by exactly
+// one render trait, instead of each trait holding its own private copy. The
+// helpers below classify which bound trait is which, deterministically and
+// structurally (never by name), and bridge tick effects into the Phase-5
+// primitive (`runTickFrame` / `useSharedEntityStore`, `@almadar/ui`).
+// ============================================================================
+
+/** Effect head-operator that writes a field onto a shared entity. */
+export const SHARED_ENTITY_WRITE_OPS: ReadonlySet<string> = new Set(['set']);
+
+/** Effect head-operators that paint a shared entity's merged state. */
+export const SHARED_ENTITY_RENDER_OPS: ReadonlySet<string> = new Set(['render-ui', 'render']);
+
+/** Every tick + transition effect a trait declares, flattened for a structural scan. */
+export function collectAllTraitEffects(trait: ResolvedTrait): SExpr[] {
+    return [
+        ...trait.ticks.flatMap((t) => t.effects),
+        ...trait.transitions.flatMap((t) => t.effects),
+    ];
+}
+
+/**
+ * Does ANY effect in this list call one of `ops` anywhere in its (possibly
+ * `do`/`if`/`when`/`let`-nested) tree? Reuses `@almadar/core`'s canonical
+ * `walkSExpr` rather than a bespoke recursive walk, and looks only at the
+ * effect's head operator — a structural presence check, no name-matching.
+ */
+export function effectsCallOp(effects: SExpr[], ops: ReadonlySet<string>): boolean {
+    for (const effect of effects) {
+        let found = false;
+        walkSExpr(effect, (node) => {
+            if (!found && Array.isArray(node) && typeof node[0] === 'string' && ops.has(node[0])) {
+                found = true;
+            }
+        });
+        if (found) return true;
+    }
+    return false;
+}
+
+/** One shared entity's bound traits, classified by what their effects do. */
+interface SharedEntityGroup {
+    /** `${orbital}::${entityName}` — this group's key in the shared-entity store. */
+    storeKey: string;
+    entityName: string;
+    /** Bindings whose ticks/transitions write (`set @entity.X`) onto this entity, in binding order. */
+    writerBindings: ResolvedTraitBinding[];
+    /** Bindings whose ticks/transitions paint (`render-ui`) this entity's merged state. */
+    renderBindings: ResolvedTraitBinding[];
+    /** Declared per-field defaults (`x: number = 0`) — the frame-0 seed for the shared store. */
+    defaults?: EntityRow;
+}
+
+/**
+ * Build one writer trait's tick into a synchronous `SharedEntityWriter`
+ * (`(scratch) => writes[]`) so `runTickFrame` can fold several writer ticks
+ * into one merged commit, in binding order.
+ *
+ * `runTickFrame`'s writer contract is synchronous, but `@almadar/runtime`'s
+ * `EffectExecutor` is inherently async (`executeAll`'s `for...of await`
+ * sequencing only guarantees the FIRST top-level effect lands before a
+ * fire-and-forget caller reads the result back — everything after the first
+ * `await` boundary would be silently dropped). `@almadar/evaluator`'s
+ * `executeEffects` is fully synchronous end-to-end (its `set`/`do`/`if`/
+ * `when`/`let` dispatch never awaits), so it — not `EffectExecutor` — is the
+ * correct tool here; `ctx.mutateEntity` captures each write instead of
+ * applying it through a handler.
+ */
+export function createSharedEntityWriter(
+    binding: ResolvedTraitBinding,
+    tick: ResolvedTraitTick,
+    traitStatesRef: MutableRefObject<Map<string, TraitState>>,
+    emit: (event: string, payload?: EventPayload) => void,
+): SharedEntityWriter {
+    return (scratch: EntityFrameState): readonly EntityFieldWrite[] => {
+        const traitName = binding.trait.name;
+        const currentState = traitStatesRef.current.get(traitName)?.currentState ?? '';
+
+        // appliesTo: empty array means fire in all states (same contract runTickEffects uses).
+        if (tick.appliesTo.length > 0 && !tick.appliesTo.includes(currentState)) return [];
+
+        // A fresh mutable copy of this frame's running scratch — never the
+        // shared store's own committed object — so a later same-frame writer
+        // trait's `writer(scratch)` call sees this write (ordered live-read)
+        // without this trait mutating anyone else's reference.
+        const scratchEntity: EntityRow = { ...scratch };
+        const writes: EntityFieldWrite[] = [];
+        const ctx: EvaluationContext = createMinimalContext(scratchEntity, {}, currentState);
+        const declaredDefaults = collectDeclaredConfigDefaults(binding.trait);
+        const callSiteConfig = binding.config as TraitConfig | undefined;
+        if (declaredDefaults || callSiteConfig) {
+            ctx.config = { ...(declaredDefaults ?? {}), ...(callSiteConfig ?? {}) } as TraitConfig;
+        }
+        // `evalSet` (the canonical `set` operator implementation) writes
+        // through `ctx.mutateEntity` — capture the write for `runTickFrame`
+        // AND apply it to `scratchEntity` so a later expression in the SAME
+        // tick (e.g. a second `set` reading the first's result) sees it.
+        // `changes`' values come back as `FieldValue` — the interpreter's
+        // canonical evaluator never yields anything else for a `set` target.
+        ctx.mutateEntity = (changes) => {
+            for (const [field, value] of Object.entries(changes)) {
+                const fieldValue = value as FieldValue;
+                scratchEntity[field] = fieldValue;
+                writes.push({ field, value: fieldValue });
+            }
+        };
+        ctx.emit = (event, payload) => {
+            emit(event, payload as EventPayload | undefined);
+        };
+
+        if (tick.guard !== undefined && !evaluateGuard(tick.guard, ctx)) {
+            tickLog.debug('guard-blocked', { traitName, tick: tick.name, state: currentState });
+            return [];
+        }
+
+        executeEffects(tick.effects, ctx);
+        return writes;
+    };
+}
+
+// ============================================================================
 // Hook Implementation
 // ============================================================================
 
@@ -249,6 +373,70 @@ export function useTraitStateMachine(
     // orbital schema) backfills the missing entries.
     const traitConfigsByName = options?.traitConfigsByName;
     const orbitalsByTrait = options?.orbitalsByTrait;
+
+    // One shared-entity store per running orbital instance (stable across
+    // re-renders — see `useSharedEntityStore`'s own ref-backed-instance
+    // pattern). Every `[shared]` entity on this page's traits lives here,
+    // keyed by `${orbital}::${entityName}`.
+    const sharedEntityStore = useSharedEntityStore();
+
+    // Group trait bindings by shared entity, classified deterministically by
+    // which effect operators their ticks/transitions call — never by name.
+    // Non-shared entities produce no group at all, so they fall straight
+    // through to today's per-trait path everywhere below.
+    const sharedGroups = useMemo<Map<string, SharedEntityGroup>>(() => {
+        const groups = new Map<string, SharedEntityGroup>();
+        for (const binding of traitBindings) {
+            const linkedEntityName = binding.linkedEntity ?? binding.trait.linkedEntity;
+            if (!linkedEntityName) continue;
+            const entityDef = entities.get(linkedEntityName);
+            if (!entityDef?.shared) continue;
+            const orbitalName = orbitalsByTrait?.[binding.trait.name] ?? '';
+            const storeKey = `${orbitalName}::${linkedEntityName}`;
+            let group = groups.get(storeKey);
+            if (!group) {
+                // Per-field declared defaults (`x: number = 0`) — the shared
+                // entity's frame-0 seed, read the same way the compiled path
+                // reads `OirField.default`.
+                let defaults: EntityRow | undefined;
+                for (const field of entityDef.fields) {
+                    if (field.default !== undefined) {
+                        (defaults ??= {})[field.name] = field.default as FieldValue;
+                    }
+                }
+                group = { storeKey, entityName: linkedEntityName, writerBindings: [], renderBindings: [], defaults };
+                groups.set(storeKey, group);
+            }
+            const allEffects = collectAllTraitEffects(binding.trait);
+            if (effectsCallOp(allEffects, SHARED_ENTITY_WRITE_OPS)) group.writerBindings.push(binding);
+            if (effectsCallOp(allEffects, SHARED_ENTITY_RENDER_OPS)) group.renderBindings.push(binding);
+        }
+        return groups;
+    }, [traitBindings, entities, orbitalsByTrait]);
+
+    // Seed each shared entity's store from its declared field defaults so the
+    // render trait reads those defaults at frame 0 (before any writer tick),
+    // matching the compiled path. Idempotent + no-notify — safe during render.
+    for (const group of sharedGroups.values()) {
+        if (group.defaults) sharedEntityStore.seed(group.storeKey, group.defaults);
+    }
+
+    // Trait name -> shared-entity store key. Consulted by the ONE execution
+    // path (`executeTransitionEffects`, shared by the event and tick loops)
+    // to decide whether `@entity` sources from the shared store instead of
+    // the per-trait `traitFieldStatesRef`. Ref-backed so callbacks read the
+    // current value without depending on (and retriggering on) it directly —
+    // mirrors `traitBindingsRef` / `managerRef` below.
+    const sharedKeyByTraitNameRef = useRef<Map<string, string>>(new Map());
+    useEffect(() => {
+        const map = new Map<string, string>();
+        for (const group of sharedGroups.values()) {
+            for (const binding of group.writerBindings) map.set(binding.trait.name, group.storeKey);
+            for (const binding of group.renderBindings) map.set(binding.trait.name, group.storeKey);
+        }
+        sharedKeyByTraitNameRef.current = map;
+    }, [sharedGroups]);
+
     const manager = useMemo(() => {
         const traitDefs = traitBindings.map(toTraitDefinition);
         const m = new StateMachineManager(traitDefs);
@@ -558,16 +746,32 @@ export function useTraitStateMachine(
         const linkedEntity = binding.linkedEntity || '';
         const entityId = payload?.entityId as string | undefined;
 
-        // ONE live `[runtime]`-entity store per trait. The canonical client
-        // `set` (createClientEffectHandlers) writes through to THIS object, the
-        // executor reads `@entity.*` from it during the same `executeAll`, and
-        // the next tick + guards seed from it — no detached binding clone, no
-        // guard-vs-render split. Created once (lazily) and reused thereafter so
-        // every read/write hits the same identity.
-        let liveEntity = traitFieldStatesRef.current.get(traitName);
-        if (!liveEntity) {
-            liveEntity = {} as EntityRow;
-            traitFieldStatesRef.current.set(traitName, liveEntity);
+        // A `[shared]` entity's live row lives in the shared-entity store,
+        // keyed by entity (not trait) — every trait bound to it reads/writes
+        // the SAME row, whether the effects run from a tick or an event.
+        // Non-shared traits are byte-for-byte unchanged: `liveEntity` is still
+        // the per-trait `traitFieldStatesRef` object below.
+        const sharedKey = sharedKeyByTraitNameRef.current.get(traitName);
+
+        // ONE live `[runtime]`-entity store per trait (or, for a `[shared]`
+        // entity, one live row per entity shared across its bound traits).
+        // The canonical client `set` (createClientEffectHandlers) writes
+        // through to THIS object, the executor reads `@entity.*` from it
+        // during the same `executeAll`, and the next tick + guards seed from
+        // it — no detached binding clone, no guard-vs-render split.
+        let liveEntity: EntityRow;
+        if (sharedKey !== undefined) {
+            // Fresh mutable copy of the CURRENT committed snapshot — mutating
+            // it directly would let this trait's in-flight write leak into
+            // other readers before the explicit commit below.
+            liveEntity = { ...sharedEntityStore.getSnapshot(sharedKey) };
+        } else {
+            let existing = traitFieldStatesRef.current.get(traitName);
+            if (!existing) {
+                existing = {} as EntityRow;
+                traitFieldStatesRef.current.set(traitName, existing);
+            }
+            liveEntity = existing;
         }
 
         // Ticks must stay synchronous — drop async effects that can't be
@@ -724,13 +928,23 @@ export function useTraitStateMachine(
         try {
             await executor.executeAll(effects);
 
+            // Commit this trait's mutated view of a `[shared]` entity back to
+            // the shared store — the ONLY point that notifies subscribers, so
+            // the render trait's own render-ui (below, or its own tick) is
+            // what paints, not this write. Non-shared traits skip this: their
+            // mutation already lives in `traitFieldStatesRef` (the SAME object
+            // `liveEntity` is, so nothing further to commit).
+            if (sharedKey !== undefined) {
+                sharedEntityStore.commit(sharedKey, liveEntity);
+            }
+
             log.debug('effects:executed', () => ({
                 traitName,
                 transition: `${previousState}->${newState}`,
                 event: flushEvent,
                 effectCount: effects.length,
                 emitted: emittedDuringExec.join(','),
-                entityAfter: JSON.stringify(traitFieldStatesRef.current.get(traitName) ?? {}),
+                entityAfter: JSON.stringify(liveEntity ?? {}),
                 slotsTouched: Array.from(pendingSlots.keys()).join(','),
             }));
 
@@ -760,7 +974,7 @@ export function useTraitStateMachine(
         }
 
         return emittedDuringExec;
-    }, [eventBus, flushSlot]);
+    }, [eventBus, flushSlot, sharedEntityStore]);
 
     /**
      * Execute a single tick's effects through the SAME canonical executor
@@ -780,10 +994,17 @@ export function useTraitStateMachine(
         if (tick.appliesTo.length > 0 && !tick.appliesTo.includes(currentState)) return;
 
         // Guard: evaluate against the SEEDED entity state so `@entity.X`
-        // guards see the advancing values, not `{}`.
+        // guards see the advancing values, not `{}`. A trait bound to a
+        // `[shared]` entity reads the shared store's current snapshot here
+        // instead of `traitFieldStatesRef` (which stays empty for it) —
+        // matters for a render trait whose OWN tick carries a guard.
         if (tick.guard !== undefined) {
+            const sharedKey = sharedKeyByTraitNameRef.current.get(traitName);
+            const entity = sharedKey !== undefined
+                ? sharedEntityStore.getSnapshot(sharedKey)
+                : (traitFieldStatesRef.current.get(traitName) ?? ({} as EntityRow));
             const guardCtx: BindingContext = {
-                entity: traitFieldStatesRef.current.get(traitName) ?? ({} as EntityRow),
+                entity,
                 payload: {},
                 state: currentState,
             };
@@ -813,7 +1034,16 @@ export function useTraitStateMachine(
             syncOnly: true,
             log: tickLog,
         });
-    }, [executeTransitionEffects]);
+    }, [executeTransitionEffects, sharedEntityStore]);
+
+    // The emit side of a shared-entity writer tick (see
+    // `createSharedEntityWriter`) — mirrors `createClientEffectHandlers`'s
+    // `emit` (UI: prefixing) so a writer's `(emit ...)` behaves identically
+    // to the render/event path's.
+    const emitFromSharedWriter = useCallback((event: string, payload?: EventPayload) => {
+        const prefixedEvent = event.startsWith('UI:') ? event : `UI:${event}`;
+        eventBus.emit(prefixedEvent, payload);
+    }, [eventBus]);
 
     /**
      * One coalesced tick clock for every binding's ticks — frame-interval
@@ -822,11 +1052,53 @@ export function useTraitStateMachine(
      * pass for frame ticks, one `setInterval` per numeric-ms tick) with a
      * single accumulator so ticks due in the same pass fire together instead
      * of on independent, uncoordinated timers. Re-built when bindings change.
+     *
+     * A `[shared]` entity's WRITER ticks are the one exception: they're
+     * pulled out of the per-trait loop below and folded through ONE
+     * `runTickFrame` driver per (shared entity, tick interval) so N writer
+     * ticks due on the same pass produce exactly one merged commit, in
+     * binding order — instead of N independent per-trait writes. Everything
+     * else (non-shared traits, and a shared entity's render trait) keeps
+     * today's exact per-trait registration; `executeTransitionEffects` is
+     * what redirects a render trait's `@entity` to the shared store.
      */
     useEffect(() => {
         const scheduler = createTickScheduler();
 
+        const writerTraitNames = new Set<string>();
+        for (const group of sharedGroups.values()) {
+            const ticksByInterval = new Map<string, Array<{ binding: ResolvedTraitBinding; tick: ResolvedTraitTick }>>();
+            for (const binding of group.writerBindings) {
+                writerTraitNames.add(binding.trait.name);
+                for (const tick of binding.trait.ticks ?? []) {
+                    const intervalKey = String(tick.interval);
+                    const entries = ticksByInterval.get(intervalKey) ?? [];
+                    entries.push({ binding, tick });
+                    ticksByInterval.set(intervalKey, entries);
+                }
+            }
+            for (const entries of ticksByInterval.values()) {
+                const interval = entries[0].tick.interval;
+                const onDue = () => {
+                    const writers = entries.map(({ binding, tick }) =>
+                        createSharedEntityWriter(binding, tick, traitStatesRef, emitFromSharedWriter),
+                    );
+                    runTickFrame(group.storeKey, writers, sharedEntityStore);
+                };
+                if (interval === 'frame') {
+                    scheduler.add(0, onDue);
+                } else if (typeof interval === 'number') {
+                    scheduler.add(interval, onDue);
+                } else if (isValidCronExpression(interval)) {
+                    scheduler.addCron(interval, onDue);
+                } else {
+                    scheduler.add(parseDurationString(interval), onDue);
+                }
+            }
+        }
+
         for (const binding of traitBindings) {
+            if (writerTraitNames.has(binding.trait.name)) continue;
             for (const tick of binding.trait.ticks ?? []) {
                 if (tick.interval === 'frame') {
                     scheduler.add(0, () => runTickEffects(tick, binding));
@@ -846,7 +1118,7 @@ export function useTraitStateMachine(
         }
 
         return () => scheduler.stopAll();
-    }, [traitBindings, runTickEffects]);
+    }, [traitBindings, runTickEffects, sharedGroups, sharedEntityStore, emitFromSharedWriter]);
 
     /**
      * Process a single event through the state machine and AWAIT all effects.

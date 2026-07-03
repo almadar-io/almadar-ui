@@ -85,6 +85,19 @@ export {
 // UI Events hook for bridging UI events to state machines
 export { useUIEvents, useTraitListens, type TraitListenSpec } from './useUIEvents';
 
+// Shared-entity store + tick orchestration: several traits bound to one
+// `[shared]` entity co-mutate it per frame, one render trait paints the
+// merged result.
+export {
+  createSharedEntityStore,
+  useSharedEntityStore,
+  useSharedEntitySnapshot,
+  runTickFrame,
+  type SharedEntityStore,
+  type SharedEntitySubscriber,
+  type SharedEntityWriter,
+} from './useSharedEntityStore';
+
 // G13 (2026-04-24): the `useEntityData` family — useEntityList, useEntity,
 // useEntityDetail, useEntityListSuspense, useEntitySuspense, entityDataKeys,
 // EntityDataProvider, useEntityDataAdapter, EntityDataAdapter — has been
