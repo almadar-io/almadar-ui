@@ -1075,7 +1075,9 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
             // Offset from the grid centre so all camera modes frame the board correctly.
             const cx = (gridBounds.minX + gridBounds.maxX) / 2;
             const cz = (gridBounds.minZ + gridBounds.maxZ) / 2;
-            const d = size * 1.5;
+            // Distance ∝ grid size so framing is size-invariant. The canvas is wide-but-short
+            // (fov is vertical), so 1.0 fills the frame; larger just adds empty margins.
+            const d = size * 1.0;
 
             switch (cameraMode) {
                 case 'isometric':
