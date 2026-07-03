@@ -32,8 +32,12 @@ export type EntityTableLook =
   | "card-rows";
 
 export interface Column<T> {
-  key: keyof T | string;
-  header: string;
+  /** Column identity. Optional because `name` is an accepted alias; the
+   * compiler emits `{ name, label }` columns and `normalizeColumns` fills
+   * `key`/`header` from the aliases, so a column needs (`key` OR `name`) and
+   * (`header` OR `label`), not literally `key`+`header`. */
+  key?: keyof T | string;
+  header?: string;
   /** Alias for key (used by compiler-generated fields) */
   name?: string;
   /** Alias for header (used by compiler-generated fields) */

@@ -24,7 +24,7 @@
 
 import * as React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Asset, EventEmit } from '@almadar/core';
+import type { Asset, AssetUrl, EventEmit } from '@almadar/core';
 import { cn } from '../../../../lib/cn';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../hooks/useTranslate';
@@ -124,8 +124,9 @@ export interface Canvas2DProps {
     platforms?: Platform[];
     /** Side-view player. `projection:'side'` only. */
     player?: SidePlayer;
-    /** Background image (tiled behind iso/hex/flat/free; stretched in side). */
-    backgroundImage?: Asset;
+    /** Background image (tiled behind iso/hex/flat/free; stretched in side).
+     * A bare URL string is accepted as shorthand for a standalone backdrop. */
+    backgroundImage?: AssetUrl | Asset;
 
     // --- Interaction state (LOLO-owned, passed in) ---
     /** Currently selected unit ID */
@@ -235,6 +236,15 @@ const PLATFORM_COLORS: Record<string, string> = {
  *  frame — no re-render trigger needed. */
 const NOOP = (): void => { /* continuous loop re-reads the atlas cache next frame */ };
 
+/** A backdrop may be authored as a bare URL string (the natural shorthand) or a
+ * full `Asset`. Normalize a string to a minimal decoration Asset so the render
+ * paths (which read `.url`/atlas) stay Asset-only. */
+function normalizeBackdrop(bg: AssetUrl | Asset | undefined): Asset | undefined {
+    return typeof bg === 'string'
+        ? { url: bg, role: 'decoration', category: 'background' }
+        : bg;
+}
+
 const PLAYER_COLOR = '#3498db';
 const PLAYER_EYE_COLOR = '#ffffff';
 const SKY_GRADIENT_TOP = '#1a1a2e';
@@ -257,7 +267,7 @@ interface SideViewProps {
     canvasHeight: number;
     follow: boolean;
     bgColor: string;
-    backgroundImage?: Asset;
+    backgroundImage?: AssetUrl | Asset;
     playerSprite?: Asset;
     tileSprites?: Record<string, Asset>;
     effects: ActiveEffect[];
@@ -280,7 +290,7 @@ function SideView({
     canvasHeight,
     follow,
     bgColor,
-    backgroundImage,
+    backgroundImage: backgroundImageRaw,
     playerSprite,
     tileSprites,
     effects,
@@ -288,6 +298,7 @@ function SideView({
     keyUpMap,
     className,
 }: SideViewProps): React.JSX.Element {
+    const backgroundImage = normalizeBackdrop(backgroundImageRaw);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const eventBus = useEventBus();
     const keysRef = useRef<Set<string>>(new Set());
@@ -585,7 +596,7 @@ export function Canvas2D({
     effects: _effectsPropRaw = [],
     platforms,
     player,
-    backgroundImage,
+    backgroundImage: backgroundImageRaw,
     // Interaction state
     selectedUnitId = null,
     validMoves = [],
@@ -626,6 +637,7 @@ export function Canvas2D({
     // Remote asset loading
     assetManifest,
 }: Canvas2DProps): React.JSX.Element {
+    const backgroundImage = normalizeBackdrop(backgroundImageRaw);
     const isSide = projection === 'side';
     const isFree = projection === 'free';
     // iso/hex/flat painter ordering treats free like flat (row-major, no depth sort).

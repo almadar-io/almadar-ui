@@ -64,7 +64,7 @@ export type ChartLook =
 
 export type ChartStackMode = "none" | "stack" | "normalize";
 
-export interface ChartDataPoint {
+export interface ChartSeriesPoint {
     label: string;
     value: number;
     color?: string;
@@ -80,7 +80,7 @@ export interface ChartScatterPoint {
 
 export interface ChartSeries {
     name: string;
-    data: readonly ChartDataPoint[];
+    data: readonly ChartSeriesPoint[];
     color?: string;
     dashed?: boolean;
 }
@@ -112,7 +112,7 @@ export interface ChartProps {
     /** Multi-series data */
     series?: readonly ChartSeries[];
     /** Simple single-series shorthand (bar/line/pie/area/donut/histogram) */
-    data?: readonly ChartDataPoint[];
+    data?: readonly ChartSeriesPoint[];
     /** Raw {x,y} points for scatter */
     scatterData?: readonly ChartScatterPoint[];
     /** Chart height in px */
@@ -169,7 +169,7 @@ const BarChart: React.FC<{
     timeAxis: boolean;
     histogram?: boolean;
     horizontal?: boolean;
-    onPointClick?: (point: ChartDataPoint, seriesName: string) => void;
+    onPointClick?: (point: ChartSeriesPoint, seriesName: string) => void;
 }> = ({ series, height, showValues, stack, timeAxis, histogram = false, horizontal = false, onPointClick }) => {
     const categories = useMemo(() => {
         const set: string[] = [];
@@ -394,11 +394,11 @@ const BarChart: React.FC<{
 
 /** Pie / Donut renderer (single-series). */
 const PieChart: React.FC<{
-    data: readonly ChartDataPoint[];
+    data: readonly ChartSeriesPoint[];
     height: number;
     showValues: boolean;
     donut?: boolean;
-    onPointClick?: (point: ChartDataPoint, seriesName: string) => void;
+    onPointClick?: (point: ChartSeriesPoint, seriesName: string) => void;
 }> = ({ data, height, showValues, donut = false, onPointClick }) => {
     const total = data.reduce((sum, d) => sum + d.value, 0);
     const size = Math.min(height, 200);
@@ -500,7 +500,7 @@ const LineChart: React.FC<{
     showValues: boolean;
     fill?: boolean;
     timeAxis: boolean;
-    onPointClick?: (point: ChartDataPoint, seriesName: string) => void;
+    onPointClick?: (point: ChartSeriesPoint, seriesName: string) => void;
 }> = ({ series, height, showValues, fill = false, timeAxis, onPointClick }) => {
     const width = 400;
     const padding = { top: 20, right: 20, bottom: 30, left: 40 };
@@ -650,7 +650,7 @@ const LineChart: React.FC<{
 const ScatterChart: React.FC<{
     data: readonly ChartScatterPoint[];
     height: number;
-    onPointClick?: (point: ChartDataPoint, seriesName: string) => void;
+    onPointClick?: (point: ChartSeriesPoint, seriesName: string) => void;
 }> = ({ data, height, onPointClick }) => {
     const width = 400;
     const padding = { top: 20, right: 20, bottom: 30, left: 40 };
@@ -794,7 +794,7 @@ export const Chart: React.FC<ChartProps> = ({
     );
 
     const handlePointClick = useCallback(
-        (point: ChartDataPoint, seriesName: string) => {
+        (point: ChartSeriesPoint, seriesName: string) => {
             if (drillEvent) {
                 eventBus.emit(`UI:${drillEvent}`, {
                     label: point.label,

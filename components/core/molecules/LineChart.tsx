@@ -12,7 +12,9 @@ import { Box } from '../atoms/index';
 import { useTranslate } from '../../../hooks/useTranslate';
 
 export interface ChartDataPoint {
-  date: string | Date;
+  /** Optional: chronological x-axis. Absent for a categorical line chart
+   * (label-as-x), which plots points in author order. */
+  date?: string | Date;
   value: number;
   label?: string;
 }
@@ -63,8 +65,11 @@ export const LineChart: React.FC<LineChartProps> = ({
 
   const sortedData = useMemo(() => {
     if (safeData.length === 0) return [];
+    // Only sort chronologically when points carry dates; a categorical line
+    // chart (no date) plots in author order (x is the point index).
+    if (!safeData.some((d) => d.date != null)) return [...safeData];
     return [...safeData].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      (a, b) => new Date(a.date ?? 0).getTime() - new Date(b.date ?? 0).getTime()
     );
   }, [safeData]);
 
