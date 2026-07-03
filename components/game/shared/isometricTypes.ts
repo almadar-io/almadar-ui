@@ -53,6 +53,8 @@ export interface IsometricTile {
     elevation?: number;
     /** 3D model URL (GLB format) for GameCanvas3D — rendered via ModelLoader with box fallback */
     modelUrl?: Asset;
+    /** Y-axis rotation in degrees (3D) — orients directional pieces (track corners, road bends) */
+    rotation?: number;
 }
 
 // =============================================================================

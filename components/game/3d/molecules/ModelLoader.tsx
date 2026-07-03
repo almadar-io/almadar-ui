@@ -42,6 +42,8 @@ export interface ModelLoaderProps {
      * unknown or absent name leaves the model static (bind pose).
      */
     animation?: string;
+    /** Multiply the model's material colors by this CSS color (per-instance; e.g. team tint). */
+    tint?: string;
     /** Enable shadows */
     castShadow?: boolean;
     /** Receive shadows */
@@ -59,6 +61,49 @@ interface ModelLoadState {
     clips: THREE.AnimationClip[];
     isLoading: boolean;
     error: Error | null;
+}
+
+interface GltfCacheEntry {
+    gltf?: { scene: THREE.Group; animations: THREE.AnimationClip[] };
+    error?: Error;
+    promise: Promise<void>;
+}
+
+/** One fetch per (resourcePath, url) — every ModelLoader instance clones from the shared scene. */
+const gltfCache = new Map<string, GltfCacheEntry>();
+
+function loadGltfCached(url: string, assetRoot: string): GltfCacheEntry {
+    const key = `${assetRoot}|${url}`;
+    let entry = gltfCache.get(key);
+    if (!entry) {
+        const pending: GltfCacheEntry = {
+            promise: new Promise<void>((resolveDone) => {
+                const loader = new GLTFLoader();
+                // setResourcePath tells GLTFLoader where to resolve relative URIs
+                // (textures, buffers) found inside the GLTF JSON — BEFORE they become
+                // absolute. This is the only way to redirect "Textures/colormap.png"
+                // since the LoadingManager URL modifier only sees already-resolved URLs.
+                loader.setResourcePath(assetRoot);
+                loader.load(
+                    url,
+                    (gltf) => {
+                        log.debug('Loaded', { url, clips: gltf.animations.length });
+                        pending.gltf = { scene: gltf.scene, animations: gltf.animations };
+                        resolveDone();
+                    },
+                    undefined,
+                    (err) => {
+                        log.warn('Failed', { url, error: err instanceof Error ? err : String(err) });
+                        pending.error = err instanceof Error ? err : new Error(String(err));
+                        resolveDone();
+                    }
+                );
+            }),
+        };
+        entry = pending;
+        gltfCache.set(key, entry);
+    }
+    return entry;
 }
 
 /**
@@ -80,55 +125,34 @@ function detectAssetRoot(modelUrl: string): string {
  * Resolves shared texture paths (e.g. "Textures/colormap.png") against the
  * asset root directory rather than the model's own subdirectory.
  */
+function stateFromEntry(entry: GltfCacheEntry | null): ModelLoadState {
+    if (!entry) return { model: null, clips: [], isLoading: false, error: null };
+    if (entry.gltf) return { model: entry.gltf.scene, clips: entry.gltf.animations, isLoading: false, error: null };
+    return { model: null, clips: [], isLoading: !entry.error, error: entry.error ?? null };
+}
+
 function useGLTFModel(url: string, resourceBasePath?: string): ModelLoadState {
-    const [state, setState] = useState<ModelLoadState>({
-        model: null,
-        clips: [],
-        isLoading: false,
-        error: null,
-    });
+    // Seed synchronously from the cache — a cache hit renders the model on the very
+    // first frame (no loading-ring flash on remount or list reshuffle).
+    const [state, setState] = useState<ModelLoadState>(() =>
+        stateFromEntry(url ? loadGltfCached(url, resourceBasePath || detectAssetRoot(url)) : null)
+    );
 
     useEffect(() => {
         if (!url) {
             setState({ model: null, clips: [], isLoading: false, error: null });
             return;
         }
-
-        log.debug('Loading', { url });
-        setState(prev => ({ ...prev, isLoading: true, error: null }));
-
-        // Where shared resources like Textures/ live
-        const assetRoot = resourceBasePath || detectAssetRoot(url);
-
-        // setResourcePath tells GLTFLoader where to resolve relative URIs
-        // (textures, buffers) found inside the GLTF JSON — BEFORE they become
-        // absolute. This is the only way to redirect "Textures/colormap.png"
-        // since the LoadingManager URL modifier only sees already-resolved URLs.
-        const loader = new GLTFLoader();
-        loader.setResourcePath(assetRoot);
-
-        loader.load(
-            url,
-            (gltf) => {
-                log.debug('Loaded', { url, clips: gltf.animations.length });
-                setState({
-                    model: gltf.scene,
-                    clips: gltf.animations,
-                    isLoading: false,
-                    error: null,
-                });
-            },
-            undefined,
-            (err) => {
-                log.warn('Failed', { url, error: err instanceof Error ? err : String(err) });
-                setState({
-                    model: null,
-                    clips: [],
-                    isLoading: false,
-                    error: err instanceof Error ? err : new Error(String(err)),
-                });
-            }
-        );
+        const entry = loadGltfCached(url, resourceBasePath || detectAssetRoot(url));
+        setState(stateFromEntry(entry));
+        if (entry.gltf || entry.error) return;
+        let cancelled = false;
+        void entry.promise.then(() => {
+            if (!cancelled) setState(stateFromEntry(entry));
+        });
+        return () => {
+            cancelled = true;
+        };
     }, [url, resourceBasePath]);
 
     return state;
@@ -151,6 +175,7 @@ export function ModelLoader({
     receiveShadow = true,
     resourceBasePath,
     animation,
+    tint,
 }: ModelLoaderProps): React.JSX.Element {
     const { model: loadedModel, clips, isLoading, error } = useGLTFModel(url, resourceBasePath);
 
@@ -165,16 +190,23 @@ export function ModelLoader({
         const cloned = cloneSkeleton(loadedModel) as THREE.Group;
         cloned.updateMatrixWorld(true);
 
-        // Apply shadow settings
+        const tintColor = tint ? new THREE.Color(tint) : null;
         cloned.traverse((child) => {
             if (child instanceof THREE.Mesh) {
                 child.castShadow = castShadow;
                 child.receiveShadow = receiveShadow;
+                // Materials are shared with the cached scene — clone before tinting so
+                // one instance's tint never leaks into siblings.
+                if (tintColor && child.material instanceof THREE.MeshStandardMaterial) {
+                    const mat = child.material.clone();
+                    mat.color.multiply(tintColor);
+                    child.material = mat;
+                }
             }
         });
 
         return cloned;
-    }, [loadedModel, castShadow, receiveShadow]);
+    }, [loadedModel, castShadow, receiveShadow, tint]);
 
     // Clip playback — the LOLO state machine drives `animation` (a named GLB clip);
     // clip tracks bind by node NAME so they play on the SkeletonUtils clone as-is.

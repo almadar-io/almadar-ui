@@ -29,7 +29,7 @@ import type { Platform, SidePlayer } from '../../2d/molecules/Canvas2D';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { Canvas, useThree, useFrame, useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
-import { OrbitControls, Grid, Billboard } from '@react-three/drei';
+import { OrbitControls, Grid, Billboard, Text } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { AssetLoader, assetLoader } from '../../shared/lib/AssetLoader';
 import { useAssetLoader } from '../../shared/hooks/useAssetLoader';
@@ -372,6 +372,9 @@ function SideScene({
     playerSprite,
     tileSprites,
     interpolate,
+    features = [],
+    events = [],
+    assetManifest,
 }: {
     player: SidePlayer;
     platforms: Platform[];
@@ -380,6 +383,11 @@ function SideScene({
     playerSprite?: Asset;
     tileSprites?: Record<string, Asset>;
     interpolate: boolean;
+    /** Side-view features (collectibles/props) — x/y are PIXELS like platforms. */
+    features?: IsometricFeature[];
+    /** Feedback markers — x/y are PIXELS in side view. */
+    events?: GameEvent[];
+    assetManifest?: GameCanvas3DAssetManifest;
 }): React.JSX.Element {
     const pw = player.width ?? 32;
     const ph = player.height ?? 48;
@@ -420,6 +428,28 @@ function SideScene({
                     </mesh>
                 );
             })}
+            {/* Side-view features (collectibles/props) — pixel coords, LOLO owns pickup logic */}
+            {features.map((feature, i) => {
+                const model = feature.assetUrl ?? assetManifest?.features?.[feature.type];
+                const fx = feature.x / ppu;
+                const fy = (worldHeight - feature.y) / ppu;
+                if (!model?.url) return null;
+                return (
+                    <group key={feature.id ?? `sfeat-${i}`} position={[fx, fy, 0]}>
+                        <ModelLoader url={model.url} scale={0.6} tint={feature.color} fallbackGeometry="sphere" castShadow />
+                    </group>
+                );
+            })}
+
+            {/* Feedback markers — pixel coords */}
+            {events.map((ev, i) => (
+                <EventMarker
+                    key={ev.id ?? `sev-${i}`}
+                    event={ev}
+                    position={[ev.x / ppu, (worldHeight - (ev.y ?? 0)) / ppu + 0.8, 0.2]}
+                />
+            ))}
+
             <LerpedGroup target={playerPos} enabled={interpolate}>
                 {playerSprite?.url ? (
                     <group position={[0, playerH / 2, 0]}>
@@ -441,6 +471,302 @@ function SideScene({
             </LerpedGroup>
         </group>
     );
+}
+
+const UNIT_BASE_MODEL_SCALE = 0.5;
+const UNIT_BASE_BILLBOARD_HEIGHT = 1.2;
+const UNIT_BASE_PRIMITIVE_RADIUS = 0.3;
+
+/** Feedback colors by GameEvent.type — hit/damage red, heal/pickup green/gold, death dark, else white. */
+const EVENT_COLORS: Record<string, string> = {
+    hit: '#ff5544',
+    damage: '#ff5544',
+    attack: '#ff8844',
+    heal: '#44dd66',
+    pickup: '#ffcc33',
+    score: '#ffcc33',
+    death: '#aa3333',
+    win: '#66ff88',
+    lose: '#ff6666',
+};
+
+/**
+ * Floating combat/feedback marker for one `GameEvent` — billboarded text above the
+ * cell. Lifetime is LOLO-owned: boards append events on actions and expire them in
+ * their tick (same contract as the 2D effects array).
+ */
+function EventMarker({
+    event,
+    position,
+}: {
+    event: GameEvent;
+    position: [number, number, number];
+}): React.JSX.Element {
+    return (
+        <Billboard position={position}>
+            <Text
+                fontSize={0.32}
+                color={EVENT_COLORS[event.type] ?? '#ffffff'}
+                outlineWidth={0.02}
+                outlineColor="#000000"
+                anchorX="center"
+                anchorY="middle"
+            >
+                {event.message ?? event.type}
+            </Text>
+        </Billboard>
+    );
+}
+
+/**
+ * Default renderers live at MODULE scope so their component identity is stable.
+ * Defining them inside GameCanvas3D (via useCallback) gave React a new component
+ * type whenever a dep changed (hover, per-tick validMoves), which unmounted and
+ * remounted every tile/unit/feature — reloading every GLB and flickering.
+ */
+function DefaultTile({
+    tile,
+    position,
+    model,
+    isSelected,
+    isHovered,
+    isValidMove,
+    isAttackTarget,
+    onTileClick,
+    onTileHover,
+}: {
+    tile: IsometricTile;
+    position: [number, number, number];
+    model?: Asset;
+    isSelected: boolean;
+    isHovered: boolean;
+    isValidMove: boolean;
+    isAttackTarget: boolean;
+    onTileClick: (tile: IsometricTile, event: MinimalMouseEvent) => void;
+    onTileHover: (tile: IsometricTile | null, event: MinimalMouseEvent) => void;
+}): React.JSX.Element {
+    let color = 0x808080;
+    if (tile.type === 'water') color = 0x4488cc;
+    else if (tile.type === 'grass') color = 0x44aa44;
+    else if (tile.type === 'sand') color = 0xddcc88;
+    else if (tile.type === 'rock') color = 0x888888;
+    else if (tile.type === 'snow') color = 0xeeeeee;
+
+    let emissive = 0x000000;
+    if (isSelected) emissive = 0x444444;
+    else if (isAttackTarget) emissive = 0x440000;
+    else if (isValidMove) emissive = 0x004400;
+    else if (isHovered) emissive = 0x222222;
+
+    // GLB tile (box fallback while loading / on error); the procedural
+    // color/emissive path below is only for tiles without a model.
+    if (model?.url) {
+        return (
+            <group
+                position={position}
+                onClick={(e) => onTileClick(tile, e)}
+                onPointerEnter={(e) => onTileHover(tile, e)}
+                onPointerLeave={(e) => onTileHover(null, e)}
+                userData={{ type: 'tile', tileId: tile.id, gridX: tile.x, gridZ: tile.z ?? tile.y }}
+            >
+                <ModelLoader
+                    url={model.url}
+                    scale={0.95}
+                    rotation={[0, tile.rotation ?? 0, 0]}
+                    fallbackGeometry="box"
+                    castShadow
+                    receiveShadow
+                />
+            </group>
+        );
+    }
+
+    return (
+        <mesh
+            position={position}
+            onClick={(e) => onTileClick(tile, e)}
+            onPointerEnter={(e) => onTileHover(tile, e)}
+            onPointerLeave={(e) => onTileHover(null, e)}
+            userData={{ type: 'tile', tileId: tile.id, gridX: tile.x, gridZ: tile.z ?? tile.y }}
+        >
+            <boxGeometry args={[0.95, 0.2, 0.95]} />
+            <meshStandardMaterial color={color} emissive={emissive} />
+        </mesh>
+    );
+}
+
+function DefaultUnit({
+    unit,
+    position,
+    model,
+    isSelected,
+    unitScale,
+    cellSize,
+    resolveUnitFrame,
+    onUnitClick,
+}: {
+    unit: IsometricUnit;
+    position: [number, number, number];
+    model?: Asset;
+    isSelected: boolean;
+    unitScale: number;
+    cellSize: number;
+    resolveUnitFrame: (unitId: string) => ResolvedFrame | null;
+    onUnitClick: (unit: IsometricUnit, event: MinimalMouseEvent) => void;
+}): React.JSX.Element {
+    const color = unit.faction === 'player' ? 0x4488ff : unit.faction === 'enemy' ? 0xff4444 : 0xffff44;
+    const hasAtlas = unitAtlasUrl(unit) !== null;
+    const initialFrame = hasAtlas ? resolveUnitFrame(unit.id) : null;
+
+    const modelScale = UNIT_BASE_MODEL_SCALE * unitScale * cellSize;
+    // Billboard height is proportional to one cell so units stay
+    // tile-sized regardless of board dimensions or cellSize.
+    const billboardHeight = UNIT_BASE_BILLBOARD_HEIGHT * unitScale * cellSize;
+    const primitiveRadius = UNIT_BASE_PRIMITIVE_RADIUS * unitScale * cellSize;
+
+    return (
+        <group
+            position={position}
+            onClick={(e) => onUnitClick(unit, e)}
+            userData={{ type: 'unit', unitId: unit.id }}
+        >
+            {/* Selection ring */}
+            {isSelected && (
+                <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                    <ringGeometry args={[0.4, 0.5, 32]} />
+                    <meshBasicMaterial color="#ffff00" transparent opacity={0.8} />
+                </mesh>
+            )}
+
+            {hasAtlas && initialFrame ? (
+                /* Animated sprite-sheet billboard — single cropped frame, by state */
+                <Billboard>
+                    <UnitSpriteBillboard
+                        sheetUrl={initialFrame.sheetUrl}
+                        resolveFrame={() => resolveUnitFrame(unit.id)}
+                        height={billboardHeight}
+                    />
+                </Billboard>
+            ) : model?.url ? (
+                /* GLB unit model — LOLO's `animation` field drives the named clip */
+                <ModelLoader
+                    url={model.url}
+                    scale={modelScale}
+                    animation={unit.animation ?? 'idle'}
+                    fallbackGeometry="box"
+                    castShadow
+                />
+            ) : (
+                <>
+                    {/* Base */}
+                    <mesh position={[0, primitiveRadius, 0]}>
+                        <cylinderGeometry args={[primitiveRadius, primitiveRadius, primitiveRadius * 0.33, 8]} />
+                        <meshStandardMaterial color={color} />
+                    </mesh>
+
+                    {/* Body */}
+                    <mesh position={[0, primitiveRadius * 2, 0]}>
+                        <capsuleGeometry args={[primitiveRadius * 0.67, primitiveRadius * 1.33, 4, 8]} />
+                        <meshStandardMaterial color={color} />
+                    </mesh>
+
+                    {/* Head */}
+                    <mesh position={[0, primitiveRadius * 3, 0]}>
+                        <sphereGeometry args={[primitiveRadius * 0.4, 8, 8]} />
+                        <meshStandardMaterial color={color} />
+                    </mesh>
+                </>
+            )}
+
+            {/* Health bar */}
+            {unit.health !== undefined && unit.maxHealth !== undefined && (
+                <group position={[0, billboardHeight, 0]}>
+                    <mesh position={[-0.25, 0, 0]}>
+                        <planeGeometry args={[0.5, 0.05]} />
+                        <meshBasicMaterial color={0x333333} />
+                    </mesh>
+                    <mesh
+                        position={[
+                            -0.25 + (0.5 * (unit.health / unit.maxHealth)) / 2,
+                            0,
+                            0.01,
+                        ]}
+                    >
+                        <planeGeometry args={[0.5 * (unit.health / unit.maxHealth), 0.05]} />
+                        <meshBasicMaterial
+                            color={
+                                unit.health / unit.maxHealth > 0.5
+                                    ? 0x44aa44
+                                    : unit.health / unit.maxHealth > 0.25
+                                      ? 0xaaaa44
+                                      : 0xff4444
+                            }
+                        />
+                    </mesh>
+                </group>
+            )}
+        </group>
+    );
+}
+
+function DefaultFeature({
+    feature,
+    position,
+    model,
+    onFeatureClick,
+}: {
+    feature: IsometricFeature;
+    position: [number, number, number];
+    model?: Asset;
+    onFeatureClick: (feature: IsometricFeature, event: MinimalMouseEvent | null) => void;
+}): React.JSX.Element | null {
+    if (model?.url) {
+        return (
+            <ModelLoader
+                url={model.url}
+                position={position}
+                scale={0.5}
+                rotation={[0, (feature as { rotation?: number }).rotation ?? 0, 0]}
+                tint={feature.color}
+                onClick={() => onFeatureClick(feature, null)}
+                fallbackGeometry="box"
+            />
+        );
+    }
+
+    if (feature.type === 'tree') {
+        return (
+            <group
+                position={position}
+                onClick={(e) => onFeatureClick(feature, e)}
+                userData={{ type: 'feature', featureId: feature.id }}
+            >
+                <mesh position={[0, 0.4, 0]}>
+                    <cylinderGeometry args={[0.1, 0.15, 0.8, 6]} />
+                    <meshStandardMaterial color={0x8b4513} />
+                </mesh>
+                <mesh position={[0, 0.9, 0]}>
+                    <coneGeometry args={[0.5, 0.8, 8]} />
+                    <meshStandardMaterial color={0x228b22} />
+                </mesh>
+            </group>
+        );
+    }
+
+    if (feature.type === 'rock') {
+        return (
+            <mesh
+                position={[position[0], position[1] + 0.3, position[2]]}
+                onClick={(e) => onFeatureClick(feature, e)}
+                userData={{ type: 'feature', featureId: feature.id }}
+            >
+                <dodecahedronGeometry args={[0.3, 0]} />
+                <meshStandardMaterial color={0x808080} />
+            </mesh>
+        );
+    }
+
+    return null;
 }
 
 /**
@@ -792,242 +1118,6 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
         }, [player, pixelsPerUnit, worldHeight, units, selectedUnitId, gridBounds, gridConfig, cameraTarget]);
 
         // Default tile renderer
-        const DefaultTileRenderer = useCallback(
-            ({ tile, position }: { tile: IsometricTile; position: [number, number, number] }) => {
-                const isSelected = tile.id ? selectedTileIds.includes(tile.id) : false;
-                const isHovered = hoveredTile?.id === tile.id;
-                const isValidMove = validMoves.some(
-                    (m) => m.x === tile.x && m.z === (tile.z ?? tile.y ?? 0)
-                );
-                const isAttackTarget = attackTargets.some(
-                    (m) => m.x === tile.x && m.z === (tile.z ?? tile.y ?? 0)
-                );
-
-                // Determine color based on tile type
-                let color = 0x808080;
-                if (tile.type === 'water') color = 0x4488cc;
-                else if (tile.type === 'grass') color = 0x44aa44;
-                else if (tile.type === 'sand') color = 0xddcc88;
-                else if (tile.type === 'rock') color = 0x888888;
-                else if (tile.type === 'snow') color = 0xeeeeee;
-
-                // Apply highlights
-                let emissive = 0x000000;
-                if (isSelected) emissive = 0x444444;
-                else if (isAttackTarget) emissive = 0x440000;
-                else if (isValidMove) emissive = 0x004400;
-                else if (isHovered) emissive = 0x222222;
-
-                // GLB tile — explicit modelUrl wins, else resolve the terrain key against
-                // the assetManifest (box fallback while loading / on error). The GLB's own
-                // materials provide coloring; the procedural color/emissive path below is
-                // only for tiles without a model.
-                const tileModel = tile.modelUrl ?? assetManifest?.terrains?.[tile.terrain ?? tile.type ?? ''];
-                if (tileModel?.url) {
-                    return (
-                        <group
-                            position={position}
-                            onClick={(e) => handleTileClick(tile, e)}
-                            onPointerEnter={(e) => handleTileHover(tile, e)}
-                            onPointerLeave={(e) => handleTileHover(null, e)}
-                            userData={{ type: 'tile', tileId: tile.id, gridX: tile.x, gridZ: tile.z ?? tile.y }}
-                        >
-                            <ModelLoader
-                                url={tileModel.url}
-                                scale={0.95}
-                                fallbackGeometry="box"
-                                castShadow
-                                receiveShadow
-                            />
-                        </group>
-                    );
-                }
-
-                return (
-                    <mesh
-                        position={position}
-                        onClick={(e) => handleTileClick(tile, e)}
-                        onPointerEnter={(e) => handleTileHover(tile, e)}
-                        onPointerLeave={(e) => handleTileHover(null, e)}
-                        userData={{ type: 'tile', tileId: tile.id, gridX: tile.x, gridZ: tile.z ?? tile.y }}
-                    >
-                        <boxGeometry args={[0.95, 0.2, 0.95]} />
-                        <meshStandardMaterial color={color} emissive={emissive} />
-                    </mesh>
-                );
-            },
-            [selectedTileIds, hoveredTile, validMoves, attackTargets, handleTileClick, handleTileHover, assetManifest]
-        );
-
-        const UNIT_BASE_MODEL_SCALE = 0.5;
-        const UNIT_BASE_BILLBOARD_HEIGHT = 1.2;
-        const UNIT_BASE_PRIMITIVE_RADIUS = 0.3;
-
-        // Default unit renderer
-        const DefaultUnitRenderer = useCallback(
-            ({ unit, position }: { unit: IsometricUnit; position: [number, number, number] }) => {
-                const isSelected = selectedUnitId === unit.id;
-                const color = unit.faction === 'player' ? 0x4488ff : unit.faction === 'enemy' ? 0xff4444 : 0xffff44;
-                const hasAtlas = unitAtlasUrl(unit) !== null;
-                const initialFrame = hasAtlas ? resolveUnitFrame(unit.id) : null;
-                const unitModel = unit.modelUrl ?? assetManifest?.units?.[unit.unitType ?? ''];
-
-                const modelScale = UNIT_BASE_MODEL_SCALE * unitScale * gridConfig.cellSize;
-                // Billboard height is proportional to one cell so units stay
-                // tile-sized regardless of board dimensions or cellSize.
-                const billboardHeight = UNIT_BASE_BILLBOARD_HEIGHT * unitScale * gridConfig.cellSize;
-                const primitiveRadius = UNIT_BASE_PRIMITIVE_RADIUS * unitScale * gridConfig.cellSize;
-
-                return (
-                    <group
-                        position={position}
-                        onClick={(e) => handleUnitClick(unit, e)}
-                        userData={{ type: 'unit', unitId: unit.id }}
-                    >
-                        {/* Selection ring */}
-                        {isSelected && (
-                            <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                                <ringGeometry args={[0.4, 0.5, 32]} />
-                                <meshBasicMaterial color="#ffff00" transparent opacity={0.8} />
-                            </mesh>
-                        )}
-
-                        {hasAtlas && initialFrame ? (
-                            /* Animated sprite-sheet billboard — single cropped frame, by state */
-                            <Billboard>
-                                <UnitSpriteBillboard
-                                    sheetUrl={initialFrame.sheetUrl}
-                                    resolveFrame={() => resolveUnitFrame(unit.id)}
-                                    height={billboardHeight}
-                                />
-                            </Billboard>
-                        ) : unitModel?.url ? (
-                            /* GLB unit model — LOLO's `animation` field drives the named clip */
-                            <ModelLoader
-                                url={unitModel.url}
-                                scale={modelScale}
-                                animation={unit.animation ?? 'idle'}
-                                fallbackGeometry="box"
-                                castShadow
-                            />
-                        ) : (
-                            <>
-                                {/* Base */}
-                                <mesh position={[0, primitiveRadius, 0]}>
-                                    <cylinderGeometry args={[primitiveRadius, primitiveRadius, primitiveRadius * 0.33, 8]} />
-                                    <meshStandardMaterial color={color} />
-                                </mesh>
-
-                                {/* Body */}
-                                <mesh position={[0, primitiveRadius * 2, 0]}>
-                                    <capsuleGeometry args={[primitiveRadius * 0.67, primitiveRadius * 1.33, 4, 8]} />
-                                    <meshStandardMaterial color={color} />
-                                </mesh>
-
-                                {/* Head */}
-                                <mesh position={[0, primitiveRadius * 3, 0]}>
-                                    <sphereGeometry args={[primitiveRadius * 0.4, 8, 8]} />
-                                    <meshStandardMaterial color={color} />
-                                </mesh>
-                            </>
-                        )}
-
-                        {/* Health bar */}
-                        {unit.health !== undefined && unit.maxHealth !== undefined && (
-                            <group position={[0, billboardHeight, 0]}>
-                                <mesh position={[-0.25, 0, 0]}>
-                                    <planeGeometry args={[0.5, 0.05]} />
-                                    <meshBasicMaterial color={0x333333} />
-                                </mesh>
-                                <mesh
-                                    position={[
-                                        -0.25 + (0.5 * (unit.health / unit.maxHealth)) / 2,
-                                        0,
-                                        0.01,
-                                    ]}
-                                >
-                                    <planeGeometry args={[0.5 * (unit.health / unit.maxHealth), 0.05]} />
-                                    <meshBasicMaterial
-                                        color={
-                                            unit.health / unit.maxHealth > 0.5
-                                                ? 0x44aa44
-                                                : unit.health / unit.maxHealth > 0.25
-                                                  ? 0xaaaa44
-                                                  : 0xff4444
-                                        }
-                                    />
-                                </mesh>
-                            </group>
-                        )}
-                    </group>
-                );
-            },
-            [selectedUnitId, handleUnitClick, resolveUnitFrame, unitScale, gridConfig, assetManifest]
-        );
-
-        // Default feature renderer
-        const DefaultFeatureRenderer = useCallback(
-            ({
-                feature,
-                position,
-            }: {
-                feature: IsometricFeature;
-                position: [number, number, number];
-            }) => {
-                // Explicit assetUrl wins, else resolve the feature type against the manifest.
-                const featureModel = feature.assetUrl ?? assetManifest?.features?.[feature.type];
-                if (featureModel?.url) {
-                    return (
-                        <ModelLoader
-                            key={feature.id}
-                            url={featureModel.url}
-                            position={position}
-                            scale={0.5}
-                            rotation={[0, (feature as { rotation?: number }).rotation ?? 0, 0]}
-                            onClick={() => handleFeatureClick(feature, null)}
-                            fallbackGeometry="box"
-                        />
-                    );
-                }
-
-                // Simple tree representation
-                if (feature.type === 'tree') {
-                    return (
-                        <group
-                            position={position}
-                            onClick={(e) => handleFeatureClick(feature, e)}
-                            userData={{ type: 'feature', featureId: feature.id }}
-                        >
-                            <mesh position={[0, 0.4, 0]}>
-                                <cylinderGeometry args={[0.1, 0.15, 0.8, 6]} />
-                                <meshStandardMaterial color={0x8b4513} />
-                            </mesh>
-                            <mesh position={[0, 0.9, 0]}>
-                                <coneGeometry args={[0.5, 0.8, 8]} />
-                                <meshStandardMaterial color={0x228b22} />
-                            </mesh>
-                        </group>
-                    );
-                }
-
-                // Simple rock representation
-                if (feature.type === 'rock') {
-                    return (
-                        <mesh
-                            position={[position[0], position[1] + 0.3, position[2]]}
-                            onClick={(e) => handleFeatureClick(feature, e)}
-                            userData={{ type: 'feature', featureId: feature.id }}
-                        >
-                            <dodecahedronGeometry args={[0.3, 0]} />
-                            <meshStandardMaterial color={0x808080} />
-                        </mesh>
-                    );
-                }
-
-                return null;
-            },
-            [handleFeatureClick, assetManifest]
-        );
 
         // Loading state
         if (externalLoading || (assetsLoading && preloadAssets.length > 0)) {
@@ -1148,6 +1238,9 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                                 playerSprite={playerSprite}
                                 tileSprites={tileSprites}
                                 interpolate={interpolateUnits}
+                                features={features}
+                                events={events}
+                                assetManifest={assetManifest}
                             />
                         ) : (
                         <group>
@@ -1158,8 +1251,24 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                                     tile.z ?? tile.y ?? 0,
                                     tile.elevation ?? 0
                                 );
-                                const Renderer = CustomTileRenderer || DefaultTileRenderer;
-                                return <Renderer key={tile.id ?? `tile-${index}`} tile={tile} position={position} />;
+                                const key = tile.id ?? `tile-${index}`;
+                                if (CustomTileRenderer) {
+                                    return <CustomTileRenderer key={key} tile={tile} position={position} />;
+                                }
+                                return (
+                                    <DefaultTile
+                                        key={key}
+                                        tile={tile}
+                                        position={position}
+                                        model={tile.modelUrl ?? assetManifest?.terrains?.[tile.terrain ?? tile.type ?? '']}
+                                        isSelected={tile.id ? selectedTileIds.includes(tile.id) : false}
+                                        isHovered={hoveredTile?.id === tile.id}
+                                        isValidMove={validMoves.some((m) => m.x === tile.x && m.z === (tile.z ?? tile.y ?? 0))}
+                                        isAttackTarget={attackTargets.some((m) => m.x === tile.x && m.z === (tile.z ?? tile.y ?? 0))}
+                                        onTileClick={handleTileClick}
+                                        onTileHover={handleTileHover}
+                                    />
+                                );
                             })}
 
                             {/* Features */}
@@ -1169,8 +1278,19 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                                     feature.z ?? feature.y ?? 0,
                                     (feature.elevation ?? 0) + 0.5
                                 );
-                                const Renderer = CustomFeatureRenderer || DefaultFeatureRenderer;
-                                return <Renderer key={feature.id ?? `feature-${index}`} feature={feature} position={position} />;
+                                const key = feature.id ?? `feature-${index}`;
+                                if (CustomFeatureRenderer) {
+                                    return <CustomFeatureRenderer key={key} feature={feature} position={position} />;
+                                }
+                                return (
+                                    <DefaultFeature
+                                        key={key}
+                                        feature={feature}
+                                        position={position}
+                                        model={feature.assetUrl ?? assetManifest?.features?.[feature.type]}
+                                        onFeatureClick={handleFeatureClick}
+                                    />
+                                );
                             })}
 
                             {/* Units — 2D-format `position:{x,y}` is the tactics-board contract;
@@ -1181,11 +1301,35 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                                     unit.z ?? unit.y ?? unit.position?.y ?? 0,
                                     (unit.elevation ?? 0) + 0.5
                                 );
-                                const Renderer = CustomUnitRenderer || DefaultUnitRenderer;
                                 return (
                                     <LerpedGroup key={unit.id} target={position} enabled={interpolateUnits}>
-                                        <Renderer unit={unit} position={[0, 0, 0]} />
+                                        {CustomUnitRenderer ? (
+                                            <CustomUnitRenderer unit={unit} position={[0, 0, 0]} />
+                                        ) : (
+                                            <DefaultUnit
+                                                unit={unit}
+                                                position={[0, 0, 0]}
+                                                model={unit.modelUrl ?? assetManifest?.units?.[unit.unitType ?? '']}
+                                                isSelected={selectedUnitId === unit.id}
+                                                unitScale={unitScale}
+                                                cellSize={gridConfig.cellSize}
+                                                resolveUnitFrame={resolveUnitFrame}
+                                                onUnitClick={handleUnitClick}
+                                            />
+                                        )}
                                     </LerpedGroup>
+                                );
+                            })}
+
+                            {/* Feedback markers — grid coords, lifetime LOLO-owned */}
+                            {events.map((ev, i) => {
+                                const position = gridToWorld(ev.x, ev.z ?? ev.y ?? 0, 0);
+                                return (
+                                    <EventMarker
+                                        key={ev.id ?? `ev-${i}`}
+                                        event={ev}
+                                        position={[position[0], position[1] + 1.4, position[2]]}
+                                    />
                                 );
                             })}
                         </group>
