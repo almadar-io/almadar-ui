@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "5.103.0",
+  "version": "5.104.0",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "sideEffects": [
@@ -213,7 +213,8 @@
     "tsx": "^4.7.0",
     "typescript": "^5.4.0",
     "vite": "^5.2.0",
-    "vitest": "^3.2.6"
+    "vitest": "^3.2.6",
+    "turbo": "^2.8.17"
   },
   "repository": {
     "type": "git",
@@ -237,5 +238,6 @@
   },
   "overrides": {
     "@almadar/core": "$@almadar/core"
-  }
+  },
+  "packageManager": "pnpm@10.30.3"
 }
