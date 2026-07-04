@@ -43,6 +43,8 @@ export interface IsometricTile {
     type?: string;
     /** Direct sprite URL override (bypasses getTerrainSprite resolver) */
     terrainSprite?: Asset;
+    /** Fallback/override fill color (2D + 3D) — bypasses the terrain color map. `.lolo`-computed. */
+    color?: string;
     /** Whether units can traverse this tile (default true) */
     passable?: boolean;
     /** Movement cost for pathfinding (default 1) */
@@ -91,6 +93,8 @@ export type IsometricUnit = {
     team?: 'player' | 'enemy' | 'neutral';
     /** Faction for 3D rendering (player/enemy/neutral) */
     faction?: 'player' | 'enemy' | 'neutral';
+    /** Fallback/override tint color (2D + 3D) — bypasses the team/faction color map. `.lolo`-computed. */
+    tint?: string;
     /** Current health */
     health?: number;
     /** Maximum health */

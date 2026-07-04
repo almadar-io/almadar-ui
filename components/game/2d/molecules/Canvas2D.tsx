@@ -52,8 +52,21 @@ import {
     FLOOR_HEIGHT,
     DIAMOND_TOP_Y,
     FEATURE_COLORS,
+    TERRAIN_COLORS,
+    TEAM_COLORS,
+    TEAM_SHADOW_COLORS,
+    HIGHLIGHT_COLORS,
+    SELECTION_RING_COLOR,
+    GRID_STROKE_COLOR,
+    BACKGROUND_FALLBACK_COLOR,
+    MINIMAP_TERRAIN_COLORS,
+    MINIMAP_UNIT_COLORS,
+    UNIT_LABEL_BG_COLORS,
+    DEFAULT_BG_COLOR,
 } from '../../shared/isometric';
-import { SHEET_COLUMNS } from '../../shared/spriteSheetConstants';
+import { SHEET_COLUMNS, SPRITE_SHEET_LAYOUT } from '../../shared/spriteSheetConstants';
+import { frameRect } from '../../shared/spriteAnimation';
+import { SideCanvas2D } from './SideCanvas2D';
 import type { UiError } from '../../../core/atoms/types';
 
 // =============================================================================
@@ -167,7 +180,7 @@ export interface Canvas2DProps {
     /**
      * Opt-in: smooth-interpolate unit positions between LOLO tick snapshots
      * via a `requestAnimationFrame` loop (same fixed-timestep technique
-     * `SideView` already uses for the player), instead of the default
+     * `SideCanvas2D` already uses for the player), instead of the default
      * tick-rate-cadence redraw. DEFAULT OFF — for continuous-movement boards
      * only; tile-snapped boards see no behavior change.
      */
@@ -223,18 +236,9 @@ export interface Canvas2DProps {
 }
 
 // =============================================================================
-// Side-view platformer branch (ported from PlatformerCanvas)
+// Side-view platformer defaults (the `SideCanvas2D` renderer itself lives in
+// ./SideCanvas2D.tsx — this file only owns the render call-site defaults).
 // =============================================================================
-
-const PLATFORM_COLORS: Record<string, string> = {
-    ground: '#4a7c59',
-    platform: '#7c6b4a',
-    hazard: '#c0392b',
-    goal: '#f1c40f',
-};
-/** SideView runs a continuous rAF loop, so a lazily-fetched atlas is picked up on the next
- *  frame — no re-render trigger needed. */
-const NOOP = (): void => { /* continuous loop re-reads the atlas cache next frame */ };
 
 /** A backdrop may be authored as a bare URL string (the natural shorthand) or a
  * full `Asset`. Normalize a string to a minimal decoration Asset so the render
@@ -245,11 +249,23 @@ function normalizeBackdrop(bg: AssetUrl | Asset | undefined): Asset | undefined 
         : bg;
 }
 
-const PLAYER_COLOR = '#3498db';
-const PLAYER_EYE_COLOR = '#ffffff';
-const SKY_GRADIENT_TOP = '#1a1a2e';
-const SKY_GRADIENT_BOTTOM = '#16213e';
-const GRID_COLOR = 'rgba(255, 255, 255, 0.03)';
+/** IsometricTile has no fallback-color field upstream; read an optional per-tile override
+ *  the same way `features` reads a `featureType` alias below — one inline intersection,
+ *  one shared theme map. */
+function resolveTileFallbackColor(tile: IsometricTile): string {
+    const override = tile.color;
+    return override ?? TERRAIN_COLORS[tile.terrain ?? ''] ?? TERRAIN_COLORS.default;
+}
+
+/** IsometricUnit has no tint field upstream; same override idiom as `resolveTileFallbackColor`. */
+function resolveUnitTeamColor(unit: IsometricUnit): string {
+    const override = unit.tint;
+    return override ?? TEAM_COLORS[unit.team ?? ''] ?? TEAM_COLORS.default;
+}
+
+/** Row count for the legacy whole-sheet fallback crop — derived from the shared animation-row
+ *  layout instead of a bare literal (idle/walk/attack/hit/death = 5 rows). */
+const LEGACY_SHEET_ROWS = Object.keys(SPRITE_SHEET_LAYOUT).length;
 
 const DEFAULT_PLATFORMS: Platform[] = [
     { x: 0, y: 368, width: 800, height: 32, type: 'ground' },
@@ -257,326 +273,6 @@ const DEFAULT_PLATFORMS: Platform[] = [
     { x: 420, y: 220, width: 160, height: 16, type: 'platform' },
     { x: 620, y: 300, width: 140, height: 16, type: 'platform' },
 ];
-
-interface SideViewProps {
-    player?: SidePlayer;
-    platforms: Platform[];
-    worldWidth: number;
-    worldHeight: number;
-    canvasWidth: number;
-    canvasHeight: number;
-    follow: boolean;
-    bgColor: string;
-    backgroundImage?: AssetUrl | Asset;
-    playerSprite?: Asset;
-    tileSprites?: Record<string, Asset>;
-    effects: ActiveEffect[];
-    keyMap?: Record<string, string>;
-    keyUpMap?: Record<string, string>;
-    className?: string;
-}
-
-/**
- * Side-view renderer — ported verbatim from PlatformerCanvas. Physics is NOT here
- * (it lives in the LOLO model); this only interpolates+draws the authoritative
- * `player`/`platforms` props and translates keyboard input into the board's semantic events via keyMap/keyUpMap.
- */
-function SideView({
-    player,
-    platforms,
-    worldWidth,
-    worldHeight,
-    canvasWidth,
-    canvasHeight,
-    follow,
-    bgColor,
-    backgroundImage: backgroundImageRaw,
-    playerSprite,
-    tileSprites,
-    effects,
-    keyMap,
-    keyUpMap,
-    className,
-}: SideViewProps): React.JSX.Element {
-    const backgroundImage = normalizeBackdrop(backgroundImageRaw);
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const eventBus = useEventBus();
-    const keysRef = useRef<Set<string>>(new Set());
-    const imageCache = useRef<Map<string, HTMLImageElement>>(new Map());
-    const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
-
-    const loadImage = useCallback((url: string): HTMLImageElement | null => {
-        if (!url) return null;
-        const cached = imageCache.current.get(url);
-        if (cached?.complete && cached.naturalWidth > 0) {
-            if (!loadedImages.has(url)) setLoadedImages((prev) => new Set(prev).add(url));
-            return cached;
-        }
-        if (!cached) {
-            const img = new Image();
-            img.crossOrigin = 'anonymous';
-            img.src = url;
-            img.onload = () => setLoadedImages((prev) => new Set(prev).add(url));
-            imageCache.current.set(url, img);
-        }
-        return null;
-    }, [loadedImages]);
-
-    // Verification bridge: register canvas frame capture.
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        bindCanvasCapture(() => canvas.toDataURL('image/png'));
-        return () => { bindCanvasCapture(() => null); };
-    }, []);
-
-    const resolvedPlayer: SidePlayer = player ?? {
-        x: 80, y: 336, width: 32, height: 48, vx: 0, vy: 0, grounded: true, facingRight: true,
-    };
-
-    // Live ref to the authoritative player for the rAF draw closure.
-    const playerRef = useRef<SidePlayer>(resolvedPlayer);
-    playerRef.current = resolvedPlayer;
-
-    const interp = useRenderInterpolation<{ id: string; x: number; y: number }>();
-    useEffect(() => {
-        interp.onSnapshot([{ id: 'player', x: resolvedPlayer.x, y: resolvedPlayer.y }]);
-    }, [resolvedPlayer.x, resolvedPlayer.y]);
-
-    const propsRef = useRef({
-        platforms, worldWidth, worldHeight, canvasWidth, canvasHeight,
-        follow, bgColor, playerSprite, tileSprites, backgroundImage, effects,
-    });
-    propsRef.current = {
-        platforms, worldWidth, worldHeight, canvasWidth, canvasHeight,
-        follow, bgColor, playerSprite, tileSprites, backgroundImage, effects,
-    };
-
-    // Keyboard → the board's SEMANTIC events via the declarative keyMap/keyUpMap.
-    // The component only translates a device keycode into the board's own intent event
-    // (LEFT/RIGHT/JUMP/STOP); it never decides game logic. The FSM stays device-agnostic
-    // and keyboard + d-pad converge on the same events.
-    const handleKeyDown = useCallback((e: KeyboardEvent) => {
-        if (keysRef.current.has(e.code)) return;
-        keysRef.current.add(e.code);
-        const ev = keyMap?.[e.code];
-        if (ev) { eventBus.emit(`UI:${ev}`, {}); e.preventDefault(); }
-    }, [eventBus, keyMap]);
-
-    const handleKeyUp = useCallback((e: KeyboardEvent) => {
-        keysRef.current.delete(e.code);
-        const ev = keyUpMap?.[e.code];
-        if (ev) eventBus.emit(`UI:${ev}`, {});
-    }, [keyUpMap, eventBus]);
-
-    useEffect(() => {
-        window.addEventListener('keydown', handleKeyDown);
-        window.addEventListener('keyup', handleKeyUp);
-        return () => {
-            window.removeEventListener('keydown', handleKeyDown);
-            window.removeEventListener('keyup', handleKeyUp);
-        };
-    }, [handleKeyDown, handleKeyUp]);
-
-    // Canvas dpr scaling — runs only when dimensions change.
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width = canvasWidth * dpr;
-        canvas.height = canvasHeight * dpr;
-        ctx.scale(dpr, dpr);
-    }, [canvasWidth, canvasHeight]);
-
-    // rAF draw loop — interpolated player position, authoritative everything else.
-    useEffect(() => {
-        const drawFrame = (positions: Map<string, { x: number; y: number }>) => {
-            const canvas = canvasRef.current;
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            if (!ctx) return;
-
-            const {
-                platforms: plats, worldWidth: ww, worldHeight: wh,
-                canvasWidth: cw, canvasHeight: ch, follow: fc,
-                bgColor: bg, playerSprite: pSprite, tileSprites: tSprites,
-                backgroundImage: bgImg, effects: fxList,
-            } = propsRef.current;
-
-            const auth = playerRef.current;
-            const interped = positions.get('player');
-            const px = interped?.x ?? auth.x;
-            const py = interped?.y ?? auth.y;
-
-            // Follow-camera clamp.
-            let camX = 0;
-            let camY = 0;
-            if (fc) {
-                camX = Math.max(0, Math.min(px - cw / 2, ww - cw));
-                camY = Math.max(0, Math.min(py - ch / 2 - 50, wh - ch));
-            }
-
-            // Background.
-            const bgImage = bgImg ? loadImage(bgImg.url) : null;
-            const bgSrc = bgImage ? resolveAssetSource(bgImage, bgImg, NOOP) : null;
-            if (bgSrc) {
-                blit(ctx, bgSrc, 0, 0, cw, ch);
-            } else if (bgImage) {
-                ctx.drawImage(bgImage, 0, 0, cw, ch);
-            } else if (bg) {
-                ctx.fillStyle = bg;
-                ctx.fillRect(0, 0, cw, ch);
-            } else {
-                const grad = ctx.createLinearGradient(0, 0, 0, ch);
-                grad.addColorStop(0, SKY_GRADIENT_TOP);
-                grad.addColorStop(1, SKY_GRADIENT_BOTTOM);
-                ctx.fillStyle = grad;
-                ctx.fillRect(0, 0, cw, ch);
-            }
-
-            // Grid lines.
-            ctx.strokeStyle = GRID_COLOR;
-            ctx.lineWidth = 1;
-            const gridSize = 32;
-            for (let gx = -camX % gridSize; gx < cw; gx += gridSize) {
-                ctx.beginPath();
-                ctx.moveTo(gx, 0);
-                ctx.lineTo(gx, ch);
-                ctx.stroke();
-            }
-            for (let gy = -camY % gridSize; gy < ch; gy += gridSize) {
-                ctx.beginPath();
-                ctx.moveTo(0, gy);
-                ctx.lineTo(cw, gy);
-                ctx.stroke();
-            }
-
-            // Platforms.
-            for (const plat of plats) {
-                const platX = plat.x - camX;
-                const platY = plat.y - camY;
-                const platType = plat.type ?? 'ground';
-                const spriteAsset = tSprites?.[platType];
-                const tileImg = spriteAsset ? loadImage(spriteAsset.url) : null;
-                const tileSrc = tileImg ? resolveAssetSource(tileImg, spriteAsset, NOOP) : null;
-
-                if (tileSrc) {
-                    // Repeat the (whole image OR atlas sub-rect) horizontally across the platform.
-                    const originX = tileSrc.rect ? tileSrc.rect.sx : 0;
-                    const originY = tileSrc.rect ? tileSrc.rect.sy : 0;
-                    const tileW = tileSrc.rect ? tileSrc.rect.sw : tileImg!.naturalWidth;
-                    const tileH = tileSrc.rect ? tileSrc.rect.sh : tileImg!.naturalHeight;
-                    const scaleH = plat.height / tileH;
-                    const scaledW = tileW * scaleH;
-                    for (let tx = 0; tx < plat.width; tx += scaledW) {
-                        const drawW = Math.min(scaledW, plat.width - tx);
-                        const srcW = drawW / scaleH;
-                        ctx.drawImage(tileImg!, originX, originY, srcW, tileH, platX + tx, platY, drawW, plat.height);
-                    }
-                } else {
-                    const color = PLATFORM_COLORS[platType] ?? PLATFORM_COLORS.ground;
-                    ctx.fillStyle = color;
-                    ctx.fillRect(platX, platY, plat.width, plat.height);
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-                    ctx.fillRect(platX, platY, plat.width, 3);
-                    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-                    ctx.fillRect(platX, platY + plat.height - 2, plat.width, 2);
-                    if (platType === 'hazard') {
-                        ctx.strokeStyle = '#e74c3c';
-                        ctx.lineWidth = 2;
-                        for (let sx = platX; sx < platX + plat.width; sx += 12) {
-                            ctx.beginPath();
-                            ctx.moveTo(sx, platY);
-                            ctx.lineTo(sx + 6, platY + plat.height);
-                            ctx.stroke();
-                        }
-                    }
-                    if (platType === 'goal') {
-                        ctx.fillStyle = 'rgba(241, 196, 15, 0.5)';
-                        ctx.beginPath();
-                        ctx.arc(platX + plat.width / 2, platY - 10, 8, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-                }
-            }
-
-            // Player (interpolated x/y; other fields authoritative).
-            const pw = auth.width ?? 24;
-            const ph = auth.height ?? 32;
-            const ppx = px - camX;
-            const ppy = py - camY;
-            const facingRight = auth.facingRight ?? true;
-            const playerImg = pSprite ? loadImage(pSprite.url) : null;
-            const playerSrc = playerImg ? resolveAssetSource(playerImg, pSprite, NOOP) : null;
-
-            if (playerSrc) {
-                ctx.save();
-                if (!facingRight) {
-                    ctx.translate(ppx + pw, ppy);
-                    ctx.scale(-1, 1);
-                    blit(ctx, playerSrc, 0, 0, pw, ph);
-                } else {
-                    blit(ctx, playerSrc, ppx, ppy, pw, ph);
-                }
-                ctx.restore();
-            } else {
-                ctx.fillStyle = PLAYER_COLOR;
-                const radius = Math.min(pw, ph) * 0.25;
-                ctx.beginPath();
-                ctx.moveTo(ppx + radius, ppy);
-                ctx.lineTo(ppx + pw - radius, ppy);
-                ctx.quadraticCurveTo(ppx + pw, ppy, ppx + pw, ppy + radius);
-                ctx.lineTo(ppx + pw, ppy + ph - radius);
-                ctx.quadraticCurveTo(ppx + pw, ppy + ph, ppx + pw - radius, ppy + ph);
-                ctx.lineTo(ppx + radius, ppy + ph);
-                ctx.quadraticCurveTo(ppx, ppy + ph, ppx, ppy + ph - radius);
-                ctx.lineTo(ppx, ppy + radius);
-                ctx.quadraticCurveTo(ppx, ppy, ppx + radius, ppy);
-                ctx.fill();
-
-                const eyeY = ppy + ph * 0.3;
-                const eyeSize = 3;
-                const eyeOffsetX = facingRight ? pw * 0.55 : pw * 0.2;
-                ctx.fillStyle = PLAYER_EYE_COLOR;
-                ctx.beginPath();
-                ctx.arc(ppx + eyeOffsetX, eyeY, eyeSize, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(ppx + eyeOffsetX + 7, eyeY, eyeSize, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            // ActiveEffect[] — world-space, faded by ttl.
-            for (const fx of fxList) {
-                const fxScreenX = fx.x - camX;
-                const fxScreenY = fx.y - camY;
-                const alpha = Math.min(1, fx.ttl / 4);
-                const prev = ctx.globalAlpha;
-                ctx.globalAlpha = alpha;
-                ctx.fillStyle = '#ffe066';
-                ctx.beginPath();
-                ctx.arc(fxScreenX, fxScreenY, 12, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.globalAlpha = prev;
-            }
-        };
-
-        return interp.startLoop(drawFrame);
-    }, [interp.startLoop, loadImage]);
-
-    return (
-        <canvas
-            ref={canvasRef}
-            style={{ width: canvasWidth, height: canvasHeight }}
-            className={cn('block rounded-container border border-border/10', className)}
-            data-testid="canvas-2d-side"
-            tabIndex={0}
-        />
-    );
-}
 
 // =============================================================================
 // Component
@@ -631,7 +327,7 @@ export function Canvas2D({
     // Side-view asset resolution
     playerSprite,
     tileSprites,
-    bgColor = '#5c94fc',
+    bgColor = DEFAULT_BG_COLOR,
     worldWidth = 800,
     worldHeight = 400,
     // Remote asset loading
@@ -660,7 +356,7 @@ export function Canvas2D({
     const lerpRafRef = useRef(0);
     const animRafRef = useRef(0);
     // Opt-in unit-position interpolation (grid projections) — same fixed-timestep
-    // technique `SideView` already uses for the player. Empty/unread when
+    // technique `SideCanvas2D` already uses for the player. Empty/unread when
     // `interpolateUnits` is off, so default behavior is byte-for-byte unchanged.
     const unitInterp = useRenderInterpolation<{ id: string; x: number; y: number }>();
     const interpolatedUnitPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
@@ -870,7 +566,7 @@ export function Canvas2D({
         return sortedTiles.map(t => ({
             x: t.x,
             y: t.y,
-            color: t.terrain === 'water' ? '#3b82f6' : t.terrain === 'mountain' ? '#78716c' : '#4ade80',
+            color: MINIMAP_TERRAIN_COLORS[t.terrain ?? ''] ?? MINIMAP_TERRAIN_COLORS.default,
         }));
     }, [showMinimap, sortedTiles]);
 
@@ -879,7 +575,7 @@ export function Canvas2D({
         return units.filter(u => u.position).map(u => ({
             x: u.position!.x,
             y: u.position!.y,
-            color: u.team === 'player' ? '#60a5fa' : u.team === 'enemy' ? '#f87171' : '#9ca3af',
+            color: MINIMAP_UNIT_COLORS[u.team ?? ''] ?? MINIMAP_UNIT_COLORS.default,
             isPlayer: u.team === 'player',
         }));
     }, [showMinimap, units]);
@@ -926,7 +622,7 @@ export function Canvas2D({
                 }
             }
         } else {
-            ctx.fillStyle = '#1a1a2e';
+            ctx.fillStyle = BACKGROUND_FALLBACK_COLOR;
             ctx.fillRect(0, 0, viewportSize.width, viewportSize.height);
         }
 
@@ -970,19 +666,15 @@ export function Canvas2D({
             } else if (img && img.naturalWidth === 0) {
                 ctx.drawImage(img, pos.x, pos.y, scaledTileWidth, scaledTileHeight);
             } else if (squareGrid) {
-                ctx.fillStyle = tile.terrain === 'water' ? '#3b82f6' :
-                    tile.terrain === 'mountain' ? '#78716c' :
-                        tile.terrain === 'stone' ? '#9ca3af' : '#4ade80';
+                ctx.fillStyle = resolveTileFallbackColor(tile);
                 ctx.fillRect(pos.x, pos.y, scaledTileWidth, scaledTileWidth);
-                ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+                ctx.strokeStyle = GRID_STROKE_COLOR;
                 ctx.lineWidth = 1;
                 ctx.strokeRect(pos.x, pos.y, scaledTileWidth, scaledTileWidth);
             } else {
                 const centerX = pos.x + scaledTileWidth / 2;
                 const topY = pos.y + scaledDiamondTopY;
-                ctx.fillStyle = tile.terrain === 'water' ? '#3b82f6' :
-                    tile.terrain === 'mountain' ? '#78716c' :
-                        tile.terrain === 'stone' ? '#9ca3af' : '#4ade80';
+                ctx.fillStyle = resolveTileFallbackColor(tile);
                 ctx.beginPath();
                 ctx.moveTo(centerX, topY);
                 ctx.lineTo(pos.x + scaledTileWidth, topY + scaledFloorHeight / 2);
@@ -990,7 +682,7 @@ export function Canvas2D({
                 ctx.lineTo(pos.x, topY + scaledFloorHeight / 2);
                 ctx.closePath();
                 ctx.fill();
-                ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+                ctx.strokeStyle = GRID_STROKE_COLOR;
                 ctx.lineWidth = 1;
                 ctx.stroke();
             }
@@ -1013,11 +705,11 @@ export function Canvas2D({
             };
 
             if (hoveredTile && hoveredTile.x === tile.x && hoveredTile.y === tile.y) {
-                drawHighlight('rgba(255, 255, 255, 0.15)');
+                drawHighlight(HIGHLIGHT_COLORS.hover);
             }
             const tileKey = `${tile.x},${tile.y}`;
-            if (validMoveSet.has(tileKey)) drawHighlight('rgba(74, 222, 128, 0.25)');
-            if (attackTargetSet.has(tileKey)) drawHighlight('rgba(239, 68, 68, 0.35)');
+            if (validMoveSet.has(tileKey)) drawHighlight(HIGHLIGHT_COLORS.validMove);
+            if (attackTargetSet.has(tileKey)) drawHighlight(HIGHLIGHT_COLORS.attack);
 
             if (debug) {
                 const centerX = pos.x + scaledTileWidth / 2;
@@ -1120,9 +812,11 @@ export function Canvas2D({
             // Static atlas sub-texture (a packed sheet + named/indexed sprite), distinct from the
             // animated `spriteSheet` grid path above.
             const unitSrc = (img && !unitIsSheet) ? resolveAssetSource(img, unitAsset, bumpAtlas) : null;
-            const SHEET_ROWS = 5;
+            // Legacy whole-sheet fallback (no atlas JSON resolved this frame): crop the sheet's
+            // top-left cell via the shared `frameRect` math, sized off the animation-row layout.
             const sheetFrameW = img ? img.naturalWidth / SHEET_COLUMNS : 0;
-            const sheetFrameH = img ? img.naturalHeight / SHEET_ROWS : 0;
+            const sheetFrameH = img ? img.naturalHeight / LEGACY_SHEET_ROWS : 0;
+            const legacyFrame = frameRect(0, 0, SHEET_COLUMNS, sheetFrameW, sheetFrameH);
             const frameW = unitIsSheet ? sheetFrameW : (img?.naturalWidth ?? 1);
             const frameH = unitIsSheet ? sheetFrameH : (img?.naturalHeight ?? 1);
             const ar = unitIsSheet ? (sheetFrameW / (sheetFrameH || 1)) : (unitSrc ? unitSrc.aspect : (frameW / (frameH || 1)));
@@ -1145,18 +839,16 @@ export function Canvas2D({
                 ctx.globalAlpha = 0.25;
                 if (img) {
                     if (unitIsSheet) {
-                        ctx.drawImage(img, 0, 0, sheetFrameW, sheetFrameH, ghostCenterX - drawW / 2, ghostGroundY - drawH, drawW, drawH);
+                        ctx.drawImage(img, legacyFrame.sx, legacyFrame.sy, legacyFrame.sw, legacyFrame.sh, ghostCenterX - drawW / 2, ghostGroundY - drawH, drawW, drawH);
                     } else if (unitSrc) {
                         blit(ctx, unitSrc, ghostCenterX - drawW / 2, ghostGroundY - drawH, drawW, drawH);
                     } else {
                         ctx.drawImage(img, ghostCenterX - drawW / 2, ghostGroundY - drawH, drawW, drawH);
                     }
                 } else {
-                    const color = unit.team === 'player' ? '#3b82f6' :
-                        unit.team === 'enemy' ? '#ef4444' : '#6b7280';
                     ctx.beginPath();
                     ctx.arc(ghostCenterX, ghostGroundY - 16 * scale, 20 * scale, 0, Math.PI * 2);
-                    ctx.fillStyle = color;
+                    ctx.fillStyle = resolveUnitTeamColor(unit);
                     ctx.fill();
                 }
                 ctx.restore();
@@ -1165,7 +857,7 @@ export function Canvas2D({
             if (isSelected) {
                 ctx.beginPath();
                 ctx.ellipse(centerX, groundY, drawW / 2 + 4 * scale, 12 * scale, 0, 0, Math.PI * 2);
-                ctx.strokeStyle = 'rgba(0, 200, 255, 0.8)';
+                ctx.strokeStyle = SELECTION_RING_COLOR;
                 ctx.lineWidth = 3;
                 ctx.stroke();
             }
@@ -1185,7 +877,7 @@ export function Canvas2D({
 
                 ctx.save();
                 if (unit.team) {
-                    ctx.shadowColor = unit.team === 'player' ? 'rgba(0, 150, 255, 0.6)' : 'rgba(255, 50, 50, 0.6)';
+                    ctx.shadowColor = TEAM_SHADOW_COLORS[unit.team] ?? TEAM_SHADOW_COLORS.default;
                     ctx.shadowBlur = 12 * scale;
                 }
                 if (frame.flipX) {
@@ -1200,7 +892,7 @@ export function Canvas2D({
                 const spriteY = groundY - drawH - breatheOffset;
                 const drawUnit = (x: number) => {
                     if (unitIsSheet) {
-                        ctx.drawImage(img, 0, 0, sheetFrameW, sheetFrameH, x, spriteY, drawW, drawH);
+                        ctx.drawImage(img, legacyFrame.sx, legacyFrame.sy, legacyFrame.sw, legacyFrame.sh, x, spriteY, drawW, drawH);
                     } else if (unitSrc) {
                         blit(ctx, unitSrc, x, spriteY, drawW, drawH);
                     } else {
@@ -1209,7 +901,7 @@ export function Canvas2D({
                 };
                 if (unit.team) {
                     ctx.save();
-                    ctx.shadowColor = unit.team === 'player' ? 'rgba(0, 150, 255, 0.6)' : 'rgba(255, 50, 50, 0.6)';
+                    ctx.shadowColor = TEAM_SHADOW_COLORS[unit.team] ?? TEAM_SHADOW_COLORS.default;
                     ctx.shadowBlur = 12 * scale;
                     drawUnit(centerX - drawW / 2);
                     ctx.restore();
@@ -1217,11 +909,9 @@ export function Canvas2D({
                     drawUnit(centerX - drawW / 2);
                 }
             } else {
-                const color = unit.team === 'player' ? '#3b82f6' :
-                    unit.team === 'enemy' ? '#ef4444' : '#6b7280';
                 ctx.beginPath();
                 ctx.arc(centerX, groundY - 20 * scale - breatheOffset, 20 * scale, 0, Math.PI * 2);
-                ctx.fillStyle = color;
+                ctx.fillStyle = resolveUnitTeamColor(unit);
                 ctx.fill();
                 ctx.strokeStyle = 'rgba(255,255,255,0.8)';
                 ctx.lineWidth = 2;
@@ -1437,7 +1127,7 @@ export function Canvas2D({
 
     // Keyboard for any NON-side projection (free/flat/iso/hex) → semantic events via keyMap/keyUpMap.
     // Gated on keyMap presence, NOT on projection — keyboard support is independent of how the board
-    // renders. (`side` has its own SideView listener above.)
+    // renders. (`side` has its own SideCanvas2D listener above.)
     useEffect(() => {
         if (isSide || (!keyMap && !keyUpMap)) return;
         const onDown = (e: KeyboardEvent) => {
@@ -1505,7 +1195,7 @@ export function Canvas2D({
     if (isSide) {
         return (
             <Box ref={containerRef} className={cn('relative overflow-hidden w-full h-full', className)}>
-                <SideView
+                <SideCanvas2D
                     player={player}
                     platforms={platforms && platforms.length ? platforms : DEFAULT_PLATFORMS}
                     worldWidth={worldWidth}
@@ -1606,7 +1296,7 @@ export function Canvas2D({
                         <Typography
                             as="span"
                             className="text-white text-xs font-bold px-1.5 py-0.5 rounded mb-0.5 whitespace-nowrap block"
-                            style={{ background: unit.team === 'player' ? 'rgba(59,130,246,0.9)' : unit.team === 'enemy' ? 'rgba(239,68,68,0.9)' : 'rgba(107,114,128,0.9)' }}
+                            style={{ background: UNIT_LABEL_BG_COLORS[unit.team ?? ''] ?? UNIT_LABEL_BG_COLORS.default }}
                         >
                             {unit.name}
                         </Typography>

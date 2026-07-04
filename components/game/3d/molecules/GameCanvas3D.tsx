@@ -27,19 +27,25 @@ import React, {
 import type { EventEmit, Asset } from '@almadar/core';
 import type { Platform, SidePlayer } from '../../2d/molecules/Canvas2D';
 import { useEventBus } from '../../../../hooks/useEventBus';
-import { Canvas, useThree, useFrame, useLoader } from '@react-three/fiber';
+import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
-import { OrbitControls, Grid, Billboard, Text } from '@react-three/drei';
+import { OrbitControls, Grid } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { AssetLoader, assetLoader } from '../../shared/lib/AssetLoader';
 import { useAssetLoader } from '../../shared/hooks/useAssetLoader';
 import { useGameCanvas3DEvents, type MinimalMouseEvent } from '../../shared/hooks/useGameCanvas3DEvents';
 import { Canvas3DLoadingState } from './Canvas3DLoadingState';
 import { Canvas3DErrorBoundary } from './Canvas3DErrorBoundary';
-import { ModelLoader } from './ModelLoader';
+import { Lighting3D } from './Lighting3D';
+import { TileMesh3D } from './TileMesh3D';
+import { UnitMesh3D } from './UnitMesh3D';
+import { FeatureMesh3D } from './FeatureMesh3D';
+import { SideScene3D } from './SideScene3D';
+import { CameraController3D, FollowCamera3D, LerpedGroup3D } from './GameCamera3D';
+import { EventMarker3D } from '../atoms/EventMarker3D';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from '../../shared/isometricTypes';
-import type { ResolvedFrame } from '../../shared/spriteAnimationTypes';
-import { useUnitSpriteAtlas, unitAtlasUrl } from '../../shared/hooks/useUnitSpriteAtlas';
+import { useUnitSpriteAtlas } from '../../shared/hooks/useUnitSpriteAtlas';
+import { GRID_COLORS_3D, DEFAULT_BACKGROUND_3D } from '../../shared/game3dTheme';
 import { cn } from '../../../../lib/cn';
 import './GameCanvas3D.css';
 
@@ -221,562 +227,11 @@ export interface GameCanvas3DHandle {
     export: () => { tiles: IsometricTile[]; units: IsometricUnit[]; features: IsometricFeature[] };
 }
 
-/**
- * Camera controller component for imperative handle integration
- */
-function CameraController({
-    onCameraChange,
-}: {
-    onCameraChange?: (pos: { x: number; y: number; z: number }) => void;
-}): null {
-    const { camera } = useThree();
-
-    useEffect(() => {
-        if (onCameraChange) {
-            onCameraChange({
-                x: camera.position.x,
-                y: camera.position.y,
-                z: camera.position.z,
-            });
-        }
-    }, [camera.position, onCameraChange]);
-
-    return null;
-}
-
-/**
- * Billboarded sprite-sheet plane for a unit. Loads the atlas's PNG sheet as a
- * texture and crops a SINGLE frame via UV `repeat`/`offset`, advancing per
- * animation state. Mirrors the 2D canvas: one frame, never the whole sheet.
- */
-function UnitSpriteBillboard({
-    sheetUrl,
-    resolveFrame,
-    height = 1.2,
-}: {
-    sheetUrl: string;
-    resolveFrame: () => ResolvedFrame | null;
-    height?: number;
-}): React.JSX.Element | null {
-    const texture = useLoader(THREE.TextureLoader, sheetUrl);
-    const meshRef = useRef<THREE.Mesh>(null);
-    const matRef = useRef<THREE.MeshBasicMaterial>(null);
-    const [aspect, setAspect] = useState(1);
-
-    useFrame(() => {
-        const frame = resolveFrame();
-        if (!frame || !texture.image) return;
-        const imgW = texture.image.width as number;
-        const imgH = texture.image.height as number;
-        if (!imgW || !imgH) return;
-
-        // Crop one frame: repeat = frame size / sheet size, offset from top-left.
-        texture.repeat.set((frame.flipX ? -1 : 1) * (frame.sw / imgW), frame.sh / imgH);
-        texture.offset.set(
-            frame.flipX ? (frame.sx + frame.sw) / imgW : frame.sx / imgW,
-            1 - (frame.sy + frame.sh) / imgH,
-        );
-        texture.magFilter = THREE.NearestFilter;
-        texture.minFilter = THREE.NearestFilter;
-        texture.needsUpdate = true;
-
-        const nextAspect = frame.sw / frame.sh;
-        if (Math.abs(nextAspect - aspect) > 0.001) setAspect(nextAspect);
-
-        if (matRef.current) matRef.current.needsUpdate = true;
-    });
-
-    return (
-        <mesh ref={meshRef} position={[0, height / 2, 0]}>
-            <planeGeometry args={[height * aspect, height]} />
-            <meshBasicMaterial
-                ref={matRef}
-                map={texture}
-                transparent
-                alphaTest={0.1}
-                side={THREE.DoubleSide}
-            />
-        </mesh>
-    );
-}
-
-/**
- * Camera that smooth-tracks a world-space target (side-view player or selected unit).
- * OrbitControls is disabled while following — the camera is authoritative.
- */
-function FollowCamera({
-    target,
-    offset,
-}: {
-    target: [number, number, number];
-    offset: [number, number, number];
-}): null {
-    const { camera } = useThree();
-    const look = useRef(new THREE.Vector3(target[0], target[1], target[2]));
-    const goal = useRef(new THREE.Vector3());
-    useFrame((_, delta) => {
-        const t = Math.min(1, delta * 5);
-        goal.current.set(target[0] + offset[0], target[1] + offset[1], target[2] + offset[2]);
-        camera.position.lerp(goal.current, t);
-        look.current.lerp(goal.current.set(target[0], target[1], target[2]), t);
-        camera.lookAt(look.current);
-    });
-    return null;
-}
-
-/**
- * Group that smooth-lerps toward its target position between LOLO tick snapshots
- * (the 3D analogue of Canvas2D's `interpolateUnits`). Disabled → snaps.
- */
-function LerpedGroup({
-    target,
-    enabled,
-    children,
-}: {
-    target: [number, number, number];
-    enabled: boolean;
-    children: React.ReactNode;
-}): React.JSX.Element {
-    const ref = useRef<THREE.Group>(null);
-    const goal = useRef(new THREE.Vector3());
-    useFrame((_, delta) => {
-        const g = ref.current;
-        if (!g) return;
-        goal.current.set(target[0], target[1], target[2]);
-        if (enabled) g.position.lerp(goal.current, Math.min(1, delta * 10));
-        else g.position.copy(goal.current);
-    });
-    return (
-        <group ref={ref} position={target}>
-            {children}
-        </group>
-    );
-}
-
-/** Fallback platform colors by type — mirrors the 2D SideView palette. */
-const SIDE_PLATFORM_COLORS: Record<string, string> = {
-    ground: '#5b8c3e',
-    platform: '#8b5a2b',
-    hazard: '#cc4444',
-    goal: '#4488cc',
-};
-
-/**
- * Side-scroller scene: renders the LOLO-owned pixel-space `player`/`platforms`
- * as 3D geometry. Physics stays in the board's tick (same contract as Canvas2D's
- * SideView) — this only maps px → world units and draws.
- */
-function SideScene({
-    player,
-    platforms,
-    worldHeight,
-    ppu,
-    playerSprite,
-    tileSprites,
-    interpolate,
-    features = [],
-    events = [],
-    assetManifest,
-}: {
-    player: SidePlayer;
-    platforms: Platform[];
-    worldHeight: number;
-    ppu: number;
-    playerSprite?: Asset;
-    tileSprites?: Record<string, Asset>;
-    interpolate: boolean;
-    /** Side-view features (collectibles/props) — x/y are PIXELS like platforms. */
-    features?: IsometricFeature[];
-    /** Feedback markers — x/y are PIXELS in side view. */
-    events?: GameEvent[];
-    assetManifest?: GameCanvas3DAssetManifest;
-}): React.JSX.Element {
-    const pw = player.width ?? 32;
-    const ph = player.height ?? 48;
-    const playerPos: [number, number, number] = [
-        (player.x + pw / 2) / ppu,
-        (worldHeight - player.y - ph) / ppu,
-        0,
-    ];
-    const playerH = Math.max(ph / ppu, 0.5);
-    return (
-        <group>
-            {platforms.map((p, i) => {
-                const platformType = p.type ?? 'platform';
-                const model = tileSprites?.[platformType]?.url;
-                const topY = (worldHeight - p.y) / ppu;
-                if (model) {
-                    // Tile the platform with unit blocks, top edge on the AABB top.
-                    const cells = Math.max(1, Math.round(p.width / ppu));
-                    const x0 = p.x / ppu;
-                    return (
-                        <group key={`plat-${i}`}>
-                            {Array.from({ length: cells }, (_, c) => (
-                                <group key={c} position={[x0 + c + 0.5, topY - 0.475, 0]}>
-                                    <ModelLoader url={model} scale={0.95} fallbackGeometry="box" castShadow receiveShadow />
-                                </group>
-                            ))}
-                        </group>
-                    );
-                }
-                // No model — exact AABB box in the 2D palette color.
-                return (
-                    <mesh
-                        key={`plat-${i}`}
-                        position={[(p.x + p.width / 2) / ppu, topY - p.height / 2 / ppu, 0]}
-                    >
-                        <boxGeometry args={[p.width / ppu, p.height / ppu, 1]} />
-                        <meshStandardMaterial color={SIDE_PLATFORM_COLORS[platformType] ?? '#888888'} />
-                    </mesh>
-                );
-            })}
-            {/* Side-view features (collectibles/props) — pixel coords, LOLO owns pickup logic */}
-            {features.map((feature, i) => {
-                const model = feature.assetUrl ?? assetManifest?.features?.[feature.type];
-                const fx = feature.x / ppu;
-                const fy = (worldHeight - feature.y) / ppu;
-                if (!model?.url) return null;
-                return (
-                    <group key={feature.id ?? `sfeat-${i}`} position={[fx, fy, 0]}>
-                        <ModelLoader url={model.url} scale={0.6} tint={feature.color} fallbackGeometry="sphere" castShadow />
-                    </group>
-                );
-            })}
-
-            {/* Feedback markers — pixel coords */}
-            {events.map((ev, i) => (
-                <EventMarker
-                    key={ev.id ?? `sev-${i}`}
-                    event={ev}
-                    position={[ev.x / ppu, (worldHeight - (ev.y ?? 0)) / ppu + 0.8, 0.2]}
-                />
-            ))}
-
-            <LerpedGroup target={playerPos} enabled={interpolate}>
-                {playerSprite?.url ? (
-                    <group position={[0, playerH / 2, 0]}>
-                        <ModelLoader
-                            url={playerSprite.url}
-                            scale={playerH}
-                            rotation={[0, player.facingRight ? 90 : -90, 0]}
-                            animation={player.animation ?? 'idle'}
-                            fallbackGeometry="box"
-                            castShadow
-                        />
-                    </group>
-                ) : (
-                    <mesh position={[0, playerH / 2, 0]}>
-                        <capsuleGeometry args={[playerH * 0.25, playerH * 0.5, 4, 8]} />
-                        <meshStandardMaterial color="#4488ff" />
-                    </mesh>
-                )}
-            </LerpedGroup>
-        </group>
-    );
-}
-
-const UNIT_BASE_MODEL_SCALE = 0.5;
-const UNIT_BASE_BILLBOARD_HEIGHT = 1.2;
-const UNIT_BASE_PRIMITIVE_RADIUS = 0.3;
 // Y offset that seats a base-pivoted unit/feature model on the tile surface.
 // Tiles render flush at grid-Y (primitive plate is 0.2 tall → top ≈ 0.1; GLB
 // terrain plates are similarly thin), so units/features sit just above that.
 // NOT the old hardcoded +0.5, which floated Kenney GLBs ~½ cell above the board.
 const TILE_TOP_OFFSET = 0.1;
-
-/** Feedback colors by GameEvent.type — hit/damage red, heal/pickup green/gold, death dark, else white. */
-const EVENT_COLORS: Record<string, string> = {
-    hit: '#ff5544',
-    damage: '#ff5544',
-    attack: '#ff8844',
-    heal: '#44dd66',
-    pickup: '#ffcc33',
-    score: '#ffcc33',
-    death: '#aa3333',
-    win: '#66ff88',
-    lose: '#ff6666',
-};
-
-/**
- * Floating combat/feedback marker for one `GameEvent` — billboarded text above the
- * cell. Lifetime is LOLO-owned: boards append events on actions and expire them in
- * their tick (same contract as the 2D effects array).
- */
-function EventMarker({
-    event,
-    position,
-}: {
-    event: GameEvent;
-    position: [number, number, number];
-}): React.JSX.Element {
-    return (
-        <Billboard position={position}>
-            <Text
-                fontSize={0.32}
-                color={EVENT_COLORS[event.type] ?? '#ffffff'}
-                outlineWidth={0.02}
-                outlineColor="#000000"
-                anchorX="center"
-                anchorY="middle"
-            >
-                {event.message ?? event.type}
-            </Text>
-        </Billboard>
-    );
-}
-
-/**
- * Default renderers live at MODULE scope so their component identity is stable.
- * Defining them inside GameCanvas3D (via useCallback) gave React a new component
- * type whenever a dep changed (hover, per-tick validMoves), which unmounted and
- * remounted every tile/unit/feature — reloading every GLB and flickering.
- */
-function DefaultTile({
-    tile,
-    position,
-    model,
-    isSelected,
-    isHovered,
-    isValidMove,
-    isAttackTarget,
-    onTileClick,
-    onTileHover,
-}: {
-    tile: IsometricTile;
-    position: [number, number, number];
-    model?: Asset;
-    isSelected: boolean;
-    isHovered: boolean;
-    isValidMove: boolean;
-    isAttackTarget: boolean;
-    onTileClick: (tile: IsometricTile, event: MinimalMouseEvent) => void;
-    onTileHover: (tile: IsometricTile | null, event: MinimalMouseEvent) => void;
-}): React.JSX.Element {
-    let color = 0x808080;
-    if (tile.type === 'water') color = 0x4488cc;
-    else if (tile.type === 'grass') color = 0x44aa44;
-    else if (tile.type === 'sand') color = 0xddcc88;
-    else if (tile.type === 'rock') color = 0x888888;
-    else if (tile.type === 'snow') color = 0xeeeeee;
-
-    let emissive = 0x000000;
-    if (isSelected) emissive = 0x444444;
-    else if (isAttackTarget) emissive = 0x440000;
-    else if (isValidMove) emissive = 0x004400;
-    else if (isHovered) emissive = 0x222222;
-
-    // GLB tile (box fallback while loading / on error); the procedural
-    // color/emissive path below is only for tiles without a model.
-    if (model?.url) {
-        return (
-            <group
-                position={position}
-                onClick={(e) => onTileClick(tile, e)}
-                onPointerEnter={(e) => onTileHover(tile, e)}
-                onPointerLeave={(e) => onTileHover(null, e)}
-                userData={{ type: 'tile', tileId: tile.id, gridX: tile.x, gridZ: tile.z ?? tile.y }}
-            >
-                <ModelLoader
-                    url={model.url}
-                    scale={0.95}
-                    rotation={[0, tile.rotation ?? 0, 0]}
-                    fallbackGeometry="box"
-                    castShadow
-                    receiveShadow
-                />
-            </group>
-        );
-    }
-
-    return (
-        <mesh
-            position={position}
-            onClick={(e) => onTileClick(tile, e)}
-            onPointerEnter={(e) => onTileHover(tile, e)}
-            onPointerLeave={(e) => onTileHover(null, e)}
-            userData={{ type: 'tile', tileId: tile.id, gridX: tile.x, gridZ: tile.z ?? tile.y }}
-        >
-            <boxGeometry args={[0.95, 0.2, 0.95]} />
-            <meshStandardMaterial color={color} emissive={emissive} />
-        </mesh>
-    );
-}
-
-function DefaultUnit({
-    unit,
-    position,
-    model,
-    isSelected,
-    unitScale,
-    cellSize,
-    resolveUnitFrame,
-    onUnitClick,
-}: {
-    unit: IsometricUnit;
-    position: [number, number, number];
-    model?: Asset;
-    isSelected: boolean;
-    unitScale: number;
-    cellSize: number;
-    resolveUnitFrame: (unitId: string) => ResolvedFrame | null;
-    onUnitClick: (unit: IsometricUnit, event: MinimalMouseEvent) => void;
-}): React.JSX.Element {
-    const color = unit.faction === 'player' ? 0x4488ff : unit.faction === 'enemy' ? 0xff4444 : 0xffff44;
-    const hasAtlas = unitAtlasUrl(unit) !== null;
-    const initialFrame = hasAtlas ? resolveUnitFrame(unit.id) : null;
-
-    const modelScale = UNIT_BASE_MODEL_SCALE * unitScale * cellSize;
-    // Billboard height is proportional to one cell so units stay
-    // tile-sized regardless of board dimensions or cellSize.
-    const billboardHeight = UNIT_BASE_BILLBOARD_HEIGHT * unitScale * cellSize;
-    const primitiveRadius = UNIT_BASE_PRIMITIVE_RADIUS * unitScale * cellSize;
-
-    return (
-        <group
-            position={position}
-            onClick={(e) => onUnitClick(unit, e)}
-            userData={{ type: 'unit', unitId: unit.id }}
-        >
-            {/* Selection ring */}
-            {isSelected && (
-                <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                    <ringGeometry args={[0.4, 0.5, 32]} />
-                    <meshBasicMaterial color="#ffff00" transparent opacity={0.8} />
-                </mesh>
-            )}
-
-            {hasAtlas && initialFrame ? (
-                /* Animated sprite-sheet billboard — single cropped frame, by state */
-                <Billboard>
-                    <UnitSpriteBillboard
-                        sheetUrl={initialFrame.sheetUrl}
-                        resolveFrame={() => resolveUnitFrame(unit.id)}
-                        height={billboardHeight}
-                    />
-                </Billboard>
-            ) : model?.url ? (
-                /* GLB unit model — LOLO's `animation` field drives the named clip;
-                   `heading` (radians) faces the model along its travel direction (driving). */
-                <ModelLoader
-                    url={model.url}
-                    scale={modelScale}
-                    rotation={[0, unit.heading ?? 0, 0]}
-                    animation={unit.animation ?? 'idle'}
-                    fallbackGeometry="box"
-                    castShadow
-                />
-            ) : (
-                <>
-                    {/* Base */}
-                    <mesh position={[0, primitiveRadius, 0]}>
-                        <cylinderGeometry args={[primitiveRadius, primitiveRadius, primitiveRadius * 0.33, 8]} />
-                        <meshStandardMaterial color={color} />
-                    </mesh>
-
-                    {/* Body */}
-                    <mesh position={[0, primitiveRadius * 2, 0]}>
-                        <capsuleGeometry args={[primitiveRadius * 0.67, primitiveRadius * 1.33, 4, 8]} />
-                        <meshStandardMaterial color={color} />
-                    </mesh>
-
-                    {/* Head */}
-                    <mesh position={[0, primitiveRadius * 3, 0]}>
-                        <sphereGeometry args={[primitiveRadius * 0.4, 8, 8]} />
-                        <meshStandardMaterial color={color} />
-                    </mesh>
-                </>
-            )}
-
-            {/* Health bar */}
-            {unit.health !== undefined && unit.maxHealth !== undefined && (
-                <group position={[0, billboardHeight, 0]}>
-                    <mesh position={[-0.25, 0, 0]}>
-                        <planeGeometry args={[0.5, 0.05]} />
-                        <meshBasicMaterial color={0x333333} />
-                    </mesh>
-                    <mesh
-                        position={[
-                            -0.25 + (0.5 * (unit.health / unit.maxHealth)) / 2,
-                            0,
-                            0.01,
-                        ]}
-                    >
-                        <planeGeometry args={[0.5 * (unit.health / unit.maxHealth), 0.05]} />
-                        <meshBasicMaterial
-                            color={
-                                unit.health / unit.maxHealth > 0.5
-                                    ? 0x44aa44
-                                    : unit.health / unit.maxHealth > 0.25
-                                      ? 0xaaaa44
-                                      : 0xff4444
-                            }
-                        />
-                    </mesh>
-                </group>
-            )}
-        </group>
-    );
-}
-
-function DefaultFeature({
-    feature,
-    position,
-    model,
-    onFeatureClick,
-}: {
-    feature: IsometricFeature;
-    position: [number, number, number];
-    model?: Asset;
-    onFeatureClick: (feature: IsometricFeature, event: MinimalMouseEvent | null) => void;
-}): React.JSX.Element | null {
-    if (model?.url) {
-        return (
-            <ModelLoader
-                url={model.url}
-                position={position}
-                scale={0.5}
-                rotation={[0, feature.rotation ?? 0, 0]}
-                tint={feature.color}
-                onClick={() => onFeatureClick(feature, null)}
-                fallbackGeometry="box"
-            />
-        );
-    }
-
-    if (feature.type === 'tree') {
-        return (
-            <group
-                position={position}
-                onClick={(e) => onFeatureClick(feature, e)}
-                userData={{ type: 'feature', featureId: feature.id }}
-            >
-                <mesh position={[0, 0.4, 0]}>
-                    <cylinderGeometry args={[0.1, 0.15, 0.8, 6]} />
-                    <meshStandardMaterial color={0x8b4513} />
-                </mesh>
-                <mesh position={[0, 0.9, 0]}>
-                    <coneGeometry args={[0.5, 0.8, 8]} />
-                    <meshStandardMaterial color={0x228b22} />
-                </mesh>
-            </group>
-        );
-    }
-
-    if (feature.type === 'rock') {
-        return (
-            <mesh
-                position={[position[0], position[1] + 0.3, position[2]]}
-                onClick={(e) => onFeatureClick(feature, e)}
-                userData={{ type: 'feature', featureId: feature.id }}
-            >
-                <dodecahedronGeometry args={[0.3, 0]} />
-                <meshStandardMaterial color={0x808080} />
-            </mesh>
-        );
-    }
-
-    return null;
-}
 
 /**
  * GameCanvas3D Component
@@ -810,7 +265,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
             showTileInfo = false,
             overlay = 'default',
             shadows = true,
-            backgroundColor = '#1a1a2e',
+            backgroundColor = DEFAULT_BACKGROUND_3D,
             onTileClick,
             onUnitClick,
             onFeatureClick,
@@ -978,7 +433,11 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
             [gridBounds]
         );
 
-        // Convert grid coordinates to world position
+        // Convert grid coordinates to world position.
+        // NOT grid3D.ts::gridToWorld — that lib fn anchors on gridConfig.offsetX/Z
+        // (centered: -(max-min)/2), while this anchors on gridBounds.minX/minZ directly.
+        // The two conventions only coincide for specific bounds; swapping would move
+        // every existing board's tiles, so the drift is intentional here.
         const gridToWorld = useCallback(
             (x: number, z: number, y: number = 0): [number, number, number] => {
                 const worldX = (x - gridBounds.minX) * gridConfig.cellSize;
@@ -1094,7 +553,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                         fov: 45,
                     };
                 case 'follow':
-                    // Initial framing only — FollowCamera takes over per-frame.
+                    // Initial framing only — FollowCamera3D takes over per-frame.
                     return {
                         position: [cx, d * 0.5, cz + d] as [number, number, number],
                         fov: 45,
@@ -1145,8 +604,6 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
             }
             return player ? [0, 2, 9] : [5, 7, 5];
         }, [cameraMode, units, selectedUnitId, player]);
-
-        // Default tile renderer
 
         // Loading state
         if (externalLoading || (assetsLoading && preloadAssets.length > 0)) {
@@ -1208,25 +665,25 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                             }
                         }}
                     >
-                        <CameraController onCameraChange={eventHandlers.handleCameraChange} />
+                        <CameraController3D onCameraChange={eventHandlers.handleCameraChange} />
                         {(cameraMode === 'follow' || cameraMode === 'chase') && (
-                            <FollowCamera
+                            <FollowCamera3D
                                 target={followTarget}
                                 offset={followOffset}
                             />
                         )}
 
-                        {/* Lighting — bias tuned against shadow acne on flat low-poly faces */}
-                        <ambientLight intensity={0.6} />
-                        <directionalLight
-                            position={[10, 20, 10]}
-                            intensity={0.8}
-                            castShadow={shadows}
-                            shadow-mapSize={[2048, 2048]}
-                            shadow-bias={-0.0004}
-                            shadow-normalBias={0.04}
+                        {/* Lighting — shadow params match the pre-decomposition inline rig
+                            (bias/normalBias tuned against acne on flat low-poly faces; ±5/near0.5/far500
+                            = three.js default directional-shadow frustum the board was tuned against). */}
+                        <Lighting3D
+                            shadows={shadows}
+                            shadowBias={-0.0004}
+                            shadowNormalBias={0.04}
+                            shadowCameraSize={5}
+                            shadowCameraNear={0.5}
+                            shadowCameraFar={500}
                         />
-                        <hemisphereLight intensity={0.3} color="#87ceeb" groundColor="#362d1d" />
 
                         {/* Grid */}
                         {showGrid && (
@@ -1242,10 +699,10 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                                 ]}
                                 cellSize={1}
                                 cellThickness={1}
-                                cellColor="#444444"
+                                cellColor={GRID_COLORS_3D.cell}
                                 sectionSize={5}
                                 sectionThickness={1.5}
-                                sectionColor="#666666"
+                                sectionColor={GRID_COLORS_3D.section}
                                 fadeDistance={50}
                                 fadeStrength={1}
                             />
@@ -1259,7 +716,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                             is accepted for API parity but zoom is camera-driven. */}
                         {player ? (
                             /* Side-scroller mode — LOLO-owned pixel space mapped to world units */
-                            <SideScene
+                            <SideScene3D
                                 player={player}
                                 platforms={platforms}
                                 worldHeight={worldHeight}
@@ -1285,7 +742,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                                     return <CustomTileRenderer key={key} tile={tile} position={position} />;
                                 }
                                 return (
-                                    <DefaultTile
+                                    <TileMesh3D
                                         key={key}
                                         tile={tile}
                                         position={position}
@@ -1312,7 +769,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                                     return <CustomFeatureRenderer key={key} feature={feature} position={position} />;
                                 }
                                 return (
-                                    <DefaultFeature
+                                    <FeatureMesh3D
                                         key={key}
                                         feature={feature}
                                         position={position}
@@ -1331,11 +788,11 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                                     (unit.elevation ?? 0) + TILE_TOP_OFFSET
                                 );
                                 return (
-                                    <LerpedGroup key={unit.id} target={position} enabled={interpolateUnits}>
+                                    <LerpedGroup3D key={unit.id} target={position} enabled={interpolateUnits}>
                                         {CustomUnitRenderer ? (
                                             <CustomUnitRenderer unit={unit} position={[0, 0, 0]} />
                                         ) : (
-                                            <DefaultUnit
+                                            <UnitMesh3D
                                                 unit={unit}
                                                 position={[0, 0, 0]}
                                                 model={unit.modelUrl ?? assetManifest?.units?.[unit.unitType ?? '']}
@@ -1346,7 +803,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                                                 onUnitClick={handleUnitClick}
                                             />
                                         )}
-                                    </LerpedGroup>
+                                    </LerpedGroup3D>
                                 );
                             })}
 
@@ -1354,7 +811,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                             {events.map((ev, i) => {
                                 const position = gridToWorld(ev.x, ev.z ?? ev.y ?? 0, 0);
                                 return (
-                                    <EventMarker
+                                    <EventMarker3D
                                         key={ev.id ?? `ev-${i}`}
                                         event={ev}
                                         position={[position[0], position[1] + 1.4, position[2]]}
@@ -1367,7 +824,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                         {/* Custom children */}
                         {children}
 
-                        {/* Camera controls — disabled while FollowCamera is authoritative */}
+                        {/* Camera controls — disabled while FollowCamera3D is authoritative */}
                         <OrbitControls
                             ref={controlsRef}
                             enabled={cameraMode !== 'follow' && cameraMode !== 'chase'}

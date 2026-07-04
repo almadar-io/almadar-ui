@@ -25,8 +25,16 @@ export interface Lighting3DProps {
     shadows?: boolean;
     /** Shadow map size */
     shadowMapSize?: number;
-    /** Shadow camera size */
+    /** Shadow camera size (orthographic half-extent) */
     shadowCameraSize?: number;
+    /** Shadow depth bias — reduces shadow acne */
+    shadowBias?: number;
+    /** Shadow normal bias — reduces acne on angled faces (undefined = three.js default 0) */
+    shadowNormalBias?: number;
+    /** Shadow camera near plane */
+    shadowCameraNear?: number;
+    /** Shadow camera far plane */
+    shadowCameraFar?: number;
     /** Show helper for directional light */
     showHelpers?: boolean;
 }
@@ -56,6 +64,10 @@ export function Lighting3D({
     shadows = true,
     shadowMapSize = 2048,
     shadowCameraSize = 20,
+    shadowBias = -0.001,
+    shadowNormalBias,
+    shadowCameraNear = 0.1,
+    shadowCameraFar = 100,
     showHelpers = false,
 }: Lighting3DProps): React.JSX.Element {
     return (
@@ -74,9 +86,10 @@ export function Lighting3D({
                 shadow-camera-right={shadowCameraSize}
                 shadow-camera-top={shadowCameraSize}
                 shadow-camera-bottom={-shadowCameraSize}
-                shadow-camera-near={0.1}
-                shadow-camera-far={100}
-                shadow-bias={-0.001}
+                shadow-camera-near={shadowCameraNear}
+                shadow-camera-far={shadowCameraFar}
+                shadow-bias={shadowBias}
+                shadow-normalBias={shadowNormalBias}
             />
 
             {/* Hemisphere Light for natural outdoor feel */}

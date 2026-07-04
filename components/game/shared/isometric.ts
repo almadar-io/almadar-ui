@@ -47,6 +47,96 @@ export const FEATURE_COLORS: Record<string, string> = {
 };
 
 // =============================================================================
+// Game-vocab palettes — single source of truth for the 2D renderer's DEFAULT
+// colors. These were baked (and duplicated 2–3×) inside `Canvas2D.tsx`. The
+// decomposed canvas reads them as DEFAULTS so it stays "dumb": every color is
+// overridable per-item via descriptor data (`tile.color`, `unit.tint`, …) or a
+// `theme` prop that `.lolo` computes. Values are the exact prior inline
+// literals so a board supplying no overrides renders identically.
+// =============================================================================
+
+/** Tile fallback color by terrain (Canvas2D 973–975 / 983–985). */
+export const TERRAIN_COLORS: Record<string, string> = {
+    water: '#3b82f6',
+    mountain: '#78716c',
+    stone: '#9ca3af',
+    default: '#4ade80',
+};
+
+/** Unit fallback + movement-ghost color by team (Canvas2D 1155–1156 / 1220–1221). */
+export const TEAM_COLORS: Record<string, string> = {
+    player: '#3b82f6',
+    enemy: '#ef4444',
+    neutral: '#6b7280',
+    default: '#6b7280',
+};
+
+/** Unit drop-shadow color by team (Canvas2D 1188 / 1212). */
+export const TEAM_SHADOW_COLORS: Record<string, string> = {
+    player: 'rgba(0,150,255,0.6)',
+    default: 'rgba(255,50,50,0.6)',
+};
+
+/** Cell highlight fill by intent (Canvas2D 1016 / 1019–1020). */
+export const HIGHLIGHT_COLORS = {
+    hover: 'rgba(255,255,255,0.15)',
+    validMove: 'rgba(74,222,128,0.25)',
+    attack: 'rgba(239,68,68,0.35)',
+};
+
+/** Selection ring stroke (Canvas2D 1168). */
+export const SELECTION_RING_COLOR = 'rgba(0,200,255,0.8)';
+
+/** Tile grid stroke (Canvas2D 977 / 993). */
+export const GRID_STROKE_COLOR = 'rgba(0,0,0,0.2)';
+
+/** Solid background fallback (Canvas2D 929). */
+export const BACKGROUND_FALLBACK_COLOR = '#1a1a2e';
+
+/** Minimap tile color by terrain (Canvas2D 873). */
+export const MINIMAP_TERRAIN_COLORS: Record<string, string> = {
+    water: '#3b82f6',
+    mountain: '#78716c',
+    default: '#4ade80',
+};
+
+/** Minimap unit color by team (Canvas2D 882). */
+export const MINIMAP_UNIT_COLORS: Record<string, string> = {
+    player: '#60a5fa',
+    enemy: '#f87171',
+    neutral: '#9ca3af',
+    default: '#9ca3af',
+};
+
+/** Unit DOM name-label background by team (Canvas2D 1609). */
+export const UNIT_LABEL_BG_COLORS: Record<string, string> = {
+    player: 'rgba(59,130,246,0.9)',
+    enemy: 'rgba(239,68,68,0.9)',
+    neutral: 'rgba(107,114,128,0.9)',
+    default: 'rgba(107,114,128,0.9)',
+};
+
+/** Side-scroller palette (Canvas2D SideView 229–259). */
+export const SIDE_PLATFORM_COLORS: Record<string, string> = {
+    ground: '#4a7c59',
+    platform: '#7c6b4a',
+    hazard: '#c0392b',
+    goal: '#f1c40f',
+};
+export const SIDE_PLAYER_COLOR = '#3498db';
+export const SIDE_PLAYER_EYE_COLOR = '#ffffff';
+export const SIDE_SKY_GRADIENT_TOP = '#1a1a2e';
+export const SIDE_SKY_GRADIENT_BOTTOM = '#16213e';
+export const SIDE_GRID_COLOR = 'rgba(255, 255, 255, 0.03)';
+export const SIDE_FX_COLOR = '#ffe066';
+export const SIDE_PLATFORM_BEVEL_COLOR = 'rgba(255,255,255,0.15)';
+export const SIDE_PLATFORM_SHADOW_COLOR = 'rgba(0,0,0,0.3)';
+export const SIDE_HAZARD_STRIPE_COLOR = '#e74c3c';
+export const SIDE_GOAL_GLOW_COLOR = 'rgba(241, 196, 15, 0.5)';
+/** Default grid-path board background (Canvas2D bgColor default 634). */
+export const DEFAULT_BG_COLOR = '#5c94fc';
+
+// =============================================================================
 // Layout
 // =============================================================================
 
