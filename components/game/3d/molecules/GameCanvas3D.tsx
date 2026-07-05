@@ -23,6 +23,7 @@
  */
 
 import React, {
+    useCallback,
     useEffect,
     useRef,
     useState,
@@ -30,8 +31,10 @@ import React, {
     forwardRef,
     useImperativeHandle,
 } from 'react';
+import type { ThreeEvent } from '@react-three/fiber';
 import type { EventEmit, Asset, ScenePos } from '@almadar/core';
 import { useEventBus } from '../../../../hooks/useEventBus';
+import { collectDrawnItems, buildHitIndex } from '../../../../lib/drawable/hitTest';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { OrbitControls, Grid } from '@react-three/drei';
@@ -106,10 +109,12 @@ export interface GameCanvas3DProps {
     shadows?: boolean;
     /** Background color */
     backgroundColor?: string;
-    /** Declarative event: tile click. Accepted; the neutral drawable host does not yet
-     *  emit it (scene-space raycast hit-test is a tracked fork). */
-    tileClickEvent?: EventEmit<{ tileId: string; x: number; z: number; type?: string; terrain?: string; elevation?: number }>;
-    /** Declarative event: unit click. Accepted; not yet emitted (see `tileClickEvent`). */
+    /** Declarative event: tile click. Emitted from a ground-plane raycast → scene cell
+     *  `{ x, z }` (the FSM validates the cell). `tileId` is optional — the neutral host
+     *  has no per-tile id, and the board FSMs key off the coordinate. */
+    tileClickEvent?: EventEmit<{ x: number; z: number; tileId?: string; type?: string; terrain?: string; elevation?: number }>;
+    /** Declarative event: unit click. Emitted `{ unitId, x, z }` when the raycast lands on a
+     *  cell whose descriptor carries an `id` (a tagged unit sprite). */
     unitClickEvent?: EventEmit<{ unitId: string; x: number; z: number; unitType?: string; name?: string; team?: string; faction?: string; health?: number; maxHealth?: number }>;
     /** Declarative event: feature click. Accepted; not yet emitted (see `tileClickEvent`). */
     featureClickEvent?: EventEmit<{ featureId: string; x: number; z: number; type?: string; elevation?: number }>;
@@ -167,27 +172,6 @@ export interface GameCanvas3DHandle {
     resetCamera: () => void;
     /** Take a screenshot */
     screenshot: () => string | null;
-}
-
-/** Collect every drawable's scene position (atoms directly; layers via `items`) —
- *  the source for the scene bounds (camera framing + grid + drawable projector). */
-function collectScenePositions(nodes: DrawableNode[]): ScenePos[] {
-    const out: ScenePos[] = [];
-    for (const n of nodes) {
-        switch (n.type) {
-            case 'draw-sprite':
-            case 'draw-shape':
-            case 'draw-text':
-                out.push(n.position);
-                break;
-            case 'draw-sprite-layer':
-            case 'draw-shape-layer':
-            case 'draw-text-layer':
-                for (const it of n.items) out.push(it.position);
-                break;
-        }
-    }
-    return out;
 }
 
 /**
@@ -267,8 +251,10 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
             cameraChangeEvent,
         });
 
-        // Scene bounds derived from the drawn descriptors (no tile data prop).
-        const scenePositions = useMemo(() => collectScenePositions(drawables ?? []), [drawables]);
+        // Scene bounds + click hit-index derived from the drawn descriptors (no tile data prop).
+        const drawnItems = useMemo(() => collectDrawnItems(drawables ?? []), [drawables]);
+        const scenePositions = useMemo(() => drawnItems.map((i) => i.pos), [drawnItems]);
+        const hitIndex = useMemo(() => buildHitIndex(drawnItems), [drawnItems]);
         const gridBounds = useMemo(() => {
             if (scenePositions.length === 0) {
                 return { minX: 0, maxX: 10, minZ: 0, maxZ: 10 };
@@ -390,6 +376,24 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
             [cameraMode]
         );
 
+        // Ground-plane raycast → scene cell (the drawable projector's inverse) → id
+        // hit-test. A cell with a tagged descriptor (a unit) → unitClick {unitId,x,z};
+        // else tileClick {x,z}. The board FSM validates the cell.
+        const handleGroundClick = useCallback((e: ThreeEvent<MouseEvent>) => {
+            if (!tileClickEvent && !unitClickEvent) return;
+            e.stopPropagation();
+            const cell = {
+                x: Math.round(e.point.x / gridConfig.cellSize + gridBounds.minX),
+                y: Math.round(e.point.z / gridConfig.cellSize + gridBounds.minZ),
+            };
+            const hitId = hitIndex.get(`${cell.x},${cell.y}`);
+            if (hitId !== undefined && unitClickEvent) {
+                eventBus.emit(`UI:${unitClickEvent}`, { unitId: hitId, x: cell.x, z: cell.y });
+            } else if (tileClickEvent) {
+                eventBus.emit(`UI:${tileClickEvent}`, { x: cell.x, z: cell.y });
+            }
+        }, [tileClickEvent, unitClickEvent, gridConfig, gridBounds, hitIndex, eventBus]);
+
         // Loading state.
         if (externalLoading) {
             return (
@@ -489,6 +493,28 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                                     <Drawable3D key={i} node={node} projector={drawableProjector} />
                                 ))}
                             </group>
+                        )}
+
+                        {/* Invisible ground plane for click hit-testing: a raycast lands
+                            on the plane cell, resolved to a scene coord + id. */}
+                        {(tileClickEvent || unitClickEvent) && (
+                            <mesh
+                                rotation={[-Math.PI / 2, 0, 0]}
+                                position={[
+                                    ((gridBounds.maxX - gridBounds.minX) / 2) * gridConfig.cellSize,
+                                    0,
+                                    ((gridBounds.maxZ - gridBounds.minZ) / 2) * gridConfig.cellSize,
+                                ]}
+                                onClick={handleGroundClick}
+                            >
+                                <planeGeometry
+                                    args={[
+                                        (gridBounds.maxX - gridBounds.minX + 4) * gridConfig.cellSize,
+                                        (gridBounds.maxZ - gridBounds.minZ + 4) * gridConfig.cellSize,
+                                    ]}
+                                />
+                                <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+                            </mesh>
                         )}
 
                         {/* Custom children */}

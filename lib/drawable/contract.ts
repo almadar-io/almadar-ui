@@ -59,6 +59,14 @@ export interface DrawContext {
 /** Common shape of every drawable descriptor. `type` keys the host's paint dispatch. */
 export interface DrawableBase {
     type: string;
+    /**
+     * Optional hit-test handle. When a board authors a per-entity id here (e.g.
+     * `id: (object/get @u id)` on a unit sprite), the canvas host indexes the
+     * descriptor's `ScenePos → id` and resolves a pointer/raycast at that cell to
+     * this id — the source of `unitClickEvent {unitId}`. A source-tagged handle,
+     * NOT a heuristic: no id → the host emits only the coordinate (tile click).
+     */
+    id?: string;
 }
 
 /** A paint function: draws one descriptor of type `T` to the painter. */

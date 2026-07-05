@@ -48,6 +48,7 @@ import { bindCanvasCapture } from '../../../../lib/verificationRegistry';
 import { createWebPainter } from '../../../../lib/webPainter2d';
 import { create2DProjector, type Projection2D } from '../../../../lib/drawable/projector';
 import { paintDrawable, type DrawableNode } from '../../../../lib/drawable/paintDispatch';
+import { collectDrawnItems, buildHitIndex } from '../../../../lib/drawable/hitTest';
 import type { DrawContext } from '../../../../lib/drawable/contract';
 import {
     screenToIso,
@@ -161,27 +162,6 @@ function normalizeBackdrop(bg: AssetUrl | Asset | undefined): Asset | undefined 
         : bg;
 }
 
-/** Collect every drawable's scene position (atoms directly; layers via `items`) —
- *  the source for grid centering and the minimap, derived from what is drawn. */
-function collectScenePositions(nodes: DrawableNode[]): ScenePos[] {
-    const out: ScenePos[] = [];
-    for (const n of nodes) {
-        switch (n.type) {
-            case 'draw-sprite':
-            case 'draw-shape':
-            case 'draw-text':
-                out.push(n.position);
-                break;
-            case 'draw-sprite-layer':
-            case 'draw-shape-layer':
-            case 'draw-text-layer':
-                for (const it of n.items) out.push(it.position);
-                break;
-        }
-    }
-    return out;
-}
-
 // =============================================================================
 // Component
 // =============================================================================
@@ -194,6 +174,7 @@ export function Canvas2D({
     drawables,
     backgroundImage: backgroundImageRaw,
     tileClickEvent,
+    unitClickEvent,
     tileHoverEvent,
     tileLeaveEvent,
     keyMap,
@@ -247,7 +228,11 @@ export function Canvas2D({
     const scaledDiamondTopY = DIAMOND_TOP_Y * scale;
 
     // -- Scene extent, derived from the drawn descriptors (no tile data prop) --
-    const scenePositions = useMemo(() => collectScenePositions(drawables ?? []), [drawables]);
+    const drawnItems = useMemo(() => collectDrawnItems(drawables ?? []), [drawables]);
+    const scenePositions = useMemo(() => drawnItems.map((i) => i.pos), [drawnItems]);
+    // Click hit-test: a descriptor that carries an `id` (a unit sprite) maps its
+    // cell → id. Later descriptors win, so a unit drawn over its tile takes the cell.
+    const hitIndex = useMemo(() => buildHitIndex(drawnItems), [drawnItems]);
     const gridExtent = useMemo(() => {
         if (scenePositions.length === 0) return { width: 0, height: 0 };
         let maxX = 0;
@@ -438,13 +423,19 @@ export function Canvas2D({
         singlePointerActiveRef.current = false;
         if (enableCamera) handlePointerUp();
         if (dragDistance() > 5) return;
-        if (!canvasRef.current || !tileClickEvent) return;
+        if (!canvasRef.current || (!tileClickEvent && !unitClickEvent)) return;
         const world = screenToWorld(e.clientX, e.clientY, canvasRef.current, viewportSize);
         const adjustedX = world.x - scaledTileWidth / 2;
         const adjustedY = squareGrid ? world.y - scaledTileWidth / 2 : world.y - scaledDiamondTopY - scaledFloorHeight / 2;
         const isoPos = unproject(adjustedX, adjustedY);
-        eventBus.emit(`UI:${tileClickEvent}`, { x: isoPos.x, y: isoPos.y });
-    }, [enableCamera, handlePointerUp, dragDistance, screenToWorld, viewportSize, scaledTileWidth, squareGrid, scaledDiamondTopY, scaledFloorHeight, unproject, tileClickEvent, eventBus]);
+        // A cell with a tagged descriptor (a unit) → unitClick {unitId}; else tileClick {x,y}.
+        const hitId = hitIndex.get(`${isoPos.x},${isoPos.y}`);
+        if (hitId !== undefined && unitClickEvent) {
+            eventBus.emit(`UI:${unitClickEvent}`, { unitId: hitId });
+        } else if (tileClickEvent) {
+            eventBus.emit(`UI:${tileClickEvent}`, { x: isoPos.x, y: isoPos.y });
+        }
+    }, [enableCamera, handlePointerUp, dragDistance, screenToWorld, viewportSize, scaledTileWidth, squareGrid, scaledDiamondTopY, scaledFloorHeight, unproject, hitIndex, tileClickEvent, unitClickEvent, eventBus]);
 
     const handleCanvasPointerLeave = useCallback(() => {
         handleMouseLeave();
@@ -466,7 +457,7 @@ export function Canvas2D({
 
     const gestureHandlers = useCanvasGestures({
         canvasRef,
-        enabled: enableCamera || !!tileHoverEvent || !!tileClickEvent,
+        enabled: enableCamera || !!tileHoverEvent || !!tileClickEvent || !!unitClickEvent,
         onPointerDown: handleCanvasPointerDown,
         onPointerMove: handleCanvasPointerMove,
         onPointerUp: handleCanvasPointerUp,
@@ -563,18 +554,30 @@ export function Canvas2D({
                     height: viewportSize.height,
                 }}
             />
-            {/* Test bridge: a hidden action button for Playwright to trigger a tile event. */}
-            {process.env.NODE_ENV !== 'production' && tileClickEvent && (
+            {/* Test bridge: hidden action buttons for Playwright to trigger tile/unit events. */}
+            {process.env.NODE_ENV !== 'production' && (tileClickEvent || unitClickEvent) && (
                 <Box data-game-actions="" className="sr-only" aria-hidden="true">
-                    <Button
-                        variant="ghost"
-                        data-event={tileClickEvent}
-                        data-x="0"
-                        data-y="0"
-                        onClick={() => eventBus.emit(`UI:${tileClickEvent}`, { x: 0, y: 0 })}
-                    >
-                        {tileClickEvent}
-                    </Button>
+                    {tileClickEvent && (
+                        <Button
+                            variant="ghost"
+                            data-event={tileClickEvent}
+                            data-x="0"
+                            data-y="0"
+                            onClick={() => eventBus.emit(`UI:${tileClickEvent}`, { x: 0, y: 0 })}
+                        >
+                            {tileClickEvent}
+                        </Button>
+                    )}
+                    {unitClickEvent && hitIndex.size > 0 && (
+                        <Button
+                            variant="ghost"
+                            data-event={unitClickEvent}
+                            data-unit-id={[...hitIndex.values()][0]}
+                            onClick={() => eventBus.emit(`UI:${unitClickEvent}`, { unitId: [...hitIndex.values()][0] })}
+                        >
+                            {unitClickEvent}
+                        </Button>
+                    )}
                 </Box>
             )}
             {showMinimap && (

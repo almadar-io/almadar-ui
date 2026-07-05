@@ -14,8 +14,9 @@ import { useEventBus, useEmitEvent } from '../../../../hooks/useEventBus';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from '../isometricTypes';
 
 export interface GameCanvas3DEventConfig {
-    /** Event name for tile clicks */
-    tileClickEvent?: EventEmit<{ tileId: string; x: number; z: number; type?: string; terrain?: string; elevation?: number }>;
+    /** Event name for tile clicks. `tileId` is optional — the neutral draw-host emits
+     *  only the scene coordinate `{ x, z }` (the FSM keys off the cell, not an id). */
+    tileClickEvent?: EventEmit<{ x: number; z: number; tileId?: string; type?: string; terrain?: string; elevation?: number }>;
     /** Event name for unit clicks */
     unitClickEvent?: EventEmit<{ unitId: string; x: number; z: number; unitType?: string; name?: string; team?: string; faction?: string; health?: number; maxHealth?: number }>;
     /** Event name for feature clicks */
