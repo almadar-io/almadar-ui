@@ -39,7 +39,7 @@ import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { OrbitControls, Grid } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
-import { useGameCanvas3DEvents } from '../../shared/hooks/useGameCanvas3DEvents';
+import { useGameCanvas3DEvents } from '../hooks/useGameCanvas3DEvents';
 import { Canvas3DLoadingState } from './Canvas3DLoadingState';
 import { Canvas3DErrorBoundary } from './Canvas3DErrorBoundary';
 import { Lighting3D } from './Lighting3D';
@@ -48,7 +48,7 @@ import { Drawable3D } from '../../../../lib/drawable/Drawable3D';
 import { create3DProjector } from '../../../../lib/drawable/projector3d';
 import type { DrawableNode } from '../../../../lib/drawable/paintDispatch';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from '../../shared/isometricTypes';
-import { GRID_COLORS_3D, DEFAULT_BACKGROUND_3D } from '../../shared/game3dTheme';
+import { GRID_COLORS_3D, DEFAULT_BACKGROUND_3D } from '../game3dTheme';
 import { cn } from '../../../../lib/cn';
 import './GameCanvas3D.css';
 
