@@ -29,11 +29,11 @@ import { Suspense, lazy } from 'react';
 import type { Asset, AssetUrl, Camera, EventEmit } from '@almadar/core';
 import type { DrawableNode } from '../../../lib/drawable/paintDispatch';
 import { Canvas2D, type CameraMode as Canvas2DCameraMode, type Projection } from './Canvas2D';
-import type { GameCanvas3DProps } from '../3d/molecules/GameCanvas3D';
+import type { GameCanvas3DProps } from '../three/molecules/GameCanvas3D';
 
 /** Lazy 3D host — keeps three/R3F out of the bundle unless a 3D canvas renders. */
 const GameCanvas3D = lazy(() =>
-    import('../3d/molecules/GameCanvas3D').then((m) => ({ default: m.GameCanvas3D })),
+    import('../three/molecules/GameCanvas3D').then((m) => ({ default: m.GameCanvas3D })),
 );
 
 /** Painter selection. Same `drawables` for both; differ only in projection + rasterizer. */

@@ -60,5 +60,5 @@ export {
 // 3D Game Canvas Templates are three.js-backed and intentionally NOT exported
 // here — they ship code-split behind the optional
 // `@almadar/ui/components/molecules/game/three` subpath (see
-// ../../game/3d/patterns.ts). The pattern scanner reads that
+// ../../game/three/patterns.ts). The pattern scanner reads that
 // subpath directly, so no shadow export is needed.

@@ -15,7 +15,7 @@ import type { DrawSpriteProps } from '../../components/game/atoms/DrawSprite';
 import type { DrawShapeProps } from '../../components/game/atoms/DrawShape';
 import type { DrawTextProps } from '../../components/game/atoms/DrawText';
 import type { Projector3D } from './projector3d';
-import { ModelLoader } from '../../components/game/3d/molecules/ModelLoader';
+import { ModelLoader } from '../../components/game/three/molecules/ModelLoader';
 
 /**
  * 2D-sprite-as-billboard 3D path. Crops UVs to `node.frame` when present.
