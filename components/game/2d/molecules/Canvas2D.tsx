@@ -1,30 +1,36 @@
 'use client';
 /**
- * Canvas2D
+ * Canvas2D — the thin 2D draw-host (Drawable Canvas, P6 closing).
  *
- * The unified 2D game renderer (GR-6 consolidation). One canvas, a `projection`
- * axis, layered render passes, opt-in clock. Absorbs IsometricCanvas (iso/hex/flat),
- * GameCanvas2D (→ `projection:'free'`, pixel-direct draw) and PlatformerCanvas
- * (→ `projection:'side'` + `platforms[]`).
+ * A pure walker: the board authors a `drawables` list (the neutral `draw-*`
+ * children) and this host paints them through the portable `Painter2D` seam,
+ * projecting each `ScenePos` for the chosen `projection` (iso/hex/flat/free/side).
+ * It owns NO game data — tiles, units, features, effects, highlights, health bars
+ * and labels are all `draw-*` children composed in `.lolo`, not props here. The
+ * only local state is view state: viewport size, camera, sprite/atlas cache.
  *
- * Pure renderer: every game datum arrives via props; only view state (viewport,
- * camera, sprite cache) is local. The clock is LOLO-driven by default — `animate`
- * opts a board into an internal RAF, but the default is OFF.
+ * Projections: iso/hex/flat/free go through the shared `create2DProjector`; `side`
+ * reuses the `free` (identity, world-pixel) projector — side boards author their
+ * platforms/player as `draw-*` children like every other board.
  *
- * Projection modes:
- * - `isometric | hex | flat`: 2:1 diamond / pointy-top hex / orthographic square,
- *   all via `isoToScreen` — identical to IsometricCanvas.
- * - `free`: tile/unit/feature x,y are SCREEN PIXELS drawn directly (no diamond),
- *   reusing the same sprite-drawing passes.
- * - `side`: side-view pixel space with `platforms[]` (AABB) + follow-camera +
- *   keyboard input — an isolated branch ported from PlatformerCanvas.
+ * Camera: `pan-zoom` (drag+wheel), `fixed` (still), or `follow` (lerps to the
+ * neutral core `Camera.target`, forwarded as `followTarget`). The unit-position
+ * interpolation of the old data-prop host is gone — the LOLO state machine owns
+ * entity motion; this host only tweens the camera.
+ *
+ * Interaction: a pointer emits the projector-unprojected scene coordinate as
+ * `tileClickEvent`/`tileHoverEvent` `{ x, y }` (the FSM validates the cell) and
+ * `tileLeaveEvent` `{}`. `unitClickEvent` needs a per-entity id the neutral
+ * drawable descriptors don't carry (they hold only a `ScenePos`); its hit-test is
+ * a deferred, tracked fork (see docs/Almadar_Std_Game_V2_PLAN.md) — the prop is
+ * accepted but not yet emitted from a coordinate.
  *
  * @packageDocumentation
  */
 
 import * as React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Asset, AssetUrl, EventEmit } from '@almadar/core';
+import type { Asset, AssetUrl, EventEmit, ScenePos } from '@almadar/core';
 import { cn } from '../../../../lib/cn';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../hooks/useTranslate';
@@ -33,44 +39,24 @@ import { Button } from '../../../core/atoms/Button';
 import { Stack } from '../../../core/atoms/Stack';
 import { Icon } from '../../../core/atoms/Icon';
 import { Typography } from '../../../core/atoms/Typography';
-import type { IsometricTile, IsometricUnit, IsometricFeature, ActiveEffect } from '../../shared/isometricTypes';
 import { MiniMap } from '../atoms/MiniMap';
-import { HealthBar } from '../atoms/HealthBar';
-import type { ResolvedFrame } from '../../shared/spriteAnimationTypes';
 import { useImageCache } from '../../shared/useImageCache';
-import { resolveAssetSource, blit, type SpriteRef } from '../../../../lib/atlasSlice';
+import { resolveAssetSource, blit } from '../../../../lib/atlasSlice';
 import { useCamera } from '../../shared/hooks/useCamera';
 import { useCanvasGestures } from '../../../../hooks/useCanvasGestures';
-import { useRenderInterpolation } from '../../../../hooks/useRenderInterpolation';
-import { useUnitSpriteAtlas } from '../../shared/hooks/useUnitSpriteAtlas';
 import { bindCanvasCapture } from '../../../../lib/verificationRegistry';
 import { createWebPainter } from '../../../../lib/webPainter2d';
-import { create2DProjector } from '../../../../lib/drawable/projector';
+import { create2DProjector, type Projection2D } from '../../../../lib/drawable/projector';
 import { paintDrawable, type DrawableNode } from '../../../../lib/drawable/paintDispatch';
 import type { DrawContext } from '../../../../lib/drawable/contract';
 import {
-    isoToScreen,
     screenToIso,
     TILE_WIDTH,
-    TILE_HEIGHT,
     FLOOR_HEIGHT,
     DIAMOND_TOP_Y,
-    FEATURE_COLORS,
-    TERRAIN_COLORS,
-    TEAM_COLORS,
-    TEAM_SHADOW_COLORS,
-    HIGHLIGHT_COLORS,
-    SELECTION_RING_COLOR,
-    GRID_STROKE_COLOR,
     BACKGROUND_FALLBACK_COLOR,
     MINIMAP_TERRAIN_COLORS,
-    MINIMAP_UNIT_COLORS,
-    UNIT_LABEL_BG_COLORS,
-    DEFAULT_BG_COLOR,
 } from '../../shared/isometric';
-import { SHEET_COLUMNS, SPRITE_SHEET_LAYOUT } from '../../shared/spriteSheetConstants';
-import { frameRect } from '../../shared/spriteAnimation';
-import { SideCanvas2D } from './SideCanvas2D';
 import type { UiError } from '../../../core/atoms/types';
 
 // =============================================================================
@@ -82,15 +68,15 @@ export interface TileCoord {
     y: number;
 }
 
-/** Projection axis. iso/hex/flat use `isoToScreen`; `free` is pixel-direct; `side`
- *  is side-view pixel space with platforms (gravity lives in the LOLO model). */
+/** Projection axis. iso/hex/flat use `isoToScreen`; `free`/`side` are world-pixel-direct. */
 export type Projection = 'isometric' | 'hex' | 'flat' | 'free' | 'side';
 
-/** Camera behavior. `pan-zoom` = user drag+wheel; `follow` = track the player/
- *  selected unit; `fixed` = no camera motion. */
+/** Camera behavior. `pan-zoom` = user drag+wheel; `follow` = track `followTarget`;
+ *  `fixed` = no camera motion. */
 export type CameraMode = 'pan-zoom' | 'follow' | 'fixed';
 
-/** A side-view platform (AABB rect). `side` projection only. */
+/** A side-view platform (AABB rect). Retained as a shared type for the 3D side
+ *  scene; side boards now author platforms as `draw-*` children, not this shape. */
 export interface Platform {
     x: number;
     y: number;
@@ -99,7 +85,8 @@ export interface Platform {
     type?: 'ground' | 'platform' | 'hazard' | 'goal';
 }
 
-/** A side-view player. The model owns physics; Canvas2D only interpolates+draws. */
+/** A side-view player. Retained as a shared type for the 3D side scene; side
+ *  boards now author the player as a `draw-sprite` child, not this shape. */
 export interface SidePlayer {
     x: number;
     y: number;
@@ -109,9 +96,7 @@ export interface SidePlayer {
     vy?: number;
     grounded?: boolean;
     facingRight?: boolean;
-    /** Animation state name — driven by the LOLO state machine (e.g. "idle", "walk", "jump"). */
     animation?: string;
-    /** Frame index within the animation — driven by the LOLO state machine. */
     frame?: number;
 }
 
@@ -125,238 +110,106 @@ export interface Canvas2DProps {
     error?: UiError | null;
 
     // --- Projection ---
-    /** Projection axis (default 'isometric'). Replaces the old `tileLayout`. */
+    /** Projection axis (default 'isometric'). */
     projection?: Projection;
 
-    // --- Layer data (each an optional render pass) ---
-    /** Tiles to render */
-    tiles?: IsometricTile[];
-    /** Units on the board */
-    units?: IsometricUnit[];
-    /** Features (resources, portals, buildings, etc.) */
-    features?: IsometricFeature[];
-    /** Active visual effects, drawn after units */
-    effects?: ActiveEffect[];
-    /**
-     * Neutral drawable descriptors (the Drawable Canvas path). When present, the host
-     * walks these via `paintDrawable` instead of the data-prop passes above — the
-     * retirement target. Delivered as `render-ui children` once `drawHost` lands (P5).
-     */
+    // --- Scene ---
+    /** Neutral drawable descriptors (the `draw-*` children). The host walks these. */
     drawables?: DrawableNode[];
-    /** Side-view platforms (AABB). `projection:'side'` only. */
-    platforms?: Platform[];
-    /** Side-view player. `projection:'side'` only. */
-    player?: SidePlayer;
-    /** Background image (tiled behind iso/hex/flat/free; stretched in side).
+    /** Background image (tiled behind iso/hex/flat/free; cover-scaled for atlas slices).
      * A bare URL string is accepted as shorthand for a standalone backdrop. */
     backgroundImage?: AssetUrl | Asset;
 
-    // --- Interaction state (LOLO-owned, passed in) ---
-    /** Currently selected unit ID */
-    selectedUnitId?: string | null;
-    /** Valid move positions (pulsing green highlights) */
-    validMoves?: TileCoord[];
-    /** Attack target positions (pulsing red highlights) */
-    attackTargets?: TileCoord[];
-    /** Hovered tile position */
-    hoveredTile?: TileCoord | null;
-
     // --- Declarative events back to LOLO ---
-    /** Emits UI:{tileClickEvent} with { x, y } on tile click */
+    /** Emits UI:{tileClickEvent} with the unprojected scene { x, y } on click. */
     tileClickEvent?: EventEmit<{ x: number; y: number }>;
-    /** Emits UI:{unitClickEvent} with { unitId } on unit click */
+    /**
+     * Unit-click event. The neutral drawable host cannot resolve a click to a
+     * per-entity id (descriptors carry only a `ScenePos`, no id), so this prop is
+     * accepted but not yet emitted — the id-hit-test is a tracked fork
+     * (docs/Almadar_Std_Game_V2_PLAN.md).
+     */
     unitClickEvent?: EventEmit<{ unitId: string }>;
-    /** Emits UI:{tileHoverEvent} with { x, y } on tile hover */
+    /** Emits UI:{tileHoverEvent} with the unprojected scene { x, y } on hover. */
     tileHoverEvent?: EventEmit<{ x: number; y: number }>;
-    /** Emits UI:{tileLeaveEvent} with {} on tile leave */
+    /** Emits UI:{tileLeaveEvent} with {} on pointer leave. */
     tileLeaveEvent?: EventEmit<Record<string, never>>;
-    /** Maps a keydown `e.code` → the board's SEMANTIC event, e.g. `{ ArrowLeft: "LEFT", KeyA: "LEFT", Space: "JUMP" }`.
-     *  The input layer emits `UI:<event>` so the FSM stays device-agnostic — keyboard and d-pad converge on the same events. */
+    /** Maps a keydown `e.code` → the board's SEMANTIC event (device-agnostic input). */
     keyMap?: Record<string, string>;
-    /** Maps a keyup `e.code` → the board's SEMANTIC event, e.g. `{ ArrowLeft: "STOP" }`. Omit a key to ignore its release (e.g. jump). */
+    /** Maps a keyup `e.code` → the board's SEMANTIC event. */
     keyUpMap?: Record<string, string>;
 
     // --- View config (pure render) ---
     /** Camera behavior (default 'pan-zoom'). */
     camera?: CameraMode;
-    /** Render scale (0.4 = 40% zoom). */
+    /** Render scale (0.4 = 40% zoom). Ignored by `free`/`side` (world-pixel-direct). */
     scale?: number;
-    /** Extra scale multiplier for unit draw size. 1 = default. */
-    unitScale?: number;
     /** Toggle minimap overlay. */
     showMinimap?: boolean;
-    /** Opt-in internal RAF clock. DEFAULT OFF — the LOLO state machine drives the clock. */
-    animate?: { fps: number };
-    /**
-     * Opt-in: smooth-interpolate unit positions between LOLO tick snapshots
-     * via a `requestAnimationFrame` loop (same fixed-timestep technique
-     * `SideCanvas2D` already uses for the player), instead of the default
-     * tick-rate-cadence redraw. DEFAULT OFF — for continuous-movement boards
-     * only; tile-snapped boards see no behavior change.
-     */
-    interpolateUnits?: boolean;
-
-    // --- Tuning (iso/hex/flat/free) ---
-    /** Show debug grid lines and coordinates. */
-    debug?: boolean;
-    /** Ratio of unit draw height to scaledFloorHeight. Default 1.5. */
-    spriteHeightRatio?: number;
-    /** Max unit draw width as a ratio of scaledTileWidth. Default 0.6. */
-    spriteMaxWidthRatio?: number;
-    /** Override for the diamond-top Y offset within the tile sprite. */
-    diamondTopY?: number;
-
-    // --- Asset resolution (project-agnostic) ---
-    /** Resolve terrain sprite from terrain key — a bare URL or an Asset (atlas sub-texture ref). */
-    getTerrainSprite?: (terrain: string) => string | Asset | undefined;
-    /** Resolve feature sprite from feature type key — a bare URL or an Asset. */
-    getFeatureSprite?: (featureType: string) => string | Asset | undefined;
-    /** Resolve unit static sprite — a bare URL or an Asset. */
-    getUnitSprite?: (unit: IsometricUnit) => string | Asset | undefined;
-    /** Resolve animated sprite sheet frame for a unit */
-    resolveUnitFrame?: (unitId: string) => ResolvedFrame | null;
-    /** Additional sprite URLs to preload (e.g., effect sprites) */
-    effectSpriteUrls?: string[];
-    /** Draw canvas effects after units (canvas-specific: cannot be declarative) */
-    onDrawEffects?: (
-        ctx: CanvasRenderingContext2D,
-        animTime: number,
-        getImage: (url: string) => HTMLImageElement | undefined,
-    ) => void;
-
-    // --- Side-view sprite resolution (projection:'side') ---
-    /** Player sprite URL for `side`. */
-    playerSprite?: Asset;
-    /** Platform-type → tile sprite URL map for `side`. */
-    tileSprites?: Record<string, Asset>;
-    /** Background color for `side` (when no backgroundImage). */
+    /** Follow-camera target in scene space (the neutral core `Camera.target`). When
+     *  `camera:'follow'` the host lerps to keep this point centered. */
+    followTarget?: ScenePos;
+    /** Solid backdrop colour (drawn when no `backgroundImage`). */
     bgColor?: string;
-    /** World dimensions for `side` follow-camera clamp. */
-    worldWidth?: number;
-    worldHeight?: number;
-
-    // --- Remote asset loading ---
-    /** Manifest mapping entity keys to resolved Asset objects (fallback resolution). */
-    assetManifest?: {
-        terrains?: Record<string, Asset>;
-        units?: Record<string, Asset>;
-        features?: Record<string, Asset>;
-        effects?: Record<string, Asset>;
-    };
 }
 
-// =============================================================================
-// Side-view platformer defaults (the `SideCanvas2D` renderer itself lives in
-// ./SideCanvas2D.tsx — this file only owns the render call-site defaults).
-// =============================================================================
-
-/** A backdrop may be authored as a bare URL string (the natural shorthand) or a
- * full `Asset`. Normalize a string to a minimal decoration Asset so the render
- * paths (which read `.url`/atlas) stay Asset-only. */
+/** A backdrop may be authored as a bare URL string or a full `Asset`; normalize a
+ * string to a minimal decoration Asset so the paint path stays Asset-only. */
 function normalizeBackdrop(bg: AssetUrl | Asset | undefined): Asset | undefined {
     return typeof bg === 'string'
         ? { url: bg, role: 'decoration', category: 'background' }
         : bg;
 }
 
-/** IsometricTile has no fallback-color field upstream; read an optional per-tile override
- *  the same way `features` reads a `featureType` alias below — one inline intersection,
- *  one shared theme map. */
-function resolveTileFallbackColor(tile: IsometricTile): string {
-    const override = tile.color;
-    return override ?? TERRAIN_COLORS[tile.terrain ?? ''] ?? TERRAIN_COLORS.default;
+/** Collect every drawable's scene position (atoms directly; layers via `items`) —
+ *  the source for grid centering and the minimap, derived from what is drawn. */
+function collectScenePositions(nodes: DrawableNode[]): ScenePos[] {
+    const out: ScenePos[] = [];
+    for (const n of nodes) {
+        switch (n.type) {
+            case 'draw-sprite':
+            case 'draw-shape':
+            case 'draw-text':
+                out.push(n.position);
+                break;
+            case 'draw-sprite-layer':
+            case 'draw-shape-layer':
+            case 'draw-text-layer':
+                for (const it of n.items) out.push(it.position);
+                break;
+        }
+    }
+    return out;
 }
-
-/** IsometricUnit has no tint field upstream; same override idiom as `resolveTileFallbackColor`. */
-function resolveUnitTeamColor(unit: IsometricUnit): string {
-    const override = unit.tint;
-    return override ?? TEAM_COLORS[unit.team ?? ''] ?? TEAM_COLORS.default;
-}
-
-/** Row count for the legacy whole-sheet fallback crop — derived from the shared animation-row
- *  layout instead of a bare literal (idle/walk/attack/hit/death = 5 rows). */
-const LEGACY_SHEET_ROWS = Object.keys(SPRITE_SHEET_LAYOUT).length;
-
-const DEFAULT_PLATFORMS: Platform[] = [
-    { x: 0, y: 368, width: 800, height: 32, type: 'ground' },
-    { x: 150, y: 280, width: 160, height: 16, type: 'platform' },
-    { x: 420, y: 220, width: 160, height: 16, type: 'platform' },
-    { x: 620, y: 300, width: 140, height: 16, type: 'platform' },
-];
 
 // =============================================================================
 // Component
 // =============================================================================
 
 export function Canvas2D({
-    // Closed-circuit
     className,
     isLoading = false,
     error = null,
-    // Projection
     projection = 'isometric',
-    // Layer data
-    tiles: _tilesPropRaw = [],
-    units: _unitsPropRaw = [],
-    features: _featuresPropRaw = [],
-    effects: _effectsPropRaw = [],
-    platforms,
-    player,
-    backgroundImage: backgroundImageRaw,
     drawables,
-    // Interaction state
-    selectedUnitId = null,
-    validMoves = [],
-    attackTargets = [],
-    hoveredTile = null,
-    // Declarative event props
+    backgroundImage: backgroundImageRaw,
     tileClickEvent,
-    unitClickEvent,
     tileHoverEvent,
     tileLeaveEvent,
     keyMap,
     keyUpMap,
-    // View config
     camera = 'pan-zoom',
     scale = 0.4,
-    unitScale = 1,
     showMinimap = true,
-    animate,
-    interpolateUnits = false,
-    // Tuning
-    debug = false,
-    spriteHeightRatio = 1.5,
-    spriteMaxWidthRatio = 0.6,
-    diamondTopY: diamondTopYProp,
-    // Asset resolution
-    getTerrainSprite,
-    getFeatureSprite,
-    getUnitSprite,
-    resolveUnitFrame,
-    effectSpriteUrls = [],
-    onDrawEffects,
-    // Side-view asset resolution
-    playerSprite,
-    tileSprites,
-    bgColor = DEFAULT_BG_COLOR,
-    worldWidth = 800,
-    worldHeight = 400,
-    // Remote asset loading
-    assetManifest,
+    followTarget,
+    bgColor,
 }: Canvas2DProps): React.JSX.Element {
     const backgroundImage = normalizeBackdrop(backgroundImageRaw);
-    const isSide = projection === 'side';
     const isFree = projection === 'free';
-    // iso/hex/flat painter ordering treats free like flat (row-major, no depth sort).
-    const flatLike = projection === 'hex' || projection === 'flat' || isFree;
-    // 'flat' is a true square grid (pitch == tile width, square cells); hex/iso keep diamond metrics.
-    const squareGrid = projection === 'flat';
-
-    // Defensive: array props always iterable.
-    const tilesProp = Array.isArray(_tilesPropRaw) ? _tilesPropRaw : [];
-    const unitsProp = Array.isArray(_unitsPropRaw) ? _unitsPropRaw : [];
-    const featuresProp = Array.isArray(_featuresPropRaw) ? _featuresPropRaw : [];
-    const effects = Array.isArray(_effectsPropRaw) ? _effectsPropRaw : [];
+    // 'flat'/'free'/'side' are square-pitch, world-pixel-direct; iso/hex keep diamond metrics.
+    const squareGrid = projection === 'flat' || isFree || projection === 'side';
+    /** The projector layout — `side` reuses `free` (identity, world pixels). */
+    const layout: Projection2D = projection === 'side' ? 'free' : projection;
 
     const eventBus = useEventBus();
     const { t } = useTranslate();
@@ -365,12 +218,6 @@ export function Canvas2D({
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const lerpRafRef = useRef(0);
-    const animRafRef = useRef(0);
-    // Opt-in unit-position interpolation (grid projections) — same fixed-timestep
-    // technique `SideCanvas2D` already uses for the player. Empty/unread when
-    // `interpolateUnits` is off, so default behavior is byte-for-byte unchanged.
-    const unitInterp = useRenderInterpolation<{ id: string; x: number; y: number }>();
-    const interpolatedUnitPositionsRef = useRef<Map<string, { x: number; y: number }>>(new Map());
 
     // -- Viewport size --
     const [viewportSize, setViewportSize] = useState({ width: 800, height: 600 });
@@ -394,130 +241,47 @@ export function Canvas2D({
         return () => observer.disconnect();
     }, []);
 
-    // -- Normalize units: accept flat x/y or position.x/y --
-    const units = useMemo(() =>
-        unitsProp.map(u => u.position ? u : { ...u, position: { x: u.x ?? 0, y: u.y ?? 0 } }),
-    [unitsProp]);
-
-    // -- Self-contained sprite-sheet animation (atlas-driven, single-frame crop) --
-    const { sheetUrls: atlasSheetUrls, resolveUnitFrame: resolveUnitFrameInternal } = useUnitSpriteAtlas(units);
-
-    const resolveFrameForUnit = useCallback((unitId: string): ResolvedFrame | null => {
-        return resolveUnitFrame?.(unitId) ?? resolveUnitFrameInternal(unitId);
-    }, [resolveUnitFrame, resolveUnitFrameInternal]);
-
-    // -- Normalize features: accept featureType or type --
-    const features = useMemo(() =>
-        featuresProp.map(f => {
-            if (f.type) return f;
-            const raw = f as IsometricFeature & { featureType?: string };
-            return raw.featureType ? { ...f, type: raw.featureType } : f;
-        }),
-    [featuresProp]);
-
-    // -- Projection helper: dispatch to isoToScreen, or pixel-direct for `free`. --
-    // `free` draws x,y as screen pixels (no diamond, no centering offset).
-    const project = useCallback((x: number, y: number, baseOffsetX: number): { x: number; y: number } => {
-        if (isFree) return { x, y };
-        // iso/hex/flat all flow through isoToScreen (which keys on the same literals).
-        return isoToScreen(x, y, scale, baseOffsetX, projection === 'side' ? 'flat' : projection);
-    }, [isFree, projection, scale]);
-
-    const unproject = useCallback((screenX: number, screenY: number, baseOffsetX: number): { x: number; y: number } => {
-        if (isFree) return { x: Math.round(screenX), y: Math.round(screenY) };
-        return screenToIso(screenX, screenY, scale, baseOffsetX, projection === 'side' ? 'flat' : projection);
-    }, [isFree, projection, scale]);
-
-    // -- Tiles default sort (stable for painter's algorithm) --
-    const sortedTiles = useMemo(() => {
-        const arr = [...tilesProp];
-        if (flatLike) {
-            arr.sort((a, b) => a.y !== b.y ? a.y - b.y : a.x - b.x);
-        } else {
-            arr.sort((a, b) => {
-                const depthA = a.x + a.y;
-                const depthB = b.x + b.y;
-                return depthA !== depthB ? depthA - depthB : a.y - b.y;
-            });
-        }
-        return arr;
-    }, [tilesProp, flatLike]);
-
-    // -- Grid dimensions --
-    const gridWidth = useMemo(() => {
-        if (sortedTiles.length === 0) return 0;
-        return Math.max(...sortedTiles.map(t => t.x)) + 1;
-    }, [sortedTiles]);
-
-    const gridHeight = useMemo(() => {
-        if (sortedTiles.length === 0) return 0;
-        return Math.max(...sortedTiles.map(t => t.y)) + 1;
-    }, [sortedTiles]);
-
-    // -- Pre-computed scaled values --
+    // -- Pre-computed scaled scalars (for the pointer→scene inverse) --
     const scaledTileWidth = TILE_WIDTH * scale;
-    const scaledTileHeight = TILE_HEIGHT * scale;
     const scaledFloorHeight = FLOOR_HEIGHT * scale;
-    const effectiveDiamondTopY = diamondTopYProp ?? DIAMOND_TOP_Y;
-    const scaledDiamondTopY = effectiveDiamondTopY * scale;
+    const scaledDiamondTopY = DIAMOND_TOP_Y * scale;
 
-    // In `free` mode tiles are at literal pixels — no centering offset. A square flat grid maps
-    // col→x directly, so the iso skew offset must be zero there too.
+    // -- Scene extent, derived from the drawn descriptors (no tile data prop) --
+    const scenePositions = useMemo(() => collectScenePositions(drawables ?? []), [drawables]);
+    const gridExtent = useMemo(() => {
+        if (scenePositions.length === 0) return { width: 0, height: 0 };
+        let maxX = 0;
+        let maxY = 0;
+        for (const p of scenePositions) {
+            if (p.x > maxX) maxX = p.x;
+            if (p.y > maxY) maxY = p.y;
+        }
+        return { width: maxX + 1, height: maxY + 1 };
+    }, [scenePositions]);
+
+    // In `free`/`side`/`flat` tiles are at literal pixels / square cells — no iso centering offset.
     const baseOffsetX = useMemo(() => {
-        if (isFree || projection === 'flat') return 0;
-        return (gridHeight - 1) * (scaledTileWidth / 2);
-    }, [isFree, projection, gridHeight, scaledTileWidth]);
+        if (isFree || projection === 'flat' || projection === 'side') return 0;
+        return (gridExtent.height - 1) * (scaledTileWidth / 2);
+    }, [isFree, projection, gridExtent.height, scaledTileWidth]);
 
-    // -- Lookup sets for highlights --
-    const validMoveSet = useMemo(() => new Set(validMoves.map(p => `${p.x},${p.y}`)), [validMoves]);
-    const attackTargetSet = useMemo(() => new Set(attackTargets.map(p => `${p.x},${p.y}`)), [attackTargets]);
+    // -- Projector (shared by draw + follow-camera) --
+    const projector = useMemo(
+        () => create2DProjector({ scale, baseOffsetX, layout }),
+        [scale, baseOffsetX, layout],
+    );
 
-    // -- Collect all sprite URLs for preloading --
-    const spriteUrls = useMemo(() => {
-        const urls: string[] = [];
-        const toUrl = (x: string | Asset | undefined): string | undefined => (typeof x === 'string' ? x : x?.url);
-        for (const tile of sortedTiles) {
-            if (tile.terrainSprite) urls.push(tile.terrainSprite.url);
-            else if (getTerrainSprite) {
-                const url = toUrl(getTerrainSprite(tile.terrain ?? ''));
-                if (url) urls.push(url);
-            } else {
-                const url = assetManifest?.terrains?.[tile.terrain ?? '']?.url;
-                if (url) urls.push(url);
-            }
-        }
-        for (const feature of features) {
-            if (feature.sprite) urls.push(feature.sprite.url);
-            else if (getFeatureSprite) {
-                const url = toUrl(getFeatureSprite(feature.type));
-                if (url) urls.push(url);
-            } else {
-                const url = assetManifest?.features?.[feature.type]?.url;
-                if (url) urls.push(url);
-            }
-        }
-        for (const unit of units) {
-            if (unit.sprite) urls.push(unit.sprite.url);
-            else if (getUnitSprite) {
-                const url = toUrl(getUnitSprite(unit));
-                if (url) urls.push(url);
-            } else if (unit.unitType) {
-                const url = assetManifest?.units?.[unit.unitType]?.url;
-                if (url) urls.push(url);
-            }
-        }
-        if (assetManifest?.effects) {
-            for (const asset of Object.values(assetManifest.effects)) {
-                if (asset.url) urls.push(asset.url);
-            }
-        }
-        if (effectSpriteUrls) urls.push(...effectSpriteUrls);
-        if (atlasSheetUrls.length) urls.push(...atlasSheetUrls);
-        if (backgroundImage) urls.push(backgroundImage.url);
-        return [...new Set(urls.filter(Boolean))];
-    }, [sortedTiles, features, units, getTerrainSprite, getFeatureSprite, getUnitSprite, effectSpriteUrls, atlasSheetUrls, backgroundImage, assetManifest]);
+    // -- Pointer → scene inverse (iso/hex/flat/free/side) --
+    const unproject = useCallback((screenX: number, screenY: number): { x: number; y: number } => {
+        // `free`/`side` are world-pixel-direct; the `=== 'free'` test (not the aliased
+        // `isFree`) narrows `projection` to a `TileLayout` for `screenToIso` below.
+        if (projection === 'free' || projection === 'side') return { x: Math.round(screenX), y: Math.round(screenY) };
+        return screenToIso(screenX, screenY, scale, baseOffsetX, projection);
+    }, [projection, scale, baseOffsetX]);
 
-    const { getImage, pendingCount: _imagePendingCount } = useImageCache(spriteUrls);
+    // -- Background image preload --
+    const bgUrls = useMemo(() => (backgroundImage ? [backgroundImage.url] : []), [backgroundImage]);
+    const { getImage, pendingCount: _imagePendingCount } = useImageCache(bgUrls);
 
     // -- Verification bridge --
     useEffect(() => {
@@ -548,54 +312,17 @@ export function Canvas2D({
     const [, setAtlasVersion] = useState(0);
     const bumpAtlas = useCallback(() => setAtlasVersion((v) => v + 1), []);
 
-    // -- Sprite resolvers — return the full Asset (may carry an atlas sub-texture ref). A bare
-    //    URL from a legacy string resolver is normalized to `{ url }`. --
-    const resolveTerrainAsset = useCallback((tile: IsometricTile): SpriteRef | undefined => {
-        if (tile.terrainSprite) return tile.terrainSprite;
-        const s = getTerrainSprite?.(tile.terrain ?? '');
-        if (s) return typeof s === 'string' ? { url: s } : s;
-        return assetManifest?.terrains?.[tile.terrain ?? ''];
-    }, [getTerrainSprite, assetManifest]);
-
-    const resolveFeatureAsset = useCallback((feature: IsometricFeature): SpriteRef | undefined => {
-        if (feature.sprite) return feature.sprite;
-        const s = getFeatureSprite?.(feature.type);
-        if (s) return typeof s === 'string' ? { url: s } : s;
-        return assetManifest?.features?.[feature.type];
-    }, [getFeatureSprite, assetManifest]);
-
-    const resolveUnitAsset = useCallback((unit: IsometricUnit): SpriteRef | undefined => {
-        if (unit.sprite) return unit.sprite;
-        const s = getUnitSprite?.(unit);
-        if (s) return typeof s === 'string' ? { url: s } : s;
-        return unit.unitType ? assetManifest?.units?.[unit.unitType] : undefined;
-    }, [getUnitSprite, assetManifest]);
-
-    // -- Minimap data --
+    // -- Minimap data (dots at each drawn descriptor's scene position) --
     const miniMapTiles = useMemo(() => {
         if (!showMinimap) return [];
-        return sortedTiles.map(t => ({
-            x: t.x,
-            y: t.y,
-            color: MINIMAP_TERRAIN_COLORS[t.terrain ?? ''] ?? MINIMAP_TERRAIN_COLORS.default,
-        }));
-    }, [showMinimap, sortedTiles]);
-
-    const miniMapUnits = useMemo(() => {
-        if (!showMinimap) return [];
-        return units.filter(u => u.position).map(u => ({
-            x: u.position!.x,
-            y: u.position!.y,
-            color: MINIMAP_UNIT_COLORS[u.team ?? ''] ?? MINIMAP_UNIT_COLORS.default,
-            isPlayer: u.team === 'player',
-        }));
-    }, [showMinimap, units]);
-
-    const miniMapWidth = gridWidth || 10;
-    const miniMapHeight = gridHeight || 10;
+        const color = MINIMAP_TERRAIN_COLORS.default;
+        return scenePositions.map((p) => ({ x: p.x, y: p.y, color }));
+    }, [showMinimap, scenePositions]);
+    const miniMapWidth = gridExtent.width || 10;
+    const miniMapHeight = gridExtent.height || 10;
 
     // =========================================================================
-    // Main draw — pure function of props; no internal clock
+    // Draw — pure function of `drawables` + camera; no internal clock
     // =========================================================================
     const draw = useCallback(() => {
         const canvas = canvasRef.current;
@@ -615,7 +342,6 @@ export function Canvas2D({
             const bgImg = getImage(backgroundImage.url);
             const bgSrc = bgImg ? resolveAssetSource(bgImg, backgroundImage, bumpAtlas) : null;
             if (bgSrc?.rect) {
-                // Atlas slice = one scene image, cover-scaled to the viewport — never tiled.
                 const k = Math.max(viewportSize.width / bgSrc.rect.sw, viewportSize.height / bgSrc.rect.sh);
                 const dw = bgSrc.rect.sw * k;
                 const dh = bgSrc.rect.sh * k;
@@ -633,413 +359,43 @@ export function Canvas2D({
                 }
             }
         } else {
-            ctx.fillStyle = BACKGROUND_FALLBACK_COLOR;
+            ctx.fillStyle = bgColor ?? BACKGROUND_FALLBACK_COLOR;
             ctx.fillRect(0, 0, viewportSize.width, viewportSize.height);
         }
 
-        // Drawable Canvas path (P3): when neutral drawable descriptors are supplied, the host
-        // walks them through the portable painter instead of the data-prop passes below (the
-        // retirement target — deleted at P6). The `!== 'side'` guard narrows `projection` to the
-        // 2D projector's modes (the side host owns its own path).
-        if (drawables && drawables.length > 0 && projection !== 'side') {
-            const cam = cameraRef.current;
-            const painter = createWebPainter(ctx, bumpAtlas);
-            painter.save();
-            painter.translate(viewportSize.width / 2, viewportSize.height / 2);
-            painter.scale(cam.zoom, cam.zoom);
-            painter.translate(-viewportSize.width / 2 - cam.x, -viewportSize.height / 2 - cam.y);
-            const projector = create2DProjector({ scale, baseOffsetX, layout: projection });
-            const dctx: DrawContext = { projector, time: 0, invalidate: bumpAtlas };
-            for (const node of drawables) paintDrawable(painter, node, dctx);
-            painter.restore();
-            return;
-        }
+        if (!drawables || drawables.length === 0) return;
 
-        if (sortedTiles.length === 0 && units.length === 0 && features.length === 0) return;
-
-        // Camera transform.
-        ctx.save();
+        // Camera transform, then walk the drawables through the portable painter.
         const cam = cameraRef.current;
-        ctx.translate(viewportSize.width / 2, viewportSize.height / 2);
-        ctx.scale(cam.zoom, cam.zoom);
-        ctx.translate(-viewportSize.width / 2 - cam.x, -viewportSize.height / 2 - cam.y);
-
-        // Visible region for culling.
-        const visLeft = cam.x - viewportSize.width / cam.zoom;
-        const visRight = cam.x + viewportSize.width * 2 / cam.zoom;
-        const visTop = cam.y - viewportSize.height / cam.zoom;
-        const visBottom = cam.y + viewportSize.height * 2 / cam.zoom;
-
-        // =========== TILES ===========
-        for (const tile of sortedTiles) {
-            const pos = project(tile.x, tile.y, baseOffsetX);
-
-            if (pos.x + scaledTileWidth < visLeft || pos.x > visRight ||
-                pos.y + scaledTileHeight < visTop || pos.y > visBottom) {
-                continue;
-            }
-
-            const terrainAsset = resolveTerrainAsset(tile);
-            const img = terrainAsset?.url ? getImage(terrainAsset.url) : null;
-            const src = img ? resolveAssetSource(img, terrainAsset, bumpAtlas) : null;
-
-            if (src) {
-                const drawW = scaledTileWidth;
-                // Square flat grid: the cell IS scaledTileWidth² — fill it exactly.
-                const drawH = squareGrid ? scaledTileWidth : scaledTileWidth / src.aspect;
-                const drawX = pos.x;
-                // Flat-like (hex/flat/free): anchor sprite top at pos.y so the row
-                // pitch controls spacing, not the ISO bounding-box height.
-                const drawY = flatLike ? pos.y : pos.y + scaledTileHeight - drawH;
-                blit(ctx, src, drawX, drawY, drawW, drawH);
-            } else if (img && img.naturalWidth === 0) {
-                ctx.drawImage(img, pos.x, pos.y, scaledTileWidth, scaledTileHeight);
-            } else if (squareGrid) {
-                ctx.fillStyle = resolveTileFallbackColor(tile);
-                ctx.fillRect(pos.x, pos.y, scaledTileWidth, scaledTileWidth);
-                ctx.strokeStyle = GRID_STROKE_COLOR;
-                ctx.lineWidth = 1;
-                ctx.strokeRect(pos.x, pos.y, scaledTileWidth, scaledTileWidth);
-            } else {
-                const centerX = pos.x + scaledTileWidth / 2;
-                const topY = pos.y + scaledDiamondTopY;
-                ctx.fillStyle = resolveTileFallbackColor(tile);
-                ctx.beginPath();
-                ctx.moveTo(centerX, topY);
-                ctx.lineTo(pos.x + scaledTileWidth, topY + scaledFloorHeight / 2);
-                ctx.lineTo(centerX, topY + scaledFloorHeight);
-                ctx.lineTo(pos.x, topY + scaledFloorHeight / 2);
-                ctx.closePath();
-                ctx.fill();
-                ctx.strokeStyle = GRID_STROKE_COLOR;
-                ctx.lineWidth = 1;
-                ctx.stroke();
-            }
-
-            const drawHighlight = (color: string) => {
-                ctx.fillStyle = color;
-                if (squareGrid) {
-                    ctx.fillRect(pos.x, pos.y, scaledTileWidth, scaledTileWidth);
-                    return;
-                }
-                const centerX = pos.x + scaledTileWidth / 2;
-                const topY = pos.y + scaledDiamondTopY;
-                ctx.beginPath();
-                ctx.moveTo(centerX, topY);
-                ctx.lineTo(pos.x + scaledTileWidth, topY + scaledFloorHeight / 2);
-                ctx.lineTo(centerX, topY + scaledFloorHeight);
-                ctx.lineTo(pos.x, topY + scaledFloorHeight / 2);
-                ctx.closePath();
-                ctx.fill();
-            };
-
-            if (hoveredTile && hoveredTile.x === tile.x && hoveredTile.y === tile.y) {
-                drawHighlight(HIGHLIGHT_COLORS.hover);
-            }
-            const tileKey = `${tile.x},${tile.y}`;
-            if (validMoveSet.has(tileKey)) drawHighlight(HIGHLIGHT_COLORS.validMove);
-            if (attackTargetSet.has(tileKey)) drawHighlight(HIGHLIGHT_COLORS.attack);
-
-            if (debug) {
-                const centerX = pos.x + scaledTileWidth / 2;
-                const centerY = squareGrid ? pos.y + scaledTileWidth / 2 : pos.y + scaledFloorHeight / 2 + scaledDiamondTopY;
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                ctx.font = `${12 * scale * 2}px monospace`;
-                ctx.textAlign = 'center';
-                ctx.fillText(`${tile.x},${tile.y}`, centerX, centerY + 4);
-            }
-        }
-
-        // =========== FEATURES ===========
-        const sortedFeatures = [...features].sort((a, b) => {
-            if (flatLike) return a.y !== b.y ? a.y - b.y : a.x - b.x;
-            const depthA = a.x + a.y;
-            const depthB = b.x + b.y;
-            return depthA !== depthB ? depthA - depthB : a.y - b.y;
-        });
-
-        for (const feature of sortedFeatures) {
-            const pos = project(feature.x, feature.y, baseOffsetX);
-
-            if (pos.x + scaledTileWidth < visLeft || pos.x > visRight ||
-                pos.y + scaledTileHeight < visTop || pos.y > visBottom) {
-                continue;
-            }
-
-            const featureAsset = resolveFeatureAsset(feature);
-            const img = featureAsset?.url ? getImage(featureAsset.url) : null;
-            const src = img ? resolveAssetSource(img, featureAsset, bumpAtlas) : null;
-
-            const centerX = pos.x + scaledTileWidth / 2;
-            const featureGroundY = squareGrid
-                ? pos.y + scaledTileWidth * 0.92
-                : pos.y + scaledDiamondTopY + scaledFloorHeight * 0.50;
-            const isCastle = feature.type === 'castle';
-            const featureDrawH = squareGrid
-                ? (isCastle ? scaledTileWidth * 1.4 : scaledTileWidth * 0.8)
-                : (isCastle ? scaledFloorHeight * 3.5 : scaledFloorHeight * 1.6);
-            const maxFeatureW = isCastle ? scaledTileWidth * 1.8 : scaledTileWidth * 0.7;
-
-            if (src) {
-                const ar = src.aspect;
-                let drawH = featureDrawH;
-                let drawW = featureDrawH * ar;
-                if (drawW > maxFeatureW) {
-                    drawW = maxFeatureW;
-                    drawH = maxFeatureW / ar;
-                }
-                const drawX = centerX - drawW / 2;
-                const drawY = featureGroundY - drawH;
-                blit(ctx, src, drawX, drawY, drawW, drawH);
-            } else {
-                const color = FEATURE_COLORS[feature.type] || FEATURE_COLORS.default;
-                ctx.beginPath();
-                ctx.arc(centerX, featureGroundY - 8 * scale, 16 * scale, 0, Math.PI * 2);
-                ctx.fillStyle = color;
-                ctx.fill();
-                ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-            }
-        }
-
-        // =========== UNITS ===========
-        const unitsWithPosition = units.filter((u): u is typeof u & { position: { x: number; y: number } } => !!u.position);
-        const sortedUnits = [...unitsWithPosition].sort((a, b) => {
-            if (flatLike) return a.position.y !== b.position.y ? a.position.y - b.position.y : a.position.x - b.position.x;
-            const depthA = a.position.x + a.position.y;
-            const depthB = b.position.x + b.position.y;
-            return depthA !== depthB ? depthA - depthB : a.position.y - b.position.y;
-        });
-
-        for (const unit of sortedUnits) {
-            const interpolated = interpolateUnits ? interpolatedUnitPositionsRef.current.get(unit.id) : undefined;
-            const pos = project(interpolated?.x ?? unit.position.x, interpolated?.y ?? unit.position.y, baseOffsetX);
-
-            if (pos.x + scaledTileWidth < visLeft || pos.x > visRight ||
-                pos.y + scaledTileHeight < visTop || pos.y > visBottom) {
-                continue;
-            }
-
-            const isSelected = unit.id === selectedUnitId;
-            const centerX = pos.x + scaledTileWidth / 2;
-            const groundY = squareGrid
-                ? pos.y + scaledTileWidth * 0.92
-                : pos.y + scaledDiamondTopY + scaledFloorHeight * 0.50;
-
-            // Breathing offset is static — LOLO state machine drives animation externally.
-            const breatheOffset = 0;
-
-            const unitAsset = resolveUnitAsset(unit);
-            const img = unitAsset?.url ? getImage(unitAsset.url) : null;
-            const unitDrawH = squareGrid
-                ? scaledTileWidth * 0.55 * spriteHeightRatio * unitScale
-                : scaledFloorHeight * spriteHeightRatio * unitScale;
-            const maxUnitW = scaledTileWidth * spriteMaxWidthRatio * unitScale;
-            // Crop `unit.sprite.url` as a sheet ONLY with a real `spriteSheet` atlas (GR-1).
-            const unitIsSheet = unit.spriteSheet?.url !== undefined;
-            // Static atlas sub-texture (a packed sheet + named/indexed sprite), distinct from the
-            // animated `spriteSheet` grid path above.
-            const unitSrc = (img && !unitIsSheet) ? resolveAssetSource(img, unitAsset, bumpAtlas) : null;
-            // Legacy whole-sheet fallback (no atlas JSON resolved this frame): crop the sheet's
-            // top-left cell via the shared `frameRect` math, sized off the animation-row layout.
-            const sheetFrameW = img ? img.naturalWidth / SHEET_COLUMNS : 0;
-            const sheetFrameH = img ? img.naturalHeight / LEGACY_SHEET_ROWS : 0;
-            const legacyFrame = frameRect(0, 0, SHEET_COLUMNS, sheetFrameW, sheetFrameH);
-            const frameW = unitIsSheet ? sheetFrameW : (img?.naturalWidth ?? 1);
-            const frameH = unitIsSheet ? sheetFrameH : (img?.naturalHeight ?? 1);
-            const ar = unitIsSheet ? (sheetFrameW / (sheetFrameH || 1)) : (unitSrc ? unitSrc.aspect : (frameW / (frameH || 1)));
-            let drawH = unitDrawH;
-            let drawW = unitDrawH * ar;
-            if (drawW > maxUnitW) {
-                drawW = maxUnitW;
-                drawH = maxUnitW / ar;
-            }
-
-            // Movement trail / ghost.
-            if (unit.previousPosition && (unit.previousPosition.x !== unit.position.x || unit.previousPosition.y !== unit.position.y)) {
-                const ghostPos = project(unit.previousPosition.x, unit.previousPosition.y, baseOffsetX);
-                const ghostCenterX = ghostPos.x + scaledTileWidth / 2;
-                const ghostGroundY = squareGrid
-                    ? ghostPos.y + scaledTileWidth * 0.92
-                    : ghostPos.y + scaledDiamondTopY + scaledFloorHeight * 0.50;
-
-                ctx.save();
-                ctx.globalAlpha = 0.25;
-                if (img) {
-                    if (unitIsSheet) {
-                        ctx.drawImage(img, legacyFrame.sx, legacyFrame.sy, legacyFrame.sw, legacyFrame.sh, ghostCenterX - drawW / 2, ghostGroundY - drawH, drawW, drawH);
-                    } else if (unitSrc) {
-                        blit(ctx, unitSrc, ghostCenterX - drawW / 2, ghostGroundY - drawH, drawW, drawH);
-                    } else {
-                        ctx.drawImage(img, ghostCenterX - drawW / 2, ghostGroundY - drawH, drawW, drawH);
-                    }
-                } else {
-                    ctx.beginPath();
-                    ctx.arc(ghostCenterX, ghostGroundY - 16 * scale, 20 * scale, 0, Math.PI * 2);
-                    ctx.fillStyle = resolveUnitTeamColor(unit);
-                    ctx.fill();
-                }
-                ctx.restore();
-            }
-
-            if (isSelected) {
-                ctx.beginPath();
-                ctx.ellipse(centerX, groundY, drawW / 2 + 4 * scale, 12 * scale, 0, 0, Math.PI * 2);
-                ctx.strokeStyle = SELECTION_RING_COLOR;
-                ctx.lineWidth = 3;
-                ctx.stroke();
-            }
-
-            const frame = resolveFrameForUnit(unit.id);
-            const frameImg = frame ? getImage(frame.sheetUrl) : null;
-
-            if (frame && frameImg) {
-                const frameAr = frame.sw / frame.sh;
-                let fDrawH = unitDrawH;
-                let fDrawW = unitDrawH * frameAr;
-                if (fDrawW > maxUnitW) {
-                    fDrawW = maxUnitW;
-                    fDrawH = maxUnitW / frameAr;
-                }
-                const spriteY = groundY - fDrawH - (frame.applyBreathing ? breatheOffset : 0);
-
-                ctx.save();
-                if (unit.team) {
-                    ctx.shadowColor = TEAM_SHADOW_COLORS[unit.team] ?? TEAM_SHADOW_COLORS.default;
-                    ctx.shadowBlur = 12 * scale;
-                }
-                if (frame.flipX) {
-                    ctx.translate(centerX, 0);
-                    ctx.scale(-1, 1);
-                    ctx.drawImage(frameImg, frame.sx, frame.sy, frame.sw, frame.sh, -fDrawW / 2, spriteY, fDrawW, fDrawH);
-                } else {
-                    ctx.drawImage(frameImg, frame.sx, frame.sy, frame.sw, frame.sh, centerX - fDrawW / 2, spriteY, fDrawW, fDrawH);
-                }
-                ctx.restore();
-            } else if (img) {
-                const spriteY = groundY - drawH - breatheOffset;
-                const drawUnit = (x: number) => {
-                    if (unitIsSheet) {
-                        ctx.drawImage(img, legacyFrame.sx, legacyFrame.sy, legacyFrame.sw, legacyFrame.sh, x, spriteY, drawW, drawH);
-                    } else if (unitSrc) {
-                        blit(ctx, unitSrc, x, spriteY, drawW, drawH);
-                    } else {
-                        ctx.drawImage(img, x, spriteY, drawW, drawH);
-                    }
-                };
-                if (unit.team) {
-                    ctx.save();
-                    ctx.shadowColor = TEAM_SHADOW_COLORS[unit.team] ?? TEAM_SHADOW_COLORS.default;
-                    ctx.shadowBlur = 12 * scale;
-                    drawUnit(centerX - drawW / 2);
-                    ctx.restore();
-                } else {
-                    drawUnit(centerX - drawW / 2);
-                }
-            } else {
-                ctx.beginPath();
-                ctx.arc(centerX, groundY - 20 * scale - breatheOffset, 20 * scale, 0, Math.PI * 2);
-                ctx.fillStyle = resolveUnitTeamColor(unit);
-                ctx.fill();
-                ctx.strokeStyle = 'rgba(255,255,255,0.8)';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-            }
-        }
-
-        // Draw ActiveEffect[] sprites after units.
-        for (const fx of effects) {
-            const fxAsset = assetManifest?.effects?.[fx.key];
-            if (!fxAsset?.url) continue;
-            const img = getImage(fxAsset.url);
-            if (!img) continue;
-            const src = resolveAssetSource(img, fxAsset, bumpAtlas);
-            const pos = project(fx.x, fx.y, baseOffsetX);
-            const cx = pos.x + scaledTileWidth / 2;
-            const cy = squareGrid ? pos.y + scaledTileWidth / 2 : pos.y + scaledDiamondTopY + scaledFloorHeight * 0.5;
-            const alpha = Math.min(1, fx.ttl / 4);
-            const prev = ctx.globalAlpha;
-            ctx.globalAlpha = alpha;
-            if (src?.rect) {
-                // Atlas frame: one named sub-rect, scaled to the tile footprint.
-                const dw = scaledTileWidth;
-                const dh = dw / src.aspect;
-                blit(ctx, src, cx - dw / 2, cy - dh / 2, dw, dh);
-            } else {
-                ctx.drawImage(img, cx - img.naturalWidth / 2, cy - img.naturalHeight / 2);
-            }
-            ctx.globalAlpha = prev;
-        }
-
-        onDrawEffects?.(ctx, 0, getImage);
-
-        ctx.restore();
-    }, [
-        sortedTiles, units, features, selectedUnitId, effects, drawables, projection,
-        project, flatLike, squareGrid, scale, debug, resolveTerrainAsset, resolveFeatureAsset, resolveUnitAsset, resolveFrameForUnit, getImage, bumpAtlas,
-        baseOffsetX, scaledTileWidth, scaledTileHeight, scaledFloorHeight, scaledDiamondTopY,
-        validMoveSet, attackTargetSet, hoveredTile, viewportSize, onDrawEffects,
-        backgroundImage, cameraRef, unitScale, assetManifest, spriteHeightRatio, spriteMaxWidthRatio,
-        interpolateUnits,
-    ]);
+        const painter = createWebPainter(ctx, bumpAtlas);
+        painter.save();
+        painter.translate(viewportSize.width / 2, viewportSize.height / 2);
+        painter.scale(cam.zoom, cam.zoom);
+        painter.translate(-viewportSize.width / 2 - cam.x, -viewportSize.height / 2 - cam.y);
+        const dctx: DrawContext = { projector, time: 0, invalidate: bumpAtlas };
+        for (const node of drawables) paintDrawable(painter, node, dctx);
+        painter.restore();
+    }, [viewportSize, backgroundImage, bgColor, drawables, projector, cameraRef, bumpAtlas, getImage]);
 
     // =========================================================================
-    // Follow camera: center on selected unit (camera:'follow' or unit selection)
+    // Follow camera: lerp to keep `followTarget` centered (camera:'follow').
     // =========================================================================
     useEffect(() => {
-        if (camera === 'fixed') return;
-        if (!selectedUnitId) return;
-        const unit = units.find(u => u.id === selectedUnitId);
-        if (!unit?.position) return;
-        const pos = project(unit.position.x, unit.position.y, baseOffsetX);
-        const centerX = pos.x + scaledTileWidth / 2;
-        const centerY = squareGrid ? pos.y + scaledTileWidth / 2 : pos.y + scaledDiamondTopY + scaledFloorHeight / 2;
+        if (camera !== 'follow' || !followTarget) return;
+        const p = projector.anchorPoint(followTarget, 'center');
         targetCameraRef.current = {
-            x: centerX - viewportSize.width / 2,
-            y: centerY - viewportSize.height / 2,
+            x: p.x - viewportSize.width / 2,
+            y: p.y - viewportSize.height / 2,
         };
-    }, [camera, selectedUnitId, units, project, baseOffsetX, scaledTileWidth, squareGrid, scaledDiamondTopY, scaledFloorHeight, viewportSize, targetCameraRef]);
+    }, [camera, followTarget, projector, viewportSize, targetCameraRef]);
 
-    // =========================================================================
-    // Opt-in unit-position interpolation (grid projections). DEFAULT OFF —
-    // when `interpolateUnits` is false these effects are no-ops (never feed
-    // a snapshot, never start the loop), so the "pure, no internal clock"
-    // redraw below stays exactly as before for every board that doesn't ask.
-    // =========================================================================
-    useEffect(() => {
-        if (isSide || !interpolateUnits) return;
-        unitInterp.onSnapshot(
-            units.filter((u): u is typeof u & { position: { x: number; y: number } } => !!u.position)
-                .map((u) => ({ id: u.id, x: u.position.x, y: u.position.y })),
-        );
-    }, [isSide, interpolateUnits, units, unitInterp]);
+    // Redraw on scene / camera change — pure, no internal clock.
+    useEffect(() => { draw(); }, [draw]);
+    useEffect(() => { draw(); }, [_imagePendingCount, draw]);
 
+    // Camera-lerp RAF: runs only while a follow target is active.
     useEffect(() => {
-        if (isSide || !interpolateUnits) return;
-        return unitInterp.startLoop((positions) => {
-            interpolatedUnitPositionsRef.current = positions;
-            draw();
-        });
-    }, [isSide, interpolateUnits, unitInterp, draw]);
-
-    // =========================================================================
-    // Redraw on data change — pure, no internal clock
-    // =========================================================================
-    useEffect(() => {
-        if (isSide) return;
-        draw();
-    }, [draw, isSide]);
-
-    useEffect(() => {
-        if (isSide) return;
-        draw();
-    }, [_imagePendingCount, isSide]);
-
-    // Camera-lerp RAF: runs only while a programmatic camera target is active.
-    useEffect(() => {
-        if (isSide) return;
-        if (selectedUnitId == null) return;
+        if (camera !== 'follow' || !followTarget) return;
         let running = true;
         const tick = () => {
             if (!running) return;
@@ -1052,34 +408,10 @@ export function Canvas2D({
             running = false;
             cancelAnimationFrame(lerpRafRef.current);
         };
-    }, [isSide, selectedUnitId, lerpToTarget, draw]);
-
-    // Opt-in animation clock: a steady RAF redraw at `animate.fps`. DEFAULT OFF —
-    // the LOLO model owns the clock; this is only for boards that explicitly want
-    // continuous internal frames (e.g. effect fades resolved by the renderer).
-    useEffect(() => {
-        if (isSide) return;
-        if (!animate) return;
-        let running = true;
-        const interval = 1000 / Math.max(1, animate.fps);
-        let last = 0;
-        const tick = (ts: number) => {
-            if (!running) return;
-            if (ts - last >= interval) {
-                last = ts;
-                draw();
-            }
-            animRafRef.current = requestAnimationFrame(tick);
-        };
-        animRafRef.current = requestAnimationFrame(tick);
-        return () => {
-            running = false;
-            cancelAnimationFrame(animRafRef.current);
-        };
-    }, [isSide, animate, draw]);
+    }, [camera, followTarget, lerpToTarget, draw]);
 
     // =========================================================================
-    // Pointer / gesture handlers (iso/hex/flat/free)
+    // Pointer / gesture handlers
     // =========================================================================
     const singlePointerActiveRef = useRef(false);
 
@@ -1095,35 +427,24 @@ export function Canvas2D({
     const handleCanvasHover = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
         if (singlePointerActiveRef.current) return;
         if (!tileHoverEvent || !canvasRef.current) return;
-
         const world = screenToWorld(e.clientX, e.clientY, canvasRef.current, viewportSize);
         const adjustedX = world.x - scaledTileWidth / 2;
         const adjustedY = squareGrid ? world.y - scaledTileWidth / 2 : world.y - scaledDiamondTopY - scaledFloorHeight / 2;
-        const isoPos = unproject(adjustedX, adjustedY, baseOffsetX);
-
-        const tileExists = tilesProp.some(t => t.x === isoPos.x && t.y === isoPos.y);
-        if (tileExists) eventBus.emit(`UI:${tileHoverEvent}`, { x: isoPos.x, y: isoPos.y });
-    }, [screenToWorld, viewportSize, scaledTileWidth, squareGrid, scaledDiamondTopY, scaledFloorHeight, unproject, baseOffsetX, tilesProp, tileHoverEvent, eventBus]);
+        const isoPos = unproject(adjustedX, adjustedY);
+        eventBus.emit(`UI:${tileHoverEvent}`, { x: isoPos.x, y: isoPos.y });
+    }, [screenToWorld, viewportSize, scaledTileWidth, squareGrid, scaledDiamondTopY, scaledFloorHeight, unproject, tileHoverEvent, eventBus]);
 
     const handleCanvasPointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
         singlePointerActiveRef.current = false;
         if (enableCamera) handlePointerUp();
         if (dragDistance() > 5) return;
-        if (!canvasRef.current) return;
-
+        if (!canvasRef.current || !tileClickEvent) return;
         const world = screenToWorld(e.clientX, e.clientY, canvasRef.current, viewportSize);
         const adjustedX = world.x - scaledTileWidth / 2;
         const adjustedY = squareGrid ? world.y - scaledTileWidth / 2 : world.y - scaledDiamondTopY - scaledFloorHeight / 2;
-        const isoPos = unproject(adjustedX, adjustedY, baseOffsetX);
-
-        const clickedUnit = units.find(u => u.position?.x === isoPos.x && u.position?.y === isoPos.y);
-        if (clickedUnit && unitClickEvent) {
-            eventBus.emit(`UI:${unitClickEvent}`, { unitId: clickedUnit.id });
-        } else if (tileClickEvent) {
-            const tileExists = tilesProp.some(t => t.x === isoPos.x && t.y === isoPos.y);
-            if (tileExists) eventBus.emit(`UI:${tileClickEvent}`, { x: isoPos.x, y: isoPos.y });
-        }
-    }, [enableCamera, handlePointerUp, dragDistance, screenToWorld, viewportSize, scaledTileWidth, squareGrid, scaledDiamondTopY, scaledFloorHeight, unproject, baseOffsetX, units, tilesProp, unitClickEvent, tileClickEvent, eventBus]);
+        const isoPos = unproject(adjustedX, adjustedY);
+        eventBus.emit(`UI:${tileClickEvent}`, { x: isoPos.x, y: isoPos.y });
+    }, [enableCamera, handlePointerUp, dragDistance, screenToWorld, viewportSize, scaledTileWidth, squareGrid, scaledDiamondTopY, scaledFloorHeight, unproject, tileClickEvent, eventBus]);
 
     const handleCanvasPointerLeave = useCallback(() => {
         handleMouseLeave();
@@ -1145,7 +466,7 @@ export function Canvas2D({
 
     const gestureHandlers = useCanvasGestures({
         canvasRef,
-        enabled: enableCamera || !!tileHoverEvent || !!tileClickEvent || !!unitClickEvent,
+        enabled: enableCamera || !!tileHoverEvent || !!tileClickEvent,
         onPointerDown: handleCanvasPointerDown,
         onPointerMove: handleCanvasPointerMove,
         onPointerUp: handleCanvasPointerUp,
@@ -1154,11 +475,9 @@ export function Canvas2D({
         onMultiTouchStart: cancelSinglePointer,
     });
 
-    // Keyboard for any NON-side projection (free/flat/iso/hex) → semantic events via keyMap/keyUpMap.
-    // Gated on keyMap presence, NOT on projection — keyboard support is independent of how the board
-    // renders. (`side` has its own SideCanvas2D listener above.)
+    // Keyboard → semantic events via keyMap/keyUpMap (device-agnostic input layer).
     useEffect(() => {
-        if (isSide || (!keyMap && !keyUpMap)) return;
+        if (!keyMap && !keyUpMap) return;
         const onDown = (e: KeyboardEvent) => {
             const ev = keyMap?.[e.code];
             if (ev) { eventBus.emit(`UI:${ev}`, {}); e.preventDefault(); }
@@ -1173,24 +492,7 @@ export function Canvas2D({
             window.removeEventListener('keydown', onDown);
             window.removeEventListener('keyup', onUp);
         };
-    }, [isSide, keyMap, keyUpMap, eventBus]);
-
-    // =========================================================================
-    // DOM overlay data — health bars + name labels positioned over canvas
-    // =========================================================================
-    const unitOverlays = useMemo(() => {
-        if (units.length === 0) return [];
-        return units
-            .filter((u): u is typeof u & { position: { x: number; y: number } } => !!u.position)
-            .map(u => {
-                const pos = project(u.position!.x, u.position!.y, baseOffsetX);
-                const cam = cameraRef.current;
-                const anchorY = squareGrid ? pos.y + scaledTileWidth * 0.92 : pos.y + scaledDiamondTopY + scaledFloorHeight * 0.5;
-                const screenX = (pos.x + scaledTileWidth / 2 - (cam.x + viewportSize.width / 2)) * cam.zoom + viewportSize.width / 2;
-                const screenY = (anchorY - (cam.y + viewportSize.height / 2)) * cam.zoom + viewportSize.height / 2;
-                return { unit: u, screenX, screenY };
-            });
-    }, [units, project, baseOffsetX, scaledTileWidth, squareGrid, scaledDiamondTopY, scaledFloorHeight, viewportSize, cameraRef]);
+    }, [keyMap, keyUpMap, eventBus]);
 
     // =========================================================================
     // Render
@@ -1220,33 +522,7 @@ export function Canvas2D({
         );
     }
 
-    // Side-view projection: isolated platformer branch.
-    if (isSide) {
-        return (
-            <Box ref={containerRef} className={cn('relative overflow-hidden w-full h-full', className)}>
-                <SideCanvas2D
-                    player={player}
-                    platforms={platforms && platforms.length ? platforms : DEFAULT_PLATFORMS}
-                    worldWidth={worldWidth}
-                    worldHeight={worldHeight}
-                    canvasWidth={viewportSize.width}
-                    canvasHeight={viewportSize.height}
-                    follow={camera === 'follow'}
-                    bgColor={bgColor}
-                    backgroundImage={backgroundImage}
-                    playerSprite={playerSprite}
-                    tileSprites={tileSprites}
-                    effects={effects}
-                    keyMap={keyMap}
-                    keyUpMap={keyUpMap}
-                    className={className}
-                />
-            </Box>
-        );
-    }
-
-    // Empty state for grid projections.
-    if (sortedTiles.length === 0 && units.length === 0 && features.length === 0) {
+    if (!drawables || drawables.length === 0) {
         return (
             <Box
                 className={cn('relative w-full overflow-hidden rounded-container', className)}
@@ -1287,59 +563,25 @@ export function Canvas2D({
                     height: viewportSize.height,
                 }}
             />
-            {/* Test bridge: hidden action buttons for Playwright to discover and trigger game events */}
-            {process.env.NODE_ENV !== 'production' && (
+            {/* Test bridge: a hidden action button for Playwright to trigger a tile event. */}
+            {process.env.NODE_ENV !== 'production' && tileClickEvent && (
                 <Box data-game-actions="" className="sr-only" aria-hidden="true">
-                    {tileClickEvent && (
-                        <Button
-                            variant="ghost"
-                            data-event={tileClickEvent}
-                            data-x="0"
-                            data-y="0"
-                            onClick={() => eventBus.emit(`UI:${tileClickEvent}`, { x: 0, y: 0 })}
-                        >
-                            {tileClickEvent}
-                        </Button>
-                    )}
-                    {unitClickEvent && units && units.length > 0 && (
-                        <Button
-                            variant="ghost"
-                            data-event={unitClickEvent}
-                            data-unit-id={units[0].id}
-                            onClick={() => eventBus.emit(`UI:${unitClickEvent}`, { unitId: units[0].id })}
-                        >
-                            {unitClickEvent}
-                        </Button>
-                    )}
+                    <Button
+                        variant="ghost"
+                        data-event={tileClickEvent}
+                        data-x="0"
+                        data-y="0"
+                        onClick={() => eventBus.emit(`UI:${tileClickEvent}`, { x: 0, y: 0 })}
+                    >
+                        {tileClickEvent}
+                    </Button>
                 </Box>
             )}
-            {/* DOM overlays: health bars and name labels per unit */}
-            {unitOverlays.map(({ unit, screenX, screenY }) => (
-                <Box
-                    key={unit.id}
-                    position="absolute"
-                    className="pointer-events-none"
-                    style={{ left: Math.round(screenX), top: Math.round(screenY), transform: 'translate(-50%, 0)', zIndex: 5 }}
-                >
-                    {unit.name && (
-                        <Typography
-                            as="span"
-                            className="text-white text-xs font-bold px-1.5 py-0.5 rounded mb-0.5 whitespace-nowrap block"
-                            style={{ background: UNIT_LABEL_BG_COLORS[unit.team ?? ''] ?? UNIT_LABEL_BG_COLORS.default }}
-                        >
-                            {unit.name}
-                        </Typography>
-                    )}
-                    {unit.health !== undefined && unit.maxHealth !== undefined && unit.maxHealth > 0 && (
-                        <HealthBar current={unit.health} max={unit.maxHealth} format="bar" size="sm" />
-                    )}
-                </Box>
-            ))}
             {showMinimap && (
                 <Box position="absolute" className="bottom-2 right-2 pointer-events-none" style={{ zIndex: 10 }}>
                     <MiniMap
                         tiles={miniMapTiles}
-                        units={miniMapUnits}
+                        units={[]}
                         width={150}
                         height={100}
                         mapWidth={miniMapWidth}

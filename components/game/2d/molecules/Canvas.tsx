@@ -170,12 +170,10 @@ export function Canvas({
             projection={projection}
             camera={to2DCamera(camera?.mode)}
             {...(zoom !== undefined ? { scale: zoom } : {})}
-            unitScale={unitScale}
+            {...(camera?.target !== undefined ? { followTarget: camera.target } : {})}
             showMinimap={showMinimap}
             backgroundImage={backgroundImage}
             {...(backgroundColor !== undefined ? { bgColor: backgroundColor } : {})}
-            worldWidth={worldWidth}
-            worldHeight={worldHeight}
             tileClickEvent={tileClickEvent}
             unitClickEvent={unitClickEvent}
             tileHoverEvent={tileHoverEvent}
