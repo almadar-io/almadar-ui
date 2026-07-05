@@ -62,12 +62,12 @@
       "require": "./dist/components/game/3d/index.cjs"
     },
     "./components/organisms/game/TraitStateViewer": {
-      "import": "./components/game/2d/TraitStateViewer.tsx",
-      "types": "./components/game/2d/TraitStateViewer.tsx"
+      "import": "./components/game/molecules/TraitStateViewer.tsx",
+      "types": "./components/game/molecules/TraitStateViewer.tsx"
     },
     "./components/organisms/game/TraitSlot": {
-      "import": "./components/game/2d/TraitSlot.tsx",
-      "types": "./components/game/2d/TraitSlot.tsx"
+      "import": "./components/game/molecules/TraitSlot.tsx",
+      "types": "./components/game/molecules/TraitSlot.tsx"
     },
     "./templates": {
       "import": "./templates/index.ts",
