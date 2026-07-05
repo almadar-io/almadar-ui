@@ -14,4 +14,3 @@
 export * from './molecules';
 
 // Organism (not re-exported by molecules/index.ts).
-export { GameBoard3D, type GameBoard3DProps } from './organisms/GameBoard3D';
