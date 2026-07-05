@@ -15,6 +15,7 @@ import { paintShape, type DrawShapeProps } from '../../components/game/atoms/Dra
 import { paintText, type DrawTextProps } from '../../components/game/atoms/DrawText';
 import { paintSpriteLayer, type DrawSpriteLayerProps } from '../../components/game/molecules/DrawSpriteLayer';
 import { paintShapeLayer, type DrawShapeLayerProps } from '../../components/game/molecules/DrawShapeLayer';
+import { paintTextLayer, type DrawTextLayerProps } from '../../components/game/molecules/DrawTextLayer';
 
 /** Every drawable descriptor. The host's `children` are a `DrawableNode[]`. */
 export type DrawableNode =
@@ -22,7 +23,8 @@ export type DrawableNode =
     | DrawShapeProps
     | DrawTextProps
     | DrawSpriteLayerProps
-    | DrawShapeLayerProps;
+    | DrawShapeLayerProps
+    | DrawTextLayerProps;
 
 /** Dispatch a drawable descriptor to its 2D painter. Unknown types are skipped — never throws. */
 export function paintDrawable(painter: Painter2D, node: DrawableNode, dctx: DrawContext): void {
@@ -41,6 +43,9 @@ export function paintDrawable(painter: Painter2D, node: DrawableNode, dctx: Draw
             break;
         case 'draw-shape-layer':
             paintShapeLayer(painter, node, dctx);
+            break;
+        case 'draw-text-layer':
+            paintTextLayer(painter, node, dctx);
             break;
     }
 }

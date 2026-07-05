@@ -44,6 +44,14 @@ export function Drawable3D({ node, projector }: Drawable3DProps): React.JSX.Elem
                     ))}
                 </>
             );
+        case 'draw-text-layer':
+            return (
+                <>
+                    {node.items.map((item, i) => (
+                        <Text3D key={i} node={item} projector={projector} />
+                    ))}
+                </>
+            );
     }
 }
 

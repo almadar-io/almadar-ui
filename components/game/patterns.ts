@@ -18,3 +18,4 @@ export { DrawShape } from './atoms/DrawShape';
 export { DrawText } from './atoms/DrawText';
 export { DrawSpriteLayer } from './molecules/DrawSpriteLayer';
 export { DrawShapeLayer } from './molecules/DrawShapeLayer';
+export { DrawTextLayer } from './molecules/DrawTextLayer';
