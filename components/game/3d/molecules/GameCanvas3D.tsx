@@ -43,6 +43,9 @@ import { FeatureMesh3D } from './FeatureMesh3D';
 import { SideScene3D } from './SideScene3D';
 import { CameraController3D, FollowCamera3D, LerpedGroup3D } from './GameCamera3D';
 import { EventMarker3D } from '../atoms/EventMarker3D';
+import { Drawable3D } from '../../drawables/Drawable3D';
+import { create3DProjector } from '../../drawables/projector3d';
+import type { DrawableNode } from '../../drawables/paintRegistry';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from '../../shared/isometricTypes';
 import { useUnitSpriteAtlas } from '../../shared/hooks/useUnitSpriteAtlas';
 import { GRID_COLORS_3D, DEFAULT_BACKGROUND_3D } from '../../shared/game3dTheme';
@@ -88,6 +91,11 @@ export interface GameCanvas3DProps {
     className?: string;
     /** Children to render inside the 3D canvas (e.g., physics objects, custom meshes) */
     children?: React.ReactNode;
+    /** Neutral drawable descriptors — the same `children` vocabulary as Canvas2D. The
+     *  host maps each through `Drawable3D` to a mesh (NEVER passes a raw descriptor to
+     *  `<group>{children}` — R3F throws). This is the draw-host interface; data props
+     *  (tiles/units/features) remain as a fallback until the P6 migration deletes them. */
+    drawables?: DrawableNode[];
     /** Loading state indicator */
     isLoading?: boolean;
     /** Error state */
@@ -306,6 +314,7 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
             assetManifest,
             interpolateUnits = false,
             children,
+            drawables,
         },
         ref
     ) => {
@@ -444,6 +453,19 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                 const worldZ = (z - gridBounds.minZ) * gridConfig.cellSize;
                 return [worldX, y * gridConfig.cellSize, worldZ];
             },
+            [gridBounds, gridConfig]
+        );
+
+        // Neutral projector for drawable descriptors — mirrors `gridToWorld`'s
+        // grid-bounds-anchored convention so a drawable at scene `{x,y,z}` lands
+        // exactly where the data-prop mesh at grid `(x, z=y, elevation)` does.
+        const drawableProjector = useMemo(
+            () =>
+                create3DProjector({
+                    cellSize: gridConfig.cellSize,
+                    offsetX: -gridBounds.minX * gridConfig.cellSize,
+                    offsetZ: -gridBounds.minZ * gridConfig.cellSize,
+                }),
             [gridBounds, gridConfig]
         );
 
@@ -819,6 +841,18 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
                                 );
                             })}
                         </group>
+                        )}
+
+                        {/* Neutral drawable scene — the draw-host walk. Each descriptor
+                            is mapped through Drawable3D to a mesh; raw descriptors never
+                            reach `<group>{children}` (R3F throws). Same `children` vocabulary
+                            as Canvas2D — this is what makes the two hosts one interface. */}
+                        {drawables && drawables.length > 0 && (
+                            <group>
+                                {drawables.map((node, i) => (
+                                    <Drawable3D key={i} node={node} projector={drawableProjector} />
+                                ))}
+                            </group>
                         )}
 
                         {/* Custom children */}

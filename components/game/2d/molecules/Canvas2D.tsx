@@ -44,6 +44,10 @@ import { useCanvasGestures } from '../../../../hooks/useCanvasGestures';
 import { useRenderInterpolation } from '../../../../hooks/useRenderInterpolation';
 import { useUnitSpriteAtlas } from '../../shared/hooks/useUnitSpriteAtlas';
 import { bindCanvasCapture } from '../../../../lib/verificationRegistry';
+import { createWebPainter } from '../../../../lib/webPainter2d';
+import { create2DProjector } from '../../drawables/projector';
+import { paintDrawable, type DrawableNode } from '../../drawables/paintRegistry';
+import type { DrawContext } from '../../drawables/types';
 import {
     isoToScreen,
     screenToIso,
@@ -133,6 +137,12 @@ export interface Canvas2DProps {
     features?: IsometricFeature[];
     /** Active visual effects, drawn after units */
     effects?: ActiveEffect[];
+    /**
+     * Neutral drawable descriptors (the Drawable Canvas path). When present, the host
+     * walks these via `paintDrawable` instead of the data-prop passes above — the
+     * retirement target. Delivered as `render-ui children` once `drawHost` lands (P5).
+     */
+    drawables?: DrawableNode[];
     /** Side-view platforms (AABB). `projection:'side'` only. */
     platforms?: Platform[];
     /** Side-view player. `projection:'side'` only. */
@@ -293,6 +303,7 @@ export function Canvas2D({
     platforms,
     player,
     backgroundImage: backgroundImageRaw,
+    drawables,
     // Interaction state
     selectedUnitId = null,
     validMoves = [],
@@ -626,6 +637,24 @@ export function Canvas2D({
             ctx.fillRect(0, 0, viewportSize.width, viewportSize.height);
         }
 
+        // Drawable Canvas path (P3): when neutral drawable descriptors are supplied, the host
+        // walks them through the portable painter instead of the data-prop passes below (the
+        // retirement target — deleted at P6). The `!== 'side'` guard narrows `projection` to the
+        // 2D projector's modes (the side host owns its own path).
+        if (drawables && drawables.length > 0 && projection !== 'side') {
+            const cam = cameraRef.current;
+            const painter = createWebPainter(ctx, bumpAtlas);
+            painter.save();
+            painter.translate(viewportSize.width / 2, viewportSize.height / 2);
+            painter.scale(cam.zoom, cam.zoom);
+            painter.translate(-viewportSize.width / 2 - cam.x, -viewportSize.height / 2 - cam.y);
+            const projector = create2DProjector({ scale, baseOffsetX, layout: projection });
+            const dctx: DrawContext = { projector, time: 0, invalidate: bumpAtlas };
+            for (const node of drawables) paintDrawable(painter, node, dctx);
+            painter.restore();
+            return;
+        }
+
         if (sortedTiles.length === 0 && units.length === 0 && features.length === 0) return;
 
         // Camera transform.
@@ -947,7 +976,7 @@ export function Canvas2D({
 
         ctx.restore();
     }, [
-        sortedTiles, units, features, selectedUnitId, effects,
+        sortedTiles, units, features, selectedUnitId, effects, drawables, projection,
         project, flatLike, squareGrid, scale, debug, resolveTerrainAsset, resolveFeatureAsset, resolveUnitAsset, resolveFrameForUnit, getImage, bumpAtlas,
         baseOffsetX, scaledTileWidth, scaledTileHeight, scaledFloorHeight, scaledDiamondTopY,
         validMoveSet, attackTargetSet, hoveredTile, viewportSize, onDrawEffects,
