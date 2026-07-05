@@ -11,15 +11,15 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { IsometricUnit } from '../isometricTypes';
+import type { IsometricUnit } from '../lib/isometricTypes';
 import type {
     ResolvedFrame,
     SpriteAtlas,
-} from '../spriteAnimationTypes';
+} from '../lib/spriteAnimationTypes';
 import {
     frameRect,
     resolveSheetDirection,
-} from '../spriteAnimation';
+} from '../lib/spriteAnimation';
 
 /**
  * Resolve the sprite-sheet atlas-JSON URL for a unit.

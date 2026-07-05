@@ -47,7 +47,7 @@ import { CameraController3D, FollowCamera3D } from './GameCamera3D';
 import { Drawable3D } from '../../../../lib/drawable/Drawable3D';
 import { create3DProjector } from '../../../../lib/drawable/projector3d';
 import type { DrawableNode } from '../../../../lib/drawable/paintDispatch';
-import type { IsometricTile, IsometricUnit, IsometricFeature } from '../../shared/isometricTypes';
+import type { IsometricTile, IsometricUnit, IsometricFeature } from '../../lib/isometricTypes';
 import { GRID_COLORS_3D, DEFAULT_BACKGROUND_3D } from '../game3dTheme';
 import { cn } from '../../../../lib/cn';
 import './GameCanvas3D.css';

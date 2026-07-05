@@ -78,7 +78,7 @@ export {
     type LoadedModel,
 } from '../lib/AssetLoader';
 
-export type { UnitAnimationState } from '../../shared/spriteAnimationTypes';
+export type { UnitAnimationState } from '../../lib/spriteAnimationTypes';
 
 // ---------------------------------------------------------------------------
 // GameCanvas3D + Templates (re-exported here so the component registry can

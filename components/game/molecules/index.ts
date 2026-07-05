@@ -10,7 +10,7 @@
 // ---------------------------------------------------------------------------
 // Shared (DTO types, projection/animation utils, image cache, combat effects)
 // ---------------------------------------------------------------------------
-export * from '../shared/index';
+export * from '../lib/index';
 
 // ---------------------------------------------------------------------------
 // Atoms
@@ -55,7 +55,7 @@ export {
     type TileCoord,
 } from './Canvas2D';
 export { Canvas, type CanvasProps, type CanvasMode } from './Canvas';
-export { useUnitSpriteAtlas } from '../shared/hooks/useUnitSpriteAtlas';
+export { useUnitSpriteAtlas } from '../hooks/useUnitSpriteAtlas';
 
 // ---------------------------------------------------------------------------
 // Audio System
@@ -66,7 +66,7 @@ export {
     useGameAudioContext,
     type GameAudioProviderProps,
     type GameAudioContextValue,
-} from '../shared/providers/GameAudioProvider';
+} from '../providers/GameAudioProvider';
 export {
     GameAudioToggle,
     type GameAudioToggleProps,
@@ -77,12 +77,12 @@ export {
     type SoundEntry,
     type GameAudioControls,
     type UseGameAudioOptions,
-} from '../shared/hooks/useGameAudio';
+} from '../hooks/useGameAudio';
 
 // ---------------------------------------------------------------------------
 // 2D Hooks
 // ---------------------------------------------------------------------------
-export { useCamera } from '../shared/hooks/useCamera';
+export { useCamera } from '../hooks/useCamera';
 // ---------------------------------------------------------------------------
 // Board Organisms (game-logic containers — templates are thin wrappers)
 // ---------------------------------------------------------------------------
@@ -126,7 +126,7 @@ export {
     type StatusBarProps,
     type TerrainPaletteProps,
     type EditorToolbarProps,
-} from '../shared/lib/editorUtils';
+} from '../lib/editorUtils';
 
 // ---------------------------------------------------------------------------
 // Puzzle Board Organisms
@@ -139,14 +139,14 @@ export { SequenceBar, type SequenceBarProps } from './SequenceBar';
 export { RuleEditor, type RuleEditorProps, type RuleDefinition } from './RuleEditor';
 export { EventLog, type EventLogProps, type EventLogEntry } from './EventLog';
 export { ObjectRulePanel, type ObjectRulePanelProps } from './ObjectRulePanel';
-export * from '../shared/lib/puzzleObject';
+export * from '../lib/puzzleObject';
 // State Architect (ages 13+)
 export { StateNode, type StateNodeProps } from './StateNode';
 export { TransitionArrow, type TransitionArrowProps } from './TransitionArrow';
 export { VariablePanel, type VariablePanelProps } from './VariablePanel';
 export { StateJsonView, type StateJsonViewProps } from './StateJsonView';
 
-export { projectileMotion, pendulum, springOscillator, ALL_PRESETS } from '../shared/lib/physicsPresets';
+export { projectileMotion, pendulum, springOscillator, ALL_PRESETS } from '../lib/physicsPresets';
 
 // ---------------------------------------------------------------------------
 // Templates (thin wrappers — header + Board organism)

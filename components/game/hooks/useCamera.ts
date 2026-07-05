@@ -9,7 +9,7 @@
  */
 
 import { useRef, useCallback } from 'react';
-import type { CameraState } from '../isometricTypes';
+import type { CameraState } from '../lib/isometricTypes';
 
 interface CameraResult {
     /** Mutable camera state ref (x, y, zoom) */

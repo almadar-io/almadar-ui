@@ -7,10 +7,10 @@
 
 import React, { useMemo } from 'react';
 import type { EventKey, Asset } from "@almadar/core";
-import type { AnimationName } from '../shared/spriteAnimationTypes';
+import type { AnimationName } from '../lib/spriteAnimationTypes';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { Box } from '../../core/atoms/Box';
-import { frameRect } from '../shared/spriteAnimation';
+import { frameRect } from '../lib/spriteAnimation';
 
 export interface SpriteProps {
   /** Spritesheet asset */

@@ -57,7 +57,7 @@ export * from './makeAsset';
 // ---------------------------------------------------------------------------
 // Hooks
 // ---------------------------------------------------------------------------
-export { useImageCache } from './useImageCache';
+export { useImageCache } from '../hooks/useImageCache';
 
 // ---------------------------------------------------------------------------
 // Utils (pure functions)
