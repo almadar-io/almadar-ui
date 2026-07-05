@@ -118,6 +118,10 @@ export function createClientEffectHandlers(
             slotSetter.addPattern(slot, pattern, props);
         },
         navigate: navigate ?? ((path: string) => {
+            if (typeof window !== 'undefined' && /^https?:\/\//.test(path)) {
+                window.location.href = path;
+                return;
+            }
             log.warn('No navigate handler, ignoring', { path });
         }),
         notify: notify ?? ((msg: string, type?: string) => {

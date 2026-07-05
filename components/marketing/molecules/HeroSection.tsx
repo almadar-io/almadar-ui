@@ -218,6 +218,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         'w-full min-h-[60vh] flex items-center justify-center',
         'py-20',
         'relative overflow-hidden',
+        backgroundStyles[background],
         className,
       )}
     >
