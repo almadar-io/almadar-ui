@@ -1109,6 +1109,35 @@ function renderPatternChildren(
 }
 
 /**
+ * Normalize a draw-HOST's authored `children` into the flat `DrawableNode[]` its
+ * `drawables` prop expects (painted via `paintDrawable` / `Drawable3D`). Each child
+ * arrives as `{ type, ...fields }` (flat) or `{ type, props: { ...fields } }` (nested)
+ * — the same two shapes `renderPatternChildren` unwraps — so a `draw-sprite` child
+ * becomes `{ type: 'draw-sprite', position, asset, ... }`. Nested `items` (layer
+ * batches) ride through inside `fields` untouched. String children (trait bindings)
+ * are dropped: a draw-host paints descriptors, never DOM lenses.
+ */
+function toDrawableNodes(
+  children:
+    | Array<{ type: string; props?: SlotProps; _id?: string } | string>
+    | { type: string; props?: SlotProps; _id?: string }
+    | string
+    | undefined,
+): SlotPropValue[] {
+  if (children === undefined || children === null) return [];
+  const arr = Array.isArray(children) ? children : [children];
+  const nodes: SlotPropValue[] = [];
+  for (const child of arr) {
+    if (!child || typeof child !== 'object') continue;
+    const rec = child as { type: string; props?: SlotProps; _id?: string } & SlotProps;
+    const { type, props: nested, _id: _drop, ...flat } = rec;
+    const fields: SlotProps = nested !== undefined ? nested : flat;
+    nodes.push({ ...fields, type });
+  }
+  return nodes;
+}
+
+/**
  * Check if a value looks like a pattern config object (has a `type` string
  * field). Predicate narrows to the `EventPayload`-shaped JSON object form
  * (subset of SlotPropValue) so callers can iterate its entries with the
@@ -1363,13 +1392,20 @@ function SlotContentRenderer({
       || (Array.isArray(childrenConfig) && childrenConfig.length > 0)
       || isSingleChild;
 
+    // A draw-HOST (canvas-2d / canvas-3d / the unified canvas) PAINTS its authored
+    // `children` as neutral drawable descriptors instead of DOM-wrapping them.
+    // Detected by the registry `drawHost` capability — pattern-sync derives it from
+    // the `DrawableNode` type identity, not a name/signal. Skip `renderPatternChildren`
+    // for it; the raw descriptors are routed into the host's `drawables` prop below.
+    const isDrawHost = getPatternDefinition(content.pattern)?.drawHost === true;
+
     // Render children recursively (pass patternPath for WYSIWYG drop targeting).
     // Inherit sourceTrait from the parent so nested patterns (e.g. a
     // form-section inside a stack) can resolve entityDef via the trait's
     // linkedEntity. Without this, only the top-level slot pattern carries
     // sourceTrait and form enrichment skips for every nested form.
     const myPath = patternPath ?? 'root';
-    const renderedChildren = hasChildren
+    const renderedChildren = (hasChildren && !isDrawHost)
       ? renderPatternChildren(childrenConfig, onDismiss, content.id, myPath, content.sourceTrait, {
           slot: content.slot,
           transitionEvent: content.transitionEvent,
@@ -1479,6 +1515,13 @@ function SlotContentRenderer({
     // renderPatternChildren above, overwrite whatever renderPatternProps produced.
     for (const [k, v] of Object.entries(nodeSlotOverrides)) {
       finalProps[k] = v;
+    }
+    // Draw-host: feed the authored `children` descriptors to the host's `drawables`
+    // prop (painted, not DOM-wrapped). `renderedChildren` was skipped above, so the
+    // host renders as `<PatternComponent {...finalProps} />` with the flat drawable
+    // array. Author-invisible: the `children` slot is unchanged, only its consumption.
+    if (isDrawHost && Array.isArray(childrenConfig) && childrenConfig.length > 0) {
+      finalProps.drawables = toDrawableNodes(childrenConfig);
     }
     const entityVal = finalProps.entity;
     const resolvedItems: ReadonlyArray<SlotPropValue> | null =
