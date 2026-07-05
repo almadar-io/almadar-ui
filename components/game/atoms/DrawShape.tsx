@@ -3,21 +3,20 @@
  * `draw-shape` — the neutral vector-fill/stroke drawable atom (dimension-agnostic).
  *
  * ONE descriptor (`DrawShapeProps`, grounded in core `ScenePos`) with TWO
- * backends: `paintShape` (2D) and `Shape3D` (a flat ground-plane R3F mesh).
- * Paints a cell footprint, an axis-aligned rect, an ellipse, or a poly at a
- * scene position, fill and/or stroke. Genre uses (tile fallback, iso/hex diamond
+ * backends: `paintShape` (2D, here) and an R3F ground-plane mesh (`Shape3D` in
+ * `lib/drawable/mesh3d`, kept OUT of this file so the 2D path never pulls R3F).
+ * Paints a cell footprint, an axis-aligned rect, an ellipse, or a poly at a scene
+ * position, fill and/or stroke. Genre uses (tile fallback, iso/hex diamond
  * fallback, cell highlight, feature disc, unit selection ring, unit fallback
  * circle, ground/ghost discs, solid backgrounds, side-view platform rects) are
  * all this atom with different `shape`/`anchor`/geometry — composed in `.lolo`,
  * not here. The React component renders `null`; it exists so the pattern pipeline
  * registers a `draw-shape` pattern and standalone pages stay inspectable.
  */
-import React from 'react';
-import * as THREE from 'three';
+import type React from 'react';
 import type { ScenePos } from '@almadar/core';
 import type { PainterPoint } from '../../../lib/painter2d';
 import type { DrawableAnchor, DrawableBase, PaintFn } from '../../../lib/drawable/contract';
-import type { Projector3D } from '../../../lib/drawable/projector3d';
 
 export type ShapeKind = 'cell' | 'rect' | 'ellipse' | 'poly';
 
@@ -91,53 +90,6 @@ export const paintShape: PaintFn<DrawShapeProps> = (painter, node, dctx) => {
 
     painter.restore();
 };
-
-/** R3F mesh backend: a flat mesh on the ground plane. */
-export function Shape3D({ node, projector }: { node: DrawShapeProps; projector: Projector3D }): React.JSX.Element | null {
-    const world = projector.toWorld(node.position);
-    const color = node.fill ?? node.stroke ?? '#ffffff';
-
-    let geometry: React.JSX.Element;
-    switch (node.shape) {
-        case 'cell':
-        case 'rect': {
-            const w = node.shape === 'cell' ? projector.cellSize * 0.95 : node.width ?? projector.cellSize;
-            const h = node.shape === 'cell' ? projector.cellSize * 0.95 : node.height ?? projector.cellSize;
-            geometry = <planeGeometry args={[w, h]} />;
-            break;
-        }
-        case 'ellipse': {
-            const radiusX = node.radiusX ?? 0.4;
-            geometry =
-                node.stroke && !node.fill ? (
-                    <ringGeometry args={[Math.max(0, radiusX - 0.08), radiusX, 32]} />
-                ) : (
-                    <circleGeometry args={[radiusX, 32]} />
-                );
-            break;
-        }
-        case 'poly': {
-            if (!node.points || node.points.length === 0) return null;
-            const s = new THREE.Shape();
-            node.points.forEach((p, i) => {
-                if (i === 0) s.moveTo(p.x, p.y);
-                else s.lineTo(p.x, p.y);
-            });
-            s.closePath();
-            geometry = <shapeGeometry args={[s]} />;
-            break;
-        }
-        default:
-            return null;
-    }
-
-    return (
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[world[0], world[1] + 0.02, world[2]]}>
-            {geometry}
-            <meshBasicMaterial color={color} transparent opacity={node.opacity ?? 1} side={THREE.DoubleSide} />
-        </mesh>
-    );
-}
 
 /** Registry/standalone stub — the host paints this atom; the DOM renders nothing. */
 export function DrawShape(_props: DrawShapeProps): React.JSX.Element | null {

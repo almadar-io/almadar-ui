@@ -13,9 +13,7 @@
 import React from 'react';
 import type { Projector3D } from './projector3d';
 import type { DrawableNode } from './paintDispatch';
-import { Sprite3D } from '../../components/game/atoms/DrawSprite';
-import { Shape3D } from '../../components/game/atoms/DrawShape';
-import { Text3D } from '../../components/game/atoms/DrawText';
+import { Sprite3D, Shape3D, Text3D } from './mesh3d';
 
 export interface Drawable3DProps {
     node: DrawableNode;

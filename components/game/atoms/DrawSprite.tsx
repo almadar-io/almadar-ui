@@ -3,25 +3,22 @@
  * `draw-sprite` — the neutral image/atlas-frame drawable atom (dimension-agnostic).
  *
  * ONE descriptor (`DrawSpriteProps`, grounded in core `ScenePos` + `Asset`) with
- * TWO backends: `paintSprite` (2D, via the portable `Painter2D` seam) and
- * `Sprite3D` (an R3F mesh). The canvas host picks the backend by `mode`; that is
- * what makes canvas-2d and canvas-3d the same `children` interface. Genre uses
- * (tile, unit body, feature, effect, movement ghost, background cover) are all
- * this atom with different `anchor`/`size`/`frame`/`flip`/`shadow` — composed in
- * `.lolo`, not here. The React component renders `null` (a drawable is painted by
- * the host, not the DOM); it exists so the pattern pipeline registers a
- * `draw-sprite` pattern and standalone pages stay inspectable.
+ * TWO backends: `paintSprite` (2D, here — via the portable `Painter2D` seam) and
+ * an R3F mesh (`Sprite3D` in `lib/drawable/mesh3d`, kept OUT of this file so the
+ * 2D paint path never pulls `three`/`drei` into an app bundle — the codebase
+ * code-splits R3F). The canvas host picks the backend by `mode`; that is what
+ * makes canvas-2d and canvas-3d the same `children` interface. Genre uses (tile,
+ * unit body, feature, effect, movement ghost, background cover) are all this atom
+ * with different `anchor`/`size`/`frame`/`flip`/`shadow` — composed in `.lolo`,
+ * not here. The React component renders `null` (a drawable is painted by the host,
+ * not the DOM); it exists so the pattern pipeline registers a `draw-sprite`
+ * pattern and standalone pages stay inspectable.
  */
-import React from 'react';
-import { Billboard } from '@react-three/drei';
-import { useLoader } from '@react-three/fiber';
-import * as THREE from 'three';
+import type React from 'react';
 import type { Asset, ScenePos } from '@almadar/core';
 import type { BlitSrc, PainterShadow } from '../../../lib/painter2d';
 import { getAtlas, isAtlasAsset, subRectFor } from '../../../lib/atlasSlice';
 import type { DrawableAnchor, DrawableBase, PaintFn } from '../../../lib/drawable/contract';
-import type { Projector3D } from '../../../lib/drawable/projector3d';
-import { ModelLoader } from '../3d/molecules/ModelLoader';
 
 export interface DrawSpriteProps extends DrawableBase {
     type: 'draw-sprite';
@@ -88,65 +85,6 @@ export const paintSprite: PaintFn<DrawSpriteProps> = (painter, node, dctx) => {
     painter.blit(tex, { x: dx, y: dy, w, h }, src);
     painter.restore();
 };
-
-/**
- * 2D-sprite-as-billboard 3D path. Crops UVs to `node.frame` when present.
- * Atlas-name resolution (`asset.atlas`/`asset.sprite` → sub-rect) is deferred
- * to P6 for the 3D path — a tracked follow-up, not a silent drop; until then
- * an atlas-only asset without an explicit `frame` renders the whole sheet.
- */
-function SpriteBillboard({ node, world }: { node: DrawSpriteProps; world: [number, number, number] }): React.JSX.Element {
-    const texture = useLoader(THREE.TextureLoader, node.asset.url);
-    const img = texture.image as { width?: number; height?: number } | undefined;
-    const imgW = img?.width || 1;
-    const imgH = img?.height || 1;
-
-    if (node.frame) {
-        texture.repeat.set(node.frame.w / imgW, node.frame.h / imgH);
-        texture.offset.set(node.frame.x / imgW, 1 - (node.frame.y + node.frame.h) / imgH);
-        texture.magFilter = texture.minFilter = THREE.NearestFilter;
-        texture.needsUpdate = true;
-    }
-
-    const aspect = node.frame ? node.frame.w / node.frame.h : imgW / imgH;
-    const height = node.height ?? 1;
-    const width = node.width ?? height * aspect;
-
-    return (
-        <Billboard position={[world[0], world[1] + height / 2, world[2]]}>
-            <mesh>
-                <planeGeometry args={[width, height]} />
-                <meshBasicMaterial
-                    map={texture}
-                    transparent
-                    alphaTest={0.1}
-                    side={THREE.DoubleSide}
-                    opacity={node.opacity ?? 1}
-                />
-            </mesh>
-        </Billboard>
-    );
-}
-
-/** R3F mesh backend: a GLB via `ModelLoader` when `asset.dimension === '3d'`; else a billboard. */
-export function Sprite3D({ node, projector }: { node: DrawSpriteProps; projector: Projector3D }): React.JSX.Element | null {
-    if (node.asset.dimension === '3d' && node.asset.url) {
-        return (
-            <group position={projector.toWorld(node.position)}>
-                <ModelLoader
-                    url={node.asset.url}
-                    scale={node.width ?? projector.cellSize}
-                    rotation={[0, node.rotation ?? 0, 0]}
-                    fallbackGeometry="box"
-                    castShadow
-                    receiveShadow
-                />
-            </group>
-        );
-    }
-    if (!node.asset.url) return null;
-    return <SpriteBillboard node={node} world={projector.toWorld(node.position)} />;
-}
 
 /** Registry/standalone stub — the host paints this atom; the DOM renders nothing. */
 export function DrawSprite(_props: DrawSpriteProps): React.JSX.Element | null {
