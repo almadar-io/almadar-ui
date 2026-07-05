@@ -1,16 +1,18 @@
 /**
  * Drawable contract — the shared vocabulary every neutral drawable primitive
- * (`sprite`/`shape`/`text` atoms, `sprite-layer`/`shape-layer` molecules) is
- * authored against. A drawable is a pure descriptor the canvas HOST walks and
- * paints via the portable {@link Painter2D} seam — no `CanvasRenderingContext2D`,
- * no DOM. Genre (a "unit"/"tile"/"highlight") is a `.lolo` COMPOSITION of these,
- * never its own primitive.
+ * (the `draw-sprite`/`draw-shape`/`draw-text` atoms, `draw-sprite-layer`/
+ * `draw-shape-layer` molecules) is authored against. A drawable is a pure
+ * descriptor the canvas HOST walks and paints via the portable {@link Painter2D}
+ * seam — no `CanvasRenderingContext2D`, no DOM. Genre (a "unit"/"tile"/
+ * "highlight") is a `.lolo` COMPOSITION of these, never its own primitive.
  *
  * A position is a core `ScenePos` (logical scene space). The host's {@link Projector}
- * maps it to pixels; primitives never do projection math themselves.
+ * maps it to pixels; primitives never do projection math themselves. Because the
+ * `ScenePos` type identity is what pattern-sync stamps as the `drawable`
+ * capability, every drawable descriptor's `position` MUST be a core `ScenePos`.
  */
 import type { ScenePos } from '@almadar/core';
-import type { Painter2D, PainterPoint } from '../../../lib/painter2d';
+import type { Painter2D, PainterPoint } from '../painter2d';
 
 /**
  * How a drawable aligns to its projected position.

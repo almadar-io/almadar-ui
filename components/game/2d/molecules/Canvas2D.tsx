@@ -45,9 +45,9 @@ import { useRenderInterpolation } from '../../../../hooks/useRenderInterpolation
 import { useUnitSpriteAtlas } from '../../shared/hooks/useUnitSpriteAtlas';
 import { bindCanvasCapture } from '../../../../lib/verificationRegistry';
 import { createWebPainter } from '../../../../lib/webPainter2d';
-import { create2DProjector } from '../../drawables/projector';
-import { paintDrawable, type DrawableNode } from '../../drawables/paintRegistry';
-import type { DrawContext } from '../../drawables/types';
+import { create2DProjector } from '../../../../lib/drawable/projector';
+import { paintDrawable, type DrawableNode } from '../../../../lib/drawable/paintDispatch';
+import type { DrawContext } from '../../../../lib/drawable/contract';
 import {
     isoToScreen,
     screenToIso,

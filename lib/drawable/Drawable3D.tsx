@@ -6,15 +6,16 @@
  * R3F element (mesh/billboard). ⚠ R3F throws if a plain descriptor object reaches
  * `<group>{children}` — the host must ALWAYS map descriptors through THIS
  * component first, never pass raw `DrawableNode`s as children. Consumes the same
- * `SpriteDrawable`/`ShapeDrawable`/`TextDrawable` descriptors as the 2D painter —
- * that is what makes canvas-2d and canvas-3d the same `children` interface.
+ * `DrawSpriteProps`/`DrawShapeProps`/`DrawTextProps` descriptors as the 2D paint
+ * dispatch — that is what makes canvas-2d and canvas-3d the same `children`
+ * interface.
  */
 import React from 'react';
 import type { Projector3D } from './projector3d';
-import type { DrawableNode } from './paintRegistry';
-import { Sprite3D } from './sprite3d';
-import { Shape3D } from './shape3d';
-import { Text3D } from './text3d';
+import type { DrawableNode } from './paintDispatch';
+import { Sprite3D } from '../../components/game/atoms/DrawSprite';
+import { Shape3D } from '../../components/game/atoms/DrawShape';
+import { Text3D } from '../../components/game/atoms/DrawText';
 
 export interface Drawable3DProps {
     node: DrawableNode;
@@ -23,13 +24,13 @@ export interface Drawable3DProps {
 
 export function Drawable3D({ node, projector }: Drawable3DProps): React.JSX.Element | null {
     switch (node.type) {
-        case 'sprite':
+        case 'draw-sprite':
             return <Sprite3D node={node} projector={projector} />;
-        case 'shape':
+        case 'draw-shape':
             return <Shape3D node={node} projector={projector} />;
-        case 'text':
+        case 'draw-text':
             return <Text3D node={node} projector={projector} />;
-        case 'sprite-layer':
+        case 'draw-sprite-layer':
             return (
                 <>
                     {node.items.map((item, i) => (
@@ -37,7 +38,7 @@ export function Drawable3D({ node, projector }: Drawable3DProps): React.JSX.Elem
                     ))}
                 </>
             );
-        case 'shape-layer':
+        case 'draw-shape-layer':
             return (
                 <>
                     {node.items.map((item, i) => (

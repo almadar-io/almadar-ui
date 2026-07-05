@@ -5,9 +5,9 @@
  * primitives stay projection-agnostic.
  */
 import type { ScenePos } from '@almadar/core';
-import type { PainterPoint } from '../../../lib/painter2d';
-import type { DrawableAnchor, Projector } from './types';
-import { TILE_WIDTH, FLOOR_HEIGHT, DIAMOND_TOP_Y, isoToScreen, type TileLayout } from '../shared/isometric';
+import type { PainterPoint } from '../painter2d';
+import type { DrawableAnchor, Projector } from './contract';
+import { TILE_WIDTH, FLOOR_HEIGHT, DIAMOND_TOP_Y, isoToScreen, type TileLayout } from '../../components/game/shared/isometric';
 
 /** Projection modes the 2D host supports. `side` is handled by the side host, not here. */
 export type Projection2D = TileLayout | 'free';
