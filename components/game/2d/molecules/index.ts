@@ -54,6 +54,7 @@ export {
     type SidePlayer,
     type TileCoord,
 } from './Canvas2D';
+export { Canvas, type CanvasProps, type CanvasMode } from './Canvas';
 export { useUnitSpriteAtlas } from '../../shared/hooks/useUnitSpriteAtlas';
 
 // ---------------------------------------------------------------------------
