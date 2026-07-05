@@ -13,6 +13,11 @@
  * host's legacy vocab here (2D `camera` string / 3D `cameraMode`; `zoom` → `scale`),
  * so the board carries one camera object regardless of painter.
  *
+ * Interaction: a click/hover event is one event-name string forwarded to whichever
+ * painter `mode` selects. Its payload phantom is the merge of both painters' emit
+ * shapes so the single value stays assignable to either host's prop (the two hosts
+ * still emit their own coordinate shape at runtime).
+ *
  * The 3D host (three.js/R3F) is lazy-imported so a 2D-only app never pulls the
  * 3D bundle — the code-split boundary the drawable atoms were built R3F-free for.
  *
@@ -51,12 +56,15 @@ export interface CanvasProps {
     unitScale?: number;
     /** Minimap overlay (2D). */
     showMinimap?: boolean;
-    /** Backdrop: 2D uses an image (`backgroundImage`), 3D a solid `backgroundColor`. */
+    /** Backdrop image (2D iso/hex/flat/free/side). */
     backgroundImage?: AssetUrl | Asset;
+    /** Solid backdrop colour — 2D `side` fill and 3D scene clear colour. */
     backgroundColor?: string;
-    /** Side/free world bounds (2D). */
+    /** Side/free world bounds (2D `side`) and 3D world extent. */
     worldWidth?: number;
     worldHeight?: number;
+    /** 3D world-unit → pixel scale (perspective/side depth). 3D only. */
+    pixelsPerUnit?: number;
     /** 3D-only presentation. */
     showGrid?: boolean;
     shadows?: boolean;
@@ -64,11 +72,17 @@ export interface CanvasProps {
     showTileInfo?: boolean;
     fogOfWar?: boolean[][];
 
-    // --- Shared interaction (LOLO-owned) ---
-    tileClickEvent?: EventEmit<{ x: number; y: number }>;
-    unitClickEvent?: EventEmit<{ unitId: string }>;
-    tileHoverEvent?: EventEmit<{ x: number; y: number }>;
+    // --- Shared interaction (LOLO-owned). The painter emitted at runtime depends on
+    //     `mode`, so the payload is genuinely mode-polymorphic: an INTERSECTION of the
+    //     two painters' emit shapes. It stays assignable to either host's prop (for the
+    //     dispatch below) while pattern-sync records it as an opaque payload — so the
+    //     validator does not force a trait to declare both modes' fields at once. ---
+    tileClickEvent?: EventEmit<{ x: number; y: number } & { tileId: string; z: number }>;
+    unitClickEvent?: EventEmit<{ unitId: string } & { x: number; z: number }>;
+    tileHoverEvent?: EventEmit<{ x: number; y: number } & { tileId: string; z: number }>;
     tileLeaveEvent?: EventEmit<Record<string, never>>;
+    /** Feature-click event (3D only). */
+    featureClickEvent?: EventEmit<{ featureId: string; x: number; z: number; type?: string; elevation?: number }>;
     keyMap?: Record<string, string>;
     keyUpMap?: Record<string, string>;
 }
@@ -100,6 +114,7 @@ export function Canvas({
     backgroundColor,
     worldWidth,
     worldHeight,
+    pixelsPerUnit,
     showGrid,
     shadows,
     showCoordinates,
@@ -109,6 +124,7 @@ export function Canvas({
     unitClickEvent,
     tileHoverEvent,
     tileLeaveEvent,
+    featureClickEvent,
     keyMap,
     keyUpMap,
 }: CanvasProps): React.JSX.Element {
@@ -123,11 +139,19 @@ export function Canvas({
             ...(zoom !== undefined ? { scale: zoom } : {}),
             unitScale,
             backgroundColor,
+            worldWidth,
+            worldHeight,
+            pixelsPerUnit,
             showGrid,
             shadows,
             showCoordinates,
             showTileInfo,
             fogOfWar,
+            tileClickEvent,
+            unitClickEvent,
+            tileHoverEvent,
+            tileLeaveEvent,
+            featureClickEvent,
             keyMap,
             keyUpMap,
         };
@@ -149,6 +173,7 @@ export function Canvas({
             unitScale={unitScale}
             showMinimap={showMinimap}
             backgroundImage={backgroundImage}
+            {...(backgroundColor !== undefined ? { bgColor: backgroundColor } : {})}
             worldWidth={worldWidth}
             worldHeight={worldHeight}
             tileClickEvent={tileClickEvent}
