@@ -31,9 +31,13 @@ import type { DrawableNode } from '../../../lib/drawable/paintDispatch';
 import { Canvas2D, type CameraMode as Canvas2DCameraMode, type Projection } from './Canvas2D';
 import type { GameCanvas3DProps } from '../three/molecules/GameCanvas3D';
 
-/** Lazy 3D host — keeps three/R3F out of the bundle unless a 3D canvas renders. */
+/** Lazy 3D host — keeps three/R3F out of the bundle unless a 3D canvas renders.
+ *  MUST import the external `@almadar/ui/.../game/three` subpath (not a relative
+ *  path): with tsup `splitting:false`, a relative `import()` is INLINED into the
+ *  main chunk (pulling R3F into every 2D app); the `@almadar/ui` external + the
+ *  external-three-subpath plugin keep the subpath form a true dynamic boundary. */
 const GameCanvas3D = lazy(() =>
-    import('../three/molecules/GameCanvas3D').then((m) => ({ default: m.GameCanvas3D })),
+    import('@almadar/ui/components/molecules/game/three').then((m) => ({ default: m.GameCanvas3D })),
 );
 
 /** Painter selection. Same `drawables` for both; differ only in projection + rasterizer. */
