@@ -57,7 +57,7 @@ export * from "./book/index";
 export * from "./layout/index";
 
 // Game organisms
-export * from "../../game/2d/molecules/index";
+export * from "../../game/molecules/index";
 
 // UI Slot system
 export {

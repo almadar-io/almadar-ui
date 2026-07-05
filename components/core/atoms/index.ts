@@ -135,7 +135,7 @@ export { AnimatedGraphic, type AnimatedGraphicProps, type GraphicAnimation } fro
 export { TraitFrame, type TraitFrameProps } from "./TraitFrame";
 
 // Game atom components
-export * from "../../game/2d/molecules/index";
+export * from "../../game/molecules/index";
 
 // Learning canvas atom
 export {

@@ -17,7 +17,7 @@ export {
 export {
   GameTemplate,
   type GameTemplateProps
-} from '../../game/2d/templates/GameTemplate';
+} from '../../game/templates/GameTemplate';
 
 export {
   GenericAppTemplate,
@@ -27,7 +27,7 @@ export {
 export {
   GameShell,
   type GameShellProps
-} from '../../game/2d/templates/GameShell';
+} from '../../game/templates/GameShell';
 
 // Game-genre view templates removed — boards are now .lolo game-shell compositions, not React components.
 
