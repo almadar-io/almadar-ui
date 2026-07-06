@@ -118,12 +118,13 @@ const dedupeProvidersPlugin = {
     build.onResolve({ filter: /(^|\/)providers\// }, (args: { importer: string; path: string; resolveDir: string }) => {
       if (!args.importer) return undefined;
       // Only dedupe the TOP-LEVEL providers/ barrel members. The bare
-      // /providers\// path match also catches nested directories like
-      // components/game/shared/providers/GameAudioProvider — those are
-      // component-tree providers, not members of the @almadar/ui/providers
-      // barrel, so redirecting them to that subpath dangles (the barrel never
-      // exports them). Resolve the import to an absolute file and bail unless it
-      // lands directly inside the top-level providersDir.
+      // /providers\// path match also catches nested component-tree providers
+      // (a provider living under components/, not a member of the
+      // @almadar/ui/providers barrel), so redirecting them to that subpath
+      // dangles (the barrel never exports them). Resolve the import to an
+      // absolute file and bail unless it lands directly inside the top-level
+      // providersDir (barrel members — every one MUST be exported by
+      // providers/index.ts, e.g. GameAudioProvider).
       const resolved = resolve(args.resolveDir || __dirname, args.path);
       if (!resolved.startsWith(providersDir + '/')) return undefined;
       // ThemeContext, UISlotContext and DesignThemeContext have their OWN

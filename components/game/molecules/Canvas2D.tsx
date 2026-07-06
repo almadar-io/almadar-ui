@@ -40,9 +40,9 @@ import { Stack } from '../../core/atoms/Stack';
 import { Icon } from '../../core/atoms/Icon';
 import { Typography } from '../../core/atoms/Typography';
 import { MiniMap } from '../atoms/MiniMap';
-import { useImageCache } from '../hooks/useImageCache';
+import { useImageCache } from '../../../hooks/useImageCache';
 import { resolveAssetSource, blit } from '../../../lib/atlasSlice';
-import { useCamera } from '../hooks/useCamera';
+import { useCamera } from '../../../hooks/useCamera';
 import { useCanvasGestures } from '../../../hooks/useCanvasGestures';
 import { bindCanvasCapture } from '../../../lib/verificationRegistry';
 import { createWebPainter } from '../../../lib/webPainter2d';
@@ -57,7 +57,7 @@ import {
     DIAMOND_TOP_Y,
     BACKGROUND_FALLBACK_COLOR,
     MINIMAP_TERRAIN_COLORS,
-} from '../lib/isometric';
+} from '../../../lib/isometric';
 import type { UiError } from '../../core/atoms/types';
 
 // =============================================================================

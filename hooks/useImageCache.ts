@@ -10,7 +10,7 @@
  */
 
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { updateAssetStatus } from '../../../lib/verificationRegistry';
+import { updateAssetStatus } from '../lib/verificationRegistry';
 
 interface ImageCacheResult {
     /** Get a cached image by URL. Returns undefined if not yet loaded. */

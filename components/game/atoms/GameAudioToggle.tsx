@@ -16,7 +16,7 @@ import React, { useCallback, useState } from 'react';
 import type { Asset } from '@almadar/core';
 import { Button } from '../../core/atoms/index';
 import { cn } from '../../../lib/cn';
-import { useGameAudioContextOptional } from '../providers/GameAudioProvider';
+import { useGameAudioContextOptional } from '../../../providers/GameAudioProvider';
 import { GameIcon } from './GameIcon';
 import type { UiError } from '../../core/atoms/types';
 

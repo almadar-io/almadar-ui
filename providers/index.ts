@@ -128,4 +128,15 @@ export type {
   OfflineModeProviderProps,
 } from './OfflineModeProvider';
 
+export {
+  GameAudioProvider,
+  GameAudioContext,
+  useGameAudioContext,
+  useGameAudioContextOptional,
+} from './GameAudioProvider';
+export type {
+  GameAudioProviderProps,
+  GameAudioContextValue,
+} from './GameAudioProvider';
+
 // Note: EventBusContextType is exported from hooks/event-bus-types to avoid duplicate exports

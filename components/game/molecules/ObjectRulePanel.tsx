@@ -27,7 +27,7 @@ import {
     objAvailableActions,
     objRules,
     objMaxRules,
-} from '../lib/puzzleObject';
+} from '../../../lib/puzzleObject';
 
 export interface ObjectRulePanelProps {
     /** The selected puzzle-object row (`EntityRow` carrying the editable object data) */

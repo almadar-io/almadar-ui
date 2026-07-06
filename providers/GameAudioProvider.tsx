@@ -19,9 +19,9 @@
  */
 
 import React, { createContext, useContext, useEffect } from 'react';
-import { useEventBus } from '../../../hooks/useEventBus';
+import { useEventBus } from '../hooks/useEventBus';
 import { useGameAudio, type AudioManifest, type GameAudioControls } from '../hooks/useGameAudio';
-import type { UiError } from '../../core/atoms/types';
+import type { UiError } from '../components/core/atoms/types';
 
 // =============================================================================
 // Context

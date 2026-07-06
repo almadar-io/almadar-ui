@@ -10,13 +10,13 @@
 
 import React from 'react';
 import type { Asset } from '@almadar/core';
-import { Box } from '../../core/atoms/Box';
-import { VStack, HStack } from '../../core/atoms/Stack';
-import { Typography } from '../../core/atoms/Typography';
-import { Button } from '../../core/atoms/Button';
-import { Badge } from '../../core/atoms/Badge';
+import { Box } from '../components/core/atoms/Box';
+import { VStack, HStack } from '../components/core/atoms/Stack';
+import { Typography } from '../components/core/atoms/Typography';
+import { Button } from '../components/core/atoms/Button';
+import { Badge } from '../components/core/atoms/Badge';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { GameIcon } from '../atoms/GameIcon';
+import { GameIcon } from '../components/game/atoms/GameIcon';
 
 // =============================================================================
 // Types

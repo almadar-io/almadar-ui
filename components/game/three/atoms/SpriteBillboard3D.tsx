@@ -12,7 +12,7 @@
 import React, { useRef, useState } from 'react';
 import { useFrame, useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
-import type { ResolvedFrame } from '../../lib/spriteAnimationTypes';
+import type { ResolvedFrame } from '../../../../lib/spriteAnimationTypes';
 
 export interface SpriteBillboard3DProps {
     sheetUrl: string;
