@@ -23,15 +23,12 @@ export { TimerDisplay, type TimerDisplayProps } from '../atoms/TimerDisplay';
 export { ItemSlot, type ItemSlotProps } from '../atoms/ItemSlot';
 export { DialogueBubble, type DialogueBubbleProps } from '../atoms/DialogueBubble';
 export { ChoiceButton, type ChoiceButtonProps } from '../atoms/ChoiceButton';
-export { ActionButton, type ActionButtonProps } from '../atoms/ActionButton';
 
 // ---------------------------------------------------------------------------
 // Molecules
 // ---------------------------------------------------------------------------
 export { ControlGrid, type ControlGridProps, type ControlGridButton, type ControlGridKind, type DPadDirection } from './ControlGrid';
 export { StatBadge, type StatBadgeProps } from './StatBadge';
-export { InventoryGrid, type InventoryGridProps, type InventoryGridItem } from './InventoryGrid';
-export { ResourceBar, type ResourceBarProps, type ResourceBarResource } from './ResourceBar';
 export { GameHud, type GameHudProps, type GameHudStat, type GameHudElement } from './GameHud';
 export { GameMenu, type GameMenuProps, type MenuOption } from './GameMenu';
 export { StateGraph, type StateGraphProps, type StateGraphTransition } from './StateGraph';
@@ -127,7 +124,6 @@ export { ActionPalette, type ActionPaletteProps } from './ActionPalette';
 export { SequenceBar, type SequenceBarProps } from './SequenceBar';
 // Event Handler (ages 9-12)
 export { RuleEditor, type RuleEditorProps, type RuleDefinition } from './RuleEditor';
-export { EventLog, type EventLogProps, type EventLogEntry } from './EventLog';
 export { ObjectRulePanel, type ObjectRulePanelProps } from './ObjectRulePanel';
 export * from '../../../lib/puzzleObject';
 // State Architect (ages 13+)
