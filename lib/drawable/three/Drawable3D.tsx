@@ -11,8 +11,8 @@
  * interface.
  */
 import React from 'react';
-import type { Projector3D } from './projector3d';
-import type { DrawableNode } from './paintDispatch';
+import type { Projector3D } from '../projector3d';
+import type { DrawableNode } from '../paintDispatch';
 import { Sprite3D, Shape3D, Text3D } from './mesh3d';
 
 export interface Drawable3DProps {

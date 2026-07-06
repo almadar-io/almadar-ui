@@ -30,9 +30,9 @@ import {
   getBreadcrumbs,
   type ZoomLevel,
 } from '../lib/avl-zoom-state';
-import { Scene3D } from '../../game/three/molecules/Scene3D';
-import { Camera3D } from '../../game/three/molecules/Camera3D';
-import { Lighting3D } from '../../game/three/molecules/Lighting3D';
+import { Scene3D } from '../../../lib/drawable/three/Scene3D';
+import { Camera3D } from '../../../lib/drawable/three/Camera3D';
+import { Lighting3D } from '../../../lib/drawable/three/Lighting3D';
 import { AVL_3D_COLORS, CAMERA_POSITIONS } from '../lib/avl-3d-layout';
 import { Avl3DApplicationScene } from './Avl3DApplicationScene';
 import { Avl3DOrbitalScene } from './Avl3DOrbitalScene';

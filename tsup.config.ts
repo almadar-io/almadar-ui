@@ -172,7 +172,7 @@ export default defineConfig([
       'renderer/index.ts',
       'runtime/index.ts',
       'lib/index.ts',
-      'components/game/three/index.ts',
+      'lib/drawable/three/index.ts',
       'locales/index.ts',
     ],
     format: ['esm', 'cjs'],

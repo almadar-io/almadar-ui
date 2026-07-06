@@ -1,6 +1,9 @@
 'use client';
 /**
- * GameCanvas3D — the thin 3D draw-host (Drawable Canvas, P6 closing).
+ * Canvas3DHost — the thin 3D draw-host: the `canvas` host's 3D painter backend
+ * (the R3F "vessel" behind the neutral drawables), the exact 3D analogue of the
+ * 2D `Painter2D` seam. Reached only via the lazy `@almadar/ui/.../game/three`
+ * subpath so three.js never enters a 2D bundle.
  *
  * The 3D twin of Canvas2D: the board authors a `drawables` list (the neutral
  * `draw-*` children) and this host maps each descriptor through `Drawable3D` to a
@@ -33,24 +36,24 @@ import React, {
 } from 'react';
 import type { ThreeEvent } from '@react-three/fiber';
 import type { EventEmit, Asset, ScenePos } from '@almadar/core';
-import { useEventBus } from '../../../../hooks/useEventBus';
-import { collectDrawnItems, buildHitIndex } from '../../../../lib/drawable/hitTest';
+import { useEventBus } from '../../../hooks/useEventBus';
+import { collectDrawnItems, buildHitIndex } from '../hitTest';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { OrbitControls, Grid } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
-import { useGameCanvas3DEvents } from '../hooks/useGameCanvas3DEvents';
+import { useGameCanvas3DEvents } from './hooks/useGameCanvas3DEvents';
 import { Canvas3DLoadingState } from './Canvas3DLoadingState';
 import { Canvas3DErrorBoundary } from './Canvas3DErrorBoundary';
 import { Lighting3D } from './Lighting3D';
 import { CameraController3D, FollowCamera3D } from './GameCamera3D';
-import { Drawable3D } from '../../../../lib/drawable/Drawable3D';
-import { create3DProjector } from '../../../../lib/drawable/projector3d';
-import type { DrawableNode } from '../../../../lib/drawable/paintDispatch';
-import type { IsometricTile, IsometricUnit, IsometricFeature } from '../../../../lib/isometricTypes';
-import { GRID_COLORS_3D, DEFAULT_BACKGROUND_3D } from '../game3dTheme';
-import { cn } from '../../../../lib/cn';
-import './GameCanvas3D.css';
+import { Drawable3D } from './Drawable3D';
+import { create3DProjector } from '../projector3d';
+import type { DrawableNode } from '../paintDispatch';
+import type { IsometricTile, IsometricUnit, IsometricFeature } from '../../isometricTypes';
+import { GRID_COLORS_3D, DEFAULT_BACKGROUND_3D } from './game3dTheme';
+import { cn } from '../../cn';
+import './Canvas3DHost.css';
 
 // Re-export types for convenience
 export type { IsometricTile, IsometricUnit, IsometricFeature };
@@ -76,7 +79,7 @@ export type MapOrientation = 'standard' | 'rotated';
 export type OverlayControl = 'default' | 'hidden' | 'minimap';
 
 /** Props for GameCanvas3D component */
-export interface GameCanvas3DProps {
+export interface Canvas3DHostProps {
     // --- Closed-circuit ---
     /** Additional CSS classes */
     className?: string;
@@ -161,7 +164,7 @@ const DEFAULT_GRID_CONFIG: GridConfig = {
 };
 
 /** Imperative handle for GameCanvas3D */
-export interface GameCanvas3DHandle {
+export interface Canvas3DHostHandle {
     /** Get current camera position */
     getCameraPosition: () => THREE.Vector3 | null;
     /** Set camera position */
@@ -175,9 +178,9 @@ export interface GameCanvas3DHandle {
 }
 
 /**
- * GameCanvas3D — thin 3D draw-host. Walks `drawables` through `Drawable3D`.
+ * Canvas3DHost — thin 3D draw-host. Walks `drawables` through `Drawable3D`.
  */
-export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
+export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
     (
         {
             cameraMode = 'isometric',
@@ -541,6 +544,6 @@ export const GameCanvas3D = forwardRef<GameCanvas3DHandle, GameCanvas3DProps>(
     }
 );
 
-GameCanvas3D.displayName = 'GameCanvas3D';
+Canvas3DHost.displayName = 'Canvas3DHost';
 
-export default GameCanvas3D;
+export default Canvas3DHost;

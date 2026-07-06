@@ -29,15 +29,15 @@ import { Suspense, lazy } from 'react';
 import type { Asset, AssetUrl, Camera, EventEmit } from '@almadar/core';
 import type { DrawableNode } from '../../../lib/drawable/paintDispatch';
 import { Canvas2D, type CameraMode as Canvas2DCameraMode, type Projection } from './Canvas2D';
-import type { GameCanvas3DProps } from '../three/molecules/GameCanvas3D';
+import type { Canvas3DHostProps } from '../../../lib/drawable/three/Canvas3DHost';
 
 /** Lazy 3D host — keeps three/R3F out of the bundle unless a 3D canvas renders.
  *  MUST import the external `@almadar/ui/.../game/three` subpath (not a relative
  *  path): with tsup `splitting:false`, a relative `import()` is INLINED into the
  *  main chunk (pulling R3F into every 2D app); the `@almadar/ui` external + the
  *  external-three-subpath plugin keep the subpath form a true dynamic boundary. */
-const GameCanvas3D = lazy(() =>
-    import('@almadar/ui/components/molecules/game/three').then((m) => ({ default: m.GameCanvas3D })),
+const Canvas3DHost = lazy(() =>
+    import('@almadar/ui/components/molecules/game/three').then((m) => ({ default: m.Canvas3DHost })),
 );
 
 /** Painter selection. Same `drawables` for both; differ only in projection + rasterizer. */
@@ -101,7 +101,7 @@ function to2DCamera(mode: Camera['mode']): Canvas2DCameraMode {
 }
 
 /** 3D `cameraMode` maps 1:1 from the neutral Camera mode (same vocabulary). */
-function to3DCameraMode(mode: Camera['mode']): GameCanvas3DProps['cameraMode'] {
+function to3DCameraMode(mode: Camera['mode']): Canvas3DHostProps['cameraMode'] {
     return mode ?? 'isometric';
 }
 
@@ -135,7 +135,7 @@ export function Canvas({
     const zoom = camera?.zoom;
 
     if (mode === '3d') {
-        const props3d: GameCanvas3DProps = {
+        const props3d: Canvas3DHostProps = {
             className,
             drawables,
             isLoading,
@@ -162,7 +162,7 @@ export function Canvas({
         };
         return (
             <Suspense fallback={null}>
-                <GameCanvas3D {...props3d} />
+                <Canvas3DHost {...props3d} />
             </Suspense>
         );
     }

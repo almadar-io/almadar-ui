@@ -57,8 +57,7 @@ export {
   type AboutPageEntity,
 } from '../../marketing/templates/AboutPageTemplate';
 
-// 3D Game Canvas Templates are three.js-backed and intentionally NOT exported
-// here — they ship code-split behind the optional
-// `@almadar/ui/components/molecules/game/three` subpath (see
-// ../../game/three/patterns.ts). The pattern scanner reads that
-// subpath directly, so no shadow export is needed.
+// The 3D draw-host is three.js-backed and intentionally NOT exported here — it
+// ships code-split behind the optional `@almadar/ui/components/molecules/game/three`
+// subpath, whose source now lives in `lib/drawable/three/` (the 3D painter backend
+// of the drawable substrate). No shadow export is needed.

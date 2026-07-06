@@ -11,11 +11,11 @@ import React from 'react';
 import { Billboard, Text } from '@react-three/drei';
 import { useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
-import type { DrawSpriteProps } from '../../components/game/atoms/DrawSprite';
-import type { DrawShapeProps } from '../../components/game/atoms/DrawShape';
-import type { DrawTextProps } from '../../components/game/atoms/DrawText';
-import type { Projector3D } from './projector3d';
-import { ModelLoader } from '../../components/game/three/molecules/ModelLoader';
+import type { DrawSpriteProps } from '../../../components/game/atoms/DrawSprite';
+import type { DrawShapeProps } from '../../../components/game/atoms/DrawShape';
+import type { DrawTextProps } from '../../../components/game/atoms/DrawText';
+import type { Projector3D } from '../projector3d';
+import { ModelLoader } from './ModelLoader';
 
 /**
  * 2D-sprite-as-billboard 3D path. Crops UVs to `node.frame` when present.

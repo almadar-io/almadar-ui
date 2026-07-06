@@ -52,14 +52,14 @@
       "require": "./dist/lib/index.cjs"
     },
     "./components/organisms/game/three": {
-      "types": "./dist/components/game/three/index.d.ts",
-      "import": "./dist/components/game/three/index.js",
-      "require": "./dist/components/game/three/index.cjs"
+      "types": "./dist/lib/drawable/three/index.d.ts",
+      "import": "./dist/lib/drawable/three/index.js",
+      "require": "./dist/lib/drawable/three/index.cjs"
     },
     "./components/molecules/game/three": {
-      "types": "./dist/components/game/three/index.d.ts",
-      "import": "./dist/components/game/three/index.js",
-      "require": "./dist/components/game/three/index.cjs"
+      "types": "./dist/lib/drawable/three/index.d.ts",
+      "import": "./dist/lib/drawable/three/index.js",
+      "require": "./dist/lib/drawable/three/index.cjs"
     },
     "./components/organisms/game/TraitStateViewer": {
       "import": "./components/game/molecules/TraitStateViewer.tsx",
