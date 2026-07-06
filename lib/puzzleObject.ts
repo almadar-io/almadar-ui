@@ -4,13 +4,24 @@
  *
  * The puzzle objects the kid configures arrive as `entity.objects` (an array of
  * `EntityRow`). These helpers narrow the weakly-typed fields the panel reads.
- * `RuleDefinition` / `RuleOption` remain plain UI value DTOs (see `RuleEditor`).
+ * `RuleDefinition` / `RuleOption` are plain UI value DTOs, defined below.
  *
  * @packageDocumentation
  */
 
 import type { EntityWith } from '@almadar/core';
-import type { RuleDefinition, RuleOption } from '../components/game/molecules/RuleEditor';
+
+/** A single Event-Handler puzzle rule: "when <event> then <action>". Plain value DTO. */
+export type RuleDefinition = {
+    whenEvent: string;
+    thenAction: string;
+};
+
+/** An option (event or action) selectable in a puzzle rule. Plain value DTO. */
+export interface RuleOption {
+    value: string;
+    label: string;
+}
 
 type PuzzleObjectRow = EntityWith<{
     name?: string;
