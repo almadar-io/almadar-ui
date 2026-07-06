@@ -19,14 +19,11 @@ export { GameCard, type GameCardProps } from '../atoms/GameCard';
 export { HealthBar, type HealthBarProps } from '../atoms/HealthBar';
 export { ScoreDisplay, type ScoreDisplayProps } from '../atoms/ScoreDisplay';
 export { ControlButton, type ControlButtonProps } from '../atoms/ControlButton';
-export { StateIndicator, type StateIndicatorProps, type StateStyle } from '../atoms/StateIndicator';
 export { TimerDisplay, type TimerDisplayProps } from '../atoms/TimerDisplay';
 export { ItemSlot, type ItemSlotProps } from '../atoms/ItemSlot';
-export { WaypointMarker, type WaypointMarkerProps } from '../atoms/WaypointMarker';
 export { DialogueBubble, type DialogueBubbleProps } from '../atoms/DialogueBubble';
 export { ChoiceButton, type ChoiceButtonProps } from '../atoms/ChoiceButton';
 export { ActionButton, type ActionButtonProps } from '../atoms/ActionButton';
-export { MiniMap, type MiniMapProps } from '../atoms/MiniMap';
 
 // ---------------------------------------------------------------------------
 // Molecules
@@ -136,7 +133,6 @@ export * from '../../../lib/puzzleObject';
 // State Architect (ages 13+)
 export { StateNode, type StateNodeProps } from './StateNode';
 export { TransitionArrow, type TransitionArrowProps } from './TransitionArrow';
-export { VariablePanel, type VariablePanelProps } from './VariablePanel';
 export { StateJsonView, type StateJsonViewProps } from './StateJsonView';
 
 export { projectileMotion, pendulum, springOscillator, ALL_PRESETS } from '../../../lib/physicsPresets';
