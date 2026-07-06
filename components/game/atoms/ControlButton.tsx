@@ -7,7 +7,7 @@ import { resolveIcon, type IconInput } from '../../core/atoms/Icon';
 import { Button } from '../../core/atoms/Button';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
-import { GameIcon } from './GameIcon';
+import { GameIcon } from '../../core/atoms/GameIcon';
 
 export interface ControlButtonProps {
   /** Sprite asset — takes precedence over icon when provided */

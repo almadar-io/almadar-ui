@@ -6,7 +6,7 @@ import { useEventBus } from '../../../hooks/useEventBus';
 import { Button } from '../../core/atoms/Button';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
-import { GameIcon } from './GameIcon';
+import { GameIcon } from '../../core/atoms/GameIcon';
 import type { Asset, EventKey } from '@almadar/core';
 
 export interface ItemSlotProps {

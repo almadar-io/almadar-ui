@@ -2,7 +2,7 @@ import * as React from 'react';
 import type { Asset } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { Box } from '../../core/atoms/Box';
-import { GameIcon } from './GameIcon';
+import { GameIcon } from '../../core/atoms/GameIcon';
 
 export interface TimerDisplayProps {
   /** Time in seconds */

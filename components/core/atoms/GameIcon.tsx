@@ -2,8 +2,9 @@
 import * as React from 'react';
 import type { Asset } from '@almadar/core';
 import { cn } from '../../../lib/cn';
-import { resolveIcon, type IconInput } from '../../core/atoms/Icon';
-import { AtlasImage } from '../../core/atoms/AtlasImage';
+import { type IconInput } from './Icon';
+import { resolveIconForFamily, useIconFamily } from '../../../lib/iconFamily';
+import { AtlasImage } from './AtlasImage';
 
 const sizeMap = {
   sm: 16,
@@ -26,6 +27,7 @@ export interface GameIconProps {
 
 export function GameIcon({ assetUrl, icon, size = 'md', alt, className }: GameIconProps) {
   const px = typeof size === 'number' ? size : sizeMap[size];
+  const family = useIconFamily();
 
   if (assetUrl?.url) {
     return (
@@ -38,7 +40,7 @@ export function GameIcon({ assetUrl, icon, size = 'md', alt, className }: GameIc
     );
   }
 
-  const I = typeof icon === 'string' ? resolveIcon(icon) : icon;
+  const I = typeof icon === 'string' ? resolveIconForFamily(icon, family) : icon;
 
   return <I width={px} height={px} className={cn('flex-shrink-0', className)} />;
 }

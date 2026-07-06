@@ -3,7 +3,7 @@ import { cn } from '../../../lib/cn';
 import { Icon, type IconInput } from '../../core/atoms/Icon';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
-import { GameIcon } from '../atoms/GameIcon';
+import { GameIcon } from '../../core/atoms/GameIcon';
 import { HealthBar } from '../atoms/HealthBar';
 import { ScoreDisplay } from '../atoms/ScoreDisplay';
 import type { Asset } from '@almadar/core';

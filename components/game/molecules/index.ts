@@ -19,21 +19,14 @@ export { GameCard, type GameCardProps } from '../atoms/GameCard';
 export { HealthBar, type HealthBarProps } from '../atoms/HealthBar';
 export { ScoreDisplay, type ScoreDisplayProps } from '../atoms/ScoreDisplay';
 export { ControlButton, type ControlButtonProps } from '../atoms/ControlButton';
-export { Sprite, drawSprite, type SpriteProps } from '../atoms/Sprite';
 export { StateIndicator, type StateIndicatorProps, type StateStyle } from '../atoms/StateIndicator';
 export { TimerDisplay, type TimerDisplayProps } from '../atoms/TimerDisplay';
-export { ResourceCounter, type ResourceCounterProps } from '../atoms/ResourceCounter';
 export { ItemSlot, type ItemSlotProps } from '../atoms/ItemSlot';
-export { TurnIndicator, type TurnIndicatorProps } from '../atoms/TurnIndicator';
-export { ComboCounter, type ComboCounterProps } from '../atoms/ComboCounter';
 export { WaypointMarker, type WaypointMarkerProps } from '../atoms/WaypointMarker';
-export { StatusEffect, type StatusEffectProps } from '../atoms/StatusEffect';
-export { DamageNumber, type DamageNumberProps } from '../atoms/DamageNumber';
 export { DialogueBubble, type DialogueBubbleProps } from '../atoms/DialogueBubble';
 export { ChoiceButton, type ChoiceButtonProps } from '../atoms/ChoiceButton';
 export { ActionButton, type ActionButtonProps } from '../atoms/ActionButton';
 export { MiniMap, type MiniMapProps } from '../atoms/MiniMap';
-export { GameIcon, type GameIconProps } from '../atoms/GameIcon';
 
 // ---------------------------------------------------------------------------
 // Molecules
@@ -151,6 +144,5 @@ export { projectileMotion, pendulum, springOscillator, ALL_PRESETS } from '../..
 // ---------------------------------------------------------------------------
 // Templates (thin wrappers — header + Board organism)
 // ---------------------------------------------------------------------------
-export { GameTemplate, type GameTemplateProps } from '../templates/GameTemplate';
 export { GameShell, type GameShellProps } from '../templates/GameShell';
 // Game-genre templates removed — boards are now .lolo game-shell compositions, not React components.

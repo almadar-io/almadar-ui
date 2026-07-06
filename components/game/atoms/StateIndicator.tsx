@@ -2,7 +2,7 @@ import React from 'react';
 import { Box } from '../../core/atoms/Box';
 import { Icon, type IconInput } from '../../core/atoms/Icon';
 import { cn } from '../../../lib/cn';
-import { GameIcon } from './GameIcon';
+import { GameIcon } from '../../core/atoms/GameIcon';
 import type { Asset } from '@almadar/core';
 
 export interface StateStyle {

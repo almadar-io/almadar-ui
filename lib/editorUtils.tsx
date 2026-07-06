@@ -16,7 +16,7 @@ import { Typography } from '../components/core/atoms/Typography';
 import { Button } from '../components/core/atoms/Button';
 import { Badge } from '../components/core/atoms/Badge';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { GameIcon } from '../components/game/atoms/GameIcon';
+import { GameIcon } from '../components/core/atoms/GameIcon';
 
 // =============================================================================
 // Types

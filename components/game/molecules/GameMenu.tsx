@@ -5,7 +5,7 @@ import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { Box } from "../../core/atoms/Box";
 import { Typography } from "../../core/atoms/Typography";
-import { GameIcon } from "../atoms/GameIcon";
+import { GameIcon } from "../../core/atoms/GameIcon";
 import { ChoiceButton } from "../atoms/ChoiceButton";
 
 export type MenuOption = EventPayload & {

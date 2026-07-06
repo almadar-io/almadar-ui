@@ -3,7 +3,7 @@ import type { Asset } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
-import { GameIcon } from './GameIcon';
+import { GameIcon } from '../../core/atoms/GameIcon';
 
 const DEFAULT_PORTRAIT: Asset = {
   url: 'https://almadar-kflow-assets.web.app/shared/characters/archetypes/04_hero.png',

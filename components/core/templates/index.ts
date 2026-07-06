@@ -13,12 +13,6 @@ export {
   type CounterVariant
 } from './CounterTemplate';
 
-// Wireframe Templates
-export {
-  GameTemplate,
-  type GameTemplateProps
-} from '../../game/templates/GameTemplate';
-
 export {
   GenericAppTemplate,
   type GenericAppTemplateProps

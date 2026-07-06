@@ -16,6 +16,7 @@ export {
 } from "./Card";
 export { Badge, type BadgeProps, type BadgeVariant } from "./Badge";
 export { AtlasImage, AtlasPanel, useAtlasSliceDataUrl, type AtlasImageProps, type AtlasImageAsset, type AtlasPanelProps } from "./AtlasImage";
+export { GameIcon, type GameIconProps } from "./GameIcon";
 export {
   FilterPill,
   type FilterPillProps,

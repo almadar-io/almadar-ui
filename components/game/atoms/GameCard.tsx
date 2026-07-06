@@ -7,7 +7,7 @@ import { Box } from '../../core/atoms/Box';
 import { Button } from '../../core/atoms/Button';
 import { Typography } from '../../core/atoms/Typography';
 import { AtlasImage } from '../../core/atoms/AtlasImage';
-import { GameIcon } from './GameIcon';
+import { GameIcon } from '../../core/atoms/GameIcon';
 
 export interface GameCardProps {
   id: string;

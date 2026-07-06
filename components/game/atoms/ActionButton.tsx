@@ -1,11 +1,9 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
-import { resolveIcon, type IconInput } from '../../core/atoms/Icon';
-import { useEventBus } from '../../../hooks/useEventBus';
+import { type IconInput } from '../../core/atoms/Icon';
 import { Button } from '../../core/atoms/Button';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
-import { GameIcon } from './GameIcon';
 import type { Asset, EventKey } from '@almadar/core';
 
 export interface ActionButtonProps {
@@ -64,7 +62,6 @@ export function ActionButton({
   action,
   className,
 }: ActionButtonProps) {
-  const eventBus = useEventBus();
   const sizes = sizeMap[size];
   const onCooldown = cooldown > 0;
   const isDisabled = disabled || onCooldown;
@@ -74,7 +71,10 @@ export function ActionButton({
     <Button
       variant={variant === 'danger' ? 'danger' : variant === 'secondary' ? 'secondary' : 'primary'}
       disabled={isDisabled}
-      onClick={() => { if (action) eventBus.emit(`UI:${action}`, {}); onClick?.(); }}
+      iconAsset={assetUrl}
+      icon={assetUrl ? undefined : icon}
+      action={action}
+      onClick={onClick}
       className={cn(
         'relative inline-flex items-center gap-1.5 rounded-interactive border font-medium overflow-hidden transition-colors duration-150',
         sizes.button,
@@ -94,15 +94,6 @@ export function ActionButton({
           } as React.CSSProperties}
         />
       )}
-      {assetUrl ? (
-        <GameIcon assetUrl={assetUrl} icon="image" size={16} className={cn('flex-shrink-0', sizes.icon)} />
-      ) : icon ? (
-        <Box as="span" className={cn('flex-shrink-0', sizes.icon)}>
-          {typeof icon === 'string'
-            ? (() => { const I = resolveIcon(icon); return I ? <I className="w-4 h-4" /> : null; })()
-            : (() => { const I = icon; return <I className="w-4 h-4" />; })()}
-        </Box>
-      ) : null}
       <Typography as="span" className="relative z-10">{label}</Typography>
       {hotkey && (
         <Typography

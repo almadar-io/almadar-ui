@@ -17,7 +17,7 @@ import type { Asset } from '@almadar/core';
 import { Button } from '../../core/atoms/index';
 import { cn } from '../../../lib/cn';
 import { useGameAudioContextOptional } from '../../../providers/GameAudioProvider';
-import { GameIcon } from './GameIcon';
+import { GameIcon } from '../../core/atoms/GameIcon';
 import type { UiError } from '../../core/atoms/types';
 
 // =============================================================================

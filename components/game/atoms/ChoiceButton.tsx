@@ -1,11 +1,10 @@
 import * as React from 'react';
 import { cn } from '../../../lib/cn';
 import { resolveIcon, type IconInput } from '../../core/atoms/Icon';
-import { useEventBus } from '../../../hooks/useEventBus';
 import { Button } from '../../core/atoms/Button';
 import { Box } from '../../core/atoms/Box';
 import { Typography } from '../../core/atoms/Typography';
-import { GameIcon } from './GameIcon';
+import { GameIcon } from '../../core/atoms/GameIcon';
 import type { Asset, EventKey } from '@almadar/core';
 
 export interface ChoiceButtonProps {
@@ -43,12 +42,13 @@ export function ChoiceButton({
   payload,
   className,
 }: ChoiceButtonProps) {
-  const eventBus = useEventBus();
   return (
     <Button
       variant="ghost"
       disabled={disabled}
-      onClick={() => { if (action) eventBus.emit(`UI:${action}`, payload ?? {}); onClick?.(); }}
+      action={action}
+      actionPayload={payload}
+      onClick={onClick}
       className={cn(
         'w-full text-left px-4 py-2.5 rounded-interactive border transition-all duration-150',
         'flex items-center gap-2',
