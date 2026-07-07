@@ -35,6 +35,8 @@ export type BoxShadow = "none" | "sm" | "md" | "lg" | "xl";
 export interface BoxProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Additional CSS classes applied to the root element. */
   className?: string;
+  /** Data-theme attribute applied to the root element for CSS theme scoping (e.g. almadar-website-dark). */
+  'data-theme'?: string;
   /** Padding on all sides */
   padding?: BoxPadding;
   /** Horizontal padding (overrides padding for x-axis) */
