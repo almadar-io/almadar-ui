@@ -106,11 +106,19 @@ export function collectEmbeddedTraits(schema: OrbitalSchema | undefined | null):
     if (!Array.isArray(traits)) continue;
     for (const traitRef of traits) {
       if (!traitRef || typeof traitRef !== 'object') continue;
-      // The runtime's `preprocessSchema` may wrap a resolved trait as
-      // `{ ref, _resolved: <full trait> }` for ref-style entries. Read
-      // the `_resolved` shape if present, otherwise the trait itself.
       const resolved = (traitRef as TraitRef & { _resolved?: Trait })._resolved;
       const target: Trait = (resolved && typeof resolved === 'object') ? resolved : traitRef as Trait;
+      // Walk the trait's declared config for nested `@trait.X` refs (e.g.
+      // a composite trait's `children: [@trait.X, @trait.Y]`). These never
+      // appear as a literal in any render-ui effect; they flow in through
+      // `@config.children` bindings, so walk the config tree directly.
+      // Done before the transitions check so reference-only traits (no
+      // inlined stateMachine) are still covered — otherwise their nested
+      // children (PayButton inside ActionButtons, stats inside StatsGrid)
+      // are not recognised as embedded and double-render into the slot.
+      if (target.config) {
+        collectTraitRefsFromValue(target.config, out);
+      }
       const transitions: Transition[] | undefined = target.stateMachine?.transitions;
       if (!Array.isArray(transitions)) continue;
       for (const t of transitions) {
