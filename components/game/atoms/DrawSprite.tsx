@@ -28,9 +28,9 @@ export interface DrawSpriteProps extends DrawableBase {
     asset: Asset;
     /** How the sprite aligns to its projected position. Default `'top-left'`. */
     anchor?: DrawableAnchor;
-    /** Draw width in px (2D) / world units (3D); omitted → resolved source width. */
+    /** Draw width in world units (fractions of `projector.tileWidth`); omitted → resolved source width in px. */
     width?: number;
-    /** Draw height in px (2D) / world units (3D); omitted → resolved source height. */
+    /** Draw height in world units (fractions of `projector.tileWidth`); omitted → resolved source height in px. */
     height?: number;
     /** Explicit atlas sub-rect override (px); omitted → resolved from `asset.atlas`/`asset.sprite`. */
     frame?: BlitSrc;
@@ -58,8 +58,9 @@ export const paintSprite: PaintFn<DrawSpriteProps> = (painter, node, dctx) => {
         src = { x: r.sx, y: r.sy, w: r.sw, h: r.sh };
     }
 
-    const w = node.width ?? (src ? src.w : tex.width);
-    const h = node.height ?? (src ? src.h : tex.height);
+    const tw = dctx.projector.tileWidth;
+    const w = node.width !== undefined ? node.width * tw : (src ? src.w : tex.width);
+    const h = node.height !== undefined ? node.height * tw : (src ? src.h : tex.height);
 
     const anchor: DrawableAnchor = node.anchor ?? 'top-left';
     const p = dctx.projector.anchorPoint(node.position, anchor);

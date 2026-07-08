@@ -27,18 +27,18 @@ export interface DrawShapeProps extends DrawableBase {
     position: ScenePos;
     /** How the shape aligns to its projected position. Default varies by `shape`. */
     anchor?: DrawableAnchor;
-    /** Rect width in px. */
+    /** Rect width in world units (fractions of `projector.tileWidth`). */
     width?: number;
-    /** Rect height in px. */
+    /** Rect height in world units (fractions of `projector.tileWidth`). */
     height?: number;
-    /** Ellipse horizontal radius in px. */
+    /** Ellipse horizontal radius in world units (fractions of `projector.tileWidth`). */
     radiusX?: number;
-    /** Ellipse vertical radius in px; omitted → `radiusX` (a circle). */
+    /** Ellipse vertical radius in world units; omitted → `radiusX` (a circle). */
     radiusY?: number;
-    /** Fine px nudge from the anchor point (e.g. a disc drawn at `groundY - 8*scale`). */
+    /** Fine nudge from the anchor point in world units. */
     offsetX?: number;
     offsetY?: number;
-    /** Poly vertices as px offsets relative to the cell's projected top-left. */
+    /** Poly vertices as world-unit offsets relative to the cell's projected top-left. */
     points?: PainterPoint[];
     fill?: string;
     stroke?: string;
@@ -61,27 +61,30 @@ export const paintShape: PaintFn<DrawShapeProps> = (painter, node, dctx) => {
         }
         case 'rect': {
             const p = dctx.projector.anchorPoint(node.position, node.anchor ?? 'top-left');
-            const x = p.x + (node.offsetX ?? 0);
-            const y = p.y + (node.offsetY ?? 0);
-            const w = node.width ?? 0;
-            const h = node.height ?? 0;
+            const tw = dctx.projector.tileWidth;
+            const x = p.x + (node.offsetX ?? 0) * tw;
+            const y = p.y + (node.offsetY ?? 0) * tw;
+            const w = (node.width ?? 0) * tw;
+            const h = (node.height ?? 0) * tw;
             if (node.fill) painter.fillRect(x, y, w, h, node.fill);
             if (node.stroke) painter.strokeRect(x, y, w, h, node.stroke, node.strokeWidth ?? 1);
             break;
         }
         case 'ellipse': {
             const p = dctx.projector.anchorPoint(node.position, node.anchor ?? 'ground');
-            const cx = p.x + (node.offsetX ?? 0);
-            const cy = p.y + (node.offsetY ?? 0);
-            const rx = node.radiusX ?? 0;
-            const ry = node.radiusY ?? rx;
+            const tw = dctx.projector.tileWidth;
+            const cx = p.x + (node.offsetX ?? 0) * tw;
+            const cy = p.y + (node.offsetY ?? 0) * tw;
+            const rx = (node.radiusX ?? 0) * tw;
+            const ry = (node.radiusY ?? rx) * tw;
             if (node.fill) painter.fillEllipse(cx, cy, rx, ry, node.fill);
             if (node.stroke) painter.strokeEllipse(cx, cy, rx, ry, node.stroke, node.strokeWidth ?? 1);
             break;
         }
         case 'poly': {
             const base = dctx.projector.project(node.position);
-            const pts = (node.points ?? []).map((pt) => ({ x: base.x + pt.x, y: base.y + pt.y }));
+            const tw = dctx.projector.tileWidth;
+            const pts = (node.points ?? []).map((pt) => ({ x: base.x + pt.x * tw, y: base.y + pt.y * tw }));
             if (node.fill) painter.fillPoly(pts, node.fill);
             if (node.stroke) painter.strokePoly(pts, node.stroke, node.strokeWidth ?? 1, true);
             break;

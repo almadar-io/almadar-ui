@@ -9,12 +9,12 @@
  */
 import React from 'react';
 import { Billboard, Text } from '@react-three/drei';
-import { useLoader } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { DrawSpriteProps } from '../../../components/game/atoms/DrawSprite';
 import type { DrawShapeProps } from '../../../components/game/atoms/DrawShape';
 import type { DrawTextProps } from '../../../components/game/atoms/DrawText';
 import type { Projector3D } from '../projector3d';
+import { getAtlas, isAtlasAsset, subRectFor } from '../../../lib/atlasSlice';
 import { ModelLoader } from './ModelLoader';
 
 /**
@@ -22,28 +22,174 @@ import { ModelLoader } from './ModelLoader';
  * Atlas-name resolution (`asset.atlas`/`asset.sprite` → sub-rect) is deferred
  * to P6 for the 3D path — a tracked follow-up, not a silent drop; until then
  * an atlas-only asset without an explicit `frame` renders the whole sheet.
+ *
+ * This deliberately avoids R3F `useLoader`: `useLoader` throws into the nearest
+ * `<Suspense>`, and the `Canvas` host's only Suspense boundary is the lazy host
+ * import with a `null` fallback. A suspended sprite therefore blanks the entire
+ * 3D scene (grid, shapes, text) until every texture finishes. We load manually
+ * with `crossOrigin="anonymous"` so CDN textures paint and keep the scene alive
+ * with a placeholder while they download.
  */
-function SpriteBillboard({ node, world }: { node: DrawSpriteProps; world: [number, number, number] }): React.JSX.Element {
-    const texture = useLoader(THREE.TextureLoader, node.asset.url);
-    const img = texture.image as { width?: number; height?: number } | undefined;
-    const imgW = img?.width || 1;
-    const imgH = img?.height || 1;
+class CrossOriginTextureLoader extends THREE.TextureLoader {
+    constructor() {
+        super();
+        this.crossOrigin = 'anonymous';
+    }
+}
 
-    if (node.frame) {
-        texture.repeat.set(node.frame.w / imgW, node.frame.h / imgH);
-        texture.offset.set(node.frame.x / imgW, 1 - (node.frame.y + node.frame.h) / imgH);
-        texture.magFilter = texture.minFilter = THREE.NearestFilter;
-        texture.needsUpdate = true;
+function useBillboardTexture(url: string): { texture: THREE.Texture | null; error: boolean } {
+    const [state, setState] = React.useState<{ texture: THREE.Texture | null; error: boolean }>({
+        texture: null,
+        error: false,
+    });
+
+    React.useEffect(() => {
+        let active = true;
+        const loader = new CrossOriginTextureLoader();
+        loader.load(
+            url,
+            (texture) => {
+                if (!active) return;
+                texture.colorSpace = THREE.SRGBColorSpace;
+                setState({ texture, error: false });
+            },
+            undefined,
+            () => {
+                if (!active) return;
+                setState({ texture: null, error: true });
+            },
+        );
+        return () => {
+            active = false;
+        };
+    }, [url]);
+
+    return state;
+}
+
+interface SpriteFrame {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+}
+
+/**
+ * Resolve an atlas sub-rect for `asset.atlas`/`asset.sprite`, mirroring the 2D
+ * `atlasSlice` path. Triggers a re-render once the atlas JSON finishes loading.
+ */
+function useAtlasFrame(asset: DrawSpriteProps['asset']): { frame: SpriteFrame | null; ready: boolean } {
+    const [tick, setTick] = React.useState(0);
+
+    React.useEffect(() => {
+        if (!isAtlasAsset(asset)) return;
+        getAtlas(asset.atlas as string, () => setTick((t) => t + 1));
+    }, [asset, tick]);
+
+    return React.useMemo(() => {
+        if (!isAtlasAsset(asset)) return { frame: null, ready: true };
+        const atlas = getAtlas(asset.atlas as string, () => setTick((t) => t + 1));
+        if (!atlas) return { frame: null, ready: false };
+        const r = subRectFor(atlas, asset.sprite as string);
+        if (!r) return { frame: null, ready: true };
+        return { frame: { x: r.sx, y: r.sy, w: r.sw, h: r.sh }, ready: true };
+    }, [asset, tick]);
+}
+
+function SpriteBillboard({ node, world }: { node: DrawSpriteProps; world: [number, number, number] }): React.JSX.Element {
+    const { texture, error: textureError } = useBillboardTexture(node.asset.url);
+    const { frame: atlasFrame, ready: atlasReady } = useAtlasFrame(node.asset);
+
+    const frame = node.frame ?? atlasFrame;
+    const anchor = node.anchor ?? 'top-left';
+
+    const size = React.useMemo(() => {
+        const img = texture?.image as { width?: number; height?: number } | undefined;
+        const imgW = img?.width || 1;
+        const imgH = img?.height || 1;
+        const aspect = frame ? frame.w / frame.h : imgW / imgH;
+        if (anchor === 'top-left') {
+            // Ground decal: explicit size in world units, defaulting to one cell.
+            const width = node.width ?? 1;
+            const height = node.height ?? 1;
+            return { width, height, imgW, imgH };
+        }
+        const height = node.height ?? 1;
+        const width = node.width ?? height * aspect;
+        return { width, height, imgW, imgH };
+    }, [texture, frame, node.height, node.width, anchor]);
+
+    if (!texture || !atlasReady) {
+        // Placeholder keeps the scene mounted and gives a visible cue while the
+        // CDN texture/atlas downloads; red signals a load failure.
+        if (anchor === 'top-left') {
+            return (
+                <group position={[world[0] + size.width / 2, 0.02, world[2] + size.height / 2]}>
+                    <mesh rotation={[-Math.PI / 2, 0, 0]}>
+                        <planeGeometry args={[size.width, size.height]} />
+                        <meshBasicMaterial color={textureError ? 0xff4444 : 0x888888} transparent opacity={0.6} side={THREE.DoubleSide} />
+                    </mesh>
+                </group>
+            );
+        }
+        return (
+            <group position={[world[0], world[1] + size.height / 2, world[2]]}>
+                <mesh>
+                    <planeGeometry args={[size.width, size.height]} />
+                    <meshBasicMaterial color={textureError ? 0xff4444 : 0x888888} transparent opacity={0.6} side={THREE.DoubleSide} />
+                </mesh>
+            </group>
+        );
     }
 
-    const aspect = node.frame ? node.frame.w / node.frame.h : imgW / imgH;
-    const height = node.height ?? 1;
-    const width = node.width ?? height * aspect;
+
+
+    const groundGeometry = React.useMemo(() => {
+        if (anchor !== 'top-left' || !texture || !atlasReady) return null;
+        const g = new THREE.PlaneGeometry(size.width, size.height);
+        g.rotateX(-Math.PI / 2);
+        if (frame) {
+            const u0 = frame.x / size.imgW;
+            const v0 = 1 - (frame.y + frame.h) / size.imgH;
+            const u1 = u0 + frame.w / size.imgW;
+            const v1 = v0 + frame.h / size.imgH;
+            // PlaneGeometry vertices: bottom-left, bottom-right, top-left, top-right.
+            const uvs = new Float32Array([u0, v0, u1, v0, u0, v1, u1, v1]);
+            g.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+        }
+        return g;
+    }, [anchor, texture, atlasReady, size.width, size.height, size.imgW, size.imgH, frame]);
+
+    texture.magFilter = texture.minFilter = THREE.NearestFilter;
+    texture.needsUpdate = true;
+
+    // Top-left anchored sprites are ground decals (tiles/covers); everything else
+    // stands vertically on the cell.
+    if (anchor === 'top-left') {
+        return (
+            <group position={[world[0] + size.width / 2, 0.01, world[2] + size.height / 2]}>
+                <mesh geometry={groundGeometry ?? undefined}>
+                    <meshBasicMaterial
+                        map={texture}
+                        transparent
+                        alphaTest={0.1}
+                        side={THREE.DoubleSide}
+                        opacity={node.opacity ?? 1}
+                    />
+                </mesh>
+            </group>
+        );
+    }
+
+    if (frame) {
+        texture.repeat.set(frame.w / size.imgW, frame.h / size.imgH);
+        texture.offset.set(frame.x / size.imgW, 1 - (frame.y + frame.h) / size.imgH);
+    }
 
     return (
-        <Billboard position={[world[0], world[1] + height / 2, world[2]]}>
+        <Billboard position={[world[0], world[1] + size.height / 2, world[2]]}>
             <mesh>
-                <planeGeometry args={[width, height]} />
+                <planeGeometry args={[size.width, size.height]} />
                 <meshBasicMaterial
                     map={texture}
                     transparent

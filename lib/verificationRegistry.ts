@@ -551,6 +551,22 @@ export function bindCanvasCapture(
 }
 
 /**
+ * Bind a reader for the last drawables list received by a canvas host.
+ * Lets verification scripts inspect exactly which neutral descriptors reached
+ * the painter without re-deriving them from state.
+ */
+export function bindLastDrawables(
+  getDrawables: () => unknown[] | null,
+): void {
+  if (typeof window === "undefined") return;
+
+  exposeOnWindow();
+  if (window.__orbitalVerification) {
+    window.__orbitalVerification.getLastDrawables = getDrawables;
+  }
+}
+
+/**
  * Update asset load status for canvas verification.
  * Game organisms call this when images load or fail.
  */

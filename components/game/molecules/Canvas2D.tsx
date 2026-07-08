@@ -44,7 +44,7 @@ import { useImageCache } from '../../../hooks/useImageCache';
 import { resolveAssetSource, blit } from '../../../lib/atlasSlice';
 import { useCamera } from '../../../hooks/useCamera';
 import { useCanvasGestures } from '../../../hooks/useCanvasGestures';
-import { bindCanvasCapture } from '../../../lib/verificationRegistry';
+import { bindCanvasCapture, bindLastDrawables } from '../../../lib/verificationRegistry';
 import { createWebPainter } from '../../../lib/webPainter2d';
 import { create2DProjector, type Projection2D } from '../../../lib/drawable/projector';
 import { paintDrawable, type DrawableNode } from '../../../lib/drawable/paintDispatch';
@@ -274,8 +274,12 @@ export function Canvas2D({
         const canvas = canvasRef.current;
         if (!canvas) return;
         bindCanvasCapture(() => canvas.toDataURL('image/png'));
-        return () => { bindCanvasCapture(() => null); };
-    }, []);
+        bindLastDrawables(() => drawables ?? null);
+        return () => {
+            bindCanvasCapture(() => null);
+            bindLastDrawables(() => null);
+        };
+    }, [drawables]);
 
     // -- Camera --
     const enableCamera = camera === 'pan-zoom';
@@ -294,7 +298,7 @@ export function Canvas2D({
     } = useCamera();
 
     // Re-render when a lazily-fetched atlas JSON lands (see atlasSlice.getAtlas).
-    const [, setAtlasVersion] = useState(0);
+    const [atlasVersion, setAtlasVersion] = useState(0);
     const bumpAtlas = useCallback(() => setAtlasVersion((v) => v + 1), []);
 
     // -- Minimap data (dots at each drawn descriptor's scene position) --
@@ -377,6 +381,8 @@ export function Canvas2D({
     // Redraw on scene / camera change — pure, no internal clock.
     useEffect(() => { draw(); }, [draw]);
     useEffect(() => { draw(); }, [_imagePendingCount, draw]);
+    // Re-render when a lazily-fetched atlas JSON lands.
+    useEffect(() => { draw(); }, [atlasVersion, draw]);
 
     // Camera-lerp RAF: runs only while a follow target is active.
     useEffect(() => {
