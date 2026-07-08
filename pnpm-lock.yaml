@@ -13,8 +13,8 @@ importers:
   .:
     dependencies:
       '@almadar/core':
-        specifier: ^10.20.0
-        version: 10.20.0
+        specifier: ^10.25.0
+        version: 10.25.0
       '@almadar/evaluator':
         specifier: '>=2.9.2'
         version: 2.12.2
@@ -22,14 +22,14 @@ importers:
         specifier: ^1.3.0
         version: 1.3.0
       '@almadar/patterns':
-        specifier: '>=2.97.0'
-        version: 2.97.0
+        specifier: ^2.101.0
+        version: 2.101.0
       '@almadar/runtime':
-        specifier: ^6.21.0
-        version: 6.21.0(express@5.2.1)
+        specifier: ^6.30.0
+        version: 6.30.0(express@5.2.1)
       '@almadar/std':
-        specifier: '>=6.4.1'
-        version: 16.22.2
+        specifier: ^16.134.0
+        version: 16.134.0
       '@almadar/syntax':
         specifier: '>=1.3.1'
         version: 1.4.0
@@ -221,8 +221,8 @@ packages:
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
 
-  '@almadar/core@10.20.0':
-    resolution: {integrity: sha512-E64CDxSuwewNkwtZlXinRAfOlmS4osDsPyYQIZZRrj4SWZxiJ4tp8dTocz1q/dX+fYZirrpO1AJGuUlTlS2ZCA==}
+  '@almadar/core@10.25.0':
+    resolution: {integrity: sha512-GkwgpunROGSjjO1N9UcTE9Zhy7dXggbrLddXVfWo9C0xbTPzEq4tjAL2PxJSMzkmcxK/R5lNchAqwHMer5fBNw==}
 
   '@almadar/eslint-plugin@2.8.2':
     resolution: {integrity: sha512-iQGH5MdsfcEPGUeImgS3XBWLfBRc0uO9+0Kyy87WQf/nc4hUoAEPxov5C/JAYe1tLoL34dLBIyKDm/SFeYPBsA==}
@@ -235,19 +235,19 @@ packages:
   '@almadar/logger@1.3.0':
     resolution: {integrity: sha512-6WhnbfjQqHEy2hoRlvZM0RYr8trAra5t82IhOOIRPIoc2/jbpoIqINZ/dGlbndoa3g1aC+4LrdH35H0TzKdEhw==}
 
-  '@almadar/patterns@2.97.0':
-    resolution: {integrity: sha512-MlCR6kpE6Pr0Oz3iVIZKXVd2MjIMfYSbVN084eoscHGmpMwfHX+HnjHJKdPme6VrnuSVMDBoIt9lfjW0Cs3sKw==}
+  '@almadar/patterns@2.101.0':
+    resolution: {integrity: sha512-bT0fui3pkxlNkK/E+JLT6xGt3XFYt80Swkzsp6afHRiU06TCXwHA4yX5ePY+AG+LSlVEpOwVQl5VJCQQPch8jg==}
 
-  '@almadar/runtime@6.21.0':
-    resolution: {integrity: sha512-8E0jMLybrCuxTd9LjSIWMLmRvxvu3Hzj0So4cHZF1QnuiPYSZ/n1zeBcUfMCunwdoeJmCNh6MMdyjM/AKgnhPQ==}
+  '@almadar/runtime@6.30.0':
+    resolution: {integrity: sha512-6F2rfsynOPfTEbP5GREZFR4WJdWmT/2sSyEkFtuTfUOEP2R2dt9pDv+6qpxbzqd3V7Y9ZWW/a5lFYUYgke80MQ==}
     peerDependencies:
       express: ^5.0.0
     peerDependenciesMeta:
       express:
         optional: true
 
-  '@almadar/server@2.14.2':
-    resolution: {integrity: sha512-kQvrTxUTS8R2d190QkhhpyHlI8csqnfXN2mSORSds0vpVUIltuLr816gdmJGfWFNQs79X9SJAl/fZQsbxcFz/g==}
+  '@almadar/server@2.20.0':
+    resolution: {integrity: sha512-Ew3nKWG5RRrsHasH0JVMSeOArrAZIb4V3k5BnDguuyQj5LUOOLWYbVvYhMasfg4sMDu7phnBCnL4Iiv+oQWZkQ==}
     peerDependencies:
       '@almadar-io/rabit': '>=0.60.3'
       express: ^5.0.0
@@ -255,8 +255,8 @@ packages:
       '@almadar-io/rabit':
         optional: true
 
-  '@almadar/std@16.22.2':
-    resolution: {integrity: sha512-bFrEaapmEiETHvIAaQ32ZEbDtxrE9K38/lloi0qhzvDXcaTBJFHyweRQ1dIk5IKwA8j66AFDJ96WKmuEnTy1ag==}
+  '@almadar/std@16.134.0':
+    resolution: {integrity: sha512-pv+CccikW6nyy9NJZYcsxPAqeD7OeVycW3N9dEAi3f+S9bX655SX2iX1LZIK6KiKG12q0V9G7pclRI07IfQ3Sg==}
 
   '@almadar/syntax@1.4.0':
     resolution: {integrity: sha512-r79cxWTDykcnBpWzWV1foHufBMWcgf/88AFT/lRAxyeIJIkwYA5lQjIJIonWh8z4adgSQw3rtl/KjlCy3mG+Uw==}
@@ -1084,8 +1084,8 @@ packages:
   '@protobufjs/pool@1.1.0':
     resolution: {integrity: sha512-0kELaGSIDBKvcgS4zkjz1PeddatrjYcmMWOlAuAPwAeccUrPHdUqo/J6LiymHHEiJT5NrF1UVwxY14f+fy4WQw==}
 
-  '@protobufjs/utf8@1.1.1':
-    resolution: {integrity: sha512-oOAWABowe8EAbMyWKM0tYDKi8Yaox52D+HWZhAIJqQXbqe0xI/GV7FhLWqlEKreMkfDjshR5FKgi3mnle0h6Eg==}
+  '@protobufjs/utf8@1.1.2':
+    resolution: {integrity: sha512-b1UQwcEZ4yCnMCD8DAL1VlbvBJE9/IX4FTIp7BG1xYpf29SLazLSrqUkj4w7Y5y7cCVP6E5tcqqcI0xemPkHug==}
 
   '@react-leaflet/core@2.1.0':
     resolution: {integrity: sha512-Qk7Pfu8BSarKGqILj4x7bCSZ1pjuAPZ+qmRwH5S7mDS91VSbVVsJSrW4qA+GPrro8t69gFYVMWb1Zc4yFmPiVg==}
@@ -2185,8 +2185,8 @@ packages:
   fast-levenshtein@2.0.6:
     resolution: {integrity: sha512-DCXu6Ifhqcks7TZKY3Hxp3y6qphY5SJZmrWMDrKcERSOXWQdMhU9Ig/PYrzyw/ul9jOIyh0N4M0tbC5hodg8dw==}
 
-  fast-xml-builder@1.2.0:
-    resolution: {integrity: sha512-00aAWieqff+ZJhsXA4g1g7M8k+7AYoMUUHF+/zFb5U6Uv/P0Vl4QZo84/IcufzYalLuEj9928bXN9PbbFzMF0Q==}
+  fast-xml-builder@1.2.1:
+    resolution: {integrity: sha512-tPb5TTWfgfVx5BNSi2xV0eLr89POeXXn0dXIsCJ9m1narrWxeIyx6je9d7Rce/3NyXLbvuQmLkxq+RuxMWejvw==}
 
   fast-xml-parser@5.9.3:
     resolution: {integrity: sha512-brCNCeScma/kqa54J4PIDriSSSLssRkuYaUCpvHJulGc3HGI/xxKUCTDcYkAdqJsyb//ydpbxecjC3hB9+tb/g==}
@@ -2452,8 +2452,8 @@ packages:
     resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==}
     engines: {node: '>=0.10.0'}
 
-  iconv-lite@0.7.2:
-    resolution: {integrity: sha512-im9DjEDQ55s9fL4EYzOAv0yMqmMBSZp6G0VvFyTMPKWxiSBHUj9NW/qqLmXUwXrrM7AvqSlTCfvqRb0cM8yYqw==}
+  iconv-lite@0.7.3:
+    resolution: {integrity: sha512-IKXpvIzjnC9XTAUbVBcMfGS0EPaIXtW6v+zr+RRp+hqULEpo0owZax6wyRwPOJbWbzjYspQwusTsfVr0ifh4uQ==}
     engines: {node: '>=0.10.0'}
 
   ieee754@1.2.1:
@@ -3103,8 +3103,8 @@ packages:
     resolution: {integrity: sha512-ak9Qy5Q7jYb2Wwcey5Fpvg2KoAc/ZIhLSLOSBmRmygPsGwkVVt0fZa0qrtMz+m6tJTAHfZQ8FnmB4MG4LWy7/w==}
     engines: {node: '>=8'}
 
-  path-expression-matcher@1.6.1:
-    resolution: {integrity: sha512-h7bxdzhHk8Knyc4Tj+jMaa7fEEoUJy7p1qtbVgkYg1Uhpe5Np5VuGXCRZnkZvU+Q42M1vStt0ifa3ueykRJPmQ==}
+  path-expression-matcher@1.6.2:
+    resolution: {integrity: sha512-enSlaiat05iasnzmgNxRj8reFdj3puY2QpNgP1aPIaVfT6nn9ICuPoFlKHk8EN22HcwewshO+mN2DGbkCEOtqQ==}
     engines: {node: '>=14.0.0'}
 
   path-key@3.1.1:
@@ -3227,8 +3227,8 @@ packages:
     resolution: {integrity: sha512-SAzp/O4Yh02jGdRc+uIrGoe87dkN/XtwxfZ4ZyafJHymd79ozp5VG5nyZ7ygqPM5+cpLDjjGnYFUkngonyDPOQ==}
     engines: {node: '>=14.0.0'}
 
-  protobufjs@7.6.4:
-    resolution: {integrity: sha512-RJJPTTpvFfHcWLkIa2JFWK4XvtSzS0yEWDmunqHXli1h3JlkbcQZXDZdcWxv+JK3Xsl5/UFDPZ0iGm7DAengYw==}
+  protobufjs@7.6.5:
+    resolution: {integrity: sha512-/FPD0nUc9jH6rfFjji9IBqOz4pcSE3CsT1m7Ep6Mdb0LxSUMj8hgl6GomOvZzpNpAqqGaXA0P3VSrZLFzIhQrw==}
     engines: {node: '>=12.0.0'}
 
   proxy-addr@2.0.7:
@@ -3448,6 +3448,11 @@ packages:
 
   semver@7.8.2:
     resolution: {integrity: sha512-c8jsqUZm3omBOI66G90z1Dyw5z622G8oLG+omfsHBJf3CWQTlOcwOjvOG6wtiNfW6anKm/eA39LMwMtMez2TiQ==}
+    engines: {node: '>=10'}
+    hasBin: true
+
+  semver@7.8.5:
+    resolution: {integrity: sha512-Y7/KDsb8LjooZpwaqGyulO6DQlksgCncchHGk+sZIY4SBvUocMBEFH5Ur1fI4dV+Jvl0w6cjvucaIi40puRioA==}
     engines: {node: '>=10'}
     hasBin: true
 
@@ -4080,9 +4085,9 @@ snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
 
-  '@almadar/core@10.20.0':
+  '@almadar/core@10.25.0':
     dependencies:
-      '@almadar/patterns': 2.97.0
+      '@almadar/patterns': 2.101.0
       zod: 3.25.76
 
   '@almadar/eslint-plugin@2.8.2(eslint@10.0.0(jiti@1.21.7))':
@@ -4092,24 +4097,24 @@ snapshots:
 
   '@almadar/evaluator@2.12.2':
     dependencies:
-      '@almadar/core': 10.20.0
-      '@almadar/std': 16.22.2
+      '@almadar/core': 10.25.0
+      '@almadar/std': 16.134.0
 
   '@almadar/logger@1.3.0':
     dependencies:
-      '@almadar/core': 10.20.0
+      '@almadar/core': 10.25.0
 
-  '@almadar/patterns@2.97.0':
+  '@almadar/patterns@2.101.0':
     dependencies:
-      '@almadar/core': 10.20.0
+      '@almadar/core': 10.25.0
 
-  '@almadar/runtime@6.21.0(express@5.2.1)':
+  '@almadar/runtime@6.30.0(express@5.2.1)':
     dependencies:
-      '@almadar/core': 10.20.0
+      '@almadar/core': 10.25.0
       '@almadar/evaluator': 2.12.2
       '@almadar/logger': 1.3.0
-      '@almadar/server': 2.14.2(express@5.2.1)
-      '@almadar/std': 16.22.2
+      '@almadar/server': 2.20.0(express@5.2.1)
+      '@almadar/std': 16.134.0
       '@faker-js/faker': 9.9.0
     optionalDependencies:
       express: 5.2.1
@@ -4120,9 +4125,9 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@almadar/server@2.14.2(express@5.2.1)':
+  '@almadar/server@2.20.0(express@5.2.1)':
     dependencies:
-      '@almadar/core': 10.20.0
+      '@almadar/core': 10.25.0
       '@almadar/logger': 1.3.0
       '@faker-js/faker': 9.9.0
       cors: 2.8.6
@@ -4138,15 +4143,15 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@almadar/std@16.22.2':
+  '@almadar/std@16.134.0':
     dependencies:
-      '@almadar/core': 10.20.0
+      '@almadar/core': 10.25.0
 
   '@almadar/syntax@1.4.0':
     dependencies:
-      '@almadar/core': 10.20.0
-      '@almadar/patterns': 2.97.0
-      '@almadar/std': 16.22.2
+      '@almadar/core': 10.25.0
+      '@almadar/patterns': 2.101.0
+      '@almadar/std': 16.134.0
 
   '@asamuzakjp/css-color@3.2.0':
     dependencies:
@@ -4675,7 +4680,7 @@ snapshots:
       fast-deep-equal: 3.1.3
       functional-red-black-tree: 1.0.1
       google-gax: 4.6.1
-      protobufjs: 7.6.4
+      protobufjs: 7.6.5
     transitivePeerDependencies:
       - encoding
       - supports-color
@@ -4724,7 +4729,7 @@ snapshots:
     dependencies:
       lodash.camelcase: 4.3.0
       long: 5.3.2
-      protobufjs: 7.6.4
+      protobufjs: 7.6.5
       yargs: 17.7.3
     optional: true
 
@@ -4732,7 +4737,7 @@ snapshots:
     dependencies:
       lodash.camelcase: 4.3.0
       long: 5.3.2
-      protobufjs: 7.6.4
+      protobufjs: 7.6.5
       yargs: 17.7.3
     optional: true
 
@@ -4832,7 +4837,7 @@ snapshots:
   '@protobufjs/pool@1.1.0':
     optional: true
 
-  '@protobufjs/utf8@1.1.1':
+  '@protobufjs/utf8@1.1.2':
     optional: true
 
   '@react-leaflet/core@2.1.0(leaflet@1.9.4)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
@@ -5467,7 +5472,7 @@ snapshots:
       content-type: 2.0.0
       debug: 4.4.3
       http-errors: 2.0.1
-      iconv-lite: 0.7.2
+      iconv-lite: 0.7.3
       on-finished: 2.4.1
       qs: 6.15.3
       raw-body: 3.0.2
@@ -6061,18 +6066,18 @@ snapshots:
 
   fast-levenshtein@2.0.6: {}
 
-  fast-xml-builder@1.2.0:
+  fast-xml-builder@1.2.1:
     dependencies:
-      path-expression-matcher: 1.6.1
+      path-expression-matcher: 1.6.2
       xml-naming: 0.1.0
     optional: true
 
   fast-xml-parser@5.9.3:
     dependencies:
       '@nodable/entities': 2.2.0
-      fast-xml-builder: 1.2.0
+      fast-xml-builder: 1.2.1
       is-unsafe: 1.0.1
-      path-expression-matcher: 1.6.1
+      path-expression-matcher: 1.6.2
       strnum: 2.4.1
       xml-naming: 0.1.0
     optional: true
@@ -6271,7 +6276,7 @@ snapshots:
       node-fetch: 2.7.0
       object-hash: 3.0.0
       proto3-json-serializer: 2.0.2
-      protobufjs: 7.6.4
+      protobufjs: 7.6.5
       retry-request: 7.0.2
       uuid: 9.0.1
     transitivePeerDependencies:
@@ -6459,7 +6464,7 @@ snapshots:
     dependencies:
       safer-buffer: 2.1.2
 
-  iconv-lite@0.7.2:
+  iconv-lite@0.7.3:
     dependencies:
       safer-buffer: 2.1.2
 
@@ -6675,7 +6680,7 @@ snapshots:
       lodash.isstring: 4.0.1
       lodash.once: 4.1.1
       ms: 2.1.3
-      semver: 7.8.2
+      semver: 7.8.5
 
   jwa@2.0.1:
     dependencies:
@@ -7313,7 +7318,7 @@ snapshots:
 
   path-exists@4.0.0: {}
 
-  path-expression-matcher@1.6.1:
+  path-expression-matcher@1.6.2:
     optional: true
 
   path-key@3.1.1: {}
@@ -7407,10 +7412,10 @@ snapshots:
 
   proto3-json-serializer@2.0.2:
     dependencies:
-      protobufjs: 7.6.4
+      protobufjs: 7.6.5
     optional: true
 
-  protobufjs@7.6.4:
+  protobufjs@7.6.5:
     dependencies:
       '@protobufjs/aspromise': 1.1.2
       '@protobufjs/base64': 1.1.2
@@ -7420,7 +7425,7 @@ snapshots:
       '@protobufjs/float': 1.0.2
       '@protobufjs/path': 1.1.2
       '@protobufjs/pool': 1.1.0
-      '@protobufjs/utf8': 1.1.1
+      '@protobufjs/utf8': 1.1.2
       '@types/node': 22.19.19
       long: 5.3.2
     optional: true
@@ -7451,7 +7456,7 @@ snapshots:
     dependencies:
       bytes: 3.1.2
       http-errors: 2.0.1
-      iconv-lite: 0.7.2
+      iconv-lite: 0.7.3
       unpipe: 1.0.0
 
   react-compiler-runtime@19.0.0-beta-af1b7da-20250417(react@19.2.7):
@@ -7718,6 +7723,8 @@ snapshots:
   semver@6.3.1: {}
 
   semver@7.8.2: {}
+
+  semver@7.8.5: {}
 
   send@1.2.1:
     dependencies:
