@@ -21,7 +21,10 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - run: pnpm install --frozen-lockfile
+      # No local pnpm-lock.yaml: this submodule is part of the root pnpm workspace
+      # (sharedWorkspaceLockfile: true) and is published standalone from its own repo.
+      # Resolve dependencies fresh so CI does not fail on a missing frozen lockfile.
+      - run: pnpm install --no-frozen-lockfile
 
       - name: Build
         run: pnpm build
