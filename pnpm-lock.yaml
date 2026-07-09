@@ -22,8 +22,8 @@ importers:
         specifier: ^1.9.0
         version: 1.9.0
       '@almadar/runtime':
-        specifier: ^6.31.0
-        version: 6.31.0(express@5.2.1)
+        specifier: ^6.32.0
+        version: 6.32.0(express@5.2.1)
       '@almadar/std':
         specifier: ^16.138.0
         version: 16.138.0
@@ -235,18 +235,18 @@ packages:
   '@almadar/logger@1.9.0':
     resolution: {integrity: sha512-863+UD4n3cP4tXReJFk6VpAc0mHzQxR6ehAroLKfy3ns09Yjs1v6y2oROiBMo0M18AmkwtitErNT+wqA5bj4sA==}
 
-  '@almadar/runtime@6.31.0':
-    resolution: {integrity: sha512-mUg7qrA8qMp7w067BDyxlL7FGoBIIHH7tH2+SgXeAKyRY96nD13AQyXWs0UrQHpsczcbhQ9ogFYTKVynVKX8cQ==}
+  '@almadar/runtime@6.32.0':
+    resolution: {integrity: sha512-X14SZ7XxpPV7qdb2eV0itzw8LGKnDWs2BJx43zSSiAKdLY5sqhi8UN2S6/+3GZ9cJ0L0W8AoQ1LvKr7mr7KjIw==}
     peerDependencies:
       express: ^5.0.0
     peerDependenciesMeta:
       express:
         optional: true
 
-  '@almadar/server@2.20.0':
-    resolution: {integrity: sha512-Ew3nKWG5RRrsHasH0JVMSeOArrAZIb4V3k5BnDguuyQj5LUOOLWYbVvYhMasfg4sMDu7phnBCnL4Iiv+oQWZkQ==}
+  '@almadar/server@2.24.0':
+    resolution: {integrity: sha512-PQaTD6JgiO0uOTvPneDVnbHkwYpoZAOejd0KJX0wdyQ/9UFe0o3nCjaXqSJqtzOj27V/RQEbQ54Uixvp9VK5Jw==}
     peerDependencies:
-      '@almadar-io/rabit': '>=0.60.3'
+      '@almadar-io/rabit': ^0.64.30
       express: ^5.0.0
     peerDependenciesMeta:
       '@almadar-io/rabit':
@@ -4091,12 +4091,12 @@ snapshots:
     dependencies:
       '@almadar/core': 10.28.0
 
-  '@almadar/runtime@6.31.0(express@5.2.1)':
+  '@almadar/runtime@6.32.0(express@5.2.1)':
     dependencies:
       '@almadar/core': 10.28.0
       '@almadar/evaluator': 2.29.0
       '@almadar/logger': 1.9.0
-      '@almadar/server': 2.20.0(express@5.2.1)
+      '@almadar/server': 2.24.0(express@5.2.1)
       '@almadar/std': 16.138.0
       '@faker-js/faker': 9.9.0
     optionalDependencies:
@@ -4108,7 +4108,7 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@almadar/server@2.20.0(express@5.2.1)':
+  '@almadar/server@2.24.0(express@5.2.1)':
     dependencies:
       '@almadar/core': 10.28.0
       '@almadar/logger': 1.9.0
