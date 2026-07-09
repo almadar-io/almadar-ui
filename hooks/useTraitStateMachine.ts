@@ -1694,31 +1694,27 @@ export function useTraitStateMachine(
     }, [traitBindings, eventBus, enqueueAndDrain]);
 
     // Fire the mount-time lifecycle transition (INIT / LOAD / $MOUNT) once per
-    // trait. The state machine has just been reset to its initial state (the
-    // `resetAll()` effect above runs first — effects fire in declaration order),
-    // so `canHandleEvent` tests whether the trait's INITIAL state declares the
-    // lifecycle transition. Single-state game boards (`initial: playing`,
-    // `INIT -> playing`) DO — their INIT effects (`set @entity.result "none"`,
-    // `set @entity.platforms @config.platforms`) seed `traitFieldStatesRef`
-    // before any user event, so the first guard read sees the seeded values.
-    // Two-state browse behaviors flipped by `prepareSchemaForPreview` to start
-    // in their data state typically DON'T handle INIT there, so they are left
-    // untouched; if their initial state does handle INIT, firing it is correct.
-    // Dispatched through `enqueueAndDrain` — the ONE event path — so INIT's
-    // effects run through `executeTransitionEffects` exactly like a user event.
+    // event kind. `StateMachineManager.sendEvent` dispatches the event to EVERY
+    // managed trait, so firing it per-trait would enqueue N lifecycle events for
+    // N traits — each processing all N traits. Behaviors with many inline render
+    // atoms (e.g. std-approval-request) then explode into N² self-loop transitions
+    // and freeze the page. Collect the set of lifecycle events handled by any
+    // trait in the current bindings and fire each once.
     useEffect(() => {
         const mgr = managerRef.current;
-        const inited = initedTraitsRef.current;
+        const eventsToFire = new Set<string>();
         for (const binding of traitBindings) {
             const traitName = binding.trait.name;
-            if (inited.has(traitName)) continue;
             const lifecycleEvent = LIFECYCLE_EVENTS.find((evt) =>
                 mgr.canHandleEvent(traitName, evt),
             );
-            if (lifecycleEvent === undefined) continue;
-            inited.add(traitName);
-            stateLog.debug('mount:fire-lifecycle', { traitName, event: lifecycleEvent });
-            enqueueAndDrain(lifecycleEvent, {});
+            if (lifecycleEvent !== undefined) {
+                eventsToFire.add(lifecycleEvent);
+            }
+        }
+        for (const event of eventsToFire) {
+            stateLog.debug('mount:fire-lifecycle', { event, traitCount: traitBindings.length });
+            enqueueAndDrain(event, {});
         }
         return () => {
             // New bindings (page nav) rebuild the manager + reset states, so a
