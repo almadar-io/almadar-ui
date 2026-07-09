@@ -176,7 +176,7 @@ export default defineConfig([
       'locales/index.ts',
     ],
     format: ['esm', 'cjs'],
-    dts: false,
+    dts: true,
     clean: true,
     sourcemap: false,
     splitting: false,

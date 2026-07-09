@@ -903,12 +903,6 @@ export function useTraitStateMachine(
             } as TraitConfig;
         }
 
-        if (traitName === 'Authority') {
-            console.log('[debug:Authority] declaredDefaults tiles count:', Array.isArray(declaredDefaults?.tiles) ? declaredDefaults.tiles.length : typeof declaredDefaults?.tiles);
-            console.log('[debug:Authority] bindingCtx.config.tiles count:', Array.isArray(bindingCtx.config?.tiles) ? bindingCtx.config.tiles.length : typeof bindingCtx.config?.tiles);
-            console.log('[debug:Authority] bindingCtx.config.tiles value:', JSON.stringify(bindingCtx.config?.tiles)?.slice(0, 200));
-        }
-
         const effectContext: EffectContext = {
             traitName,
             state: previousState,
@@ -933,11 +927,6 @@ export function useTraitStateMachine(
         void slotSource;
         try {
             await executor.executeAll(effects);
-
-            if (traitName === 'Authority') {
-                console.log('[debug:Authority] liveEntity.tiles after executeAll count:', Array.isArray(liveEntity?.tiles) ? liveEntity.tiles.length : typeof liveEntity?.tiles);
-                console.log('[debug:Authority] liveEntity.tiles after executeAll value:', JSON.stringify(liveEntity?.tiles)?.slice(0, 200));
-            }
 
             // Commit this trait's mutated view of a `[shared]` entity back to
             // the shared store — the ONLY point that notifies subscribers, so
