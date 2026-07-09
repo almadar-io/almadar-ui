@@ -102,6 +102,13 @@ const tickLog = createLogger('almadar:ui:tick-effects');
 // WARN; opt back in with setNamespaceLevel('almadar:ui:tick-effects', 'DEBUG').
 setNamespaceLevel('almadar:ui:tick-effects', 'WARN');
 
+// Shared-entity seed/map/execute diagnostic. Used when a board's render trait
+// reads an empty shared entity at frame 0 or writer/render traits disagree on
+// the store key. Off by default; enable with
+// setNamespaceLevel('almadar:ui:shared-entity', 'DEBUG').
+const sharedEntityLog = createLogger('almadar:ui:shared-entity');
+setNamespaceLevel('almadar:ui:shared-entity', 'WARN');
+
 // Synchronous effect operators a tick may run. `set` / `emit` /
 // `render-ui` (+ navigate/notify/log) resolve without awaiting; the
 // async ops (`fetch`/`persist`/`call-service`/`swap!`/`ref`/`deref`/
@@ -389,11 +396,11 @@ export interface UseTraitStateMachineOptions {
 function getBindingConfig(binding: ResolvedTraitBinding): TraitConfig | undefined {
     const raw = binding.config;
     const normalized = normalizeCallSiteConfigToValues(raw);
-    console.log('[debug:getBindingConfig]', binding.trait.name, 'raw keys=', raw ? Object.keys(raw) : 'undefined', 'has tiles=', raw ? 'tiles' in raw : false);
+    sharedEntityLog.debug('getBindingConfig', { traitName: binding.trait.name, rawKeys: raw ? Object.keys(raw) : undefined, hasTiles: raw ? 'tiles' in raw : false });
     return normalized;
 }
 
-function evalFieldDefault(value: unknown): unknown {
+function evalFieldDefault(value: FieldValue): FieldValue {
     if (!Array.isArray(value) || value.length === 0) return value;
     const head = value[0];
     const isSExpr =
@@ -401,7 +408,7 @@ function evalFieldDefault(value: unknown): unknown {
         (head.includes('/') || head === 'let' || head === 'if' || head === 'lambda');
     if (!isSExpr) return value;
     try {
-        return evaluate(value as SExpr, createMinimalContext({}, {}, ''));
+        return evaluate(value as SExpr, createMinimalContext({}, {}, '')) as FieldValue;
     } catch {
         return value;
     }
@@ -412,7 +419,7 @@ export function useTraitStateMachine(
     uiSlots: ReturnType<typeof useUISlots>,
     options?: UseTraitStateMachineOptions
 ): TraitStateMachineResult {
-    console.log('[debug:useTraitStateMachine] start, traitBindings count=', traitBindings.length, 'names=', traitBindings.map((b) => b.trait.name).join(','));
+    sharedEntityLog.debug('useTraitStateMachine start', { traitBindingsCount: traitBindings.length, traitNames: traitBindings.map((b) => b.trait.name) });
     const eventBus = useEventBus();
     const { entities } = useEntitySchema();
     // Mirrors OrbitalServerRuntime's setTraitConfig loop so the client-side
@@ -448,10 +455,15 @@ export function useTraitStateMachine(
                 // reads `OirField.default`.
                 let defaults: EntityRow | undefined;
                 for (const field of entityDef.fields) {
-                    if (field.default !== undefined) {
-                        const evaluated = evalFieldDefault(field.default) as FieldValue;
+                    if (field.default !== undefined && field.default !== null) {
+                        const evaluated = evalFieldDefault(field.default as FieldValue);
                         if (field.name === 'tiles') {
-                            console.log(`[debug:seed] ${linkedEntityName}.tiles seed type=`, typeof evaluated, Array.isArray(evaluated) ? 'len=' + (evaluated as unknown[])?.length : '', 'head=', Array.isArray(evaluated) && evaluated.length > 0 ? JSON.stringify((evaluated as unknown[])[0]).slice(0, 80) : 'n/a');
+                            sharedEntityLog.debug('seed tiles', {
+                                linkedEntityName,
+                                type: typeof evaluated,
+                                length: Array.isArray(evaluated) ? (evaluated as FieldValue[])?.length : undefined,
+                                head: Array.isArray(evaluated) && evaluated.length > 0 ? JSON.stringify((evaluated as FieldValue[])[0]).slice(0, 80) : undefined,
+                            });
                         }
                         (defaults ??= {})[field.name] = evaluated;
                     }
@@ -472,7 +484,12 @@ export function useTraitStateMachine(
     for (const group of sharedGroups.values()) {
         if (group.defaults) {
             sharedEntityStore.seed(group.storeKey, group.defaults);
-            console.log('[debug:shared-seed]', group.storeKey, 'writers=', group.writerBindings.map((b) => b.trait.name).join(','), 'renderers=', group.renderBindings.map((b) => b.trait.name).join(','), 'defaults.tiles=', Array.isArray(group.defaults.tiles) ? group.defaults.tiles.length : group.defaults.tiles);
+            sharedEntityLog.debug('shared-seed', {
+                storeKey: group.storeKey,
+                writers: group.writerBindings.map((b) => b.trait.name),
+                renderers: group.renderBindings.map((b) => b.trait.name),
+                tilesLength: Array.isArray(group.defaults.tiles) ? group.defaults.tiles.length : group.defaults.tiles,
+            });
         }
     }
 
@@ -490,7 +507,7 @@ export function useTraitStateMachine(
             for (const binding of group.renderBindings) map.set(binding.trait.name, group.storeKey);
         }
         sharedKeyByTraitNameRef.current = map;
-        console.log('[debug:shared-map]', Array.from(map.entries()).map(([k, v]) => `${k}->${v}`).join(','));
+        sharedEntityLog.debug('shared-map', { map: Array.from(map.entries()).map(([k, v]) => `${k}->${v}`) });
     }, [sharedGroups]);
 
     const manager = useMemo(() => {
@@ -809,7 +826,7 @@ export function useTraitStateMachine(
         // the per-trait `traitFieldStatesRef` object below.
         const sharedKey = sharedKeyByTraitNameRef.current.get(traitName);
         if (traitName === 'Hero' || traitName === 'Authority') {
-            console.log(`[debug:executeTransitionEffects] ${traitName} sharedKey=`, sharedKey, 'store tiles=', sharedKey ? (sharedEntityStore.getSnapshot(sharedKey).tiles as unknown[])?.length : 'n/a');
+            sharedEntityLog.debug('executeTransitionEffects sharedKey', { traitName, sharedKey, storeTilesLength: sharedKey ? (sharedEntityStore.getSnapshot(sharedKey).tiles as FieldValue[])?.length : undefined });
         }
 
         // ONE live `[runtime]`-entity store per trait (or, for a `[shared]`
@@ -856,11 +873,25 @@ export function useTraitStateMachine(
             slotSetter: {
                 addPattern: (slot, pattern, props) => {
                     if (traitName === 'Hero' && slot === 'main' && props && typeof props === 'object') {
-                        const canvasChild = Array.isArray((props as Record<string, unknown>).children) ? ((props as Record<string, unknown>).children as unknown[])[0] : null;
-                        const grandChildren = canvasChild && typeof canvasChild === 'object' ? (canvasChild as Record<string, unknown>).children : null;
+                        const canvasChild = Array.isArray(props.children) ? props.children[0] : null;
+                        const grandChildren =
+                            canvasChild && typeof canvasChild === 'object' && !Array.isArray(canvasChild)
+                                ? (canvasChild as Record<string, FieldValue | undefined>).children
+                                : null;
                         const firstLayer = Array.isArray(grandChildren) && grandChildren.length > 0 ? grandChildren[0] : null;
-                        const firstLayerItems = firstLayer && typeof firstLayer === 'object' ? (firstLayer as Record<string, unknown>).items : null;
-                        console.log(`[debug:render-ui] ${traitName} slot=${slot} canvasChild=`, canvasChild ? (canvasChild as Record<string, unknown>).type : 'none', 'firstLayerItems=', Array.isArray(firstLayerItems) ? firstLayerItems.length : firstLayerItems);
+                        const firstLayerItems =
+                            firstLayer && typeof firstLayer === 'object' && !Array.isArray(firstLayer)
+                                ? (firstLayer as Record<string, FieldValue | undefined>).items
+                                : null;
+                        sharedEntityLog.debug('render-ui main slot', {
+                            traitName,
+                            slot,
+                            canvasChildType:
+                                canvasChild && typeof canvasChild === 'object' && !Array.isArray(canvasChild)
+                                    ? (canvasChild as Record<string, FieldValue | undefined>).type
+                                    : 'none',
+                            firstLayerItemsLength: Array.isArray(firstLayerItems) ? firstLayerItems.length : firstLayerItems,
+                        });
                     }
                     const existing = pendingSlots.get(slot) || [];
                     existing.push({ pattern: pattern as PatternConfig, props: props || {} });
@@ -969,7 +1000,12 @@ export function useTraitStateMachine(
             } as TraitConfig;
         }
         if (traitName === 'Authority' || traitName === 'Hero') {
-            console.log(`[debug:executeTransitionEffects] ${traitName} config tiles type=`, typeof bindingCtx.config?.tiles, Array.isArray(bindingCtx.config?.tiles) ? 'len=' + (bindingCtx.config?.tiles as unknown[])?.length : '', 'keys=', bindingCtx.config ? Object.keys(bindingCtx.config) : 'none');
+            sharedEntityLog.debug('executeTransitionEffects config tiles', {
+                traitName,
+                tilesType: typeof bindingCtx.config?.tiles,
+                tilesLength: Array.isArray(bindingCtx.config?.tiles) ? (bindingCtx.config?.tiles as FieldValue[])?.length : undefined,
+                configKeys: bindingCtx.config ? Object.keys(bindingCtx.config) : undefined,
+            });
         }
 
         const effectContext: EffectContext = {
@@ -992,7 +1028,12 @@ export function useTraitStateMachine(
         };
 
         if (traitName === 'Hero') {
-            console.log(`[debug:executeTransitionEffects] ${traitName} effects count=${effects.length} hasRenderUI=${typeof handlers.renderUI === 'function'} effect heads=${effects.map((e) => Array.isArray(e) ? String(e[0]) : '??').join(',')}`);
+            sharedEntityLog.debug('executeTransitionEffects effects summary', {
+                traitName,
+                effectsCount: effects.length,
+                hasRenderUI: typeof handlers.renderUI === 'function',
+                effectHeads: effects.map((e) => Array.isArray(e) ? String(e[0]) : '??'),
+            });
         }
         const executor = new EffectExecutor({ handlers: trackingHandlers, bindings: bindingCtx, context: effectContext });
 
@@ -1000,7 +1041,12 @@ export function useTraitStateMachine(
         try {
             await executor.executeAll(effects);
             if (traitName === 'Authority' || traitName === 'Hero') {
-                console.log(`[debug:executeTransitionEffects] ${traitName} after executeAll liveEntity.tiles type=`, typeof liveEntity.tiles, Array.isArray(liveEntity.tiles) ? 'len=' + (liveEntity.tiles as unknown[])?.length : '', 'firstTilePos=', Array.isArray(liveEntity.tiles) && liveEntity.tiles.length > 0 ? JSON.stringify((liveEntity.tiles as unknown[])[0]).slice(0, 120) : 'n/a');
+                sharedEntityLog.debug('executeTransitionEffects after executeAll', {
+                    traitName,
+                    tilesType: typeof liveEntity.tiles,
+                    tilesLength: Array.isArray(liveEntity.tiles) ? (liveEntity.tiles as FieldValue[])?.length : undefined,
+                    firstTilePos: Array.isArray(liveEntity.tiles) && liveEntity.tiles.length > 0 ? JSON.stringify((liveEntity.tiles as FieldValue[])[0]).slice(0, 120) : undefined,
+                });
             }
 
             // Commit this trait's mutated view of a `[shared]` entity back to

@@ -11,6 +11,7 @@
  */
 
 import { createLogger } from '@almadar/logger';
+import type { DrawableNode } from './drawable/paintDispatch';
 import type {
   AssetLoadStatus,
   BridgeHealth,
@@ -556,7 +557,7 @@ export function bindCanvasCapture(
  * the painter without re-deriving them from state.
  */
 export function bindLastDrawables(
-  getDrawables: () => unknown[] | null,
+  getDrawables: () => DrawableNode[] | null,
 ): void {
   if (typeof window === "undefined") return;
 

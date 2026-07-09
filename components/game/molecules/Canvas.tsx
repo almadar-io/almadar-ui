@@ -26,6 +26,7 @@
 
 import * as React from 'react';
 import { Suspense, lazy } from 'react';
+import { createLogger } from '@almadar/logger';
 import type { Asset, AssetUrl, Camera, EventEmit } from '@almadar/core';
 import type { DrawableNode } from '../../../lib/drawable/paintDispatch';
 import { Canvas2D, type CameraMode as Canvas2DCameraMode, type Projection } from './Canvas2D';
@@ -91,6 +92,8 @@ export interface CanvasProps {
     keyUpMap?: Record<string, string>;
 }
 
+const canvasLog = createLogger('almadar:ui:game-canvas');
+
 /** 2D `camera` string from the neutral Camera mode: only `follow` tracks; the fixed
  *  framings (isometric/top-down) become the 2D `fixed` camera; `chase`/`perspective`
  *  (3D-native) fall back to `pan-zoom` in 2D. */
@@ -132,7 +135,7 @@ export function Canvas({
     keyMap,
     keyUpMap,
 }: CanvasProps): React.JSX.Element {
-    console.error('[debug:Canvas] ' + JSON.stringify({ mode, drawablesCount: drawables?.length, projection, camera }));
+    canvasLog.debug('Canvas render', { mode, drawablesCount: drawables?.length, projection, camera: camera ? JSON.stringify(camera) : undefined });
     const zoom = camera?.zoom;
 
     if (mode === '3d') {

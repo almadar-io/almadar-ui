@@ -30,6 +30,7 @@
 
 import * as React from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createLogger } from '@almadar/logger';
 import type { Asset, AssetUrl, EventEmit, ScenePos } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -48,6 +49,9 @@ import { bindCanvasCapture, bindLastDrawables } from '../../../lib/verificationR
 import { createWebPainter } from '../../../lib/webPainter2d';
 import { create2DProjector, type Projection2D } from '../../../lib/drawable/projector';
 import { paintDrawable, type DrawableNode } from '../../../lib/drawable/paintDispatch';
+import type { DrawSpriteLayerProps } from './DrawSpriteLayer';
+import type { DrawShapeLayerProps } from './DrawShapeLayer';
+import type { DrawTextLayerProps } from './DrawTextLayer';
 import { collectDrawnItems, buildHitIndex } from '../../../lib/drawable/hitTest';
 import type { DrawContext } from '../../../lib/drawable/contract';
 import {
@@ -59,6 +63,8 @@ import {
     MINIMAP_TERRAIN_COLORS,
 } from '../../../lib/isometric';
 import type { UiError } from '../../core/atoms/types';
+
+const canvas2DLog = createLogger('almadar:ui:game-canvas');
 
 // =============================================================================
 // Props
@@ -190,14 +196,26 @@ export function Canvas2D({
     cameraPos,
     bgColor,
 }: Canvas2DProps): React.JSX.Element {
-    const layerSummaries = drawables?.map((d: unknown) => {
-        if (!d || typeof d !== 'object') return d;
-        const rec = d as Record<string, unknown>;
-        return { type: rec.type, itemsLen: Array.isArray(rec.items) ? rec.items.length : undefined, firstItem: Array.isArray(rec.items) ? rec.items[0] : undefined };
-    });
-    console.error('[debug:Canvas2D] ' + JSON.stringify({ projection, scale, cameraMode: camera, cameraPos, drawablesCount: drawables?.length, layerSummaries }));
-    const backgroundImage = normalizeBackdrop(backgroundImageRaw);
     const instanceId = useMemo(() => Math.random().toString(36).slice(2, 8), []);
+    type DrawableLayer = DrawSpriteLayerProps | DrawShapeLayerProps | DrawTextLayerProps;
+    interface DrawableLayerSummary {
+        type: string;
+        itemsLen?: number;
+        firstItem?: DrawableNode;
+    }
+    function isDrawableLayer(node: DrawableNode): node is DrawableLayer {
+        return (
+            node.type === 'draw-sprite-layer' ||
+            node.type === 'draw-shape-layer' ||
+            node.type === 'draw-text-layer'
+        );
+    }
+    const layerSummaries = drawables?.map((d): DrawableLayerSummary => {
+        if (!isDrawableLayer(d)) return { type: d.type };
+        return { type: d.type, itemsLen: d.items.length, firstItem: d.items[0] };
+    });
+    canvas2DLog.debug('Canvas2D render', { instanceId, projection, scale, cameraMode: camera, cameraPos: cameraPos ? JSON.stringify(cameraPos) : undefined, drawablesCount: drawables?.length, layerSummaries: layerSummaries ? JSON.stringify(layerSummaries) : undefined });
+    const backgroundImage = normalizeBackdrop(backgroundImageRaw);
     const isFree = projection === 'free';
     // 'flat'/'free'/'side' are square-pitch, world-pixel-direct; iso/hex keep diamond metrics.
     const squareGrid = projection === 'flat' || isFree || projection === 'side';
@@ -376,7 +394,7 @@ export function Canvas2D({
         }
         const containerRect = containerRef.current?.getBoundingClientRect();
         const canvasRect = canvas.getBoundingClientRect();
-        console.error('[debug:Canvas2D:draw:' + instanceId + '] ' + JSON.stringify({ viewportSize, baseOffsetX, cam: { x: cam.x, y: cam.y, zoom: cam.zoom }, cameraPos, containerRect: containerRect ? { width: containerRect.width, height: containerRect.height } : null, canvasRect: canvasRect ? { width: canvasRect.width, height: canvasRect.height } : null }));
+        canvas2DLog.debug('Canvas2D draw', { instanceId, viewportSize, baseOffsetX, cam: { x: cam.x, y: cam.y, zoom: cam.zoom }, cameraPos: cameraPos ? JSON.stringify(cameraPos) : undefined, containerRect: containerRect ? { width: containerRect.width, height: containerRect.height } : null, canvasRect: canvasRect ? { width: canvasRect.width, height: canvasRect.height } : null });
         const painter = createWebPainter(ctx, bumpAtlas);
         painter.save();
         painter.translate(viewportSize.width / 2, viewportSize.height / 2);

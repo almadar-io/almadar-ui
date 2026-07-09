@@ -264,6 +264,7 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
       hadPrev: prevTraitsRef.current !== undefined,
     }));
     if (refChanged) {
+      navLog.info('page:traits-reset', { traitsCount: Array.isArray(traits) ? traits.length : -1 });
       uiSlots.clearAll();
       initSentRef.current = false;
     }
