@@ -26,7 +26,7 @@ import type {
   EntityData,
   JsonObject,
 } from '@almadar/core';
-import type { AnyPatternConfig } from '@almadar/patterns';
+import type { AnyPatternConfig } from '@almadar/core/patterns';
 import type {
   PreviewNodeData,
   EventEdgeData,

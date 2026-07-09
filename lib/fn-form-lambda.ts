@@ -12,7 +12,7 @@
 
 import React from "react";
 import type { EntityRow, EventPayloadValue, RenderItemLambda } from "@almadar/core";
-import type { AnyPatternConfig } from "@almadar/patterns";
+import type { AnyPatternConfig } from "@almadar/core/patterns";
 import type { SlotProps, SlotPropValue } from "../hooks/useUISlots";
 import { createLogger } from '@almadar/logger';
 

@@ -11,14 +11,14 @@
  */
 
 import type { FieldValue } from '@almadar/core';
-import type { PatternPropDef, AnyPatternConfig } from '@almadar/patterns';
+import type { PatternPropDef, AnyPatternConfig } from '@almadar/core/patterns';
 import type { PatternConfig, MappedPattern } from '../types/renderer-types';
 import { createLogger } from '@almadar/logger';
 
 const log = createLogger('almadar:ui:pattern-resolver');
 
 // ============================================================================
-// Component Mapping (imported from orbital-shared/patterns/)
+// Component Mapping (imported from @almadar/core/patterns)
 // ============================================================================
 
 /**

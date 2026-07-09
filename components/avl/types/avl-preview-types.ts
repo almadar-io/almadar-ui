@@ -9,7 +9,7 @@
  */
 
 import type { Expression, EntityData, OrbitalSchema, UISlot } from '@almadar/core';
-import type { AnyPatternConfig } from '@almadar/patterns';
+import type { AnyPatternConfig } from '@almadar/core/patterns';
 
 // ---------------------------------------------------------------------------
 // View levels

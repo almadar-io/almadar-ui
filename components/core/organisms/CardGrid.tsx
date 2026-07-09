@@ -11,7 +11,7 @@
  */
 import React from 'react';
 import type { EventKey, EventPayload, FieldValue } from "@almadar/core";
-import type { ItemActionPayload } from '@almadar/patterns';
+import type { ItemActionPayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
 import { getNestedValue } from '../../../lib/getNestedValue';
 import { useEventBus } from '../../../hooks/useEventBus';

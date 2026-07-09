@@ -14,7 +14,7 @@
  */
 import React from 'react';
 import type { EntityRow, EntityWith, FieldValue, EventKey } from '@almadar/core';
-import type { ItemActionPayload, SelectionChangePayload } from '@almadar/patterns';
+import type { ItemActionPayload, SelectionChangePayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
 import { createLogger } from '@almadar/logger';
 

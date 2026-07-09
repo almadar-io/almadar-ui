@@ -18,7 +18,7 @@ import React, { Suspense, createContext, useContext, useEffect, useState } from 
 import { useEntitySchemaOptional } from "../../../providers/EntitySchemaContext";
 import { TraitScopeProvider } from "../../../providers/TraitScopeProvider";
 import type { EntityRow, EventPayload, EventPayloadValue, RenderItemLambda, ResolvedEntity } from "@almadar/core";
-import type { AnyPatternConfig } from "@almadar/patterns";
+import type { AnyPatternConfig } from "@almadar/core/patterns";
 import { createPortal } from "react-dom";
 import {
   useUISlots,
@@ -42,13 +42,13 @@ import { createLogger } from '@almadar/logger';
 const scopeWrapLog = createLogger("almadar:ui:scope-wrap");
 import { Skeleton, type SkeletonVariant } from "../molecules/Skeleton";
 
-// Shared renderer imports (synced from orbital-shared/design-system/renderer)
+// Shared renderer imports (synced from @almadar/core/patterns renderer)
 import { isPortalSlot, SLOT_DEFINITIONS } from "../../../renderer/index";
-import { getPatternDefinition, isDrawHostPattern } from "@almadar/patterns";
+import { getPatternDefinition, isDrawHostPattern } from "@almadar/core/patterns";
 import { wrapCallbackForEvent } from "../../../lib/wrapCallbackForEvent";
 
 // Pattern registry — single source of truth for pattern → component name resolution
-import { getComponentForPattern as getComponentName } from "@almadar/patterns";
+import { getComponentForPattern as getComponentName } from "@almadar/core/patterns";
 
 // Per-trait composition primitive — `@trait.X` bindings embedded in
 // pattern children resolve to this component at render time. See
@@ -120,7 +120,7 @@ function getSlotFallback(slot: UISlot, config: SuspenseConfig): React.ReactNode 
   return <Skeleton variant={variant} />;
 }
 
-// Component registry — auto-generated from @almadar/patterns component-mapping.json
+// Component registry — auto-generated from @almadar/core/patterns component-mapping.json
 // Regenerate: npx tsx tools/almadar-pattern-sync/generate-component-registry.ts
 import { COMPONENT_REGISTRY } from "./component-registry.generated";
 
@@ -133,7 +133,7 @@ import type { UiError } from '../atoms/types';
 
 /**
  * Get the React component for a pattern type.
- * Uses @almadar/patterns component-mapping.json (auto-generated, single source of truth)
+ * Uses @almadar/core/patterns component-mapping.json (auto-generated, single source of truth)
  * to resolve pattern type → component name, then looks up in COMPONENT_REGISTRY.
  *
  * NOTE: getComponentName() returns the full mapping entry object
@@ -1160,7 +1160,7 @@ function isPatternConfig(
   // wrapped as <SlotContentRenderer> elements, destroying the data the consuming
   // component reads (the platforms-never-render bug).
   //
-  // Use getComponentName (@almadar/patterns, static JSON-backed) instead of the
+  // Use getComponentName (@almadar/core/patterns, static JSON-backed) instead of the
   // local isKnownPattern (pattern-resolver.ts, requires initializePatterns() to
   // have been called). The local resolver starts with componentMapping={} and
   // returns false for all types until the consumer calls initializePatterns(),

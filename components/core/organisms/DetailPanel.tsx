@@ -10,7 +10,7 @@
 
 import React, { useCallback, Suspense, lazy } from "react";
 import type { EventPayload, EntityRow, FieldValue } from "@almadar/core";
-import type { ItemActionPayload } from "@almadar/patterns";
+import type { ItemActionPayload } from "@almadar/core/patterns";
 import {
   Calendar,
   Tag,

@@ -15,7 +15,7 @@
 
 import React from "react";
 import type { EntityRow, EventKey, EventPayload, FieldValue, JsonObject } from "@almadar/core";
-import type { FormSubmitPayload } from "@almadar/patterns";
+import type { FormSubmitPayload } from "@almadar/core/patterns";
 import { cn } from "../../../lib/cn";
 import { Input } from "../atoms/Input";
 import { Button } from "../atoms/Button";

@@ -1,4 +1,4 @@
-import type { PatternCallbackArg } from '@almadar/patterns';
+import type { PatternCallbackArg } from '@almadar/core/patterns';
 import type { EventPayload, EventPayloadValue } from '@almadar/core';
 
 /**

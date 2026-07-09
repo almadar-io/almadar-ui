@@ -21,7 +21,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import type { BusEventSource, EntityRow, EventPayload, OrbitalSchema, SExpr } from '@almadar/core';
-import type { AnyPatternConfig } from '@almadar/patterns';
+import type { AnyPatternConfig } from '@almadar/core/patterns';
 import { useEventBus } from '../hooks/useEventBus';
 import { createLogger } from '@almadar/logger';
 

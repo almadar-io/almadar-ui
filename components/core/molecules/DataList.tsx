@@ -13,7 +13,7 @@
  */
 import React from 'react';
 import type { EntityRow, EventKey, FieldValue } from "@almadar/core";
-import type { ItemActionPayload } from '@almadar/patterns';
+import type { ItemActionPayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
 import { createLogger } from '@almadar/logger';
 
@@ -82,7 +82,7 @@ export interface DataListProps extends DataDndProps {
   entity: readonly EntityRow[];
   /**
    * Field definitions for rendering each row. The pattern contract in
-   * `@almadar/patterns` documents `columns` as the wire-format alias the
+   * `@almadar/core/patterns` documents `columns` as the wire-format alias the
    * compiler emits — both names resolve to the same shape here. Pass either.
    */
   fields?: readonly DataListField[];

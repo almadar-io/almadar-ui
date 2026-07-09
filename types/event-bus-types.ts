@@ -26,7 +26,7 @@ export type EventListener = BusEventListener;
  * `emit` accepts `EventPayload` from `@almadar/core` — the canonical
  * object shape (index signature over `EventPayloadValue`) that the bus
  * envelope stores and listeners consume. Pattern-specific payload types
- * from `@almadar/patterns` (`ItemActionPayload`, `SelectionChangePayload`,
+ * from `@almadar/core/patterns` (`ItemActionPayload`, `SelectionChangePayload`,
  * `FormSubmitPayload`, ...) are structural subtypes of `EventPayload`,
  * so components can pass them in without casts.
  */

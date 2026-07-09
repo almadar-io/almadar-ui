@@ -1,7 +1,7 @@
 /**
  * Pattern Resolver Initialization
  *
- * Loads pattern registry and component mapping from orbital-shared/patterns/
+ * Loads pattern registry and component mapping from @almadar/core/patterns
  * and initializes the pattern resolver at app startup.
  *
  * @packageDocumentation
@@ -10,8 +10,8 @@
 import { initializePatternResolver } from './pattern-resolver';
 import { createLogger } from '@almadar/logger';
 
-// Import patterns data from @almadar/patterns (JSON is inlined in the package bundle)
-import { componentMapping as componentMappingJson, patternsRegistry as registryJson } from '@almadar/patterns';
+// Import patterns data from @almadar/core/patterns (JSON is inlined in the package bundle)
+import { componentMapping as componentMappingJson, patternsRegistry as registryJson } from '@almadar/core/patterns';
 
 const log = createLogger('almadar:ui:pattern-resolver');
 

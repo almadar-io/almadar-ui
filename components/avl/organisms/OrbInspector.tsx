@@ -34,7 +34,7 @@ import type {
   Transition,
 } from '@almadar/core';
 import { FieldTypeSchema } from '@almadar/core';
-import type { PatternPropDef } from '@almadar/patterns';
+import type { PatternPropDef } from '@almadar/core/patterns';
 import { Box } from '../../core/atoms/Box';
 import { Button } from '../../core/atoms/Button';
 import { Typography } from '../../core/atoms/Typography';
@@ -54,7 +54,7 @@ import {
 } from '../types/avl-atom-types';
 import type { PreviewNodeData } from '../types/avl-preview-types';
 import { PatternSelectionContext } from '../molecules/OrbPreviewNode';
-import { getPatternDefinition, isEntityAwarePattern } from '@almadar/patterns';
+import { getPatternDefinition, isEntityAwarePattern } from '@almadar/core/patterns';
 import { createLogger } from '@almadar/logger';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -855,7 +855,7 @@ OrbInspector.displayName = 'OrbInspector';
 
 /**
  * Stopgap token contract per pattern. Phase-2 leftover until each
- * `@almadar/patterns` PatternEntry grows a real `tokenContract` field
+ * `@almadar/core/patterns` PatternEntry grows a real `tokenContract` field
  * sourced from @almadar/ui component analysis. Patterns missing here
  * render an empty list with a "no contract declared" note so the gap is
  * visible. Read by the Styles tab to show which CSS variables a pattern
