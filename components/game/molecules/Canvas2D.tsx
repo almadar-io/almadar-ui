@@ -190,7 +190,14 @@ export function Canvas2D({
     cameraPos,
     bgColor,
 }: Canvas2DProps): React.JSX.Element {
+    const layerSummaries = drawables?.map((d: unknown) => {
+        if (!d || typeof d !== 'object') return d;
+        const rec = d as Record<string, unknown>;
+        return { type: rec.type, itemsLen: Array.isArray(rec.items) ? rec.items.length : undefined, firstItem: Array.isArray(rec.items) ? rec.items[0] : undefined };
+    });
+    console.error('[debug:Canvas2D] ' + JSON.stringify({ projection, scale, cameraMode: camera, cameraPos, drawablesCount: drawables?.length, layerSummaries }));
     const backgroundImage = normalizeBackdrop(backgroundImageRaw);
+    const instanceId = useMemo(() => Math.random().toString(36).slice(2, 8), []);
     const isFree = projection === 'free';
     // 'flat'/'free'/'side' are square-pitch, world-pixel-direct; iso/hex keep diamond metrics.
     const squareGrid = projection === 'flat' || isFree || projection === 'side';
@@ -300,7 +307,7 @@ export function Canvas2D({
         zoomAtPoint,
         screenToWorld,
         lerpToTarget,
-    } = useCamera();
+    } = useCamera({ zoom: scale });
 
     // Re-render when a lazily-fetched atlas JSON lands (see atlasSlice.getAtlas).
     const [atlasVersion, setAtlasVersion] = useState(0);
@@ -367,6 +374,9 @@ export function Canvas2D({
             cam.x = p.x - viewportSize.width / 2;
             cam.y = p.y - viewportSize.height / 2;
         }
+        const containerRect = containerRef.current?.getBoundingClientRect();
+        const canvasRect = canvas.getBoundingClientRect();
+        console.error('[debug:Canvas2D:draw:' + instanceId + '] ' + JSON.stringify({ viewportSize, baseOffsetX, cam: { x: cam.x, y: cam.y, zoom: cam.zoom }, cameraPos, containerRect: containerRect ? { width: containerRect.width, height: containerRect.height } : null, canvasRect: canvasRect ? { width: canvasRect.width, height: canvasRect.height } : null }));
         const painter = createWebPainter(ctx, bumpAtlas);
         painter.save();
         painter.translate(viewportSize.width / 2, viewportSize.height / 2);

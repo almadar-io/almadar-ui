@@ -30,6 +30,7 @@ import {
     createContextFromBindings,
     createServerEffectHandlers,
     collectDeclaredConfigDefaults,
+    normalizeCallSiteConfigToValues,
     createTickScheduler,
     isValidCronExpression,
     parseDurationString,
@@ -40,7 +41,7 @@ import {
     type EffectContext,
     type CreateServerEffectHandlersOptions,
 } from '@almadar/runtime';
-import { evaluateGuard, executeEffects, createMinimalContext, type EvaluationContext } from '@almadar/evaluator';
+import { evaluate, evaluateGuard, executeEffects, createMinimalContext, type EvaluationContext } from '@almadar/evaluator';
 import { createClientEffectHandlers } from '../lib/createClientEffectHandlers';
 import type { ResolvedTraitBinding, ResolvedTraitListener } from '../types/runtime-types';
 import type { SlotPatternEntry, SlotSource } from '../types/slot-types';
@@ -201,6 +202,16 @@ export function effectsCallOp(effects: SExpr[], ops: ReadonlySet<string>): boole
     return false;
 }
 
+/** Classify one tick's effects for shared-entity scheduling. */
+export function classifySharedTick(tick: ResolvedTraitTick): 'writer' | 'renderer' | 'both' | 'neither' {
+    const writes = effectsCallOp(tick.effects, SHARED_ENTITY_WRITE_OPS);
+    const renders = effectsCallOp(tick.effects, SHARED_ENTITY_RENDER_OPS);
+    if (writes && renders) return 'both';
+    if (writes) return 'writer';
+    if (renders) return 'renderer';
+    return 'neither';
+}
+
 /** One shared entity's bound traits, classified by what their effects do. */
 interface SharedEntityGroup {
     /** `${orbital}::${entityName}` — this group's key in the shared-entity store. */
@@ -250,7 +261,7 @@ export function createSharedEntityWriter(
         const writes: EntityFieldWrite[] = [];
         const ctx: EvaluationContext = createMinimalContext(scratchEntity, {}, currentState);
         const declaredDefaults = collectDeclaredConfigDefaults(binding.trait);
-        const callSiteConfig = binding.config as TraitConfig | undefined;
+        const callSiteConfig = getBindingConfig(binding);
         if (declaredDefaults || callSiteConfig) {
             ctx.config = { ...(declaredDefaults ?? {}), ...(callSiteConfig ?? {}) } as TraitConfig;
         }
@@ -360,11 +371,48 @@ export interface UseTraitStateMachineOptions {
  * codegen, where atom views are inlined as JSX inside the layout's
  * pattern rather than each writing a shared slot.
  */
+
+/**
+ * Evaluate a shared-entity field default when it is authored as a .lolo
+ * S-expression (e.g. `(array/flatten (array/map ...))`). The compiled path
+ * evaluates these defaults once before seeding the shared entity; the runtime
+ * path must do the same so render traits read concrete values at frame 0.
+ */
+/**
+ * Return the effective call-site config values for a binding.
+ * The raw `.orb` call-site config stores annotated field declarations
+ * (`{ type, default, label, ... }`); the runtime binding context expects
+ * plain values, so we extract `.default` from declarations and pass plain
+ * values through. Declared defaults are already plain values from
+ * `collectDeclaredConfigDefaults`.
+ */
+function getBindingConfig(binding: ResolvedTraitBinding): TraitConfig | undefined {
+    const raw = binding.config;
+    const normalized = normalizeCallSiteConfigToValues(raw);
+    console.log('[debug:getBindingConfig]', binding.trait.name, 'raw keys=', raw ? Object.keys(raw) : 'undefined', 'has tiles=', raw ? 'tiles' in raw : false);
+    return normalized;
+}
+
+function evalFieldDefault(value: unknown): unknown {
+    if (!Array.isArray(value) || value.length === 0) return value;
+    const head = value[0];
+    const isSExpr =
+        typeof head === 'string' &&
+        (head.includes('/') || head === 'let' || head === 'if' || head === 'lambda');
+    if (!isSExpr) return value;
+    try {
+        return evaluate(value as SExpr, createMinimalContext({}, {}, ''));
+    } catch {
+        return value;
+    }
+}
+
 export function useTraitStateMachine(
     traitBindings: ResolvedTraitBinding[],
     uiSlots: ReturnType<typeof useUISlots>,
     options?: UseTraitStateMachineOptions
 ): TraitStateMachineResult {
+    console.log('[debug:useTraitStateMachine] start, traitBindings count=', traitBindings.length, 'names=', traitBindings.map((b) => b.trait.name).join(','));
     const eventBus = useEventBus();
     const { entities } = useEntitySchema();
     // Mirrors OrbitalServerRuntime's setTraitConfig loop so the client-side
@@ -401,7 +449,11 @@ export function useTraitStateMachine(
                 let defaults: EntityRow | undefined;
                 for (const field of entityDef.fields) {
                     if (field.default !== undefined) {
-                        (defaults ??= {})[field.name] = field.default as FieldValue;
+                        const evaluated = evalFieldDefault(field.default) as FieldValue;
+                        if (field.name === 'tiles') {
+                            console.log(`[debug:seed] ${linkedEntityName}.tiles seed type=`, typeof evaluated, Array.isArray(evaluated) ? 'len=' + (evaluated as unknown[])?.length : '', 'head=', Array.isArray(evaluated) && evaluated.length > 0 ? JSON.stringify((evaluated as unknown[])[0]).slice(0, 80) : 'n/a');
+                        }
+                        (defaults ??= {})[field.name] = evaluated;
                     }
                 }
                 group = { storeKey, entityName: linkedEntityName, writerBindings: [], renderBindings: [], defaults };
@@ -418,7 +470,10 @@ export function useTraitStateMachine(
     // render trait reads those defaults at frame 0 (before any writer tick),
     // matching the compiled path. Idempotent + no-notify — safe during render.
     for (const group of sharedGroups.values()) {
-        if (group.defaults) sharedEntityStore.seed(group.storeKey, group.defaults);
+        if (group.defaults) {
+            sharedEntityStore.seed(group.storeKey, group.defaults);
+            console.log('[debug:shared-seed]', group.storeKey, 'writers=', group.writerBindings.map((b) => b.trait.name).join(','), 'renderers=', group.renderBindings.map((b) => b.trait.name).join(','), 'defaults.tiles=', Array.isArray(group.defaults.tiles) ? group.defaults.tiles.length : group.defaults.tiles);
+        }
     }
 
     // Trait name -> shared-entity store key. Consulted by the ONE execution
@@ -435,13 +490,14 @@ export function useTraitStateMachine(
             for (const binding of group.renderBindings) map.set(binding.trait.name, group.storeKey);
         }
         sharedKeyByTraitNameRef.current = map;
+        console.log('[debug:shared-map]', Array.from(map.entries()).map(([k, v]) => `${k}->${v}`).join(','));
     }, [sharedGroups]);
 
     const manager = useMemo(() => {
         const traitDefs = traitBindings.map(toTraitDefinition);
         const m = new StateMachineManager(traitDefs);
         for (const binding of traitBindings) {
-            const cfg = binding.config ?? traitConfigsByName?.[binding.trait.name];
+            const cfg = getBindingConfig(binding) ?? traitConfigsByName?.[binding.trait.name];
             if (cfg !== undefined) {
                 m.setTraitConfig(binding.trait.name, cfg);
             }
@@ -752,6 +808,9 @@ export function useTraitStateMachine(
         // Non-shared traits are byte-for-byte unchanged: `liveEntity` is still
         // the per-trait `traitFieldStatesRef` object below.
         const sharedKey = sharedKeyByTraitNameRef.current.get(traitName);
+        if (traitName === 'Hero' || traitName === 'Authority') {
+            console.log(`[debug:executeTransitionEffects] ${traitName} sharedKey=`, sharedKey, 'store tiles=', sharedKey ? (sharedEntityStore.getSnapshot(sharedKey).tiles as unknown[])?.length : 'n/a');
+        }
 
         // ONE live `[runtime]`-entity store per trait (or, for a `[shared]`
         // entity, one live row per entity shared across its bound traits).
@@ -796,6 +855,13 @@ export function useTraitStateMachine(
             eventBus,
             slotSetter: {
                 addPattern: (slot, pattern, props) => {
+                    if (traitName === 'Hero' && slot === 'main' && props && typeof props === 'object') {
+                        const canvasChild = Array.isArray((props as Record<string, unknown>).children) ? ((props as Record<string, unknown>).children as unknown[])[0] : null;
+                        const grandChildren = canvasChild && typeof canvasChild === 'object' ? (canvasChild as Record<string, unknown>).children : null;
+                        const firstLayer = Array.isArray(grandChildren) && grandChildren.length > 0 ? grandChildren[0] : null;
+                        const firstLayerItems = firstLayer && typeof firstLayer === 'object' ? (firstLayer as Record<string, unknown>).items : null;
+                        console.log(`[debug:render-ui] ${traitName} slot=${slot} canvasChild=`, canvasChild ? (canvasChild as Record<string, unknown>).type : 'none', 'firstLayerItems=', Array.isArray(firstLayerItems) ? firstLayerItems.length : firstLayerItems);
+                    }
                     const existing = pendingSlots.get(slot) || [];
                     existing.push({ pattern: pattern as PatternConfig, props: props || {} });
                     pendingSlots.set(slot, existing);
@@ -834,7 +900,7 @@ export function useTraitStateMachine(
                 state: previousState,
             };
             const sharedDeclared = collectDeclaredConfigDefaults(binding.trait);
-            const sharedCallSite = binding.config as TraitConfig | undefined;
+            const sharedCallSite = getBindingConfig(binding);
             if (sharedDeclared || sharedCallSite) {
                 sharedBindings.config = {
                     ...(sharedDeclared ?? {}),
@@ -895,12 +961,15 @@ export function useTraitStateMachine(
             state: previousState,
         };
         const declaredDefaults = collectDeclaredConfigDefaults(binding.trait);
-        const callSiteConfig = binding.config as TraitConfig | undefined;
+        const callSiteConfig = getBindingConfig(binding);
         if (declaredDefaults || callSiteConfig) {
             bindingCtx.config = {
                 ...(declaredDefaults ?? {}),
                 ...(callSiteConfig ?? {}),
             } as TraitConfig;
+        }
+        if (traitName === 'Authority' || traitName === 'Hero') {
+            console.log(`[debug:executeTransitionEffects] ${traitName} config tiles type=`, typeof bindingCtx.config?.tiles, Array.isArray(bindingCtx.config?.tiles) ? 'len=' + (bindingCtx.config?.tiles as unknown[])?.length : '', 'keys=', bindingCtx.config ? Object.keys(bindingCtx.config) : 'none');
         }
 
         const effectContext: EffectContext = {
@@ -922,11 +991,17 @@ export function useTraitStateMachine(
             },
         };
 
+        if (traitName === 'Hero') {
+            console.log(`[debug:executeTransitionEffects] ${traitName} effects count=${effects.length} hasRenderUI=${typeof handlers.renderUI === 'function'} effect heads=${effects.map((e) => Array.isArray(e) ? String(e[0]) : '??').join(',')}`);
+        }
         const executor = new EffectExecutor({ handlers: trackingHandlers, bindings: bindingCtx, context: effectContext });
 
         void slotSource;
         try {
             await executor.executeAll(effects);
+            if (traitName === 'Authority' || traitName === 'Hero') {
+                console.log(`[debug:executeTransitionEffects] ${traitName} after executeAll liveEntity.tiles type=`, typeof liveEntity.tiles, Array.isArray(liveEntity.tiles) ? 'len=' + (liveEntity.tiles as unknown[])?.length : '', 'firstTilePos=', Array.isArray(liveEntity.tiles) && liveEntity.tiles.length > 0 ? JSON.stringify((liveEntity.tiles as unknown[])[0]).slice(0, 120) : 'n/a');
+            }
 
             // Commit this trait's mutated view of a `[shared]` entity back to
             // the shared store — the ONLY point that notifies subscribers, so
@@ -1008,8 +1083,9 @@ export function useTraitStateMachine(
                 payload: {},
                 state: currentState,
             };
-            if (binding.config) {
-                guardCtx.config = binding.config as TraitConfig;
+            const bindingCfg = getBindingConfig(binding);
+            if (bindingCfg) {
+                guardCtx.config = bindingCfg;
             }
             // Use the canonical boolean guard evaluator (same as the event path in
             // StateMachineCore) — NOT interpolateValue, which resolves bindings but
@@ -1065,12 +1141,20 @@ export function useTraitStateMachine(
     useEffect(() => {
         const scheduler = createTickScheduler();
 
-        const writerTraitNames = new Set<string>();
+        // Per-tick classification for shared entities. A tick is scheduled
+        // through runTickFrame ONLY when it is a pure writer (set, no render-ui).
+        // Ticks that paint (render-ui/render) must run through the full
+        // EffectExecutor path (runTickEffects) so their render-ui handler is
+        // wired; ticks that do both are also routed through runTickEffects
+        // because it handles set + render-ui correctly.
+        const pureWriterTickKeys = new Set<string>();
         for (const group of sharedGroups.values()) {
             const ticksByInterval = new Map<string, Array<{ binding: ResolvedTraitBinding; tick: ResolvedTraitTick }>>();
             for (const binding of group.writerBindings) {
-                writerTraitNames.add(binding.trait.name);
                 for (const tick of binding.trait.ticks ?? []) {
+                    const classification = classifySharedTick(tick);
+                    if (classification !== 'writer') continue;
+                    pureWriterTickKeys.add(`${binding.trait.name}::${tick.name}`);
                     const intervalKey = String(tick.interval);
                     const entries = ticksByInterval.get(intervalKey) ?? [];
                     entries.push({ binding, tick });
@@ -1098,8 +1182,12 @@ export function useTraitStateMachine(
         }
 
         for (const binding of traitBindings) {
-            if (writerTraitNames.has(binding.trait.name)) continue;
             for (const tick of binding.trait.ticks ?? []) {
+                // Shared-entity pure writer ticks are already folded through runTickFrame above.
+                const sharedKey = sharedKeyByTraitNameRef.current.get(binding.trait.name);
+                if (sharedKey !== undefined && pureWriterTickKeys.has(`${binding.trait.name}::${tick.name}`)) {
+                    continue;
+                }
                 if (tick.interval === 'frame') {
                     scheduler.add(0, () => runTickEffects(tick, binding));
                 } else if (typeof tick.interval === 'number') {

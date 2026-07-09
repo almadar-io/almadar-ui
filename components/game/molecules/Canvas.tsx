@@ -132,6 +132,7 @@ export function Canvas({
     keyMap,
     keyUpMap,
 }: CanvasProps): React.JSX.Element {
+    console.error('[debug:Canvas] ' + JSON.stringify({ mode, drawablesCount: drawables?.length, projection, camera }));
     const zoom = camera?.zoom;
 
     if (mode === '3d') {
