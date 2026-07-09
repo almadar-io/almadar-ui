@@ -150,6 +150,10 @@ export interface Canvas2DProps {
     /** Follow-camera target in scene space (the neutral core `Camera.target`). When
      *  `camera:'follow'` the host lerps to keep this point centered. */
     followTarget?: ScenePos;
+    /** Initial camera position in scene space (the neutral core `Camera.pos`). The
+     *  host projects this to screen space and centers the viewport on it for the
+     *  first render; ignored once the user pans or a follow target takes over. */
+    cameraPos?: ScenePos;
     /** Solid backdrop colour (drawn when no `backgroundImage`). */
     bgColor?: string;
 }
@@ -183,6 +187,7 @@ export function Canvas2D({
     scale = 0.4,
     showMinimap = true,
     followTarget,
+    cameraPos,
     bgColor,
 }: Canvas2DProps): React.JSX.Element {
     const backgroundImage = normalizeBackdrop(backgroundImageRaw);
@@ -356,6 +361,12 @@ export function Canvas2D({
 
         // Camera transform, then walk the drawables through the portable painter.
         const cam = cameraRef.current;
+        // Center the viewport on the authored scene position unless the user has panned.
+        if (cameraPos && dragDistance() === 0) {
+            const p = projector.anchorPoint(cameraPos, 'center');
+            cam.x = p.x - viewportSize.width / 2;
+            cam.y = p.y - viewportSize.height / 2;
+        }
         const painter = createWebPainter(ctx, bumpAtlas);
         painter.save();
         painter.translate(viewportSize.width / 2, viewportSize.height / 2);

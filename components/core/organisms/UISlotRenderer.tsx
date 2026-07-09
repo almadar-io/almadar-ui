@@ -44,7 +44,7 @@ import { Skeleton, type SkeletonVariant } from "../molecules/Skeleton";
 
 // Shared renderer imports (synced from orbital-shared/design-system/renderer)
 import { isPortalSlot, SLOT_DEFINITIONS } from "../../../renderer/index";
-import { getPatternDefinition } from "@almadar/patterns";
+import { getPatternDefinition, isDrawHostPattern } from "@almadar/patterns";
 import { wrapCallbackForEvent } from "../../../lib/wrapCallbackForEvent";
 
 // Pattern registry — single source of truth for pattern → component name resolution
@@ -1397,7 +1397,7 @@ function SlotContentRenderer({
     // Detected by the registry `drawHost` capability — pattern-sync derives it from
     // the `DrawableNode` type identity, not a name/signal. Skip `renderPatternChildren`
     // for it; the raw descriptors are routed into the host's `drawables` prop below.
-    const isDrawHost = getPatternDefinition(content.pattern)?.drawHost === true;
+    const isDrawHost = isDrawHostPattern(content.pattern);
 
     // Render children recursively (pass patternPath for WYSIWYG drop targeting).
     // Inherit sourceTrait from the parent so nested patterns (e.g. a

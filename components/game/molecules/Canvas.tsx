@@ -176,6 +176,7 @@ export function Canvas({
             camera={to2DCamera(camera?.mode)}
             {...(zoom !== undefined ? { scale: zoom } : {})}
             {...(camera?.target !== undefined ? { followTarget: camera.target } : {})}
+            {...(camera?.pos !== undefined ? { cameraPos: camera.pos } : {})}
             showMinimap={showMinimap}
             backgroundImage={backgroundImage}
             {...(backgroundColor !== undefined ? { bgColor: backgroundColor } : {})}

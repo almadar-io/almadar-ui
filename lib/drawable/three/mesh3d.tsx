@@ -50,16 +50,12 @@ function useBillboardTexture(url: string): { texture: THREE.Texture | null; erro
             url,
             (texture) => {
                 if (!active) return;
-                // eslint-disable-next-line no-console
-                console.log('[SpriteBillboard] texture loaded', url, texture.image?.width, texture.image?.height);
                 texture.colorSpace = THREE.SRGBColorSpace;
                 setState({ texture, error: false });
             },
             undefined,
-            (err) => {
+            () => {
                 if (!active) return;
-                // eslint-disable-next-line no-console
-                console.error('[SpriteBillboard] texture load error', url, err);
                 setState({ texture: null, error: true });
             },
         );
@@ -94,13 +90,9 @@ function useAtlasFrame(asset: DrawSpriteProps['asset']): { frame: SpriteFrame | 
         if (!isAtlasAsset(asset)) return { frame: null, ready: true };
         const atlas = getAtlas(asset.atlas as string, () => setTick((t) => t + 1));
         if (!atlas) {
-            // eslint-disable-next-line no-console
-            console.log('[SpriteBillboard] atlas not ready', asset.atlas, asset.sprite);
             return { frame: null, ready: false };
         }
         const r = subRectFor(atlas, asset.sprite as string);
-        // eslint-disable-next-line no-console
-        console.log('[SpriteBillboard] atlas frame', asset.atlas, asset.sprite, r);
         if (!r) return { frame: null, ready: true };
         return { frame: { x: r.sx, y: r.sy, w: r.sw, h: r.sh }, ready: true };
     }, [asset, tick]);
@@ -112,9 +104,6 @@ function SpriteBillboard({ node, world }: { node: DrawSpriteProps; world: [numbe
 
     const frame = node.frame ?? atlasFrame;
     const anchor = node.anchor ?? 'top-left';
-
-    // eslint-disable-next-line no-console
-    console.log('[SpriteBillboard] render', node.asset.url, anchor, frame, 'texture?', !!texture, 'atlasReady?', atlasReady);
 
     const size = React.useMemo(() => {
         const img = texture?.image as { width?: number; height?: number } | undefined;
@@ -131,6 +120,13 @@ function SpriteBillboard({ node, world }: { node: DrawSpriteProps; world: [numbe
         const width = node.width ?? height * aspect;
         return { width, height, imgW, imgH };
     }, [texture, frame, node.height, node.width, anchor]);
+
+    const groundGeometry = React.useMemo(() => {
+        if (anchor !== 'top-left' || !texture || !atlasReady) return null;
+        const g = new THREE.PlaneGeometry(size.width, size.height);
+        g.rotateX(-Math.PI / 2);
+        return g;
+    }, [anchor, texture, atlasReady, size.width, size.height]);
 
     if (!texture || !atlasReady) {
         // Placeholder keeps the scene mounted and gives a visible cue while the
@@ -155,30 +151,16 @@ function SpriteBillboard({ node, world }: { node: DrawSpriteProps; world: [numbe
         );
     }
 
-
-
-    const groundGeometry = React.useMemo(() => {
-        if (anchor !== 'top-left' || !texture || !atlasReady) return null;
-        const g = new THREE.PlaneGeometry(size.width, size.height);
-        g.rotateX(-Math.PI / 2);
-        if (frame) {
-            const u0 = frame.x / size.imgW;
-            const v0 = 1 - (frame.y + frame.h) / size.imgH;
-            const u1 = u0 + frame.w / size.imgW;
-            const v1 = v0 + frame.h / size.imgH;
-            // PlaneGeometry default vertices (segments = 1): top-left, top-right,
-            // bottom-left, bottom-right. UV origin is bottom-left.
-            const uvs = new Float32Array([u0, v1, u1, v1, u0, v0, u1, v0]);
-            g.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-        }
-        return g;
-    }, [anchor, texture, atlasReady, size.width, size.height, size.imgW, size.imgH, frame]);
-
     texture.magFilter = texture.minFilter = THREE.NearestFilter;
     texture.needsUpdate = true;
 
     // Top-left anchored sprites are ground decals (tiles/covers); everything else
     // stands vertically on the cell.
+    if (frame) {
+        texture.repeat.set(frame.w / size.imgW, frame.h / size.imgH);
+        texture.offset.set(frame.x / size.imgW, 1 - (frame.y + frame.h) / size.imgH);
+    }
+
     if (anchor === 'top-left') {
         return (
             <group position={[world[0] + size.width / 2, 0.01, world[2] + size.height / 2]}>
@@ -193,11 +175,6 @@ function SpriteBillboard({ node, world }: { node: DrawSpriteProps; world: [numbe
                 </mesh>
             </group>
         );
-    }
-
-    if (frame) {
-        texture.repeat.set(frame.w / size.imgW, frame.h / size.imgH);
-        texture.offset.set(frame.x / size.imgW, 1 - (frame.y + frame.h) / size.imgH);
     }
 
     return (

@@ -54,8 +54,12 @@ interface CameraResult {
  *
  * @returns Camera state, event handlers, and coordinate conversion
  */
-export function useCamera(): CameraResult {
-    const cameraRef = useRef<CameraState>({ x: 0, y: 0, zoom: 1 });
+export function useCamera(initial?: Partial<CameraState>): CameraResult {
+    const cameraRef = useRef<CameraState>({
+        x: initial?.x ?? 0,
+        y: initial?.y ?? 0,
+        zoom: initial?.zoom ?? 1,
+    });
     const targetCameraRef = useRef<{ x: number; y: number } | null>(null);
     const isDraggingRef = useRef(false);
     const dragDistanceRef = useRef(0);
