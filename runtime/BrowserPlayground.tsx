@@ -31,7 +31,7 @@ const playgroundLog = createLogger('almadar:ui:browser-playground');
 export interface BrowserPlaygroundProps {
   /** OrbitalSchema to render. */
   schema: OrbitalSchema;
-  /** Persistence mode for the in-process runtime. Default: 'mock' (Faker-seeded MockPersistenceAdapter). */
+  /** Persistence mode for the in-process runtime. Default: 'mock' (seeded MockPersistenceAdapter). */
   mode?: 'mock';
   /** Initial page path to render (forwarded to OrbPreview). */
   initialPagePath?: string;
