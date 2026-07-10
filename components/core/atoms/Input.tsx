@@ -77,6 +77,7 @@ export const Input = React.forwardRef<
       icon: iconProp,
       clearable,
       onClear,
+      action,
       value,
       options,
       rows = 3,
@@ -137,6 +138,17 @@ export const Input = React.forwardRef<
         eventBus.emit(`UI:${onClear}`, {});
       } else {
         onClear?.();
+      }
+    };
+
+    // `action` is the declarative event dispatched on the input's primary
+    // gesture — Enter/submit (the text-input analog of Button's on-click).
+    // Consuming it here also keeps `action` off `...props`, so it never
+    // reaches the native <input> (React warns: "You can only pass the action
+    // prop to <form>").
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (action && e.key === 'Enter') {
+        eventBus.emit(`UI:${action}`, { value: e.currentTarget.value });
       }
     };
 
@@ -235,6 +247,7 @@ export const Input = React.forwardRef<
           type={type}
           value={value}
           onChange={handleChange as React.ChangeEventHandler<HTMLInputElement>}
+          onKeyDown={handleKeyDown}
           className={baseClassName}
           {...props}
         />
