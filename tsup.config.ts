@@ -179,7 +179,7 @@ export default defineConfig([
     dts: true,
     clean: true,
     sourcemap: false,
-    splitting: false,
+    splitting: true,
     treeshake: true,
     external: ['react', 'react-dom', 'react-router-dom', '@tanstack/react-query', '@almadar/ui', '@almadar/runtime', '@almadar/core', '@almadar/evaluator', '@almadar/core/patterns'],
     banner: { js: '"use client";' },
@@ -199,7 +199,7 @@ export default defineConfig([
     external: ['react', 'react-dom', 'react/jsx-runtime', 'lucide-react'],
     noExternal: ['clsx', 'tailwind-merge'],
     banner: { js: '"use client";' },
-    esbuildPlugins: [externalThreeSubpathPlugin],
+    esbuildPlugins: [dedupeContextPlugin, dedupeThemePlugin, dedupeEventBusPlugin, dedupeProvidersPlugin, dedupeI18nPlugin, externalThreeSubpathPlugin],
   },
   // AVL build: Almadar Visual Language formal notation
   {
