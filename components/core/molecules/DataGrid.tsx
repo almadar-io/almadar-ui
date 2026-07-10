@@ -261,9 +261,12 @@ export function DataGrid({
   const [visibleCount, setVisibleCount] = useState(pageSize || Infinity);
 
   // Honor the pattern-types alias: compiler emits `columns`, the React API
-  // accepts `fields`. Either resolves to the same shape; missing both yields
-  // an empty list rather than a TypeError on `.find`.
-  const fieldDefs: readonly DataGridField[] = fields ?? columns ?? [];
+  // accepts `fields`. Either resolves to the same shape. Both `fields` and
+  // `itemActions` coerce to an array first: a transient render can hand this
+  // pure component an unresolved `@config.X` forward string, and rendering an
+  // empty grid beats a TypeError on `.find`/`.filter` that trips the boundary.
+  const fieldDefs: readonly DataGridField[] = (Array.isArray(fields) ? fields : undefined) ?? (Array.isArray(columns) ? columns : undefined) ?? [];
+  const actionDefs: readonly DataGridItemAction[] = Array.isArray(itemActions) ? itemActions : [];
 
   const allDataRaw = Array.isArray(entity) ? entity : entity ? [entity] : [];
   const dnd = useDataDnd({
@@ -314,8 +317,8 @@ export function DataGrid({
   const bodyFields = fieldDefs.filter((f) => f !== titleField && !badgeFields.includes(f));
 
   // Separate actions by variant
-  const primaryActions = itemActions?.filter((a) => a.variant !== 'danger') ?? [];
-  const dangerActions = itemActions?.filter((a) => a.variant === 'danger') ?? [];
+  const primaryActions = actionDefs.filter((a) => a.variant !== 'danger');
+  const dangerActions = actionDefs.filter((a) => a.variant === 'danger');
 
   const handleActionClick = (action: DataGridItemAction, itemData: EntityRow) => (e: React.MouseEvent) => {
     e.stopPropagation();

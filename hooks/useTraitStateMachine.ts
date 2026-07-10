@@ -514,7 +514,17 @@ export function useTraitStateMachine(
         const traitDefs = traitBindings.map(toTraitDefinition);
         const m = new StateMachineManager(traitDefs);
         for (const binding of traitBindings) {
-            const cfg = getBindingConfig(binding) ?? traitConfigsByName?.[binding.trait.name];
+            // Merge the raw call-site config with the resolved map, letting the
+            // resolved values win: `traitConfigsByName` chains embedded
+            // sub-traits' `@config.X` forwards (e.g. an inline DataGrid's
+            // `fields: @config.fields`) to concrete values, whereas the raw
+            // call-site config still holds the literal forward. Raw-only keys
+            // (none today, but future-proof) are preserved.
+            const rawCfg = getBindingConfig(binding);
+            const resolvedCfg = traitConfigsByName?.[binding.trait.name];
+            const cfg = (rawCfg || resolvedCfg)
+                ? { ...(rawCfg ?? {}), ...(resolvedCfg ?? {}) } as TraitConfig
+                : undefined;
             if (cfg !== undefined) {
                 m.setTraitConfig(binding.trait.name, cfg);
             }
@@ -1006,11 +1016,25 @@ export function useTraitStateMachine(
         const declaredDefaults = collectDeclaredConfigDefaults(binding.trait);
         const resolvedDefaults = traitConfigsByName?.[traitName];
         const callSiteConfig = getBindingConfig(binding);
-        if (declaredDefaults || resolvedDefaults || callSiteConfig) {
+        // Drop unresolved `@config.X` forwards from the raw call-site config:
+        // they are the un-chained form of what `resolvedDefaults` already
+        // substituted to a concrete value (via `collectEmbeddedTraitReferrers`).
+        // Spread last, a literal `"@config.fields"` on an embedded sub-trait
+        // (e.g. std-browse's `DataGrid1` forwarding its embedder's columns)
+        // would clobber the resolved array and crash the DataGrid's
+        // `fieldDefs.find`. Concrete call-site overrides still win.
+        const callSiteOverrides = callSiteConfig
+            ? Object.fromEntries(
+                Object.entries(callSiteConfig).filter(
+                    ([, v]) => !(typeof v === 'string' && v.startsWith('@config.')),
+                ),
+            )
+            : undefined;
+        if (declaredDefaults || resolvedDefaults || callSiteOverrides) {
             bindingCtx.config = {
                 ...(declaredDefaults ?? {}),
                 ...(resolvedDefaults ?? {}),
-                ...(callSiteConfig ?? {}),
+                ...(callSiteOverrides ?? {}),
             } as TraitConfig;
         }
         if (traitName === 'Authority' || traitName === 'Hero') {
