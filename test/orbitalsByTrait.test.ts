@@ -56,6 +56,6 @@ describe('buildOrbitalsByTrait', () => {
 
   it('returns an empty map for a schema with no orbitals', () => {
     expect(buildOrbitalsByTrait(undefined)).toEqual({});
-    expect(buildOrbitalsByTrait({})).toEqual({});
+    expect(buildOrbitalsByTrait({ orbitals: [] })).toEqual({});
   });
 });

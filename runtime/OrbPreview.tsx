@@ -28,7 +28,7 @@ import { useResolvedSchema } from '../hooks/useResolvedSchema';
 import { collectEmbeddedTraits, collectTraitRefsFromResolvedTrait } from '../lib/embedded-traits';
 import { convertFnFormLambdasInProps } from '../lib/fn-form-lambda';
 import { useTraitStateMachine } from '../hooks/useTraitStateMachine';
-import { buildOrbitalsByTrait, type OrbitalsByTraitSchema } from '../lib/orbitalsByTrait';
+import { buildOrbitalsByTrait } from '../lib/orbitalsByTrait';
 import { EntitySchemaProvider } from '../providers/EntitySchemaContext';
 import { ServerBridgeProvider, useServerBridge, type ServerBridgeTransport } from '../providers/ServerBridge';
 import { OrbitalThemeProvider } from '../providers/OrbitalThemeProvider';
@@ -431,7 +431,7 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavi
   const orbitalsByTrait = useMemo<Record<string, string>>(
     () =>
       buildOrbitalsByTrait(
-        schema as OrbitalsByTraitSchema | undefined,
+        schema,
         ir
           ? Array.from(ir.pages.values()).map((p) => ({
               path: p.path,
