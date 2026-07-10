@@ -69,4 +69,7 @@ describe('EventBusContext is a cross-chunk singleton', () => {
     }
   });
 
+  it.each(BUS_CONSUMERS)('%s imports the shared @almadar/ui/providers chunk', (sub) => {
+    expect(read(sub), `${sub} must import the shared EventBusContext, not redefine it`).toMatch(IMPORTS_SHARED);
+  });
 });
