@@ -931,10 +931,12 @@ export function useTraitStateMachine(
                 state: previousState,
             };
             const sharedDeclared = collectDeclaredConfigDefaults(binding.trait);
+            const sharedResolved = traitConfigsByName?.[traitName];
             const sharedCallSite = getBindingConfig(binding);
-            if (sharedDeclared || sharedCallSite) {
+            if (sharedDeclared || sharedResolved || sharedCallSite) {
                 sharedBindings.config = {
                     ...(sharedDeclared ?? {}),
+                    ...(sharedResolved ?? {}),
                     ...(sharedCallSite ?? {}),
                 } as TraitConfig;
             }
@@ -991,11 +993,23 @@ export function useTraitStateMachine(
             payload: payload || {},
             state: previousState,
         };
+        // `declaredDefaults` reads the trait's OWN declared config schema
+        // verbatim — for an embedded sub-trait authored as `config { fields:
+        // @config.fields }` (e.g. std-browse's `DataGrid1`), that default IS
+        // the literal forward string, since the atom's `.lolo` meant "read
+        // MY embedder's config" and has no enclosing scope once flattened.
+        // `traitConfigsByName` (built in OrbPreview from the same source
+        // config) chains that forward through `collectEmbeddedTraitReferrers`
+        // to the trait that actually embeds this one, so prefer it over the
+        // raw declared defaults when present — it's a strict superset (same
+        // keys, forwards substituted with concrete values where resolvable).
         const declaredDefaults = collectDeclaredConfigDefaults(binding.trait);
+        const resolvedDefaults = traitConfigsByName?.[traitName];
         const callSiteConfig = getBindingConfig(binding);
-        if (declaredDefaults || callSiteConfig) {
+        if (declaredDefaults || resolvedDefaults || callSiteConfig) {
             bindingCtx.config = {
                 ...(declaredDefaults ?? {}),
+                ...(resolvedDefaults ?? {}),
                 ...(callSiteConfig ?? {}),
             } as TraitConfig;
         }
@@ -1129,7 +1143,7 @@ export function useTraitStateMachine(
                 payload: {},
                 state: currentState,
             };
-            const bindingCfg = getBindingConfig(binding);
+            const bindingCfg = getBindingConfig(binding) ?? traitConfigsByName?.[traitName];
             if (bindingCfg) {
                 guardCtx.config = bindingCfg;
             }

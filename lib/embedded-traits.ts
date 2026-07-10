@@ -137,3 +137,9 @@ export function collectEmbeddedTraits(schema: OrbitalSchema | undefined | null):
   }
   return out;
 }
+
+// The childTraitName → referrerTraitName map (for chaining an embedded
+// sub-trait's `@config.X` forward to the trait that actually embeds it) now
+// lives in `@almadar/core`'s `collectEmbeddedTraitReferrers` — shared with
+// `@almadar/runtime`'s server-side binding-context builder, which can't
+// depend on `@almadar/ui`. See `packages/almadar-core/src/embedded-trait-config.ts`.

@@ -23,6 +23,7 @@ import { UISlotProvider, useUISlots, type SlotProps } from '../providers/UISlotC
 import { UISlotRenderer } from '../components/core/organisms/UISlotRenderer';
 import { useEventBus } from '../hooks/useEventBus';
 import type { OrbitalSchema, EntityData, ResolvedTraitBinding, EventPayload, PatternNode, Orbital, TraitRef } from '@almadar/core';
+import { buildResolvedTraitConfigs } from '@almadar/core';
 import { useResolvedSchema } from '../hooks/useResolvedSchema';
 import { collectEmbeddedTraits, collectTraitRefsFromResolvedTrait } from '../lib/embedded-traits';
 import { convertFnFormLambdasInProps } from '../lib/fn-form-lambda';
@@ -513,24 +514,16 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavi
   // StateMachineManager would otherwise see no config and OPEN guards
   // like `["or", ["=", "@config.mode", "create"], "@payload.row"]` would
   // reject the create flow.
-  const traitConfigsByName = useMemo(() => {
-    const map: Record<string, import('@almadar/core').TraitConfig> = {};
-    const orbitals: Orbital[] | undefined = schema?.orbitals;
-    if (!orbitals) return map;
-    for (const orb of orbitals) {
-      const traitRefs: TraitRef[] | undefined = orb.traits;
-      if (!traitRefs) continue;
-      for (const t of traitRefs) {
-        if (typeof t === 'string') continue;
-        const name = (t as { name?: string; ref?: string }).name ?? (t as { ref?: string }).ref;
-        const config = (t as { config?: import('@almadar/core').TraitConfig }).config;
-        if (typeof name === 'string' && config !== undefined) {
-          map[name] = config;
-        }
-      }
-    }
-    return map;
-  }, [schema]);
+  //
+  // `buildResolvedTraitConfigs` (@almadar/core, shared with the SERVER-side
+  // OrbitalServerRuntime binding-context builder) also chains embedded
+  // sub-traits' `@config.X` forwards (e.g. std-browse's `DataGrid1: config
+  // { fields: @config.fields }`) through to the trait that actually embeds
+  // them — see `embedded-trait-config.ts` for the full rationale.
+  const traitConfigsByName = useMemo(
+    () => buildResolvedTraitConfigs(schema),
+    [schema],
+  );
 
   // V2 Phase 6: EntityStore is gone. Standalone-preview (no serverUrl) with
   // `mockData` no longer hydrates a shared store; mock data now flows through
