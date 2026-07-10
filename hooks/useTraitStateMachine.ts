@@ -942,7 +942,21 @@ export function useTraitStateMachine(
             };
             const sharedDeclared = collectDeclaredConfigDefaults(binding.trait);
             const sharedResolved = traitConfigsByName?.[traitName];
-            const sharedCallSite = getBindingConfig(binding);
+            // Drop unresolved `@config.X` forwards from the raw call-site config
+            // before spreading it last: they are the un-chained form of what
+            // `sharedResolved` already substituted to a concrete value, so a
+            // literal `"@config.fields"` here would clobber the resolved array
+            // back to a string (the server-handler render path's half of the
+            // oscillation the client-handler path already guards against below).
+            // A concrete call-site override (non-forward value) still wins.
+            const sharedCallSiteRaw = getBindingConfig(binding);
+            const sharedCallSite = sharedCallSiteRaw
+                ? Object.fromEntries(
+                    Object.entries(sharedCallSiteRaw).filter(
+                        ([, v]) => !(typeof v === 'string' && v.startsWith('@config.')),
+                    ),
+                )
+                : undefined;
             if (sharedDeclared || sharedResolved || sharedCallSite) {
                 sharedBindings.config = {
                     ...(sharedDeclared ?? {}),
