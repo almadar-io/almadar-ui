@@ -34,6 +34,7 @@ import {
     createTickScheduler,
     isValidCronExpression,
     parseDurationString,
+    resolveCallSitePayloadCaptures,
     type TraitState,
     type TraitDefinition,
     type EffectHandlers,
@@ -951,10 +952,13 @@ export function useTraitStateMachine(
             // A concrete call-site override (non-forward value) still wins.
             const sharedCallSiteRaw = getBindingConfig(binding);
             const sharedCallSite = sharedCallSiteRaw
-                ? Object.fromEntries(
-                    Object.entries(sharedCallSiteRaw).filter(
-                        ([, v]) => !(typeof v === 'string' && v.startsWith('@config.')),
+                ? resolveCallSitePayloadCaptures(
+                    Object.fromEntries(
+                        Object.entries(sharedCallSiteRaw).filter(
+                            ([, v]) => !(typeof v === 'string' && v.startsWith('@config.')),
+                        ),
                     ),
+                    payload || {},
                 )
                 : undefined;
             if (sharedDeclared || sharedResolved || sharedCallSite) {
@@ -1038,10 +1042,13 @@ export function useTraitStateMachine(
         // would clobber the resolved array and crash the DataGrid's
         // `fieldDefs.find`. Concrete call-site overrides still win.
         const callSiteOverrides = callSiteConfig
-            ? Object.fromEntries(
-                Object.entries(callSiteConfig).filter(
-                    ([, v]) => !(typeof v === 'string' && v.startsWith('@config.')),
+            ? resolveCallSitePayloadCaptures(
+                Object.fromEntries(
+                    Object.entries(callSiteConfig).filter(
+                        ([, v]) => !(typeof v === 'string' && v.startsWith('@config.')),
+                    ),
                 ),
+                payload || {},
             )
             : undefined;
         if (declaredDefaults || resolvedDefaults || callSiteOverrides) {
