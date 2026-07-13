@@ -19,6 +19,7 @@ import type { Asset, ScenePos } from '@almadar/core';
 import type { BlitSrc, PainterShadow } from '../../../lib/painter2d';
 import { getAtlas, isAtlasAsset, subRectFor } from '../../../lib/atlasSlice';
 import type { DrawableAnchor, DrawableBase, PaintFn } from '../../../lib/drawable/contract';
+import { isValidScenePos } from '../../../lib/drawable/contract';
 
 export interface DrawSpriteProps extends DrawableBase {
     type: 'draw-sprite';
@@ -34,6 +35,8 @@ export interface DrawSpriteProps extends DrawableBase {
     height?: number;
     /** Explicit atlas sub-rect override (px); omitted → resolved from `asset.atlas`/`asset.sprite`. */
     frame?: BlitSrc;
+    /** Named GLB animation clip to play (3D backend only; the 2D painter animates via `frame`). Matched case-insensitively against the model's clips. */
+    animation?: string;
     /** Mirror horizontally (facing). */
     flipX?: boolean;
     /** Rotation in radians about the sprite's center. */
@@ -46,10 +49,15 @@ export interface DrawSpriteProps extends DrawableBase {
 
 /** Paint a {@link DrawSpriteProps}. Renders nothing (returns) when a resource is not ready — never throws. */
 export const paintSprite: PaintFn<DrawSpriteProps> = (painter, node, dctx) => {
+    // A drawable with no resolvable asset or position renders nothing — never throws.
+    if (!node.asset?.url || !isValidScenePos(node.position)) return;
     const tex = painter.resolveTexture(node.asset.url);
     if (!tex) return; // image not loaded yet
 
-    let src = node.frame;
+    // `frame` is an explicit source rect. A bare number (an animation frame
+    // INDEX) carries no rect and would blank the blit — ignore it so the
+    // atlas-sprite / whole-image source still draws.
+    let src = typeof node.frame === 'object' ? node.frame : undefined;
     if (!src && isAtlasAsset(node.asset)) {
         const atlas = getAtlas(node.asset.atlas as string, dctx.invalidate);
         if (!atlas) return; // atlas JSON in-flight

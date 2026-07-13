@@ -24,9 +24,11 @@ export interface Projector2DOptions {
 /** Build a {@link Projector} for a 2D projection. */
 export function create2DProjector(opts: Projector2DOptions): Projector {
     const { scale, baseOffsetX, layout } = opts;
-    const tileWidth = TILE_WIDTH * scale;
-    const floorHeight = FLOOR_HEIGHT * scale;
-    const diamondTopY = (opts.diamondTopY ?? DIAMOND_TOP_Y) * scale;
+    // `free`/`side` project identity (world-pixel-direct): cell metrics collapse
+    // to 1 so `draw-sprite` width/height are literal px; grids keep scaled tiles.
+    const tileWidth = layout === 'free' ? 1 : TILE_WIDTH * scale;
+    const floorHeight = layout === 'free' ? 1 : FLOOR_HEIGHT * scale;
+    const diamondTopY = layout === 'free' ? 0 : (opts.diamondTopY ?? DIAMOND_TOP_Y) * scale;
     const squareGrid = layout === 'flat' || layout === 'free';
 
     const project = (pos: ScenePos): PainterPoint =>

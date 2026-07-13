@@ -11,12 +11,28 @@
  */
 
 import React from "react";
-import type { EntityRow, EventPayloadValue, RenderItemLambda } from "@almadar/core";
+import { isSExpr, isEventPayloadValue, type EntityRow, type EventPayloadValue, type RenderItemLambda } from "@almadar/core";
 import type { AnyPatternConfig } from "@almadar/core/patterns";
 import type { SlotProps, SlotPropValue } from "../hooks/useUISlots";
+import { evaluate, createMinimalContext } from "@almadar/evaluator";
+// Browser-safe subpath (pure operator metadata) — same import the runtime's
+// BindingResolver uses; the `@almadar/std` index bundles a node-only loader.
+import { isKnownStdOperator } from "@almadar/std/registry";
 import { createLogger } from '@almadar/logger';
 
 const lambdaLog = createLogger("almadar:ui:fn-form-lambda");
+
+/**
+ * Operator-call predicate for substituted arrays, mirroring
+ * `BindingResolver.isSExpression` in @almadar/runtime: a string head that is
+ * a known std operator, a namespaced `topic/op`, or `lambda`/`let`. Literal
+ * data arrays (`["static", ...]`) fail this and pass through raw.
+ */
+function isOperatorCall(value: ReadonlyArray<SlotPropValue>): boolean {
+  const first = value[0];
+  if (typeof first !== "string") return false;
+  return isKnownStdOperator(first) || first.includes("/") || first === "lambda" || first === "let";
+}
 
 export function isFnFormLambda(value: SlotPropValue): value is RenderItemLambda {
   if (!Array.isArray(value)) return false;
@@ -83,7 +99,23 @@ export function resolveLambdaBindings(
     return body;
   }
   if (Array.isArray(body)) {
-    return body.map((b) => recur(b as SlotPropValue)) as SlotPropValue;
+    // Fn-form lambdas stay raw: `convertObjectProps` compiles them into
+    // render-prop functions after substitution (see makeLambdaFn).
+    if (isFnFormLambda(body)) return body;
+    // TS narrows the array union to `never` above (RenderItemLambda is a
+    // subtype of the readonly-array member) — re-widen for the element map.
+    const arr = body as ReadonlyArray<SlotPropValue>;
+    const substituted = arr.map((b) => recur(b));
+    // Operator calls inside a lambda body (e.g. `(str/concat "⚔" @c.attack)`
+    // → `["str/concat","⚔",5]`) must be EVALUATED, not joined as text —
+    // substitution only replaces `@arg.path` leaves. Mirrors
+    // BindingResolver.isSExpression; literal data arrays fail the predicate
+    // and pass through unchanged.
+    if (isOperatorCall(substituted) && isSExpr(substituted)) {
+      const evaluated = evaluate(substituted, createMinimalContext());
+      return isEventPayloadValue(evaluated) ? evaluated : String(evaluated);
+    }
+    return substituted;
   }
   if (body !== null && typeof body === "object" && !React.isValidElement(body) && !(body instanceof Date) && typeof body !== "function") {
     const out: Record<string, SlotPropValue> = {};

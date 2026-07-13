@@ -145,7 +145,8 @@ export interface Canvas3DHostProps {
     worldWidth?: number;
     /** Side-view world size in pixels (accepted for API parity). */
     worldHeight?: number;
-    /** Pixel→world-unit divisor for side view (accepted for API parity). */
+    /** Pixel→world-unit divisor for pixel-authored (side-view) scenes: world size =
+     *  scene size ÷ `pixelsPerUnit`. Omitted → 1 world unit per scene unit (grid boards). */
     pixelsPerUnit?: number;
 }
 
@@ -204,6 +205,7 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
             loadingMessage = 'Loading 3D Scene...',
             keyMap,
             keyUpMap,
+            pixelsPerUnit,
             children,
             drawables,
         },
@@ -275,23 +277,33 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
             return { minX, maxX, minZ, maxZ };
         }, [scenePositions]);
 
-        // Camera target (centre of the scene bounds).
+        // World units per scene unit: 1 for grid-authored scenes; pixel-authored
+        // (side-view) scenes are divided down by `pixelsPerUnit` so framing distances,
+        // follow offsets and the far clip plane stay in their calibrated ranges.
+        const cellSize =
+            pixelsPerUnit !== undefined && pixelsPerUnit > 0
+                ? 1 / pixelsPerUnit
+                : DEFAULT_GRID_CONFIG.cellSize;
+
+        // Camera target (centre of the scene bounds, in world space — the projector
+        // anchors world X/Z on the bounds' min, so the centre is the half-extent).
         const cameraTarget = useMemo(
-            () => [
-                (gridBounds.minX + gridBounds.maxX) / 2,
-                0,
-                (gridBounds.minZ + gridBounds.maxZ) / 2,
-            ] as [number, number, number],
-            [gridBounds]
+            () =>
+                [
+                    ((gridBounds.maxX - gridBounds.minX) / 2) * cellSize,
+                    0,
+                    ((gridBounds.maxZ - gridBounds.minZ) / 2) * cellSize,
+                ] as [number, number, number],
+            [gridBounds, cellSize]
         );
 
         const gridConfig = useMemo(
             () => ({
-                ...DEFAULT_GRID_CONFIG,
+                cellSize,
                 offsetX: -(gridBounds.maxX - gridBounds.minX) / 2,
                 offsetZ: -(gridBounds.maxZ - gridBounds.minZ) / 2,
             }),
-            [gridBounds]
+            [gridBounds, cellSize]
         );
 
         // Neutral projector for drawable descriptors — anchors on the scene bounds so
@@ -341,15 +353,16 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
             },
         }));
 
-        // Camera configuration based on mode.
+        // Camera configuration based on mode. Framing size is in WORLD units (the
+        // scene extent × cellSize) so pixel-authored worlds stay inside the far plane.
         const cameraConfig = useMemo(() => {
             const size = Math.max(
-                gridBounds.maxX - gridBounds.minX,
-                gridBounds.maxZ - gridBounds.minZ,
+                (gridBounds.maxX - gridBounds.minX) * cellSize,
+                (gridBounds.maxZ - gridBounds.minZ) * cellSize,
                 4  // minimum framing distance so a tiny board isn't zoomed in
             );
-            const cx = (gridBounds.minX + gridBounds.maxX) / 2;
-            const cz = (gridBounds.minZ + gridBounds.maxZ) / 2;
+            const cx = cameraTarget[0];
+            const cz = cameraTarget[2];
             const d = size * 1.0;
 
             switch (cameraMode) {
@@ -364,7 +377,7 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                 default:
                     return { position: [cx + d, d, cz + d] as [number, number, number], fov: 45 };
             }
-        }, [cameraMode, gridBounds]);
+        }, [cameraMode, gridBounds, cellSize, cameraTarget]);
 
         // Follow target in world space — the neutral `Camera.target`, else scene centre.
         const followWorld = useMemo((): [number, number, number] => {
@@ -374,8 +387,10 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
 
         // Follow offset from the target (fixed per mode; no per-entity heading in the
         // thin host — a `chase` heading would ride the neutral Camera in a later pass).
+        // `follow` is the side-view tracking camera: high + far enough that a 400px-deep
+        // (12.5-unit) pixel-authored world fits the 45° fov without foreground occlusion.
         const followOffset = useMemo(
-            (): [number, number, number] => (cameraMode === 'chase' ? [0, 4, -7] : [5, 7, 5]),
+            (): [number, number, number] => (cameraMode === 'chase' ? [0, 4, -7] : [0, 12, 14]),
             [cameraMode]
         );
 
@@ -467,13 +482,13 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                         {showGrid && (
                             <Grid
                                 args={[
-                                    Math.max(gridBounds.maxX - gridBounds.minX + 2, 10),
-                                    Math.max(gridBounds.maxZ - gridBounds.minZ + 2, 10),
+                                    Math.max((gridBounds.maxX - gridBounds.minX + 2) * cellSize, 10),
+                                    Math.max((gridBounds.maxZ - gridBounds.minZ + 2) * cellSize, 10),
                                 ]}
                                 position={[
-                                    (gridBounds.maxX - gridBounds.minX) / 2 - 0.5,
+                                    ((gridBounds.maxX - gridBounds.minX) / 2) * cellSize - cellSize / 2,
                                     0,
-                                    (gridBounds.maxZ - gridBounds.minZ) / 2 - 0.5,
+                                    ((gridBounds.maxZ - gridBounds.minZ) / 2) * cellSize - cellSize / 2,
                                 ]}
                                 cellSize={1}
                                 cellThickness={1}
@@ -504,16 +519,16 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                             <mesh
                                 rotation={[-Math.PI / 2, 0, 0]}
                                 position={[
-                                    ((gridBounds.maxX - gridBounds.minX) / 2) * gridConfig.cellSize,
+                                    ((gridBounds.maxX - gridBounds.minX) / 2) * cellSize,
                                     0,
-                                    ((gridBounds.maxZ - gridBounds.minZ) / 2) * gridConfig.cellSize,
+                                    ((gridBounds.maxZ - gridBounds.minZ) / 2) * cellSize,
                                 ]}
                                 onClick={handleGroundClick}
                             >
                                 <planeGeometry
                                     args={[
-                                        (gridBounds.maxX - gridBounds.minX + 4) * gridConfig.cellSize,
-                                        (gridBounds.maxZ - gridBounds.minZ + 4) * gridConfig.cellSize,
+                                        (gridBounds.maxX - gridBounds.minX + 4) * cellSize,
+                                        (gridBounds.maxZ - gridBounds.minZ + 4) * cellSize,
                                     ]}
                                 />
                                 <meshBasicMaterial transparent opacity={0} depthWrite={false} />

@@ -12,6 +12,7 @@
  */
 import type { ScenePos } from '@almadar/core';
 import type { DrawableNode } from './paintDispatch';
+import { isValidScenePos } from './contract';
 
 /** One drawn descriptor's scene position + optional hit-test id. */
 export interface DrawnItem {
@@ -27,12 +28,14 @@ export function collectDrawnItems(nodes: DrawableNode[]): DrawnItem[] {
             case 'draw-sprite':
             case 'draw-shape':
             case 'draw-text':
-                out.push({ pos: n.position, id: n.id });
+                if (isValidScenePos(n.position)) out.push({ pos: n.position, id: n.id });
                 break;
             case 'draw-sprite-layer':
             case 'draw-shape-layer':
             case 'draw-text-layer':
-                for (const it of n.items) out.push({ pos: it.position, id: it.id });
+                for (const it of n.items) {
+                    if (isValidScenePos(it.position)) out.push({ pos: it.position, id: it.id });
+                }
                 break;
         }
     }

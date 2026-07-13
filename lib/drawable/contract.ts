@@ -35,16 +35,25 @@ export interface Projector {
     anchorPoint(pos: ScenePos, anchor: DrawableAnchor): PainterPoint;
     /** The cell footprint polygon — a rect (square grids) or a diamond (iso/hex). */
     cellPath(pos: ScenePos): PainterPoint[];
-    /** Scaled cell width in px (`TILE_WIDTH * scale`). */
+    /** Cell width in px — `TILE_WIDTH * scale` for grid layouts, 1 for `free`/`side` (world-pixel-direct). */
     readonly tileWidth: number;
-    /** Scaled floor/diamond height in px (`FLOOR_HEIGHT * scale`). */
+    /** Cell floor height in px — `FLOOR_HEIGHT * scale` for grid layouts, 1 for `free`/`side`. */
     readonly floorHeight: number;
-    /** Scaled diamond-top offset in px (`DIAMOND_TOP_Y * scale`). */
+    /** Diamond-top offset in px — `DIAMOND_TOP_Y * scale` for grid layouts, 0 for `free`/`side`. */
     readonly diamondTopY: number;
     /** Render scale factor. */
     readonly scale: number;
     /** True for square-pitch grids (`flat`/`free`); false for diamond (iso/hex). */
     readonly squareGrid: boolean;
+}
+
+/**
+ * True when `pos` is a usable scene position (finite numeric x/y). A drawable
+ * whose position expression resolved to nothing renders nothing — one malformed
+ * item must never blank a board, mirroring the unresolvable-asset contract.
+ */
+export function isValidScenePos(pos: ScenePos | undefined): pos is ScenePos {
+    return Number.isFinite(pos?.x) && Number.isFinite(pos?.y);
 }
 
 /** Per-frame context handed to every paint fn. */

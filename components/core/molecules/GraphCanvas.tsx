@@ -32,6 +32,8 @@ export type GraphNode = EventPayload & {
     group?: string;
     color?: string;
     size?: number;
+    /** Merge-cluster count (drawn as a top-right badge; click expands). */
+    badge?: number;
     /** Position (optional, computed if missing) */
     x?: number;
     y?: number;
@@ -73,6 +75,8 @@ export interface GraphCanvasProps {
     onNodeClick?: (node: GraphNode) => void;
     /** On node double-click (e.g. to drill in) */
     onNodeDoubleClick?: (node: GraphNode) => void;
+    /** On node badge click (e.g. to expand a merged cluster). */
+    onBadgeClick?: (node: GraphNode) => void;
     /** Node click event */
     nodeClickEvent?: EventEmit<{ id: string }>;
     /** Currently selected node id (rendered emphasized) */
@@ -120,7 +124,7 @@ function measureLabelWidth(text: string): number {
     if (typeof document === "undefined") return text.length * 6;
     if (!labelMeasureCtx) labelMeasureCtx = document.createElement("canvas").getContext("2d");
     if (!labelMeasureCtx) return text.length * 6;
-    labelMeasureCtx.font = "10px system-ui";
+    labelMeasureCtx.font = "12px system-ui";
     return labelMeasureCtx.measureText(text).width;
 }
 
@@ -152,6 +156,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     actions,
     onNodeClick,
     onNodeDoubleClick,
+    onBadgeClick,
     nodeClickEvent,
     selectedNodeId,
     repulsion = 800,
@@ -337,10 +342,12 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                     const dx = target.x! - source.x!;
                     const dy = target.y! - source.y!;
                     const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                    // Semantic edges (chroma similarity, weight < 1) pull less strongly than
-                    // structural edges; unweighted edges default to w=1 (unchanged force).
+                    // Weight drives the *target* distance: similar nodes (w≈1) target a tight
+                    // link (cluster up), dissimilar nodes (low w) target a long link (push apart).
+                    // Unweighted/structural edges default to w=1 (tight, as before).
                     const w = edge.weight ?? 1;
-                    const force = (dist - linkDistance) * 0.05 * w;
+                    const linkTarget = linkDistance * (1 + (1 - Math.min(1, Math.max(0, w))) * 1.5);
+                    const force = (dist - linkTarget) * 0.05;
                     const fx = (dx / dist) * force;
                     const fy = (dy / dist) * force;
                     source.fx += fx;
@@ -372,7 +379,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                 // node circle AND its label (drawn centered below), so neither circles nor text
                 // overlap. Push apart along the axis of least penetration each iteration.
                 const LABEL_GAP = 12; // label baseline offset below the circle (matches render)
-                const LABEL_H = 12; // one line of 10px text
+                const LABEL_H = 16; // one line of 12px text
                 const pad = nodeSpacing / 2;
                 for (let i = 0; i < nodes.length; i++) {
                     for (let j = i + 1; j < nodes.length; j++) {
@@ -435,6 +442,11 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         const h = height;
         const nodes = nodesRef.current;
         const accentColor = resolveColor("var(--color-accent)", canvas);
+        const fontFamily = resolveColor("var(--font-family)", canvas) || "system-ui";
+        const fgColor = resolveColor("var(--color-foreground)", canvas);
+        const mutedColor = resolveColor("var(--color-muted-foreground)", canvas) || fgColor;
+        const bgColor = resolveColor("var(--color-background)", canvas) || "#ffffff";
+        const accentFg = resolveColor("var(--color-accent-foreground)", canvas) || "#ffffff";
         const dpr = (typeof window !== "undefined" && window.devicePixelRatio) || 1;
 
         // Pre-scale by devicePixelRatio so the backing store renders crisp on HiDPI displays.
@@ -478,9 +490,10 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
             if (edge.label && showLabels) {
                 const mx = (source.x! + target.x!) / 2;
                 const my = (source.y! + target.y!) / 2;
-                ctx.fillStyle = "#888888";
-                ctx.font = "9px system-ui";
+                ctx.fillStyle = mutedColor;
+                ctx.font = `9px ${fontFamily}`;
                 ctx.textAlign = "center";
+                ctx.textBaseline = "alphabetic";
                 ctx.fillText(edge.label, mx, my - 4);
             }
         }
@@ -510,12 +523,37 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
             }
             ctx.stroke();
 
-            // Label
+            // Label — theme font/color with a background halo so it reads over nodes/edges.
             if (showLabels && node.label) {
-                ctx.fillStyle = "#666666";
-                ctx.font = `${isSelected || isHovered ? "bold " : ""}10px system-ui`;
+                ctx.font = `${isSelected || isHovered ? "600" : "500"} 12px ${fontFamily}`;
                 ctx.textAlign = "center";
-                ctx.fillText(node.label, node.x!, node.y! + radius + 12);
+                ctx.textBaseline = "middle";
+                const ly = node.y! + radius + 14;
+                ctx.lineWidth = 3;
+                ctx.lineJoin = "round";
+                ctx.strokeStyle = bgColor;
+                ctx.strokeText(node.label, node.x!, ly);
+                ctx.fillStyle = (isSelected || isHovered) ? fgColor : mutedColor;
+                ctx.fillText(node.label, node.x!, ly);
+            }
+
+            // Merge-count badge (top-right) — click expands the cluster.
+            if (node.badge && node.badge > 1) {
+                const bx = node.x! + radius * 0.7;
+                const by = node.y! - radius * 0.7;
+                const br = Math.max(7, Math.min(11, radius * 0.45));
+                ctx.beginPath();
+                ctx.arc(bx, by, br, 0, Math.PI * 2);
+                ctx.fillStyle = accentColor;
+                ctx.fill();
+                ctx.strokeStyle = bgColor;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.fillStyle = accentFg;
+                ctx.font = `600 9px ${fontFamily}`;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(String(node.badge), bx, by + 0.5);
             }
         }
 
@@ -627,11 +665,22 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                 if (!coords) return;
                 const node = nodeAt(coords.graphX, coords.graphY);
                 if (node) {
+                    // Badge (top-right) takes priority when present.
+                    if (node.badge && node.badge > 1 && onBadgeClick) {
+                        const r = (node.size || 8) + (selectedNodeId === node.id ? 4 : 0);
+                        const bx = node.x! + r * 0.7;
+                        const by = node.y! - r * 0.7;
+                        const br = Math.max(7, Math.min(11, r * 0.45)) + 3;
+                        if (Math.hypot(coords.graphX - bx, coords.graphY - by) <= br) {
+                            onBadgeClick(node);
+                            return;
+                        }
+                    }
                     handleNodeClick(node);
                 }
             }
         },
-        [toCoords, nodeAt, handleNodeClick],
+        [toCoords, nodeAt, handleNodeClick, onBadgeClick, selectedNodeId],
     );
 
     const handlePointerLeave = useCallback(() => {

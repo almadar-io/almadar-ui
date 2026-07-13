@@ -11,6 +11,7 @@
 import type React from 'react';
 import type { ScenePos } from '@almadar/core';
 import type { DrawableAnchor, DrawableBase, PaintFn } from '../../../lib/drawable/contract';
+import { isValidScenePos } from '../../../lib/drawable/contract';
 
 export interface DrawTextProps extends DrawableBase {
     type: 'draw-text';
@@ -29,6 +30,7 @@ export interface DrawTextProps extends DrawableBase {
 
 /** Paint a {@link DrawTextProps}. */
 export const paintText: PaintFn<DrawTextProps> = (painter, node, dctx) => {
+    if (!isValidScenePos(node.position)) return;
     const p = dctx.projector.anchorPoint(node.position, node.anchor ?? 'center');
     const x = p.x + (node.offsetX ?? 0);
     const y = p.y + (node.offsetY ?? 0);

@@ -191,7 +191,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || isLoading}
         className={cn(
-          "inline-flex items-center justify-center gap-2",
+          "relative inline-flex items-center justify-center gap-2",
           "font-medium",
           "rounded-sm",
           "cursor-pointer",

@@ -14,6 +14,7 @@ import type { DrawSpriteProps } from '../../../components/game/atoms/DrawSprite'
 import type { DrawShapeProps } from '../../../components/game/atoms/DrawShape';
 import type { DrawTextProps } from '../../../components/game/atoms/DrawText';
 import type { Projector3D } from '../projector3d';
+import { isValidScenePos } from '../contract';
 import { getAtlas, isAtlasAsset, subRectFor } from '../../../lib/atlasSlice';
 import { ModelLoader } from './ModelLoader';
 
@@ -98,7 +99,7 @@ function useAtlasFrame(asset: DrawSpriteProps['asset']): { frame: SpriteFrame | 
     }, [asset, tick]);
 }
 
-function SpriteBillboard({ node, world }: { node: DrawSpriteProps; world: [number, number, number] }): React.JSX.Element {
+function SpriteBillboard({ node, world, cellSize = 1 }: { node: DrawSpriteProps; world: [number, number, number]; cellSize?: number }): React.JSX.Element {
     const { texture, error: textureError } = useBillboardTexture(node.asset.url);
     const { frame: atlasFrame, ready: atlasReady } = useAtlasFrame(node.asset);
 
@@ -112,14 +113,14 @@ function SpriteBillboard({ node, world }: { node: DrawSpriteProps; world: [numbe
         const aspect = frame ? frame.w / frame.h : imgW / imgH;
         if (anchor === 'top-left') {
             // Ground decal: explicit size in world units, defaulting to one cell.
-            const width = node.width ?? 1;
-            const height = node.height ?? 1;
+            const width = (node.width ?? 1) * cellSize;
+            const height = (node.height ?? 1) * cellSize;
             return { width, height, imgW, imgH };
         }
         const height = node.height ?? 1;
         const width = node.width ?? height * aspect;
-        return { width, height, imgW, imgH };
-    }, [texture, frame, node.height, node.width, anchor]);
+        return { width: width * cellSize, height: height * cellSize, imgW, imgH };
+    }, [texture, frame, node.height, node.width, anchor, cellSize]);
 
     const groundGeometry = React.useMemo(() => {
         if (anchor !== 'top-left' || !texture || !atlasReady) return null;
@@ -195,13 +196,32 @@ function SpriteBillboard({ node, world }: { node: DrawSpriteProps; world: [numbe
 
 /** R3F mesh backend for `draw-sprite`: a GLB via `ModelLoader` when `asset.dimension === '3d'`; else a billboard. */
 export function Sprite3D({ node, projector }: { node: DrawSpriteProps; projector: Projector3D }): React.JSX.Element | null {
-    if (node.asset.dimension === '3d' && node.asset.url) {
+    const asset = node.asset;
+    // Mirrors the 2D `paintSprite` contract: a drawable with no resolvable asset
+    // or position renders nothing — it never throws (one bad item must not blank the scene).
+    if (!asset?.url || !isValidScenePos(node.position)) return null;
+    if (asset.dimension === '3d') {
+        // GLB scale = the sprite's authored world size: uniform from `width` alone;
+        // [width, height, width] when `height` is authored too, so a side-view tile
+        // (340×32 px) becomes a slab instead of a cube. Grid boards author width ==
+        // height, so their uniform scale is unchanged.
+        const scale: number | [number, number, number] =
+            node.width === undefined
+                ? 1
+                : node.height === undefined
+                  ? node.width * projector.cellSize
+                  : [
+                        node.width * projector.cellSize,
+                        node.height * projector.cellSize,
+                        node.width * projector.cellSize,
+                    ];
         return (
             <group position={projector.toWorld(node.position)}>
                 <ModelLoader
-                    url={node.asset.url}
-                    scale={node.width ?? projector.cellSize}
+                    url={asset.url}
+                    scale={scale}
                     rotation={[0, node.rotation ?? 0, 0]}
+                    animation={node.animation}
                     fallbackGeometry="box"
                     castShadow
                     receiveShadow
@@ -209,12 +229,12 @@ export function Sprite3D({ node, projector }: { node: DrawSpriteProps; projector
             </group>
         );
     }
-    if (!node.asset.url) return null;
-    return <SpriteBillboard node={node} world={projector.toWorld(node.position)} />;
+    return <SpriteBillboard node={node} world={projector.toWorld(node.position)} cellSize={projector.cellSize} />;
 }
 
 /** R3F mesh backend for `draw-shape`: a flat mesh on the ground plane. */
 export function Shape3D({ node, projector }: { node: DrawShapeProps; projector: Projector3D }): React.JSX.Element | null {
+    if (!isValidScenePos(node.position)) return null;
     const world = projector.toWorld(node.position);
     const color = node.fill ?? node.stroke ?? '#ffffff';
 
@@ -222,8 +242,8 @@ export function Shape3D({ node, projector }: { node: DrawShapeProps; projector: 
     switch (node.shape) {
         case 'cell':
         case 'rect': {
-            const w = node.shape === 'cell' ? projector.cellSize * 0.95 : node.width ?? projector.cellSize;
-            const h = node.shape === 'cell' ? projector.cellSize * 0.95 : node.height ?? projector.cellSize;
+            const w = node.shape === 'cell' ? projector.cellSize * 0.95 : (node.width ?? 1) * projector.cellSize;
+            const h = node.shape === 'cell' ? projector.cellSize * 0.95 : (node.height ?? 1) * projector.cellSize;
             geometry = <planeGeometry args={[w, h]} />;
             break;
         }
@@ -262,6 +282,7 @@ export function Shape3D({ node, projector }: { node: DrawShapeProps; projector: 
 
 /** R3F mesh backend for `draw-text`: a billboarded drei `<Text>` above the scene position. */
 export function Text3D({ node, projector }: { node: DrawTextProps; projector: Projector3D }): React.JSX.Element | null {
+    if (!isValidScenePos(node.position)) return null;
     const world = projector.toWorld(node.position);
     return (
         <Billboard position={[world[0], world[1] + 1.2, world[2]]}>

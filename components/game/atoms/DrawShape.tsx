@@ -17,6 +17,7 @@ import type React from 'react';
 import type { ScenePos } from '@almadar/core';
 import type { PainterPoint } from '../../../lib/painter2d';
 import type { DrawableAnchor, DrawableBase, PaintFn } from '../../../lib/drawable/contract';
+import { isValidScenePos } from '../../../lib/drawable/contract';
 
 export type ShapeKind = 'cell' | 'rect' | 'ellipse' | 'poly';
 
@@ -49,6 +50,7 @@ export interface DrawShapeProps extends DrawableBase {
 
 /** Paint a {@link DrawShapeProps}. Skips a draw when its required geometry is missing — never throws. */
 export const paintShape: PaintFn<DrawShapeProps> = (painter, node, dctx) => {
+    if (!isValidScenePos(node.position)) return;
     painter.save();
     if (node.opacity !== undefined && node.opacity !== 1) painter.setAlpha(node.opacity);
 
