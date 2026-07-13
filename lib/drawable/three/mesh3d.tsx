@@ -215,13 +215,8 @@ export function Sprite3D({ node, projector }: { node: DrawSpriteProps; projector
                         node.height * projector.cellSize,
                         node.width * projector.cellSize,
                     ];
-        const world = projector.toWorld(node.position);
-        if (node.position.z !== undefined) {
-            // eslint-disable-next-line no-console
-            console.warn(`TMP-GG1 sprite3d ${asset.url.split('/').pop() ?? asset.url} posZ=${node.position.z} world=${JSON.stringify(world)} scale=${JSON.stringify(scale)}`);
-        }
         return (
-            <group position={world}>
+            <group position={projector.toWorld(node.position)}>
                 <ModelLoader
                     url={asset.url}
                     scale={scale}
