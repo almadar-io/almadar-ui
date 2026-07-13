@@ -304,7 +304,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         // Simple force simulation for force layout
         if (layout === "force") {
             let iterations = 0;
-            const maxIterations = 100;
+            const maxIterations = 300;
 
             const tick = () => {
                 const nodes = nodesRef.current;
@@ -333,7 +333,9 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                     }
                 }
 
-                // Attraction along edges
+                // Attraction along edges — weight scales BOTH target distance and pull
+                // strength, so high-similarity links draw nodes into a tight knot while weak
+                // links stay loose. Unweighted/structural edges default to w=1 (tight).
                 for (const edge of propEdges) {
                     const source = nodes.find((n) => n.id === edge.source);
                     const target = nodes.find((n) => n.id === edge.target);
@@ -342,12 +344,9 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                     const dx = target.x! - source.x!;
                     const dy = target.y! - source.y!;
                     const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                    // Weight drives the *target* distance: similar nodes (w≈1) target a tight
-                    // link (cluster up), dissimilar nodes (low w) target a long link (push apart).
-                    // Unweighted/structural edges default to w=1 (tight, as before).
-                    const w = edge.weight ?? 1;
-                    const linkTarget = linkDistance * (1 + (1 - Math.min(1, Math.max(0, w))) * 1.5);
-                    const force = (dist - linkTarget) * 0.05;
+                    const w = Math.min(1, Math.max(0, edge.weight ?? 1));
+                    const linkTarget = linkDistance * (0.5 + (1 - w) * 1.5); // w=1→0.5×, w=0→2×
+                    const force = (dist - linkTarget) * (0.04 + 0.1 * w);
                     const fx = (dx / dist) * force;
                     const fy = (dy / dist) * force;
                     source.fx += fx;
@@ -356,10 +355,24 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                     target.fy -= fy;
                 }
 
-                // Center gravity
+                // Cluster centroid gravity — pull each node toward its group's centroid so
+                // same-cluster nodes form visible islands; singletons drift to canvas center.
+                const centroids = new Map<string, { x: number; y: number; n: number }>();
                 for (const node of nodes) {
-                    node.fx += (centerX - node.x!) * 0.01;
-                    node.fy += (centerY - node.y!) * 0.01;
+                    const g = node.group ?? "__none__";
+                    let c = centroids.get(g);
+                    if (!c) { c = { x: 0, y: 0, n: 0 }; centroids.set(g, c); }
+                    c.x += node.x!; c.y += node.y!; c.n += 1;
+                }
+                for (const node of nodes) {
+                    const c = centroids.get(node.group ?? "__none__");
+                    if (c && c.n > 1) {
+                        node.fx += (c.x / c.n - node.x!) * 0.04;
+                        node.fy += (c.y / c.n - node.y!) * 0.04;
+                    } else {
+                        node.fx += (centerX - node.x!) * 0.01;
+                        node.fy += (centerY - node.y!) * 0.01;
+                    }
                 }
 
                 // Apply forces

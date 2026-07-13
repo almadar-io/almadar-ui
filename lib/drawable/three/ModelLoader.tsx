@@ -241,6 +241,7 @@ export function ModelLoader({
         // 1/≈0 would blow the model up to fill the canvas. Below this floor we decline to
         // normalize (factor 1) rather than upscale by a wild factor.
         if (!Number.isFinite(maxDim) || maxDim < 0.05) return 1;
+        log.warn(`TMP-GG1 bounds ${url.split('/').pop() ?? url} size=${JSON.stringify([size.x, size.y, size.z])} scaleProp=${JSON.stringify(scale)}`);
         return 1 / maxDim;
     }, [model]);
 
