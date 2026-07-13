@@ -337,7 +337,10 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                     const dx = target.x! - source.x!;
                     const dy = target.y! - source.y!;
                     const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                    const force = (dist - linkDistance) * 0.05;
+                    // Semantic edges (chroma similarity, weight < 1) pull less strongly than
+                    // structural edges; unweighted edges default to w=1 (unchanged force).
+                    const w = edge.weight ?? 1;
+                    const force = (dist - linkDistance) * 0.05 * w;
                     const fx = (dx / dist) * force;
                     const fy = (dy / dist) * force;
                     source.fx += fx;
@@ -460,12 +463,15 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
             const incident = !!hoveredNode && (edge.source === hoveredNode || edge.target === hoveredNode);
             // Links stay faint by default so a dense graph reads as a backdrop; the edges
             // incident to a hovered node light up while the rest drop further back.
-            ctx.globalAlpha = hoveredNode ? (incident ? 1 : 0.05) : linkOpacity;
+            // Weight (unweighted edges default to w=1, i.e. unchanged) scales opacity and
+            // width linearly so stronger semantic edges read more prominently than weaker ones.
+            const w = edge.weight ?? 1;
+            ctx.globalAlpha = hoveredNode ? (incident ? 1 : 0.05) : linkOpacity * w;
             ctx.beginPath();
             ctx.moveTo(source.x!, source.y!);
             ctx.lineTo(target.x!, target.y!);
             ctx.strokeStyle = incident ? accentColor : (edge.color || "#888888");
-            ctx.lineWidth = incident ? 2 : edge.weight ? Math.max(1, edge.weight) : 1;
+            ctx.lineWidth = incident ? 2 : Math.max(0.75, w);
             ctx.stroke();
 
             // Edge label
