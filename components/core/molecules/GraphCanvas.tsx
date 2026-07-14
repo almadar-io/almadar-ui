@@ -319,8 +319,13 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         const canvas = canvasRef.current;
         if (!canvas || propNodes.length === 0) return;
 
-        const w = logicalW;
-        const h = height;
+        const viewW = logicalW;
+        const viewH = height;
+        // Virtual canvas: dense graphs (45 nodes + labels) need far more room than the visible
+        // card. Lay out in a larger virtual space, then auto-fit the result back into view.
+        const layoutScale = Math.max(1, Math.min(3, Math.sqrt(propNodes.length / 12)));
+        const w = viewW * layoutScale;
+        const h = viewH * layoutScale;
         // Theme font the labels render in — used to size the collision boxes so they match the text on screen.
         const labelFont = resolveColor("var(--font-family)", canvas) || "system-ui";
 
@@ -377,13 +382,44 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
             const LABEL_GAP = 12; // label sits below the circle (matches render)
             const LABEL_H = 16; // one line of 12px text
 
-            const tick = (iter: number) => {
+            // Sparse similarity: each node keeps only its top-K strongest non-edge neighbors.
+            // Passing a dense full-matrix (e.g. 45 paths → 990 pairs) makes every node attract
+            // every other node, collapsing clusters into a single hairball.
+            const SIMILARITY_NEIGHBORS = 5;
+            const SIMILARITY_MIN_WEIGHT = 0.25;
+            const drawnPairs = new Set<string>();
+            for (const edge of propEdges) drawnPairs.add(edgeKeyOf(edge.source, edge.target));
+            const similarityNeighbors = new Map<string, Set<string>>();
+            if (SIMILARITY_NEIGHBORS > 0) {
+                const bySource = new Map<string, GraphSimilarity[]>();
+                for (const pair of propSimilarity) {
+                    if (pair.weight < SIMILARITY_MIN_WEIGHT) continue;
+                    if (drawnPairs.has(edgeKeyOf(pair.source, pair.target))) continue;
+                    const arr = bySource.get(pair.source) ?? [];
+                    arr.push(pair);
+                    bySource.set(pair.source, arr);
+                }
+                for (const [id, arr] of bySource) {
+                    arr.sort((a, b) => b.weight - a.weight);
+                    const keep = new Set(arr.slice(0, SIMILARITY_NEIGHBORS).map((p) => p.target));
+                    similarityNeighbors.set(id, keep);
+                }
+            }
+            const activeSimilarity = propSimilarity.filter((pair) => {
+                if (drawnPairs.has(edgeKeyOf(pair.source, pair.target))) return false;
+                const a = similarityNeighbors.get(pair.source);
+                const b = similarityNeighbors.get(pair.target);
+                return (a?.has(pair.target) ?? false) || (b?.has(pair.source) ?? false);
+            });
+
+            const tick = (iter: number, options?: { skipForces?: boolean }) => {
+                const skipForces = options?.skipForces ?? false;
                 const nodes = nodesRef.current;
                 const centerX = w / 2;
                 const centerY = h / 2;
                 // Cooling schedule: strong springs early to find structure, weak late so the
                 // collision constraint can settle the graph without the springs re-breaking it.
-                const temp = Math.max(COOL, 1 - iter / maxIterations);
+                const temp = skipForces ? 0 : Math.max(COOL, 1 - iter / maxIterations);
 
                 // Reset forces
                 for (const node of nodes) {
@@ -391,96 +427,98 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                     node.fy = 0;
                 }
 
-                // Repulsion between all nodes (cooled)
-                for (let i = 0; i < nodes.length; i++) {
-                    for (let j = i + 1; j < nodes.length; j++) {
-                        const dx = nodes[j].x! - nodes[i].x!;
-                        const dy = nodes[j].y! - nodes[i].y!;
+                if (!skipForces) {
+                    // Repulsion between all nodes (cooled)
+                    for (let i = 0; i < nodes.length; i++) {
+                        for (let j = i + 1; j < nodes.length; j++) {
+                            const dx = nodes[j].x! - nodes[i].x!;
+                            const dy = nodes[j].y! - nodes[i].y!;
+                            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                            const force = (repulsion / (dist * dist)) * temp;
+                            const fx = (dx / dist) * force;
+                            const fy = (dy / dist) * force;
+                            nodes[i].fx -= fx;
+                            nodes[i].fy -= fy;
+                            nodes[j].fx += fx;
+                            nodes[j].fy += fy;
+                        }
+                    }
+
+                    const nodeById = new Map(nodes.map((n) => [n.id, n] as const));
+                    const spring = (a: SimNode, b: SimNode, rest: number, k: number) => {
+                        const dx = b.x! - a.x!;
+                        const dy = b.y! - a.y!;
                         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                        const force = (repulsion / (dist * dist)) * temp;
+                        const force = (dist - rest) * k * temp;
                         const fx = (dx / dist) * force;
                         const fy = (dy / dist) * force;
-                        nodes[i].fx -= fx;
-                        nodes[i].fy -= fy;
-                        nodes[j].fx += fx;
-                        nodes[j].fy += fy;
+                        a.fx += fx;
+                        a.fy += fy;
+                        b.fx -= fx;
+                        b.fy -= fy;
+                    };
+
+                    // Drawn edges are the PRIMARY structure: a strong, tight spring so connected nodes
+                    // clearly cluster. Weight nudges the rest length (higher ⇒ tighter).
+                    for (const edge of propEdges) {
+                        const source = nodeById.get(edge.source);
+                        const target = nodeById.get(edge.target);
+                        if (!source || !target) continue;
+                        drawnPairs.add(edgeKeyOf(edge.source, edge.target));
+                        const w = Math.min(1, Math.max(0, edge.weight ?? 1));
+                        spring(source, target, linkDistance * (0.35 + (1 - w) * 0.3), 0.14);
                     }
-                }
 
-                const nodeById = new Map(nodes.map((n) => [n.id, n] as const));
-                const spring = (a: SimNode, b: SimNode, rest: number, k: number) => {
-                    const dx = b.x! - a.x!;
-                    const dy = b.y! - a.y!;
-                    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                    const force = (dist - rest) * k * temp;
-                    const fx = (dx / dist) * force;
-                    const fy = (dy / dist) * force;
-                    a.fx += fx;
-                    a.fy += fy;
-                    b.fx -= fx;
-                    b.fy -= fy;
-                };
+                    // Top-K similarity is the SECONDARY macro-layout: only the strongest non-edge
+                    // neighbors per node get a weak spring so clusters arrange relative to each
+                    // other without collapsing the whole graph.
+                    for (const pair of activeSimilarity) {
+                        const source = nodeById.get(pair.source);
+                        const target = nodeById.get(pair.target);
+                        if (!source || !target) continue;
+                        const w = Math.min(1, Math.max(0, pair.weight));
+                        spring(source, target, linkDistance * (1.35 - 0.55 * w), 0.015);
+                    }
 
-                // Drawn edges are the PRIMARY structure: a strong, tight spring so connected nodes
-                // clearly cluster. Weight nudges the rest length (higher ⇒ tighter).
-                const drawnPairs = new Set<string>();
-                for (const edge of propEdges) {
-                    const source = nodeById.get(edge.source);
-                    const target = nodeById.get(edge.target);
-                    if (!source || !target) continue;
-                    drawnPairs.add(edgeKeyOf(edge.source, edge.target));
-                    const w = Math.min(1, Math.max(0, edge.weight ?? 1));
-                    spring(source, target, linkDistance * (0.35 + (1 - w) * 0.3), 0.14);
-                }
-
-                // All-pairs similarity is the SECONDARY macro-layout: only pairs that are NOT directly
-                // connected get a weak spring so clusters arrange relative to each other without
-                // fighting the tight edge springs.
-                for (const pair of propSimilarity) {
-                    if (drawnPairs.has(edgeKeyOf(pair.source, pair.target))) continue;
-                    const source = nodeById.get(pair.source);
-                    const target = nodeById.get(pair.target);
-                    if (!source || !target) continue;
-                    const w = Math.min(1, Math.max(0, pair.weight));
-                    spring(source, target, linkDistance * (1.35 - 0.55 * w), 0.015);
-                }
-
-                // Cluster centroid gravity — only when there are ≥2 clusters, so same-cluster nodes
-                // form visible islands. A single-cluster graph would otherwise be crushed into one
-                // knot; there we fall back to a gentle global centering.
-                const centroids = new Map<string, { x: number; y: number; n: number }>();
-                for (const node of nodes) {
-                    const g = node.group ?? "__none__";
-                    let c = centroids.get(g);
-                    if (!c) { c = { x: 0, y: 0, n: 0 }; centroids.set(g, c); }
-                    c.x += node.x!; c.y += node.y!; c.n += 1;
-                }
-                const multiCluster = centroids.size > 1;
-                for (const node of nodes) {
-                    if (multiCluster) {
-                        const c = centroids.get(node.group ?? "__none__");
-                        if (c && c.n > 1) {
-                            node.fx += (c.x / c.n - node.x!) * 0.04 * temp;
-                            node.fy += (c.y / c.n - node.y!) * 0.04 * temp;
+                    // Cluster centroid gravity — only when there are ≥2 clusters, so same-cluster nodes
+                    // form visible islands. A single-cluster graph would otherwise be crushed into one
+                    // knot; there we fall back to a gentle global centering.
+                    const centroids = new Map<string, { x: number; y: number; n: number }>();
+                    for (const node of nodes) {
+                        const g = node.group ?? "__none__";
+                        let c = centroids.get(g);
+                        if (!c) { c = { x: 0, y: 0, n: 0 }; centroids.set(g, c); }
+                        c.x += node.x!; c.y += node.y!; c.n += 1;
+                    }
+                    const multiCluster = centroids.size > 1;
+                    for (const node of nodes) {
+                        if (multiCluster) {
+                            const c = centroids.get(node.group ?? "__none__");
+                            if (c && c.n > 1) {
+                                node.fx += (c.x / c.n - node.x!) * 0.06 * temp;
+                                node.fy += (c.y / c.n - node.y!) * 0.06 * temp;
+                            } else {
+                                node.fx += (centerX - node.x!) * 0.01 * temp;
+                                node.fy += (centerY - node.y!) * 0.01 * temp;
+                            }
                         } else {
-                            node.fx += (centerX - node.x!) * 0.01 * temp;
-                            node.fy += (centerY - node.y!) * 0.01 * temp;
+                            node.fx += (centerX - node.x!) * 0.008 * temp;
+                            node.fy += (centerY - node.y!) * 0.008 * temp;
                         }
-                    } else {
-                        node.fx += (centerX - node.x!) * 0.008 * temp;
-                        node.fy += (centerY - node.y!) * 0.008 * temp;
+                    }
+
+                    // Apply forces
+                    const damping = 0.9;
+                    for (const node of nodes) {
+                        node.vx = (node.vx + node.fx) * damping;
+                        node.vy = (node.vy + node.fy) * damping;
+                        node.x! += node.vx;
+                        node.y! += node.vy;
                     }
                 }
 
-                // Apply forces
-                const damping = 0.9;
+                // Boundary (virtual layout space)
                 for (const node of nodes) {
-                    node.vx = (node.vx + node.fx) * damping;
-                    node.vy = (node.vy + node.fy) * damping;
-                    node.x! += node.vx;
-                    node.y! += node.vy;
-
-                    // Boundary
                     node.x = Math.max(30, Math.min(w - 30, node.x!));
                     node.y = Math.max(30, Math.min(h - 30, node.y!));
                 }
@@ -541,6 +579,29 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
             if (fullRelayout) {
                 // Run the simulation synchronously to a settled state (no per-frame animation).
                 for (let i = 0; i < maxIterations; i++) tick(i);
+
+                // Final collision-only cleanup: separate any residual overlaps without springs
+                // pulling nodes back together.
+                for (let i = 0; i < 4; i++) tick(maxIterations, { skipForces: true });
+
+                // Auto-fit the virtual layout into the visible viewport so dense graphs don't
+                // appear cramped and the user sees the whole picture on first load.
+                const fitPad = 40;
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                for (const node of nodesRef.current) {
+                    const r = node.size || 8;
+                    const lw = showLabels ? (node.labelW ?? (node.labelW = node.label ? measureLabelWidth(node.label, labelFont) : 0)) : 0;
+                    minX = Math.min(minX, node.x! - r, node.x! - lw / 2);
+                    minY = Math.min(minY, node.y! - r);
+                    maxX = Math.max(maxX, node.x! + r, node.x! + lw / 2);
+                    maxY = Math.max(maxY, node.y! + r + LABEL_GAP + LABEL_H);
+                }
+                const bboxW = Math.max(1, maxX - minX + fitPad * 2);
+                const bboxH = Math.max(1, maxY - minY + fitPad * 2);
+                const nextZoom = Math.min(1, viewW / bboxW, viewH / bboxH);
+                setZoom(nextZoom);
+                setOffset({ x: fitPad - minX * nextZoom, y: fitPad - minY * nextZoom });
+
                 laidOutRef.current = true;
             } else {
                 // Patch only: keep every settled node where it is and place newly-appeared nodes
