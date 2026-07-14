@@ -47,6 +47,19 @@ export interface GraphEdge {
     color?: string;
 }
 
+/**
+ * All-pairs similarity (cosine 0–1) used ONLY for layout: ideal pair distance
+ * is derived from similarity (higher ⇒ closer). Never drawn — `edges` remain
+ * the only rendered links. When provided it supersedes edge-weight attraction;
+ * when omitted, edges drive layout as before.
+ */
+export interface GraphSimilarity {
+    source: string;
+    target: string;
+    /** Cosine similarity in [0,1]; higher ⇒ closer. */
+    weight: number;
+}
+
 export interface GraphAction {
     label: string;
     event?: string;
@@ -59,8 +72,14 @@ export interface GraphCanvasProps {
     title?: string;
     /** Graph nodes */
     nodes?: readonly GraphNode[];
-    /** Graph edges */
+    /** Graph edges (the only rendered links) */
     edges?: readonly GraphEdge[];
+    /**
+     * All-pairs similarity (cosine 0–1) used ONLY for layout: ideal pair
+     * distance = linkDistance × (1 − cosine). Never drawn. When provided it
+     * supersedes edge-weight attraction; when omitted, edges drive layout.
+     */
+    similarity?: readonly GraphSimilarity[];
     /** Canvas height */
     height?: number;
     /** Show node labels */
@@ -134,6 +153,27 @@ function getGroupColor(group: string | undefined, groups: string[]): string {
     return GROUP_COLORS[idx % GROUP_COLORS.length];
 }
 
+/** Deterministic 32-bit string hash — the seed for the layout PRNG. */
+function hashSeed(str: string): number {
+    let h = 1779033703 ^ str.length;
+    for (let i = 0; i < str.length; i++) {
+        h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+        h = (h << 13) | (h >>> 19);
+    }
+    return (h ^= h >>> 16) >>> 0;
+}
+
+/** mulberry32: tiny deterministic PRNG so a graph lays out identically on every load. */
+function mulberry32(a: number): () => number {
+    return function () {
+        a |= 0;
+        a = (a + 0x6d2b79f5) | 0;
+        let t = Math.imul(a ^ (a >>> 15), 1 | a);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
 /**
  * Canvas 2D `fillStyle`/`strokeStyle` cannot resolve CSS custom properties (`var(--x)`),
  * so resolve them against the element's computed style; pass through literal colors.
@@ -149,6 +189,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     title,
     nodes: propNodes = [],
     edges: propEdges = [],
+    similarity: propSimilarity = [],
     height = 400,
     showLabels = true,
     interactive = true,
@@ -297,9 +338,11 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                     x = gapX * ((idx % cols) + 1);
                     y = gapY * (Math.floor(idx / cols) + 1);
                 } else {
-                    // Force layout: random initial positions
-                    x = w * 0.2 + Math.random() * w * 0.6;
-                    y = h * 0.2 + Math.random() * h * 0.6;
+                    // Force layout: deterministic seeded initial positions (stable per node id,
+                    // so the same graph settles into the same layout on every load).
+                    const rand = mulberry32(hashSeed(n.id));
+                    x = w * 0.2 + rand() * w * 0.6;
+                    y = h * 0.2 + rand() * h * 0.6;
                 }
             }
 
@@ -348,26 +391,51 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                     }
                 }
 
-                // Attraction along edges — weight scales BOTH target distance and pull
-                // strength, so high-similarity links draw nodes into a tight knot while weak
-                // links stay loose. Unweighted/structural edges default to w=1 (tight).
-                for (const edge of propEdges) {
-                    const source = nodes.find((n) => n.id === edge.source);
-                    const target = nodes.find((n) => n.id === edge.target);
-                    if (!source || !target) continue;
+                // Layout attraction. When an all-pairs `similarity` matrix is provided it is the
+                // layout driver (edges become drawing-only): ideal pair distance = linkDistance ×
+                // (1 − cosine), so alike nodes pull tight and unrelated ones rest at max distance.
+                // Without it, fall back to edge-weight attraction (unchanged legacy behavior).
+                const nodeById = new Map(nodes.map((n) => [n.id, n] as const));
+                if (propSimilarity.length > 0) {
+                    for (const pair of propSimilarity) {
+                        const source = nodeById.get(pair.source);
+                        const target = nodeById.get(pair.target);
+                        if (!source || !target) continue;
+                        const dx = target.x! - source.x!;
+                        const dy = target.y! - source.y!;
+                        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                        const w = Math.min(1, Math.max(0, pair.weight));
+                        const linkTarget = linkDistance * (1 - w); // cosine 1 ⇒ 0 (tight), 0 ⇒ max
+                        const force = (dist - linkTarget) * (0.04 + 0.1 * w);
+                        const fx = (dx / dist) * force;
+                        const fy = (dy / dist) * force;
+                        source.fx += fx;
+                        source.fy += fy;
+                        target.fx -= fx;
+                        target.fy -= fy;
+                    }
+                } else {
+                    // Attraction along edges — weight scales BOTH target distance and pull
+                    // strength, so high-similarity links draw nodes into a tight knot while weak
+                    // links stay loose. Unweighted/structural edges default to w=1 (tight).
+                    for (const edge of propEdges) {
+                        const source = nodeById.get(edge.source);
+                        const target = nodeById.get(edge.target);
+                        if (!source || !target) continue;
 
-                    const dx = target.x! - source.x!;
-                    const dy = target.y! - source.y!;
-                    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                    const w = Math.min(1, Math.max(0, edge.weight ?? 1));
-                    const linkTarget = linkDistance * (0.5 + (1 - w) * 1.5); // w=1→0.5×, w=0→2×
-                    const force = (dist - linkTarget) * (0.04 + 0.1 * w);
-                    const fx = (dx / dist) * force;
-                    const fy = (dy / dist) * force;
-                    source.fx += fx;
-                    source.fy += fy;
-                    target.fx -= fx;
-                    target.fy -= fy;
+                        const dx = target.x! - source.x!;
+                        const dy = target.y! - source.y!;
+                        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                        const w = Math.min(1, Math.max(0, edge.weight ?? 1));
+                        const linkTarget = linkDistance * (0.5 + (1 - w) * 1.5); // w=1→0.5×, w=0→2×
+                        const force = (dist - linkTarget) * (0.04 + 0.1 * w);
+                        const fx = (dx / dist) * force;
+                        const fy = (dy / dist) * force;
+                        source.fx += fx;
+                        source.fy += fy;
+                        target.fx -= fx;
+                        target.fy -= fy;
+                    }
                 }
 
                 // Cluster centroid gravity — pull each node toward its group's centroid so
@@ -481,7 +549,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         return () => {
             cancelAnimationFrame(animRef.current);
         };
-    }, [propNodes, propEdges, layout, repulsion, linkDistance, nodeSpacing, showLabels]);
+    }, [propNodes, propEdges, propSimilarity, layout, repulsion, linkDistance, nodeSpacing, showLabels]);
 
     // Render
     useEffect(() => {

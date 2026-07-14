@@ -283,6 +283,7 @@ export {
   type GraphCanvasProps,
   type GraphNode,
   type GraphEdge,
+  type GraphSimilarity,
 } from "./GraphCanvas";
 
 // Learning-science molecules (generative-UI primitives)
