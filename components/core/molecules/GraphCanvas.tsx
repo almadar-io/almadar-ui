@@ -181,6 +181,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     offsetRef.current = offset;
     const [hoveredNode, setHoveredNode] = useState<string | null>(null);
     const nodesRef = useRef<SimNode[]>([]);
+    const laidOutRef = useRef(false);
     const [, forceUpdate] = useState(0);
     // Logical drawing width in CSS px (the canvas backing store is this × devicePixelRatio for crisp text).
     const [logicalW, setLogicalW] = useState(800);
@@ -306,6 +307,15 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         });
 
         nodesRef.current = simNodes;
+
+        // Relayout only on the very first layout, or when the node set changes substantially
+        // (e.g. an L1→L2 drill is a different graph). React-Query refetches, window resize, and
+        // badge-expand all preserve every settled position so the graph never "shifts around".
+        const prevIds = new Set<string>([...prevPos.keys()]);
+        const newIdList = simNodes.map((n) => n.id);
+        const kept = newIdList.filter((id) => prevIds.has(id)).length;
+        const overlap = prevIds.size === 0 ? 0 : kept / Math.max(prevIds.size, newIdList.length);
+        const fullRelayout = !laidOutRef.current || overlap < 0.5;
 
         // Simple force simulation for force layout
         if (layout === "force") {
@@ -433,9 +443,36 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
 
             };
 
-            // Run the simulation synchronously to a settled state (no per-frame animation),
-            // so the graph never visibly “shifts around rapidly then settles” on each change.
-            for (let i = 0; i < maxIterations; i++) tick();
+            if (fullRelayout) {
+                // Run the simulation synchronously to a settled state (no per-frame animation).
+                for (let i = 0; i < maxIterations; i++) tick();
+                laidOutRef.current = true;
+            } else {
+                // Patch only: keep every settled node where it is and place newly-appeared nodes
+                // in a spiral around their cluster centroid (or canvas center if none).
+                const centroids = new Map<string, { x: number; y: number; n: number }>();
+                for (const node of simNodes) {
+                    if (!prevPos.has(node.id)) continue;
+                    const g = node.group ?? "__none__";
+                    let c = centroids.get(g);
+                    if (!c) { c = { x: 0, y: 0, n: 0 }; centroids.set(g, c); }
+                    c.x += node.x!; c.y += node.y!; c.n += 1;
+                }
+                const ringCount = new Map<string, number>();
+                for (const node of simNodes) {
+                    if (prevPos.has(node.id)) continue;
+                    const g = node.group ?? "__none__";
+                    const c = centroids.get(g);
+                    const cx = c && c.n > 0 ? c.x / c.n : w / 2;
+                    const cy = c && c.n > 0 ? c.y / c.n : h / 2;
+                    const k = ringCount.get(g) ?? 0;
+                    ringCount.set(g, k + 1);
+                    const angle = k * 2.399963; // golden-angle sunflower spiral
+                    const r = 22 + k * 8;
+                    node.x = Math.max(30, Math.min(w - 30, cx + r * Math.cos(angle)));
+                    node.y = Math.max(30, Math.min(h - 30, cy + r * Math.sin(angle)));
+                }
+            }
             forceUpdate((n) => n + 1);
         } else {
             forceUpdate((n) => n + 1);
@@ -444,7 +481,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         return () => {
             cancelAnimationFrame(animRef.current);
         };
-    }, [propNodes, propEdges, layout, repulsion, linkDistance, nodeSpacing, showLabels, logicalW, height]);
+    }, [propNodes, propEdges, layout, repulsion, linkDistance, nodeSpacing, showLabels]);
 
     // Render
     useEffect(() => {
