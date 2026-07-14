@@ -658,18 +658,20 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
             }
             ctx.stroke();
 
-            // Label — theme font/color with a background halo so it reads over nodes/edges.
+            // Label — high-contrast theme foreground with a thick background halo so it
+            // stays legible over nodes and crossing edges.
             if (showLabels && node.label) {
                 const displayLabel = truncateLabel(node.label);
-                ctx.font = `${isSelected || isHovered ? "600" : "500"} 12px ${fontFamily}`;
+                ctx.font = `${isSelected || isHovered ? "700" : "600"} 12px ${fontFamily}`;
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
                 const ly = node.y! + radius + 14;
-                ctx.lineWidth = 3;
+                // Thick background halo knocks out any edges/nodes behind the text.
+                ctx.lineWidth = 4;
                 ctx.lineJoin = "round";
                 ctx.strokeStyle = bgColor;
                 ctx.strokeText(displayLabel, node.x!, ly);
-                ctx.fillStyle = (isSelected || isHovered) ? fgColor : mutedColor;
+                ctx.fillStyle = fgColor;
                 ctx.fillText(displayLabel, node.x!, ly);
             }
 
