@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "5.120.0",
+  "version": "5.121.0",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "sideEffects": [
@@ -136,6 +136,7 @@
     "@tabler/icons-react": "^3.44.0",
     "@xyflow/react": "12.10.1",
     "clsx": "^2.1.0",
+    "d3-force": "^3.0.0",
     "elkjs": "0.11.1",
     "hastscript": "^9.0.0",
     "leaflet": "1.9.4",
@@ -185,6 +186,7 @@
     "@testing-library/jest-dom": "^6.4.0",
     "@testing-library/react": "^14.2.0",
     "@testing-library/user-event": "^14.5.0",
+    "@types/d3-force": "^3.0.10",
     "@types/leaflet": "1.9.21",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
