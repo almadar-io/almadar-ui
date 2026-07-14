@@ -153,7 +153,9 @@ function measureLabelWidth(text: string, fontFamily = "system-ui"): number {
 }
 
 function getGroupColor(group: string | undefined, groups: string[]): string {
-    if (!group) return GROUP_COLORS[0];
+    // Ungrouped nodes render neutral in a mixed graph so real groups pop; a graph with
+    // no groups at all keeps the primary color everywhere.
+    if (!group) return groups.length > 0 ? "var(--color-muted-foreground)" : GROUP_COLORS[0];
     const idx = groups.indexOf(group);
     return GROUP_COLORS[idx % GROUP_COLORS.length];
 }
@@ -453,9 +455,11 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                     .force("charge", forceManyBody<SimNode>().strength(-repulsion * 0.5))
                     // Collide keeps node circles AND their (truncated) labels from overlapping.
                     .force("collide", forceCollide<SimNode>().radius(collideRadius).strength(0.9))
-                    // Per-group sector gravity (or gentle global centering for a single cluster).
-                    .force("x", forceX<SimNode>((n) => groupTarget.get(n.group ?? "")?.x ?? w / 2).strength(multiCluster ? 0.05 : 0.02))
-                    .force("y", forceY<SimNode>((n) => groupTarget.get(n.group ?? "")?.y ?? h / 2).strength(multiCluster ? 0.05 : 0.02))
+                    // Per-group sector gravity: grouped nodes are pulled toward their group's ring
+                    // sector — strongly enough to beat cross-group springs, so same-color nodes
+                    // form islands. Ungrouped nodes only get gentle global centering.
+                    .force("x", forceX<SimNode>((n) => groupTarget.get(n.group ?? "")?.x ?? w / 2).strength((n) => (multiCluster && n.group ? 0.14 : 0.02)))
+                    .force("y", forceY<SimNode>((n) => groupTarget.get(n.group ?? "")?.y ?? h / 2).strength((n) => (multiCluster && n.group ? 0.14 : 0.02)))
                     .stop();
 
                 // Settle synchronously (no per-frame animation).
