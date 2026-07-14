@@ -125,7 +125,7 @@ function measureLabelWidth(text: string): number {
     if (!labelMeasureCtx) labelMeasureCtx = document.createElement("canvas").getContext("2d");
     if (!labelMeasureCtx) return text.length * 6;
     labelMeasureCtx.font = "12px system-ui";
-    return labelMeasureCtx.measureText(text).width;
+    return labelMeasureCtx.measureText(text).width + 4;
 }
 
 function getGroupColor(group: string | undefined, groups: string[]): string {
@@ -273,11 +273,17 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         const w = logicalW;
         const h = height;
 
-        const simNodes: SimNode[] = propNodes.map((n, idx) => {
-            let x = n.x ?? 0;
-            let y = n.y ?? 0;
+        // Preserve settled positions across data changes so the graph doesn't re-explode
+        // and re-settle every time nodes/edges change (e.g. expanding a merge badge).
+        const prevPos = new Map<string, { x: number; y: number }>();
+        for (const pn of nodesRef.current) if (pn.x != null && pn.y != null) prevPos.set(pn.id, { x: pn.x!, y: pn.y! });
 
-            if (!n.x || !n.y) {
+        const simNodes: SimNode[] = propNodes.map((n, idx) => {
+            const prev = prevPos.get(n.id);
+            let x = prev?.x ?? n.x ?? 0;
+            let y = prev?.y ?? n.y ?? 0;
+
+            if (!prev && (!n.x || !n.y)) {
                 if (layout === "circular") {
                     const angle = (idx / propNodes.length) * 2 * Math.PI;
                     const radius = Math.min(w, h) * 0.35;
@@ -303,7 +309,6 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
 
         // Simple force simulation for force layout
         if (layout === "force") {
-            let iterations = 0;
             const maxIterations = 300;
 
             const tick = () => {
@@ -426,14 +431,12 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                     }
                 }
 
-                iterations++;
-                forceUpdate((n) => n + 1);
-                if (iterations < maxIterations) {
-                    animRef.current = requestAnimationFrame(tick);
-                }
             };
 
-            animRef.current = requestAnimationFrame(tick);
+            // Run the simulation synchronously to a settled state (no per-frame animation),
+            // so the graph never visibly “shifts around rapidly then settles” on each change.
+            for (let i = 0; i < maxIterations; i++) tick();
+            forceUpdate((n) => n + 1);
         } else {
             forceUpdate((n) => n + 1);
         }
