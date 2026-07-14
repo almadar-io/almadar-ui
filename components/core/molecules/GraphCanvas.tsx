@@ -48,10 +48,11 @@ export interface GraphEdge {
 }
 
 /**
- * All-pairs similarity (cosine 0–1) used ONLY for layout: ideal pair distance
- * is derived from similarity (higher ⇒ closer). Never drawn — `edges` remain
- * the only rendered links. When provided it supersedes edge-weight attraction;
- * when omitted, edges drive layout as before.
+ * All-pairs similarity (cosine 0–1) used ONLY for layout, never drawn — `edges`
+ * remain the only rendered links. It is the SECONDARY macro-layout: pairs that are
+ * NOT directly connected get a weak spring (higher cosine ⇒ closer) so clusters
+ * arrange relative to each other, while drawn `edges` stay the primary tight
+ * structure. When omitted, edges alone drive the layout.
  */
 export interface GraphSimilarity {
     source: string;
@@ -75,9 +76,10 @@ export interface GraphCanvasProps {
     /** Graph edges (the only rendered links) */
     edges?: readonly GraphEdge[];
     /**
-     * All-pairs similarity (cosine 0–1) used ONLY for layout: ideal pair
-     * distance = linkDistance × (1 − cosine). Never drawn. When provided it
-     * supersedes edge-weight attraction; when omitted, edges drive layout.
+     * All-pairs similarity (cosine 0–1) used ONLY for layout, never drawn. It is the
+     * secondary macro-layout: non-connected pairs get a weak spring (higher cosine ⇒
+     * closer) so clusters arrange relative to each other; drawn `edges` stay the
+     * primary tight structure. When omitted, edges alone drive the layout.
      */
     similarity?: readonly GraphSimilarity[];
     /** Canvas height */
@@ -137,13 +139,13 @@ interface SimNode extends GraphNode {
     labelW?: number;
 }
 
-/** Offscreen 2D context reused to measure label widths (matches the label font below). */
+/** Offscreen 2D context reused to measure label widths (matches the rendered label font). */
 let labelMeasureCtx: CanvasRenderingContext2D | null = null;
-function measureLabelWidth(text: string): number {
+function measureLabelWidth(text: string, fontFamily = "system-ui"): number {
     if (typeof document === "undefined") return text.length * 6;
     if (!labelMeasureCtx) labelMeasureCtx = document.createElement("canvas").getContext("2d");
     if (!labelMeasureCtx) return text.length * 6;
-    labelMeasureCtx.font = "12px system-ui";
+    labelMeasureCtx.font = `12px ${fontFamily}`;
     return labelMeasureCtx.measureText(text).width + 4;
 }
 
@@ -172,6 +174,11 @@ function mulberry32(a: number): () => number {
         t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
         return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
+}
+
+/** Order-independent key for a node pair — used to tell drawn edges from similarity-only pairs. */
+function edgeKeyOf(a: string, b: string): string {
+    return a < b ? `${a}\0${b}` : `${b}\0${a}`;
 }
 
 /**
@@ -314,6 +321,8 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
 
         const w = logicalW;
         const h = height;
+        // Theme font the labels render in — used to size the collision boxes so they match the text on screen.
+        const labelFont = resolveColor("var(--font-family)", canvas) || "system-ui";
 
         // Preserve settled positions across data changes so the graph doesn't re-explode
         // and re-settle every time nodes/edges change (e.g. expanding a merge badge).
@@ -363,11 +372,18 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         // Simple force simulation for force layout
         if (layout === "force") {
             const maxIterations = 300;
+            const COOL = 0.12; // spring temperature floor — late iterations let collision win the settle
+            const COLLIDE_PASSES = 6; // label-aware relaxation passes per tick
+            const LABEL_GAP = 12; // label sits below the circle (matches render)
+            const LABEL_H = 16; // one line of 12px text
 
-            const tick = () => {
+            const tick = (iter: number) => {
                 const nodes = nodesRef.current;
                 const centerX = w / 2;
                 const centerY = h / 2;
+                // Cooling schedule: strong springs early to find structure, weak late so the
+                // collision constraint can settle the graph without the springs re-breaking it.
+                const temp = Math.max(COOL, 1 - iter / maxIterations);
 
                 // Reset forces
                 for (const node of nodes) {
@@ -375,13 +391,13 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                     node.fy = 0;
                 }
 
-                // Repulsion between all nodes
+                // Repulsion between all nodes (cooled)
                 for (let i = 0; i < nodes.length; i++) {
                     for (let j = i + 1; j < nodes.length; j++) {
                         const dx = nodes[j].x! - nodes[i].x!;
                         const dy = nodes[j].y! - nodes[i].y!;
                         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                        const force = repulsion / (dist * dist);
+                        const force = (repulsion / (dist * dist)) * temp;
                         const fx = (dx / dist) * force;
                         const fy = (dy / dist) * force;
                         nodes[i].fx -= fx;
@@ -391,55 +407,47 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                     }
                 }
 
-                // Layout attraction. When an all-pairs `similarity` matrix is provided it is the
-                // layout driver (edges become drawing-only): ideal pair distance = linkDistance ×
-                // (1 − cosine), so alike nodes pull tight and unrelated ones rest at max distance.
-                // Without it, fall back to edge-weight attraction (unchanged legacy behavior).
                 const nodeById = new Map(nodes.map((n) => [n.id, n] as const));
-                if (propSimilarity.length > 0) {
-                    for (const pair of propSimilarity) {
-                        const source = nodeById.get(pair.source);
-                        const target = nodeById.get(pair.target);
-                        if (!source || !target) continue;
-                        const dx = target.x! - source.x!;
-                        const dy = target.y! - source.y!;
-                        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                        const w = Math.min(1, Math.max(0, pair.weight));
-                        const linkTarget = linkDistance * (1 - w); // cosine 1 ⇒ 0 (tight), 0 ⇒ max
-                        const force = (dist - linkTarget) * (0.04 + 0.1 * w);
-                        const fx = (dx / dist) * force;
-                        const fy = (dy / dist) * force;
-                        source.fx += fx;
-                        source.fy += fy;
-                        target.fx -= fx;
-                        target.fy -= fy;
-                    }
-                } else {
-                    // Attraction along edges — weight scales BOTH target distance and pull
-                    // strength, so high-similarity links draw nodes into a tight knot while weak
-                    // links stay loose. Unweighted/structural edges default to w=1 (tight).
-                    for (const edge of propEdges) {
-                        const source = nodeById.get(edge.source);
-                        const target = nodeById.get(edge.target);
-                        if (!source || !target) continue;
+                const spring = (a: SimNode, b: SimNode, rest: number, k: number) => {
+                    const dx = b.x! - a.x!;
+                    const dy = b.y! - a.y!;
+                    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    const force = (dist - rest) * k * temp;
+                    const fx = (dx / dist) * force;
+                    const fy = (dy / dist) * force;
+                    a.fx += fx;
+                    a.fy += fy;
+                    b.fx -= fx;
+                    b.fy -= fy;
+                };
 
-                        const dx = target.x! - source.x!;
-                        const dy = target.y! - source.y!;
-                        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                        const w = Math.min(1, Math.max(0, edge.weight ?? 1));
-                        const linkTarget = linkDistance * (0.5 + (1 - w) * 1.5); // w=1→0.5×, w=0→2×
-                        const force = (dist - linkTarget) * (0.04 + 0.1 * w);
-                        const fx = (dx / dist) * force;
-                        const fy = (dy / dist) * force;
-                        source.fx += fx;
-                        source.fy += fy;
-                        target.fx -= fx;
-                        target.fy -= fy;
-                    }
+                // Drawn edges are the PRIMARY structure: a strong, tight spring so connected nodes
+                // clearly cluster. Weight nudges the rest length (higher ⇒ tighter).
+                const drawnPairs = new Set<string>();
+                for (const edge of propEdges) {
+                    const source = nodeById.get(edge.source);
+                    const target = nodeById.get(edge.target);
+                    if (!source || !target) continue;
+                    drawnPairs.add(edgeKeyOf(edge.source, edge.target));
+                    const w = Math.min(1, Math.max(0, edge.weight ?? 1));
+                    spring(source, target, linkDistance * (0.35 + (1 - w) * 0.3), 0.14);
                 }
 
-                // Cluster centroid gravity — pull each node toward its group's centroid so
-                // same-cluster nodes form visible islands; singletons drift to canvas center.
+                // All-pairs similarity is the SECONDARY macro-layout: only pairs that are NOT directly
+                // connected get a weak spring so clusters arrange relative to each other without
+                // fighting the tight edge springs.
+                for (const pair of propSimilarity) {
+                    if (drawnPairs.has(edgeKeyOf(pair.source, pair.target))) continue;
+                    const source = nodeById.get(pair.source);
+                    const target = nodeById.get(pair.target);
+                    if (!source || !target) continue;
+                    const w = Math.min(1, Math.max(0, pair.weight));
+                    spring(source, target, linkDistance * (1.35 - 0.55 * w), 0.015);
+                }
+
+                // Cluster centroid gravity — only when there are ≥2 clusters, so same-cluster nodes
+                // form visible islands. A single-cluster graph would otherwise be crushed into one
+                // knot; there we fall back to a gentle global centering.
                 const centroids = new Map<string, { x: number; y: number; n: number }>();
                 for (const node of nodes) {
                     const g = node.group ?? "__none__";
@@ -447,14 +455,20 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                     if (!c) { c = { x: 0, y: 0, n: 0 }; centroids.set(g, c); }
                     c.x += node.x!; c.y += node.y!; c.n += 1;
                 }
+                const multiCluster = centroids.size > 1;
                 for (const node of nodes) {
-                    const c = centroids.get(node.group ?? "__none__");
-                    if (c && c.n > 1) {
-                        node.fx += (c.x / c.n - node.x!) * 0.04;
-                        node.fy += (c.y / c.n - node.y!) * 0.04;
+                    if (multiCluster) {
+                        const c = centroids.get(node.group ?? "__none__");
+                        if (c && c.n > 1) {
+                            node.fx += (c.x / c.n - node.x!) * 0.04 * temp;
+                            node.fy += (c.y / c.n - node.y!) * 0.04 * temp;
+                        } else {
+                            node.fx += (centerX - node.x!) * 0.01 * temp;
+                            node.fy += (centerY - node.y!) * 0.01 * temp;
+                        }
                     } else {
-                        node.fx += (centerX - node.x!) * 0.01;
-                        node.fy += (centerY - node.y!) * 0.01;
+                        node.fx += (centerX - node.x!) * 0.008 * temp;
+                        node.fy += (centerY - node.y!) * 0.008 * temp;
                     }
                 }
 
@@ -471,49 +485,62 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                     node.y = Math.max(30, Math.min(h - 30, node.y!));
                 }
 
-                // Collision separation — hard constraint via axis-aligned boxes that cover the
-                // node circle AND its label (drawn centered below), so neither circles nor text
-                // overlap. Push apart along the axis of least penetration each iteration.
-                const LABEL_GAP = 12; // label baseline offset below the circle (matches render)
-                const LABEL_H = 16; // one line of 12px text
+                // Label-aware collision. Each node is TWO boxes — the circle and the label hanging
+                // below it — checked separately so connected nodes can sit close while only genuinely
+                // overlapping circles/text push apart. Multi-pass relaxation with velocity zeroing
+                // makes it a hard constraint the springs can't re-break.
                 const pad = nodeSpacing / 2;
-                for (let i = 0; i < nodes.length; i++) {
-                    for (let j = i + 1; j < nodes.length; j++) {
-                        const a = nodes[i];
-                        const b = nodes[j];
-                        const ar = a.size || 8;
-                        const br = b.size || 8;
-                        if (showLabels) {
-                            if (a.labelW === undefined) a.labelW = a.label ? measureLabelWidth(a.label) : 0;
-                            if (b.labelW === undefined) b.labelW = b.label ? measureLabelWidth(b.label) : 0;
-                        }
-                        const labelBelow = showLabels ? LABEL_GAP + LABEL_H : 0;
-                        const aHalfW = Math.max(ar, (a.labelW ?? 0) / 2) + pad;
-                        const bHalfW = Math.max(br, (b.labelW ?? 0) / 2) + pad;
-                        const aTop = a.y! - ar - pad, aBot = a.y! + ar + labelBelow + pad;
-                        const bTop = b.y! - br - pad, bBot = b.y! + br + labelBelow + pad;
-                        const overlapX =
-                            Math.min(a.x! + aHalfW, b.x! + bHalfW) - Math.max(a.x! - aHalfW, b.x! - bHalfW);
-                        const overlapY = Math.min(aBot, bBot) - Math.max(aTop, bTop);
-                        if (overlapX > 0 && overlapY > 0) {
-                            if (overlapX <= overlapY) {
-                                const push = (overlapX / 2) * (b.x! >= a.x! ? 1 : -1);
-                                a.x = Math.max(30, Math.min(w - 30, a.x! - push));
-                                b.x = Math.max(30, Math.min(w - 30, b.x! + push));
-                            } else {
-                                const push = (overlapY / 2) * ((bTop + bBot) >= (aTop + aBot) ? 1 : -1);
-                                a.y = Math.max(30, Math.min(h - 30, a.y! - push));
-                                b.y = Math.max(30, Math.min(h - 30, b.y! + push));
+                type Rect = readonly [number, number, number, number];
+                const rectsOf = (n: SimNode): { circle: Rect; label: Rect } => {
+                    const r = n.size || 8;
+                    const lw = showLabels ? (n.labelW ?? (n.labelW = n.label ? measureLabelWidth(n.label, labelFont) : 0)) : 0;
+                    return {
+                        circle: [n.x! - r - pad, n.y! - r - pad, n.x! + r + pad, n.y! + r + pad],
+                        label: [n.x! - lw / 2 - pad, n.y! + r + LABEL_GAP - 8, n.x! + lw / 2 + pad, n.y! + r + LABEL_GAP + LABEL_H],
+                    };
+                };
+                const sep = (r1: Rect, r2: Rect): { axis: "x" | "y"; depth: number; sign: number } | null => {
+                    const ox = Math.min(r1[2], r2[2]) - Math.max(r1[0], r2[0]);
+                    const oy = Math.min(r1[3], r2[3]) - Math.max(r1[1], r2[1]);
+                    if (ox <= 0 || oy <= 0) return null;
+                    return ox <= oy
+                        ? { axis: "x", depth: ox, sign: r1[0] + r1[2] < r2[0] + r2[2] ? 1 : -1 }
+                        : { axis: "y", depth: oy, sign: r1[1] + r1[3] < r2[1] + r2[3] ? 1 : -1 };
+                };
+                for (let pass = 0; pass < COLLIDE_PASSES; pass++) {
+                    for (let i = 0; i < nodes.length; i++) {
+                        for (let j = i + 1; j < nodes.length; j++) {
+                            const a = nodes[i];
+                            const b = nodes[j];
+                            const ra = rectsOf(a);
+                            const rb = rectsOf(b);
+                            let best: { axis: "x" | "y"; depth: number; sign: number } | null = null;
+                            for (const [r1, r2] of [[ra.circle, rb.circle], [ra.circle, rb.label], [ra.label, rb.circle], [ra.label, rb.label]] as const) {
+                                const s = sep(r1, r2);
+                                if (s && (!best || s.depth < best.depth)) best = s;
+                            }
+                            if (best) {
+                                const push = best.depth / 2;
+                                if (best.axis === "x") {
+                                    a.x = Math.max(30, Math.min(w - 30, a.x! - push * best.sign));
+                                    b.x = Math.max(30, Math.min(w - 30, b.x! + push * best.sign));
+                                    a.vx = 0;
+                                    b.vx = 0;
+                                } else {
+                                    a.y = Math.max(30, Math.min(h - 30, a.y! - push * best.sign));
+                                    b.y = Math.max(30, Math.min(h - 30, b.y! + push * best.sign));
+                                    a.vy = 0;
+                                    b.vy = 0;
+                                }
                             }
                         }
                     }
                 }
-
             };
 
             if (fullRelayout) {
                 // Run the simulation synchronously to a settled state (no per-frame animation).
-                for (let i = 0; i < maxIterations; i++) tick();
+                for (let i = 0; i < maxIterations; i++) tick(i);
                 laidOutRef.current = true;
             } else {
                 // Patch only: keep every settled node where it is and place newly-appeared nodes
