@@ -24,6 +24,8 @@ import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { useCanvasGestures } from "../../../hooks/useCanvasGestures";
 import { Maximize2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { createPortal } from "react-dom";
+import { forceSimulation, forceManyBody, forceLink, forceCollide, forceX, forceY } from "d3-force";
 import type { UiError } from '../atoms/types';
 
 export type GraphNode = EventPayload & {
@@ -133,9 +135,10 @@ const GROUP_COLORS = [
 interface SimNode extends GraphNode {
     vx: number;
     vy: number;
-    fx: number;
-    fy: number;
-    /** Cached rendered width of the label (measured once) so collision can keep text from overlapping. */
+    // d3-force reads fx/fy as FIXED coordinates; leave them undefined so nodes stay free.
+    fx?: number | null;
+    fy?: number | null;
+    /** Cached rendered width of the TRUNCATED label so collision keeps on-screen text apart. */
     labelW?: number;
 }
 
@@ -190,6 +193,12 @@ function resolveColor(color: string, el: Element): string {
     if (!m) return color;
     const resolved = getComputedStyle(el).getPropertyValue(m[1]).trim();
     return resolved || (m[2]?.trim() ?? '#888888');
+}
+
+/** Long labels are truncated on the node; the full text shows in a hover tooltip. */
+const MAX_LABEL_CHARS = 22;
+function truncateLabel(label: string): string {
+    return label.length > MAX_LABEL_CHARS ? label.slice(0, MAX_LABEL_CHARS - 1) + "\u2026" : label;
 }
 
 export const GraphCanvas: React.FC<GraphCanvasProps> = ({
@@ -328,6 +337,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         const h = viewH * layoutScale;
         // Theme font the labels render in — used to size the collision boxes so they match the text on screen.
         const labelFont = resolveColor("var(--font-family)", canvas) || "system-ui";
+        const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 
         // Preserve settled positions across data changes so the graph doesn't re-explode
         // and re-settle every time nodes/edges change (e.g. expanding a merge badge).
@@ -360,7 +370,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                 }
             }
 
-            return { ...n, x, y, vx: 0, vy: 0, fx: 0, fy: 0 };
+            return { ...n, x, y, vx: 0, vy: 0 };
         });
 
         nodesRef.current = simNodes;
@@ -374,23 +384,23 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         const overlap = prevIds.size === 0 ? 0 : kept / Math.max(prevIds.size, newIdList.length);
         const fullRelayout = !laidOutRef.current || overlap < 0.5;
 
-        // Simple force simulation for force layout
         if (layout === "force") {
-            const maxIterations = 300;
-            const COOL = 0.12; // spring temperature floor — late iterations let collision win the settle
-            const COLLIDE_PASSES = 6; // label-aware relaxation passes per tick
-            const LABEL_GAP = 12; // label sits below the circle (matches render)
-            const LABEL_H = 16; // one line of 12px text
+            if (fullRelayout) {
+                const LABEL_GAP = 12; // label sits below the circle (matches render)
+                const LABEL_H = 16; // one line of 12px text
 
-            // Sparse similarity: each node keeps only its top-K strongest non-edge neighbors.
-            // Passing a dense full-matrix (e.g. 45 paths → 990 pairs) makes every node attract
-            // every other node, collapsing clusters into a single hairball.
-            const SIMILARITY_NEIGHBORS = 5;
-            const SIMILARITY_MIN_WEIGHT = 0.25;
-            const drawnPairs = new Set<string>();
-            for (const edge of propEdges) drawnPairs.add(edgeKeyOf(edge.source, edge.target));
-            const similarityNeighbors = new Map<string, Set<string>>();
-            if (SIMILARITY_NEIGHBORS > 0) {
+                // Cache each node's TRUNCATED label width so the collide radius and the
+                // rectangle cleanup keep rendered text from overlapping.
+                for (const n of simNodes) n.labelW = showLabels && n.label ? measureLabelWidth(truncateLabel(n.label), labelFont) : 0;
+
+                // Sparse similarity: each node keeps only its top-K strongest non-edge neighbors.
+                // A dense full-matrix (45 paths → 990 pairs) makes every node attract every other,
+                // collapsing clusters into a single hairball.
+                const SIMILARITY_NEIGHBORS = 5;
+                const SIMILARITY_MIN_WEIGHT = 0.25;
+                const drawnPairs = new Set<string>();
+                for (const edge of propEdges) drawnPairs.add(edgeKeyOf(edge.source, edge.target));
+                const similarityNeighbors = new Map<string, Set<string>>();
                 const bySource = new Map<string, GraphSimilarity[]>();
                 for (const pair of propSimilarity) {
                     if (pair.weight < SIMILARITY_MIN_WEIGHT) continue;
@@ -401,137 +411,63 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                 }
                 for (const [id, arr] of bySource) {
                     arr.sort((a, b) => b.weight - a.weight);
-                    const keep = new Set(arr.slice(0, SIMILARITY_NEIGHBORS).map((p) => p.target));
-                    similarityNeighbors.set(id, keep);
+                    similarityNeighbors.set(id, new Set(arr.slice(0, SIMILARITY_NEIGHBORS).map((p) => p.target)));
                 }
-            }
-            const activeSimilarity = propSimilarity.filter((pair) => {
-                if (drawnPairs.has(edgeKeyOf(pair.source, pair.target))) return false;
-                const a = similarityNeighbors.get(pair.source);
-                const b = similarityNeighbors.get(pair.target);
-                return (a?.has(pair.target) ?? false) || (b?.has(pair.source) ?? false);
-            });
+                const activeSimilarity = propSimilarity.filter((pair) => {
+                    if (drawnPairs.has(edgeKeyOf(pair.source, pair.target))) return false;
+                    const a = similarityNeighbors.get(pair.source);
+                    const b = similarityNeighbors.get(pair.target);
+                    return (a?.has(pair.target) ?? false) || (b?.has(pair.source) ?? false);
+                });
 
-            const tick = (iter: number, options?: { skipForces?: boolean }) => {
-                const skipForces = options?.skipForces ?? false;
-                const nodes = nodesRef.current;
-                const centerX = w / 2;
-                const centerY = h / 2;
-                // Cooling schedule: strong springs early to find structure, weak late so the
-                // collision constraint can settle the graph without the springs re-breaking it.
-                const temp = skipForces ? 0 : Math.max(COOL, 1 - iter / maxIterations);
-
-                // Reset forces
-                for (const node of nodes) {
-                    node.fx = 0;
-                    node.fy = 0;
+                // Per-group sector targets so same-group nodes form visible islands (deterministic,
+                // arranged on a ring). A single-cluster graph falls back to gentle global centering.
+                const groupTarget = new Map<string, { x: number; y: number }>();
+                const multiCluster = groups.length > 1;
+                if (multiCluster) {
+                    const ring = Math.min(w, h) * 0.34;
+                    groups.forEach((g, i) => {
+                        const a = (i / groups.length) * 2 * Math.PI;
+                        groupTarget.set(g, { x: w / 2 + ring * Math.cos(a), y: h / 2 + ring * Math.sin(a) });
+                    });
                 }
 
-                if (!skipForces) {
-                    // Repulsion between all nodes (cooled)
-                    for (let i = 0; i < nodes.length; i++) {
-                        for (let j = i + 1; j < nodes.length; j++) {
-                            const dx = nodes[j].x! - nodes[i].x!;
-                            const dy = nodes[j].y! - nodes[i].y!;
-                            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                            const force = (repulsion / (dist * dist)) * temp;
-                            const fx = (dx / dist) * force;
-                            const fy = (dy / dist) * force;
-                            nodes[i].fx -= fx;
-                            nodes[i].fy -= fy;
-                            nodes[j].fx += fx;
-                            nodes[j].fy += fy;
-                        }
-                    }
+                const present = new Set(simNodes.map((n) => n.id));
+                interface D3Link { source: string | SimNode; target: string | SimNode; weight: number }
+                const edgeLinks: D3Link[] = propEdges
+                    .filter((e) => present.has(e.source) && present.has(e.target))
+                    .map((e) => ({ source: e.source, target: e.target, weight: clamp01(e.weight ?? 1) }));
+                const simLinks: D3Link[] = activeSimilarity
+                    .filter((p) => present.has(p.source) && present.has(p.target))
+                    .map((p) => ({ source: p.source, target: p.target, weight: clamp01(p.weight) }));
 
-                    const nodeById = new Map(nodes.map((n) => [n.id, n] as const));
-                    const spring = (a: SimNode, b: SimNode, rest: number, k: number) => {
-                        const dx = b.x! - a.x!;
-                        const dy = b.y! - a.y!;
-                        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                        const force = (dist - rest) * k * temp;
-                        const fx = (dx / dist) * force;
-                        const fy = (dy / dist) * force;
-                        a.fx += fx;
-                        a.fy += fy;
-                        b.fx -= fx;
-                        b.fy -= fy;
-                    };
+                const collideRadius = (n: SimNode) => Math.max(n.size || 8, (n.labelW ?? 0) / 2) + nodeSpacing / 2;
 
-                    // Drawn edges are the PRIMARY structure: a strong, tight spring so connected nodes
-                    // clearly cluster. Weight nudges the rest length (higher ⇒ tighter).
-                    for (const edge of propEdges) {
-                        const source = nodeById.get(edge.source);
-                        const target = nodeById.get(edge.target);
-                        if (!source || !target) continue;
-                        drawnPairs.add(edgeKeyOf(edge.source, edge.target));
-                        const w = Math.min(1, Math.max(0, edge.weight ?? 1));
-                        spring(source, target, linkDistance * (0.35 + (1 - w) * 0.3), 0.14);
-                    }
+                const simulation = forceSimulation<SimNode>(simNodes)
+                    // Drawn edges are the PRIMARY structure: a strong, tight link (higher weight ⇒ shorter).
+                    .force("edge", forceLink<SimNode, D3Link>(edgeLinks).id((d) => d.id).distance((l) => linkDistance * (0.35 + (1 - l.weight) * 0.3)).strength(0.9))
+                    // Top-K similarity is the SECONDARY macro-layout: weak links so clusters arrange
+                    // relative to each other without collapsing the whole graph.
+                    .force("similarity", forceLink<SimNode, D3Link>(simLinks).id((d) => d.id).distance((l) => linkDistance * (1.35 - 0.55 * l.weight)).strength(0.03))
+                    // Charge keeps unconnected nodes apart.
+                    .force("charge", forceManyBody<SimNode>().strength(-repulsion * 0.5))
+                    // Collide keeps node circles AND their (truncated) labels from overlapping.
+                    .force("collide", forceCollide<SimNode>().radius(collideRadius).strength(0.9))
+                    // Per-group sector gravity (or gentle global centering for a single cluster).
+                    .force("x", forceX<SimNode>((n) => groupTarget.get(n.group ?? "")?.x ?? w / 2).strength(multiCluster ? 0.05 : 0.02))
+                    .force("y", forceY<SimNode>((n) => groupTarget.get(n.group ?? "")?.y ?? h / 2).strength(multiCluster ? 0.05 : 0.02))
+                    .stop();
 
-                    // Top-K similarity is the SECONDARY macro-layout: only the strongest non-edge
-                    // neighbors per node get a weak spring so clusters arrange relative to each
-                    // other without collapsing the whole graph.
-                    for (const pair of activeSimilarity) {
-                        const source = nodeById.get(pair.source);
-                        const target = nodeById.get(pair.target);
-                        if (!source || !target) continue;
-                        const w = Math.min(1, Math.max(0, pair.weight));
-                        spring(source, target, linkDistance * (1.35 - 0.55 * w), 0.015);
-                    }
+                // Settle synchronously (no per-frame animation).
+                for (let i = 0; i < 300; i++) simulation.tick();
 
-                    // Cluster centroid gravity — only when there are ≥2 clusters, so same-cluster nodes
-                    // form visible islands. A single-cluster graph would otherwise be crushed into one
-                    // knot; there we fall back to a gentle global centering.
-                    const centroids = new Map<string, { x: number; y: number; n: number }>();
-                    for (const node of nodes) {
-                        const g = node.group ?? "__none__";
-                        let c = centroids.get(g);
-                        if (!c) { c = { x: 0, y: 0, n: 0 }; centroids.set(g, c); }
-                        c.x += node.x!; c.y += node.y!; c.n += 1;
-                    }
-                    const multiCluster = centroids.size > 1;
-                    for (const node of nodes) {
-                        if (multiCluster) {
-                            const c = centroids.get(node.group ?? "__none__");
-                            if (c && c.n > 1) {
-                                node.fx += (c.x / c.n - node.x!) * 0.06 * temp;
-                                node.fy += (c.y / c.n - node.y!) * 0.06 * temp;
-                            } else {
-                                node.fx += (centerX - node.x!) * 0.01 * temp;
-                                node.fy += (centerY - node.y!) * 0.01 * temp;
-                            }
-                        } else {
-                            node.fx += (centerX - node.x!) * 0.008 * temp;
-                            node.fy += (centerY - node.y!) * 0.008 * temp;
-                        }
-                    }
-
-                    // Apply forces
-                    const damping = 0.9;
-                    for (const node of nodes) {
-                        node.vx = (node.vx + node.fx) * damping;
-                        node.vy = (node.vy + node.fy) * damping;
-                        node.x! += node.vx;
-                        node.y! += node.vy;
-                    }
-                }
-
-                // Boundary (virtual layout space)
-                for (const node of nodes) {
-                    node.x = Math.max(30, Math.min(w - 30, node.x!));
-                    node.y = Math.max(30, Math.min(h - 30, node.y!));
-                }
-
-                // Label-aware collision. Each node is TWO boxes — the circle and the label hanging
-                // below it — checked separately so connected nodes can sit close while only genuinely
-                // overlapping circles/text push apart. Multi-pass relaxation with velocity zeroing
-                // makes it a hard constraint the springs can't re-break.
+                // d3's collide is circular, so it misses vertical label↔circle / label↔label
+                // overlaps. A short rectangle pass resolves those without springs pulling back.
                 const pad = nodeSpacing / 2;
                 type Rect = readonly [number, number, number, number];
                 const rectsOf = (n: SimNode): { circle: Rect; label: Rect } => {
                     const r = n.size || 8;
-                    const lw = showLabels ? (n.labelW ?? (n.labelW = n.label ? measureLabelWidth(n.label, labelFont) : 0)) : 0;
+                    const lw = showLabels ? (n.labelW ?? 0) : 0;
                     return {
                         circle: [n.x! - r - pad, n.y! - r - pad, n.x! + r + pad, n.y! + r + pad],
                         label: [n.x! - lw / 2 - pad, n.y! + r + LABEL_GAP - 8, n.x! + lw / 2 + pad, n.y! + r + LABEL_GAP + LABEL_H],
@@ -545,11 +481,12 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                         ? { axis: "x", depth: ox, sign: r1[0] + r1[2] < r2[0] + r2[2] ? 1 : -1 }
                         : { axis: "y", depth: oy, sign: r1[1] + r1[3] < r2[1] + r2[3] ? 1 : -1 };
                 };
-                for (let pass = 0; pass < COLLIDE_PASSES; pass++) {
-                    for (let i = 0; i < nodes.length; i++) {
-                        for (let j = i + 1; j < nodes.length; j++) {
-                            const a = nodes[i];
-                            const b = nodes[j];
+                for (let pass = 0; pass < 24; pass++) {
+                    let moved = false;
+                    for (let i = 0; i < simNodes.length; i++) {
+                        for (let j = i + 1; j < simNodes.length; j++) {
+                            const a = simNodes[i];
+                            const b = simNodes[j];
                             const ra = rectsOf(a);
                             const rb = rectsOf(b);
                             let best: { axis: "x" | "y"; depth: number; sign: number } | null = null;
@@ -558,31 +495,20 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                                 if (s && (!best || s.depth < best.depth)) best = s;
                             }
                             if (best) {
+                                moved = true;
                                 const push = best.depth / 2;
                                 if (best.axis === "x") {
                                     a.x = Math.max(30, Math.min(w - 30, a.x! - push * best.sign));
                                     b.x = Math.max(30, Math.min(w - 30, b.x! + push * best.sign));
-                                    a.vx = 0;
-                                    b.vx = 0;
                                 } else {
                                     a.y = Math.max(30, Math.min(h - 30, a.y! - push * best.sign));
                                     b.y = Math.max(30, Math.min(h - 30, b.y! + push * best.sign));
-                                    a.vy = 0;
-                                    b.vy = 0;
                                 }
                             }
                         }
                     }
+                    if (!moved) break;
                 }
-            };
-
-            if (fullRelayout) {
-                // Run the simulation synchronously to a settled state (no per-frame animation).
-                for (let i = 0; i < maxIterations; i++) tick(i);
-
-                // Final collision-only cleanup: separate any residual overlaps without springs
-                // pulling nodes back together.
-                for (let i = 0; i < 4; i++) tick(maxIterations, { skipForces: true });
 
                 // Auto-fit the virtual layout into the visible viewport so dense graphs don't
                 // appear cramped and the user sees the whole picture on first load.
@@ -590,7 +516,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                 let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
                 for (const node of nodesRef.current) {
                     const r = node.size || 8;
-                    const lw = showLabels ? (node.labelW ?? (node.labelW = node.label ? measureLabelWidth(node.label, labelFont) : 0)) : 0;
+                    const lw = showLabels ? (node.labelW ?? 0) : 0;
                     minX = Math.min(minX, node.x! - r, node.x! - lw / 2);
                     minY = Math.min(minY, node.y! - r);
                     maxX = Math.max(maxX, node.x! + r, node.x! + lw / 2);
@@ -734,6 +660,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
 
             // Label — theme font/color with a background halo so it reads over nodes/edges.
             if (showLabels && node.label) {
+                const displayLabel = truncateLabel(node.label);
                 ctx.font = `${isSelected || isHovered ? "600" : "500"} 12px ${fontFamily}`;
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
@@ -741,9 +668,9 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                 ctx.lineWidth = 3;
                 ctx.lineJoin = "round";
                 ctx.strokeStyle = bgColor;
-                ctx.strokeText(node.label, node.x!, ly);
+                ctx.strokeText(displayLabel, node.x!, ly);
                 ctx.fillStyle = (isSelected || isHovered) ? fgColor : mutedColor;
-                ctx.fillText(node.label, node.x!, ly);
+                ctx.fillText(displayLabel, node.x!, ly);
             }
 
             // Merge-count badge (top-right) — click expands the cluster.
@@ -917,6 +844,23 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         [toCoords, nodeAt, onNodeDoubleClick],
     );
 
+    // Canvas has no per-node DOM nodes, so a truncated label's full text is shown in a
+    // theme-matching tooltip positioned at the hovered node's screen coordinates.
+    const hoveredObj = hoveredNode ? nodesRef.current.find((n) => n.id === hoveredNode) : undefined;
+    const canvasEl = canvasRef.current;
+    const showLabelTooltip = Boolean(
+        hoveredObj?.label && hoveredObj.label.length > MAX_LABEL_CHARS && hoveredObj.x != null && canvasEl
+    );
+    const labelTooltipStyle: React.CSSProperties | undefined = (() => {
+        if (!showLabelTooltip || !canvasEl || !hoveredObj || hoveredObj.x == null || hoveredObj.y == null) return undefined;
+        const rect = canvasEl.getBoundingClientRect();
+        return {
+            left: rect.left + offset.x + hoveredObj.x * zoom,
+            top: rect.top + offset.y + hoveredObj.y * zoom - 10,
+            transform: "translate(-50%, -100%)",
+        };
+    })();
+
     if (isLoading) {
         return <LoadingState message={t('common.loading')} className={className} />;
     }
@@ -995,6 +939,22 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                         onWheel={gestureHandlers.onWheel}
                         onDoubleClick={handleDoubleClick}
                     />
+                    {typeof window !== "undefined" && showLabelTooltip && labelTooltipStyle && createPortal(
+                        <div
+                            className={cn(
+                                "fixed z-50 px-3 py-2 max-w-xs",
+                                "bg-primary text-primary-foreground",
+                                "shadow-elevation-popover rounded-sm",
+                                "text-sm pointer-events-none",
+                                "break-words whitespace-normal"
+                            )}
+                            style={labelTooltipStyle}
+                            role="tooltip"
+                        >
+                            {hoveredObj?.label}
+                        </div>,
+                        document.body
+                    )}
                 </Box>
 
                 {/* Legend */}
