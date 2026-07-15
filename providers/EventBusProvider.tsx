@@ -170,7 +170,12 @@ export function EventBusProvider({ children, isolated = false }: EventBusProvide
     const listenerCount = (listeners?.size ?? 0) + anyListenersRef.current.size;
     busLog.debug('emit', { type, payloadKeys: payload ? Object.keys(payload).length : 0, listenerCount });
     if (listenerCount === 0) {
-      busLog.warn('emit:no-listeners', { type });
+      // DEBUG (not WARN): a zero-subscriber emit is a routing diagnostic, not
+      // an actionable warning — tick/internal events commonly have no runtime
+      // listener and WARN floods the console. Gate it behind the
+      // `almadar:eventbus` namespace; real orphan emits are caught by the
+      // closed-circuit validator, not at runtime.
+      busLog.debug('emit:no-listeners', { type });
     }
 
     // Per-listener invocation log. The summary `emit` line above only

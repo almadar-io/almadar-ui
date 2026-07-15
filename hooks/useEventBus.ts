@@ -11,7 +11,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useContext } from 'react';
 import { EventBusContext } from '../providers/EventBusProvider';
-import { useTraitScope } from '../providers/TraitScopeProvider';
+import { useTraitScopeChain } from '../providers/TraitScopeProvider';
 import type {
   BusEvent,
   BusEventSource,
@@ -206,10 +206,25 @@ export function useEventBus(): EventBusContextType {
   // untouched. Already-qualified keys (`UI:Orbital.Trait.X`,
   // `SERVER:X`, `BRIDGE:X`, anything without a leading `UI:` and no
   // dots) flow through verbatim.
-  const scope = useTraitScope();
+  // Trait-scope qualification + embedded-trait emit bubbling.
+  //
+  // (1) Bare `UI:X` emits from pure components (Button, Form, …) are
+  // rewritten to the qualified `UI:Orbital.Trait.X` form that
+  // `useTraitStateMachine` listens on.
+  //
+  // (2) R-EMBEDDED-EMIT-BUBBLE: when a trait is embedded inside a host's
+  // render-ui (`@trait.X` / inline `<External.Trait …/>`), the providers
+  // nest and `useTraitScopeChain` returns the full ancestor chain
+  // (innermost-first). Every `UI:*` emit is fanned out to EACH scope on
+  // the chain, so the embedded trait's emit also lands on the host's
+  // qualified key — a `<UiButton.traits.ButtonRender action={CREATE}/>`
+  // inside `HostManage` dispatches `UI:Orb.HostManage.CREATE`, which the
+  // host subscribes to. The embedded trait's own key is still emitted, so
+  // its own listeners keep firing. Additive fan-out, not a source rewrite.
+  const chain = useTraitScopeChain();
 
   return useMemo(() => {
-    if (!scope) {
+    if (chain.length === 0) {
       return {
         ...baseBus,
         emit: (type: string, payload?: EventPayload, source?: BusEventSource) => {
@@ -225,29 +240,38 @@ export function useEventBus(): EventBusContextType {
       emit: (type: string, payload?: EventPayload, source?: BusEventSource) => {
         if (typeof type === 'string' && type.startsWith('UI:')) {
           const tail = type.slice(3);
-          // Already-qualified key (`UI:Orbital.Trait.X`) leaves untouched.
-          // We detect "qualified" by the presence of a `.` in the tail —
-          // bare event names are uppercase-snake (`CREATE`, `SAVE`,
-          // `LOAD_MORE`), so a dot is a reliable marker for the
-          // `Orbital.Trait.EVENT` shape.
-          const qualified = tail.includes('.')
-            ? type
-            : `UI:${scope.orbital}.${scope.trait}.${tail}`;
-          if (qualified !== type) {
-            scopeLog.info('emit:qualified', {
+          const isQualified = tail.includes('.');
+          // Bare event name. For a qualified key the event is the segment
+          // after `Orbital.Trait`; for a bare key the whole tail is the
+          // event name.
+          const event = isQualified ? tail.split('.').slice(2).join('.') : tail;
+          if (!event) {
+            baseBus.emit(type, payload, source);
+            return;
+          }
+          // Fan out: one qualified key per scope on the chain
+          // (innermost-first), deduped. Preserve the original qualified
+          // key verbatim so subscribers keyed exactly to the emitter's own
+          // scoped key (incl. the codegen-baked action string) still match.
+          const keys = new Set<string>();
+          if (isQualified) keys.add(type);
+          for (const sc of chain) {
+            keys.add(`UI:${sc.orbital}.${sc.trait}.${event}`);
+          }
+          if (keys.size > 1) {
+            scopeLog.info('emit:fan-out', {
               from: type,
-              to: qualified,
-              scopeOrbital: scope.orbital,
-              scopeTrait: scope.trait,
+              keys: Array.from(keys),
+              chainDepth: chain.length,
             });
           }
-          baseBus.emit(qualified, payload, source);
+          for (const key of keys) baseBus.emit(key, payload, source);
           return;
         }
         baseBus.emit(type, payload, source);
       },
     };
-  }, [baseBus, scope]);
+  }, [baseBus, chain]);
 }
 
 // ============================================================================

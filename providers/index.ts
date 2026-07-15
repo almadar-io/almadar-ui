@@ -101,7 +101,7 @@ export {
 
 // Individual providers (for advanced use cases)
 export { EventBusProvider, EventBusContext } from './EventBusProvider';
-export { TraitScopeProvider, useTraitScope } from './TraitScopeProvider';
+export { TraitScopeProvider, useTraitScope, useTraitScopeChain } from './TraitScopeProvider';
 export type { TraitScope, TraitScopeProviderProps } from './TraitScopeProvider';
 export { SelectionProvider, SelectionContext, useSelection, useSelectionOptional } from './SelectionProvider';
 export type { SelectionContextType } from './SelectionProvider';
