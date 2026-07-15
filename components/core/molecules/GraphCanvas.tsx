@@ -132,6 +132,17 @@ const GROUP_COLORS = [
     "var(--color-accent)",
 ];
 
+/**
+ * Sector-gravity strengths (d3 forceX/Y = fraction-of-the-way per tick). Grouped nodes
+ * get pulled to their cluster's ring sector HARD enough that same-color islands hold
+ * even when a node's cross-cluster links disagree (link springs are 0.9, but a single
+ * link stretches long before gravity lets the node leave its island); ungrouped nodes
+ * only drift gently to center. Raise GROUP_GRAVITY for tighter islands, lower for a
+ * more link-driven layout.
+ */
+const GROUP_GRAVITY = 0.3;
+const UNGROUPED_GRAVITY = 0.02;
+
 interface SimNode extends GraphNode {
     vx: number;
     vy: number;
@@ -456,10 +467,10 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                     // Collide keeps node circles AND their (truncated) labels from overlapping.
                     .force("collide", forceCollide<SimNode>().radius(collideRadius).strength(0.9))
                     // Per-group sector gravity: grouped nodes are pulled toward their group's ring
-                    // sector — strongly enough to beat cross-group springs, so same-color nodes
-                    // form islands. Ungrouped nodes only get gentle global centering.
-                    .force("x", forceX<SimNode>((n) => groupTarget.get(n.group ?? "")?.x ?? w / 2).strength((n) => (multiCluster && n.group ? 0.14 : 0.02)))
-                    .force("y", forceY<SimNode>((n) => groupTarget.get(n.group ?? "")?.y ?? h / 2).strength((n) => (multiCluster && n.group ? 0.14 : 0.02)))
+                    // sector hard enough that same-color islands beat cross-cluster springs (see
+                    // GROUP_GRAVITY); ungrouped nodes only get gentle global centering.
+                    .force("x", forceX<SimNode>((n) => groupTarget.get(n.group ?? "")?.x ?? w / 2).strength((n) => (multiCluster && n.group ? GROUP_GRAVITY : UNGROUPED_GRAVITY)))
+                    .force("y", forceY<SimNode>((n) => groupTarget.get(n.group ?? "")?.y ?? h / 2).strength((n) => (multiCluster && n.group ? GROUP_GRAVITY : UNGROUPED_GRAVITY)))
                     .stop();
 
                 // Settle synchronously (no per-frame animation).
