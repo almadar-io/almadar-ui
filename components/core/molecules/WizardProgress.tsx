@@ -41,7 +41,12 @@ export interface WizardProgressProps {
   compact?: boolean;
   /** Additional CSS classes */
   className?: string;
-  /** Declarative step click event — emits UI:{stepClickEvent} with { stepIndex } */
+  /**
+   * Declarative step click event — emits UI:{stepClickEvent} with { stepIndex }.
+   * Setting it requires declaring that event (with a `{ stepIndex }` payload)
+   * and a transition handling it in the same trait; omit this prop for
+   * non-clickable progress indicators.
+   */
   stepClickEvent?: EventEmit<{ stepIndex: number }>;
 }
 

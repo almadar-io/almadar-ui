@@ -24,7 +24,13 @@ export interface InputProps extends Omit<
   disabled?: boolean;
   /** Declarative event name for trait dispatch */
   action?: EventKey;
-  /** Input type - supports 'select' and 'textarea' in addition to standard types */
+  /**
+   * Input type — selects the field's data mode. Use 'password' for masked
+   * credentials / secret / passphrase entry (there is no separate password
+   * pattern); 'email', 'tel', 'url', 'number', 'search', 'date', and 'time'
+   * for their respective values; and 'select' / 'textarea' for choice and
+   * multi-line entry in addition to the standard single-line types.
+   */
   inputType?:
   | "text"
   | "email"
