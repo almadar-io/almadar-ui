@@ -34,6 +34,13 @@ import type { UiError } from '../atoms/types';
 
 export type TimelineItemStatus = "complete" | "active" | "pending" | "error";
 
+/** Same contract as DataGrid/DataList: locale date when parseable, raw string otherwise. */
+function formatDate(value: string): string {
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return value;
+    return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
 /**
  * Layer 2 visual treatment for the timeline pattern — orthogonal to the
  * semantic status conveyed by per-item style.
@@ -240,7 +247,7 @@ export const Timeline: React.FC<TimelineProps> = ({
                                         </Typography>
                                         {item.date && (
                                             <Typography variant="caption" color="secondary" className="flex-shrink-0">
-                                                {item.date}
+                                                {formatDate(item.date)}
                                             </Typography>
                                         )}
                                     </HStack>

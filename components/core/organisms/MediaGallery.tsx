@@ -105,9 +105,19 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
     const eventBus = useEventBus();
     const { t } = useTranslate();
     const [lightboxItem, setLightboxItem] = useState<MediaItem | null>(null);
+    const [failedIds, setFailedIds] = useState<ReadonlySet<string>>(new Set());
 
     const closeLightbox = useCallback(() => setLightboxItem(null), []);
     useEventListener("UI:LIGHTBOX_CLOSE", closeLightbox);
+
+    const handleImageError = useCallback((id: string) => {
+        setFailedIds((prev) => {
+            if (prev.has(id)) return prev;
+            const next = new Set(prev);
+            next.add(id);
+            return next;
+        });
+    }, []);
 
     const handleItemClick = useCallback(
         (item: MediaItem) => {
@@ -128,7 +138,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
     // Normalize entity data
     const entityData = Array.isArray(entity) ? entity : [];
     const items: readonly MediaItem[] = React.useMemo(() => {
-        if (propItems) return propItems;
+        if (propItems && propItems.length > 0) return propItems;
         if (entityData.length === 0) return [];
 
         return entityData.map((record, idx): MediaItem => {
@@ -236,12 +246,19 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                                     onClick={() => handleItemClick(item)}
                                 >
                                     { }
-                                    <img
-                                        src={item.thumbnail || item.src}
-                                        alt={item.alt || item.caption || ""}
-                                        className="w-full h-full object-cover"
-                                        loading="lazy"
-                                    />
+                                    {failedIds.has(item.id) ? (
+                                        <Box className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground">
+                                            <Icon icon={ImageIcon} size="lg" />
+                                        </Box>
+                                    ) : (
+                                        <img
+                                            src={item.thumbnail || item.src}
+                                            alt={item.alt || item.caption || ""}
+                                            className="w-full h-full object-cover"
+                                            loading="lazy"
+                                            onError={() => handleImageError(item.id)}
+                                        />
+                                    )}
                                     {/* Hover overlay */}
                                     <Box
                                         className={cn(

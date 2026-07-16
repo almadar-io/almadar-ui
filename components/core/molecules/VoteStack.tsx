@@ -94,6 +94,11 @@ export const VoteStack: React.FC<VoteStackProps> = ({
     <div
       className={cn(
         "inline-flex items-center justify-center",
+        // Shrink-wrap in stretch contexts (slot/sidecar wrappers are
+        // flex-column with stretch alignment): without this the root spans
+        // the full wrapper width and the count row's `w-full` turns the
+        // compact pill into a page-wide band.
+        "w-fit",
         variant === "vertical" ? "flex-col" : "flex-row",
         "rounded-sm",
         "border-[length:var(--border-width)] border-border",

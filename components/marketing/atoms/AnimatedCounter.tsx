@@ -18,6 +18,8 @@ export interface AnimatedCounterProps {
   prefix?: string;
   /** Text to display after the number */
   suffix?: string;
+  /** Display format: "number" (locale grouping), "currency" ($x.xx), "percent" (rounded %). Unset preserves the value's own decimals. */
+  format?: string;
   /** Additional class names */
   className?: string;
 }
@@ -26,11 +28,25 @@ function easeOut(t: number): number {
   return t * (2 - t);
 }
 
+function formatDisplay(value: number, format: string | undefined, decimals: number): string {
+  switch (format) {
+    case 'currency':
+      return `$${value.toFixed(2)}`;
+    case 'percent':
+      return `${Math.round(value)}%`;
+    case 'number':
+      return value.toLocaleString();
+    default:
+      return value.toFixed(decimals);
+  }
+}
+
 export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
   value: rawValue,
   duration = 600,
   prefix,
   suffix,
+  format,
   className,
 }) => {
   const numericRaw = typeof rawValue === 'number' ? rawValue : Number.parseFloat(String(rawValue ?? ''));
@@ -45,6 +61,11 @@ export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
     previousValueRef.current = value;
 
     if (from === to) {
+      setDisplayValue(to);
+      return;
+    }
+
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       setDisplayValue(to);
       return;
     }
@@ -77,7 +98,7 @@ export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
 
   // Determine decimal places from the target value
   const decimalPlaces = Number.isInteger(value) ? 0 : String(value).split(".")[1]?.length ?? 0;
-  const formattedValue = displayValue.toFixed(decimalPlaces);
+  const formattedValue = formatDisplay(displayValue, format, decimalPlaces);
 
   return (
     <Typography variant="h3" className={cn("tabular-nums", className)}>

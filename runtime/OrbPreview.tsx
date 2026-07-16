@@ -92,11 +92,12 @@ function normalizeChild(child: PatternNode | string | null | readonly PatternNod
  * rendered — its render-ui carries the `@trait.X` strings that
  * `<TraitFrame>` uses to embed atom frames.
  */
-function applyServerEffects(
+export function applyServerEffects(
   effects: ReadonlyArray<import('../providers/ServerBridge').ServerClientEffect>,
   uiSlots: ReturnType<typeof useUISlots>,
   onNavigate?: (path: string, params?: Record<string, string>) => void,
   embeddedTraits?: ReadonlySet<string>,
+  activeTraits?: ReadonlySet<string>,
 ): void {
   // Call uiSlots.render() once per effect. useUISlots is multi-source
   // internally: each call merges into `slots[target][sourceTrait]`, and
@@ -112,6 +113,17 @@ function applyServerEffects(
   // inside the layout's pattern, never writing a shared slot).
   for (const eff of effects) {
     if (eff.type === 'render-ui' && eff.slot && eff.pattern) {
+      // Gap #11 is orbital-granular: the server initializes EVERY trait of an
+      // on-page orbital, so an orbital bundling several page composers returns
+      // render-ui effects for traits that are not mounted on the active page.
+      // The local path never mounts them — drop their server effects for parity.
+      if (eff.traitName && activeTraits && !activeTraits.has(eff.traitName)) {
+        xOrbitalLog.debug('slot:off-page-trait-skipped', {
+          sourceTrait: eff.traitName,
+          slot: eff.slot,
+        });
+        continue;
+      }
       const patternRecord = eff.pattern as PatternNode;
       const { type: patternType, children, ...inlineProps } = patternRecord;
       const normalizedChildren = Array.isArray(children)
@@ -197,6 +209,12 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
   embeddedTraits?: ReadonlySet<string>;
 }) {
   const bridge = useServerBridge();
+  // Traits mounted on the active page (page bindings + embed-routed
+  // siblings). Server effects from any other trait are off-page writes.
+  const activeTraitNames = useMemo(
+    () => new Set(traits.map((b) => b.trait.name).filter((n): n is string => !!n)),
+    [traits],
+  );
   // Single slot store: `useUISlots`. Both the server-bridge path
   // (`applyServerEffects`) and the local trait state-machine path
   // (`useTraitStateMachine`) write here directly. Pre-consolidation
@@ -238,9 +256,9 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
     for (const name of targets) {
       const { effects, meta } = await bridge.sendEvent(name, event, payload);
       recordServerResponse(name, event, meta);
-      applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits);
+      applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNames);
     }
-  }, [bridge.connected, bridge.sendEvent, orbitalNames, uiSlots, onNavigate, embeddedTraits]);
+  }, [bridge.connected, bridge.sendEvent, orbitalNames, uiSlots, onNavigate, embeddedTraits, activeTraitNames]);
 
   const opts = orbitalNames
     ? { onEventProcessed, navigate: onNavigate, traitConfigsByName, orbitalsByTrait, embeddedTraits }
@@ -322,10 +340,10 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
         // event bus via typed emit payloads, bound into the pattern tree by
         // the listener / render-ui pipeline. The server effects carry the
         // resolved data; no store hydration needed.
-        applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits);
+        applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNames);
       }
     })();
-  }, [bridge.connected, orbitalNames, bridge.sendEvent, uiSlots, onNavigate, embeddedTraits]);
+  }, [bridge.connected, orbitalNames, bridge.sendEvent, uiSlots, onNavigate, embeddedTraits, activeTraitNames]);
 
   return null;
 }
@@ -502,7 +520,7 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavi
     }
     xOrbitalLog.info('SchemaRunner:mount', {
       pageName,
-      traitNames,
+      traitNames: traitNames.join(','),
       orbitalsByTraitForPage,
       pageOrbitalNames: pageOrbitalNames.join(','),
     });

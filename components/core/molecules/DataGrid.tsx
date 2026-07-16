@@ -526,12 +526,12 @@ export function DataGrid({
                     <HStack gap="xs" className="flex-wrap">
                       {badgeFields.map((field) => {
                         const val = getNestedValue(itemData, field.name);
-                        if (val === undefined || val === null) return null;
+                        if (val === undefined || val === null || val === '') return null;
                         return (
                           <HStack key={field.name} gap="xs" className="items-center">
                             {field.icon && renderIconInput(field.icon, { size: 'xs' })}
                             <Badge variant={resolveBadgeVariant(field, String(val))}>
-                              {String(val)}
+                              {formatValue(val, field.format)}
                             </Badge>
                           </HStack>
                         );

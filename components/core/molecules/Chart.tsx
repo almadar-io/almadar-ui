@@ -296,8 +296,9 @@ const BarChart: React.FC<{
                             align="center"
                             flex
                             className="min-w-0"
+                            style={{ height: "100%" }}
                         >
-                            <HStack gap={histogram ? "none" : "xs"} align="end" className="w-full" style={{ height: "100%" }}>
+                            <HStack gap={histogram ? "none" : "xs"} align="end" justify={histogram ? undefined : "center"} className="w-full flex-1 min-h-0">
                                 {series.map((s, sIdx) => {
                                     const value = valueAt(s, label);
                                     const barHeight = (value / maxValue) * 100;
@@ -311,6 +312,8 @@ const BarChart: React.FC<{
                                             )}
                                             style={{
                                                 height: `${barHeight}%`,
+                                                // Cap width so a lone category doesn't paint the whole plot as one solid block; narrow columns are unaffected (flex-1 binds first).
+                                                ...(!histogram && { maxWidth: 72 }),
                                                 backgroundColor: color,
                                             }}
                                             onClick={() =>
@@ -348,8 +351,9 @@ const BarChart: React.FC<{
                         align="center"
                         flex
                         className="min-w-0"
+                        style={{ height: "100%" }}
                     >
-                        <VStack gap="none" className="w-full" style={{ height: "100%" }} justify="end">
+                        <VStack gap="none" className="w-full flex-1 min-h-0" justify="end">
                             {series.map((s, sIdx) => {
                                 const value = valueAt(s, label);
                                 const ratio =
@@ -407,6 +411,7 @@ const PieChart: React.FC<{
     const center = size / 2;
 
     const segments = useMemo(() => {
+        if (!Number.isFinite(total) || total <= 0) return [];
         let currentAngle = -Math.PI / 2;
         return data.map((point, idx) => {
             const angle = (point.value / total) * 2 * Math.PI;
@@ -420,13 +425,29 @@ const PieChart: React.FC<{
             const x2 = center + radius * Math.cos(endAngle);
             const y2 = center + radius * Math.sin(endAngle);
 
+            // A 100% slice spans the full circle, so its arc endpoints
+            // coincide and SVG drops the segment — split it into two half
+            // arcs (each exactly π, so either largeArc value draws them).
+            const fullCircle = angle >= 2 * Math.PI - 1e-9;
+            const midAngle = startAngle + angle / 2;
+            const xm = center + radius * Math.cos(midAngle);
+            const ym = center + radius * Math.sin(midAngle);
+
             let d: string;
             if (innerRadius > 0) {
                 const ix1 = center + innerRadius * Math.cos(startAngle);
                 const iy1 = center + innerRadius * Math.sin(startAngle);
                 const ix2 = center + innerRadius * Math.cos(endAngle);
                 const iy2 = center + innerRadius * Math.sin(endAngle);
-                d = `M ${ix1} ${iy1} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} L ${ix2} ${iy2} A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${ix1} ${iy1} Z`;
+                if (fullCircle) {
+                    const ixm = center + innerRadius * Math.cos(midAngle);
+                    const iym = center + innerRadius * Math.sin(midAngle);
+                    d = `M ${ix1} ${iy1} L ${x1} ${y1} A ${radius} ${radius} 0 1 1 ${xm} ${ym} A ${radius} ${radius} 0 1 1 ${x2} ${y2} L ${ix2} ${iy2} A ${innerRadius} ${innerRadius} 0 1 0 ${ixm} ${iym} A ${innerRadius} ${innerRadius} 0 1 0 ${ix1} ${iy1} Z`;
+                } else {
+                    d = `M ${ix1} ${iy1} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} L ${ix2} ${iy2} A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${ix1} ${iy1} Z`;
+                }
+            } else if (fullCircle) {
+                d = `M ${center} ${center} L ${x1} ${y1} A ${radius} ${radius} 0 1 1 ${xm} ${ym} A ${radius} ${radius} 0 1 1 ${x2} ${y2} Z`;
             } else {
                 d = `M ${center} ${center} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`;
             }

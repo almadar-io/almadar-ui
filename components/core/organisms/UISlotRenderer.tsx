@@ -45,6 +45,7 @@ import { Skeleton, type SkeletonVariant } from "../molecules/Skeleton";
 // Shared renderer imports (synced from @almadar/core/patterns renderer)
 import { isPortalSlot, SLOT_DEFINITIONS } from "../../../renderer/index";
 import { getPatternDefinition, isDrawHostPattern } from "@almadar/core/patterns";
+import type { PatternPropDef } from "@almadar/core/patterns";
 import { wrapCallbackForEvent } from "../../../lib/wrapCallbackForEvent";
 
 // Pattern registry — single source of truth for pattern → component name resolution
@@ -1247,6 +1248,7 @@ function substituteTraitRefsDeep(
 function renderPatternProps(
   props: SlotProps,
   onDismiss: () => void,
+  propsSchema?: Record<string, PatternPropDef>,
 ): SlotProps {
   const rendered: Record<string, SlotPropValue> = {};
   for (const [key, value] of Object.entries(props)) {
@@ -1267,9 +1269,14 @@ function renderPatternProps(
         <SlotContentRenderer content={childContent} onDismiss={onDismiss} />
       );
     } else if (Array.isArray(value)) {
+      // Schema-declared data array (`items: object` — form `fields`, table
+      // `columns`, tabs `items`): an item's `type` is domain data (e.g. a
+      // field's input type), never a pattern name, even when it collides
+      // with a registered pattern like "textarea".
+      const isDataArray = propsSchema?.[key]?.items?.types?.includes("object") ?? false;
       rendered[key] = value.map((item, i) => {
         const el = item as SlotPropValue;
-        if (isPatternConfig(el)) {
+        if (!isDataArray && isPatternConfig(el)) {
           const nestedProps: SlotProps = {};
           for (const [k, v] of Object.entries(el)) {
             if (k !== "type") nestedProps[k] = v;
@@ -1451,7 +1458,9 @@ function SlotContentRenderer({
     }
 
     // Recursively render any named props that are pattern configs
-    const renderedProps = renderPatternProps(restProps, onDismiss);
+    const patternDef = getPatternDefinition(content.pattern);
+    const propsSchema = patternDef?.propsSchema;
+    const renderedProps = renderPatternProps(restProps, onDismiss, propsSchema);
 
     // C2 runtime path: any callback-kind prop whose schema value is still a
     // string (e.g. `onTabChange: "TAB_CHANGED"`) is a declarative event
@@ -1461,13 +1470,14 @@ function SlotContentRenderer({
     // the bus carries the trait's declared event payload, not a raw
     // positional spread. Mirrors the codegen wrapper at
     // `orbital-shell-typescript/src/codegen/pattern.rs` (compiled path).
-    const patternDef = getPatternDefinition(content.pattern);
-    const propsSchema = patternDef?.propsSchema;
+    // Empty string counts as unset (same contract as Icon's `icon`), so a
+    // `= ""` atom default does not become a truthy handler emitting `UI:`.
     if (propsSchema) {
       for (const [propKey, propValue] of Object.entries(renderedProps)) {
         if (typeof propValue !== 'string') continue;
         const propDef = propsSchema[propKey];
         if (!propDef || propDef.kind !== 'callback') continue;
+        if (propValue === '') continue;
         renderedProps[propKey] = wrapCallbackForEvent(
           `UI:${propValue}`,
           propDef.callbackArgs,

@@ -63,6 +63,11 @@ export const AnimatedCounter: React.FC<AnimatedCounterProps> = ({
       return;
     }
 
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setDisplayValue(String(value));
+      return;
+    }
+
     const startTime = performance.now();
 
     const tick = (now: number) => {

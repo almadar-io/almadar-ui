@@ -165,14 +165,18 @@ export const Icon: React.FC<IconProps> = ({
   // family-aware `name` path so it resolves (and theme-swaps) like `name`.
   const directIcon: LucideIcon | undefined =
     typeof icon === "string" ? undefined : icon;
-  const effectiveName = typeof icon === "string" ? icon : name;
+  // Empty-string `icon` counts as unset so `name` still resolves — ui-icon's
+  // config forwards both props and its neutral default must not shadow `name`.
+  const effectiveName = typeof icon === "string" && icon !== "" ? icon : name;
+  // 0 counts as unset for the same reason: ui-icon's neutral `strokeWidth`
+  // default is 0, and a literal 0 would zero the stroke and hide the icon.
+  const effectiveStrokeWidth = strokeWidth != null && strokeWidth > 0 ? strokeWidth : undefined;
   const family = useIconFamily();
   const RenderedComponent = React.useMemo(() => {
     if (directIcon) return null;
     return effectiveName ? resolveIconForFamily(effectiveName, family) : null;
   }, [directIcon, effectiveName, family]);
 
-  const effectiveStrokeWidth = strokeWidth ?? undefined;
   const inlineStyle: React.CSSProperties = {
     ...(effectiveStrokeWidth === undefined
       ? { strokeWidth: 'var(--icon-stroke-width, 2)' }

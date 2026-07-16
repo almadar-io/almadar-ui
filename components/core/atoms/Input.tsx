@@ -152,8 +152,8 @@ export const Input = React.forwardRef<
       }
     };
 
-    const wrapField = (field: React.ReactNode) => (
-      <div className="w-full">
+    const wrapField = (field: React.ReactNode, fullWidth = true) => (
+      <div className={fullWidth ? "w-full" : "w-fit"}>
         {label && (
           <label className="block text-sm font-medium text-foreground mb-1">
             {label}
@@ -230,7 +230,8 @@ export const Input = React.forwardRef<
             className,
           )}
           {...props}
-        />
+        />,
+        false,
       );
     }
 

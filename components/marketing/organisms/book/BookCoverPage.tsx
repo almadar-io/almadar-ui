@@ -91,7 +91,7 @@ export const BookCoverPage: React.FC<BookCoverPageProps> = ({
         action="BOOK_START"
         className="mt-8"
       >
-        <Typography variant="body">
+        <Typography variant="body" color="inherit">
           {t('book.startReading')}
         </Typography>
       </Button>

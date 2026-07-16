@@ -178,9 +178,14 @@ export function recordTransition(trace: Omit<TransitionTrace, "id">): void {
         "pass",
       );
     } else {
-      // Only warn if the trait renders entity-bound patterns
-      const hasRenderUI = entry.effects.some((e) => e.type === "render-ui");
-      if (hasRenderUI) {
+      // Only warn if the trait renders entity-bound patterns: the render-ui
+      // args must reference `@entity.` data. Presentational renders
+      // (loading-state, empty-state, spinners) bind config only and never
+      // need a fetch.
+      const rendersEntityData = entry.effects.some(
+        (e) => e.type === "render-ui" && JSON.stringify(e.args).includes("@entity."),
+      );
+      if (rendersEntityData) {
         registerCheck(
           checkId,
           `INIT transition for "${entry.traitName}" missing fetch effect`,
