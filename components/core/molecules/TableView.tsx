@@ -123,6 +123,7 @@ export interface TableViewProps extends DataDndProps {
   /**
    * Per-row render function (schema alias). In .orb: ["fn","item",{...}].
    * The compiler converts this to the children render prop.
+   * In .lolo, author the per-row renderer as renderItem: (fn item <Component …={@item.field}/>), binding per-item fields via @item.field.
    * @deprecated Use children in React code; exists for pattern registry sync.
    */
   renderItem?: (item: EntityRow, index: number) => React.ReactNode;

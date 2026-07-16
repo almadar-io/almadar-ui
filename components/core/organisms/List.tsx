@@ -139,6 +139,7 @@ export interface ListProps extends DisplayStateProps {
   showDividers?: boolean;
   variant?: "default" | "card";
   emptyMessage?: string;
+  /** Render function for each item. In .lolo: renderItem: (fn item <Component …={@item.field}/>), binding per-item fields via @item.field. */
   renderItem?: (item: ListItem, index: number) => React.ReactNode;
   children?: React.ReactNode;
   /** Fields to display - accepts string[] or {key, header}[] for unified interface */

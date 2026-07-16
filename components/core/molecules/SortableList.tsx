@@ -20,6 +20,7 @@ const EMPTY_ITEMS: readonly EntityRow[] = [];
 
 export interface SortableListProps {
   items: readonly EntityRow[];
+  /** Render function for each item. In .lolo: renderItem: (fn item <Component …={@item.field}/>), binding per-item fields via @item.field. */
   renderItem: (item: EntityRow, index: number) => React.ReactNode;
   reorderEvent: EventKey;
   reorderPayload?: EventPayload;

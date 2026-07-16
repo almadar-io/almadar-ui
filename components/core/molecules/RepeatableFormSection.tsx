@@ -44,7 +44,7 @@ export interface RepeatableFormSectionProps {
   title: string;
   /** Items in the section */
   items: RepeatableItem[];
-  /** Render function for each item */
+  /** Render function for each item. In .lolo: renderItem: (fn item <Component …={@item.field}/>), binding per-item fields via @item.field. */
   renderItem: (item: RepeatableItem, index: number) => React.ReactNode;
   /** Minimum items required */
   minItems?: number;

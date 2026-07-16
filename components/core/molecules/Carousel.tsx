@@ -40,7 +40,7 @@ export interface CarouselItem {
 export interface CarouselProps<T = CarouselItem> {
   /** Array of items to display as slides */
   items: T[];
-  /** Render function for each slide */
+  /** Render function for each slide. In .lolo: renderItem: (fn item <Component …={@item.field}/>), binding per-item fields via @item.field. */
   renderItem?: (item: T, index: number) => React.ReactNode;
   /** Children-as-function fallback for renderItem (compiler compatibility) */
   children?: (item: T, index: number) => React.ReactNode;

@@ -141,6 +141,7 @@ export interface DataListProps extends DataDndProps {
    * Per-item render function (schema-level alias for children render prop).
    * In .orb schemas: ["fn", "item", { pattern tree with @item.field bindings }]
    * The compiler converts this to the children render prop.
+   * In .lolo, author the per-item renderer as renderItem: (fn item <Component …={@item.field}/>), binding per-item fields via @item.field.
    * @deprecated Use children render prop in React code. This prop exists for pattern registry sync.
    */
   renderItem?: (item: EntityRow, index: number) => React.ReactNode;
