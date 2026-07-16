@@ -22,7 +22,7 @@ import { VerificationProvider } from '../providers/VerificationProvider';
 import { UISlotProvider, useUISlots, type SlotProps } from '../providers/UISlotContext';
 import { UISlotRenderer } from '../components/core/organisms/UISlotRenderer';
 import { useEventBus } from '../hooks/useEventBus';
-import type { OrbitalSchema, EntityData, ResolvedTraitBinding, EventPayload, PatternNode, Orbital, TraitRef } from '@almadar/core';
+import type { OrbitalSchema, EntityData, ResolvedTrait, ResolvedTraitBinding, EventPayload, PatternNode, Orbital, TraitRef } from '@almadar/core';
 import { buildResolvedTraitConfigs } from '@almadar/core';
 import { useResolvedSchema } from '../hooks/useResolvedSchema';
 import { collectEmbeddedTraits, collectTraitRefsFromResolvedTrait } from '../lib/embedded-traits';
@@ -179,7 +179,49 @@ export function applyServerEffects(
  * to the server after local processing. Server response provides enriched
  * patterns with entity data resolved reactively via useEntityRef.
  */
-function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits }: {
+/**
+ * Traits the SERVER should execute for the active page, sent over the bridge
+ * as `payload._activeTraits` so `OrbitalServerRuntime.processOrbitalEvent`
+ * scopes EXECUTION (not just the client-side render filter) to the page —
+ * matching the local path, which only ever mounts the page closure.
+ *
+ * The set is the mounted closure PLUS every "pageless" trait (a trait in no
+ * page's closure: persistors, audit, erasure, notifiers — the side-effectful
+ * lifecycle class), so non-UI traits keep executing on every event exactly as
+ * before. Only traits bound to OTHER pages' closures are excluded — Gap #11's
+ * leak class. `undefined` (single-page schema or no IR) means "no scoping":
+ * the server executes the whole orbital, today's behavior.
+ */
+export function collectServerActiveTraits(
+  ir: { pages: ReadonlyMap<string, { traits: readonly ResolvedTraitBinding[] }> } | null,
+  allTraits: ReadonlyMap<string, ResolvedTrait>,
+  mountedTraitNames: ReadonlySet<string>,
+): ReadonlySet<string> | undefined {
+  if (!ir?.pages || ir.pages.size <= 1) return undefined;
+  const pageBound = new Set<string>();
+  for (const page of ir.pages.values()) {
+    // Page bindings + transitive `@trait.X` embed closure (the same closure
+    // `allPageTraits` mounts) — an embedded sibling is page-bound through its
+    // embedding page trait.
+    const queue = page.traits
+      .map((b) => b.trait.name)
+      .filter((n): n is string => !!n);
+    for (const name of queue) {
+      if (pageBound.has(name)) continue;
+      pageBound.add(name);
+      const rt = allTraits.get(name);
+      if (!rt) continue;
+      queue.push(...collectTraitRefsFromResolvedTrait(rt));
+    }
+  }
+  const active = new Set(mountedTraitNames);
+  for (const name of allTraits.keys()) {
+    if (!pageBound.has(name)) active.add(name);
+  }
+  return active;
+}
+
+function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits, serverActiveTraits }: {
   traits: ResolvedTraitBinding[];
   orbitalNames?: string[];
   traitConfigsByName?: Record<string, import('@almadar/core').TraitConfig>;
@@ -207,6 +249,13 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
    * Mirrors compiled-path codegen semantics.
    */
   embeddedTraits?: ReadonlySet<string>;
+  /**
+   * Page-scoped execution set (`collectServerActiveTraits`): mounted closure
+   * + pageless lifecycle traits. Rides every bridge send as
+   * `payload._activeTraits` so the server executes only these traits'
+   * transitions — the upstream twin of the client-side render filter below.
+   */
+  serverActiveTraits?: ReadonlySet<string>;
 }) {
   const bridge = useServerBridge();
   // Traits mounted on the active page (page bindings + embed-routed
@@ -214,6 +263,17 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
   const activeTraitNames = useMemo(
     () => new Set(traits.map((b) => b.trait.name).filter((n): n is string => !!n)),
     [traits],
+  );
+  // Stamp the page-scoped execution set onto an outgoing bridge payload. The
+  // server strips `_activeTraits` before state-machine processing
+  // (OrbitalServerRuntime.processOrbitalEvent) and executes effects only for
+  // the named traits.
+  const withActiveTraits = useCallback(
+    (payload?: EventPayload): EventPayload | undefined => {
+      if (!serverActiveTraits || serverActiveTraits.size === 0) return payload;
+      return { ...(payload ?? {}), _activeTraits: Array.from(serverActiveTraits) };
+    },
+    [serverActiveTraits],
   );
   // Single slot store: `useUISlots`. Both the server-bridge path
   // (`applyServerEffects`) and the local trait state-machine path
@@ -254,11 +314,11 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
       dispatchedOrbitalsSize: dispatchedOrbitals?.size ?? 0,
     }));
     for (const name of targets) {
-      const { effects, meta } = await bridge.sendEvent(name, event, payload);
+      const { effects, meta } = await bridge.sendEvent(name, event, withActiveTraits(payload));
       recordServerResponse(name, event, meta);
       applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNames);
     }
-  }, [bridge.connected, bridge.sendEvent, orbitalNames, uiSlots, onNavigate, embeddedTraits, activeTraitNames]);
+  }, [bridge.connected, bridge.sendEvent, orbitalNames, uiSlots, onNavigate, embeddedTraits, activeTraitNames, withActiveTraits]);
 
   const opts = orbitalNames
     ? { onEventProcessed, navigate: onNavigate, traitConfigsByName, orbitalsByTrait, embeddedTraits }
@@ -314,7 +374,7 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
     initSentRef.current = true;
     (async () => {
       for (const name of orbitalNames) {
-        const { effects, meta } = await bridge.sendEvent(name, 'INIT', {});
+        const { effects, meta } = await bridge.sendEvent(name, 'INIT', withActiveTraits({}));
 
         // Record server response in verification timeline
         recordServerResponse(name, 'INIT', meta);
@@ -343,7 +403,7 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
         applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNames);
       }
     })();
-  }, [bridge.connected, orbitalNames, bridge.sendEvent, uiSlots, onNavigate, embeddedTraits, activeTraitNames]);
+  }, [bridge.connected, orbitalNames, bridge.sendEvent, uiSlots, onNavigate, embeddedTraits, activeTraitNames, withActiveTraits]);
 
   return null;
 }
@@ -507,6 +567,20 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavi
     return Array.from(set);
   }, [allPageTraits, orbitalsByTrait]);
 
+  // Gap #11 upstream twin: page-scoped SERVER execution. The mounted closure
+  // plus pageless lifecycle traits, sent as `payload._activeTraits` so
+  // `OrbitalServerRuntime` skips other pages' composers entirely instead of
+  // the client dropping their renders after the fact.
+  const serverActiveTraits = useMemo<ReadonlySet<string> | undefined>(
+    () =>
+      collectServerActiveTraits(
+        ir,
+        allTraits,
+        new Set(allPageTraits.map((b) => b.trait.name).filter((n): n is string => !!n)),
+      ),
+    [ir, allTraits, allPageTraits],
+  );
+
   // Gap #11: emit allPageTraits at mount/page-change so runtime-verify's
   // console capture shows which traits the runtime path believes belong on
   // the active page. Compare against the .lolo `page "X" -> ...` declaration
@@ -602,6 +676,7 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavi
           traitConfigsByName={traitConfigsByName}
           orbitalsByTrait={orbitalsByTrait}
           embeddedTraits={embeddedTraits}
+          serverActiveTraits={serverActiveTraits}
           onNavigate={onNavigate}
           onLocalFallback={onLocalFallback}
           persistence={persistence}
