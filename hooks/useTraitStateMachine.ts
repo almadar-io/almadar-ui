@@ -677,6 +677,16 @@ export function useTraitStateMachine(
     // post-fetch write-through, no payload mirror. Initial empty per trait.
     const traitFieldStatesRef = useRef<Map<string, EntityRow>>(new Map());
 
+    // Reactive-canvas parity with the compiled shell: the compiled path
+    // re-evaluates a canvas's `drawables` S-expr against `fields` on every
+    // render, but this runtime path evaluates render-ui patterns EAGERLY at
+    // flush time, so a tick/event `(set @entity.x …)` never repaints. Stash
+    // the raw render-ui S-expr of each trait's canvas pattern (keyed by
+    // trait) at flush time; after any later field-writing execution that did
+    // NOT itself render, re-execute the stash so the canvas re-evaluates
+    // against the advanced field state.
+    const lastCanvasRenderUiRef = useRef<Map<string, SExpr[]>>(new Map());
+
 
     // Register traits with debug registry and clean up on unmount/rebind
     useEffect(() => {
@@ -727,11 +737,9 @@ export function useTraitStateMachine(
         bindTraitStateGetter((traitName) => {
             const allStates = newManager.getAllStates();
             if (allStates instanceof Map) {
-                const val = allStates.get(traitName);
-                return typeof val === 'string' ? val : undefined;
+                return allStates.get(traitName)?.currentState;
             }
-            const state = newManager.getState(traitName);
-            return typeof state === 'string' ? state : undefined;
+            return newManager.getState(traitName)?.currentState;
         });
 
         // Per-trait snapshot getter: feeds `window.__orbitalVerification
@@ -907,6 +915,18 @@ export function useTraitStateMachine(
                     const existing = pendingSlots.get(slot) || [];
                     existing.push({ pattern: pattern as PatternConfig, props: props || {} });
                     pendingSlots.set(slot, existing);
+                    // Canvas patterns re-evaluate against the live field store
+                    // on repaint (see lastCanvasRenderUiRef) — stash the raw
+                    // render-ui effects that produced this slot's canvas.
+                    const patternType = (pattern as PatternConfig | null)?.type;
+                    if (patternType === 'canvas') {
+                        const rawForSlot = effects.filter(
+                            (e): e is SExpr => Array.isArray(e) && (e[0] === 'render-ui' || e[0] === 'render') && e[1] === slot,
+                        );
+                        if (rawForSlot.length > 0) {
+                            lastCanvasRenderUiRef.current.set(traitName, rawForSlot);
+                        }
+                    }
                 },
                 clearSlot: (slot) => {
                     pendingSlots.set(slot, []);
@@ -1142,6 +1162,27 @@ export function useTraitStateMachine(
                     state: previousState,
                     entity: binding.linkedEntity,
                 });
+            }
+
+            // Reactive-canvas repaint (compiled-shell parity): this execution
+            // wrote fields but rendered nothing itself (a tick, or a
+            // key-driven move), so the canvas would keep painting the
+            // INIT-time drawables snapshot. Re-execute the trait's stashed
+            // canvas render-ui — `bindingCtx.entity` IS the mutated
+            // `liveEntity`, so drawables re-evaluate against the advanced
+            // field state, then flush the repainted pattern.
+            if (pendingSlots.size === 0 && effectsCallOp(effects, SHARED_ENTITY_WRITE_OPS)) {
+                const stashed = lastCanvasRenderUiRef.current.get(traitName);
+                if (stashed !== undefined && stashed.length > 0) {
+                    await executor.executeAll(stashed);
+                    for (const [slot, patterns] of pendingSlots) {
+                        flushSlot(traitName, slot, patterns, {
+                            event: flushEvent,
+                            state: previousState,
+                            entity: binding.linkedEntity,
+                        });
+                    }
+                }
             }
         } catch (error: unknown) {
             log.error('effects:error', {
