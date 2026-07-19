@@ -105,6 +105,16 @@ export const Modal: React.FC<ModalProps> = ({
   const [dragY, setDragY] = useState(0);
   const dragStartY = useRef(0);
   const isDragging = useRef(false);
+  // Close transition: keep the dialog mounted while the exit animation runs.
+  const [closing, setClosing] = useState(false);
+  const wasOpenRef = useRef(isOpen);
+  useEffect(() => {
+    if (wasOpenRef.current && !isOpen) setClosing(true);
+    wasOpenRef.current = isOpen;
+  }, [isOpen]);
+  const handleAnimEnd = (e: React.AnimationEvent) => {
+    if (closing && e.target === e.currentTarget) setClosing(false);
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -142,7 +152,11 @@ export const Modal: React.FC<ModalProps> = ({
     };
   }, [isOpen]);
 
-  if (!isOpen || typeof document === "undefined") return null;
+  if (typeof document === "undefined") return null;
+  const renderOpen = isOpen || closing;
+  if (!renderOpen) return null;
+  const dialogAnim = closing ? "animate-modal-out" : "animate-modal-in";
+  const overlayAnim = closing ? "animate-overlay-out" : "animate-overlay-in";
 
   const handleClose = () => {
     if (closeEvent) eventBus.emit(`UI:${closeEvent}`, {});
@@ -165,6 +179,7 @@ export const Modal: React.FC<ModalProps> = ({
         "fixed inset-0 z-[1000]",
         "flex items-start justify-center px-4 pb-4 pt-[10vh]",
         "max-sm:items-stretch max-sm:p-0 max-sm:pt-0",
+        overlayAnim,
       )}
       style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
       onClick={handleOverlayClick}
@@ -192,7 +207,9 @@ export const Modal: React.FC<ModalProps> = ({
             "max-sm:max-w-none max-sm:max-h-none max-sm:w-full max-sm:h-full max-sm:rounded-none",
             lookStyles[look],
             className,
+            dialogAnim,
           )}
+          onAnimationEnd={handleAnimEnd}
           style={dragY > 0 ? {
             transform: `translateY(${dragY}px)`,
             transition: isDragging.current ? 'none' : 'transform 200ms ease-out',

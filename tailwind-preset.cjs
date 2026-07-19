@@ -84,6 +84,13 @@ module.exports = {
   'ring-2',
   'ring-primary',
   
+  // Motion utilities (applied conditionally on open/close state)
+  'animate-modal-in',
+  'animate-modal-out',
+  'animate-overlay-in',
+  'animate-overlay-out',
+  'animate-slide-up',
+  
   // Auto-added by audit-tailwind-safelist.ts (2026-03-28)
   'active:scale-[var(--active-scale)]',
   'animate-[combat-flash_0.2s_ease-in-out_2]',
@@ -362,6 +369,37 @@ module.exports = {
         standard: 'var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
         emphasized: 'var(--easing-emphasized, cubic-bezier(0.2, 0, 0, 1))',
         spring: 'var(--easing-spring, cubic-bezier(0.34, 1.56, 0.64, 1))',
+      },
+      keyframes: {
+        'modal-in': {
+          '0%': { opacity: '0', transform: 'scale(0.96) translateY(8px)' },
+          '100%': { opacity: '1', transform: 'scale(1) translateY(0)' },
+        },
+        'modal-out': {
+          '0%': { opacity: '1', transform: 'scale(1) translateY(0)' },
+          '100%': { opacity: '0', transform: 'scale(0.96) translateY(8px)' },
+        },
+        'overlay-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'overlay-out': {
+          '0%': { opacity: '1' },
+          '100%': { opacity: '0' },
+        },
+        'slide-up': {
+          '0%': { opacity: '0', transform: 'translateY(16px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        // Motion-token-driven durations/easings (fall back to legacy
+        // --transition-* so themes that haven't migrated keep working).
+        'modal-in': 'modal-in var(--duration-normal, var(--transition-normal, 250ms)) var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
+        'modal-out': 'modal-out var(--duration-fast, var(--transition-fast, 150ms)) var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
+        'overlay-in': 'overlay-in var(--duration-normal, var(--transition-normal, 250ms)) var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
+        'overlay-out': 'overlay-out var(--duration-fast, var(--transition-fast, 150ms)) var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
+        'slide-up': 'slide-up var(--duration-slow, var(--transition-slow, 400ms)) var(--easing-emphasized, cubic-bezier(0.2, 0, 0, 1))',
       },
       // Density-axis spacing scale. Tailwind's default `p-3` / `gap-4` resolve
       // here so existing classes keep working — but now read from tokens.

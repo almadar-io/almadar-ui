@@ -41,6 +41,7 @@ export const Overlay: React.FC<OverlayProps> = ({
       className={cn(
         "fixed inset-0 z-40",
         blur && "backdrop-blur-sm",
+        "animate-overlay-in",
         className,
       )}
       style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}

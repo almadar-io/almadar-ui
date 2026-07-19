@@ -489,22 +489,43 @@ export function bindEventBus(eventBus: {
       eventBus.emit(prefixed, payload);
     };
 
-    // Initialize event log
+    // Initialize event log. Ring-buffered to the last MAX_EVENT_LOG
+    // entries: on overflow the OLDEST entry is evicted (tracked in
+    // eventLogDropped) so the recent — driven — tail is never silently
+    // dropped. The prior hard cap `if (length < 200) push` stopped
+    // recording once full, which made a late-run driven event (e.g. an
+    // emit-sweep probe) vanish from the delta. eventLogEpoch is a
+    // per-page-load nonce the verifier uses to detect resets across
+    // hermetic reloads (array length is not a reliable reset sentinel —
+    // a reload can refill to the same count).
+    const MAX_EVENT_LOG = 5000;
     const eventLog: EventLogEntry[] = [];
+    let eventLogDropped = 0;
+    const bumpEpoch = () => {
+      window.__orbitalVerification!.eventLogEpoch = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    };
     window.__orbitalVerification.eventLog = eventLog;
+    window.__orbitalVerification.eventLogDropped = 0;
+    bumpEpoch();
     window.__orbitalVerification.clearEventLog = () => {
       eventLog.length = 0;
+      eventLogDropped = 0;
+      window.__orbitalVerification!.eventLogDropped = 0;
+      bumpEpoch();
     };
 
     // Instrument event bus to log all emissions
     if (eventBus.onAny) {
       const verificationRegistryEventLogger = (event: BusEvent) => {
-        if (eventLog.length < 200) {
-          eventLog.push({
-            type: event.type,
-            payload: event.payload,
-            timestamp: Date.now(),
-          });
+        eventLog.push({
+          type: event.type,
+          payload: event.payload,
+          timestamp: Date.now(),
+        });
+        if (eventLog.length > MAX_EVENT_LOG) {
+          eventLog.shift();
+          eventLogDropped += 1;
+          window.__orbitalVerification!.eventLogDropped = eventLogDropped;
         }
       };
       // See VerificationProvider for the same defineProperty pattern.
