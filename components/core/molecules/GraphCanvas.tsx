@@ -214,11 +214,17 @@ function truncateLabel(label: string): string {
     return label.length > MAX_LABEL_CHARS ? label.slice(0, MAX_LABEL_CHARS - 1) + "\u2026" : label;
 }
 
+// Stable empty defaults so omitted array props don't create a new reference each render
+// (which would destabilize the layout effect's dependency list and loop setState).
+const NO_NODES: readonly GraphNode[] = [];
+const NO_EDGES: readonly GraphEdge[] = [];
+const NO_SIM: readonly GraphSimilarity[] = [];
+
 export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     title,
-    nodes: propNodes = [],
-    edges: propEdges = [],
-    similarity: propSimilarity = [],
+    nodes: propNodes = NO_NODES,
+    edges: propEdges = NO_EDGES,
+    similarity: propSimilarity = NO_SIM,
     height = 400,
     showLabels = true,
     interactive = true,
@@ -273,12 +279,14 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     const interactionRef = useRef<{
         mode: "none" | "panning" | "dragging";
         dragNodeId: string | null;
+        pressedNodeId: string | null;
         startMouse: { x: number; y: number };
         startOffset: { x: number; y: number };
         downPos: { x: number; y: number };
     }>({
         mode: "none",
         dragNodeId: null,
+        pressedNodeId: null,
         startMouse: { x: 0, y: 0 },
         startOffset: { x: 0, y: 0 },
         downPos: { x: 0, y: 0 },
@@ -334,6 +342,14 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     const groups = useMemo(
         () => [...new Set(propNodes.map((n) => n.group).filter(Boolean))] as string[],
         [propNodes],
+    );
+
+    // Stable content signatures so the layout effect doesn't re-fire when the parent passes a
+    // fresh array reference with identical contents (which would loop setState forever).
+    const nodesKey = useMemo(() => propNodes.map((n) => n.id).join("\u0001"), [propNodes]);
+    const edgesKey = useMemo(
+        () => propEdges.map((e) => `${e.source}\u0001${e.target}`).join("\u0001"),
+        [propEdges],
     );
 
     // Initialize node positions
@@ -578,7 +594,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         return () => {
             cancelAnimationFrame(animRef.current);
         };
-    }, [propNodes, propEdges, propSimilarity, layout, repulsion, linkDistance, nodeSpacing, showLabels]);
+    }, [nodesKey, edgesKey, propSimilarity, layout, repulsion, linkDistance, nodeSpacing, showLabels]);
 
     // Render
     useEffect(() => {
@@ -744,6 +760,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     const cancelSinglePointer = useCallback(() => {
         interactionRef.current.mode = "none";
         interactionRef.current.dragNodeId = null;
+        interactionRef.current.pressedNodeId = null;
     }, []);
 
     const handlePointerDown = useCallback(
@@ -756,6 +773,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
             state.startMouse = { x: e.clientX, y: e.clientY };
             state.startOffset = { ...offset };
 
+            state.pressedNodeId = node?.id ?? null;
             if (draggable && node) {
                 state.mode = "dragging";
                 state.dragNodeId = node.id;
@@ -816,7 +834,12 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
             if (moved < 4) {
                 const coords = toCoords(e);
                 if (!coords) return;
-                const node = nodeAt(coords.graphX, coords.graphY);
+                // Resolve to the node pressed at pointer-down: the force sim may have
+                // drifted it by release, so a fresh hit-test would miss it.
+                const node = (state.pressedNodeId
+                    ? nodesRef.current.find((n) => n.id === state.pressedNodeId)
+                    : undefined) ?? nodeAt(coords.graphX, coords.graphY);
+                state.pressedNodeId = null;
                 if (node) {
                     // Badge (top-right) takes priority when present.
                     if (node.badge && node.badge > 1 && onBadgeClick) {
@@ -838,6 +861,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
 
     const handlePointerLeave = useCallback(() => {
         setHoveredNode(null);
+        interactionRef.current.pressedNodeId = null;
     }, []);
 
     const gestureHandlers = useCanvasGestures({
