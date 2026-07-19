@@ -10,12 +10,15 @@ export interface LoadingStateProps {
   title?: string;
   message?: string;
   className?: string;
+  /** Center over the whole viewport (fix: inset-0 overlay) instead of inline. */
+  fullPage?: boolean;
 }
 
 export const LoadingState: React.FC<LoadingStateProps> = ({
   title,
   message,
   className,
+  fullPage = false,
 }) => {
   const { t } = useTranslate();
   const displayMessage = message ?? t('common.loading');
@@ -23,7 +26,10 @@ export const LoadingState: React.FC<LoadingStateProps> = ({
     <VStack
       align="center"
       className={cn(
-        "justify-center py-12",
+        "justify-center",
+        fullPage
+          ? "fixed inset-0 z-[1000] py-12 bg-background/80 backdrop-blur-sm animate-overlay-in"
+          : "py-12",
         className,
       )}
     >
