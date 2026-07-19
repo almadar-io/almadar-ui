@@ -372,24 +372,42 @@ module.exports = {
       },
       keyframes: {
         'modal-in': {
-          '0%': { opacity: '0', transform: 'scale(0.96) translateY(8px)' },
-          '100%': { opacity: '1', transform: 'scale(1) translateY(0)' },
+          '0%': {
+            opacity: 'var(--motion-modal-enter-from-opacity, 0)',
+            transform: 'var(--motion-modal-enter-from-transform, scale(0.96) translateY(8px))',
+          },
+          '100%': {
+            opacity: 'var(--motion-modal-enter-to-opacity, 1)',
+            transform: 'var(--motion-modal-enter-to-transform, translateZ(0))',
+          },
         },
         'modal-out': {
-          '0%': { opacity: '1', transform: 'scale(1) translateY(0)' },
-          '100%': { opacity: '0', transform: 'scale(0.96) translateY(8px)' },
+          '0%': {
+            opacity: 'var(--motion-modal-exit-from-opacity, 1)',
+            transform: 'var(--motion-modal-exit-from-transform, translateZ(0))',
+          },
+          '100%': {
+            opacity: 'var(--motion-modal-exit-to-opacity, 0)',
+            transform: 'var(--motion-modal-exit-to-transform, scale(0.96) translateY(8px))',
+          },
         },
         'overlay-in': {
-          '0%': { opacity: '0' },
+          '0%': { opacity: 'var(--motion-overlay-from-opacity, 0)' },
           '100%': { opacity: '1' },
         },
         'overlay-out': {
           '0%': { opacity: '1' },
-          '100%': { opacity: '0' },
+          '100%': { opacity: 'var(--motion-overlay-from-opacity, 0)' },
         },
         'slide-up': {
-          '0%': { opacity: '0', transform: 'translateY(16px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
+          '0%': {
+            opacity: 'var(--motion-slide-up-from-opacity, 0)',
+            transform: 'var(--motion-slide-up-from-transform, translateY(16px))',
+          },
+          '100%': {
+            opacity: '1',
+            transform: 'translateZ(0)',
+          },
         },
       },
       animation: {

@@ -121,4 +121,23 @@
     --card-padding-lg: 40px;
     --dialog-padding: 40px;
     --section-gap: 64px;
+
+    /* ----------------------------------------------------------------
+     * Motion-keyframe endpoints (animate-modal-in/out, animate-overlay-in/out,
+     * animate-slide-up). These are the "shape" of the built-in transitions;
+     * duration/easing come from --duration-* / --easing-*. Override any of
+     * these in a theme block to restyle the motion — e.g. a minimal theme
+     * sets --motion-modal-enter-from-transform: none for a pure fade.
+     * ---------------------------------------------------------------- */
+    --motion-overlay-from-opacity: 0;
+    --motion-modal-enter-from-opacity: 0;
+    --motion-modal-enter-from-transform: scale(0.96) translateY(8px);
+    --motion-modal-enter-to-opacity: 1;
+    --motion-modal-enter-to-transform: translateZ(0);
+    --motion-modal-exit-from-opacity: 1;
+    --motion-modal-exit-from-transform: translateZ(0);
+    --motion-modal-exit-to-opacity: 0;
+    --motion-modal-exit-to-transform: scale(0.96) translateY(8px);
+    --motion-slide-up-from-opacity: 0;
+    --motion-slide-up-from-transform: translateY(16px);
 }
