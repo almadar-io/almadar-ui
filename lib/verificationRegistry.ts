@@ -186,12 +186,36 @@ export function recordTransition(trace: Omit<TransitionTrace, "id">): void {
         (e) => e.type === "render-ui" && JSON.stringify(e.args).includes("@entity."),
       );
       if (rendersEntityData) {
-        registerCheck(
-          checkId,
-          `INIT transition for "${entry.traitName}" missing fetch effect`,
-          "fail",
-          "Entity-bound render-ui without a fetch effect will show empty data",
+        // A `[runtime, shared]` entity is seeded by a SIBLING writer trait's
+        // own INIT (`set @entity…` / `fetch`) — the render trait reads the
+        // shared store, so its data is not empty despite having no fetch of
+        // its own. Sibling seeds recorded before this INIT (the manager
+        // processes bindings in order, writers first) satisfy the check.
+        const siblingSeeds = getState().transitions.some(
+          (t) =>
+            t.event === "INIT" &&
+            t.effects.some(
+              (e) =>
+                e.type === "fetch" ||
+                (e.type === "set" &&
+                  typeof e.args[0] === "string" &&
+                  e.args[0].startsWith("@entity.")),
+            ),
         );
+        if (siblingSeeds) {
+          registerCheck(
+            checkId,
+            `INIT transition for "${entry.traitName}" has sibling entity-seed (shared entity)`,
+            "pass",
+          );
+        } else {
+          registerCheck(
+            checkId,
+            `INIT transition for "${entry.traitName}" missing fetch effect`,
+            "fail",
+            "Entity-bound render-ui without a fetch effect will show empty data",
+          );
+        }
       }
     }
   }

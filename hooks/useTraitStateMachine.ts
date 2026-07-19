@@ -137,6 +137,17 @@ const SYNC_TICK_OPERATORS: ReadonlySet<string> = new Set([
     'when',
 ]);
 
+// Pattern types whose render-ui is stashed for the reactive repaint (see
+// lastCanvasRenderUiRef): the game render substrate evaluates `@entity`
+// eagerly at flush time, so a headless mechanic trait's writes would leave
+// them frozen at the INIT snapshot. Scoped to these three — a broader set
+// would re-render interactive patterns (forms) on every write.
+const REACTIVE_REPAINT_PATTERN_TYPES: ReadonlySet<string> = new Set([
+    'canvas',
+    'game-hud',
+    'game-shell',
+]);
+
 // Lifecycle (mount-time) events. They are NOT user-driven, so the event-bus
 // self-subscription skips them — instead they are fired once per trait on mount
 // (see the mount-init effect) so single-state boards' INIT `set` effects seed
@@ -687,6 +698,25 @@ export function useTraitStateMachine(
     // against the advanced field state.
     const lastCanvasRenderUiRef = useRef<Map<string, SExpr[]>>(new Map());
 
+    // Self-reference to `executeTransitionEffects` (assigned below, right
+    // after its definition) so a field-writing execution on a `[shared]`
+    // entity can repaint SIBLING render traits' stashed canvases through
+    // their own bindings — a headless mechanic atom never renders itself,
+    // so without the cross-trait pass a composed canvas would freeze at its
+    // INIT-time snapshot.
+    const executeTransitionEffectsRef = useRef<
+        ((params: {
+            binding: ResolvedTraitBinding;
+            effects: SExpr[];
+            previousState: string;
+            newState: string;
+            payload?: EventPayload;
+            flushEvent: string;
+            syncOnly: boolean;
+            log: ReturnType<typeof createLogger>;
+        }) => Promise<string[]>) | null
+    >(null);
+
 
     // Register traits with debug registry and clean up on unmount/rebind
     useEffect(() => {
@@ -915,11 +945,16 @@ export function useTraitStateMachine(
                     const existing = pendingSlots.get(slot) || [];
                     existing.push({ pattern: pattern as PatternConfig, props: props || {} });
                     pendingSlots.set(slot, existing);
-                    // Canvas patterns re-evaluate against the live field store
-                    // on repaint (see lastCanvasRenderUiRef) — stash the raw
-                    // render-ui effects that produced this slot's canvas.
+                    // Reactive patterns re-evaluate against the live field
+                    // store on repaint (see lastCanvasRenderUiRef) — stash the
+                    // raw render-ui effects that produced this slot's pattern.
+                    // Scoped to the game render substrate: a canvas repaints
+                    // its drawables, a game-hud its stat chips, a game-shell
+                    // its win/lose overlay — all three evaluate `@entity`
+                    // eagerly at flush time, so a headless mechanic's write
+                    // would otherwise leave them frozen at the INIT snapshot.
                     const patternType = (pattern as PatternConfig | null)?.type;
-                    if (patternType === 'canvas') {
+                    if (patternType !== undefined && REACTIVE_REPAINT_PATTERN_TYPES.has(patternType)) {
                         const rawForSlot = effects.filter(
                             (e): e is SExpr => Array.isArray(e) && (e[0] === 'render-ui' || e[0] === 'render') && e[1] === slot,
                         );
@@ -1183,6 +1218,34 @@ export function useTraitStateMachine(
                         });
                     }
                 }
+
+                // Cross-trait repaint: on a `[shared]` entity the writer is
+                // usually a headless mechanic trait (no render-ui of its
+                // own), while the canvas lives on a SIBLING render trait.
+                // Re-execute every sibling's stashed canvas render-ui
+                // through its own binding — inside `executeTransitionEffects`
+                // its `liveEntity` seeds from the shared store's just-
+                // committed snapshot, so drawables re-evaluate against the
+                // advanced state and flush under the sibling's own trait.
+                if (sharedKey !== undefined && executeTransitionEffectsRef.current !== null) {
+                    for (const sibling of traitBindingsRef.current) {
+                        const siblingName = sibling.trait.name;
+                        if (siblingName === traitName) continue;
+                        if (sharedKeyByTraitNameRef.current.get(siblingName) !== sharedKey) continue;
+                        const siblingStash = lastCanvasRenderUiRef.current.get(siblingName);
+                        if (siblingStash === undefined || siblingStash.length === 0) continue;
+                        const siblingState = traitStatesRef.current.get(siblingName)?.currentState ?? '';
+                        await executeTransitionEffectsRef.current({
+                            binding: sibling,
+                            effects: siblingStash,
+                            previousState: siblingState,
+                            newState: siblingState,
+                            flushEvent: `${flushEvent}:repaint`,
+                            syncOnly,
+                            log,
+                        });
+                    }
+                }
             }
         } catch (error: unknown) {
             log.error('effects:error', {
@@ -1196,6 +1259,14 @@ export function useTraitStateMachine(
 
         return emittedDuringExec;
     }, [eventBus, flushSlot, sharedEntityStore]);
+
+    // Publish the self-reference the cross-trait canvas repaint uses (a
+    // writer on a `[shared]` entity repaints sibling render traits through
+    // their own bindings — see the repaint block inside
+    // `executeTransitionEffects` and the runTickFrame driver below).
+    useEffect(() => {
+        executeTransitionEffectsRef.current = executeTransitionEffects;
+    }, [executeTransitionEffects]);
 
     /**
      * Execute a single tick's effects through the SAME canonical executor
@@ -1314,6 +1385,31 @@ export function useTraitStateMachine(
                         createSharedEntityWriter(binding, tick, traitStatesRef, emitFromSharedWriter),
                     );
                     runTickFrame(group.storeKey, writers, sharedEntityStore);
+
+                    // Cross-trait canvas repaint: the pure-writer path folds
+                    // writes straight into the shared store without touching
+                    // `executeTransitionEffects`, so sibling render traits
+                    // never see a field-writing execution to hang a repaint
+                    // on. Re-execute each render binding's stashed canvas
+                    // render-ui against the just-committed frame.
+                    const repaint = executeTransitionEffectsRef.current;
+                    if (repaint !== null) {
+                        for (const renderBinding of group.renderBindings) {
+                            const renderTraitName = renderBinding.trait.name;
+                            const stash = lastCanvasRenderUiRef.current.get(renderTraitName);
+                            if (stash === undefined || stash.length === 0) continue;
+                            const renderState = traitStatesRef.current.get(renderTraitName)?.currentState ?? '';
+                            void repaint({
+                                binding: renderBinding,
+                                effects: stash,
+                                previousState: renderState,
+                                newState: renderState,
+                                flushEvent: 'tick:repaint',
+                                syncOnly: true,
+                                log: sharedEntityLog,
+                            });
+                        }
+                    }
                 };
                 if (interval === 'frame') {
                     scheduler.add(0, onDue);
@@ -1742,6 +1838,35 @@ export function useTraitStateMachine(
                 });
                 unsubscribes.push(() => {
                     crossTraitLog.debug('self:unsubscribe', { traitName, busKey: selfBusKey, eventKey });
+                    unsub();
+                });
+            }
+        }
+
+        // Intra-orbital cascade routing (atom composition): an `(emit EVENT)`
+        // inside a trait's effects reaches the bus as the BARE `UI:EVENT`
+        // key (there is no trait-scope chain mid-execution), while the
+        // qualified subscriptions above key on each trait's own name — so a
+        // composed atom's contract events (TURN, BURST, HERO_STEPPED, …)
+        // never delivered to the listening traits. Subscribe each accepted
+        // event's bare key once and route it into the manager, which
+        // broadcasts to every bound trait exactly like the server does.
+        // Scoped to events at least one current binding transitions on, so
+        // foreign bare emits with no local acceptor stay untouched.
+        const bareCascadeKeys = new Set<string>();
+        for (const binding of traitBindings) {
+            for (const transition of binding.trait.transitions) {
+                const eventKey = transition.event;
+                if ((LIFECYCLE_EVENTS as readonly string[]).includes(eventKey)) continue;
+                if (bareCascadeKeys.has(eventKey)) continue;
+                bareCascadeKeys.add(eventKey);
+                const bareKey = `UI:${eventKey}`;
+                const unsub = eventBus.on(bareKey, (event) => {
+                    crossTraitLog.debug('bare-cascade:fire', { bareKey, eventKey });
+                    enqueueAndDrain(eventKey, event.payload);
+                });
+                unsubscribes.push(() => {
+                    crossTraitLog.debug('bare-cascade:unsubscribe', { bareKey, eventKey });
                     unsub();
                 });
             }
