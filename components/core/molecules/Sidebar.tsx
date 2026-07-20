@@ -105,7 +105,7 @@ const SidebarNavItem: React.FC<{
           ? [
             'bg-primary text-primary-foreground',
             'font-medium shadow-sm',
-            'border-primary translate-x-1 -translate-y-0.5',
+            'border-primary translate-x-1 rtl:-translate-x-1 -translate-y-0.5',
           ].join(' ')
           : [
             'text-foreground',
@@ -122,7 +122,7 @@ const SidebarNavItem: React.FC<{
       )}
 
       {!collapsed && (
-        <Typography variant="body" color={isActive ? 'inherit' : 'primary'} className="font-medium truncate flex-1 text-left">{item.label}</Typography>
+        <Typography variant="body" color={isActive ? 'inherit' : 'primary'} className="font-medium truncate flex-1 text-start">{item.label}</Typography>
       )}
 
       {!collapsed && item.badge !== undefined && (
@@ -132,7 +132,7 @@ const SidebarNavItem: React.FC<{
       {/* Tooltip for collapsed state */}
       {collapsed && (
         <Box className={cn(
-          'absolute left-full ml-2 px-2 py-1 text-xs opacity-0 group-hover:opacity-100',
+          'absolute start-full ms-2 px-2 py-1 text-xs opacity-0 group-hover:opacity-100',
           'pointer-events-none whitespace-nowrap z-50 transition-opacity',
           'bg-primary text-primary-foreground',
           'border-[length:var(--border-width-thin)] border-border',
@@ -193,7 +193,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       as="aside"
       className={cn(
         'flex flex-col h-full',
-        'bg-card border-r border-border',
+        'bg-card border-e border-border',
         'transition-all duration-300 ease-in-out',
         collapsed ? 'w-20' : 'w-64',
         className
