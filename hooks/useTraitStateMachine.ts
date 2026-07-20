@@ -21,7 +21,7 @@ import { useState, useCallback, useEffect, useRef, useMemo, type MutableRefObjec
 // Use hooks from @almadar/ui
 import { useEventBus, useSharedEntityStore, runTickFrame, type SharedEntityWriter } from './index';
 import { createLogger, setNamespaceLevel } from '@almadar/logger';
-import { isCircuitEvent, walkSExpr } from '@almadar/core';
+import { isCircuitEvent, walkSExpr, mergeEntityFrame } from '@almadar/core';
 import type { PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, TraitConfig, SExpr, ServiceParams, ResolvedTrait, FieldValue, EntityFieldWrite, EntityFrameState } from '@almadar/core';
 import {
     StateMachineManager,
@@ -1053,12 +1053,18 @@ export function useTraitStateMachine(
         // without owning the write — the canonical client `set` (and, in
         // offline-preview, the server `set`) already mutate `liveEntity`.
         // A second writing wrapper here would be a parallel store; this just
-        // taps the value as it passes through for diagnostics.
+        // taps the value as it passes through for diagnostics AND (for a
+        // `[shared]` entity) to record exactly which fields THIS trait wrote,
+        // so the commit below can merge instead of replace.
+        const sharedWrites: EntityFieldWrite[] = [];
         const baseSet = handlers.set;
         handlers = {
             ...handlers,
             set: async (targetId, field, value) => {
                 if (baseSet) await baseSet(targetId, field, value);
+                if (sharedKey !== undefined) {
+                    sharedWrites.push({ field, value: value as FieldValue });
+                }
                 log.debug('set:write', {
                     traitName,
                     field,
@@ -1163,14 +1169,31 @@ export function useTraitStateMachine(
                 });
             }
 
-            // Commit this trait's mutated view of a `[shared]` entity back to
-            // the shared store — the ONLY point that notifies subscribers, so
-            // the render trait's own render-ui (below, or its own tick) is
-            // what paints, not this write. Non-shared traits skip this: their
-            // mutation already lives in `traitFieldStatesRef` (the SAME object
+            // Commit this trait's own writes onto a FRESH read of the shared
+            // store — the ONLY point that notifies subscribers, so the render
+            // trait's own render-ui (below, or its own tick) is what paints,
+            // not this write. Non-shared traits skip this: their mutation
+            // already lives in `traitFieldStatesRef` (the SAME object
             // `liveEntity` is, so nothing further to commit).
+            //
+            // A wholesale `commit(sharedKey, liveEntity)` here would replace
+            // the ENTIRE row with a snapshot captured at this call's ENTRY
+            // (`liveEntity`, line ~892) — but this function is async and can
+            // suspend mid-`executeAll` at any `await`. A concurrent shared-
+            // entity tick-writer (`runTickFrame`/`useSharedEntityStore.ts`)
+            // runs fully synchronously and can commit a FRESHER frame while
+            // this call is suspended; when this call resumes, a wholesale
+            // replace would clobber that fresher commit with this call's
+            // stale entry-time values for every field, not just the ones this
+            // trait actually wrote. Merging `sharedWrites` onto a re-read
+            // snapshot (the same fold `runTickFrame` already uses) means
+            // whichever commit lands last only overwrites the fields it
+            // actually owns, closing the race regardless of async timing.
             if (sharedKey !== undefined) {
-                sharedEntityStore.commit(sharedKey, liveEntity);
+                sharedEntityStore.commit(
+                    sharedKey,
+                    mergeEntityFrame(sharedEntityStore.getSnapshot(sharedKey), sharedWrites),
+                );
             }
 
             log.debug('effects:executed', () => ({
@@ -1490,6 +1513,29 @@ export function useTraitStateMachine(
             }
         }
 
+        // A trait bound to a `[shared]` entity never appears in
+        // `traitFieldStatesRef` (its live state lives in `sharedEntityStore`
+        // instead — see `executeTransitionEffects`'s `liveEntity` setup), so
+        // without this it falls through to `entityData` (`undefined`) in
+        // `StateMachineCore.sendEvent`'s `entityByTrait?.[traitName] ??
+        // entityData`. That silently blocks every guarded transition on a
+        // shared-entity trait (`@entity.X` reads `undefined`) whether or not
+        // the trait itself writes — a pure-relay interaction trait
+        // (FroggerPlay/GemPlay) or a mechanic trait reacting to a keyboard-
+        // triggered event (Breaker's PADDLE_SET, PongRally's PADDLE_MOVE).
+        // Mirrors the tick-guard path's already-correct lookup above
+        // (`runTickEffects`, guard evaluation against
+        // `sharedEntityStore.getSnapshot(sharedKey)`). A trait is never both
+        // shared and non-shared, so this never overwrites an entry the loop
+        // above already set.
+        for (const binding of bindings) {
+            const name = binding.trait.name;
+            const sharedKey = sharedKeyByTraitNameRef.current.get(name);
+            if (sharedKey !== undefined) {
+                entityByTrait[name] = { ...sharedEntityStore.getSnapshot(sharedKey) };
+            }
+        }
+
         // Send event through StateMachineManager (shared runtime)
         const results = currentManager.sendEvent(
             normalizedEvent,
@@ -1703,7 +1749,7 @@ export function useTraitStateMachine(
             }
             await onEventProcessed(normalizedEvent, payload, dispatchedOrbitals);
         }
-    }, [entities, eventBus]);
+    }, [entities, eventBus, sharedEntityStore]);
 
     /**
      * Drain the event queue one entry at a time (actor model).

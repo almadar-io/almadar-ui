@@ -15,7 +15,7 @@
  * @packageDocumentation
  */
 
-import { useRef, useSyncExternalStore } from 'react';
+import { createContext, useContext, useRef, useSyncExternalStore } from 'react';
 import type { EntityFieldWrite, EntityFrameState } from '@almadar/core';
 import { mergeEntityFrame } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
@@ -117,6 +117,32 @@ export function useSharedEntityStore(): SharedEntityStore {
     storeRef.current = createSharedEntityStore();
   }
   return storeRef.current;
+}
+
+/**
+ * Cross-component access to ONE `SharedEntityStore` instance. `useSharedEntityStore`
+ * is `useRef`-scoped to its own call site — correct for a single owner (the JS
+ * runtime path's `useTraitStateMachine` interprets a whole orbital in one hook
+ * call), but the compiled path (`orbital-rust`'s TS-shell codegen) generates one
+ * hook + component PER TRAIT, so several independent trait hooks bound to the
+ * SAME `[shared]` entity need the SAME store instance. A page-level owner calls
+ * `useSharedEntityStore()` once and provides it here; every trait hook on that
+ * page reads it back via `useSharedEntityStoreContext()` instead of creating its
+ * own disconnected store. Not used by the JS runtime path today — purely
+ * additive, zero effect on `useSharedEntityStore`'s existing single-caller
+ * behavior.
+ */
+export const SharedEntityStoreContext = createContext<SharedEntityStore | null>(null);
+
+/** Read the page-level `SharedEntityStore` provided by `SharedEntityStoreContext`. */
+export function useSharedEntityStoreContext(): SharedEntityStore {
+  const store = useContext(SharedEntityStoreContext);
+  if (!store) {
+    throw new Error(
+      'useSharedEntityStoreContext: no SharedEntityStoreContext.Provider found in the component tree',
+    );
+  }
+  return store;
 }
 
 /**

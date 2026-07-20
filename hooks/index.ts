@@ -93,6 +93,8 @@ export {
   useSharedEntityStore,
   useSharedEntitySnapshot,
   runTickFrame,
+  SharedEntityStoreContext,
+  useSharedEntityStoreContext,
   type SharedEntityStore,
   type SharedEntitySubscriber,
   type SharedEntityWriter,

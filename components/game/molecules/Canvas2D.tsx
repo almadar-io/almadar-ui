@@ -530,6 +530,15 @@ export function Canvas2D({
         };
     }, [keyMap, keyUpMap, eventBus]);
 
+    // Keyboard delivery above is window-scoped (not focus-gated), so this
+    // isn't load-bearing for input — it's a visible affordance: a
+    // keyboard-driven board's canvas should read as the focused, interactive
+    // surface as soon as it mounts, not just after the player clicks it.
+    useEffect(() => {
+        if (!keyMap && !keyUpMap) return;
+        canvasRef.current?.focus();
+    }, [keyMap, keyUpMap]);
+
     // =========================================================================
     // Render
     // =========================================================================
@@ -593,7 +602,7 @@ export function Canvas2D({
                 onWheel={gestureHandlers.onWheel}
                 onContextMenu={(e) => e.preventDefault()}
                 className="cursor-pointer touch-none"
-                tabIndex={isFree ? 0 : undefined}
+                tabIndex={isFree || keyMap || keyUpMap ? 0 : undefined}
                 style={{
                     width: viewportSize.width,
                     height: viewportSize.height,
