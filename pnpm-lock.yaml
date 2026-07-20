@@ -13,8 +13,8 @@ importers:
   .:
     dependencies:
       '@almadar/core':
-        specifier: ^10.29.0
-        version: 10.29.0
+        specifier: ^10.30.0
+        version: 10.30.0
       '@almadar/evaluator':
         specifier: ^2.30.0
         version: 2.30.0
@@ -227,8 +227,8 @@ packages:
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
 
-  '@almadar/core@10.29.0':
-    resolution: {integrity: sha512-1g+7J94gudPPbu71m09+f3pFnX0bRS5GgXEQ1WWuSGrKnREhv7Rh1kWmzVA1NBgdPBqt4yk/4shdehu39xEoqA==}
+  '@almadar/core@10.30.0':
+    resolution: {integrity: sha512-rCkoCyo/Rb/SkwyVdbj5zyLzlllKdiPw6ZK6QzjVlDFs1UT885DmS2lcCoSlKwov1/rSMxupBcQq78CPfkHU4Q==}
 
   '@almadar/eslint-plugin@2.14.0':
     resolution: {integrity: sha512-kBZ20xYQoLVHLqX5ZsfFgYUPDL1DRWwlKI00k4pvZy4a5fx4y2+47wa6O6Vq2sAZxjKCy7EDBoARIrKt9JOMkA==}
@@ -4090,7 +4090,7 @@ snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
 
-  '@almadar/core@10.29.0':
+  '@almadar/core@10.30.0':
     dependencies:
       zod: 3.25.76
 
@@ -4101,16 +4101,16 @@ snapshots:
 
   '@almadar/evaluator@2.30.0':
     dependencies:
-      '@almadar/core': 10.29.0
+      '@almadar/core': 10.30.0
       '@almadar/std': 16.140.0
 
   '@almadar/logger@1.9.0':
     dependencies:
-      '@almadar/core': 10.29.0
+      '@almadar/core': 10.30.0
 
   '@almadar/runtime@6.33.0(express@5.2.1)':
     dependencies:
-      '@almadar/core': 10.29.0
+      '@almadar/core': 10.30.0
       '@almadar/evaluator': 2.30.0
       '@almadar/logger': 1.9.0
       '@almadar/server': 2.25.0(express@5.2.1)
@@ -4126,7 +4126,7 @@ snapshots:
 
   '@almadar/server@2.25.0(express@5.2.1)':
     dependencies:
-      '@almadar/core': 10.29.0
+      '@almadar/core': 10.30.0
       '@almadar/logger': 1.9.0
       '@faker-js/faker': 9.9.0
       cors: 2.8.6
@@ -4144,11 +4144,11 @@ snapshots:
 
   '@almadar/std@16.140.0':
     dependencies:
-      '@almadar/core': 10.29.0
+      '@almadar/core': 10.30.0
 
   '@almadar/syntax@1.11.0':
     dependencies:
-      '@almadar/core': 10.29.0
+      '@almadar/core': 10.30.0
       '@almadar/std': 16.140.0
 
   '@asamuzakjp/css-color@3.2.0':

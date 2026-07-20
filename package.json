@@ -123,7 +123,7 @@
     "lint": "eslint --no-warn-ignored --max-warnings 0 ."
   },
   "dependencies": {
-    "@almadar/core": "^10.29.0",
+    "@almadar/core": "^10.30.0",
     "@almadar/evaluator": "^2.30.0",
     "@almadar/logger": "^1.9.0",
     "@almadar/runtime": "^6.33.0",
