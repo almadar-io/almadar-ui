@@ -511,6 +511,16 @@ export function Canvas2D({
         onMultiTouchStart: cancelSinglePointer,
     });
 
+    // Native non-passive wheel listener so preventDefault() in the gesture
+    // handler fires (React onWheel is passive → page would scroll while zooming).
+    const canvasWheelHandler = gestureHandlers.onWheel;
+    useEffect(() => {
+        const el = canvasRef.current;
+        if (!el) return;
+        el.addEventListener('wheel', canvasWheelHandler, { passive: false });
+        return () => el.removeEventListener('wheel', canvasWheelHandler);
+    }, [canvasWheelHandler]);
+
     // Keyboard → semantic events via keyMap/keyUpMap (device-agnostic input layer).
     useEffect(() => {
         if (!keyMap && !keyUpMap) return;
@@ -599,7 +609,6 @@ export function Canvas2D({
                 onPointerUp={gestureHandlers.onPointerUp}
                 onPointerCancel={gestureHandlers.onPointerCancel}
                 onPointerLeave={handleCanvasPointerLeave}
-                onWheel={gestureHandlers.onWheel}
                 onContextMenu={(e) => e.preventDefault()}
                 className="cursor-pointer touch-none"
                 tabIndex={isFree || keyMap || keyUpMap ? 0 : undefined}

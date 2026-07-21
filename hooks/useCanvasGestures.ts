@@ -44,7 +44,7 @@ export interface CanvasGestureHandlers {
   onPointerMove: (e: React.PointerEvent<HTMLCanvasElement>) => void;
   onPointerUp: (e: React.PointerEvent<HTMLCanvasElement>) => void;
   onPointerCancel: (e: React.PointerEvent<HTMLCanvasElement>) => void;
-  onWheel: (e: React.WheelEvent<HTMLCanvasElement>) => void;
+  onWheel: (e: WheelEvent) => void;
 }
 
 interface PinchState {
@@ -162,7 +162,7 @@ export function useCanvasGestures(options: UseCanvasGesturesOptions): CanvasGest
   );
 
   const handleWheel = useCallback(
-    (e: React.WheelEvent<HTMLCanvasElement>) => {
+    (e: WheelEvent) => {
       if (!enabled) return;
       e.preventDefault();
       const { x, y } = localPoint(canvasRef.current, e.clientX, e.clientY);

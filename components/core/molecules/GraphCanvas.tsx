@@ -875,6 +875,17 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         onMultiTouchStart: cancelSinglePointer,
     });
 
+    // Attach wheel as a NATIVE non-passive listener so preventDefault() inside
+    // the gesture handler actually fires (React's onWheel is passive → the page
+    // would scroll while zooming the canvas).
+    const wheelHandler = gestureHandlers.onWheel;
+    useEffect(() => {
+        const el = canvasRef.current;
+        if (!el) return;
+        el.addEventListener('wheel', wheelHandler, { passive: false });
+        return () => el.removeEventListener('wheel', wheelHandler);
+    }, [wheelHandler]);
+
     const handleDoubleClick = useCallback(
         (e: React.MouseEvent<HTMLCanvasElement>) => {
             const coords = toCoords(e);
@@ -977,7 +988,6 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                         onPointerUp={gestureHandlers.onPointerUp}
                         onPointerCancel={gestureHandlers.onPointerCancel}
                         onPointerLeave={handlePointerLeave}
-                        onWheel={gestureHandlers.onWheel}
                         onDoubleClick={handleDoubleClick}
                     />
                     {typeof window !== "undefined" && showLabelTooltip && labelTooltipStyle && createPortal(
