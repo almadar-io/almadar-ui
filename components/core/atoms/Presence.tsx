@@ -117,11 +117,17 @@ export function usePresence(show: boolean, opts: UsePresenceOptions): PresenceRe
   useEffect(() => () => clearSafe(), [clearSafe]);
 
   const disabled = !animate || !isMotionEnabled();
+  // Base the direction on `show`, NOT `exiting`. `finishExit` calls
+  // setExiting(false) + setMounted(false); if those ever land in separate
+  // renders there is a frame where mounted=true && exiting=false, which an
+  // `exiting ? out : in` derivation would misread as enter (re-playing the
+  // in-animation → flicker). `show` is already false throughout exit, so
+  // `show ? in : out` can never flip back to "in" once closing begins.
   const className = disabled
     ? ""
-    : exiting
-      ? `animate-${animation}-out`
-      : `animate-${animation}-in`;
+    : show
+      ? `animate-${animation}-in`
+      : `animate-${animation}-out`;
 
   const onAnimationEnd = useCallback(
     (e: React.AnimationEvent) => {
