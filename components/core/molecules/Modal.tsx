@@ -34,6 +34,8 @@ export interface ModalProps {
   isOpen?: boolean;
   /** Callback when modal should close (injected by slot wrapper) */
   onClose?: () => void;
+  /** Fires after the exit animation completes (the modal is about to unmount). */
+  onExited?: () => void;
   title?: string;
   /** Modal content (can be empty if using slot content) */
   children?: React.ReactNode;
@@ -86,6 +88,7 @@ const lookStyles: Record<ModalLook, string> = {
 export const Modal: React.FC<ModalProps> = ({
   isOpen = true,
   onClose = () => {},
+  onExited,
   title,
   children = null,
   footer,
@@ -113,7 +116,10 @@ export const Modal: React.FC<ModalProps> = ({
     wasOpenRef.current = isOpen;
   }, [isOpen]);
   const handleAnimEnd = (e: React.AnimationEvent) => {
-    if (closing && e.target === e.currentTarget) setClosing(false);
+    if (closing && e.target === e.currentTarget) {
+      setClosing(false);
+      onExited?.();
+    }
   };
 
   useEffect(() => {
