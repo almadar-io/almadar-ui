@@ -6,7 +6,7 @@
  * Uses theme-aware CSS variables for styling.
  */
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { EventEmit } from "@almadar/core";
 import { Box } from "../atoms/Box";
@@ -109,9 +109,11 @@ export const Modal: React.FC<ModalProps> = ({
   const dragStartY = useRef(0);
   const isDragging = useRef(false);
   // Close transition: keep the dialog mounted while the exit animation runs.
+  // useLayoutEffect (not useEffect) so closing is set BEFORE paint — otherwise
+  // the first false render returns null and the modal vanishes with no exit.
   const [closing, setClosing] = useState(false);
   const wasOpenRef = useRef(isOpen);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (wasOpenRef.current && !isOpen) setClosing(true);
     wasOpenRef.current = isOpen;
   }, [isOpen]);

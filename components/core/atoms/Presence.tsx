@@ -18,7 +18,7 @@
  * @packageDocumentation
  */
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "../../../lib/cn";
 
 export type PresenceAnimation =
@@ -93,7 +93,10 @@ export function usePresence(show: boolean, opts: UsePresenceOptions): PresenceRe
     onExitedRef.current?.();
   }, [clearSafe]);
 
-  useEffect(() => {
+  // useLayoutEffect (not useEffect) so mounted/exiting flip BEFORE paint —
+  // otherwise the first render of a transition returns null and the element
+  // vanishes with no animation (the Modal null-frame bug).
+  useLayoutEffect(() => {
     const moving = animate && isMotionEnabled();
     if (show && !prev.current) {
       setExiting(false);
