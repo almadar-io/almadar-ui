@@ -39,8 +39,8 @@ export interface DrawerProps {
   isOpen?: boolean;
   /** Callback when drawer should close (injected by slot wrapper) */
   onClose?: () => void;
-  /** Drawer title */
-  title?: string;
+  /** Drawer title (text or any node, e.g. a brand logo + name). */
+  title?: React.ReactNode;
   /** Drawer content (can be empty if using slot content) */
   children?: React.ReactNode;
   /** Footer content */
