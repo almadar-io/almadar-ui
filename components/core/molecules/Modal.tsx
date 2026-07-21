@@ -6,7 +6,7 @@
  * Uses theme-aware CSS variables for styling.
  */
 
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { EventEmit } from "@almadar/core";
 import { Box } from "../atoms/Box";
@@ -16,6 +16,7 @@ import { Typography } from "../atoms/Typography";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
+import { usePresence } from "../atoms/Presence";
 
 export type ModalSize = "sm" | "md" | "lg" | "xl" | "full";
 
@@ -108,21 +109,13 @@ export const Modal: React.FC<ModalProps> = ({
   const [dragY, setDragY] = useState(0);
   const dragStartY = useRef(0);
   const isDragging = useRef(false);
-  // Close transition: keep the dialog mounted while the exit animation runs.
-  // useLayoutEffect (not useEffect) so closing is set BEFORE paint — otherwise
-  // the first false render returns null and the modal vanishes with no exit.
-  const [closing, setClosing] = useState(false);
-  const wasOpenRef = useRef(isOpen);
-  useLayoutEffect(() => {
-    if (wasOpenRef.current && !isOpen) setClosing(true);
-    wasOpenRef.current = isOpen;
-  }, [isOpen]);
-  const handleAnimEnd = (e: React.AnimationEvent) => {
-    if (closing && e.target === e.currentTarget) {
-      setClosing(false);
-      onExited?.();
-    }
-  };
+  // Presence keeps the dialog mounted through the entire exit animation
+  // (mounted stays true while exiting), so the dialog is never
+  // unmounted-then-remounted — only its className swaps modal-in→modal-out.
+  const { mounted, exiting, onAnimationEnd: handleAnimEnd } = usePresence(isOpen, {
+    animation: "modal",
+    onExited,
+  });
 
   useEffect(() => {
     if (isOpen) {
@@ -161,10 +154,9 @@ export const Modal: React.FC<ModalProps> = ({
   }, [isOpen]);
 
   if (typeof document === "undefined") return null;
-  const renderOpen = isOpen || closing;
-  if (!renderOpen) return null;
-  const dialogAnim = closing ? "animate-modal-out" : "animate-modal-in";
-  const overlayAnim = closing ? "animate-overlay-out" : "animate-overlay-in";
+  if (!mounted) return null;
+  const dialogAnim = exiting ? "animate-modal-out" : "animate-modal-in";
+  const overlayAnim = exiting ? "animate-overlay-out" : "animate-overlay-in";
 
   const handleClose = () => {
     if (closeEvent) eventBus.emit(`UI:${closeEvent}`, {});
