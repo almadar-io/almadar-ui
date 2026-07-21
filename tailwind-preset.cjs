@@ -90,6 +90,17 @@ module.exports = {
   'animate-overlay-in',
   'animate-overlay-out',
   'animate-slide-up',
+  'animate-drawer-in',
+  'animate-drawer-out',
+  'animate-popover-in',
+  'animate-popover-out',
+  'animate-toast-in',
+  'animate-toast-out',
+  'animate-fade-in',
+  'animate-fade-out',
+  'animate-page-in',
+  'animate-page-out',
+  'animate-shimmer',
   
   // Auto-added by audit-tailwind-safelist.ts (2026-03-28)
   'active:scale-[var(--active-scale)]',
