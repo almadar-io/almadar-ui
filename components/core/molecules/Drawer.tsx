@@ -169,6 +169,10 @@ export const Drawer: React.FC<DrawerProps> = ({
 
   // Drawer slide sign: right drawer enters from +100%, left from -100%.
   const drawerSign = position === "right" ? 1 : -1;
+  // Literal slide transforms per side. Set inline so the keyframe's
+  // var(--motion-drawer-enter/exit-*-transform) resolves against THIS element —
+  // a sign var declared on :root does not re-substitute per element.
+  const slideTransform = position === "right" ? "translateX(100%)" : "translateX(-100%)";
 
   return (
     <>
@@ -193,7 +197,7 @@ export const Drawer: React.FC<DrawerProps> = ({
           drawerAnim,
           className,
         )}
-        style={{ ...widthStyle, "--motion-drawer-sign": drawerSign } as React.CSSProperties}
+        style={{ ...widthStyle, "--motion-drawer-sign": drawerSign, "--motion-drawer-enter-from-transform": slideTransform, "--motion-drawer-exit-to-transform": slideTransform } as React.CSSProperties}
         role="dialog"
         aria-modal="true"
         onAnimationEnd={onAnimationEnd}
