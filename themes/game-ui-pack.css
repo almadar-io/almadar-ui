@@ -1,32 +1,29 @@
 /**
- * Game Sci-Fi Theme — "Deep Space HUD"
+ * Game UI Pack Theme — "Neutral Flat HUD"
  *
- * Kenney sci-fi UI pack (glass/metal HUD panels, cyan/blue accents) as a real
- * theme, following the same contract every other theme uses. Dark mode only —
- * this is a game UI, not a productivity app (see trait-wars.css precedent).
+ * Kenney's grey/neutral UI pack (light, flat chip-style panels + buttons) as a
+ * real theme, same contract as every other theme. Dark-mode background so the
+ * light sprite chrome pops as high-contrast HUD chips (the sprite art itself
+ * is near-white — pairing it with a light page background is what produced
+ * the original washed-out look this project fixed).
  *
- * Chrome sprites: --game-panel-border-image is a CSS 9-slice (border-image)
- * sourced from kenney-ui-pack-sci-fi's `metalPanel_blue` sprite, consumed by
- * the `.bg-chrome-panel` utility (tailwind-preset.cjs) that Card/GameShell/
- * GameHud/GameMenu already apply unconditionally. This pack ships no button
- * sprites, so --game-button-bg-image is left undeclared — Button renders with
- * flat theme-colored chrome instead (a legitimate sci-fi HUD look, and the
- * `.bg-chrome-button` utility's `none` fallback already handles this cleanly).
+ * Chrome sprites: --game-panel-border-image / --game-button-bg-image are CSS
+ * 9-slice / stretched backgrounds sourced from kenney-ui-pack's grey sheet,
+ * consumed by the `.chrome-panel` / `.chrome-button` utilities
+ * (tailwind-preset.cjs) that Card/Button/GameShell/GameHud/GameMenu already
+ * apply unconditionally.
  */
-[data-theme="game-sci-fi-dark"] {
-    /* Shadows — cool cyan glow */
-    --shadow-main:
-        0 4px 14px rgba(62, 166, 255, 0.14), 0 1px 3px rgba(0, 0, 0, 0.35);
-    --shadow-sm: 0 2px 4px rgba(62, 166, 255, 0.08);
-    --shadow-lg:
-        0 8px 30px rgba(62, 166, 255, 0.20), 0 4px 10px rgba(0, 0, 0, 0.30);
+[data-theme="game-ui-pack-dark"] {
+    /* Shadows */
+    --shadow-main: 0 4px 14px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.25);
+    --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.45), 0 4px 10px rgba(0, 0, 0, 0.3);
     --shadow-inner: inset 0 1px 3px rgba(0, 0, 0, 0.35);
     --shadow-none: none;
-    --shadow-hover:
-        0 12px 40px rgba(62, 166, 255, 0.25), 0 4px 12px rgba(79, 195, 247, 0.12);
-    --shadow-active: 0 2px 8px rgba(62, 166, 255, 0.18);
+    --shadow-hover: 0 12px 40px rgba(46, 167, 225, 0.25), 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-active: 0 2px 8px rgba(0, 0, 0, 0.3);
 
-    /* Border radius — HUD panels are only lightly rounded */
+    /* Border radius — flat chip UI, lightly rounded */
     --radius-none: 0px;
     --radius-sm: 4px;
     --radius-md: 6px;
@@ -43,69 +40,70 @@
      * CORE COLORS
      * ====================================================================== */
 
-    /* Primary — HUD cyan (actions, interactive elements) */
-    --color-primary: #3ea6ff;
-    --color-primary-hover: #6cc3ff;
-    --color-primary-foreground: #071018;
+    /* Primary — friendly flat blue */
+    --color-primary: #2ea7e1;
+    --color-primary-hover: #4fb8ea;
+    --color-primary-foreground: #06202c;
 
-    /* Secondary — deep space panel */
-    --color-secondary: #182338;
-    --color-secondary-hover: #22314c;
-    --color-secondary-foreground: #dceaf7;
+    /* Secondary — neutral chip grey */
+    --color-secondary: #3a3f47;
+    --color-secondary-hover: #474d56;
+    --color-secondary-foreground: #f2f3f4;
 
-    /* Accent — energy yellow (score/highlight) */
-    --color-accent: #ffcc4d;
-    --color-accent-foreground: #1a1408;
+    /* Accent — score/highlight gold */
+    --color-accent: #ffb703;
+    --color-accent-foreground: #241a00;
 
-    /* Muted — dim HUD grey */
-    --color-muted: #22314c;
-    --color-muted-foreground: #7e93b3;
+    /* Muted */
+    --color-muted: #33373d;
+    --color-muted-foreground: #9aa0a8;
 
     /* Surfaces */
-    --color-background: #0a0e1a;
-    --color-foreground: #e8f4fb;
-    --color-card: #141d30;
-    --color-card-foreground: #e8f4fb;
-    --color-surface: #141d30;
+    --color-background: #1b1e22;
+    --color-foreground: #f2f3f4;
+    --color-card: #eeeeee;
+    --color-card-foreground: #22262b;
+    --color-surface: #24272c;
 
     /* Borders & Inputs */
-    --color-border: #3a4a66;
-    --color-input: #182338;
-    --color-ring: #3ea6ff;
+    --color-border: #999999;
+    --color-input: #3a3f47;
+    --color-ring: #2ea7e1;
 
     /* Semantic colors */
     --color-error: #ff5c5c;
     --color-error-foreground: #1a0808;
     --color-success: #4ade80;
     --color-success-foreground: #082014;
-    --color-warning: #ffcc4d;
-    --color-warning-foreground: #1a1408;
-    --color-info: #3ea6ff;
-    --color-info-foreground: #071018;
+    --color-warning: #ffb703;
+    --color-warning-foreground: #241a00;
+    --color-info: #2ea7e1;
+    --color-info-foreground: #06202c;
 
     /* ======================================================================
-     * CHROME — sprite-driven panel skin (kenney-ui-pack-sci-fi/metalPanel_blue)
+     * CHROME — sprite-driven panel/button skin (kenney-ui-pack grey sheet)
      * ====================================================================== */
-    --game-panel-border-image: url('https://almadar-kflow-assets.web.app/shared/ui-game-shell/kenney-ui-pack-sci-fi/ui/metalPanel_blue.png');
+    --game-panel-border-image: url('https://almadar-kflow-assets.web.app/shared/ui-game-shell/kenney-ui-pack/ui/grey_panel.png');
     --game-panel-border-image-slice: 26 fill;
     --game-panel-border-image-width: 22px;
+    --game-button-bg-image: url('https://almadar-kflow-assets.web.app/shared/ui-game-shell/kenney-ui-pack/ui/grey_button00.png');
 
     /* ======================================================================
      * TYPOGRAPHY
      * ====================================================================== */
     --font-family:
-        "Kenney Future", "Orbitron", "Rajdhani", ui-sans-serif, system-ui, sans-serif;
+        "Kenney Future", ui-sans-serif, system-ui, sans-serif;
     --font-weight-normal: 400;
     --font-weight-medium: 500;
     --font-weight-bold: 700;
-    --letter-spacing: 0.02em;
+    --letter-spacing: 0.01em;
     --line-height: 1.5;
 
-    /* Icon styling — cyan tint */
+    /* Icon styling */
     --icon-stroke-width: 1.75;
-    --icon-color: #3ea6ff;
+    --icon-color: #2ea7e1;
 
-    /* Transitions — snappy HUD response */
+    /* Transitions */
     --transition-fast: 100ms;
     --transition-normal: 200ms;
     --transition-slow: 400ms;
@@ -118,10 +116,10 @@
     --active-scale: 0.99;
     --active-translate-y: 0;
 
-    /* Focus ring — cyan */
+    /* Focus ring */
     --focus-ring-width: 2px;
     --focus-ring-offset: 2px;
-    --focus-ring-color: #3ea6ff;
+    --focus-ring-color: #2ea7e1;
 
     /* Layer 1 — backfill (see themes/_contract.md) */
     /* Density axis — spacing scale */

@@ -139,7 +139,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
         className={cn(
           "rounded-container relative",
           "transition-all duration-[var(--transition-normal)]",
-          "bg-chrome-panel",
+          "chrome-panel",
           variantStyles[variant],
           paddingStyles[padding],
           lookStyles[look],

@@ -101,7 +101,7 @@ export function GameMenu({
       <Card
         variant="bordered"
         padding="lg"
-        className="bg-card/90 backdrop-blur-sm flex flex-col items-center max-w-md w-full"
+        className="bg-card flex flex-col items-center max-w-md w-full"
       >
         {/* Logo/Title Section */}
         <Box className="text-center mb-8 animate-fade-in">

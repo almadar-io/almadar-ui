@@ -149,11 +149,12 @@ export function GameHud({
         variant="bordered"
         padding="none"
         className={cn(
-          "flex items-center justify-between w-full rounded-none",
+          "flex items-center justify-between w-full rounded-none bg-card",
           "px-4 py-2 gap-4",
-          transparent ? "bg-card/40 backdrop-blur-sm" : "bg-card/90 backdrop-blur-sm",
+          transparent && "backdrop-blur-sm",
           className,
         )}
+        style={transparent ? { backgroundColor: "color-mix(in srgb, var(--color-card) 40%, transparent)" } : undefined}
       >
         {/* Left stat group */}
         <Box className="flex items-center gap-3 flex-shrink-0">
@@ -178,10 +179,11 @@ export function GameHud({
       variant="bordered"
       padding="sm"
       className={cn(
-        "z-10 relative flex items-center gap-4",
-        transparent ? "bg-card/30 backdrop-blur-sm" : "bg-card/90 backdrop-blur-sm",
+        "z-10 relative flex items-center gap-4 bg-card",
+        transparent && "backdrop-blur-sm",
         className,
       )}
+      style={transparent ? { backgroundColor: "color-mix(in srgb, var(--color-card) 30%, transparent)" } : undefined}
     >
       {stats.map((stat, i) => (
         <StatBadge key={i} {...stat} size={size} />

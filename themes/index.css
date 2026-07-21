@@ -26,6 +26,9 @@
 @import "./almadar-website.css";
 @import "./trait-wars.css";
 @import "./game-sci-fi.css";
+@import "./game-ui-pack.css";
+@import "./game-adventure.css";
+@import "./game-rpg.css";
 
 /* Extended themes */
 @import "./ocean.css";

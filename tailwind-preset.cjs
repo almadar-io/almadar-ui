@@ -515,13 +515,13 @@ module.exports = {
     // zero visual change for every theme that doesn't set them.
     require('tailwindcss/plugin')(({ addUtilities }) => {
       addUtilities({
-        '.bg-chrome-panel': {
+        '.chrome-panel': {
           'border-image-source': 'var(--game-panel-border-image, none)',
           'border-image-slice': 'var(--game-panel-border-image-slice, 30 fill)',
           'border-image-width': 'var(--game-panel-border-image-width, 30px)',
           'border-image-repeat': 'stretch',
         },
-        '.bg-chrome-button': {
+        '.chrome-button': {
           'background-image': 'var(--game-button-bg-image, none)',
           'background-size': 'var(--game-button-bg-size, 100% 100%)',
           'background-repeat': 'no-repeat',

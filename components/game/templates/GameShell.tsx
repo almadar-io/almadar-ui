@@ -77,14 +77,15 @@ export const GameShell: React.FC<GameShellProps> = ({
     const font = GAME_FONTS[fontFamily] ?? fontFamily;
     return (
         <Box
+            data-theme={dataTheme || undefined}
             className={cn("game-shell", className)}
             style={{
                 position: "relative",
                 width: "100vw",
                 height: "100vh",
                 overflow: "hidden",
-                background: "var(--color-background)",
-                color: "var(--color-foreground)",
+                background: "var(--color-background, #0a0a0f)",
+                color: "var(--color-foreground, #e0e0e0)",
                 fontFamily: `'${font}', system-ui, sans-serif`,
             }}
         >
@@ -125,7 +126,7 @@ export const GameShell: React.FC<GameShellProps> = ({
                         <Card
                             variant="bordered"
                             padding="none"
-                            className="game-shell__title bg-card/90 pointer-events-auto"
+                            className="game-shell__title bg-card pointer-events-auto"
                             style={{ padding: "6px 16px", flexShrink: 0 }}
                         >
                             <Typography

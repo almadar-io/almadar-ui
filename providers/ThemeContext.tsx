@@ -72,6 +72,24 @@ export const BUILT_IN_THEMES: UIThemeDefinition[] = [
     hasLightMode: false,
     hasDarkMode: true,
   },
+  {
+    name: "game-ui-pack",
+    displayName: "Game: Flat UI",
+    hasLightMode: false,
+    hasDarkMode: true,
+  },
+  {
+    name: "game-adventure",
+    displayName: "Game: Adventure",
+    hasLightMode: false,
+    hasDarkMode: true,
+  },
+  {
+    name: "game-rpg",
+    displayName: "Game: RPG",
+    hasLightMode: false,
+    hasDarkMode: true,
+  },
   // Extended themes
   {
     name: "ocean",
