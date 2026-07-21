@@ -431,7 +431,7 @@ module.exports = {
         'drawer-in': {
           '0%': {
             opacity: 'var(--motion-drawer-enter-from-opacity, 0)',
-            transform: 'var(--motion-drawer-enter-from-transform, translateX(100%))',
+            transform: 'var(--motion-drawer-enter-from-transform, translateX(calc(100% * var(--motion-drawer-sign, 1))))',
           },
           '100%': {
             opacity: 'var(--motion-drawer-enter-to-opacity, 1)',
@@ -445,7 +445,7 @@ module.exports = {
           },
           '100%': {
             opacity: 'var(--motion-drawer-exit-to-opacity, 0)',
-            transform: 'var(--motion-drawer-exit-to-transform, translateX(100%))',
+            transform: 'var(--motion-drawer-exit-to-transform, translateX(calc(100% * var(--motion-drawer-sign, 1))))',
           },
         },
         'popover-in': {
