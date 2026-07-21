@@ -353,9 +353,11 @@ module.exports = {
         bold: 'var(--font-weight-bold, 600)',
       },
       transitionDuration: {
-        // Existing aliases retained; resolve through the Motion-axis tokens
-        // with the previous `--transition-*` values as fallback so themes that
-        // don't define `--duration-*` keep their pre-Layer-1 motion.
+        // DEFAULT drives every bare `transition-*` utility (transition-all /
+        // transition-colors / ...) so its duration is theme-token-driven too —
+        // not Tailwind's hardcoded 150ms. Existing aliases resolve through the
+        // Motion-axis tokens with the legacy `--transition-*` as fallback.
+        DEFAULT: 'var(--duration-fast, var(--transition-fast, 150ms))',
         fast: 'var(--duration-fast, var(--transition-fast, 150ms))',
         normal: 'var(--duration-normal, var(--transition-normal, 250ms))',
         slow: 'var(--duration-slow, var(--transition-slow, 400ms))',
@@ -363,8 +365,10 @@ module.exports = {
         dramatic: 'var(--duration-dramatic, 600ms)',
       },
       transitionTimingFunction: {
-        // Motion-axis easing palette. `standard` falls back to the existing
-        // `--transition-timing` so backward compat is preserved.
+        // DEFAULT drives every bare `transition-*` utility so its easing is
+        // theme-token-driven — not Tailwind's hardcoded cubic-bezier. `standard`
+        // falls back to legacy `--transition-timing` for backward compat.
+        DEFAULT: 'var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
         linear: 'var(--easing-linear, linear)',
         standard: 'var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
         emphasized: 'var(--easing-emphasized, cubic-bezier(0.2, 0, 0, 1))',
