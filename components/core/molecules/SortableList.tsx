@@ -18,6 +18,11 @@ import { Icon } from '../atoms/Icon';
 
 const EMPTY_ITEMS: readonly EntityRow[] = [];
 
+/**
+ * SortableList — a drag-and-drop reorderable list of items.
+ *
+ * @capabilities checklist, task list, to-do list, priority list, ranked list, drag-to-reorder queue
+ */
 export interface SortableListProps {
   items: readonly EntityRow[];
   /** Render function for each item. In .lolo: renderItem: (fn item <Component …={@item.field}/>), binding per-item fields via @item.field. */

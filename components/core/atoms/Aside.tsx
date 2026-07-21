@@ -9,6 +9,12 @@
 import React from "react";
 import { cn } from "../../../lib/cn";
 
+/**
+ * Aside — a secondary side panel that hosts navigation links or supplementary
+ * content alongside a main content area.
+ *
+ * @capabilities settings navigation sidebar, preferences menu panel, account settings nav, secondary panel, side navigation rail
+ */
 export interface AsideProps extends React.HTMLAttributes<HTMLElement> {
   /** Additional CSS classes */
   className?: string;

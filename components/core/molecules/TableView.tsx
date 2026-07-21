@@ -79,6 +79,12 @@ export interface TableViewItemAction {
 
 // ── Props ────────────────────────────────────────────────────────────
 
+/**
+ * TableView — sortable, selectable data table rendering rows over configurable
+ * columns, with inline row actions and grouping.
+ *
+ * @capabilities admin console table, records list, CRUD data table, user list, manage-users grid, sortable columns, row selection with bulk actions, grouped list view
+ */
 export interface TableViewProps extends DataDndProps {
   /** Schema entity data — the collection of rows to render. */
   entity: readonly EntityRow[];
@@ -384,7 +390,7 @@ export function TableView({
       className={cn(
         'grid items-center gap-3 sticky top-0 z-10',
         'bg-[var(--color-surface-subtle)] border-b border-[var(--color-border)]',
-        'text-[var(--color-text-muted)] uppercase text-xs font-semibold tracking-wide',
+        'text-muted-foreground uppercase text-xs font-semibold tracking-wide',
         lk.headPad,
       )}
     >

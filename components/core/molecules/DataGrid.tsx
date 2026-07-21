@@ -74,6 +74,12 @@ export interface DataGridItemAction {
 
 // ── Props ────────────────────────────────────────────────────────────
 
+/**
+ * DataGrid — structured records grid rendering rows over configurable columns,
+ * with sort, select, and drag-reorder.
+ *
+ * @capabilities admin table, records grid, user list, CRUD list, manage-records view, spreadsheet-style data grid, sortable columns
+ */
 export interface DataGridProps extends DataDndProps {
   /**
    * Schema entity data — the collection of rows to render. pattern-sync tags

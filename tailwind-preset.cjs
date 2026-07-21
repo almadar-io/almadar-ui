@@ -509,4 +509,25 @@ module.exports = {
       },
     },
   },
+  plugins: [
+    // Chrome-skin utilities: sprite-driven panel/button chrome, opt-in per theme.
+    // No-op (`none`) unless the active theme defines the backing --game-* vars —
+    // zero visual change for every theme that doesn't set them.
+    require('tailwindcss/plugin')(({ addUtilities }) => {
+      addUtilities({
+        '.bg-chrome-panel': {
+          'border-image-source': 'var(--game-panel-border-image, none)',
+          'border-image-slice': 'var(--game-panel-border-image-slice, 30 fill)',
+          'border-image-width': 'var(--game-panel-border-image-width, 30px)',
+          'border-image-repeat': 'stretch',
+        },
+        '.bg-chrome-button': {
+          'background-image': 'var(--game-button-bg-image, none)',
+          'background-size': 'var(--game-button-bg-size, 100% 100%)',
+          'background-repeat': 'no-repeat',
+          'background-position': 'center',
+        },
+      });
+    }),
+  ],
 };

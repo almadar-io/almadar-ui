@@ -37,6 +37,12 @@ export type RepeatableItem = {
   [key: string]: JsonValue | undefined;
 };
 
+/**
+ * RepeatableFormSection — a form section that repeats a fixed group of fields,
+ * letting the user add or remove entries.
+ *
+ * @capabilities dynamic line items, repeatable field group, add/remove entry rows, multi-entry form block
+ */
 export interface RepeatableFormSectionProps {
   /** Section type identifier */
   sectionType: string;

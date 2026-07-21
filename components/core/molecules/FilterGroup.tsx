@@ -59,6 +59,12 @@ export interface FilterDefinition {
 const resolveFilterType = (filter: FilterDefinition) =>
   filter.filterType ?? filter.type;
 
+/**
+ * FilterGroup — a panel of filter controls that narrows a collection by field
+ * values.
+ *
+ * @capabilities search refinement panel, facet filters, admin list filters, records filter sidebar, filter chips panel
+ */
 export interface FilterGroupProps {
   /** Entity name to filter */
   entity: string;

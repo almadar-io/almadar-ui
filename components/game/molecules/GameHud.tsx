@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cn } from "../../../lib/cn";
 import { Box } from "../../core/atoms/Box";
+import { Card } from "../../core/atoms/Card";
 import { StatBadge, type StatBadgeProps } from "./StatBadge";
 import type { Asset } from "@almadar/core";
 import type { IconInput } from "../../core/atoms/index";
@@ -143,19 +144,14 @@ export function GameHud({
     const leftStats = stats.slice(0, mid);
     const rightStats = stats.slice(mid);
 
-    const isTop = position === "top";
-
     return (
-      <Box
+      <Card
+        variant="bordered"
+        padding="none"
         className={cn(
-          "flex items-center justify-between w-full",
+          "flex items-center justify-between w-full rounded-none",
           "px-4 py-2 gap-4",
-          !transparent && (isTop
-            ? "border-b border-border/40 bg-surface/90 backdrop-blur-sm"
-            : "border-t border-border/40 bg-surface/90 backdrop-blur-sm"),
-          transparent && (isTop
-            ? "border-b border-white/10 bg-black/40 backdrop-blur-sm"
-            : "border-t border-white/10 bg-black/40 backdrop-blur-sm"),
+          transparent ? "bg-card/40 backdrop-blur-sm" : "bg-card/90 backdrop-blur-sm",
           className,
         )}
       >
@@ -173,25 +169,24 @@ export function GameHud({
             ))}
           </Box>
         )}
-      </Box>
+      </Card>
     );
   }
 
   return (
-    <Box
-      position="relative"
+    <Card
+      variant="bordered"
+      padding="sm"
       className={cn(
-        "z-10 flex items-center gap-4 px-4 py-2",
-        transparent
-          ? "bg-black/30 backdrop-blur-sm"
-          : "bg-surface/90 backdrop-blur-sm",
+        "z-10 relative flex items-center gap-4",
+        transparent ? "bg-card/30 backdrop-blur-sm" : "bg-card/90 backdrop-blur-sm",
         className,
       )}
     >
       {stats.map((stat, i) => (
         <StatBadge key={i} {...stat} size={size} />
       ))}
-    </Box>
+    </Card>
   );
 }
 

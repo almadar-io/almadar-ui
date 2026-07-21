@@ -11,6 +11,7 @@ import React from "react";
 import type { Asset } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Box } from "../../core/atoms/Box";
+import { Card } from "../../core/atoms/Card";
 import { Typography } from "../../core/atoms/Typography";
 import { AtlasPanel } from "../../core/atoms/AtlasImage";
 
@@ -52,10 +53,12 @@ export interface GameShellProps {
     children?: React.ReactNode;
     /** Pattern slice tiled at low opacity across the surface (never cover-stretched). */
     backgroundAsset?: Asset;
-    /** 9-sliced panel skin for the HUD chips row + title chip. */
+    /** Per-call-site 9-sliced panel override. Chrome normally comes from the active theme; most callers leave this unset. */
     hudBackgroundAsset?: Asset;
     /** Game font key (future | future-narrow | pixel | blocks | mini) or a CSS font-family. */
     fontFamily?: string;
+    /** Scopes an `@almadar/ui` theme (e.g. "game-sci-fi-dark") to this shell's subtree. */
+    "data-theme"?: string;
 }
 
 export const GameShell: React.FC<GameShellProps> = ({
@@ -68,8 +71,8 @@ export const GameShell: React.FC<GameShellProps> = ({
     showTopBar = true,
     children,
     backgroundAsset,
-    hudBackgroundAsset,
     fontFamily = "future",
+    "data-theme": dataTheme,
 }) => {
     const font = GAME_FONTS[fontFamily] ?? fontFamily;
     return (
@@ -80,8 +83,8 @@ export const GameShell: React.FC<GameShellProps> = ({
                 width: "100vw",
                 height: "100vh",
                 overflow: "hidden",
-                background: "var(--color-background, #0a0a0f)",
-                color: "var(--color-text, #e0e0e0)",
+                background: "var(--color-background)",
+                color: "var(--color-foreground)",
                 fontFamily: `'${font}', system-ui, sans-serif`,
             }}
         >
@@ -119,18 +122,11 @@ export const GameShell: React.FC<GameShellProps> = ({
                     }}
                 >
                     {showTopBar && (
-                        <AtlasPanel
-                            asset={hudBackgroundAsset}
-                            borderSlice={12}
-                            borderWidth={10}
-                            className="game-shell__title pointer-events-auto"
-                            style={{
-                                padding: "6px 16px",
-                                background: hudBackgroundAsset ? undefined : "rgba(18, 18, 31, 0.85)",
-                                borderRadius: hudBackgroundAsset ? undefined : 10,
-                                boxShadow: "0 4px 14px rgba(0,0,0,0.45)",
-                                flexShrink: 0,
-                            }}
+                        <Card
+                            variant="bordered"
+                            padding="none"
+                            className="game-shell__title bg-card/90 pointer-events-auto"
+                            style={{ padding: "6px 16px", flexShrink: 0 }}
                         >
                             <Typography
                                 as="span"
@@ -144,7 +140,7 @@ export const GameShell: React.FC<GameShellProps> = ({
                             >
                                 {appName}
                             </Typography>
-                        </AtlasPanel>
+                        </Card>
                     )}
                     {hud && (
                         <Box className="game-shell__hud pointer-events-auto" style={{ flex: 1, minWidth: 0 }}>

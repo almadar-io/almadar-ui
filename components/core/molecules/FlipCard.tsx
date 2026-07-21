@@ -9,6 +9,12 @@ import { cn } from '../../../lib/cn';
 import { Box } from '../atoms/Box';
 import { FlipContainer } from '../atoms/FlipContainer';
 
+/**
+ * FlipCard — flip card that reveals a hidden back face on tap or click,
+ * toggling between a front and back content slot.
+ *
+ * @capabilities flashcard, study deck, spaced-repetition review card, memorization drill, quiz reveal card, question/answer card, before/after reveal, term-and-definition card
+ */
 export interface FlipCardProps {
   /** Content rendered on the front face */
   front: React.ReactNode;

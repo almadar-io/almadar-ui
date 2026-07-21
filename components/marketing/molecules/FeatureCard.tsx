@@ -14,6 +14,12 @@ import { Icon, type IconInput } from '../../core/atoms/Icon';
 import { Typography } from '../../core/atoms/Typography';
 import { Button } from '../../core/atoms/Button';
 
+/**
+ * FeatureCard — an icon-led card pairing a title and description to call out a
+ * single product feature.
+ *
+ * @capabilities feature highlight, benefit callout, product capability card, feature-grid tile
+ */
 export interface FeatureCardProps {
   icon?: IconInput;
   /** Feature title */

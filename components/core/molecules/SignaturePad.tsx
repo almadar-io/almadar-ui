@@ -24,6 +24,12 @@ import { useTranslate } from "../../../hooks/useTranslate";
 import { Eraser, Check } from "lucide-react";
 import type { UiError } from '../atoms/types';
 
+/**
+ * SignaturePad — a draw-to-sign canvas that captures a handwritten signature
+ * or initials.
+ *
+ * @capabilities e-signature capture, sign-here field, consent signature, initial-here field, wet-signature substitute
+ */
 export interface SignaturePadProps {
     /** Label above the pad */
     label?: string;

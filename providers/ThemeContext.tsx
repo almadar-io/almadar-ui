@@ -66,6 +66,12 @@ export const BUILT_IN_THEMES: UIThemeDefinition[] = [
     hasLightMode: false,
     hasDarkMode: true,
   },
+  {
+    name: "game-sci-fi",
+    displayName: "Game: Sci-Fi",
+    hasLightMode: false,
+    hasDarkMode: true,
+  },
   // Extended themes
   {
     name: "ocean",

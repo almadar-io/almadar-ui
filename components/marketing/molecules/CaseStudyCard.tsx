@@ -14,6 +14,12 @@ import { Badge } from '../../core/atoms/Badge';
 import { Typography } from '../../core/atoms/Typography';
 import { Button } from '../../core/atoms/Button';
 
+/**
+ * CaseStudyCard — a card summarizing a customer case study with logo, headline
+ * result, and link.
+ *
+ * @capabilities customer story, success story, client story card, results showcase, proof-point card
+ */
 export interface CaseStudyCardProps {
   /** Case study title */
   title: string;

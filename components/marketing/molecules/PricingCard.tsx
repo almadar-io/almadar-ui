@@ -18,6 +18,12 @@ import { Divider } from '../../core/atoms/Divider';
 import { Spacer } from '../../core/atoms/Spacer';
 import { Button } from '../../core/atoms/Button';
 
+/**
+ * PricingCard — a single pricing-tier card with price, billing period, feature
+ * list, and call-to-action.
+ *
+ * @capabilities pricing tier, plan card, subscription tier, plan comparison card, price plan
+ */
 export interface PricingCardProps {
   name: string;
   price: string;

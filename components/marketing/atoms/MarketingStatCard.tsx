@@ -5,6 +5,12 @@ import { Typography } from "../../core/atoms/Typography";
 
 export type StatCardSize = "sm" | "md" | "lg";
 
+/**
+ * MarketingStatCard — a single number-highlight card pairing a large value
+ * with a label and trend delta.
+ *
+ * @capabilities KPI card, metric tile, dashboard stat card, number card, big-number widget, stat highlight, key metric callout
+ */
 export interface MarketingStatCardProps {
   /** The stat value to display prominently */
   value: string;

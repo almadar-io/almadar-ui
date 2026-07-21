@@ -20,6 +20,12 @@ import { Box } from '../atoms/Box';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { cn } from '../../../lib/cn';
 
+/**
+ * QuizBlock — a single quiz question with answer choices and submit/reveal
+ * feedback.
+ *
+ * @capabilities multiple-choice quiz, test question, exam item, assessment question, knowledge check, trivia question
+ */
 export interface QuizBlockProps {
   /** The quiz question */
   question: string;

@@ -18,6 +18,12 @@ import { CONNECTION_COLORS, type AvlFieldTypeKind, type AvlPersistenceKind } fro
 import { MiniStateMachine } from './MiniStateMachine';
 import type { AvlNodeData } from '../types/avl-canvas-types';
 
+/**
+ * ModuleCard — a card summarizing one course module or lesson with progress
+ * and entry point.
+ *
+ * @capabilities course module card, lesson card, curriculum unit card, learning-path step card
+ */
 export interface ModuleCardProps {
   data: AvlNodeData;
 }
