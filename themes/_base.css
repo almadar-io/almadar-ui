@@ -162,7 +162,7 @@
     --motion-modal-exit-from-opacity: 1;
     --motion-modal-exit-from-transform: translateZ(0);
     --motion-modal-exit-to-opacity: 0;
-    --motion-modal-exit-to-transform: scale(0.96) translateY(8px);
+    --motion-modal-exit-to-transform: scale(0.92) translateY(16px);
 
     --motion-slide-up-from-opacity: 0;
     --motion-slide-up-from-transform: translateY(16px);
@@ -214,6 +214,28 @@
     --motion-page-exit-from-transform: translateZ(0);
     --motion-page-exit-to-opacity: 0;
     --motion-page-exit-to-transform: translateY(-8px);
+
+    /* ----------------------------------------------------------------
+     * Skeleton shimmer — the loading-placeholder sweep. Two color stops
+     * (base + highlight) drive the gradient; --duration-shimmer the loop.
+     * Override per theme to restyle the placeholder tone.
+     * ---------------------------------------------------------------- */
+    --skeleton-base: var(--color-muted, rgba(128, 128, 128, 0.18));
+    --skeleton-highlight: var(--color-surface, rgba(255, 255, 255, 0.55));
+    --duration-shimmer: 1.5s;
+}
+
+/* The shimmer gradient background. Pair with the `animate-shimmer` utility
+ * (defined in tailwind-preset) which sweeps background-position. */
+.almadar-shimmer {
+    background-image: linear-gradient(
+        90deg,
+        var(--skeleton-base) 0%,
+        var(--skeleton-highlight) 50%,
+        var(--skeleton-base) 100%
+    );
+    background-size: 200% 100%;
+    background-repeat: no-repeat;
 }
 
 /* ----------------------------------------------------------------

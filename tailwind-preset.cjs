@@ -385,6 +385,10 @@ module.exports = {
             transform: 'var(--motion-modal-enter-to-transform, translateZ(0))',
           },
         },
+        shimmer: {
+          '0%': { backgroundPosition: '200% 0' },
+          '100%': { backgroundPosition: '-200% 0' },
+        },
         'modal-out': {
           '0%': {
             opacity: 'var(--motion-modal-exit-from-opacity, 1)',
@@ -506,7 +510,7 @@ module.exports = {
         // Motion-token-driven durations/easings (fall back to legacy
         // --transition-* so themes that haven't migrated keep working).
         'modal-in': 'modal-in var(--duration-normal, var(--transition-normal, 250ms)) var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
-        'modal-out': 'modal-out var(--duration-fast, var(--transition-fast, 150ms)) var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
+        'modal-out': 'modal-out var(--duration-normal, var(--transition-normal, 250ms)) var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
         'overlay-in': 'overlay-in var(--duration-normal, var(--transition-normal, 250ms)) var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
         'overlay-out': 'overlay-out var(--duration-fast, var(--transition-fast, 150ms)) var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
         'slide-up': 'slide-up var(--duration-slow, var(--transition-slow, 400ms)) var(--easing-emphasized, cubic-bezier(0.2, 0, 0, 1))',
@@ -520,6 +524,7 @@ module.exports = {
         'fade-out': 'fade-out var(--duration-fast, var(--transition-fast, 150ms)) var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
         'page-in': 'page-in var(--duration-normal, var(--transition-normal, 250ms)) var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
         'page-out': 'page-out var(--duration-fast, var(--transition-fast, 150ms)) var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
+        'shimmer': 'shimmer var(--duration-shimmer, 1.5s) var(--easing-linear, linear) infinite',
       },
       // Density-axis spacing scale. Tailwind's default `p-3` / `gap-4` resolve
       // here so existing classes keep working — but now read from tokens.

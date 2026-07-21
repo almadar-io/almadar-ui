@@ -22,7 +22,7 @@ export interface SkeletonProps {
   className?: string;
 }
 
-const pulseClass = 'animate-pulse bg-muted/60 rounded';
+const pulseClass = 'almadar-shimmer animate-shimmer rounded';
 
 function SkeletonLine({ className }: { className?: string }) {
   return <Box className={cn(pulseClass, 'h-4', className)} />;
