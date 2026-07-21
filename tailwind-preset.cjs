@@ -392,12 +392,12 @@ module.exports = {
           },
         },
         'overlay-in': {
-          '0%': { opacity: 'var(--motion-overlay-from-opacity, 0)' },
+          '0%': { opacity: 'var(--motion-overlay-enter-from-opacity, var(--motion-overlay-from-opacity, 0))' },
           '100%': { opacity: '1' },
         },
         'overlay-out': {
           '0%': { opacity: '1' },
-          '100%': { opacity: 'var(--motion-overlay-from-opacity, 0)' },
+          '100%': { opacity: 'var(--motion-overlay-exit-to-opacity, var(--motion-overlay-from-opacity, 0))' },
         },
         'slide-up': {
           '0%': {
@@ -409,6 +409,94 @@ module.exports = {
             transform: 'translateZ(0)',
           },
         },
+        'drawer-in': {
+          '0%': {
+            opacity: 'var(--motion-drawer-enter-from-opacity, 0)',
+            transform: 'var(--motion-drawer-enter-from-transform, translateX(100%))',
+          },
+          '100%': {
+            opacity: 'var(--motion-drawer-enter-to-opacity, 1)',
+            transform: 'var(--motion-drawer-enter-to-transform, translateZ(0))',
+          },
+        },
+        'drawer-out': {
+          '0%': {
+            opacity: 'var(--motion-drawer-exit-from-opacity, 1)',
+            transform: 'var(--motion-drawer-exit-from-transform, translateZ(0))',
+          },
+          '100%': {
+            opacity: 'var(--motion-drawer-exit-to-opacity, 0)',
+            transform: 'var(--motion-drawer-exit-to-transform, translateX(100%))',
+          },
+        },
+        'popover-in': {
+          '0%': {
+            opacity: 'var(--motion-popover-enter-from-opacity, 0)',
+            transform: 'var(--motion-popover-enter-from-transform, scale(0.95))',
+          },
+          '100%': {
+            opacity: 'var(--motion-popover-enter-to-opacity, 1)',
+            transform: 'var(--motion-popover-enter-to-transform, scale(1))',
+          },
+        },
+        'popover-out': {
+          '0%': {
+            opacity: 'var(--motion-popover-exit-from-opacity, 1)',
+            transform: 'var(--motion-popover-exit-from-transform, scale(1))',
+          },
+          '100%': {
+            opacity: 'var(--motion-popover-exit-to-opacity, 0)',
+            transform: 'var(--motion-popover-exit-to-transform, scale(0.95))',
+          },
+        },
+        'toast-in': {
+          '0%': {
+            opacity: 'var(--motion-toast-enter-from-opacity, 0)',
+            transform: 'var(--motion-toast-enter-from-transform, translateY(16px))',
+          },
+          '100%': {
+            opacity: 'var(--motion-toast-enter-to-opacity, 1)',
+            transform: 'var(--motion-toast-enter-to-transform, translateZ(0))',
+          },
+        },
+        'toast-out': {
+          '0%': {
+            opacity: 'var(--motion-toast-exit-from-opacity, 1)',
+            transform: 'var(--motion-toast-exit-from-transform, translateZ(0))',
+          },
+          '100%': {
+            opacity: 'var(--motion-toast-exit-to-opacity, 0)',
+            transform: 'var(--motion-toast-exit-to-transform, translateY(16px))',
+          },
+        },
+        'fade-in': {
+          '0%': { opacity: 'var(--motion-fade-enter-from-opacity, 0)' },
+          '100%': { opacity: 'var(--motion-fade-enter-to-opacity, 1)' },
+        },
+        'fade-out': {
+          '0%': { opacity: 'var(--motion-fade-exit-from-opacity, 1)' },
+          '100%': { opacity: 'var(--motion-fade-exit-to-opacity, 0)' },
+        },
+        'page-in': {
+          '0%': {
+            opacity: 'var(--motion-page-enter-from-opacity, 0)',
+            transform: 'var(--motion-page-enter-from-transform, translateY(8px))',
+          },
+          '100%': {
+            opacity: 'var(--motion-page-enter-to-opacity, 1)',
+            transform: 'var(--motion-page-enter-to-transform, translateZ(0))',
+          },
+        },
+        'page-out': {
+          '0%': {
+            opacity: 'var(--motion-page-exit-from-opacity, 1)',
+            transform: 'var(--motion-page-exit-from-transform, translateZ(0))',
+          },
+          '100%': {
+            opacity: 'var(--motion-page-exit-to-opacity, 0)',
+            transform: 'var(--motion-page-exit-to-transform, translateY(-8px))',
+          },
+        },
       },
       animation: {
         // Motion-token-driven durations/easings (fall back to legacy
@@ -418,6 +506,16 @@ module.exports = {
         'overlay-in': 'overlay-in var(--duration-normal, var(--transition-normal, 250ms)) var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
         'overlay-out': 'overlay-out var(--duration-fast, var(--transition-fast, 150ms)) var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
         'slide-up': 'slide-up var(--duration-slow, var(--transition-slow, 400ms)) var(--easing-emphasized, cubic-bezier(0.2, 0, 0, 1))',
+        'drawer-in': 'drawer-in var(--duration-normal, var(--transition-normal, 250ms)) var(--easing-emphasized, cubic-bezier(0.2, 0, 0, 1))',
+        'drawer-out': 'drawer-out var(--duration-normal, var(--transition-normal, 250ms)) var(--easing-emphasized, cubic-bezier(0.2, 0, 0, 1))',
+        'popover-in': 'popover-in var(--duration-fast, var(--transition-fast, 150ms)) var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
+        'popover-out': 'popover-out var(--duration-fast, var(--transition-fast, 150ms)) var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
+        'toast-in': 'toast-in var(--duration-normal, var(--transition-normal, 250ms)) var(--easing-emphasized, cubic-bezier(0.2, 0, 0, 1))',
+        'toast-out': 'toast-out var(--duration-normal, var(--transition-normal, 250ms)) var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
+        'fade-in': 'fade-in var(--duration-fast, var(--transition-fast, 150ms)) var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
+        'fade-out': 'fade-out var(--duration-fast, var(--transition-fast, 150ms)) var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
+        'page-in': 'page-in var(--duration-normal, var(--transition-normal, 250ms)) var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
+        'page-out': 'page-out var(--duration-fast, var(--transition-fast, 150ms)) var(--easing-standard, var(--transition-timing, cubic-bezier(0.4, 0, 0.2, 1)))',
       },
       // Density-axis spacing scale. Tailwind's default `p-3` / `gap-4` resolve
       // here so existing classes keep working — but now read from tokens.

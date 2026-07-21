@@ -193,7 +193,7 @@ export const RangeSlider = React.forwardRef<HTMLDivElement, RangeSliderProps>(
               "border-2 border-primary",
               "shadow-sm",
               "pointer-events-none",
-              "transition-transform duration-100",
+              "transition-transform duration-instant",
               isDragging && "scale-[var(--hover-scale)]",
               thumbSizes[size],
             )}

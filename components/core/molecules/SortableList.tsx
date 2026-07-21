@@ -91,7 +91,7 @@ function SortableListInner({
               'flex items-center justify-center',
               'text-muted-foreground',
               'hover:text-foreground',
-              'transition-colors duration-100',
+              'transition-colors duration-instant',
               'px-1',
             )}
             aria-grabbed={ariaGrabbed}
@@ -119,7 +119,7 @@ function SortableListInner({
               gap="sm"
               align="center"
               className={cn(
-                'transition-opacity duration-150',
+                'transition-opacity duration-fast',
                 isBeingDragged && 'opacity-50',
               )}
             >

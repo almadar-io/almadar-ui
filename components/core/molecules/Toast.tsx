@@ -6,7 +6,7 @@
  * Uses theme-aware CSS variables for styling.
  */
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import type { EventEmit } from "@almadar/core";
 import { Box } from "../atoms/Box";
 import { Icon } from "../atoms/Icon";
@@ -87,16 +87,31 @@ export const Toast: React.FC<ToastProps> = ({
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
+  // Self-managed exit: dismiss starts the out-animation; the real onDismiss
+  // fires after it completes (so the parent keeps the toast mounted through
+  // the exit). Enter animation runs on mount.
+  const [leaving, setLeaving] = useState(false);
 
-  const handleDismiss = () => {
+  const doRealDismiss = () => {
     if (dismissEvent) eventBus.emit(`UI:${dismissEvent}`, {});
     onDismiss?.();
+  };
+
+  const handleDismiss = () => {
+    if (leaving) return;
+    setLeaving(true);
   };
 
   const handleAction = () => {
     if (actionEvent) eventBus.emit(`UI:${actionEvent}`, {});
     onAction?.();
   };
+
+  const handleAnimEnd = (e: React.AnimationEvent) => {
+    if (e.target !== e.currentTarget) return;
+    if (leaving) doRealDismiss();
+  };
+
   useEffect(() => {
     if (duration <= 0 || (!onDismiss && !dismissEvent)) {
       return;
@@ -117,10 +132,12 @@ export const Toast: React.FC<ToastProps> = ({
         // edge. `max-w-[calc(100vw-2rem)]` clamps to viewport too.
         "border-l-4 p-4 shadow-elevation-toast min-w-0 sm:min-w-[300px] max-w-md max-w-[calc(100vw-2rem)]",
         "rounded-sm",
+        leaving ? "animate-toast-out" : "animate-toast-in",
         variantClasses[variant],
         className,
       )}
       role="alert"
+      onAnimationEnd={handleAnimEnd}
     >
       <Box className="flex items-start gap-3">
         <Box className="flex-shrink-0 mt-0.5">

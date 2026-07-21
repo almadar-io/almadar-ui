@@ -209,7 +209,7 @@ export const Coachmark: React.FC<CoachmarkProps> = ({
       role="dialog"
       aria-label={title}
       className={cn(
-        "fixed z-50 max-w-xs w-72 transition-opacity duration-150",
+        "fixed z-50 max-w-xs w-72 transition-opacity duration-fast",
         centered || pos ? "opacity-100" : "opacity-0",
         className,
       )}

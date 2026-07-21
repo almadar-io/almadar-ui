@@ -99,7 +99,7 @@ const SidebarNavItem: React.FC<{
       variant="ghost"
       onClick={item.onClick}
       className={cn(
-        'w-full flex items-center gap-3 px-3 py-2.5 transition-all duration-[var(--transition-fast)] group relative',
+        'w-full flex items-center gap-3 px-3 py-2.5 transition-all duration-fast group relative',
         'rounded-sm border-[length:var(--border-width-thin)] border-transparent',
         isActive
           ? [
@@ -194,7 +194,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       className={cn(
         'flex flex-col h-full',
         'bg-card border-e border-border',
-        'transition-all duration-300 ease-in-out',
+        'transition-all duration-normal ease-standard',
         collapsed ? 'w-20' : 'w-64',
         className
       )}

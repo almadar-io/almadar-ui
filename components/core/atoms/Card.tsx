@@ -46,21 +46,21 @@ const variantStyles = {
     "bg-card",
     "border-[length:var(--border-width)] border-border",
     "shadow-elevation-card",
-    "transition-all duration-[var(--transition-normal)]",
+    "transition-all duration-normal",
     "hover:shadow-elevation-dialog hover:translate-y-[var(--hover-translate-y)]",
   ].join(" "),
   bordered: [
     "bg-card",
     "border-[length:var(--border-width)] border-border",
     "shadow-elevation-card",
-    "transition-all duration-[var(--transition-normal)]",
+    "transition-all duration-normal",
     "hover:shadow-elevation-dialog hover:translate-y-[var(--hover-translate-y)]",
   ].join(" "),
   elevated: [
     "bg-card",
     "border-[length:var(--border-width)] border-border",
     "shadow",
-    "transition-all duration-[var(--transition-normal)]",
+    "transition-all duration-normal",
     "hover:shadow-elevation-dialog hover:translate-y-[var(--hover-translate-y)]",
   ].join(" "),
   // Interactive variant with theme-specific hover effects
@@ -69,7 +69,7 @@ const variantStyles = {
     "border-[length:var(--border-width)] border-border",
     "shadow",
     "cursor-pointer",
-    "transition-all duration-[var(--transition-normal)]",
+    "transition-all duration-normal",
     "hover:shadow-elevation-dialog",
   ].join(" "),
 };
@@ -138,7 +138,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
         ref={ref}
         className={cn(
           "rounded-container relative",
-          "transition-all duration-[var(--transition-normal)]",
+          "transition-all duration-normal",
           "chrome-panel",
           variantStyles[variant],
           paddingStyles[padding],

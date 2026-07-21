@@ -140,7 +140,7 @@ export const StarRating: React.FC<StarRatingProps> = ({
               className={cn(
                 styles.star,
                 "text-foreground/30",
-                "transition-colors duration-100",
+                "transition-colors duration-instant",
               )}
               strokeWidth={1.5}
             />
@@ -153,7 +153,7 @@ export const StarRating: React.FC<StarRatingProps> = ({
                   styles.star,
                   "absolute inset-0",
                   "text-warning fill-warning",
-                  "transition-colors duration-100",
+                  "transition-colors duration-instant",
                 )}
                 strokeWidth={1.5}
                 style={isHalf ? { clipPath: "inset(0 50% 0 0)" } : undefined}

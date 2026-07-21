@@ -136,7 +136,7 @@ export const LikertScale = React.forwardRef<HTMLDivElement, LikertScaleProps>(
                   disabled={disabled}
                   onClick={() => handleSelect(opt.value)}
                   className={cn(
-                    "flex-1 text-center font-medium transition-colors duration-100",
+                    "flex-1 text-center font-medium transition-colors duration-instant",
                     "focus:outline-none focus:ring-[length:var(--focus-ring-width)] focus:ring-ring focus:ring-inset",
                     "disabled:cursor-not-allowed",
                     "rounded-none gap-0 shadow-none border-none",

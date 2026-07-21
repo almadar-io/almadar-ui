@@ -9,6 +9,7 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import { Typography } from "../atoms/Typography";
+import { usePresence } from "../atoms/Presence";
 import { cn } from "../../../lib/cn";
 import { useTapReveal } from "../../../hooks/useTapReveal";
 
@@ -114,6 +115,9 @@ export const Popover: React.FC<PopoverProps> = ({
   const triggerRef = useRef<HTMLElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
+  // Enter/exit motion. Panel stays mounted through the exit animation.
+  const { mounted, className: panelAnim, onAnimationEnd } = usePresence(isOpen, { animation: "popover" });
+
   const updatePosition = () => {
     if (triggerRef.current) {
       setTriggerRect(triggerRef.current.getBoundingClientRect());
@@ -143,10 +147,14 @@ export const Popover: React.FC<PopoverProps> = ({
   useEffect(() => {
     if (isOpen) {
       updatePosition();
-    } else {
-      setPopoverWidth(0);
     }
   }, [isOpen]);
+
+  // Reset the measured width only once the panel has fully unmounted (not
+  // at the start of the exit animation, which would flash it hidden).
+  useEffect(() => {
+    if (!mounted) setPopoverWidth(0);
+  }, [mounted]);
 
   useLayoutEffect(() => {
     if (isOpen && popoverRef.current) {
@@ -231,12 +239,13 @@ export const Popover: React.FC<PopoverProps> = ({
   // `transform` (ReactFlow's `.react-flow__viewport`, PreviewFrame's
   // `translate3d(0,0,0)` chrome-scoping trick, etc.) becomes the
   // containing block for the fixed panel and shifts it off the trigger.
-  const panel = isOpen && triggerRect ? (
+  const panel = mounted && triggerRect ? (
     <div
       ref={popoverRef}
       className={cn(
         "fixed z-50 p-4",
         "bg-card border-2 border-border shadow-elevation-popover",
+        panelAnim,
         className,
       )}
       style={{
@@ -244,6 +253,7 @@ export const Popover: React.FC<PopoverProps> = ({
         ...(popoverWidth === 0 ? { visibility: 'hidden' as const } : undefined),
       }}
       role="dialog"
+      onAnimationEnd={onAnimationEnd}
       onMouseEnter={trigger === "hover" ? handleOpen : undefined}
       onMouseLeave={trigger === "hover" ? handleClose : undefined}
     >

@@ -119,7 +119,7 @@ export const FormSectionHeader: React.FC<FormSectionHeaderProps> = ({
               name="chevron-down"
               size="sm"
               className={cn(
-                "text-muted-foreground transition-transform duration-200 shrink-0",
+                "text-muted-foreground transition-transform duration-fast shrink-0",
                 isCollapsed && "-rotate-90",
               )}
             />

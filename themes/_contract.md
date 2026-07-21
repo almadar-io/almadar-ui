@@ -158,6 +158,31 @@ Easing palette (existing `--transition-timing` aliases to `--easing-standard`):
 | `--easing-emphasized` | `cubic-bezier(0.2, 0, 0, 1)` |
 | `--easing-spring` | `cubic-bezier(0.34, 1.56, 0.64, 1)` |
 
+**Master toggle:** `--motion-enable` (`on` \| `off`, default `on`). Set `off` to collapse every
+motion to instant — the programmatic opt-out (independent of `prefers-reduced-motion`, which the
+base layer also honours globally).
+
+### Motion axis — keyframe endpoints (surface shapes)
+
+Every animated surface has enter + exit endpoints so `<Presence>` (the one enter/leave primitive)
+can animate both directions. Override these in a theme block to restyle the *shape*; duration &
+easing still come from the palettes above.
+
+| Surface | Endpoints (enter/exit) | Default shape |
+|---|---|---|
+| overlay | `--motion-overlay-enter-from-opacity`, `--motion-overlay-exit-to-opacity` | fade |
+| modal | `--motion-modal-{enter,exit}-{from,to}-{opacity,transform}` | scale .96 + translateY(8px) + fade |
+| slide-up | `--motion-slide-up-from-{opacity,transform}` | translateY(16px) + fade |
+| drawer | `--motion-drawer-{enter,exit}-{from,to}-{opacity,transform}` + `--motion-drawer-sign` (1 / -1) | horizontal slide by side |
+| popover | `--motion-popover-{enter,exit}-{from,to}-{opacity,transform}` | scale .95 + fade |
+| toast | `--motion-toast-{enter,exit}-{from,to}-{opacity,transform}` | translateY(16px) + fade |
+| fade | `--motion-fade-{enter,exit}-{from,to}-opacity` | opacity only |
+| page | `--motion-page-{enter,exit}-{from,to}-{opacity,transform}` | translateY(±8px) + fade |
+
+These back the preset utilities `animate-<surface>-in` / `animate-<surface>-out`. A reduced-motion
+user (`@media (prefers-reduced-motion: reduce)`, declared once in `_base.css`) gets every surface
+instantly regardless of theme.
+
 ### Iconography axis
 
 | Variable | Default | Notes |

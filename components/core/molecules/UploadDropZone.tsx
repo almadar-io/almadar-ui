@@ -170,7 +170,7 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
         "relative flex flex-col items-center justify-center",
         "p-8 rounded-sm",
         "border-2 border-dashed",
-        "transition-colors duration-150",
+        "transition-colors duration-fast",
         "cursor-pointer",
         isDragOver
           ? "border-primary bg-primary bg-opacity-5"

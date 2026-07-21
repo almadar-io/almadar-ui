@@ -84,6 +84,7 @@ export {
 } from "./Typography";
 export { ThemeToggle, type ThemeToggleProps } from "./ThemeToggle";
 export { Overlay, type OverlayProps } from "./Overlay";
+export { Presence, usePresence, type PresenceProps, type PresenceAnimation, type UsePresenceOptions, type PresenceResult } from "./Presence";
 export { FlipContainer, type FlipContainerProps } from "./FlipContainer";
 export { Dialog, type DialogProps } from "./Dialog";
 export { Aside, type AsideProps } from "./Aside";

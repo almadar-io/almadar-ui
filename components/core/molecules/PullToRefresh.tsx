@@ -107,7 +107,7 @@ export const PullToRefresh: React.FC<PullToRefreshProps> = ({
         }}
       >
         <Box
-          className="transition-transform duration-150"
+          className="transition-transform duration-fast"
           style={{
             transform: `scale(${isRefreshing ? 1 : pullProgress})`,
             opacity: isRefreshing ? 1 : pullProgress,

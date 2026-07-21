@@ -22,6 +22,7 @@ export { Grid, type GridProps } from './Grid';
 export { InputGroup, type InputGroupProps } from './InputGroup';
 export { Menu, type MenuProps, type MenuItem } from './Menu';
 export { Modal, type ModalProps, type ModalSize } from './Modal';
+export { PageTransition, type PageTransitionProps } from './PageTransition';
 export { Pagination, type PaginationProps } from './Pagination';
 export { Popover, type PopoverProps } from './Popover';
 export {

@@ -302,7 +302,7 @@ const ProgressIndicator: React.FC<{ value: number }> = ({ value }) => {
       <Box className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
         <Box
           className={cn(
-            "h-full rounded-full transition-all duration-500",
+            "h-full rounded-full transition-all duration-slow",
             clampedValue >= 100
               ? "bg-success"
               : clampedValue >= 70
@@ -535,7 +535,7 @@ export const List: React.FC<ListProps> = ({
         <Box
           className={cn(
             "group flex items-center gap-5 px-6 py-5",
-            "transition-all duration-300 ease-out",
+            "transition-all duration-normal ease-standard",
             hasExplicitClick && "cursor-pointer",
             // Hover state
             "hover:bg-muted/80",
@@ -654,7 +654,7 @@ export const List: React.FC<ListProps> = ({
                 variant="ghost"
                 action={editAction.event}
                 className={cn(
-                  "p-2 rounded-lg transition-all duration-200",
+                  "p-2 rounded-lg transition-all duration-fast",
                   "hover:bg-primary/10 hover:text-primary",
                   "text-muted-foreground",
                   "active:scale-95",
@@ -672,7 +672,7 @@ export const List: React.FC<ListProps> = ({
                 variant="ghost"
                 action={viewAction.event}
                 className={cn(
-                  "p-2 rounded-lg transition-all duration-200",
+                  "p-2 rounded-lg transition-all duration-fast",
                   "hover:bg-muted hover:text-foreground",
                   "text-muted-foreground",
                   "active:scale-95",
@@ -699,7 +699,7 @@ export const List: React.FC<ListProps> = ({
                     <Button
                       variant="ghost"
                       className={cn(
-                        "p-2 rounded-lg transition-all duration-200",
+                        "p-2 rounded-lg transition-all duration-fast",
                         "hover:bg-muted hover:shadow-sm",
                         "text-muted-foreground hover:text-foreground",
                         "active:scale-95",

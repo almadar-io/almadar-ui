@@ -246,7 +246,7 @@ const BarChart: React.FC<{
                                     return (
                                         <Box
                                             key={s.name}
-                                            className="h-full rounded-r-sm transition-all duration-500 ease-out min-w-[2px] cursor-pointer hover:opacity-80"
+                                            className="h-full rounded-r-sm transition-all duration-slow ease-standard min-w-[2px] cursor-pointer hover:opacity-80"
                                             style={{
                                                 width: `${ratio}%`,
                                                 backgroundColor: color,
@@ -307,7 +307,7 @@ const BarChart: React.FC<{
                                         <Box
                                             key={s.name}
                                             className={cn(
-                                                "rounded-t-sm transition-all duration-500 ease-out min-h-[4px] cursor-pointer hover:opacity-80",
+                                                "rounded-t-sm transition-all duration-slow ease-standard min-h-[4px] cursor-pointer hover:opacity-80",
                                                 histogram ? "flex-1 mx-0" : "flex-1",
                                             )}
                                             style={{
@@ -366,7 +366,7 @@ const BarChart: React.FC<{
                                 return (
                                     <Box
                                         key={s.name}
-                                        className="w-full transition-all duration-500 ease-out cursor-pointer hover:opacity-80"
+                                        className="w-full transition-all duration-slow ease-standard cursor-pointer hover:opacity-80"
                                         style={{
                                             height: `${ratio}%`,
                                             backgroundColor: color,
@@ -472,7 +472,7 @@ const PieChart: React.FC<{
                         fill={seg.color}
                         stroke="var(--color-card)"
                         strokeWidth="2"
-                        className="transition-opacity duration-200 hover:opacity-80 cursor-pointer"
+                        className="transition-opacity duration-fast hover:opacity-80 cursor-pointer"
                         onClick={() =>
                             onPointClick?.(
                                 { label: seg.label, value: seg.value, color: seg.color },

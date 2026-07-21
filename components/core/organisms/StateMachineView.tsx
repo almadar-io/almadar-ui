@@ -507,7 +507,7 @@ const BundleTooltip: React.FC<{
   return createPortal(
     <Box
       className={cn(
-        'fixed z-50 animate-in fade-in-0 zoom-in-95 duration-150',
+        'fixed z-50 animate-in fade-in-0 zoom-in-95 duration-fast',
         tooltip.pinned ? 'pointer-events-auto' : 'pointer-events-none',
       )}
       style={{

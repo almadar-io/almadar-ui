@@ -22,6 +22,7 @@ import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
 import { Overlay } from "../atoms/Overlay";
+import { usePresence } from "../atoms/Presence";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
@@ -128,6 +129,10 @@ export const Drawer: React.FC<DrawerProps> = ({
     return () => document.removeEventListener("keydown", handleEscape);
   }, [isOpen, closeOnEscape, onClose, closeEvent, eventBus]);
 
+  // Enter/exit motion (token-driven). The slide direction is flipped per
+  // side via the --motion-drawer-sign CSS var consumed by the drawer keyframes.
+  const { mounted, className: drawerAnim, onAnimationEnd } = usePresence(isOpen, { animation: "drawer" });
+
   // Prevent body scroll when open
   useEffect(() => {
     if (isOpen) {
@@ -140,7 +145,7 @@ export const Drawer: React.FC<DrawerProps> = ({
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!mounted) return null;
 
   const handleClose = () => {
     if (closeEvent) eventBus.emit(`UI:${closeEvent}`, {});
@@ -162,9 +167,8 @@ export const Drawer: React.FC<DrawerProps> = ({
   const positionClasses =
     position === "right" ? "right-0 border-l" : "left-0 border-r";
 
-  // Animation classes
-  const animationClasses =
-    position === "right" ? "animate-slide-in-right" : "animate-slide-in-left";
+  // Drawer slide sign: right drawer enters from +100%, left from -100%.
+  const drawerSign = position === "right" ? 1 : -1;
 
   return (
     <>
@@ -186,12 +190,13 @@ export const Drawer: React.FC<DrawerProps> = ({
           "flex flex-col max-h-screen",
           positionClasses,
           widthClass,
-          animationClasses,
+          drawerAnim,
           className,
         )}
-        style={widthStyle}
+        style={{ ...widthStyle, "--motion-drawer-sign": drawerSign } as React.CSSProperties}
         role="dialog"
         aria-modal="true"
+        onAnimationEnd={onAnimationEnd}
         {...(title && { "aria-labelledby": "drawer-title" })}
       >
         {/* Header */}
@@ -236,31 +241,6 @@ export const Drawer: React.FC<DrawerProps> = ({
         )}
       </Box>
 
-      {/* Animation styles */}
-      <style>{`
-        @keyframes slide-in-right {
-          from {
-            transform: translateX(100%);
-          }
-          to {
-            transform: translateX(0);
-          }
-        }
-        @keyframes slide-in-left {
-          from {
-            transform: translateX(-100%);
-          }
-          to {
-            transform: translateX(0);
-          }
-        }
-        .animate-slide-in-right {
-          animation: slide-in-right 0.3s ease-out;
-        }
-        .animate-slide-in-left {
-          animation: slide-in-left 0.3s ease-out;
-        }
-      `}</style>
     </>
   );
 };

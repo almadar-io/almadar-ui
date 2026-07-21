@@ -228,7 +228,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
                 type="button"
                 onClick={() => handleFilterSelect(filter.field, null)}
                 className={cn(
-                  "px-3 py-1.5 text-sm font-medium transition-all duration-[var(--transition-fast)]",
+                  "px-3 py-1.5 text-sm font-medium transition-all duration-fast",
                   !selectedValues[filter.field]
                     ? "bg-primary text-primary-foreground"
                     : "bg-card text-muted-foreground hover:bg-muted",
@@ -242,7 +242,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
                   type="button"
                   onClick={() => handleFilterSelect(filter.field, option)}
                   className={cn(
-                    "px-3 py-1.5 text-sm font-medium transition-all duration-[var(--transition-fast)]",
+                    "px-3 py-1.5 text-sm font-medium transition-all duration-fast",
                     "border-l-[length:var(--border-width)] border-border",
                     selectedValues[filter.field] === option
                       ? "bg-primary text-primary-foreground"

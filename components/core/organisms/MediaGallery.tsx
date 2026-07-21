@@ -236,7 +236,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                                     key={item.id}
                                     className={cn(
                                         "group relative overflow-hidden rounded-md cursor-pointer",
-                                        "border-2 transition-all duration-200",
+                                        "border-2 transition-all duration-fast",
                                         isSelected
                                             ? "border-primary ring-2 ring-primary/30"
                                             : "border-transparent hover:border-border",
@@ -263,13 +263,13 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                                     <Box
                                         className={cn(
                                             "absolute inset-0 bg-foreground/0 group-hover:bg-foreground/20",
-                                            "transition-colors duration-200 flex items-center justify-center",
+                                            "transition-colors duration-fast flex items-center justify-center",
                                         )}
                                     >
                                         <Icon
                                             icon={ZoomIn}
                                             size="md"
-                                            className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                            className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-fast"
                                         />
                                     </Box>
                                     {/* Caption */}

@@ -12,6 +12,7 @@ import { Aside } from "../atoms/Aside";
 import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
+import { Presence, usePresence } from "../atoms/Presence";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
@@ -88,16 +89,22 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     onClose();
   };
 
-  if (!isOpen) return null;
+  // Enter/exit slide. Direction flips per side via --motion-drawer-sign.
+  const { mounted, className: panelAnim, onAnimationEnd } = usePresence(isOpen, { animation: "drawer" });
+  const drawerSign = position === "right" ? 1 : -1;
+
+  if (!mounted) return null;
 
   return (
     <>
       {/* Overlay */}
       {showOverlay && (
-        <Box
-          className="fixed inset-0 bg-white/80 backdrop-blur-sm z-40 lg:hidden"
-          onClick={handleClose}
-        />
+        <Presence show={isOpen} animation="overlay">
+          <Box
+            className="fixed inset-0 bg-white/80 backdrop-blur-sm z-40 lg:hidden"
+            onClick={handleClose}
+          />
+        </Presence>
       )}
 
       {/* Side Panel — fills the viewport on mobile, uses the `width` prop
@@ -110,11 +117,13 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           "border-l-2 border-border",
           position === "left" && "border-l-0 border-r-2",
           "flex flex-col",
-          "transition-transform duration-normal ease-standard",
+          panelAnim,
           width,
           position === "right" ? "right-0" : "left-0",
           className,
         )}
+        style={{ "--motion-drawer-sign": drawerSign } as React.CSSProperties}
+        onAnimationEnd={onAnimationEnd}
       >
         {/* Header */}
         <Box className="flex items-center justify-between p-4 border-b-2 border-border sticky top-0 bg-card z-10">

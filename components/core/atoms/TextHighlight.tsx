@@ -80,7 +80,7 @@ export const TextHighlight: React.FC<TextHighlightProps> = ({
   hoverEvent,
 }) => {
   const eventBus = useEventBus();
-  const baseStyles = "cursor-pointer transition-all duration-150";
+  const baseStyles = "cursor-pointer transition-all duration-fast";
 
   const typeStyles = {
     question: cn(
