@@ -74,3 +74,119 @@ declare module 'react-syntax-highlighter/dist/esm/languages/prism/go.js' {
 declare module 'react-syntax-highlighter/dist/esm/languages/prism/graphql.js' {
   export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/graphql';
 }
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/clojure.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/clojure';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/haskell.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/haskell';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/lisp.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/lisp';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/scheme.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/scheme';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/scala.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/scala';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/elixir.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/elixir';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/erlang.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/erlang';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/elm.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/elm';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/fsharp.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/fsharp';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/ocaml.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/ocaml';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/java.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/java';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/c.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/c';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/cpp.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/cpp';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/csharp.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/csharp';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/objectivec.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/objectivec';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/php.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/php';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/ruby.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/ruby';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/swift.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/swift';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/kotlin.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/kotlin';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/lua.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/lua';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/r.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/r';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/dart.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/dart';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/julia.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/julia';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/fortran.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/fortran';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/perl.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/perl';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/powershell.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/powershell';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/makefile.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/makefile';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/nginx.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/nginx';
+}
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/ini.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/ini';
+}

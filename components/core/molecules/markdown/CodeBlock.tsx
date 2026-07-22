@@ -45,6 +45,37 @@ import langDiff from 'react-syntax-highlighter/dist/esm/languages/prism/diff.js'
 import langToml from 'react-syntax-highlighter/dist/esm/languages/prism/toml.js';
 import langGo from 'react-syntax-highlighter/dist/esm/languages/prism/go.js';
 import langGraphql from 'react-syntax-highlighter/dist/esm/languages/prism/graphql.js';
+// Common languages used in lessons (statically bundled for reliable highlighting;
+// the dynamic loader covers the long tail on demand).
+import langClojure from 'react-syntax-highlighter/dist/esm/languages/prism/clojure.js';
+import langHaskell from 'react-syntax-highlighter/dist/esm/languages/prism/haskell.js';
+import langLisp from 'react-syntax-highlighter/dist/esm/languages/prism/lisp.js';
+import langScheme from 'react-syntax-highlighter/dist/esm/languages/prism/scheme.js';
+import langScala from 'react-syntax-highlighter/dist/esm/languages/prism/scala.js';
+import langElixir from 'react-syntax-highlighter/dist/esm/languages/prism/elixir.js';
+import langErlang from 'react-syntax-highlighter/dist/esm/languages/prism/erlang.js';
+import langElm from 'react-syntax-highlighter/dist/esm/languages/prism/elm.js';
+import langFsharp from 'react-syntax-highlighter/dist/esm/languages/prism/fsharp.js';
+import langOcaml from 'react-syntax-highlighter/dist/esm/languages/prism/ocaml.js';
+import langJava from 'react-syntax-highlighter/dist/esm/languages/prism/java.js';
+import langC from 'react-syntax-highlighter/dist/esm/languages/prism/c.js';
+import langCpp from 'react-syntax-highlighter/dist/esm/languages/prism/cpp.js';
+import langCsharp from 'react-syntax-highlighter/dist/esm/languages/prism/csharp.js';
+import langObjectivec from 'react-syntax-highlighter/dist/esm/languages/prism/objectivec.js';
+import langPhp from 'react-syntax-highlighter/dist/esm/languages/prism/php.js';
+import langRuby from 'react-syntax-highlighter/dist/esm/languages/prism/ruby.js';
+import langSwift from 'react-syntax-highlighter/dist/esm/languages/prism/swift.js';
+import langKotlin from 'react-syntax-highlighter/dist/esm/languages/prism/kotlin.js';
+import langLua from 'react-syntax-highlighter/dist/esm/languages/prism/lua.js';
+import langR from 'react-syntax-highlighter/dist/esm/languages/prism/r.js';
+import langDart from 'react-syntax-highlighter/dist/esm/languages/prism/dart.js';
+import langJulia from 'react-syntax-highlighter/dist/esm/languages/prism/julia.js';
+import langFortran from 'react-syntax-highlighter/dist/esm/languages/prism/fortran.js';
+import langPerl from 'react-syntax-highlighter/dist/esm/languages/prism/perl.js';
+import langPowershell from 'react-syntax-highlighter/dist/esm/languages/prism/powershell.js';
+import langMakefile from 'react-syntax-highlighter/dist/esm/languages/prism/makefile.js';
+import langNginx from 'react-syntax-highlighter/dist/esm/languages/prism/nginx.js';
+import langIni from 'react-syntax-highlighter/dist/esm/languages/prism/ini.js';
 
 // Register built-in languages
 SyntaxHighlighter.registerLanguage('json', langJson);
@@ -70,6 +101,58 @@ SyntaxHighlighter.registerLanguage('diff', langDiff);
 SyntaxHighlighter.registerLanguage('toml', langToml);
 SyntaxHighlighter.registerLanguage('go', langGo);
 SyntaxHighlighter.registerLanguage('graphql', langGraphql);
+SyntaxHighlighter.registerLanguage('clojure', langClojure);
+SyntaxHighlighter.registerLanguage('clj', langClojure);
+SyntaxHighlighter.registerLanguage('edn', langClojure);
+SyntaxHighlighter.registerLanguage('haskell', langHaskell);
+SyntaxHighlighter.registerLanguage('hs', langHaskell);
+SyntaxHighlighter.registerLanguage('lisp', langLisp);
+SyntaxHighlighter.registerLanguage('scheme', langScheme);
+SyntaxHighlighter.registerLanguage('scala', langScala);
+SyntaxHighlighter.registerLanguage('elixir', langElixir);
+SyntaxHighlighter.registerLanguage('ex', langElixir);
+SyntaxHighlighter.registerLanguage('exs', langElixir);
+SyntaxHighlighter.registerLanguage('erlang', langErlang);
+SyntaxHighlighter.registerLanguage('erl', langErlang);
+SyntaxHighlighter.registerLanguage('elm', langElm);
+SyntaxHighlighter.registerLanguage('fsharp', langFsharp);
+SyntaxHighlighter.registerLanguage('fs', langFsharp);
+SyntaxHighlighter.registerLanguage('fsx', langFsharp);
+SyntaxHighlighter.registerLanguage('ocaml', langOcaml);
+SyntaxHighlighter.registerLanguage('ml', langOcaml);
+SyntaxHighlighter.registerLanguage('java', langJava);
+SyntaxHighlighter.registerLanguage('c', langC);
+SyntaxHighlighter.registerLanguage('cpp', langCpp);
+SyntaxHighlighter.registerLanguage('c++', langCpp);
+SyntaxHighlighter.registerLanguage('cc', langCpp);
+SyntaxHighlighter.registerLanguage('cxx', langCpp);
+SyntaxHighlighter.registerLanguage('hpp', langCpp);
+SyntaxHighlighter.registerLanguage('h', langCpp);
+SyntaxHighlighter.registerLanguage('csharp', langCsharp);
+SyntaxHighlighter.registerLanguage('cs', langCsharp);
+SyntaxHighlighter.registerLanguage('objectivec', langObjectivec);
+SyntaxHighlighter.registerLanguage('objc', langObjectivec);
+SyntaxHighlighter.registerLanguage('php', langPhp);
+SyntaxHighlighter.registerLanguage('ruby', langRuby);
+SyntaxHighlighter.registerLanguage('rb', langRuby);
+SyntaxHighlighter.registerLanguage('swift', langSwift);
+SyntaxHighlighter.registerLanguage('kotlin', langKotlin);
+SyntaxHighlighter.registerLanguage('kt', langKotlin);
+SyntaxHighlighter.registerLanguage('lua', langLua);
+SyntaxHighlighter.registerLanguage('r', langR);
+SyntaxHighlighter.registerLanguage('dart', langDart);
+SyntaxHighlighter.registerLanguage('julia', langJulia);
+SyntaxHighlighter.registerLanguage('fortran', langFortran);
+SyntaxHighlighter.registerLanguage('f90', langFortran);
+SyntaxHighlighter.registerLanguage('f95', langFortran);
+SyntaxHighlighter.registerLanguage('perl', langPerl);
+SyntaxHighlighter.registerLanguage('pl', langPerl);
+SyntaxHighlighter.registerLanguage('powershell', langPowershell);
+SyntaxHighlighter.registerLanguage('ps1', langPowershell);
+SyntaxHighlighter.registerLanguage('makefile', langMakefile);
+SyntaxHighlighter.registerLanguage('make', langMakefile);
+SyntaxHighlighter.registerLanguage('nginx', langNginx);
+SyntaxHighlighter.registerLanguage('ini', langIni);
 
 // Register .orb and .lolo languages from @almadar/syntax (refractor-compatible)
 SyntaxHighlighter.registerLanguage('orb', orbLanguage);
@@ -245,6 +328,58 @@ export const CODE_LANGUAGES = [
   'graphql',
   'html',
   'xml',
+  'clojure',
+  'clj',
+  'edn',
+  'haskell',
+  'hs',
+  'lisp',
+  'scheme',
+  'scala',
+  'elixir',
+  'ex',
+  'exs',
+  'erlang',
+  'erl',
+  'elm',
+  'fsharp',
+  'fs',
+  'fsx',
+  'ocaml',
+  'ml',
+  'java',
+  'c',
+  'cpp',
+  'c++',
+  'cc',
+  'cxx',
+  'hpp',
+  'h',
+  'csharp',
+  'cs',
+  'objectivec',
+  'objc',
+  'php',
+  'ruby',
+  'rb',
+  'swift',
+  'kotlin',
+  'kt',
+  'lua',
+  'r',
+  'dart',
+  'julia',
+  'fortran',
+  'f90',
+  'f95',
+  'perl',
+  'pl',
+  'powershell',
+  'ps1',
+  'makefile',
+  'make',
+  'nginx',
+  'ini',
   'orb',
   'lolo',
 ] as const;
