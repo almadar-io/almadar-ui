@@ -22,7 +22,7 @@ import { useState, useCallback, useEffect, useRef, useMemo, type MutableRefObjec
 import { useEventBus, useSharedEntityStore, runTickFrame, type SharedEntityWriter } from './index';
 import { createLogger, setNamespaceLevel } from '@almadar/logger';
 import { isCircuitEvent, walkSExpr, mergeEntityFrame } from '@almadar/core';
-import type { PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, TraitConfig, SExpr, ServiceParams, ResolvedTrait, FieldValue, EntityFieldWrite, EntityFrameState } from '@almadar/core';
+import type { PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, TraitConfig, TraitConfigValue, SExpr, ServiceParams, ResolvedTrait, FieldValue, EntityFieldWrite, EntityFrameState } from '@almadar/core';
 import {
     StateMachineManager,
     EffectExecutor,
@@ -405,6 +405,23 @@ export interface UseTraitStateMachineOptions {
  * values through. Declared defaults are already plain values from
  * `collectDeclaredConfigDefaults`.
  */
+/**
+ * True when a raw call-site config value still carries an un-chained
+ * `@config.X` forward ANYWHERE in its tree — not only as a top-level
+ * string. A vessel like std-service-email's `EmailComposerSlot { children:
+ * [@config.uiTrait] }` nests its forward inside an array; filtering only
+ * top-level strings let the raw array clobber the resolved one from
+ * `traitConfigsByName` (blank standalone boot).
+ */
+function containsConfigForward(value: TraitConfigValue): boolean {
+    if (typeof value === 'string') return value.startsWith('@config.');
+    if (Array.isArray(value)) return value.some(containsConfigForward);
+    if (value !== null && typeof value === 'object') {
+        return Object.values(value).some(containsConfigForward);
+    }
+    return false;
+}
+
 function getBindingConfig(binding: ResolvedTraitBinding): TraitConfig | undefined {
     const raw = binding.config;
     const normalized = normalizeCallSiteConfigToValues(raw);
@@ -1010,7 +1027,7 @@ export function useTraitStateMachine(
                 ? resolveCallSitePayloadCaptures(
                     Object.fromEntries(
                         Object.entries(sharedCallSiteRaw).filter(
-                            ([, v]) => !(typeof v === 'string' && v.startsWith('@config.')),
+                            ([, v]) => !containsConfigForward(v),
                         ),
                     ),
                     payload || {},
@@ -1106,7 +1123,7 @@ export function useTraitStateMachine(
             ? resolveCallSitePayloadCaptures(
                 Object.fromEntries(
                     Object.entries(callSiteConfig).filter(
-                        ([, v]) => !(typeof v === 'string' && v.startsWith('@config.')),
+                        ([, v]) => !containsConfigForward(v),
                     ),
                 ),
                 payload || {},
