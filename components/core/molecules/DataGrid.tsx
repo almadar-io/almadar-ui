@@ -125,8 +125,8 @@ export interface DataGridProps extends DataDndProps {
   loadMoreEvent?: EventKey;
   /** Whether more items are available for infinite scroll */
   hasMore?: boolean;
-  /** Render prop for custom per-card content. When provided, `fields` and
-   *  `itemActions` are ignored. */
+  /** Render prop for custom per-card content. When provided, `fields` are
+   *  ignored; `itemActions` render as a footer beneath the custom content. */
   children?: (item: EntityRow, index: number) => React.ReactNode;
   /**
    * Per-item render function (schema-level alias for children render prop).
@@ -457,7 +457,9 @@ export function DataGrid({
           const wrapDnd = (node: React.ReactNode): React.ReactNode =>
             dnd.isZone ? <dnd.SortableItem key={dndId} id={dndId}>{node}</dnd.SortableItem> : node;
 
-          // Custom render-prop path: delegate card content to children
+          // Custom render-prop path: delegate card content to children;
+          // itemActions still render as a footer so row-scoped events keep
+          // their {id, row} payload regardless of the custom card body.
           if (hasRenderProp) {
             return wrapDnd(
               <Box
@@ -467,6 +469,46 @@ export function DataGrid({
                 className={cn(isSelected && 'ring-2 ring-primary rounded-lg')}
               >
                 {children(itemData, index)}
+                {actionDefs.length > 0 && (
+                  <Box className="px-4 py-3 border-t border-border">
+                    <HStack gap="sm" className="justify-end">
+                      {(maxInlineActions != null ? actionDefs.slice(0, maxInlineActions) : actionDefs).map((action, idx) => (
+                        <Button
+                          key={idx}
+                          variant={action.variant === 'primary' ? 'primary' : 'ghost'}
+                          size="sm"
+                          onClick={handleActionClick(action, itemData)}
+                          data-testid={`action-${action.event}`}
+                          data-row-id={String(itemData.id)}
+                          className={action.variant === 'danger' ? 'text-error hover:text-error hover:bg-error/10' : undefined}
+                        >
+                          {action.icon && renderIconInput(action.icon, { size: 'xs', className: 'mr-1' })}
+                          {action.label}
+                        </Button>
+                      ))}
+                      {maxInlineActions != null && actionDefs.length > maxInlineActions && (
+                        <Menu
+                          position="bottom-end"
+                          trigger={
+                            <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow">
+                              <Icon name="more-horizontal" size="xs" />
+                            </Button>
+                          }
+                          items={actionDefs.slice(maxInlineActions).map((action) => ({
+                            label: action.label,
+                            icon: action.icon,
+                            event: action.event,
+                            onClick: () =>
+                              eventBus.emit(`UI:${action.event}`, {
+                                id: itemData.id as string | number,
+                                row: itemData as ItemActionPayload['row'],
+                              }),
+                          }))}
+                        />
+                      )}
+                    </HStack>
+                  </Box>
+                )}
               </Box>
             );
           }
