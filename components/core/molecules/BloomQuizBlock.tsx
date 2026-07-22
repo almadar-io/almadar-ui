@@ -13,7 +13,7 @@ import React, { useState, useMemo } from 'react';
 import { CheckCircle } from 'lucide-react';
 import { MarkdownContent } from './markdown/MarkdownContent';
 import { CodeBlock } from './markdown/CodeBlock';
-import { parseMarkdownWithCodeBlocks } from './lessonSegmentUtils';
+import { parseMarkdownWithCodeBlocks } from '../../../lib/lessonSegmentUtils';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { cn } from '../../../lib/cn';
 import type { CodeLanguage } from './markdown/CodeBlock';

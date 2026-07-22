@@ -11,7 +11,12 @@ export type MixedSegment = MarkdownSegment | CodeSegment;
 /** Splits markdown content into markdown and fenced-code-block segments. */
 export function parseMarkdownWithCodeBlocks(content: string): MixedSegment[] {
   const segments: MixedSegment[] = [];
-  const codeBlockRegex = /```([\w-]+)?(?:\s+(run))?\n([\s\S]*?)```/g;
+  // CommonMark-ish fenced code: ```<info-line>\r?\n<code>```. The info-line is
+  // captured whole and tokenised below — the first token is the language, and
+  // kflow adds a `run` token / `<lang>-runnable` suffix to mark executable
+  // blocks. Capturing the full line (not just [\w-]) tolerates attributes like
+  // ```ocaml title="x" and CRLF endings that previously left stray backticks.
+  const codeBlockRegex = /```([^\n\r]*)\r?\n([\s\S]*?)```/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
@@ -21,13 +26,13 @@ export function parseMarkdownWithCodeBlocks(content: string): MixedSegment[] {
       segments.push({ type: 'markdown', content: before });
     }
 
-    const rawLanguage = match[1] ?? 'text';
-    const runModifier = !!match[2];
+    const tokens = match[1].trim().split(/\s+/).filter(Boolean);
+    let rawLanguage = tokens[0] ?? 'text';
     const suffixRunnable = rawLanguage.endsWith('-runnable');
-    const runnable = runModifier || suffixRunnable;
+    const runnable = suffixRunnable || tokens.includes('run');
     const baseLanguage = suffixRunnable ? rawLanguage.slice(0, -'-runnable'.length) || 'text' : rawLanguage;
 
-    segments.push({ type: 'code', language: baseLanguage, content: match[3].trim(), runnable });
+    segments.push({ type: 'code', language: baseLanguage, content: match[2].trim(), runnable });
     lastIndex = codeBlockRegex.lastIndex;
   }
 

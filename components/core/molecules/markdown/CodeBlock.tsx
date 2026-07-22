@@ -75,6 +75,45 @@ SyntaxHighlighter.registerLanguage('graphql', langGraphql);
 SyntaxHighlighter.registerLanguage('orb', orbLanguage);
 SyntaxHighlighter.registerLanguage('lolo', loloLanguage);
 
+// ── Dynamic Prism language loading ───────────────────────────────────────────
+// Any language outside the static set above is fetched on demand. Because
+// `@almadar/ui` is pre-bundled by the consumer's bundler, a template-literal
+// dynamic import here would not be code-split — so the loader is injected from
+// app source (where the bundler can split each grammar into its own lazy chunk)
+// via `registerCodeLanguageLoader`. Apps call it once at bootstrap.
+const dynamicallyLoaded = new Set<string>();
+
+/** A PrismLight grammar module's default export: a function that registers
+ *  token definitions on the Prism/refractor instance passed to it. */
+export type PrismLanguageGrammar = (prism: object) => void;
+
+/** A consumer-supplied async grammar fetcher. Returns the language module
+ *  default (registered with PrismLight), or `null` if no grammar exists. */
+export type CodeLanguageLoader = (lang: string) => Promise<PrismLanguageGrammar | null>;
+
+let codeLanguageLoader: CodeLanguageLoader | null = null;
+
+/** Wire up a dynamic language-grammar loader. Must be called from app source
+ *  (not a pre-bundled dependency) so the bundler can split grammars into chunks. */
+export function registerCodeLanguageLoader(loader: CodeLanguageLoader | null): void {
+  codeLanguageLoader = loader;
+}
+
+function isLanguageRegistered(lang: string): boolean {
+  return CODE_LANGUAGE_SET.has(lang) || dynamicallyLoaded.has(lang);
+}
+
+async function loadPrismLanguage(lang: string): Promise<void> {
+  if (isLanguageRegistered(lang)) return;
+  try {
+    const grammar = codeLanguageLoader ? await codeLanguageLoader(lang) : null;
+    if (grammar) SyntaxHighlighter.registerLanguage(lang, grammar);
+    dynamicallyLoaded.add(lang);
+  } catch {
+    dynamicallyLoaded.add(lang);
+  }
+}
+
 // AVL-aligned style overrides for .orb token classes
 const orbStyleOverrides: Record<string, React.CSSProperties> = {
   'orb-binding':     { color: ORB_COLORS.dark.binding, fontWeight: 'bold' },
@@ -215,12 +254,13 @@ export type CodeLanguage = (typeof CODE_LANGUAGES)[number];
 const CODE_LANGUAGE_SET = new Set<string>(CODE_LANGUAGES);
 
 /**
- * Narrow an arbitrary string (e.g. a markdown fence info-string) to a
- * `CodeLanguage`, falling back to `'text'` for any value without a registered
- * grammar — matching the highlighter's own plain-text fallback.
+ * Normalize a fence info-string to a language id. Known languages pass through
+ * as-is; unknown ids also pass through so they can be dynamically loaded by
+ * `CodeBlock` (falling back to plain text if no Prism grammar exists).
  */
-export function toCodeLanguage(value: string | undefined): CodeLanguage {
-  return value && CODE_LANGUAGE_SET.has(value) ? (value as CodeLanguage) : 'text';
+export function toCodeLanguage(value: string | undefined): string {
+  if (!value) return 'text';
+  return value.toLowerCase();
 }
 
 // ── Viewer types (absorbed from CodeViewer) ──────────────────────────────────
@@ -249,8 +289,8 @@ export interface CodeViewerFile {
 export interface CodeBlockProps {
   /** The code content to display */
   code?: string;
-  /** Programming language for syntax highlighting */
-  language?: CodeLanguage;
+  /** Programming language for syntax highlighting (any Prism id; loaded on demand if not pre-registered) */
+  language?: string;
   /** Show the copy button */
   showCopyButton?: boolean;
   /** Show the language badge */
@@ -347,6 +387,22 @@ const DIFF_STYLE_FALLBACK: { bg: string; prefix: string; text: string } = { bg: 
 const LINE_PROPS_FN = (n: number): React.HTMLProps<HTMLElement> => ({ 'data-line': String(n - 1) } as React.HTMLProps<HTMLElement>);
 const HIDDEN_LINE_NUMBERS: React.CSSProperties = { display: 'none' };
 
+/** Loads the Prism grammar for `language` on demand; returns readiness so the
+ *  highlight re-renders once the lazy chunk arrives. */
+function useLanguageReady(language: string): boolean {
+  const [ready, setReady] = useState(() => isLanguageRegistered(language));
+  useEffect(() => {
+    if (isLanguageRegistered(language)) {
+      if (!ready) setReady(true);
+      return;
+    }
+    let active = true;
+    loadPrismLanguage(language).then(() => { if (active) setReady(true); });
+    return () => { active = false; };
+  }, [language]);
+  return ready;
+}
+
 export const CodeBlock = React.memo<CodeBlockProps>(
   ({
     code: rawCode,
@@ -377,6 +433,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     const isOrb = language === 'orb';
     const isLolo = language === 'lolo';
     const activeStyle = isOrb ? orbStyle : isLolo ? loloStyle : dark;
+    const languageReady = useLanguageReady(language);
     const eventBus = useEventBus();
     const { t } = useTranslate();
     const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -390,7 +447,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
 
     const activeFile = files?.[activeFileIndex];
     const activeCode = activeFile?.code ?? code;
-    const activeLanguage = (activeFile?.language ?? language) as CodeLanguage;
+    const activeLanguage: string = activeFile?.language ?? language;
 
     const diffLines = useMemo(() => {
       if (propDiff) return propDiff;
@@ -532,7 +589,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
           {code}
         </SyntaxHighlighter>
       ),
-      [code, language, activeStyle],
+      [code, language, activeStyle, languageReady],
     );
 
     // ── DOM-level fold UI (no re-tokenization, just style + element injection) ──

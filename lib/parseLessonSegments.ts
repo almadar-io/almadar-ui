@@ -9,7 +9,7 @@
  * until the next recognised tag, a section heading (`\n\n#`), or end-of-input.
  */
 
-import type { BloomLevel } from './BloomQuizBlock';
+import type { BloomLevel } from '../components/core/molecules/BloomQuizBlock';
 import { parseMarkdownWithCodeBlocks, type MixedSegment } from './lessonSegmentUtils';
 
 // ── Segment types ─────────────────────────────────────────────────────────────

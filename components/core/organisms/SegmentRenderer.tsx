@@ -22,8 +22,7 @@ import { ReflectionBlock } from '../molecules/ReflectionBlock';
 import { BloomQuizBlock } from '../molecules/BloomQuizBlock';
 import { CodeRunnerPanel, type CodeSimulationOutput } from './CodeRunnerPanel';
 import { cn } from '../../../lib/cn';
-import type { LessonSegment, LessonUserProgress, InteractiveOrbitalType } from '../molecules/parseLessonSegments';
-import type { CodeLanguage } from '../molecules/markdown/CodeBlock';
+import type { LessonSegment, LessonUserProgress, InteractiveOrbitalType } from '../../../lib/parseLessonSegments';
 
 export type { LessonSegment, LessonUserProgress, CodeSimulationOutput };
 
@@ -90,7 +89,7 @@ export const SegmentRenderer: React.FC<SegmentRendererProps> = ({
           return (
             <CodeBlock
               key={`code-${index}`}
-              language={(segment.language ?? 'text') as CodeLanguage}
+              language={segment.language ?? 'text'}
               code={segment.content}
             />
           );
