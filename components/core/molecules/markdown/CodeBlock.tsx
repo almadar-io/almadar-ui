@@ -76,6 +76,7 @@ import langPowershell from 'react-syntax-highlighter/dist/esm/languages/prism/po
 import langMakefile from 'react-syntax-highlighter/dist/esm/languages/prism/makefile.js';
 import langNginx from 'react-syntax-highlighter/dist/esm/languages/prism/nginx.js';
 import langIni from 'react-syntax-highlighter/dist/esm/languages/prism/ini.js';
+import langClike from 'react-syntax-highlighter/dist/esm/languages/prism/clike.js';
 
 // Register built-in languages
 SyntaxHighlighter.registerLanguage('json', langJson);
@@ -153,6 +154,10 @@ SyntaxHighlighter.registerLanguage('makefile', langMakefile);
 SyntaxHighlighter.registerLanguage('make', langMakefile);
 SyntaxHighlighter.registerLanguage('nginx', langNginx);
 SyntaxHighlighter.registerLanguage('ini', langIni);
+// C-like base grammar: registered on demand as a fallback for obscure
+// languages with no dedicated grammar, so they still get basic token coloring
+// (comments, strings, numbers, keywords, operators).
+SyntaxHighlighter.registerLanguage('clike', langClike);
 
 // Register .orb and .lolo languages from @almadar/syntax (refractor-compatible)
 SyntaxHighlighter.registerLanguage('orb', orbLanguage);
@@ -190,7 +195,10 @@ async function loadPrismLanguage(lang: string): Promise<void> {
   if (isLanguageRegistered(lang)) return;
   try {
     const grammar = codeLanguageLoader ? await codeLanguageLoader(lang) : null;
-    if (grammar) SyntaxHighlighter.registerLanguage(lang, grammar);
+    // Fallback: no dedicated grammar → register the generic C-like base grammar
+    // under this language id so obscure code still gets basic token coloring
+    // (comments, strings, numbers, keywords) instead of plain text.
+    SyntaxHighlighter.registerLanguage(lang, grammar ?? langClike);
     dynamicallyLoaded.add(lang);
   } catch {
     dynamicallyLoaded.add(lang);
@@ -1030,7 +1038,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     const hasHeader = showLanguageBadge || effectiveCopy;
 
     return (
-      <Box className={`relative group ${className || ''}`} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <Box className={`relative group not-prose ${className || ''}`} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         {hasHeader && (
           <HStack
             justify="between"

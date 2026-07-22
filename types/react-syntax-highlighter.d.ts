@@ -190,3 +190,7 @@ declare module 'react-syntax-highlighter/dist/esm/languages/prism/nginx.js' {
 declare module 'react-syntax-highlighter/dist/esm/languages/prism/ini.js' {
   export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/ini';
 }
+
+declare module 'react-syntax-highlighter/dist/esm/languages/prism/clike.js' {
+  export { default } from 'react-syntax-highlighter/dist/esm/languages/prism/clike';
+}
