@@ -1702,8 +1702,18 @@ export function useTraitStateMachine(
                 const effectTraces: EffectTrace[] = result.effects.map(
                     (e: SExpr): EffectTrace => {
                         if (Array.isArray(e)) {
+                            const head = String(e[0] ?? 'unknown');
+                            // fetch: ["fetch", Entity, ...]; persist single-
+                            // record: ["persist", action, Entity, ...].
+                            const entityName =
+                                head === 'fetch' && typeof e[1] === 'string'
+                                    ? e[1]
+                                    : head === 'persist' && typeof e[2] === 'string'
+                                        ? e[2]
+                                        : undefined;
                             return {
-                                type: String(e[0] ?? 'unknown'),
+                                type: head,
+                                ...(entityName !== undefined ? { entityName } : {}),
                                 args: e.slice(1),
                                 status: 'executed' as const,
                             };
