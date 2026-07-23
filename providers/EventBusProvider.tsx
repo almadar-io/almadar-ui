@@ -50,7 +50,9 @@ export const EventBusContext = createContext<EventBusContextTypeExtended | null>
 // ============================================================================
 
 interface EventBusProviderProps {
-  children: ReactNode;
+  // Optional: createElement passes children positionally (see
+  // TraitScopeProviderProps for the TS2769 rationale).
+  children?: ReactNode;
   /**
    * @deprecated No-op. Logging is now gated by `@almadar/logger` —
    * use `setLogLevel('DEBUG')` or `setNamespaceLevel('almadar:eventbus', 'DEBUG')`

@@ -57,7 +57,10 @@ const TraitScopeContext = createContext<TraitScopeChain | null>(null);
 export interface TraitScopeProviderProps {
   orbital: string;
   trait: string;
-  children: React.ReactNode;
+  // Optional: React.createElement passes children POSITIONALLY (third arg),
+  // and a required children prop makes those call sites fail tsc (TS2769)
+  // even though children are provided.
+  children?: React.ReactNode;
 }
 
 /**
