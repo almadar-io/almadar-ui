@@ -66,6 +66,9 @@ export interface DataGridItemAction {
   label: string;
   /** Event name to emit (dispatched as UI:{event} with { row: itemData }) */
   event: EventKey;
+  /** Route to navigate to instead of (or after) emitting — `{{row.field}}`
+   *  placeholders interpolate from the item row (CardGrid's contract). */
+  navigatesTo?: string;
   /** Lucide icon name or component */
   icon?: IconInput;
   /** Button variant */
@@ -334,6 +337,12 @@ export function DataGrid({
       row: itemData,
     };
     eventBus.emit(`UI:${action.event}`, payload);
+    if (action.navigatesTo) {
+      const url = action.navigatesTo.replace(/\{\{row\.(\w+(?:\.\w+)*)\}\}/g, (_, field: string) =>
+        String(itemData[field] ?? ''),
+      );
+      eventBus.emit('UI:NAVIGATE', { url });
+    }
   };
 
   const hasRenderProp = typeof children === 'function';

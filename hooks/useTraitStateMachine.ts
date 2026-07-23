@@ -568,7 +568,7 @@ export function useTraitStateMachine(
 
     // Actor model queue: events are enqueued and drained one at a time,
     // awaiting all effects before processing the next event.
-    const eventQueueRef = useRef<Array<{ eventKey: string; payload?: EventPayload }>>([]);
+    const eventQueueRef = useRef<Array<{ eventKey: string; payload?: EventPayload; targetTrait?: string }>>([]);
     const processingRef = useRef(false);
 
     // Trait names whose mount-time lifecycle event (INIT/LOAD/$MOUNT) has
@@ -1500,7 +1500,13 @@ export function useTraitStateMachine(
      */
     const processEventQueued = useCallback(async (
         eventKey: string,
-        payload?: EventPayload
+        payload?: EventPayload,
+        // Scoped-listen delivery: dispatch to THIS trait only. A listens-
+        // matched trigger is addressed to the LISTENING trait; broadcasting
+        // it to every bound trait made a trigger renamed to INIT re-run the
+        // source's own initializer (fetch → re-emit → re-trigger — the
+        // R-SCOPED-LISTEN-INIT-RENAME-FREEZE permanent loop).
+        targetTrait?: string
     ): Promise<void> => {
         const normalizedEvent = normalizeEventKey(eventKey);
         const bindings = traitBindingsRef.current;
@@ -1558,7 +1564,9 @@ export function useTraitStateMachine(
             normalizedEvent,
             payload,
             undefined,
-            entityByTrait
+            entityByTrait,
+            undefined,
+            targetTrait,
         );
         crossTraitLog.debug('processEvent:results', {
             event: normalizedEvent,
@@ -1764,7 +1772,16 @@ export function useTraitStateMachine(
                 const orbital = orbitalsByTrait?.[traitName];
                 if (orbital) dispatchedOrbitals.add(orbital);
             }
-            await onEventProcessed(normalizedEvent, payload, dispatchedOrbitals);
+            // Scoped-listen delivery survives the server relay: the server
+            // extracts `_targetTrait` (the `_activeTraits` sidecar pattern)
+            // and restricts its own dispatch to the listening trait —
+            // otherwise the relayed trigger broadcasts orbital-wide and a
+            // trigger renamed to INIT re-runs the source's initializer
+            // (R-SCOPED-LISTEN-INIT-RENAME-FREEZE's server half).
+            const relayPayload = targetTrait !== undefined
+                ? { ...(payload ?? {}), _targetTrait: targetTrait }
+                : payload;
+            await onEventProcessed(normalizedEvent, relayPayload, dispatchedOrbitals);
         }
     }, [entities, eventBus, sharedEntityStore]);
 
@@ -1785,7 +1802,7 @@ export function useTraitStateMachine(
         try {
             while (eventQueueRef.current.length > 0) {
                 const entry = eventQueueRef.current.shift()!;
-                await processEventQueued(entry.eventKey, entry.payload);
+                await processEventQueued(entry.eventKey, entry.payload, entry.targetTrait);
             }
         } finally {
             processingRef.current = false;
@@ -1798,8 +1815,8 @@ export function useTraitStateMachine(
      * This replaces direct processEvent calls. Events arriving while the queue
      * is draining (e.g. from emit effects) are appended and processed in order.
      */
-    const enqueueAndDrain = useCallback((eventKey: string, payload?: EventPayload) => {
-        eventQueueRef.current.push({ eventKey, payload });
+    const enqueueAndDrain = useCallback((eventKey: string, payload?: EventPayload, targetTrait?: string) => {
+        eventQueueRef.current.push({ eventKey, payload, targetTrait });
         void drainEventQueue();
     }, [drainEventQueue]);
 
@@ -1963,7 +1980,7 @@ export function useTraitStateMachine(
                 crossTraitLog.debug('listen:subscribed', { busKey, targetTrait: binding.trait.name, sourceOrbital, sourceTrait, listenEvent: listen.event, triggers: listen.triggers });
                 const unsub = eventBus.on(busKey, (event) => {
                     crossTraitLog.debug('listen:fired', { busKey, targetTrait: binding.trait.name, triggers: listen.triggers });
-                    enqueueAndDrain(listen.triggers, event.payload);
+                    enqueueAndDrain(listen.triggers, event.payload, binding.trait.name);
                 });
                 unsubscribes.push(() => {
                     crossTraitLog.debug('listen:unsubscribe', { busKey, targetTrait: binding.trait.name, triggers: listen.triggers });

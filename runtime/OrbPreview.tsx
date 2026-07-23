@@ -942,6 +942,21 @@ export function OrbPreview({
     }
   }, [pages]);
 
+  // `UI:NAVIGATE` consumer: itemActions' `navigatesTo` (CardGrid/DataGrid
+  // interpolate `{{row.field}}` then emit `UI:NAVIGATE {url}`) routes through
+  // the same page switcher as every other navigation. Previously the emit had
+  // no listener in the standalone preview and fired into the void
+  // (C-ITEMACTION-HREF-CONTRACT-DIVERGENCE).
+  useEffect(() => {
+    const unsubscribe = eventBus.on('UI:NAVIGATE', (event) => {
+      const url = event.payload?.url;
+      if (typeof url === 'string' && url.length > 0) {
+        handleNavigate(url);
+      }
+    });
+    return unsubscribe;
+  }, [eventBus, handleNavigate]);
+
   if (!parseResult.ok) {
     return (
       <Box className={className} style={{ height }}>

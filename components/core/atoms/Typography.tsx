@@ -25,7 +25,8 @@ export type TypographyVariant =
   | "large"
   | "label";
 
-export type TypographySize = "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl";
+/** `none` = no size override — the variant's baked size applies. */
+export type TypographySize = "none" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl" | "3xl";
 
 export interface TypographyProps {
   /** Typography variant */
@@ -43,8 +44,8 @@ export interface TypographyProps {
   | "inherit";
   /** Text alignment */
   align?: "left" | "center" | "right";
-  /** Font weight override */
-  weight?: "light" | "normal" | "medium" | "semibold" | "bold";
+  /** Font weight override — `none` = no override, the variant's baked weight applies */
+  weight?: "none" | "light" | "normal" | "medium" | "semibold" | "bold";
   /** Font size override */
   size?: TypographySize;
   /** Truncate with ellipsis (single line) */
@@ -97,6 +98,11 @@ const colorStyles = {
 };
 
 const weightStyles = {
+  // Neutral: an atom default of "none" must not override the variant's baked
+  // weight (C-PATTERN-ENUM-BLOCKS-NEUTRAL-OVERRIDE — `variant={h2}` rendered
+  // tiny because the ui-typography atom's `weight: light`/`size: xs` defaults
+  // clobbered every variant).
+  none: "",
   light: "font-light",
   normal: "font-normal",
   medium: "font-medium",
@@ -125,6 +131,7 @@ const defaultElements: Record<TypographyVariant, keyof React.JSX.IntrinsicElemen
 };
 
 const typographySizeStyles: Record<TypographySize, string> = {
+  none: "",
   xs: "text-xs",
   sm: "text-sm",
   md: "text-base",

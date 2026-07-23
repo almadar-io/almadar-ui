@@ -192,7 +192,7 @@ export default defineConfig([
     format: ['esm', 'cjs'],
     dts: true,
     outDir: 'dist',
-    clean: true,
+    clean: false, // shared outDir: only the main build cleans — a later clean races away the main build's dts output
     sourcemap: false,
     splitting: false,
     treeshake: true,
@@ -207,7 +207,7 @@ export default defineConfig([
     format: ['esm', 'cjs'],
     dts: true,
     outDir: 'dist',
-    clean: true,
+    clean: false, // shared outDir: only the main build cleans — a later clean races away the main build's dts output
     sourcemap: false,
     splitting: false,
     treeshake: true,

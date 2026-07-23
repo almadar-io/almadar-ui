@@ -9,6 +9,7 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
+import type { EventKey } from '@almadar/core';
 import { Search } from 'lucide-react';
 import { Input } from '../atoms/Input';
 import { Spinner } from '../atoms/Spinner';
@@ -58,11 +59,8 @@ export interface SearchInputProps extends Omit<React.InputHTMLAttributes<HTMLInp
    */
   className?: string;
 
-  /**
-   * Event name to dispatch on search (schema metadata, wired by trait)
-   * This is metadata used by the trait generator, not by the component.
-   */
-  event?: string;
+  /** Declarative search event — emits UI:{event} via eventBus on query submit (alongside canonical UI:SEARCH) */
+  event?: EventKey;
 
   /**
    * Entity type for context-aware search.
@@ -125,8 +123,10 @@ export const SearchInput: React.FC<SearchInputProps> = ({
       // Call callback if provided
       onSearch?.(newValue);
 
-      // Emit event if event name is provided (schema-driven)
-      if (event) {
+      // Emit event if event name is provided (schema-driven). A knob left at
+      // the canonical default emits once via the generic UI:SEARCH below, not
+      // twice.
+      if (event && event !== 'SEARCH') {
         eventBus.emit(`UI:${event}`, { searchTerm: newValue, entity });
       }
 

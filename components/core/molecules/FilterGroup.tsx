@@ -14,6 +14,7 @@
  */
 
 import React, { useState, useCallback, useEffect } from "react";
+import type { EventKey } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Button } from "../atoms/Button";
 import { Input } from "../atoms/Input";
@@ -90,6 +91,10 @@ export interface FilterGroupProps {
   isLoading?: boolean;
   /** Layer 2 visual treatment — orthogonal to the semantic variant. */
   look?: FilterGroupLook;
+  /** Declarative filter event — emits UI:{event} via eventBus on filter change (alongside canonical UI:FILTER) */
+  event?: EventKey;
+  /** Declarative clear event — emits UI:{clearEvent} via eventBus on clear-all (alongside canonical UI:CLEAR_FILTERS) */
+  clearEvent?: EventKey;
 }
 
 // Layer 2 look styles target actual form controls (input / select / button)
@@ -121,6 +126,8 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
   query,
   isLoading,
   look = "toolbar",
+  event,
+  clearEvent,
 }) => {
   const { t } = useTranslate();
   const eventBus = useEventBus();
@@ -177,14 +184,22 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
       // string so the bus payload matches std-filter's `value : string!`
       // contract; std-browse REFETCH_FILTER short-circuits on '' to mean
       // 'no filter applied'.
-      eventBus.emit("UI:FILTER", {
+      const payload = {
         entity,
         field,
         value: value === "all" || value === null ? "" : value,
         query,
-      });
+      };
+      // Declarative configured event first (SearchInput's dual-emit shape):
+      // cross-trait listeners route the configured name; the canonical
+      // UI:FILTER below always drives the owning trait's own machine. A knob
+      // left at the canonical default emits once, not twice.
+      if (event && event !== "FILTER") {
+        eventBus.emit(`UI:${event}`, payload);
+      }
+      eventBus.emit("UI:FILTER", payload);
     },
-    [onFilterChange, queryState, eventBus, entity, query],
+    [onFilterChange, queryState, eventBus, entity, query, event],
   );
 
   const handleClearAll = useCallback(() => {
@@ -199,8 +214,11 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
     onClearAll?.();
 
     // Emit UI:CLEAR_FILTERS event for closed circuit
+    if (clearEvent && clearEvent !== "CLEAR_FILTERS") {
+      eventBus.emit(`UI:${clearEvent}`, { entity, query });
+    }
     eventBus.emit("UI:CLEAR_FILTERS", { entity, query });
-  }, [onClearAll, queryState, eventBus, entity, query]);
+  }, [onClearAll, queryState, eventBus, entity, query, clearEvent]);
 
   const activeFilterCount = Object.keys(selectedValues).length;
 
