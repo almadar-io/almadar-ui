@@ -377,6 +377,11 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     const root = document.documentElement;
     root.setAttribute("data-theme", appliedTheme);
 
+    // Set color-scheme so native form controls (<select> dropdowns, scrollbars,
+    // date pickers) render in the correct mode — without this, the OS dropdown
+    // background doesn't match the themed text color.
+    root.style.colorScheme = resolvedMode;
+
     // Also set class for Tailwind dark: variant compatibility
     root.classList.remove("light", "dark");
     root.classList.add(resolvedMode);
