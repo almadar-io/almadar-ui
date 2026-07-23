@@ -493,6 +493,17 @@ export function useUISlotManager(): UISlotManager {
         };
         const nextAll = { ...prev, [config.target]: nextSources };
 
+        // Contention onset: this write makes a second live writer for the slot.
+        // Almost always an unclaimed main-writer — detect, never arbitrate.
+        const priorWriters = Object.keys(slotSources);
+        if (priorWriters.length === 1 && priorWriters[0] !== sourceKey) {
+          log.warn('slot:contention', {
+            slot: config.target,
+            writers: [priorWriters[0], sourceKey],
+            patternTypes: [slotSources[priorWriters[0]].pattern, content.pattern],
+          });
+        }
+
         // Maintain the trait-scoped reverse index + notify per-trait
         // subscribers. The index stores one entry per trait regardless
         // of slot, so we don't remove the previous trait's entry just
