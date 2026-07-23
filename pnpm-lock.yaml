@@ -13,20 +13,20 @@ importers:
   .:
     dependencies:
       '@almadar/core':
-        specifier: ^10.30.0
-        version: 10.30.0
+        specifier: ^10.32.0
+        version: 10.32.0
       '@almadar/evaluator':
-        specifier: ^2.30.0
-        version: 2.30.0
+        specifier: ^2.32.0
+        version: 2.32.0
       '@almadar/logger':
         specifier: ^1.9.0
         version: 1.9.0
       '@almadar/runtime':
-        specifier: ^6.33.0
-        version: 6.33.0(express@5.2.1)
+        specifier: ^6.35.0
+        version: 6.35.0(express@5.2.1)
       '@almadar/std':
-        specifier: ^16.140.0
-        version: 16.140.0
+        specifier: ^16.142.0
+        version: 16.142.0
       '@almadar/syntax':
         specifier: ^1.11.0
         version: 1.11.0
@@ -227,22 +227,22 @@ packages:
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
 
-  '@almadar/core@10.30.0':
-    resolution: {integrity: sha512-rCkoCyo/Rb/SkwyVdbj5zyLzlllKdiPw6ZK6QzjVlDFs1UT885DmS2lcCoSlKwov1/rSMxupBcQq78CPfkHU4Q==}
+  '@almadar/core@10.32.0':
+    resolution: {integrity: sha512-/NccBhjxqjL6NbFIRJp4hVrmWt/4FW4izPBavYk+VRjpn4ligy5KJoQX53NYUInEzQOpjbAoufpoEKGE9n7nxQ==}
 
   '@almadar/eslint-plugin@2.14.0':
     resolution: {integrity: sha512-kBZ20xYQoLVHLqX5ZsfFgYUPDL1DRWwlKI00k4pvZy4a5fx4y2+47wa6O6Vq2sAZxjKCy7EDBoARIrKt9JOMkA==}
     peerDependencies:
       eslint: '>=8.0.0'
 
-  '@almadar/evaluator@2.30.0':
-    resolution: {integrity: sha512-FMlRoPzjK+1zfLQ8qq02eV9ho9cG19XdwAjAq3o6D6yccLnQmZWhQM0Vb1WBClbRCgiHrZlWLEdn8ozbdUxkBQ==}
+  '@almadar/evaluator@2.32.0':
+    resolution: {integrity: sha512-0OC8/g0RnKI9Jwq2r9fFEeWTrWTNFREH31DvA1SuPw8+6ySvJ7YTkR+CvIZ1aaWH0PQEmlfA+FLPFBvma6SJNQ==}
 
   '@almadar/logger@1.9.0':
     resolution: {integrity: sha512-863+UD4n3cP4tXReJFk6VpAc0mHzQxR6ehAroLKfy3ns09Yjs1v6y2oROiBMo0M18AmkwtitErNT+wqA5bj4sA==}
 
-  '@almadar/runtime@6.33.0':
-    resolution: {integrity: sha512-BhjV9+vZzirA1noX93DEt5GSKkuyHCogLmpfIv8TvzaxC8hVolomiEe+TtJfKOjdJsbUxS12CqGcVufuHBhApg==}
+  '@almadar/runtime@6.35.0':
+    resolution: {integrity: sha512-OdDOUi8D19rsULOtdWVSFw9xft+j91Gh9Fns+cCvszdrHcxeHaQ1Y7jmr2Ys/T1OkLZZaZ9w1al30fCdHx33ig==}
     peerDependencies:
       express: ^5.0.0
     peerDependenciesMeta:
@@ -258,8 +258,8 @@ packages:
       '@almadar-io/rabit':
         optional: true
 
-  '@almadar/std@16.140.0':
-    resolution: {integrity: sha512-Ynahq3pL0j0LF3lLnrO00Sqb719niFHxI5f5KeM2XTJejyxfqCpoV5dMt9ffPpPoeJF0eUaW4iTUcToZQtcVfA==}
+  '@almadar/std@16.142.0':
+    resolution: {integrity: sha512-moP8uKh0YyENwLiiWVuT3EwOL0s+QKFMcV415Qo34qLhjoHiSK7WCMq+R3xgv3/5fj3UZs2fuQEziW9Y4d+9Ow==}
 
   '@almadar/syntax@1.11.0':
     resolution: {integrity: sha512-r+ALQNzClsKnLrYko1n+l3eOfdDTV9zMe40aLEQEDWUvfgY/GiFtSouXqCmif6+WCL/+21KJ4du4Ya3fPhl9mQ==}
@@ -4090,7 +4090,7 @@ snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
 
-  '@almadar/core@10.30.0':
+  '@almadar/core@10.32.0':
     dependencies:
       zod: 3.25.76
 
@@ -4099,22 +4099,22 @@ snapshots:
       eslint: 10.0.0(jiti@1.21.7)
       jsonc-eslint-parser: 3.1.0
 
-  '@almadar/evaluator@2.30.0':
+  '@almadar/evaluator@2.32.0':
     dependencies:
-      '@almadar/core': 10.30.0
-      '@almadar/std': 16.140.0
+      '@almadar/core': 10.32.0
+      '@almadar/std': 16.142.0
 
   '@almadar/logger@1.9.0':
     dependencies:
-      '@almadar/core': 10.30.0
+      '@almadar/core': 10.32.0
 
-  '@almadar/runtime@6.33.0(express@5.2.1)':
+  '@almadar/runtime@6.35.0(express@5.2.1)':
     dependencies:
-      '@almadar/core': 10.30.0
-      '@almadar/evaluator': 2.30.0
+      '@almadar/core': 10.32.0
+      '@almadar/evaluator': 2.32.0
       '@almadar/logger': 1.9.0
       '@almadar/server': 2.25.0(express@5.2.1)
-      '@almadar/std': 16.140.0
+      '@almadar/std': 16.142.0
     optionalDependencies:
       express: 5.2.1
     transitivePeerDependencies:
@@ -4126,7 +4126,7 @@ snapshots:
 
   '@almadar/server@2.25.0(express@5.2.1)':
     dependencies:
-      '@almadar/core': 10.30.0
+      '@almadar/core': 10.32.0
       '@almadar/logger': 1.9.0
       '@faker-js/faker': 9.9.0
       cors: 2.8.6
@@ -4142,14 +4142,14 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@almadar/std@16.140.0':
+  '@almadar/std@16.142.0':
     dependencies:
-      '@almadar/core': 10.30.0
+      '@almadar/core': 10.32.0
 
   '@almadar/syntax@1.11.0':
     dependencies:
-      '@almadar/core': 10.30.0
-      '@almadar/std': 16.140.0
+      '@almadar/core': 10.32.0
+      '@almadar/std': 16.142.0
 
   '@asamuzakjp/css-color@3.2.0':
     dependencies:
