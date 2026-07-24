@@ -42,7 +42,7 @@ export function DayCell({
     <Box
       className={cn(
         "p-2 text-center cursor-pointer hover:bg-muted transition-colors",
-        isToday && "bg-blue-500/10",
+        isToday && "bg-primary/10",
         className,
       )}
       onClick={handleClick}
@@ -52,7 +52,7 @@ export function DayCell({
         className={cn(
           "font-medium",
           isToday
-            ? "text-blue-600"
+            ? "text-primary"
             : "text-muted-foreground",
         )}
       >
@@ -63,7 +63,7 @@ export function DayCell({
         rounded="full"
         className={cn(
           "h-8 w-8 mx-auto items-center justify-center",
-          isToday && "bg-blue-600 text-white",
+          isToday && "bg-primary text-primary-foreground",
         )}
       >
         <Typography variant="body" className="font-semibold">

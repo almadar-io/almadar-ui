@@ -64,9 +64,10 @@ export interface DataGridField {
 export interface DataGridItemAction {
   /** Button label */
   label: string;
-  /** Event name to emit (dispatched as UI:{event} with { row: itemData }) */
-  event: EventKey;
-  /** Route to navigate to instead of (or after) emitting — `{{row.field}}`
+  /** Event name to emit (dispatched as UI:{event} with { row: itemData }).
+   *  Optional when `navigatesTo` is set — a navigating action never emits. */
+  event?: EventKey;
+  /** Route to navigate to instead of emitting — `{{row.field}}`
    *  placeholders interpolate from the item row (CardGrid's contract). */
   navigatesTo?: string;
   /** Lucide icon name or component */
@@ -330,19 +331,28 @@ export function DataGrid({
   const primaryActions = actionDefs.filter((a) => a.variant !== 'danger');
   const dangerActions = actionDefs.filter((a) => a.variant === 'danger');
 
-  const handleActionClick = (action: DataGridItemAction, itemData: EntityRow) => (e: React.MouseEvent) => {
-    e.stopPropagation();
+  // navigatesTo-first with early return (mirrors CardGrid): a navigating
+  // action must not also emit — the old order double-fired and emitted
+  // `UI:undefined` for event-less actions. ONE firing path for inline
+  // buttons and the overflow menu alike.
+  const fireAction = (action: DataGridItemAction, itemData: EntityRow) => {
+    if (action.navigatesTo) {
+      const url = action.navigatesTo.replace(/\{\{row\.(\w+(?:\.\w+)*)\}\}/g, (_, field: string) =>
+        String(itemData[field] ?? ''),
+      );
+      eventBus.emit('UI:NAVIGATE', { url, row: itemData });
+      return;
+    }
     const payload: ItemActionPayload = {
       id: itemData.id as string | number,
       row: itemData,
     };
     eventBus.emit(`UI:${action.event}`, payload);
-    if (action.navigatesTo) {
-      const url = action.navigatesTo.replace(/\{\{row\.(\w+(?:\.\w+)*)\}\}/g, (_, field: string) =>
-        String(itemData[field] ?? ''),
-      );
-      eventBus.emit('UI:NAVIGATE', { url });
-    }
+  };
+
+  const handleActionClick = (action: DataGridItemAction, itemData: EntityRow) => (e: React.MouseEvent) => {
+    e.stopPropagation();
+    fireAction(action, itemData);
   };
 
   const hasRenderProp = typeof children === 'function';
@@ -507,11 +517,7 @@ export function DataGrid({
                             label: action.label,
                             icon: action.icon,
                             event: action.event,
-                            onClick: () =>
-                              eventBus.emit(`UI:${action.event}`, {
-                                id: itemData.id as string | number,
-                                row: itemData as ItemActionPayload['row'],
-                              }),
+                            onClick: () => fireAction(action, itemData),
                           }))}
                         />
                       )}
@@ -693,11 +699,7 @@ export function DataGrid({
                         label: action.label,
                         icon: action.icon,
                         event: action.event,
-                        onClick: () =>
-                          eventBus.emit(`UI:${action.event}`, {
-                            id: itemData.id as string | number,
-                            row: itemData as ItemActionPayload['row'],
-                          }),
+                        onClick: () => fireAction(action, itemData),
                       }))}
                     />
                   )}

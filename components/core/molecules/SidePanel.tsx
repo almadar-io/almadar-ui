@@ -101,7 +101,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
       {showOverlay && (
         <Presence show={isOpen} animation="overlay">
           <Box
-            className="fixed inset-0 bg-white/80 backdrop-blur-sm z-40 lg:hidden"
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden"
             onClick={handleClose}
           />
         </Presence>

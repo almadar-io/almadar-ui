@@ -32,11 +32,11 @@ export function TraitsTab({ traits }: TraitsTabProps) {
         id: trait.id,
         header: (
             <div className="flex items-center gap-2 w-full">
-                <Typography variant="body" weight="semibold" className="text-purple-600 dark:text-purple-400">
+                <Typography variant="body" weight="semibold" className="text-primary">
                     {trait.name}
                 </Typography>
                 <Badge variant="success" size="sm">{trait.currentState}</Badge>
-                <Typography variant="small" className="text-gray-500 ml-auto">
+                <Typography variant="small" className="text-muted-foreground ml-auto">
                     {t('debug.transitionsCount', { count: trait.transitionCount })}
                 </Typography>
             </div>
@@ -45,7 +45,7 @@ export function TraitsTab({ traits }: TraitsTabProps) {
             <Stack gap="sm">
                 {/* States */}
                 <div>
-                    <Typography variant="small" weight="medium" className="text-gray-500 mb-2">{t('debug.states')}</Typography>
+                    <Typography variant="small" weight="medium" className="text-muted-foreground mb-2">{t('debug.states')}</Typography>
                     <div className="flex flex-wrap gap-1">
                         {trait.states.map(state => (
                             <Badge
@@ -62,12 +62,12 @@ export function TraitsTab({ traits }: TraitsTabProps) {
                 {/* Transitions */}
                 {trait.transitions.length > 0 && (
                     <div>
-                        <Typography variant="small" weight="medium" className="text-gray-500 mb-2">{t('debug.transitions')}</Typography>
+                        <Typography variant="small" weight="medium" className="text-muted-foreground mb-2">{t('debug.transitions')}</Typography>
                         <Stack gap="xs">
                             {trait.transitions.map((t, i) => (
                                 <Typography key={i} variant="small" className="font-mono">
-                                    {t.from} → {t.to} <span className="text-gray-500">({t.event})</span>
-                                    {t.guard && <span className="text-amber-500"> [{t.guard}]</span>}
+                                    {t.from} → {t.to} <span className="text-muted-foreground">({t.event})</span>
+                                    {t.guard && <span className="text-warning"> [{t.guard}]</span>}
                                 </Typography>
                             ))}
                         </Stack>
@@ -77,7 +77,7 @@ export function TraitsTab({ traits }: TraitsTabProps) {
                 {/* Guards */}
                 {trait.guards.length > 0 && (
                     <div>
-                        <Typography variant="small" weight="medium" className="text-gray-500 mb-2">{t('debug.guards')}</Typography>
+                        <Typography variant="small" weight="medium" className="text-muted-foreground mb-2">{t('debug.guards')}</Typography>
                         <Stack gap="xs">
                             {trait.guards.map((g, i) => (
                                 <div key={i} className="flex items-center justify-between">

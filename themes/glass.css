@@ -1,92 +1,97 @@
 /**
- * Minimalist Theme
+ * Glass Theme — "Glassmorphism"
  *
- * Clean, subtle, refined. Uses soft shadows, thin borders,
- * and gentle curves for a premium, modern feel.
- * Elegant hover effects and smooth transitions.
+ * Frosted-glass surfaces in the Apple/macOS Big Sur lineage. Cards, surfaces,
+ * and muted fills are translucent rgba layers floating over a softly tinted
+ * background, edged by hairline luminous borders and lifted by soft layered
+ * shadows with a subtle colored glow. Large radii, light Inter weights, and
+ * springy slightly-slow motion give every interaction a glassy settle; the
+ * companion backdrop-filter rules at the bottom of the file supply the blur.
  */
 
 /* ==========================================================================
  * LIGHT MODE
  * ========================================================================== */
-[data-theme="minimalist-light"] {
-    /* Shadows - Soft, layered */
-    --shadow-main: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+[data-theme="glass-light"] {
+    /* Shadows - Soft layered with a subtle indigo glow */
+    --shadow-main:
+        0 4px 16px rgba(99, 102, 241, 0.1), 0 2px 6px rgba(15, 23, 42, 0.05);
+    --shadow-sm: 0 1px 6px rgba(99, 102, 241, 0.08);
     --shadow-lg:
-        0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-    --shadow-inner: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+        0 12px 32px rgba(99, 102, 241, 0.14), 0 4px 12px rgba(15, 23, 42, 0.06);
+    --shadow-inner: inset 0 1px 4px rgba(99, 102, 241, 0.08);
     --shadow-none: none;
-    --shadow-hover: 0 10px 40px -10px rgba(0, 0, 0, 0.15);
-    --shadow-active: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-hover:
+        0 12px 36px rgba(99, 102, 241, 0.2), 0 4px 12px rgba(139, 92, 246, 0.08);
+    --shadow-active: 0 2px 8px rgba(99, 102, 241, 0.12);
 
-    /* Border radius - Gentle curves */
+    /* Border radius - Large, soft glass panes */
     --radius-none: 0px;
-    --radius-sm: 4px;
-    --radius-md: 10px;
-    --radius-lg: 14px;
-    --radius-xl: 16px;
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 18px;
+    --radius-xl: 20px;
     --radius-full: 9999px;
 
-    /* Border width - Thin, delicate */
+    /* Border width - Hairline luminous edges */
     --border-width: 1px;
     --border-width-thin: 1px;
     --border-width-thick: 2px;
 
-    /* Colors - Subtle contrast with soft grays */
-    --color-primary: #18181b;
-    --color-primary-hover: #27272a;
-    --color-primary-foreground: #fafafa;
+    /* Colors - Cool periwinkle light with translucent panes */
+    --color-primary: #5b5df0;
+    --color-primary-hover: #4f46e5;
+    --color-primary-foreground: #ffffff;
 
-    --color-secondary: #fafafa;
-    --color-secondary-hover: #f4f4f5;
-    --color-secondary-foreground: #18181b;
+    --color-secondary: rgba(255, 255, 255, 0.55);
+    --color-secondary-hover: rgba(255, 255, 255, 0.7);
+    --color-secondary-foreground: #3f3d56;
 
-    --color-accent: #18181b;
-    --color-accent-foreground: #fafafa;
+    --color-accent: #8347f3;
+    --color-accent-foreground: #ffffff;
 
-    --color-muted: #f4f4f5;
-    --color-muted-foreground: #65656e;
+    --color-muted: rgba(255, 255, 255, 0.5);
+    --color-muted-foreground: #5d6a7f;
 
-    --color-background: #f8fafc;
-    --color-foreground: #18181b;
-    --color-card: #ffffff;
-    --color-card-foreground: #18181b;
-    --color-surface: #f4f4f5;
-    --color-border: #e4e4e7;
-    --color-input: #d4d4d8;
-    --color-ring: #18181b;
+    --color-background: #eef1f8;
+    --color-foreground: #1e2235;
+    --color-card: rgba(255, 255, 255, 0.62);
+    --color-card-foreground: #1e2235;
+    --color-surface: rgba(255, 255, 255, 0.55);
+    --color-border: rgba(255, 255, 255, 0.65);
+    --color-input: rgba(99, 102, 241, 0.25);
+    --color-ring: #6366f1;
 
     /* Semantic colors */
-    --color-error: #dc2626;
+    --color-error: #e11d48;
     --color-error-foreground: #ffffff;
-    --color-success: #15803d;
+    --color-success: #047857;
     --color-success-foreground: #ffffff;
-    --color-warning: #ca8a04;
+    --color-warning: #d97706;
     --color-warning-foreground: #000000;
-    --color-info: #2563eb;
+    --color-info: #0270ae;
     --color-info-foreground: #ffffff;
 
-    /* Typography - Light, elegant */
+    /* Typography - Light, airy Inter */
     --font-family:
-        "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-weight-normal: 400;
     --font-weight-medium: 500;
-    --font-weight-bold: 600;
+    --font-weight-bold: 650;
     --letter-spacing: -0.01em;
     --line-height: 1.6;
 
-    /* Icon styling - Thin, refined */
+    /* Icon styling */
     --icon-stroke-width: 1.5;
-    --icon-color: currentColor;
+    --icon-color: #6366f1;
 
-    /* Transitions - Smooth, elegant */
-    --transition-fast: 150ms;
-    --transition-normal: 250ms;
-    --transition-slow: 400ms;
-    --transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+    /* Transitions - Springy, glassy settle */
+    --transition-fast: 120ms;
+    --transition-normal: 220ms;
+    --transition-slow: 320ms;
+    --transition-timing: cubic-bezier(0.34, 1.3, 0.64, 1);
 
-    /* Hover/Active transforms - Subtle lift */
+    /* Hover/Active transforms - Gentle lift, like a pane catching light */
     --hover-scale: 1.01;
     --hover-translate-y: -1px;
     --hover-translate-x: 0;
@@ -96,7 +101,7 @@
     /* Focus ring */
     --focus-ring-width: 2px;
     --focus-ring-offset: 2px;
-    --focus-ring-color: #18181b;
+    --focus-ring-color: #6366f1;
 
     /* Layer 1 — backfill (preserves current visual output, see themes/_contract.md) */
     /* Density axis — spacing scale */
@@ -114,21 +119,21 @@
     --space-11: 44px;
     --space-12: 48px;
     /* Density axis — per-element heights */
-    --button-height-sm: 28px;
-    --button-height-md: 36px;
-    --button-height-lg: 44px;
-    --input-height-sm: 28px;
-    --input-height-md: 36px;
-    --input-height-lg: 44px;
-    --row-height-compact: 32px;
-    --row-height-normal: 40px;
-    --row-height-spacious: 48px;
+    --button-height-sm: 32px;
+    --button-height-md: 40px;
+    --button-height-lg: 48px;
+    --input-height-sm: 32px;
+    --input-height-md: 40px;
+    --input-height-lg: 48px;
+    --row-height-compact: 36px;
+    --row-height-normal: 44px;
+    --row-height-spacious: 52px;
     /* Density axis — per-element padding */
-    --card-padding-sm: 12px;
-    --card-padding-md: 16px;
-    --card-padding-lg: 24px;
-    --dialog-padding: 24px;
-    --section-gap: 32px;
+    --card-padding-sm: 16px;
+    --card-padding-md: 20px;
+    --card-padding-lg: 28px;
+    --dialog-padding: 28px;
+    --section-gap: 40px;
     /* Type axis — family triplet (aliases existing --font-family for backward compat) */
     --font-family-display: var(--font-family);
     --font-family-body: var(--font-family);
@@ -159,7 +164,7 @@
     --intent-heading-major-weight: var(--font-weight-bold);
     --intent-heading-major-leading: var(--leading-2xl);
     --intent-heading-minor-size: var(--text-lg);
-    --intent-heading-minor-weight: var(--font-weight-bold);
+    --intent-heading-minor-weight: var(--font-weight-medium);
     --intent-heading-minor-leading: var(--leading-lg);
     --intent-body-emphasis-size: var(--text-base);
     --intent-body-emphasis-weight: var(--font-weight-medium);
@@ -181,11 +186,11 @@
     --duration-fast: var(--transition-fast);
     --duration-normal: var(--transition-normal);
     --duration-slow: var(--transition-slow);
-    --duration-dramatic: 600ms;
+    --duration-dramatic: 800ms;
     /* Motion axis — easing palette */
     --easing-linear: linear;
     --easing-standard: var(--transition-timing);
-    --easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+    --easing-emphasized: cubic-bezier(0.22, 1, 0.36, 1);
     --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     /* Iconography axis */
     --icon-family: lucide;
@@ -196,7 +201,7 @@
     --elevation-dialog: var(--shadow-lg);
     --elevation-toast: var(--shadow-main);
     /* Geometry axis — radius rhythm with intent */
-    --radius-container: var(--radius-md);
+    --radius-container: var(--radius-lg);
     --radius-interactive: var(--radius-md);
     --radius-pill: var(--radius-full);
     /* Geometry axis — border-width rhythm */
@@ -208,84 +213,89 @@
 /* ==========================================================================
  * DARK MODE
  * ========================================================================== */
-[data-theme="minimalist-dark"] {
-    /* Shadows - Darker, more pronounced */
-    --shadow-main: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+[data-theme="glass-dark"] {
+    /* Shadows - Deep layered drops with an indigo/violet glow */
+    --shadow-main:
+        0 4px 18px rgba(0, 0, 0, 0.45), 0 0 14px rgba(129, 140, 248, 0.12);
+    --shadow-sm:
+        0 1px 6px rgba(0, 0, 0, 0.35), 0 0 8px rgba(129, 140, 248, 0.08);
     --shadow-lg:
-        0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
-    --shadow-inner: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+        0 14px 40px rgba(0, 0, 0, 0.55), 0 0 28px rgba(129, 140, 248, 0.16);
+    --shadow-inner:
+        inset 0 1px 4px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(129, 140, 248, 0.06);
     --shadow-none: none;
-    --shadow-hover: 0 10px 40px -10px rgba(0, 0, 0, 0.4);
-    --shadow-active: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-hover:
+        0 14px 44px rgba(0, 0, 0, 0.6), 0 0 32px rgba(167, 139, 250, 0.22);
+    --shadow-active:
+        0 2px 8px rgba(0, 0, 0, 0.4), 0 0 10px rgba(129, 140, 248, 0.1);
 
-    /* Border radius - Gentle curves */
+    /* Border radius - Large, soft glass panes */
     --radius-none: 0px;
-    --radius-sm: 4px;
-    --radius-md: 10px;
-    --radius-lg: 14px;
-    --radius-xl: 16px;
+    --radius-sm: 10px;
+    --radius-md: 14px;
+    --radius-lg: 18px;
+    --radius-xl: 20px;
     --radius-full: 9999px;
 
-    /* Border width - Thin, delicate */
+    /* Border width - Hairline luminous edges */
     --border-width: 1px;
     --border-width-thin: 1px;
     --border-width-thick: 2px;
 
-    /* Colors - Dark mode inverted */
-    --color-primary: #fafafa;
-    --color-primary-hover: #e4e4e7;
-    --color-primary-foreground: #18181b;
+    /* Colors - Deep indigo-slate with translucent panes */
+    --color-primary: #818cf8;
+    --color-primary-hover: #6b72f5;
+    --color-primary-foreground: #0b1020;
 
-    --color-secondary: #27272a;
-    --color-secondary-hover: #3f3f46;
-    --color-secondary-foreground: #fafafa;
+    --color-secondary: rgba(30, 36, 66, 0.55);
+    --color-secondary-hover: rgba(38, 45, 80, 0.65);
+    --color-secondary-foreground: #e2e5f4;
 
-    --color-accent: #fafafa;
-    --color-accent-foreground: #18181b;
+    --color-accent: #a78bfa;
+    --color-accent-foreground: #160b2e;
 
-    --color-muted: #27272a;
-    --color-muted-foreground: #a1a1aa;
+    --color-muted: rgba(30, 36, 66, 0.55);
+    --color-muted-foreground: #8f96b8;
 
-    --color-background: #09090b;
-    --color-foreground: #fafafa;
-    --color-card: #18181b;
-    --color-card-foreground: #fafafa;
-    --color-surface: #27272a;
-    --color-border: #27272a;
-    --color-input: #3f3f46;
-    --color-ring: #fafafa;
+    --color-background: #0b1020;
+    --color-foreground: #e7e9f5;
+    --color-card: rgba(22, 27, 51, 0.58);
+    --color-card-foreground: #e7e9f5;
+    --color-surface: rgba(30, 36, 66, 0.55);
+    --color-border: rgba(255, 255, 255, 0.14);
+    --color-input: rgba(255, 255, 255, 0.2);
+    --color-ring: #818cf8;
 
-    /* Semantic colors - Brighter for dark mode */
-    --color-error: #f87171;
+    /* Semantic colors - Soft-bright for dark mode */
+    --color-error: #fb7185;
     --color-error-foreground: #000000;
-    --color-success: #4ade80;
+    --color-success: #34d399;
     --color-success-foreground: #000000;
     --color-warning: #fbbf24;
     --color-warning-foreground: #000000;
-    --color-info: #60a5fa;
+    --color-info: #38bdf8;
     --color-info-foreground: #000000;
 
-    /* Typography */
+    /* Typography - Light, airy Inter */
     --font-family:
-        "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-weight-normal: 400;
     --font-weight-medium: 500;
-    --font-weight-bold: 600;
+    --font-weight-bold: 650;
     --letter-spacing: -0.01em;
     --line-height: 1.6;
 
     /* Icon styling */
     --icon-stroke-width: 1.5;
-    --icon-color: currentColor;
+    --icon-color: #818cf8;
 
-    /* Transitions */
-    --transition-fast: 150ms;
-    --transition-normal: 250ms;
-    --transition-slow: 400ms;
-    --transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+    /* Transitions - Springy, glassy settle */
+    --transition-fast: 120ms;
+    --transition-normal: 220ms;
+    --transition-slow: 320ms;
+    --transition-timing: cubic-bezier(0.34, 1.3, 0.64, 1);
 
-    /* Hover/Active transforms */
+    /* Hover/Active transforms - Gentle lift, like a pane catching light */
     --hover-scale: 1.01;
     --hover-translate-y: -1px;
     --hover-translate-x: 0;
@@ -295,7 +305,7 @@
     /* Focus ring */
     --focus-ring-width: 2px;
     --focus-ring-offset: 2px;
-    --focus-ring-color: #fafafa;
+    --focus-ring-color: #818cf8;
 
     /* Layer 1 — backfill (preserves current visual output, see themes/_contract.md) */
     /* Density axis — spacing scale */
@@ -313,21 +323,21 @@
     --space-11: 44px;
     --space-12: 48px;
     /* Density axis — per-element heights */
-    --button-height-sm: 28px;
-    --button-height-md: 36px;
-    --button-height-lg: 44px;
-    --input-height-sm: 28px;
-    --input-height-md: 36px;
-    --input-height-lg: 44px;
-    --row-height-compact: 32px;
-    --row-height-normal: 40px;
-    --row-height-spacious: 48px;
+    --button-height-sm: 32px;
+    --button-height-md: 40px;
+    --button-height-lg: 48px;
+    --input-height-sm: 32px;
+    --input-height-md: 40px;
+    --input-height-lg: 48px;
+    --row-height-compact: 36px;
+    --row-height-normal: 44px;
+    --row-height-spacious: 52px;
     /* Density axis — per-element padding */
-    --card-padding-sm: 12px;
-    --card-padding-md: 16px;
-    --card-padding-lg: 24px;
-    --dialog-padding: 24px;
-    --section-gap: 32px;
+    --card-padding-sm: 16px;
+    --card-padding-md: 20px;
+    --card-padding-lg: 28px;
+    --dialog-padding: 28px;
+    --section-gap: 40px;
     /* Type axis — family triplet (aliases existing --font-family for backward compat) */
     --font-family-display: var(--font-family);
     --font-family-body: var(--font-family);
@@ -358,7 +368,7 @@
     --intent-heading-major-weight: var(--font-weight-bold);
     --intent-heading-major-leading: var(--leading-2xl);
     --intent-heading-minor-size: var(--text-lg);
-    --intent-heading-minor-weight: var(--font-weight-bold);
+    --intent-heading-minor-weight: var(--font-weight-medium);
     --intent-heading-minor-leading: var(--leading-lg);
     --intent-body-emphasis-size: var(--text-base);
     --intent-body-emphasis-weight: var(--font-weight-medium);
@@ -380,11 +390,11 @@
     --duration-fast: var(--transition-fast);
     --duration-normal: var(--transition-normal);
     --duration-slow: var(--transition-slow);
-    --duration-dramatic: 600ms;
+    --duration-dramatic: 800ms;
     /* Motion axis — easing palette */
     --easing-linear: linear;
     --easing-standard: var(--transition-timing);
-    --easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+    --easing-emphasized: cubic-bezier(0.22, 1, 0.36, 1);
     --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     /* Iconography axis */
     --icon-family: lucide;
@@ -395,11 +405,24 @@
     --elevation-dialog: var(--shadow-lg);
     --elevation-toast: var(--shadow-main);
     /* Geometry axis — radius rhythm with intent */
-    --radius-container: var(--radius-md);
+    --radius-container: var(--radius-lg);
     --radius-interactive: var(--radius-md);
     --radius-pill: var(--radius-full);
     /* Geometry axis — border-width rhythm */
     --border-hairline: 1px;
     --border-standard: var(--border-width);
     --border-heavy: var(--border-width-thick);
+}
+
+/* ==========================================================================
+ * SURFACE BLUR
+ * ========================================================================== */
+/* Frosted backdrop for painted card/surface utilities */
+[data-theme="glass-light"] .bg-card,
+[data-theme="glass-light"] .bg-surface {
+    backdrop-filter: blur(14px) saturate(1.4);
+}
+[data-theme="glass-dark"] .bg-card,
+[data-theme="glass-dark"] .bg-surface {
+    backdrop-filter: blur(18px) saturate(1.3);
 }

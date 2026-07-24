@@ -148,7 +148,7 @@ export const WizardNavigation: React.FC<WizardNavigationProps> = ({
 
       {/* Step counter */}
       <HStack align="center" gap="sm">
-        <Typography variant="caption" className="text-neutral-500">
+        <Typography variant="caption" className="text-muted-foreground">
           {t('wizard.stepOf', { current: String(currentStep + 1), total: String(totalSteps) })}
         </Typography>
       </HStack>

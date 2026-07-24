@@ -141,7 +141,7 @@ function CounterStandard({
           variant="h1"
           className={cn(
             sizeStyles[size].display,
-            "font-bold tabular-nums text-primary-600",
+            "font-bold tabular-nums text-primary",
           )}
         >
           {resolved.count}
@@ -210,7 +210,7 @@ function CounterFull({
             variant="h1"
             className={cn(
               sizeStyles[size].display,
-              "font-bold tabular-nums text-primary-600",
+              "font-bold tabular-nums text-primary",
             )}
           >
             {resolved.count}

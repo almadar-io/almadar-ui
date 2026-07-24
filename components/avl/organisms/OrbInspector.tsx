@@ -666,11 +666,11 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
                 <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">{t('avl.transition')}</Typography>
                 <svg width="100%" height={44} viewBox="0 0 280 44">
                   <AvlState x={8} y={8} name={fromState} role={getStateRole(fromState) as StateRole} width={90} height={26} />
-                  <line x1={104} y1={21} x2={158} y2={21} stroke="#1E293B" strokeWidth={2} markerEnd="url(#orb-arrow)" />
+                  <line x1={104} y1={21} x2={158} y2={21} stroke="var(--color-foreground)" strokeWidth={2} markerEnd="url(#orb-arrow)" />
                   <AvlState x={164} y={8} name={toState} role={getStateRole(toState) as StateRole} width={90} height={26} />
                   <defs>
                     <marker id="orb-arrow" markerWidth={8} markerHeight={6} refX={8} refY={3} orient="auto">
-                      <path d="M0,0 L8,3 L0,6 Z" fill="#1E293B" />
+                      <path d="M0,0 L8,3 L0,6 Z" fill="var(--color-foreground)" />
                     </marker>
                   </defs>
                 </svg>
@@ -829,9 +829,9 @@ function OrbPatternTree({ config, depth }: { config: PatternNode; depth: number 
       <Typography variant="small" className="text-primary font-semibold text-xs">{type}</Typography>
       {propEntries.slice(0, 5).map(([key, val]) => {
         const display = typeof val === 'string'
-          ? val.startsWith('@') ? <span className="text-purple-500">{val}</span> : `"${val}"`
+          ? val.startsWith('@') ? <span className="text-primary">{val}</span> : `"${val}"`
           : Array.isArray(val) && val.length > 0 && typeof val[0] === 'string' && (val[0] as string).includes('/')
-            ? <span className="text-amber-600">({val.map(String).join(' ')})</span>
+            ? <span className="text-warning">({val.map(String).join(' ')})</span>
             : String(val);
         return (
           <Box key={key} className="flex gap-1 text-xs">

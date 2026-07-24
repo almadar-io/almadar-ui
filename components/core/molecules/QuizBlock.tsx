@@ -44,17 +44,17 @@ export const QuizBlock: React.FC<QuizBlockProps> = ({
   const [revealed, setRevealed] = useState(false);
 
   return (
-    <Card className={cn('my-4 border-blue-200 dark:border-blue-800', className)}>
+    <Card className={cn('my-4 border-primary', className)}>
       <VStack gap="sm" className="p-4">
         <HStack gap="sm" align="start">
-          <Icon icon={HelpCircle} size="sm" className="text-blue-500 mt-0.5 shrink-0" />
+          <Icon icon={HelpCircle} size="sm" className="text-primary mt-0.5 shrink-0" />
           <Typography variant="body" className="font-medium">
             {question}
           </Typography>
         </HStack>
 
         {revealed ? (
-          <Box className="pl-7 pt-2 border-t border-gray-200 dark:border-gray-700">
+          <Box className="pl-7 pt-2 border-t border-border">
             <Typography variant="body" className="text-foreground">
               {answer}
             </Typography>

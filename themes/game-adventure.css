@@ -56,9 +56,9 @@
     --color-accent: #e0a52c;
     --color-accent-foreground: #241608;
 
-    /* Muted */
-    --color-muted: #4a3018;
-    --color-muted-foreground: #b3966e;
+    /* Muted — deep parchment inset (light, like the card, so muted text passes on both) */
+    --color-muted: #e8d6ae;
+    --color-muted-foreground: #6b4f2a;
 
     /* Surfaces */
     --color-background: #241608;

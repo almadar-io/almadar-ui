@@ -266,10 +266,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           >
             <Link to="/" className="flex items-center gap-2">
               {logo || (
-                <Box className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+                <Box className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                   <Typography
                     variant="small"
-                    className="text-white font-bold text-sm"
+                    className="text-primary-foreground font-bold text-sm"
                     as="span"
                   >
                     {appName.charAt(0).toUpperCase()}
@@ -354,10 +354,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 >
                   <Link to="/" className="flex items-center gap-2 mr-3 shrink-0">
                     {logo || (
-                      <Box className="w-7 h-7 bg-primary-600 rounded-lg flex items-center justify-center">
+                      <Box className="w-7 h-7 bg-primary rounded-lg flex items-center justify-center">
                         <Typography
                           variant="small"
-                          className="text-white font-bold text-xs"
+                          className="text-primary-foreground font-bold text-xs"
                           as="span"
                         >
                           {appName.charAt(0).toUpperCase()}
@@ -423,8 +423,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                       <Box
                         as="span"
                         className={cn(
-                          "absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-xs font-semibold text-white flex items-center justify-center",
-                          action.variant === "danger" ? "bg-error" : action.variant === "primary" ? "bg-primary" : "bg-foreground"
+                          "absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full text-xs font-semibold flex items-center justify-center",
+                          action.variant === "danger" ? "bg-error text-error-foreground" : action.variant === "primary" ? "bg-primary text-primary-foreground" : "bg-foreground text-background"
                         )}
                       >
                         {action.badge}
@@ -445,7 +445,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                     {unreadCount > 0 && (
                       <Box
                         as="span"
-                        className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-error rounded-full text-xs font-semibold text-white flex items-center justify-center"
+                        className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-error rounded-full text-xs font-semibold text-error-foreground flex items-center justify-center"
                       >
                         {unreadCount > 99 ? '99+' : unreadCount}
                       </Box>

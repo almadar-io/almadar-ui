@@ -51,7 +51,7 @@ export function VerificationTab({ checks, summary }: VerificationTabProps) {
     return (
         <div className="debug-tab debug-tab--verification">
             {/* Summary bar */}
-            <div className="flex items-center gap-3 mb-3 p-2 bg-gray-50 dark:bg-gray-800 rounded">
+            <div className="flex items-center gap-3 mb-3 p-2 bg-muted rounded">
                 <Badge variant="success" size="sm">{summary.passed} passed</Badge>
                 {summary.failed > 0 && (
                     <Badge variant="danger" size="sm">{summary.failed} failed</Badge>
@@ -62,7 +62,7 @@ export function VerificationTab({ checks, summary }: VerificationTabProps) {
                 {summary.pending > 0 && (
                     <Badge variant="default" size="sm">{summary.pending} pending</Badge>
                 )}
-                <Typography variant="small" className="text-gray-500 ml-auto">
+                <Typography variant="small" className="text-muted-foreground ml-auto">
                     {summary.totalChecks} total checks
                 </Typography>
             </div>
@@ -75,7 +75,7 @@ export function VerificationTab({ checks, summary }: VerificationTabProps) {
                         return (
                             <div
                                 key={check.id}
-                                className="flex items-start gap-2 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-800"
+                                className="flex items-start gap-2 p-2 rounded hover:bg-muted/50"
                             >
                                 <Badge variant={config.variant} size="sm" className="min-w-[20px] justify-center mt-0.5">
                                     {config.icon}
@@ -85,7 +85,7 @@ export function VerificationTab({ checks, summary }: VerificationTabProps) {
                                         {check.label}
                                     </Typography>
                                     {check.details && (
-                                        <Typography variant="small" className="text-gray-500 break-words">
+                                        <Typography variant="small" className="text-muted-foreground break-words">
                                             {check.details}
                                         </Typography>
                                     )}

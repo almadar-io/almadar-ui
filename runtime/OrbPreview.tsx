@@ -25,6 +25,7 @@ import { useEventBus } from '../hooks/useEventBus';
 import type { OrbitalSchema, EntityData, ResolvedTrait, ResolvedTraitBinding, EventPayload, PatternNode, Orbital, TraitRef } from '@almadar/core';
 import { buildResolvedTraitConfigs } from '@almadar/core';
 import { useResolvedSchema } from '../hooks/useResolvedSchema';
+import { matchPath } from '../providers/navigation';
 import { collectEmbeddedTraits, collectTraitRefsFromResolvedTrait } from '../lib/embedded-traits';
 import { convertFnFormLambdasInProps } from '../lib/fn-form-lambda';
 import { useTraitStateMachine } from '../hooks/useTraitStateMachine';
@@ -221,8 +222,10 @@ export function collectServerActiveTraits(
   return active;
 }
 
-function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits, serverActiveTraits }: {
+function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onLocalFallback, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits, serverActiveTraits }: {
   traits: ResolvedTraitBinding[];
+  /** Route params from a parameterized page path — merged into every INIT payload. */
+  routeParams?: Record<string, string>;
   orbitalNames?: string[];
   traitConfigsByName?: Record<string, import('@almadar/core').TraitConfig>;
   /** Trait → orbital map; gap #13 qualified bus key. */
@@ -321,8 +324,8 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
   }, [bridge.connected, bridge.sendEvent, orbitalNames, uiSlots, onNavigate, embeddedTraits, activeTraitNames, withActiveTraits]);
 
   const opts = orbitalNames
-    ? { onEventProcessed, navigate: onNavigate, traitConfigsByName, orbitalsByTrait, embeddedTraits }
-    : { navigate: onNavigate, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits };
+    ? { onEventProcessed, navigate: onNavigate, traitConfigsByName, orbitalsByTrait, embeddedTraits, initPayload: routeParams }
+    : { navigate: onNavigate, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits, initPayload: routeParams };
   const { sendEvent } = useTraitStateMachine(traits, uiSlots, opts);
 
   const initSentRef = useRef(false);
@@ -335,38 +338,46 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
   // the @almadar/core cache keys on name+version and would otherwise
   // return the same IR (and same traits array) across mutations.
   const prevTraitsRef = useRef<ResolvedTraitBinding[] | undefined>(undefined);
+  // Same-page param nav (`/threads/1` -> `/threads/2`) keeps the traits ref
+  // stable; the params key is the second reset trigger so INIT re-fires with
+  // the new id.
+  const paramsKey = JSON.stringify(routeParams ?? {});
+  const prevParamsKeyRef = useRef<string | undefined>(undefined);
   useEffect(() => {
     const refChanged = prevTraitsRef.current !== undefined && prevTraitsRef.current !== traits;
+    const paramsChanged = prevParamsKeyRef.current !== undefined && prevParamsKeyRef.current !== paramsKey;
     navLog.debug('page:traits-effect', () => ({
       refChanged,
+      paramsChanged,
       traitsCount: Array.isArray(traits) ? traits.length : -1,
       hadPrev: prevTraitsRef.current !== undefined,
     }));
-    if (refChanged) {
-      navLog.info('page:traits-reset', { traitsCount: Array.isArray(traits) ? traits.length : -1 });
+    if (refChanged || paramsChanged) {
+      navLog.info('page:traits-reset', { traitsCount: Array.isArray(traits) ? traits.length : -1, paramsChanged });
       uiSlots.clearAll();
       initSentRef.current = false;
     }
     prevTraitsRef.current = traits;
-  }, [traits, uiSlots]);
+    prevParamsKeyRef.current = paramsKey;
+  }, [traits, uiSlots, paramsKey]);
 
   // Local INIT - fires immediately when no server bridge,
   // or after 5s fallback if server bridge fails to connect.
   useEffect(() => {
     if (!orbitalNames?.length) {
-      const t = setTimeout(() => sendEvent('INIT'), 50);
+      const t = setTimeout(() => sendEvent('INIT', routeParams), 50);
       return () => clearTimeout(t);
     }
     // Fallback: if server bridge doesn't connect within 5s, fire local INIT
     // and notify the parent so it can surface the fallback (GAP-19).
     const fallback = setTimeout(() => {
       if (!initSentRef.current) {
-        sendEvent('INIT');
+        sendEvent('INIT', routeParams);
         onLocalFallback?.();
       }
     }, 5000);
     return () => clearTimeout(fallback);
-  }, [traits, orbitalNames, sendEvent, onLocalFallback]);
+  }, [traits, orbitalNames, sendEvent, onLocalFallback, routeParams]);
 
   // Server INIT when bridge connects. Apply enriched effects to slots.
   useEffect(() => {
@@ -374,7 +385,7 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
     initSentRef.current = true;
     (async () => {
       for (const name of orbitalNames) {
-        const { effects, meta } = await bridge.sendEvent(name, 'INIT', withActiveTraits({}));
+        const { effects, meta } = await bridge.sendEvent(name, 'INIT', withActiveTraits({ ...(routeParams ?? {}) }));
 
         // Record server response in verification timeline
         recordServerResponse(name, 'INIT', meta);
@@ -403,7 +414,7 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
         applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNames);
       }
     })();
-  }, [bridge.connected, orbitalNames, bridge.sendEvent, uiSlots, onNavigate, embeddedTraits, activeTraitNames, withActiveTraits]);
+  }, [bridge.connected, orbitalNames, bridge.sendEvent, uiSlots, onNavigate, embeddedTraits, activeTraitNames, withActiveTraits, routeParams]);
 
   return null;
 }
@@ -413,12 +424,14 @@ function TraitInitializer({ traits, orbitalNames, onNavigate, onLocalFallback, p
  * When `serverUrl` is provided, wraps with ServerBridgeProvider and
  * forwards events to the server after local processing.
  */
-function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavigate, onLocalFallback, persistence }: {
+function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, routeParams, onNavigate, onLocalFallback, persistence }: {
   schema: OrbitalSchema;
   serverUrl?: string;
   transport?: ServerBridgeTransport;
   mockData?: EntityData;
   pageName?: string;
+  /** Route params extracted from a parameterized page path (`/x/:id`) — merged into INIT payloads. */
+  routeParams?: Record<string, string>;
   onNavigate?: (path: string, params?: Record<string, string>) => void;
   /** GAP-19: forwarded to TraitInitializer to surface server-bridge fallback. */
   onLocalFallback?: () => void;
@@ -672,6 +685,7 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, onNavi
       >
         <TraitInitializer
           traits={allPageTraits}
+          routeParams={routeParams}
           orbitalNames={(serverUrl || transport) ? pageOrbitalNames : undefined}
           traitConfigsByName={traitConfigsByName}
           orbitalsByTrait={orbitalsByTrait}
@@ -889,12 +903,19 @@ export function OrbPreview({
   // navigation): resolve the path against the schema's pages to get the
   // page NAME (the keying useResolvedSchema expects). Falls back to
   // undefined → SchemaRunner picks the schema's first page.
-  const initialPageName = useMemo(() => {
+  const initialPageMatch = useMemo(() => {
     if (!initialPagePath) return undefined;
-    const match = pages.find(({ page }) => page.path === initialPagePath);
-    return match?.page.name;
+    // Pattern-aware: a concrete `/threads/abc` URL must land on the declared
+    // `/threads/:id` page, with the route params extracted for INIT.
+    for (const { page } of pages) {
+      const params = page.path ? matchPath(page.path, initialPagePath) : null;
+      if (params !== null) return { name: page.name, params };
+    }
+    return undefined;
   }, [pages, initialPagePath]);
+  const initialPageName = initialPageMatch?.name;
   const [currentPage, setCurrentPage] = useState<string | undefined>(initialPageName);
+  const [routeParams, setRouteParams] = useState<Record<string, string>>(initialPageMatch?.params ?? {});
 
   // When the parent passes a different initialPagePath later (e.g. the host
   // syncs `?page=` on browser back/forward / popstate), follow it — INCLUDING
@@ -910,8 +931,9 @@ export function OrbPreview({
     if (prevInitialPagePathRef.current !== initialPagePath) {
       prevInitialPagePathRef.current = initialPagePath;
       setCurrentPage(initialPageName);
+      setRouteParams(initialPageMatch?.params ?? {});
     }
-  }, [initialPagePath, initialPageName]);
+  }, [initialPagePath, initialPageName, initialPageMatch]);
 
   // Navigate handler: when a ['navigate', '/path'] effect fires OR a
   // sidebar `<Link>` click is intercepted, find the matching page and
@@ -920,13 +942,27 @@ export function OrbPreview({
   // `?page=...` on mount as `initialPagePath`). MemoryRouter doesn't
   // sync to the URL on its own — we drive that explicitly here.
   const handleNavigate = useCallback((path: string) => {
-    const match = pages.find(({ page }) => page.path === path);
+    // Pattern-aware page matching: `/threads/abc` matches the declared
+    // `/threads/:id` (exact paths still match — matchPath handles both).
+    // Route params merge into the target page's INIT payload downstream.
+    let match: { page: { name?: string; path?: string } } | undefined;
+    let params: Record<string, string> = {};
+    for (const entry of pages) {
+      const m = entry.page.path ? matchPath(entry.page.path, path) : null;
+      if (m !== null) {
+        match = entry;
+        params = m;
+        break;
+      }
+    }
     navLog.debug('handleNavigate', () => ({
       path,
       matched: match?.page.name ?? null,
+      params,
       availablePaths: pages.map((p) => p.page.path),
     }));
-    if (match) {
+    if (match?.page.name) {
+      setRouteParams(params);
       setCurrentPage(match.page.name);
       if (typeof window !== 'undefined') {
         const url = new URL(window.location.href);
@@ -1025,6 +1061,7 @@ export function OrbPreview({
             transport={transport}
             mockData={effectiveMockData}
             pageName={currentPage}
+            routeParams={routeParams}
             onNavigate={handleNavigate}
             onLocalFallback={handleLocalFallback}
             persistence={persistence}

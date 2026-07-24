@@ -43,11 +43,11 @@
     --color-secondary-hover: #e2e8f0;
     --color-secondary-foreground: #0f172a;
 
-    --color-accent: #06b6d4;
+    --color-accent: #0e7490;
     --color-accent-foreground: #ffffff;
 
     --color-muted: #f1f5f9;
-    --color-muted-foreground: #64748b;
+    --color-muted-foreground: #607080;
 
     --color-background: #f8fafc;
     --color-foreground: #0f172a;
@@ -61,11 +61,11 @@
     /* Semantic colors */
     --color-error: #dc2626;
     --color-error-foreground: #ffffff;
-    --color-success: #16a34a;
+    --color-success: #15803d;
     --color-success-foreground: #ffffff;
     --color-warning: #ca8a04;
     --color-warning-foreground: #000000;
-    --color-info: #0ea5e9;
+    --color-info: #0369a1;
     --color-info-foreground: #ffffff;
 
     /* Icon styling */

@@ -158,6 +158,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({
       overflow="hidden"
       rounded="sm"
       className={cn(
+        // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim
         "bg-black",
         "aspect-square w-full max-w-md",
         className,
@@ -179,10 +180,15 @@ export const QrScanner: React.FC<QrScannerProps> = ({
 
       {showOverlay && isReady && !isPaused && (
         <Box position="absolute" className="pointer-events-none inset-0">
+          {/* eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim */}
           <Box position="absolute" className="left-[15%] top-[15%] h-8 w-8 border-l-2 border-t-2 border-white" />
+          {/* eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim */}
           <Box position="absolute" className="right-[15%] top-[15%] h-8 w-8 border-r-2 border-t-2 border-white" />
+          {/* eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim */}
           <Box position="absolute" className="bottom-[15%] left-[15%] h-8 w-8 border-b-2 border-l-2 border-white" />
+          {/* eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim */}
           <Box position="absolute" className="bottom-[15%] right-[15%] h-8 w-8 border-b-2 border-r-2 border-white" />
+          {/* eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim */}
           <Box position="absolute" className="left-[15%] right-[15%] top-1/2 h-px bg-white opacity-60" />
         </Box>
       )}
@@ -192,10 +198,14 @@ export const QrScanner: React.FC<QrScannerProps> = ({
           position="absolute"
           display="flex"
           padding="lg"
+          // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim
           className="inset-0 flex-col items-center justify-center gap-2 bg-black bg-opacity-80 text-center"
         >
+          {/* eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim */}
           <Icon name="camera" className="h-8 w-8 text-white" aria-hidden="true" />
+          {/* eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim */}
           <Typography variant="body2" className="text-white">{t('qrScanner.cameraUnavailable')}</Typography>
+          {/* eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim */}
           <Typography variant="caption" className="text-white opacity-70">{cameraError.message}</Typography>
         </Box>
       )}
@@ -204,8 +214,10 @@ export const QrScanner: React.FC<QrScannerProps> = ({
         <Box
           position="absolute"
           display="flex"
+          // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim
           className="inset-0 items-center justify-center bg-black bg-opacity-60"
         >
+          {/* eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim */}
           <Typography variant="body2" className="text-white">{t('qrScanner.paused')}</Typography>
         </Box>
       )}
@@ -220,7 +232,9 @@ export const QrScanner: React.FC<QrScannerProps> = ({
             type="button"
             onClick={togglePause}
             className={cn(
+              // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim
               "rounded-full bg-black bg-opacity-60 p-2 text-white",
+              // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim
               "hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-white",
             )}
             aria-label={isPaused ? t('qrScanner.resumeScanning') : t('qrScanner.pauseScanning')}
@@ -231,7 +245,9 @@ export const QrScanner: React.FC<QrScannerProps> = ({
             type="button"
             onClick={toggleFacing}
             className={cn(
+              // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim
               "rounded-full bg-black bg-opacity-60 p-2 text-white",
+              // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim
               "hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-white",
             )}
             aria-label={currentFacing === 'environment' ? t('qrScanner.switchToFrontCamera') : t('qrScanner.switchToRearCamera')}
@@ -242,7 +258,9 @@ export const QrScanner: React.FC<QrScannerProps> = ({
             type="button"
             onClick={handleMockScan}
             className={cn(
+              // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim
               "rounded-full bg-black bg-opacity-60 px-3 py-2 text-xs text-white",
+              // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim
               "hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-white",
             )}
             aria-label={t('aria.mockScanDev')}

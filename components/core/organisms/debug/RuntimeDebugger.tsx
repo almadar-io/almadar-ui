@@ -41,26 +41,26 @@ function ServerResponseRow({ sr }: { sr: ServerResponseTrace }) {
     const { t } = useTranslate();
     const entityEntries = Object.entries(sr.dataEntities);
     return (
-        <div className="ml-4 pl-2 border-l border-purple-500/30 py-0.5 text-xs font-mono">
+        <div className="ml-4 pl-2 border-l border-primary py-0.5 text-xs font-mono">
             <div className="flex items-center gap-2">
-                <span className={sr.success ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                <span className={sr.success ? 'text-success' : 'text-error'}>
                     {sr.success ? '\u2713' : '\u2717'} {t('debug.server')}
                 </span>
-                <span className="text-purple-600 dark:text-purple-300">
+                <span className="text-primary">
                     {sr.orbitalName}
                 </span>
                 {sr.clientEffects > 0 && (
-                    <span className="px-1 rounded bg-purple-500/15 text-purple-600 dark:text-purple-300">
+                    <span className="px-1 rounded bg-primary/10 text-primary">
                         {t('debug.clientEffectsCount', { count: sr.clientEffects })}
                     </span>
                 )}
                 {sr.emittedEvents.length > 0 && (
-                    <span className="px-1 rounded bg-blue-500/15 text-blue-300">
+                    <span className="px-1 rounded bg-primary/10 text-primary">
                         {t('debug.emitLabel')} {sr.emittedEvents.join(', ')}
                     </span>
                 )}
                 {sr.error && (
-                    <span className="px-1 rounded bg-red-500/15 text-red-600 dark:text-red-400 truncate max-w-[300px]">
+                    <span className="px-1 rounded bg-error/10 text-error truncate max-w-[300px]">
                         {sr.error}
                     </span>
                 )}
@@ -88,11 +88,11 @@ function TransitionRow({ trace }: { trace: TransitionTrace }) {
         return (
             <div className="py-0.5 border-b border-border last:border-0">
                 <div className="flex items-start gap-2 text-xs font-mono">
-                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 bg-purple-500" />
+                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 bg-primary" />
                     <Badge variant="warning" size="sm" className="flex-shrink-0">
                         {trace.event}
                     </Badge>
-                    <span className="text-purple-600 dark:text-purple-400 flex-shrink-0">{t('debug.serverResponse')}</span>
+                    <span className="text-primary flex-shrink-0">{t('debug.serverResponse')}</span>
                 </div>
                 <ServerResponseRow sr={trace.serverResponse} />
             </div>
@@ -105,7 +105,7 @@ function TransitionRow({ trace }: { trace: TransitionTrace }) {
             <div className="flex items-start gap-2 text-xs font-mono">
                 <span className={cn(
                     'mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0',
-                    hasFailedEffects ? 'bg-red-500' : 'bg-green-500'
+                    hasFailedEffects ? 'bg-error' : 'bg-success'
                 )} />
                 <Badge variant="info" size="sm" className="flex-shrink-0">{trace.event}</Badge>
                 <span className="text-foreground flex-shrink-0">{trace.traitName}</span>
@@ -117,9 +117,9 @@ function TransitionRow({ trace }: { trace: TransitionTrace }) {
                     {trace.effects.map((eff: EffectTrace, i: number) => (
                         <span key={i} className={cn(
                             'px-1 rounded text-xs',
-                            eff.status === 'executed' ? 'bg-green-500/15 text-green-600 dark:text-green-400' :
-                            eff.status === 'failed' ? 'bg-red-500/15 text-red-600 dark:text-red-400' :
-                            'bg-yellow-500/15 text-yellow-600 dark:text-yellow-400'
+                            eff.status === 'executed' ? 'bg-success/10 text-success' :
+                            eff.status === 'failed' ? 'bg-error/10 text-error' :
+                            'bg-warning/10 text-warning'
                         )}>
                             {eff.status === 'executed' ? '\u2713' : eff.status === 'failed' ? '\u2717' : '-'} {eff.type}
                             {eff.args.length > 0 && (
@@ -187,7 +187,7 @@ function VerifyModePanel({
         <div
             className={cn(
                 'runtime-debugger runtime-debugger--verify',
-                'flex flex-col bg-[var(--color-card)] text-[var(--color-foreground)] border-t-2 border-cyan-500',
+                'flex flex-col bg-[var(--color-card)] text-[var(--color-foreground)] border-t-2 border-accent',
                 hudBottom ? '' : 'fixed bottom-0 left-0 right-0',
                 className
             )}
@@ -211,11 +211,11 @@ function VerifyModePanel({
                 <span className="text-foreground/70">
                     {t('debug.localCount', { count: localCount })}
                 </span>
-                <span className="text-purple-600 dark:text-purple-400">
+                <span className="text-primary">
                     {t('debug.serverCount', { count: serverCount })}
                 </span>
                 {traitStates && (
-                    <span className="text-cyan-600 dark:text-cyan-400 truncate max-w-[400px]">{traitStates}</span>
+                    <span className="text-accent truncate max-w-[400px]">{traitStates}</span>
                 )}
                 {!expanded && transitions.length > 0 && (
                     <span className="ml-auto text-foreground/50">{t('debug.transitionsCount', { count: transitions.length })}</span>
@@ -470,7 +470,7 @@ export function RuntimeDebugger({
                     {failedChecks > 0 ? (
                         <span className="relative">
                             <span>V</span>
-                            <span className="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full" />
+                            <span className="absolute -top-1 -right-2 w-2 h-2 bg-error rounded-full" />
                         </span>
                     ) : (
                         <span>V</span>

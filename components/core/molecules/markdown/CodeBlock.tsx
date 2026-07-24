@@ -1043,7 +1043,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
           <HStack
             justify="between"
             align="center"
-            className="px-3 py-2 bg-[var(--color-card)] rounded-t-lg border-b border-gray-700"
+            className="px-3 py-2 bg-[var(--color-card)] rounded-t-lg border-b border-border"
           >
             {showLanguageBadge && (
               <Badge variant="default" size="sm">
@@ -1055,11 +1055,11 @@ export const CodeBlock = React.memo<CodeBlockProps>(
                 variant="ghost"
                 size="sm"
                 onClick={handleCopy}
-                className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity text-muted-foreground hover:text-white"
+                className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
                 aria-label={t('common.copy')}
               >
                 {copied ? (
-                  <Icon name="check" className="w-4 h-4 text-green-400" />
+                  <Icon name="check" className="w-4 h-4 text-success" />
                 ) : (
                   <Icon name="copy" className="w-4 h-4" />
                 )}

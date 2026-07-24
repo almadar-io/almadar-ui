@@ -184,7 +184,7 @@ function SubMenu({
               ) : (
                 <Icon icon={item.icon} size="sm" className="flex-shrink-0" />
               ))}
-            <Typography variant="small" className={cn("flex-1", isDanger && "text-red-600")}>
+            <Typography variant="small" className={cn("flex-1", isDanger && "text-error")}>
               {item.label}
             </Typography>
             {item.badge !== undefined && (
@@ -263,7 +263,7 @@ function MenuItemRow({
             ))}
           <Typography
             variant="small"
-            className={cn("flex-1", isDanger && "text-red-600")}
+            className={cn("flex-1", isDanger && "text-error")}
           >
             {item.label}
           </Typography>

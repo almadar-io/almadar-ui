@@ -45,11 +45,11 @@
     --color-secondary-hover: #99f6e4;
     --color-secondary-foreground: #134e4a;
 
-    --color-accent: #ec4899;
+    --color-accent: #be185d;
     --color-accent-foreground: #ffffff;
 
     --color-muted: #ccfbf1;
-    --color-muted-foreground: #64748b;
+    --color-muted-foreground: #475569;
 
     --color-background: #f0fdfa;
     --color-foreground: #134e4a;
@@ -63,7 +63,7 @@
     /* Semantic colors */
     --color-error: #dc2626;
     --color-error-foreground: #ffffff;
-    --color-success: #16a34a;
+    --color-success: #15803d;
     --color-success-foreground: #ffffff;
     --color-warning: #ca8a04;
     --color-warning-foreground: #000000;

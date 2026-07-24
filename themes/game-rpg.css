@@ -55,12 +55,12 @@
 
     /* Muted */
     --color-muted: #3a2a18;
-    --color-muted-foreground: #b39a78;
+    --color-muted-foreground: #e0cba8;
 
     /* Surfaces */
     --color-background: #1a1108;
     --color-foreground: #f5e6cf;
-    --color-card: #97714a;
+    --color-card: #6e4f30;
     --color-card-foreground: #fff5e0;
     --color-surface: #2a1d10;
 

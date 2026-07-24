@@ -282,7 +282,7 @@ export function CalendarGrid({
         "cursor-pointer hover:shadow-sm transition-shadow text-xs truncate",
         color
           ? color
-          : "bg-blue-500/15 border-blue-500/30 text-blue-600",
+          : "bg-primary/10 border-primary/30 text-primary",
       )}
       onClick={(e: React.MouseEvent) => handleEventClick(event, e)}
     >
@@ -398,7 +398,7 @@ export function CalendarGrid({
                     onClick={() => handleSlotClick(day, time)}
                     className={cn(
                       "border-l border-border",
-                      isToday && "bg-blue-50/30",
+                      isToday && "bg-primary/10",
                     )}
                     {...(longPressEvent ? {
                       onPointerDown: () => startLongPress(day, time),

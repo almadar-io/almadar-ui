@@ -38,6 +38,9 @@ jobs:
       - name: Test
         run: pnpm --if-present test
 
+      - name: Verify theme contrast (WCAG AA)
+        run: pnpm --if-present verify:themes
+
       - name: Lint
         run: npx eslint --no-warn-ignored --max-warnings 0 components/ hooks/ providers/ context/ renderer/ lib/ types/
 

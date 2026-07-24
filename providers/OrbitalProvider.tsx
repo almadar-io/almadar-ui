@@ -119,7 +119,7 @@ export interface OrbitalProviderProps {
  *
  * function App() {
  *   return (
- *     <OrbitalProvider themes={THEMES} defaultTheme="ocean">
+ *     <OrbitalProvider themes={THEMES} defaultTheme="glass">
  *       <Router>
  *         <Routes />
  *       </Router>

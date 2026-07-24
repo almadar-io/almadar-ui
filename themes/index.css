@@ -8,10 +8,11 @@
  * IMPORTANT: @import must precede all other statements (Vite requirement).
  */
 
-/* Layer 1 skin axes — font families consumed by prism / gazette / terminal / atelier / kiosk.
+/* Layer 1 skin axes — font families consumed by prism / gazette / terminal / atelier / kiosk,
+ * plus VT323 for retro's pixel display type.
  * Combined into a single Google Fonts request for fewer round-trips. font-display: swap
  * means body text renders immediately with the fallback chain while the web fonts load. */
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;700;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;700;900&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&family=Manrope:wght@400;500;600;700;800&family=VT323&display=swap");
 
 /* Shared base layer — atelier's typography + density at :root, inherited
  * by every theme that doesn't override. MUST come before per-theme
@@ -31,18 +32,7 @@
 @import "./game-rpg.css";
 
 /* Extended themes */
-@import "./ocean.css";
-@import "./forest.css";
-@import "./sunset.css";
-@import "./lavender.css";
-@import "./rose.css";
-@import "./slate.css";
-@import "./ember.css";
-@import "./midnight.css";
-@import "./sand.css";
 @import "./neon.css";
-@import "./arctic.css";
-@import "./copper.css";
 
 /* Layer 1 skin axes — truly-unique themes (see docs/Almadar_Std_Variations.md) */
 @import "./prism.css";
@@ -53,6 +43,12 @@
 @import "./linear-clean.css";
 @import "./notion-editorial.css";
 @import "./bloomberg-dense.css";
+
+/* Personality themes — high-demand web styles (see themes/_contract.md) */
+@import "./glass.css";
+@import "./clay.css";
+@import "./retro.css";
+@import "./corporate.css";
 
 /**
  * Minimal element reset for @almadar/ui components.

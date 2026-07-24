@@ -21,6 +21,7 @@ module.exports = [
       "almadar/no-record-string-unknown": "error",
       "almadar/no-import-generated": "error",
       "almadar/atom-molecule-no-entity-prop": "error",
+      "almadar/no-hardcoded-colors": "error",
       // react-compiler: disabled at package level — pre-existing patterns need incremental cleanup
       "react-compiler/react-compiler": "off",
     },

@@ -45,7 +45,7 @@
     --color-accent-foreground: #0f172a;
 
     --color-muted: #f1f5f9;
-    --color-muted-foreground: #64748b;
+    --color-muted-foreground: #5c6b80;
 
     --color-background: #ffffff;
     --color-foreground: #0f172a;
@@ -61,11 +61,11 @@
     /* Semantic colors */
     --color-error: #dc2626;
     --color-error-foreground: #ffffff;
-    --color-success: #22c55e;
+    --color-success: #15803d;
     --color-success-foreground: #ffffff;
     --color-warning: #f59e0b;
     --color-warning-foreground: #000000;
-    --color-info: #3b82f6;
+    --color-info: #1d4ed8;
     --color-info-foreground: #ffffff;
 
     /* Icon styling */

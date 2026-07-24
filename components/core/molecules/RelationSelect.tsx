@@ -210,8 +210,8 @@ export const RelationSelect: React.FC<RelationSelectProps> = ({
         disabled={disabled}
         className={cn(
           "w-full justify-between font-normal",
-          error && "border-red-300 focus:border-red-500 focus:ring-red-500",
-          isOpen && "ring-2 ring-primary-500 border-primary-500",
+          error && "border-error/50 focus:border-error focus:ring-error",
+          isOpen && "ring-2 ring-primary border-primary",
         )}
       >
         <Typography
@@ -303,7 +303,7 @@ export const RelationSelect: React.FC<RelationSelectProps> = ({
                     className={cn(
                       "text-left text-sm hover:bg-muted focus:outline-none focus:bg-muted",
                       option.value === value &&
-                        "bg-primary-50 text-primary-700",
+                        "bg-primary/10 text-primary",
                       option.disabled && "opacity-50 cursor-not-allowed",
                     )}
                     onClick={() => handleSelect(option)}

@@ -32,13 +32,13 @@ function EffectBadge({ effect }: { effect: EffectTrace }) {
     const icon = effect.status === 'executed' ? '\u2713' : effect.status === 'failed' ? '\u2717' : '-';
 
     return (
-        <span className="inline-flex items-center gap-1 text-xs font-mono bg-gray-100 dark:bg-gray-700 rounded px-1.5 py-0.5">
+        <span className="inline-flex items-center gap-1 text-xs font-mono bg-muted rounded px-1.5 py-0.5">
             <Badge variant={variant} size="sm" className="!text-[9px] !px-1 !py-0">
                 {icon}
             </Badge>
-            <span className="text-gray-600 dark:text-gray-400">{effect.type}</span>
+            <span className="text-muted-foreground">{effect.type}</span>
             {effect.error && (
-                <span className="text-red-500 truncate max-w-[120px]" title={effect.error}>
+                <span className="text-error truncate max-w-[120px]" title={effect.error}>
                     {effect.error}
                 </span>
             )}
@@ -85,10 +85,10 @@ export function TransitionTimeline({ transitions }: TransitionTimelineProps) {
         <div className="debug-tab debug-tab--timeline">
             {/* Header */}
             <div className="flex items-center justify-between mb-2">
-                <Typography variant="small" className="text-gray-500">
+                <Typography variant="small" className="text-muted-foreground">
                     {t('debug.transitionsRecorded', { count: transitions.length })}
                 </Typography>
-                <label className="flex items-center gap-1 text-xs text-gray-500 cursor-pointer">
+                <label className="flex items-center gap-1 text-xs text-muted-foreground cursor-pointer">
                     <Checkbox
                         checked={autoScroll}
                         onChange={(e) => setAutoScroll(e.target.checked)}
@@ -112,27 +112,27 @@ export function TransitionTimeline({ transitions }: TransitionTimelineProps) {
                             key={trace.id}
                             className={`
                                 relative pl-6 pb-3 border-l-2 cursor-pointer
-                                hover:bg-gray-50 dark:hover:bg-gray-800 rounded-r
-                                ${hasFailedEffects ? 'border-red-300 dark:border-red-700' : 'border-gray-200 dark:border-gray-700'}
+                                hover:bg-muted/50 rounded-r
+                                ${hasFailedEffects ? 'border-error' : 'border-border'}
                             `}
                             onClick={() => setExpandedId(isExpanded ? null : trace.id)}
                         >
                             {/* Timeline dot */}
                             <div className={`
                                 absolute left-[-5px] top-1 w-2 h-2 rounded-full
-                                ${hasFailedEffects ? 'bg-red-500' : allPassed ? 'bg-green-500' : 'bg-gray-400'}
+                                ${hasFailedEffects ? 'bg-error' : allPassed ? 'bg-success' : 'bg-muted-foreground'}
                             `} />
 
                             {/* Main row */}
                             <div className="flex items-center gap-2 text-xs py-1 px-2">
-                                <Typography variant="small" className="text-gray-400 font-mono min-w-[65px]">
+                                <Typography variant="small" className="text-muted-foreground font-mono min-w-[65px]">
                                     {formatTime(trace.timestamp)}
                                 </Typography>
                                 <Badge variant="primary" size="sm" className="min-w-[60px] justify-center">
                                     {trace.traitName}
                                 </Badge>
-                                <Typography variant="small" className="font-mono text-gray-600 dark:text-gray-400">
-                                    {trace.from} <span className="text-gray-400">{'\u2192'}</span> {trace.to}
+                                <Typography variant="small" className="font-mono text-muted-foreground">
+                                    {trace.from} <span className="text-muted-foreground/50">{'\u2192'}</span> {trace.to}
                                 </Typography>
                                 <Badge variant="info" size="sm">
                                     {trace.event}
@@ -145,14 +145,14 @@ export function TransitionTimeline({ transitions }: TransitionTimelineProps) {
                                         {t('debug.guardLabel')} {trace.guardResult ? '\u2713' : '\u2717'}
                                     </Badge>
                                 )}
-                                <Typography variant="small" className="text-gray-400 ml-auto">
+                                <Typography variant="small" className="text-muted-foreground ml-auto">
                                     {t('debug.effectsCount', { count: trace.effects.length })}
                                 </Typography>
                             </div>
 
                             {/* Expanded effects detail */}
                             {isExpanded && trace.effects.length > 0 && (
-                                <div className="ml-2 mt-1 mb-2 pl-2 border-l border-gray-200 dark:border-gray-700 space-y-1">
+                                <div className="ml-2 mt-1 mb-2 pl-2 border-l border-border space-y-1">
                                     {trace.effects.map((effect, eIdx) => (
                                         <div key={eIdx} className="flex items-center gap-1">
                                             <EffectBadge effect={effect} />

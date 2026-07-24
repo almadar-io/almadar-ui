@@ -21,7 +21,7 @@ import { useState, useCallback, useEffect, useRef, useMemo, type MutableRefObjec
 // Use hooks from @almadar/ui
 import { useEventBus, useSharedEntityStore, runTickFrame, type SharedEntityWriter } from './index';
 import { createLogger, setNamespaceLevel } from '@almadar/logger';
-import { isCircuitEvent, walkSExpr, mergeEntityFrame } from '@almadar/core';
+import { isCircuitEvent, walkSExpr, mergeEntityFrame, applyListenPayloadMapping } from '@almadar/core';
 import type { PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, TraitConfig, TraitConfigValue, SExpr, ServiceParams, ResolvedTrait, FieldValue, EntityFieldWrite, EntityFrameState } from '@almadar/core';
 import {
     StateMachineManager,
@@ -334,6 +334,8 @@ export interface UseTraitStateMachineOptions {
     ) => void | Promise<void>;
     /** Router navigate function for navigate effects */
     navigate?: (path: string, params?: Record<string, string>) => void;
+    /** Payload merged into the mount-time lifecycle INIT (route params from a parameterized page path). */
+    initPayload?: EventPayload;
     /** Notification function for notify effects */
     notify?: (message: string, type?: 'success' | 'error' | 'warning' | 'info') => void;
     /**
@@ -1990,7 +1992,11 @@ export function useTraitStateMachine(
                 crossTraitLog.debug('listen:subscribed', { busKey, targetTrait: binding.trait.name, sourceOrbital, sourceTrait, listenEvent: listen.event, triggers: listen.triggers });
                 const unsub = eventBus.on(busKey, (event) => {
                     crossTraitLog.debug('listen:fired', { busKey, targetTrait: binding.trait.name, triggers: listen.triggers });
-                    enqueueAndDrain(listen.triggers, event.payload, binding.trait.name);
+                    enqueueAndDrain(
+                        listen.triggers,
+                        applyListenPayloadMapping(listen.payloadMapping, event.payload),
+                        binding.trait.name,
+                    );
                 });
                 unsubscribes.push(() => {
                     crossTraitLog.debug('listen:unsubscribe', { busKey, targetTrait: binding.trait.name, triggers: listen.triggers });
@@ -2029,7 +2035,7 @@ export function useTraitStateMachine(
         }
         for (const event of eventsToFire) {
             stateLog.debug('mount:fire-lifecycle', { event, traitCount: traitBindings.length });
-            enqueueAndDrain(event, {});
+            enqueueAndDrain(event, { ...(optionsRef.current?.initPayload ?? {}) });
         }
         return () => {
             // New bindings (page nav) rebuild the manager + reset states, so a

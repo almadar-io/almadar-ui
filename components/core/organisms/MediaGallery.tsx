@@ -269,12 +269,15 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                                         <Icon
                                             icon={ZoomIn}
                                             size="md"
+                                            // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim
                                             className="text-white opacity-0 group-hover:opacity-100 transition-opacity duration-fast"
                                         />
                                     </Box>
                                     {/* Caption */}
                                     {item.caption && (
+                                        // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: caption scrim over image
                                         <Box className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/60 to-transparent">
+                                            {/* eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: caption over dark scrim */}
                                             <Typography variant="caption" className="text-white truncate">
                                                 {item.caption}
                                             </Typography>
@@ -283,7 +286,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                                     {/* Selection indicator */}
                                     {selectable && isSelected && (
                                         <Box className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
-                                            <Typography variant="caption" className="text-white text-xs">
+                                            <Typography variant="caption" className="text-primary-foreground text-xs">
                                                 ✓
                                             </Typography>
                                         </Box>
@@ -314,7 +317,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                                 size="sm"
                                 icon={X}
                                 action="LIGHTBOX_CLOSE"
-                                className="text-white hover:bg-white/20"
+                                className="text-foreground hover:bg-muted/50"
                             />
                         </HStack>
                         { }
@@ -324,7 +327,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                             className="max-w-full max-h-[80vh] object-contain rounded-md"
                         />
                         {lightboxItem.caption && (
-                            <Typography variant="body" className="text-white mt-3 text-center">
+                            <Typography variant="body" className="text-foreground mt-3 text-center">
                                 {lightboxItem.caption}
                             </Typography>
                         )}

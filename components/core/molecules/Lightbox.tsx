@@ -137,6 +137,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
     <div
       className={cn(
         "fixed inset-0 z-50 flex items-center justify-center",
+        // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: lightbox scrim behind images
         "bg-black bg-opacity-90",
         className,
       )}
@@ -158,7 +159,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
           "p-2 rounded-full",
           "text-[var(--color-foreground)] bg-[var(--color-card)]",
           "hover:bg-opacity-70 transition-opacity",
-          "focus:outline-none focus:ring-2 focus:ring-white",
+          "focus:outline-none focus:ring-2 focus:ring-ring",
         )}
         aria-label={t('aria.closeModal')}
       >
@@ -178,7 +179,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
             "p-2 rounded-full",
             "text-[var(--color-foreground)] bg-[var(--color-card)]",
             "hover:bg-opacity-70 transition-opacity",
-            "focus:outline-none focus:ring-2 focus:ring-white",
+            "focus:outline-none focus:ring-2 focus:ring-ring",
           )}
           aria-label={t('aria.previousImage')}
         >
@@ -216,7 +217,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
             "p-2 rounded-full",
             "text-[var(--color-foreground)] bg-[var(--color-card)]",
             "hover:bg-opacity-70 transition-opacity",
-            "focus:outline-none focus:ring-2 focus:ring-white",
+            "focus:outline-none focus:ring-2 focus:ring-ring",
           )}
           aria-label={t('aria.nextImage')}
         >

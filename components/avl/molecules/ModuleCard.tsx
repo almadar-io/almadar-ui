@@ -37,10 +37,10 @@ function toFieldKind(type: string): AvlFieldTypeKind {
 }
 
 const PERSISTENCE_BORDER: Record<string, string> = {
-  persistent: 'border-l-[3px] border-l-blue-500 border-solid',
-  runtime: 'border-l-[3px] border-l-blue-500 border-dashed',
-  singleton: 'border-l-[3px] border-l-blue-500 border-double',
-  instance: 'border-l-[3px] border-l-blue-500 border-dotted',
+  persistent: 'border-l-[3px] border-l-primary border-solid',
+  runtime: 'border-l-[3px] border-l-primary border-dashed',
+  singleton: 'border-l-[3px] border-l-primary border-double',
+  instance: 'border-l-[3px] border-l-primary border-dotted',
 };
 
 const PERSISTENCE_ICON: Record<string, string> = {
@@ -70,8 +70,8 @@ const ModuleCardInner: React.FC<ModuleCardProps> = ({ data }) => {
       style={{ minWidth: 280, maxWidth: 400 }}
     >
       {/* Handles for event wire connections */}
-      <Handle type="target" position={Position.Left} className="!w-2.5 !h-2.5 !bg-orange-400" />
-      <Handle type="source" position={Position.Right} className="!w-2.5 !h-2.5 !bg-orange-400" />
+      <Handle type="target" position={Position.Left} className="!w-2.5 !h-2.5 !bg-warning" />
+      <Handle type="source" position={Position.Right} className="!w-2.5 !h-2.5 !bg-warning" />
 
       {/* Header */}
       <div className="px-3 py-2 border-b border-[var(--color-border)]">

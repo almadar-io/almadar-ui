@@ -650,8 +650,9 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
               key={idx}
               variant={action.variant || "secondary"}
               size="sm"
-              action={action.event}
+              action={action.navigatesTo ? undefined : action.event}
               actionPayload={{ row: normalizedData }}
+              onClick={action.navigatesTo ? () => handleActionClick(action, normalizedData) : undefined}
               icon={action.icon}
               data-testid={action.event ? `action-${action.event}` : undefined}
               data-row-id={normalizedData?.id !== undefined ? String(normalizedData.id) : undefined}

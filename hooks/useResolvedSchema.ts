@@ -126,6 +126,8 @@ export function useResolvedSchema(
                     event: l.event,
                     triggers: l.triggers,
                     source: l.source,
+                    guard: l.guard,
+                    payloadMapping: l.payloadMapping,
                 }));
                 resolvedSchemaLog.info('listens:restored', {
                     trait: traitName,

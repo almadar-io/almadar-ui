@@ -2,10 +2,10 @@
 /**
  * Unified ThemeContext - Single provider for theme and color mode
  *
- * Combines design theme selection (ocean, wireframe, etc.) with
+ * Combines design theme selection (glass, wireframe, etc.) with
  * color mode (light/dark) into a single, simple system.
  *
- * Uses a single data attribute: data-theme="ocean-light" or data-theme="ocean-dark"
+ * Uses a single data attribute: data-theme="glass-light" or data-theme="glass-dark"
  *
  * @packageDocumentation
  */
@@ -30,7 +30,7 @@ export type ResolvedMode = "light" | "dark";
 
 /** Theme definition */
 export interface UIThemeDefinition {
-  /** Theme identifier (e.g., "ocean", "wireframe") */
+  /** Theme identifier (e.g., "glass", "wireframe") */
   name: string;
   /** Display name for UI (e.g., "Ocean Blue") */
   displayName?: string;
@@ -92,74 +92,8 @@ export const BUILT_IN_THEMES: UIThemeDefinition[] = [
   },
   // Extended themes
   {
-    name: "ocean",
-    displayName: "Ocean",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "forest",
-    displayName: "Forest",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "sunset",
-    displayName: "Sunset",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "lavender",
-    displayName: "Lavender",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "rose",
-    displayName: "Rose",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "slate",
-    displayName: "Slate",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "ember",
-    displayName: "Ember",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "midnight",
-    displayName: "Midnight",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "sand",
-    displayName: "Sand",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
     name: "neon",
     displayName: "Neon",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "arctic",
-    displayName: "Arctic",
-    hasLightMode: true,
-    hasDarkMode: true,
-  },
-  {
-    name: "copper",
-    displayName: "Copper",
     hasLightMode: true,
     hasDarkMode: true,
   },
@@ -212,6 +146,31 @@ export const BUILT_IN_THEMES: UIThemeDefinition[] = [
     hasLightMode: true,
     hasDarkMode: true,
   },
+  // Personality themes — high-demand web styles (glassmorphism / claymorphism / retro / enterprise)
+  {
+    name: "glass",
+    displayName: "Glass",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
+  {
+    name: "clay",
+    displayName: "Clay",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
+  {
+    name: "retro",
+    displayName: "Retro",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
+  {
+    name: "corporate",
+    displayName: "Corporate",
+    hasLightMode: true,
+    hasDarkMode: true,
+  },
 ];
 
 /** Theme context value */
@@ -230,7 +189,7 @@ interface ThemeContextValue {
   toggleMode: () => void;
   /** Available themes */
   availableThemes: UIThemeDefinition[];
-  /** The full theme string applied to data-theme (e.g., "ocean-light") */
+  /** The full theme string applied to data-theme (e.g., "glass-light") */
   appliedTheme: string;
 }
 
@@ -284,7 +243,7 @@ export interface ThemeProviderProps {
  *
  * // With custom themes from orbital schema
  * import { THEMES } from './generated/theme-manifest';
- * <ThemeProvider themes={THEMES} defaultTheme="ocean" defaultMode="system">
+ * <ThemeProvider themes={THEMES} defaultTheme="glass" defaultMode="system">
  *   <App />
  * </ThemeProvider>
  * ```
@@ -339,7 +298,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     resolveMode(mode),
   );
 
-  // The applied theme string (e.g., "ocean-light")
+  // The applied theme string (e.g., "glass-light")
   const appliedTheme = useMemo(
     () => `${theme}-${resolvedMode}`,
     [theme, resolvedMode],

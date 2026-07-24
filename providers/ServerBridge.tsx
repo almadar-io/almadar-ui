@@ -23,6 +23,7 @@ import type { ReactNode } from 'react';
 import type { BusEventSource, EntityRow, EventPayload, OrbitalSchema, SExpr } from '@almadar/core';
 import type { AnyPatternConfig } from '@almadar/core/patterns';
 import { useEventBus } from '../hooks/useEventBus';
+import type { EventBusContextType } from '../types/event-bus-types';
 import { createLogger } from '@almadar/logger';
 
 /** Wire-format client effect tuple from the server response. */
@@ -32,13 +33,140 @@ type ClientEffectTuple =
   | ['notify', string, ...SExpr[]];
 
 // Gap #11 (Almadar_Std_Verification.md): cross-orbital re-broadcast
-// tracing. Each server response's `emittedEvents[]` is re-emitted on the
-// qualified `UI:Orbital.Trait.EVENT` bus key here; if the source-stamp
-// drops anywhere in the wire format, every emit is silently skipped — log
-// both branches so the runtime-verify capture surfaces the gap.
+// tracing. Each server-cascade event — carried back in-response (gap #13)
+// or pushed out-of-band over SSE (Almadar_Live_Push.md) — is re-emitted on
+// the qualified `UI:Orbital.Trait.EVENT` bus key by `reEmitServerEvent`
+// below; if the source-stamp drops anywhere in the wire format, every emit
+// is silently skipped — log both branches so the runtime-verify capture
+// surfaces the gap.
 const xOrbitalLog = createLogger('almadar:runtime:cross-orbital');
 const serverBridgeLog = createLogger('almadar:ui:server-bridge');
 
+/** A single server-cascade event, however it arrived (response or push). */
+interface RemoteBusEvent {
+  event: string;
+  payload?: EventPayload;
+  source?: BusEventSource;
+}
+
+/**
+ * Re-emit one server-cascade event on the qualified `UI:Orbital.Trait.EVENT`
+ * bus key the codegen-emitted subscribers (own `useUIEvents`, cross-trait
+ * `eventBus.on('UI:Orbital.Trait.EVENT')`) listen to (gap #13). Shared by
+ * the response-cascade path (`sendEvent`) and the SSE push leg
+ * (Almadar_Live_Push.md) so both deliver identical re-emit semantics.
+ *
+ * `origin` is a debug label only (dispatch orbital for the response path,
+ * `'push'` for the SSE path) — it never affects the re-emit key.
+ */
+function reEmitServerEvent(eventBus: EventBusContextType, emitted: RemoteBusEvent, origin: string): void {
+  const evTrait = emitted.source?.trait;
+  if (!evTrait) {
+    // Absent source means we don't know the trait, so the emit is dropped
+    // (preserves the unification — bare re-emits with a `source.trait`
+    // filter were the pre-fix path).
+    xOrbitalLog.warn('emit:dropped-no-source', { event: emitted.event, origin });
+    return;
+  }
+  const key = emitted.source?.orbital
+    ? `UI:${emitted.source.orbital}.${evTrait}.${emitted.event}`
+    : `UI:${evTrait}.${emitted.event}`;
+  xOrbitalLog.info('emit:rebroadcast', {
+    busKey: key,
+    sourceOrbital: emitted.source?.orbital,
+    sourceTrait: evTrait,
+    origin,
+  });
+  eventBus.emit(key, emitted.payload);
+}
+
+/**
+ * Push message shape on the `/api/events` SSE channel (Almadar_Live_Push.md).
+ * The channel also carries dev `reload` messages, so only `type: 'bus'`
+ * entries are cascade events — everything else is ignored by the subscriber.
+ */
+interface ServerPushEnvelope {
+  type: string;
+  event?: string;
+  payload?: EventPayload;
+  source?: BusEventSource;
+  timestamp?: number;
+}
+
+function isBusPushEnvelope(value: ServerPushEnvelope): value is ServerPushEnvelope & { type: 'bus'; event: string } {
+  return value.type === 'bus' && typeof value.event === 'string';
+}
+
+/**
+ * Per-TAB identity (Almadar_Live_Push.md) — module-scoped, NOT per provider.
+ * A page mounting several orbital providers is still ONE origin: the server's
+ * broadcast exclusion keys on this id, and per-provider ids would let one
+ * provider's persist echo back into its sibling providers in the same tab.
+ */
+let tabClientId: string | undefined;
+function getTabClientId(): string {
+  if (tabClientId === undefined) tabClientId = crypto.randomUUID();
+  return tabClientId;
+}
+
+type BusPushEnvelope = ServerPushEnvelope & { type: 'bus'; event: string };
+
+interface SharedPushChannel {
+  source: EventSource;
+  subscribers: Set<(envelope: BusPushEnvelope) => void>;
+}
+
+/**
+ * One shared EventSource per events URL, fanned out to every mounted
+ * provider. SSE connections are long-lived HTTP: one per provider exhausts
+ * Chromium's ~6-per-host HTTP/1.1 pool on multi-orbital pages and starves
+ * the bridge's own dispatch fetches (proven on std-kflow: every walk
+ * dispatch stalled to "driver did not deliver").
+ */
+const pushChannels = new Map<string, SharedPushChannel>();
+
+function acquirePushChannel(url: string, subscriber: (envelope: BusPushEnvelope) => void): () => void {
+  let channel = pushChannels.get(url);
+  if (channel === undefined) {
+    const source = new EventSource(url);
+    const created: SharedPushChannel = { source, subscribers: new Set() };
+    source.onmessage = (ev: MessageEvent<string>) => {
+      let parsed: ServerPushEnvelope;
+      try {
+        parsed = JSON.parse(ev.data) as ServerPushEnvelope;
+      } catch (err) {
+        serverBridgeLog.warn('push:parse-failed', { error: err instanceof Error ? err.message : String(err) });
+        return;
+      }
+      if (!isBusPushEnvelope(parsed)) return;
+      for (const sub of created.subscribers) sub(parsed);
+    };
+    source.onerror = () => {
+      serverBridgeLog.warn('push:connection-error', { url });
+    };
+    pushChannels.set(url, created);
+    channel = created;
+  }
+  channel.subscribers.add(subscriber);
+  return () => {
+    channel.subscribers.delete(subscriber);
+    if (channel.subscribers.size === 0) {
+      channel.source.close();
+      pushChannels.delete(url);
+    }
+  };
+}
+
+/**
+ * `/api/events` sits alongside the API root the provider already posts to
+ * (`serverUrl` = `.../orbitals`; the SSE channel is `.../events`, its
+ * sibling) — derive it structurally rather than hardcoding a second base.
+ */
+function deriveEventsUrl(serverUrl: string): string {
+  const trimmed = serverUrl.replace(/\/+$/, '');
+  const apiRoot = trimmed.replace(/\/[^/]*$/, '');
+  return `${apiRoot}/events`;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -123,7 +251,19 @@ export interface ServerBridgeContextValue {
 export interface ServerBridgeTransport {
   register: (schema: OrbitalSchema) => Promise<boolean>;
   unregister: () => Promise<void>;
-  sendEvent: (orbitalName: string, event: string, payload?: EventPayload) => Promise<OrbitalEventResponse>;
+  /**
+   * `clientId` (Almadar_Live_Push.md) is the per-tab id stamped on every
+   * dispatch so the server's push broadcast can exclude the origin tab
+   * (it already got this cascade in-response).
+   */
+  sendEvent: (orbitalName: string, event: string, payload?: EventPayload, clientId?: string) => Promise<OrbitalEventResponse>;
+}
+
+/** Request body posted to `POST /:orbital/events` — the local `OrbitalEventRequest` wire shape this transport owns. */
+interface OrbitalEventRequestBody {
+  event: string;
+  payload?: EventPayload;
+  clientId?: string;
 }
 
 /** HTTP transport — POSTs to a server speaking the canonical playground-runtime contract. */
@@ -158,11 +298,12 @@ function createHttpTransport(serverUrl: string): ServerBridgeTransport {
         // Ignore cleanup errors
       }
     },
-    sendEvent: async (orbitalName, event, payload) => {
+    sendEvent: async (orbitalName, event, payload, clientId) => {
+      const body: OrbitalEventRequestBody = { event, payload, clientId };
       const res = await fetch(`${serverUrl}/${orbitalName}/events`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ event, payload }),
+        body: JSON.stringify(body),
       });
       return res.json() as Promise<OrbitalEventResponse>;
     },
@@ -220,6 +361,7 @@ export function ServerBridgeProvider({
   const eventBus = useEventBus();
   const [connected, setConnected] = useState(false);
 
+
   // Resolve the transport: custom takes precedence (only one is set per the
   // mutual-exclusion check above). Memo on `serverUrl`/`customTransport` so
   // useCallback deps don't churn every render.
@@ -249,7 +391,7 @@ export function ServerBridgeProvider({
     if (!connected) return { effects: [], meta: emptyMeta };
 
     try {
-      const result: OrbitalEventResponse = await transport.sendEvent(orbitalName, event, payload);
+      const result: OrbitalEventResponse = await transport.sendEvent(orbitalName, event, payload, getTabClientId());
       const effects: ServerClientEffect[] = [];
 
       // Build metadata from raw response
@@ -309,33 +451,11 @@ export function ServerBridgeProvider({
           }
         }
 
-        // Gap #13: re-emit server-cascade events on the qualified bus
-        // key the codegen-emitted subscribers (own `useUIEvents`,
-        // cross-trait `eventBus.on('UI:Orbital.Trait.EVENT')`) listen to.
-        // The server response carries `source: BusEventSource` per emit
-        // when populated; absent source we don't know the trait, so the
-        // emit is dropped (preserves the unification — bare re-emits
-        // with a `source.trait` filter were the pre-fix path).
+        // Gap #13: re-emit server-cascade events on the qualified bus key
+        // (shared with the SSE push leg below — see `reEmitServerEvent`).
         if (result.emittedEvents) {
           for (const emitted of result.emittedEvents) {
-            const evTrait = emitted.source?.trait;
-            if (!evTrait) {
-              xOrbitalLog.warn('emit:dropped-no-source', {
-                event: emitted.event,
-                dispatchOrbital: orbitalName,
-              });
-              continue;
-            }
-            const key = emitted.source?.orbital
-              ? `UI:${emitted.source.orbital}.${evTrait}.${emitted.event}`
-              : `UI:${evTrait}.${emitted.event}`;
-            xOrbitalLog.info('emit:rebroadcast', {
-              busKey: key,
-              sourceOrbital: emitted.source?.orbital,
-              sourceTrait: evTrait,
-              dispatchOrbital: orbitalName,
-            });
-            eventBus.emit(key, emitted.payload);
+            reEmitServerEvent(eventBus, emitted, orbitalName);
           }
         }
       } else if (result.error) {
@@ -403,6 +523,29 @@ export function ServerBridgeProvider({
       unregisterSchema();
     };
   }, [schema, registerSchema, unregisterSchema]);
+
+  // Push subscribe leg (Almadar_Live_Push.md): other clients' persist-envelope
+  // emits arrive here and re-emit through the identical `reEmitServerEvent`
+  // path the response cascade uses, so existing `listens` routes match the
+  // same way regardless of which leg delivered the event. Only meaningful
+  // for the HTTP transport — the in-process transport has no server to push
+  // from. EventSource auto-reconnects natively; no custom retry loop. The
+  // connection itself is the shared per-tab channel — this effect only
+  // subscribes this provider's bus to it.
+  useEffect(() => {
+    if (!serverUrl) return;
+    if (typeof EventSource === 'undefined') return;
+
+    const url = `${deriveEventsUrl(serverUrl)}?clientId=${encodeURIComponent(getTabClientId())}`;
+    return acquirePushChannel(url, (parsed) => {
+      serverBridgeLog.debug('push:received', {
+        event: parsed.event,
+        sourceOrbital: parsed.source?.orbital,
+        sourceTrait: parsed.source?.trait,
+      });
+      reEmitServerEvent(eventBus, parsed, 'push');
+    });
+  }, [serverUrl, eventBus]);
 
   return (
     <ServerBridgeContext.Provider value={{ connected, sendEvent }}>

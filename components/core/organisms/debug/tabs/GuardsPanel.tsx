@@ -59,16 +59,16 @@ export function GuardsPanel({ guards }: GuardsPanelProps) {
                 <Badge variant={guard.result ? 'success' : 'danger'} size="sm">
                     {guard.result ? '✓' : '✗'}
                 </Badge>
-                <Typography variant="body" weight="semibold" className="text-amber-600 dark:text-amber-400">
+                <Typography variant="body" weight="semibold" className="text-warning">
                     {guard.guardName}
                 </Typography>
-                <Typography variant="small" className="text-gray-500">
+                <Typography variant="small" className="text-muted-foreground">
                     {guard.context.type === 'transition'
                         ? `${guard.context.transitionFrom} → ${guard.context.transitionTo}`
                         : guard.context.tickName
                     }
                 </Typography>
-                <Typography variant="small" className="text-gray-400 ml-auto">
+                <Typography variant="small" className="text-muted-foreground ml-auto">
                     {formatTime(guard.timestamp)}
                 </Typography>
             </div>
@@ -76,19 +76,19 @@ export function GuardsPanel({ guards }: GuardsPanelProps) {
         content: (
             <Stack gap="sm">
                 <div>
-                    <Typography variant="small" weight="medium" className="text-gray-500">{t('debug.expression')}</Typography>
-                    <code className="block mt-1 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 px-2 py-1 rounded">
+                    <Typography variant="small" weight="medium" className="text-muted-foreground">{t('debug.expression')}</Typography>
+                    <code className="block mt-1 text-xs text-warning bg-warning/10 px-2 py-1 rounded">
                         {guard.expression}
                     </code>
                 </div>
                 <div>
-                    <Typography variant="small" weight="medium" className="text-gray-500">{t('debug.inputs')}</Typography>
-                    <pre className="mt-1 text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-2 rounded overflow-auto max-h-24">
+                    <Typography variant="small" weight="medium" className="text-muted-foreground">{t('debug.inputs')}</Typography>
+                    <pre className="mt-1 text-xs text-muted-foreground bg-muted p-2 rounded overflow-auto max-h-24">
                         {JSON.stringify(guard.inputs, null, 2)}
                     </pre>
                 </div>
                 <div>
-                    <Typography variant="small" weight="medium" className="text-gray-500">{t('debug.trait')}</Typography>
+                    <Typography variant="small" weight="medium" className="text-muted-foreground">{t('debug.trait')}</Typography>
                     <Typography variant="small">{guard.context.traitName}</Typography>
                 </div>
             </Stack>

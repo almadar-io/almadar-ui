@@ -48,13 +48,13 @@ export function EntitiesTab({ snapshot }: EntitiesTabProps) {
         header: (
             <div className="flex items-center gap-2">
                 <Badge variant="primary" size="sm">{t('debug.singleton')}</Badge>
-                <Typography variant="body" weight="semibold" className="text-sky-600 dark:text-sky-400">
+                <Typography variant="body" weight="semibold" className="text-info">
                     {name}
                 </Typography>
             </div>
         ),
         content: (
-            <pre className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-2 rounded overflow-auto max-h-40">
+            <pre className="text-xs text-muted-foreground bg-muted p-2 rounded overflow-auto max-h-40">
                 {JSON.stringify(data, null, 2)}
             </pre>
         ),
@@ -65,16 +65,16 @@ export function EntitiesTab({ snapshot }: EntitiesTabProps) {
         id: entity.id,
         header: (
             <div className="flex items-center gap-2">
-                <Typography variant="body" weight="semibold" className="text-sky-600 dark:text-sky-400">
+                <Typography variant="body" weight="semibold" className="text-info">
                     {entity.type}
                 </Typography>
-                <Typography variant="small" className="text-gray-500">
+                <Typography variant="small" className="text-muted-foreground">
                     #{entity.id.slice(0, 8)}
                 </Typography>
             </div>
         ),
         content: (
-            <pre className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 p-2 rounded overflow-auto max-h-40">
+            <pre className="text-xs text-muted-foreground bg-muted p-2 rounded overflow-auto max-h-40">
                 {JSON.stringify(entity.data, null, 2)}
             </pre>
         ),
@@ -85,7 +85,7 @@ export function EntitiesTab({ snapshot }: EntitiesTabProps) {
             {/* Singletons */}
             {singletonItems.length > 0 && (
                 <div className="mb-4">
-                    <Typography variant="small" weight="medium" className="text-gray-500 mb-2">
+                    <Typography variant="small" weight="medium" className="text-muted-foreground mb-2">
                         {t('debug.singletonsCount', { count: singletonItems.length })}
                     </Typography>
                     <Accordion items={singletonItems} multiple />
@@ -95,12 +95,12 @@ export function EntitiesTab({ snapshot }: EntitiesTabProps) {
             {/* Runtime entities */}
             {runtimeItems.length > 0 && (
                 <div className="mb-4">
-                    <Typography variant="small" weight="medium" className="text-gray-500 mb-2">
+                    <Typography variant="small" weight="medium" className="text-muted-foreground mb-2">
                         {t('debug.runtimeCount', { count: runtimeEntities.length })}
                     </Typography>
                     <Accordion items={runtimeItems} multiple />
                     {runtimeEntities.length > 20 && (
-                        <Typography variant="small" className="text-gray-400 text-center mt-2">
+                        <Typography variant="small" className="text-muted-foreground text-center mt-2">
                             {t('debug.moreEntities', { count: runtimeEntities.length - 20 })}
                         </Typography>
                     )}
@@ -110,7 +110,7 @@ export function EntitiesTab({ snapshot }: EntitiesTabProps) {
             {/* Persistent entities */}
             {persistentEntries.length > 0 && (
                 <div>
-                    <Typography variant="small" weight="medium" className="text-gray-500 mb-2">
+                    <Typography variant="small" weight="medium" className="text-muted-foreground mb-2">
                         {t('debug.persistent')}
                     </Typography>
                     <Stack gap="xs">

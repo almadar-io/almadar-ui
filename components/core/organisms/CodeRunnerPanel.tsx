@@ -160,64 +160,64 @@ export const CodeRunnerPanel: React.FC<CodeRunnerPanelProps> = ({
       </HStack>
 
       {hasOutput && (
-        <Box className="rounded-lg border border-gray-700 bg-[#0d0d0d] overflow-hidden">
+        <Box className="rounded-lg border border-border bg-foreground overflow-hidden">
           <HStack
             gap="sm"
             align="center"
-            className="px-3 py-2 bg-gray-800 border-b border-gray-700"
+            className="px-3 py-2 bg-card border-b border-border"
           >
-            <Terminal size={16} className="text-gray-400" />
-            <Typography variant="small" className="text-gray-300 font-medium">
+            <Terminal size={16} className="text-muted-foreground" />
+            <Typography variant="small" className="text-foreground font-medium">
               Output
             </Typography>
           </HStack>
 
           <VStack gap="none" className="p-3 font-mono text-sm">
             {error ? (
-              <Typography variant="small" className="text-red-400 whitespace-pre-wrap">
+              <Typography variant="small" className="text-error whitespace-pre-wrap">
                 {error}
               </Typography>
             ) : (
               <>
                 {output?.stdout ? (
-                  <Typography variant="small" className="text-gray-200 whitespace-pre-wrap">
+                  <Typography variant="small" className="text-background whitespace-pre-wrap">
                     {output.stdout}
                   </Typography>
                 ) : null}
                 {output?.stderr ? (
-                  <Typography variant="small" className="text-red-400 whitespace-pre-wrap">
+                  <Typography variant="small" className="text-error whitespace-pre-wrap">
                     {output.stderr}
                   </Typography>
                 ) : null}
                 {!output?.stdout && !output?.stderr ? (
-                  <Typography variant="small" className="text-gray-500 italic">
+                  <Typography variant="small" className="text-background italic">
                     No output
                   </Typography>
                 ) : null}
 
                 {output && output.testResults.length > 0 && (
-                  <Box className="mt-3 pt-3 border-t border-gray-700 space-y-2">
+                  <Box className="mt-3 pt-3 border-t border-border space-y-2">
                     {output.testResults.map((test, index) => (
                       <HStack key={index} gap="sm" align="start" className="text-xs">
                         {test.passed ? (
-                          <CheckCircle size={14} className="text-green-400 mt-0.5" />
+                          <CheckCircle size={14} className="text-success mt-0.5" />
                         ) : (
-                          <XCircle size={14} className="text-red-400 mt-0.5" />
+                          <XCircle size={14} className="text-error mt-0.5" />
                         )}
                         <VStack gap="xs" className="flex-1">
                           <Typography
                             variant="small"
-                            className={test.passed ? 'text-green-400' : 'text-red-400'}
+                            className={test.passed ? 'text-success' : 'text-error'}
                           >
                             Test {index + 1}: {test.passed ? 'passed' : 'failed'}
                           </Typography>
-                          <Typography variant="small" className="text-gray-400">
+                          <Typography variant="small" className="text-background">
                             Input: {test.input}
                           </Typography>
-                          <Typography variant="small" className="text-gray-400">
+                          <Typography variant="small" className="text-background">
                             Expected: {test.expectedOutput}
                           </Typography>
-                          <Typography variant="small" className="text-gray-400">
+                          <Typography variant="small" className="text-background">
                             Actual: {test.actualOutput}
                           </Typography>
                         </VStack>

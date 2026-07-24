@@ -1,102 +1,106 @@
 /**
- * Minimalist Theme
+ * Retro Theme — "80s/90s Vaporwave Arcade"
  *
- * Clean, subtle, refined. Uses soft shadows, thin borders,
- * and gentle curves for a premium, modern feel.
- * Elegant hover effects and smooth transitions.
+ * CRT-terminal energy: pixel display type (VT323) over deep indigo-purple,
+ * hot magenta primary against electric cyan accents, hard offset shadows in
+ * solid contrasting colors like a screen-printed arcade cabinet, razor-sharp
+ * corners, and snappy linear micro-transitions that feel like a button press
+ * on an 8-bit machine. Dark mode is the native habitat; light mode is a
+ * lavender day-shift.
  */
 
 /* ==========================================================================
  * LIGHT MODE
  * ========================================================================== */
-[data-theme="minimalist-light"] {
-    /* Shadows - Soft, layered */
-    --shadow-main: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+[data-theme="retro-light"] {
+    /* Shadows - Hard offset, solid contrasting colors (arcade print) */
+    --shadow-main: 4px 4px 0 0 rgba(255, 46, 136, 0.55);
+    --shadow-sm: 2px 2px 0 0 rgba(255, 46, 136, 0.45);
     --shadow-lg:
-        0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-    --shadow-inner: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+        6px 6px 0 0 rgba(255, 46, 136, 0.55);
+    --shadow-inner: inset 2px 2px 0 0 rgba(109, 40, 217, 0.12);
     --shadow-none: none;
-    --shadow-hover: 0 10px 40px -10px rgba(0, 0, 0, 0.15);
-    --shadow-active: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-hover:
+        6px 6px 0 0 rgba(0, 188, 212, 0.7);
+    --shadow-active: 1px 1px 0 0 rgba(255, 46, 136, 0.55);
 
-    /* Border radius - Gentle curves */
+    /* Border radius - Sharp arcade corners */
     --radius-none: 0px;
-    --radius-sm: 4px;
-    --radius-md: 10px;
-    --radius-lg: 14px;
-    --radius-xl: 16px;
+    --radius-sm: 2px;
+    --radius-md: 4px;
+    --radius-lg: 4px;
+    --radius-xl: 4px;
     --radius-full: 9999px;
 
-    /* Border width - Thin, delicate */
-    --border-width: 1px;
+    /* Border width - Chunky outlined look */
+    --border-width: 2px;
     --border-width-thin: 1px;
-    --border-width-thick: 2px;
+    --border-width-thick: 3px;
 
-    /* Colors - Subtle contrast with soft grays */
-    --color-primary: #18181b;
-    --color-primary-hover: #27272a;
-    --color-primary-foreground: #fafafa;
+    /* Colors - Lavender day-shift over deep indigo ink */
+    --color-primary: #e01a74;
+    --color-primary-hover: #c01563;
+    --color-primary-foreground: #ffffff;
 
-    --color-secondary: #fafafa;
-    --color-secondary-hover: #f4f4f5;
-    --color-secondary-foreground: #18181b;
+    --color-secondary: #e9d5ff;
+    --color-secondary-hover: #d8b4fe;
+    --color-secondary-foreground: #3b1a63;
 
-    --color-accent: #18181b;
-    --color-accent-foreground: #fafafa;
+    --color-accent: #00798c;
+    --color-accent-foreground: #ffffff;
 
-    --color-muted: #f4f4f5;
-    --color-muted-foreground: #65656e;
+    --color-muted: #e9d5ff;
+    --color-muted-foreground: #6b4a9e;
 
-    --color-background: #f8fafc;
-    --color-foreground: #18181b;
+    --color-background: #f3e8ff;
+    --color-foreground: #2a1650;
     --color-card: #ffffff;
-    --color-card-foreground: #18181b;
-    --color-surface: #f4f4f5;
-    --color-border: #e4e4e7;
-    --color-input: #d4d4d8;
-    --color-ring: #18181b;
+    --color-card-foreground: #2a1650;
+    --color-surface: #e9d5ff;
+    --color-border: rgba(255, 46, 136, 0.45);
+    --color-input: rgba(0, 172, 193, 0.45);
+    --color-ring: #00acc1;
 
     /* Semantic colors */
     --color-error: #dc2626;
     --color-error-foreground: #ffffff;
     --color-success: #15803d;
     --color-success-foreground: #ffffff;
-    --color-warning: #ca8a04;
+    --color-warning: #d97706;
     --color-warning-foreground: #000000;
-    --color-info: #2563eb;
+    --color-info: #0e7490;
     --color-info-foreground: #ffffff;
 
-    /* Typography - Light, elegant */
+    /* Typography - Mono body, pixel display, wide tracking */
     --font-family:
-        "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        "IBM Plex Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     --font-weight-normal: 400;
     --font-weight-medium: 500;
-    --font-weight-bold: 600;
-    --letter-spacing: -0.01em;
-    --line-height: 1.6;
+    --font-weight-bold: 700;
+    --letter-spacing: 0.04em;
+    --line-height: 1.5;
 
-    /* Icon styling - Thin, refined */
-    --icon-stroke-width: 1.5;
-    --icon-color: currentColor;
+    /* Icon styling - Chunky strokes */
+    --icon-stroke-width: 2.5;
+    --icon-color: #e01a74;
 
-    /* Transitions - Smooth, elegant */
-    --transition-fast: 150ms;
-    --transition-normal: 250ms;
-    --transition-slow: 400ms;
-    --transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+    /* Transitions - Snappy, mechanical, linear */
+    --transition-fast: 50ms;
+    --transition-normal: 80ms;
+    --transition-slow: 120ms;
+    --transition-timing: linear;
 
-    /* Hover/Active transforms - Subtle lift */
-    --hover-scale: 1.01;
-    --hover-translate-y: -1px;
+    /* Hover/Active transforms - Button-press feel via shadow shift */
+    --hover-scale: 1.0;
+    --hover-translate-y: 0;
     --hover-translate-x: 0;
     --active-scale: 0.99;
-    --active-translate-y: 0;
+    --active-translate-y: 2px;
 
     /* Focus ring */
     --focus-ring-width: 2px;
     --focus-ring-offset: 2px;
-    --focus-ring-color: #18181b;
+    --focus-ring-color: #00acc1;
 
     /* Layer 1 — backfill (preserves current visual output, see themes/_contract.md) */
     /* Density axis — spacing scale */
@@ -114,25 +118,25 @@
     --space-11: 44px;
     --space-12: 48px;
     /* Density axis — per-element heights */
-    --button-height-sm: 28px;
-    --button-height-md: 36px;
-    --button-height-lg: 44px;
-    --input-height-sm: 28px;
-    --input-height-md: 36px;
-    --input-height-lg: 44px;
+    --button-height-sm: 30px;
+    --button-height-md: 38px;
+    --button-height-lg: 46px;
+    --input-height-sm: 30px;
+    --input-height-md: 38px;
+    --input-height-lg: 46px;
     --row-height-compact: 32px;
     --row-height-normal: 40px;
     --row-height-spacious: 48px;
     /* Density axis — per-element padding */
     --card-padding-sm: 12px;
-    --card-padding-md: 16px;
+    --card-padding-md: 18px;
     --card-padding-lg: 24px;
     --dialog-padding: 24px;
     --section-gap: 32px;
     /* Type axis — family triplet (aliases existing --font-family for backward compat) */
-    --font-family-display: var(--font-family);
+    --font-family-display: "VT323", "Courier New", monospace;
     --font-family-body: var(--font-family);
-    --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --font-family-mono: "IBM Plex Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     /* Type axis — size scale */
     --text-xs: 12px;
     --leading-xs: 16px;
@@ -181,11 +185,11 @@
     --duration-fast: var(--transition-fast);
     --duration-normal: var(--transition-normal);
     --duration-slow: var(--transition-slow);
-    --duration-dramatic: 600ms;
+    --duration-dramatic: 400ms;
     /* Motion axis — easing palette */
     --easing-linear: linear;
     --easing-standard: var(--transition-timing);
-    --easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+    --easing-emphasized: linear;
     --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     /* Iconography axis */
     --icon-family: lucide;
@@ -196,8 +200,8 @@
     --elevation-dialog: var(--shadow-lg);
     --elevation-toast: var(--shadow-main);
     /* Geometry axis — radius rhythm with intent */
-    --radius-container: var(--radius-md);
-    --radius-interactive: var(--radius-md);
+    --radius-container: var(--radius-sm);
+    --radius-interactive: var(--radius-sm);
     --radius-pill: var(--radius-full);
     /* Geometry axis — border-width rhythm */
     --border-hairline: 1px;
@@ -208,94 +212,95 @@
 /* ==========================================================================
  * DARK MODE
  * ========================================================================== */
-[data-theme="minimalist-dark"] {
-    /* Shadows - Darker, more pronounced */
-    --shadow-main: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+[data-theme="retro-dark"] {
+    /* Shadows - Hard offset, solid neon offsets (arcade cabinet) */
+    --shadow-main: 4px 4px 0 0 rgba(0, 229, 255, 0.9);
+    --shadow-sm: 2px 2px 0 0 rgba(0, 229, 255, 0.7);
     --shadow-lg:
-        0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 8px 10px -6px rgba(0, 0, 0, 0.3);
-    --shadow-inner: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+        6px 6px 0 0 rgba(0, 229, 255, 0.9);
+    --shadow-inner: inset 2px 2px 0 0 rgba(255, 46, 136, 0.25);
     --shadow-none: none;
-    --shadow-hover: 0 10px 40px -10px rgba(0, 0, 0, 0.4);
-    --shadow-active: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --shadow-hover:
+        6px 6px 0 0 rgba(255, 46, 136, 0.9);
+    --shadow-active: 1px 1px 0 0 rgba(0, 229, 255, 0.9);
 
-    /* Border radius - Gentle curves */
+    /* Border radius - Sharp arcade corners */
     --radius-none: 0px;
-    --radius-sm: 4px;
-    --radius-md: 10px;
-    --radius-lg: 14px;
-    --radius-xl: 16px;
+    --radius-sm: 2px;
+    --radius-md: 4px;
+    --radius-lg: 4px;
+    --radius-xl: 4px;
     --radius-full: 9999px;
 
-    /* Border width - Thin, delicate */
-    --border-width: 1px;
+    /* Border width - Chunky outlined look */
+    --border-width: 2px;
     --border-width-thin: 1px;
-    --border-width-thick: 2px;
+    --border-width-thick: 3px;
 
-    /* Colors - Dark mode inverted */
-    --color-primary: #fafafa;
-    --color-primary-hover: #e4e4e7;
-    --color-primary-foreground: #18181b;
+    /* Colors - Deep indigo-purple vaporwave night */
+    --color-primary: #ff2e88;
+    --color-primary-hover: #ff5aa2;
+    --color-primary-foreground: #2b0216;
 
-    --color-secondary: #27272a;
-    --color-secondary-hover: #3f3f46;
-    --color-secondary-foreground: #fafafa;
+    --color-secondary: #2d1b4e;
+    --color-secondary-hover: #3b2566;
+    --color-secondary-foreground: #efe3ff;
 
-    --color-accent: #fafafa;
-    --color-accent-foreground: #18181b;
+    --color-accent: #00e5ff;
+    --color-accent-foreground: #00252b;
 
-    --color-muted: #27272a;
-    --color-muted-foreground: #a1a1aa;
+    --color-muted: #2d1b4e;
+    --color-muted-foreground: #9d86d6;
 
-    --color-background: #09090b;
-    --color-foreground: #fafafa;
-    --color-card: #18181b;
-    --color-card-foreground: #fafafa;
-    --color-surface: #27272a;
-    --color-border: #27272a;
-    --color-input: #3f3f46;
-    --color-ring: #fafafa;
+    --color-background: #1a0b2e;
+    --color-foreground: #efe3ff;
+    --color-card: #241242;
+    --color-card-foreground: #efe3ff;
+    --color-surface: #2d1b4e;
+    --color-border: rgba(255, 46, 136, 0.5);
+    --color-input: rgba(0, 229, 255, 0.5);
+    --color-ring: #00e5ff;
 
-    /* Semantic colors - Brighter for dark mode */
-    --color-error: #f87171;
-    --color-error-foreground: #000000;
-    --color-success: #4ade80;
-    --color-success-foreground: #000000;
-    --color-warning: #fbbf24;
-    --color-warning-foreground: #000000;
-    --color-info: #60a5fa;
-    --color-info-foreground: #000000;
+    /* Semantic colors - Neon-bright for dark mode */
+    --color-error: #ff5252;
+    --color-error-foreground: #1a0000;
+    --color-success: #2ee66e;
+    --color-success-foreground: #00290f;
+    --color-warning: #ffb300;
+    --color-warning-foreground: #2a1a00;
+    --color-info: #00e5ff;
+    --color-info-foreground: #00252b;
 
-    /* Typography */
+    /* Typography - Mono body, pixel display, wide tracking */
     --font-family:
-        "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        "IBM Plex Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     --font-weight-normal: 400;
     --font-weight-medium: 500;
-    --font-weight-bold: 600;
-    --letter-spacing: -0.01em;
-    --line-height: 1.6;
+    --font-weight-bold: 700;
+    --letter-spacing: 0.04em;
+    --line-height: 1.5;
 
-    /* Icon styling */
-    --icon-stroke-width: 1.5;
-    --icon-color: currentColor;
+    /* Icon styling - Chunky strokes */
+    --icon-stroke-width: 2.5;
+    --icon-color: #00e5ff;
 
-    /* Transitions */
-    --transition-fast: 150ms;
-    --transition-normal: 250ms;
-    --transition-slow: 400ms;
-    --transition-timing: cubic-bezier(0.4, 0, 0.2, 1);
+    /* Transitions - Snappy, mechanical, linear */
+    --transition-fast: 50ms;
+    --transition-normal: 80ms;
+    --transition-slow: 120ms;
+    --transition-timing: linear;
 
-    /* Hover/Active transforms */
-    --hover-scale: 1.01;
-    --hover-translate-y: -1px;
+    /* Hover/Active transforms - Button-press feel via shadow shift */
+    --hover-scale: 1.0;
+    --hover-translate-y: 0;
     --hover-translate-x: 0;
     --active-scale: 0.99;
-    --active-translate-y: 0;
+    --active-translate-y: 2px;
 
     /* Focus ring */
     --focus-ring-width: 2px;
     --focus-ring-offset: 2px;
-    --focus-ring-color: #fafafa;
+    --focus-ring-color: #00e5ff;
 
     /* Layer 1 — backfill (preserves current visual output, see themes/_contract.md) */
     /* Density axis — spacing scale */
@@ -313,25 +318,25 @@
     --space-11: 44px;
     --space-12: 48px;
     /* Density axis — per-element heights */
-    --button-height-sm: 28px;
-    --button-height-md: 36px;
-    --button-height-lg: 44px;
-    --input-height-sm: 28px;
-    --input-height-md: 36px;
-    --input-height-lg: 44px;
+    --button-height-sm: 30px;
+    --button-height-md: 38px;
+    --button-height-lg: 46px;
+    --input-height-sm: 30px;
+    --input-height-md: 38px;
+    --input-height-lg: 46px;
     --row-height-compact: 32px;
     --row-height-normal: 40px;
     --row-height-spacious: 48px;
     /* Density axis — per-element padding */
     --card-padding-sm: 12px;
-    --card-padding-md: 16px;
+    --card-padding-md: 18px;
     --card-padding-lg: 24px;
     --dialog-padding: 24px;
     --section-gap: 32px;
     /* Type axis — family triplet (aliases existing --font-family for backward compat) */
-    --font-family-display: var(--font-family);
+    --font-family-display: "VT323", "Courier New", monospace;
     --font-family-body: var(--font-family);
-    --font-family-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --font-family-mono: "IBM Plex Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
     /* Type axis — size scale */
     --text-xs: 12px;
     --leading-xs: 16px;
@@ -380,11 +385,11 @@
     --duration-fast: var(--transition-fast);
     --duration-normal: var(--transition-normal);
     --duration-slow: var(--transition-slow);
-    --duration-dramatic: 600ms;
+    --duration-dramatic: 400ms;
     /* Motion axis — easing palette */
     --easing-linear: linear;
     --easing-standard: var(--transition-timing);
-    --easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+    --easing-emphasized: linear;
     --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
     /* Iconography axis */
     --icon-family: lucide;
@@ -395,8 +400,8 @@
     --elevation-dialog: var(--shadow-lg);
     --elevation-toast: var(--shadow-main);
     /* Geometry axis — radius rhythm with intent */
-    --radius-container: var(--radius-md);
-    --radius-interactive: var(--radius-md);
+    --radius-container: var(--radius-sm);
+    --radius-interactive: var(--radius-sm);
     --radius-pill: var(--radius-full);
     /* Geometry axis — border-width rhythm */
     --border-hairline: 1px;

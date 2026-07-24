@@ -174,7 +174,7 @@ export function EventDispatcherTab({ traits, schema }: EventDispatcherTabProps) 
         <div className="debug-tab debug-tab--dispatch">
             {/* Current state per trait */}
             <div className="mb-3">
-                <Typography variant="small" weight="medium" className="text-gray-500 mb-1">
+                <Typography variant="small" weight="medium" className="text-muted-foreground mb-1">
                     {t('debug.activeStates')}
                 </Typography>
                 <div className="flex flex-wrap gap-1">
@@ -188,11 +188,11 @@ export function EventDispatcherTab({ traits, schema }: EventDispatcherTabProps) 
 
             {/* Available events (from current state) */}
             <div className="mb-3">
-                <Typography variant="small" weight="medium" className="text-gray-500 mb-1">
+                <Typography variant="small" weight="medium" className="text-muted-foreground mb-1">
                     {t('debug.availableEvents')}
                 </Typography>
                 {availableEvents.length === 0 ? (
-                    <Typography variant="small" className="text-gray-400 italic">
+                    <Typography variant="small" className="text-muted-foreground italic">
                         {t('debug.noTransitionsFromState')}
                     </Typography>
                 ) : (
@@ -207,7 +207,7 @@ export function EventDispatcherTab({ traits, schema }: EventDispatcherTabProps) 
                                 >
                                     {event}
                                 </Button>
-                                <Typography variant="small" className="text-gray-500">
+                                <Typography variant="small" className="text-muted-foreground">
                                     {transitions.map((t) => `${t.from} -> ${t.to}`).join(', ')}
                                 </Typography>
                                 {transitions.some((tr) => tr.guard) && (
@@ -222,7 +222,7 @@ export function EventDispatcherTab({ traits, schema }: EventDispatcherTabProps) 
             {/* Unavailable events (from other states, shown as disabled) */}
             {unavailableEvents.length > 0 && (
                 <div className="mb-3">
-                    <Typography variant="small" weight="medium" className="text-gray-500 mb-1">
+                    <Typography variant="small" weight="medium" className="text-muted-foreground mb-1">
                         {t('debug.otherEvents')}
                     </Typography>
                     <div className="flex flex-wrap gap-1">
@@ -238,17 +238,17 @@ export function EventDispatcherTab({ traits, schema }: EventDispatcherTabProps) 
             {/* Transition log */}
             {log.length > 0 && (
                 <div>
-                    <Typography variant="small" weight="medium" className="text-gray-500 mb-1">
+                    <Typography variant="small" weight="medium" className="text-muted-foreground mb-1">
                         {t('debug.recentTransitions')}
                     </Typography>
                     <Stack gap="xs">
                         {log.map((entry, i) => (
                             <Typography key={i} variant="small" className="font-mono text-xs">
-                                <span className="text-purple-400">{entry.traitName}</span>
+                                <span className="text-primary">{entry.traitName}</span>
                                 {' '}
-                                <span className="text-gray-500">{entry.from}</span>
+                                <span className="text-muted-foreground">{entry.from}</span>
                                 {' -> '}
-                                <span className="text-green-400">{entry.to}</span>
+                                <span className="text-success">{entry.to}</span>
                             </Typography>
                         ))}
                     </Stack>

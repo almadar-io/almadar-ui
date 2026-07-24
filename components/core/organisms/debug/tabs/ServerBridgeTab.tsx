@@ -29,8 +29,8 @@ function StatRow({ label, value, variant }: {
     variant?: 'success' | 'danger' | 'warning' | 'default';
 }) {
     return (
-        <div className="flex items-center justify-between py-1.5 border-b border-gray-100 dark:border-gray-800 last:border-b-0">
-            <Typography variant="small" className="text-gray-500">
+        <div className="flex items-center justify-between py-1.5 border-b border-border last:border-b-0">
+            <Typography variant="small" className="text-muted-foreground">
                 {label}
             </Typography>
             {variant ? (
@@ -73,7 +73,7 @@ export function ServerBridgeTab({ bridge }: ServerBridgeTabProps) {
                 {/* Connection Status */}
                 <Card className="p-3">
                     <div className="flex items-center gap-3 mb-3">
-                        <div className={`w-3 h-3 rounded-full ${bridge.connected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                        <div className={`w-3 h-3 rounded-full ${bridge.connected ? 'bg-success animate-pulse' : 'bg-error'}`} />
                         <Typography variant="h6">
                             {bridge.connected ? t('debug.connected') : t('debug.disconnected')}
                         </Typography>
@@ -102,11 +102,11 @@ export function ServerBridgeTab({ bridge }: ServerBridgeTabProps) {
 
                 {/* Error Display */}
                 {bridge.lastError && (
-                    <Card className="p-3 border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950">
-                        <Typography variant="small" weight="semibold" className="text-red-600 dark:text-red-400 mb-1">
+                    <Card className="p-3 border-error/30 bg-error/10">
+                        <Typography variant="small" weight="semibold" className="text-error mb-1">
                             {t('debug.lastError')}
                         </Typography>
-                        <Typography variant="small" className="text-red-500 font-mono break-all">
+                        <Typography variant="small" className="text-error font-mono break-all">
                             {bridge.lastError}
                         </Typography>
                     </Card>
@@ -115,7 +115,7 @@ export function ServerBridgeTab({ bridge }: ServerBridgeTabProps) {
                 {/* Throughput indicator */}
                 {bridge.connected && (
                     <div className="text-center py-2">
-                        <Typography variant="small" className="text-gray-400">
+                        <Typography variant="small" className="text-muted-foreground">
                             {t('debug.totalEventsProcessed', { count: bridge.eventsForwarded + bridge.eventsReceived })}
                         </Typography>
                     </div>

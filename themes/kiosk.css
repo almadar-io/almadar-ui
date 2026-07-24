@@ -43,7 +43,7 @@
     --color-secondary-hover: #ffe1dd;
     --color-secondary-foreground: #1a1a1a;
 
-    --color-accent: #22c8be;
+    --color-accent: #0f766e;
     --color-accent-foreground: #ffffff;
 
     --color-muted: #f5f5f4;
@@ -59,13 +59,13 @@
     --color-ring: #ff5a4f;
 
     /* Semantic colors - Saturated, cheerful */
-    --color-error: #ef4444;
+    --color-error: #b91c1c;
     --color-error-foreground: #ffffff;
-    --color-success: #16a34a;
+    --color-success: #15803d;
     --color-success-foreground: #ffffff;
     --color-warning: #f59e0b;
     --color-warning-foreground: #1a1a1a;
-    --color-info: #0ea5e9;
+    --color-info: #0369a1;
     --color-info-foreground: #ffffff;
 
     /* Typography - Chunky, rounded geometric */
@@ -241,7 +241,7 @@
     /* Colors - Deep navy background, coral primary, turquoise pop */
     --color-primary: #ff6b5e;
     --color-primary-hover: #ff8478;
-    --color-primary-foreground: #ffffff;
+    --color-primary-foreground: #1a0606;
 
     --color-secondary: #1c2a44;
     --color-secondary-hover: #2a3a5c;

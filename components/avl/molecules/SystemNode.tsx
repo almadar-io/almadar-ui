@@ -64,8 +64,8 @@ export const SystemNode: React.FC<SystemNodeProps> = ({ data }) => {
       style={{ minWidth: 160, maxWidth: 220 }}
     >
       {/* Handles for event wire connections */}
-      <Handle type="target" position={Position.Left} className="!w-2 !h-2 !bg-orange-400" />
-      <Handle type="source" position={Position.Right} className="!w-2 !h-2 !bg-orange-400" />
+      <Handle type="target" position={Position.Left} className="!w-2 !h-2 !bg-warning" />
+      <Handle type="source" position={Position.Right} className="!w-2 !h-2 !bg-warning" />
 
       {/* Row 1: Name + entity glyph + field type dots */}
       <div className="flex items-center gap-1.5 mb-1">

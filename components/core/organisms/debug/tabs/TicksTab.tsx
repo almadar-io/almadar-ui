@@ -42,15 +42,15 @@ export function TicksTab({ ticks }: TicksTabProps) {
     const TickCard = ({ tick, active }: { tick: TickExecution; active: boolean }) => (
         <Card className={`p-3 ${!active ? 'opacity-50' : ''}`}>
             <div className="flex items-center gap-2 mb-2">
-                <span className={`w-2 h-2 rounded-full ${active ? 'bg-green-500' : 'bg-gray-400'}`} />
-                <Typography variant="body" weight="semibold" className="text-amber-600 dark:text-amber-400">
+                <span className={`w-2 h-2 rounded-full ${active ? 'bg-success' : 'bg-muted-foreground'}`} />
+                <Typography variant="body" weight="semibold" className="text-warning">
                     {tick.name}
                 </Typography>
-                <Typography variant="small" className="text-gray-500">
+                <Typography variant="small" className="text-muted-foreground">
                     {tick.traitName}
                 </Typography>
             </div>
-            <div className="flex gap-3 text-xs text-gray-500">
+            <div className="flex gap-3 text-xs text-muted-foreground">
                 <span>{tick.interval}ms</span>
                 <span>{tick.runCount} runs</span>
                 <span>{tick.executionTime.toFixed(1)}ms exec</span>
@@ -71,7 +71,7 @@ export function TicksTab({ ticks }: TicksTabProps) {
             {/* Active ticks */}
             {activeTicks.length > 0 && (
                 <div className="mb-4">
-                    <Typography variant="small" weight="medium" className="text-gray-500 mb-2">
+                    <Typography variant="small" weight="medium" className="text-muted-foreground mb-2">
                         Active ({activeTicks.length})
                     </Typography>
                     <Stack gap="sm">
@@ -85,7 +85,7 @@ export function TicksTab({ ticks }: TicksTabProps) {
             {/* Inactive ticks */}
             {inactiveTicks.length > 0 && (
                 <div>
-                    <Typography variant="small" weight="medium" className="text-gray-400 mb-2">
+                    <Typography variant="small" weight="medium" className="text-muted-foreground mb-2">
                         Inactive ({inactiveTicks.length})
                     </Typography>
                     <Stack gap="sm">

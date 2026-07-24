@@ -211,7 +211,7 @@ export function WalkMinimap(): React.ReactElement | null {
                 key={t.name}
                 variant={variant}
                 size="sm"
-                className={`flex-shrink-0 text-[9px] ${isActive ? 'ring-1 ring-cyan-400' : ''}`}
+                className={`flex-shrink-0 text-[9px] ${isActive ? 'ring-1 ring-info' : ''}`}
               >
                 {isDone ? '\u2713' : isActive ? '\u25CF' : '\u25CB'} {shortName || t.name}
               </Badge>
@@ -385,11 +385,11 @@ export function WalkMinimap(): React.ReactElement | null {
       {/* Layer 3: Progress footer */}
       <Box className="px-2 py-1 border-t border-border">
         <HStack gap="sm" className="items-center justify-between">
-          <Typography variant="caption" className="text-xs font-mono text-green-500">
+          <Typography variant="caption" className="text-xs font-mono text-success">
             Engine: {engineCount}/{totalTransitions}
           </Typography>
           {domCount > 0 && (
-            <Typography variant="caption" className="text-xs font-mono text-cyan-500">
+            <Typography variant="caption" className="text-xs font-mono text-info">
               DOM: {domCount}
             </Typography>
           )}

@@ -72,7 +72,7 @@ export const BookTableOfContents: React.FC<BookTableOfContentsProps> = ({
                   className={cn(
                     'justify-start text-left w-full',
                     direction === 'rtl' && 'text-right',
-                    isCurrent && 'bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400',
+                    isCurrent && 'bg-primary/10 text-primary',
                   )}
                 >
                   <Box className="truncate">

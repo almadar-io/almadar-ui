@@ -26,6 +26,9 @@ jobs:
       # Resolve dependencies fresh so CI does not fail on a missing frozen lockfile.
       - run: pnpm install --frozen-lockfile
 
+      - name: Verify theme contrast (WCAG AA)
+        run: pnpm verify:themes
+
       - name: Build
         run: pnpm build
         env:

@@ -96,7 +96,7 @@ export function EventFlowTab({ events }: EventFlowTabProps) {
                         );
                     })}
                 </ButtonGroup>
-                <label className="flex items-center gap-1 text-xs text-gray-500 ml-auto cursor-pointer">
+                <label className="flex items-center gap-1 text-xs text-muted-foreground ml-auto cursor-pointer">
                     <Checkbox
                         checked={autoScroll}
                         onChange={(e) => setAutoScroll(e.target.checked)}
@@ -108,23 +108,23 @@ export function EventFlowTab({ events }: EventFlowTabProps) {
             {/* Event list */}
             <div
                 ref={containerRef}
-                className="max-h-64 overflow-y-auto space-y-1 bg-gray-50 dark:bg-gray-800 rounded p-2"
+                className="max-h-64 overflow-y-auto space-y-1 bg-muted rounded p-2"
             >
                 {filteredEvents.slice(-100).map(event => {
                     const { variant, icon } = TYPE_BADGES[event.type] || { variant: 'default' as const, icon: '•' };
                     return (
                         <div
                             key={event.id}
-                            className="flex items-start gap-2 text-xs py-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded px-1"
+                            className="flex items-start gap-2 text-xs py-1 hover:bg-muted/50 rounded px-1"
                         >
-                            <Typography variant="small" className="text-gray-400 font-mono min-w-[65px]">
+                            <Typography variant="small" className="text-muted-foreground font-mono min-w-[65px]">
                                 {formatTime(event.timestamp)}
                             </Typography>
                             <span>{icon}</span>
                             <Badge variant={variant} size="sm" className="min-w-[60px] justify-center">
                                 {event.source}
                             </Badge>
-                            <Typography variant="small" className="text-gray-600 dark:text-gray-400">
+                            <Typography variant="small" className="text-muted-foreground">
                                 {event.message}
                             </Typography>
                         </div>

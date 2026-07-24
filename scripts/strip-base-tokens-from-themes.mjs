@@ -17,18 +17,7 @@ const themesDir = resolve(__dirname, '..', 'themes');
 const GENERAL_THEMES = [
   'almadar.css',
   'almadar-website.css',
-  'arctic.css',
-  'copper.css',
-  'ember.css',
-  'forest.css',
-  'lavender.css',
-  'midnight.css',
-  'ocean.css',
   'prism.css',
-  'rose.css',
-  'sand.css',
-  'slate.css',
-  'sunset.css',
 ];
 
 // CSS variable names to strip from each [data-theme="..."] block.

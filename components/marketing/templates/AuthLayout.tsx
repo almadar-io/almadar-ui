@@ -36,7 +36,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
       {showBranding && (
         <VStack
           className={cn(
-            "hidden lg:flex lg:w-1/2 bg-primary-600 relative overflow-hidden",
+            "hidden lg:flex lg:w-1/2 bg-primary relative overflow-hidden",
             "justify-between p-12",
           )}
           style={
@@ -50,7 +50,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           gap="none"
         >
           {/* Gradient overlay */}
-          <Box className="absolute inset-0 bg-gradient-to-br from-primary-600/90 to-primary-800/90" />
+          <Box className="absolute inset-0 bg-gradient-to-br from-primary/90 to-primary-hover/90" />
 
           {/* Content */}
           <Box className="relative z-10">
@@ -140,7 +140,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
           <Box className="lg:hidden mb-8 text-center">
             <Link to="/" className="inline-flex items-center gap-3">
               {logo || (
-                <Box className="w-12 h-12 bg-primary-600 rounded-xl flex items-center justify-center">
+                <Box className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
                   <Typography
                     variant="body1"
                     className="text-[var(--color-foreground)] font-bold text-xl"

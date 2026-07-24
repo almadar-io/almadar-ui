@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "5.123.0",
+  "version": "5.124.0",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "sideEffects": [
@@ -120,14 +120,15 @@
     "build": "NODE_OPTIONS=--max-old-space-size=8192 tsup",
     "build:watch": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint --no-warn-ignored --max-warnings 0 ."
+    "lint": "eslint --no-warn-ignored --max-warnings 0 .",
+    "verify:themes": "node scripts/theme-contrast-audit.mjs"
   },
   "dependencies": {
-    "@almadar/core": "^10.32.0",
-    "@almadar/evaluator": "^2.32.0",
+    "@almadar/core": "^10.33.0",
+    "@almadar/evaluator": "^2.34.0",
     "@almadar/logger": "^1.9.0",
-    "@almadar/runtime": "^6.35.0",
-    "@almadar/std": "^16.142.0",
+    "@almadar/runtime": "^6.36.0",
+    "@almadar/std": "^16.143.0",
     "@almadar/syntax": "^1.11.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
@@ -177,7 +178,7 @@
     }
   },
   "devDependencies": {
-    "@almadar/eslint-plugin": "^2.14.0",
+    "@almadar/eslint-plugin": "^2.15.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.0",
     "@react-three/postprocessing": "3.0.4",
