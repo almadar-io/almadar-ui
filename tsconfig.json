@@ -17,7 +17,7 @@
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
     "paths": {
       "@almadar/ui": ["./components/index.ts"],
       "@almadar/ui/components": ["./components/index.ts"],

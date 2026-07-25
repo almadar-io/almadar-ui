@@ -241,7 +241,7 @@ const MapViewImpl = lazy(async () => {
           {routes.map((route) => (
             <Polyline
               key={route.id}
-              positions={route.waypoints.map((wp) => [wp.lat, wp.lng])}
+              positions={route.waypoints.map((wp): [number, number] => [wp.lat, wp.lng])}
               pathOptions={{
                 color: route.color ?? 'var(--primary, #2563eb)',
                 weight: route.weight ?? 4,
