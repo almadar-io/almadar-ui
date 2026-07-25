@@ -25,7 +25,7 @@ import { useEventBus } from '../hooks/useEventBus';
 import type { OrbitalSchema, EntityData, ResolvedTrait, ResolvedTraitBinding, EventPayload, PatternNode, Orbital, TraitRef } from '@almadar/core';
 import { buildResolvedTraitConfigs } from '@almadar/core';
 import { useResolvedSchema } from '../hooks/useResolvedSchema';
-import { matchPath } from '../providers/navigation';
+import { matchPathAmong } from '../providers/navigation';
 import { collectEmbeddedTraits, collectTraitRefsFromResolvedTrait } from '../lib/embedded-traits';
 import { convertFnFormLambdasInProps } from '../lib/fn-form-lambda';
 import { useTraitStateMachine } from '../hooks/useTraitStateMachine';
@@ -906,12 +906,11 @@ export function OrbPreview({
   const initialPageMatch = useMemo(() => {
     if (!initialPagePath) return undefined;
     // Pattern-aware: a concrete `/threads/abc` URL must land on the declared
-    // `/threads/:id` page, with the route params extracted for INIT.
-    for (const { page } of pages) {
-      const params = page.path ? matchPath(page.path, initialPagePath) : null;
-      if (params !== null) return { name: page.name, params };
-    }
-    return undefined;
+    // `/threads/:id` page, with the route params extracted for INIT — and a
+    // static sibling outranks the `:param` route whatever the declaration order.
+    const hit = matchPathAmong(pages, initialPagePath, (entry) => entry.page.path);
+    if (!hit) return undefined;
+    return { name: hit.candidate.page.name, params: hit.params };
   }, [pages, initialPagePath]);
   const initialPageName = initialPageMatch?.name;
   const [currentPage, setCurrentPage] = useState<string | undefined>(initialPageName);
@@ -945,16 +944,10 @@ export function OrbPreview({
     // Pattern-aware page matching: `/threads/abc` matches the declared
     // `/threads/:id` (exact paths still match — matchPath handles both).
     // Route params merge into the target page's INIT payload downstream.
-    let match: { page: { name?: string; path?: string } } | undefined;
-    let params: Record<string, string> = {};
-    for (const entry of pages) {
-      const m = entry.page.path ? matchPath(entry.page.path, path) : null;
-      if (m !== null) {
-        match = entry;
-        params = m;
-        break;
-      }
-    }
+    // A static route outranks a `:param` sibling whatever the declaration order.
+    const hit = matchPathAmong(pages, path, (entry) => entry.page.path);
+    const match: { page: { name?: string; path?: string } } | undefined = hit?.candidate;
+    const params: Record<string, string> = hit?.params ?? {};
     navLog.debug('handleNavigate', () => ({
       path,
       matched: match?.page.name ?? null,

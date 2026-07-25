@@ -424,7 +424,9 @@ export function TableView({
           </Box>
         );
       })}
-      {hasActions && <Box aria-hidden />}
+      {hasActions && (
+        <Box aria-hidden className="sticky right-0 bg-[var(--color-surface-subtle)]" />
+      )}
     </Box>
   );
 
@@ -482,7 +484,18 @@ export function TableView({
           })
         )}
         {itemActions && itemActions.length > 0 && (
-          <HStack gap="xs" className="justify-end flex-shrink-0 opacity-60 group-hover:opacity-100 transition-opacity">
+          <HStack
+            gap="xs"
+            className={cn(
+              // Pinned: the fixed column tracks routinely overflow the caller's
+              // scroll container, which used to leave the actions off-screen.
+              // Opaque so scrolled cells pass underneath it.
+              'justify-end flex-shrink-0 sticky right-0 z-[1] transition-colors',
+              lk.striped && index % 2 === 1
+                ? 'bg-[var(--color-surface-subtle)]'
+                : 'bg-[var(--color-card)] group-hover:bg-[var(--color-surface-subtle)]',
+            )}
+          >
             {(maxInlineActions != null ? itemActions.slice(0, maxInlineActions) : itemActions).map((action, i) => (
               <Button
                 key={i}

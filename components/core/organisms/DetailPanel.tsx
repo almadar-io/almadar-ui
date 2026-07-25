@@ -297,6 +297,21 @@ function normalizeFieldDefs(fields: readonly FieldDef[] | undefined): string[] {
 }
 
 /**
+ * Build a map of field name -> authored header, so a call site's `header`
+ * survives into the rendered section instead of being re-derived from the key.
+ */
+function buildFieldLabelMap(fields: readonly FieldDef[] | undefined): Record<string, string> {
+  const map: Record<string, string> = {};
+  if (!fields) return map;
+  for (const f of fields) {
+    if (typeof f === "object" && "key" in f && f.header !== undefined && f.header !== "") {
+      map[f.key] = f.header;
+    }
+  }
+  return map;
+}
+
+/**
  * Build a map of field name -> field type from typed field definitions.
  */
 function buildFieldTypeMap(fields: readonly FieldDef[] | undefined): Record<string, string> {
@@ -388,6 +403,11 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     ? buildFieldTypeMap(propFields)
     : {};
 
+  const fieldLabelMap = isFieldDefArray(propFields)
+    ? buildFieldLabelMap(propFields)
+    : {};
+  const labelFor = (field: string): string => fieldLabelMap[field] ?? formatFieldLabel(field);
+
   // Handle action click with event bus and navigation support
   const handleActionClick = useCallback(
     (action: DetailPanelAction, data?: EventPayload) => {
@@ -441,7 +461,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         if (typeof field === "string") {
           const value = getNestedValue(normalizedData, field) as FieldValue | undefined;
           return {
-            label: formatFieldLabel(field),
+            label: labelFor(field),
             value: formatFieldValue(value, field),
             icon: getFieldIcon(field),
           };
@@ -454,7 +474,11 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   // Build sections from schema if provided
   if (normalizedData && effectiveFieldNames) {
     const primaryField = effectiveFieldNames[0];
-    if (!title && primaryField && normalizedData[primaryField]) {
+    // Only the field actually consumed as the title is withheld from the body
+    const titleDerivedFromPrimary = Boolean(
+      !title && primaryField && normalizedData[primaryField],
+    );
+    if (titleDerivedFromPrimary) {
       title = String(normalizedData[primaryField]);
     }
 
@@ -487,7 +511,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     );
     const otherFields = effectiveFieldNames.filter(
       (f) =>
-        f !== primaryField &&
+        (!titleDerivedFromPrimary || f !== primaryField) &&
         !statusFields.includes(f) &&
         !progressFields.includes(f) &&
         !metricFields.includes(f) &&
@@ -501,11 +525,11 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     if (statusFields.length > 0 || otherFields.length > 0) {
       const overviewFields: DetailField[] = [];
 
-      [...statusFields, ...otherFields.slice(0, 3)].forEach((field) => {
+      [...statusFields, ...otherFields].forEach((field) => {
         const value = getNestedValue(normalizedData, field) as FieldValue | undefined;
         if (value !== undefined && value !== null) {
           overviewFields.push({
-            label: formatFieldLabel(field),
+            label: labelFor(field),
             value: renderRichFieldValue(value, field, fieldTypeMap[field]),
             icon: getFieldIcon(field),
           });
@@ -525,7 +549,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         const value = getNestedValue(normalizedData, field) as FieldValue | undefined;
         if (value !== undefined && value !== null) {
           metricsFields.push({
-            label: formatFieldLabel(field),
+            label: labelFor(field),
             value: renderRichFieldValue(value, field, fieldTypeMap[field]),
             icon: getFieldIcon(field),
           });
@@ -545,7 +569,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         const value = getNestedValue(normalizedData, field) as FieldValue | undefined;
         if (value !== undefined && value !== null) {
           timelineFields.push({
-            label: formatFieldLabel(field),
+            label: labelFor(field),
             value: renderRichFieldValue(value, field, fieldTypeMap[field]),
             icon: getFieldIcon(field),
           });
@@ -565,7 +589,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         const value = getNestedValue(normalizedData, field) as FieldValue | undefined;
         if (value !== undefined && value !== null) {
           descFields.push({
-            label: formatFieldLabel(field),
+            label: labelFor(field),
             value: renderRichFieldValue(value, field, fieldTypeMap[field]),
             icon: getFieldIcon(field),
           });
@@ -621,7 +645,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         if (typeof field === "string") {
           const value = (normalizedData ? getNestedValue(normalizedData, field) : undefined) as FieldValue | undefined;
           allFields.push({
-            label: formatFieldLabel(field),
+            label: labelFor(field),
             value: renderRichFieldValue(value, field, fieldTypeMap[field]),
             icon: getFieldIcon(field),
           });

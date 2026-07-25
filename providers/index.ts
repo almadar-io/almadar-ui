@@ -67,6 +67,8 @@ export {
   useActivePage,
   useNavigationId,
   matchPath,
+  matchPathAmong,
+  comparePathSpecificity,
   extractRouteParams,
   pathMatches,
   findPageByPath,

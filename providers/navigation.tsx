@@ -100,6 +100,51 @@ export function pathMatches(pattern: string, path: string): boolean {
     return matchPath(pattern, path) !== null;
 }
 
+/**
+ * Order two route patterns most-specific-first: at the first segment where they
+ * disagree in kind, a static segment outranks a `:param`. Patterns that agree in
+ * kind everywhere tie, leaving declaration order to decide.
+ *
+ * Without this, `/listings/:id` declared before `/listings/moderation` swallows
+ * its static sibling, because every `:param` matches any segment.
+ */
+export function comparePathSpecificity(a: string, b: string): number {
+    const aParts = a.split('/').filter(Boolean);
+    const bParts = b.split('/').filter(Boolean);
+    const shared = Math.min(aParts.length, bParts.length);
+
+    for (let i = 0; i < shared; i++) {
+        const aParam = aParts[i].startsWith(':');
+        const bParam = bParts[i].startsWith(':');
+        if (aParam !== bParam) return aParam ? 1 : -1;
+    }
+
+    return 0;
+}
+
+/**
+ * Match a concrete path against route-bearing candidates, most-specific first.
+ * The single resolver every route lookup goes through — the candidate array is
+ * never reordered in place, so callers keep their declaration-order semantics.
+ */
+export function matchPathAmong<T>(
+    candidates: readonly T[],
+    path: string,
+    pathOf: (candidate: T) => string | undefined
+): { candidate: T; params: Record<string, string> } | null {
+    const routed = candidates.filter((candidate) => Boolean(pathOf(candidate)));
+    const ranked = [...routed].sort((a, b) =>
+        comparePathSpecificity(pathOf(a) as string, pathOf(b) as string)
+    );
+
+    for (const candidate of ranked) {
+        const params = matchPath(pathOf(candidate) as string, path);
+        if (params !== null) return { candidate, params };
+    }
+
+    return null;
+}
+
 // ============================================================================
 // Page Finding Utilities
 // ============================================================================
@@ -133,25 +178,25 @@ export function findPageByPath(
 ): { page: OrbitalPage; params: Record<string, string>; orbitalName: string } | null {
     if (!schema.orbitals) return null;
 
+    const candidates: { page: OrbitalPage; orbitalName: string }[] = [];
     for (const orbital of schema.orbitals) {
         if (!isInlineOrbital(orbital)) continue;
         if (!orbital.pages) continue;
 
         for (const pageRef of orbital.pages) {
             if (!isInlinePage(pageRef)) continue;
-            const page = pageRef;
-
-            const pagePath = page.path;
-            if (!pagePath) continue;
-
-            const params = matchPath(pagePath, path);
-            if (params !== null) {
-                return { page, params, orbitalName: orbital.name };
-            }
+            candidates.push({ page: pageRef, orbitalName: orbital.name });
         }
     }
 
-    return null;
+    const hit = matchPathAmong(candidates, path, (entry) => entry.page.path);
+    if (!hit) return null;
+
+    return {
+        page: hit.candidate.page,
+        params: hit.params,
+        orbitalName: hit.candidate.orbitalName,
+    };
 }
 
 /**

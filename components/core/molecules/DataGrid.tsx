@@ -576,11 +576,11 @@ export function DataGrid({
                 )}
                 <VStack gap="xs" className="flex-1 min-w-0">
                   {titleValue !== undefined && titleValue !== null && (
-                    <HStack gap="xs" className="items-center">
+                    <HStack gap="xs" className="items-center min-w-0">
                       {titleField?.icon && renderIconInput(titleField.icon, { size: 'sm', className: 'text-primary flex-shrink-0' })}
                       <Typography
                         variant={titleField?.variant === 'h3' ? 'h3' : 'h4'}
-                        className="font-semibold truncate"
+                        className="font-semibold truncate min-w-0"
                       >
                         {String(titleValue)}
                       </Typography>
@@ -673,7 +673,7 @@ export function DataGrid({
             {/* Card Footer: primary actions */}
             {primaryActions.length > 0 && (
               <Box className="px-4 py-3 mt-auto border-t border-border">
-                <HStack gap="sm" className="justify-end">
+                <HStack gap="sm" className="justify-end flex-wrap">
                   {(maxInlineActions != null ? primaryActions.slice(0, maxInlineActions) : primaryActions).map((action, idx) => (
                     <Button
                       key={idx}

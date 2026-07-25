@@ -143,6 +143,8 @@ export {
     useNavigationId,
     // Path utilities
     matchPath,
+    matchPathAmong,
+    comparePathSpecificity,
     extractRouteParams,
     pathMatches,
     // Page finding utilities
