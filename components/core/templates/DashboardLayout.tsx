@@ -453,8 +453,9 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   </Button>
                 )}
 
-                {/* User menu */}
-                {user && (
+                {/* User menu — `user.name` is read unguarded below, so a
+                    partial user object must not open this branch. */}
+                {user?.name && (
                   <Box className="relative">
                     <Button
                       variant="ghost"

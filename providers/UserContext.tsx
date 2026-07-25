@@ -22,30 +22,18 @@
  */
 
 import React, { createContext, useContext, useMemo, useCallback } from 'react';
-import type { FieldValue } from '@almadar/core';
+import { ANONYMOUS_USER, type FieldValue, type UserContext as Viewer } from '@almadar/core';
 
 // ============================================================================
 // Types
 // ============================================================================
 
 /**
- * User data for @user bindings.
- * Matches UserContext type from evaluator/context.ts
+ * User data for `@user` bindings — the canonical `UserContext` from
+ * `@almadar/core`, kept under this name for existing consumers. Declaring the
+ * shape locally let it drift from the type both execution paths resolve against.
  */
-export interface UserData {
-  /** User's unique ID */
-  id: string;
-  /** User's email */
-  email?: string;
-  /** User's display name */
-  name?: string;
-  /** User's role (for RBAC) */
-  role?: string;
-  /** User's permissions */
-  permissions?: string[];
-  /** Additional custom profile fields */
-  [key: string]: FieldValue | undefined;
-}
+export type UserData = Viewer;
 
 /**
  * User context value.
@@ -66,19 +54,6 @@ export interface UserContextValue {
   /** Get a user field by path (for @user.field bindings) */
   getUserField: (path: string) => FieldValue | undefined;
 }
-
-// ============================================================================
-// Anonymous User
-// ============================================================================
-
-/**
- * Anonymous user for when no user is logged in.
- */
-const ANONYMOUS_USER: UserData = {
-  id: 'anonymous',
-  role: 'anonymous',
-  permissions: [],
-};
 
 // ============================================================================
 // Context
@@ -145,22 +120,24 @@ export function UserProvider({
   // Field access for @user.field bindings
   const getUserField = useCallback(
     (path: string): FieldValue | undefined => {
-      const userData = user ?? ANONYMOUS_USER;
-      const parts = path.split('.');
-      let value: FieldValue | UserData = userData;
+      const viewer = user ?? ANONYMOUS_USER;
+      const [first, ...rest] = path.split('.');
+      if (!first) return undefined;
 
-      for (const segment of parts) {
-        if (value === null || value === undefined) {
+      let value: FieldValue | undefined = viewer[first];
+      for (const segment of rest) {
+        if (
+          value === null ||
+          typeof value !== 'object' ||
+          Array.isArray(value) ||
+          value instanceof Date
+        ) {
           return undefined;
         }
-        if (typeof value === 'object') {
-          value = (value as Record<string, FieldValue>)[segment];
-        } else {
-          return undefined;
-        }
+        value = value[segment];
       }
 
-      return value as FieldValue | undefined;
+      return value;
     },
     [user]
   );
