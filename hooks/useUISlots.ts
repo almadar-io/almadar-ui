@@ -304,10 +304,20 @@ function aggregateSlot(sources: SlotSources | undefined): SlotContent | null {
   if (entries.length === 0) return null;
   if (entries.length === 1) return entries[0][1];
 
-  // Multi-source: build a stack wrapper.
-  const children = entries.map(([, entry]) => ({
+  // Multi-source: build a stack wrapper. Each child carries its own
+  // `_sourceTrait` sidecar (same convention as `_id`) because the wrapper
+  // itself has no single owner: the synthetic stack's `sourceTrait` is the
+  // sentinel below, so a renderer that scoped by the wrapper alone would
+  // give every stacked trait's subtree NO trait scope at all — and then a
+  // bare `UI:X` emit from an affordance inside it can never be qualified to
+  // its owning trait's key, so the click reaches nothing. The compiled path
+  // has no equivalent hazard: codegen emits `<TraitScopeProvider>` lexically
+  // around each trait's own markup, so scope is structural there. This keeps
+  // the two paths in agreement (see R-SLOT-MULTI-SOURCE-STACK-DROPS-TRAIT-SCOPE).
+  const children = entries.map(([sourceKey, entry]) => ({
     type: entry.pattern,
     ...entry.props,
+    ...(sourceKey !== DEFAULT_SOURCE_KEY && { _sourceTrait: sourceKey }),
   }));
   const stackId = `slot-content-stack-${entries.map(([k]) => k).join('-')}`;
   return {

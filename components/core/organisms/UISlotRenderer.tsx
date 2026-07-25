@@ -519,6 +519,20 @@ function MaybeTraitScope({
       </TraitScopeProvider>
     );
   }
+  // Declining to wrap is not free: every bare `UI:X` emit inside these
+  // children then qualifies against whatever scope surrounds them instead
+  // of their owning trait, so cross-trait listeners miss it and the
+  // affordance is silently dead. Storybook/compiled callers legitimately
+  // land here (no schema context, or codegen already emitted the scope) —
+  // hence a warning rather than a throw — but a named trait that failed
+  // the `orbitalsByTrait` lookup is a real wiring hole worth surfacing.
+  if (sourceTrait !== undefined && schemaCtx !== null) {
+    scopeWrapLog.warn('decline', {
+      sourceTrait,
+      orbitalsByTraitSize: schemaCtx.orbitalsByTrait.size,
+      reason: 'sourceTrait not in orbitalsByTrait — children render unscoped',
+    });
+  }
   return <>{children}</>;
 }
 
@@ -1071,8 +1085,8 @@ function renderPatternChildren(
     // DELETE cascade failure: the Confirm button rendered without
     // actionPayload, emitted `{}` on click, and Persistor's DO_DELETE
     // ran with no id.
-    const childAsRecord = child as { type: string; props?: SlotProps; _id?: string; children?: SlotPropValue } & SlotProps;
-    const { type: _childType, props: nestedProps, _id: _childNodeId, children: _childChildren, ...flatProps } = childAsRecord;
+    const childAsRecord = child as { type: string; props?: SlotProps; _id?: string; _sourceTrait?: string; children?: SlotPropValue } & SlotProps;
+    const { type: _childType, props: nestedProps, _id: _childNodeId, _sourceTrait: childSourceTrait, children: _childChildren, ...flatProps } = childAsRecord;
     const resolvedProps: SlotProps = nestedProps !== undefined
       ? nestedProps
       : (flatProps as SlotProps);
@@ -1093,18 +1107,36 @@ function renderPatternChildren(
       // (e.g. form-section inside a stack) can resolve entityDef via
       // the trait's linkedEntity for form-field enrichment. The orbCtx
       // (slot/transition/state/entity) propagates the same way so every
-      // nested node carries a complete contextual-edit address.
-      ...(sourceTrait !== undefined && { sourceTrait }),
+      // nested node carries a complete contextual-edit address. A child
+      // carrying its own `_sourceTrait` (multi-source slot stack) owns it
+      // outright — inheriting the synthetic wrapper's sentinel instead
+      // would erase the real owner.
+      ...(childSourceTrait !== undefined
+        ? { sourceTrait: childSourceTrait }
+        : sourceTrait !== undefined && { sourceTrait }),
       ...(orbCtx ?? {}),
     };
 
-    return (
+    const renderedChild = (
       <SlotContentRenderer
         key={childId}
         content={childContent}
         onDismiss={onDismiss}
         patternPath={childPath}
       />
+    );
+
+    // A child that names its own source trait establishes that trait's
+    // scope for its own subtree, mirroring the compiled path's per-trait
+    // `<TraitScopeProvider>`. Without this, affordances inside a
+    // multi-source slot stack emit under whatever scope surrounds the
+    // stack (the sentinel resolves to none) and reach no listener.
+    return childSourceTrait !== undefined ? (
+      <MaybeTraitScope key={childId} sourceTrait={childSourceTrait}>
+        {renderedChild}
+      </MaybeTraitScope>
+    ) : (
+      renderedChild
     );
   });
 }
