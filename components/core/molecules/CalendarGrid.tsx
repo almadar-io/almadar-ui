@@ -9,6 +9,7 @@
 import React, { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import type { EventEmit, EventPayload, EntityRow, EntityWith } from "@almadar/core";
 import { cn } from "../../../lib/cn";
+import { getNestedValue } from "../../../lib/getNestedValue";
 import { Box } from "../atoms/Box";
 import { Button } from "../atoms/Button";
 import { HStack, VStack } from "../atoms/Stack";
@@ -66,6 +67,32 @@ export interface CalendarGridProps {
    * layouts or screenshot tests).
    */
   dayWindow?: CalendarDayWindow | 'auto';
+  /**
+   * Row field holding the chip label. Defaults to `title`. Lets a host bound
+   * to its own entity name the column instead of being forced to rename its
+   * fields to this grid's contract (same accessor idiom as `DataList`'s
+   * `senderField` / `DataGrid`'s `imageField`).
+   */
+  titleField?: string;
+  /** Row field holding the start timestamp (ISO or epoch). Defaults to `startTime`. */
+  startField?: string;
+  /** Row field holding the chip's Tailwind colour class. Defaults to `color`. */
+  colorField?: string;
+  /**
+   * Render function for one event chip's content. Receives the row and its
+   * index in the materialised events array. The grid keeps ownership of
+   * placement, colour and the click target; this replaces only what is drawn
+   * INSIDE the chip, so a host can show a time + instructor + badge stack
+   * instead of the default single label.
+   */
+  children?: (item: EntityRow, index: number) => React.ReactNode;
+  /**
+   * Per-event render function (schema-level alias for the children render
+   * prop). In `.orb`: `["fn", "item", { pattern tree with @item.field bindings }]`.
+   * In `.lolo`: `renderItem: (fn item <Component …={@item.field}/>)` — the same
+   * contract `data-list` / `data-grid` / `carousel` already use.
+   */
+  renderItem?: (item: EntityRow, index: number) => React.ReactNode;
 }
 
 /**
@@ -139,17 +166,30 @@ const DEFAULT_LAST_HOUR = 17;
 const slotLabel = (hour: number): string => `${hour.toString().padStart(2, '0')}:00`;
 
 /**
+ * Read a row's start timestamp through the caller's field accessor. A row whose
+ * accessor resolves to nothing yields an Invalid Date, which every caller here
+ * already guards — so a mis-named field means "renders nowhere", never a throw.
+ */
+function eventStartDate(event: EntityRow, startField: string): Date {
+  const raw = getNestedValue(event, startField);
+  return new Date((raw ?? '') as string | number);
+}
+
+/**
  * Hourly slot labels covering the business-hours band WIDENED to include every
  * hour the given events actually start in. A fixed 09:00–17:00 band silently
  * dropped every early-morning or evening event: the day-header count badge
  * still counted it (that filter is date-only) while no chip could ever render
  * in any slot. Passing an explicit `timeSlots` keeps full author control.
  */
-function generateDefaultTimeSlots(events: readonly EntityRow[]): string[] {
+function generateDefaultTimeSlots(
+  events: readonly EntityRow[],
+  startField: string,
+): string[] {
   let first = DEFAULT_FIRST_HOUR;
   let last = DEFAULT_LAST_HOUR;
   for (const ev of events) {
-    const start = new Date(ev.startTime as string);
+    const start = eventStartDate(ev, startField);
     if (Number.isNaN(start.getTime())) continue;
     const hour = start.getHours();
     if (hour < first) first = hour;
@@ -174,8 +214,9 @@ function eventInSlot(
   event: EntityRow,
   day: Date,
   slotTime: string,
+  startField: string,
 ): boolean {
-  const eventStart = new Date(event.startTime as string);
+  const eventStart = eventStartDate(event, startField);
   if (Number.isNaN(eventStart.getTime())) return false;
   const [slotHour] = slotTime.split(":").map(Number);
 
@@ -198,6 +239,11 @@ export function CalendarGrid({
   swipeLeftEvent,
   swipeRightEvent,
   dayWindow = 'auto',
+  titleField = 'title',
+  startField = 'startTime',
+  colorField = 'color',
+  children,
+  renderItem,
 }: CalendarGridProps): React.JSX.Element {
   const evs = Array.isArray(events) ? events : events ? [events] : [];
   const eventBus = useEventBus();
@@ -214,8 +260,8 @@ export function CalendarGrid({
   );
 
   const resolvedTimeSlots = useMemo(
-    () => timeSlots ?? generateDefaultTimeSlots(evs),
-    [timeSlots, evs],
+    () => timeSlots ?? generateDefaultTimeSlots(evs, startField),
+    [timeSlots, evs, startField],
   );
 
   // Viewport-driven number of day columns shown at once. Mobile shows 1
@@ -272,9 +318,9 @@ export function CalendarGrid({
   const eventsForDayCount = useCallback(
     (day: Date): number =>
       evs.filter(
-        (ev) => new Date(ev.startTime as string).toDateString() === day.toDateString(),
+        (ev) => eventStartDate(ev, startField).toDateString() === day.toDateString(),
       ).length,
-    [events],
+    [events, startField],
   );
 
   const swipeCallbacks = useMemo(() => ({
@@ -298,8 +344,16 @@ export function CalendarGrid({
     }, 500);
   }, [longPressEvent, longPressPayload, eventBus]);
 
+  // `renderItem` is the schema-level alias the lambda converter also mirrors
+  // onto `children`; either arrives as a compiled `(item, index) => node`.
+  const renderChip = children ?? renderItem;
+
   const renderEvent = (event: EntityRow) => {
-    const color = event.color as string | undefined;
+    const color = getNestedValue(event, colorField) as string | undefined;
+    const label = String(getNestedValue(event, titleField) ?? '');
+    // Index into the full events array, not the slot's own list, so `@index`
+    // inside an authored lambda numbers rows consistently across days.
+    const eventIndex = evs.indexOf(event as EntityWith<CalendarEventRow>);
     return (
     <Box
       key={event.id as string}
@@ -314,9 +368,11 @@ export function CalendarGrid({
       )}
       onClick={(e: React.MouseEvent) => handleEventClick(event, e)}
     >
-      <Typography variant="small" className="truncate font-medium">
-        {event.title as string}
-      </Typography>
+      {renderChip ? renderChip(event, eventIndex) : (
+        <Typography variant="small" className="truncate font-medium">
+          {label}
+        </Typography>
+      )}
     </Box>
     );
   };
@@ -413,7 +469,7 @@ export function CalendarGrid({
               {/* Day cells */}
               {visibleDays.map((day) => {
                 const slotEvents = evs.filter((ev) =>
-                  eventInSlot(ev, day, time),
+                  eventInSlot(ev, day, time, startField),
                 );
                 const isToday =
                   day.toDateString() === new Date().toDateString();

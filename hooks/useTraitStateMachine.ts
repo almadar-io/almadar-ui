@@ -42,7 +42,7 @@ import {
     type EffectContext,
     type CreateServerEffectHandlersOptions,
 } from '@almadar/runtime';
-import { evaluate, evaluateGuard, executeEffects, createMinimalContext, type EvaluationContext } from '@almadar/evaluator';
+import { evaluate, evaluateGuard, executeEffects, createMinimalContext, evaluateListenPayloadExpr, type EvaluationContext } from '@almadar/evaluator';
 import { createClientEffectHandlers } from '../lib/createClientEffectHandlers';
 import type { ResolvedTraitBinding, ResolvedTraitListener } from '../types/runtime-types';
 import type { SlotPatternEntry, SlotSource } from '../types/slot-types';
@@ -1994,7 +1994,7 @@ export function useTraitStateMachine(
                     crossTraitLog.debug('listen:fired', { busKey, targetTrait: binding.trait.name, triggers: listen.triggers });
                     enqueueAndDrain(
                         listen.triggers,
-                        applyListenPayloadMapping(listen.payloadMapping, event.payload),
+                        applyListenPayloadMapping(listen.payloadMapping, event.payload, evaluateListenPayloadExpr),
                         binding.trait.name,
                     );
                 });

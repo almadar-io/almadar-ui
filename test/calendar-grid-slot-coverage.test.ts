@@ -74,3 +74,97 @@ describe('CalendarGrid event placement', () => {
     expect(getAllByText('2').length).toBeGreaterThan(0);
   });
 });
+
+/**
+ * Row-field accessors. Before these, the grid hardcoded `title`/`startTime`, so
+ * a host bound to its own entity (std-calendar's own `name`/`date`, or
+ * std-event-ticketing's `EventRow`) painted nothing and the only remedies were
+ * renaming a published entity contract or living with an empty grid.
+ */
+describe('CalendarGrid row-field accessors', () => {
+  const ownRows = [{ id: '1', name: 'Community Class', date: todayAt(10, 30) }];
+
+  it('places and labels a row through titleField / startField', () => {
+    const { getByText } = render(
+      createElement(CalendarGrid, {
+        events: ownRows,
+        dayWindow: 7,
+        titleField: 'name',
+        startField: 'date',
+      } as never),
+    );
+    expect(getByText('Community Class')).toBeTruthy();
+  });
+
+  it('renders nowhere — never throws — when an accessor names a missing field', () => {
+    const { queryByText } = render(
+      createElement(CalendarGrid, {
+        events: ownRows,
+        dayWindow: 7,
+        titleField: 'name',
+        startField: 'noSuchField',
+      } as never),
+    );
+    expect(queryByText('Community Class')).toBeNull();
+  });
+
+  it('reads a nested accessor path', () => {
+    const { getByText } = render(
+      createElement(CalendarGrid, {
+        events: [{ id: '1', session: { label: 'Nested Pilates' }, date: todayAt(11) }],
+        dayWindow: 7,
+        titleField: 'session.label',
+        startField: 'date',
+      } as never),
+    );
+    expect(getByText('Nested Pilates')).toBeTruthy();
+  });
+});
+
+/**
+ * `renderItem` — the same per-row lambda contract `data-list`/`data-grid` use,
+ * so a `.lolo` author can compose the chip's insides as a render-ui tree
+ * (`renderItem: (fn item <Stack …={@item.field}/>)`) while the grid keeps
+ * placement, colour and the click target.
+ */
+describe('CalendarGrid renderItem', () => {
+  const row = { id: '1', title: 'Yoga', instructor: 'Dana', startTime: todayAt(9, 30) };
+
+  it('draws the authored chip content instead of the default label', () => {
+    const { getByText, queryByText } = render(
+      createElement(CalendarGrid, {
+        events: [row],
+        dayWindow: 7,
+        renderItem: (item: Record<string, unknown>) =>
+          createElement('span', null, `${String(item.title)} · ${String(item.instructor)}`),
+      } as never),
+    );
+    expect(getByText('Yoga · Dana')).toBeTruthy();
+    expect(queryByText('Yoga')).toBeNull();
+  });
+
+  it('passes the row index within the whole events array, not the slot', () => {
+    const seen: number[] = [];
+    render(
+      createElement(CalendarGrid, {
+        events: [
+          { id: '1', title: 'First', startTime: todayAt(9, 15) },
+          { id: '2', title: 'Second', startTime: todayAt(14, 5) },
+        ],
+        dayWindow: 7,
+        renderItem: (item: Record<string, unknown>, index: number) => {
+          seen.push(index);
+          return createElement('span', null, String(item.title));
+        },
+      } as never),
+    );
+    expect(seen.sort()).toEqual([0, 1]);
+  });
+
+  it('falls back to the titleField label when no renderItem is given', () => {
+    const { getByText } = render(
+      createElement(CalendarGrid, { events: [row], dayWindow: 7 } as never),
+    );
+    expect(getByText('Yoga')).toBeTruthy();
+  });
+});
