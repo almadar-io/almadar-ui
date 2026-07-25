@@ -177,7 +177,7 @@ export default defineConfig([
     ],
     format: ['esm', 'cjs'],
     dts: true,
-    clean: true,
+    clean: false, // build script rm -rf's dist upfront; an in-band clean races the sibling configs' output (it wiped dist/avl/*.d.ts)
     sourcemap: false,
     splitting: false,
     treeshake: true,
@@ -192,7 +192,7 @@ export default defineConfig([
     format: ['esm', 'cjs'],
     dts: true,
     outDir: 'dist',
-    clean: false, // shared outDir: only the main build cleans — a later clean races away the main build's dts output
+    clean: false, // shared outDir: cleaned once upfront by the build script
     sourcemap: false,
     splitting: false,
     treeshake: true,
@@ -207,7 +207,7 @@ export default defineConfig([
     format: ['esm', 'cjs'],
     dts: true,
     outDir: 'dist',
-    clean: false, // shared outDir: only the main build cleans — a later clean races away the main build's dts output
+    clean: false, // shared outDir: cleaned once upfront by the build script
     sourcemap: false,
     splitting: false,
     treeshake: true,
