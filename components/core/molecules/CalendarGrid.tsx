@@ -132,28 +132,56 @@ function getWeekDays(start: Date): Date[] {
   return days;
 }
 
-/** Generate hourly time slot labels from 09:00 to 17:00 */
-function generateDefaultTimeSlots(): string[] {
+/** Business-hours band shown when the events themselves need no wider window. */
+const DEFAULT_FIRST_HOUR = 9;
+const DEFAULT_LAST_HOUR = 17;
+
+const slotLabel = (hour: number): string => `${hour.toString().padStart(2, '0')}:00`;
+
+/**
+ * Hourly slot labels covering the business-hours band WIDENED to include every
+ * hour the given events actually start in. A fixed 09:00–17:00 band silently
+ * dropped every early-morning or evening event: the day-header count badge
+ * still counted it (that filter is date-only) while no chip could ever render
+ * in any slot. Passing an explicit `timeSlots` keeps full author control.
+ */
+function generateDefaultTimeSlots(events: readonly EntityRow[]): string[] {
+  let first = DEFAULT_FIRST_HOUR;
+  let last = DEFAULT_LAST_HOUR;
+  for (const ev of events) {
+    const start = new Date(ev.startTime as string);
+    if (Number.isNaN(start.getTime())) continue;
+    const hour = start.getHours();
+    if (hour < first) first = hour;
+    if (hour > last) last = hour;
+  }
   const slots: string[] = [];
-  for (let hour = 9; hour <= 17; hour++) {
-    slots.push(`${hour.toString().padStart(2, "0")}:00`);
+  for (let hour = first; hour <= last; hour++) {
+    slots.push(slotLabel(hour));
   }
   return slots;
 }
 
-/** Check whether an event falls within a specific day and time slot */
+/**
+ * Check whether an event falls within a specific day and time slot.
+ *
+ * Slots are hour BUCKETS: an event at 09:30 belongs to the 09:00 row. The
+ * previous exact-minute equality meant only events landing precisely on the
+ * hour ever rendered — every :15/:30/:45 appointment vanished from the grid
+ * while still being counted in the day header.
+ */
 function eventInSlot(
   event: EntityRow,
   day: Date,
   slotTime: string,
 ): boolean {
   const eventStart = new Date(event.startTime as string);
-  const [slotHour, slotMinute] = slotTime.split(":").map(Number);
+  if (Number.isNaN(eventStart.getTime())) return false;
+  const [slotHour] = slotTime.split(":").map(Number);
 
   return (
     eventStart.toDateString() === day.toDateString() &&
-    eventStart.getHours() === slotHour &&
-    eventStart.getMinutes() === slotMinute
+    eventStart.getHours() === slotHour
   );
 }
 
@@ -186,8 +214,8 @@ export function CalendarGrid({
   );
 
   const resolvedTimeSlots = useMemo(
-    () => timeSlots ?? generateDefaultTimeSlots(),
-    [timeSlots],
+    () => timeSlots ?? generateDefaultTimeSlots(evs),
+    [timeSlots, evs],
   );
 
   // Viewport-driven number of day columns shown at once. Mobile shows 1
