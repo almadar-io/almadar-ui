@@ -209,6 +209,9 @@ function groupData(
   return Array.from(groups.entries()).map(([label, groupItems]) => ({ label, items: groupItems }));
 }
 
+/** Ceiling on a measured column floor, so one prose column can't starve the rest. */
+const MAX_MEASURED_COL_CH = 32;
+
 const alignClass: Record<NonNullable<TableViewColumn['align']>, string> = {
   left: 'justify-start text-left',
   center: 'justify-center text-center',
@@ -376,9 +379,25 @@ export function TableView({
   const actionsTrack = hasActions
     ? `${inlineActionCount * 6 + (hasOverflowActions ? 3 : 0)}rem`
     : null;
+  // A bare `minmax(0, 1fr)` splits width evenly, so a long value (an email) is
+  // truncated while a short one (a badge) wastes its share. The floor can't be
+  // `min-content`/`auto` for the reason above — each row is its own grid, so a
+  // content-measured track differs per row and the columns drift. Measuring the
+  // whole visible page instead yields one floor that is identical for the header
+  // and every row, so alignment holds.
+  const colFloors = React.useMemo(
+    () => colDefs.map((col) => {
+      const longest = data.reduce((widest, row) => {
+        const cell = formatCell(asFieldValue(getNestedValue(row, col.field ?? col.key)), col.format);
+        return Math.max(widest, cell.length);
+      }, columnLabel(col).length);
+      return Math.min(longest, MAX_MEASURED_COL_CH);
+    }),
+    [colDefs, data],
+  );
   const gridTemplateColumns = [
     selectable ? 'auto' : null,
-    ...colDefs.map((c) => c.width ?? 'minmax(0, 1fr)'),
+    ...colDefs.map((c, i) => c.width ?? `minmax(${colFloors[i]}ch, 1fr)`),
     actionsTrack,
   ].filter(Boolean).join(' ');
 

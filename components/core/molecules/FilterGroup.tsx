@@ -107,7 +107,7 @@ const lookStyles: Record<FilterGroupLook, string> = {
     "gap-1 [&_input]:rounded-pill [&_select]:rounded-pill [&_button]:rounded-pill [&_input]:!px-3 [&_select]:!px-3 [&_input]:bg-muted [&_select]:bg-muted [&_label]:hidden",
   pills:
     "gap-2 [&_input]:rounded-pill [&_select]:rounded-pill [&_button]:rounded-pill",
-  "popover-trigger": "[&>*:not(:first-child)]:hidden",
+  "popover-trigger": "",
   "inline-column-header": "hidden",
 };
 
@@ -115,7 +115,7 @@ const lookStyles: Record<FilterGroupLook, string> = {
  * FilterGroup - Renders filter controls for entity data
  * Uses atoms: Button, Select, Badge, HStack
  */
-export const FilterGroup: React.FC<FilterGroupProps> = ({
+const FilterGroupControls: React.FC<FilterGroupProps> = ({
   entity,
   filters,
   onFilterChange,
@@ -517,7 +517,7 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
             className="text-muted-foreground"
           >
             <Icon name="filter" className="h-4 w-4" />
-            <span className="text-sm font-bold uppercase tracking-wide">
+            <span className="text-xs font-bold uppercase tracking-wide">
               {t('filterGroup.filters')}
             </span>
           </HStack>
@@ -625,5 +625,62 @@ export const FilterGroup: React.FC<FilterGroupProps> = ({
     </div>
   );
 };
+
+FilterGroupControls.displayName = "FilterGroupControls";
+
+/**
+ * `popover-trigger` collapses the filters behind a single trigger, per the
+ * Hick's Law guidance: keep the primary controls visible and put the rest in a
+ * panel. It previously only *hid* the extra filters with a CSS selector, which
+ * made them unreachable rather than collapsed — asking for the collapsed look
+ * silently dropped filters. The panel reuses the same control renderer at
+ * `look="toolbar"`, so there is one implementation of the controls.
+ */
+const FilterGroupPopover: React.FC<FilterGroupProps> = (props) => {
+  const { t } = useTranslate();
+  const [open, setOpen] = useState(false);
+  const queryState = useQuerySingleton(props.query);
+  const activeFilterCount = queryState?.filters
+    ? Object.values(queryState.filters).filter((v) => v !== null && v !== undefined).length
+    : 0;
+
+  return (
+    <div className={cn("relative inline-block", props.className)}>
+      <Button
+        variant={activeFilterCount > 0 ? "secondary" : "ghost"}
+        size="sm"
+        leftIcon="filter"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        aria-haspopup="true"
+      >
+        <HStack gap="xs" align="center">
+          <span>{t('filterGroup.filters')}</span>
+          {activeFilterCount > 0 && (
+            <Badge variant="primary" size="sm">{activeFilterCount}</Badge>
+          )}
+        </HStack>
+      </Button>
+      {open && (
+        <div className="absolute left-0 z-50 mt-2 min-w-[16rem] rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] p-card-md shadow-main">
+          <FilterGroupControls
+            {...props}
+            className={undefined}
+            look="toolbar"
+            variant="vertical"
+            showIcon={false}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
+FilterGroupPopover.displayName = "FilterGroupPopover";
+
+export const FilterGroup: React.FC<FilterGroupProps> = (props) =>
+  props.look === "popover-trigger"
+    ? <FilterGroupPopover {...props} />
+    : <FilterGroupControls {...props} />;
 
 FilterGroup.displayName = "FilterGroup";
