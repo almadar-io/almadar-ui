@@ -39,10 +39,12 @@ const sizeStyles: Record<ContainerSize, string> = {
 
 const paddingStyles: Record<ContainerPadding, string> = {
   none: 'px-0',
-  sm: 'px-4',
-  md: 'px-6',
-  lg: 'px-8',
-  xl: 'px-12',
+  // Mobile-tighter, desktop-identical: fixed px-6 on a 360px phone eats ~13% of
+  // the viewport, so each token steps down below the sm breakpoint.
+  sm: 'px-3 sm:px-4',
+  md: 'px-4 sm:px-6',
+  lg: 'px-4 sm:px-6 md:px-8',
+  xl: 'px-4 sm:px-8 md:px-12',
 };
 
 /**

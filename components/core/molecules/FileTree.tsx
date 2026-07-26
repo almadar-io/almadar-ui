@@ -14,7 +14,6 @@ import React, { useState, useCallback } from 'react';
 import { Box } from '../atoms/Box';
 import { Typography } from '../atoms/Typography';
 import { Icon } from '../atoms/Icon';
-import { useTranslate } from '../../../hooks/useTranslate';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -174,14 +173,10 @@ export const FileTree: React.FC<FileTreeProps> = ({
   className,
   indent = 16,
 }) => {
-  const { t } = useTranslate();
-  if (tree.length === 0) {
-    return (
-      <Box className={`p-4 ${className ?? ''}`}>
-        <Typography variant="caption" color="muted">{t('fileTree.noFiles')}</Typography>
-      </Box>
-    );
-  }
+  // An optional tree region renders nothing when empty rather than an empty-state
+  // block: consumers that don't supply a tree (std-wiki) otherwise get a dead
+  // ~100px "No files" panel under a heading that reports a non-zero count.
+  if (tree.length === 0) return null;
 
   return (
     <Box className={`py-1 overflow-y-auto ${className ?? ''}`} role="tree">

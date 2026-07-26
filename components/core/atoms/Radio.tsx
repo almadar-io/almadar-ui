@@ -104,10 +104,10 @@ export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
             "border-[length:var(--border-width)] transition-all cursor-pointer",
             sizeClasses[size],
             hasError
-              ? "border-error peer-focus:ring-error/20"
-              : "border-border peer-focus:ring-ring/20",
+              ? "border-error peer-focus-visible:ring-error/20"
+              : "border-border peer-focus-visible:ring-ring/20",
             isChecked ? (hasError ? "border-error" : "border-primary bg-primary") : "",
-            "peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-offset-2",
+            "peer-focus:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-offset-2",
             disabled && "opacity-50 cursor-not-allowed",
             !disabled && "hover:border-[var(--color-border-hover)]",
           )}

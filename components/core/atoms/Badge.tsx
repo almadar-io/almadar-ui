@@ -119,7 +119,7 @@ export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
             }}
             className={cn(
               "inline-flex items-center justify-center rounded-sm",
-              "hover:bg-foreground/10 focus:outline-none focus:ring-1 focus:ring-ring",
+              "hover:bg-foreground/10 focus:outline-none focus-visible:ring-1 focus-visible:ring-ring",
               "transition-colors",
               size === "sm" ? "w-4 h-4 ml-0.5" : size === "md" ? "w-5 h-5 ml-1" : "w-6 h-6 ml-1",
             )}

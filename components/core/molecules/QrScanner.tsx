@@ -235,7 +235,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({
               // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim
               "rounded-full bg-black bg-opacity-60 p-2 text-white",
               // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim
-              "hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-white",
+              "hover:bg-opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-white",
             )}
             aria-label={isPaused ? t('qrScanner.resumeScanning') : t('qrScanner.pauseScanning')}
           >
@@ -248,7 +248,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({
               // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim
               "rounded-full bg-black bg-opacity-60 p-2 text-white",
               // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim
-              "hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-white",
+              "hover:bg-opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-white",
             )}
             aria-label={currentFacing === 'environment' ? t('qrScanner.switchToFrontCamera') : t('qrScanner.switchToRearCamera')}
           >
@@ -261,7 +261,7 @@ export const QrScanner: React.FC<QrScannerProps> = ({
               // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim
               "rounded-full bg-black bg-opacity-60 px-3 py-2 text-xs text-white",
               // eslint-disable-next-line almadar/no-hardcoded-colors -- media overlay: always over a dark scrim
-              "hover:bg-opacity-80 focus:outline-none focus:ring-2 focus:ring-white",
+              "hover:bg-opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-white",
             )}
             aria-label={t('aria.mockScanDev')}
           >

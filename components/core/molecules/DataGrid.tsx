@@ -603,6 +603,11 @@ export function DataGrid({
                     </HStack>
                   )}
                 </VStack>
+                {/* Icon-only when an icon exists: this slot is `flex-shrink-0`
+                    beside a `flex-1 min-w-0` title, so a text label here claims
+                    width the title can never reclaim and collapses it to an
+                    ellipsis on narrow cards. Icon-only also stops a destructive
+                    action from being the loudest thing in the card. */}
                 {dangerActions.length > 0 && (
                   <HStack gap="xs" className="flex-shrink-0">
                     {dangerActions.map((action, idx) => (
@@ -613,10 +618,13 @@ export function DataGrid({
                         onClick={handleActionClick(action, itemData)}
                         data-testid={`action-${action.event}`}
                         data-row-id={String(itemData.id)}
+                        aria-label={action.label}
+                        title={action.label}
                         className="text-error hover:text-error hover:bg-error/10 px-2"
                       >
-                        {action.icon && renderIconInput(action.icon, { size: 'xs' })}
-                        {action.label}
+                        {action.icon
+                          ? renderIconInput(action.icon, { size: 'xs' })
+                          : action.label}
                       </Button>
                     ))}
                   </HStack>

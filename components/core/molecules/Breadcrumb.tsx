@@ -135,7 +135,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
                   }}
                   className={cn(
                     "flex items-center gap-1.5 transition-colors",
-                    "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                     isLast
                       ? "text-foreground font-bold cursor-default"
                       : "text-muted-foreground hover:text-foreground",

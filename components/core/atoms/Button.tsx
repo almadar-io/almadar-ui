@@ -198,7 +198,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           "cursor-pointer",
           "chrome-button",
           "transition-all duration-normal",
-          "focus:outline-none focus:ring-[length:var(--focus-ring-width)] focus:ring-ring focus:ring-offset-[length:var(--focus-ring-offset)]",
+          "focus:outline-none focus-visible:ring-[length:var(--focus-ring-width)] focus-visible:ring-ring focus-visible:ring-offset-[length:var(--focus-ring-offset)]",
           "disabled:opacity-50 disabled:cursor-not-allowed",
           variantStyles[variant],
           sizeStyles[size],

@@ -186,7 +186,7 @@ export const Accordion: React.FC<AccordionProps> = ({
                   "bg-card",
                   "hover:bg-muted",
                   "transition-colors duration-fast",
-                  "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-inset",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
                   "disabled:opacity-50 disabled:cursor-not-allowed",
                   isOpen && "bg-muted font-bold",
                 )}

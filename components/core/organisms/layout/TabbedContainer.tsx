@@ -114,7 +114,7 @@ export const TabbedContainer: React.FC<TabbedContainerProps> = ({
               onClick={() => !isDisabled && handleTabChange(tab.id)}
               className={cn(
                 "flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors",
-                "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 "disabled:opacity-50 disabled:cursor-not-allowed",
                 isActive
                   ? "bg-primary text-primary-foreground"

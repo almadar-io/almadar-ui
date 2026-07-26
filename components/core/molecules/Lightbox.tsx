@@ -159,7 +159,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
           "p-2 rounded-full",
           "text-[var(--color-foreground)] bg-[var(--color-card)]",
           "hover:bg-opacity-70 transition-opacity",
-          "focus:outline-none focus:ring-2 focus:ring-ring",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         )}
         aria-label={t('aria.closeModal')}
       >
@@ -179,7 +179,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
             "p-2 rounded-full",
             "text-[var(--color-foreground)] bg-[var(--color-card)]",
             "hover:bg-opacity-70 transition-opacity",
-            "focus:outline-none focus:ring-2 focus:ring-ring",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           )}
           aria-label={t('aria.previousImage')}
         >
@@ -217,7 +217,7 @@ export const Lightbox: React.FC<LightboxProps> = ({
             "p-2 rounded-full",
             "text-[var(--color-foreground)] bg-[var(--color-card)]",
             "hover:bg-opacity-70 transition-opacity",
-            "focus:outline-none focus:ring-2 focus:ring-ring",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           )}
           aria-label={t('aria.nextImage')}
         >

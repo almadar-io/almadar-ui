@@ -212,6 +212,9 @@ function groupData(
 /** Ceiling on a measured column floor, so one prose column can't starve the rest. */
 const MAX_MEASURED_COL_CH = 32;
 
+/** Horizontal padding a Badge adds around its label, in approximate `ch`. */
+const BADGE_CHROME_CH = 4;
+
 const alignClass: Record<NonNullable<TableViewColumn['align']>, string> = {
   left: 'justify-start text-left',
   center: 'justify-center text-center',
@@ -391,7 +394,10 @@ export function TableView({
         const cell = formatCell(asFieldValue(getNestedValue(row, col.field ?? col.key)), col.format);
         return Math.max(widest, cell.length);
       }, columnLabel(col).length);
-      return Math.min(longest, MAX_MEASURED_COL_CH);
+      // A badge wraps its text in padding, so the raw character count
+      // under-measures the track it actually needs.
+      const chrome = col.format === 'badge' ? BADGE_CHROME_CH : 0;
+      return Math.min(longest + chrome, MAX_MEASURED_COL_CH);
     }),
     [colDefs, data],
   );
@@ -491,7 +497,7 @@ export function TableView({
             if (col.format === 'badge' && raw != null && raw !== '') {
               return (
                 <Box key={col.key} role="cell" className={cellBase}>
-                  <Badge variant={statusVariant(String(raw))} size="sm">{String(raw)}</Badge>
+                  <Badge variant={statusVariant(String(raw))} size="sm" className="whitespace-nowrap">{String(raw)}</Badge>
                 </Box>
               );
             }

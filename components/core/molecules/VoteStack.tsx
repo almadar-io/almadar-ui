@@ -123,7 +123,7 @@ export const VoteStack: React.FC<VoteStackProps> = ({
           "active:bg-muted",
           "transition-colors duration-instant",
           "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent",
-          "focus:outline-none focus:ring-[length:var(--focus-ring-width)] focus:ring-ring focus:ring-inset",
+          "focus:outline-none focus-visible:ring-[length:var(--focus-ring-width)] focus-visible:ring-ring focus-visible:ring-inset",
           styles.button,
         )}
       >
@@ -160,7 +160,7 @@ export const VoteStack: React.FC<VoteStackProps> = ({
           "active:bg-muted",
           "transition-colors duration-instant",
           "disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent",
-          "focus:outline-none focus:ring-[length:var(--focus-ring-width)] focus:ring-ring focus:ring-inset",
+          "focus:outline-none focus-visible:ring-[length:var(--focus-ring-width)] focus-visible:ring-ring focus-visible:ring-inset",
           styles.button,
         )}
       >

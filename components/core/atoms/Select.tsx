@@ -108,7 +108,7 @@ function NativeSelect({
           "block w-full border-[length:var(--border-width)] shadow-sm appearance-none",
           "px-3 py-2 pr-10 text-sm text-foreground font-medium",
           "bg-card",
-          "focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-ring",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:ring-ring",
           "disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed",
           error
             ? "border-error focus:border-error"
@@ -260,7 +260,7 @@ function RichSelect({
           "block w-full border-[length:var(--border-width)] shadow-sm",
           "px-3 py-2 pr-10 text-sm text-start font-medium",
           "bg-card rounded-sm",
-          "focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-ring",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-0 focus-visible:ring-ring",
           "disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed",
           error ? "border-error focus:border-error" : "border-border focus:border-primary",
           !hasValue && "text-muted-foreground",
