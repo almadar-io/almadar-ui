@@ -290,6 +290,9 @@ export {
   type GraphSimilarity,
 } from "./GraphCanvas";
 
+// Import (migration) molecules
+export * from './import/index';
+
 // Learning-science molecules (generative-UI primitives)
 export { ActivationBlock, type ActivationBlockProps } from './ActivationBlock';
 export { ReflectionBlock, type ReflectionBlockProps } from './ReflectionBlock';

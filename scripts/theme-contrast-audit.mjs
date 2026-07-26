@@ -1,16 +1,33 @@
 #!/usr/bin/env node
 /**
- * WCAG contrast audit for all themes in packages/almadar-ui/themes/.
+ * WCAG contrast audit for theme CSS files.
  * Parses each [data-theme="..."] block, resolves var() aliases and rgba
  * compositing over the theme's own background, then checks the canonical
  * foreground/background pairs every component relies on.
+ *
+ * Usage:
+ *   node theme-contrast-audit.mjs [--dir <themes-dir>] [file-filter]
+ *
+ * Defaults to this package's own themes/ dir. Apps that ship their own
+ * [data-theme] files (e.g. apps/kflow's design-system/themes) run the same
+ * audit against that dir via --dir so app-local themes stay gated.
  */
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const themesDir = resolve(__dirname, '..', 'themes');
+
+const args = process.argv.slice(2);
+let themesDir = resolve(__dirname, '..', 'themes');
+let filter;
+for (let i = 0; i < args.length; i++) {
+  if (args[i] === '--dir') {
+    themesDir = resolve(process.cwd(), args[++i]);
+  } else {
+    filter = args[i];
+  }
+}
 
 const PAIRS = [
   ['--color-foreground', '--color-background'],
@@ -69,7 +86,6 @@ function contrast(c1, c2) {
   return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
 }
 
-const filter = process.argv[2];
 const files = readdirSync(themesDir).filter(f => f.endsWith('.css') && !f.startsWith('_') && f !== 'index.css' && (!filter || f === filter));
 let violations = 0;
 
@@ -113,3 +129,4 @@ for (const file of files.sort()) {
   }
 }
 console.log(violations === 0 ? '\nAll theme pairs pass WCAG AA (4.5:1).' : `\n${violations} violation(s).`);
+process.exit(violations === 0 ? 0 : 1);

@@ -110,6 +110,7 @@
     "index.css",
     "themes",
     "locales",
+    "scripts",
     "tailwind-preset.cjs"
   ],
   "publishConfig": {
