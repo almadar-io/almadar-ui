@@ -101,7 +101,8 @@ function asBooleanValue(value: FieldValue | undefined): boolean | null {
 export interface RowAction<T> {
   label: string;
   icon?: IconInput;
-  onClick: (row: T) => void;
+  /** Optional when `event` is set — a bus-emitting onClick is synthesized. */
+  onClick?: (row: T) => void;
   variant?: "default" | "danger";
   show?: (row: T) => boolean;
   event?: string;
@@ -150,8 +151,10 @@ export interface DataTableProps<T extends EntityRow & { id: string | number }>
   bulkActions?: ReadonlyArray<{
     label: string;
     icon?: IconInput;
-    onClick: (selectedRows: T[]) => void;
+    /** Optional when `event` is set — a bus-emitting onClick is synthesized. */
+    onClick?: (selectedRows: T[]) => void;
     variant?: "default" | "danger";
+    event?: string;
   }>;
 
   // Header actions
@@ -230,8 +233,20 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
   const total = totalCount ?? items.length;
   const totalPages = Math.ceil(total / currentPageSize);
 
-  // Convert itemActions to rowActions format if provided
-  const rowActions =
+  // Convert itemActions to rowActions format if provided. Entries carrying
+  // only `event` (the `.lolo`-authored shape) get a bus-emitting onClick —
+  // same mapping the itemActions path applies.
+  const withEventClick = (action: RowAction<T>): RowAction<T> => {
+    if (action.onClick || !action.event) return action;
+    const event = action.event;
+    return {
+      ...action,
+      onClick: (row: T) => {
+        eventBus.emit(`UI:${event}`, { row });
+      },
+    };
+  };
+  const rowActions = (
     externalRowActions ??
     (itemActions
       ?.filter((a) => a.placement !== "bulk")
@@ -257,7 +272,19 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
             });
           }
         },
-      })) as RowAction<T>[] | undefined);
+      })) as RowAction<T>[] | undefined)
+  )?.map(withEventClick);
+
+  const normalizedBulkActions = bulkActions?.map((action) => {
+    if (action.onClick || !action.event) return action;
+    const event = action.event;
+    return {
+      ...action,
+      onClick: (selectedRows: T[]) => {
+        eventBus.emit(`UI:${event}`, { rows: selectedRows });
+      },
+    };
+  });
 
   // Find VIEW action or navigatesTo action from itemActions for row click behavior
   const viewAction = itemActions?.find(
@@ -384,7 +411,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
             )}
 
             {/* Bulk actions */}
-            {bulkActions && selectedIds.length > 0 && (
+            {normalizedBulkActions && selectedIds.length > 0 && (
               <HStack className="items-center gap-2 pl-0 sm:pl-3 border-l-0 sm:border-l border-border">
                 <Typography
                   variant="small"
@@ -395,7 +422,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
                   })}
                 </Typography>
                 <HStack className="flex-wrap gap-2">
-                  {bulkActions.map((action, idx) => (
+                  {normalizedBulkActions.map((action, idx) => (
                     <Button
                       key={idx}
                       variant={
@@ -403,7 +430,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
                       }
                       size="sm"
                       leftIcon={action.icon}
-                      onClick={() => action.onClick(selectedRows)}
+                      onClick={() => action.onClick?.(selectedRows)}
                     >
                       {action.label}
                     </Button>
@@ -624,7 +651,7 @@ export function DataTable<T extends EntityRow & { id: string | number }>({
                                   )}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    action.onClick(row);
+                                    action.onClick?.(row);
                                     setOpenActionMenu(null);
                                   }}
                                 >
