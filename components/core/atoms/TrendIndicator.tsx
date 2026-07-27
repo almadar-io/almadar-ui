@@ -61,12 +61,18 @@ export const TrendIndicator = React.forwardRef<HTMLSpanElement, TrendIndicatorPr
     },
     ref,
   ) => {
-    const dir = resolveDirection(value, direction);
+    // No trend data and no explicit direction — render nothing rather than
+    // a fabricated flat "→" (same contract as Badge's empty render). Unset
+    // bindings can arrive as null or "" depending on the path, so only a
+    // finite number counts as data.
+    const hasValue = typeof value === "number" && Number.isFinite(value);
+    if (!hasValue && !direction) return null;
+    const dir = resolveDirection(hasValue ? value : undefined, direction);
     const colorClass = resolveColor(dir, invert);
     const iconName = iconNameMap[dir];
     const styles = sizeStyles[size];
 
-    const formattedValue = value !== undefined
+    const formattedValue = hasValue
       ? `${value > 0 ? "+" : ""}${value}%`
       : undefined;
 

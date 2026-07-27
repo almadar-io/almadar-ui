@@ -520,17 +520,48 @@ export function DataList({
     const dndId = (itemData[idFieldName] as string | number | undefined) ?? `__idx_${index}`;
     const wrapDnd = (node: React.ReactNode): React.ReactNode =>
       dnd.isZone ? <dnd.SortableItem key={dndId} id={dndId}>{node}</dnd.SortableItem> : node;
-    // Custom render-prop path: delegate item content to children, keep itemActions
+    // Custom render-prop path: delegate item content to children, keep itemActions.
+    // The custom card draws its own chrome, so actions render INSIDE its
+    // top-right corner as a hover/focus-revealed cluster (always visible on
+    // coarse pointers) instead of a side gutter that floats outside the card.
     if (hasRenderProp) {
       const id = (itemData.id as string) || String(index);
+      const actions = renderItemActions(itemData);
       return wrapDnd(
-        <Box key={id} data-entity-row data-entity-id={id} onClick={itemClickEvent ? handleRowClick(itemData) : undefined} className={cn(itemClickEvent && 'cursor-pointer')}>
-          <Box className="group flex items-stretch gap-2">
-            <Box className="flex-1 min-w-0">
-              {children(itemData as EntityRow, index)}
+        <Box key={id} data-entity-row data-entity-id={id} onClick={itemClickEvent ? handleRowClick(itemData) : undefined} className={cn('relative group/rowactions', itemClickEvent && 'cursor-pointer')}>
+          {children(itemData as EntityRow, index)}
+          {actions && (
+            <Box className="absolute top-2 right-2 z-10 opacity-0 group-hover/rowactions:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity duration-fast">
+              {/* Fine pointers: hover-revealed inline cluster. */}
+              <Box className="rounded-md border border-border bg-card/95 backdrop-blur-sm shadow-sm p-0.5 [@media(pointer:coarse)]:hidden">
+                {actions}
+              </Box>
+              {/* Coarse pointers: always-visible single kebab — an inline
+                  cluster would sit on the card title at phone widths
+                  (verified at 390px). */}
+              <Box className="hidden [@media(pointer:coarse)]:block rounded-md border border-border bg-card/95 backdrop-blur-sm shadow-sm p-0.5">
+                <Menu
+                  position="bottom-end"
+                  trigger={
+                    <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow">
+                      <Icon name="more-horizontal" size="xs" />
+                    </Button>
+                  }
+                  items={(itemActions ?? []).map((action) => ({
+                    label: action.label,
+                    icon: action.icon,
+                    event: action.event,
+                    variant: action.variant === 'danger' ? ('danger' as const) : ('default' as const),
+                    onClick: () =>
+                      eventBus.emit(`UI:${action.event}`, {
+                        id: itemData.id as string | number,
+                        row: itemData as ItemActionPayload['row'],
+                      }),
+                  }))}
+                />
+              </Box>
             </Box>
-            {renderItemActions(itemData)}
-          </Box>
+          )}
           {isCard && !isLast && (
             <Box className="mx-6 border-b border-border/40" />
           )}
@@ -580,9 +611,12 @@ export function DataList({
               })}
             </HStack>
 
-            {/* Secondary row: metadata fields */}
-            {bodyFields.length > 0 && !isCompact && (
-              <HStack gap="md" className="mt-1.5 flex-wrap">
+            {/* Secondary row: metadata fields. Compact rows keep it — an
+                inbox row's meta (assignee, age) is its scanning substance —
+                just tighter. Suppressing it entirely silently emptied every
+                triage queue's configured meta (U-DATALIST-COMPACT-DROPS-META-FIELDS). */}
+            {bodyFields.length > 0 && (
+              <HStack gap="md" className={cn('flex-wrap', isCompact ? 'mt-0.5' : 'mt-1.5')}>
                 {bodyFields.map((field) => {
                   const value = getNestedValue(itemData, field.name) as FieldValue | undefined;
                   if (value === undefined || value === null || value === '') return null;

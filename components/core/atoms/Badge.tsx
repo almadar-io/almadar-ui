@@ -95,6 +95,10 @@ export const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
       : typeof icon === "string"
         ? <Icon name={icon} className={iconSizes[size]} />
         : icon ? <Icon icon={icon} className={iconSizes[size]} /> : null;
+    // A badge bound to an absent value must render nothing, not an empty
+    // colored pill (schema-driven trees bind label to optional fields).
+    const hasText = Boolean(children) || amount != null || (label !== undefined && label !== null && label !== '');
+    if (!hasText && !resolvedIcon && !onRemove) return null;
     return (
       <span
         ref={ref}

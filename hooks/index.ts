@@ -161,6 +161,7 @@ export {
   useDragReorder,
   type DragReorderResult,
 } from './useDragReorder';
+export { useMediaQuery } from './useMediaQuery';
 export {
   useInfiniteScroll,
   type InfiniteScrollOptions,

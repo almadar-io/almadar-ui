@@ -22,11 +22,11 @@ importers:
         specifier: ^1.10.0
         version: 1.10.0
       '@almadar/runtime':
-        specifier: ^6.41.0
-        version: 6.41.0(express@5.2.1)
+        specifier: ^6.42.0
+        version: 6.42.0(express@5.2.1)
       '@almadar/std':
-        specifier: ^16.148.0
-        version: 16.148.0
+        specifier: ^16.149.0
+        version: 16.149.0
       '@almadar/syntax':
         specifier: ^1.13.0
         version: 1.13.0
@@ -244,8 +244,8 @@ packages:
   '@almadar/logger@1.10.0':
     resolution: {integrity: sha512-QEAEiDg72wRkdYgpaa4pipx+Cd/QBHkNUSyCTj98EpTtIrziLek765qwDbAivEwjuKfS79CPUs3sF4baiZAgwQ==}
 
-  '@almadar/runtime@6.41.0':
-    resolution: {integrity: sha512-s5Hcq2dIA7+PaNUotOrHUxw43JjEtmc48RdA69n7EwMLT5xj6f40UnC+XxKzpGVC6DT2qEB3wskWmvyy2JDHsg==}
+  '@almadar/runtime@6.42.0':
+    resolution: {integrity: sha512-RBjhj7yls+exds1PMzPLHJxURYtTTe4z6cqywiHAMisqZ4afBS7T+NpFUIKG5qkPgwX0Fsfyzv4w+eJB5zzw2Q==}
     peerDependencies:
       express: ^5.0.0
     peerDependenciesMeta:
@@ -261,8 +261,8 @@ packages:
       '@almadar-io/rabit':
         optional: true
 
-  '@almadar/std@16.148.0':
-    resolution: {integrity: sha512-gg96jlBSR5ddeFOKCnIuUzYNDZF6wJJiIlT9tFCRuGCCZeMMoUCoPtoq4lEtywVdDpe38U8Gc5hhWFMXVwqAHQ==}
+  '@almadar/std@16.149.0':
+    resolution: {integrity: sha512-DT2aOZrDmdWysRcVsKFW9n0kW9PdD1rtq09ygoq3pjyBZtNWSatmluUWGcI1RR16pXXIyhIjEM7Lsx+UxxbhYg==}
 
   '@almadar/syntax@1.13.0':
     resolution: {integrity: sha512-Y5EJotscEmWesnuFqTE1BwD9A3QP17VEMxOM+hs39HW5PP/Ke7ltuv6O3BD94B2Vjdm6BdByqf8JVbpipIYLRQ==}
@@ -4345,19 +4345,19 @@ snapshots:
   '@almadar/evaluator@2.37.0':
     dependencies:
       '@almadar/core': 10.38.0
-      '@almadar/std': 16.148.0
+      '@almadar/std': 16.149.0
 
   '@almadar/logger@1.10.0':
     dependencies:
       '@almadar/core': 10.38.0
 
-  '@almadar/runtime@6.41.0(express@5.2.1)':
+  '@almadar/runtime@6.42.0(express@5.2.1)':
     dependencies:
       '@almadar/core': 10.38.0
       '@almadar/evaluator': 2.37.0
       '@almadar/logger': 1.10.0
       '@almadar/server': 2.29.0(express@5.2.1)
-      '@almadar/std': 16.148.0
+      '@almadar/std': 16.149.0
     optionalDependencies:
       express: 5.2.1
     transitivePeerDependencies:
@@ -4385,14 +4385,14 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@almadar/std@16.148.0':
+  '@almadar/std@16.149.0':
     dependencies:
       '@almadar/core': 10.38.0
 
   '@almadar/syntax@1.13.0':
     dependencies:
       '@almadar/core': 10.38.0
-      '@almadar/std': 16.148.0
+      '@almadar/std': 16.149.0
 
   '@asamuzakjp/css-color@3.2.0':
     dependencies:

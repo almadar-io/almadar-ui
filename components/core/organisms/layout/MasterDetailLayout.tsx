@@ -61,23 +61,22 @@ export const MasterDetailLayout: React.FC<MasterDetailLayoutProps> = ({
   masterClassName,
   detailClassName,
 }) => {
-  // Calculate ratio from masterWidth if it's a percentage
-  const ratio = masterWidth.endsWith("%") ? parseInt(masterWidth, 10) : 30; // Default to 30% if pixel value
-
+  // Below `md` a two-column split has no room (a fixed master track leaves the
+  // detail a ~0px sliver on phones — opening a record looked like a dead
+  // click). Small screens get the standard two-screen flow instead: the list,
+  // or the open record full-width; the record's close action returns to the
+  // list. The grid only exists from `md:` up, via a CSS var so masterWidth
+  // stays a prop.
   return (
     <div
-      className={cn("flex h-full w-full", className)}
-      style={{
-        display: "grid",
-        gridTemplateColumns: masterWidth.endsWith("%")
-          ? `${masterWidth} 1fr`
-          : `${masterWidth} 1fr`,
-      }}
+      className={cn("w-full h-full md:grid md:grid-cols-[var(--master-detail-cols)]", className)}
+      style={{ "--master-detail-cols": `${masterWidth} 1fr` } as React.CSSProperties}
     >
       {/* Master panel */}
       <div
         className={cn(
-          "border-r-2 border-border overflow-auto",
+          "border-r border-border overflow-auto",
+          hasSelection && "hidden md:block",
           masterClassName,
         )}
       >
@@ -85,7 +84,7 @@ export const MasterDetailLayout: React.FC<MasterDetailLayoutProps> = ({
       </div>
 
       {/* Detail panel */}
-      <div className={cn("overflow-auto", detailClassName)}>
+      <div className={cn("overflow-auto", !hasSelection && "hidden md:block", detailClassName)}>
         {hasSelection ? detail : emptyDetail || <DefaultEmptyDetail />}
       </div>
     </div>

@@ -480,17 +480,23 @@ export function DataGrid({
           // itemActions still render as a footer so row-scoped events keep
           // their {id, row} payload regardless of the custom card body.
           if (hasRenderProp) {
+            // Custom cards draw their own chrome, so a sibling action band
+            // below them reads as detached furniture. Actions live INSIDE
+            // the card's top-right corner instead: hover/focus-revealed on
+            // pointer devices (Beauty §7 "action buttons fade in"), always
+            // visible on coarse pointers where hover doesn't exist.
             return wrapDnd(
               <Box
                 key={id}
                 data-entity-row
                 data-entity-id={id}
-                className={cn(isSelected && 'ring-2 ring-primary rounded-lg')}
+                className={cn('relative group/rowactions', isSelected && 'ring-2 ring-primary rounded-lg')}
               >
                 {children(itemData, index)}
                 {actionDefs.length > 0 && (
-                  <Box className="px-4 py-3 border-t border-border">
-                    <HStack gap="sm" className="justify-end">
+                  <Box className="absolute top-2 right-2 z-10 opacity-0 group-hover/rowactions:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity duration-fast">
+                    {/* Fine pointers: hover-revealed inline cluster. */}
+                    <HStack gap="xs" className="rounded-md border border-border bg-card/95 backdrop-blur-sm shadow-sm p-0.5 [@media(pointer:coarse)]:hidden">
                       {(maxInlineActions != null ? actionDefs.slice(0, maxInlineActions) : actionDefs).map((action, idx) => (
                         <Button
                           key={idx}
@@ -522,6 +528,26 @@ export function DataGrid({
                         />
                       )}
                     </HStack>
+                    {/* Coarse pointers have no hover, so the cluster is always
+                        visible — an inline row would sit on the card's title
+                        at phone widths (verified at 390px). One kebab holding
+                        every action cannot overlap anything meaningful. */}
+                    <Box className="hidden [@media(pointer:coarse)]:block rounded-md border border-border bg-card/95 backdrop-blur-sm shadow-sm p-0.5">
+                      <Menu
+                        position="bottom-end"
+                        trigger={
+                          <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow">
+                            <Icon name="more-horizontal" size="xs" />
+                          </Button>
+                        }
+                        items={actionDefs.map((action) => ({
+                          label: action.label,
+                          icon: action.icon,
+                          event: action.event,
+                          onClick: () => fireAction(action, itemData),
+                        }))}
+                      />
+                    </Box>
                   </Box>
                 )}
               </Box>
@@ -561,8 +587,8 @@ export function DataGrid({
               );
             })()}
 
-            {/* Card Header: title + badges + danger actions */}
-            <Box className="p-4 pb-0">
+            {/* Card Header: title + badges + the action cluster */}
+            <Box className={cn('p-4', bodyFields.length > 0 && 'pb-0')}>
               <HStack gap="sm" className="justify-between items-start">
                 {selectable && (
                   <input
@@ -603,16 +629,57 @@ export function DataGrid({
                     </HStack>
                   )}
                 </VStack>
-                {/* Icon-only when an icon exists: this slot is `flex-shrink-0`
-                    beside a `flex-1 min-w-0` title, so a text label here claims
-                    width the title can never reclaim and collapses it to an
-                    ellipsis on narrow cards. Icon-only also stops a destructive
-                    action from being the loudest thing in the card. */}
-                {dangerActions.length > 0 && (
+                {/* Header action cluster: inline primaries (capped by
+                    maxInlineActions, rest in a "⋯" menu) + icon-only danger.
+                    Living on the title row keeps the card free of a footer
+                    band — one surface separation (the card border), no
+                    second divider, no dead bottom space. Danger stays
+                    icon-only so a destructive action is never the loudest
+                    thing in the card. */}
+                {(primaryActions.length > 0 || dangerActions.length > 0) && (
                   <HStack gap="xs" className="flex-shrink-0">
-                    {dangerActions.map((action, idx) => (
+                    {/* Icon-only when an icon exists: two labeled buttons in a
+                        ~240px card starve the title down to a single character
+                        (the label rides in title/aria-label instead). */}
+                    {(maxInlineActions != null ? primaryActions.slice(0, maxInlineActions) : primaryActions).map((action, idx) => (
                       <Button
                         key={idx}
+                        variant={action.variant === 'primary' ? 'primary' : 'ghost'}
+                        size="sm"
+                        onClick={handleActionClick(action, itemData)}
+                        data-testid={`action-${action.event}`}
+                        data-row-id={String(itemData.id)}
+                        aria-label={action.label}
+                        title={action.label}
+                        className={cn(
+                          action.variant === 'primary' ? undefined : 'text-muted-foreground hover:text-foreground',
+                          action.icon && 'px-2',
+                        )}
+                      >
+                        {action.icon
+                          ? renderIconInput(action.icon, { size: 'xs' })
+                          : action.label}
+                      </Button>
+                    ))}
+                    {maxInlineActions != null && primaryActions.length > maxInlineActions && (
+                      <Menu
+                        position="bottom-end"
+                        trigger={
+                          <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow">
+                            <Icon name="more-horizontal" size="xs" />
+                          </Button>
+                        }
+                        items={primaryActions.slice(maxInlineActions).map((action) => ({
+                          label: action.label,
+                          icon: action.icon,
+                          event: action.event,
+                          onClick: () => fireAction(action, itemData),
+                        }))}
+                      />
+                    )}
+                    {dangerActions.map((action, idx) => (
+                      <Button
+                        key={`danger-${idx}`}
                         variant="ghost"
                         size="sm"
                         onClick={handleActionClick(action, itemData)}
@@ -632,86 +699,57 @@ export function DataGrid({
               </HStack>
             </Box>
 
-            {/* Card Body: remaining fields */}
+            {/* Card Body: caption-variant fields read as prose (their value
+                speaks for itself — a "Description" label over a description
+                is noise); everything else is an inline `Label: value` pair in
+                a wrapping meta row, the same convention DataList's default
+                path uses. Never label-left/value-right across the card width:
+                that separation breaks the label from its value. */}
             {bodyFields.length > 0 && (
-              <Box className="px-4 py-3 flex-1">
+              <Box className="px-4 pt-2 pb-4 flex-1">
                 <VStack gap="xs">
-                  {bodyFields.map((field) => {
+                  {bodyFields.filter((f) => f.variant === 'caption' && f.format !== 'boolean').map((field) => {
                     const value = getNestedValue(itemData, field.name);
                     if (value === undefined || value === null || value === '') return null;
+                    return (
+                      <Typography key={field.name} variant="small" color="secondary" className="line-clamp-2">
+                        {formatValue(value, field.format)}
+                      </Typography>
+                    );
+                  })}
+                  <HStack gap="md" className="flex-wrap gap-y-1">
+                    {bodyFields.filter((f) => f.variant !== 'caption' || f.format === 'boolean').map((field) => {
+                      const value = getNestedValue(itemData, field.name);
+                      if (value === undefined || value === null || value === '') return null;
 
-                    // Boolean format renders as badge
-                    if (field.format === 'boolean') {
-                      return (
-                        <HStack key={field.name} gap="sm" className="justify-between items-center">
-                          <HStack gap="xs" className="items-center">
+                      if (field.format === 'boolean') {
+                        return (
+                          <HStack key={field.name} gap="xs" className="items-center">
                             {field.icon && renderIconInput(field.icon, { size: 'xs', className: 'text-muted-foreground' })}
                             <Typography variant="caption" color="secondary">
                               {field.label ?? fieldLabel(field.name)}
                             </Typography>
+                            <Badge variant={value ? 'success' : 'neutral'}>
+                              {value ? (t('common.yes') || 'Yes') : (t('common.no') || 'No')}
+                            </Badge>
                           </HStack>
-                          <Badge variant={value ? 'success' : 'neutral'}>
-                            {value ? (t('common.yes') || 'Yes') : (t('common.no') || 'No')}
-                          </Badge>
-                        </HStack>
-                      );
-                    }
+                        );
+                      }
 
-                    return (
-                      <HStack key={field.name} gap="sm" className="justify-between items-center">
-                        <HStack gap="xs" className="items-center">
+                      return (
+                        <HStack key={field.name} gap="xs" className="items-center">
                           {field.icon && renderIconInput(field.icon, { size: 'xs', className: 'text-muted-foreground' })}
                           <Typography variant="caption" color="secondary">
-                            {field.label ?? fieldLabel(field.name)}
+                            {(field.label ?? fieldLabel(field.name)) + ':'}
+                          </Typography>
+                          <Typography variant="small">
+                            {formatValue(value, field.format)}
                           </Typography>
                         </HStack>
-                        <Typography
-                          variant={field.variant === 'caption' ? 'caption' : 'small'}
-                          className="text-right truncate max-w-[60%]"
-                        >
-                          {formatValue(value, field.format)}
-                        </Typography>
-                      </HStack>
-                    );
-                  })}
+                      );
+                    })}
+                  </HStack>
                 </VStack>
-              </Box>
-            )}
-
-            {/* Card Footer: primary actions */}
-            {primaryActions.length > 0 && (
-              <Box className="px-4 py-3 mt-auto border-t border-border">
-                <HStack gap="sm" className="justify-end flex-wrap">
-                  {(maxInlineActions != null ? primaryActions.slice(0, maxInlineActions) : primaryActions).map((action, idx) => (
-                    <Button
-                      key={idx}
-                      variant={action.variant === 'primary' ? 'primary' : 'ghost'}
-                      size="sm"
-                      onClick={handleActionClick(action, itemData)}
-                      data-testid={`action-${action.event}`}
-                      data-row-id={String(itemData.id)}
-                    >
-                      {action.icon && renderIconInput(action.icon, { size: 'xs', className: 'mr-1' })}
-                      {action.label}
-                    </Button>
-                  ))}
-                  {maxInlineActions != null && primaryActions.length > maxInlineActions && (
-                    <Menu
-                      position="bottom-end"
-                      trigger={
-                        <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow">
-                          <Icon name="more-horizontal" size="xs" />
-                        </Button>
-                      }
-                      items={primaryActions.slice(maxInlineActions).map((action) => ({
-                        label: action.label,
-                        icon: action.icon,
-                        event: action.event,
-                        onClick: () => fireAction(action, itemData),
-                      }))}
-                    />
-                  )}
-                </HStack>
               </Box>
             )}
           </Box>

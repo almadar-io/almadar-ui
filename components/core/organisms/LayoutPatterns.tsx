@@ -12,7 +12,7 @@
 
 import React from 'react';
 import type { UiError } from '../atoms/types';
-import { Box, type BoxPadding, type BoxBg, type BoxRounded, type BoxShadow } from '../atoms/Box';
+import { Box, type BoxProps, type BoxPadding, type BoxRounded } from '../atoms/Box';
 import { Spacer } from '../atoms/Spacer';
 import { Divider, type DividerVariant, type DividerOrientation } from '../atoms/Divider';
 
@@ -43,50 +43,46 @@ export interface LayoutPatternProps {
 // Box Pattern
 // ============================================================================
 
-export interface BoxPatternProps extends LayoutPatternProps {
-  /** Padding shorthand */
+export interface BoxPatternProps extends BoxProps {
+  /** Padding shorthand (alias of padding) */
   p?: BoxPadding;
-  /** Margin shorthand */
+  /** Margin shorthand (alias of margin) */
   m?: BoxPadding;
-  /** Background color token */
-  bg?: BoxBg;
-  /** Show border */
-  border?: boolean;
-  /** Border radius */
+  /** Border radius shorthand (alias of rounded) */
   radius?: BoxRounded;
-  /** Shadow level */
-  shadow?: BoxShadow;
+  /** Loading state (framework-injected; not a DOM prop) */
+  isLoading?: boolean;
+  /** Error state (framework-injected; not a DOM prop) */
+  error?: UiError | null;
+  /** Entity name (framework-injected; not a DOM prop) */
+  entity?: string;
 }
 
 /**
  * Box pattern component.
  *
- * Generic styled container with theming support.
+ * Generic styled container with theming support. Forwards the full `box`
+ * registry surface to Box — the pattern's declared props (`data-theme`,
+ * `padding`, `fullHeight`, `action`, …) must reach the atom, not stop at
+ * this adapter. Only the framework-injected render-state props and the
+ * legacy `p`/`m`/`radius` aliases are translated away.
  */
 export function BoxPattern({
   p,
   m,
-  bg = 'transparent',
-  border = false,
-  radius = 'none',
-  shadow = 'none',
-  className,
-  style,
-  children,
+  radius,
+  isLoading: _isLoading,
+  error: _error,
+  entity: _entity,
+  ...boxProps
 }: BoxPatternProps): React.ReactElement {
   return (
     <Box
-      padding={p}
-      margin={m as BoxPadding | undefined}
-      bg={bg}
-      border={border}
-      rounded={radius}
-      shadow={shadow}
-      className={className}
-      style={style}
-    >
-      {children}
-    </Box>
+      padding={boxProps.padding ?? p}
+      margin={boxProps.margin ?? m}
+      rounded={boxProps.rounded ?? radius}
+      {...boxProps}
+    />
   );
 }
 

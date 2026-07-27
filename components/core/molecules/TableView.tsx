@@ -21,6 +21,7 @@ import { createLogger } from '@almadar/logger';
 const tableViewLog = createLogger('almadar:ui:table-view');
 import { getNestedValue } from '../../../lib/getNestedValue';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { Box } from '../atoms/Box';
 import { VStack, HStack } from '../atoms/Stack';
@@ -239,7 +240,7 @@ interface LookConfig {
 }
 
 const LOOKS: Record<NonNullable<TableViewProps['look']>, LookConfig> = {
-  dense: { rowPad: 'px-card-md py-card-sm', headPad: 'px-card-md py-card-sm', striped: false, divider: true },
+  dense: { rowPad: 'px-card-md py-2', headPad: 'px-card-md py-2', striped: false, divider: true },
   spacious: { rowPad: 'px-card-lg py-card-md', headPad: 'px-card-lg py-card-sm', striped: false, divider: true },
   striped: { rowPad: 'px-card-md py-card-sm', headPad: 'px-card-md py-card-sm', striped: true, divider: false },
   borderless: { rowPad: 'px-card-md py-card-sm', headPad: 'px-card-md py-card-sm', striped: false, divider: false },
@@ -304,6 +305,7 @@ export function TableView({
   const hasMore = pageSize > 0 && visibleCount < ordered.length;
   const hasRenderProp = typeof children === 'function';
   const idField = dndItemIdField ?? 'id';
+  const isCoarsePointer = useMediaQuery('(pointer: coarse)');
 
   const selected = selectedIds ? new Set(selectedIds) : localSelected;
 
@@ -342,6 +344,27 @@ export function TableView({
       eventBus.emit(`UI:${action.event}`, payload);
     };
 
+  // A bare `minmax(0, 1fr)` splits width evenly, so a long value (an email) is
+  // truncated while a short one (a badge) wastes its share. The floor can't be
+  // `min-content`/`auto` — each row is its own grid, so a content-measured track
+  // differs per row and the columns drift. Measuring the whole visible page
+  // instead yields one floor that is identical for the header and every row, so
+  // alignment holds. Must run BEFORE the loading/error/empty early returns:
+  // a hook below them changes the hook count when data arrives (React #300).
+  const colFloors = React.useMemo(
+    () => colDefs.map((col) => {
+      const longest = data.reduce((widest, row) => {
+        const cell = formatCell(asFieldValue(getNestedValue(row, col.field ?? col.key)), col.format);
+        return Math.max(widest, cell.length);
+      }, columnLabel(col).length);
+      // A badge wraps its text in padding, so the raw character count
+      // under-measures the track it actually needs.
+      const chrome = col.format === 'badge' ? BADGE_CHROME_CH : 0;
+      return Math.min(longest + chrome, MAX_MEASURED_COL_CH);
+    }),
+    [colDefs, data],
+  );
+
   if (isLoading) {
     return (
       <Box className="text-center py-8">
@@ -375,32 +398,17 @@ export function TableView({
   // leftover space per row, drifting the header labels off their columns. A
   // fixed width is identical in header and body, so columns stay aligned.
   const hasActions = Boolean(itemActions && itemActions.length > 0);
+  // Touch surfaces get a kebab-only action cell: inline text actions cost a
+  // fixed 6rem apiece in the shared track, which crushes the data columns at
+  // phone widths (verified at 390px — three actions left ~60px for the data).
+  const effectiveMaxInline = isCoarsePointer ? 0 : maxInlineActions;
   const inlineActionCount = hasActions
-    ? (maxInlineActions != null ? Math.min(itemActions!.length, maxInlineActions) : itemActions!.length)
+    ? (effectiveMaxInline != null ? Math.min(itemActions!.length, effectiveMaxInline) : itemActions!.length)
     : 0;
-  const hasOverflowActions = hasActions && maxInlineActions != null && itemActions!.length > maxInlineActions;
+  const hasOverflowActions = hasActions && effectiveMaxInline != null && itemActions!.length > effectiveMaxInline;
   const actionsTrack = hasActions
     ? `${inlineActionCount * 6 + (hasOverflowActions ? 3 : 0)}rem`
     : null;
-  // A bare `minmax(0, 1fr)` splits width evenly, so a long value (an email) is
-  // truncated while a short one (a badge) wastes its share. The floor can't be
-  // `min-content`/`auto` for the reason above — each row is its own grid, so a
-  // content-measured track differs per row and the columns drift. Measuring the
-  // whole visible page instead yields one floor that is identical for the header
-  // and every row, so alignment holds.
-  const colFloors = React.useMemo(
-    () => colDefs.map((col) => {
-      const longest = data.reduce((widest, row) => {
-        const cell = formatCell(asFieldValue(getNestedValue(row, col.field ?? col.key)), col.format);
-        return Math.max(widest, cell.length);
-      }, columnLabel(col).length);
-      // A badge wraps its text in padding, so the raw character count
-      // under-measures the track it actually needs.
-      const chrome = col.format === 'badge' ? BADGE_CHROME_CH : 0;
-      return Math.min(longest + chrome, MAX_MEASURED_COL_CH);
-    }),
-    [colDefs, data],
-  );
   const gridTemplateColumns = [
     selectable ? 'auto' : null,
     ...colDefs.map((c, i) => c.width ?? `minmax(${colFloors[i]}ch, 1fr)`),
@@ -503,7 +511,7 @@ export function TableView({
             }
             return (
               <Box key={col.key} role="cell" className={cellBase}>
-                <span className="truncate">{formatCell(raw, col.format)}</span>
+                <span className="truncate text-foreground">{formatCell(raw, col.format)}</span>
               </Box>
             );
           })
@@ -521,21 +529,25 @@ export function TableView({
                 : 'bg-[var(--color-card)] group-hover:bg-[var(--color-surface-subtle)]',
             )}
           >
-            {(maxInlineActions != null ? itemActions.slice(0, maxInlineActions) : itemActions).map((action, i) => (
+            {(effectiveMaxInline != null ? itemActions.slice(0, effectiveMaxInline) : itemActions).map((action, i) => (
               <Button
                 key={i}
-                variant={action.variant ?? 'ghost'}
+                // Inline row cells never render the filled danger button — a
+                // loud destructive control repeated on every row becomes the
+                // surface's focal point. Danger keeps its semantics via the
+                // error text treatment; only an explicit primary stays filled.
+                variant={action.variant === 'primary' ? 'primary' : 'ghost'}
                 size="sm"
                 onClick={handleActionClick(action, row)}
                 data-testid={`action-${action.event}`}
                 data-row-id={String(row.id)}
-                className={cn(action.variant === 'danger' && 'text-error hover:bg-error/10')}
+                className={cn(action.variant === 'danger' && 'text-error hover:text-error hover:bg-error/10')}
               >
                 {action.icon && renderIconInput(action.icon, { size: 'xs', className: 'mr-1' })}
                 {action.label}
               </Button>
             ))}
-            {maxInlineActions != null && itemActions.length > maxInlineActions && (
+            {effectiveMaxInline != null && itemActions.length > effectiveMaxInline && (
               <Menu
                 position="bottom-end"
                 trigger={
@@ -543,7 +555,7 @@ export function TableView({
                     <Icon name="more-horizontal" size="xs" />
                   </Button>
                 }
-                items={itemActions.slice(maxInlineActions).map((action) => ({
+                items={itemActions.slice(effectiveMaxInline).map((action) => ({
                   label: action.label,
                   icon: action.icon,
                   event: action.event,

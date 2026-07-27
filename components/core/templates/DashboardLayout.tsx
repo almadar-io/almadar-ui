@@ -168,23 +168,27 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   // Responsive sidebar is driven by a JS-measured container width (ResizeObserver
   // on the layout root) rather than Tailwind container-query classes. The
-  // open/close + desktop-vs-mobile decision then uses React state + inline
-  // styles, so dismissing the drawer works in ANY consumer regardless of whether
-  // their CSS build emits `@container`/`@lg/dashboard:*`/`-translate-x-full`
-  // utilities. (Studio mobile/tablet preview still works — the container shrinks,
-  // the observer fires.) `< 1024px` mirrors the `lg` breakpoint.
+  // open/close + tier decision then uses React state + inline styles, so
+  // dismissing the drawer works in ANY consumer regardless of whether their CSS
+  // build emits `@container`/`@lg/dashboard:*`/`-translate-x-full` utilities.
+  // (Studio mobile/tablet preview still works — the container shrinks, the
+  // observer fires.) Three tiers: full labeled sidebar ≥1024; a 64px icon RAIL
+  // between 768–1024 so navigation never disappears at exactly the widths where
+  // split views need room; an off-canvas drawer only on true phone widths.
   const layoutRef = useRef<HTMLDivElement>(null);
-  const [isMobile, setIsMobile] = useState(false);
+  const [layoutWidth, setLayoutWidth] = useState<number | null>(null);
   useEffect(() => {
     const el = layoutRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver((entries) => {
       const w = entries[0]?.contentRect.width ?? el.clientWidth;
-      setIsMobile(w < 1024);
+      setLayoutWidth(w);
     });
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
+  const isMobile = layoutWidth !== null && layoutWidth < 768;
+  const isRail = layoutWidth !== null && layoutWidth >= 768 && layoutWidth < 1024;
   // Leaving mobile (e.g. preview resized up) shouldn't leave a stale open drawer.
   useEffect(() => {
     if (!isMobile && sidebarOpen) setSidebarOpen(false);
@@ -239,7 +243,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         <Box
           as="aside"
           className={cn(
-            "z-30 w-64 flex-shrink-0 bg-card dark:bg-card border-r border-border dark:border-border",
+            "z-30 flex-shrink-0 bg-card dark:bg-card border-r border-border dark:border-border",
+            isRail ? "w-16" : "w-64",
             "flex flex-col",
           )}
           // Position + slide driven by inline styles (not Tailwind transform /
@@ -261,10 +266,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           {/* Sidebar header */}
           <HStack
             align="center"
-            justify="between"
-            className="h-16 px-4 border-b border-border dark:border-border"
+            justify={isRail ? "center" : "between"}
+            className={cn("h-16 border-b border-border dark:border-border", isRail ? "px-2" : "px-4")}
           >
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/" className="flex items-center gap-2" title={isRail ? appName : undefined}>
               {logo || (
                 <Box className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                   <Typography
@@ -276,13 +281,15 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                   </Typography>
                 </Box>
               )}
-              <Typography
-                variant="label"
-                className="font-semibold text-foreground dark:text-foreground"
-                as="span"
-              >
-                {appName}
-              </Typography>
+              {!isRail && (
+                <Typography
+                  variant="label"
+                  className="font-semibold text-foreground dark:text-foreground"
+                  as="span"
+                >
+                  {appName}
+                </Typography>
+              )}
             </Link>
             {isMobile && (
               <Button
@@ -299,13 +306,14 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <VStack
             as="nav"
             gap="none"
-            className="flex-1 px-3 py-4 space-y-1 overflow-y-auto"
+            className={cn("flex-1 py-4 space-y-1 overflow-y-auto", isRail ? "px-2" : "px-3")}
           >
             {navItems.map((item) => (
               <NavLink
                 key={item.href}
                 item={item}
                 currentPath={activePath}
+                compact={isRail}
               />
             ))}
           </VStack>
@@ -567,9 +575,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 DashboardLayout.displayName = "DashboardLayout";
 
 // NavLink component
-const NavLink: React.FC<{ item: NavItem; currentPath: string }> = ({
+const NavLink: React.FC<{ item: NavItem; currentPath: string; compact?: boolean }> = ({
   item,
   currentPath,
+  compact = false,
 }) => {
   const isActive =
     currentPath === item.href || currentPath.startsWith(item.href + "/");
@@ -580,6 +589,46 @@ const NavLink: React.FC<{ item: NavItem; currentPath: string }> = ({
       ? "text-primary-foreground"
       : "text-muted-foreground",
   );
+
+  // Rail mode: the item collapses to its icon — label becomes the tooltip and
+  // accessible name, a badge rides the icon's corner so counts stay visible.
+  // An icon-less item shows its label's first letter so it never disappears.
+  if (compact) {
+    return (
+      <Link
+        to={item.href}
+        title={item.label}
+        aria-label={item.label}
+        className={cn(
+          "flex items-center justify-center px-2 py-2 rounded-lg transition-colors",
+          isActive
+            ? "bg-primary text-primary-foreground shadow-sm"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground",
+        )}
+      >
+        <Box as="span" className="relative inline-flex">
+          {item.icon ? (
+            typeof item.icon === 'string'
+              ? <AlmadarIcon name={item.icon} className={iconClassName} />
+              : <item.icon className={iconClassName} />
+          ) : (
+            <Typography variant="small" className="font-semibold" as="span">
+              {item.label.charAt(0).toUpperCase()}
+            </Typography>
+          )}
+          {item.badge && (
+            <Badge
+              variant={isActive ? "primary" : "default"}
+              size="sm"
+              className="absolute -top-2 -right-2 px-1 py-0 text-[10px] leading-4"
+            >
+              {item.badge}
+            </Badge>
+          )}
+        </Box>
+      </Link>
+    );
+  }
 
   return (
     <Link
