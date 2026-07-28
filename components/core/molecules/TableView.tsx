@@ -265,7 +265,15 @@ export function TableView({
   const [visibleCount, setVisibleCount] = React.useState(pageSize > 0 ? pageSize : Infinity);
   const [localSelected, setLocalSelected] = React.useState<ReadonlySet<string>>(new Set());
 
-  const colDefs: readonly TableViewColumn[] = columns ?? fields ?? [];
+  // Both `columns`/`fields` and `itemActions` coerce to an array first: a
+  // transient render can hand this pure component an unresolved `@config.X`
+  // forward STRING, and `"@config.itemActions".length > 0` is true — so a bare
+  // truthiness check then throws on `.map`. Mirrors DataGrid.tsx, but keeps
+  // TableView's `columns`-first precedence (DataGrid is `fields`-first);
+  // do not "harmonize" the two.
+  const colDefs: readonly TableViewColumn[] =
+    (Array.isArray(columns) ? columns : undefined) ?? (Array.isArray(fields) ? fields : undefined) ?? [];
+  const actionDefs: readonly TableViewItemAction[] = Array.isArray(itemActions) ? itemActions : [];
   const allDataRaw = Array.isArray(entity) ? entity : entity ? [entity] : [];
 
   const dnd = useDataDnd({
@@ -286,6 +294,26 @@ export function TableView({
   const hasRenderProp = typeof children === 'function';
   const idField = dndItemIdField ?? 'id';
   const isCoarsePointer = useMediaQuery('(pointer: coarse)');
+
+  // `tableViewLog` was declared and never called, so every diagnosis of this
+  // component started blind. Hook order is safe: there are no early returns.
+  React.useEffect(() => {
+    tableViewLog.debug('render', {
+      rowCount: data.length,
+      colCount: colDefs.length,
+      look,
+      isLoading: Boolean(isLoading),
+      hasError: Boolean(error),
+      dnd: dnd.enabled,
+    });
+    if (data.length > 0 && !hasRenderProp && colDefs.length === 0) {
+      tableViewLog.warn('columns-unresolved', {
+        rowCount: data.length,
+        columnsIsArray: Array.isArray(columns),
+        fieldsIsArray: Array.isArray(fields),
+      });
+    }
+  }, [data, colDefs, look, isLoading, error, dnd.enabled, hasRenderProp, columns, fields]);
 
   const selected = selectedIds ? new Set(selectedIds) : localSelected;
 
@@ -345,28 +373,25 @@ export function TableView({
     [colDefs, data],
   );
 
-  if (isLoading) {
-    return (
-      <Box className="text-center py-8">
-        <Typography variant="body" color="secondary">{t('loading.items')}</Typography>
-      </Box>
-    );
-  }
-  if (error) {
-    return (
-      <Box className="text-center py-8">
-        <Typography variant="body" color="error">{error.message}</Typography>
-      </Box>
-    );
-  }
-  if (data.length === 0) {
-    const emptyNode = (
-      <Box className="text-center py-12">
-        <Typography variant="body" color="secondary">{emptyMessage || t('empty.noItems')}</Typography>
-      </Box>
-    );
-    return dnd.enabled ? <>{dnd.wrapContainer(emptyNode)}</> : emptyNode;
-  }
+  // The header is CHROME, not data. Loading / error / empty each used to return
+  // a header-less node, so any render where `entity` resolved to `[]` dropped
+  // the column headers and a populated render put them back — which is the
+  // "columns appear momentarily then disappear" flicker. DataTable.tsx already
+  // avoids this by keeping <thead> and putting the empty check inside the table;
+  // the three states now collapse to one status row rendered UNDER the header.
+  const statusNode = isLoading ? (
+    <Box className="text-center py-8">
+      <Typography variant="body" color="secondary">{t('loading.items')}</Typography>
+    </Box>
+  ) : error ? (
+    <Box className="text-center py-8">
+      <Typography variant="body" color="error">{error.message}</Typography>
+    </Box>
+  ) : data.length === 0 ? (
+    <Box className="text-center py-12">
+      <Typography variant="body" color="secondary">{emptyMessage || t('empty.noItems')}</Typography>
+    </Box>
+  ) : null;
 
   const lk = LOOKS[look];
 
@@ -377,15 +402,15 @@ export function TableView({
   // header, wide in the body — and the `fr` data columns then split different
   // leftover space per row, drifting the header labels off their columns. A
   // fixed width is identical in header and body, so columns stay aligned.
-  const hasActions = Boolean(itemActions && itemActions.length > 0);
+  const hasActions = actionDefs.length > 0;
   // Touch surfaces get a kebab-only action cell: inline text actions cost a
   // fixed 6rem apiece in the shared track, which crushes the data columns at
   // phone widths (verified at 390px — three actions left ~60px for the data).
   const effectiveMaxInline = isCoarsePointer ? 0 : maxInlineActions;
   const inlineActionCount = hasActions
-    ? (effectiveMaxInline != null ? Math.min(itemActions!.length, effectiveMaxInline) : itemActions!.length)
+    ? (effectiveMaxInline != null ? Math.min(actionDefs.length, effectiveMaxInline) : actionDefs.length)
     : 0;
-  const hasOverflowActions = hasActions && effectiveMaxInline != null && itemActions!.length > effectiveMaxInline;
+  const hasOverflowActions = hasActions && effectiveMaxInline != null && actionDefs.length > effectiveMaxInline;
   const actionsTrack = hasActions
     ? `${inlineActionCount * 6 + (hasOverflowActions ? 3 : 0)}rem`
     : null;
@@ -496,7 +521,7 @@ export function TableView({
             );
           })
         )}
-        {itemActions && itemActions.length > 0 && (
+        {hasActions && (
           <HStack
             gap="xs"
             className={cn(
@@ -509,7 +534,7 @@ export function TableView({
                 : 'bg-[var(--color-card)] group-hover:bg-[var(--color-surface-subtle)]',
             )}
           >
-            {(effectiveMaxInline != null ? itemActions.slice(0, effectiveMaxInline) : itemActions).map((action, i) => (
+            {(effectiveMaxInline != null ? actionDefs.slice(0, effectiveMaxInline) : actionDefs).map((action, i) => (
               <Button
                 key={i}
                 // Inline row cells never render the filled danger button — a
@@ -527,7 +552,7 @@ export function TableView({
                 {action.label}
               </Button>
             ))}
-            {effectiveMaxInline != null && itemActions.length > effectiveMaxInline && (
+            {effectiveMaxInline != null && actionDefs.length > effectiveMaxInline && (
               <Menu
                 position="bottom-end"
                 trigger={
@@ -535,7 +560,7 @@ export function TableView({
                     <Icon name="more-horizontal" size="xs" />
                   </Button>
                 }
-                items={itemActions.slice(effectiveMaxInline).map((action) => ({
+                items={actionDefs.slice(effectiveMaxInline).map((action) => ({
                   label: action.label,
                   icon: action.icon,
                   event: action.event,
@@ -574,14 +599,19 @@ export function TableView({
     </Box>
   );
 
+  // A header with no columns and no render prop is an empty bar — noise, not
+  // chrome. Every other case keeps it mounted so the status row replaces the
+  // BODY only, and one `wrapContainer` keeps an empty list a valid drop target.
+  const showHeader = colDefs.length > 0 || hasRenderProp;
+
   return (
     <Box
       role="table"
       className={cn('w-full text-sm', className)}
     >
-      {header}
-      {dnd.wrapContainer(body)}
-      {hasMore && (
+      {showHeader && header}
+      {dnd.wrapContainer(statusNode ? <Box role="rowgroup">{statusNode}</Box> : body)}
+      {!statusNode && hasMore && (
         <Box className="flex justify-center py-3">
           <Button variant="ghost" size="sm" onClick={() => setVisibleCount((p) => p + (pageSize || 5))}>
             <Icon name="chevron-down" size="xs" className="mr-1" />

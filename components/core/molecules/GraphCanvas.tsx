@@ -28,6 +28,10 @@ import { createPortal } from "react-dom";
 import { forceSimulation, forceManyBody, forceLink, forceCollide, forceX, forceY } from "d3-force";
 import type { UiError } from '../atoms/types';
 
+export type GraphNodeMark =
+    | { kind: 'suggested'; suggestionId: string }
+    | { kind: 'proposed'; suggestionId: string; tint?: string };
+
 export type GraphNode = EventPayload & {
     id: string;
     label?: string;
@@ -36,6 +40,8 @@ export type GraphNode = EventPayload & {
     size?: number;
     /** Merge-cluster count (drawn as a top-right badge; click expands). */
     badge?: number;
+    /** Overlay decoration: a suggestion/proposal target. undefined = ordinary committed node. */
+    mark?: GraphNodeMark;
     /** Position (optional, computed if missing) */
     x?: number;
     y?: number;
@@ -77,6 +83,8 @@ export interface GraphCanvasProps {
     nodes?: readonly GraphNode[];
     /** Graph edges (the only rendered links) */
     edges?: readonly GraphEdge[];
+    /** Uncommitted proposal links — rendered dashed/faint in a separate pass, never folded into the layout springs. */
+    proposedEdges?: readonly GraphEdge[];
     /**
      * All-pairs similarity (cosine 0–1) used ONLY for layout, never drawn. It is the
      * secondary macro-layout: non-connected pairs get a weak spring (higher cosine ⇒
@@ -96,6 +104,8 @@ export interface GraphCanvasProps {
     actions?: readonly GraphAction[];
     /** On node click */
     onNodeClick?: (node: GraphNode) => void;
+    /** On marked-node click (suggestion/proposal target). Takes priority over onNodeClick. */
+    onMarkClick?: (node: GraphNode) => void;
     /** On node double-click (e.g. to drill in) */
     onNodeDoubleClick?: (node: GraphNode) => void;
     /** On node badge click (e.g. to expand a merged cluster). */
@@ -224,6 +234,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     title,
     nodes: propNodes = NO_NODES,
     edges: propEdges = NO_EDGES,
+    proposedEdges = NO_EDGES,
     similarity: propSimilarity = NO_SIM,
     height = 400,
     showLabels = true,
@@ -231,6 +242,7 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     draggable = true,
     actions,
     onNodeClick,
+    onMarkClick,
     onNodeDoubleClick,
     onBadgeClick,
     nodeClickEvent,
@@ -261,6 +273,16 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
     const [, forceUpdate] = useState(0);
     // Logical drawing width in CSS px (the canvas backing store is this × devicePixelRatio for crisp text).
     const [logicalW, setLogicalW] = useState(800);
+    // Ambient pulse for proposed (uncommitted) nodes — a rAF phase, advanced only while any is visible.
+    const hasProposed = useMemo(() => propNodes.some(n => n.mark?.kind === 'proposed'), [propNodes]);
+    const [pulseTick, setPulseTick] = useState(0);
+    useEffect(() => {
+        if (!hasProposed) return;
+        let raf = 0;
+        const loop = () => { setPulseTick(t => (t + 1) % 1_000_000); raf = requestAnimationFrame(loop); };
+        raf = requestAnimationFrame(loop);
+        return () => cancelAnimationFrame(raf);
+    }, [hasProposed]);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -665,22 +687,44 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
         }
         ctx.globalAlpha = 1;
 
+        // Proposed (uncommitted) edges — dashed/faint, never part of the layout springs.
+        ctx.setLineDash([4, 4]);
+        for (const edge of proposedEdges) {
+            const source = nodes.find(n => n.id === edge.source);
+            const target = nodes.find(n => n.id === edge.target);
+            if (!source || !target) continue;
+            ctx.globalAlpha = 0.4;
+            ctx.beginPath();
+            ctx.moveTo(source.x!, source.y!);
+            ctx.lineTo(target.x!, target.y!);
+            ctx.strokeStyle = edge.color || mutedColor;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+        ctx.setLineDash([]);
+        ctx.globalAlpha = 1;
+
         // Draw nodes
         for (const node of nodes) {
             const size = node.size || 8;
             const color = resolveColor(node.color || getGroupColor(node.group, groups), canvas);
             const isHovered = hoveredNode === node.id;
             const isSelected = selectedNodeId !== undefined && node.id === selectedNodeId;
+            const mark = node.mark;
 
-            ctx.globalAlpha = hoveredNode && !neighbors.has(node.id) ? 0.2 : 1;
+            ctx.globalAlpha = hoveredNode && !neighbors.has(node.id) ? 0.2 : (mark?.kind === 'proposed' ? 0.55 : 1);
             const radius = isSelected ? size + 4 : isHovered ? size + 2 : size;
 
             // Node circle
             ctx.beginPath();
             ctx.arc(node.x!, node.y!, radius, 0, Math.PI * 2);
-            ctx.fillStyle = color;
+            ctx.fillStyle = mark?.kind === 'proposed' ? mutedColor : color;
             ctx.fill();
-            if (isSelected) {
+            if (mark?.kind === 'proposed') {
+                ctx.setLineDash([3, 3]);
+                ctx.strokeStyle = resolveColor(mark.tint ?? "var(--color-warning)", canvas);
+                ctx.lineWidth = 1.5;
+            } else if (isSelected) {
                 ctx.strokeStyle = accentColor;
                 ctx.lineWidth = 3;
             } else {
@@ -688,6 +732,32 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                 ctx.lineWidth = isHovered ? 2 : 1;
             }
             ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Suggestion/proposal overlay decoration.
+            if (mark?.kind === 'suggested') {
+                // Accent ring + indicator dot (distinct from the merge-cluster badge slot).
+                ctx.beginPath();
+                ctx.arc(node.x!, node.y!, radius + 3, 0, Math.PI * 2);
+                ctx.strokeStyle = accentColor;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(node.x! + radius * 0.7, node.y! - radius * 0.7, 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = accentColor;
+                ctx.fill();
+            } else if (mark?.kind === 'proposed') {
+                // Ambient pulse ring — phase advances only while a proposed node is on screen.
+                const phase = (pulseTick % 60) / 60;
+                const baseAlpha = hoveredNode && !neighbors.has(node.id) ? 0.2 : 0.55;
+                ctx.globalAlpha = baseAlpha * (0.4 + 0.4 * (1 - Math.abs(phase * 2 - 1)));
+                ctx.beginPath();
+                ctx.arc(node.x!, node.y!, radius + 6 + Math.sin(phase * Math.PI * 2) * 3, 0, Math.PI * 2);
+                ctx.strokeStyle = resolveColor(mark.tint ?? "var(--color-warning)", canvas);
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.globalAlpha = baseAlpha;
+            }
 
             // Label — high-contrast theme foreground with a thick background halo so it
             // stays legible over nodes and crossing edges.
@@ -852,11 +922,16 @@ export const GraphCanvas: React.FC<GraphCanvasProps> = ({
                             return;
                         }
                     }
+                    // Marked node (suggestion/proposal target) takes priority over a plain click.
+                    if (node.mark && onMarkClick) {
+                        onMarkClick(node);
+                        return;
+                    }
                     handleNodeClick(node);
                 }
             }
         },
-        [toCoords, nodeAt, handleNodeClick, onBadgeClick, selectedNodeId],
+        [toCoords, nodeAt, handleNodeClick, onBadgeClick, onMarkClick, selectedNodeId],
     );
 
     const handlePointerLeave = useCallback(() => {

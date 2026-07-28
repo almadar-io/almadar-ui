@@ -104,8 +104,20 @@ export interface DataListProps extends DataDndProps {
   groupBy?: string;
   /** Field name identifying the sender (used with variant: "message") */
   senderField?: string;
+  /**
+   * Field holding the sender's human-readable name (used with variant: "message").
+   * Defaults to `senderField`. Set this when `senderField` holds an id — an
+   * id-keyed thread otherwise labels bubbles `staff-1` instead of `Sam Staff`.
+   */
+  senderLabelField?: string;
   /** Current user identifier; messages matching this value align right (used with variant: "message") */
   currentUser?: string;
+  /**
+   * Message shown when there are no rows. Falls back to the generic
+   * "no items" translation. `TableView` already exposes this; an agenda or an
+   * inbox wants to say what "empty" means in its own words.
+   */
+  emptyMessage?: string;
   /** Additional CSS classes */
   className?: string;
   /** Loading state */
@@ -227,7 +239,9 @@ export function DataList({
   variant = 'default',
   groupBy,
   senderField,
+  senderLabelField,
   currentUser,
+  emptyMessage,
   className,
   isLoading = false,
   error = null,
@@ -414,7 +428,7 @@ export function DataList({
     const emptyNode = (
       <Box className="text-center py-12">
         <Typography variant="body" color="secondary">
-          {t('empty.noItems')}
+          {emptyMessage || t('empty.noItems')}
         </Typography>
       </Box>
     );
@@ -437,6 +451,13 @@ export function DataList({
     const items = [...data];
     const groups = groupBy ? groupData(items, groupBy) : [{ label: '', items }];
     const contentField = titleField?.name ?? fieldDefs[0]?.name ?? '';
+    // The bubble label. Falls back to the raw sender cell so existing callers
+    // are unchanged; with `senderLabelField` an id-keyed thread shows the name.
+    const senderLabel = (itemData: EntityRow, raw: string): string => {
+      if (!senderLabelField) return raw;
+      const v = getNestedValue(itemData, senderLabelField);
+      return v === undefined || v === null || v === '' ? raw : String(v);
+    };
 
     return (
       <VStack gap="sm" className={cn('py-2', className)}>
@@ -452,12 +473,21 @@ export function DataList({
               const content = getNestedValue(itemData, contentField);
               const timestampField = fieldDefs.find((f) => f.format === 'date');
               const timestamp = (timestampField ? getNestedValue(itemData, timestampField.name) : null) as FieldValue | null;
+              // Every declared field other than the bubble's own content and its
+              // timestamp — chat's `channel` badge used to be dropped silently.
+              const metaFields = fieldDefs.filter(
+                (f) => f.name !== contentField && f.name !== timestampField?.name,
+              );
 
               return (
                 <Box
                   key={id}
+                  data-entity-row
+                  data-entity-id={id}
+                  onClick={itemClickEvent ? handleRowClick(itemData) : undefined}
                   className={cn(
-                    'flex px-4',
+                    'flex px-4 group/rowactions',
+                    itemClickEvent && 'cursor-pointer',
                     isSent ? 'justify-end' : 'justify-start',
                   )}
                 >
@@ -471,29 +501,60 @@ export function DataList({
                   >
                     {!isSent && senderField && (
                       <Typography variant="caption" className="font-semibold mb-0.5">
-                        {sender}
+                        {senderLabel(itemData, sender)}
                       </Typography>
                     )}
                     <Typography variant="body" className={cn(isSent && 'text-primary-foreground')}>
                       {content !== undefined && content !== null ? String(content) : ''}
                     </Typography>
-                    {timestamp != null ? (
-                      <Typography
-                        variant="caption"
-                        className={cn(
-                          'mt-1 text-xs',
-                          isSent ? 'opacity-70' : 'text-muted-foreground',
-                        )}
-                      >
-                        {formatDate(timestamp)}
-                      </Typography>
-                    ) : null}
+                    {metaFields.length > 0 && (
+                      <HStack gap="xs" className="mt-1 flex-wrap">
+                        {metaFields.map((f) => {
+                          const v = getNestedValue(itemData, f.name);
+                          if (v === undefined || v === null || v === '') return null;
+                          return f.variant === 'badge' ? (
+                            <Badge key={f.name} variant={statusVariant(String(v))}>{String(v)}</Badge>
+                          ) : (
+                            <Typography
+                              key={f.name}
+                              variant="caption"
+                              className={cn('text-xs', isSent ? 'opacity-70' : 'text-muted-foreground')}
+                            >
+                              {formatValue(v as FieldValue, f.format)}
+                            </Typography>
+                          );
+                        })}
+                      </HStack>
+                    )}
+                    <HStack gap="xs" className="mt-1 items-center justify-between">
+                      {timestamp != null ? (
+                        <Typography
+                          variant="caption"
+                          className={cn('text-xs', isSent ? 'opacity-70' : 'text-muted-foreground')}
+                        >
+                          {formatDate(timestamp)}
+                        </Typography>
+                      ) : <span />}
+                      {renderItemActions(itemData)}
+                    </HStack>
                   </Box>
                 </Box>
               );
             })}
           </React.Fragment>
         ))}
+        {hasMoreLocal && (
+          <Box className="flex justify-center py-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setVisibleCount((prev) => prev + (pageSize || 5))}
+            >
+              <Icon name="chevron-down" size="xs" className="mr-1" />
+              {t('common.showMore')} ({t('common.remaining', { count: allData.length - visibleCount })})
+            </Button>
+          </Box>
+        )}
       </VStack>
     );
   }
