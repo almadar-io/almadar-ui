@@ -6,6 +6,7 @@
 
 import React from "react";
 import { cn } from "../../../lib/cn";
+import { formatValue } from "../../../lib/format";
 
 export type TypographyVariant =
   | "h1"
@@ -60,6 +61,12 @@ export interface TypographyProps {
   className?: string;
   /** Inline style */
   style?: React.CSSProperties;
+  /**
+   * Value formatting applied to string/number/Date content — `none` (the
+   * default) renders content as-is. Covers the raw-ISO-date class: a bound
+   * datetime renders human-readable via `format="date"|"time"|"datetime"`.
+   */
+  format?: "none" | "date" | "time" | "datetime" | "number" | "currency" | "percent";
   /** Text content (alternative to children) */
   content?: React.ReactNode;
   /** Children elements */
@@ -162,6 +169,7 @@ export const Typography: React.FC<TypographyProps> = ({
   id,
   className,
   style,
+  format,
   content,
   children,
 }) => {
@@ -169,6 +177,12 @@ export const Typography: React.FC<TypographyProps> = ({
   const variant: TypographyVariant =
     variantProp ?? (level ? (`h${level}` as TypographyVariant) : "body1");
   const Component = as || defaultElements[variant];
+
+  // Formatting applies only to formattable scalars; element children pass through.
+  let body = children ?? content;
+  if (format !== undefined && format !== "none" && (typeof body === "string" || typeof body === "number" || body instanceof Date)) {
+    body = formatValue(body, format);
+  }
 
   return React.createElement(
     Component,
@@ -186,7 +200,7 @@ export const Typography: React.FC<TypographyProps> = ({
       ),
       style,
     },
-    children ?? content,
+    body,
   );
 };
 

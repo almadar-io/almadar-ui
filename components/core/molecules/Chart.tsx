@@ -149,6 +149,18 @@ const CHART_COLORS = [
 const seriesColor = (series: ChartSeries, idx: number): string =>
     series.color ?? CHART_COLORS[idx % CHART_COLORS.length];
 
+// A single bar series carries no series identity to encode, so its bars cycle
+// the palette per category — parity with donut/pie point colors. Multi-series
+// keeps series-indexed colors (legend identity).
+const barColor = (
+    series: ChartSeries,
+    sIdx: number,
+    catIdx: number,
+    seriesCount: number,
+): string =>
+    series.color ??
+    CHART_COLORS[(seriesCount === 1 ? catIdx : sIdx) % CHART_COLORS.length];
+
 const monthFormatter = new Intl.DateTimeFormat(undefined, {
     month: "short",
     year: "2-digit",
@@ -242,7 +254,7 @@ const BarChart: React.FC<{
                                                 ? 0
                                                 : (value / total) * 100
                                             : (value / maxValue) * 100;
-                                    const color = seriesColor(s, sIdx);
+                                    const color = barColor(s, sIdx, catIdx, series.length);
                                     return (
                                         <Box
                                             key={s.name}
@@ -302,7 +314,7 @@ const BarChart: React.FC<{
                                 {series.map((s, sIdx) => {
                                     const value = valueAt(s, label);
                                     const barHeight = (value / maxValue) * 100;
-                                    const color = seriesColor(s, sIdx);
+                                    const color = barColor(s, sIdx, catIdx, series.length);
                                     return (
                                         <Box
                                             key={s.name}
@@ -362,7 +374,7 @@ const BarChart: React.FC<{
                                             ? 0
                                             : (value / total) * 100
                                         : (value / maxValue) * 100;
-                                const color = seriesColor(s, sIdx);
+                                const color = barColor(s, sIdx, catIdx, series.length);
                                 return (
                                     <Box
                                         key={s.name}

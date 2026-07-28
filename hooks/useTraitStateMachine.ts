@@ -1926,7 +1926,11 @@ export function useTraitStateMachine(
                         return;
                     }
                     crossTraitLog.debug('self:fire', { traitName, busKey: selfBusKey, eventKey });
-                    enqueueAndDrain(eventKey, event.payload);
+                    // The qualified key addresses exactly this trait — scope the
+                    // dispatch so a name-shared event (TableViewLoaded on two
+                    // table traits) can't drain into every sibling
+                    // (R-TABLEVIEW-LOADED-UNSCOPED-CROSS-PAGE-BLEED).
+                    enqueueAndDrain(eventKey, event.payload, traitName);
                 });
                 unsubscribes.push(() => {
                     crossTraitLog.debug('self:unsubscribe', { traitName, busKey: selfBusKey, eventKey });

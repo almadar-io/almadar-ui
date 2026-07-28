@@ -15,6 +15,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import type { EntityRow, EventKey, FieldValue } from '@almadar/core';
 import type { ItemActionPayload, SelectionChangePayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
+import { formatValue, humanizeEnumValue, humanizeFieldName } from '../../../lib/format';
 import { createLogger } from '@almadar/logger';
 
 const dataGridLog = createLogger('almadar:ui:data-grid');
@@ -157,12 +158,7 @@ function renderIconInput(icon: IconInput, props: React.ComponentProps<typeof Ico
     : <Icon icon={icon} {...props} />;
 }
 
-function fieldLabel(key: string): string {
-  return key
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/[_-]/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
+const fieldLabel = humanizeFieldName;
 
 function statusVariant(value: string): 'success' | 'warning' | 'error' | 'info' | 'default' {
   const v = value.toLowerCase();
@@ -193,24 +189,6 @@ function resolveBadgeVariant(field: DataGridField, value: string): BadgeVariant 
   return statusVariant(value);
 }
 
-function formatDate(value: FieldValue | undefined): string {
-  if (!value) return '';
-  const d = new Date(String(value));
-  if (isNaN(d.getTime())) return String(value);
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
-function formatValue(value: FieldValue | undefined, format?: DataGridField['format']): string {
-  if (value === undefined || value === null) return '';
-  switch (format) {
-    case 'date': return formatDate(value);
-    case 'currency': return typeof value === 'number' ? `$${value.toFixed(2)}` : String(value);
-    case 'number': return typeof value === 'number' ? value.toLocaleString() : String(value);
-    case 'percent': return typeof value === 'number' ? `${Math.round(value)}%` : String(value);
-    case 'boolean': return value ? 'Yes' : 'No';
-    default: return String(value);
-  }
-}
 
 const gapStyles: Record<string, string> = {
   none: 'gap-0',
@@ -621,7 +599,7 @@ export function DataGrid({
                           <HStack key={field.name} gap="xs" className="items-center">
                             {field.icon && renderIconInput(field.icon, { size: 'xs' })}
                             <Badge variant={resolveBadgeVariant(field, String(val))}>
-                              {formatValue(val, field.format)}
+                              {humanizeEnumValue(formatValue(val, field.format))}
                             </Badge>
                           </HStack>
                         );

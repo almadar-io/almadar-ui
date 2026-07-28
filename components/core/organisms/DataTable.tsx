@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useCallback } from "react";
 import type { EventKey } from "@almadar/core";
 import { cn } from "../../../lib/cn";
+import { humanizeFieldName } from "../../../lib/format";
 import { getNestedValue } from "../../../lib/getNestedValue";
 import { Button, Input, Badge, Checkbox, Spinner } from "../atoms/index";
 import { Box } from "../atoms/Box";
@@ -45,26 +46,6 @@ export interface Column<T> {
   width?: string;
   sortable?: boolean;
   render?: (value: FieldValue | undefined, row: T, index: number) => React.ReactNode;
-}
-
-/**
- * Convert a camelCase, PascalCase, ALLCAPS, or snake_case field name
- * to a human-readable header: "estimatedDelivery" → "Estimated Delivery",
- * "PURCHASEPRICE" → "Purchase Price", "is_active" → "Is Active".
- */
-function humanizeFieldName(name: string): string {
-  return name
-    // Insert space before uppercase letters preceded by a lowercase letter: "estimatedDelivery" → "estimated Delivery"
-    .replace(/([a-z])([A-Z])/g, "$1 $2")
-    // Insert space between consecutive uppercase and a following lowercase: "HTMLParser" → "HTML Parser"
-    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
-    // Replace underscores/hyphens with spaces
-    .replace(/[_-]/g, " ")
-    // Title-case each word
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    // Lowercase remaining chars within all-caps runs that became words
-    .replace(/\b([A-Z])([A-Z]+)\b/g, (_, first: string, rest: string) => first + rest.toLowerCase())
-    .trim();
 }
 
 /**

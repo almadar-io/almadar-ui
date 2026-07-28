@@ -16,6 +16,7 @@ import React from 'react';
 import type { EntityRow, EntityWith, FieldValue, EventKey } from '@almadar/core';
 import type { ItemActionPayload, SelectionChangePayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
+import { formatValue, humanizeEnumValue, humanizeFieldName } from '../../../lib/format';
 import { createLogger } from '@almadar/logger';
 
 const tableViewLog = createLogger('almadar:ui:table-view');
@@ -150,14 +151,7 @@ function renderIconInput(icon: IconInput, props: React.ComponentProps<typeof Ico
 }
 
 function columnLabel(col: TableViewColumn): string {
-  return (
-    col.header ??
-    col.label ??
-    col.key
-      .replace(/([a-z])([A-Z])/g, '$1 $2')
-      .replace(/[_-]/g, ' ')
-      .replace(/\b\w/g, (c) => c.toUpperCase())
-  );
+  return col.header ?? col.label ?? humanizeFieldName(col.key);
 }
 
 function asFieldValue(v: ReturnType<typeof getNestedValue>): FieldValue | undefined {
@@ -179,22 +173,8 @@ function statusVariant(value: string): 'success' | 'warning' | 'error' | 'info' 
   return 'default';
 }
 
-function formatCell(value: FieldValue | undefined, format?: TableViewColumn['format']): string {
-  if (value === undefined || value === null) return '';
-  switch (format) {
-    case 'date': {
-      const d = new Date(String(value));
-      return isNaN(d.getTime())
-        ? String(value)
-        : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-    }
-    case 'currency': return typeof value === 'number' ? `$${value.toFixed(2)}` : String(value);
-    case 'number': return typeof value === 'number' ? value.toLocaleString() : String(value);
-    case 'percent': return typeof value === 'number' ? `${Math.round(value)}%` : String(value);
-    case 'boolean': return value ? 'Yes' : 'No';
-    default: return String(value);
-  }
-}
+const formatCell = (value: FieldValue | undefined, format?: TableViewColumn['format']): string =>
+  formatValue(value, format);
 
 function groupData(
   items: EntityRow[],
@@ -505,7 +485,7 @@ export function TableView({
             if (col.format === 'badge' && raw != null && raw !== '') {
               return (
                 <Box key={col.key} role="cell" className={cellBase}>
-                  <Badge variant={statusVariant(String(raw))} size="sm" className="whitespace-nowrap">{String(raw)}</Badge>
+                  <Badge variant={statusVariant(String(raw))} size="sm" className="whitespace-nowrap">{humanizeEnumValue(String(raw))}</Badge>
                 </Box>
               );
             }

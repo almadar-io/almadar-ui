@@ -15,6 +15,7 @@ import React from 'react';
 import type { EntityRow, EventKey, FieldValue } from "@almadar/core";
 import type { ItemActionPayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
+import { formatDate, formatValue as libFormatValue, humanizeFieldName } from '../../../lib/format';
 import { createLogger } from '@almadar/logger';
 
 const dataListLog = createLogger('almadar:ui:data-list');
@@ -162,12 +163,7 @@ function renderIconInput(icon: IconInput, props: React.ComponentProps<typeof Ico
     : <Icon icon={icon} {...props} />;
 }
 
-function fieldLabel(key: string): string {
-  return key
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/[_-]/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
+const fieldLabel = humanizeFieldName;
 
 function statusVariant(value: string): 'success' | 'warning' | 'error' | 'info' | 'default' {
   const v = value.toLowerCase();
@@ -178,27 +174,18 @@ function statusVariant(value: string): 'success' | 'warning' | 'error' | 'info' 
   return 'default';
 }
 
-function formatDate(value: FieldValue | undefined): string {
-  if (!value) return '';
-  const d = new Date(String(value));
-  if (isNaN(d.getTime())) return String(value);
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-}
-
+// Thin wrapper over the shared formatter that keeps DataList's i18n yes/no
+// labels for boolean fields.
 function formatValue(
   value: FieldValue | undefined,
   format?: DataListField['format'],
   boolLabels?: { yes: string; no: string },
 ): string {
-  if (value === undefined || value === null) return '';
-  switch (format) {
-    case 'date': return formatDate(value);
-    case 'currency': return typeof value === 'number' ? `$${value.toFixed(2)}` : String(value);
-    case 'number': return typeof value === 'number' ? value.toLocaleString() : String(value);
-    case 'percent': return typeof value === 'number' ? `${Math.round(value)}%` : String(value);
-    case 'boolean': return value ? (boolLabels?.yes ?? 'Yes') : (boolLabels?.no ?? 'No');
-    default: return String(value);
+  if (value !== undefined && value !== null && (format === 'boolean' || typeof value === 'boolean')) {
+    const isNo = value === false || value === 0 || String(value) === 'false';
+    return isNo ? (boolLabels?.no ?? 'No') : (boolLabels?.yes ?? 'Yes');
   }
+  return libFormatValue(value, format);
 }
 
 function groupData(

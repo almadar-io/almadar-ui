@@ -33,6 +33,8 @@ export * from './traitRegistry';
 export * from './verificationRegistry';
 
 // Data utilities
+export * from './format';
+
 export * from './getNestedValue';
 
 // Visualizer

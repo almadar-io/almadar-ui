@@ -13,6 +13,7 @@ import React from 'react';
 import type { EventKey, EventPayload, FieldValue } from "@almadar/core";
 import type { ItemActionPayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
+import { formatDate, humanizeFieldName } from '../../../lib/format';
 import { getNestedValue } from '../../../lib/getNestedValue';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -64,12 +65,7 @@ function normalizeFields(fields: readonly FieldDef[] | undefined): string[] {
  * Get a human-readable label from a field key.
  * "firstName" -> "First Name", "created_at" -> "Created At"
  */
-function fieldLabel(key: string): string {
-  return key
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/[_-]/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-}
+const fieldLabel = humanizeFieldName;
 
 /**
  * Detect boolean values (actual booleans or "true"/"false" strings)
@@ -95,15 +91,6 @@ function isDateField(key: string): boolean {
   return lower.includes('date') || lower.includes('time') || lower.endsWith('at') || lower.endsWith('_at');
 }
 
-/**
- * Format a date value for display
- */
-function formatDate(value: FieldValue): string {
-  if (!value) return '';
-  const d = new Date(String(value));
-  if (isNaN(d.getTime())) return String(value);
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-}
 
 /**
  * Pick badge variant based on status-like values

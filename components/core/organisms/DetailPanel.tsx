@@ -42,6 +42,7 @@ import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
 import { cn } from "../../../lib/cn";
+import { humanizeFieldName } from "../../../lib/format";
 import { getNestedValue } from "../../../lib/getNestedValue";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
@@ -105,11 +106,7 @@ function getBadgeVariant(
   return "default";
 }
 
-function formatFieldLabel(fieldName: string): string {
-  return fieldName
-    .replace(/([A-Z])/g, " $1")
-    .replace(/^./, (str) => str.toUpperCase());
-}
+const formatFieldLabel = humanizeFieldName;
 
 function formatFieldValue(value: FieldValue | undefined, fieldName: string): string {
   if (typeof value === "number") {

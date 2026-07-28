@@ -36,6 +36,7 @@ import { EmptyState } from "../molecules/EmptyState";
 import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
 import { cn } from "../../../lib/cn";
+import { humanizeFieldName } from "../../../lib/format";
 import { getNestedValue } from "../../../lib/getNestedValue";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
@@ -258,10 +259,8 @@ function formatValue(value: FieldValue | undefined, fieldName: string): string {
 }
 
 function formatFieldLabel(fieldName: string): string {
-  return fieldName
-    .replace(/([A-Z])/g, " $1")
-    .replace(/^./, (str) => str.toUpperCase())
-    .replace(/Id$/, "")
+  return humanizeFieldName(fieldName)
+    .replace(/\sId$/, "")
     .trim();
 }
 

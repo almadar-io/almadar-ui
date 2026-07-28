@@ -36,6 +36,7 @@ import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { slotLog, refId } from "../../../types/slot-types";
 import { cn } from "../../../lib/cn";
+import { humanizeFieldName } from "../../../lib/format";
 import { ErrorBoundary } from "../molecules/ErrorBoundary";
 import { createLogger } from '@almadar/logger';
 
@@ -177,7 +178,7 @@ function enrichFormFields(
       if (entityField) {
         const enriched: SlotProps = {
           name: field,
-          label: field.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\b\w/g, (c) => c.toUpperCase()),
+          label: humanizeFieldName(field),
           type: entityField.type,
           required: entityField.required ?? false,
         };
@@ -191,7 +192,7 @@ function enrichFormFields(
         }
         return enriched;
       }
-      return { name: field, label: field.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\b\w/g, (c) => c.toUpperCase()) };
+      return { name: field, label: humanizeFieldName(field) };
     }
 
     if (field && typeof field === 'object' && !Array.isArray(field) && !React.isValidElement(field) && !(field instanceof Date)) {
@@ -1477,9 +1478,20 @@ function SlotContentRenderer({
       const slotVal = restProps[slotKey];
       if (slotVal === undefined || slotVal === null) continue;
       if (React.isValidElement(slotVal) || typeof slotVal === 'string' || typeof slotVal === 'number' || typeof slotVal === 'boolean') continue;
-      if (Array.isArray(slotVal) || (typeof slotVal === 'object' && 'type' in (slotVal as object))) {
+      // A typeless `{ children: [...] }` wrapper (authored slot bodies like
+      // master-detail's `detail: { children: [...] }`) renders its children —
+      // previously it failed this guard, fell through renderPatternProps'
+      // type-requiring check too, and the slot silently showed nothing.
+      const typelessChildren =
+        !Array.isArray(slotVal) &&
+        typeof slotVal === 'object' &&
+        !('type' in (slotVal as object)) &&
+        Array.isArray((slotVal as { children?: SlotPropValue }).children)
+          ? (slotVal as { children: Parameters<typeof renderPatternChildren>[0] }).children
+          : undefined;
+      if (typelessChildren !== undefined || Array.isArray(slotVal) || (typeof slotVal === 'object' && 'type' in (slotVal as object))) {
         nodeSlotOverrides[slotKey] = renderPatternChildren(
-          slotVal as Parameters<typeof renderPatternChildren>[0],
+          typelessChildren ?? (slotVal as Parameters<typeof renderPatternChildren>[0]),
           onDismiss,
           `${content.id}-${slotKey}`,
           `${myPath}.${slotKey}`,
