@@ -17,6 +17,17 @@ import type { Projector3D } from '../projector3d';
 import { isValidScenePos } from '../contract';
 import { getAtlas, isAtlasAsset, subRectFor } from '../../../lib/atlasSlice';
 import { ModelLoader } from './ModelLoader';
+import { createLogger } from '@almadar/logger';
+
+const mesh3dLog = createLogger('almadar:ui:drawable-3d');
+const warnedUnsupported = new Set<string>();
+
+/** 2D-canvas-only drawable kinds reach here when a board is viewed in 3D — skip with one warn per kind. */
+export const warnUnsupported3d = (kind: string): void => {
+    if (warnedUnsupported.has(kind)) return;
+    warnedUnsupported.add(kind);
+    mesh3dLog.warn('unsupported drawable kind on the 3D backend — skipped', { kind });
+};
 
 /**
  * 2D-sprite-as-billboard 3D path. Crops UVs to `node.frame` when present.
@@ -267,6 +278,10 @@ export function Shape3D({ node, projector }: { node: DrawShapeProps; projector: 
             s.closePath();
             geometry = <shapeGeometry args={[s]} />;
             break;
+        }
+        case 'path': {
+            warnUnsupported3d('draw-shape:path');
+            return null;
         }
         default:
             return null;

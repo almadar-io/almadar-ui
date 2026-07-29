@@ -5,12 +5,12 @@
  * ONE descriptor (`DrawShapeProps`, grounded in core `ScenePos`) with TWO
  * backends: `paintShape` (2D, here) and an R3F ground-plane mesh (`Shape3D` in
  * `lib/drawable/mesh3d`, kept OUT of this file so the 2D path never pulls R3F).
- * Paints a cell footprint, an axis-aligned rect, an ellipse, or a poly at a scene
- * position, fill and/or stroke. Genre uses (tile fallback, iso/hex diamond
- * fallback, cell highlight, feature disc, unit selection ring, unit fallback
- * circle, ground/ghost discs, solid backgrounds, side-view platform rects) are
- * all this atom with different `shape`/`anchor`/geometry — composed in `.lolo`,
- * not here. The React component renders `null`; it exists so the pattern pipeline
+ * Paints a cell footprint, an axis-aligned rect, an ellipse, a poly, or an SVG
+ * path at a scene position, fill and/or stroke. Genre uses (tile fallback, iso/hex
+ * diamond fallback, cell highlight, feature disc, unit selection ring, unit
+ * fallback circle, ground/ghost discs, solid backgrounds, side-view platform
+ * rects, hand-authored vector art) are all this atom with different
+ * `shape`/`anchor`/geometry — composed in `.lolo`, not here. The React component renders `null`; it exists so the pattern pipeline
  * registers a `draw-shape` pattern and standalone pages stay inspectable.
  */
 import type React from 'react';
@@ -19,7 +19,7 @@ import type { PainterPoint } from '../../../lib/painter2d';
 import type { DrawableAnchor, DrawableBase, PaintFn } from '../../../lib/drawable/contract';
 import { isValidScenePos } from '../../../lib/drawable/contract';
 
-export type ShapeKind = 'cell' | 'rect' | 'ellipse' | 'poly';
+export type ShapeKind = 'cell' | 'rect' | 'ellipse' | 'poly' | 'path';
 
 export interface DrawShapeProps extends DrawableBase {
     type: 'draw-shape';
@@ -41,6 +41,8 @@ export interface DrawShapeProps extends DrawableBase {
     offsetY?: number;
     /** Poly vertices as world-unit offsets relative to the cell's projected top-left. */
     points?: PainterPoint[];
+    /** SVG path data in world units relative to the cell's projected top-left — same coordinate convention as `points`. */
+    d?: string;
     fill?: string;
     stroke?: string;
     strokeWidth?: number;
@@ -89,6 +91,17 @@ export const paintShape: PaintFn<DrawShapeProps> = (painter, node, dctx) => {
             const pts = (node.points ?? []).map((pt) => ({ x: base.x + pt.x * tw, y: base.y + pt.y * tw }));
             if (node.fill) painter.fillPoly(pts, node.fill);
             if (node.stroke) painter.strokePoly(pts, node.stroke, node.strokeWidth ?? 1, true);
+            break;
+        }
+        case 'path': {
+            if (!node.d) break;
+            const base = dctx.projector.project(node.position);
+            const tw = dctx.projector.tileWidth;
+            painter.translate(base.x, base.y);
+            painter.scale(tw, tw);
+            if (node.fill) painter.fillPath(node.d, node.fill);
+            // Undo the transform scale so strokeWidth stays in px like strokePoly.
+            if (node.stroke) painter.strokePath(node.d, node.stroke, (node.strokeWidth ?? 1) / tw);
             break;
         }
     }

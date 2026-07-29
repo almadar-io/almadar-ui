@@ -83,3 +83,64 @@ export function formatValue(value: FieldValue | undefined, format?: string): str
     default: return String(value);
   }
 }
+
+/** Sort direction for {@link sortRows}. */
+export type SortDirection = 'asc' | 'desc';
+
+/**
+ * Order two cell values by their own type, never by what the field is called.
+ *
+ * Numbers compare numerically, date-like strings chronologically, everything
+ * else by locale string order. `null`/`undefined` sort last in both directions
+ * so empty cells never displace real data at the top of a list.
+ */
+export function compareCellValues(a: FieldValue | undefined, b: FieldValue | undefined): number {
+  const aEmpty = a === null || a === undefined || a === '';
+  const bEmpty = b === null || b === undefined || b === '';
+  if (aEmpty || bEmpty) return aEmpty && bEmpty ? 0 : aEmpty ? 1 : -1;
+
+  if (typeof a === 'number' && typeof b === 'number') return a - b;
+  if (typeof a === 'boolean' && typeof b === 'boolean') return Number(a) - Number(b);
+
+  // Numeric strings before dates: `Date.parse('2020')` succeeds as a year, so a
+  // string column holding "9" and "2020" would otherwise sort as dates.
+  const aNum = Number(a);
+  const bNum = Number(b);
+  if (Number.isFinite(aNum) && Number.isFinite(bNum)) return aNum - bNum;
+
+  const aTime = dateLikeTime(a);
+  const bTime = dateLikeTime(b);
+  if (aTime !== null && bTime !== null) return aTime - bTime;
+
+  return String(a).localeCompare(String(b));
+}
+
+/**
+ * Milliseconds for a value that is genuinely date-shaped, else `null`.
+ * Requires a date separator, so bare tokens never reach `Date.parse` — this
+ * reads the value's own form, never the field's name.
+ */
+function dateLikeTime(value: FieldValue): number | null {
+  if (value instanceof Date) return value.getTime();
+  const text = String(value);
+  if (!/\d/.test(text) || !/[-/:T]/.test(text)) return null;
+  const time = Date.parse(text);
+  return Number.isNaN(time) ? null : time;
+}
+
+/**
+ * Return a new array ordered by `field`. Non-mutating, and a no-op without a
+ * field so callers can pass the prop through unconditionally.
+ *
+ * NOTE: this orders only the rows already fetched. A collection larger than its
+ * `limit` still needs ordering at the data layer — see `L-NO-COLLECTION-ORDERING`.
+ */
+export function sortRows<T extends Record<string, FieldValue | undefined>>(
+  rows: readonly T[],
+  field?: string,
+  direction: SortDirection = 'asc',
+): readonly T[] {
+  if (!field) return rows;
+  const dir = direction === 'desc' ? -1 : 1;
+  return [...rows].sort((a, b) => dir * compareCellValues(a?.[field], b?.[field]));
+}

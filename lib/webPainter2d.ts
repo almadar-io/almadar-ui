@@ -131,6 +131,15 @@ export function createWebPainter(ctx: CanvasRenderingContext2D, onAssetLoad?: ()
             ctx.lineWidth = lineWidth;
             ctx.stroke();
         },
+        fillPath(d, color) {
+            ctx.fillStyle = color;
+            ctx.fill(new Path2D(d));
+        },
+        strokePath(d, color, lineWidth = 1) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.stroke(new Path2D(d));
+        },
 
         text(str: string, x: number, y: number, style: TextStyle) {
             if (style.font) ctx.font = style.font;

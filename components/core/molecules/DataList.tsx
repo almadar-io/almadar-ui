@@ -4,7 +4,9 @@
  *
  * A simplified, schema-driven list for iterating over entity data.
  * Extracted from the List organism with all complexity removed:
- * no built-in search, sort, filter, selection, bulk actions, or custom renderers.
+ * no built-in search, filter, selection, bulk actions, or custom renderers.
+ * Ordering is available via `sortBy`/`sortDirection`, but it orders only the
+ * rows handed in — a set larger than its `limit` must be ordered upstream.
  *
  * Accepts `fields` config for per-field rendering control (icon, variant, format)
  * and `itemActions` for per-item event bus wiring.
@@ -15,7 +17,7 @@ import React from 'react';
 import type { EntityRow, EventKey, FieldValue } from "@almadar/core";
 import type { ItemActionPayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
-import { formatDate, formatValue as libFormatValue, humanizeFieldName } from '../../../lib/format';
+import { formatDate, formatValue as libFormatValue, humanizeFieldName, sortRows } from '../../../lib/format';
 import { createLogger } from '@almadar/logger';
 
 const dataListLog = createLogger('almadar:ui:data-list');
@@ -161,6 +163,18 @@ export interface DataListProps extends DataDndProps {
   /** Max items to show before "Show More" button. Defaults to 5. Set to 0 to disable. */
   pageSize?: number;
   /**
+   * Field name to order rows by. Values are compared by their own type —
+   * numbers numerically, date-like strings chronologically, everything else
+   * alphabetically — never by what the field is called. Empty cells sort last.
+   * Unset leaves the incoming order untouched.
+   *
+   * Orders only the rows already fetched: a collection larger than its `limit`
+   * still needs ordering at the data layer.
+   */
+  sortBy?: string;
+  /** Direction for `sortBy`. Defaults to ascending. */
+  sortDirection?: "asc" | "desc";
+  /**
    * Layer 2 visual treatment — mirrors the `entity-table` look enum so
    * data-grid / data-list / entity-table share one knob name from authors.
    */
@@ -260,6 +274,8 @@ export function DataList({
   hasMore,
   children,
   pageSize = 5,
+  sortBy,
+  sortDirection,
   renderItem: schemaRenderItem,
   dragGroup,
   accepts,
@@ -293,7 +309,13 @@ export function DataList({
     dndItemIdField,
     dndRoot,
   });
-  const allData = dnd.orderedItems as readonly EntityRow[];
+  // Sort before paginating — slicing an unordered set makes "first N" arbitrary.
+  // A drag-reordered list is a different mode, so `sortBy` wins only when set.
+  const orderedData = dnd.orderedItems as readonly EntityRow[];
+  const allData = React.useMemo(
+    () => sortRows(orderedData, sortBy, sortDirection),
+    [orderedData, sortBy, sortDirection],
+  );
   const data = pageSize > 0 ? allData.slice(0, visibleCount) : allData;
   const hasMoreLocal = pageSize > 0 && visibleCount < allData.length;
   const hasRenderProp = typeof children === 'function';
@@ -344,7 +366,12 @@ export function DataList({
   };
 
   // Inline up to `maxInlineActions` row actions; collapse the rest into a "⋯" overflow menu.
-  const renderItemActions = (itemData: EntityRow) => {
+  /**
+   * `onPrimary` recolours the actions for a filled surface — a sent message
+   * bubble paints `bg-primary`, where a default-foreground ghost button is
+   * dark-on-purple and effectively invisible.
+   */
+  const renderItemActions = (itemData: EntityRow, onPrimary = false) => {
     if (!itemActions || itemActions.length === 0) return null;
     const inline = maxInlineActions != null ? itemActions.slice(0, maxInlineActions) : itemActions;
     const overflow = maxInlineActions != null ? itemActions.slice(maxInlineActions) : [];
@@ -358,7 +385,12 @@ export function DataList({
             onClick={handleActionClick(action, itemData)}
             data-testid={`action-${action.event}`}
             data-row-id={String(itemData.id)}
-            className={cn(action.variant === 'danger' && 'text-error hover:bg-error/10')}
+            className={cn(
+              action.variant === 'danger' && 'text-error hover:bg-error/10',
+              // Must sit on the Button itself: the variant's own text colour
+              // beats an inherited one from the row wrapper.
+              onPrimary && '!text-primary-foreground hover:bg-primary-foreground/15',
+            )}
           >
             {action.icon && renderIconInput(action.icon, { size: 'xs', className: 'mr-1' })}
             {action.label}
@@ -535,7 +567,7 @@ export function DataList({
                           {formatDate(timestamp)}
                         </Typography>
                       ) : <span />}
-                      {renderItemActions(itemData)}
+                      {renderItemActions(itemData, isSent)}
                     </HStack>
                   </Box>
                 </Box>

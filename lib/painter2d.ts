@@ -87,6 +87,10 @@ export interface Painter2D {
     strokePoly(points: readonly PainterPoint[], color: string, lineWidth?: number, closed?: boolean): void;
     fillEllipse(cx: number, cy: number, rx: number, ry: number, color: string): void;
     strokeEllipse(cx: number, cy: number, rx: number, ry: number, color: string, lineWidth?: number): void;
+    /** Fill an SVG path (`d` attribute syntax) in the painter's current transform. */
+    fillPath(d: string, color: string): void;
+    /** Stroke an SVG path (`d` attribute syntax) in the painter's current transform. */
+    strokePath(d: string, color: string, lineWidth?: number): void;
 
     text(str: string, x: number, y: number, style: TextStyle): void;
 }

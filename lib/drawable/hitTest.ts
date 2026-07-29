@@ -28,6 +28,7 @@ export function collectDrawnItems(nodes: DrawableNode[]): DrawnItem[] {
             case 'draw-sprite':
             case 'draw-shape':
             case 'draw-text':
+            case 'draw-group':
                 if (isValidScenePos(n.position)) out.push({ pos: n.position, id: n.id });
                 break;
             case 'draw-sprite-layer':

@@ -10,9 +10,11 @@
  */
 import type { Painter2D } from '../painter2d';
 import type { DrawContext } from './contract';
+import { isValidScenePos } from './contract';
 import { paintSprite, type DrawSpriteProps } from '../../components/game/atoms/DrawSprite';
 import { paintShape, type DrawShapeProps } from '../../components/game/atoms/DrawShape';
 import { paintText, type DrawTextProps } from '../../components/game/atoms/DrawText';
+import { type DrawGroupProps } from '../../components/game/atoms/DrawGroup';
 import { paintSpriteLayer, type DrawSpriteLayerProps } from '../../components/game/molecules/DrawSpriteLayer';
 import { paintShapeLayer, type DrawShapeLayerProps } from '../../components/game/molecules/DrawShapeLayer';
 import { paintTextLayer, type DrawTextLayerProps } from '../../components/game/molecules/DrawTextLayer';
@@ -22,6 +24,7 @@ export type DrawableNode =
     | DrawSpriteProps
     | DrawShapeProps
     | DrawTextProps
+    | DrawGroupProps
     | DrawSpriteLayerProps
     | DrawShapeLayerProps
     | DrawTextLayerProps;
@@ -38,6 +41,22 @@ export function paintDrawable(painter: Painter2D, node: DrawableNode, dctx: Draw
         case 'draw-text':
             paintText(painter, node, dctx);
             break;
+        case 'draw-group': {
+            if (!isValidScenePos(node.position)) break;
+            // items can be transiently undefined when the descriptor graph
+            // reads entity data an atom has not seeded yet (first paint); the
+            // reactive repaint fills it in. Contract: never throws.
+            if (!Array.isArray(node.items)) break;
+            const p = dctx.projector.project(node.position);
+            painter.save();
+            painter.translate(p.x, p.y);
+            if (node.scale !== undefined) painter.scale(node.scale, node.scale);
+            if (node.rotate !== undefined) painter.rotate(node.rotate);
+            if (node.opacity !== undefined && node.opacity !== 1) painter.setAlpha(node.opacity);
+            for (const item of node.items) paintDrawable(painter, item, dctx);
+            painter.restore();
+            break;
+        }
         case 'draw-sprite-layer':
             paintSpriteLayer(painter, node, dctx);
             break;

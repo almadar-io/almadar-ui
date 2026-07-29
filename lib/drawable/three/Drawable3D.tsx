@@ -13,7 +13,7 @@
 import React from 'react';
 import type { Projector3D } from '../projector3d';
 import type { DrawableNode } from '../paintDispatch';
-import { Sprite3D, Shape3D, Text3D } from './mesh3d';
+import { Sprite3D, Shape3D, Text3D, warnUnsupported3d } from './mesh3d';
 
 export interface Drawable3DProps {
     node: DrawableNode;
@@ -52,6 +52,9 @@ export function Drawable3D({ node, projector }: Drawable3DProps): React.JSX.Elem
                     ))}
                 </>
             );
+        case 'draw-group':
+            warnUnsupported3d('draw-group');
+            return null;
     }
 }
 
