@@ -174,7 +174,9 @@ export type TileLayout = 'isometric' | 'hex' | 'flat';
  *
  * @param tileX - Grid X (col) coordinate
  * @param tileY - Grid Y (row) coordinate
- * @param scale - Render scale factor
+ * @param cellWidth - Cell width in the caller's coordinate space (tile-space for
+ *   forward projection, on-screen px for inverse hit-testing). The 2:1 diamond / hex
+ *   row stride derive from it (`floorHeight = cellWidth / 2`).
  * @param baseOffsetX - Horizontal offset to center the grid
  * @param layout - Tile layout mode (default: 'isometric')
  * @returns Screen position { x, y } of the tile's top-left corner
@@ -182,29 +184,28 @@ export type TileLayout = 'isometric' | 'hex' | 'flat';
 export function isoToScreen(
     tileX: number,
     tileY: number,
-    scale: number,
+    cellWidth: number,
     baseOffsetX: number,
     layout: TileLayout = 'isometric',
 ): { x: number; y: number } {
-    const scaledTileWidth = TILE_WIDTH * scale;
-    const scaledFloorHeight = FLOOR_HEIGHT * scale;
+    const w = cellWidth;
+    const fh = cellWidth / 2; // 2:1 diamond height / hex row base
 
     if (layout === 'hex') {
-        const screenX = tileX * scaledTileWidth + (tileY & 1) * (scaledTileWidth / 2) + baseOffsetX;
-        const screenY = tileY * (scaledFloorHeight * 0.75);
+        const screenX = tileX * w + (tileY & 1) * (w / 2) + baseOffsetX;
+        const screenY = tileY * (fh * 0.75);
         return { x: screenX, y: screenY };
     }
 
     if (layout === 'flat') {
-        // True top-down square grid: vertical pitch == horizontal pitch. (The old FLOOR_HEIGHT
-        // pitch made every square tile overlap the next row by 50% — the woven-strip artifact.)
-        const screenX = tileX * scaledTileWidth + baseOffsetX;
-        const screenY = tileY * scaledTileWidth;
+        // True top-down square grid: vertical pitch == horizontal pitch.
+        const screenX = tileX * w + baseOffsetX;
+        const screenY = tileY * w;
         return { x: screenX, y: screenY };
     }
 
-    const screenX = (tileX - tileY) * (scaledTileWidth / 2) + baseOffsetX;
-    const screenY = (tileX + tileY) * (scaledFloorHeight / 2);
+    const screenX = (tileX - tileY) * (w / 2) + baseOffsetX;
+    const screenY = (tileX + tileY) * (fh / 2);
 
     return { x: screenX, y: screenY };
 }
@@ -216,7 +217,8 @@ export function isoToScreen(
  *
  * @param screenX - Screen X in pixels
  * @param screenY - Screen Y in pixels
- * @param scale - Render scale factor
+ * @param cellWidth - On-screen cell width in px (must match the forward projection's
+ *   `cellWidth × zoom` so the inverse is consistent).
  * @param baseOffsetX - Horizontal offset used in isoToScreen
  * @param layout - Tile layout mode (default: 'isometric')
  * @returns Snapped grid position { x, y }
@@ -224,29 +226,29 @@ export function isoToScreen(
 export function screenToIso(
     screenX: number,
     screenY: number,
-    scale: number,
+    cellWidth: number,
     baseOffsetX: number,
     layout: TileLayout = 'isometric',
 ): { x: number; y: number } {
-    const scaledTileWidth = TILE_WIDTH * scale;
-    const scaledFloorHeight = FLOOR_HEIGHT * scale;
+    const w = cellWidth;
+    const fh = cellWidth / 2;
 
     if (layout === 'hex') {
-        const row = Math.round(screenY / (scaledFloorHeight * 0.75));
-        const col = Math.round((screenX - (row & 1) * (scaledTileWidth / 2) - baseOffsetX) / scaledTileWidth);
+        const row = Math.round(screenY / (fh * 0.75));
+        const col = Math.round((screenX - (row & 1) * (w / 2) - baseOffsetX) / w);
         return { x: col, y: row };
     }
 
     if (layout === 'flat') {
-        const col = Math.round((screenX - baseOffsetX) / scaledTileWidth);
-        const row = Math.round(screenY / scaledTileWidth);
+        const col = Math.round((screenX - baseOffsetX) / w);
+        const row = Math.round(screenY / w);
         return { x: col, y: row };
     }
 
     const adjustedX = screenX - baseOffsetX;
 
-    const tileX = (adjustedX / (scaledTileWidth / 2) + screenY / (scaledFloorHeight / 2)) / 2;
-    const tileY = (screenY / (scaledFloorHeight / 2) - adjustedX / (scaledTileWidth / 2)) / 2;
+    const tileX = (adjustedX / (w / 2) + screenY / (fh / 2)) / 2;
+    const tileY = (screenY / (fh / 2) - adjustedX / (w / 2)) / 2;
 
     return { x: Math.round(tileX), y: Math.round(tileY) };
 }

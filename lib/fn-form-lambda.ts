@@ -11,7 +11,7 @@
  */
 
 import React from "react";
-import { isSExpr, isEventPayloadValue, type EntityRow, type EventPayloadValue, type RenderItemLambda } from "@almadar/core";
+import { isSExpr, isEventPayloadValue, isRenderBindingMarker, containsEntityBinding, RENDER_BINDING_MARKER, type RenderBindingMarker, type SExpr, type EntityRow, type EventPayloadValue, type RenderItemLambda, type RuntimeValue } from "@almadar/core";
 import type { AnyPatternConfig } from "@almadar/core/patterns";
 import type { SlotProps, SlotPropValue } from "../hooks/useUISlots";
 import { evaluate, createMinimalContext } from "@almadar/evaluator";
@@ -112,7 +112,18 @@ export function resolveLambdaBindings(
     // BindingResolver.isSExpression; literal data arrays fail the predicate
     // and pass through unchanged.
     if (isOperatorCall(substituted) && isSExpr(substituted)) {
-      const evaluated = evaluate(substituted, createMinimalContext());
+      // An expression still referencing `@entity` after row substitution
+      // (e.g. the selected-row highlight `(if (== @item.channel
+      // @entity.openChannel) …)`) cannot be evaluated here — the minimal
+      // context has no entity, so the ref would compare as a literal
+      // string and freeze the branch. Left RAW for `deferLambdaEntityExprs`
+      // (top-down, so the OUTERMOST such node becomes one marker — a
+      // bottom-up marker here left marker objects inside parent `if`
+      // conditions, always truthy, highlighting every row).
+      if (containsEntityBinding(substituted as SExpr)) {
+        return substituted;
+      }
+      const evaluated = evaluate(substituted, createMinimalContext()) as RuntimeValue;
       return isEventPayloadValue(evaluated) ? evaluated : String(evaluated);
     }
     return substituted;
@@ -149,13 +160,51 @@ function getSlotContentRenderer(): SlotContentRendererComponent {
   return _slotContentRenderer;
 }
 
+/**
+ * Top-down twin of the flush-side `deferEntityBindings` for lambda bodies:
+ * after `@item` substitution, the OUTERMOST node still referencing
+ * `@entity` (string leaf or operator-call expression) becomes ONE
+ * `RenderBindingMarker` for SlotContentRenderer to resolve against the
+ * ambient trait's live snapshot. Top-down is load-bearing — a bottom-up
+ * pass wraps inner sub-expressions first, and a marker object inside a
+ * parent `if` condition is always truthy.
+ */
+function deferLambdaEntityExprs(value: SlotPropValue): SlotPropValue {
+  if (typeof value === "string") {
+    if (containsEntityBinding(value)) {
+      const marker: RenderBindingMarker = { [RENDER_BINDING_MARKER]: true, expression: value };
+      return marker as SlotPropValue;
+    }
+    return value;
+  }
+  if (Array.isArray(value)) {
+    if (isFnFormLambda(value)) return value;
+    const arr = value as ReadonlyArray<SlotPropValue>;
+    if (isOperatorCall(arr) && isSExpr(arr) && containsEntityBinding(arr as SExpr)) {
+      const marker: RenderBindingMarker = { [RENDER_BINDING_MARKER]: true, expression: arr as SExpr };
+      return marker as SlotPropValue;
+    }
+    return arr.map((v) => deferLambdaEntityExprs(v));
+  }
+  if (value !== null && typeof value === "object" && !React.isValidElement(value) && !(value instanceof Date) && typeof value !== "function" && !isRenderBindingMarker(value as RuntimeValue)) {
+    const out: Record<string, SlotPropValue> = {};
+    for (const [k, v] of Object.entries(value as Record<string, SlotPropValue>)) {
+      out[k] = deferLambdaEntityExprs(v);
+    }
+    return out as SlotPropValue;
+  }
+  return value;
+}
+
 function makeLambdaFn(
   params: readonly string[],
   lambdaBody: AnyPatternConfig,
   callerKey: string,
 ): (item: EntityRow, index: number) => React.ReactNode {
   return (item, index) => {
-    const resolvedBody = resolveLambdaBindings(lambdaBody as SlotPropValue, params, item, index);
+    const resolvedBody = deferLambdaEntityExprs(
+      resolveLambdaBindings(lambdaBody as SlotPropValue, params, item, index),
+    );
     if (
       resolvedBody === null ||
       typeof resolvedBody !== "object" ||
@@ -199,6 +248,10 @@ function makeLambdaFn(
 // downstream don't re-render needlessly.
 function convertNode(node: SlotPropValue, callerKey: string): SlotPropValue {
   if (node === null || node === undefined) return node;
+  // A `$renderBinding` marker's `expression` is one S-expr evaluated whole at
+  // render time — descending into it would compile its `fn` nodes into
+  // render-props and corrupt the expression the evaluator later runs.
+  if (isRenderBindingMarker(node)) return node;
   if (Array.isArray(node)) {
     if (isFnFormLambda(node)) {
       const arr = node as ReadonlyArray<SlotPropValue>;

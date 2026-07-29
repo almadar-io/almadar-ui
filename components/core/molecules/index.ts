@@ -86,6 +86,11 @@ export {
 } from './GridPicker';
 export { AssetPicker, type AssetPickerProps } from './AssetPicker';
 export { IconPicker, type IconPickerProps } from './IconPicker';
+export {
+  EmojiPicker,
+  type EmojiPickerProps,
+  type EmojiPickerPosition,
+} from './EmojiPicker';
 
 // Chart molecules
 export { DateRangePicker, type DateRangePickerProps, type DateRangePickerPreset } from './DateRangePicker';

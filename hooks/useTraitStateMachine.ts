@@ -49,6 +49,7 @@ import type { SlotPatternEntry, SlotSource } from '../types/slot-types';
 import type { useUISlots, SlotProps } from '../providers/UISlotContext';
 import { convertFnFormLambdasInProps } from '../lib/fn-form-lambda';
 import { useEntitySchema } from '../providers/EntitySchemaContext';
+import type { EntityBindingSource } from '../providers/EntityBindingContext';
 import {
     registerTrait,
     unregisterTrait,
@@ -73,6 +74,9 @@ export interface TraitStateMachineResult {
     getTraitState: (traitName: string) => TraitState | undefined;
     /** Check if a trait can handle an event from its current state */
     canHandleEvent: (traitName: string, eventKey: string) => boolean;
+    /** Live per-trait binding surface for `EntityBindingContext` — the
+     * renderer resolves `RenderBindingMarker` prop leaves against it. */
+    entityBindingSource: EntityBindingSource;
 }
 
 const crossTraitLog = createLogger('almadar:ui:cross-trait');
@@ -110,6 +114,9 @@ setNamespaceLevel('almadar:ui:tick-effects', 'WARN');
 const sharedEntityLog = createLogger('almadar:ui:shared-entity');
 setNamespaceLevel('almadar:ui:shared-entity', 'WARN');
 
+/** Identity-stable empty row for traits with no published binding snapshot. */
+const EMPTY_BINDING_SNAPSHOT: EntityRow = {};
+
 // Synchronous effect operators a tick may run. `set` / `emit` /
 // `render-ui` (+ navigate/notify/log) resolve without awaiting; the
 // async ops (`fetch`/`persist`/`call-service`/`swap!`/`ref`/`deref`/
@@ -135,17 +142,6 @@ const SYNC_TICK_OPERATORS: ReadonlySet<string> = new Set([
     'if',
     'do',
     'when',
-]);
-
-// Pattern types whose render-ui is stashed for the reactive repaint (see
-// lastCanvasRenderUiRef): the game render substrate evaluates `@entity`
-// eagerly at flush time, so a headless mechanic trait's writes would leave
-// them frozen at the INIT snapshot. Scoped to these three — a broader set
-// would re-render interactive patterns (forms) on every write.
-const REACTIVE_REPAINT_PATTERN_TYPES: ReadonlySet<string> = new Set([
-    'canvas',
-    'game-hud',
-    'game-shell',
 ]);
 
 // Lifecycle (mount-time) events. They are NOT user-driven, so the event-bus
@@ -229,6 +225,44 @@ export function classifySharedTick(tick: ResolvedTraitTick): 'writer' | 'rendere
     if (writes) return 'writer';
     if (renders) return 'renderer';
     return 'neither';
+}
+
+/**
+ * The one trait-config merge — declared defaults < `traitConfigsByName`
+ * (forwards chained to concrete values) < call-site overrides — shared by
+ * the effect-binding context and the render-time binding source so a
+ * marker expression's `@config.X` reads exactly what the flush-time
+ * executor read. Unresolved `@config.X` forwards in the raw call-site
+ * config are dropped (they are the un-chained form of what the resolved
+ * map already substituted) and `@callsitePayload.*` captures resolve
+ * against the given payload (`{}` at render time).
+ */
+function buildTraitRenderConfig(
+    binding: ResolvedTraitBinding,
+    traitConfigsByName: Record<string, TraitConfig> | undefined,
+    payload: EventPayload,
+): TraitConfig | undefined {
+    const declaredDefaults = collectDeclaredConfigDefaults(binding.trait);
+    const resolvedDefaults = traitConfigsByName?.[binding.trait.name];
+    const callSiteConfig = getBindingConfig(binding);
+    const callSiteOverrides = callSiteConfig
+        ? resolveCallSitePayloadCaptures(
+            Object.fromEntries(
+                Object.entries(callSiteConfig).filter(
+                    ([, v]) => !containsConfigForward(v),
+                ),
+            ),
+            payload,
+        )
+        : undefined;
+    if (declaredDefaults || resolvedDefaults || callSiteOverrides) {
+        return {
+            ...(declaredDefaults ?? {}),
+            ...(resolvedDefaults ?? {}),
+            ...(callSiteOverrides ?? {}),
+        } as TraitConfig;
+    }
+    return undefined;
 }
 
 /** One shared entity's bound traits, classified by what their effects do. */
@@ -707,34 +741,43 @@ export function useTraitStateMachine(
     // post-fetch write-through, no payload mirror. Initial empty per trait.
     const traitFieldStatesRef = useRef<Map<string, EntityRow>>(new Map());
 
-    // Reactive-canvas parity with the compiled shell: the compiled path
-    // re-evaluates a canvas's `drawables` S-expr against `fields` on every
-    // render, but this runtime path evaluates render-ui patterns EAGERLY at
-    // flush time, so a tick/event `(set @entity.x …)` never repaints. Stash
-    // the raw render-ui S-expr of each trait's canvas pattern (keyed by
-    // trait) at flush time; after any later field-writing execution that did
-    // NOT itself render, re-execute the stash so the canvas re-evaluates
-    // against the advanced field state.
-    const lastCanvasRenderUiRef = useRef<Map<string, SExpr[]>>(new Map());
+    // Events THIS dispatch's local effect execution emitted (event key →
+    // pending echo count). The R-DUAL-EXEC-SERVER-ECHO skip must drop ONLY
+    // the response-cascade echo of an emit the tab already delivered via the
+    // bare-cascade key. A server-executed async result (a fetch/persist
+    // success emit) was never delivered locally — its stamped qualified
+    // relay is the ONLY copy, and unconditionally skipping it froze every
+    // browse trait on its loading skeleton. Populated when effects run,
+    // consumed one echo per skip, cleared at the next dispatch (echoes for
+    // dispatch N arrive inside dispatch N's awaited bridge round-trip).
+    const bridgeEchoPendingRef = useRef<Map<string, number>>(new Map());
 
-    // Self-reference to `executeTransitionEffects` (assigned below, right
-    // after its definition) so a field-writing execution on a `[shared]`
-    // entity can repaint SIBLING render traits' stashed canvases through
-    // their own bindings — a headless mechanic atom never renders itself,
-    // so without the cross-trait pass a composed canvas would freeze at its
-    // INIT-time snapshot.
-    const executeTransitionEffectsRef = useRef<
-        ((params: {
-            binding: ResolvedTraitBinding;
-            effects: SExpr[];
-            previousState: string;
-            newState: string;
-            payload?: EventPayload;
-            flushEvent: string;
-            syncOnly: boolean;
-            log: ReturnType<typeof createLogger>;
-        }) => Promise<string[]>) | null
-    >(null);
+    // Render-time binding snapshots: after a non-shared trait's execution
+    // writes `@entity` fields, the fresh row is published here as a NEW
+    // object (the live store is mutated in place, so without a copy
+    // `useSyncExternalStore` would see a stable reference and skip the
+    // re-render). `EntityBindingContext` consumers resolve
+    // `RenderBindingMarker` prop leaves against these snapshots; shared
+    // traits bypass this map entirely (their store already notifies on
+    // commit).
+    const bindingSnapshotsRef = useRef<Map<string, EntityRow>>(new Map());
+    const bindingListenersRef = useRef<Map<string, Set<() => void>>>(new Map());
+
+    const publishBindingSnapshot = useCallback((traitName: string, row: EntityRow) => {
+        bindingSnapshotsRef.current.set(traitName, { ...row });
+        const listeners = bindingListenersRef.current.get(traitName);
+        if (!listeners) return;
+        listeners.forEach((callback) => {
+            try {
+                callback();
+            } catch (error) {
+                stateLog.error('binding-snapshot listener error', {
+                    traitName,
+                    error: error instanceof Error ? error.message : String(error),
+                });
+            }
+        });
+    }, []);
 
 
     // Register traits with debug registry and clean up on unmount/rebind
@@ -964,23 +1007,6 @@ export function useTraitStateMachine(
                     const existing = pendingSlots.get(slot) || [];
                     existing.push({ pattern: pattern as PatternConfig, props: props || {} });
                     pendingSlots.set(slot, existing);
-                    // Reactive patterns re-evaluate against the live field
-                    // store on repaint (see lastCanvasRenderUiRef) — stash the
-                    // raw render-ui effects that produced this slot's pattern.
-                    // Scoped to the game render substrate: a canvas repaints
-                    // its drawables, a game-hud its stat chips, a game-shell
-                    // its win/lose overlay — all three evaluate `@entity`
-                    // eagerly at flush time, so a headless mechanic's write
-                    // would otherwise leave them frozen at the INIT snapshot.
-                    const patternType = (pattern as PatternConfig | null)?.type;
-                    if (patternType !== undefined && REACTIVE_REPAINT_PATTERN_TYPES.has(patternType)) {
-                        const rawForSlot = effects.filter(
-                            (e): e is SExpr => Array.isArray(e) && (e[0] === 'render-ui' || e[0] === 'render') && e[1] === slot,
-                        );
-                        if (rawForSlot.length > 0) {
-                            lastCanvasRenderUiRef.current.set(traitName, rawForSlot);
-                        }
-                    }
                 },
                 clearSlot: (slot) => {
                     pendingSlots.set(slot, []);
@@ -1074,13 +1100,16 @@ export function useTraitStateMachine(
         // A second writing wrapper here would be a parallel store; this just
         // taps the value as it passes through for diagnostics AND (for a
         // `[shared]` entity) to record exactly which fields THIS trait wrote,
-        // so the commit below can merge instead of replace.
+        // so the commit below can merge instead of replace. `didWrite` gates
+        // the render-time binding snapshot publish below.
         const sharedWrites: EntityFieldWrite[] = [];
+        let didWrite = false;
         const baseSet = handlers.set;
         handlers = {
             ...handlers,
             set: async (targetId, field, value) => {
                 if (baseSet) await baseSet(targetId, field, value);
+                didWrite = true;
                 if (sharedKey !== undefined) {
                     sharedWrites.push({ field, value: value as FieldValue });
                 }
@@ -1101,42 +1130,13 @@ export function useTraitStateMachine(
             payload: payload || {},
             state: previousState,
         };
-        // `declaredDefaults` reads the trait's OWN declared config schema
-        // verbatim — for an embedded sub-trait authored as `config { fields:
-        // @config.fields }` (e.g. std-browse's `DataGrid1`), that default IS
-        // the literal forward string, since the atom's `.lolo` meant "read
-        // MY embedder's config" and has no enclosing scope once flattened.
-        // `traitConfigsByName` (built in OrbPreview from the same source
-        // config) chains that forward through `collectEmbeddedTraitReferrers`
-        // to the trait that actually embeds this one, so prefer it over the
-        // raw declared defaults when present — it's a strict superset (same
-        // keys, forwards substituted with concrete values where resolvable).
-        const declaredDefaults = collectDeclaredConfigDefaults(binding.trait);
-        const resolvedDefaults = traitConfigsByName?.[traitName];
-        const callSiteConfig = getBindingConfig(binding);
-        // Drop unresolved `@config.X` forwards from the raw call-site config:
-        // they are the un-chained form of what `resolvedDefaults` already
-        // substituted to a concrete value (via `collectEmbeddedTraitReferrers`).
-        // Spread last, a literal `"@config.fields"` on an embedded sub-trait
-        // (e.g. std-browse's `DataGrid1` forwarding its embedder's columns)
-        // would clobber the resolved array and crash the DataGrid's
-        // `fieldDefs.find`. Concrete call-site overrides still win.
-        const callSiteOverrides = callSiteConfig
-            ? resolveCallSitePayloadCaptures(
-                Object.fromEntries(
-                    Object.entries(callSiteConfig).filter(
-                        ([, v]) => !containsConfigForward(v),
-                    ),
-                ),
-                payload || {},
-            )
-            : undefined;
-        if (declaredDefaults || resolvedDefaults || callSiteOverrides) {
-            bindingCtx.config = {
-                ...(declaredDefaults ?? {}),
-                ...(resolvedDefaults ?? {}),
-                ...(callSiteOverrides ?? {}),
-            } as TraitConfig;
+        // The one config merge (declared < resolved < call-site) — see
+        // `buildTraitRenderConfig`. The render-time binding source
+        // (`EntityBindingContext`) resolves marker expressions against the
+        // same merge, so `@config.X` reads identically on both paths.
+        const renderConfig = buildTraitRenderConfig(binding, traitConfigsByName, payload || {});
+        if (renderConfig !== undefined) {
+            bindingCtx.config = renderConfig;
         }
         if (traitName === 'Authority' || traitName === 'Hero') {
             sharedEntityLog.debug('executeTransitionEffects config tiles', {
@@ -1174,7 +1174,7 @@ export function useTraitStateMachine(
                 effectHeads: effects.map((e) => Array.isArray(e) ? String(e[0]) : '??'),
             });
         }
-        const executor = new EffectExecutor({ handlers: trackingHandlers, bindings: bindingCtx, context: effectContext });
+        const executor = new EffectExecutor({ handlers: trackingHandlers, bindings: bindingCtx, context: effectContext, deferRenderBindings: true });
 
         void slotSource;
         try {
@@ -1241,53 +1241,14 @@ export function useTraitStateMachine(
                 });
             }
 
-            // Reactive-canvas repaint (compiled-shell parity): this execution
-            // wrote fields but rendered nothing itself (a tick, or a
-            // key-driven move), so the canvas would keep painting the
-            // INIT-time drawables snapshot. Re-execute the trait's stashed
-            // canvas render-ui — `bindingCtx.entity` IS the mutated
-            // `liveEntity`, so drawables re-evaluate against the advanced
-            // field state, then flush the repainted pattern.
-            if (pendingSlots.size === 0 && effectsCallOp(effects, SHARED_ENTITY_WRITE_OPS)) {
-                const stashed = lastCanvasRenderUiRef.current.get(traitName);
-                if (stashed !== undefined && stashed.length > 0) {
-                    await executor.executeAll(stashed);
-                    for (const [slot, patterns] of pendingSlots) {
-                        flushSlot(traitName, slot, patterns, {
-                            event: flushEvent,
-                            state: previousState,
-                            entity: binding.linkedEntity,
-                        });
-                    }
-                }
-
-                // Cross-trait repaint: on a `[shared]` entity the writer is
-                // usually a headless mechanic trait (no render-ui of its
-                // own), while the canvas lives on a SIBLING render trait.
-                // Re-execute every sibling's stashed canvas render-ui
-                // through its own binding — inside `executeTransitionEffects`
-                // its `liveEntity` seeds from the shared store's just-
-                // committed snapshot, so drawables re-evaluate against the
-                // advanced state and flush under the sibling's own trait.
-                if (sharedKey !== undefined && executeTransitionEffectsRef.current !== null) {
-                    for (const sibling of traitBindingsRef.current) {
-                        const siblingName = sibling.trait.name;
-                        if (siblingName === traitName) continue;
-                        if (sharedKeyByTraitNameRef.current.get(siblingName) !== sharedKey) continue;
-                        const siblingStash = lastCanvasRenderUiRef.current.get(siblingName);
-                        if (siblingStash === undefined || siblingStash.length === 0) continue;
-                        const siblingState = traitStatesRef.current.get(siblingName)?.currentState ?? '';
-                        await executeTransitionEffectsRef.current({
-                            binding: sibling,
-                            effects: siblingStash,
-                            previousState: siblingState,
-                            newState: siblingState,
-                            flushEvent: `${flushEvent}:repaint`,
-                            syncOnly,
-                            log,
-                        });
-                    }
-                }
+            // Render-time binding publish (compiled-shell parity): this
+            // execution's `@entity` writes must re-resolve any
+            // `RenderBindingMarker` prop leaves this trait's rendered
+            // patterns carry. Non-shared traits publish a fresh snapshot
+            // (the live store is mutated in place); shared traits already
+            // notified their subscribers via the store commit above.
+            if (didWrite && sharedKey === undefined) {
+                publishBindingSnapshot(traitName, liveEntity);
             }
         } catch (error: unknown) {
             log.error('effects:error', {
@@ -1300,15 +1261,7 @@ export function useTraitStateMachine(
         }
 
         return emittedDuringExec;
-    }, [eventBus, flushSlot, sharedEntityStore]);
-
-    // Publish the self-reference the cross-trait canvas repaint uses (a
-    // writer on a `[shared]` entity repaints sibling render traits through
-    // their own bindings — see the repaint block inside
-    // `executeTransitionEffects` and the runTickFrame driver below).
-    useEffect(() => {
-        executeTransitionEffectsRef.current = executeTransitionEffects;
-    }, [executeTransitionEffects]);
+    }, [eventBus, flushSlot, sharedEntityStore, publishBindingSnapshot]);
 
     /**
      * Execute a single tick's effects through the SAME canonical executor
@@ -1426,32 +1379,11 @@ export function useTraitStateMachine(
                     const writers = entries.map(({ binding, tick }) =>
                         createSharedEntityWriter(binding, tick, traitStatesRef, emitFromSharedWriter),
                     );
+                    // The store commit notifies every subscriber — including
+                    // the render-time binding markers sibling render traits
+                    // carry, so their marked props re-resolve against the
+                    // just-committed frame with no repaint pass.
                     runTickFrame(group.storeKey, writers, sharedEntityStore);
-
-                    // Cross-trait canvas repaint: the pure-writer path folds
-                    // writes straight into the shared store without touching
-                    // `executeTransitionEffects`, so sibling render traits
-                    // never see a field-writing execution to hang a repaint
-                    // on. Re-execute each render binding's stashed canvas
-                    // render-ui against the just-committed frame.
-                    const repaint = executeTransitionEffectsRef.current;
-                    if (repaint !== null) {
-                        for (const renderBinding of group.renderBindings) {
-                            const renderTraitName = renderBinding.trait.name;
-                            const stash = lastCanvasRenderUiRef.current.get(renderTraitName);
-                            if (stash === undefined || stash.length === 0) continue;
-                            const renderState = traitStatesRef.current.get(renderTraitName)?.currentState ?? '';
-                            void repaint({
-                                binding: renderBinding,
-                                effects: stash,
-                                previousState: renderState,
-                                newState: renderState,
-                                flushEvent: 'tick:repaint',
-                                syncOnly: true,
-                                log: sharedEntityLog,
-                            });
-                        }
-                    }
                 };
                 if (interval === 'frame') {
                     scheduler.add(0, onDue);
@@ -1585,6 +1517,12 @@ export function useTraitStateMachine(
         // declared emit.success and serverResponse arrives as null.
         const emittedByTrait = new Map<string, string[]>();
 
+        // Fresh dispatch — the previous dispatch's bridge echoes have all
+        // arrived (the bridge round-trip is awaited below), so leftovers are
+        // local emits the server chose not to echo; keeping them would make
+        // a FUTURE genuine server cascade of the same name skip wrongly.
+        bridgeEchoPendingRef.current.clear();
+
         // Execute effects for each transition that occurred
         for (const { traitName, result } of results) {
             const binding = bindingMap.get(traitName);
@@ -1670,6 +1608,12 @@ export function useTraitStateMachine(
                     log: stateLog,
                 });
                 emittedByTrait.set(traitName, emittedDuringExec);
+                for (const emittedKey of emittedDuringExec) {
+                    bridgeEchoPendingRef.current.set(
+                        emittedKey,
+                        (bridgeEchoPendingRef.current.get(emittedKey) ?? 0) + 1,
+                    );
+                }
             } else if (!result.executed) {
                 if (result.guardResult === false) {
                     stateLog.debug('guard-blocked-transition', {
@@ -1915,15 +1859,26 @@ export function useTraitStateMachine(
                 subscribedBusKeys.add(selfBusKey);
                 crossTraitLog.debug('self:subscribe', { traitName, busKey: selfBusKey, eventKey });
                 const unsub = eventBus.on(selfBusKey, (event) => {
-                    // Skip bridge echoes of THIS event's own dispatch
-                    // (`dispatched: true` flag). Server-side emits via
-                    // (emit) / fetch.emit.success carry `fromBridge: true`
-                    // but NOT `dispatched`, so they reach the trait's
-                    // transition handler — that's how in-trait cascades
-                    // (e.g. loading → browsing on BrowseItemLoaded) work.
+                    // Skip bridge echoes this tab already processed.
+                    // ServerBridge stamps response-cascade echoes with
+                    // `dispatched: true` (R-DUAL-EXEC-SERVER-ECHO). The
+                    // stamp alone is NOT proof of local delivery: only an
+                    // emit this tab's own effects ran went out on the
+                    // bare-cascade key — a SERVER-executed async result
+                    // (fetch/persist success emit) arrives ONLY as this
+                    // stamped relay, and dropping it froze every browse
+                    // trait at its loading skeleton. Skip one echo per
+                    // locally-delivered emit; let server-only cascade
+                    // results through. Push-leg events from OTHER tabs
+                    // (multiplayer) carry no stamp and fire normally.
                     if (event.source && (event.source as { dispatched?: boolean }).dispatched) {
-                        crossTraitLog.debug('self:fire-skipped-bridge-echo', { traitName, busKey: selfBusKey, eventKey });
-                        return;
+                        const pendingEchoes = bridgeEchoPendingRef.current.get(eventKey) ?? 0;
+                        if (pendingEchoes > 0) {
+                            bridgeEchoPendingRef.current.set(eventKey, pendingEchoes - 1);
+                            crossTraitLog.debug('self:fire-skipped-bridge-echo', { traitName, busKey: selfBusKey, eventKey });
+                            return;
+                        }
+                        crossTraitLog.debug('self:fire-server-cascade', { traitName, busKey: selfBusKey, eventKey });
                     }
                     crossTraitLog.debug('self:fire', { traitName, busKey: selfBusKey, eventKey });
                     // The qualified key addresses exactly this trait — scope the
@@ -2048,11 +2003,53 @@ export function useTraitStateMachine(
         };
     }, [traitBindings, enqueueAndDrain]);
 
+    // The render-time binding surface (`EntityBindingContext`): per-trait
+    // entity snapshots + merged config + current state, with subscription.
+    // Shared-entity traits read/subscribe straight through the shared store
+    // (commits notify); non-shared traits read the snapshots published by
+    // `executeTransitionEffects` after a writing execution.
+    const entityBindingSource = useMemo<EntityBindingSource>(() => ({
+        getEntitySnapshot: (traitName) => {
+            const sharedKey = sharedKeyByTraitNameRef.current.get(traitName);
+            if (sharedKey !== undefined) {
+                return sharedEntityStore.getSnapshot(sharedKey) as EntityRow;
+            }
+            return bindingSnapshotsRef.current.get(traitName) ?? EMPTY_BINDING_SNAPSHOT;
+        },
+        getConfig: (traitName) => {
+            const binding = traitBindingsRef.current.find((b) => b.trait.name === traitName);
+            if (binding === undefined) return undefined;
+            return buildTraitRenderConfig(binding, traitConfigsByName, {});
+        },
+        getState: (traitName) => traitStatesRef.current.get(traitName)?.currentState ?? '',
+        subscribe: (traitName, callback) => {
+            const sharedKey = sharedKeyByTraitNameRef.current.get(traitName);
+            if (sharedKey !== undefined) {
+                return sharedEntityStore.subscribe(sharedKey, callback);
+            }
+            let listeners = bindingListenersRef.current.get(traitName);
+            if (!listeners) {
+                listeners = new Set();
+                bindingListenersRef.current.set(traitName, listeners);
+            }
+            listeners.add(callback);
+            return () => {
+                const current = bindingListenersRef.current.get(traitName);
+                if (!current) return;
+                current.delete(callback);
+                if (current.size === 0) {
+                    bindingListenersRef.current.delete(traitName);
+                }
+            };
+        },
+    }), [sharedEntityStore, traitConfigsByName]);
+
     return {
         traitStates,
         sendEvent,
         getTraitState,
         canHandleEvent,
+        entityBindingSource,
     };
 }
 

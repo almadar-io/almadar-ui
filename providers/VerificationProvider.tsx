@@ -18,7 +18,7 @@
  */
 
 import React, { useEffect, useRef, type ReactNode } from 'react';
-import type { BusEvent, FieldValue, EventPayload } from '@almadar/core';
+import type { BusEvent, FieldValue, EventPayload, SExpr } from '@almadar/core';
 import { useEventBus } from '../hooks/useEventBus';
 import {
   recordTransition,
@@ -48,7 +48,7 @@ interface TransitionObserver {
     guardResult?: boolean;
     effects: Array<{
       type: string;
-      args: FieldValue[];
+      args: SExpr[];
       status: 'executed' | 'failed' | 'skipped';
       error?: string;
       durationMs?: number;
@@ -204,9 +204,10 @@ export function VerificationProvider({
           ? payload['effectResults'] as Array<EventPayload>
           : [];
         for (const er of effectResults) {
+          const target = er['entity'] ?? er['service'];
           effects.push({
             type: String(er['type'] ?? er['effect'] ?? 'server-effect'),
-            args: [er['entity'] ?? er['service'] ?? ''].filter(Boolean),
+            args: typeof target === 'string' && target !== '' ? [target] : [],
             status: er['error'] ? 'failed' as const : 'executed' as const,
             error: er['error'] as string | undefined,
           });

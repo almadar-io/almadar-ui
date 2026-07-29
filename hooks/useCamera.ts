@@ -11,6 +11,11 @@
 import { useRef, useCallback } from 'react';
 import type { CameraState } from '../lib/isometricTypes';
 
+/** Zoom bounds. The floor must sit below any auto-fit zoom (~0.1 on large boards)
+ *  or wheel/pinch zoom-out snaps IN to the floor once and then stalls dead. */
+export const MIN_ZOOM = 0.05;
+export const MAX_ZOOM = 10;
+
 interface CameraResult {
     /** Mutable camera state ref (x, y, zoom) */
     cameraRef: React.MutableRefObject<CameraState>;
@@ -100,7 +105,7 @@ export function useCamera(initial?: Partial<CameraState>): CameraResult {
     const handleWheel = useCallback((e: React.WheelEvent, drawFn?: () => void) => {
         e.preventDefault();
         const zoomDelta = e.deltaY > 0 ? 0.9 : 1.1;
-        cameraRef.current.zoom = Math.max(0.5, Math.min(3, cameraRef.current.zoom * zoomDelta));
+        cameraRef.current.zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, cameraRef.current.zoom * zoomDelta));
         drawFn?.();
     }, []);
 
@@ -134,7 +139,7 @@ export function useCamera(initial?: Partial<CameraState>): CameraResult {
     ) => {
         const cam = cameraRef.current;
         const oldZoom = cam.zoom;
-        const newZoom = Math.max(0.5, Math.min(3, oldZoom * factor));
+        const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, oldZoom * factor));
         if (newZoom === oldZoom) {
             drawFn?.();
             return;

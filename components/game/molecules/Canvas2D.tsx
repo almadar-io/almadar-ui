@@ -42,7 +42,7 @@ import { Icon } from '../../core/atoms/Icon';
 import { Typography } from '../../core/atoms/Typography';
 import { MiniMap } from '../atoms/MiniMap';
 import { useImageCache } from '../../../hooks/useImageCache';
-import { resolveAssetSource, blit } from '../../../lib/atlasSlice';
+import { resolveAssetSource, blit, getAtlas, isAtlasAsset } from '../../../lib/atlasSlice';
 import { useCamera } from '../../../hooks/useCamera';
 import { useCanvasGestures } from '../../../hooks/useCanvasGestures';
 import { bindCanvasCapture, bindLastDrawables } from '../../../lib/verificationRegistry';
@@ -57,7 +57,6 @@ import type { DrawContext } from '../../../lib/drawable/contract';
 import {
     screenToIso,
     TILE_WIDTH,
-    FLOOR_HEIGHT,
     DIAMOND_TOP_Y,
     BACKGROUND_FALLBACK_COLOR,
     MINIMAP_TERRAIN_COLORS,
@@ -149,8 +148,23 @@ export interface Canvas2DProps {
     // --- View config (pure render) ---
     /** Camera behavior (default 'pan-zoom'). */
     camera?: CameraMode;
-    /** Render scale (0.4 = 40% zoom). Ignored by `free`/`side` (world-pixel-direct). */
+    /** Render scale, legacy-squared semantics: on-screen cell ≈ `256 × scale²` px
+     *  (the authored contract every board tuned its value for). Converted internally
+     *  to the single camera zoom against the board's native tile width, so the cell
+     *  pitch follows the asset while the on-screen size stays as authored.
+     *  Ignored when `fit` is on; passed through raw for `free`/`side`
+     *  (world-pixel-direct). */
     scale?: number;
+    /** Native tile/cell width in source px for this board's asset (e.g. 16 for
+     *  Kenney tiny-dungeon, ~128 for iso blocks). The grid cell pitch follows the
+     *  asset, so tile textures map 1:1 (crisp, no stretch). Defaults to the
+     *  detected atlas tile width, else 256. */
+    tileWidth?: number;
+    /** Auto-fit the board's grid extent to the viewport (default false — boards
+     *  render at their authored `scale` and overflow → pan). Opt in for
+     *  whole-board-overview boards. User wheel/pinch zoom always wins after the
+     *  initial fit. */
+    fit?: boolean;
     /** Toggle minimap overlay. */
     showMinimap?: boolean;
     /** Follow-camera target in scene space (the neutral core `Camera.target`). When
@@ -191,6 +205,8 @@ export function Canvas2D({
     keyUpMap,
     camera = 'pan-zoom',
     scale = 0.4,
+    tileWidth,
+    fit = false,
     showMinimap = true,
     followTarget,
     cameraPos,
@@ -252,10 +268,41 @@ export function Canvas2D({
         return () => observer.disconnect();
     }, []);
 
-    // -- Pre-computed scaled scalars (for the pointer→scene inverse) --
-    const scaledTileWidth = TILE_WIDTH * scale;
-    const scaledFloorHeight = FLOOR_HEIGHT * scale;
-    const scaledDiamondTopY = DIAMOND_TOP_Y * scale;
+    // -- Tile-space cell metrics (the projector works in the board's native tile
+    //    width; the camera zoom is the only on-screen scaler). These feed the
+    //    pointer→scene inverse + the iso centering offset. --
+    // Atlas-ready trigger (re-detect / re-draw when a lazily-fetched atlas lands).
+    const [atlasVersion, setAtlasVersion] = useState(0);
+    const bumpAtlas = useCallback(() => setAtlasVersion((v) => v + 1), []);
+    // Auto-detect the board's native tile width from its first tilesheet atlas —
+    // assets declare `tileWidth` in their JSON, so the grid adheres to the art
+    // with zero per-board config. Overridable via the `tileWidth` prop.
+    const detectedTileWidth = useMemo(() => {
+        for (const n of drawables ?? []) {
+            const refs: Asset[] = [];
+            if (n.type === 'draw-sprite') refs.push(n.asset);
+            else if (n.type === 'draw-sprite-layer') for (const it of n.items) refs.push(it.asset);
+            for (const a of refs) {
+                if (a && isAtlasAsset(a) && a.atlas) {
+                    const atlas = getAtlas(a.atlas, bumpAtlas);
+                    if (atlas) {
+                        // Tilesheet: declared `tileWidth`. Subtexture atlas (iso/hex
+                        // block art): use the first frame's width as the cell width.
+                        if ('tileWidth' in atlas) return atlas.tileWidth;
+                        if ('subTextures' in atlas) {
+                            const first = Object.values(atlas.subTextures)[0];
+                            if (first && typeof first.width === 'number') return first.width;
+                        }
+                    }
+                }
+            }
+        }
+        return undefined;
+    }, [drawables, atlasVersion]);
+    const nativeTileW = tileWidth ?? detectedTileWidth ?? TILE_WIDTH;
+    const scaledTileWidth = nativeTileW;
+    const scaledFloorHeight = nativeTileW / 2;
+    const scaledDiamondTopY = nativeTileW * (DIAMOND_TOP_Y / TILE_WIDTH);
 
     // -- Scene extent, derived from the drawn descriptors (no tile data prop) --
     const drawnItems = useMemo(() => collectDrawnItems(drawables ?? []), [drawables]);
@@ -280,10 +327,41 @@ export function Canvas2D({
         return (gridExtent.height - 1) * (scaledTileWidth / 2);
     }, [isFree, projection, gridExtent.height, scaledTileWidth]);
 
+    // -- Effective on-screen zoom (the single scaler; the projector works in
+    //    tile-space so a tile texture maps 1:1 to its cell at `zoom`x). --
+    // `free`/`side` are world-pixel-direct: zoom = raw `scale`. Grid layouts keep
+    // the legacy-squared contract (on-screen cell ≈ 256×scale² px) by converting
+    // the authored scale against the native tile width. `fit` (opt-in) instead
+    // fits the grid extent to 85% of the viewport.
+    const effectiveZoom = useMemo(() => {
+        if (isFree || projection === 'side') return scale;
+        if (!fit) {
+            const z = (TILE_WIDTH * scale * scale) / nativeTileW;
+            return Number.isFinite(z) && z > 0 ? z : scale;
+        }
+        if (!viewportSize.width || gridExtent.width < 2 || gridExtent.height < 2) return scale;
+        // Board pixel extent in tile-space: iso spans (w+h) half-widths both axes;
+        // hex staggers columns; flat is a square pitch.
+        let boardW: number;
+        let boardH: number;
+        if (projection === 'flat') {
+            boardW = gridExtent.width * nativeTileW;
+            boardH = gridExtent.height * nativeTileW;
+        } else if (projection === 'hex') {
+            boardW = (gridExtent.width + 0.5) * nativeTileW;
+            boardH = gridExtent.height * (nativeTileW / 2) * 0.75 + nativeTileW / 2;
+        } else {
+            boardW = (gridExtent.width + gridExtent.height) * (nativeTileW / 2);
+            boardH = (gridExtent.width + gridExtent.height) * (nativeTileW / 4);
+        }
+        const z = Math.min((viewportSize.width * 0.85) / boardW, (viewportSize.height * 0.85) / boardH);
+        return Number.isFinite(z) && z > 0 ? z : scale;
+    }, [isFree, projection, fit, viewportSize, gridExtent, nativeTileW, scale]);
+
     // -- Projector (shared by draw + follow-camera) --
     const projector = useMemo(
-        () => create2DProjector({ scale, baseOffsetX, layout }),
-        [scale, baseOffsetX, layout],
+        () => create2DProjector({ tileWidth: nativeTileW, baseOffsetX, layout }),
+        [nativeTileW, baseOffsetX, layout],
     );
 
     // -- Pointer → scene inverse (iso/hex/flat/free/side) --
@@ -291,8 +369,8 @@ export function Canvas2D({
         // `free`/`side` are world-pixel-direct; the `=== 'free'` test (not the aliased
         // `isFree`) narrows `projection` to a `TileLayout` for `screenToIso` below.
         if (projection === 'free' || projection === 'side') return { x: Math.round(screenX), y: Math.round(screenY) };
-        return screenToIso(screenX, screenY, scale, baseOffsetX, projection);
-    }, [projection, scale, baseOffsetX]);
+        return screenToIso(screenX, screenY, nativeTileW, baseOffsetX, projection);
+    }, [projection, nativeTileW, baseOffsetX]);
 
     // -- Background image preload --
     const bgUrls = useMemo(() => (backgroundImage ? [backgroundImage.url] : []), [backgroundImage]);
@@ -325,11 +403,9 @@ export function Canvas2D({
         zoomAtPoint,
         screenToWorld,
         lerpToTarget,
-    } = useCamera({ zoom: scale });
+    } = useCamera({ zoom: effectiveZoom });
 
     // Re-render when a lazily-fetched atlas JSON lands (see atlasSlice.getAtlas).
-    const [atlasVersion, setAtlasVersion] = useState(0);
-    const bumpAtlas = useCallback(() => setAtlasVersion((v) => v + 1), []);
 
     // -- Minimap data (dots at each drawn descriptor's scene position) --
     const miniMapTiles = useMemo(() => {
@@ -420,6 +496,17 @@ export function Canvas2D({
     // Redraw on scene / camera change — pure, no internal clock.
     useEffect(() => { draw(); }, [draw]);
     useEffect(() => { draw(); }, [_imagePendingCount, draw]);
+    // Keep the camera on the computed zoom across its changes (initial mount,
+    // a lazily-fetched atlas changing the detected tile width, a resize re-fit)
+    // until the user takes over with wheel/pinch — after that, manual zoom is
+    // never clobbered.
+    const userZoomedRef = useRef(false);
+    useEffect(() => {
+        if (userZoomedRef.current) return;
+        if (cameraRef.current.zoom === effectiveZoom) return;
+        cameraRef.current.zoom = effectiveZoom;
+        draw();
+    }, [effectiveZoom, cameraRef, draw]);
     // Re-render when a lazily-fetched atlas JSON lands.
     useEffect(() => { draw(); }, [atlasVersion, draw]);
 
@@ -488,7 +575,9 @@ export function Canvas2D({
     }, [handleMouseLeave, tileLeaveEvent, eventBus]);
 
     const applyZoom = useCallback((factor: number, centerX: number, centerY: number) => {
-        if (enableCamera) zoomAtPoint(factor, centerX, centerY, viewportSize, () => draw());
+        if (!enableCamera) return;
+        userZoomedRef.current = true;
+        zoomAtPoint(factor, centerX, centerY, viewportSize, () => draw());
     }, [enableCamera, zoomAtPoint, viewportSize, draw]);
 
     const applyPanDelta = useCallback((dx: number, dy: number) => {

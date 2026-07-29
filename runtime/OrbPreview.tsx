@@ -31,6 +31,7 @@ import { convertFnFormLambdasInProps } from '../lib/fn-form-lambda';
 import { useTraitStateMachine } from '../hooks/useTraitStateMachine';
 import { buildOrbitalsByTrait } from '../lib/orbitalsByTrait';
 import { EntitySchemaProvider } from '../providers/EntitySchemaContext';
+import { EntityBindingContext } from '../providers/EntityBindingContext';
 import { ServerBridgeProvider, useServerBridge, type ServerBridgeTransport } from '../providers/ServerBridge';
 import { OrbitalThemeProvider } from '../providers/OrbitalThemeProvider';
 import { getAllPages } from '../providers/navigation';
@@ -222,7 +223,7 @@ export function collectServerActiveTraits(
   return active;
 }
 
-function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onLocalFallback, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits, serverActiveTraits }: {
+function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onLocalFallback, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits, serverActiveTraits, children }: {
   traits: ResolvedTraitBinding[];
   /** Route params from a parameterized page path — merged into every INIT payload. */
   routeParams?: Record<string, string>;
@@ -259,6 +260,12 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onLoc
    * transitions — the upstream twin of the client-side render filter below.
    */
   serverActiveTraits?: ReadonlySet<string>;
+  /**
+   * Slot subtree — wrapped in `EntityBindingContext.Provider` so the
+   * renderer resolves `RenderBindingMarker` prop leaves against this
+   * hook's live per-trait binding stores.
+   */
+  children?: React.ReactNode;
 }) {
   const bridge = useServerBridge();
   // Traits mounted on the active page (page bindings + embed-routed
@@ -326,7 +333,7 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onLoc
   const opts = orbitalNames
     ? { onEventProcessed, navigate: onNavigate, traitConfigsByName, orbitalsByTrait, embeddedTraits, initPayload: routeParams }
     : { navigate: onNavigate, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits, initPayload: routeParams };
-  const { sendEvent } = useTraitStateMachine(traits, uiSlots, opts);
+  const { sendEvent, entityBindingSource } = useTraitStateMachine(traits, uiSlots, opts);
 
   const initSentRef = useRef(false);
 
@@ -394,7 +401,7 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onLoc
           { type: 'fetch', args: [], status: 'executed' as const },
           ...effects.map((eff) => ({
             type: eff.type,
-            args: eff.type === 'render-ui' ? [eff.slot] : [],
+            args: eff.type === 'render-ui' && eff.slot !== undefined ? [eff.slot] : [],
             status: 'executed' as const,
           })),
         ];
@@ -416,7 +423,11 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onLoc
     })();
   }, [bridge.connected, orbitalNames, bridge.sendEvent, uiSlots, onNavigate, embeddedTraits, activeTraitNames, withActiveTraits, routeParams]);
 
-  return null;
+  return (
+    <EntityBindingContext.Provider value={entityBindingSource}>
+      {children}
+    </EntityBindingContext.Provider>
+  );
 }
 
 /**
@@ -694,7 +705,7 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, routeP
           onNavigate={onNavigate}
           onLocalFallback={onLocalFallback}
           persistence={persistence}
-        />
+        >
         {/* Sizing model:
             - `h-full` resolves to 100% of the parent's `style.height`. When
               consumers pass an explicit pixel height (e.g. canvas L2's
@@ -720,6 +731,7 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, routeP
             <UISlotRenderer includeHud hudMode="inline" includeFloating />
           </Box>
         </OrbitalThemeProvider>
+        </TraitInitializer>
       </EntitySchemaProvider>
     </VerificationProvider>
   );

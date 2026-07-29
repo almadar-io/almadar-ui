@@ -42,8 +42,14 @@ export function getAtlas(url: string, onReady: () => void): ParsedAtlas | undefi
     fetch(url)
         .then((r) => r.json())
         .then((json: ParsedAtlas) => { atlasCache.set(url, json); onReady(); })
-        .catch(() => { atlasCache.set(url, null); });
+        .catch(() => { atlasCache.set(url, null); onReady(); }); // failed → repaint so fallback art shows
     return undefined;
+}
+
+/** True when the atlas fetch for `url` has failed (cached null). `getAtlas`
+ *  collapses in-flight and failed to `undefined`; this distinguishes them. */
+export function atlasFailed(url: string): boolean {
+    return atlasCache.get(url) === null;
 }
 
 export interface SubRect { sx: number; sy: number; sw: number; sh: number }

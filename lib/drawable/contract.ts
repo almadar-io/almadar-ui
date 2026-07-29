@@ -35,16 +35,17 @@ export interface Projector {
     anchorPoint(pos: ScenePos, anchor: DrawableAnchor): PainterPoint;
     /** The cell footprint polygon — a rect (square grids) or a diamond (iso/hex). */
     cellPath(pos: ScenePos): PainterPoint[];
-    /** Cell width in px — `TILE_WIDTH * scale` for grid layouts, 1 for `free`/`side` (world-pixel-direct). */
+    /** Cell width in source-px tile-space — the board's native tile width for grid layouts (`flat`/`iso`/`hex`), 1 for `free`/`side` (world-pixel-direct). The host camera applies the on-screen zoom once. */
     readonly tileWidth: number;
-    /** Cell floor height in px — `FLOOR_HEIGHT * scale` for grid layouts, 1 for `free`/`side`. */
+    /** Cell floor height in source-px tile-space (`tileWidth / 2` for grid layouts, 1 for `free`/`side`). */
     readonly floorHeight: number;
-    /** Diamond-top offset in px — `DIAMOND_TOP_Y * scale` for grid layouts, 0 for `free`/`side`. */
+    /** Diamond-top offset in source-px tile-space (where the iso diamond starts in the sprite). */
     readonly diamondTopY: number;
     /** Render scale factor. */
-    readonly scale: number;
     /** True for square-pitch grids (`flat`/`free`); false for diamond (iso/hex). */
     readonly squareGrid: boolean;
+    /** True for world-pixel-direct layouts (`free`/`side`); false for tile grids (`flat`/`iso`/`hex`). */
+    readonly worldPixelDirect: boolean;
 }
 
 /**

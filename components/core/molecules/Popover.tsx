@@ -46,6 +46,17 @@ export interface PopoverProps {
   showArrow?: boolean;
 
   /**
+   * Controlled open state. When set, the host owns visibility and the popover
+   * reports intent through onOpenChange instead of toggling itself.
+   */
+  open?: boolean;
+
+  /**
+   * Fired when the popover wants to change visibility (trigger click, outside click)
+   */
+  onOpenChange?: (open: boolean) => void;
+
+  /**
    * Additional CSS classes
    */
   className?: string;
@@ -107,9 +118,16 @@ export const Popover: React.FC<PopoverProps> = ({
   position = "bottom",
   trigger = "click",
   showArrow = true,
+  open,
+  onOpenChange,
   className,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isOpen = open !== undefined ? open : uncontrolledOpen;
+  const setIsOpen = (next: boolean) => {
+    if (open === undefined) setUncontrolledOpen(next);
+    onOpenChange?.(next);
+  };
   const [triggerRect, setTriggerRect] = useState<DOMRect | null>(null);
   const [popoverWidth, setPopoverWidth] = useState(0);
   const triggerRef = useRef<HTMLElement>(null);
@@ -148,6 +166,29 @@ export const Popover: React.FC<PopoverProps> = ({
     if (isOpen) {
       updatePosition();
     }
+  }, [isOpen]);
+
+  // The panel is positioned from the trigger's rect at open time, but the
+  // trigger can keep moving afterwards (async content settling inside a
+  // fixed-height shell, scrolls, resizes — none of which resize <body>).
+  // While open, follow the trigger's actual rect frame-by-frame so the
+  // panel stays glued to it; the loop only lives for the open duration.
+  useEffect(() => {
+    if (!isOpen) return;
+    let raf = 0;
+    let lastTop = Number.NaN;
+    let lastLeft = Number.NaN;
+    const track = () => {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (rect && (rect.top !== lastTop || rect.left !== lastLeft)) {
+        lastTop = rect.top;
+        lastLeft = rect.left;
+        updatePosition();
+      }
+      raf = requestAnimationFrame(track);
+    };
+    raf = requestAnimationFrame(track);
+    return () => cancelAnimationFrame(raf);
   }, [isOpen]);
 
   // Reset the measured width only once the panel has fully unmounted (not

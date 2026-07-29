@@ -16,10 +16,46 @@
  */
 import type React from 'react';
 import type { Asset, ScenePos } from '@almadar/core';
-import type { BlitSrc, PainterShadow } from '../../../lib/painter2d';
-import { getAtlas, isAtlasAsset, subRectFor } from '../../../lib/atlasSlice';
-import type { DrawableAnchor, DrawableBase, PaintFn } from '../../../lib/drawable/contract';
+import { createLogger } from '@almadar/logger';
+import type { BlitSrc, Painter2D, PainterShadow } from '../../../lib/painter2d';
+import { getAtlas, atlasFailed, isAtlasAsset, subRectFor } from '../../../lib/atlasSlice';
+import { getImageStatus } from '../../../lib/imageCache';
+import type { DrawableAnchor, DrawableBase, DrawContext, PaintFn } from '../../../lib/drawable/contract';
 import { isValidScenePos } from '../../../lib/drawable/contract';
+
+const spriteLog = createLogger('almadar:ui:draw-sprite');
+const loggedMissing = new Set<string>();
+
+/** World-px size of the fallback square on `free`/`side` (world-pixel-direct)
+ *  boards when the descriptor carries no explicit width/height. */
+const FALLBACK_WORLD_PX = 32;
+
+function warnMissingOnce(reason: 'texture-failed' | 'atlas-failed' | 'sprite-missing', node: DrawSpriteProps): void {
+    const key = `${reason}:${node.asset.url}:${String(node.asset.atlas)}:${String(node.asset.sprite)}`;
+    if (loggedMissing.has(key)) return;
+    loggedMissing.add(key);
+    spriteLog.warn('draw-sprite asset unresolvable — painting fallback square', { reason, url: node.asset.url, atlas: node.asset.atlas, sprite: node.asset.sprite });
+}
+
+/** A missing/broken asset must never render as an invisible hole: paint a
+ *  cell-sized flat square (honoring explicit width/height) so the board stays
+ *  readable and the bad ref is visible on the canvas, not just in a log. */
+function paintFallbackSquare(painter: Painter2D, node: DrawSpriteProps, dctx: DrawContext, reason: 'texture-failed' | 'atlas-failed' | 'sprite-missing'): void {
+    warnMissingOnce(reason, node);
+    const tw = dctx.projector.tileWidth;
+    const natural = dctx.projector.worldPixelDirect ? FALLBACK_WORLD_PX : tw;
+    const w = node.width !== undefined ? node.width * tw : natural;
+    const h = node.height !== undefined ? node.height * tw : natural;
+    const anchor: DrawableAnchor = node.anchor ?? 'top-left';
+    const p = dctx.projector.anchorPoint(node.position, anchor);
+    const dx = anchor === 'top-left' ? p.x : p.x - w / 2;
+    const dy = anchor === 'ground' ? p.y - h : anchor === 'center' ? p.y - h / 2 : p.y;
+    painter.save();
+    if (node.opacity !== undefined && node.opacity !== 1) painter.setAlpha(node.opacity);
+    painter.fillRect(dx, dy, w, h, '#9b8f7f');
+    painter.strokeRect(dx, dy, w, h, '#5e564b', Math.max(1, tw / 32));
+    painter.restore();
+}
 
 export interface DrawSpriteProps extends DrawableBase {
     type: 'draw-sprite';
@@ -29,9 +65,9 @@ export interface DrawSpriteProps extends DrawableBase {
     asset: Asset;
     /** How the sprite aligns to its projected position. Default `'top-left'`. */
     anchor?: DrawableAnchor;
-    /** Draw width in world units (fractions of `projector.tileWidth`); omitted → resolved source width in px. */
+    /** Draw width in world units (fractions of `projector.tileWidth`). Omitted → one cell on tile grids (`flat`/`iso`/`hex`); native source px on `free`/`side`. */
     width?: number;
-    /** Draw height in world units (fractions of `projector.tileWidth`); omitted → resolved source height in px. */
+    /** Draw height in world units (fractions of `projector.tileWidth`). Omitted → one cell on tile grids (`flat`/`iso`/`hex`); native source px on `free`/`side`. */
     height?: number;
     /** Explicit atlas sub-rect override (px); omitted → resolved from `asset.atlas`/`asset.sprite`. */
     frame?: BlitSrc;
@@ -47,12 +83,17 @@ export interface DrawSpriteProps extends DrawableBase {
     shadow?: PainterShadow;
 }
 
-/** Paint a {@link DrawSpriteProps}. Renders nothing (returns) when a resource is not ready — never throws. */
+/** Paint a {@link DrawSpriteProps}. Paints a fallback square when a resource is
+ *  definitively broken (texture/atlas fetch failed, sprite name unresolvable);
+ *  renders nothing while a resource is still in-flight — never throws. */
 export const paintSprite: PaintFn<DrawSpriteProps> = (painter, node, dctx) => {
     // A drawable with no resolvable asset or position renders nothing — never throws.
     if (!node.asset?.url || !isValidScenePos(node.position)) return;
     const tex = painter.resolveTexture(node.asset.url);
-    if (!tex) return; // image not loaded yet
+    if (!tex) {
+        if (getImageStatus(node.asset.url) === 'failed') paintFallbackSquare(painter, node, dctx, 'texture-failed');
+        return; // image in-flight
+    }
 
     // `frame` is an explicit source rect. A bare number (an animation frame
     // INDEX) carries no rect and would blank the blit — ignore it so the
@@ -60,15 +101,25 @@ export const paintSprite: PaintFn<DrawSpriteProps> = (painter, node, dctx) => {
     let src = typeof node.frame === 'object' ? node.frame : undefined;
     if (!src && isAtlasAsset(node.asset)) {
         const atlas = getAtlas(node.asset.atlas as string, dctx.invalidate);
-        if (!atlas) return; // atlas JSON in-flight
+        if (!atlas) {
+            if (atlasFailed(node.asset.atlas as string)) paintFallbackSquare(painter, node, dctx, 'atlas-failed');
+            return; // atlas JSON in-flight
+        }
         const r = subRectFor(atlas, node.asset.sprite as string);
-        if (!r) return; // sprite name/index does not resolve
+        if (!r) {
+            paintFallbackSquare(painter, node, dctx, 'sprite-missing');
+            return;
+        }
         src = { x: r.sx, y: r.sy, w: r.sw, h: r.sh };
     }
 
     const tw = dctx.projector.tileWidth;
-    const w = node.width !== undefined ? node.width * tw : (src ? src.w : tex.width);
-    const h = node.height !== undefined ? node.height * tw : (src ? src.h : tex.height);
+    // Tile grids (flat/iso/hex) size a sprite to one cell by default; `free`/`side`
+    // are world-pixel-direct, so they fall back to the texture's native source size.
+    const fallbackW = dctx.projector.worldPixelDirect ? (src ? src.w : tex.width) : tw;
+    const fallbackH = dctx.projector.worldPixelDirect ? (src ? src.h : tex.height) : tw;
+    const w = node.width !== undefined ? node.width * tw : fallbackW;
+    const h = node.height !== undefined ? node.height * tw : fallbackH;
 
     const anchor: DrawableAnchor = node.anchor ?? 'top-left';
     const p = dctx.projector.anchorPoint(node.position, anchor);

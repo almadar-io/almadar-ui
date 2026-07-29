@@ -98,6 +98,10 @@ export interface TableViewProps extends DataDndProps {
   itemActions?: readonly TableViewItemAction[];
   /** Max inline action buttons before the rest collapse into a "⋯" overflow menu. Omit = all inline. */
   maxInlineActions?: number;
+  /** When set, the whole row is clickable and emits UI:{itemClickEvent} with
+   *  { id, row } (action-button clicks stopPropagation so they still win).
+   *  Mirrors DataList's contract. */
+  itemClickEvent?: EventKey;
   /** Render a leading checkbox column. Selection changes emit `selectEvent`. */
   selectable?: boolean;
   /** Event emitted on selection change: UI:{selectEvent} with { ids, rows }. */
@@ -235,6 +239,7 @@ export function TableView({
   fields,
   itemActions,
   maxInlineActions,
+  itemClickEvent,
   selectable = false,
   selectEvent,
   selectedIds,
@@ -351,6 +356,15 @@ export function TableView({
       };
       eventBus.emit(`UI:${action.event}`, payload);
     };
+
+  const handleRowClick = (row: EntityRow) => () => {
+    if (!itemClickEvent) return;
+    const payload: ItemActionPayload = {
+      id: row.id as string | number,
+      row: row as ItemActionPayload['row'],
+    };
+    eventBus.emit(`UI:${itemClickEvent}`, payload);
+  };
 
   // A bare `minmax(0, 1fr)` splits width evenly, so a long value (an email) is
   // truncated while a short one (a badge) wastes its share. The floor can't be
@@ -476,10 +490,12 @@ export function TableView({
         role="row"
         data-entity-row
         data-entity-id={id}
+        onClick={itemClickEvent ? handleRowClick(row) : undefined}
         style={!hasRenderProp ? { gridTemplateColumns } : undefined}
         className={cn(
           'group items-center gap-3 transition-colors duration-fast',
           hasRenderProp ? 'flex' : 'grid',
+          itemClickEvent && 'cursor-pointer',
           lk.rowPad,
           lk.divider && 'border-b border-[var(--color-border)]',
           lk.striped && index % 2 === 1 && 'bg-[var(--color-surface-subtle)]',
@@ -488,7 +504,7 @@ export function TableView({
         )}
       >
         {selectable && (
-          <Box className="flex items-center">
+          <Box className="flex items-center" onClick={itemClickEvent ? (e) => e.stopPropagation() : undefined}>
             <Checkbox
               checked={selected.has(id)}
               onChange={() => toggleRow(id)}
@@ -524,6 +540,9 @@ export function TableView({
         {hasActions && (
           <HStack
             gap="xs"
+            // The overflow Menu's item onClick has no stopPropagation of its
+            // own, so the whole actions cell shields the row click instead.
+            onClick={itemClickEvent ? (e) => e.stopPropagation() : undefined}
             className={cn(
               // Pinned: the fixed column tracks routinely overflow the caller's
               // scroll container, which used to leave the actions off-screen.

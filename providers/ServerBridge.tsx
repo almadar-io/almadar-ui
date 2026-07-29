@@ -77,7 +77,11 @@ function reEmitServerEvent(eventBus: EventBusContextType, emitted: RemoteBusEven
     sourceTrait: evTrait,
     origin,
   });
-  eventBus.emit(key, emitted.payload);
+  // The source MUST ride the bus event: the self-subscription skip guard
+  // (`useTraitStateMachine`) reads `source.dispatched` to drop own-tab
+  // echoes — dropping it here re-triggers every transition a second time
+  // (R-DUAL-EXEC-SERVER-ECHO).
+  eventBus.emit(key, emitted.payload, emitted.source);
 }
 
 /**
@@ -453,9 +457,33 @@ export function ServerBridgeProvider({
 
         // Gap #13: re-emit server-cascade events on the qualified bus key
         // (shared with the SSE push leg below — see `reEmitServerEvent`).
+        //
+        // R-DUAL-EXEC-SERVER-ECHO: this response is the echo of THIS tab's
+        // own dispatch — under dual execution the tab already delivered
+        // every entry locally (the dispatched event via its click-time
+        // qualified emit; cascade emits via the bare-cascade `UI:EVENT`
+        // subscription), so a raw re-emit re-fires self-subscriptions and
+        // `listens` a second time. Multiplayer is unaffected: other tabs
+        // receive this same cascade over the SSE push leg (the server
+        // excludes the origin clientId), which stays unstamped below.
         if (result.emittedEvents) {
           for (const emitted of result.emittedEvents) {
-            reEmitServerEvent(eventBus, emitted, orbitalName);
+            // The dispatched event's own echo: the click-time qualified
+            // emit already fired both the self-subscription and every
+            // `listens` subscriber on that key — the echo adds only the
+            // duplicate.
+            if (emitted.event === event) continue;
+            // Cascade echoes: stamp `dispatched` so the emitting trait's
+            // self-subscription skips (the bare-cascade subscription
+            // already delivered it locally) while cross-trait `listens`
+            // subscribers — which don't filter on `dispatched` — still
+            // fire: the qualified key is their only delivery for a
+            // cascade emit.
+            reEmitServerEvent(
+              eventBus,
+              { ...emitted, source: { ...emitted.source, dispatched: true } },
+              orbitalName,
+            );
           }
         }
       } else if (result.error) {

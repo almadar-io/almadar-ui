@@ -107,6 +107,8 @@ export { TraitScopeProvider, useTraitScope, useTraitScopeChain } from './TraitSc
 export type { TraitScope, TraitScopeProviderProps } from './TraitScopeProvider';
 export { SelectionProvider, SelectionContext, useSelection, useSelectionOptional } from './SelectionProvider';
 export type { SelectionContextType } from './SelectionProvider';
+export { EntityBindingContext, useEntityBindingSnapshot } from './EntityBindingContext';
+export type { EntityBindingSource } from './EntityBindingContext';
 
 // G13 Phase 3 (2026-04-24): the FetchedDataProvider family has been
 // removed. It was never mounted in any real provider tree, so consumers

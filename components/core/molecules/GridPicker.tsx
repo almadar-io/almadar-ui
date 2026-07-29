@@ -25,6 +25,8 @@ export interface PickerItem {
   label: string;
   /** Category key used by the filter chips. */
   category: string;
+  /** Extra search terms matched alongside the label (e.g. emoji keywords). */
+  keywords?: string[];
 }
 
 export type GridPickerCellSize = 16 | 32 | 48;
@@ -84,7 +86,11 @@ export const GridPicker: React.FC<GridPickerProps> = ({
     return items.filter((item) => {
       const matchesCategory =
         activeCategory === ALL_CATEGORY || item.category === activeCategory;
-      const matchesSearch = needle === '' || item.label.toLowerCase().includes(needle);
+      const matchesSearch =
+        needle === '' ||
+        item.label.toLowerCase().includes(needle) ||
+        (item.keywords !== undefined &&
+          item.keywords.some((k) => k.toLowerCase().includes(needle)));
       return matchesCategory && matchesSearch;
     });
   }, [items, search, activeCategory]);

@@ -545,7 +545,11 @@ export function DataList({
                           const v = getNestedValue(itemData, f.name);
                           if (v === undefined || v === null || v === '') return null;
                           return f.variant === 'badge' ? (
-                            <Badge key={f.name} variant={statusVariant(String(v))}>{String(v)}</Badge>
+                            // `format` applies here too — a boolean field badged
+                            // without it renders the raw "false" instead of "No".
+                            <Badge key={f.name} variant={statusVariant(String(v))}>
+                              {formatValue(v as FieldValue, f.format)}
+                            </Badge>
                           ) : (
                             <Typography
                               key={f.name}
@@ -684,7 +688,7 @@ export function DataList({
                   <HStack key={field.name} gap="xs" className="items-center flex-shrink-0">
                     {field.icon && renderIconInput(field.icon, { size: 'xs' })}
                     <Badge variant={statusVariant(String(val))}>
-                      {String(val)}
+                      {formatValue(val as FieldValue, field.format)}
                     </Badge>
                   </HStack>
                 );

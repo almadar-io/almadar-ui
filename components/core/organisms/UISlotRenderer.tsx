@@ -14,10 +14,13 @@
  * @packageDocumentation
  */
 
-import React, { Suspense, createContext, useContext, useEffect, useState } from "react";
+import React, { Suspense, createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useEntitySchemaOptional } from "../../../providers/EntitySchemaContext";
-import { TraitScopeProvider } from "../../../providers/TraitScopeProvider";
+import { useEntityBindingSnapshot } from "../../../providers/EntityBindingContext";
+import { resolveRenderBindingMarkers } from "../../../lib/resolve-render-bindings";
+import { TraitScopeProvider, useTraitScope } from "../../../providers/TraitScopeProvider";
 import type { EntityRow, EventPayload, EventPayloadValue, RenderItemLambda, ResolvedEntity } from "@almadar/core";
+import { isRenderBindingMarker } from "@almadar/core";
 import type { AnyPatternConfig } from "@almadar/core/patterns";
 import { createPortal } from "react-dom";
 import {
@@ -557,7 +560,24 @@ function UISlotComponent({
   const suspenseConfig = useContext(SuspenseConfigContext);
   const contained = useContext(SlotContainedContext);
   const schemaCtx = useEntitySchemaOptional();
-  const content = slots[slot];
+  const rawContent = slots[slot];
+  // Render-time binding resolution for the slot wrappers below (Modal /
+  // Drawer / Toast read `content.props.title` etc. directly). Nested
+  // patterns re-resolve inside SlotContentRenderer with their own
+  // sourceTrait — both passes are identity-preserving when no markers
+  // are present.
+  const binding = useEntityBindingSnapshot(rawContent?.sourceTrait);
+  const content = useMemo(() => {
+    if (!rawContent) return rawContent;
+    const resolvedProps = resolveRenderBindingMarkers(
+      rawContent.props,
+      rawContent.sourceTrait,
+      binding.entity,
+      binding.config,
+      binding.state,
+    );
+    return resolvedProps === rawContent.props ? rawContent : { ...rawContent, props: resolvedProps };
+  }, [rawContent, binding.entity, binding.config, binding.state]);
 
   // Compiled mode: children provided directly, skip context resolution
   if (children !== undefined) {
@@ -1234,6 +1254,9 @@ function substituteTraitRefsDeep(
   value: SlotPropValue,
   pathKey: string,
 ): SlotPropValue {
+  // `$renderBinding` markers (foreign `_sourceTrait` subtrees left raw for
+  // their own renderer) carry an unevaluated S-expr — never rewrite inside it.
+  if (isRenderBindingMarker(value)) return value;
   if (typeof value === "string") {
     const match = TRAIT_BINDING_RE.exec(value);
     if (match) {
@@ -1348,6 +1371,25 @@ function SlotContentRenderer({
   onDismiss,
   patternPath,
 }: SlotContentRendererProps): React.ReactElement {
+  // Render-time binding resolution (compiled-shell parity): `@entity`-
+  // dependent prop leaves arrive as `RenderBindingMarker`s and resolve
+  // here against the source trait's live entity snapshot, so every
+  // committed write re-renders with fresh values for EVERY pattern type.
+  // Identity-stable when nothing relevant changed (Form's
+  // normalizedInitialData contract is preserved).
+  //
+  // Lambda-row content (`makeLambdaFn`) mounts inside the owning trait's
+  // subtree but carries no explicit sourceTrait — the ambient
+  // TraitScopeProvider (already wrapping every slot subtree for emit
+  // qualification) supplies the trait, so markers deferred out of
+  // renderItem bodies resolve against the same live frame.
+  const ambientScope = useTraitScope();
+  const bindingTrait = content.sourceTrait ?? ambientScope?.trait;
+  const binding = useEntityBindingSnapshot(bindingTrait);
+  const liveProps = useMemo(
+    () => resolveRenderBindingMarkers(content.props, bindingTrait, binding.entity, binding.config, binding.state),
+    [content.props, bindingTrait, binding.entity, binding.config, binding.state],
+  );
   // V2 (post-Phase-6): entity data arrives pre-resolved in `content.props.entity`
   // as a value (array or record). String-entity bindings — the EntityStore
   // fallback path — are gone; the compiler + runtime resolve bindings via
@@ -1355,7 +1397,7 @@ function SlotContentRenderer({
   // If a stale `entity: "StringName"` literal is still present at render time
   // (e.g. non-migrated project content), dev-mode throws so the author fixes
   // the schema; prod silently renders nothing.
-  const entityProp = content.props.entity;
+  const entityProp = liveProps.entity;
   // Trace every render of every form-section so we can see whether
   // typing in the form causes the parent SlotContentRenderer to re-
   // render with a fresh entity reference (which would invalidate
@@ -1420,7 +1462,7 @@ function SlotContentRenderer({
     // `children` can be an array (stack/grid/etc) or a single pattern
     // config (popover trigger, tooltip target). renderPatternChildren
     // accepts both shapes — see its normalization branch.
-    const childrenConfig = content.props.children as
+    const childrenConfig = liveProps.children as
       | Array<string | { type: string; props?: SlotProps; _id?: string }>
       | { type: string; props?: SlotProps; _id?: string }
       | string
@@ -1458,9 +1500,9 @@ function SlotContentRenderer({
     // conversion (`runtime/fn-form-lambda.ts`) and are render-prop
     // callbacks for DataGrid/DataList/Carousel — keep them in restProps
     // instead of treating them as a pattern array.
-    const incomingChildren = content.props.children;
+    const incomingChildren = liveProps.children;
     const childrenIsRenderFn = typeof incomingChildren === "function";
-    const { children: _childrenConfig, ...restPropsNoChildren } = content.props;
+    const { children: _childrenConfig, ...restPropsNoChildren } = liveProps;
     const restProps: SlotProps = childrenIsRenderFn
       ? { ...restPropsNoChildren, children: incomingChildren }
       : restPropsNoChildren;
@@ -1655,7 +1697,7 @@ function SlotContentRenderer({
       data-orb-pattern={content.pattern}
       data-orb-orbital={orbitalName}
     >
-      {(content.props.children as React.ReactNode) ?? (
+      {(liveProps.children as React.ReactNode) ?? (
         <Box className="p-4 text-sm text-muted-foreground border border-dashed border-border rounded">
           Unknown pattern: {content.pattern}
           {content.sourceTrait && (

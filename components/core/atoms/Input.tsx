@@ -96,6 +96,29 @@ export const Input = React.forwardRef<
     const eventBus = useEventBus();
     // inputType takes precedence over type, default to "text"
     const type = inputType || htmlType || "text";
+
+    // Declarative mode (onChange is an event-key string): the value round-trips
+    // through the circuit — emit → set → frame → re-render — with arbitrary
+    // lag, and a plain controlled input clobbers the DOM back to the lagging
+    // frame value on every commit, eating keystrokes typed in between. Echo
+    // cancellation, same contract as the bus layer's bridgeEchoPendingRef:
+    // a value this input EMITTED is its own echo and never overwrites the DOM;
+    // a value it never emitted (a SEND clearing the draft, another tab's
+    // write) is genuinely external and applies.
+    const isDeclarative = typeof onChange === "string";
+    const [localValue, setLocalValue] = React.useState<string | number | undefined>(value);
+    const pendingEchoRef = React.useRef<Set<string>>(new Set());
+    React.useEffect(() => {
+      if (!isDeclarative) return;
+      const incoming = value == null ? "" : String(value);
+      if (pendingEchoRef.current.has(incoming)) {
+        pendingEchoRef.current.delete(incoming);
+        return;
+      }
+      pendingEchoRef.current.clear();
+      setLocalValue(value);
+    }, [value, isDeclarative]);
+    const displayValue = isDeclarative ? localValue : value;
     const resolveIconNode = (i: IconInput | undefined, cls: string) => {
       if (!i) return null;
       if (typeof i === "string") return <Icon name={i} className={cls} />;
@@ -108,7 +131,7 @@ export const Input = React.forwardRef<
     const resolvedLeftIcon =
       (leftIcon ? resolveIconNode(leftIcon, iconCls) : null) ||
       (IconComponent && <IconComponent className={iconCls} />);
-    const showClearButton = clearable && value && String(value).length > 0;
+    const showClearButton = clearable && displayValue && String(displayValue).length > 0;
 
     const isMultiline = type === "textarea";
     const baseClassName = cn(
@@ -133,6 +156,10 @@ export const Input = React.forwardRef<
         const payload = type === 'checkbox'
           ? { checked: (target as HTMLInputElement).checked }
           : { value: target.value };
+        if (type !== 'checkbox') {
+          pendingEchoRef.current.add(target.value);
+          setLocalValue(target.value);
+        }
         eventBus.emit(`UI:${onChange}`, payload);
       } else {
         onChange?.(e);
@@ -185,7 +212,7 @@ export const Input = React.forwardRef<
           )}
           <select
             ref={ref as React.Ref<HTMLSelectElement>}
-            value={value as string}
+            value={displayValue as string}
             onChange={handleChange as React.ChangeEventHandler<HTMLSelectElement>}
             className={cn(baseClassName, "appearance-none pr-10", className)}
             {...(props as React.SelectHTMLAttributes<HTMLSelectElement>)}
@@ -210,7 +237,7 @@ export const Input = React.forwardRef<
         <div className="relative w-full">
           <textarea
             ref={ref as React.Ref<HTMLTextAreaElement>}
-            value={value as string}
+            value={displayValue as string}
             onChange={handleChange as React.ChangeEventHandler<HTMLTextAreaElement>}
             rows={rows}
             className={baseClassName}
@@ -252,7 +279,7 @@ export const Input = React.forwardRef<
         <input
           ref={ref as React.Ref<HTMLInputElement>}
           type={type}
-          value={value}
+          value={displayValue}
           onChange={handleChange as React.ChangeEventHandler<HTMLInputElement>}
           onKeyDown={handleKeyDown}
           className={baseClassName}

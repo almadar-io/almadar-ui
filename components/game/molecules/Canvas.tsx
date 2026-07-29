@@ -61,6 +61,12 @@ export interface CanvasProps {
     unitScale?: number;
     /** Minimap overlay (2D). */
     showMinimap?: boolean;
+    /** Auto-fit the board's grid extent to the viewport (2D grid layouts; default
+     *  false — boards render at their authored `camera.zoom` scale). */
+    fit?: boolean;
+    /** Native tile/cell width in source px of the board's asset (2D grid layouts;
+     *  defaults to the detected atlas tile width, else 256). */
+    tileWidth?: number;
     /** Backdrop image (2D iso/hex/flat/free/side). */
     backgroundImage?: AssetUrl | Asset;
     /** Solid backdrop colour — 2D `side` fill and 3D scene clear colour. */
@@ -117,6 +123,8 @@ export function Canvas({
     isLoading,
     unitScale,
     showMinimap,
+    fit,
+    tileWidth,
     backgroundImage,
     backgroundColor,
     worldWidth,
@@ -179,6 +187,8 @@ export function Canvas({
             projection={projection}
             camera={to2DCamera(camera?.mode)}
             {...(zoom !== undefined ? { scale: zoom } : {})}
+            {...(fit !== undefined ? { fit } : {})}
+            {...(tileWidth !== undefined ? { tileWidth } : {})}
             {...(camera?.target !== undefined ? { followTarget: camera.target } : {})}
             {...(camera?.pos !== undefined ? { cameraPos: camera.pos } : {})}
             showMinimap={showMinimap}

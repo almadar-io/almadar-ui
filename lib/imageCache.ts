@@ -36,6 +36,10 @@ export function getOrLoadImage(url: string, onReady?: () => void): HTMLImageElem
     }
 
     const img = new Image();
+    // CORS-clean load: without this the canvas is tainted by cross-origin art and
+    // toDataURL/getImageData (the verification capture bridge) throw. The asset
+    // CDN serves `access-control-allow-origin: *`, so this is safe.
+    img.crossOrigin = 'anonymous';
     const entry: Entry = { img, status: 'pending', onReady };
     cache.set(url, entry);
     updateAssetStatus(url, 'pending');
@@ -47,6 +51,7 @@ export function getOrLoadImage(url: string, onReady?: () => void): HTMLImageElem
     img.onerror = () => {
         entry.status = 'failed';
         updateAssetStatus(url, 'failed');
+        entry.onReady?.(); // a failure is also a state change worth repainting (fallback art)
     };
     img.src = url;
     return null;
@@ -55,4 +60,11 @@ export function getOrLoadImage(url: string, onReady?: () => void): HTMLImageElem
 /** Test/reset hook — clears the module cache. */
 export function clearImageCache(): void {
     cache.clear();
+}
+
+/** Current load status for `url` (undefined if never requested). Lets painters
+ *  distinguish "pending" from "failed" — both surface as `null` from
+ *  {@link getOrLoadImage}. */
+export function getImageStatus(url: string): AssetLoadStatus | undefined {
+    return cache.get(url)?.status;
 }

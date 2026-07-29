@@ -77,6 +77,7 @@ export function MiniMap({
     const cached = imgCacheRef.current.get(url);
     if (cached) return cached.complete ? cached : null;
     const img = new Image();
+    img.crossOrigin = 'anonymous'; // keep the canvas untainted for capture/pixel reads
     img.src = url;
     img.onload = () => {
       const canvas = canvasRef.current;
