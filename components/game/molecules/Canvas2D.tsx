@@ -321,6 +321,14 @@ export function Canvas2D({
         return { width: maxX + 1, height: maxY + 1 };
     }, [scenePositions]);
 
+    // Default camera focus: the grid's center cell when the board authors no
+    // `cameraPos` — grid layouts only; `free`/`side` keep world-origin framing.
+    const defaultGridFocus = useMemo((): ScenePos | undefined => {
+        if (isFree || projection === 'side') return undefined;
+        if (gridExtent.width < 2 || gridExtent.height < 2) return undefined;
+        return { x: (gridExtent.width - 1) / 2, y: (gridExtent.height - 1) / 2 } as ScenePos;
+    }, [isFree, projection, gridExtent]);
+
     // In `free`/`side`/`flat` tiles are at literal pixels / square cells — no iso centering offset.
     const baseOffsetX = useMemo(() => {
         if (isFree || projection === 'flat' || projection === 'side') return 0;
@@ -462,11 +470,17 @@ export function Canvas2D({
 
         // Camera transform, then walk the drawables through the portable painter.
         const cam = cameraRef.current;
-        // Center the viewport on the authored scene position unless the user has panned.
-        if (cameraPos && dragDistance() === 0) {
-            const p = projector.anchorPoint(cameraPos, 'center');
-            cam.x = p.x - viewportSize.width / 2;
-            cam.y = p.y - viewportSize.height / 2;
+        // Frame the authored scene position — or, when none is authored, the
+        // grid's own center. The default matters: converted zooms can exceed 1
+        // (small native tiles), and with a zero camera the world origin lands at
+        // (1−zoom)×vp/2 — outside the viewport for zoom>1 (blank board).
+        if (camera !== 'follow' && dragDistance() === 0) {
+            const focus = cameraPos ?? defaultGridFocus;
+            if (focus) {
+                const p = projector.anchorPoint(focus, 'center');
+                cam.x = p.x - viewportSize.width / 2;
+                cam.y = p.y - viewportSize.height / 2;
+            }
         }
         const containerRect = containerRef.current?.getBoundingClientRect();
         const canvasRect = canvas.getBoundingClientRect();
@@ -479,7 +493,7 @@ export function Canvas2D({
         const dctx: DrawContext = { projector, time: 0, invalidate: bumpAtlas };
         for (const node of drawables) paintDrawable(painter, node, dctx);
         painter.restore();
-    }, [viewportSize, backgroundImage, bgColor, drawables, projector, cameraRef, bumpAtlas, getImage]);
+    }, [viewportSize, backgroundImage, bgColor, drawables, projector, cameraRef, bumpAtlas, getImage, cameraPos, defaultGridFocus, camera, dragDistance]);
 
     // =========================================================================
     // Follow camera: lerp to keep `followTarget` centered (camera:'follow').
