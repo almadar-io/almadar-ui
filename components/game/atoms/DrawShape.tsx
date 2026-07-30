@@ -18,6 +18,8 @@ import type { ScenePos } from '@almadar/core';
 import type { PainterPoint } from '../../../lib/painter2d';
 import type { DrawableAnchor, DrawableBase, PaintFn } from '../../../lib/drawable/contract';
 import { isValidScenePos } from '../../../lib/drawable/contract';
+import { DrawableRegistryContext } from '../../../lib/drawable/registry';
+import { useContext } from 'react';
 
 export type ShapeKind = 'cell' | 'rect' | 'ellipse' | 'poly' | 'path';
 
@@ -109,8 +111,21 @@ export const paintShape: PaintFn<DrawShapeProps> = (painter, node, dctx) => {
     painter.restore();
 };
 
-/** Registry/standalone stub — the host paints this atom; the DOM renders nothing. */
-export function DrawShape(_props: DrawShapeProps): React.JSX.Element | null {
+/** Registry/standalone stub — the host paints this atom; the DOM renders nothing.
+ *  When composed as a React child of a draw-host (Canvas2D), registers its
+ *  descriptor via context so the host paints it. */
+export function DrawShape(props: DrawShapeProps): React.JSX.Element | null {
+    const register = useContext(DrawableRegistryContext);
+    if (register) {
+        const { opacity, ...rest } = props;
+        const node: DrawShapeProps = {
+            ...rest,
+            type: 'draw-shape',
+            ...(opacity !== undefined && opacity > 0 ? { opacity } : {}),
+        };
+        register(node);
+        return <div data-draw-shape-debug="" style={{ position: 'absolute', width: 4, height: 4, background: 'red', zIndex: 9999 }} />;
+    }
     return null;
 }
 

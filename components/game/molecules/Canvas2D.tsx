@@ -49,10 +49,11 @@ import { bindCanvasCapture, bindLastDrawables } from '../../../lib/verificationR
 import { createWebPainter } from '../../../lib/webPainter2d';
 import { create2DProjector, type Projection2D } from '../../../lib/drawable/projector';
 import { paintDrawable, type DrawableNode } from '../../../lib/drawable/paintDispatch';
+import { DrawableRegistryContext, type DrawableRegistrar } from '../../../lib/drawable/registry';
 import type { DrawSpriteLayerProps } from './DrawSpriteLayer';
 import type { DrawShapeLayerProps } from './DrawShapeLayer';
 import type { DrawTextLayerProps } from './DrawTextLayer';
-import { collectDrawnItems, buildHitIndex } from '../../../lib/drawable/hitTest';
+import { collectDrawnItems, buildHitIndex, hitTestSprites } from '../../../lib/drawable/hitTest';
 import type { DrawContext } from '../../../lib/drawable/contract';
 import {
     screenToIso,
@@ -176,6 +177,10 @@ export interface Canvas2DProps {
     cameraPos?: ScenePos;
     /** Solid backdrop colour (drawn when no `backgroundImage`). */
     bgColor?: string;
+    /** Declarative JSX drawable children (`<DrawShape .../>` composed in paint order).
+     *  When `drawables` is empty, each child registers its descriptor via the
+     *  drawable registry context and the host paints them. */
+    children?: React.ReactNode;
 }
 
 /** A backdrop may be authored as a bare URL string or a full `Asset`; normalize a
@@ -211,8 +216,22 @@ export function Canvas2D({
     followTarget,
     cameraPos,
     bgColor,
+    children,
 }: Canvas2DProps): React.JSX.Element {
     const instanceId = useMemo(() => Math.random().toString(36).slice(2, 8), []);
+
+    // -- Drawable registration (JSX children path) --
+    // When `drawables` prop is empty, collect descriptors registered by child
+    // `draw-*` atoms via context. Cleared at the top of each render so children
+    // re-register fresh; read in `draw` (useEffect, after children committed).
+    const childDrawablesRef = useRef<DrawableNode[]>([]);
+    childDrawablesRef.current = [];
+    const registerChildDrawable: DrawableRegistrar = useCallback((node) => {
+        childDrawablesRef.current.push(node);
+    }, []);
+    const hasJsxChildren = React.Children.count(children) > 0;
+    const effectiveDrawables: DrawableNode[] | undefined =
+        drawables && drawables.length > 0 ? drawables : childDrawablesRef.current;
     type DrawableLayer = DrawSpriteLayerProps | DrawShapeLayerProps | DrawTextLayerProps;
     interface DrawableLayerSummary {
         type: string;
@@ -466,7 +485,20 @@ export function Canvas2D({
             ctx.fillRect(0, 0, viewportSize.width, viewportSize.height);
         }
 
-        if (!drawables || drawables.length === 0) return;
+        if (!drawables || drawables.length === 0) {
+            // Fall through to child-registered drawables (JSX composition path).
+            const childDrawables = childDrawablesRef.current;
+            if (childDrawables.length === 0) return;
+            const painter0 = createWebPainter(ctx, bumpAtlas);
+            painter0.save();
+            painter0.translate(viewportSize.width / 2, viewportSize.height / 2);
+            painter0.scale(cameraRef.current.zoom, cameraRef.current.zoom);
+            painter0.translate(-viewportSize.width / 2, -viewportSize.height / 2);
+            const dctx0: DrawContext = { projector, time: 0, invalidate: bumpAtlas };
+            for (const node of childDrawables) paintDrawable(painter0, node, dctx0);
+            painter0.restore();
+            return;
+        }
 
         // Camera transform, then walk the drawables through the portable painter.
         const cam = cameraRef.current;
@@ -571,6 +603,13 @@ export function Canvas2D({
         if (dragDistance() > 5) return;
         if (!canvasRef.current || (!tileClickEvent && !unitClickEvent)) return;
         const world = screenToWorld(e.clientX, e.clientY, canvasRef.current, viewportSize);
+        // A click on a unit's visible body/head hangs over the cells behind its
+        // floor cell — resolve against painted sprite rects first, then the cell.
+        const spriteHit = unitClickEvent ? hitTestSprites(drawnItems, projector, world) : undefined;
+        if (spriteHit !== undefined && unitClickEvent) {
+            eventBus.emit(`UI:${unitClickEvent}`, { unitId: spriteHit });
+            return;
+        }
         const adjustedX = world.x - scaledTileWidth / 2;
         const adjustedY = squareGrid ? world.y - scaledTileWidth / 2 : world.y - scaledDiamondTopY - scaledFloorHeight / 2;
         const isoPos = unproject(adjustedX, adjustedY);
@@ -581,7 +620,7 @@ export function Canvas2D({
         } else if (tileClickEvent) {
             eventBus.emit(`UI:${tileClickEvent}`, { x: isoPos.x, y: isoPos.y });
         }
-    }, [enableCamera, handlePointerUp, dragDistance, screenToWorld, viewportSize, scaledTileWidth, squareGrid, scaledDiamondTopY, scaledFloorHeight, unproject, hitIndex, tileClickEvent, unitClickEvent, eventBus]);
+    }, [enableCamera, handlePointerUp, dragDistance, screenToWorld, viewportSize, scaledTileWidth, squareGrid, scaledDiamondTopY, scaledFloorHeight, unproject, hitIndex, drawnItems, projector, tileClickEvent, unitClickEvent, eventBus]);
 
     const handleCanvasPointerLeave = useCallback(() => {
         handleMouseLeave();
@@ -680,7 +719,7 @@ export function Canvas2D({
         );
     }
 
-    if (!drawables || drawables.length === 0) {
+    if ((!drawables || drawables.length === 0) && !hasJsxChildren) {
         return (
             <Box
                 className={cn('relative w-full overflow-hidden rounded-container', className)}
@@ -700,6 +739,7 @@ export function Canvas2D({
     }
 
     return (
+        <DrawableRegistryContext.Provider value={registerChildDrawable}>
         <Box
             ref={containerRef}
             className={cn('relative overflow-hidden w-full h-full', className)}
@@ -758,7 +798,12 @@ export function Canvas2D({
                     />
                 </Box>
             )}
+            {/* Hidden mount for JSX drawable children — they render null but
+                register their descriptors via DrawableRegistryContext. */}
+            {hasJsxChildren && <div aria-hidden="true" style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>{children}</div>}
+            <div data-debug="" style={{ position: 'absolute', top: 0, left: 0, background: 'yellow', color: 'black', zIndex: 9999, fontSize: 24, padding: 8 }}>C={React.Children.count(children)} J={String(hasJsxChildren)} D={drawables?.length ?? -1}</div>
         </Box>
+        </DrawableRegistryContext.Provider>
     );
 }
 

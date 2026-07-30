@@ -21,7 +21,7 @@ import type { BlitSrc, Painter2D, PainterShadow } from '../../../lib/painter2d';
 import { getAtlas, atlasFailed, isAtlasAsset, subRectFor } from '../../../lib/atlasSlice';
 import { getImageStatus } from '../../../lib/imageCache';
 import type { DrawableAnchor, DrawableBase, DrawContext, PaintFn } from '../../../lib/drawable/contract';
-import { isValidScenePos } from '../../../lib/drawable/contract';
+import { isValidScenePos, spriteRect } from '../../../lib/drawable/contract';
 
 const spriteLog = createLogger('almadar:ui:draw-sprite');
 const loggedMissing = new Set<string>();
@@ -44,16 +44,11 @@ function paintFallbackSquare(painter: Painter2D, node: DrawSpriteProps, dctx: Dr
     warnMissingOnce(reason, node);
     const tw = dctx.projector.tileWidth;
     const natural = dctx.projector.worldPixelDirect ? FALLBACK_WORLD_PX : tw;
-    const w = node.width !== undefined ? node.width * tw : natural;
-    const h = node.height !== undefined ? node.height * tw : natural;
-    const anchor: DrawableAnchor = node.anchor ?? 'top-left';
-    const p = dctx.projector.anchorPoint(node.position, anchor);
-    const dx = anchor === 'top-left' ? p.x : p.x - w / 2;
-    const dy = anchor === 'ground' ? p.y - h : anchor === 'center' ? p.y - h / 2 : p.y;
+    const rect = spriteRect(dctx.projector, node, { w: natural, h: natural });
     painter.save();
     if (node.opacity !== undefined && node.opacity !== 1) painter.setAlpha(node.opacity);
-    painter.fillRect(dx, dy, w, h, '#9b8f7f');
-    painter.strokeRect(dx, dy, w, h, '#5e564b', Math.max(1, tw / 32));
+    painter.fillRect(rect.x, rect.y, rect.w, rect.h, '#9b8f7f');
+    painter.strokeRect(rect.x, rect.y, rect.w, rect.h, '#5e564b', Math.max(1, tw / 32));
     painter.restore();
 }
 
@@ -113,18 +108,12 @@ export const paintSprite: PaintFn<DrawSpriteProps> = (painter, node, dctx) => {
         src = { x: r.sx, y: r.sy, w: r.sw, h: r.sh };
     }
 
-    const tw = dctx.projector.tileWidth;
     // Tile grids (flat/iso/hex) size a sprite to one cell by default; `free`/`side`
     // are world-pixel-direct, so they fall back to the texture's native source size.
-    const fallbackW = dctx.projector.worldPixelDirect ? (src ? src.w : tex.width) : tw;
-    const fallbackH = dctx.projector.worldPixelDirect ? (src ? src.h : tex.height) : tw;
-    const w = node.width !== undefined ? node.width * tw : fallbackW;
-    const h = node.height !== undefined ? node.height * tw : fallbackH;
-
-    const anchor: DrawableAnchor = node.anchor ?? 'top-left';
-    const p = dctx.projector.anchorPoint(node.position, anchor);
-    const dx = anchor === 'top-left' ? p.x : p.x - w / 2;
-    const dy = anchor === 'ground' ? p.y - h : anchor === 'center' ? p.y - h / 2 : p.y;
+    const rect = spriteRect(dctx.projector, node, src ? { w: src.w, h: src.h } : { w: tex.width, h: tex.height });
+    const { w, h } = rect;
+    const dx = rect.x;
+    const dy = rect.y;
 
     painter.save();
     if (node.opacity !== undefined && node.opacity !== 1) painter.setAlpha(node.opacity);

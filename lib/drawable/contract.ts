@@ -66,6 +66,47 @@ export interface DrawContext {
     invalidate: () => void;
 }
 
+/** The minimal geometry a sprite-like descriptor declares for placement. */
+export interface SpritePlacement {
+    position: ScenePos;
+    anchor?: DrawableAnchor;
+    /** Draw width in world units (fractions of `projector.tileWidth`). */
+    width?: number;
+    /** Draw height in world units (fractions of `projector.tileWidth`). */
+    height?: number;
+}
+
+export interface SpriteRect {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+}
+
+/**
+ * The painted rectangle of a sprite-like descriptor — the ONE anchor/size math,
+ * shared by the sprite painter (destination rect) and the hit-test (pointer
+ * containment) so a click always resolves against exactly what was painted.
+ * Default size is one cell on tile grids; `free`/`side` callers pass explicit
+ * sizes (their painter falls back to native texture px only when omitted, which
+ * no descriptor-driven board does).
+ */
+export function spriteRect(projector: Projector, node: SpritePlacement, natural?: { w: number; h: number }): SpriteRect {
+    const tw = projector.tileWidth;
+    const fallbackW = projector.worldPixelDirect ? (natural?.w ?? 0) : tw;
+    const fallbackH = projector.worldPixelDirect ? (natural?.h ?? 0) : tw;
+    const w = node.width !== undefined ? node.width * tw : fallbackW;
+    const h = node.height !== undefined ? node.height * tw : fallbackH;
+    const anchor: DrawableAnchor = node.anchor ?? 'top-left';
+    const p = projector.anchorPoint(node.position, anchor);
+    return {
+        x: anchor === 'top-left' ? p.x : p.x - w / 2,
+        y: anchor === 'ground' ? p.y - h : anchor === 'center' ? p.y - h / 2 : p.y,
+        w,
+        h,
+    };
+}
+
 /** Common shape of every drawable descriptor. `type` keys the host's paint dispatch. */
 export interface DrawableBase {
     type: string;

@@ -96,6 +96,9 @@ export interface CanvasProps {
     featureClickEvent?: EventEmit<{ featureId: string; x: number; z: number; type?: string; elevation?: number }>;
     keyMap?: Record<string, string>;
     keyUpMap?: Record<string, string>;
+    /** Declarative JSX drawable children (`<DrawShape .../>` composed in paint order).
+     *  Forwarded to the 2D host, which collects them via drawable registry context. */
+    children?: React.ReactNode;
 }
 
 const canvasLog = createLogger('almadar:ui:game-canvas');
@@ -142,6 +145,7 @@ export function Canvas({
     featureClickEvent,
     keyMap,
     keyUpMap,
+    children,
 }: CanvasProps): React.JSX.Element {
     canvasLog.debug('Canvas render', { mode, drawablesCount: drawables?.length, projection, camera: camera ? JSON.stringify(camera) : undefined });
     const zoom = camera?.zoom;
@@ -200,6 +204,7 @@ export function Canvas({
             tileLeaveEvent={tileLeaveEvent}
             keyMap={keyMap}
             keyUpMap={keyUpMap}
+            {...(children !== undefined ? { children } : {})}
         />
     );
 }
