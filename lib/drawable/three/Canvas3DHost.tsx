@@ -38,14 +38,16 @@ import type { ThreeEvent } from '@react-three/fiber';
 import type { EventEmit, Asset, ScenePos } from '@almadar/core';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { collectDrawnItems, buildHitIndex } from '../hitTest';
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { OrbitControls, Grid } from '@react-three/drei';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import { useGameCanvas3DEvents } from './hooks/useGameCanvas3DEvents';
 import { Canvas3DLoadingState } from './Canvas3DLoadingState';
 import { Canvas3DErrorBoundary } from './Canvas3DErrorBoundary';
 import { Lighting3D } from './Lighting3D';
+import { Effects3D } from './Effects3D';
 import { CameraController3D, FollowCamera3D } from './GameCamera3D';
 import { Drawable3D } from './Drawable3D';
 import { create3DProjector } from '../projector3d';
@@ -78,12 +80,61 @@ export type MapOrientation = 'standard' | 'rotated';
 /** Overlay control */
 export type OverlayControl = 'default' | 'hidden' | 'minimap';
 
+/** Single light's tunable knobs (ambient/directional share this shape). */
+export interface CanvasLightConfig {
+    intensity?: number;
+    color?: string;
+    position?: [number, number, number];
+}
+
+/** Hemisphere (sky/ground) light config. */
+export interface CanvasHemisphereConfig {
+    intensity?: number;
+    color?: string;
+    groundColor?: string;
+}
+
+/** Point light config — `position` is required since a point light has no
+ *  meaningful default placement. */
+export interface CanvasPointLightConfig {
+    intensity?: number;
+    color?: string;
+    position: [number, number, number];
+    distance?: number;
+    decay?: number;
+}
+
+/** Canvas-level 3D light rig, authored as data. Every field is optional — an
+ *  omitted field falls back to today's fixed rig (the defaults live in `Lighting3D`). */
+export interface CanvasLighting {
+    /** Default intensity 0.6, color '#ffffff'. */
+    ambient?: CanvasLightConfig;
+    /** Default intensity 0.8, color '#ffffff', position [10, 20, 10]. */
+    directional?: CanvasLightConfig;
+    /** Default intensity 0.3, color '#87ceeb', groundColor '#362d1d'. */
+    hemisphere?: CanvasHemisphereConfig;
+    /** Additional point lights. Default none. */
+    points?: CanvasPointLightConfig[];
+    /** Procedural environment for PBR reflection (metals/glass). 'room' uses three's
+     *  RoomEnvironment via PMREMGenerator — no network fetch. Default 'none' (today's
+     *  look). */
+    environment?: 'room' | 'none';
+}
+
+/** Canvas-level post-processing stack. Every field is optional — an omitted field
+ *  means that pass is not mounted. */
+export interface CanvasPost {
+    bloom?: { intensity?: number; threshold?: number; smoothing?: number };
+    vignette?: { offset?: number; darkness?: number };
+}
+
 /** Props for GameCanvas3D component */
 export interface Canvas3DHostProps {
     // --- Closed-circuit ---
     /** Additional CSS classes */
     className?: string;
-    /** Children to render inside the 3D canvas (e.g., physics objects, custom meshes) */
+    /** Declarative JSX drawable children — rendered in a hidden DOM mount where they
+     *  register their descriptors via DrawableRegistryContext (same contract as Canvas2D). */
     children?: React.ReactNode;
     /** Neutral drawable descriptors — the same `children` vocabulary as Canvas2D. The
      *  host maps each through `Drawable3D` to a mesh. */
@@ -150,6 +201,12 @@ export interface Canvas3DHostProps {
     pixelsPerUnit?: number;
     /** Perspective field of view in degrees — the neutral `Camera.fov`. Default 45. */
     fov?: number;
+    /** 3D scene light rig as data — ambient/directional/hemisphere/point lights + optional
+     *  'room' environment. Omitted → the standard fixed rig (this host's current
+     *  hardcoded lights, unchanged). */
+    lighting?: CanvasLighting;
+    /** 3D post-processing stack — bloom + vignette. Omitted → no composer pass mounted. */
+    post?: CanvasPost;
 }
 
 /** Grid configuration */
@@ -181,6 +238,28 @@ export interface Canvas3DHostHandle {
 }
 
 /**
+ * RoomEnvironment3D — mounts three's `RoomEnvironment` through a `PMREMGenerator` so
+ * PBR surfaces (metals/glass) pick up a procedural reflection with no network fetch.
+ * Disposes the generated texture and restores `scene.environment` to null on unmount.
+ */
+function RoomEnvironment3D(): null {
+    const { gl, scene } = useThree(({ gl, scene }) => ({ gl, scene }));
+
+    useEffect(() => {
+        const pmremGenerator = new THREE.PMREMGenerator(gl);
+        const envTexture = pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
+        scene.environment = envTexture;
+        return () => {
+            scene.environment = null;
+            envTexture.dispose();
+            pmremGenerator.dispose();
+        };
+    }, [gl, scene]);
+
+    return null;
+}
+
+/**
  * Canvas3DHost — thin 3D draw-host. Walks `drawables` through `Drawable3D`.
  */
 export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
@@ -209,6 +288,8 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
             keyUpMap,
             pixelsPerUnit,
             fov,
+            lighting,
+            post,
             children,
             drawables,
         },
@@ -219,6 +300,12 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
         const [internalError, setInternalError] = useState<string | null>(null);
         const eventBus = useEventBus();
         const keysRef = useRef<Set<string>>(new Set());
+
+        // JSX drawable children are collected by the UNIFIED Canvas (main chunk) and
+        // arrive pre-merged in `drawables`: a DrawableRegistryContext provider in this
+        // lazy chunk would be a different module instance from the one the drawable
+        // atoms read, so registration must happen outside the three bundle.
+        const allDrawables = useMemo(() => drawables ?? [], [drawables]);
 
         // Keyboard → the board's SEMANTIC events via the declarative keyMap/keyUpMap.
         // The input layer only translates device keycodes; the FSM stays device-agnostic.
@@ -260,7 +347,7 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
         });
 
         // Scene bounds + click hit-index derived from the drawn descriptors (no tile data prop).
-        const drawnItems = useMemo(() => collectDrawnItems(drawables ?? []), [drawables]);
+        const drawnItems = useMemo(() => collectDrawnItems(allDrawables), [allDrawables]);
         const scenePositions = useMemo(() => drawnItems.map((i) => i.pos), [drawnItems]);
         const hitIndex = useMemo(() => buildHitIndex(drawnItems), [drawnItems]);
         const gridBounds = useMemo(() => {
@@ -481,7 +568,18 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                             shadowCameraSize={5}
                             shadowCameraNear={0.5}
                             shadowCameraFar={500}
+                            ambientIntensity={lighting?.ambient?.intensity}
+                            ambientColor={lighting?.ambient?.color}
+                            directionalIntensity={lighting?.directional?.intensity}
+                            directionalColor={lighting?.directional?.color}
+                            directionalPosition={lighting?.directional?.position}
+                            hemisphereIntensity={lighting?.hemisphere?.intensity}
+                            hemisphereColor={lighting?.hemisphere?.color}
+                            hemisphereGroundColor={lighting?.hemisphere?.groundColor}
+                            points={lighting?.points}
                         />
+
+                        {lighting?.environment === 'room' && <RoomEnvironment3D />}
 
                         {showGrid && (
                             <Grid
@@ -509,9 +607,9 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                             mapped through Drawable3D to a mesh; raw descriptors never reach
                             `<group>{children}` (R3F throws). Same `children` vocabulary as
                             Canvas2D — this is what makes the two hosts one interface. */}
-                        {drawables && drawables.length > 0 && (
+                        {allDrawables.length > 0 && (
                             <group>
-                                {drawables.map((node, i) => (
+                                {allDrawables.map((node, i) => (
                                     <Drawable3D key={i} node={node} projector={drawableProjector} />
                                 ))}
                             </group>
@@ -539,8 +637,7 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                             </mesh>
                         )}
 
-                        {/* Custom children */}
-                        {children}
+                        {post && (post.bloom || post.vignette) ? <Effects3D post={post} /> : null}
 
                         {/* Camera controls — disabled while FollowCamera3D is authoritative */}
                         <OrbitControls

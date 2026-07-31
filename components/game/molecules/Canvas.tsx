@@ -25,12 +25,13 @@
  */
 
 import * as React from 'react';
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import { createLogger } from '@almadar/logger';
 import type { Asset, AssetUrl, Camera, EventEmit } from '@almadar/core';
 import type { DrawableNode } from '../../../lib/drawable/paintDispatch';
+import { DrawableRegistryContext, type DrawableRegistrar } from '../../../lib/drawable/registry';
 import { Canvas2D, type CameraMode as Canvas2DCameraMode, type Projection } from './Canvas2D';
-import type { Canvas3DHostProps } from '../../../lib/drawable/three/Canvas3DHost';
+import type { Canvas3DHostProps, CanvasLighting, CanvasPost } from '../../../lib/drawable/three/Canvas3DHost';
 
 /** Lazy 3D host — keeps three/R3F out of the bundle unless a 3D canvas renders.
  *  MUST import the external `@almadar/ui/.../game/three` subpath (not a relative
@@ -82,6 +83,12 @@ export interface CanvasProps {
     showCoordinates?: boolean;
     showTileInfo?: boolean;
     fogOfWar?: boolean[][];
+    /** 3D scene light rig as data — ambient/directional/hemisphere/point lights + optional
+     *  'room' environment for PBR reflections. Omitted → the standard fixed rig. */
+    lighting?: CanvasLighting;
+    /** 3D post-processing stack — bloom (emissive glow / neon) and vignette. Omitted →
+     *  no post pass. */
+    post?: CanvasPost;
 
     // --- Shared interaction (LOLO-owned). The painter emitted at runtime depends on
     //     `mode`, so the payload is genuinely mode-polymorphic: an INTERSECTION of the
@@ -138,6 +145,8 @@ export function Canvas({
     showCoordinates,
     showTileInfo,
     fogOfWar,
+    lighting,
+    post,
     tileClickEvent,
     unitClickEvent,
     tileHoverEvent,
@@ -150,10 +159,36 @@ export function Canvas({
     canvasLog.debug('Canvas render', { mode, drawablesCount: drawables?.length, projection, camera: camera ? JSON.stringify(camera) : undefined });
     const zoom = camera?.zoom;
 
+    // 3D-mode JSX drawable children — collected HERE (the main chunk) rather than
+    // in the lazy 3D host: the three chunk bundles its own copy of `registry.ts`,
+    // so a provider inside it would be a DIFFERENT context object from the one the
+    // drawable atoms' `useContext` reads. Children render in a hidden DOM div
+    // (React context cannot cross the R3F renderer boundary anyway), register
+    // during the pass, and the commit effect adopts them into state so the host
+    // re-renders with the merged `drawables`. Canvas2D keeps its own provider.
+    const childDrawablesRef = useRef<DrawableNode[]>([]);
+    if (mode === '3d') childDrawablesRef.current = [];
+    const registerChildDrawable: DrawableRegistrar = useCallback((node) => {
+        childDrawablesRef.current.push(node);
+    }, []);
+    const [childDrawables, setChildDrawables] = useState<DrawableNode[]>([]);
+    useEffect(() => {
+        if (mode !== '3d') return;
+        const next = childDrawablesRef.current;
+        canvasLog.debug('children:adopt', { registered: next.length, adopted: childDrawables.length });
+        // A render pass where the (unchanged) children bailed out of re-rendering
+        // registers nothing — that is NOT "children went empty"; keep the adopted
+        // set. Only an actual unmount of the children clears it (count 0 below).
+        if (next.length === 0 && React.Children.count(children) > 0) return;
+        setChildDrawables((prev) =>
+            prev.length === next.length && JSON.stringify(prev) === JSON.stringify(next) ? prev : [...next],
+        );
+    });
+
     if (mode === '3d') {
         const props3d: Canvas3DHostProps = {
             className,
-            drawables,
+            drawables: [...(drawables ?? []), ...childDrawables],
             isLoading,
             cameraMode: to3DCameraMode(camera?.mode),
             ...(zoom !== undefined ? { scale: zoom } : {}),
@@ -169,6 +204,8 @@ export function Canvas({
             showCoordinates,
             showTileInfo,
             fogOfWar,
+            lighting,
+            post,
             tileClickEvent,
             unitClickEvent,
             tileHoverEvent,
@@ -178,9 +215,18 @@ export function Canvas({
             keyUpMap,
         };
         return (
-            <Suspense fallback={null}>
-                <Canvas3DHost {...props3d} />
-            </Suspense>
+            <>
+                <Suspense fallback={null}>
+                    <Canvas3DHost {...props3d} />
+                </Suspense>
+                {/* Hidden mount for JSX drawable children — they render null but
+                    register their descriptors via DrawableRegistryContext. */}
+                {React.Children.count(children) > 0 && (
+                    <DrawableRegistryContext.Provider value={registerChildDrawable}>
+                        <div aria-hidden="true" style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>{children}</div>
+                    </DrawableRegistryContext.Provider>
+                )}
+            </>
         );
     }
 

@@ -9,6 +9,7 @@
 
 import React from 'react';
 import * as THREE from 'three';
+import type { CanvasPointLightConfig } from './Canvas3DHost';
 
 export interface Lighting3DProps {
     /** Ambient light intensity */
@@ -21,6 +22,14 @@ export interface Lighting3DProps {
     directionalColor?: string;
     /** Directional light position */
     directionalPosition?: [number, number, number];
+    /** Hemisphere (sky/ground) light intensity */
+    hemisphereIntensity?: number;
+    /** Hemisphere sky color */
+    hemisphereColor?: string;
+    /** Hemisphere ground color */
+    hemisphereGroundColor?: string;
+    /** Additional point lights, authored as data */
+    points?: CanvasPointLightConfig[];
     /** Enable shadows */
     shadows?: boolean;
     /** Shadow map size */
@@ -61,6 +70,10 @@ export function Lighting3D({
     directionalIntensity = 0.8,
     directionalColor = '#ffffff',
     directionalPosition = [10, 20, 10],
+    hemisphereIntensity = 0.3,
+    hemisphereColor = '#87ceeb',
+    hemisphereGroundColor = '#362d1d',
+    points,
     shadows = true,
     shadowMapSize = 2048,
     shadowCameraSize = 20,
@@ -94,10 +107,22 @@ export function Lighting3D({
 
             {/* Hemisphere Light for natural outdoor feel */}
             <hemisphereLight
-                intensity={0.3}
-                color="#87ceeb"
-                groundColor="#362d1d"
+                intensity={hemisphereIntensity}
+                color={hemisphereColor}
+                groundColor={hemisphereGroundColor}
             />
+
+            {/* Additional point lights, authored as data */}
+            {points?.map((p, i) => (
+                <pointLight
+                    key={i}
+                    position={p.position}
+                    intensity={p.intensity}
+                    color={p.color}
+                    distance={p.distance}
+                    decay={p.decay}
+                />
+            ))}
 
             {/* Light Helpers (debug) */}
             {showHelpers && (

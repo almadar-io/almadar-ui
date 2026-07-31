@@ -38,7 +38,7 @@ export function Drawable3D({ node, projector, groupOpacity = 1 }: Drawable3DProp
         case 'draw-shape':
             return <Shape3D node={node} projector={projector} groupOpacity={groupOpacity} />;
         case 'draw-text':
-            return <Text3D node={node} projector={projector} />;
+            return <Text3D node={node} projector={projector} groupOpacity={groupOpacity} />;
         case 'draw-mesh':
             return <Mesh3D node={node} projector={projector} groupOpacity={groupOpacity} />;
         case 'draw-sprite-layer':
@@ -61,7 +61,7 @@ export function Drawable3D({ node, projector, groupOpacity = 1 }: Drawable3DProp
             return (
                 <>
                     {node.items.map((item, i) => (
-                        <Text3D key={i} node={item} projector={projector} />
+                        <Text3D key={i} node={item} projector={projector} groupOpacity={groupOpacity} />
                     ))}
                 </>
             );

@@ -8,10 +8,11 @@
  * canvas-3d render the same `children`.
  */
 import React from 'react';
+import { useFrame } from '@react-three/fiber';
 import { Billboard, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import type { DrawSpriteProps } from '../../../components/game/atoms/DrawSprite';
-import type { DrawShapeProps } from '../../../components/game/atoms/DrawShape';
+import { applyShapeAnimation, isAnimatedShape, type DrawShapeProps } from '../../../components/game/atoms/DrawShape';
 import type { DrawTextProps } from '../../../components/game/atoms/DrawText';
 import type { Projector3D } from '../projector3d';
 import { isValidScenePos } from '../contract';
@@ -244,10 +245,33 @@ export function Sprite3D({ node, projector, groupOpacity = 1 }: { node: DrawSpri
     return <SpriteBillboard node={node} world={projector.toWorld(node.position)} cellSize={projector.cellSize} groupOpacity={groupOpacity} />;
 }
 
-/** R3F mesh backend for `draw-shape`: a flat mesh on the ground plane. */
+/** R3F mesh backend for `draw-shape`: a flat mesh on the ground plane. An animated shape
+ *  (`node.animation`) advances its transform/material tracks via `useFrame` ref mutation —
+ *  no React re-render, matching `Mesh3D`'s animation path. */
 export function Shape3D({ node, projector, groupOpacity = 1 }: { node: DrawShapeProps; projector: Projector3D; groupOpacity?: number }): React.JSX.Element | null {
-    if (!isValidScenePos(node.position)) return null;
-    const world = projector.toWorld(node.position);
+    const groupRef = React.useRef<THREE.Group>(null);
+    const materialRef = React.useRef<THREE.MeshBasicMaterial>(null);
+    const animated = isAnimatedShape(node);
+    const validPos = isValidScenePos(node.position);
+    const world: [number, number, number] = validPos ? projector.toWorld(node.position) : [0, 0, 0];
+
+    useFrame(({ clock }) => {
+        if (!animated || !groupRef.current) return;
+        const view = applyShapeAnimation(node, clock.elapsedTime * 1000);
+        groupRef.current.position.set(
+            world[0] + (view.offsetX ?? 0) * projector.cellSize,
+            world[1] + 0.02,
+            world[2] + (view.offsetY ?? 0) * projector.cellSize,
+        );
+        groupRef.current.rotation.y = -(view.rotate ?? 0);
+        const mat = materialRef.current;
+        if (mat) {
+            mat.opacity = (view.opacity ?? node.opacity ?? 1) * groupOpacity;
+            if (view.fill) mat.color.set(view.fill);
+        }
+    });
+
+    if (!validPos) return null;
     const color = node.fill ?? node.stroke ?? '#ffffff';
 
     let geometry: React.JSX.Element;
@@ -289,15 +313,18 @@ export function Shape3D({ node, projector, groupOpacity = 1 }: { node: DrawShape
     }
 
     return (
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[world[0], world[1] + 0.02, world[2]]}>
-            {geometry}
-            <meshBasicMaterial color={color} transparent opacity={(node.opacity ?? 1) * groupOpacity} side={THREE.DoubleSide} />
-        </mesh>
+        <group ref={groupRef} position={[world[0], world[1] + 0.02, world[2]]}>
+            <mesh rotation={[-Math.PI / 2, 0, 0]}>
+                {geometry}
+                <meshBasicMaterial ref={materialRef} color={color} transparent opacity={(node.opacity ?? 1) * groupOpacity} side={THREE.DoubleSide} />
+            </mesh>
+        </group>
     );
 }
 
-/** R3F mesh backend for `draw-text`: a billboarded drei `<Text>` above the scene position. */
-export function Text3D({ node, projector }: { node: DrawTextProps; projector: Projector3D }): React.JSX.Element | null {
+/** R3F mesh backend for `draw-text`: a billboarded drei `<Text>` above the scene position.
+ *  `groupOpacity` (enclosing `draw-group`) multiplies the fill/outline opacity. */
+export function Text3D({ node, projector, groupOpacity = 1 }: { node: DrawTextProps; projector: Projector3D; groupOpacity?: number }): React.JSX.Element | null {
     if (!isValidScenePos(node.position)) return null;
     const world = projector.toWorld(node.position);
     return (
@@ -309,6 +336,8 @@ export function Text3D({ node, projector }: { node: DrawTextProps; projector: Pr
                 anchorY="middle"
                 outlineWidth={0.02}
                 outlineColor="#000000"
+                fillOpacity={groupOpacity}
+                outlineOpacity={groupOpacity}
             >
                 {node.text}
             </Text>
