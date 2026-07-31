@@ -148,6 +148,8 @@ export interface Canvas3DHostProps {
     /** Pixel→world-unit divisor for pixel-authored (side-view) scenes: world size =
      *  scene size ÷ `pixelsPerUnit`. Omitted → 1 world unit per scene unit (grid boards). */
     pixelsPerUnit?: number;
+    /** Perspective field of view in degrees — the neutral `Camera.fov`. Default 45. */
+    fov?: number;
 }
 
 /** Grid configuration */
@@ -206,6 +208,7 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
             keyMap,
             keyUpMap,
             pixelsPerUnit,
+            fov,
             children,
             drawables,
         },
@@ -364,20 +367,21 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
             const cx = cameraTarget[0];
             const cz = cameraTarget[2];
             const d = size * 1.0;
+            const fovDeg = fov ?? 45;
 
             switch (cameraMode) {
                 case 'isometric':
-                    return { position: [cx + d, d * 0.8, cz + d] as [number, number, number], fov: 45 };
+                    return { position: [cx + d, d * 0.8, cz + d] as [number, number, number], fov: fovDeg };
                 case 'top-down':
                     // A small forward tilt avoids the OrbitControls gimbal lock at exactly-overhead.
-                    return { position: [cx, d * 2, cz + d * 0.35] as [number, number, number], fov: 45 };
+                    return { position: [cx, d * 2, cz + d * 0.35] as [number, number, number], fov: fovDeg };
                 case 'follow':
-                    return { position: [cx, d * 0.5, cz + d] as [number, number, number], fov: 45 };
+                    return { position: [cx, d * 0.5, cz + d] as [number, number, number], fov: fovDeg };
                 case 'perspective':
                 default:
-                    return { position: [cx + d, d, cz + d] as [number, number, number], fov: 45 };
+                    return { position: [cx + d, d, cz + d] as [number, number, number], fov: fovDeg };
             }
-        }, [cameraMode, gridBounds, cellSize, cameraTarget]);
+        }, [cameraMode, gridBounds, cellSize, cameraTarget, fov]);
 
         // Follow target in world space — the neutral `Camera.target`, else scene centre.
         const followWorld = useMemo((): [number, number, number] => {

@@ -64,6 +64,13 @@ export interface DrawContext {
     time: number;
     /** Force a host re-draw once an async resource (image / atlas JSON) has loaded. */
     invalidate: () => void;
+    /**
+     * Accumulated `draw-group` scale on the painter transform (1 / undefined outside
+     * groups). `strokeWidth` and `shadow.blur` are contractually painter-px, so shape
+     * painters compensate against this — geometry scales with the group, line weights
+     * and glows do not. The host camera zoom is deliberately NOT included.
+     */
+    groupScale?: number;
 }
 
 /** The minimal geometry a sprite-like descriptor declares for placement. */

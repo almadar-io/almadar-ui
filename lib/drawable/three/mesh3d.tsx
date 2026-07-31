@@ -110,7 +110,7 @@ function useAtlasFrame(asset: DrawSpriteProps['asset']): { frame: SpriteFrame | 
     }, [asset, tick]);
 }
 
-function SpriteBillboard({ node, world, cellSize = 1 }: { node: DrawSpriteProps; world: [number, number, number]; cellSize?: number }): React.JSX.Element {
+function SpriteBillboard({ node, world, cellSize = 1, groupOpacity = 1 }: { node: DrawSpriteProps; world: [number, number, number]; cellSize?: number; groupOpacity?: number }): React.JSX.Element {
     const { texture, error: textureError } = useBillboardTexture(node.asset.url);
     const { frame: atlasFrame, ready: atlasReady } = useAtlasFrame(node.asset);
 
@@ -182,7 +182,7 @@ function SpriteBillboard({ node, world, cellSize = 1 }: { node: DrawSpriteProps;
                         transparent
                         alphaTest={0.1}
                         side={THREE.DoubleSide}
-                        opacity={node.opacity ?? 1}
+                        opacity={(node.opacity ?? 1) * groupOpacity}
                     />
                 </mesh>
             </group>
@@ -205,8 +205,9 @@ function SpriteBillboard({ node, world, cellSize = 1 }: { node: DrawSpriteProps;
     );
 }
 
-/** R3F mesh backend for `draw-sprite`: a GLB via `ModelLoader` when `asset.dimension === '3d'`; else a billboard. */
-export function Sprite3D({ node, projector }: { node: DrawSpriteProps; projector: Projector3D }): React.JSX.Element | null {
+/** R3F mesh backend for `draw-sprite`: a GLB via `ModelLoader` when `asset.dimension === '3d'`; else a billboard.
+ *  `groupOpacity` (enclosing `draw-group`) multiplies billboard opacity; GLB materials are the model's own. */
+export function Sprite3D({ node, projector, groupOpacity = 1 }: { node: DrawSpriteProps; projector: Projector3D; groupOpacity?: number }): React.JSX.Element | null {
     const asset = node.asset;
     // Mirrors the 2D `paintSprite` contract: a drawable with no resolvable asset
     // or position renders nothing — it never throws (one bad item must not blank the scene).
@@ -231,7 +232,7 @@ export function Sprite3D({ node, projector }: { node: DrawSpriteProps; projector
                 <ModelLoader
                     url={asset.url}
                     scale={scale}
-                    rotation={[0, node.rotation ?? 0, 0]}
+                    rotation={[0, ((node.rotation ?? 0) * 180) / Math.PI, 0]}
                     animation={node.animation}
                     fallbackGeometry="box"
                     castShadow
@@ -240,11 +241,11 @@ export function Sprite3D({ node, projector }: { node: DrawSpriteProps; projector
             </group>
         );
     }
-    return <SpriteBillboard node={node} world={projector.toWorld(node.position)} cellSize={projector.cellSize} />;
+    return <SpriteBillboard node={node} world={projector.toWorld(node.position)} cellSize={projector.cellSize} groupOpacity={groupOpacity} />;
 }
 
 /** R3F mesh backend for `draw-shape`: a flat mesh on the ground plane. */
-export function Shape3D({ node, projector }: { node: DrawShapeProps; projector: Projector3D }): React.JSX.Element | null {
+export function Shape3D({ node, projector, groupOpacity = 1 }: { node: DrawShapeProps; projector: Projector3D; groupOpacity?: number }): React.JSX.Element | null {
     if (!isValidScenePos(node.position)) return null;
     const world = projector.toWorld(node.position);
     const color = node.fill ?? node.stroke ?? '#ffffff';
@@ -290,7 +291,7 @@ export function Shape3D({ node, projector }: { node: DrawShapeProps; projector: 
     return (
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[world[0], world[1] + 0.02, world[2]]}>
             {geometry}
-            <meshBasicMaterial color={color} transparent opacity={node.opacity ?? 1} side={THREE.DoubleSide} />
+            <meshBasicMaterial color={color} transparent opacity={(node.opacity ?? 1) * groupOpacity} side={THREE.DoubleSide} />
         </mesh>
     );
 }

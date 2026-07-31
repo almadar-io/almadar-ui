@@ -29,9 +29,35 @@ const imageByHandle = new WeakMap<TextureHandle, HTMLImageElement>();
  * fires when a texture requested via `resolveTexture` finishes loading, so a
  * draw-host can schedule a re-draw.
  */
+// Deterministic 0..1 hash per noise cell — same grain every paint, no RNG state.
+const noiseHash = (x: number, y: number): number => {
+    const s = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+    return s - Math.floor(s);
+};
+
+const NOISE_CELLS = 32;
+
+function makeNoiseTile(alpha: number, color: string): HTMLCanvasElement {
+    const tile = document.createElement('canvas');
+    tile.width = NOISE_CELLS;
+    tile.height = NOISE_CELLS;
+    const t = tile.getContext('2d');
+    if (t) {
+        t.fillStyle = color;
+        for (let y = 0; y < NOISE_CELLS; y++) {
+            for (let x = 0; x < NOISE_CELLS; x++) {
+                t.globalAlpha = noiseHash(x, y) * alpha;
+                t.fillRect(x, y, 1, 1);
+            }
+        }
+    }
+    return tile;
+}
+
 export function createWebPainter(ctx: CanvasRenderingContext2D, onAssetLoad?: () => void): Painter2D {
     let vw = 0;
     let vh = 0;
+    const patternCache = new Map<string, CanvasPattern | null>();
 
     const tracePoly = (points: readonly PainterPoint[], closed: boolean): void => {
         if (points.length === 0) return;
@@ -41,12 +67,34 @@ export function createWebPainter(ctx: CanvasRenderingContext2D, onAssetLoad?: ()
         if (closed) ctx.closePath();
     };
 
-    const toCanvasStyle = (style: PaintStyle): string | CanvasGradient => {
+    const toCanvasPattern = (style: Extract<PaintStyle, { kind: 'noise' | 'image' }>): CanvasPattern | string => {
+        const key = JSON.stringify(style);
+        let pattern = patternCache.get(key);
+        if (pattern === undefined) {
+            if (style.kind === 'noise') {
+                pattern = ctx.createPattern(makeNoiseTile(style.alpha ?? 0.12, style.color ?? '#000000'), 'repeat');
+            } else {
+                const img = getOrLoadImage(style.url, onAssetLoad);
+                if (!img) return 'rgba(0,0,0,0)'; // still loading — repaint fills it in
+                pattern = ctx.createPattern(img, 'repeat');
+            }
+            if (pattern && style.scale !== undefined && style.scale !== 1) {
+                pattern.setTransform(new DOMMatrix().scale(style.scale));
+            }
+            patternCache.set(key, pattern);
+        }
+        return pattern ?? 'rgba(0,0,0,0)';
+    };
+
+    const toCanvasStyle = (style: PaintStyle): string | CanvasGradient | CanvasPattern => {
         if (typeof style === 'string') return style;
+        if (style.kind === 'noise' || style.kind === 'image') return toCanvasPattern(style);
         const g =
             style.kind === 'linear'
                 ? ctx.createLinearGradient(style.x1, style.y1, style.x2, style.y2)
-                : ctx.createRadialGradient(style.cx, style.cy, 0, style.cx, style.cy, style.r);
+                : style.kind === 'conic'
+                  ? ctx.createConicGradient(style.angle, style.cx, style.cy)
+                  : ctx.createRadialGradient(style.cx, style.cy, 0, style.cx, style.cy, style.r);
         for (const stop of style.stops) g.addColorStop(stop.offset, stop.color);
         return g;
     };
@@ -82,6 +130,19 @@ export function createWebPainter(ctx: CanvasRenderingContext2D, onAssetLoad?: ()
         setShadow(shadow: PainterShadow | null) {
             ctx.shadowColor = shadow ? shadow.color : 'transparent';
             ctx.shadowBlur = shadow ? shadow.blur : 0;
+        },
+        setBlend(mode: GlobalCompositeOperation | null) {
+            ctx.globalCompositeOperation = mode ?? 'source-over';
+        },
+        setLineDash(pattern: readonly number[] | null, offset = 0) {
+            ctx.setLineDash(pattern ? [...pattern] : []);
+            ctx.lineDashOffset = offset;
+        },
+        setBlur(px: number | null) {
+            ctx.filter = px && px > 0 ? `blur(${px}px)` : 'none';
+        },
+        clipPath(d: string) {
+            ctx.clip(new Path2D(d));
         },
 
         resolveTexture(url: string): TextureHandle | null {

@@ -157,6 +157,7 @@ export function Canvas({
             isLoading,
             cameraMode: to3DCameraMode(camera?.mode),
             ...(zoom !== undefined ? { scale: zoom } : {}),
+            ...(camera?.fov !== undefined ? { fov: camera.fov } : {}),
             ...(camera?.target !== undefined ? { followTarget: camera.target } : {}),
             unitScale,
             backgroundColor,

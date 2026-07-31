@@ -23,6 +23,30 @@ import { useContext } from 'react';
 
 export type ShapeKind = 'cell' | 'rect' | 'ellipse' | 'poly' | 'path';
 
+/** Composite modes a shape may blend with — the canvas `globalCompositeOperation` set, spelled out so the pattern schema carries a real enum. */
+export type DrawShapeBlendMode =
+    | 'source-over'
+    | 'lighter'
+    | 'multiply'
+    | 'screen'
+    | 'overlay'
+    | 'darken'
+    | 'lighten'
+    | 'color-dodge'
+    | 'color-burn'
+    | 'hard-light'
+    | 'soft-light'
+    | 'difference'
+    | 'exclusion'
+    | 'hue'
+    | 'saturation'
+    | 'color'
+    | 'luminosity'
+    | 'source-atop'
+    | 'destination-over'
+    | 'destination-out'
+    | 'xor';
+
 /** One gradient color stop; `offset` is 0..1 along the gradient axis. */
 export type DrawShapeGradientStop = PainterGradientStop;
 
@@ -31,17 +55,36 @@ export type DrawShapeGradientStop = PainterGradientStop;
  * same coordinate convention as `points` and `d`. Overrides `fill` when present.
  */
 export interface DrawShapeGradient {
-    kind: 'linear' | 'radial';
+    kind: 'linear' | 'radial' | 'conic';
     /** Linear start point in world units. */
     from?: PainterPoint;
     /** Linear end point in world units. */
     to?: PainterPoint;
-    /** Radial center in world units. */
+    /** Radial/conic center in world units. */
     center?: PainterPoint;
     /** Radial radius in world units. */
     radius?: number;
+    /** Conic start angle in radians. */
+    angle?: number;
     /** Ordered color stops. */
     stops: DrawShapeGradientStop[];
+}
+
+/**
+ * A repeating texture painted OVER the fill, clipped to the same geometry —
+ * procedural grain (`noise`) or a tiling image. `scale` is painter-px per noise
+ * cell (default 2) / an image scale multiplier; grain stays constant-px under
+ * group scale, like strokes.
+ */
+export interface DrawShapeFillPattern {
+    kind: 'noise' | 'image';
+    /** Image pattern URL (`kind: 'image'`). */
+    url?: string;
+    scale?: number;
+    /** Noise speckle max alpha (default 0.12). */
+    alpha?: number;
+    /** Noise speckle color (default black). */
+    color?: string;
 }
 
 /** A soft glow / drop-shadow behind the shape; `blur` is in world units. */
@@ -65,6 +108,8 @@ export interface DrawShapeKeyframe {
     width?: number;
     height?: number;
     strokeWidth?: number;
+    strokeDashOffset?: number;
+    blur?: number;
     fill?: string;
     stroke?: string;
     shadow?: DrawShapeShadow;
@@ -111,8 +156,20 @@ export interface DrawShapeProps extends DrawableBase {
     fill?: string;
     /** Gradient fill in world units; overrides `fill` when present. */
     gradient?: DrawShapeGradient;
+    /** Repeating texture painted over the fill (grain / tiling image). */
+    fillPattern?: DrawShapeFillPattern;
     stroke?: string;
     strokeWidth?: number;
+    /** Gradient stroke in world units; overrides `stroke` when present. */
+    strokeGradient?: DrawShapeGradient;
+    /** Dash pattern in painter-px (constant under group scale, like `strokeWidth`). */
+    strokeDash?: number[];
+    /** Dash phase offset in painter-px; animatable (marching ants). */
+    strokeDashOffset?: number;
+    /** Composite/blend mode for this shape's draws (`lighter`, `multiply`, `screen`, …). */
+    blendMode?: DrawShapeBlendMode;
+    /** Gaussian blur in painter-px. Expensive — forces an intermediate raster; use sparingly. */
+    blur?: number;
     /** Rotation in radians (painter units, same as `draw-group`), about `pivot`. */
     rotate?: number;
     /** Rotation pivot in world units relative to the cell's projected top-left; default `{x:0.5, y:0.5}` (cell center). */
@@ -136,6 +193,8 @@ const NUMERIC_TRACKS = [
     'width',
     'height',
     'strokeWidth',
+    'strokeDashOffset',
+    'blur',
 ] as const;
 
 /** True when this animation has something to play. */
@@ -221,6 +280,16 @@ function gradientStyle(g: DrawShapeGradient, ox: number, oy: number, scale: numb
             stops: g.stops,
         };
     }
+    if (g.kind === 'conic') {
+        if (!g.center) return undefined;
+        return {
+            kind: 'conic',
+            cx: ox + g.center.x * scale,
+            cy: oy + g.center.y * scale,
+            angle: g.angle ?? 0,
+            stops: g.stops,
+        };
+    }
     if (!g.center || g.radius === undefined) return undefined;
     return {
         kind: 'radial',
@@ -229,6 +298,15 @@ function gradientStyle(g: DrawShapeGradient, ox: number, oy: number, scale: numb
         r: g.radius * scale,
         stops: g.stops,
     };
+}
+
+/** Map a fill pattern to a painter style; `unit` is the transform scale to compensate (grain stays constant-px). */
+function patternStyle(p: DrawShapeFillPattern, unit: number): PaintStyle | undefined {
+    if (p.kind === 'image') {
+        if (!p.url) return undefined;
+        return { kind: 'image', url: p.url, scale: (p.scale ?? 1) / unit };
+    }
+    return { kind: 'noise', scale: (p.scale ?? 2) / unit, alpha: p.alpha, color: p.color };
 }
 
 /** Paint a {@link DrawShapeProps}. Skips a draw when its required geometry is missing — never throws. */
@@ -240,6 +318,19 @@ export const paintShape: PaintFn<DrawShapeProps> = (painter, rawNode, dctx) => {
 
     const origin = dctx.projector.project(node.position);
     const tileWidth = dctx.projector.tileWidth;
+    // strokeWidth and shadow.blur are painter-px by contract: an enclosing
+    // draw-group's transform scale must not fatten lines (strokes divide by it),
+    // while ctx shadowBlur ignores the transform entirely (blur multiplies by it).
+    const groupScale = dctx.groupScale ?? 1;
+    const strokePx = (node.strokeWidth ?? 1) / groupScale;
+    if (node.blendMode) painter.setBlend(node.blendMode);
+    if (node.strokeDash && node.strokeDash.length > 0) {
+        painter.setLineDash(
+            node.strokeDash.map((v) => v / groupScale),
+            (node.strokeDashOffset ?? 0) / groupScale,
+        );
+    }
+    if (node.blur !== undefined && node.blur > 0) painter.setBlur(node.blur / groupScale);
     if (node.rotate) {
         const pivot = node.pivot ?? { x: 0.5, y: 0.5 };
         const px = origin.x + pivot.x * tileWidth;
@@ -248,7 +339,7 @@ export const paintShape: PaintFn<DrawShapeProps> = (painter, rawNode, dctx) => {
         painter.rotate(node.rotate);
         painter.translate(-px, -py);
     }
-    if (node.shadow) painter.setShadow({ color: node.shadow.color, blur: node.shadow.blur * tileWidth });
+    if (node.shadow) painter.setShadow({ color: node.shadow.color, blur: node.shadow.blur * tileWidth * groupScale });
     // SVG sentinel: 'none' means no paint — an invalid canvas style assignment
     // would silently keep the previous fill/stroke and paint with a stale color.
     const fill = node.fill === 'none' ? undefined : node.fill;
@@ -258,12 +349,17 @@ export const paintShape: PaintFn<DrawShapeProps> = (painter, rawNode, dctx) => {
     const pxFill: PaintStyle | undefined = node.gradient
         ? gradientStyle(node.gradient, origin.x, origin.y, tileWidth) ?? fill
         : fill;
+    const pxStroke: PaintStyle | undefined = node.strokeGradient
+        ? gradientStyle(node.strokeGradient, origin.x, origin.y, tileWidth) ?? stroke
+        : stroke;
+    const patFill = node.fillPattern ? patternStyle(node.fillPattern, groupScale) : undefined;
 
     switch (node.shape) {
         case 'cell': {
             const pts = dctx.projector.cellPath(node.position);
             if (pxFill) painter.fillPoly(pts, pxFill);
-            if (stroke) painter.strokePoly(pts, stroke, node.strokeWidth ?? 1, true);
+            if (patFill) painter.fillPoly(pts, patFill);
+            if (pxStroke) painter.strokePoly(pts, pxStroke, strokePx, true);
             break;
         }
         case 'rect': {
@@ -274,7 +370,8 @@ export const paintShape: PaintFn<DrawShapeProps> = (painter, rawNode, dctx) => {
             const w = (node.width ?? 0) * tw;
             const h = (node.height ?? 0) * tw;
             if (pxFill) painter.fillRect(x, y, w, h, pxFill);
-            if (stroke) painter.strokeRect(x, y, w, h, stroke, node.strokeWidth ?? 1);
+            if (patFill) painter.fillRect(x, y, w, h, patFill);
+            if (pxStroke) painter.strokeRect(x, y, w, h, pxStroke, strokePx);
             break;
         }
         case 'ellipse': {
@@ -285,7 +382,8 @@ export const paintShape: PaintFn<DrawShapeProps> = (painter, rawNode, dctx) => {
             const rx = (node.radiusX ?? 0) * tw;
             const ry = (node.radiusY ?? rx) * tw;
             if (pxFill) painter.fillEllipse(cx, cy, rx, ry, pxFill);
-            if (stroke) painter.strokeEllipse(cx, cy, rx, ry, stroke, node.strokeWidth ?? 1);
+            if (patFill) painter.fillEllipse(cx, cy, rx, ry, patFill);
+            if (pxStroke) painter.strokeEllipse(cx, cy, rx, ry, pxStroke, strokePx);
             break;
         }
         case 'poly': {
@@ -294,19 +392,33 @@ export const paintShape: PaintFn<DrawShapeProps> = (painter, rawNode, dctx) => {
                 y: origin.y + ((node.offsetY ?? 0) + pt.y) * tileWidth,
             }));
             if (pxFill) painter.fillPoly(pts, pxFill);
-            if (stroke) painter.strokePoly(pts, stroke, node.strokeWidth ?? 1, true);
+            if (patFill) painter.fillPoly(pts, patFill);
+            if (pxStroke) painter.strokePoly(pts, pxStroke, strokePx, true);
             break;
         }
         case 'path': {
             if (!node.d) break;
             painter.translate(origin.x + (node.offsetX ?? 0) * tileWidth, origin.y + (node.offsetY ?? 0) * tileWidth);
             painter.scale(tileWidth, tileWidth);
+            // The scaled transform magnifies dash/blur/pattern px — compensate like strokeWidth.
+            if (node.strokeDash && node.strokeDash.length > 0) {
+                painter.setLineDash(
+                    node.strokeDash.map((v) => v / (groupScale * tileWidth)),
+                    (node.strokeDashOffset ?? 0) / (groupScale * tileWidth),
+                );
+            }
+            if (node.blur !== undefined && node.blur > 0) painter.setBlur(node.blur / (groupScale * tileWidth));
             const localFill: PaintStyle | undefined = node.gradient
                 ? gradientStyle(node.gradient, 0, 0, 1) ?? fill
                 : fill;
+            const localStroke: PaintStyle | undefined = node.strokeGradient
+                ? gradientStyle(node.strokeGradient, 0, 0, 1) ?? stroke
+                : stroke;
+            const localPat = node.fillPattern ? patternStyle(node.fillPattern, groupScale * tileWidth) : undefined;
             if (localFill) painter.fillPath(node.d, localFill);
+            if (localPat) painter.fillPath(node.d, localPat);
             // Undo the transform scale so strokeWidth stays in px like strokePoly.
-            if (stroke) painter.strokePath(node.d, stroke, (node.strokeWidth ?? 1) / tileWidth);
+            if (localStroke) painter.strokePath(node.d, localStroke, strokePx / tileWidth);
             break;
         }
     }

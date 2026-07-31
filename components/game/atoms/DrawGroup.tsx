@@ -12,9 +12,11 @@
  * inspectable. 2D-canvas only — the 3D backend skips it with a warn.
  */
 import type React from 'react';
+import { useContext } from 'react';
 import type { ScenePos } from '@almadar/core';
 import type { DrawableBase } from '../../../lib/drawable/contract';
 import type { DrawableNode } from '../../../lib/drawable/paintDispatch';
+import { DrawableRegistryContext } from '../../../lib/drawable/registry';
 
 export interface DrawGroupProps extends DrawableBase {
     type: 'draw-group';
@@ -26,12 +28,18 @@ export interface DrawGroupProps extends DrawableBase {
     rotate?: number;
     /** 0..1 opacity. */
     opacity?: number;
+    /** Clip the group's items to an SVG path (`d` syntax) in world units relative to the group origin — masked reveals, meters, portraits. */
+    clip?: string;
     /** The grouped drawables, painted through the normal dispatch. */
     items: DrawableNode[];
 }
 
-/** Registry/standalone stub — the host paints this atom; the DOM renders nothing. */
-export function DrawGroup(_props: DrawGroupProps): React.JSX.Element | null {
+/** Registry/standalone stub — the host paints this atom; the DOM renders nothing.
+ *  When composed as a React child of a draw-host (Canvas2D), registers its
+ *  descriptor via context so the host paints it — same path as DrawShape. */
+export function DrawGroup(props: DrawGroupProps): React.JSX.Element | null {
+    const register = useContext(DrawableRegistryContext);
+    if (register) register({ ...props, type: 'draw-group' });
     return null;
 }
 

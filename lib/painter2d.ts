@@ -64,14 +64,24 @@ export interface PainterGradientStop {
 /**
  * A gradient paint style. Coordinates are PIXELS in the painter's current
  * transform — same convention as every other verb; scene→pixel mapping stays
- * the caller's job.
+ * the caller's job. Conic `angle` is the start angle in radians.
  */
 export type PainterGradient =
     | { kind: 'linear'; x1: number; y1: number; x2: number; y2: number; stops: PainterGradientStop[] }
-    | { kind: 'radial'; cx: number; cy: number; r: number; stops: PainterGradientStop[] };
+    | { kind: 'radial'; cx: number; cy: number; r: number; stops: PainterGradientStop[] }
+    | { kind: 'conic'; cx: number; cy: number; angle: number; stops: PainterGradientStop[] };
 
-/** What a fill/stroke verb accepts: a CSS color string or a gradient. */
-export type PaintStyle = string | PainterGradient;
+/**
+ * A repeating texture paint style. `noise` is a deterministic procedural grain
+ * tile (1px cells, magnified by `scale`); `image` tiles a texture URL. `scale`
+ * is a pattern-space multiplier in the painter's current transform.
+ */
+export type PainterPattern =
+    | { kind: 'noise'; scale?: number; alpha?: number; color?: string }
+    | { kind: 'image'; url: string; scale?: number };
+
+/** What a fill/stroke verb accepts: a CSS color string, a gradient, or a pattern. */
+export type PaintStyle = string | PainterGradient | PainterPattern;
 
 /**
  * The verb set. Roughly the union of what `Canvas2D`'s draw passes call on a 2D
@@ -93,6 +103,14 @@ export interface Painter2D {
     setAlpha(alpha: number): void;
     /** Drop shadow for subsequent draws; `null` clears it. */
     setShadow(shadow: PainterShadow | null): void;
+    /** Composite/blend mode for subsequent draws; `null` restores source-over. */
+    setBlend(mode: GlobalCompositeOperation | null): void;
+    /** Stroke dash pattern (px in the current transform) for subsequent strokes; `null` restores solid. */
+    setLineDash(pattern: readonly number[] | null, offset?: number): void;
+    /** Gaussian blur (px in the current transform) applied to subsequent draws; `null`/0 clears it. */
+    setBlur(px: number | null): void;
+    /** Clip subsequent draws to an SVG path (`d` syntax) in the current transform; lifted by `restore`. */
+    clipPath(d: string): void;
 
     /** Resolve a texture URL to a handle, or `null` if not loaded yet (load is kicked off). */
     resolveTexture(url: string): TextureHandle | null;
