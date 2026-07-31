@@ -55,6 +55,24 @@ export interface PainterShadow {
     blur: number;
 }
 
+/** One color stop of a {@link PainterGradient}; `offset` is 0..1 along the gradient. */
+export interface PainterGradientStop {
+    offset: number;
+    color: string;
+}
+
+/**
+ * A gradient paint style. Coordinates are PIXELS in the painter's current
+ * transform — same convention as every other verb; scene→pixel mapping stays
+ * the caller's job.
+ */
+export type PainterGradient =
+    | { kind: 'linear'; x1: number; y1: number; x2: number; y2: number; stops: PainterGradientStop[] }
+    | { kind: 'radial'; cx: number; cy: number; r: number; stops: PainterGradientStop[] };
+
+/** What a fill/stroke verb accepts: a CSS color string or a gradient. */
+export type PaintStyle = string | PainterGradient;
+
 /**
  * The verb set. Roughly the union of what `Canvas2D`'s draw passes call on a 2D
  * context, reframed as painter-neutral operations so the same drawable atoms
@@ -81,16 +99,16 @@ export interface Painter2D {
     /** Blit a (sub-rect of a) texture to a destination rectangle. */
     blit(tex: TextureHandle, dest: BlitDest, src?: BlitSrc): void;
 
-    fillRect(x: number, y: number, w: number, h: number, color: string): void;
-    strokeRect(x: number, y: number, w: number, h: number, color: string, lineWidth?: number): void;
-    fillPoly(points: readonly PainterPoint[], color: string): void;
-    strokePoly(points: readonly PainterPoint[], color: string, lineWidth?: number, closed?: boolean): void;
-    fillEllipse(cx: number, cy: number, rx: number, ry: number, color: string): void;
-    strokeEllipse(cx: number, cy: number, rx: number, ry: number, color: string, lineWidth?: number): void;
+    fillRect(x: number, y: number, w: number, h: number, style: PaintStyle): void;
+    strokeRect(x: number, y: number, w: number, h: number, style: PaintStyle, lineWidth?: number): void;
+    fillPoly(points: readonly PainterPoint[], style: PaintStyle): void;
+    strokePoly(points: readonly PainterPoint[], style: PaintStyle, lineWidth?: number, closed?: boolean): void;
+    fillEllipse(cx: number, cy: number, rx: number, ry: number, style: PaintStyle): void;
+    strokeEllipse(cx: number, cy: number, rx: number, ry: number, style: PaintStyle, lineWidth?: number): void;
     /** Fill an SVG path (`d` attribute syntax) in the painter's current transform. */
-    fillPath(d: string, color: string): void;
+    fillPath(d: string, style: PaintStyle): void;
     /** Stroke an SVG path (`d` attribute syntax) in the painter's current transform. */
-    strokePath(d: string, color: string, lineWidth?: number): void;
+    strokePath(d: string, style: PaintStyle, lineWidth?: number): void;
 
     text(str: string, x: number, y: number, style: TextStyle): void;
 }

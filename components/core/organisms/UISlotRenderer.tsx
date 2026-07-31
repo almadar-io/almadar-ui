@@ -253,6 +253,8 @@ const PATTERNS_WITH_CHILDREN = new Set([
   "vstack",
   "hstack",
   "box",
+  "canvas",
+  "canvas-2d",
   "grid",
   "center",
   "card",
@@ -1481,13 +1483,26 @@ function SlotContentRenderer({
     // for it; the raw descriptors are routed into the host's `drawables` prop below.
     const isDrawHost = isDrawHostPattern(content.pattern);
 
+    // Draw hosts paint their children as drawable descriptors, not DOM.
+    // But when children are `@trait.X` JSX composition (organism-authored
+    // `<Primitives.traits.SvgPrimitiveRender>` inside `<Canvas>`), each
+    // child resolves to a TraitFrame → DrawShape that registers its
+    // descriptor via DrawableRegistryContext. Detect this case: children
+    // that are `@trait.` strings need the React-element path (not the
+    // raw-data `toDrawableNodes` path below).
+    const arr = Array.isArray(childrenConfig) ? childrenConfig : (childrenConfig ? [childrenConfig] : []);
+    const hasTraitChildren = arr.some(
+      (c) => typeof c === 'string' && TRAIT_BINDING_RE.test(c),
+    );
+    const drawHostUsesReactChildren = isDrawHost && hasTraitChildren;
+
     // Render children recursively (pass patternPath for WYSIWYG drop targeting).
     // Inherit sourceTrait from the parent so nested patterns (e.g. a
     // form-section inside a stack) can resolve entityDef via the trait's
     // linkedEntity. Without this, only the top-level slot pattern carries
     // sourceTrait and form enrichment skips for every nested form.
     const myPath = patternPath ?? 'root';
-    const renderedChildren = (hasChildren && !isDrawHost)
+    const renderedChildren = (hasChildren && (!isDrawHost || drawHostUsesReactChildren))
       ? renderPatternChildren(childrenConfig, onDismiss, content.id, myPath, content.sourceTrait, {
           slot: content.slot,
           transitionEvent: content.transitionEvent,
@@ -1616,7 +1631,9 @@ function SlotContentRenderer({
     // prop (painted, not DOM-wrapped). `renderedChildren` was skipped above, so the
     // host renders as `<PatternComponent {...finalProps} />` with the flat drawable
     // array. Author-invisible: the `children` slot is unchanged, only its consumption.
-    if (isDrawHost && Array.isArray(childrenConfig) && childrenConfig.length > 0) {
+    // When children are `@trait.X` JSX composition, skip this — renderedChildren
+    // carries the React elements that register via DrawableRegistryContext.
+    if (isDrawHost && !drawHostUsesReactChildren && Array.isArray(childrenConfig) && childrenConfig.length > 0) {
       finalProps.drawables = toDrawableNodes(childrenConfig);
     }
     const entityVal = finalProps.entity;

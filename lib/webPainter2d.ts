@@ -8,6 +8,7 @@
  */
 import { getOrLoadImage } from './imageCache';
 import type {
+    PaintStyle,
     Painter2D,
     PainterPoint,
     PainterShadow,
@@ -38,6 +39,16 @@ export function createWebPainter(ctx: CanvasRenderingContext2D, onAssetLoad?: ()
         ctx.moveTo(points[0].x, points[0].y);
         for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
         if (closed) ctx.closePath();
+    };
+
+    const toCanvasStyle = (style: PaintStyle): string | CanvasGradient => {
+        if (typeof style === 'string') return style;
+        const g =
+            style.kind === 'linear'
+                ? ctx.createLinearGradient(style.x1, style.y1, style.x2, style.y2)
+                : ctx.createRadialGradient(style.cx, style.cy, 0, style.cx, style.cy, style.r);
+        for (const stop of style.stops) g.addColorStop(stop.offset, stop.color);
+        return g;
     };
 
     return {
@@ -96,47 +107,47 @@ export function createWebPainter(ctx: CanvasRenderingContext2D, onAssetLoad?: ()
             }
         },
 
-        fillRect(x, y, w, h, color) {
-            ctx.fillStyle = color;
+        fillRect(x, y, w, h, style) {
+            ctx.fillStyle = toCanvasStyle(style);
             ctx.fillRect(x, y, w, h);
         },
-        strokeRect(x, y, w, h, color, lineWidth = 1) {
-            ctx.strokeStyle = color;
+        strokeRect(x, y, w, h, style, lineWidth = 1) {
+            ctx.strokeStyle = toCanvasStyle(style);
             ctx.lineWidth = lineWidth;
             ctx.strokeRect(x, y, w, h);
         },
-        fillPoly(points, color) {
+        fillPoly(points, style) {
             if (points.length === 0) return;
             tracePoly(points, true);
-            ctx.fillStyle = color;
+            ctx.fillStyle = toCanvasStyle(style);
             ctx.fill();
         },
-        strokePoly(points, color, lineWidth = 1, closed = false) {
+        strokePoly(points, style, lineWidth = 1, closed = false) {
             if (points.length === 0) return;
             tracePoly(points, closed);
-            ctx.strokeStyle = color;
+            ctx.strokeStyle = toCanvasStyle(style);
             ctx.lineWidth = lineWidth;
             ctx.stroke();
         },
-        fillEllipse(cx, cy, rx, ry, color) {
+        fillEllipse(cx, cy, rx, ry, style) {
             ctx.beginPath();
             ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-            ctx.fillStyle = color;
+            ctx.fillStyle = toCanvasStyle(style);
             ctx.fill();
         },
-        strokeEllipse(cx, cy, rx, ry, color, lineWidth = 1) {
+        strokeEllipse(cx, cy, rx, ry, style, lineWidth = 1) {
             ctx.beginPath();
             ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-            ctx.strokeStyle = color;
+            ctx.strokeStyle = toCanvasStyle(style);
             ctx.lineWidth = lineWidth;
             ctx.stroke();
         },
-        fillPath(d, color) {
-            ctx.fillStyle = color;
+        fillPath(d, style) {
+            ctx.fillStyle = toCanvasStyle(style);
             ctx.fill(new Path2D(d));
         },
-        strokePath(d, color, lineWidth = 1) {
-            ctx.strokeStyle = color;
+        strokePath(d, style, lineWidth = 1) {
+            ctx.strokeStyle = toCanvasStyle(style);
             ctx.lineWidth = lineWidth;
             ctx.stroke(new Path2D(d));
         },

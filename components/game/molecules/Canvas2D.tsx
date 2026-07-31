@@ -49,6 +49,7 @@ import { bindCanvasCapture, bindLastDrawables } from '../../../lib/verificationR
 import { createWebPainter } from '../../../lib/webPainter2d';
 import { create2DProjector, type Projection2D } from '../../../lib/drawable/projector';
 import { paintDrawable, type DrawableNode } from '../../../lib/drawable/paintDispatch';
+import { isAnimatedShape } from '../atoms/DrawShape';
 import { DrawableRegistryContext, type DrawableRegistrar } from '../../../lib/drawable/registry';
 import type { DrawSpriteLayerProps } from './DrawSpriteLayer';
 import type { DrawShapeLayerProps } from './DrawShapeLayer';
@@ -230,8 +231,6 @@ export function Canvas2D({
         childDrawablesRef.current.push(node);
     }, []);
     const hasJsxChildren = React.Children.count(children) > 0;
-    const effectiveDrawables: DrawableNode[] | undefined =
-        drawables && drawables.length > 0 ? drawables : childDrawablesRef.current;
     type DrawableLayer = DrawSpriteLayerProps | DrawShapeLayerProps | DrawTextLayerProps;
     interface DrawableLayerSummary {
         type: string;
@@ -443,14 +442,32 @@ export function Canvas2D({
     const miniMapWidth = gridExtent.width || 10;
     const miniMapHeight = gridExtent.height || 10;
 
+    // True when a drawable (or a group/layer item) declares a playable keyframe animation.
+    const drawableIsAnimated = (node: DrawableNode): boolean => {
+        if (node.type === 'draw-shape') return isAnimatedShape(node);
+        if (node.type === 'draw-group') return Array.isArray(node.items) && node.items.some(drawableIsAnimated);
+        if (node.type === 'draw-shape-layer') return Array.isArray(node.items) && node.items.some(isAnimatedShape);
+        return false;
+    };
+
     // =========================================================================
-    // Draw — pure function of `drawables` + camera; no internal clock
+    // Draw — pure function of `drawables` + camera + `timeMs`. The only clock
+    // is the self-scheduled animation RAF below: it runs solely while some
+    // drawable declares a keyframe `animation`, feeding `timeMs` back in.
     // =========================================================================
-    const draw = useCallback(() => {
+    const animRafRef = useRef(0);
+    const drawTimeRef = useRef<(timeMs: number) => void>(() => undefined);
+    const draw = useCallback((timeMs = 0) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
+
+        const scheduleAnimation = (nodes: readonly DrawableNode[]): void => {
+            if (!nodes.some(drawableIsAnimated)) return;
+            cancelAnimationFrame(animRafRef.current);
+            animRafRef.current = requestAnimationFrame(() => drawTimeRef.current(performance.now()));
+        };
 
         const dpr = window.devicePixelRatio || 1;
         canvas.width = viewportSize.width * dpr;
@@ -489,14 +506,24 @@ export function Canvas2D({
             // Fall through to child-registered drawables (JSX composition path).
             const childDrawables = childDrawablesRef.current;
             if (childDrawables.length === 0) return;
+            const cam0 = cameraRef.current;
+            if (camera !== 'follow' && dragDistance() === 0) {
+                const focus = cameraPos ?? defaultGridFocus;
+                if (focus) {
+                    const p = projector.anchorPoint(focus, 'center');
+                    cam0.x = p.x - viewportSize.width / 2;
+                    cam0.y = p.y - viewportSize.height / 2;
+                }
+            }
             const painter0 = createWebPainter(ctx, bumpAtlas);
             painter0.save();
             painter0.translate(viewportSize.width / 2, viewportSize.height / 2);
-            painter0.scale(cameraRef.current.zoom, cameraRef.current.zoom);
-            painter0.translate(-viewportSize.width / 2, -viewportSize.height / 2);
-            const dctx0: DrawContext = { projector, time: 0, invalidate: bumpAtlas };
+            painter0.scale(cam0.zoom, cam0.zoom);
+            painter0.translate(-viewportSize.width / 2 - cam0.x, -viewportSize.height / 2 - cam0.y);
+            const dctx0: DrawContext = { projector, time: timeMs, invalidate: bumpAtlas };
             for (const node of childDrawables) paintDrawable(painter0, node, dctx0);
             painter0.restore();
+            scheduleAnimation(childDrawables);
             return;
         }
 
@@ -522,10 +549,15 @@ export function Canvas2D({
         painter.translate(viewportSize.width / 2, viewportSize.height / 2);
         painter.scale(cam.zoom, cam.zoom);
         painter.translate(-viewportSize.width / 2 - cam.x, -viewportSize.height / 2 - cam.y);
-        const dctx: DrawContext = { projector, time: 0, invalidate: bumpAtlas };
+        const dctx: DrawContext = { projector, time: timeMs, invalidate: bumpAtlas };
         for (const node of drawables) paintDrawable(painter, node, dctx);
         painter.restore();
+        scheduleAnimation(drawables);
     }, [viewportSize, backgroundImage, bgColor, drawables, projector, cameraRef, bumpAtlas, getImage, cameraPos, defaultGridFocus, camera, dragDistance]);
+    useEffect(() => {
+        drawTimeRef.current = draw;
+    }, [draw]);
+    useEffect(() => () => cancelAnimationFrame(animRafRef.current), []);
 
     // =========================================================================
     // Follow camera: lerp to keep `followTarget` centered (camera:'follow').
@@ -801,7 +833,6 @@ export function Canvas2D({
             {/* Hidden mount for JSX drawable children — they render null but
                 register their descriptors via DrawableRegistryContext. */}
             {hasJsxChildren && <div aria-hidden="true" style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>{children}</div>}
-            <div data-debug="" style={{ position: 'absolute', top: 0, left: 0, background: 'yellow', color: 'black', zIndex: 9999, fontSize: 24, padding: 8 }}>C={React.Children.count(children)} J={String(hasJsxChildren)} D={drawables?.length ?? -1}</div>
         </Box>
         </DrawableRegistryContext.Provider>
     );

@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "5.139.0",
+  "version": "5.140.0",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "sideEffects": [
@@ -125,11 +125,11 @@
     "verify:themes": "node scripts/theme-contrast-audit.mjs"
   },
   "dependencies": {
-    "@almadar/core": "^10.45.0",
+    "@almadar/core": "^10.46.0",
     "@almadar/evaluator": "^2.38.0",
     "@almadar/logger": "^1.10.0",
     "@almadar/runtime": "^6.47.0",
-    "@almadar/std": "^16.155.0",
+    "@almadar/std": "^16.156.0",
     "@almadar/syntax": "^1.13.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
