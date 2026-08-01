@@ -50,6 +50,7 @@ import { Lighting3D } from './Lighting3D';
 import { Effects3D } from './Effects3D';
 import { CameraController3D, FollowCamera3D } from './GameCamera3D';
 import { Drawable3D } from './Drawable3D';
+import { BoneRegistryContext, BoneStore } from './BoneRegistry';
 import { create3DProjector } from '../projector3d';
 import type { DrawableNode } from '../paintDispatch';
 import type { IsometricTile, IsometricUnit, IsometricFeature } from '../../isometricTypes';
@@ -63,7 +64,7 @@ export type { IsometricTile, IsometricUnit, IsometricFeature };
 /** Camera mode for 3D view.
  *  - `follow` tracks `followTarget` (the neutral `Camera.target`) from a fixed offset.
  *  - `chase` sits behind + above the target. */
-export type CameraMode = 'isometric' | 'perspective' | 'top-down' | 'follow' | 'chase';
+export type CameraMode = 'isometric' | 'perspective' | 'top-down' | 'front' | 'follow' | 'chase';
 
 /** Per-role model manifest (retained type export; the thin host no longer resolves
  *  models from a manifest — a `draw-sprite` carries its own `Asset`). */
@@ -119,6 +120,10 @@ export interface CanvasLighting {
      *  RoomEnvironment via PMREMGenerator — no network fetch. Default 'none' (today's
      *  look). */
     environment?: 'room' | 'none';
+    /** Output tone mapping. Default 'aces' (R3F's filmic default — the stylized look
+     *  every existing scene was authored under); 'none' renders material colors
+     *  faithfully (raw three default — what GLB viewers show). */
+    toneMapping?: 'aces' | 'none';
 }
 
 /** Canvas-level post-processing stack. Every field is optional — an omitted field
@@ -396,6 +401,8 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
             [gridBounds, cellSize]
         );
 
+        const boneStore = useMemo(() => new BoneStore(), []);
+
         // Neutral projector for drawable descriptors — anchors on the scene bounds so
         // a drawable at scene `{x, y}` lands at world `((x-minX)·cell, (y-minZ)·cell)`.
         const drawableProjector = useMemo(
@@ -462,6 +469,11 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                 case 'top-down':
                     // A small forward tilt avoids the OrbitControls gimbal lock at exactly-overhead.
                     return { position: [cx, d * 2, cz + d * 0.35] as [number, number, number], fov: fovDeg };
+                case 'front':
+                    // Straight-on "flat" elevation from +Z (scene +y — the side rigs face):
+                    // the side-scroller/reference-sheet view; near-zero elevation keeps
+                    // vertical proportions unforeshortened.
+                    return { position: [cx, d * 0.32, cz + d * 1.15] as [number, number, number], fov: fovDeg };
                 case 'follow':
                     return { position: [cx, d * 0.5, cz + d] as [number, number, number], fov: fovDeg };
                 case 'perspective':
@@ -543,6 +555,7 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                 >
                     <Canvas
                         shadows={shadows}
+                        flat={lighting?.toneMapping === 'none'}
                         camera={{
                             position: cameraConfig.position,
                             fov: cameraConfig.fov,
@@ -608,11 +621,13 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                             `<group>{children}` (R3F throws). Same `children` vocabulary as
                             Canvas2D — this is what makes the two hosts one interface. */}
                         {allDrawables.length > 0 && (
-                            <group>
-                                {allDrawables.map((node, i) => (
-                                    <Drawable3D key={i} node={node} projector={drawableProjector} />
-                                ))}
-                            </group>
+                            <BoneRegistryContext.Provider value={boneStore}>
+                                <group>
+                                    {allDrawables.map((node, i) => (
+                                        <Drawable3D key={i} node={node} projector={drawableProjector} />
+                                    ))}
+                                </group>
+                            </BoneRegistryContext.Provider>
                         )}
 
                         {/* Invisible ground plane for click hit-testing: a raycast lands

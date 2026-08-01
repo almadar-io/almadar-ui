@@ -2,7 +2,8 @@
 /**
  * Mesh3D — the R3F backend for `draw-mesh`, the volumetric twin of `Shape3D`.
  *
- * Geometry: one parametric primitive per `shape`, sized in cells × `cellSize`.
+ * Geometry: one parametric primitive per `shape`, sized in cells × `cellSize`;
+ * `polyhedron` builds an indexed BufferGeometry from raw `vertices`/`faces`.
  * `pivot: 'bottom'` (default) lifts the mesh by its half-height so it rests on
  * the ground plane of `position` (whose `z` is height in cells).
  * Material: data-driven kind → three material (standard/physical/toon/basic);
@@ -11,27 +12,87 @@
  * Animation: per-mesh `useFrame` resolves `applyMeshAnimation` and mutates the
  * group/mesh/material refs directly — no React re-render, no host clock.
  */
-import React, { useMemo, useRef } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import {
     applyMeshAnimation,
     clampSegments,
     isAnimatedMesh,
+    polyhedronBounds,
     type DrawMeshProps,
+    type DrawMeshSkin,
     type MeshMaterial,
     type MeshMaterialSide,
 } from '../../../components/game/atoms/DrawMesh';
 import type { Projector3D } from '../projector3d';
 import { isValidScenePos } from '../contract';
+import { BoneRegistryContext } from './BoneRegistry';
 
 interface MeshGeometry {
-    /** The geometry element (centered at the origin, three convention). */
-    element: React.JSX.Element;
-    /** World-Y half-height used for `pivot: 'bottom'` grounding. */
+    /** Parametric geometry element (centered at the origin, three convention). */
+    element?: React.JSX.Element;
+    /** Imperative geometry (`polyhedron`) — owned here, disposed on replacement. */
+    geometry?: THREE.BufferGeometry;
+    /** World-Y offset used for `pivot: 'bottom'` grounding. */
     lift: number;
     /** Representative world size, used to scale the outline shell. */
     size: number;
+    /** Shape-intrinsic orientation, composed under the descriptor's `rotation`. */
+    baseRotation?: [number, number, number];
+}
+
+/** `plane`/`circle` are scene ground-plane shapes (X/Y extents in cells, 2D-path
+ *  parity); three builds them in its vertical XY plane, so tip them flat, facing up. */
+const GROUND_ROTATION: [number, number, number] = [-Math.PI / 2, 0, 0];
+
+/**
+ * Raw-geometry `polyhedron`: `vertices` are scene-frame `[x,y,z]` (z = up),
+ * `faces` are index triples wound CCW-outward in the SCENE frame. The scene→
+ * three map [x,z,y] (same axis swap as `projector3d.toWorld`) has det −1 and
+ * reverses winding, so each triangle is emitted as [a,c,b]. The importer's
+ * gltf→scene swap reverses once too — the two reversals cancel and glTF
+ * winding reaches the GPU unchanged. Do not "simplify" either reversal away.
+ */
+function polyhedronGeometry(node: DrawMeshProps, cellSize: number): MeshGeometry | null {
+    const verts = node.vertices;
+    const faces = node.faces;
+    const bounds = polyhedronBounds(verts);
+    if (!verts || !bounds || !faces || faces.length === 0) return null;
+    const positions = new Float32Array(verts.length * 3);
+    for (let i = 0; i < verts.length; i++) {
+        positions[i * 3] = verts[i][0] * cellSize;
+        positions[i * 3 + 1] = verts[i][2] * cellSize;
+        positions[i * 3 + 2] = verts[i][1] * cellSize;
+    }
+    const index: number[] = [];
+    for (const face of faces) {
+        if (face.length < 3) continue;
+        const [a, b, c] = face;
+        if (a === b || b === c || a === c) continue;
+        if (![a, b, c].every((i) => Number.isInteger(i) && i >= 0 && i < verts.length)) continue;
+        index.push(a, c, b);
+    }
+    if (index.length === 0) return null;
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    geometry.setIndex(index);
+    geometry.computeVertexNormals();
+    const skin = node.skin;
+    if (skin && skin.indices.length === verts.length && skin.weights.length === verts.length) {
+        const skinIndex = new Uint16Array(verts.length * 4);
+        const skinWeight = new Float32Array(verts.length * 4);
+        for (let i = 0; i < verts.length; i++) {
+            for (let k = 0; k < 4; k++) {
+                skinIndex[i * 4 + k] = skin.indices[i][k] ?? 0;
+                skinWeight[i * 4 + k] = skin.weights[i][k] ?? 0;
+            }
+        }
+        geometry.setAttribute('skinIndex', new THREE.BufferAttribute(skinIndex, 4));
+        geometry.setAttribute('skinWeight', new THREE.BufferAttribute(skinWeight, 4));
+    }
+    const size = Math.max(bounds.max[0] - bounds.min[0], bounds.max[1] - bounds.min[1], bounds.max[2] - bounds.min[2]) * cellSize;
+    return { geometry, lift: -bounds.min[2] * cellSize, size };
 }
 
 /** Build the primitive geometry for a mesh descriptor. Sizes are cells × `cellSize`. */
@@ -61,13 +122,17 @@ function meshGeometry(node: DrawMeshProps, cellSize: number): MeshGeometry | nul
             return { element: <torusGeometry args={[r, tube, Math.max(3, Math.round(seg / 2)), seg]} />, lift: r + tube, size: (r + tube) * 2 };
         }
         case 'plane':
-            return { element: <planeGeometry args={[w, d]} />, lift: 0, size: Math.max(w, d) };
+            return { element: <planeGeometry args={[w, d]} />, lift: 0, size: Math.max(w, d), baseRotation: GROUND_ROTATION };
         case 'circle':
-            return { element: <circleGeometry args={[r, seg]} />, lift: 0, size: r * 2 };
+            return { element: <circleGeometry args={[r, seg]} />, lift: 0, size: r * 2, baseRotation: GROUND_ROTATION };
+        case 'polyhedron':
+            return polyhedronGeometry(node, cellSize);
         default:
             return null;
     }
 }
+
+let warnedPolyhedronOutline = false;
 
 const SIDE_MAP: Record<MeshMaterialSide, THREE.Side> = {
     front: THREE.FrontSide,
@@ -121,6 +186,72 @@ function meshMaterial(mat: MeshMaterial | undefined, opacity: number, ref?: Mesh
     }
 }
 
+/**
+ * Skinned polyhedron backend: a `THREE.SkinnedMesh` bound with an IDENTITY bind
+ * matrix to the named bone groups — in 'attached' bind mode the mesh's own
+ * transform cancels, so the bones alone place every vertex and the unit's
+ * root-group motion carries the surface automatically. Binds once all
+ * `skin.bones` names are registered; re-checks on every registry change.
+ */
+function SkinnedPolyhedron3D({
+    node,
+    skin,
+    geometry,
+    cellSize,
+    opacity,
+}: {
+    node: DrawMeshProps;
+    skin: DrawMeshSkin;
+    geometry: THREE.BufferGeometry;
+    cellSize: number;
+    opacity: number;
+}): React.JSX.Element {
+    const boneStore = useContext(BoneRegistryContext);
+    const meshRef = useRef<THREE.SkinnedMesh>(null);
+    const [registryTick, setRegistryTick] = useState(0);
+
+    useEffect(() => boneStore?.subscribe(() => setRegistryTick((t) => t + 1)), [boneStore]);
+
+    useEffect(() => {
+        const mesh = meshRef.current;
+        if (!mesh || !boneStore) return;
+        const bones: THREE.Bone[] = [];
+        for (const name of skin.bones) {
+            const bone = boneStore.get(name);
+            if (!bone) return;
+            bones.push(bone);
+        }
+        if (mesh.skeleton && mesh.skeleton.bones.length === bones.length && mesh.skeleton.bones.every((b, i) => b === bones[i])) return;
+        if (skin.inverseBindMatrices.length !== bones.length) return;
+        const inverses = skin.inverseBindMatrices.map((m) => {
+            const mat = new THREE.Matrix4().fromArray(m);
+            // IBM translations are authored in cells, like vertices — scale to world.
+            mat.elements[12] *= cellSize;
+            mat.elements[13] *= cellSize;
+            mat.elements[14] *= cellSize;
+            return mat;
+        });
+        mesh.bind(new THREE.Skeleton(bones, inverses), new THREE.Matrix4());
+    }, [registryTick, skin, boneStore, geometry, cellSize]);
+
+    useEffect(() => {
+        const mesh = meshRef.current;
+        return () => mesh?.skeleton?.dispose();
+    }, []);
+
+    return (
+        <skinnedMesh
+            ref={meshRef}
+            geometry={geometry}
+            frustumCulled={false}
+            castShadow={node.castShadow ?? true}
+            receiveShadow={node.receiveShadow ?? true}
+        >
+            {meshMaterial(node.material, opacity)}
+        </skinnedMesh>
+    );
+}
+
 /** R3F mesh backend for `draw-mesh`: a lit parametric primitive at a scene position. */
 export function Mesh3D({
     node,
@@ -140,6 +271,14 @@ export function Mesh3D({
 
     const geo = useMemo(() => meshGeometry(node, projector.cellSize), [node, projector.cellSize]);
 
+    // R3F only auto-disposes JSX-created objects; the imperative polyhedron
+    // geometry is rebuilt whenever the descriptor identity changes and must be
+    // released by hand or its GPU buffers accumulate.
+    useEffect(() => {
+        const g = geo?.geometry;
+        return () => g?.dispose();
+    }, [geo]);
+
     useFrame(({ clock }) => {
         if (!animated || !groupRef.current) return;
         const state = applyMeshAnimation(node, clock.elapsedTime * 1000);
@@ -153,8 +292,13 @@ export function Mesh3D({
         );
         groupRef.current.scale.setScalar(state.scale);
         if (meshRef.current) {
+            const shapeRot = geo?.baseRotation ?? [0, 0, 0];
             const base = node.rotation ?? [0, 0, 0];
-            meshRef.current.rotation.set(base[0] + state.rotate[0], base[1] + state.rotate[1], base[2] + state.rotate[2]);
+            meshRef.current.rotation.set(
+                shapeRot[0] + base[0] + state.rotate[0],
+                shapeRot[1] + base[1] + state.rotate[1],
+                shapeRot[2] + base[2] + state.rotate[2],
+            );
         }
         const mat = materialRef.current;
         if (mat) {
@@ -173,13 +317,34 @@ export function Mesh3D({
     if (!validPos || !geo) return null;
     const lift = (node.pivot ?? 'bottom') === 'bottom' ? geo.lift : 0;
     const opacity = (node.opacity ?? 1) * (node.material?.opacity ?? 1) * groupOpacity;
-    const rotation = node.rotation ?? [0, 0, 0];
+    if (node.skin && geo.geometry) {
+        return (
+            <group position={baseWorld}>
+                <SkinnedPolyhedron3D node={node} skin={node.skin} geometry={geo.geometry} cellSize={projector.cellSize} opacity={opacity} />
+            </group>
+        );
+    }
+    const nodeRotation = node.rotation ?? [0, 0, 0];
+    const shapeRotation = geo.baseRotation ?? [0, 0, 0];
+    const rotation: [number, number, number] = [
+        shapeRotation[0] + nodeRotation[0],
+        shapeRotation[1] + nodeRotation[1],
+        shapeRotation[2] + nodeRotation[2],
+    ];
     const outlineScale = geo.size > 0 ? 1 + ((node.outline?.width ?? 0.05) * projector.cellSize) / geo.size : 1;
+    // The uniform-scale hull assumes origin-centered geometry; a polyhedron's
+    // hull would drift. The faithful mechanism is a normal-displacement shell.
+    if (node.outline && geo.geometry && !warnedPolyhedronOutline) {
+        warnedPolyhedronOutline = true;
+        console.warn('[draw-mesh] outline is not yet supported on shape "polyhedron" — skipped');
+    }
+    const geometryProp = geo.geometry ? { geometry: geo.geometry } : {};
 
     return (
         <group ref={groupRef} position={baseWorld}>
             <mesh
                 ref={meshRef}
+                {...geometryProp}
                 position={[0, lift, 0]}
                 rotation={rotation}
                 castShadow={node.castShadow ?? true}
@@ -188,7 +353,7 @@ export function Mesh3D({
                 {geo.element}
                 {meshMaterial(node.material, opacity, materialRef)}
             </mesh>
-            {node.outline && (
+            {node.outline && !geo.geometry && (
                 <mesh position={[0, lift, 0]} rotation={rotation} scale={outlineScale}>
                     {geo.element}
                     <meshBasicMaterial

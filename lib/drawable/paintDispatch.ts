@@ -14,8 +14,8 @@ import { isValidScenePos } from './contract';
 import { paintSprite, type DrawSpriteProps } from '../../components/game/atoms/DrawSprite';
 import { paintShape, type DrawShapeProps } from '../../components/game/atoms/DrawShape';
 import { paintText, type DrawTextProps } from '../../components/game/atoms/DrawText';
-import { type DrawGroupProps } from '../../components/game/atoms/DrawGroup';
-import { type DrawMeshProps } from '../../components/game/atoms/DrawMesh';
+import { isAnimatedGroup, type DrawGroupProps } from '../../components/game/atoms/DrawGroup';
+import { applyMeshAnimation, type DrawMeshProps } from '../../components/game/atoms/DrawMesh';
 import { paintSpriteLayer, type DrawSpriteLayerProps } from '../../components/game/molecules/DrawSpriteLayer';
 import { paintShapeLayer, type DrawShapeLayerProps } from '../../components/game/molecules/DrawShapeLayer';
 import { paintTextLayer, type DrawTextLayerProps } from '../../components/game/molecules/DrawTextLayer';
@@ -61,22 +61,26 @@ export function paintDrawable(painter: Painter2D, node: DrawableNode, dctx: Draw
             // reactive repaint fills it in. Contract: never throws.
             if (!Array.isArray(node.items)) break;
             const p = dctx.projector.project(node.position);
+            // Group animation shares the mesh track engine; the 2D painter maps
+            // offsets to screen cells and takes the in-plane rotateZ component.
+            const anim = dctx.time > 0 && isAnimatedGroup(node) ? applyMeshAnimation(node, dctx.time) : null;
+            const tw = dctx.projector.tileWidth;
             painter.save();
-            painter.translate(p.x, p.y);
-            if (node.scale !== undefined) painter.scale(node.scale, node.scale);
-            if (node.rotate !== undefined) painter.rotate(node.rotate);
-            if (node.opacity !== undefined && node.opacity !== 1) painter.setAlpha(node.opacity);
+            painter.translate(p.x + (anim ? anim.offset[0] * tw : 0), p.y + (anim ? anim.offset[1] * tw : 0));
+            const scale = (node.scale ?? 1) * (anim?.scale ?? 1);
+            if (scale !== 1) painter.scale(scale, scale);
+            const rotate = (node.rotate ?? 0) + (node.rotation?.[2] ?? 0) + (anim?.rotate[2] ?? 0);
+            if (rotate !== 0) painter.rotate(rotate);
+            const opacity = (node.opacity ?? 1) * (anim?.opacity ?? 1);
+            if (opacity !== 1) painter.setAlpha(opacity);
             if (node.clip) {
                 // Clip is authored in world units; scope the scale to the clip so items paint unchanged.
-                const tw = dctx.projector.tileWidth;
                 painter.scale(tw, tw);
                 painter.clipPath(node.clip);
                 painter.scale(1 / tw, 1 / tw);
             }
             const childCtx: DrawContext =
-                node.scale !== undefined && node.scale !== 1
-                    ? { ...dctx, groupScale: (dctx.groupScale ?? 1) * node.scale }
-                    : dctx;
+                scale !== 1 ? { ...dctx, groupScale: (dctx.groupScale ?? 1) * scale } : dctx;
             for (const item of node.items) paintDrawable(painter, item, childCtx);
             painter.restore();
             break;

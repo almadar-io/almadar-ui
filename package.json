@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "5.142.0",
+  "version": "5.143.0",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "sideEffects": [
@@ -125,12 +125,12 @@
     "verify:themes": "node scripts/theme-contrast-audit.mjs"
   },
   "dependencies": {
-    "@almadar/core": "^10.48.0",
-    "@almadar/evaluator": "^2.38.0",
-    "@almadar/logger": "^1.10.0",
-    "@almadar/runtime": "^6.48.0",
-    "@almadar/std": "^16.158.0",
-    "@almadar/syntax": "^1.13.0",
+    "@almadar/core": "^10.49.0",
+    "@almadar/evaluator": "^2.39.0",
+    "@almadar/logger": "^1.11.0",
+    "@almadar/runtime": "^6.49.0",
+    "@almadar/std": "^16.160.0",
+    "@almadar/syntax": "^1.14.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -196,7 +196,7 @@
     "@types/react-dom": "^19.0.0",
     "@types/react-syntax-highlighter": "^15.5.0",
     "@types/three": "^0.160.0",
-    "@typescript-eslint/parser": "8.56.0",
+    "@typescript-eslint/parser": "8.65.0",
     "@vitejs/plugin-react": "^4.2.0",
     "@vitest/ui": "^3.2.6",
     "autoprefixer": "^10.4.0",

@@ -13,14 +13,25 @@
  * `draw-group` maps to a three `<group>`: items are group-LOCAL (their positions
  * project through an origin-anchored projector so the host's bounds anchor is not
  * applied twice), `rotate` is ground-plane yaw (negated — 2D screen rotation is
- * clockwise-positive under y-down, world-Y yaw is CCW-positive), and `opacity`
- * accumulates down into every leaf material. `clip` has no faithful three
- * mapping (SVG-path masks) — skipped with a one-time warn.
+ * clockwise-positive under y-down, world-Y yaw is CCW-positive) while `rotation`
+ * is a raw per-axis Euler (same convention as `draw-mesh`), and `opacity`
+ * accumulates down into every leaf material. A group placed at a joint with
+ * `rotation` + `animation` (transform tracks, `useFrame` ref mutation — same
+ * engine as `draw-mesh`) is a skeleton BONE: children inherit the rotation, so
+ * nested groups form joint chains. The opacity track is 2D-only at group level
+ * (leaf materials would need a re-render); animate leaf mesh opacity instead.
+ * `clip` has no faithful three mapping (SVG-path masks) — skipped with a
+ * one-time warn.
  */
-import React from 'react';
+import React, { useContext, useEffect, useMemo, useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
+import * as THREE from 'three';
 import { create3DProjector, type Projector3D } from '../projector3d';
+import { BoneRegistryContext, BoneStore } from './BoneRegistry';
 import type { DrawableNode } from '../paintDispatch';
 import { isValidScenePos } from '../contract';
+import { isAnimatedGroup, type DrawGroupProps } from '../../../components/game/atoms/DrawGroup';
+import { applyMeshAnimation } from '../../../components/game/atoms/DrawMesh';
 import { Sprite3D, Shape3D, Text3D, warnUnsupported3d } from './mesh3d';
 import { Mesh3D } from './DrawMesh3D';
 
@@ -68,19 +79,72 @@ export function Drawable3D({ node, projector, groupOpacity = 1 }: Drawable3DProp
         case 'draw-group': {
             if (!isValidScenePos(node.position) || !Array.isArray(node.items)) return null;
             if (node.clip) warnUnsupported3d('draw-group:clip');
-            const world = projector.toWorld(node.position);
-            const inner = create3DProjector({ cellSize: projector.cellSize });
-            const opacity = (node.opacity ?? 1) * groupOpacity;
-            const s = node.scale ?? 1;
-            return (
-                <group position={world} rotation={[0, -(node.rotate ?? 0), 0]} scale={[s, s, s]}>
-                    {node.items.map((item, i) => (
-                        <Drawable3D key={i} node={item} projector={inner} groupOpacity={opacity} />
-                    ))}
-                </group>
-            );
+            return <Group3D node={node} projector={projector} groupOpacity={groupOpacity} />;
         }
     }
+}
+
+/** Three `<group>` backend for `draw-group` — the skeleton bone. `rotation` is
+ *  a raw Euler; without it, `rotate` keeps its negated ground-plane-yaw meaning.
+ *  Animation mutates the group ref per frame (transform tracks only). */
+function Group3D({
+    node,
+    projector,
+    groupOpacity,
+}: {
+    node: DrawGroupProps;
+    projector: Projector3D;
+    groupOpacity: number;
+}): React.JSX.Element {
+    const ref = useRef<THREE.Group>(null);
+    const animated = isAnimatedGroup(node);
+    const world = projector.toWorld(node.position);
+    const inner = create3DProjector({ cellSize: projector.cellSize });
+    const opacity = (node.opacity ?? 1) * groupOpacity;
+    const s = node.scale ?? 1;
+    const baseRotation: [number, number, number] = node.rotation ?? [0, -(node.rotate ?? 0), 0];
+
+    // A named group is a skeleton bone: mount a real THREE.Bone with identity
+    // local transform (it rides this group's world matrix) and register it so
+    // skinned meshes can bind to it by name. A `skeleton: true` group opens a
+    // fresh scope, so multiple instances of one rig never collide.
+    const parentStore = useContext(BoneRegistryContext);
+    const scopedStore = useMemo(() => (node.skeleton ? new BoneStore() : null), [node.skeleton]);
+    const boneStore = scopedStore ?? parentStore;
+    const boneObject = useMemo(() => (node.bone ? new THREE.Bone() : null), [node.bone]);
+    useEffect(() => {
+        if (!node.bone || !boneStore || !boneObject) return;
+        return boneStore.register(node.bone, boneObject);
+    }, [node.bone, boneStore, boneObject]);
+
+    useFrame(({ clock }) => {
+        if (!animated || !ref.current) return;
+        const state = applyMeshAnimation(node, clock.elapsedTime * 1000);
+        if (!state) return;
+        const cell = projector.cellSize;
+        // Scene-axis offsets project like ScenePos: x → world X, y → world Z, z → world Y.
+        ref.current.position.set(
+            world[0] + state.offset[0] * cell,
+            world[1] + state.offset[2] * cell,
+            world[2] + state.offset[1] * cell,
+        );
+        ref.current.rotation.set(
+            baseRotation[0] + state.rotate[0],
+            baseRotation[1] + state.rotate[1],
+            baseRotation[2] + state.rotate[2],
+        );
+        ref.current.scale.setScalar(s * state.scale);
+    });
+
+    const children = (
+        <group ref={ref} position={world} rotation={baseRotation} scale={[s, s, s]}>
+            {boneObject && <primitive object={boneObject} />}
+            {node.items.map((item, i) => (
+                <Drawable3D key={i} node={item} projector={inner} groupOpacity={opacity} />
+            ))}
+        </group>
+    );
+    return scopedStore ? <BoneRegistryContext.Provider value={scopedStore}>{children}</BoneRegistryContext.Provider> : children;
 }
 
 export default Drawable3D;

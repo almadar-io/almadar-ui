@@ -5,7 +5,9 @@
  * ONE descriptor (`DrawMeshProps`, grounded in core `ScenePos`) with the R3F
  * backend `Mesh3D` in `lib/drawable/three/DrawMesh3D` (kept OUT of this file so
  * the 2D path never pulls three). A parametric primitive (box, sphere, capsule,
- * cylinder, cone, torus, plane, circle) at a scene position — `position.z` is
+ * cylinder, cone, torus, plane, circle — `plane`/`circle` lie flat in the
+ * scene ground plane facing up, matching the 2D painter) or a raw-geometry `polyhedron`
+ * (`vertices` + `faces` as plain data) at a scene position — `position.z` is
  * height in cells — with a data-driven material (`standard`/`physical`/`toon`/
  * `basic`), an optional inverted-hull outline, and keyframe animation over
  * transform/material tracks. Low-poly is a knob, not a geometry rewrite:
@@ -20,7 +22,7 @@ import type { ScenePos } from '@almadar/core';
 import type { DrawableBase } from '../../../lib/drawable/contract';
 import { DrawableRegistryContext } from '../../../lib/drawable/registry';
 
-export type MeshShapeKind = 'box' | 'sphere' | 'capsule' | 'cylinder' | 'cone' | 'torus' | 'plane' | 'circle';
+export type MeshShapeKind = 'box' | 'sphere' | 'capsule' | 'cylinder' | 'cone' | 'torus' | 'plane' | 'circle' | 'polyhedron';
 
 export type MeshMaterialKind = 'standard' | 'physical' | 'toon' | 'basic';
 
@@ -97,6 +99,23 @@ export interface DrawMeshAnimation {
     keyframes: DrawMeshKeyframe[];
 }
 
+/**
+ * Smooth-skinning data for a `polyhedron` — plain declarative data, no runtime
+ * objects. Vertices carry blended bone weights (a neck-base vertex can be 60%
+ * neck / 40% spine), so the surface stretches continuously across joints
+ * instead of cracking at rigid chunk boundaries.
+ */
+export interface DrawMeshSkin {
+    /** Bone names, resolved against sibling `draw-group` `bone:` names in the same canvas. */
+    bones: string[];
+    /** One 16-float column-major inverse bind matrix per bone (model space → bone bind-local; translations in cells). */
+    inverseBindMatrices: number[][];
+    /** Per-vertex bone indices into `bones`, up to 4 each (pad with 0). */
+    indices: number[][];
+    /** Per-vertex blend weights matching `indices`, normalized to sum 1 (pad with 0). */
+    weights: number[][];
+}
+
 export interface DrawMeshProps extends DrawableBase {
     type: 'draw-mesh';
     shape: MeshShapeKind;
@@ -118,9 +137,15 @@ export interface DrawMeshProps extends DrawableBase {
     tube?: number;
     /** Curved-surface tessellation, clamped 3..64 (default 24). 4–8 + `flatShading` = low-poly. */
     segments?: number;
+    /** `polyhedron` only: raw vertices as scene-frame `[x, y, z]` triples in cells, `z` = up. */
+    vertices?: number[][];
+    /** `polyhedron` only: triangle index triples into `vertices`, wound counter-clockwise seen from OUTSIDE in the scene frame. */
+    faces?: number[][];
+    /** `polyhedron` only: smooth-skinning weights binding the vertices to named bone groups. Vertices must then be authored in BIND POSE model space; the bones' animated transforms deform them. */
+    skin?: DrawMeshSkin;
     /** Euler rotation `[x, y, z]` in radians. */
     rotation?: [number, number, number];
-    /** `bottom` (default) rests the mesh on its position's ground plane; `center` centers it there. */
+    /** `bottom` (default) rests the mesh on its position's ground plane; `center` centers it there. For `polyhedron`, `bottom` lifts by −min(z) and `center` applies no offset — the vertices are authoritative. */
     pivot?: 'bottom' | 'center';
     material?: MeshMaterial;
     outline?: MeshOutline;
@@ -133,6 +158,21 @@ export interface DrawMeshProps extends DrawableBase {
 }
 
 export const MESH_SEGMENTS_DEFAULT = 24;
+
+/** Scene-frame AABB of a polyhedron's vertices; null when the data can't form a surface. */
+export function polyhedronBounds(vertices: number[][] | undefined): { min: [number, number, number]; max: [number, number, number] } | null {
+    if (!vertices || vertices.length < 3) return null;
+    const min: [number, number, number] = [Infinity, Infinity, Infinity];
+    const max: [number, number, number] = [-Infinity, -Infinity, -Infinity];
+    for (const v of vertices) {
+        if (v.length < 3 || !v.every((c) => Number.isFinite(c))) return null;
+        for (let axis = 0; axis < 3; axis++) {
+            min[axis] = Math.min(min[axis], v[axis]);
+            max[axis] = Math.max(max[axis], v[axis]);
+        }
+    }
+    return { min, max };
+}
 
 /** Clamp the tessellation knob to the supported 3..64 band. */
 export function clampSegments(segments: number | undefined): number {
@@ -182,7 +222,7 @@ const NUMERIC_TRACKS = [
  * each track interpolates between the keyframes that define it; before its first
  * defining keyframe the identity holds.
  */
-export function applyMeshAnimation(node: DrawMeshProps, timeMs: number): MeshAnimationState | null {
+export function applyMeshAnimation(node: { animation?: DrawMeshAnimation }, timeMs: number): MeshAnimationState | null {
     const anim = node.animation;
     if (!anim || !(anim.durationMs > 0) || anim.keyframes.length === 0) return null;
     const frames = [...anim.keyframes].sort((a, b) => a.at - b.at);
