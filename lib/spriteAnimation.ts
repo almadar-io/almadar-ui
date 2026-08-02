@@ -18,7 +18,13 @@ import type {
     SpriteFrameDims,
     SpriteSheetUrls,
 } from './spriteAnimationTypes';
+import { ANIMATION_NAMES } from '@almadar/core';
 import { SPRITE_SHEET_LAYOUT, SHEET_COLUMNS } from './spriteSheetConstants';
+
+/** Narrow an arbitrary string (e.g. a descriptor's `animation` prop) to the canonical row vocabulary. */
+export function isAnimationName(name: string): name is AnimationName {
+    return (ANIMATION_NAMES as readonly string[]).includes(name);
+}
 
 // =============================================================================
 // Direction Logic
@@ -146,8 +152,15 @@ export function resolveFrame(
 ): ResolvedFrame | null {
     if (!sheetUrls) return null;
 
-    const { sheetDir, flipX } = resolveSheetDirection(animState.direction);
-    const sheetUrl = sheetUrls[sheetDir];
+    // A real sheet for the facing wins; the mirror-flip cheat is the legacy
+    // fallback for 2-sheet packs with no ne/nw art.
+    const real = sheetUrls[animState.direction];
+    const { sheetUrl, flipX } = real
+        ? { sheetUrl: real, flipX: false }
+        : (() => {
+              const legacy = resolveSheetDirection(animState.direction);
+              return { sheetUrl: sheetUrls[legacy.sheetDir], flipX: legacy.flipX };
+          })();
     if (!sheetUrl) return null;
 
     const def = SPRITE_SHEET_LAYOUT[animState.animation];

@@ -193,6 +193,7 @@ export function Canvas({
             cameraMode: to3DCameraMode(camera?.mode),
             ...(zoom !== undefined ? { scale: zoom } : {}),
             ...(camera?.fov !== undefined ? { fov: camera.fov } : {}),
+            ...(camera?.azimuth !== undefined ? { azimuth: camera.azimuth } : {}),
             ...(camera?.target !== undefined ? { followTarget: camera.target } : {}),
             unitScale,
             backgroundColor,

@@ -50,6 +50,7 @@ import { createWebPainter } from '../../../lib/webPainter2d';
 import { create2DProjector, type Projection2D } from '../../../lib/drawable/projector';
 import { paintDrawable, type DrawableNode } from '../../../lib/drawable/paintDispatch';
 import { isAnimatedShape } from '../atoms/DrawShape';
+import { isAnimatedSprite } from '../atoms/DrawSprite';
 import { isAnimatedGroup } from '../atoms/DrawGroup';
 import { DrawableRegistryContext, type DrawableRegistrar } from '../../../lib/drawable/registry';
 import type { DrawSpriteLayerProps } from './DrawSpriteLayer';
@@ -446,9 +447,11 @@ export function Canvas2D({
     // True when a drawable (or a group/layer item) declares a playable keyframe animation.
     const drawableIsAnimated = (node: DrawableNode): boolean => {
         if (node.type === 'draw-shape') return isAnimatedShape(node);
+        if (node.type === 'draw-sprite') return isAnimatedSprite(node);
         if (node.type === 'draw-group')
             return isAnimatedGroup(node) || (Array.isArray(node.items) && node.items.some(drawableIsAnimated));
         if (node.type === 'draw-shape-layer') return Array.isArray(node.items) && node.items.some(isAnimatedShape);
+        if (node.type === 'draw-sprite-layer') return Array.isArray(node.items) && node.items.some(isAnimatedSprite);
         return false;
     };
 

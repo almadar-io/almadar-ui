@@ -18,7 +18,8 @@ import type React from 'react';
 import type { Asset, ScenePos } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 import type { BlitSrc, Painter2D, PainterShadow } from '../../../lib/painter2d';
-import { getAtlas, atlasFailed, isAtlasAsset, subRectFor } from '../../../lib/atlasSlice';
+import { getAtlas, atlasFailed, isAtlasAsset, isSpriteSheetAtlas, subRectFor } from '../../../lib/atlasSlice';
+import { frameRect, getCurrentFrameFromDef, isAnimationName } from '../../../lib/spriteAnimation';
 import { getImageStatus } from '../../../lib/imageCache';
 import type { DrawableAnchor, DrawableBase, DrawContext, PaintFn } from '../../../lib/drawable/contract';
 import { isValidScenePos, spriteRect } from '../../../lib/drawable/contract';
@@ -66,8 +67,10 @@ export interface DrawSpriteProps extends DrawableBase {
     height?: number;
     /** Explicit atlas sub-rect override (px); omitted → resolved from `asset.atlas`/`asset.sprite`. */
     frame?: BlitSrc;
-    /** Named GLB animation clip to play (3D backend only; the 2D painter animates via `frame`). Matched case-insensitively against the model's clips. */
+    /** Animation to play. 3D backend: a named GLB clip (matched case-insensitively). 2D painter: when `asset.atlas` resolves to a `SpriteSheetAtlas` manifest, the canonical row of that name (idle/walk/attack/hit/death) plays off the host paint clock; an explicit `frame` rect overrides. */
     animation?: string;
+    /** Override the sheet row's loop flag. The paint clock is wall-time, so one-shot rows hold their final frame — preview pages set `true` to cycle attack/hit/death continuously. */
+    loop?: boolean;
     /** Mirror horizontally (facing). */
     flipX?: boolean;
     /** Rotation in radians about the sprite's center. */
@@ -94,6 +97,26 @@ export const paintSprite: PaintFn<DrawSpriteProps> = (painter, node, dctx) => {
     // INDEX) carries no rect and would blank the blit — ignore it so the
     // atlas-sprite / whole-image source still draws.
     let src = typeof node.frame === 'object' ? node.frame : undefined;
+    // Sheet playback: `animation` + a SpriteSheetAtlas manifest → the current
+    // row frame at the host clock. Non-sheet atlases fall through to the
+    // named-sprite path (the `animation` prop there is 3D-clip semantics).
+    if (!src && node.animation !== undefined && typeof node.asset.atlas === 'string') {
+        const atlas = getAtlas(node.asset.atlas, dctx.invalidate);
+        if (!atlas) {
+            if (atlasFailed(node.asset.atlas)) paintFallbackSquare(painter, node, dctx, 'atlas-failed');
+            return; // atlas JSON in-flight
+        }
+        if (isSpriteSheetAtlas(atlas)) {
+            const def = isAnimationName(node.animation) ? atlas.animations[node.animation] : undefined;
+            if (!def) {
+                paintFallbackSquare(painter, node, dctx, 'sprite-missing');
+                return;
+            }
+            const { frame } = getCurrentFrameFromDef(node.loop === undefined ? def : { ...def, loop: node.loop }, dctx.time);
+            const r = frameRect(frame, def.row, atlas.columns, atlas.frameWidth, atlas.frameHeight);
+            src = { x: r.sx, y: r.sy, w: r.sw, h: r.sh };
+        }
+    }
     if (!src && isAtlasAsset(node.asset)) {
         const atlas = getAtlas(node.asset.atlas as string, dctx.invalidate);
         if (!atlas) {
@@ -134,6 +157,11 @@ export const paintSprite: PaintFn<DrawSpriteProps> = (painter, node, dctx) => {
     painter.blit(tex, { x: dx, y: dy, w, h }, src);
     painter.restore();
 };
+
+/** True when this descriptor declares sheet playback (the host must run the paint clock). */
+export function isAnimatedSprite(node: DrawSpriteProps): boolean {
+    return node.animation !== undefined && typeof node.asset?.atlas === 'string';
+}
 
 /** Registry/standalone stub — the host paints this atom; the DOM renders nothing. */
 export function DrawSprite(_props: DrawSpriteProps): React.JSX.Element | null {

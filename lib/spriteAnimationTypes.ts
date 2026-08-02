@@ -63,12 +63,20 @@ export interface SpriteFrameDims {
     height: number;
 }
 
-/** Sheet URLs for both directions */
+/**
+ * Sheet URLs per facing. Legacy hand-drawn packs ship only se/sw (ne/nw are
+ * mirror-flipped — a cheat that shows the face while walking away); 3D-baked
+ * sheets also ship real ne/nw, which `resolveFrame` prefers when present.
+ */
 export interface SpriteSheetUrls {
     /** Southeast-facing sheet URL */
     se: string;
     /** Southwest-facing sheet URL */
     sw: string;
+    /** Northeast-facing sheet URL (real back view; omitted → mirror of sw) */
+    ne?: string;
+    /** Northwest-facing sheet URL (real back view; omitted → mirror of se) */
+    nw?: string;
 }
 
 /**

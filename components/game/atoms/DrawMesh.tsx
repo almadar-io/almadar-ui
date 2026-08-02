@@ -55,6 +55,8 @@ export interface MeshMaterial {
     flatShading?: boolean;
     /** Which faces render (default `front`). */
     side?: MeshMaterialSide;
+    /** Albedo texture: an image URL or `data:` URI, sampled through the polyhedron's `uvs`. Multiplied by `color` — keep `color` white (or unset) to show the texture unmodified. */
+    map?: string;
 }
 
 /** Inverted-hull toon outline: a back-face shell of the same geometry, scaled out by `width`. */
@@ -141,6 +143,8 @@ export interface DrawMeshProps extends DrawableBase {
     vertices?: number[][];
     /** `polyhedron` only: triangle index triples into `vertices`, wound counter-clockwise seen from OUTSIDE in the scene frame. */
     faces?: number[][];
+    /** `polyhedron` only: per-vertex `[u, v]` texture coordinates parallel to `vertices`, glTF convention (`v` grows DOWN from the image's top-left). Pairs with `material.map`. */
+    uvs?: number[][];
     /** `polyhedron` only: smooth-skinning weights binding the vertices to named bone groups. Vertices must then be authored in BIND POSE model space; the bones' animated transforms deform them. */
     skin?: DrawMeshSkin;
     /** Euler rotation `[x, y, z]` in radians. */

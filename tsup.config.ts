@@ -1,6 +1,12 @@
 import { defineConfig, type Options } from 'tsup';
 import { resolve } from 'node:path';
 
+// `build:dev` sets UI_SKIP_DTS=1: declaration emission is the slow step (the JS
+// TypeScript compiler re-checks the React+three type graph once per entry) and
+// the dev loop only needs fresh JS — dependents resolve types through the
+// workspace source. `build` (publish) always emits declarations.
+const emitDts = process.env.UI_SKIP_DTS !== '1';
+
 // All entry points that import context/UISlotContext.tsx inline their own
 // createContext() call when splitting is off. This causes duplicate React
 // contexts (components/index.js gets one, context/index.js gets another).
@@ -176,7 +182,7 @@ export default defineConfig([
       'locales/index.ts',
     ],
     format: ['esm', 'cjs'],
-    dts: true,
+    dts: emitDts,
     clean: false, // build script rm -rf's dist upfront; an in-band clean races the sibling configs' output (it wiped dist/avl/*.d.ts)
     sourcemap: false,
     splitting: false,
@@ -190,7 +196,7 @@ export default defineConfig([
   {
     entry: { 'marketing/index': 'marketing/index.ts' },
     format: ['esm', 'cjs'],
-    dts: true,
+    dts: emitDts,
     outDir: 'dist',
     clean: false, // shared outDir: cleaned once upfront by the build script
     sourcemap: false,
@@ -205,7 +211,7 @@ export default defineConfig([
   {
     entry: { 'avl/index': 'avl/index.ts' },
     format: ['esm', 'cjs'],
-    dts: true,
+    dts: emitDts,
     outDir: 'dist',
     clean: false, // shared outDir: cleaned once upfront by the build script
     sourcemap: false,

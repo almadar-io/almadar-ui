@@ -206,6 +206,8 @@ export interface Canvas3DHostProps {
     pixelsPerUnit?: number;
     /** Perspective field of view in degrees — the neutral `Camera.fov`. Default 45. */
     fov?: number;
+    /** Orbit the mode's framing position around the vertical axis through the target, in radians — the neutral `Camera.azimuth`. */
+    azimuth?: number;
     /** 3D scene light rig as data — ambient/directional/hemisphere/point lights + optional
      *  'room' environment. Omitted → the standard fixed rig (this host's current
      *  hardcoded lights, unchanged). */
@@ -240,6 +242,34 @@ export interface Canvas3DHostHandle {
     resetCamera: () => void;
     /** Take a screenshot */
     screenshot: () => string | null;
+}
+
+/**
+ * CameraPose — re-applies the mode/azimuth framing whenever it changes. R3F's
+ * Canvas `camera` prop is creation-time only, so a runtime camera switch (a
+ * board changing `camera.mode`, spritesheet baking orbiting `Camera.azimuth`
+ * per CELL) must set the pose imperatively; `controls.update()` then re-aims
+ * at the OrbitControls target from the new position.
+ */
+function CameraPose({
+    position,
+    fov,
+    controls,
+}: {
+    position: [number, number, number];
+    fov: number;
+    controls: React.RefObject<OrbitControlsImpl | null>;
+}): null {
+    const camera = useThree((s) => s.camera);
+    useEffect(() => {
+        camera.position.set(position[0], position[1], position[2]);
+        if ((camera as THREE.PerspectiveCamera).isPerspectiveCamera) {
+            (camera as THREE.PerspectiveCamera).fov = fov;
+            (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
+        }
+        controls.current?.update();
+    }, [camera, position, fov, controls]);
+    return null;
 }
 
 /**
@@ -293,6 +323,7 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
             keyUpMap,
             pixelsPerUnit,
             fov,
+            azimuth,
             lighting,
             post,
             children,
@@ -463,24 +494,35 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
             const d = size * 1.0;
             const fovDeg = fov ?? 45;
 
-            switch (cameraMode) {
-                case 'isometric':
-                    return { position: [cx + d, d * 0.8, cz + d] as [number, number, number], fov: fovDeg };
-                case 'top-down':
-                    // A small forward tilt avoids the OrbitControls gimbal lock at exactly-overhead.
-                    return { position: [cx, d * 2, cz + d * 0.35] as [number, number, number], fov: fovDeg };
-                case 'front':
-                    // Straight-on "flat" elevation from +Z (scene +y — the side rigs face):
-                    // the side-scroller/reference-sheet view; near-zero elevation keeps
-                    // vertical proportions unforeshortened.
-                    return { position: [cx, d * 0.32, cz + d * 1.15] as [number, number, number], fov: fovDeg };
-                case 'follow':
-                    return { position: [cx, d * 0.5, cz + d] as [number, number, number], fov: fovDeg };
-                case 'perspective':
-                default:
-                    return { position: [cx + d, d, cz + d] as [number, number, number], fov: fovDeg };
-            }
-        }, [cameraMode, gridBounds, cellSize, cameraTarget, fov]);
+            const base = ((): { position: [number, number, number]; fov: number } => {
+                switch (cameraMode) {
+                    case 'isometric':
+                        return { position: [cx + d, d * 0.8, cz + d], fov: fovDeg };
+                    case 'top-down':
+                        // A small forward tilt avoids the OrbitControls gimbal lock at exactly-overhead.
+                        return { position: [cx, d * 2, cz + d * 0.35], fov: fovDeg };
+                    case 'front':
+                        // Straight-on "flat" elevation from +Z (scene +y — the side rigs face):
+                        // the side-scroller/reference-sheet view; near-zero elevation keeps
+                        // vertical proportions unforeshortened.
+                        return { position: [cx, d * 0.32, cz + d * 1.15], fov: fovDeg };
+                    case 'follow':
+                        return { position: [cx, d * 0.5, cz + d], fov: fovDeg };
+                    case 'perspective':
+                    default:
+                        return { position: [cx + d, d, cz + d], fov: fovDeg };
+                }
+            })();
+            if (!azimuth) return base;
+            // Neutral `Camera.azimuth`: orbit the framing position around the
+            // vertical axis through the target (spritesheet baking turns the view,
+            // not the model — the posed cells stay identical across facings).
+            const ox = base.position[0] - cx;
+            const oz = base.position[2] - cz;
+            const c = Math.cos(azimuth);
+            const s = Math.sin(azimuth);
+            return { position: [cx + ox * c - oz * s, base.position[1], cz + ox * s + oz * c] as [number, number, number], fov: base.fov };
+        }, [cameraMode, gridBounds, cellSize, cameraTarget, fov, azimuth]);
 
         // Follow target in world space — the neutral `Camera.target`, else scene centre.
         const followWorld = useMemo((): [number, number, number] => {
@@ -556,6 +598,10 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                     <Canvas
                         shadows={shadows}
                         flat={lighting?.toneMapping === 'none'}
+                        // Keeps the GL buffer readable after present, so the imperative
+                        // `screenshot` handle and headless `toDataURL` captures (spritesheet
+                        // baking reads the buffer WITH alpha) are reliable, not driver luck.
+                        gl={{ preserveDrawingBuffer: true }}
                         camera={{
                             position: cameraConfig.position,
                             fov: cameraConfig.fov,
@@ -570,6 +616,7 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                         }}
                     >
                         <CameraController3D onCameraChange={eventHandlers.handleCameraChange} />
+                        <CameraPose position={cameraConfig.position} fov={cameraConfig.fov} controls={controlsRef} />
                         {(cameraMode === 'follow' || cameraMode === 'chase') && (
                             <FollowCamera3D target={followWorld} offset={followOffset} />
                         )}

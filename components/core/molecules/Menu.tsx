@@ -34,6 +34,8 @@ export interface MenuItem {
   onClick?: () => void;
   /** Event name for pattern compatibility */
   event?: string;
+  /** File URL this item downloads on pick (gesture-driven, `DocumentViewer` precedent). The item's `event` still emits on the bus. */
+  url?: string;
   /** Variant for styling (pattern compatibility) */
   variant?: "default" | "danger";
   /** Sub-menu items */
@@ -77,6 +79,19 @@ export interface MenuProps {
 }
 
 const MENU_GAP = 4;
+
+// Gesture-driven file save for `MenuItem.url` — an anchor with `download` keeps
+// image/JSON URLs saving instead of navigating (same-origin; falls back to
+// opening the file for cross-origin URLs, per the download-attribute spec).
+// `data:` URIs (embedded sprite sheets) have no path — the item label names the file.
+function downloadItemUrl(url: string, label: string): void {
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = url.startsWith("data:") ? label : (url.split("/").pop() ?? "download");
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
 
 // Compute fixed viewport coords for the dropdown panel given the trigger rect
 // and the desired position. Returns inline style to apply to the portaled div.
@@ -165,6 +180,7 @@ function SubMenu({
             onClick={() => {
               if (item.disabled) return;
               if (item.event) eventBus.emit(`UI:${item.event}`, { itemId, label: item.label });
+              if (item.url) downloadItemUrl(item.url, item.label);
               item.onClick?.();
             }}
             aria-disabled={item.disabled || undefined}
@@ -332,6 +348,7 @@ export const Menu: React.FC<MenuProps> = ({
       setActiveSubMenu(itemId);
     } else {
       if (item.event) eventBus.emit(`UI:${item.event}`, { itemId, label: item.label });
+      if (item.url) downloadItemUrl(item.url, item.label);
       item.onClick?.();
       setIsOpen(false);
     }
@@ -377,19 +394,30 @@ export const Menu: React.FC<MenuProps> = ({
   const effectivePosition =
     direction === "rtl" ? (rtlMirror[position] ?? position) : position;
 
-  // Wrap non-element trigger in a Typography inline span — atoms only.
-  const triggerChild = React.isValidElement(trigger) ? (
-    trigger
-  ) : (
-    <Typography variant="small" as="span">{trigger}</Typography>
-  );
-
-  const triggerElement = React.cloneElement(
-    triggerChild as React.ReactElement<MenuTriggerProps>,
-    {
+  // Non-element triggers (label strings, projected element ARRAYS — the
+  // std-export `trigger: [@trait.Button1]` shape) get an interactive Box span
+  // wrapper: cloning onClick/ref onto Typography silently dropped both (its
+  // prop surface is fixed), leaving the menu unopenable. Bubbling from any
+  // inner element reaches the wrapper, so opening never depends on the
+  // trigger's components forwarding onClick/ref.
+  const triggerElement = React.isValidElement(trigger) ? (
+    React.cloneElement(trigger as React.ReactElement<MenuTriggerProps>, {
       ref: triggerRef,
       onClick: handleToggle,
-    },
+    })
+  ) : (
+    <Box
+      as="span"
+      ref={(el: HTMLDivElement | null) => { triggerRef.current = el; }}
+      onClick={handleToggle}
+      className="inline-flex"
+    >
+      {typeof trigger === "string" || typeof trigger === "number" ? (
+        <Typography variant="small" as="span">{trigger}</Typography>
+      ) : (
+        trigger
+      )}
+    </Box>
   );
 
   const renderMenuItems = (menuItems: MenuItem[]) =>

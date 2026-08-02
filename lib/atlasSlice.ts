@@ -13,7 +13,7 @@
  * @packageDocumentation
  */
 
-import type { TextureAtlas, Tilesheet } from '@almadar/core';
+import type { SpriteSheetAtlas, TextureAtlas, Tilesheet } from '@almadar/core';
 
 /** The minimal draw-relevant projection of an `Asset` — a sheet URL plus an optional atlas
  *  sub-texture reference. A full `@almadar/core` `Asset` is structurally assignable. */
@@ -23,13 +23,19 @@ export interface SpriteRef {
     sprite?: string;
 }
 
-type ParsedAtlas = TextureAtlas | Tilesheet;
+type ParsedAtlas = TextureAtlas | Tilesheet | SpriteSheetAtlas;
 
 /** url → parsed atlas (undefined while in-flight; null on failure — both mean "not ready"). */
 const atlasCache = new Map<string, ParsedAtlas | null | undefined>();
 
 function isTilesheet(a: ParsedAtlas): a is Tilesheet {
     return typeof (a as Tilesheet).tileWidth === 'number';
+}
+
+/** True for an animated sprite-sheet manifest (frame grid + animation rows). */
+export function isSpriteSheetAtlas(a: ParsedAtlas): a is SpriteSheetAtlas {
+    const s = a as SpriteSheetAtlas;
+    return typeof s.frameWidth === 'number' && typeof s.frameHeight === 'number' && typeof s.animations === 'object';
 }
 
 /**
@@ -83,6 +89,7 @@ export function subRectFor(atlas: ParsedAtlas, sprite: string): SubRect | null {
             sh: atlas.tileHeight,
         };
     }
+    if (isSpriteSheetAtlas(atlas)) return null; // animated manifest — frames are cut by the sprite painter, not by name
     const st = atlas.subTextures[sprite];
     if (!st) return null;
     return { sx: st.x, sy: st.y, sw: st.width, sh: st.height };

@@ -46,6 +46,25 @@ interface MeshGeometry {
  *  parity); three builds them in its vertical XY plane, so tip them flat, facing up. */
 const GROUND_ROTATION: [number, number, number] = [-Math.PI / 2, 0, 0];
 
+/** Shared albedo-texture cache keyed by URL/`data:` URI — one GPU texture per
+ *  distinct image across every mesh, mount, and canvas; never disposed (bounded
+ *  by the session's distinct catalog textures). `flipY: false` honors the glTF
+ *  top-left UV convention `uvs` are authored in; `RepeatWrapping` matches the
+ *  glTF default sampler. */
+const textureCache = new Map<string, THREE.Texture>();
+
+function getMeshTexture(url: string): THREE.Texture {
+    const cached = textureCache.get(url);
+    if (cached) return cached;
+    const texture = new THREE.TextureLoader().load(url);
+    texture.flipY = false;
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    textureCache.set(url, texture);
+    return texture;
+}
+
 /**
  * Raw-geometry `polyhedron`: `vertices` are scene-frame `[x,y,z]` (z = up),
  * `faces` are index triples wound CCW-outward in the SCENE frame. The scene→
@@ -76,6 +95,14 @@ function polyhedronGeometry(node: DrawMeshProps, cellSize: number): MeshGeometry
     if (index.length === 0) return null;
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    if (node.uvs && node.uvs.length === verts.length) {
+        const uv = new Float32Array(verts.length * 2);
+        for (let i = 0; i < verts.length; i++) {
+            uv[i * 2] = node.uvs[i][0];
+            uv[i * 2 + 1] = node.uvs[i][1];
+        }
+        geometry.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    }
     geometry.setIndex(index);
     geometry.computeVertexNormals();
     const skin = node.skin;
@@ -151,6 +178,7 @@ function meshMaterial(mat: MeshMaterial | undefined, opacity: number, ref?: Mesh
         transparent: opacity < 1,
         opacity,
         side: SIDE_MAP[m.side ?? 'front'],
+        ...(m.map ? { map: getMeshTexture(m.map) } : {}),
     };
     const emissive = m.emissive
         ? { emissive: m.emissive, emissiveIntensity: m.emissiveIntensity ?? 1 }

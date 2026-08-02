@@ -215,7 +215,10 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             <span className="flex-shrink-0">{resolvedLeftIcon}</span>
           )
         )}
-        {children || label}
+        {/* Runtime slot projection passes children as an (often empty) array —
+            an empty array is truthy, so a bare `children || label` eats the
+            label on every projected icon+label button. */}
+        {(Array.isArray(children) ? children.length > 0 : Boolean(children)) ? children : label}
         {resolvedRightIcon && !isLoading && (
           <span className="flex-shrink-0">{resolvedRightIcon}</span>
         )}
