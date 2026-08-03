@@ -196,9 +196,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const location = useLocation();
   // Resolution order: explicit prop > runtime context > router pathname.
   // The studio preview wraps the playground with `CurrentPagePathProvider`
-  // so the in-frame page is what NavLink matches against.
+  // so the in-frame page is what NavLink matches against. "" is not a path —
+  // the std-app-layout atom forwards its `currentPath : string = ""` knob
+  // unconditionally, and that empty default must not shadow the context.
   const ctxPagePath = useCurrentPagePath();
-  const activePath = currentPath ?? ctxPagePath ?? location.pathname;
+  const activePath = (currentPath || undefined) ?? ctxPagePath ?? location.pathname;
 
   // Get user and signOut from auth context (with prop overrides)
   const { user: authUser, signOut: authSignOut } = useAuthContext();

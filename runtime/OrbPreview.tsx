@@ -18,6 +18,7 @@ import React, { useEffect, useMemo, useCallback, useRef, useState } from 'react'
 import { Box } from '../components/core/atoms/Box';
 import { Typography } from '../components/core/atoms/Typography';
 import { OrbitalProvider } from '../providers/OrbitalProvider';
+import { CurrentPagePathProvider } from '../providers/CurrentPagePathContext';
 import { VerificationProvider } from '../providers/VerificationProvider';
 import { UISlotProvider, useUISlots, type SlotProps } from '../providers/UISlotContext';
 import { UISlotRenderer } from '../components/core/organisms/UISlotRenderer';
@@ -946,6 +947,21 @@ export function OrbPreview({
     }
   }, [initialPagePath, initialPageName, initialPageMatch]);
 
+  // Resolved path of the page actually on screen (currentPage is a page
+  // NAME, not a path — DashboardLayout's sidebar highlighting needs the
+  // PATH). Falls back to the first declared page when currentPage hasn't
+  // been set yet (initial mount, no initialPagePath), mirroring
+  // SchemaRunner's own first-page default so the highlight matches what
+  // actually renders instead of staying blank. Fed to
+  // `CurrentPagePathProvider` below — `DashboardLayout` prefers this over
+  // `useLocation().pathname`, which never changes here because in-preview
+  // nav is intercepted client-side and never touches the MemoryRouter.
+  const currentPagePath = useMemo(() => {
+    const activePageName = currentPage ?? pages[0]?.page.name;
+    const resolved = pages.find((p) => p.page.name === activePageName)?.page.path;
+    return resolved ?? initialPagePath;
+  }, [pages, currentPage, initialPagePath]);
+
   // Navigate handler: when a ['navigate', '/path'] effect fires OR a
   // sidebar `<Link>` click is intercepted, find the matching page and
   // switch to it. Also pushes `?page=/path` into the host URL so a
@@ -1058,21 +1074,23 @@ export function OrbPreview({
           </Typography>
         </Box>
       )}
-      <OrbitalProvider initialData={effectiveMockData} skipTheme verification isolated={isolated}>
-        <UISlotProvider>
-          <SchemaRunner
-            schema={parseResult.schema}
-            serverUrl={serverUrl}
-            transport={transport}
-            mockData={effectiveMockData}
-            pageName={currentPage}
-            routeParams={routeParams}
-            onNavigate={handleNavigate}
-            onLocalFallback={handleLocalFallback}
-            persistence={persistence}
-          />
-        </UISlotProvider>
-      </OrbitalProvider>
+      <CurrentPagePathProvider value={currentPagePath}>
+        <OrbitalProvider initialData={effectiveMockData} skipTheme verification isolated={isolated}>
+          <UISlotProvider>
+            <SchemaRunner
+              schema={parseResult.schema}
+              serverUrl={serverUrl}
+              transport={transport}
+              mockData={effectiveMockData}
+              pageName={currentPage}
+              routeParams={routeParams}
+              onNavigate={handleNavigate}
+              onLocalFallback={handleLocalFallback}
+              persistence={persistence}
+            />
+          </UISlotProvider>
+        </OrbitalProvider>
+      </CurrentPagePathProvider>
     </Box>
   );
 }
