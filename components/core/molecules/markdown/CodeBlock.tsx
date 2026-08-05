@@ -1151,8 +1151,11 @@ export const CodeBlock = React.memo<CodeBlockProps>(
               ref={editableTextareaRef}
               defaultValue={code}
               onChange={(e) => {
-                setEditableValue(e.target.value);
-                onChange?.(e.target.value);
+                const v = e.target.value;
+                // Mark known so the parent echoing `v` back doesn't remount us.
+                lastPropCodeRef.current = v;
+                setEditableValue(v);
+                onChange?.(v);
               }}
               onScroll={handleEditableScroll}
               spellCheck={false}
