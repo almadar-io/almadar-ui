@@ -12,7 +12,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { Play, RotateCcw, Terminal, CheckCircle, XCircle } from 'lucide-react';
+import { Play, RotateCcw, Terminal, CheckCircle, XCircle, Copy, Check } from 'lucide-react';
 import { Box } from '../atoms/Box';
 import { Button } from '../atoms/Button';
 import { Badge } from '../atoms/Badge';
@@ -68,6 +68,7 @@ export const CodeRunnerPanel: React.FC<CodeRunnerPanelProps> = ({
   const [output, setOutput] = useState<CodeSimulationOutput | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleRun = useCallback(async () => {
     if (!onRun) return;
@@ -95,6 +96,17 @@ export const CodeRunnerPanel: React.FC<CodeRunnerPanelProps> = ({
     setError(null);
   }, [initialCode]);
 
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      eventBus.emit('UI:COPY_CODE', { language, success: true });
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      eventBus.emit('UI:COPY_CODE', { language, success: false });
+    }
+  }, [code, language, eventBus]);
+
   if (!runnable || !onRun) {
     return (
       <Box className={className}>
@@ -107,57 +119,54 @@ export const CodeRunnerPanel: React.FC<CodeRunnerPanelProps> = ({
 
   return (
     <Box className={cn('space-y-3', className)}>
-      <CodeBlock
-        language={language as Parameters<typeof CodeBlock>[0]['language']}
-        code={code}
-        editable
-        onChange={setCode}
-        showLanguageBadge
-        showCopyButton
-      />
+      {/* editable CodeBlock sizes via height:100% + flex:1; needs a concrete parent height */}
+      <Box className="group relative" style={{ height: 360 }}>
+        <CodeBlock
+          language={language as Parameters<typeof CodeBlock>[0]['language']}
+          code={code}
+          editable
+          onChange={setCode}
+          showLanguageBadge
+          showCopyButton={false}
+          maxHeight="100%"
+        />
 
-      <HStack gap="sm" justify="between">
-        <HStack gap="sm">
+        {/* Hover toolbar: Copy / Reset / Run. Revealed on hover or keyboard
+            focus-within so the lesson body isn't polluted with per-block
+            button rows. */}
+        <HStack
+          gap="xs"
+          align="center"
+          className="absolute top-2 right-2 z-10 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto focus-within:opacity-100 focus-within:pointer-events-auto transition-opacity bg-[var(--color-card)]/90 backdrop-blur-sm rounded-md p-1 shadow-sm border border-border"
+        >
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCopy}
+            icon={copied ? Check : Copy}
+            aria-label={t('common.copy')}
+            className={copied ? 'text-success' : ''}
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleReset}
+            disabled={isRunning}
+            icon={RotateCcw}
+            aria-label="Reset"
+          />
           <Button
             variant="primary"
             size="sm"
             onClick={handleRun}
             disabled={isRunning}
-            className="min-w-[5rem]"
+            icon={isRunning ? RotateCcw : Play}
+            className={isRunning ? '[&_svg]:animate-spin' : ''}
           >
-            {isRunning ? (
-              <span className="inline-flex items-center gap-2">
-                <RotateCcw size={16} className="animate-spin" />
-                {t('common.loading')}
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-2">
-                <Play size={16} />
-                Run
-              </span>
-            )}
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleReset}
-            disabled={isRunning}
-          >
-            <span className="inline-flex items-center gap-2">
-              <RotateCcw size={16} />
-              Reset
-            </span>
+            {isRunning ? t('common.loading') : 'Run'}
           </Button>
         </HStack>
-        {output && (
-          <Badge
-            variant={output.exitCode === 0 ? 'success' : 'danger'}
-            size="sm"
-          >
-            Exit {output.exitCode}
-          </Badge>
-        )}
-      </HStack>
+      </Box>
 
       {hasOutput && (
         <Box className="rounded-lg border border-border bg-foreground overflow-hidden">
@@ -170,6 +179,14 @@ export const CodeRunnerPanel: React.FC<CodeRunnerPanelProps> = ({
             <Typography variant="small" className="text-foreground font-medium">
               Output
             </Typography>
+            {output && (
+              <Badge
+                variant={output.exitCode === 0 ? 'success' : 'danger'}
+                size="sm"
+              >
+                Exit {output.exitCode}
+              </Badge>
+            )}
           </HStack>
 
           <VStack gap="none" className="p-3 font-mono text-sm">
