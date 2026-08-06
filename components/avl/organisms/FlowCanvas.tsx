@@ -191,6 +191,18 @@ export interface FlowCanvasProps {
    * originates from the synthesized `__design_system__` schema.
    */
   themeManifest?: ThemeDefinition;
+  /**
+   * Persisted node positions keyed by node id. When the node set changes
+   * (level/schema switch), any id present here overrides the computed layout
+   * position, restoring a user's manual drag arrangement. Node ids are unique
+   * per view level, so a single flat map covers overview + expanded.
+   */
+  nodePositions?: Record<string, { x: number; y: number }>;
+  /**
+   * Fired on node drag-stop with the full {id → position} map of the current
+   * node set, so the consumer can persist the arrangement across reloads.
+   */
+  onPositionsChange?: (positions: Record<string, { x: number; y: number }>) => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -224,6 +236,8 @@ function FlowCanvasInner({
   behaviorWires,
   userType = 'builder',
   themeManifest,
+  nodePositions,
+  onPositionsChange,
 }: FlowCanvasProps) {
   const { t } = useTranslate();
   // Render-time NODE_TYPES / EDGE_TYPES — not module-level. When vite's
@@ -369,14 +383,29 @@ function FlowCanvasInner({
 
   const reactFlow = useReactFlow();
 
+  // Persisted-position overlay. Held in a ref and read only when the node SET
+  // changes (level/schema switch), so a consumer updating its store mid-drag
+  // never clobbers the live xyflow positions.
+  const savedPositionsRef = React.useRef(nodePositions);
+  savedPositionsRef.current = nodePositions;
+  // Latest nodes via ref so onNodeDragStop reads post-drag positions without
+  // rebuilding its closure every drag frame.
+  const nodesRef = React.useRef(nodes);
+  nodesRef.current = nodes;
+
   // Sync nodes/edges when level or schema changes. setNodes/setEdges write
   // to separate zustand stores; between them xyflow can briefly see new
   // nodes paired with old edges (or vice versa) when switching levels.
   // Clear edges FIRST so no edge ever references a node id that's about to
-  // disappear, then set the new nodes, then the new edges.
+  // disappear, then set the new nodes (overlaid with any saved positions),
+  // then the new edges.
   useEffect(() => {
     setEdges([]);
-    setNodes(activeNodes);
+    const saved = savedPositionsRef.current;
+    const merged = saved
+      ? activeNodes.map((n) => (saved[n.id] ? { ...n, position: saved[n.id] } : n))
+      : activeNodes;
+    setNodes(merged);
     setEdges(activeEdges);
     requestAnimationFrame(() => {
       reactFlow.fitView({ duration: 300, padding: 0.25 });
@@ -590,6 +619,17 @@ function FlowCanvasInner({
     });
   }, [nodes, onEventWire, eventBus]);
 
+  // Persist drag arrangement: on drop, snapshot every node's position so the
+  // consumer (builder workspace) can restore it across reloads.
+  const handleNodeDragStop = useCallback(() => {
+    if (!onPositionsChange) return;
+    const positions: Record<string, { x: number; y: number }> = {};
+    for (const n of nodesRef.current) {
+      positions[n.id] = { x: n.position.x, y: n.position.y };
+    }
+    onPositionsChange(positions);
+  }, [onPositionsChange]);
+
   const screenSizeKeys: ScreenSize[] = ['mobile', 'tablet', 'laptop', 'wide'];
 
   // COSMIC-1: TraitCardNode (used at `trait-expanded`) bubbles row clicks
@@ -627,6 +667,7 @@ function FlowCanvasInner({
           onNodeDoubleClick={handleNodeDoubleClick}
           onNodeClick={handleNodeClick}
           onConnect={handleConnect}
+          onNodeDragStop={handleNodeDragStop}
           minZoom={0.1}
           maxZoom={2.0}
           fitView
