@@ -21,7 +21,8 @@ export type InteractiveOrbitalType =
   | 'biology'
   | 'chemistry'
   | 'probability'
-  | 'freeform';
+  | 'charts'
+  | 'diagram';
 
 export type LessonSegment =
   | MixedSegment
@@ -90,7 +91,7 @@ export function parseLessonSegments(lesson: string | undefined): LessonSegment[]
       '(?<bloom><bloom\\s+level="(?<bloomLevel>remember|understand|apply|analyze|evaluate|create)">(?<bloomClosed>[\\s\\S]*?)<\\/bloom>)|' +
       '(?<bloomUnclosed><bloom\\s+level="(?<bloomLevelUn>remember|understand|apply|analyze|evaluate|create)">(?<bloomOpen>[\\s\\S]*?)(?=<(?:activate|connect|reflect|bloom|prq|question|answer|visualize)|\\n\\n#|$))|' +
       '(?<quiz><question>(?<quizQuestion>[\\s\\S]*?)<\\/question>\\s*<answer>(?<quizAnswer>[\\s\\S]*?)<\\/answer>)|' +
-      '(?<visualize><visualize\\s+type="(?<vizType>algorithms|math|physics|biology|chemistry|probability|freeform)"\\s+description="(?<vizDesc>[^"]*?)"\\s*\\/?>)',
+      '(?<visualize><visualize\\s+type="(?<vizType>algorithms|math|physics|biology|chemistry|probability|charts|diagram)"\\s+description="(?<vizDesc>[^"]*?)"\\s*\\/?>)',
     'gi',
   );
 

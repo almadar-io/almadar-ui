@@ -9,10 +9,11 @@
  * to lay out nodes, then renders via SVG circles and lines.
  */
 
-import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo, useId } from 'react';
 import { cn } from '../../../lib/cn';
 import { Box } from '../atoms/index';
 import { useTranslate } from '../../../hooks/useTranslate';
+import { computeStaticLayout, type GraphViewLayout } from '../../../lib/graphViewLayouts';
 
 export type GraphViewNode = {
   id: string;
@@ -48,6 +49,15 @@ export interface GraphViewProps {
   showLabels?: boolean;
   /** Auto zoom-to-fit after layout settles (default true) */
   zoomToFit?: boolean;
+  /**
+   * Layout mode. force = physics simulation (default); flow = layered
+   * left-to-right process flow; tree = top-down hierarchy tiers from the
+   * roots; radial = concentric rings by depth (a pure cycle renders as a
+   * single ring). Non-force layouts are deterministic.
+   * @tier domain
+   * @synonyms layout mode, flow layout, tree layout, radial layout, hierarchy layout
+   */
+  layout?: 'force' | 'flow' | 'tree' | 'radial';
 }
 
 /** Default group colors using Tailwind palette values */
@@ -99,10 +109,12 @@ export const GraphView: React.FC<GraphViewProps> = ({
   className,
   showLabels = true,
   zoomToFit = true,
+  layout = 'force',
 }) => {
   const { t } = useTranslate();
   const containerRef = useRef<HTMLDivElement>(null);
   const animRef = useRef<number>(0);
+  const arrowMarkerId = useId();
   const [simNodes, setSimNodes] = useState<SimNode[]>([]);
   const [settled, setSettled] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -170,6 +182,23 @@ export const GraphView: React.FC<GraphViewProps> = ({
         fy: 0,
       };
     });
+
+    if (layout !== 'force') {
+      const points = computeStaticLayout(layout, {
+        nodeIds: nodes.map((n) => n.id),
+        edges,
+        width: w,
+        height: h,
+      });
+      const pointById = new Map(points.map((p) => [p.id, p]));
+      const laidOut = initialNodes.map((node) => {
+        const point = pointById.get(node.id);
+        return point ? { ...node, x: point.x, y: point.y } : node;
+      });
+      setSimNodes(laidOut);
+      setSettled(true);
+      return;
+    }
 
     let iterations = 0;
     const maxIterations = 120;
@@ -255,7 +284,7 @@ export const GraphView: React.FC<GraphViewProps> = ({
     return () => {
       cancelAnimationFrame(animRef.current);
     };
-  }, [nodes, edges, w, h, groups]);
+  }, [nodes, edges, w, h, groups, layout]);
 
   // Compute viewBox for zoom-to-fit
   const viewBox = useMemo(() => {
@@ -343,6 +372,22 @@ export const GraphView: React.FC<GraphViewProps> = ({
         viewBox={viewBox}
         preserveAspectRatio="xMidYMid meet"
       >
+        {layout !== 'force' && (
+          <defs>
+            <marker
+              id={arrowMarkerId}
+              viewBox="0 0 10 10"
+              refX="9"
+              refY="5"
+              markerWidth="6"
+              markerHeight="6"
+              orient="auto-start-reverse"
+            >
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor" />
+            </marker>
+          </defs>
+        )}
+
         {/* Edges */}
         {edges.map((edge, idx) => {
           const source = nodeMap.get(edge.source);
@@ -361,8 +406,10 @@ export const GraphView: React.FC<GraphViewProps> = ({
                 x2={target.x}
                 y2={target.y}
                 stroke={edge.color ?? DEFAULT_EDGE_COLOR}
+                color={edge.color ?? DEFAULT_EDGE_COLOR}
                 strokeWidth={1.5}
                 opacity={isHighlighted ? 0.8 : 0.15}
+                markerEnd={layout !== 'force' ? `url(#${arrowMarkerId})` : undefined}
               />
               {showLabels && edge.label && (
                 <text

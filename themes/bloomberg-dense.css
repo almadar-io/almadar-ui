@@ -1,18 +1,29 @@
 /**
- * Bloomberg Dense Theme
+ * Bloomberg Dense Theme — "Data Cockpit"
  *
- * Personality: trading-terminal / data-cockpit feel. Very dark navy canvas, cyan +
- * amber data accents, JetBrains Mono everywhere, sharp 0-radius corners with thick
- * 2px borders carrying hierarchy. Mechanical linear motion under 200ms.
+ * Personality: a modern trading terminal — dense, dark, instrument-grade, but
+ * refined rather than brutalist. Deep cool-navy canvas with a cyan primary and
+ * amber data accent, panels lifted by soft layered shadows carrying a faint
+ * cyan glow, small-but-present radii, and a clean grotesque body paired with a
+ * mono used only for numerics. Motion is smooth (emphasized-decel) with a
+ * subtle spring, not the old mechanical linear. The 4pt rhythm and compact
+ * element heights keep it unmistakably a data cockpit.
+ *
+ * What changed from the original bloomberg-dense (de-boxified):
+ *   Geometry     sharp 0px radius + 2px black borders → 3-6px radii + 1px hairlines
+ *   Elevation    flat (no shadows) → layered depth with a faint cyan glow
+ *   Type         JetBrains Mono everywhere → Inter body + mono numerics only
+ *   Motion       linear 100/150/200ms → emphasized-decel 120/180/260ms + spring
+ *   Iconography  phosphor-fill (heavy) → lucide 1.5px (clean)
  *
  * Spec axes (per docs/Almadar_Std_Variations.md §2.4):
- *   Color        very dark navy/black + cyan/amber data accents
- *   Density      compact (4pt rhythm, 24/28/32 buttons — tighter than linear)
- *   Type         dense (JetBrains Mono everywhere, 1.3 leading, base 14px)
- *   Geometry     sharp (radius 0, borders 2px thick)
- *   Elevation    outline (no shadows — borders carry hierarchy)
- *   Motion       mechanical (linear easing, 100/150/200ms)
- *   Iconography  filled (phosphor-fill, 0 stroke)
+ *   Color        deep cool-navy + cyan primary + amber data accent
+ *   Density      compact (4pt rhythm, 26/30/34 buttons)
+ *   Type         dense grotesque (Inter body, JetBrains Mono numerics, 1.45 leading)
+ *   Geometry     refined (3-6px radius, 1px hairline borders)
+ *   Elevation    depth-glowed (layered shadows w/ faint cyan tint)
+ *   Motion       smooth (emphasized-decel, subtle spring, 120/180/260ms)
+ *   Iconography  outline (lucide, stroke 1.5)
  *   Illustration text-only (no imagery in empty states)
  */
 
@@ -20,99 +31,106 @@
  * LIGHT MODE
  * ========================================================================== */
 [data-theme="bloomberg-dense-light"] {
+    /* Shadows — soft, neutral, with a faint cyan tint for the data-cockpit glow */
     --shadow-none: none;
-    --shadow-sm: none;
-    --shadow-main: none;
-    --shadow-lg: none;
-    --shadow-inner: none;
-    --shadow-hover: none;
-    --shadow-active: none;
+    --shadow-sm: 0 1px 2px rgba(12, 20, 36, 0.06);
+    --shadow-main: 0 4px 12px rgba(12, 20, 36, 0.08), 0 0 0 1px rgba(14, 116, 144, 0.06);
+    --shadow-lg: 0 12px 28px rgba(12, 20, 36, 0.10), 0 2px 6px rgba(12, 20, 36, 0.05);
+    --shadow-inner: inset 0 1px 2px rgba(12, 20, 36, 0.05);
+    --shadow-hover: 0 6px 16px rgba(12, 20, 36, 0.10), 0 0 0 1px rgba(14, 116, 144, 0.10);
+    --shadow-active: 0 1px 3px rgba(12, 20, 36, 0.08);
 
+    /* Radius — small but present (de-boxified) */
     --radius-none: 0px;
-    --radius-sm: 0px;
-    --radius-md: 0px;
-    --radius-lg: 0px;
-    --radius-xl: 0px;
+    --radius-sm: 3px;
+    --radius-md: 4px;
+    --radius-lg: 6px;
+    --radius-xl: 8px;
     --radius-full: 9999px;
 
-    --border-width: 2px;
+    /* Border width — hairline-led */
+    --border-width: 1px;
     --border-width-thin: 1px;
-    --border-width-thick: 3px;
+    --border-width-thick: 2px;
 
-    --color-primary: #06b6d4;
-    --color-primary-hover: #0891b2;
-    --color-primary-foreground: #0a0e1a;
+    /* Colors — cool off-white canvas, deep navy ink, cyan + amber data accents */
+    --color-primary: #0e7490;
+    --color-primary-hover: #155e75;
+    --color-primary-foreground: #ffffff;
 
-    --color-secondary: #e4e9f2;
-    --color-secondary-hover: #d6dce8;
-    --color-secondary-foreground: #0a0e1a;
+    --color-secondary: #eef2f8;
+    --color-secondary-hover: #e1e7f0;
+    --color-secondary-foreground: #0c1424;
 
-    --color-accent: #f59e0b;
-    --color-accent-foreground: #0a0e1a;
+    --color-accent: #b45309;
+    --color-accent-foreground: #ffffff;
 
-    --color-muted: #e4e9f2;
-    --color-muted-foreground: #4a5568;
+    --color-muted: #eef2f8;
+    --color-muted-foreground: #4a5876;
 
-    --color-background: #f5f7fa;
-    --color-foreground: #0a0e1a;
+    --color-background: #f6f8fc;
+    --color-foreground: #0c1424;
     --color-card: #ffffff;
-    --color-card-foreground: #0a0e1a;
-    --color-surface: #eceff5;
-    --color-border: #0a0e1a;
-    --color-input: #0a0e1a;
-    --color-ring: #06b6d4;
+    --color-card-foreground: #0c1424;
+    --color-surface: #eef2f8;
+    --color-border: #d6deeb;
+    --color-input: #c2cee0;
+    --color-ring: #0e7490;
 
-    --color-table-header: #0a0e1a;
-    --color-table-border: #0a0e1a;
-    --color-table-row-hover: #eceff5;
-    --color-surface-hover: #d6dce8;
-    --color-border-hover: #0a0e1a;
-    --color-placeholder: #6b7280;
+    --color-table-header: #eef2f8;
+    --color-table-border: #d6deeb;
+    --color-table-row-hover: #eef2f8;
+    --color-surface-hover: #e1e7f0;
+    --color-border-hover: #aab8cd;
+    --color-placeholder: #6b7a96;
 
-    --color-error: #dc2626;
+    --color-error: #c2410c;
     --color-error-foreground: #ffffff;
-    --color-success: #15803d;
+    --color-success: #047857;
     --color-success-foreground: #ffffff;
-    --color-warning: #f59e0b;
-    --color-warning-foreground: #0a0e1a;
-    --color-info: #06b6d4;
-    --color-info-foreground: #0a0e1a;
+    --color-warning: #b45309;
+    --color-warning-foreground: #ffffff;
+    --color-info: #0e7490;
+    --color-info-foreground: #ffffff;
 
+    /* Typography — clean grotesque body, mono reserved for numerics */
     --font-family:
-        "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-family-display:
-        "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-family-body:
-        "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-family-mono:
-        "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
+        "JetBrains Mono", "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
     --font-weight-normal: 400;
     --font-weight-medium: 500;
-    --font-weight-bold: 700;
-    --letter-spacing: 0;
-    --line-height: 1.3;
+    --font-weight-bold: 600;
+    --letter-spacing: -0.011em;
+    --line-height: 1.45;
 
-    --text-xs: 10px;
-    --leading-xs: 13px;
-    --text-sm: 12px;
-    --leading-sm: 16px;
+    /* Dense type scale — slightly less squinty than the old 10/12/14 */
+    --text-xs: 11px;
+    --leading-xs: 15px;
+    --text-sm: 13px;
+    --leading-sm: 18px;
     --text-base: 14px;
-    --leading-base: 18px;
+    --leading-base: 20px;
     --text-lg: 16px;
-    --leading-lg: 20px;
+    --leading-lg: 22px;
     --text-xl: 18px;
-    --leading-xl: 23px;
-    --text-2xl: 20px;
-    --leading-2xl: 26px;
-    --text-3xl: 24px;
-    --leading-3xl: 31px;
-    --text-4xl: 30px;
-    --leading-4xl: 39px;
-    --text-display-1: 38px;
-    --leading-display-1: 49px;
-    --text-display-2: 48px;
+    --leading-xl: 24px;
+    --text-2xl: 21px;
+    --leading-2xl: 27px;
+    --text-3xl: 25px;
+    --leading-3xl: 32px;
+    --text-4xl: 31px;
+    --leading-4xl: 40px;
+    --text-display-1: 40px;
+    --leading-display-1: 50px;
+    --text-display-2: 52px;
     --leading-display-2: 62px;
 
+    /* Intent mapping — mono family only on numerics, where it earns its place */
     --intent-heading-major-size: var(--text-xl);
     --intent-heading-major-weight: var(--font-weight-bold);
     --intent-heading-major-leading: var(--leading-xl);
@@ -129,13 +147,14 @@
     --intent-body-quiet-weight: var(--font-weight-normal);
     --intent-body-quiet-leading: var(--leading-xs);
     --intent-caption-size: var(--text-xs);
-    --intent-caption-weight: var(--font-weight-normal);
+    --intent-caption-weight: var(--font-weight-medium);
     --intent-caption-leading: var(--leading-xs);
     --intent-numeric-size: var(--text-sm);
     --intent-numeric-weight: var(--font-weight-bold);
     --intent-numeric-leading: var(--leading-sm);
     --intent-numeric-family: var(--font-family-mono);
 
+    /* Density — 4pt rhythm, compact but slightly more breathable than the old 8/12/16 */
     --space-0: 0px;
     --space-1: 4px;
     --space-2: 8px;
@@ -150,162 +169,174 @@
     --space-11: 44px;
     --space-12: 48px;
 
-    --button-height-sm: 24px;
-    --button-height-md: 28px;
-    --button-height-lg: 32px;
-    --input-height-sm: 24px;
-    --input-height-md: 28px;
-    --input-height-lg: 32px;
-    --row-height-compact: 24px;
-    --row-height-normal: 28px;
-    --row-height-spacious: 36px;
+    --button-height-sm: 26px;
+    --button-height-md: 30px;
+    --button-height-lg: 34px;
+    --input-height-sm: 26px;
+    --input-height-md: 30px;
+    --input-height-lg: 34px;
+    --row-height-compact: 30px;
+    --row-height-normal: 36px;
+    --row-height-spacious: 44px;
 
-    --card-padding-sm: 8px;
-    --card-padding-md: 12px;
-    --card-padding-lg: 16px;
-    --dialog-padding: 20px;
-    --section-gap: 24px;
+    --card-padding-sm: 12px;
+    --card-padding-md: 16px;
+    --card-padding-lg: 20px;
+    --dialog-padding: 22px;
+    --section-gap: 28px;
 
-    --icon-family: phosphor-fill;
-    --icon-default-size: 14px;
-    --icon-stroke-width: 0;
+    /* Iconography — clean outline (lucide), not the old heavy phosphor-fill */
+    --icon-family: lucide;
+    --icon-default-size: 15px;
+    --icon-stroke-width: 1.5;
     --icon-color: currentColor;
 
-    --elevation-card: none;
-    --elevation-popover: none;
-    --elevation-dialog: none;
-    --elevation-toast: none;
+    /* Elevation — per-layer mapping (panels float, popovers/dialogs lift higher) */
+    --elevation-card: var(--shadow-sm);
+    --elevation-popover: var(--shadow-main);
+    --elevation-dialog: var(--shadow-lg);
+    --elevation-toast: var(--shadow-main);
 
-    --radius-container: 0px;
-    --radius-interactive: 0px;
+    /* Geometry — refined radius + hairline rhythm with intent */
+    --radius-container: 6px;
+    --radius-interactive: 4px;
     --radius-pill: 9999px;
     --border-hairline: 1px;
-    --border-standard: 2px;
-    --border-heavy: 3px;
+    --border-standard: 1px;
+    --border-heavy: 2px;
 
-    --transition-fast: 100ms;
-    --transition-normal: 150ms;
-    --transition-slow: 200ms;
-    --transition-timing: linear;
+    /* Motion — smooth emphasized-decel + subtle spring (de-mechanized) */
+    --transition-fast: 120ms;
+    --transition-normal: 180ms;
+    --transition-slow: 260ms;
+    --transition-timing: cubic-bezier(0.2, 0, 0, 1);
 
     --duration-instant: 0ms;
-    --duration-fast: 100ms;
-    --duration-normal: 150ms;
-    --duration-slow: 200ms;
-    --duration-dramatic: 300ms;
+    --duration-fast: 120ms;
+    --duration-normal: 180ms;
+    --duration-slow: 260ms;
+    --duration-dramatic: 420ms;
     --easing-linear: linear;
-    --easing-standard: linear;
-    --easing-emphasized: linear;
-    --easing-spring: linear;
+    --easing-standard: cubic-bezier(0.2, 0, 0, 1);
+    --easing-emphasized: cubic-bezier(0.3, 0, 0, 1);
+    --easing-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
 
+    /* Interaction — subtle lift (vs old dead-static none) */
     --hover-scale: 1;
-    --hover-translate-y: 0;
+    --hover-translate-y: -1px;
     --hover-translate-x: 0;
-    --active-scale: 1;
+    --active-scale: 0.99;
     --active-translate-y: 0;
 
     --focus-ring-width: 2px;
-    --focus-ring-offset: 0px;
-    --focus-ring-color: #06b6d4;
+    --focus-ring-offset: 2px;
+    --focus-ring-color: #0e7490;
 }
 
 /* ==========================================================================
  * DARK MODE
  * ========================================================================== */
 [data-theme="bloomberg-dense-dark"] {
+    /* Shadows — deep layered drops carrying the faint cyan data-cockpit glow */
     --shadow-none: none;
-    --shadow-sm: none;
-    --shadow-main: none;
-    --shadow-lg: none;
-    --shadow-inner: none;
-    --shadow-hover: none;
-    --shadow-active: none;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-main: 0 4px 14px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(34, 211, 238, 0.06);
+    --shadow-lg: 0 14px 34px rgba(0, 0, 0, 0.6), 0 0 26px rgba(34, 211, 238, 0.07);
+    --shadow-inner: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-hover: 0 8px 22px rgba(0, 0, 0, 0.55), 0 0 18px rgba(34, 211, 238, 0.12);
+    --shadow-active: 0 1px 3px rgba(0, 0, 0, 0.45);
 
+    /* Radius — small but present (de-boxified) */
     --radius-none: 0px;
-    --radius-sm: 0px;
-    --radius-md: 0px;
-    --radius-lg: 0px;
-    --radius-xl: 0px;
+    --radius-sm: 3px;
+    --radius-md: 4px;
+    --radius-lg: 6px;
+    --radius-xl: 8px;
     --radius-full: 9999px;
 
-    --border-width: 2px;
+    /* Border width — hairline-led */
+    --border-width: 1px;
     --border-width-thin: 1px;
-    --border-width-thick: 3px;
+    --border-width-thick: 2px;
 
+    /* Colors — deep cool-navy canvas, soft-cool foreground, cyan + amber accents */
     --color-primary: #22d3ee;
     --color-primary-hover: #67e8f9;
-    --color-primary-foreground: #0a0e1a;
+    --color-primary-foreground: #06131a;
 
-    --color-secondary: #131826;
-    --color-secondary-hover: #1c2236;
-    --color-secondary-foreground: #c7d2e0;
+    --color-secondary: #16233d;
+    --color-secondary-hover: #1d2d4c;
+    --color-secondary-foreground: #d6e0ef;
 
     --color-accent: #fbbf24;
-    --color-accent-foreground: #0a0e1a;
+    --color-accent-foreground: #1a1206;
 
-    --color-muted: #131826;
-    --color-muted-foreground: #8a98b3;
+    --color-muted: #131f36;
+    --color-muted-foreground: #8e9db8;
 
-    --color-background: #0a0e1a;
-    --color-foreground: #c7d2e0;
-    --color-card: #0e1322;
-    --color-card-foreground: #c7d2e0;
-    --color-surface: #131826;
-    --color-border: #22d3ee;
-    --color-input: #22d3ee;
+    --color-background: #0a0f1c;
+    --color-foreground: #e6edf7;
+    --color-card: #0f1626;
+    --color-card-foreground: #e6edf7;
+    --color-surface: #131f36;
+    --color-border: #20304e;
+    --color-input: #2d4163;
     --color-ring: #22d3ee;
 
-    --color-table-header: #131826;
-    --color-table-border: #22d3ee;
-    --color-table-row-hover: #131826;
-    --color-surface-hover: #1c2236;
-    --color-border-hover: #67e8f9;
-    --color-placeholder: #4a5772;
+    --color-table-header: #131f36;
+    --color-table-border: #20304e;
+    --color-table-row-hover: #16233d;
+    --color-surface-hover: #1d2d4c;
+    --color-border-hover: #36506f;
+    --color-placeholder: #5a6b88;
 
     --color-error: #f87171;
-    --color-error-foreground: #0a0e1a;
-    --color-success: #4ade80;
-    --color-success-foreground: #0a0e1a;
+    --color-error-foreground: #1a0a0a;
+    --color-success: #34d399;
+    --color-success-foreground: #06170f;
     --color-warning: #fbbf24;
-    --color-warning-foreground: #0a0e1a;
-    --color-info: #22d3ee;
-    --color-info-foreground: #0a0e1a;
+    --color-warning-foreground: #1a1206;
+    --color-info: #38bdf8;
+    --color-info-foreground: #061318;
 
+    /* Typography — clean grotesque body, mono reserved for numerics */
     --font-family:
-        "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-family-display:
-        "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-family-body:
-        "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-family-mono:
-        "JetBrains Mono", "Fira Code", "SF Mono", ui-monospace, monospace;
+        "JetBrains Mono", "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
     --font-weight-normal: 400;
     --font-weight-medium: 500;
-    --font-weight-bold: 700;
-    --letter-spacing: 0;
-    --line-height: 1.3;
+    --font-weight-bold: 600;
+    --letter-spacing: -0.011em;
+    --line-height: 1.45;
 
-    --text-xs: 10px;
-    --leading-xs: 13px;
-    --text-sm: 12px;
-    --leading-sm: 16px;
+    /* Dense type scale */
+    --text-xs: 11px;
+    --leading-xs: 15px;
+    --text-sm: 13px;
+    --leading-sm: 18px;
     --text-base: 14px;
-    --leading-base: 18px;
+    --leading-base: 20px;
     --text-lg: 16px;
-    --leading-lg: 20px;
+    --leading-lg: 22px;
     --text-xl: 18px;
-    --leading-xl: 23px;
-    --text-2xl: 20px;
-    --leading-2xl: 26px;
-    --text-3xl: 24px;
-    --leading-3xl: 31px;
-    --text-4xl: 30px;
-    --leading-4xl: 39px;
-    --text-display-1: 38px;
-    --leading-display-1: 49px;
-    --text-display-2: 48px;
+    --leading-xl: 24px;
+    --text-2xl: 21px;
+    --leading-2xl: 27px;
+    --text-3xl: 25px;
+    --leading-3xl: 32px;
+    --text-4xl: 31px;
+    --leading-4xl: 40px;
+    --text-display-1: 40px;
+    --leading-display-1: 50px;
+    --text-display-2: 52px;
     --leading-display-2: 62px;
 
+    /* Intent mapping — mono family only on numerics */
     --intent-heading-major-size: var(--text-xl);
     --intent-heading-major-weight: var(--font-weight-bold);
     --intent-heading-major-leading: var(--leading-xl);
@@ -322,13 +353,14 @@
     --intent-body-quiet-weight: var(--font-weight-normal);
     --intent-body-quiet-leading: var(--leading-xs);
     --intent-caption-size: var(--text-xs);
-    --intent-caption-weight: var(--font-weight-normal);
+    --intent-caption-weight: var(--font-weight-medium);
     --intent-caption-leading: var(--leading-xs);
     --intent-numeric-size: var(--text-sm);
     --intent-numeric-weight: var(--font-weight-bold);
     --intent-numeric-leading: var(--leading-sm);
     --intent-numeric-family: var(--font-family-mono);
 
+    /* Density — 4pt rhythm */
     --space-0: 0px;
     --space-1: 4px;
     --space-2: 8px;
@@ -343,61 +375,66 @@
     --space-11: 44px;
     --space-12: 48px;
 
-    --button-height-sm: 24px;
-    --button-height-md: 28px;
-    --button-height-lg: 32px;
-    --input-height-sm: 24px;
-    --input-height-md: 28px;
-    --input-height-lg: 32px;
-    --row-height-compact: 24px;
-    --row-height-normal: 28px;
-    --row-height-spacious: 36px;
+    --button-height-sm: 26px;
+    --button-height-md: 30px;
+    --button-height-lg: 34px;
+    --input-height-sm: 26px;
+    --input-height-md: 30px;
+    --input-height-lg: 34px;
+    --row-height-compact: 30px;
+    --row-height-normal: 36px;
+    --row-height-spacious: 44px;
 
-    --card-padding-sm: 8px;
-    --card-padding-md: 12px;
-    --card-padding-lg: 16px;
-    --dialog-padding: 20px;
-    --section-gap: 24px;
+    --card-padding-sm: 12px;
+    --card-padding-md: 16px;
+    --card-padding-lg: 20px;
+    --dialog-padding: 22px;
+    --section-gap: 28px;
 
-    --icon-family: phosphor-fill;
-    --icon-default-size: 14px;
-    --icon-stroke-width: 0;
+    /* Iconography — clean outline (lucide) */
+    --icon-family: lucide;
+    --icon-default-size: 15px;
+    --icon-stroke-width: 1.5;
     --icon-color: currentColor;
 
-    --elevation-card: none;
-    --elevation-popover: none;
-    --elevation-dialog: none;
-    --elevation-toast: none;
+    /* Elevation — per-layer mapping */
+    --elevation-card: var(--shadow-sm);
+    --elevation-popover: var(--shadow-main);
+    --elevation-dialog: var(--shadow-lg);
+    --elevation-toast: var(--shadow-main);
 
-    --radius-container: 0px;
-    --radius-interactive: 0px;
+    /* Geometry — refined radius + hairline rhythm */
+    --radius-container: 6px;
+    --radius-interactive: 4px;
     --radius-pill: 9999px;
     --border-hairline: 1px;
-    --border-standard: 2px;
-    --border-heavy: 3px;
+    --border-standard: 1px;
+    --border-heavy: 2px;
 
-    --transition-fast: 100ms;
-    --transition-normal: 150ms;
-    --transition-slow: 200ms;
-    --transition-timing: linear;
+    /* Motion — smooth emphasized-decel + subtle spring */
+    --transition-fast: 120ms;
+    --transition-normal: 180ms;
+    --transition-slow: 260ms;
+    --transition-timing: cubic-bezier(0.2, 0, 0, 1);
 
     --duration-instant: 0ms;
-    --duration-fast: 100ms;
-    --duration-normal: 150ms;
-    --duration-slow: 200ms;
-    --duration-dramatic: 300ms;
+    --duration-fast: 120ms;
+    --duration-normal: 180ms;
+    --duration-slow: 260ms;
+    --duration-dramatic: 420ms;
     --easing-linear: linear;
-    --easing-standard: linear;
-    --easing-emphasized: linear;
-    --easing-spring: linear;
+    --easing-standard: cubic-bezier(0.2, 0, 0, 1);
+    --easing-emphasized: cubic-bezier(0.3, 0, 0, 1);
+    --easing-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
 
+    /* Interaction — subtle lift */
     --hover-scale: 1;
-    --hover-translate-y: 0;
+    --hover-translate-y: -1px;
     --hover-translate-x: 0;
-    --active-scale: 1;
+    --active-scale: 0.99;
     --active-translate-y: 0;
 
     --focus-ring-width: 2px;
-    --focus-ring-offset: 0px;
+    --focus-ring-offset: 2px;
     --focus-ring-color: #22d3ee;
 }
