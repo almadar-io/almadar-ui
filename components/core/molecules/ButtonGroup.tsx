@@ -12,6 +12,7 @@ import { cn } from '../../../lib/cn';
 import { Button } from '../atoms/index';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { createLogger } from '@almadar/logger';
+import type { FilterDefinition } from './FilterGroup';
 
 const log = createLogger('almadar:ui:button-group');
 
@@ -37,16 +38,6 @@ export interface ActionButton {
   navigatesTo?: string;
   /** Button variant - matches Button component variants. Accepts string for schema compatibility. */
   variant?: string;
-}
-
-/** Filter definition for filter-group pattern */
-export interface FilterDefinition {
-  field: string;
-  label: string;
-  /** Filter type (checkbox, select, etc.) */
-  type?: 'checkbox' | 'select' | 'toggle';
-  /** Options for select filters */
-  options?: readonly string[];
 }
 
 export interface ButtonGroupProps {

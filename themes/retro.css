@@ -13,16 +13,16 @@
  * LIGHT MODE
  * ========================================================================== */
 [data-theme="retro-light"] {
-    /* Shadows - Hard offset, solid contrasting colors (arcade print) */
-    --shadow-main: 4px 4px 0 0 rgba(255, 46, 136, 0.55);
-    --shadow-sm: 2px 2px 0 0 rgba(255, 46, 136, 0.45);
+    /* Shadows - Hard offset arcade silhouette, toned-down opacity */
+    --shadow-main: 4px 4px 0 0 rgba(196, 36, 107, 0.4);
+    --shadow-sm: 2px 2px 0 0 rgba(196, 36, 107, 0.3);
     --shadow-lg:
-        6px 6px 0 0 rgba(255, 46, 136, 0.55);
+        6px 6px 0 0 rgba(196, 36, 107, 0.4);
     --shadow-inner: inset 2px 2px 0 0 rgba(109, 40, 217, 0.12);
     --shadow-none: none;
     --shadow-hover:
-        6px 6px 0 0 rgba(0, 188, 212, 0.7);
-    --shadow-active: 1px 1px 0 0 rgba(255, 46, 136, 0.55);
+        6px 6px 0 0 rgba(0, 152, 170, 0.45);
+    --shadow-active: 1px 1px 0 0 rgba(196, 36, 107, 0.4);
 
     /* Border radius - Sharp arcade corners */
     --radius-none: 0px;
@@ -38,8 +38,8 @@
     --border-width-thick: 3px;
 
     /* Colors - Lavender day-shift over deep indigo ink */
-    --color-primary: #e01a74;
-    --color-primary-hover: #c01563;
+    --color-primary: #d12368;
+    --color-primary-hover: #b81a57;
     --color-primary-foreground: #ffffff;
 
     --color-secondary: #e9d5ff;
@@ -57,9 +57,9 @@
     --color-card: #ffffff;
     --color-card-foreground: #2a1650;
     --color-surface: #e9d5ff;
-    --color-border: rgba(255, 46, 136, 0.45);
-    --color-input: rgba(0, 172, 193, 0.45);
-    --color-ring: #00acc1;
+    --color-border: rgba(196, 36, 107, 0.3);
+    --color-input: rgba(0, 152, 170, 0.35);
+    --color-ring: #0098aa;
 
     /* Semantic colors */
     --color-error: #dc2626;
@@ -82,7 +82,7 @@
 
     /* Icon styling - Chunky strokes */
     --icon-stroke-width: 2.5;
-    --icon-color: #e01a74;
+    --icon-color: #d12368;
 
     /* Transitions - Snappy, mechanical, linear */
     --transition-fast: 50ms;
@@ -100,7 +100,7 @@
     /* Focus ring */
     --focus-ring-width: 2px;
     --focus-ring-offset: 2px;
-    --focus-ring-color: #00acc1;
+    --focus-ring-color: #0098aa;
 
     /* Layer 1 — backfill (preserves current visual output, see themes/_contract.md) */
     /* Density axis — spacing scale */
@@ -213,16 +213,16 @@
  * DARK MODE
  * ========================================================================== */
 [data-theme="retro-dark"] {
-    /* Shadows - Hard offset, solid neon offsets (arcade cabinet) */
-    --shadow-main: 4px 4px 0 0 rgba(0, 229, 255, 0.9);
-    --shadow-sm: 2px 2px 0 0 rgba(0, 229, 255, 0.7);
+    /* Shadows - Hard offset arcade silhouette, toned-down neon opacity */
+    --shadow-main: 4px 4px 0 0 rgba(58, 201, 216, 0.4);
+    --shadow-sm: 2px 2px 0 0 rgba(58, 201, 216, 0.3);
     --shadow-lg:
-        6px 6px 0 0 rgba(0, 229, 255, 0.9);
-    --shadow-inner: inset 2px 2px 0 0 rgba(255, 46, 136, 0.25);
+        6px 6px 0 0 rgba(58, 201, 216, 0.4);
+    --shadow-inner: inset 2px 2px 0 0 rgba(224, 76, 138, 0.18);
     --shadow-none: none;
     --shadow-hover:
-        6px 6px 0 0 rgba(255, 46, 136, 0.9);
-    --shadow-active: 1px 1px 0 0 rgba(0, 229, 255, 0.9);
+        6px 6px 0 0 rgba(224, 76, 138, 0.4);
+    --shadow-active: 1px 1px 0 0 rgba(58, 201, 216, 0.4);
 
     /* Border radius - Sharp arcade corners */
     --radius-none: 0px;
@@ -237,16 +237,16 @@
     --border-width-thin: 1px;
     --border-width-thick: 3px;
 
-    /* Colors - Deep indigo-purple vaporwave night */
-    --color-primary: #ff2e88;
-    --color-primary-hover: #ff5aa2;
+    /* Colors - Deep indigo-purple vaporwave night, softened neon */
+    --color-primary: #e04c8a;
+    --color-primary-hover: #ec6a9f;
     --color-primary-foreground: #2b0216;
 
     --color-secondary: #2d1b4e;
     --color-secondary-hover: #3b2566;
     --color-secondary-foreground: #efe3ff;
 
-    --color-accent: #00e5ff;
+    --color-accent: #3ac9d8;
     --color-accent-foreground: #00252b;
 
     --color-muted: #2d1b4e;
@@ -257,9 +257,9 @@
     --color-card: #241242;
     --color-card-foreground: #efe3ff;
     --color-surface: #2d1b4e;
-    --color-border: rgba(255, 46, 136, 0.5);
-    --color-input: rgba(0, 229, 255, 0.5);
-    --color-ring: #00e5ff;
+    --color-border: rgba(224, 76, 138, 0.32);
+    --color-input: rgba(58, 201, 216, 0.34);
+    --color-ring: #3ac9d8;
 
     /* Semantic colors - Neon-bright for dark mode */
     --color-error: #ff5252;
@@ -268,7 +268,7 @@
     --color-success-foreground: #00290f;
     --color-warning: #ffb300;
     --color-warning-foreground: #2a1a00;
-    --color-info: #00e5ff;
+    --color-info: #3ac9d8;
     --color-info-foreground: #00252b;
 
     /* Typography - Mono body, pixel display, wide tracking */
@@ -282,7 +282,7 @@
 
     /* Icon styling - Chunky strokes */
     --icon-stroke-width: 2.5;
-    --icon-color: #00e5ff;
+    --icon-color: #3ac9d8;
 
     /* Transitions - Snappy, mechanical, linear */
     --transition-fast: 50ms;
@@ -300,7 +300,7 @@
     /* Focus ring */
     --focus-ring-width: 2px;
     --focus-ring-offset: 2px;
-    --focus-ring-color: #00e5ff;
+    --focus-ring-color: #3ac9d8;
 
     /* Layer 1 — backfill (preserves current visual output, see themes/_contract.md) */
     /* Density axis — spacing scale */

@@ -20,13 +20,24 @@ import { HStack, VStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
 import { useEventBus } from '../../../hooks/useEventBus';
 
+export interface DateRange {
+  from: string;
+  to: string;
+}
+
 export interface DateRangePickerPreset {
   /** Display label (e.g. "Last 30 days"). */
   label: string;
   /** Stable key used for highlighting the active preset. */
   value: string;
-  /** Returns `{ from, to }` as ISO date strings (YYYY-MM-DD). */
-  range: () => { from: string; to: string };
+  /**
+   * Range resolver: a function (JS callers), a literal `{ from, to }`
+   * fixed range, or omitted — then `value` must be a built-in token
+   * ('7d' | '30d' | 'month' | 'quarter' | 'ytd') resolved at click time.
+   * Declarative (.orb) presets use a literal or a token; functions are
+   * not expressible in config data.
+   */
+  range?: (() => DateRange) | DateRange;
 }
 
 export interface DateRangePickerProps {
@@ -77,33 +88,29 @@ function daysAgo(n: number): Date {
   return d;
 }
 
+/** Built-in relative ranges, resolved at click time. Declarative presets
+ *  reference these by `value` when they carry no `range` of their own. */
+const TOKEN_RANGES: Record<string, () => DateRange> = {
+  '7d': () => ({ from: toISODate(daysAgo(7)), to: toISODate(new Date()) }),
+  '30d': () => ({ from: toISODate(daysAgo(30)), to: toISODate(new Date()) }),
+  month: () => ({ from: toISODate(startOfMonth(new Date())), to: toISODate(new Date()) }),
+  quarter: () => ({ from: toISODate(startOfQuarter(new Date())), to: toISODate(new Date()) }),
+  ytd: () => ({ from: toISODate(startOfYear(new Date())), to: toISODate(new Date()) }),
+};
+
 const DEFAULT_PRESETS: DateRangePickerPreset[] = [
-  {
-    label: 'Last 7 days',
-    value: '7d',
-    range: () => ({ from: toISODate(daysAgo(7)), to: toISODate(new Date()) }),
-  },
-  {
-    label: 'Last 30 days',
-    value: '30d',
-    range: () => ({ from: toISODate(daysAgo(30)), to: toISODate(new Date()) }),
-  },
-  {
-    label: 'This Month',
-    value: 'month',
-    range: () => ({ from: toISODate(startOfMonth(new Date())), to: toISODate(new Date()) }),
-  },
-  {
-    label: 'This Quarter',
-    value: 'quarter',
-    range: () => ({ from: toISODate(startOfQuarter(new Date())), to: toISODate(new Date()) }),
-  },
-  {
-    label: 'YTD',
-    value: 'ytd',
-    range: () => ({ from: toISODate(startOfYear(new Date())), to: toISODate(new Date()) }),
-  },
+  { label: 'Last 7 days', value: '7d' },
+  { label: 'Last 30 days', value: '30d' },
+  { label: 'This Month', value: 'month' },
+  { label: 'This Quarter', value: 'quarter' },
+  { label: 'YTD', value: 'ytd' },
 ];
+
+function resolvePresetRange(preset: DateRangePickerPreset): DateRange | null {
+  if (typeof preset.range === 'function') return preset.range();
+  if (preset.range) return preset.range;
+  return TOKEN_RANGES[preset.value]?.() ?? null;
+}
 
 export const DateRangePicker: React.FC<DateRangePickerProps> = ({
   from: fromProp,
@@ -148,7 +155,8 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
 
   const handlePreset = useCallback(
     (preset: DateRangePickerPreset) => {
-      const range = preset.range();
+      const range = resolvePresetRange(preset);
+      if (range === null) return;
       setFrom(range.from);
       setTo(range.to);
       setActivePreset(preset.value);
@@ -157,9 +165,15 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
     [emit],
   );
 
+  // A preset with no resolvable range would be a dead button — never render it.
+  const renderablePresets = useMemo(
+    () => presets.filter((p) => p.range !== undefined || TOKEN_RANGES[p.value] !== undefined),
+    [presets],
+  );
+
   const presetButtons = useMemo(
     () =>
-      presets.map((preset) => (
+      renderablePresets.map((preset) => (
         <Button
           key={preset.value}
           variant={activePreset === preset.value ? 'primary' : 'ghost'}
@@ -169,7 +183,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
           {preset.label}
         </Button>
       )),
-    [presets, activePreset, handlePreset],
+    [renderablePresets, activePreset, handlePreset],
   );
 
   return (
@@ -196,7 +210,7 @@ export const DateRangePicker: React.FC<DateRangePickerProps> = ({
           />
         </VStack>
       </HStack>
-      {presets.length > 0 && (
+      {renderablePresets.length > 0 && (
         <HStack gap="xs" wrap>
           {presetButtons}
         </HStack>
