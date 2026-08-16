@@ -67,7 +67,8 @@ const DEFAULT_BAR_COLOR = '#3b82f6';
 const DEFAULT_CELL_COLOR = '#e5e7eb';
 const DEFAULT_POINTER_COLOR = '#dc2626';
 const POINTER_BAND = 34;
-const TOP_PAD = 12;
+// Reserves the label band above the tallest bar: 8px offset + an 11px centered label.
+const TOP_PAD = 26;
 
 export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
   className,

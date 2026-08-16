@@ -350,8 +350,12 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
       ctx.fillRect(0, 0, width, height);
     }
 
+    // Text always renders in a final top pass so labels are never buried under paths/fills.
     for (const shape of shapes) {
-      drawShape(ctx, shape, width, height);
+      if (shape.type !== 'text') drawShape(ctx, shape, width, height);
+    }
+    for (const shape of shapes) {
+      if (shape.type === 'text') drawShape(ctx, shape, width, height);
     }
   }, [width, height, backgroundColor, shapes]);
 

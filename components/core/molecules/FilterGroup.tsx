@@ -22,6 +22,7 @@ import { Select } from "../atoms/Select";
 import { Badge } from "../atoms/Badge";
 import { HStack } from "../atoms/Stack";
 import { Icon } from "../atoms/Icon";
+import { RangeSlider } from "../atoms/RangeSlider";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useQuerySingleton } from "../../../hooks/useQuerySingleton";
 import { useTranslate } from "../../../hooks/useTranslate";
@@ -41,7 +42,7 @@ export type FilterGroupLook =
 export interface FilterDefinition {
   field: string;
   label: string;
-  /** Filter type - 'text' free-text input, 'date' renders a date picker, 'date-range'/'daterange' renders two date pickers */
+  /** Filter type - 'text' free-text input, 'date' renders a date picker, 'date-range'/'daterange' renders two date pickers, 'number-range'/'numberrange' renders two range sliders */
   filterType?:
     | "text"
     | "select"
@@ -49,11 +50,28 @@ export interface FilterDefinition {
     | "checkbox"
     | "date"
     | "daterange"
-    | "date-range";
+    | "date-range"
+    | "numberrange"
+    | "number-range";
   /** Alias for filterType (schema compatibility) */
-  type?: "text" | "select" | "toggle" | "checkbox" | "date" | "daterange" | "date-range";
+  type?:
+    | "text"
+    | "select"
+    | "toggle"
+    | "checkbox"
+    | "date"
+    | "daterange"
+    | "date-range"
+    | "numberrange"
+    | "number-range";
   /** Options for select/toggle filters */
   options?: readonly string[];
+  /** Lower bound for numberrange filters */
+  min?: number;
+  /** Upper bound for numberrange filters */
+  max?: number;
+  /** Step increment for numberrange filters */
+  step?: number;
 }
 
 /** Resolve filter type, supporting both filterType and type aliases */
@@ -348,6 +366,36 @@ const FilterGroupControls: React.FC<FilterGroupProps> = ({
                   onClear={() => handleFilterSelect(`${filter.field}_to`, null)}
                 />
               </div>
+            ) : resolveFilterType(filter) === "numberrange" ||
+              resolveFilterType(filter) === "number-range" ? (
+              <div className="flex flex-col gap-2">
+                <RangeSlider
+                  min={filter.min ?? 0}
+                  max={filter.max ?? 100}
+                  step={filter.step ?? 1}
+                  value={Number(
+                    selectedValues[`${filter.field}_min`] ?? filter.min ?? 0,
+                  )}
+                  onChange={(v) =>
+                    handleFilterSelect(`${filter.field}_min`, String(v))
+                  }
+                  showTooltip
+                  aria-label={t('filterGroup.from')}
+                />
+                <RangeSlider
+                  min={filter.min ?? 0}
+                  max={filter.max ?? 100}
+                  step={filter.step ?? 1}
+                  value={Number(
+                    selectedValues[`${filter.field}_max`] ?? filter.max ?? 100,
+                  )}
+                  onChange={(v) =>
+                    handleFilterSelect(`${filter.field}_max`, String(v))
+                  }
+                  showTooltip
+                  aria-label={t('filterGroup.to')}
+                />
+              </div>
             ) : resolveFilterType(filter) === "text" ? (
               <Input
                 value={selectedValues[filter.field] || ""}
@@ -439,6 +487,37 @@ const FilterGroupControls: React.FC<FilterGroupProps> = ({
                     )
                   }
                   className="text-sm min-w-[100px]"
+                />
+              </HStack>
+            ) : resolveFilterType(filter) === "numberrange" ||
+              resolveFilterType(filter) === "number-range" ? (
+              <HStack gap="xs" align="center">
+                <RangeSlider
+                  min={filter.min ?? 0}
+                  max={filter.max ?? 100}
+                  step={filter.step ?? 1}
+                  value={Number(
+                    selectedValues[`${filter.field}_min`] ?? filter.min ?? 0,
+                  )}
+                  onChange={(v) =>
+                    handleFilterSelect(`${filter.field}_min`, String(v))
+                  }
+                  className="min-w-[100px]"
+                  aria-label={t('filterGroup.from')}
+                />
+                <span className="text-muted-foreground">-</span>
+                <RangeSlider
+                  min={filter.min ?? 0}
+                  max={filter.max ?? 100}
+                  step={filter.step ?? 1}
+                  value={Number(
+                    selectedValues[`${filter.field}_max`] ?? filter.max ?? 100,
+                  )}
+                  onChange={(v) =>
+                    handleFilterSelect(`${filter.field}_max`, String(v))
+                  }
+                  className="min-w-[100px]"
+                  aria-label={t('filterGroup.to')}
                 />
               </HStack>
             ) : resolveFilterType(filter) === "text" ? (
@@ -573,6 +652,39 @@ const FilterGroupControls: React.FC<FilterGroupProps> = ({
                   clearable
                   onClear={() => handleFilterSelect(`${filter.field}_to`, null)}
                   className="min-w-[130px]"
+                />
+              </HStack>
+            ) : resolveFilterType(filter) === "numberrange" ||
+              resolveFilterType(filter) === "number-range" ? (
+              <HStack gap="xs" align="center">
+                <RangeSlider
+                  min={filter.min ?? 0}
+                  max={filter.max ?? 100}
+                  step={filter.step ?? 1}
+                  value={Number(
+                    selectedValues[`${filter.field}_min`] ?? filter.min ?? 0,
+                  )}
+                  onChange={(v) =>
+                    handleFilterSelect(`${filter.field}_min`, String(v))
+                  }
+                  showTooltip
+                  className="min-w-[130px]"
+                  aria-label={t('filterGroup.from')}
+                />
+                <span className="text-muted-foreground">-</span>
+                <RangeSlider
+                  min={filter.min ?? 0}
+                  max={filter.max ?? 100}
+                  step={filter.step ?? 1}
+                  value={Number(
+                    selectedValues[`${filter.field}_max`] ?? filter.max ?? 100,
+                  )}
+                  onChange={(v) =>
+                    handleFilterSelect(`${filter.field}_max`, String(v))
+                  }
+                  showTooltip
+                  className="min-w-[130px]"
+                  aria-label={t('filterGroup.to')}
                 />
               </HStack>
             ) : resolveFilterType(filter) === "text" ? (
