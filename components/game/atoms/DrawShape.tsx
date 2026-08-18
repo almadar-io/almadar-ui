@@ -15,11 +15,12 @@
  */
 import type React from 'react';
 import type { ScenePos } from '@almadar/core';
-import type { PaintStyle, PainterGradient, PainterGradientStop, PainterPoint } from '../../../lib/painter2d';
+import type { PaintStyle, PainterGradient, PainterGradientStop } from '../../../lib/painter2d';
 import type { DrawableAnchor, DrawableBase, PaintFn } from '../../../lib/drawable/contract';
 import { isValidScenePos } from '../../../lib/drawable/contract';
 import { DrawableRegistryContext } from '../../../lib/drawable/registry';
 import { useContext } from 'react';
+import type { Point } from '../../core/atoms/types';
 
 export type ShapeKind = 'cell' | 'rect' | 'ellipse' | 'poly' | 'path';
 
@@ -57,11 +58,11 @@ export type DrawShapeGradientStop = PainterGradientStop;
 export interface DrawShapeGradient {
     kind: 'linear' | 'radial' | 'conic';
     /** Linear start point in world units. */
-    from?: PainterPoint;
+    from?: Point;
     /** Linear end point in world units. */
-    to?: PainterPoint;
+    to?: Point;
     /** Radial/conic center in world units. */
-    center?: PainterPoint;
+    center?: Point;
     /** Radial radius in world units. */
     radius?: number;
     /** Conic start angle in radians. */
@@ -150,7 +151,7 @@ export interface DrawShapeProps extends DrawableBase {
     offsetX?: number;
     offsetY?: number;
     /** Poly vertices as world-unit offsets relative to the cell's projected top-left. */
-    points?: PainterPoint[];
+    points?: Point[];
     /** SVG path data in world units relative to the cell's projected top-left — same coordinate convention as `points`. */
     d?: string;
     fill?: string;
@@ -173,7 +174,7 @@ export interface DrawShapeProps extends DrawableBase {
     /** Rotation in radians (painter units, same as `draw-group`), about `pivot`. */
     rotate?: number;
     /** Rotation pivot in world units relative to the cell's projected top-left; default `{x:0.5, y:0.5}` (cell center). */
-    pivot?: PainterPoint;
+    pivot?: Point;
     /** Soft glow / drop-shadow behind the shape; `blur` in world units. */
     shadow?: DrawShapeShadow;
     /** Keyframe animation over this shape's props; the host runs a paint clock while present. */

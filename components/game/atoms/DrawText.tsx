@@ -13,6 +13,17 @@ import type { ScenePos } from '@almadar/core';
 import type { DrawableAnchor, DrawableBase, PaintFn } from '../../../lib/drawable/contract';
 import { isValidScenePos } from '../../../lib/drawable/contract';
 
+/**
+ * Mirrors DOM lib.dom.d.ts `CanvasTextAlign` by value (used directly instead
+ * of the ambient global so the pattern-sync scanner — which only indexes
+ * `components/**` and can't see ambient TS-lib types — resolves this to a
+ * concrete enum instead of `json`). Structurally identical; `node.align`
+ * still flows straight into `Painter2D.text`'s `TextStyle.align`.
+ */
+export type DrawTextAlign = 'center' | 'end' | 'left' | 'right' | 'start';
+/** Mirrors DOM `CanvasTextBaseline` by value — see {@link DrawTextAlign}. */
+export type DrawTextBaseline = 'alphabetic' | 'bottom' | 'hanging' | 'ideographic' | 'middle' | 'top';
+
 export interface DrawTextProps extends DrawableBase {
     type: 'draw-text';
     text: string;
@@ -23,8 +34,8 @@ export interface DrawTextProps extends DrawableBase {
     offsetY?: number;
     color: string;
     font?: string;
-    align?: CanvasTextAlign;
-    baseline?: CanvasTextBaseline;
+    align?: DrawTextAlign;
+    baseline?: DrawTextBaseline;
     opacity?: number;
 }
 

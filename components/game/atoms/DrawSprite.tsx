@@ -17,12 +17,14 @@
 import type React from 'react';
 import type { Asset, ScenePos } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
-import type { BlitSrc, Painter2D, PainterShadow } from '../../../lib/painter2d';
+import type { Painter2D } from '../../../lib/painter2d';
 import { getAtlas, atlasFailed, isAtlasAsset, isSpriteSheetAtlas, subRectFor } from '../../../lib/atlasSlice';
 import { frameRect, getCurrentFrameFromDef, isAnimationName } from '../../../lib/spriteAnimation';
 import { getImageStatus } from '../../../lib/imageCache';
 import type { DrawableAnchor, DrawableBase, DrawContext, PaintFn } from '../../../lib/drawable/contract';
 import { isValidScenePos, spriteRect } from '../../../lib/drawable/contract';
+import type { Rect } from '../../core/atoms/types';
+import type { DrawShapeShadow } from './DrawShape';
 
 const spriteLog = createLogger('almadar:ui:draw-sprite');
 const loggedMissing = new Set<string>();
@@ -66,7 +68,7 @@ export interface DrawSpriteProps extends DrawableBase {
     /** Draw height in world units (fractions of `projector.tileWidth`). Omitted → one cell on tile grids (`flat`/`iso`/`hex`); native source px on `free`/`side`. */
     height?: number;
     /** Explicit atlas sub-rect override (px); omitted → resolved from `asset.atlas`/`asset.sprite`. */
-    frame?: BlitSrc;
+    frame?: Rect;
     /** Animation to play. 3D backend: a named GLB clip (matched case-insensitively). 2D painter: when `asset.atlas` resolves to a `SpriteSheetAtlas` manifest, the canonical row of that name (idle/walk/attack/hit/death) plays off the host paint clock; an explicit `frame` rect overrides. */
     animation?: string;
     /** Override the sheet row's loop flag. The paint clock is wall-time, so one-shot rows hold their final frame — preview pages set `true` to cycle attack/hit/death continuously. */
@@ -78,7 +80,7 @@ export interface DrawSpriteProps extends DrawableBase {
     /** 0..1 opacity. */
     opacity?: number;
     /** Drop shadow (e.g. a team-colored glow). */
-    shadow?: PainterShadow;
+    shadow?: DrawShapeShadow;
 }
 
 /** Paint a {@link DrawSpriteProps}. Paints a fallback square when a resource is

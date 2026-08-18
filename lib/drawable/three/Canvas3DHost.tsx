@@ -17,10 +17,11 @@
  * (forwarded as `followTarget`), falling back to the scene centre.
  *
  * Interaction: keyboard maps to semantic events (device-agnostic input). Pointer
- * click/hover on neutral drawables needs a per-entity id + a scene-space raycast
- * the descriptors don't yet carry — that hit-test is a tracked fork
- * (docs/Almadar_Std_Game_V2_PLAN.md); the click/hover event props are accepted but
- * not yet emitted from a raycast.
+ * click on a tagged drawable (a descriptor carrying `DrawableBase.id`) raycasts to
+ * the mesh and walks up to the tagged ancestor → `unitClickEvent {unitId,x,z}`;
+ * a click that hits no tagged mesh falls back to the ground-plane cell raycast →
+ * `tileClickEvent`. Pointer hover/feature events are accepted but not yet
+ * emitted (docs/Almadar_Std_Gaps.md S-CANVAS3D-HOVER-DEAD).
  *
  * @packageDocumentation
  */
@@ -172,8 +173,9 @@ export interface Canvas3DHostProps {
      *  `{ x, z }` (the FSM validates the cell). `tileId` is optional — the neutral host
      *  has no per-tile id, and the board FSMs key off the coordinate. */
     tileClickEvent?: EventEmit<{ x: number; z: number; tileId?: string; type?: string; terrain?: string; elevation?: number }>;
-    /** Declarative event: unit click. Emitted `{ unitId, x, z }` when the raycast lands on a
-     *  cell whose descriptor carries an `id` (a tagged unit sprite). */
+    /** Declarative event: unit click. Emitted `{ unitId, x, z }` when the raycast hits a
+     *  mesh tagged with a descriptor `id` (or lands on a ground cell whose descriptor
+     *  carries an `id`). */
     unitClickEvent?: EventEmit<{ unitId: string; x: number; z: number; unitType?: string; name?: string; team?: string; faction?: string; health?: number; maxHealth?: number }>;
     /** Declarative event: feature click. Accepted; not yet emitted (see `tileClickEvent`). */
     featureClickEvent?: EventEmit<{ featureId: string; x: number; z: number; type?: string; elevation?: number }>;
@@ -191,8 +193,12 @@ export interface Canvas3DHostProps {
     loadingMessage?: string;
     /** Unit draw-size multiplier (accepted for API parity; sizing is drawable-authored). */
     unitScale?: number;
-    /** Board zoom (accepted for API parity; 3D zoom is camera-driven, not group-scaled). */
-    scale?: number;
+    /** Board zoom — the neutral `Camera.zoom`. Dollies the camera: the framing
+     *  distance is divided by `zoom` (undefined/1 = default framing; <= 0 ignored). */
+    zoom?: number;
+    /** Enable the orbit camera controls. Default true; `follow`/`chase` modes always
+     *  disable them (the follow camera is authoritative). */
+    controlsEnabled?: boolean;
     /** Maps a keydown `e.code` → the board's SEMANTIC event (device-agnostic input). */
     keyMap?: Record<string, string>;
     /** Maps a keyup `e.code` → the board's SEMANTIC event. */
@@ -208,6 +214,9 @@ export interface Canvas3DHostProps {
     fov?: number;
     /** Orbit the mode's framing position around the vertical axis through the target, in radians — the neutral `Camera.azimuth`. */
     azimuth?: number;
+    /** Orbit height angle above the ground plane, in radians — the neutral `Camera.elevation`
+     *  (perspective mode). Omitted → the mode's fixed framing height. */
+    elevation?: number;
     /** 3D scene light rig as data — ambient/directional/hemisphere/point lights + optional
      *  'room' environment. Omitted → the standard fixed rig (this host's current
      *  hardcoded lights, unchanged). */
@@ -261,14 +270,17 @@ function CameraPose({
     controls: React.RefObject<OrbitControlsImpl | null>;
 }): null {
     const camera = useThree((s) => s.camera);
+    const [px, py, pz] = position;
+    // Scalar deps: the framing chain rebuilds `position`'s identity every tick,
+    // and re-posing on identity alone fights OrbitControls/FollowCamera3D.
     useEffect(() => {
-        camera.position.set(position[0], position[1], position[2]);
+        camera.position.set(px, py, pz);
         if ((camera as THREE.PerspectiveCamera).isPerspectiveCamera) {
             (camera as THREE.PerspectiveCamera).fov = fov;
             (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
         }
         controls.current?.update();
-    }, [camera, position, fov, controls]);
+    }, [camera, px, py, pz, fov, controls]);
     return null;
 }
 
@@ -324,6 +336,9 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
             pixelsPerUnit,
             fov,
             azimuth,
+            elevation,
+            zoom,
+            controlsEnabled = true,
             lighting,
             post,
             children,
@@ -369,8 +384,8 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
             };
         }, [keyMap, keyUpMap, eventBus]);
 
-        // Event handlers (canvas/background click + camera change use these; the
-        // per-entity tile/unit/feature handlers await the drawable hit-test fork).
+        // Event handlers (canvas/background click + camera change use these; tile/unit
+        // clicks are emitted by handleDrawableClick/handleGroundClick below).
         const eventHandlers = useGameCanvas3DEvents({
             tileClickEvent,
             unitClickEvent,
@@ -491,7 +506,8 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
             );
             const cx = cameraTarget[0];
             const cz = cameraTarget[2];
-            const d = size * 1.0;
+            // Neutral `Camera.zoom` dollies the framing distance (<= 0 is no zoom).
+            const d = (size * 1.0) / (zoom !== undefined && zoom > 0 ? zoom : 1);
             const fovDeg = fov ?? 45;
 
             const base = ((): { position: [number, number, number]; fov: number } => {
@@ -509,8 +525,13 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                     case 'follow':
                         return { position: [cx, d * 0.5, cz + d], fov: fovDeg };
                     case 'perspective':
-                    default:
-                        return { position: [cx + d, d, cz + d], fov: fovDeg };
+                    default: {
+                        if (elevation === undefined) return { position: [cx + d, d, cz + d], fov: fovDeg };
+                        // Neutral `Camera.elevation`: height angle above the ground plane
+                        // (clamped below gimbal-lock overhead); horizontal radius stays d.
+                        const el = Math.min(Math.max(elevation, 0), Math.PI / 2 - 0.1);
+                        return { position: [cx + d, d * Math.tan(el), cz + d], fov: fovDeg };
+                    }
                 }
             })();
             if (!azimuth) return base;
@@ -522,7 +543,7 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
             const c = Math.cos(azimuth);
             const s = Math.sin(azimuth);
             return { position: [cx + ox * c - oz * s, base.position[1], cz + ox * s + oz * c] as [number, number, number], fov: base.fov };
-        }, [cameraMode, gridBounds, cellSize, cameraTarget, fov, azimuth]);
+        }, [cameraMode, gridBounds, cellSize, cameraTarget, fov, azimuth, elevation, zoom]);
 
         // Follow target in world space — the neutral `Camera.target`, else scene centre.
         const followWorld = useMemo((): [number, number, number] => {
@@ -556,6 +577,28 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                 eventBus.emit(`UI:${tileClickEvent}`, { x: cell.x, z: cell.y });
             }
         }, [tileClickEvent, unitClickEvent, gridConfig, gridBounds, hitIndex, eventBus]);
+
+        // True per-mesh picking: the raycast hit walks up to the nearest ancestor
+        // tagged with a descriptor id (Drawable3D stamps `userData.drawableId`) →
+        // unitClick {unitId,x,z}. stopPropagation keeps the ground fallback from
+        // also firing; an untagged hit falls through to handleGroundClick.
+        const handleDrawableClick = useCallback((e: ThreeEvent<MouseEvent>) => {
+            if (!unitClickEvent) return;
+            let obj: THREE.Object3D | null = e.object;
+            while (obj) {
+                const id: string | undefined = obj.userData.drawableId;
+                if (id !== undefined) {
+                    e.stopPropagation();
+                    eventBus.emit(`UI:${unitClickEvent}`, {
+                        unitId: id,
+                        x: e.point.x / gridConfig.cellSize + gridBounds.minX,
+                        z: e.point.z / gridConfig.cellSize + gridBounds.minZ,
+                    });
+                    return;
+                }
+                obj = obj.parent;
+            }
+        }, [unitClickEvent, gridConfig, gridBounds, eventBus]);
 
         // Loading state.
         if (externalLoading) {
@@ -616,7 +659,9 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                         }}
                     >
                         <CameraController3D onCameraChange={eventHandlers.handleCameraChange} />
-                        <CameraPose position={cameraConfig.position} fov={cameraConfig.fov} controls={controlsRef} />
+                        {cameraMode !== 'follow' && cameraMode !== 'chase' && (
+                            <CameraPose position={cameraConfig.position} fov={cameraConfig.fov} controls={controlsRef} />
+                        )}
                         {(cameraMode === 'follow' || cameraMode === 'chase') && (
                             <FollowCamera3D target={followWorld} offset={followOffset} />
                         )}
@@ -669,7 +714,7 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                             Canvas2D — this is what makes the two hosts one interface. */}
                         {allDrawables.length > 0 && (
                             <BoneRegistryContext.Provider value={boneStore}>
-                                <group>
+                                <group onClick={unitClickEvent ? handleDrawableClick : undefined}>
                                     {allDrawables.map((node, i) => (
                                         <Drawable3D key={i} node={node} projector={drawableProjector} />
                                     ))}
@@ -704,7 +749,7 @@ export const Canvas3DHost = forwardRef<Canvas3DHostHandle, Canvas3DHostProps>(
                         {/* Camera controls — disabled while FollowCamera3D is authoritative */}
                         <OrbitControls
                             ref={controlsRef}
-                            enabled={cameraMode !== 'follow' && cameraMode !== 'chase'}
+                            enabled={controlsEnabled && cameraMode !== 'follow' && cameraMode !== 'chase'}
                             target={cameraTarget}
                             enableDamping
                             dampingFactor={0.05}

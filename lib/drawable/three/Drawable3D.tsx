@@ -43,45 +43,50 @@ export interface Drawable3DProps {
 }
 
 export function Drawable3D({ node, projector, groupOpacity = 1 }: Drawable3DProps): React.JSX.Element | null {
-    switch (node.type) {
-        case 'draw-sprite':
-            return <Sprite3D node={node} projector={projector} groupOpacity={groupOpacity} />;
-        case 'draw-shape':
-            return <Shape3D node={node} projector={projector} groupOpacity={groupOpacity} />;
-        case 'draw-text':
-            return <Text3D node={node} projector={projector} groupOpacity={groupOpacity} />;
-        case 'draw-mesh':
-            return <Mesh3D node={node} projector={projector} groupOpacity={groupOpacity} />;
-        case 'draw-sprite-layer':
-            return (
-                <>
-                    {node.items.map((item, i) => (
-                        <Sprite3D key={i} node={item} projector={projector} groupOpacity={groupOpacity} />
-                    ))}
-                </>
-            );
-        case 'draw-shape-layer':
-            return (
-                <>
-                    {node.items.map((item, i) => (
-                        <Shape3D key={i} node={item} projector={projector} groupOpacity={groupOpacity} />
-                    ))}
-                </>
-            );
-        case 'draw-text-layer':
-            return (
-                <>
-                    {node.items.map((item, i) => (
-                        <Text3D key={i} node={item} projector={projector} groupOpacity={groupOpacity} />
-                    ))}
-                </>
-            );
-        case 'draw-group': {
-            if (!isValidScenePos(node.position) || !Array.isArray(node.items)) return null;
-            if (node.clip) warnUnsupported3d('draw-group:clip');
-            return <Group3D node={node} projector={projector} groupOpacity={groupOpacity} />;
+    const rendered = ((): React.JSX.Element | null => {
+        switch (node.type) {
+            case 'draw-sprite':
+                return <Sprite3D node={node} projector={projector} groupOpacity={groupOpacity} />;
+            case 'draw-shape':
+                return <Shape3D node={node} projector={projector} groupOpacity={groupOpacity} />;
+            case 'draw-text':
+                return <Text3D node={node} projector={projector} groupOpacity={groupOpacity} />;
+            case 'draw-mesh':
+                return <Mesh3D node={node} projector={projector} groupOpacity={groupOpacity} />;
+            case 'draw-sprite-layer':
+                return (
+                    <>
+                        {node.items.map((item, i) => (
+                            <Sprite3D key={i} node={item} projector={projector} groupOpacity={groupOpacity} />
+                        ))}
+                    </>
+                );
+            case 'draw-shape-layer':
+                return (
+                    <>
+                        {node.items.map((item, i) => (
+                            <Shape3D key={i} node={item} projector={projector} groupOpacity={groupOpacity} />
+                        ))}
+                    </>
+                );
+            case 'draw-text-layer':
+                return (
+                    <>
+                        {node.items.map((item, i) => (
+                            <Text3D key={i} node={item} projector={projector} groupOpacity={groupOpacity} />
+                        ))}
+                    </>
+                );
+            case 'draw-group': {
+                if (!isValidScenePos(node.position) || !Array.isArray(node.items)) return null;
+                if (node.clip) warnUnsupported3d('draw-group:clip');
+                return <Group3D node={node} projector={projector} groupOpacity={groupOpacity} />;
+            }
         }
-    }
+    })();
+    // A tagged descriptor stamps its id on the scene graph so the host's mesh
+    // raycast resolves a click to this drawable (nearest tagged ancestor wins).
+    return node.id ? <group userData={{ drawableId: node.id }}>{rendered}</group> : rendered;
 }
 
 /** Three `<group>` backend for `draw-group` — the skeleton bone. `rotation` is

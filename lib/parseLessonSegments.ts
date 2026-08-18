@@ -31,12 +31,11 @@ export type LessonSegment =
   | { type: 'bloom'; level: BloomLevel; question: string; answer: string }
   | { type: 'visualization'; visualizationType: InteractiveOrbitalType; description: string };
 
-/** User progress state passed into SegmentRenderer. */
-export interface LessonUserProgress {
-  activationResponse?: string;
-  reflectionNotes?: string[];
-  bloomAnswered?: Record<number, boolean>;
-}
+// `LessonUserProgress` is declared in `SegmentRenderer.tsx` (its one consumer)
+// instead of here: the pattern-sync scanner that builds `.lolo` factory knobs
+// only indexes types declared under `components/**`, so a prop-shape type
+// living in `lib/` is invisible to it and degrades to an unshaped `json`
+// knob even though the interface itself is fully concrete.
 
 // ── Internal helpers ──────────────────────────────────────────────────────────
 

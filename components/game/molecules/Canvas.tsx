@@ -10,8 +10,9 @@
  * a board writes `{ type: canvas, mode, camera, children: [...] }`.
  *
  * Camera: the neutral core `Camera` ({ mode, zoom, ... }) is mapped to each
- * host's legacy vocab here (2D `camera` string / 3D `cameraMode`; `zoom` → `scale`),
- * so the board carries one camera object regardless of painter.
+ * host's legacy vocab here (2D `camera` string / 3D `cameraMode`; `zoom` → 2D
+ * `scale` / 3D camera dolly), so the board carries one camera object regardless
+ * of painter.
  *
  * Interaction: a click/hover event is one event-name string forwarded to whichever
  * painter `mode` selects. Its payload phantom is the merge of both painters' emit
@@ -191,9 +192,10 @@ export function Canvas({
             drawables: [...(drawables ?? []), ...childDrawables],
             isLoading,
             cameraMode: to3DCameraMode(camera?.mode),
-            ...(zoom !== undefined ? { scale: zoom } : {}),
+            ...(zoom !== undefined ? { zoom } : {}),
             ...(camera?.fov !== undefined ? { fov: camera.fov } : {}),
             ...(camera?.azimuth !== undefined ? { azimuth: camera.azimuth } : {}),
+            ...(camera?.elevation !== undefined ? { elevation: camera.elevation } : {}),
             ...(camera?.target !== undefined ? { followTarget: camera.target } : {}),
             unitScale,
             backgroundColor,

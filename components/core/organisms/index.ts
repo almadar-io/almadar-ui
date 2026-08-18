@@ -134,6 +134,7 @@ export {
 export {
   SegmentRenderer,
   type SegmentRendererProps,
+  type LessonUserProgress,
 } from './SegmentRenderer';
 
 // Agent-trace organisms (promoted from apps/builder). Read the agent-trace

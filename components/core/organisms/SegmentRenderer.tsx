@@ -22,9 +22,21 @@ import { ReflectionBlock } from '../molecules/ReflectionBlock';
 import { BloomQuizBlock } from '../molecules/BloomQuizBlock';
 import { CodeRunnerPanel, type CodeSimulationOutput } from './CodeRunnerPanel';
 import { cn } from '../../../lib/cn';
-import type { LessonSegment, LessonUserProgress, InteractiveOrbitalType } from '../../../lib/parseLessonSegments';
+import type { LessonSegment, InteractiveOrbitalType } from '../../../lib/parseLessonSegments';
 
-export type { LessonSegment, LessonUserProgress, CodeSimulationOutput };
+export type { LessonSegment, CodeSimulationOutput };
+
+/**
+ * User progress state passed into SegmentRenderer. Declared here (rather than
+ * alongside `LessonSegment` in `lib/parseLessonSegments.ts`) so the
+ * pattern-sync scanner — which only indexes types under `components/**` —
+ * can resolve it to a concrete `.lolo` object shape instead of `json`.
+ */
+export interface LessonUserProgress {
+  activationResponse?: string;
+  reflectionNotes?: string[];
+  bloomAnswered?: Record<number, boolean>;
+}
 
 export interface SegmentRendererProps {
   /** Parsed lesson segments (see `parseLessonSegments`) */

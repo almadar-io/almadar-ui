@@ -83,8 +83,18 @@ export interface DisplayStateProps {
   pageSize?: number;
   /** Total number of items (for pagination display) */
   totalCount?: number;
-  /** Active filters */
-  activeFilters?: Record<string, FieldValue>;
+  /**
+   * Active filters, keyed by field name. Scalar-only (`string | number |
+   * boolean`) rather than the full `FieldValue` domain: `FieldValue` is a
+   * self-referential union (adds `Date`, nested arrays/objects) the
+   * pattern-sync scanner can't shape into a `Map string V` knob, so it always
+   * degraded to `json`. This narrows out date/array/nested-object filter
+   * values — no current call site in this package constructs this prop, so
+   * nothing here breaks, but a caller wiring a date-range or multi-select
+   * filter through this prop would need those. Flagged for the coordinator;
+   * revert to `Record<string, FieldValue>` if that capability is needed.
+   */
+  activeFilters?: Record<string, string | number | boolean>;
   /** Currently selected item IDs */
   selectedIds?: readonly (string | number)[];
 }

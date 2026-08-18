@@ -14,7 +14,7 @@
  */
 
 import React from "react";
-import type { EntityRow, EventKey, EventPayload, FieldValue, JsonObject } from "@almadar/core";
+import type { EntityRow, EventKey, EventPayload, FieldValue } from "@almadar/core";
 import type { FormSubmitPayload } from "@almadar/core/patterns";
 import { cn } from "../../../lib/cn";
 import { Input } from "../atoms/Input";
@@ -166,6 +166,16 @@ export interface RelationConfig {
 }
 
 /**
+ * Validation-rule bundle for a schema field. Only `enum` is actually read
+ * (`getEnumOptions` below); the rest of `JsonObject`'s key space was never
+ * consumed, so the concrete shape is exactly the field this component uses.
+ */
+export interface FormFieldValidation {
+  /** Allowed values, mirrors `SchemaField.values` when sourced from validation metadata instead. */
+  enum?: readonly string[];
+}
+
+/**
  * Schema field definition
  * Supports both 'name' and 'field' for compatibility with different schema formats
  */
@@ -199,7 +209,7 @@ export interface SchemaField {
   /** Pattern for validation */
   pattern?: string;
   /** Validation rules */
-  validation?: JsonObject;
+  validation?: FormFieldValidation;
   /** Whether field is readonly (displays value but cannot edit) */
   readonly?: boolean;
   /** Whether field is disabled (alternative to readonly for compatibility) */
@@ -344,8 +354,8 @@ function getEnumOptions(field: SchemaField): SelectOption[] {
 
   // Check for validation.enum
   const validation = field.validation;
-  if (validation?.enum && Array.isArray(validation.enum)) {
-    return (validation.enum as string[]).map((v) => ({
+  if (validation?.enum && validation.enum.length > 0) {
+    return validation.enum.map((v) => ({
       value: v,
       label: v.charAt(0).toUpperCase() + v.slice(1).replace(/_/g, " "),
     }));
