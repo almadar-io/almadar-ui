@@ -681,11 +681,11 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, routeP
           const name = typeof pageRef === 'object' && pageRef !== null
             ? (pageRef as { name?: string }).name
             : undefined;
-          if (name === pageName) return orb.theme;
+          if (name === pageName) return orb.theme ?? schema.theme;
         }
       }
     }
-    return schema.orbitals[0]?.theme;
+    return schema.orbitals[0]?.theme ?? schema.theme;
   }, [schema, pageName]);
 
   const inner = (
