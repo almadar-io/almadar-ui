@@ -228,7 +228,12 @@ export function useEventBus(): EventBusContextType {
       return {
         ...baseBus,
         emit: (type: string, payload?: EventPayload, source?: BusEventSource) => {
-          if (typeof type === 'string' && type.startsWith('UI:') && !type.slice(3).includes('.')) {
+          // A machine-originated emit (EffectExecutor/server handlers stamp
+          // `source.trait`) is bare BY DESIGN — the manager's bare-cascade and
+          // the bridge relay deliver it. Only a sourceless bare emit is the
+          // real defect this warn exists for: a component (Button/Form) firing
+          // outside any TraitScopeProvider, whose click reaches no machine.
+          if (typeof type === 'string' && type.startsWith('UI:') && !type.slice(3).includes('.') && !source?.trait) {
             scopeLog.warn('emit:bare-key-no-scope', { type });
           }
           baseBus.emit(type, payload, source);

@@ -22,7 +22,7 @@ import { useState, useCallback, useEffect, useRef, useMemo, type MutableRefObjec
 import { useEventBus, useSharedEntityStore, runTickFrame, type SharedEntityWriter } from './index';
 import { createLogger, setNamespaceLevel } from '@almadar/logger';
 import { isCircuitEvent, walkSExpr, mergeEntityFrame, applyListenPayloadMapping } from '@almadar/core';
-import type { PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, TraitConfig, TraitConfigValue, SExpr, ServiceParams, ResolvedTrait, FieldValue, EntityFieldWrite, EntityFrameState } from '@almadar/core';
+import type { BusEventSource, PatternConfig, ResolvedTraitTick, EventPayload, EntityRow, TraitConfig, TraitConfigValue, SExpr, ServiceParams, ResolvedTrait, FieldValue, EntityFieldWrite, EntityFrameState } from '@almadar/core';
 import {
     StateMachineManager,
     EffectExecutor,
@@ -297,7 +297,7 @@ export function createSharedEntityWriter(
     binding: ResolvedTraitBinding,
     tick: ResolvedTraitTick,
     traitStatesRef: MutableRefObject<Map<string, TraitState>>,
-    emit: (event: string, payload?: EventPayload) => void,
+    emit: (event: string, payload?: EventPayload, source?: BusEventSource) => void,
 ): SharedEntityWriter {
     return (scratch: EntityFrameState): readonly EntityFieldWrite[] => {
         const traitName = binding.trait.name;
@@ -332,7 +332,9 @@ export function createSharedEntityWriter(
             }
         };
         ctx.emit = (event, payload) => {
-            emit(event, payload as EventPayload | undefined);
+            // Stamp the writer's identity so the bus telemetry can tell this
+            // tick-originated emit from an unscoped component emit.
+            emit(event, payload as EventPayload | undefined, { trait: traitName, tick: tick.name });
         };
 
         if (tick.guard !== undefined && !evaluateGuard(tick.guard, ctx)) {
@@ -1149,6 +1151,7 @@ export function useTraitStateMachine(
 
         const effectContext: EffectContext = {
             traitName,
+            orbitalName: orbitalsByTrait?.[traitName],
             state: previousState,
             transition: `${previousState}->${newState}`,
             linkedEntity,
@@ -1261,7 +1264,7 @@ export function useTraitStateMachine(
         }
 
         return emittedDuringExec;
-    }, [eventBus, flushSlot, sharedEntityStore, publishBindingSnapshot]);
+    }, [eventBus, flushSlot, sharedEntityStore, publishBindingSnapshot, orbitalsByTrait]);
 
     /**
      * Execute a single tick's effects through the SAME canonical executor
@@ -1328,9 +1331,9 @@ export function useTraitStateMachine(
     // `createSharedEntityWriter`) — mirrors `createClientEffectHandlers`'s
     // `emit` (UI: prefixing) so a writer's `(emit ...)` behaves identically
     // to the render/event path's.
-    const emitFromSharedWriter = useCallback((event: string, payload?: EventPayload) => {
+    const emitFromSharedWriter = useCallback((event: string, payload?: EventPayload, source?: BusEventSource) => {
         const prefixedEvent = event.startsWith('UI:') ? event : `UI:${event}`;
-        eventBus.emit(prefixedEvent, payload);
+        eventBus.emit(prefixedEvent, payload, source);
     }, [eventBus]);
 
     /**

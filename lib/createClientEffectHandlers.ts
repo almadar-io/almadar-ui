@@ -6,14 +6,14 @@
  * @packageDocumentation
  */
 
-import type { EventPayload, EntityRow, FieldValue, ServiceParams, PatternConfig } from '@almadar/core';
+import type { BusEventSource, EventPayload, EntityRow, FieldValue, ServiceParams, PatternConfig } from '@almadar/core';
 import type { EffectHandlers } from '@almadar/runtime';
 import { createLogger } from '@almadar/logger';
 
 const log = createLogger('almadar:ui:effects:client-handlers');
 
 export interface ClientEventBus {
-    emit: (type: string, payload?: EventPayload) => void;
+    emit: (type: string, payload?: EventPayload, source?: BusEventSource) => void;
 }
 
 export interface SlotSetter {
@@ -57,14 +57,19 @@ export function createClientEffectHandlers(
     const { eventBus, slotSetter, navigate, notify, callService, liveEntity } = options;
 
     return {
-        emit: (event: string, payload?: EventPayload) => {
+        emit: (event: string, payload?: EventPayload, source?: BusEventSource) => {
             // The event bus wraps its second arg AS the event's `payload`
             // field (see IEventBus contract). Double-wrapping as `{ payload }`
             // here made subscribers see `event.payload = { payload: realPayload }`,
             // and `@payload.X` binding resolution failed (one level too deep).
             // Pass the caller's payload through directly.
+            //
+            // `source` is EffectExecutor's `sourceStamp()` ({orbital, trait,
+            // transition}) — forwarded so the bus can tell a machine-originated
+            // emit (bare key by design, delivered via manager/bare-cascade)
+            // from a component emit missing its TraitScopeProvider.
             const prefixedEvent = event.startsWith('UI:') ? event : `UI:${event}`;
-            eventBus.emit(prefixedEvent, payload);
+            eventBus.emit(prefixedEvent, payload, source);
         },
         persist: async () => {
             log.warn('persist is server-side only, ignored on client');

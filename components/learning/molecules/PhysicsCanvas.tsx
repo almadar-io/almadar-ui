@@ -17,18 +17,22 @@ import type { Camera } from '@almadar/core';
 import { Card, Typography } from '../../core/atoms/index';
 import { VStack } from '../../core/atoms/Stack';
 import { LearningCanvas } from '../atoms/LearningCanvas';
-import type { LearningShape } from '../atoms/LearningCanvas';
+import type { LearningReadout, LearningShape, LearningTracePanel } from '../atoms/LearningCanvas';
 import type { UiError } from '../../core/atoms/types';
 import type { DrawableNode } from '../../../lib/drawable/paintDispatch';
 import type { CanvasLighting, CanvasPost } from '../../../lib/drawable/three/Canvas3DHost';
 import {
   LearningScene3D,
   arrowBetween,
+  arrowField,
   billboardLabel,
   cylinderBetween,
   get3DClickPayload,
+  heightFieldMesh,
   labelColorForBackground,
   meshSphere,
+  polylineTube,
+  type Learning3DPoint,
 } from './learningScene3D';
 
 const physicsLog = createLogger('almadar:ui:physics-canvas');
@@ -56,6 +60,537 @@ export interface LearningPhysicsConstraint {
   from: string;
   to: string;
   color?: string;
+  /** Draw style: rigid line (default), zigzag coil, or dashed tether. 2D only — 3D always draws a rod. */
+  kind?: 'rod' | 'spring' | 'string';
+}
+
+/** Fixed scene fixture kind: ground/wall/ramp/box/pivot. */
+export type PhysicsSceneObjectKind = 'ground' | 'wall' | 'ramp' | 'box' | 'pivot';
+
+/**
+ * A static, non-body scene fixture with a hatching pattern and an optional label.
+ * @synonyms ground, wall, ramp, incline, pivot, floor
+ */
+export interface PhysicsSceneObject {
+  /** Fixture kind; each kind reads its own subset of the point/span fields below. */
+  kind: PhysicsSceneObjectKind;
+  /** Point kinds: wall x, pivot x, box origin x. */
+  x?: number;
+  /** Point kinds: ground y, pivot y, box origin y. */
+  y?: number;
+  /** Span/ramp endpoint 1 x. */
+  x1?: number;
+  /** Span/ramp endpoint 1 y. */
+  y1?: number;
+  /** Span/ramp endpoint 2 x. */
+  x2?: number;
+  /** Span/ramp endpoint 2 y. */
+  y2?: number;
+  /** Box width. */
+  width?: number;
+  /** Box height. */
+  height?: number;
+  /** Stroke + hatch color (default '#334155'). */
+  color?: string;
+  /** Fill color; ramp defaults to '#e2e8f0'. */
+  fill?: string;
+  /** Fixture label. */
+  label?: string;
+}
+
+/**
+ * A named, labeled arrow anchored to a fixed point or to a body's live position.
+ * @synonyms force arrow, labeled arrow, free body diagram
+ */
+export interface PhysicsVector {
+  /** Anchor x; ignored when `body` resolves to a body. */
+  x?: number;
+  /** Anchor y; ignored when `body` resolves to a body. */
+  y?: number;
+  /** Anchor at this body's position, overriding `x`/`y`. */
+  body?: string;
+  /** Arrow x-component in pixels, before `scale`. */
+  dx: number;
+  /** Arrow y-component in pixels, before `scale`. */
+  dy: number;
+  /** Multiplies `dx`/`dy` (default 1). */
+  scale?: number;
+  /** Arrow + label color (default '#dc2626'). */
+  color?: string;
+  /** Label drawn at the tip, offset 8px further along the arrow direction. */
+  label?: string;
+  /** Stroke dash style (default solid). */
+  dash?: 'dashed' | 'dotted';
+}
+
+/** A trail point in canvas pixel coordinates. */
+export interface PhysicsTrailPoint {
+  x: number;
+  y: number;
+  /** 3D mode only; 2D ignores it. */
+  z?: number;
+}
+
+/**
+ * A fading trajectory polyline through recent body positions.
+ * @synonyms trajectory, path, trace, orbit, orbit path, trajectory tube
+ */
+export interface PhysicsTrail {
+  /** Authoring handle only — not clickable. */
+  id?: string;
+  points: PhysicsTrailPoint[];
+  /** Line color (default '#94a3b8'). */
+  color?: string;
+  /** 2D: stroke width in pixels (default 2). 3D: tube radius in scene cells (default 0.05). */
+  width?: number;
+  /** Multiplies the per-segment fade opacity (default 1). */
+  opacity?: number;
+  /** Older segments fade toward transparent (default true). 2D only — 3D always draws an opaque tube. */
+  fade?: boolean;
+}
+
+/** One elevation color band for a `surface3d` height field; sorted ascending by `min`. */
+export interface PhysicsSurfaceBand {
+  /** Inclusive floor height in cells; omit for the catch-all lowest band. */
+  min?: number;
+  color: string;
+}
+
+/**
+ * A 3D height-field mesh (a wave, a terrain, a potential surface) rendered
+ * from a row-major grid of heights. 3D only.
+ * @synonyms heightfield, wave surface, terrain, potential surface
+ */
+export interface PhysicsSurface3D {
+  /** Grid columns. */
+  nx: number;
+  /** Grid rows. */
+  ny: number;
+  /** Vertex heights, length `nx*ny`, row-major: `heights[iy*nx+ix]`. */
+  heights: number[];
+  /** Cell spacing in scene cells (default 1). */
+  spacing?: number;
+  /** Sheet center x on the ground plane (default 0). */
+  x?: number;
+  /** Sheet center y on the ground plane (default 0). */
+  y?: number;
+  /** Elevation color bands; omitted → a single flat-colored sheet. */
+  bands?: PhysicsSurfaceBand[];
+  /** Fallback color when `bands` is omitted (default '#64748b'). */
+  color?: string;
+  opacity?: number;
+  /** Faceted low-poly shading (default true). */
+  flatShading?: boolean;
+}
+
+/**
+ * A single labeled 3D arrow (field arrow, axis-triad leg, force/velocity
+ * vector), rendered via `vectors3d` + `vectorScale`. 3D only.
+ * @synonyms 3D arrows, field arrows, axis triad
+ */
+export interface PhysicsVector3D {
+  /** Clickable when present. */
+  id?: string;
+  /** Tail position, cells. */
+  x: number;
+  y: number;
+  /** Tail height (default 0). */
+  z?: number;
+  /** Vector components, cells, before `vectorScale`. */
+  dx: number;
+  dy: number;
+  /** Height component (default 0). */
+  dz?: number;
+  /** Arrow + label color (default '#dc2626'). */
+  color?: string;
+  /** Billboard label at the tip. */
+  label?: string;
+  /** Shaft radius in scene cells (default 0.05). */
+  width?: number;
+}
+
+/**
+ * A screen-convention angle arc between two bearings, with a label past the arc.
+ * @synonyms angle arc, theta, incline angle
+ */
+export interface PhysicsAngleMarker {
+  x: number;
+  y: number;
+  /** Start bearing, degrees, screen convention (0 = +x, clockwise). */
+  from: number;
+  /** End bearing, degrees, screen convention (0 = +x, clockwise). */
+  to: number;
+  /** Arc radius in pixels (default 26). */
+  radius?: number;
+  /** Arc + label color (default '#0ea5e9'). */
+  color?: string;
+  /** Label drawn past the arc, along the bisecting bearing. */
+  label?: string;
+}
+
+/**
+ * A single uniform vector/into-page/out-of-page lattice drawn over a region.
+ * @synonyms magnetic field, into page, out of page, field grid
+ */
+export interface PhysicsField {
+  kind: 'arrows' | 'into' | 'out';
+  /** Lattice cell size in pixels (default 48). */
+  spacing?: number;
+  /** Arrow bearing in degrees, screen convention; `arrows` kind only (default 0). */
+  angle?: number;
+  /** Glyph size in pixels (default 14). */
+  size?: number;
+  /** Glyph color (default '#94a3b8'). */
+  color?: string;
+  /** Region left edge (default 0). */
+  x?: number;
+  /** Region top edge (default 0). */
+  y?: number;
+  /** Region width (default canvas width). */
+  width?: number;
+  /** Region height (default canvas height). */
+  height?: number;
+}
+
+/**
+ * A bottom-left labeled bar gauge for a scalar quantity (energy, speed, charge, ...).
+ * @synonyms energy bar, KE, PE, gauge
+ */
+export interface PhysicsMeter {
+  label: string;
+  value: number;
+  /** Full-bar value (default: the max value across all meters, so bars stay comparable). */
+  max?: number;
+  /** Bar + value color (default '#3b82f6'). */
+  color?: string;
+}
+
+const PHYSICS_LABEL_COLOR = '#374151';
+
+function formatMeterValue(v: number): string {
+  return Number.isInteger(v) ? String(v) : String(Number(v.toFixed(2)));
+}
+
+function sceneObjectShapes(obj: PhysicsSceneObject, canvasWidth: number, canvasHeight: number): LearningShape[] {
+  const out: LearningShape[] = [];
+  const color = obj.color ?? '#334155';
+  switch (obj.kind) {
+    case 'ground': {
+      const xStart = obj.x1 ?? 0;
+      const xEnd = obj.x2 ?? canvasWidth;
+      const y = obj.y ?? 0;
+      out.push({ type: 'line', x1: xStart, y1: y, x2: xEnd, y2: y, color, lineWidth: 2 });
+      for (let hx = xStart + 7; hx <= xEnd; hx += 14) {
+        out.push({ type: 'line', x1: hx, y1: y, x2: hx - 7, y2: y + 7, color, lineWidth: 1 });
+      }
+      if (obj.label) {
+        out.push({
+          type: 'text',
+          x: (xStart + xEnd) / 2,
+          y: y - 10,
+          text: obj.label,
+          color: PHYSICS_LABEL_COLOR,
+          fontSize: 11,
+          align: 'center',
+        });
+      }
+      break;
+    }
+    case 'wall': {
+      const yStart = obj.y1 ?? 0;
+      const yEnd = obj.y2 ?? canvasHeight;
+      const x = obj.x ?? 0;
+      out.push({ type: 'line', x1: x, y1: yStart, x2: x, y2: yEnd, color, lineWidth: 2 });
+      for (let hy = yStart + 7; hy <= yEnd; hy += 14) {
+        out.push({ type: 'line', x1: x, y1: hy, x2: x - 7, y2: hy + 7, color, lineWidth: 1 });
+      }
+      if (obj.label) {
+        out.push({
+          type: 'text',
+          x: x + 12,
+          y: (yStart + yEnd) / 2,
+          text: obj.label,
+          color: PHYSICS_LABEL_COLOR,
+          fontSize: 11,
+          align: 'left',
+        });
+      }
+      break;
+    }
+    case 'ramp': {
+      const x1 = obj.x1 ?? 0;
+      const y1 = obj.y1 ?? 0;
+      const x2 = obj.x2 ?? canvasWidth;
+      const y2 = obj.y2 ?? canvasHeight;
+      out.push({
+        type: 'polygon',
+        points: [
+          { x: x1, y: y1 },
+          { x: x2, y: y2 },
+          { x: x1, y: y2 },
+        ],
+        color,
+        fill: obj.fill ?? '#e2e8f0',
+        lineWidth: 2,
+      });
+      if (obj.label) {
+        out.push({
+          type: 'text',
+          x: (2 * x1 + x2) / 3,
+          y: (y1 + 2 * y2) / 3,
+          text: obj.label,
+          color: PHYSICS_LABEL_COLOR,
+          fontSize: 11,
+          align: 'center',
+        });
+      }
+      break;
+    }
+    case 'box': {
+      const x = obj.x ?? 0;
+      const y = obj.y ?? 0;
+      const w = obj.width ?? 40;
+      const h = obj.height ?? 40;
+      out.push({ type: 'rect', x, y, width: w, height: h, color, fill: obj.fill, lineWidth: 2 });
+      if (obj.label) {
+        out.push({
+          type: 'text',
+          x: x + w / 2,
+          y: y + h / 2,
+          text: obj.label,
+          color: PHYSICS_LABEL_COLOR,
+          fontSize: 11,
+          align: 'center',
+        });
+      }
+      break;
+    }
+    case 'pivot': {
+      const x = obj.x ?? 0;
+      const y = obj.y ?? 0;
+      out.push({ type: 'circle', x, y, radius: 5, color, fill: color });
+      out.push({ type: 'line', x1: x - 14, y1: y - 8, x2: x + 14, y2: y - 8, color, lineWidth: 1 });
+      for (let k = 0; k < 5; k++) {
+        const hx = x - 14 + 7 * k;
+        out.push({ type: 'line', x1: hx, y1: y - 8, x2: hx - 6, y2: y - 14, color, lineWidth: 1 });
+      }
+      if (obj.label) {
+        out.push({
+          type: 'text',
+          x,
+          y: y - 20,
+          text: obj.label,
+          color: PHYSICS_LABEL_COLOR,
+          fontSize: 11,
+          align: 'center',
+        });
+      }
+      break;
+    }
+  }
+  return out;
+}
+
+function trailShapes(trail: PhysicsTrail): LearningShape[] {
+  const n = trail.points.length;
+  if (n < 2) return [];
+  const color = trail.color ?? '#94a3b8';
+  const lineWidth = trail.width ?? 2;
+  const fade = trail.fade ?? true;
+  const globalOpacity = trail.opacity ?? 1;
+  const out: LearningShape[] = [];
+  for (let i = 0; i < n - 1; i++) {
+    const a = trail.points[i];
+    const b = trail.points[i + 1];
+    const segmentOpacity = fade ? 0.12 + (0.68 * i) / (n - 1) : 0.6;
+    out.push({
+      type: 'line',
+      x1: a.x,
+      y1: a.y,
+      x2: b.x,
+      y2: b.y,
+      color,
+      lineWidth,
+      opacity: segmentOpacity * globalOpacity,
+    });
+  }
+  return out;
+}
+
+/** rod = exact current line push. string = the same line, dashed. spring = zigzag coil between shortened, lead-in endpoints. */
+function constraintShapes(
+  c: LearningPhysicsConstraint,
+  a: LearningPhysicsBody,
+  b: LearningPhysicsBody,
+): LearningShape[] {
+  const color = c.color ?? '#9ca3af';
+  const kind = c.kind ?? 'rod';
+  if (kind === 'rod') {
+    return [{ type: 'line', x1: a.x, y1: a.y, x2: b.x, y2: b.y, color, lineWidth: 2 }];
+  }
+  if (kind === 'string') {
+    return [{ type: 'line', x1: a.x, y1: a.y, x2: b.x, y2: b.y, color, lineWidth: 2, dash: 'dashed' }];
+  }
+
+  const COILS = 8;
+  const AMP = 7;
+  const LEAD = 10;
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const dist = Math.max(1e-6, Math.hypot(dx, dy));
+  const ux = dx / dist;
+  const uy = dy / dist;
+  const perpX = -uy;
+  const perpY = ux;
+  const aPrime = { x: a.x + LEAD * ux, y: a.y + LEAD * uy };
+  const bPrime = { x: b.x - LEAD * ux, y: b.y - LEAD * uy };
+  const m = 2 * COILS;
+
+  const polyline: { x: number; y: number }[] = [{ x: a.x, y: a.y }, aPrime];
+  for (let j = 1; j <= m; j++) {
+    const t = j / (m + 1);
+    const baseX = aPrime.x + t * (bPrime.x - aPrime.x);
+    const baseY = aPrime.y + t * (bPrime.y - aPrime.y);
+    const sign = j % 2 === 0 ? 1 : -1;
+    polyline.push({ x: baseX + sign * AMP * perpX, y: baseY + sign * AMP * perpY });
+  }
+  polyline.push(bPrime, { x: b.x, y: b.y });
+
+  const out: LearningShape[] = [];
+  for (let i = 1; i < polyline.length; i++) {
+    out.push({
+      type: 'line',
+      x1: polyline[i - 1].x,
+      y1: polyline[i - 1].y,
+      x2: polyline[i].x,
+      y2: polyline[i].y,
+      color,
+      lineWidth: 2,
+    });
+  }
+  return out;
+}
+
+function vectorShapes(v: PhysicsVector, bodyById: Map<string, LearningPhysicsBody>): LearningShape[] {
+  let ax: number;
+  let ay: number;
+  if (v.body) {
+    const anchor = bodyById.get(v.body);
+    if (!anchor) return [];
+    ax = anchor.x;
+    ay = anchor.y;
+  } else {
+    ax = v.x ?? 0;
+    ay = v.y ?? 0;
+  }
+  const scale = v.scale ?? 1;
+  const color = v.color ?? '#dc2626';
+  const tx = ax + v.dx * scale;
+  const ty = ay + v.dy * scale;
+
+  const out: LearningShape[] = [{ type: 'arrow', x1: ax, y1: ay, x2: tx, y2: ty, color, lineWidth: 2, dash: v.dash }];
+  if (v.label) {
+    const dist = Math.max(1e-6, Math.hypot(tx - ax, ty - ay));
+    const ux = (tx - ax) / dist;
+    const uy = (ty - ay) / dist;
+    out.push({
+      type: 'text',
+      x: tx + 8 * ux,
+      y: ty + 8 * uy,
+      text: v.label,
+      color,
+      fontSize: 11,
+      align: 'center',
+    });
+  }
+  return out;
+}
+
+function angleMarkerShapes(a: PhysicsAngleMarker): LearningShape[] {
+  const radius = a.radius ?? 26;
+  const color = a.color ?? '#0ea5e9';
+  const out: LearningShape[] = [
+    {
+      type: 'ellipse',
+      x: a.x,
+      y: a.y,
+      width: radius * 2,
+      height: radius * 2,
+      startAngle: a.from,
+      endAngle: a.to,
+      color,
+      lineWidth: 2,
+    },
+  ];
+  if (a.label) {
+    const mid = ((a.from + a.to) / 2) * (Math.PI / 180);
+    out.push({
+      type: 'text',
+      x: a.x + (radius + 13) * Math.cos(mid),
+      y: a.y + (radius + 13) * Math.sin(mid),
+      text: a.label,
+      color,
+      fontSize: 11,
+      align: 'center',
+    });
+  }
+  return out;
+}
+
+function fieldShapes(field: PhysicsField, canvasWidth: number, canvasHeight: number): LearningShape[] {
+  const spacing = field.spacing ?? 48;
+  const size = field.size ?? 14;
+  const color = field.color ?? '#94a3b8';
+  const regionX = field.x ?? 0;
+  const regionY = field.y ?? 0;
+  const regionW = field.width ?? canvasWidth;
+  const regionH = field.height ?? canvasHeight;
+
+  const out: LearningShape[] = [];
+  for (let gx = regionX + spacing / 2; gx < regionX + regionW; gx += spacing) {
+    for (let gy = regionY + spacing / 2; gy < regionY + regionH; gy += spacing) {
+      if (field.kind === 'arrows') {
+        const rad = ((field.angle ?? 0) * Math.PI) / 180;
+        const hx = (Math.cos(rad) * size) / 2;
+        const hy = (Math.sin(rad) * size) / 2;
+        out.push({ type: 'arrow', x1: gx - hx, y1: gy - hy, x2: gx + hx, y2: gy + hy, color, lineWidth: 2 });
+      } else if (field.kind === 'into') {
+        const r = size / 3;
+        const d = 0.6 * r * Math.SQRT1_2;
+        out.push({ type: 'circle', x: gx, y: gy, radius: r, color });
+        out.push({ type: 'line', x1: gx - d, y1: gy - d, x2: gx + d, y2: gy + d, color, lineWidth: 1 });
+        out.push({ type: 'line', x1: gx - d, y1: gy + d, x2: gx + d, y2: gy - d, color, lineWidth: 1 });
+      } else {
+        const r = size / 3;
+        out.push({ type: 'circle', x: gx, y: gy, radius: r, color });
+        out.push({ type: 'circle', x: gx, y: gy, radius: 1.5, color, fill: color });
+      }
+    }
+  }
+  return out;
+}
+
+function meterShapes(meters: PhysicsMeter[], canvasHeight: number): LearningShape[] {
+  const n = meters.length;
+  const out: LearningShape[] = [];
+  const sharedMax = Math.max(1e-6, ...meters.map((m) => m.value));
+  meters.forEach((meter, i) => {
+    const rowY = canvasHeight - 10 - 16 * (n - i);
+    const color = meter.color ?? '#3b82f6';
+    const M = meter.max ?? sharedMax;
+    const w = Math.round(Math.min(1, Math.max(0, meter.value / M)) * 110);
+    out.push({ type: 'text', x: 8, y: rowY + 8, text: meter.label, color: PHYSICS_LABEL_COLOR, fontSize: 10 });
+    out.push({ type: 'rect', x: 52, y: rowY, width: w, height: 10, color, fill: color });
+    out.push({
+      type: 'text',
+      x: 166,
+      y: rowY + 8,
+      text: formatMeterValue(meter.value),
+      color: '#6b7280',
+      fontSize: 9,
+    });
+  });
+  return out;
 }
 
 export interface PhysicsCanvasProps {
@@ -78,8 +613,30 @@ export interface PhysicsCanvasProps {
   showForces?: boolean;
   velocityScale?: number;
   forceScale?: number;
+  /** Ground/wall/ramp/box/pivot scene fixtures. 2D only. */
+  sceneObjects?: PhysicsSceneObject[];
+  /** Fading trajectory polylines (2D) / trajectory tubes (3D). */
+  trails?: PhysicsTrail[];
+  /** Named force/velocity/free-body arrows, anchored by point or by body id. 2D only. */
+  vectors?: PhysicsVector[];
+  /** A 3D height-field surface mesh (wave, terrain, potential well). 3D only. */
+  surface3d?: PhysicsSurface3D;
+  /** Labeled 3D arrows (field arrows, axis triads). 3D only. */
+  vectors3d?: PhysicsVector3D[];
+  /** Multiplies every `vectors3d` entry's `dx`/`dy`/`dz` (default 1). 3D only. */
+  vectorScale?: number;
+  /** Angle arcs between two bearings. 2D only. */
+  angles?: PhysicsAngleMarker[];
+  /** A single uniform vector/into/out field lattice. 2D only. */
+  field?: PhysicsField;
+  /** Bottom-left labeled bar gauges. 2D only. */
+  meters?: PhysicsMeter[];
   /** Extra declarative shapes in canvas pixel coordinates (2D mode only — ignored in 3D). */
   shapes?: LearningShape[];
+  /** Top-right status chip row, forwarded to LearningCanvas verbatim. */
+  readouts?: LearningReadout[];
+  /** Inset sparkline panels, forwarded to LearningCanvas verbatim. */
+  traces?: LearningTracePanel[];
   /** 3D only: show the ground grid (default off). */
   showGrid?: boolean;
   /** 3D only: enable shadows. Omitted → the host default. */
@@ -109,7 +666,18 @@ export const PhysicsCanvas: React.FC<PhysicsCanvasProps> = ({
   showForces = false,
   velocityScale = 20,
   forceScale = 20,
+  sceneObjects = [],
+  trails = [],
+  vectors = [],
+  surface3d,
+  vectors3d = [],
+  vectorScale = 1,
+  angles = [],
+  field,
+  meters = [],
   shapes = [],
+  readouts,
+  traces,
   showGrid,
   shadows,
   interactive,
@@ -125,19 +693,17 @@ export const PhysicsCanvas: React.FC<PhysicsCanvasProps> = ({
       if (b.id) bodyById.set(b.id, b);
     }
 
+    if (field) out.push(...fieldShapes(field, width, height));
+
+    for (const obj of sceneObjects) out.push(...sceneObjectShapes(obj, width, height));
+
+    for (const trail of trails) out.push(...trailShapes(trail));
+
     for (const c of constraints) {
       const a = bodyById.get(c.from);
       const b = bodyById.get(c.to);
       if (!a || !b) continue;
-      out.push({
-        type: 'line',
-        x1: a.x,
-        y1: a.y,
-        x2: b.x,
-        y2: b.y,
-        color: c.color ?? '#9ca3af',
-        lineWidth: 2,
-      });
+      out.push(...constraintShapes(c, a, b));
     }
 
     for (const b of bodies) {
@@ -184,14 +750,54 @@ export const PhysicsCanvas: React.FC<PhysicsCanvasProps> = ({
       }
     }
 
+    for (const v of vectors) out.push(...vectorShapes(v, bodyById));
+
+    for (const a of angles) out.push(...angleMarkerShapes(a));
+
+    if (meters.length > 0) out.push(...meterShapes(meters, height));
+
     out.push(...shapes);
     return out;
-  }, [bodies, constraints, showVelocity, showForces, velocityScale, forceScale, shapes]);
+  }, [
+    bodies,
+    constraints,
+    showVelocity,
+    showForces,
+    velocityScale,
+    forceScale,
+    sceneObjects,
+    trails,
+    vectors,
+    angles,
+    field,
+    meters,
+    shapes,
+    width,
+    height,
+  ]);
 
   const drawables3D: DrawableNode[] = useMemo(() => {
     if (mode !== '3d') return [];
     if (shapes.length > 0) {
       physicsLog.debug('shapes ignored in 3D mode (pixel-authored 2D vocabulary)', { count: shapes.length });
+    }
+    if (sceneObjects.length > 0) {
+      physicsLog.debug('sceneObjects ignored in 3D mode (pixel-authored 2D vocabulary)', { count: sceneObjects.length });
+    }
+    if (vectors.length > 0) {
+      physicsLog.debug('vectors ignored in 3D mode (pixel-authored 2D vocabulary)', { count: vectors.length });
+    }
+    if (angles.length > 0) {
+      physicsLog.debug('angles ignored in 3D mode (pixel-authored 2D vocabulary)', { count: angles.length });
+    }
+    if (field) {
+      physicsLog.debug('field ignored in 3D mode (pixel-authored 2D vocabulary)');
+    }
+    if (meters.length > 0) {
+      physicsLog.debug('meters ignored in 3D mode (pixel-authored 2D vocabulary)', { count: meters.length });
+    }
+    if (animate) {
+      physicsLog.debug('animate ignored in 3D mode (motion is entity-state driven)');
     }
     const out: DrawableNode[] = [];
     const labelColor = labelColorForBackground(backgroundColor);
@@ -242,16 +848,75 @@ export const PhysicsCanvas: React.FC<PhysicsCanvasProps> = ({
         if (arrow) out.push(arrow);
       }
     }
-    return out;
-  }, [mode, bodies, constraints, showVelocity, showForces, velocityScale, forceScale, shapes, backgroundColor]);
 
+    for (const trail of trails) {
+      if (trail.fade !== undefined) {
+        physicsLog.debug('trail.fade ignored in 3D mode (2D-only fade curve — 3D draws an opaque tube)', { id: trail.id });
+      }
+      const points: Learning3DPoint[] = trail.points.map((p) => [p.x, p.y, p.z ?? 0]);
+      out.push(
+        ...polylineTube(points, trail.width ?? 0.05, trail.color ?? '#94a3b8', {
+          ...(trail.opacity !== undefined ? { opacity: trail.opacity } : {}),
+        }),
+      );
+    }
+
+    if (surface3d) {
+      out.push(...heightFieldMesh(surface3d));
+    }
+
+    if (vectors3d.length > 0) {
+      out.push(
+        ...arrowField(
+          vectors3d.map((v) => ({
+            id: v.id,
+            from: [v.x, v.y, v.z ?? 0] as Learning3DPoint,
+            delta: [v.dx, v.dy, v.dz ?? 0] as Learning3DPoint,
+            color: v.color,
+            label: v.label,
+            width: v.width,
+          })),
+          { scale: vectorScale, labelColor },
+        ),
+      );
+    }
+    return out;
+  }, [
+    mode,
+    bodies,
+    constraints,
+    showVelocity,
+    showForces,
+    velocityScale,
+    forceScale,
+    shapes,
+    sceneObjects,
+    trails,
+    vectors,
+    surface3d,
+    vectors3d,
+    vectorScale,
+    angles,
+    field,
+    meters,
+    animate,
+    backgroundColor,
+  ]);
+
+  /**
+   * Click id→index map. `vectors3d` entries are keyed by their own index
+   * within `vectors3d`; on an id collision with a body, the body wins (set last).
+   */
   const bodyIndexById = useMemo(() => {
     const m = new Map<string, number>();
+    vectors3d.forEach((v, i) => {
+      if (v.id) m.set(v.id, i);
+    });
     bodies.forEach((b, i) => {
       if (b.id) m.set(b.id, i);
     });
     return m;
-  }, [bodies]);
+  }, [bodies, vectors3d]);
 
   if (mode === '3d') {
     return (
@@ -284,6 +949,8 @@ export const PhysicsCanvas: React.FC<PhysicsCanvasProps> = ({
           height={height}
           backgroundColor={backgroundColor}
           shapes={derivedShapes}
+          readouts={readouts}
+          traces={traces}
           interactive={interactive ?? false}
           animate={animate}
           onShapeClick={onShapeClick}

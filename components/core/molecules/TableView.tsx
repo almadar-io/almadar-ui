@@ -22,7 +22,6 @@ import { createLogger } from '@almadar/logger';
 const tableViewLog = createLogger('almadar:ui:table-view');
 import { getNestedValue } from '../../../lib/getNestedValue';
 import { useEventBus } from '../../../hooks/useEventBus';
-import { useMediaQuery } from '../../../hooks/useMediaQuery';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { Box } from '../atoms/Box';
 import { VStack, HStack } from '../atoms/Stack';
@@ -94,13 +93,16 @@ export interface TableViewProps extends DataDndProps {
   columns?: readonly TableViewColumn[];
   /** Alias for `columns`. */
   fields?: readonly TableViewColumn[];
-  /** Per-row action buttons (trailing column). */
+  /** Per-row actions, collected under a trailing kebab overflow menu. */
   itemActions?: readonly TableViewItemAction[];
-  /** Max inline action buttons before the rest collapse into a "⋯" overflow menu. Omit = all inline. */
+  /** @deprecated Row actions always render as a kebab menu now (UX doctrine: row actions behind an overflow menu; a pinned inline button strip paints over cells during horizontal scroll). Accepted and ignored. */
   maxInlineActions?: number;
   /** When set, the whole row is clickable and emits UI:{itemClickEvent} with
    *  { id, row } (action-button clicks stopPropagation so they still win).
-   *  Mirrors DataList's contract. */
+   *  Mirrors DataList's contract. When OMITTED and `itemActions` exist, the
+   *  row click defaults to the first non-danger item action (the view/open
+   *  action by authoring convention) — a danger action never becomes the row
+   *  default (destructive actions require intentional reach). */
   itemClickEvent?: EventKey;
   /** Render a leading checkbox column. Selection changes emit `selectEvent`. */
   selectable?: boolean;
@@ -238,8 +240,8 @@ export function TableView({
   columns,
   fields,
   itemActions,
-  maxInlineActions,
-  itemClickEvent,
+  maxInlineActions: _maxInlineActions,
+  itemClickEvent = '',
   selectable = false,
   selectEvent,
   selectedIds,
@@ -298,7 +300,6 @@ export function TableView({
   const hasMore = pageSize > 0 && visibleCount < ordered.length;
   const hasRenderProp = typeof children === 'function';
   const idField = dndItemIdField ?? 'id';
-  const isCoarsePointer = useMediaQuery('(pointer: coarse)');
 
   // `tableViewLog` was declared and never called, so every diagnosis of this
   // component started blind. Hook order is safe: there are no early returns.
@@ -347,23 +348,21 @@ export function TableView({
     eventBus.emit(`UI:${sortEvent}`, { column: col.field ?? col.key, direction: dir });
   };
 
-  const handleActionClick =
-    (action: TableViewItemAction, row: EntityRow) => (e: React.MouseEvent) => {
-      e.stopPropagation();
-      const payload: ItemActionPayload = {
-        id: row.id as string | number,
-        row: row as ItemActionPayload['row'],
-      };
-      eventBus.emit(`UI:${action.event}`, payload);
-    };
+  // Explicit itemClickEvent wins; otherwise the first non-danger item action
+  // is the row's default click (declared `variant` is the semantic marker —
+  // no label/name matching — and a destructive action never becomes the
+  // default). Danger-only tables get no row click. The '' default is a
+  // declared contract the lolo-ui generator honors (default-off outlet).
+  const rowClickEvent: EventKey | undefined =
+    itemClickEvent || actionDefs.find((a) => a.variant !== 'danger')?.event;
 
   const handleRowClick = (row: EntityRow) => () => {
-    if (!itemClickEvent) return;
+    if (!rowClickEvent) return;
     const payload: ItemActionPayload = {
       id: row.id as string | number,
       row: row as ItemActionPayload['row'],
     };
-    eventBus.emit(`UI:${itemClickEvent}`, payload);
+    eventBus.emit(`UI:${rowClickEvent}`, payload);
   };
 
   // A bare `minmax(0, 1fr)` splits width evenly, so a long value (an email) is
@@ -417,17 +416,11 @@ export function TableView({
   // leftover space per row, drifting the header labels off their columns. A
   // fixed width is identical in header and body, so columns stay aligned.
   const hasActions = actionDefs.length > 0;
-  // Touch surfaces get a kebab-only action cell: inline text actions cost a
-  // fixed 6rem apiece in the shared track, which crushes the data columns at
-  // phone widths (verified at 390px — three actions left ~60px for the data).
-  const effectiveMaxInline = isCoarsePointer ? 0 : maxInlineActions;
-  const inlineActionCount = hasActions
-    ? (effectiveMaxInline != null ? Math.min(actionDefs.length, effectiveMaxInline) : actionDefs.length)
-    : 0;
-  const hasOverflowActions = hasActions && effectiveMaxInline != null && actionDefs.length > effectiveMaxInline;
-  const actionsTrack = hasActions
-    ? `${inlineActionCount * 6 + (hasOverflowActions ? 3 : 0)}rem`
-    : null;
+  // All row actions live under one kebab menu: an inline button strip needs a
+  // wide fixed track that, pinned, paints over data cells during horizontal
+  // scroll (looked broken); a single 3rem icon cell with a hairline edge is
+  // the standard overflow affordance and covers nothing meaningful.
+  const actionsTrack = hasActions ? '3rem' : null;
   const gridTemplateColumns = [
     selectable ? 'auto' : null,
     ...colDefs.map((c, i) => c.width ?? `minmax(${colFloors[i]}ch, 1fr)`),
@@ -477,7 +470,7 @@ export function TableView({
         );
       })}
       {hasActions && (
-        <Box aria-hidden className="sticky right-0 bg-[var(--color-surface-subtle)]" />
+        <Box aria-hidden className="sticky right-0 bg-[var(--color-surface-subtle)] border-l border-[var(--color-border)] h-full" />
       )}
     </Box>
   );
@@ -490,12 +483,12 @@ export function TableView({
         role="row"
         data-entity-row
         data-entity-id={id}
-        onClick={itemClickEvent ? handleRowClick(row) : undefined}
+        onClick={rowClickEvent ? handleRowClick(row) : undefined}
         style={!hasRenderProp ? { gridTemplateColumns } : undefined}
         className={cn(
           'group items-center gap-3 transition-colors duration-fast',
           hasRenderProp ? 'flex' : 'grid',
-          itemClickEvent && 'cursor-pointer',
+          rowClickEvent && 'cursor-pointer',
           lk.rowPad,
           lk.divider && 'border-b border-[var(--color-border)]',
           lk.striped && index % 2 === 1 && 'bg-[var(--color-surface-subtle)]',
@@ -504,7 +497,7 @@ export function TableView({
         )}
       >
         {selectable && (
-          <Box className="flex items-center" onClick={itemClickEvent ? (e) => e.stopPropagation() : undefined}>
+          <Box className="flex items-center" onClick={rowClickEvent ? (e) => e.stopPropagation() : undefined}>
             <Checkbox
               checked={selected.has(id)}
               onChange={() => toggleRow(id)}
@@ -540,58 +533,40 @@ export function TableView({
         {hasActions && (
           <HStack
             gap="xs"
-            // The overflow Menu's item onClick has no stopPropagation of its
-            // own, so the whole actions cell shields the row click instead.
-            onClick={itemClickEvent ? (e) => e.stopPropagation() : undefined}
+            // The Menu's item onClick has no stopPropagation of its own, so
+            // the whole actions cell shields the row click instead.
+            onClick={rowClickEvent ? (e) => e.stopPropagation() : undefined}
             className={cn(
               // Pinned: the fixed column tracks routinely overflow the caller's
-              // scroll container, which used to leave the actions off-screen.
-              // Opaque so scrolled cells pass underneath it.
+              // scroll container, which would leave the kebab off-screen.
+              // Opaque + hairline edge so it reads as a pinned column, not a
+              // floating control, while scrolled cells pass underneath.
               'justify-end flex-shrink-0 sticky right-0 z-[1] transition-colors',
+              'border-l border-[var(--color-border)]',
               lk.striped && index % 2 === 1
                 ? 'bg-[var(--color-surface-subtle)]'
                 : 'bg-[var(--color-card)] group-hover:bg-[var(--color-surface-subtle)]',
             )}
           >
-            {(effectiveMaxInline != null ? actionDefs.slice(0, effectiveMaxInline) : actionDefs).map((action, i) => (
-              <Button
-                key={i}
-                // Inline row cells never render the filled danger button — a
-                // loud destructive control repeated on every row becomes the
-                // surface's focal point. Danger keeps its semantics via the
-                // error text treatment; only an explicit primary stays filled.
-                variant={action.variant === 'primary' ? 'primary' : 'ghost'}
-                size="sm"
-                onClick={handleActionClick(action, row)}
-                data-testid={`action-${action.event}`}
-                data-row-id={String(row.id)}
-                className={cn(action.variant === 'danger' && 'text-error hover:text-error hover:bg-error/10')}
-              >
-                {action.icon && renderIconInput(action.icon, { size: 'xs', className: 'mr-1' })}
-                {action.label}
-              </Button>
-            ))}
-            {effectiveMaxInline != null && actionDefs.length > effectiveMaxInline && (
-              <Menu
-                position="bottom-end"
-                trigger={
-                  <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow">
-                    <Icon name="more-horizontal" size="xs" />
-                  </Button>
-                }
-                items={actionDefs.slice(effectiveMaxInline).map((action) => ({
-                  label: action.label,
-                  icon: action.icon,
-                  event: action.event,
-                  variant: action.variant === 'danger' ? 'danger' : 'default',
-                  onClick: () =>
-                    eventBus.emit(`UI:${action.event}`, {
-                      id: row.id as string | number,
-                      row: row as ItemActionPayload['row'],
-                    }),
-                }))}
-              />
-            )}
+            <Menu
+              position="bottom-end"
+              trigger={
+                <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow" data-row-id={String(row.id)}>
+                  <Icon name="more-horizontal" size="xs" />
+                </Button>
+              }
+              items={actionDefs.map((action) => ({
+                label: action.label,
+                icon: action.icon,
+                event: action.event,
+                variant: action.variant === 'danger' ? 'danger' : 'default',
+                onClick: () =>
+                  eventBus.emit(`UI:${action.event}`, {
+                    id: row.id as string | number,
+                    row: row as ItemActionPayload['row'],
+                  }),
+              }))}
+            />
           </HStack>
         )}
       </Box>

@@ -137,6 +137,16 @@ export {
   type AlgorithmPointer,
 } from '../../learning/molecules/AlgorithmCanvas';
 export {
+  AlgoGraphCanvas,
+  type AlgoGraphCanvasProps,
+  type AlgoGraphNode,
+  type AlgoGraphEdge,
+  type AlgoGraphNodeBadge,
+  type AlgoGraphNodeState,
+  type AlgoGraphEdgeState,
+  type AlgoGraphLayout,
+} from '../../learning/molecules/AlgoGraphCanvas';
+export {
   LearningScene3D,
   type LearningScene3DProps,
   type Learning3DPoint,

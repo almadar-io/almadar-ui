@@ -23,12 +23,14 @@ export type LearningShapeType =
   | 'line'
   | 'arrow'
   | 'circle'
+  | 'ellipse'
   | 'rect'
   | 'polygon'
   | 'path'
   | 'text'
   | 'axis'
-  | 'grid';
+  | 'grid'
+  | 'venn-region';
 
 export interface LearningPoint {
   x: number;
@@ -62,7 +64,68 @@ export interface LearningShape {
   fill?: string;
   lineWidth?: number;
   opacity?: number;
+  /** Ellipse arc start, in degrees (screen convention: 0 = +x, clockwise). Omit with `endAngle` for a full ellipse. */
+  startAngle?: number;
+  /** Ellipse arc end, in degrees (screen convention: 0 = +x, clockwise). Omit with `startAngle` for a full ellipse. */
+  endAngle?: number;
+  /** Stroke dash style for line/arrow/circle/rect/polygon/path/ellipse strokes; omit for a solid line. */
+  dash?: 'dashed' | 'dotted';
+  /** venn-region only: ids of sibling `circle` shapes; the filled region is the INTERSECTION of these circles. */
+  inside?: string[];
+  /** venn-region only: ids of sibling `circle` shapes SUBTRACTED from the `inside` intersection (true lens/exclusion shading). */
+  outside?: string[];
 }
+
+/** A single top-right status chip (e.g. a live measurement or score). */
+export interface LearningReadout {
+  /** Chip label, shown before the value. */
+  label: string;
+  /** Chip value, shown after the label. */
+  value: string | number;
+  /** Chip fill/border color (default '#334155'). */
+  color?: string;
+}
+
+/** One plotted line within a trace panel. */
+export interface LearningTraceSeries {
+  /** Time-series samples in world/data coordinates. */
+  samples: LearningPoint[];
+  /** Series line + dot color (defaults from TRACE_SERIES_COLORS by index). */
+  color?: string;
+  /** Series label drawn top-left inside the panel. */
+  label?: string;
+}
+
+/**
+ * A minimal in-canvas sparkline inset — no ticks/grid/legend. For real axes, compose
+ * a MathCanvas instead.
+ */
+export interface LearningTracePanel {
+  /** Panel left edge (default anchors bottom-right, stacked upward per panel index). */
+  x?: number;
+  /** Panel top edge. */
+  y?: number;
+  /** Panel width (default 32% of canvas width). */
+  width?: number;
+  /** Panel height (default 28% of canvas height). */
+  height?: number;
+  /** Series drawn in this panel, auto-scaled to their combined extent. */
+  series: LearningTraceSeries[];
+  /** Bottom-right inside label, e.g. the x-axis quantity. */
+  xLabel?: string;
+  /** Top-right inside label, e.g. the y-axis quantity. */
+  yLabel?: string;
+  /** Panel border color (default '#94a3b8'). */
+  frameColor?: string;
+  /** Panel fill color (default '#ffffff'). */
+  backgroundColor?: string;
+  /** Panel fill opacity (default 0.85). */
+  backgroundOpacity?: number;
+}
+
+const DASH_PATTERNS = { dashed: [6, 4], dotted: [2, 3] } as const;
+
+const TRACE_SERIES_COLORS = ['#2563eb', '#dc2626', '#16a34a', '#f59e0b'];
 
 export interface LearningCanvasProps {
   /** Additional CSS classes. */
@@ -75,6 +138,16 @@ export interface LearningCanvasProps {
   backgroundColor?: string;
   /** Declarative shapes to draw. */
   shapes?: LearningShape[];
+  /**
+   * Top-right status chip row (live measurements, scores, counters).
+   * @synonyms chips, stats, measurements
+   */
+  readouts?: LearningReadout[];
+  /**
+   * Inset sparkline panels stacked from the bottom-right corner.
+   * @synonyms sparkline, time series, history plot
+   */
+  traces?: LearningTracePanel[];
   /** Enable pointer interaction (click/hover). */
   interactive?: boolean;
   /** Enable continuous redraw loop. */
@@ -126,6 +199,14 @@ function shapeBounds(shape: LearningShape): { x: number; y: number; w: number; h
         w: shape.radius * 2 + 8,
         h: shape.radius * 2 + 8,
       };
+    case 'ellipse':
+      if (shape.x == null || shape.y == null || shape.width == null || shape.height == null) return null;
+      return {
+        x: shape.x - shape.width / 2 - 4,
+        y: shape.y - shape.height / 2 - 4,
+        w: shape.width + 8,
+        h: shape.height + 8,
+      };
     case 'rect':
       if (shape.x == null || shape.y == null || shape.width == null || shape.height == null) return null;
       return { x: shape.x - 4, y: shape.y - 4, w: shape.width + 8, h: shape.height + 8 };
@@ -173,6 +254,7 @@ function drawShape(
   shape: LearningShape,
   width: number,
   height: number,
+  allShapes: readonly LearningShape[],
 ) {
   ctx.save();
   const opacity = shape.opacity ?? 1;
@@ -180,6 +262,7 @@ function drawShape(
   const stroke = resolveColor(shape.color, ctx, '#333333');
   const fill = shape.fill ? resolveColor(shape.fill, ctx, '#cccccc') : undefined;
   ctx.lineWidth = shape.lineWidth ?? 2;
+  if (shape.dash) ctx.setLineDash([...DASH_PATTERNS[shape.dash]]);
 
   switch (shape.type) {
     case 'grid': {
@@ -246,6 +329,20 @@ function drawShape(
       ctx.stroke();
       break;
     }
+    case 'ellipse': {
+      if (shape.x == null || shape.y == null || shape.width == null || shape.height == null) break;
+      const startAngle = ((shape.startAngle ?? 0) * Math.PI) / 180;
+      const endAngle = ((shape.endAngle ?? 360) * Math.PI) / 180;
+      ctx.beginPath();
+      ctx.ellipse(shape.x, shape.y, shape.width / 2, shape.height / 2, 0, startAngle, endAngle);
+      if (fill) {
+        ctx.fillStyle = fill;
+        ctx.fill();
+      }
+      ctx.strokeStyle = stroke;
+      ctx.stroke();
+      break;
+    }
     case 'rect': {
       if (shape.x == null || shape.y == null || shape.width == null || shape.height == null) break;
       if (fill) {
@@ -292,9 +389,152 @@ function drawShape(
       ctx.fillText(shape.text, shape.x, shape.y);
       break;
     }
+    case 'venn-region': {
+      // True boolean circle-region fill: intersection of the `inside` circles
+      // minus the union of the `outside` circles, composited via an offscreen
+      // canvas (successive clips intersect; destination-out punches exactly,
+      // even where outside circles overlap each other — an evenodd path
+      // cannot express that).
+      const resolveCircles = (ids?: string[]) =>
+        (ids ?? []).flatMap((id) => {
+          const c = allShapes.find((s) => s.type === 'circle' && s.id === id);
+          return c && c.x != null && c.y != null && c.radius != null
+            ? [{ x: c.x, y: c.y, radius: c.radius }]
+            : [];
+        });
+      const inside = resolveCircles(shape.inside);
+      if (inside.length === 0) break;
+      const outside = resolveCircles(shape.outside);
+      const off = document.createElement('canvas');
+      off.width = ctx.canvas.width;
+      off.height = ctx.canvas.height;
+      const octx = off.getContext('2d');
+      if (!octx) break;
+      octx.setTransform(ctx.getTransform());
+      for (const c of inside) {
+        const p = new Path2D();
+        p.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+        octx.clip(p);
+      }
+      octx.fillStyle = fill ?? stroke;
+      octx.fillRect(0, 0, width, height);
+      octx.globalCompositeOperation = 'destination-out';
+      for (const c of outside) {
+        const p = new Path2D();
+        p.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
+        octx.fill(p);
+      }
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(off, 0, 0);
+      ctx.restore();
+      break;
+    }
   }
 
   ctx.restore();
+}
+
+function readoutShapes(readouts: LearningReadout[], width: number): LearningShape[] {
+  const out: LearningShape[] = [];
+  const chipH = 18;
+  const gap = 6;
+  let rightEdge = width - 6;
+  let rowY = 6;
+  for (const readout of readouts) {
+    const text = `${readout.label}: ${String(readout.value)}`;
+    const chipW = Math.min(170, Math.max(34, text.length * 6 + 12));
+    let chipX = rightEdge - chipW;
+    if (chipX < 4) {
+      rowY += chipH + 4;
+      rightEdge = width - 6;
+      chipX = rightEdge - chipW;
+    }
+    const color = readout.color ?? '#334155';
+    out.push({ type: 'rect', x: chipX, y: rowY, width: chipW, height: chipH, color, fill: color });
+    out.push({
+      type: 'text',
+      x: chipX + chipW / 2,
+      y: rowY + chipH / 2,
+      text,
+      color: '#ffffff',
+      fontSize: 10,
+      align: 'center',
+    });
+    rightEdge = chipX - gap;
+  }
+  return out;
+}
+
+function traceShapes(panel: LearningTracePanel, k: number, width: number, height: number): LearningShape[] {
+  const w = panel.width ?? Math.round(width * 0.32);
+  const h = panel.height ?? Math.round(height * 0.28);
+  const x = panel.x ?? width - w - 8;
+  const y = panel.y ?? height - h - 8 - k * (h + 8);
+
+  const allSamples = panel.series.flatMap((series) => series.samples);
+  let xLo = Math.min(...allSamples.map((p) => p.x));
+  let xHi = Math.max(...allSamples.map((p) => p.x));
+  let yLo = Math.min(...allSamples.map((p) => p.y));
+  let yHi = Math.max(...allSamples.map((p) => p.y));
+  if (xLo === xHi) {
+    xLo -= 1;
+    xHi += 1;
+  }
+  if (yLo === yHi) {
+    yLo -= 1;
+    yHi += 1;
+  }
+
+  const backgroundColor = panel.backgroundColor ?? '#ffffff';
+  const frameColor = panel.frameColor ?? '#94a3b8';
+  const out: LearningShape[] = [];
+  out.push({
+    type: 'rect',
+    x,
+    y,
+    width: w,
+    height: h,
+    color: backgroundColor,
+    fill: backgroundColor,
+    opacity: panel.backgroundOpacity ?? 0.85,
+  });
+  out.push({ type: 'rect', x, y, width: w, height: h, color: frameColor, lineWidth: 1 });
+
+  panel.series.forEach((series, j) => {
+    const color = series.color ?? TRACE_SERIES_COLORS[j % TRACE_SERIES_COLORS.length];
+    const mapped = series.samples.map((p) => ({
+      x: x + 4 + ((p.x - xLo) / (xHi - xLo)) * (w - 8),
+      y: y + h - 4 - ((p.y - yLo) / (yHi - yLo)) * (h - 8),
+    }));
+    for (let i = 1; i < mapped.length; i++) {
+      out.push({
+        type: 'line',
+        x1: mapped[i - 1].x,
+        y1: mapped[i - 1].y,
+        x2: mapped[i].x,
+        y2: mapped[i].y,
+        color,
+        lineWidth: 1.5,
+      });
+    }
+    if (mapped.length > 0) {
+      const last = mapped[mapped.length - 1];
+      out.push({ type: 'circle', x: last.x, y: last.y, radius: 2, color, fill: color });
+    }
+    if (series.label) {
+      out.push({ type: 'text', x: x + 6, y: y + 10 + 11 * j, text: series.label, color, fontSize: 9 });
+    }
+  });
+
+  if (panel.yLabel) {
+    out.push({ type: 'text', x: x + w - 6, y: y + 10, text: panel.yLabel, color: '#6b7280', fontSize: 9, align: 'right' });
+  }
+  if (panel.xLabel) {
+    out.push({ type: 'text', x: x + w - 6, y: y + h - 6, text: panel.xLabel, color: '#6b7280', fontSize: 9, align: 'right' });
+  }
+
+  return out;
 }
 
 export const LearningCanvas: React.FC<LearningCanvasProps> = ({
@@ -303,6 +543,8 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
   height = 400,
   backgroundColor,
   shapes = [],
+  readouts,
+  traces,
   interactive = false,
   animate = false,
   onShapeClick,
@@ -331,6 +573,13 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
     return -1;
   }, [shapes]);
 
+  const derivedShapes = useMemo(() => {
+    if (!traces?.length && !readouts?.length) return shapes;
+    const traceOut = (traces ?? []).flatMap((panel, k) => traceShapes(panel, k, width, height));
+    const readoutOut = readouts?.length ? readoutShapes(readouts, width) : [];
+    return [...shapes, ...traceOut, ...readoutOut];
+  }, [shapes, traces, readouts, width, height]);
+
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -351,13 +600,13 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
     }
 
     // Text always renders in a final top pass so labels are never buried under paths/fills.
-    for (const shape of shapes) {
-      if (shape.type !== 'text') drawShape(ctx, shape, width, height);
+    for (const shape of derivedShapes) {
+      if (shape.type !== 'text') drawShape(ctx, shape, width, height, derivedShapes);
     }
-    for (const shape of shapes) {
-      if (shape.type === 'text') drawShape(ctx, shape, width, height);
+    for (const shape of derivedShapes) {
+      if (shape.type === 'text') drawShape(ctx, shape, width, height, derivedShapes);
     }
-  }, [width, height, backgroundColor, shapes]);
+  }, [width, height, backgroundColor, derivedShapes]);
 
   useEffect(() => {
     draw();
