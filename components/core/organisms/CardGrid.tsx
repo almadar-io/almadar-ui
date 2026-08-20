@@ -14,7 +14,7 @@ import type { EventKey, EventPayload, FieldValue } from "@almadar/core";
 import type { ItemActionPayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
 import { formatDate, humanizeFieldName } from '../../../lib/format';
-import { getNestedValue } from '../../../lib/getNestedValue';
+import { getNestedValue, resolveImageUrl } from '../../../lib/getNestedValue';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { Button } from '../atoms/index';
@@ -293,8 +293,8 @@ export const CardGrid: React.FC<CardGridProps> = ({
         >
           {/* Card Image: thumbnail from imageField */}
           {imageField && (() => {
-            const imgUrl = getNestedValue(itemData, imageField);
-            if (!imgUrl || typeof imgUrl !== 'string') return null;
+            const imgUrl = resolveImageUrl(getNestedValue(itemData, imageField));
+            if (!imgUrl) return null;
             return (
               <Box className="w-full aspect-video overflow-hidden rounded-t-lg">
                 <img

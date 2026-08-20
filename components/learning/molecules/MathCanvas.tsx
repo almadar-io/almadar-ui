@@ -11,7 +11,8 @@
  */
 
 import * as React from 'react';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import { useEventBus } from '../../../hooks/useEventBus';
 import { Card, Typography } from '../../core/atoms/index';
 import { VStack } from '../../core/atoms/Stack';
 import { LearningCanvas } from '../atoms/LearningCanvas';
@@ -171,6 +172,10 @@ export interface MathCanvasProps {
   interactive?: boolean;
   animate?: boolean;
   onShapeClick?: (payload: { id?: string; type?: string; index: number }) => void;
+  /** Maps a keydown `e.code` → the board's SEMANTIC event (device-agnostic input), emitted as `UI:{event}` — same contract as the game canvas keyMap. */
+  keyMap?: Record<string, string>;
+  /** Maps a keyup `e.code` → the board's SEMANTIC event. */
+  keyUpMap?: Record<string, string>;
   isLoading?: boolean;
   error?: UiError | null;
 }
@@ -203,9 +208,33 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
   interactive = false,
   animate = false,
   onShapeClick,
+  keyMap,
+  keyUpMap,
   isLoading,
   error,
 }) => {
+  const eventBus = useEventBus();
+
+  // Keyboard → semantic events via keyMap/keyUpMap (device-agnostic input layer,
+  // mirroring the game canvas): window-scoped so no focus gate is needed.
+  useEffect(() => {
+    if (!keyMap && !keyUpMap) return;
+    const onDown = (e: KeyboardEvent) => {
+      const ev = keyMap?.[e.code];
+      if (ev) { eventBus.emit(`UI:${ev}`, {}); e.preventDefault(); }
+    };
+    const onUp = (e: KeyboardEvent) => {
+      const ev = keyUpMap?.[e.code];
+      if (ev) eventBus.emit(`UI:${ev}`, {});
+    };
+    window.addEventListener('keydown', onDown);
+    window.addEventListener('keyup', onUp);
+    return () => {
+      window.removeEventListener('keydown', onDown);
+      window.removeEventListener('keyup', onUp);
+    };
+  }, [keyMap, keyUpMap, eventBus]);
+
   const derivedShapes: LearningShape[] = useMemo(() => {
     const out: LearningShape[] = [];
 
@@ -219,13 +248,16 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
     const yAxisX = Math.max(margin, Math.min(width - margin, mapX(0)));
 
     if (showGrid) {
+      // Mid-gray at low opacity stays a faint lattice on BOTH themes — the canvas is
+      // transparent when no backgroundColor is passed, so a light-theme gray at full
+      // opacity reads as a bright white grid over a dark page.
       for (let x = Math.ceil(xMin / gridStep) * gridStep; x <= xMax; x += gridStep) {
         const px = mapX(x);
-        out.push({ type: 'line', x1: px, y1: margin, x2: px, y2: height - margin, color: '#e5e7eb', lineWidth: 1 });
+        out.push({ type: 'line', x1: px, y1: margin, x2: px, y2: height - margin, color: '#9ca3af', opacity: 0.35, lineWidth: 1 });
       }
       for (let y = Math.ceil(yMin / gridStep) * gridStep; y <= yMax; y += gridStep) {
         const py = mapY(y);
-        out.push({ type: 'line', x1: margin, y1: py, x2: width - margin, y2: py, color: '#e5e7eb', lineWidth: 1 });
+        out.push({ type: 'line', x1: margin, y1: py, x2: width - margin, y2: py, color: '#9ca3af', opacity: 0.35, lineWidth: 1 });
       }
     }
 

@@ -57,7 +57,9 @@ export interface TopBarAction {
 
 export interface DashboardUser {
   name: string;
-  email: string;
+  /** Optional — the `.lolo` viewer binding (`viewerEmail: @user.email`)
+   *  compiles to `user?.email`, and an identity without an email is legal. */
+  email?: string;
   avatar?: AssetUrl;
 }
 
@@ -69,8 +71,11 @@ export interface DashboardLayoutProps {
   /** Navigation items. Apps that need a Settings page should add it
    *  as a navItems entry, not depend on baked-in chrome. */
   navItems?: NavItem[];
-  /** Current user info (optional - auto-populated from auth context if not provided) */
-  user?: DashboardUser;
+  /** Current user info (optional - auto-populated from auth context if not
+   *  provided). Accepts `null` as well as `undefined`: the `.lolo` substrate's
+   *  signed-out spelling is `(if @config.viewerName {…} null)`, and the
+   *  compiled path passes that `null` through verbatim. */
+  user?: DashboardUser | null;
   /** Header actions (extra slots beyond bell/search/theme). */
   headerActions?: React.ReactNode;
   /** Show the top-bar search box. Default `false` — opt in by setting

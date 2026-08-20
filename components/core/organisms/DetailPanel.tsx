@@ -12,6 +12,7 @@ import React, { useCallback, Suspense, lazy } from "react";
 import type { EventPayload, EntityRow, FieldValue } from "@almadar/core";
 import type { ItemActionPayload } from "@almadar/core/patterns";
 import {
+  ArrowLeft,
   Calendar,
   Tag,
   TrendingUp,
@@ -42,11 +43,13 @@ import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
 import { cn } from "../../../lib/cn";
-import { humanizeFieldName } from "../../../lib/format";
+import { humanizeFieldName, humanizeEnumValue } from "../../../lib/format";
 import { getNestedValue } from "../../../lib/getNestedValue";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import type { DisplayStateProps } from "./types";
+import type { RelationOption } from "../molecules/RelationSelect";
+import { formatFileSize } from "../molecules/UploadDropZone";
 
 function getFieldIcon(fieldName: string): IconInput {
   const name = fieldName.toLowerCase();
@@ -139,6 +142,19 @@ interface TypedFieldDef {
   type: string;
 }
 
+/** Schema metadata for one display field, injected by the runtime's
+ *  detail enrichment (UISlotRenderer) or the compiled path's codegen. */
+export interface FieldMeta {
+  type?: string;
+  /** Closed vocabulary — a `.lolo` string union's `values` sidecar. */
+  values?: readonly string[];
+  /** Relation target entity name, when the field is relation-typed. */
+  relation?: string;
+  /** Relation options for display-name resolution (from `relationsData`,
+   *  injected server-side by the runtime / bound by compiled codegen). */
+  options?: readonly RelationOption[];
+}
+
 /**
  * Render a field value with rich content support based on entity field type.
  * Uses the schema-declared type (not regex heuristics) to decide rendering.
@@ -147,6 +163,7 @@ function renderRichFieldValue(
   value: FieldValue | undefined,
   fieldName: string,
   fieldType?: string,
+  meta?: FieldMeta,
 ): React.ReactNode {
   if (value === undefined || value === null) return "—";
 
@@ -230,20 +247,74 @@ function renderRichFieldValue(
       );
 
     case "date":
-    case "datetime": {
+    case "datetime":
+    case "timestamp": {
       const d = new Date(str);
       if (!isNaN(d.getTime())) {
         return d.toLocaleDateString(undefined, {
           year: "numeric",
           month: "long",
           day: "numeric",
-          ...(fieldType === "datetime" ? { hour: "2-digit", minute: "2-digit" } : {}),
+          ...(fieldType !== "date" ? { hour: "2-digit", minute: "2-digit" } : {}),
         });
       }
       return str;
     }
 
+    case "money": {
+      const n = typeof value === "number" ? value : Number(str);
+      if (!isNaN(n)) {
+        return new Intl.NumberFormat(undefined, {
+          style: "currency",
+          currency: "USD",
+        }).format(n);
+      }
+      return str;
+    }
+
+    case "relation": {
+      // Resolve the stored foreign id to its display name via the injected
+      // relation options (same {value, label} contract as Form's selects).
+      const match = meta?.options?.find((opt) => opt.value === str);
+      return match ? match.label : str;
+    }
+
+    case "file": {
+      // A file field holds the canonical {name, url, mimeType, sizeBytes}
+      // struct — render a download chip, never the raw object.
+      if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+        const file = value as { name?: string; url?: string; sizeBytes?: number };
+        const label = typeof file.name === "string" && file.name ? file.name : "file";
+        const size = typeof file.sizeBytes === "number" ? ` · ${formatFileSize(file.sizeBytes)}` : "";
+        return (
+          <a
+            href={typeof file.url === "string" ? file.url : undefined}
+            download={label}
+            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted px-2 py-1 text-sm text-foreground no-underline hover:bg-accent"
+          >
+            <Icon icon={FileText} size="sm" className="text-muted-foreground" />
+            {label}
+            {size && (
+              <Typography as="span" variant="caption" color="muted">
+                {size}
+              </Typography>
+            )}
+          </a>
+        );
+      }
+      return str;
+    }
+
     default:
+      // A field with a schema-declared closed vocabulary (a `.lolo` string
+      // union) renders as a Badge — its value is a state, not prose.
+      if (meta?.values && meta.values.length > 0 && meta.values.includes(str)) {
+        return (
+          <Badge variant={getBadgeVariant(fieldName, str)}>
+            {humanizeEnumValue(str)}
+          </Badge>
+        );
+      }
       return formatFieldValue(value, fieldName);
   }
 }
@@ -276,9 +347,15 @@ export interface DetailPanelAction {
 }
 
 /**
- * Field definition for unified interface - can be a simple string, key/header object, or typed object
+ * Field definition for unified interface - can be a simple string, key/header
+ * object, or typed object. `type`/`values`/`relation` on the {key, header}
+ * shape are injected by the runtime's detail enrichment (UISlotRenderer) or
+ * the compiled path's codegen — call sites keep authoring plain {key, header}.
  */
-export type FieldDef = string | { key: string; header?: string } | { name: string; type: string };
+export type FieldDef =
+  | string
+  | { key: string; header?: string; type?: string; values?: readonly string[]; relation?: string }
+  | { name: string; type: string; values?: readonly string[]; relation?: string };
 
 /**
  * Normalize fields to simple string array
@@ -310,13 +387,30 @@ function buildFieldLabelMap(fields: readonly FieldDef[] | undefined): Record<str
 
 /**
  * Build a map of field name -> field type from typed field definitions.
+ * Reads `type` off BOTH object shapes — {name, type} and the enriched
+ * {key, header, type} the runtime/compiled paths inject.
  */
 function buildFieldTypeMap(fields: readonly FieldDef[] | undefined): Record<string, string> {
   const map: Record<string, string> = {};
   if (!fields) return map;
   for (const f of fields) {
-    if (typeof f === "object" && "name" in f && "type" in f) {
-      map[f.name] = f.type;
+    if (typeof f === "object" && f.type !== undefined) {
+      map["name" in f ? f.name : f.key] = f.type;
+    }
+  }
+  return map;
+}
+
+/**
+ * Build a map of field name -> schema metadata (values vocabulary, relation
+ * target) from enriched field definitions.
+ */
+function buildFieldMetaMap(fields: readonly FieldDef[] | undefined): Record<string, FieldMeta> {
+  const map: Record<string, FieldMeta> = {};
+  if (!fields) return map;
+  for (const f of fields) {
+    if (typeof f === "object" && (f.type !== undefined || f.values !== undefined || f.relation !== undefined)) {
+      map["name" in f ? f.name : f.key] = { type: f.type, values: f.values, relation: f.relation };
     }
   }
   return map;
@@ -327,6 +421,11 @@ export interface DetailPanelStatus {
   variant?: "default" | "success" | "warning" | "danger" | "info";
 }
 
+/**
+ * Props for DetailPanel — the generic read-only record detail view.
+ *
+ * @fieldsContract display
+ */
 export interface DetailPanelProps extends DisplayStateProps {
   /** RECORD-cardinality: renders ONE record (see body collapse below). */
   entity?: EntityRow;
@@ -337,6 +436,12 @@ export interface DetailPanelProps extends DisplayStateProps {
   sections?: readonly DetailSection[];
   /** Unified actions array - first action with variant='primary' is the main action */
   actions?: readonly DetailPanelAction[];
+  /**
+   * Navigation-back affordance. Renders top-LEFT before the title (OS/back
+   * convention — Almadar_UX §8.4), spatially separated from the right-aligned
+   * action buttons + close X. Never inferred from actions[] labels.
+   */
+  backAction?: DetailPanelAction;
   footer?: React.ReactNode;
   slideOver?: boolean;
 
@@ -356,6 +461,10 @@ export interface DetailPanelProps extends DisplayStateProps {
   displayFields?: readonly string[];
   /** Show actions flag */
   showActions?: boolean;
+  /** Relation display data: { fieldName: [{value, label}] } — injected
+   *  server-side by the runtime (relation-option injection) or bound by
+   *  compiled codegen; resolves stored foreign ids to display names. */
+  relationsData?: Record<string, readonly RelationOption[]>;
 }
 
 export const DetailPanel: React.FC<DetailPanelProps> = ({
@@ -365,6 +474,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   avatar,
   sections: propSections,
   actions,
+  backAction,
   footer,
   slideOver = false,
   className,
@@ -374,6 +484,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   initialData,
   isLoading = false,
   error,
+  relationsData,
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
@@ -400,10 +511,22 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     ? buildFieldTypeMap(propFields)
     : {};
 
+  const fieldMetaMap = isFieldDefArray(propFields)
+    ? buildFieldMetaMap(propFields)
+    : {};
+
   const fieldLabelMap = isFieldDefArray(propFields)
     ? buildFieldLabelMap(propFields)
     : {};
   const labelFor = (field: string): string => fieldLabelMap[field] ?? formatFieldLabel(field);
+
+  // Schema metadata + relation options merged per field for typed rendering.
+  const metaFor = (field: string): FieldMeta | undefined => {
+    const base = fieldMetaMap[field];
+    const options = relationsData?.[field];
+    if (!base && !options) return undefined;
+    return { ...base, options };
+  };
 
   // Handle action click with event bus and navigation support
   const handleActionClick = useCallback(
@@ -527,7 +650,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         if (value !== undefined && value !== null) {
           overviewFields.push({
             label: labelFor(field),
-            value: renderRichFieldValue(value, field, fieldTypeMap[field]),
+            value: renderRichFieldValue(value, field, fieldTypeMap[field], metaFor(field)),
             icon: getFieldIcon(field),
           });
         }
@@ -547,7 +670,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         if (value !== undefined && value !== null) {
           metricsFields.push({
             label: labelFor(field),
-            value: renderRichFieldValue(value, field, fieldTypeMap[field]),
+            value: renderRichFieldValue(value, field, fieldTypeMap[field], metaFor(field)),
             icon: getFieldIcon(field),
           });
         }
@@ -567,7 +690,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         if (value !== undefined && value !== null) {
           timelineFields.push({
             label: labelFor(field),
-            value: renderRichFieldValue(value, field, fieldTypeMap[field]),
+            value: renderRichFieldValue(value, field, fieldTypeMap[field], metaFor(field)),
             icon: getFieldIcon(field),
           });
         }
@@ -587,7 +710,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
         if (value !== undefined && value !== null) {
           descFields.push({
             label: labelFor(field),
-            value: renderRichFieldValue(value, field, fieldTypeMap[field]),
+            value: renderRichFieldValue(value, field, fieldTypeMap[field], metaFor(field)),
             icon: getFieldIcon(field),
           });
         }
@@ -643,7 +766,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
           const value = (normalizedData ? getNestedValue(normalizedData, field) : undefined) as FieldValue | undefined;
           allFields.push({
             label: labelFor(field),
-            value: renderRichFieldValue(value, field, fieldTypeMap[field]),
+            value: renderRichFieldValue(value, field, fieldTypeMap[field], metaFor(field)),
             icon: getFieldIcon(field),
           });
         } else {
@@ -664,32 +787,51 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   const content = (
     <Card variant="elevated">
       <VStack gap="md" className="p-6">
-        {/* Top bar: action buttons + close X on the right */}
-        <HStack justify="end" align="center" gap="xs">
-          {otherActions.map((action, idx) => (
+        {/* Top bar: back (navigation) LEFT per OS/back convention (UX §8.4);
+            action buttons + close X stay right. `justify-between` keeps the
+            two groups spatially separated even when backAction is absent. */}
+        <HStack justify="between" align="center" gap="xs">
+          <HStack align="center" gap="xs">
+            {backAction && (
+              <Button
+                variant={backAction.variant || "ghost"}
+                size="sm"
+                action={backAction.navigatesTo ? undefined : backAction.event}
+                actionPayload={{ row: normalizedData }}
+                onClick={backAction.navigatesTo ? () => handleActionClick(backAction, normalizedData) : undefined}
+                icon={backAction.icon ?? ArrowLeft}
+                data-testid={backAction.event ? `action-${backAction.event}` : "action-back"}
+              >
+                {backAction.label}
+              </Button>
+            )}
+          </HStack>
+          <HStack justify="end" align="center" gap="xs">
+            {otherActions.map((action, idx) => (
+              <Button
+                key={idx}
+                variant={action.variant || "secondary"}
+                size="sm"
+                action={action.navigatesTo ? undefined : action.event}
+                actionPayload={{ row: normalizedData }}
+                onClick={action.navigatesTo ? () => handleActionClick(action, normalizedData) : undefined}
+                icon={action.icon}
+                data-testid={action.event ? `action-${action.event}` : undefined}
+                data-row-id={normalizedData?.id !== undefined ? String(normalizedData.id) : undefined}
+              >
+                {action.label}
+              </Button>
+            ))}
             <Button
-              key={idx}
-              variant={action.variant || "secondary"}
+              variant="ghost"
               size="sm"
-              action={action.navigatesTo ? undefined : action.event}
+              action={effectiveCloseAction.event}
               actionPayload={{ row: normalizedData }}
-              onClick={action.navigatesTo ? () => handleActionClick(action, normalizedData) : undefined}
-              icon={action.icon}
-              data-testid={action.event ? `action-${action.event}` : undefined}
-              data-row-id={normalizedData?.id !== undefined ? String(normalizedData.id) : undefined}
-            >
-              {action.label}
-            </Button>
-          ))}
-          <Button
-            variant="ghost"
-            size="sm"
-            action={effectiveCloseAction.event}
-            actionPayload={{ row: normalizedData }}
-            onClick={effectiveCloseAction.event ? undefined : handleClose}
-            icon={X}
-            data-testid={effectiveCloseAction.event ? `action-${effectiveCloseAction.event}` : "action-close"}
-          />
+              onClick={effectiveCloseAction.event ? undefined : handleClose}
+              icon={X}
+              data-testid={effectiveCloseAction.event ? `action-${effectiveCloseAction.event}` : "action-close"}
+            />
+          </HStack>
         </HStack>
 
         {/* Avatar + Title */}

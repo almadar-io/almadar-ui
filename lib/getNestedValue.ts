@@ -1,4 +1,4 @@
-import type { EventPayload, FieldValue } from '@almadar/core';
+import { isFileValue, type EventPayload, type FieldValue } from '@almadar/core';
 
 /**
  * Get Nested Value Utility
@@ -49,6 +49,22 @@ export function getNestedValue(
   }
 
   return value as FieldValue | undefined;
+}
+
+/**
+ * Resolve a field value that may be a raw URL string (legacy `image`/`url` fields) or a
+ * structured `file`-typed {@link FileValue} into the URL an `<img src>` can use. Gallery/card
+ * grid image tiles only ever rendered the raw-string case before the file-type promotion —
+ * this keeps them working once a field is retyped to `file`.
+ */
+export function resolveImageUrl(value: FieldValue | undefined): string | undefined {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (isFileValue(value)) {
+    return value.url;
+  }
+  return undefined;
 }
 
 /**

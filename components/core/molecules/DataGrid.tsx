@@ -19,7 +19,7 @@ import { formatValue, humanizeEnumValue, humanizeFieldName } from '../../../lib/
 import { createLogger } from '@almadar/logger';
 
 const dataGridLog = createLogger('almadar:ui:data-grid');
-import { getNestedValue } from '../../../lib/getNestedValue';
+import { getNestedValue, resolveImageUrl } from '../../../lib/getNestedValue';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { Box } from '../atoms/Box';
@@ -551,8 +551,8 @@ export function DataGrid({
             >
             {/* Card Image */}
             {imageField && (() => {
-              const imgUrl = getNestedValue(itemData, imageField);
-              if (!imgUrl || typeof imgUrl !== 'string') return null;
+              const imgUrl = resolveImageUrl(getNestedValue(itemData, imageField));
+              if (!imgUrl) return null;
               return (
                 <Box className="w-full aspect-video overflow-hidden rounded-t-lg">
                   <img

@@ -48,7 +48,7 @@ import { Skeleton, type SkeletonVariant } from "../molecules/Skeleton";
 
 // Shared renderer imports (synced from @almadar/core/patterns renderer)
 import { isPortalSlot, SLOT_DEFINITIONS } from "../../../renderer/index";
-import { getPatternDefinition, isDrawHostPattern } from "@almadar/core/patterns";
+import { getPatternDefinition, getPatternFieldsContract, isDrawHostPattern } from "@almadar/core/patterns";
 import type { PatternPropDef } from "@almadar/core/patterns";
 import { wrapCallbackForEvent } from "../../../lib/wrapCallbackForEvent";
 
@@ -155,13 +155,11 @@ function getComponentForPattern(
   return COMPONENT_REGISTRY[mapping] ?? null;
 }
 
-// Form patterns whose `fields` should be enriched with entity field types
-const FORM_PATTERNS = new Set([
-  "form",
-  "form-section",
-  "inline-edit-form",
-  "wizard-step",
-]);
+// Which patterns get entity-schema field enrichment — and in which shape —
+// is DECLARED per component via the `@fieldsContract` JSDoc tag ('form' =
+// editable SchemaFields, 'display' = read-only {key, header} + typed meta)
+// and read from the pattern registry. Never a hardcoded pattern-name list:
+// a future pattern declaring a contract gets enrichment with zero edits here.
 
 /**
  * Enrich form field definitions with entity schema type info.
@@ -185,6 +183,10 @@ function enrichFormFields(
           type: entityField.type,
           required: entityField.required ?? false,
         };
+        if (entityField.description) {
+          // The entity field's @description becomes the input's help text.
+          enriched.hint = entityField.description;
+        }
         if (entityField.values && entityField.values.length > 0) {
           enriched.values = entityField.values as SlotPropValue[];
         } else if (entityField.enumValues && entityField.enumValues.length > 0) {
@@ -213,6 +215,9 @@ function enrichFormFields(
       if (entityField.required && !('required' in obj)) {
         enriched.required = true;
       }
+      if (entityField.description && !obj.hint && !obj.help) {
+        enriched.hint = entityField.description;
+      }
       if (!obj.values && !obj.options) {
         if (entityField.values && entityField.values.length > 0) {
           enriched.values = entityField.values as SlotPropValue[];
@@ -224,6 +229,48 @@ function enrichFormFields(
         enriched.relation = entityField.relation.entity;
       }
       return enriched;
+    }
+
+    return field;
+  });
+}
+
+/**
+ * Enrich detail-panel display fields with entity schema type info — the
+ * display twin of enrichFormFields. Accepts the shapes call sites author
+ * (bare string names and {key, header} pairs) and injects `type`, `values`
+ * (a string union's closed vocabulary) and `relation` (target entity name)
+ * from the resolved entity, activating DetailPanel's typed rendering path.
+ * Entries that already carry a `type` are the author's override — untouched.
+ */
+function enrichDetailFields(
+  fields: SlotPropValue[],
+  entityDef: ResolvedEntity,
+): SlotPropValue[] {
+  const fieldMap = new Map(entityDef.fields.map((f) => [f.name, f]));
+
+  const metaFor = (name: string): SlotProps | undefined => {
+    const entityField = fieldMap.get(name);
+    if (!entityField) return undefined;
+    const meta: SlotProps = { type: entityField.type };
+    const values = entityField.values ?? entityField.enumValues;
+    if (values && values.length > 0) meta.values = values as SlotPropValue[];
+    if (entityField.relation) meta.relation = entityField.relation.entity;
+    return meta;
+  };
+
+  return fields.map((field) => {
+    if (typeof field === 'string') {
+      const meta = metaFor(field);
+      return meta ? ({ key: field, ...meta } as SlotPropValue) : field;
+    }
+
+    if (field && typeof field === 'object' && !Array.isArray(field) && !React.isValidElement(field) && !(field instanceof Date)) {
+      const obj = field as SlotProps;
+      const fieldName = typeof obj.key === 'string' ? obj.key : typeof obj.name === 'string' ? obj.name : undefined;
+      if (!fieldName || obj.type) return field;
+      const meta = metaFor(fieldName);
+      return meta ? ({ ...obj, ...meta } as SlotPropValue) : field;
     }
 
     return field;
@@ -1227,6 +1274,37 @@ function isPatternConfig(
 }
 
 /**
+ * PatternValue → ReactNode boundary for the COMPILED path. Generated Views
+ * forward node-typed config knobs straight into JSX slots
+ * (`children: @config.children` → `{renderPatternValue(config?.children)}`);
+ * the interpreted path resolves the same values through
+ * `renderPatternChildren`/`SlotContentRenderer`, so this export routes the
+ * compiled path through that exact machinery instead of handing React a raw
+ * pattern object. Scalars render as text (booleans/functions render nothing,
+ * matching React children semantics), Dates as their locale string, elements
+ * pass through, strings resolve `@trait.X` bindings, and registered pattern
+ * objects/arrays render through the component registry.
+ */
+export function renderPatternValue(value: SlotPropValue): React.ReactNode {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "boolean" || typeof value === "function") return null;
+  if (typeof value === "number") return value;
+  if (typeof value === "string") return renderPatternChildren(value, () => {});
+  if (value instanceof Date) return value.toLocaleString();
+  if (React.isValidElement(value)) return value;
+  if (Array.isArray(value)) {
+    return (value as ReadonlyArray<SlotPropValue>).map((item, index) => (
+      <React.Fragment key={index}>{renderPatternValue(item)}</React.Fragment>
+    ));
+  }
+  if (isPatternConfig(value)) {
+    const { type, ...props } = value;
+    return renderPatternChildren({ type, props }, () => {});
+  }
+  return null;
+}
+
+/**
  * Plain-object guard — distinguishes a JSON-shape map from a React element,
  * Date, or class instance. Used to narrow the deep-scan walker so it only
  * recurses into config-data objects, never into renderable nodes or dates.
@@ -1654,14 +1732,21 @@ function SlotContentRenderer({
       }
     }
 
-    // Form field type enrichment: inject entity field types into form SchemaFields.
-    // Mirrors what the compiler does at build time (EntityFieldInfo injection).
-    const isFormPattern = FORM_PATTERNS.has(content.pattern)
-      || content.pattern.includes('form');
-    if (isFormPattern && entityDef && Array.isArray(finalProps.fields) && finalProps.fields[0] !== 'fn') {
-      finalProps.fields = enrichFormFields([...finalProps.fields] as SlotPropValue[], entityDef);
-      // V2: edit-form initialData comes pre-bound via `initialData: @payload.data`
-      // instead of being hydrated from the entity store.
+    // Entity-schema field enrichment, keyed on the pattern's DECLARED
+    // `@fieldsContract` (see the note at the top of this file):
+    //   'form'    → editable SchemaFields (type/values/relation/hint).
+    //   'display' → read-only display meta on {key, header} fields.
+    // Legacy fallback: unregistered client/project patterns whose name
+    // contains 'form' keep the form treatment they always had — registered
+    // patterns are governed solely by their declared contract.
+    const fieldsContract = getPatternFieldsContract(content.pattern)
+      ?? (getPatternDefinition(content.pattern) === null && content.pattern.includes('form') ? 'form' : undefined);
+    if (fieldsContract && entityDef && Array.isArray(finalProps.fields) && finalProps.fields[0] !== 'fn') {
+      finalProps.fields = fieldsContract === 'form'
+        ? enrichFormFields([...finalProps.fields] as SlotPropValue[], entityDef)
+        // V2: edit-form initialData comes pre-bound via `initialData: @payload.data`
+        // instead of being hydrated from the entity store.
+        : enrichDetailFields([...finalProps.fields] as SlotPropValue[], entityDef);
     }
 
     const acceptsChildren = PATTERNS_WITH_CHILDREN.has(content.pattern);

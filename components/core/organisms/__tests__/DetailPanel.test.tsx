@@ -1,20 +1,22 @@
 /**
  * DetailPanel Component Tests
  *
- * Tests for detail panel functionality including selectedEntity from event bus.
+ * DetailPanel receives pre-resolved data via its `entity` prop (bound from
+ * `@payload.data` / `@payload.row` on the state machine). The three tests
+ * that asserted bus-driven `selectedEntity` swapping on `UI:VIEW`/`UI:SELECT`/
+ * `UI:CLOSE` were removed 2026-08-19: that mechanism was deleted in G13
+ * (2026-04-24) along with `useEntityDetail` — the tests outlived the behavior
+ * by five months because the component test glob was orphaned from the
+ * vitest config.
  */
-import React, { useEffect } from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import React from 'react';
+import { describe, it, expect } from 'vitest';
+import { render, screen, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { DetailPanel } from '../DetailPanel';
 import { EventBusProvider } from '../../../../providers/EventBusProvider';
 import { useEventBus } from '../../../../hooks/useEventBus';
-
-// G13 (2026-04-24): the `useEntityDetail` mock block was removed — the hook
-// is deleted. DetailPanel now receives pre-resolved data via its `entity`
-// prop (bound from `@payload.data` or `@payload.row` on the state machine).
 
 // Test wrapper with providers
 const createTestWrapper = (initialRoute = '/') => {
@@ -65,22 +67,11 @@ describe('DetailPanel', () => {
     expect(screen.getByText('1,299')).toBeInTheDocument();
   });
 
-  it('uses selectedEntity from event bus when UI:VIEW is emitted', async () => {
+  it('shows the not-found empty state without an entity', () => {
     const TestWrapper = createTestWrapper();
-
-    // Component that provides a way to emit events imperatively
-    let emitView: (entity: typeof mockProduct) => void = () => {};
-    const EventController: React.FC = () => {
-      const eventBus = useEventBus();
-      emitView = (entity) => {
-        eventBus.emit('UI:VIEW', { row: entity });
-      };
-      return null;
-    };
 
     render(
       <TestWrapper>
-        <EventController />
         <DetailPanel
           fields={['name', 'price', 'category']}
           fieldNames={['name', 'price', 'category']}
@@ -88,104 +79,10 @@ describe('DetailPanel', () => {
       </TestWrapper>
     );
 
-    // Initially shows empty state (no data)
-    expect(screen.getByText('Not Found')).toBeInTheDocument();
-
-    // Emit VIEW event with entity
-    act(() => {
-      emitView(mockProduct);
-    });
-
-    // The detail panel should display the selected entity
-    await waitFor(() => {
-      expect(screen.getByText('Premium Laptop')).toBeInTheDocument();
-    });
+    expect(screen.getByText('Not found')).toBeInTheDocument();
   });
 
-  it('uses selectedEntity from UI:SELECT event', async () => {
-    const TestWrapper = createTestWrapper();
-
-    let emitSelect: (entity: typeof mockProduct) => void = () => {};
-    const EventController: React.FC = () => {
-      const eventBus = useEventBus();
-      emitSelect = (entity) => {
-        eventBus.emit('UI:SELECT', { row: entity });
-      };
-      return null;
-    };
-
-    render(
-      <TestWrapper>
-        <EventController />
-        <DetailPanel
-          fields={['name', 'price', 'category']}
-          fieldNames={['name', 'price', 'category']}
-        />
-      </TestWrapper>
-    );
-
-    // Initially shows empty state
-    expect(screen.getByText('Not Found')).toBeInTheDocument();
-
-    // Emit SELECT event
-    act(() => {
-      emitSelect(mockProduct);
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText('Premium Laptop')).toBeInTheDocument();
-    });
-  });
-
-  it('clears selectedEntity when UI:CLOSE is emitted', async () => {
-    const TestWrapper = createTestWrapper();
-
-    let emitSelect: (entity: typeof mockProduct) => void = () => {};
-    let emitClose: () => void = () => {};
-    const EventController: React.FC = () => {
-      const eventBus = useEventBus();
-      emitSelect = (entity) => {
-        eventBus.emit('UI:SELECT', { row: entity });
-      };
-      emitClose = () => {
-        eventBus.emit('UI:CLOSE', {});
-      };
-      return null;
-    };
-
-    render(
-      <TestWrapper>
-        <EventController />
-        <DetailPanel
-          fields={['name', 'price', 'category']}
-          fieldNames={['name', 'price', 'category']}
-        />
-      </TestWrapper>
-    );
-
-    // Select an entity
-    act(() => {
-      emitSelect(mockProduct);
-    });
-
-    // First, entity should be displayed
-    await waitFor(() => {
-      expect(screen.getByText('Premium Laptop')).toBeInTheDocument();
-    });
-
-    // Then emit close event
-    act(() => {
-      emitClose();
-    });
-
-    // Entity should no longer be displayed (shows empty state)
-    await waitFor(() => {
-      expect(screen.queryByText('Premium Laptop')).not.toBeInTheDocument();
-      expect(screen.getByText('Not Found')).toBeInTheDocument();
-    });
-  });
-
-  it('prioritizes explicit data prop over selectedEntity', async () => {
+  it('renders the entity prop and ignores bus events (V2 data flow)', async () => {
     const TestWrapper = createTestWrapper();
     const explicitData = { ...mockProduct, name: 'Explicit Product' };
 
@@ -209,18 +106,13 @@ describe('DetailPanel', () => {
       </TestWrapper>
     );
 
-    // Should show explicit data
     expect(screen.getByText('Explicit Product')).toBeInTheDocument();
 
-    // Even after emitting select, explicit data should still be shown
     act(() => {
       emitSelect(mockProduct);
     });
 
-    // Should still show explicit data, not selectedEntity
-    await waitFor(() => {
-      expect(screen.getByText('Explicit Product')).toBeInTheDocument();
-      expect(screen.queryByText('Premium Laptop')).not.toBeInTheDocument();
-    });
+    expect(screen.getByText('Explicit Product')).toBeInTheDocument();
+    expect(screen.queryByText('Premium Laptop')).not.toBeInTheDocument();
   });
 });

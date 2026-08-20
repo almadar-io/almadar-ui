@@ -14,6 +14,7 @@
 
 import React, { useState, useCallback } from "react";
 import type { AssetUrl, EventEmit } from "@almadar/core";
+import { resolveImageUrl } from "../../../lib/getNestedValue";
 import { cn } from "../../../lib/cn";
 import { Card, Typography, Badge, Button, Icon, Box } from "../atoms/index";
 import { VStack, HStack } from "../atoms/Stack";
@@ -144,9 +145,9 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
         return entityData.map((record, idx): MediaItem => {
             return {
                 id: String(record.id ?? idx),
-                src: String(record.src ?? ('url' in record ? record.url : '') ?? ('image' in record ? record.image : '') ?? ""),
+                src: resolveImageUrl(record.src ?? ('url' in record ? record.url : undefined) ?? ('image' in record ? record.image : undefined)) ?? "",
                 alt: (record.alt ? String(record.alt) : undefined),
-                thumbnail: (record.thumbnail ? String(record.thumbnail) : undefined),
+                thumbnail: resolveImageUrl(record.thumbnail),
                 caption: (record.caption ? String(record.caption) : ('title' in record ? String(record.title) : undefined)),
             };
         });

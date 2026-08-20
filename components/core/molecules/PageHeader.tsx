@@ -49,8 +49,9 @@ export interface PageHeaderProps {
   backEvent?: EventEmit<Record<string, never>>;
   /** Breadcrumbs */
   breadcrumbs?: readonly PageBreadcrumb[];
-  /** Status badge */
-  status?: PageHeaderStatus;
+  /** Status badge — a bare string (an entity's status field bound directly,
+   * e.g. `status: @entity.status`) renders as a default-variant badge */
+  status?: PageHeaderStatus | string;
   /** Actions array - first action with variant='primary' (or first action) is the main action */
   actions?: readonly Readonly<SchemaAction>[];
   /** Loading state indicator */
@@ -86,6 +87,8 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   className,
 }) => {
   const eventBus = useEventBus();
+  const statusBadge: PageHeaderStatus | undefined =
+    typeof status === "string" ? (status ? { label: status } : undefined) : status;
 
   const handleBack = () => {
     // Emit event for trait state machine to handle
@@ -164,15 +167,15 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               <Typography variant="h1" className="text-2xl font-bold text-foreground">
                 {title != null ? String(title) : ""}
               </Typography>
-              {status && (
+              {statusBadge && (
                 <Typography
                   variant="small"
                   className={cn(
                     "px-2.5 py-1 rounded-full text-xs font-medium",
-                    statusColors[status.variant || "default"],
+                    statusColors[statusBadge.variant || "default"],
                   )}
                 >
-                  {status.label}
+                  {statusBadge.label}
                 </Typography>
               )}
             </Box>

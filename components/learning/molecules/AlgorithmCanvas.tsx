@@ -180,9 +180,21 @@ const SLOT_VALUE_TEXT_COLOR = '#ffffff';
 const FRAME_ACTIVE_COLOR = '#3b82f6';
 const FRAME_RETURNING_COLOR = '#f59e0b';
 const FRAME_DONE_COLOR = '#94a3b8';
+const FRAME_RIM_COLOR: Record<string, string> = {
+  active: '#1d4ed8',
+  returning: '#b45309',
+  done: '#64748b',
+};
 const FRAME_LABEL_COLOR = '#ffffff';
 const FRAME_DETAIL_COLOR = '#e2e8f0';
 const FRAME_TWO_LINE_MIN_H = 22;
+// Strips are fixed-height slabs stacked from the panel bottom (a real call
+// stack silhouette) — never stretched to fill the panel; they only compress
+// once the stack outgrows it.
+const FRAME_STRIP_H = 44;
+const FRAME_GAP = 6;
+const FRAME_BOTTOM_PAD = 8;
+const FRAME_MIN_H = 12;
 
 // buckets
 const BUCKET_INDEX_FILL = '#e2e8f0';
@@ -733,12 +745,15 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
     if (frames.length > 0) {
       const panelYFrames = panelY.frames;
       const n = frames.length;
-      const frameH = panelHeight / n;
+      const maxStride = (panelHeight - FRAME_BOTTOM_PAD - TOP_PAD) / n;
+      const stride = Math.min(FRAME_STRIP_H + FRAME_GAP, maxStride);
+      const frameH = Math.max(FRAME_MIN_H, stride - FRAME_GAP);
       const x = 8;
       const w = width - 16;
+      const bottom = panelYFrames + panelHeight - FRAME_BOTTOM_PAD;
 
       frames.forEach((f, i) => {
-        const y = panelYFrames + panelHeight - (i + 1) * frameH;
+        const y = bottom - i * stride - frameH;
         const state = f.state ?? 'active';
         const fill =
           state === 'returning'
@@ -746,7 +761,8 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
             : state === 'done'
               ? (f.color ?? FRAME_DONE_COLOR)
               : (f.color ?? FRAME_ACTIVE_COLOR);
-        out.push({ type: 'rect', id: `frame-${i}`, x, y, width: w, height: frameH, color: fill, fill });
+        const rim = f.color ?? FRAME_RIM_COLOR[state] ?? FRAME_RIM_COLOR.active;
+        out.push({ type: 'rect', id: `frame-${i}`, x, y, width: w, height: frameH, color: rim, fill });
         if (frameH >= FRAME_TWO_LINE_MIN_H) {
           out.push({
             type: 'text',
@@ -754,14 +770,14 @@ export const AlgorithmCanvas: React.FC<AlgorithmCanvasProps> = ({
             y: y + frameH * 0.35,
             text: f.label,
             color: FRAME_LABEL_COLOR,
-            fontSize: 10,
+            fontSize: 11,
             align: 'left',
           });
           if (f.detail) {
             out.push({
               type: 'text',
               x: 16,
-              y: y + frameH * 0.7,
+              y: y + frameH * 0.72,
               text: f.detail,
               color: FRAME_DETAIL_COLOR,
               fontSize: 10,

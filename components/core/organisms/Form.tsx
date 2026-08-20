@@ -30,6 +30,8 @@ import {
   RelationSelect,
   type RelationOption,
 } from "../molecules/RelationSelect";
+import { UploadDropZone } from "../molecules/UploadDropZone";
+import { DollarSign } from "lucide-react";
 import { Alert } from "../molecules/Alert";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
@@ -58,10 +60,13 @@ export type SExpression = SExpr;
  * Form-specific evaluation context
  */
 export interface FormEvaluationContext {
-  formValues: EntityRow;
+  // Record shape, not EntityRow: form values are keyed field states, and the
+  // compiled path's declared config type for this knob is the generic record
+  // (`id` carries no special contract here). EntityRow stays assignable.
+  formValues: Record<string, FieldValue | undefined>;
   globalVariables: Record<string, FieldValue>;
   localVariables?: Record<string, FieldValue>;
-  entity?: EntityRow;
+  entity?: Record<string, FieldValue | undefined>;
 }
 
 /**
@@ -214,12 +219,30 @@ export interface SchemaField {
   readonly?: boolean;
   /** Whether field is disabled (alternative to readonly for compatibility) */
   disabled?: boolean;
+  /** Help text rendered under the input — sourced from the entity field's
+   *  `@description` (auto, via schema enrichment) or a call-site override. */
+  hint?: string;
+}
+
+/**
+ * Per-field display-copy override, keyed by field name — the shape of
+ * ModalRecordModal's `fieldOverrides` config knob. Only display copy:
+ * types, options, relations and required-ness stay entity-schema-driven
+ * (declare once on the entity).
+ */
+export interface SchemaFieldOverride {
+  name: string;
+  label?: string;
+  placeholder?: string;
+  hint?: string;
 }
 
 /**
  * Form is the ONE EXCEPTION to the "no internal state" rule for organisms.
  * It manages local `formData` state for field input tracking.
  * See EntityDisplayProps in ./types.ts for documentation.
+ *
+ * @fieldsContract form
  */
 export interface FormProps extends Omit<
   React.FormHTMLAttributes<HTMLFormElement>,
@@ -279,6 +302,9 @@ export interface FormProps extends Omit<
   relationsData?: Record<string, readonly RelationOption[]>;
   /** Loading state for relation data: { fieldName: boolean } */
   relationsLoading?: Record<string, boolean>;
+  /** Per-field display-copy overrides (label/placeholder/hint), merged by
+   *  field name over the schema-enriched fields. */
+  fieldOverrides?: readonly SchemaFieldOverride[];
 
   // Inspection form extensions
   /** Map of fieldId → S-expression condition for conditional field display (boolean true means enabled but config loaded separately) */
@@ -395,6 +421,10 @@ function determineInputType(field: SchemaField): string {
       return "password";
     case "url":
       return "url";
+    case "file":
+      return "file";
+    case "money":
+      return "currency";
     case "number":
     case "integer":
     case "float":
@@ -443,6 +473,7 @@ export const Form: React.FC<FormProps> = ({
   cancelEvent = "CANCEL",
   relationsData = {},
   relationsLoading = {},
+  fieldOverrides,
   // Inspection form extensions - may come as boolean true from generated code (meaning enabled but config loaded separately)
   conditionalFields: conditionalFieldsRaw = {},
   hiddenCalculations: hiddenCalculationsRaw = [],
@@ -824,6 +855,11 @@ export const Form: React.FC<FormProps> = ({
             </Typography>
           )}
           {renderFieldInput(field, fieldName, inputType, currentValue, label)}
+          {field.hint && (
+            <Typography variant="caption" color="muted">
+              {field.hint}
+            </Typography>
+          )}
         </VStack>
       );
     },
@@ -845,6 +881,7 @@ export const Form: React.FC<FormProps> = ({
             name: field,
             type: entityField.type,
             required: entityField.required,
+            hint: entityField.description,
             // EntityField.default is typed `unknown` upstream — safe cast: schema defaults are always FieldValues.
             defaultValue: entityField.default as FieldValue | undefined,
             // EntityField is a discriminated union — `values` lives on Scalar/Enum, `relation` lives on Relation.
@@ -860,8 +897,21 @@ export const Form: React.FC<FormProps> = ({
         return { name: field, type: 'string' };
       }
       return field as SchemaField;
+    }).map((field): SchemaField => {
+      // Per-field display-copy overrides (ModalRecordModal's fieldOverrides
+      // knob) win over the schema-derived label/placeholder/hint; everything
+      // else stays entity-schema-driven.
+      const fieldName = field.name || field.field;
+      const override = fieldOverrides?.find((o) => o.name === fieldName);
+      if (!override) return field;
+      return {
+        ...field,
+        ...(override.label !== undefined ? { label: override.label } : {}),
+        ...(override.placeholder !== undefined ? { placeholder: override.placeholder } : {}),
+        ...(override.hint !== undefined ? { hint: override.hint } : {}),
+      };
     });
-  }, [effectiveFields, resolvedEntity]);
+  }, [effectiveFields, resolvedEntity, fieldOverrides]);
 
   // Generate form fields from schema
   const schemaFields = React.useMemo(() => {
@@ -1026,6 +1076,57 @@ export const Form: React.FC<FormProps> = ({
             }
             min={field.min}
             max={field.max}
+          />
+        );
+
+      case "currency":
+        // Monetary entry: numeric input with a currency adornment. The value
+        // stays a plain number (the `money` field type owns the semantics);
+        // display formatting happens on read surfaces (DetailPanel/columns).
+        return (
+          <Input
+            {...commonProps}
+            type="number"
+            step="0.01"
+            icon={DollarSign}
+            value={
+              currentValue !== undefined && currentValue !== ""
+                ? String(currentValue)
+                : ""
+            }
+            onChange={(e) =>
+              handleChange(
+                fieldName,
+                e.target.value ? Number(e.target.value) : undefined,
+              )
+            }
+            min={field.min}
+            max={field.max}
+          />
+        );
+
+      case "file":
+        // File entry: real dropzone instead of a text box. The stored value
+        // is the structured file object {name, url, mimeType, sizeBytes};
+        // in mock/playground mode `url` is a data: URI read client-side.
+        return (
+          <UploadDropZone
+            accept={field.pattern}
+            maxFiles={1}
+            disabled={isLoading}
+            onFiles={(files) => {
+              const f = files[0];
+              if (!f) return;
+              const reader = new FileReader();
+              reader.onload = () =>
+                handleChange(fieldName, {
+                  name: f.name,
+                  mimeType: f.type,
+                  sizeBytes: f.size,
+                  url: typeof reader.result === "string" ? reader.result : "",
+                });
+              reader.readAsDataURL(f);
+            }}
           />
         );
 

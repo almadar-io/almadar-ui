@@ -64,6 +64,7 @@ export {
   UISlotRenderer,
   UISlotComponent,
   SlotContentRenderer,
+  renderPatternValue,
   type UISlotRendererProps,
 } from "./UISlotRenderer";
 export { ModalSlot, type ModalSlotProps } from "./ModalSlot";

@@ -417,7 +417,8 @@ export const AlgoGraphCanvas: React.FC<AlgoGraphCanvasProps> = ({
 
     const badgeGeoms: { cx: number; cy: number; w: number; h: number; color: string; text: string }[] = [];
     for (const g of nodeGeoms) {
-      if (!g.badge) continue;
+      // An empty badge is "no badge yet" — drawing it paints a bare dark pill.
+      if (!g.badge || g.badge.text === '') continue;
       const w = Math.min(42, Math.max(18, g.badge.text.length * 6 + 10));
       badgeGeoms.push({
         cx: g.x + g.radius * 0.75,
