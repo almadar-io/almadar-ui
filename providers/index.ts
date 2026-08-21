@@ -143,4 +143,16 @@ export type {
   GameAudioContextValue,
 } from './GameAudioProvider';
 
+export {
+  NavStackProvider,
+  NavStackRouterBridge,
+  useNavStack,
+} from './NavStackContext';
+export type {
+  NavStackApi,
+  NavStackProviderProps,
+  NavStackRouterBridgeProps,
+  NavPageDecl,
+} from './NavStackContext';
+
 // Note: EventBusContextType is exported from hooks/event-bus-types to avoid duplicate exports

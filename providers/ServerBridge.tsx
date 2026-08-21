@@ -30,6 +30,7 @@ import { createLogger } from '@almadar/logger';
 type ClientEffectTuple =
   | ['render-ui', string, AnyPatternConfig | null, ...SExpr[]]
   | ['navigate', string, ...SExpr[]]
+  | ['navigate-back']
   | ['notify', string, ...SExpr[]];
 
 // Gap #11 (Almadar_Std_Verification.md): cross-orbital re-broadcast
@@ -203,11 +204,13 @@ interface OrbitalEventResponse {
 }
 
 export interface ServerClientEffect {
-  type: 'render-ui' | 'navigate' | 'notify';
+  type: 'render-ui' | 'navigate' | 'navigate-back' | 'notify';
   slot?: string;
   pattern?: AnyPatternConfig;
   route?: string;
   params?: EventPayload;
+  /** Nav-stack entry label carried by the navigate effect's options. */
+  crumb?: string;
   message?: string;
   /**
    * Trait that emitted this effect. Used by `<TraitFrame>` to resolve
@@ -441,14 +444,23 @@ export function ServerBridgeProvider({
           } else if (effectType === 'navigate') {
             const route = effect[1];
             const rawParams = (effect as ['navigate', string, ...SExpr[]])[2];
+            const rawOptions = (effect as ['navigate', string, ...SExpr[]])[3];
+            const optionsObj =
+              rawOptions !== null && rawOptions !== undefined && typeof rawOptions === 'object' && !Array.isArray(rawOptions)
+                ? (rawOptions as { crumb?: string })
+                : undefined;
+            const crumb = typeof optionsObj?.crumb === 'string' ? optionsObj.crumb : undefined;
             effects.push({
               type: 'navigate',
               route,
               params: (rawParams !== null && rawParams !== undefined && typeof rawParams === 'object' && !Array.isArray(rawParams))
                 ? (rawParams as EventPayload)
                 : undefined,
+              crumb,
               traitName,
             });
+          } else if (effectType === 'navigate-back') {
+            effects.push({ type: 'navigate-back', traitName });
           } else if (effectType === 'notify') {
             const message = effect[1];
             effects.push({ type: 'notify', message: typeof message === 'string' ? message : undefined, traitName });

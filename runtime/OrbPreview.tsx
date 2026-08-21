@@ -36,6 +36,7 @@ import { EntityBindingContext } from '../providers/EntityBindingContext';
 import { ServerBridgeProvider, useServerBridge, type ServerBridgeTransport } from '../providers/ServerBridge';
 import { OrbitalThemeProvider } from '../providers/OrbitalThemeProvider';
 import { getAllPages } from '../providers/navigation';
+import { NavStackProvider, useNavStack, type NavStackApi, type NavPageDecl } from '../providers/NavStackContext';
 import { recordTransition, recordServerResponse, type EffectTrace } from '../lib/verificationRegistry';
 import { prepareSchemaForPreview } from '../lib/prepareSchemaForPreview';
 import { InMemoryPersistence, type PersistenceAdapter } from '@almadar/runtime';
@@ -98,9 +99,10 @@ function normalizeChild(child: PatternNode | string | null | readonly PatternNod
 export function applyServerEffects(
   effects: ReadonlyArray<import('../providers/ServerBridge').ServerClientEffect>,
   uiSlots: ReturnType<typeof useUISlots>,
-  onNavigate?: (path: string, params?: Record<string, string>) => void,
+  onNavigate?: (path: string, params?: Record<string, string>, crumb?: string) => void,
   embeddedTraits?: ReadonlySet<string>,
   activeTraits?: ReadonlySet<string>,
+  onNavigateBack?: () => void,
 ): void {
   // Call uiSlots.render() once per effect. useUISlots is multi-source
   // internally: each call merges into `slots[target][sourceTrait]`, and
@@ -169,7 +171,9 @@ export function applyServerEffects(
         });
       }
     } else if (eff.type === 'navigate' && eff.route && onNavigate) {
-      onNavigate(eff.route, eff.params as Record<string, string> | undefined);
+      onNavigate(eff.route, eff.params as Record<string, string> | undefined, eff.crumb);
+    } else if (eff.type === 'navigate-back' && onNavigateBack) {
+      onNavigateBack();
     }
   }
 }
@@ -224,7 +228,23 @@ export function collectServerActiveTraits(
   return active;
 }
 
-function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onLocalFallback, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits, serverActiveTraits, children }: {
+/**
+ * Exposes the mounted NavStackProvider's api to OrbPreview through a ref —
+ * OrbPreview sits OUTSIDE the provider but its effect handlers
+ * (crumb-carrying navigate, navigate-back) need the api.
+ */
+function NavStackRefBridge({ apiRef }: { apiRef: React.MutableRefObject<NavStackApi | null> }) {
+  const api = useNavStack();
+  useEffect(() => {
+    apiRef.current = api;
+    return () => {
+      apiRef.current = null;
+    };
+  }, [api, apiRef]);
+  return null;
+}
+
+function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNavigateBack, onLocalFallback, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits, serverActiveTraits, children }: {
   traits: ResolvedTraitBinding[];
   /** Route params from a parameterized page path — merged into every INIT payload. */
   routeParams?: Record<string, string>;
@@ -232,7 +252,9 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onLoc
   traitConfigsByName?: Record<string, import('@almadar/core').TraitConfig>;
   /** Trait → orbital map; gap #13 qualified bus key. */
   orbitalsByTrait?: Record<string, string>;
-  onNavigate?: (path: string, params?: Record<string, string>) => void;
+  onNavigate?: (path: string, params?: Record<string, string>, crumb?: string) => void;
+  /** navigate-back effect handler: pop the orbital's navigation stack. */
+  onNavigateBack?: () => void;
   /**
    * GAP-19: Called when the 5s server-bridge fallback fires (the preview server
    * never connected, so the preview is running locally instead). Lets the parent
@@ -327,13 +349,13 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onLoc
     for (const name of targets) {
       const { effects, meta } = await bridge.sendEvent(name, event, withActiveTraits(payload));
       recordServerResponse(name, event, meta);
-      applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNames);
+      applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNames, onNavigateBack);
     }
-  }, [bridge.connected, bridge.sendEvent, orbitalNames, uiSlots, onNavigate, embeddedTraits, activeTraitNames, withActiveTraits]);
+  }, [bridge.connected, bridge.sendEvent, orbitalNames, uiSlots, onNavigate, onNavigateBack, embeddedTraits, activeTraitNames, withActiveTraits]);
 
   const opts = orbitalNames
-    ? { onEventProcessed, navigate: onNavigate, traitConfigsByName, orbitalsByTrait, embeddedTraits, initPayload: routeParams }
-    : { navigate: onNavigate, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits, initPayload: routeParams };
+    ? { onEventProcessed, navigate: onNavigate, navigateBack: onNavigateBack, traitConfigsByName, orbitalsByTrait, embeddedTraits, initPayload: routeParams }
+    : { navigate: onNavigate, navigateBack: onNavigateBack, persistence, traitConfigsByName, orbitalsByTrait, embeddedTraits, initPayload: routeParams };
   const { sendEvent, entityBindingSource } = useTraitStateMachine(traits, uiSlots, opts);
 
   const initSentRef = useRef(false);
@@ -419,10 +441,10 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onLoc
         // event bus via typed emit payloads, bound into the pattern tree by
         // the listener / render-ui pipeline. The server effects carry the
         // resolved data; no store hydration needed.
-        applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNames);
+        applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNames, onNavigateBack);
       }
     })();
-  }, [bridge.connected, orbitalNames, bridge.sendEvent, uiSlots, onNavigate, embeddedTraits, activeTraitNames, withActiveTraits, routeParams]);
+  }, [bridge.connected, orbitalNames, bridge.sendEvent, uiSlots, onNavigate, onNavigateBack, embeddedTraits, activeTraitNames, withActiveTraits, routeParams]);
 
   return (
     <EntityBindingContext.Provider value={entityBindingSource}>
@@ -436,7 +458,7 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onLoc
  * When `serverUrl` is provided, wraps with ServerBridgeProvider and
  * forwards events to the server after local processing.
  */
-function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, routeParams, onNavigate, onLocalFallback, persistence }: {
+function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, routeParams, onNavigate, onNavigateBack, onLocalFallback, persistence }: {
   schema: OrbitalSchema;
   serverUrl?: string;
   transport?: ServerBridgeTransport;
@@ -444,7 +466,9 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, routeP
   pageName?: string;
   /** Route params extracted from a parameterized page path (`/x/:id`) — merged into INIT payloads. */
   routeParams?: Record<string, string>;
-  onNavigate?: (path: string, params?: Record<string, string>) => void;
+  onNavigate?: (path: string, params?: Record<string, string>, crumb?: string) => void;
+  /** navigate-back effect handler: pop the orbital's navigation stack. */
+  onNavigateBack?: () => void;
   /** GAP-19: forwarded to TraitInitializer to surface server-bridge fallback. */
   onLocalFallback?: () => void;
   /** Offline-preview persistence layer. */
@@ -704,6 +728,7 @@ function SchemaRunner({ schema, serverUrl, transport, mockData, pageName, routeP
           embeddedTraits={embeddedTraits}
           serverActiveTraits={serverActiveTraits}
           onNavigate={onNavigate}
+          onNavigateBack={onNavigateBack}
           onLocalFallback={onLocalFallback}
           persistence={persistence}
         >
@@ -962,6 +987,22 @@ export function OrbPreview({
     return resolved ?? initialPagePath;
   }, [pages, currentPage, initialPagePath]);
 
+  // Nav-stack host wiring (runtime-path mirror of the compiled App.tsx's
+  // NavStackRouterBridge): page manifest + the CONCRETE current path
+  // (route params substituted into the pattern) drive NavStackProvider.
+  const navPages = useMemo<NavPageDecl[]>(
+    () =>
+      pages
+        .filter((p) => typeof p.page.path === 'string' && p.page.path.length > 0)
+        .map((p) => ({ path: p.page.path as string, name: p.page.name, orbital: p.orbitalName })),
+    [pages],
+  );
+  const concreteCurrentPath = useMemo(() => {
+    const pattern = currentPagePath ?? '/';
+    return pattern.replace(/:([A-Za-z0-9_]+)/g, (whole, key: string) => routeParams[key] ?? whole);
+  }, [currentPagePath, routeParams]);
+  const navStackRef = useRef<NavStackApi | null>(null);
+
   // Navigate handler: when a ['navigate', '/path'] effect fires OR a
   // sidebar `<Link>` click is intercepted, find the matching page and
   // switch to it. Also pushes `?page=/path` into the host URL so a
@@ -998,6 +1039,22 @@ export function OrbPreview({
       }
     }
   }, [pages]);
+
+  // Effect-facing navigate: stages the nav-stack crumb (when the navigate
+  // effect carried one) before the page switch; the provider's sync consumes
+  // it on arrival. Anchor clicks / UI:NAVIGATE keep plain handleNavigate.
+  const handleNavigateEffect = useCallback(
+    (path: string, _params?: Record<string, string>, crumb?: string) => {
+      navStackRef.current?.beginNavigate(path, crumb);
+      handleNavigate(path);
+    },
+    [handleNavigate],
+  );
+
+  // navigate-back effect: pop the current orbital's stack.
+  const handleNavigateBack = useCallback(() => {
+    navStackRef.current?.back();
+  }, []);
 
   // `UI:NAVIGATE` consumer: itemActions' `navigatesTo` (CardGrid/DataGrid
   // interpolate `{{row.field}}` then emit `UI:NAVIGATE {url}`) routes through
@@ -1075,6 +1132,13 @@ export function OrbPreview({
         </Box>
       )}
       <CurrentPagePathProvider value={currentPagePath}>
+        <NavStackProvider
+          pages={navPages}
+          currentPath={concreteCurrentPath}
+          navigate={handleNavigate}
+          storageKey={`almadar:navstack:${parseResult.schema.name ?? 'preview'}`}
+        >
+        <NavStackRefBridge apiRef={navStackRef} />
         <OrbitalProvider initialData={effectiveMockData} skipTheme verification isolated={isolated}>
           <UISlotProvider>
             <SchemaRunner
@@ -1084,12 +1148,14 @@ export function OrbPreview({
               mockData={effectiveMockData}
               pageName={currentPage}
               routeParams={routeParams}
-              onNavigate={handleNavigate}
+              onNavigate={handleNavigateEffect}
+              onNavigateBack={handleNavigateBack}
               onLocalFallback={handleLocalFallback}
               persistence={persistence}
             />
           </UISlotProvider>
         </OrbitalProvider>
+        </NavStackProvider>
       </CurrentPagePathProvider>
     </Box>
   );

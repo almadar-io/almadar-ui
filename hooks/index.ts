@@ -84,6 +84,8 @@ export {
 
 // UI Events hook for bridging UI events to state machines
 export { useUIEvents, useTraitListens, type TraitListenSpec } from './useUIEvents';
+// Nav stack hook — generated trait logic hooks import it from '@almadar/ui/hooks'.
+export { useNavStack, type NavStackApi } from '../providers/NavStackContext';
 
 // Shared-entity store + tick orchestration: several traits bound to one
 // `[shared]` entity co-mutate it per frame, one render trait paints the

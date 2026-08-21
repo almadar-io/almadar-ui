@@ -39,6 +39,7 @@ import {
 import { Box } from "../atoms/Box";
 import { VStack, HStack } from "../atoms/Stack";
 import { SimpleGrid } from "../molecules/SimpleGrid";
+import { Menu } from "../molecules/Menu";
 import { LoadingState } from "../molecules/LoadingState";
 import { ErrorState } from "../molecules/ErrorState";
 import { EmptyState } from "../molecules/EmptyState";
@@ -436,6 +437,8 @@ export interface DetailPanelProps extends DisplayStateProps {
   sections?: readonly DetailSection[];
   /** Unified actions array - first action with variant='primary' is the main action */
   actions?: readonly DetailPanelAction[];
+  /** Max inline action buttons before the rest collapse into a "⋯" overflow menu (mirrors DataGrid's maxInlineActions). Omit = all inline. */
+  maxInlineActions?: number;
   /**
    * Navigation-back affordance. Renders top-LEFT before the title (OS/back
    * convention — Almadar_UX §8.4), spatially separated from the right-aligned
@@ -474,6 +477,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   avatar,
   sections: propSections,
   actions,
+  maxInlineActions,
   backAction,
   footer,
   slideOver = false,
@@ -807,7 +811,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
             )}
           </HStack>
           <HStack justify="end" align="center" gap="xs">
-            {otherActions.map((action, idx) => (
+            {(maxInlineActions != null ? otherActions.slice(0, maxInlineActions) : otherActions).map((action, idx) => (
               <Button
                 key={idx}
                 variant={action.variant || "secondary"}
@@ -822,6 +826,25 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                 {action.label}
               </Button>
             ))}
+            {maxInlineActions != null && otherActions.length > maxInlineActions && (
+              <Menu
+                position="bottom-end"
+                trigger={
+                  <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow">
+                    <Icon name="more-horizontal" size="xs" />
+                  </Button>
+                }
+                items={otherActions.slice(maxInlineActions).map((action) => ({
+                  // ONE firing path: onClick → handleActionClick (emits with
+                  // the {id, row} payload). Passing `event` too would make
+                  // Menu emit a second, payload-less copy of the same event.
+                  label: action.label,
+                  icon: action.icon,
+                  variant: action.variant === "danger" ? ("danger" as const) : ("default" as const),
+                  onClick: () => handleActionClick(action, normalizedData),
+                }))}
+              />
+            )}
             <Button
               variant="ghost"
               size="sm"

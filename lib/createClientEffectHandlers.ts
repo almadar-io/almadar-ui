@@ -24,7 +24,11 @@ export interface SlotSetter {
 export interface CreateClientEffectHandlersOptions {
     eventBus: ClientEventBus;
     slotSetter: SlotSetter;
-    navigate?: (path: string, params?: Record<string, string>) => void;
+    /** Navigate handler. `crumb` labels the target page's navigation-stack
+     * entry (from the navigate effect's `{ crumb: … }` options). */
+    navigate?: (path: string, params?: Record<string, string>, crumb?: string) => void;
+    /** Pop the orbital-scoped navigation stack (navigate-back effect). */
+    navigateBack?: () => void;
     notify?: (message: string, type: 'success' | 'error' | 'warning' | 'info') => void;
     /**
      * Live client-entity write target for `[runtime]` entities. `(set
@@ -54,7 +58,7 @@ export interface CreateClientEffectHandlersOptions {
 export function createClientEffectHandlers(
     options: CreateClientEffectHandlersOptions
 ): EffectHandlers {
-    const { eventBus, slotSetter, navigate, notify, callService, liveEntity } = options;
+    const { eventBus, slotSetter, navigate, navigateBack, notify, callService, liveEntity } = options;
 
     return {
         emit: (event: string, payload?: EventPayload, source?: BusEventSource) => {
@@ -128,6 +132,9 @@ export function createClientEffectHandlers(
                 return;
             }
             log.warn('No navigate handler, ignoring', { path });
+        }),
+        navigateBack: navigateBack ?? (() => {
+            log.warn('No navigate-back handler, ignoring');
         }),
         notify: notify ?? ((msg: string, type?: string) => {
             log.debug('notify', { type, message: msg });

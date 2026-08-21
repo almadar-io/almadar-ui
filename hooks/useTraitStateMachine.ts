@@ -368,8 +368,11 @@ export interface UseTraitStateMachineOptions {
         payload?: EventPayload,
         dispatchedOrbitals?: Set<string>,
     ) => void | Promise<void>;
-    /** Router navigate function for navigate effects */
-    navigate?: (path: string, params?: Record<string, string>) => void;
+    /** Router navigate function for navigate effects. `crumb` labels the
+     * target page's navigation-stack entry (from the effect's options). */
+    navigate?: (path: string, params?: Record<string, string>, crumb?: string) => void;
+    /** Pop the orbital-scoped navigation stack (navigate-back effect). */
+    navigateBack?: () => void;
     /** Payload merged into the mount-time lifecycle INIT (route params from a parameterized page path). */
     initPayload?: EventPayload;
     /** Notification function for notify effects */
@@ -1015,6 +1018,7 @@ export function useTraitStateMachine(
                 },
             },
             navigate: optionsRef.current?.navigate,
+            navigateBack: optionsRef.current?.navigateBack,
             notify: optionsRef.current?.notify,
             callService: optionsRef.current?.callService,
             // The canonical client `set` writes `(set @entity.X)` straight into
@@ -1092,6 +1096,7 @@ export function useTraitStateMachine(
                 emit: clientHandlers.emit,
                 renderUI: clientHandlers.renderUI,
                 navigate: clientHandlers.navigate,
+                navigateBack: clientHandlers.navigateBack,
                 notify: clientHandlers.notify,
             };
         }

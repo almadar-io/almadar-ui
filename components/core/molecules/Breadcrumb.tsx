@@ -7,12 +7,14 @@
  */
 
 import React from "react";
+import type { EventKey } from "@almadar/core";
 import { Icon } from "../atoms/Icon";
 import type { IconInput } from "../atoms/index";
 import { Typography } from "../atoms/Typography";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
+import { useNavStack } from "../../../providers/NavStackContext";
 
 export interface BreadcrumbItem {
   /**
@@ -46,14 +48,30 @@ export interface BreadcrumbItem {
   isCurrent?: boolean;
 
   /** Event name to emit when clicked (for trait state machine integration) */
-  event?: string;
+  event?: EventKey;
 }
 
 export interface BreadcrumbProps {
   /**
-   * Breadcrumb items
+   * Breadcrumb items. Omit together with `fromNavStack` to render the
+   * orbital-scoped navigation stack instead of an authored trail.
    */
-  items: BreadcrumbItem[];
+  items?: BreadcrumbItem[];
+
+  /**
+   * Render the current orbital's navigation stack (NavStackProvider) as the
+   * trail: one crumb per visited/declared level, last entry current. The
+   * stack is client-session state both execution paths maintain; outside a
+   * provider this renders nothing.
+   */
+  fromNavStack?: boolean;
+
+  /**
+   * Event emitted when a non-current crumb is clicked, with payload
+   * `{ label, href, index }` — the trait handles it with
+   * `(navigate ?href)`. Without it, stack crumbs navigate directly.
+   */
+  itemEvent?: EventKey;
 
   /**
    * Separator icon (canonical kebab-case name or LucideIcon component)
@@ -73,20 +91,39 @@ export interface BreadcrumbProps {
 
 export const Breadcrumb: React.FC<BreadcrumbProps> = ({
   items,
+  fromNavStack = false,
+  itemEvent,
   separator = "chevron-right",
   maxItems,
   className,
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
+  const navStack = useNavStack();
+
+  // Stack mode: derive the trail from the orbital-scoped navigation stack.
+  // `path` carries the target href for the click payload / direct goTo;
+  // deliberately NOT `href`, so crumbs render as buttons (SPA), never
+  // full-reload anchors.
+  const sourceItems: BreadcrumbItem[] = fromNavStack
+    ? navStack.entries.map((entry, i) => ({
+        label: entry.label,
+        path: entry.href,
+        isCurrent: i === navStack.entries.length - 1,
+        event: itemEvent,
+      }))
+    : (items ?? []);
+
+  if (fromNavStack && sourceItems.length === 0) return null;
+
   const displayItems =
-    maxItems && items.length > maxItems
+    maxItems && sourceItems.length > maxItems
       ? [
-          ...items.slice(0, 1),
+          ...sourceItems.slice(0, 1),
           { label: "...", isCurrent: false } as BreadcrumbItem,
-          ...items.slice(-maxItems + 1),
+          ...sourceItems.slice(-maxItems + 1),
         ]
-      : items;
+      : sourceItems;
 
   return (
     <nav
@@ -104,7 +141,7 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
                 <Typography variant="small" color="muted">
                   {item.label}
                 </Typography>
-              ) : item.href || item.path ? (
+              ) : (item.href || item.path) && !item.event && !fromNavStack ? (
                 <a
                   href={item.href || item.path}
                   className={cn(
@@ -130,7 +167,14 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    if (item.event) eventBus.emit(`UI:${item.event}`, { label: item.label });
+                    const href = item.path ?? item.href;
+                    if (item.event) {
+                      eventBus.emit(`UI:${item.event}`, { label: item.label, href, index });
+                    } else if (fromNavStack && href) {
+                      // Stack crumbs without an event navigate directly
+                      // through the provider (SPA in both paths).
+                      navStack.goTo(href);
+                    }
                     item.onClick?.();
                   }}
                   className={cn(
