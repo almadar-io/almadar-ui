@@ -21,3 +21,4 @@ export { DrawMesh } from './atoms/DrawMesh';
 export { DrawSpriteLayer } from './molecules/DrawSpriteLayer';
 export { DrawShapeLayer } from './molecules/DrawShapeLayer';
 export { DrawTextLayer } from './molecules/DrawTextLayer';
+export { DrawFxLayer } from './molecules/DrawFxLayer';

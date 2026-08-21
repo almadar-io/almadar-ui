@@ -9,6 +9,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { cn } from "../../../lib/cn";
 import { Box } from "./Box";
+import { CONFETTI_BURST_KEYFRAMES, createConfettiParticles, type ConfettiParticle } from "./fx";
 
 export interface ConfettiEffectProps {
   /** When this changes from false to true, a burst of particles is spawned */
@@ -21,59 +22,23 @@ export interface ConfettiEffectProps {
   className?: string;
 }
 
-interface Particle {
-  id: number;
-  color: string;
-  left: number;
-  delay: number;
-  angle: number;
-  distance: number;
-  rotation: number;
-  size: number;
-}
-
-const CONFETTI_COLORS = [
-  "var(--color-primary)",
-  "var(--color-success)",
-  "var(--color-warning)",
-  "var(--color-error)",
-  "gold",
-  "dodgerblue",
-];
-
-let particleIdCounter = 0;
-
-function createParticles(count: number): Particle[] {
-  return Array.from({ length: count }, () => {
-    particleIdCounter += 1;
-    return {
-      id: particleIdCounter,
-      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-      left: 30 + Math.random() * 40,
-      delay: Math.random() * 300,
-      angle: Math.random() * 360,
-      distance: 40 + Math.random() * 80,
-      rotation: Math.random() * 720 - 360,
-      size: 4 + Math.random() * 6,
-    };
-  });
-}
-
 export const ConfettiEffect: React.FC<ConfettiEffectProps> = ({
   trigger,
   duration = 2000,
   particleCount = 30,
   className,
 }) => {
-  const [particles, setParticles] = useState<Particle[]>([]);
+  const [particles, setParticles] = useState<ConfettiParticle[]>([]);
   const previousTriggerRef = useRef(false);
+  const burstRef = useRef(0);
 
   useEffect(() => {
     const wasFalse = !previousTriggerRef.current;
     previousTriggerRef.current = trigger;
 
     if (trigger && wasFalse) {
-      const newParticles = createParticles(particleCount);
+      burstRef.current += 1;
+      const newParticles = createConfettiParticles(particleCount, `confetti-${burstRef.current}`);
       setParticles(newParticles);
 
       const timer = window.setTimeout(() => {
@@ -124,21 +89,7 @@ export const ConfettiEffect: React.FC<ConfettiEffectProps> = ({
           />
         );
       })}
-      <style>{`
-        @keyframes confetti-burst {
-          0% {
-            opacity: 1;
-            transform: translate(0, 0) rotate(0deg) scale(1);
-          }
-          70% {
-            opacity: 1;
-          }
-          100% {
-            opacity: 0;
-            transform: translate(var(--confetti-tx), var(--confetti-ty)) rotate(var(--confetti-rotate)) scale(0.5);
-          }
-        }
-      `}</style>
+      <style>{CONFETTI_BURST_KEYFRAMES}</style>
     </Box>
   );
 };

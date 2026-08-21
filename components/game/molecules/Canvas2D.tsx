@@ -452,6 +452,9 @@ export function Canvas2D({
             return isAnimatedGroup(node) || (Array.isArray(node.items) && node.items.some(drawableIsAnimated));
         if (node.type === 'draw-shape-layer') return Array.isArray(node.items) && node.items.some(isAnimatedShape);
         if (node.type === 'draw-sprite-layer') return Array.isArray(node.items) && node.items.some(isAnimatedSprite);
+        // Live fx entries animate off the paint clock until the mechanic's ttl
+        // decay empties the list (which triggers the final static repaint).
+        if (node.type === 'draw-fx-layer') return Array.isArray(node.items) && node.items.length > 0;
         return false;
     };
 

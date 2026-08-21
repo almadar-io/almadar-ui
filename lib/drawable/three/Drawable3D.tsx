@@ -23,7 +23,7 @@
  * `clip` has no faithful three mapping (SVG-path masks) — skipped with a
  * one-time warn.
  */
-import React, { useContext, useEffect, useMemo, useRef } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { create3DProjector, type Projector3D } from '../projector3d';
@@ -32,6 +32,7 @@ import type { DrawableNode } from '../paintDispatch';
 import { isValidScenePos } from '../contract';
 import { isAnimatedGroup, type DrawGroupProps } from '../../../components/game/atoms/DrawGroup';
 import { applyMeshAnimation } from '../../../components/game/atoms/DrawMesh';
+import { expandFxLayer, type DrawFxLayerProps } from '../../../components/game/molecules/DrawFxLayer';
 import { Sprite3D, Shape3D, Text3D, warnUnsupported3d } from './mesh3d';
 import { Mesh3D } from './DrawMesh3D';
 
@@ -82,6 +83,8 @@ export function Drawable3D({ node, projector, groupOpacity = 1 }: Drawable3DProp
                 if (node.clip) warnUnsupported3d('draw-group:clip');
                 return <Group3D node={node} projector={projector} groupOpacity={groupOpacity} />;
             }
+            case 'draw-fx-layer':
+                return <FxLayer3D node={node} projector={projector} groupOpacity={groupOpacity} />;
         }
     })();
     // A tagged descriptor stamps its id on the scene graph so the host's mesh
@@ -150,6 +153,37 @@ function Group3D({
         </group>
     );
     return scopedStore ? <BoneRegistryContext.Provider value={scopedStore}>{children}</BoneRegistryContext.Provider> : children;
+}
+
+/** R3F backend for `draw-fx-layer` — re-expands each frame while fx are live.
+ *  Fx entries are few and short-lived, so a state-driven per-frame re-render is
+ *  the honest MVP; the expanded descriptors ride the normal Drawable3D dispatch
+ *  (Text3D billboards for messages, Shape3D ellipses whose `lighter`-bright
+ *  colors glow under an authored `post: {bloom}` with zero extra passes). */
+function FxLayer3D({
+    node,
+    projector,
+    groupOpacity,
+}: {
+    node: DrawFxLayerProps;
+    projector: Projector3D;
+    groupOpacity: number;
+}): React.JSX.Element | null {
+    const [, setFrame] = useState(0);
+    const live = Array.isArray(node.items) && node.items.length > 0;
+    useFrame(() => {
+        if (live) setFrame((f) => (f + 1) % 1000000);
+    });
+    if (!live) return null;
+    const epochNow = typeof performance !== 'undefined' ? performance.timeOrigin + performance.now() : 0;
+    const children = expandFxLayer(node, epochNow, '3d');
+    return (
+        <>
+            {children.map((c, i) => (
+                <Drawable3D key={i} node={c} projector={projector} groupOpacity={groupOpacity} />
+            ))}
+        </>
+    );
 }
 
 export default Drawable3D;

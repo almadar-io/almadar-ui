@@ -19,6 +19,7 @@ import { applyMeshAnimation, type DrawMeshProps } from '../../components/game/at
 import { paintSpriteLayer, type DrawSpriteLayerProps } from '../../components/game/molecules/DrawSpriteLayer';
 import { paintShapeLayer, type DrawShapeLayerProps } from '../../components/game/molecules/DrawShapeLayer';
 import { paintTextLayer, type DrawTextLayerProps } from '../../components/game/molecules/DrawTextLayer';
+import { expandFxLayer, type DrawFxLayerProps } from '../../components/game/molecules/DrawFxLayer';
 import { createLogger } from '@almadar/logger';
 
 /** Every drawable descriptor. The host's `children` are a `DrawableNode[]`. */
@@ -30,7 +31,8 @@ export type DrawableNode =
     | DrawMeshProps
     | DrawSpriteLayerProps
     | DrawShapeLayerProps
-    | DrawTextLayerProps;
+    | DrawTextLayerProps
+    | DrawFxLayerProps;
 
 const paint2dLog = createLogger('almadar:ui:drawable-2d');
 const warnedUnsupported2d = new Set<string>();
@@ -98,5 +100,14 @@ export function paintDrawable(painter: Painter2D, node: DrawableNode, dctx: Draw
         case 'draw-text-layer':
             paintTextLayer(painter, node, dctx);
             break;
+        case 'draw-fx-layer': {
+            // Expansion is pure descriptors→descriptors; smoothness comes from the
+            // paint clock (epoch-anchored against each item's bornAt), removal from
+            // the fx mechanic's ttl decay.
+            const epochNow =
+                dctx.time > 0 && typeof performance !== 'undefined' ? performance.timeOrigin + dctx.time : 0;
+            for (const child of expandFxLayer(node, epochNow, '2d')) paintDrawable(painter, child, dctx);
+            break;
+        }
     }
 }

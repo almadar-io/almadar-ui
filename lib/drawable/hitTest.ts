@@ -54,6 +54,9 @@ export function collectDrawnItems(nodes: DrawableNode[]): DrawnItem[] {
                     if (isValidScenePos(it.position)) out.push({ pos: it.position, id: it.id });
                 }
                 break;
+            case 'draw-fx-layer':
+                // Transient effects are never click targets.
+                break;
         }
     }
     return out;

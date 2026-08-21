@@ -381,7 +381,9 @@ export const paintShape: PaintFn<DrawShapeProps> = (painter, rawNode, dctx) => {
             const cx = p.x + (node.offsetX ?? 0) * tw;
             const cy = p.y + (node.offsetY ?? 0) * tw;
             const rx = (node.radiusX ?? 0) * tw;
-            const ry = (node.radiusY ?? rx) * tw;
+            // radiusY defaults to radiusX (a circle) — in WORLD units, before the
+            // px scale; `?? rx` post-scale double-multiplied by tw (full-height bars).
+            const ry = (node.radiusY ?? node.radiusX ?? 0) * tw;
             if (pxFill) painter.fillEllipse(cx, cy, rx, ry, pxFill);
             if (patFill) painter.fillEllipse(cx, cy, rx, ry, patFill);
             if (pxStroke) painter.strokeEllipse(cx, cy, rx, ry, pxStroke, strokePx);
