@@ -90,13 +90,15 @@ export interface TraitSlotProps {
     // -- Callbacks --
     /** Click handler */
     onClick?: () => void;
-    /** Remove handler */
+    /** Remove handler
+     *  @offByDefault */
     onRemove?: () => void;
 
     // -- Declarative events --
     /** Emits UI:{clickEvent} with { slotNumber } */
     clickEvent?: EventEmit<{ slotNumber: number }>;
-    /** Emits UI:{removeEvent} with { slotNumber } */
+    /** Emits UI:{removeEvent} with { slotNumber }
+     *  @offByDefault */
     removeEvent?: EventEmit<{ slotNumber: number }>;
     /** Emits UI:{dropEvent} with { slotNumber, itemId } when an item is dropped into this slot */
     dropEvent?: EventEmit<{ slotNumber: number; itemId: string }>;

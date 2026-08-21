@@ -35,7 +35,8 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   /** When set, renders a small X button on the right of the badge that
    *  invokes this handler — turns the badge into a removable chip.
    *  Used by the TagInput molecule and other "list of removable values"
-   *  surfaces. */
+   *  surfaces.
+   *  @offByDefault */
   onRemove?: () => void;
   /** Accessible label for the remove button. Defaults to "Remove". */
   removeLabel?: string;

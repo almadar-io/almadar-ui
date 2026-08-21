@@ -25,7 +25,8 @@ export interface FilterPillProps extends Omit<React.HTMLAttributes<HTMLSpanEleme
   label?: string | number;
   /** Lucide icon component or canonical kebab-case icon name string */
   icon?: IconInput;
-  /** Called when the user clicks the remove (×) button */
+  /** Called when the user clicks the remove (×) button
+   *  @offByDefault */
   onRemove?: () => void;
   /** Disable the remove button (renders without × control) */
   removable?: boolean;
@@ -33,7 +34,8 @@ export interface FilterPillProps extends Omit<React.HTMLAttributes<HTMLSpanEleme
   onClick?: () => void;
   /** Event name dispatched via event bus when the pill body is clicked. Payload: { label } */
   clickEvent?: EventEmit<{ label: string | number | undefined }>;
-  /** Event name dispatched via event bus when the remove (×) button is clicked. Payload: { label } */
+  /** Event name dispatched via event bus when the remove (×) button is clicked. Payload: { label }
+   *  @offByDefault */
   removeEvent?: EventEmit<{ label: string | number | undefined }>;
 }
 
