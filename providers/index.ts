@@ -29,6 +29,12 @@ export {
   type CurrentPagePathProviderProps,
 } from './CurrentPagePathContext';
 
+export {
+  RenderSlotProvider,
+  useRenderSlot,
+  type RenderSlotProviderProps,
+} from './RenderSlotContext';
+
 // User provider
 export {
   UserProvider,

@@ -76,6 +76,11 @@ export interface CalendarGridProps {
   titleField?: string;
   /** Row field holding the start timestamp (ISO or epoch). Defaults to `startTime`. */
   startField?: string;
+  /** Row field holding the end timestamp (ISO or epoch). Defaults to `endTime`.
+   *  When a row carries an end, the event's chip renders in its start slot and
+   *  every further slot it covers shows a subdued continuation bar — without
+   *  this, multi-hour events silently collapsed to their first hour. */
+  endField?: string;
   /** Row field holding the chip's Tailwind colour class. Defaults to `color`. */
   colorField?: string;
   /**
@@ -175,6 +180,35 @@ function eventStartDate(event: EntityRow, startField: string): Date {
   return new Date((raw ?? '') as string | number);
 }
 
+/** Event end, or null when the row has no (valid) end value. */
+function eventEndDate(event: EntityRow, endField: string): Date | null {
+  const raw = getNestedValue(event, endField);
+  if (raw === undefined || raw === null || raw === '') return null;
+  const end = new Date(raw as string | number);
+  return Number.isNaN(end.getTime()) ? null : end;
+}
+
+/**
+ * Check whether an event STARTED EARLIER still covers this slot — the
+ * continuation half of span rendering. The start slot itself is excluded
+ * (that's where the chip renders via `eventInSlot`).
+ */
+function eventContinuesInSlot(
+  event: EntityRow,
+  day: Date,
+  slotTime: string,
+  startField: string,
+  endField: string,
+): boolean {
+  const eventStart = eventStartDate(event, startField);
+  const eventEnd = eventEndDate(event, endField);
+  if (eventEnd === null || Number.isNaN(eventStart.getTime())) return false;
+  const [slotHour] = slotTime.split(":").map(Number);
+  const slotStart = new Date(day);
+  slotStart.setHours(slotHour, 0, 0, 0);
+  return slotStart.getTime() > eventStart.getTime() && slotStart.getTime() < eventEnd.getTime();
+}
+
 /**
  * Hourly slot labels covering the business-hours band WIDENED to include every
  * hour the given events actually start in. A fixed 09:00–17:00 band silently
@@ -185,6 +219,7 @@ function eventStartDate(event: EntityRow, startField: string): Date {
 function generateDefaultTimeSlots(
   events: readonly EntityRow[],
   startField: string,
+  endField: string,
 ): string[] {
   let first = DEFAULT_FIRST_HOUR;
   let last = DEFAULT_LAST_HOUR;
@@ -194,6 +229,15 @@ function generateDefaultTimeSlots(
     const hour = start.getHours();
     if (hour < first) first = hour;
     if (hour > last) last = hour;
+    const end = eventEndDate(ev, endField);
+    if (end && end.toDateString() === start.toDateString()) {
+      // Cover the event's span: its last occupied hour bucket ends at the
+      // hour BEFORE a clean on-the-hour end (a 13:00 end occupies ..–13:00).
+      const endHour = end.getMinutes() === 0 && end.getSeconds() === 0
+        ? end.getHours() - 1
+        : end.getHours();
+      if (endHour > last) last = endHour;
+    }
   }
   const slots: string[] = [];
   for (let hour = first; hour <= last; hour++) {
@@ -241,6 +285,7 @@ export function CalendarGrid({
   dayWindow = 'auto',
   titleField = 'title',
   startField = 'startTime',
+  endField = 'endTime',
   colorField = 'color',
   children,
   renderItem,
@@ -260,8 +305,8 @@ export function CalendarGrid({
   );
 
   const resolvedTimeSlots = useMemo(
-    () => timeSlots ?? generateDefaultTimeSlots(evs, startField),
-    [timeSlots, evs, startField],
+    () => timeSlots ?? generateDefaultTimeSlots(evs, startField, endField),
+    [timeSlots, evs, startField, endField],
   );
 
   // Viewport-driven number of day columns shown at once. Mobile shows 1
@@ -471,6 +516,9 @@ export function CalendarGrid({
                 const slotEvents = evs.filter((ev) =>
                   eventInSlot(ev, day, time, startField),
                 );
+                const continuingEvents = evs.filter((ev) =>
+                  eventContinuesInSlot(ev, day, time, startField, endField),
+                );
                 const isToday =
                   day.toDateString() === new Date().toDateString();
 
@@ -478,7 +526,7 @@ export function CalendarGrid({
                   <TimeSlotCell
                     key={`${day.toISOString()}-${time}`}
                     time={time}
-                    isOccupied={slotEvents.length > 0}
+                    isOccupied={slotEvents.length > 0 || continuingEvents.length > 0}
                     onClick={() => handleSlotClick(day, time)}
                     className={cn(
                       "border-l border-border",
@@ -492,6 +540,21 @@ export function CalendarGrid({
                   >
                     <VStack gap="xs">
                       {slotEvents.map(renderEvent)}
+                      {continuingEvents.map((event) => {
+                        const color = getNestedValue(event, colorField) as string | undefined;
+                        return (
+                          <Box
+                            key={`${event.id as string}-cont`}
+                            rounded="sm"
+                            border
+                            className={cn(
+                              "cursor-pointer h-2",
+                              color ? cn(color, "opacity-50") : "bg-primary/10 border-primary/20",
+                            )}
+                            onClick={(e: React.MouseEvent) => handleEventClick(event, e)}
+                          />
+                        );
+                      })}
                     </VStack>
                   </TimeSlotCell>
                 );

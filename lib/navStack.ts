@@ -127,6 +127,32 @@ export function syncNavStack(
 }
 
 /**
+ * Relabel the entry for the current path — the loaded record's real title
+ * replacing the page-name fallback (`Contract Detail` → the contract's
+ * title). Fed by DetailPanel when it renders a resolved record in the
+ * routed main slot, so cold loads and refreshes read like in-app pushes.
+ * Returns the same state object when nothing changes (no page match, or
+ * the label already equals `label`) so callers can skip re-renders.
+ */
+export function relabelCurrent(
+  state: NavStackState,
+  pages: readonly NavPageDecl[],
+  path: string,
+  label: string,
+): NavStackState {
+  const normalized = normalizePath(path);
+  const page = matchNavPage(pages, normalized);
+  if (!page || !label) return state;
+  const stack = state[page.orbital];
+  if (!stack || stack.length === 0) return state;
+  const idx = stack.findIndex((e) => e.href === normalized);
+  if (idx < 0 || stack[idx].label === label) return state;
+  const next = [...stack];
+  next[idx] = { href: normalized, label };
+  return { ...state, [page.orbital]: next };
+}
+
+/**
  * The previous entry for the current path's orbital — the `navigate-back`
  * target — or null when the stack holds no earlier entry (top-level page).
  */

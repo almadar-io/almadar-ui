@@ -27,6 +27,7 @@ import type { NavStackEntry } from '@almadar/core';
 import {
   entriesFor,
   previousEntry,
+  relabelCurrent,
   syncNavStack,
   type NavPageDecl,
   type NavStackState,
@@ -44,6 +45,10 @@ export interface NavStackApi {
   back: () => void;
   /** Navigate to an arbitrary stack entry (breadcrumb click). */
   goTo: (href: string) => void;
+  /** Relabel the current page's stack entry with the loaded record's title
+   *  (idempotent; no-op when the label already matches). DetailPanel calls
+   *  this from the routed main slot so cold-loaded crumbs read like pushes. */
+  setCurrentLabel: (label: string) => void;
 }
 
 /**
@@ -56,6 +61,7 @@ const INERT_API: NavStackApi = {
   beginNavigate: () => undefined,
   back: () => undefined,
   goTo: () => undefined,
+  setCurrentLabel: () => undefined,
 };
 
 const NavStackContext = createContext<NavStackApi>(INERT_API);
@@ -137,6 +143,17 @@ export const NavStackProvider: React.FC<NavStackProviderProps> = ({
     [navigate],
   );
 
+  const setCurrentLabel = useCallback(
+    (label: string) => {
+      setState((prev) => {
+        const next = relabelCurrent(prev, pages, currentPath, label);
+        if (next !== prev) persistStored(storageKey, next);
+        return next;
+      });
+    },
+    [pages, currentPath, storageKey],
+  );
+
   const entries = useMemo(
     () => entriesFor(state, pages, currentPath),
     [state, pages, currentPath],
@@ -149,8 +166,9 @@ export const NavStackProvider: React.FC<NavStackProviderProps> = ({
       beginNavigate,
       back,
       goTo,
+      setCurrentLabel,
     }),
-    [entries, state, pages, currentPath, beginNavigate, back, goTo],
+    [entries, state, pages, currentPath, beginNavigate, back, goTo, setCurrentLabel],
   );
 
   return <NavStackContext.Provider value={api}>{children}</NavStackContext.Provider>;

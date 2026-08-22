@@ -103,27 +103,36 @@ describe('detail-panel schema enrichment (runtime path)', () => {
   });
 });
 
-describe('DetailPanel backAction placement', () => {
-  it('renders backAction in the left group, separated from actions + close', () => {
+describe('DetailPanel header layout', () => {
+  function renderPanel(props: Partial<React.ComponentProps<typeof DetailPanel>>) {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const { container } = render(
+    return render(
       <QueryClientProvider client={queryClient}>
         <MemoryRouter>
           <EventBusProvider debug={false}>
             <DetailPanel
               entity={{ id: '1', name: 'Opening A' }}
               fields={['name']}
-              backAction={{ label: 'Back to openings', event: 'BACK' }}
-              actions={[{ label: 'Edit', event: 'EDIT', variant: 'primary' }]}
+              {...props}
             />
           </EventBusProvider>
         </MemoryRouter>
       </QueryClientProvider>,
     );
+  }
+
+  it('renders backAction in the left group, actions + declared close in the right group', () => {
+    const { container } = renderPanel({
+      backAction: { label: 'Back to openings', event: 'BACK' },
+      actions: [
+        { label: 'Edit', event: 'EDIT', variant: 'primary' },
+        { label: 'Close', event: 'CLOSE_VIEW', variant: 'ghost' },
+      ],
+    });
 
     const back = screen.getByTestId('action-BACK');
     const edit = screen.getByTestId('action-EDIT');
-    const close = screen.getByTestId('action-close');
+    const close = screen.getByTestId('action-CLOSE_VIEW');
     expect(back).toBeInTheDocument();
 
     // The back button must live in a DIFFERENT flex group than edit/close,
@@ -133,5 +142,41 @@ describe('DetailPanel backAction placement', () => {
     const order = back.compareDocumentPosition(edit);
     expect(order & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(container.querySelectorAll('[data-testid="action-BACK"]').length).toBe(1);
+  });
+
+  it('renders NO close × when the call site declares no close action', () => {
+    // The close affordance is presence-gated: a routed detail page (no
+    // declared close) must not show a dismiss × — the shell's Back owns
+    // navigation. The old synthetic fallback (always-rendered ×, emitting
+    // a payload-less UI:CLOSE nobody listens to) was the defect.
+    renderPanel({ actions: [{ label: 'Edit', event: 'EDIT', variant: 'primary' }] });
+    expect(screen.queryByTestId('action-close')).not.toBeInTheDocument();
+    expect(screen.getByTestId('action-EDIT')).toBeInTheDocument();
+  });
+
+  it('collapses actions beyond maxInlineActions (default 2) into the overflow menu', () => {
+    renderPanel({
+      actions: [
+        { label: 'Edit', event: 'EDIT', variant: 'primary' },
+        { label: 'Duplicate', event: 'DUPLICATE', variant: 'secondary' },
+        { label: 'Archive', event: 'ARCHIVE', variant: 'danger' },
+      ],
+    });
+    expect(screen.getByTestId('action-EDIT')).toBeInTheDocument();
+    expect(screen.getByTestId('action-DUPLICATE')).toBeInTheDocument();
+    expect(screen.queryByTestId('action-ARCHIVE')).not.toBeInTheDocument();
+    expect(screen.getByTestId('action-overflow')).toBeInTheDocument();
+  });
+
+  it('hides the whole action group when showActions is false', () => {
+    renderPanel({
+      showActions: false,
+      actions: [
+        { label: 'Edit', event: 'EDIT', variant: 'primary' },
+        { label: 'Close', event: 'CLOSE_VIEW', variant: 'ghost' },
+      ],
+    });
+    expect(screen.queryByTestId('action-EDIT')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('action-CLOSE_VIEW')).not.toBeInTheDocument();
   });
 });

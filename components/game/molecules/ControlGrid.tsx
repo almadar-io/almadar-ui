@@ -48,6 +48,8 @@ export interface ControlGridProps {
   directionAssets?: Partial<Record<DPadDirection, Asset>>;
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
+  /** "auto" (default) renders only on coarse-pointer (touch) devices; "always" renders everywhere. */
+  visibility?: 'auto' | 'always';
   className?: string;
 }
 
@@ -92,10 +94,22 @@ export function ControlGrid({
   directionAssets,
   size = 'md',
   disabled,
+  visibility = 'auto',
   className,
-}: ControlGridProps): React.JSX.Element {
+}: ControlGridProps): React.JSX.Element | null {
   const eventBus = useEventBus();
   const [active, setActive] = React.useState<Set<string>>(new Set());
+  const [coarse, setCoarse] = React.useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches,
+  );
+
+  React.useEffect(() => {
+    if (visibility !== 'auto' || typeof window === 'undefined') return;
+    const mq = window.matchMedia('(pointer: coarse)');
+    const onChange = (e: MediaQueryListEvent) => setCoarse(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [visibility]);
 
   const handlePress = React.useCallback(
     (id: string) => {
@@ -130,6 +144,8 @@ export function ControlGrid({
     },
     [kind, actionEvent, directionEvent, directionReleaseEvents, eventBus, onAction, onDirection],
   );
+
+  if (visibility === 'auto' && !coarse) return null;
 
   if (kind === 'dpad') {
     const ds = dpadSizeMap[size];

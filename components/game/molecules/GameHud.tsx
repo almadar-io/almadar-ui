@@ -47,6 +47,11 @@ export interface GameHudProps {
   elements?: readonly GameHudElement[];
   /** Size variant */
   size?: "sm" | "md" | "lg";
+  /**
+   * Layout variant: "floating" (default) renders a compact pill cluster that hugs
+   * its content width; "bar" preserves the legacy full-width split bar.
+   */
+  variant?: "floating" | "bar";
   /** Additional CSS classes */
   className?: string;
   /** Whether to use a semi-transparent background */
@@ -102,6 +107,7 @@ export function GameHud({
   items,
   elements,
   size = "md",
+  variant = "floating",
   className,
   transparent = true,
 }: GameHudProps) {
@@ -138,7 +144,8 @@ export function GameHud({
     );
   }
 
-  if (position === "top" || position === "bottom") {
+  if ((position === "top" || position === "bottom") && variant === "bar") {
+    // Legacy full-width split bar (opt-in via variant="bar").
     // Split stats into left (first half) and right (second half) groups
     const mid = Math.ceil(stats.length / 2);
     const leftStats = stats.slice(0, mid);

@@ -19,6 +19,14 @@ import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import type { UiError } from '../../core/atoms/types';
 
+/** Canvas 2D `ctx.font` cannot resolve CSS vars — read the theme contract's
+ *  body slot off the element so in-canvas text follows the active theme. */
+function themeBodyFont(el: HTMLCanvasElement): string {
+  if (typeof getComputedStyle !== 'function') return 'system-ui, sans-serif';
+  const v = getComputedStyle(el).getPropertyValue('--font-family-body').trim();
+  return v || 'system-ui, sans-serif';
+}
+
 export type LearningShapeType =
   | 'line'
   | 'arrow'
@@ -383,7 +391,7 @@ function drawShape(
     case 'text': {
       if (shape.x == null || shape.y == null || !shape.text) break;
       ctx.fillStyle = stroke;
-      ctx.font = `${shape.fontSize ?? 14}px system-ui, sans-serif`;
+      ctx.font = `${shape.fontSize ?? 14}px ${themeBodyFont(ctx.canvas)}`;
       ctx.textAlign = shape.align ?? 'left';
       ctx.textBaseline = 'middle';
       ctx.fillText(shape.text, shape.x, shape.y);

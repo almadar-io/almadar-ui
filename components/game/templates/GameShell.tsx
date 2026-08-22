@@ -15,8 +15,6 @@ import { Card } from "../../core/atoms/Card";
 import { Typography } from "../../core/atoms/Typography";
 import { AtlasPanel } from "../../core/atoms/AtlasImage";
 
-const FONT_BASE = "https://almadar-kflow-assets.web.app/shared/_shared/kenney-fonts/fonts";
-
 const GAME_FONTS: Record<string, string> = {
     future: "Kenney Future",
     "future-narrow": "Kenney Future Narrow",
@@ -25,25 +23,16 @@ const GAME_FONTS: Record<string, string> = {
     mini: "Kenney Mini",
 };
 
-const FONT_FACES = `
-@font-face { font-family: 'Kenney Future'; src: url('${FONT_BASE}/Kenney%20Future.ttf') format('truetype'); font-display: swap; }
-@font-face { font-family: 'Kenney Future Narrow'; src: url('${FONT_BASE}/Kenney%20Future%20Narrow.ttf') format('truetype'); font-display: swap; }
-@font-face { font-family: 'Kenney Pixel'; src: url('${FONT_BASE}/Kenney%20Pixel.ttf') format('truetype'); font-display: swap; }
-@font-face { font-family: 'Kenney Blocks'; src: url('${FONT_BASE}/Kenney%20Blocks.ttf') format('truetype'); font-display: swap; }
-@font-face { font-family: 'Kenney Mini'; src: url('${FONT_BASE}/Kenney%20Mini.ttf') format('truetype'); font-display: swap; }
-.game-shell, .game-shell * { font-family: inherit; }
-`;
-
 export interface GameShellProps {
     /** Application / game title shown as a floating chip */
     appName?: string;
-    /** Stat chips row — floats along the top edge */
+    /** Stat chips row — floats along the top edge. Legacy chrome surface: new behaviors emit HUD chrome via `render-ui "hud-top"` instead. */
     hud?: React.ReactNode;
-    /** Action cluster — floats bottom-right (End Turn, Fire, Reset, …) */
+    /** Action cluster — floats bottom-right (End Turn, Fire, Reset, …). Legacy chrome surface: new behaviors emit action chrome via `render-ui "hud-bottom"` or `"floating"` instead. */
     addons?: React.ReactNode;
-    /** Movement controls — floats bottom-left (d-pad / control-grid). */
+    /** Movement controls — floats bottom-left (d-pad / control-grid). Legacy chrome surface: new behaviors emit movement controls via `render-ui "hud-bottom"` instead. */
     controls?: React.ReactNode;
-    /** Centered overlay layer (victory/defeat banners, dialogs). */
+    /** Centered overlay layer (victory/defeat banners, dialogs). Legacy chrome surface: new behaviors emit overlays via `render-ui "overlay"` (clear with `render-ui "overlay" null` on every exit) instead. */
     overlay?: React.ReactNode;
     /** Extra class name on the root container */
     className?: string;
@@ -55,7 +44,7 @@ export interface GameShellProps {
     backgroundAsset?: Asset;
     /** Per-call-site 9-sliced panel override. Chrome normally comes from the active theme; most callers leave this unset. */
     hudBackgroundAsset?: Asset;
-    /** Game font key (future | future-narrow | pixel | blocks | mini) or a CSS font-family. */
+    /** Game display-font key (future | future-narrow | pixel | blocks | mini) or a CSS font-family. Scoped override of the theme contract's --font-family-display slot: titles and numerics take this face, body text follows the active theme. */
     fontFamily?: string;
     /** Scopes an `@almadar/ui` theme (e.g. "game-sci-fi-dark") to this shell's subtree. */
     "data-theme"?: string;
@@ -86,11 +75,12 @@ export const GameShell: React.FC<GameShellProps> = ({
                 overflow: "hidden",
                 background: "var(--color-background, #0a0a0f)",
                 color: "var(--color-foreground, #e0e0e0)",
-                fontFamily: `'${font}', system-ui, sans-serif`,
-            }}
+                // The fontFamily knob is a scoped override of the theme contract's
+                // display slot: titles/numerics take the game face, body text keeps
+                // the active theme's --font-family-body.
+                "--font-family-display": `'${font}', ui-sans-serif, system-ui, sans-serif`,
+            } as React.CSSProperties}
         >
-            <style>{FONT_FACES}</style>
-
             {/* Optional tiled pattern — subtle game-table texture, never a stretched slice. */}
             {backgroundAsset && (
                 <AtlasPanel
@@ -131,6 +121,7 @@ export const GameShell: React.FC<GameShellProps> = ({
                         >
                             <Typography
                                 as="span"
+                                className="font-display"
                                 style={{
                                     fontWeight: 700,
                                     fontSize: "1.05rem",

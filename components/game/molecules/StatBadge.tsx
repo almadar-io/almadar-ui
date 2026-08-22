@@ -42,6 +42,7 @@ export interface StatBadgeProps {
 }
 
 const sizeMap = {
+  xs: 'text-xs px-1.5 py-0.5',
   sm: 'text-xs px-2 py-1',
   md: 'text-sm px-3 py-1.5',
   lg: 'text-base px-4 py-2',
@@ -59,7 +60,7 @@ export function StatBadge({
   assetUrl,
   iconUrl,
   label,
-  value = 0,
+  value,
   max,
   format = 'number',
   icon,
@@ -70,6 +71,7 @@ export function StatBadge({
   source: _source,
   field: _field,
 }: StatBadgeProps) {
+  const hasValue = value !== undefined && value !== null;
   const numValue = typeof value === 'number' ? value : parseInt(String(value), 10) || 0;
   const resolvedAsset = iconUrl ?? assetUrl;
 
@@ -88,9 +90,9 @@ export function StatBadge({
         <Box as="span" className="flex-shrink-0 text-lg">{typeof icon === 'string' ? <Icon name={icon} className="w-4 h-4" /> : <Icon icon={icon} className="w-4 h-4" />}</Box>
       ) : null}
 
-      <Typography as="span" className="text-muted-foreground font-medium">{label}</Typography>
+      <Typography as="span" className="text-muted-foreground font-medium text-xs">{label}</Typography>
 
-      {format === 'hearts' && max && (
+      {hasValue && format === 'hearts' && max && (
         <HealthBar
           current={numValue}
           max={max}
@@ -99,7 +101,7 @@ export function StatBadge({
         />
       )}
 
-      {format === 'bar' && max && (
+      {hasValue && format === 'bar' && max && (
         <HealthBar
           current={numValue}
           max={max}
@@ -108,14 +110,15 @@ export function StatBadge({
         />
       )}
 
-      {format === 'number' && (
+      {hasValue && format === 'number' && (
         <ScoreDisplay
           value={numValue}
           size={size === 'lg' ? 'md' : 'sm'}
+          className="font-display"
         />
       )}
 
-      {format === 'text' && (
+      {hasValue && format === 'text' && (
         <Typography as="span" className="font-bold text-foreground">{value}</Typography>
       )}
     </Box>

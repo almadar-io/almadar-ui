@@ -19,6 +19,7 @@ import { useEntitySchemaOptional } from "../../../providers/EntitySchemaContext"
 import { useEntityBindingSnapshot } from "../../../providers/EntityBindingContext";
 import { resolveRenderBindingMarkers } from "../../../lib/resolve-render-bindings";
 import { TraitScopeProvider, useTraitScope } from "../../../providers/TraitScopeProvider";
+import { RenderSlotProvider } from "../../../providers/RenderSlotContext";
 import type { EntityRow, EventPayload, EventPayloadValue, RenderItemLambda, ResolvedEntity } from "@almadar/core";
 import { isRenderBindingMarker } from "@almadar/core";
 import type { AnyPatternConfig } from "@almadar/core/patterns";
@@ -594,7 +595,17 @@ function MaybeTraitScope({
  *
  * Handles different slot types with appropriate wrappers.
  */
-function UISlotComponent({
+function UISlotComponent(props: UISlotComponentProps): React.ReactElement | null {
+  // Every subtree knows which slot hosts it (RenderSlotContext default is
+  // 'main'; slot-sensitive components like DetailPanel gate on it).
+  return (
+    <RenderSlotProvider slot={props.slot}>
+      <UISlotComponentInner {...props} />
+    </RenderSlotProvider>
+  );
+}
+
+function UISlotComponentInner({
   slot,
   portal = false,
   position,

@@ -15,6 +15,7 @@ import React from 'react';
 import { Modal } from '../molecules/Modal';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useEntitySchemaOptional } from '../../../providers/EntitySchemaContext';
+import { RenderSlotProvider } from '../../../providers/RenderSlotContext';
 import type { UiError } from '../atoms/types';
 
 export interface ModalSlotProps {
@@ -91,7 +92,7 @@ export const ModalSlot: React.FC<ModalSlotProps> = ({
       size={size}
       className={className}
     >
-      {children}
+      <RenderSlotProvider slot="modal">{children}</RenderSlotProvider>
     </Modal>
   );
 };

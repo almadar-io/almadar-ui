@@ -121,14 +121,42 @@ export const UploadDropZone: React.FC<UploadDropZoneProps> = ({
       if (valid.length > 0) {
         onFiles?.(valid);
         if (action) {
-          eventBus.emit(`UI:${action}`, {
-            ...actionPayload,
-            files: valid.map((f) => ({ name: f.name, size: f.size, type: f.type })),
-          });
+          // The payload must carry the BYTES (base64 data URL), not just
+          // metadata — a `(call-service storage upload { file: ?file })`
+          // downstream has nothing to store otherwise. Size is already
+          // capped by validateFiles/maxSize before any read happens.
+          void Promise.all(
+            valid.map(
+              (f) =>
+                new Promise<{ name: string; size: number; type: string; content: string }>(
+                  (resolvePayload, rejectPayload) => {
+                    const reader = new FileReader();
+                    reader.onload = () =>
+                      resolvePayload({
+                        name: f.name,
+                        size: f.size,
+                        type: f.type,
+                        content: String(reader.result ?? ''),
+                      });
+                    reader.onerror = () => rejectPayload(reader.error);
+                    reader.readAsDataURL(f);
+                  },
+                ),
+            ),
+          )
+            .then((payloadFiles) => {
+              eventBus.emit(`UI:${action}`, {
+                ...actionPayload,
+                files: payloadFiles,
+              });
+            })
+            .catch(() => {
+              setError(t('Could not read the selected file'));
+            });
         }
       }
     },
-    [validateFiles, onFiles, action, actionPayload, eventBus],
+    [validateFiles, onFiles, action, actionPayload, eventBus, t],
   );
 
   const handleDragOver = (e: React.DragEvent) => {

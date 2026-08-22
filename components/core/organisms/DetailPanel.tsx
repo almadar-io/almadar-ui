@@ -8,23 +8,10 @@
  * Extends DisplayStateProps (see ./types.ts) and declares `entity?: EntityRow`.
  */
 
-import React, { useCallback, Suspense, lazy } from "react";
+import React, { useCallback, useEffect, Suspense, lazy } from "react";
 import type { EventPayload, EntityRow, FieldValue } from "@almadar/core";
 import type { ItemActionPayload } from "@almadar/core/patterns";
-import {
-  ArrowLeft,
-  Calendar,
-  Tag,
-  TrendingUp,
-  User,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  DollarSign,
-  FileText,
-  Package,
-  X,
-} from "lucide-react";
+import { ArrowLeft, FileText, X } from "lucide-react";
 import type { IconInput } from "../atoms/Icon";
 import {
   Card,
@@ -48,39 +35,11 @@ import { humanizeFieldName, humanizeEnumValue } from "../../../lib/format";
 import { getNestedValue } from "../../../lib/getNestedValue";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
+import { useNavStack } from "../../../providers/NavStackContext";
+import { useRenderSlot } from "../../../providers/RenderSlotContext";
 import type { DisplayStateProps } from "./types";
 import type { RelationOption } from "../molecules/RelationSelect";
 import { formatFileSize } from "../molecules/UploadDropZone";
-
-function getFieldIcon(fieldName: string): IconInput {
-  const name = fieldName.toLowerCase();
-  if (name.includes("date") || name.includes("time")) return Calendar;
-  if (name.includes("status")) return Tag;
-  if (name.includes("priority")) return AlertCircle;
-  if (name.includes("progress") || name.includes("percent")) return TrendingUp;
-  if (
-    name.includes("assignee") ||
-    name.includes("owner") ||
-    name.includes("user") ||
-    name.includes("member")
-  )
-    return User;
-  if (name.includes("due")) return Clock;
-  if (name.includes("complete")) return CheckCircle2;
-  if (
-    name.includes("budget") ||
-    name.includes("cost") ||
-    name.includes("price")
-  )
-    return DollarSign;
-  if (
-    name.includes("description") ||
-    name.includes("note") ||
-    name.includes("comment")
-  )
-    return FileText;
-  return Package;
-}
 
 function getBadgeVariant(
   fieldName: string,
@@ -184,6 +143,18 @@ function renderRichFieldValue(
               loading="lazy"
             />
           </Box>
+        );
+      }
+      if (fieldType === "url" && /^https?:\/\//i.test(str)) {
+        return (
+          <a
+            href={str}
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary hover:underline break-all"
+          >
+            {str}
+          </a>
         );
       }
       return str;
@@ -305,6 +276,43 @@ function renderRichFieldValue(
       }
       return str;
     }
+
+    case "boolean": {
+      if (typeof value === "boolean") return value ? "Yes" : "No";
+      if (str === "true") return "Yes";
+      if (str === "false") return "No";
+      return str;
+    }
+
+    case "array": {
+      if (Array.isArray(value) && value.length > 0) {
+        return (
+          <HStack gap="xs" wrap>
+            {value.map((item, i) => (
+              <Badge key={i} variant="default">
+                {String(item)}
+              </Badge>
+            ))}
+          </HStack>
+        );
+      }
+      if (Array.isArray(value)) return "—";
+      return str;
+    }
+
+    case "email":
+      return (
+        <a href={`mailto:${str}`} className="text-primary hover:underline break-all">
+          {str}
+        </a>
+      );
+
+    case "phone":
+      return (
+        <a href={`tel:${str}`} className="text-primary hover:underline">
+          {str}
+        </a>
+      );
 
     default:
       // A field with a schema-declared closed vocabulary (a `.lolo` string
@@ -437,7 +445,10 @@ export interface DetailPanelProps extends DisplayStateProps {
   sections?: readonly DetailSection[];
   /** Unified actions array - first action with variant='primary' is the main action */
   actions?: readonly DetailPanelAction[];
-  /** Max inline action buttons before the rest collapse into a "⋯" overflow menu (mirrors DataGrid's maxInlineActions). Omit = all inline. */
+  /** Max inline action buttons before the rest collapse into a "⋯" overflow
+   *  menu (mirrors DataGrid's maxInlineActions). Defaults to 2 — primary +
+   *  secondary visible, the rest under the menu — so every detail panel
+   *  carries the same action pattern. */
   maxInlineActions?: number;
   /**
    * Navigation-back affordance. Renders top-LEFT before the title (OS/back
@@ -462,7 +473,8 @@ export interface DetailPanelProps extends DisplayStateProps {
   width?: string;
   /** Display fields (alias for fields) */
   displayFields?: readonly string[];
-  /** Show actions flag */
+  /** When false, hides the action buttons + overflow menu (and the close ×).
+   *  Defaults to true. */
   showActions?: boolean;
   /** Relation display data: { fieldName: [{value, label}] } — injected
    *  server-side by the runtime (relation-option injection) or bound by
@@ -477,10 +489,11 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
   avatar,
   sections: propSections,
   actions,
-  maxInlineActions,
+  maxInlineActions = 2,
   backAction,
   footer,
   slideOver = false,
+  showActions = true,
   className,
   entity,
   fields: propFields,
@@ -556,11 +569,6 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     [eventBus],
   );
 
-  // Handle close via event bus (closed circuit pattern)
-  const handleClose = useCallback(() => {
-    eventBus.emit('UI:CLOSE', {});
-  }, [eventBus]);
-
   // entity is now the data itself (single record or first element of array)
   const entityRecord = Array.isArray(entity) ? entity[0] : entity;
   const data = entityRecord ?? initialData;
@@ -587,7 +595,6 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
           return {
             label: labelFor(field),
             value: formatFieldValue(value, field),
-            icon: getFieldIcon(field),
           };
         }
         return field;
@@ -645,17 +652,18 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
 
     sections = [];
 
-    // Overview section
-    if (statusFields.length > 0 || otherFields.length > 0) {
+    // Overview section. Status/priority fields are DELIBERATELY withheld —
+    // they already render as badges beside the title; repeating them as grid
+    // rows showed the same value twice on 53 of 79 surveyed detail pages.
+    if (otherFields.length > 0) {
       const overviewFields: DetailField[] = [];
 
-      [...statusFields, ...otherFields].forEach((field) => {
+      otherFields.forEach((field) => {
         const value = getNestedValue(normalizedData, field) as FieldValue | undefined;
         if (value !== undefined && value !== null) {
           overviewFields.push({
             label: labelFor(field),
             value: renderRichFieldValue(value, field, fieldTypeMap[field], metaFor(field)),
-            icon: getFieldIcon(field),
           });
         }
       });
@@ -675,7 +683,6 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
           metricsFields.push({
             label: labelFor(field),
             value: renderRichFieldValue(value, field, fieldTypeMap[field], metaFor(field)),
-            icon: getFieldIcon(field),
           });
         }
       });
@@ -695,7 +702,6 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
           timelineFields.push({
             label: labelFor(field),
             value: renderRichFieldValue(value, field, fieldTypeMap[field], metaFor(field)),
-            icon: getFieldIcon(field),
           });
         }
       });
@@ -715,7 +721,6 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
           descFields.push({
             label: labelFor(field),
             value: renderRichFieldValue(value, field, fieldTypeMap[field], metaFor(field)),
-            icon: getFieldIcon(field),
           });
         }
       });
@@ -725,6 +730,21 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
       }
     }
   }
+
+  // Feed the loaded record's title into the nav stack's current crumb, so a
+  // cold-loaded/refreshed detail page reads like an in-app push ("Contracts
+  // › Service Agreement", not "Contracts › Contract Detail"). Only from the
+  // routed MAIN slot — a modal/drawer/slide-over must not relabel the page's
+  // crumb — and a no-op outside a NavStackProvider (inert default API).
+  const renderSlot = useRenderSlot();
+  const navStack = useNavStack();
+  const { setCurrentLabel } = navStack;
+  const resolvedTitle = normalizedData ? title : undefined;
+  useEffect(() => {
+    if (renderSlot === "main" && !slideOver && resolvedTitle) {
+      setCurrentLabel(resolvedTitle);
+    }
+  }, [renderSlot, slideOver, resolvedTitle, setCurrentLabel]);
 
   if (isLoading) {
     return (
@@ -771,7 +791,6 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
           allFields.push({
             label: labelFor(field),
             value: renderRichFieldValue(value, field, fieldTypeMap[field], metaFor(field)),
-            icon: getFieldIcon(field),
           });
         } else {
           allFields.push(field);
@@ -780,22 +799,52 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     }
   }
 
-  // Separate close action from other actions. Close always renders as X top-right.
+  // The close × renders ONLY when the call site declares a close-matching
+  // action — a routed detail page declares none and gets no dismiss
+  // affordance (the shell's Back owns navigation there). Viewers,
+  // slide-overs and modals keep their declared Close, wired to its event.
   const closeAction = actions?.find(
     (a) => a.event === "CLOSE" || a.event === "CANCEL" || a.label?.toLowerCase() === "close",
   );
   const otherActions = actions?.filter((a) => a !== closeAction) ?? [];
-  // If no explicit close action, create a default one using handleClose
-  const effectiveCloseAction = closeAction ?? { event: undefined as string | undefined, label: "Close" };
+
+  const statusBadges = (
+    <>
+      {normalizedData && effectiveFieldNames &&
+        effectiveFieldNames
+          .filter(
+            (f) =>
+              f.toLowerCase().includes("status") ||
+              f.toLowerCase().includes("priority"),
+          )
+          .map((field) => {
+            const value = getNestedValue(normalizedData, field);
+            if (!value) return null;
+            return (
+              <Badge
+                key={field}
+                variant={getBadgeVariant(field, String(value))}
+              >
+                {humanizeEnumValue(String(value))}
+              </Badge>
+            );
+          })}
+      {status && (
+        <Badge variant={status.variant ?? "default"}>
+          {status.label}
+        </Badge>
+      )}
+    </>
+  );
 
   const content = (
     <Card variant="elevated">
       <VStack gap="md" className="p-6">
-        {/* Top bar: back (navigation) LEFT per OS/back convention (UX §8.4);
-            action buttons + close X stay right. `justify-between` keeps the
-            two groups spatially separated even when backAction is absent. */}
-        <HStack justify="between" align="center" gap="xs">
-          <HStack align="center" gap="xs">
+        {/* One-row header: identity LEFT (back per OS convention, then
+            avatar + title with its status badges + subtitle), actions RIGHT
+            (inline up to maxInlineActions, rest in the ⋯ menu, gated ×). */}
+        <HStack justify="between" align="start" gap="md">
+          <HStack align="start" gap="sm" className="min-w-0">
             {backAction && (
               <Button
                 variant={backAction.variant || "ghost"}
@@ -809,91 +858,69 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                 {backAction.label}
               </Button>
             )}
+            {avatar}
+            <VStack gap="xs" className="min-w-0">
+              <HStack align="center" gap="sm" wrap>
+                <Typography variant="h2" weight="bold">
+                  {title || "Details"}
+                </Typography>
+                {statusBadges}
+              </HStack>
+              {subtitle && (
+                <Typography variant="body" color="secondary">
+                  {subtitle}
+                </Typography>
+              )}
+            </VStack>
           </HStack>
-          <HStack justify="end" align="center" gap="xs">
-            {(maxInlineActions != null ? otherActions.slice(0, maxInlineActions) : otherActions).map((action, idx) => (
-              <Button
-                key={idx}
-                variant={action.variant || "secondary"}
-                size="sm"
-                action={action.navigatesTo ? undefined : action.event}
-                actionPayload={{ row: normalizedData }}
-                onClick={action.navigatesTo ? () => handleActionClick(action, normalizedData) : undefined}
-                icon={action.icon}
-                data-testid={action.event ? `action-${action.event}` : undefined}
-                data-row-id={normalizedData?.id !== undefined ? String(normalizedData.id) : undefined}
-              >
-                {action.label}
-              </Button>
-            ))}
-            {maxInlineActions != null && otherActions.length > maxInlineActions && (
-              <Menu
-                position="bottom-end"
-                trigger={
-                  <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow">
-                    <Icon name="more-horizontal" size="xs" />
-                  </Button>
-                }
-                items={otherActions.slice(maxInlineActions).map((action) => ({
-                  // ONE firing path: onClick → handleActionClick (emits with
-                  // the {id, row} payload). Passing `event` too would make
-                  // Menu emit a second, payload-less copy of the same event.
-                  label: action.label,
-                  icon: action.icon,
-                  variant: action.variant === "danger" ? ("danger" as const) : ("default" as const),
-                  onClick: () => handleActionClick(action, normalizedData),
-                }))}
-              />
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              action={effectiveCloseAction.event}
-              actionPayload={{ row: normalizedData }}
-              onClick={effectiveCloseAction.event ? undefined : handleClose}
-              icon={X}
-              data-testid={effectiveCloseAction.event ? `action-${effectiveCloseAction.event}` : "action-close"}
-            />
-          </HStack>
-        </HStack>
-
-        {/* Avatar + Title */}
-        {avatar}
-        <Typography variant="h2" weight="bold">
-          {title || "Details"}
-        </Typography>
-
-        {subtitle && (
-          <Typography variant="body" color="secondary">
-            {subtitle}
-          </Typography>
-        )}
-
-        {/* Status badges inline with title */}
-        <HStack gap="xs" wrap>
-          {normalizedData && effectiveFieldNames &&
-            effectiveFieldNames
-              .filter(
-                (f) =>
-                  f.toLowerCase().includes("status") ||
-                  f.toLowerCase().includes("priority"),
-              )
-              .map((field) => {
-                const value = getNestedValue(normalizedData, field);
-                if (!value) return null;
-                return (
-                  <Badge
-                    key={field}
-                    variant={getBadgeVariant(field, String(value))}
-                  >
-                    {String(value)}
-                  </Badge>
-                );
-              })}
-          {status && (
-            <Badge variant={status.variant ?? "default"}>
-              {status.label}
-            </Badge>
+          {showActions && (
+            <HStack justify="end" align="center" gap="xs" className="shrink-0">
+              {otherActions.slice(0, maxInlineActions).map((action, idx) => (
+                <Button
+                  key={idx}
+                  variant={action.variant || "secondary"}
+                  size="sm"
+                  action={action.navigatesTo ? undefined : action.event}
+                  actionPayload={{ row: normalizedData }}
+                  onClick={action.navigatesTo ? () => handleActionClick(action, normalizedData) : undefined}
+                  icon={action.icon}
+                  data-testid={action.event ? `action-${action.event}` : undefined}
+                  data-row-id={normalizedData?.id !== undefined ? String(normalizedData.id) : undefined}
+                >
+                  {action.label}
+                </Button>
+              ))}
+              {otherActions.length > maxInlineActions && (
+                <Menu
+                  position="bottom-end"
+                  trigger={
+                    <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow">
+                      <Icon name="more-horizontal" size="xs" />
+                    </Button>
+                  }
+                  items={otherActions.slice(maxInlineActions).map((action) => ({
+                    // ONE firing path: onClick → handleActionClick (emits with
+                    // the {id, row} payload). Passing `event` too would make
+                    // Menu emit a second, payload-less copy of the same event.
+                    label: action.label,
+                    icon: action.icon,
+                    variant: action.variant === "danger" ? ("danger" as const) : ("default" as const),
+                    onClick: () => handleActionClick(action, normalizedData),
+                  }))}
+                />
+              )}
+              {closeAction && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  action={closeAction.event}
+                  actionPayload={{ row: normalizedData }}
+                  onClick={closeAction.event ? undefined : () => handleActionClick(closeAction, normalizedData)}
+                  icon={X}
+                  data-testid={closeAction.event ? `action-${closeAction.event}` : "action-close"}
+                />
+              )}
+            </HStack>
           )}
         </HStack>
 
@@ -945,9 +972,10 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
                   )}
                   <VStack gap="xs" flex className="min-w-0">
                     <Typography
-                      variant="small"
-                      color="secondary"
+                      variant="caption"
+                      color="muted"
                       weight="medium"
+                      className="uppercase tracking-wider"
                     >
                       {field.label}
                     </Typography>

@@ -16,6 +16,7 @@ import React from 'react';
 import { Drawer, DrawerPosition, DrawerSize } from '../molecules/Drawer';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useEntitySchemaOptional } from '../../../providers/EntitySchemaContext';
+import { RenderSlotProvider } from '../../../providers/RenderSlotContext';
 import type { UiError } from '../atoms/types';
 
 interface ComponentWithTitle {
@@ -100,7 +101,7 @@ export const DrawerSlot: React.FC<DrawerSlotProps> = ({
       width={size}
       className={className}
     >
-      {children}
+      <RenderSlotProvider slot="drawer">{children}</RenderSlotProvider>
     </Drawer>
   );
 };
