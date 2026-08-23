@@ -8,6 +8,7 @@ import type {
   AssetCatalog,
   Asset,
 } from '@almadar/core';
+import { isSecretConfigType } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { VStack, HStack } from '../atoms/Stack';
 import { Typography } from '../atoms/Typography';
@@ -63,11 +64,14 @@ function currentValue(
 function TextLikeControl({
   field,
   numeric,
+  secret,
   value,
   onCommit,
 }: {
   field: string;
   numeric: boolean;
+  /** `secret`-typed knob: the value is a credential reference — password-render it. */
+  secret?: boolean;
   value: TraitConfigValue | undefined;
   onCommit: (field: string, value: TraitConfigValue) => void;
 }): React.ReactElement {
@@ -86,7 +90,7 @@ function TextLikeControl({
 
   return (
     <Input
-      inputType={numeric ? 'number' : 'text'}
+      inputType={secret ? 'password' : numeric ? 'number' : 'text'}
       value={draft}
       onChange={(e) => setDraft(e.target.value)}
       onBlur={commit}
@@ -97,7 +101,7 @@ function TextLikeControl({
   );
 }
 
-const SCALAR_TYPES = new Set(['string', 'number', 'boolean', 'icon', 'asset', 'Asset']);
+const SCALAR_TYPES = new Set(['string', 'number', 'boolean', 'icon', 'asset', 'Asset', 'secret']);
 
 function isTraitConfigObject(
   v: TraitConfigValue | undefined,
@@ -167,6 +171,8 @@ export function FieldControl({
     );
   } else if (decl.type === 'number') {
     control = <TextLikeControl field={name} numeric value={value} onCommit={onChange} />;
+  } else if (isSecretConfigType(decl.type)) {
+    control = <TextLikeControl field={name} numeric={false} secret value={value} onCommit={onChange} />;
   } else if (decl.type === 'string') {
     control = <TextLikeControl field={name} numeric={false} value={value} onCommit={onChange} />;
   } else if (decl.type === 'node') {

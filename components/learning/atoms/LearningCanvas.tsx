@@ -380,6 +380,8 @@ function drawShape(
     case 'path': {
       if (!shape.path) break;
       const p = new Path2D(shape.path);
+      ctx.lineJoin = 'round';
+      ctx.lineCap = 'round';
       if (fill) {
         ctx.fillStyle = fill;
         ctx.fill(p);
@@ -603,7 +605,7 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
 
     ctx.clearRect(0, 0, width, height);
     if (backgroundColor) {
-      ctx.fillStyle = backgroundColor;
+      ctx.fillStyle = resolveColor(backgroundColor, ctx, backgroundColor);
       ctx.fillRect(0, 0, width, height);
     }
 

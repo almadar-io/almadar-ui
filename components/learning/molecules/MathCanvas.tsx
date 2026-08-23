@@ -146,6 +146,12 @@ export interface MathCanvasProps {
   showAxes?: boolean;
   showGrid?: boolean;
   gridStep?: number;
+  /** Canvas fill color; `var(--token, fallback)` strings resolve against the active theme. Default transparent. */
+  backgroundColor?: string;
+  /** Grid line color; resolves theme tokens (default `var(--color-border, #9ca3af)`). */
+  gridColor?: string;
+  /** Axis line color; resolves theme tokens (default `var(--color-muted-foreground, #374151)`). */
+  axisColor?: string;
   /** Draw numeric labels on grid lines (default false). */
   showTickLabels?: boolean;
   /** Draw each curve's `label` at its last in-range sample (default false). */
@@ -192,6 +198,9 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
   showAxes = true,
   showGrid = true,
   gridStep = 1,
+  backgroundColor,
+  gridColor = 'var(--color-border, #9ca3af)',
+  axisColor = 'var(--color-muted-foreground, #374151)',
   showTickLabels = false,
   showCurveLabels = false,
   curves = [],
@@ -248,16 +257,15 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
     const yAxisX = Math.max(margin, Math.min(width - margin, mapX(0)));
 
     if (showGrid) {
-      // Mid-gray at low opacity stays a faint lattice on BOTH themes — the canvas is
-      // transparent when no backgroundColor is passed, so a light-theme gray at full
-      // opacity reads as a bright white grid over a dark page.
+      // Low opacity keeps the lattice faint on BOTH themes; the color itself is a
+      // theme token by default so dark and light themes each get their own gray.
       for (let x = Math.ceil(xMin / gridStep) * gridStep; x <= xMax; x += gridStep) {
         const px = mapX(x);
-        out.push({ type: 'line', x1: px, y1: margin, x2: px, y2: height - margin, color: '#9ca3af', opacity: 0.35, lineWidth: 1 });
+        out.push({ type: 'line', x1: px, y1: margin, x2: px, y2: height - margin, color: gridColor, opacity: 0.35, lineWidth: 1 });
       }
       for (let y = Math.ceil(yMin / gridStep) * gridStep; y <= yMax; y += gridStep) {
         const py = mapY(y);
-        out.push({ type: 'line', x1: margin, y1: py, x2: width - margin, y2: py, color: '#9ca3af', opacity: 0.35, lineWidth: 1 });
+        out.push({ type: 'line', x1: margin, y1: py, x2: width - margin, y2: py, color: gridColor, opacity: 0.35, lineWidth: 1 });
       }
     }
 
@@ -335,8 +343,8 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
     }
 
     if (showAxes) {
-      out.push({ type: 'line', x1: margin, y1: xAxisY, x2: width - margin, y2: xAxisY, color: '#374151', lineWidth: 2 });
-      out.push({ type: 'line', x1: yAxisX, y1: margin, x2: yAxisX, y2: height - margin, color: '#374151', lineWidth: 2 });
+      out.push({ type: 'line', x1: margin, y1: xAxisY, x2: width - margin, y2: xAxisY, color: axisColor, lineWidth: 2 });
+      out.push({ type: 'line', x1: yAxisX, y1: margin, x2: yAxisX, y2: height - margin, color: axisColor, lineWidth: 2 });
     }
 
     for (const guide of guides) {
@@ -361,23 +369,40 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
 
     for (const curve of curves) {
       if (!curve.samples || curve.samples.length < 2) continue;
+      // One clipped Path2D per curve: segments are clipped to the x-window (y is
+      // interpolated at the crossing) instead of dropped, so curves no longer snap
+      // off at the viewport edge under a moving window; a single stroked path with
+      // round joins also removes the seams dense per-segment lines used to show.
+      let d = '';
+      let penDown = false;
       let lastInRange: LearningPoint | undefined;
       for (let i = 1; i < curve.samples.length; i++) {
         const a = curve.samples[i - 1];
         const b = curve.samples[i];
-        if (a.x < xMin || a.x > xMax || b.x < xMin || b.x > xMax) continue;
-        out.push({
-          type: 'line',
-          x1: mapX(a.x),
-          y1: mapY(a.y),
-          x2: mapX(b.x),
-          y2: mapY(b.y),
-          color: curve.color ?? '#2563eb',
-          lineWidth: 2,
-          dash: curve.dash,
-        });
-        lastInRange = b;
+        if ((a.x < xMin && b.x < xMin) || (a.x > xMax && b.x > xMax)) {
+          penDown = false;
+          continue;
+        }
+        const clip = (p: LearningPoint, q: LearningPoint, xLim: number): LearningPoint => {
+          const t = q.x === p.x ? 0 : (xLim - p.x) / (q.x - p.x);
+          return { x: xLim, y: p.y + t * (q.y - p.y) };
+        };
+        const ca = a.x < xMin ? clip(a, b, xMin) : a.x > xMax ? clip(a, b, xMax) : a;
+        const cb = b.x < xMin ? clip(a, b, xMin) : b.x > xMax ? clip(a, b, xMax) : b;
+        const pax = mapX(ca.x);
+        const pay = mapY(ca.y);
+        d += `${penDown ? 'L' : 'M'} ${pax} ${pay} L ${mapX(cb.x)} ${mapY(cb.y)} `;
+        penDown = true;
+        if (b.x >= xMin && b.x <= xMax) lastInRange = b;
       }
+      if (!d) continue;
+      out.push({
+        type: 'path',
+        path: d,
+        color: curve.color ?? '#2563eb',
+        lineWidth: 2,
+        dash: curve.dash,
+      });
       if (showCurveLabels && curve.label && lastInRange) {
         out.push({
           type: 'text',
@@ -497,6 +522,8 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
     showAxes,
     showGrid,
     gridStep,
+    gridColor,
+    axisColor,
     showTickLabels,
     showCurveLabels,
     curves,
@@ -517,6 +544,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
         <LearningCanvas
           width={width}
           height={height}
+          backgroundColor={backgroundColor}
           shapes={derivedShapes}
           readouts={readouts}
           traces={traces}
