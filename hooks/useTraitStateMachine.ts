@@ -44,6 +44,7 @@ import {
 } from '@almadar/runtime';
 import { evaluate, evaluateGuard, executeEffects, createMinimalContext, evaluateListenPayloadExpr, type EvaluationContext } from '@almadar/evaluator';
 import { createClientEffectHandlers } from '../lib/createClientEffectHandlers';
+import { enqueueEvent, type QueuedEventEntry } from '../lib/event-queue-coalesce';
 import type { ResolvedTraitBinding, ResolvedTraitListener } from '../types/runtime-types';
 import type { SlotPatternEntry, SlotSource } from '../types/slot-types';
 import type { useUISlots, SlotProps } from '../providers/UISlotContext';
@@ -367,6 +368,16 @@ export interface UseTraitStateMachineOptions {
         eventKey: string,
         payload?: EventPayload,
         dispatchedOrbitals?: Set<string>,
+        /**
+         * Broadcast-class marker (T6): when set, the entry is a tick's
+         * latest-state broadcast — the drain does NOT await the server
+         * fan-out, and the bridge discards the response (nobody reads a
+         * broadcast response; applying a stale one would clobber newer
+         * local state). `sourceTrait` is the emitting trait, for the
+         * server relay's BusEventSource.
+         */
+        tick?: string,
+        sourceTrait?: string,
     ) => void | Promise<void>;
     /** Router navigate function for navigate effects. `crumb` labels the
      * target page's navigation-stack entry (from the effect's options). */
@@ -608,8 +619,10 @@ export function useTraitStateMachine(
     });
 
     // Actor model queue: events are enqueued and drained one at a time,
-    // awaiting all effects before processing the next event.
-    const eventQueueRef = useRef<Array<{ eventKey: string; payload?: EventPayload; targetTrait?: string }>>([]);
+    // awaiting all effects before processing the next event. Tick-originated
+    // entries coalesce on enqueue (latest-state broadcast contract — see
+    // lib/event-queue-coalesce.ts).
+    const eventQueueRef = useRef<QueuedEventEntry[]>([]);
     const processingRef = useRef(false);
 
     // Trait names whose mount-time lifecycle event (INIT/LOAD/$MOUNT) has
@@ -1164,13 +1177,18 @@ export function useTraitStateMachine(
         };
 
         // Capture every event this trait's effects emit during execution.
+        // A tick-driven execution (`flushEvent: 'tick:<name>'` from
+        // runTickEffects) stamps its emits with the tick name so the actor
+        // queue can coalesce them as latest-state broadcasts; EffectExecutor's
+        // own sourceStamp carries only {orbital, trait, transition}.
         const emittedDuringExec: string[] = [];
+        const tickName = flushEvent.startsWith('tick:') ? flushEvent.slice(5) : undefined;
         const baseEmit = handlers.emit;
         const trackingHandlers: EffectHandlers = {
             ...handlers,
             emit: (event, eventPayload, source) => {
                 emittedDuringExec.push(event);
-                baseEmit(event, eventPayload, source);
+                baseEmit(event, eventPayload, tickName !== undefined ? { ...source, tick: tickName } : source);
             },
         };
 
@@ -1448,7 +1466,11 @@ export function useTraitStateMachine(
         // it to every bound trait made a trigger renamed to INIT re-run the
         // source's own initializer (fetch → re-emit → re-trigger — the
         // R-SCOPED-LISTEN-INIT-RENAME-FREEZE permanent loop).
-        targetTrait?: string
+        targetTrait?: string,
+        // T6 broadcast class: tick-originated entries fan out to the server
+        // fire-and-forget (see the onEventProcessed call below).
+        tick?: string,
+        sourceTrait?: string
     ): Promise<void> => {
         const normalizedEvent = normalizeEventKey(eventKey);
         const bindings = traitBindingsRef.current;
@@ -1745,7 +1767,15 @@ export function useTraitStateMachine(
             const relayPayload = targetTrait !== undefined
                 ? { ...(payload ?? {}), _targetTrait: targetTrait }
                 : payload;
-            await onEventProcessed(normalizedEvent, relayPayload, dispatchedOrbitals);
+            // T6: tick-stamped broadcasts never block the drain — the server
+            // leg is lossy by contract (coalesced snapshot relay, §3a), so
+            // network latency stays off the input path. Commands (sourceless)
+            // keep the await: ordering + response application are load-bearing.
+            if (tick !== undefined) {
+                void onEventProcessed(normalizedEvent, relayPayload, dispatchedOrbitals, tick, sourceTrait);
+            } else {
+                await onEventProcessed(normalizedEvent, relayPayload, dispatchedOrbitals);
+            }
         }
     }, [entities, eventBus, sharedEntityStore]);
 
@@ -1766,7 +1796,7 @@ export function useTraitStateMachine(
         try {
             while (eventQueueRef.current.length > 0) {
                 const entry = eventQueueRef.current.shift()!;
-                await processEventQueued(entry.eventKey, entry.payload, entry.targetTrait);
+                await processEventQueued(entry.eventKey, entry.payload, entry.targetTrait, entry.tick, entry.sourceTrait);
             }
         } finally {
             processingRef.current = false;
@@ -1778,9 +1808,11 @@ export function useTraitStateMachine(
      *
      * This replaces direct processEvent calls. Events arriving while the queue
      * is draining (e.g. from emit effects) are appended and processed in order.
+     * A `tick` stamp marks the entry as a latest-state broadcast: it coalesces
+     * onto a pending same-(event, trait) tick entry instead of appending.
      */
-    const enqueueAndDrain = useCallback((eventKey: string, payload?: EventPayload, targetTrait?: string) => {
-        eventQueueRef.current.push({ eventKey, payload, targetTrait });
+    const enqueueAndDrain = useCallback((eventKey: string, payload?: EventPayload, targetTrait?: string, tick?: string, sourceTrait?: string) => {
+        enqueueEvent(eventQueueRef.current, { eventKey, payload, targetTrait, tick, sourceTrait });
         void drainEventQueue();
     }, [drainEventQueue]);
 
@@ -1893,7 +1925,7 @@ export function useTraitStateMachine(
                     // dispatch so a name-shared event (TableViewLoaded on two
                     // table traits) can't drain into every sibling
                     // (R-TABLEVIEW-LOADED-UNSCOPED-CROSS-PAGE-BLEED).
-                    enqueueAndDrain(eventKey, event.payload, traitName);
+                    enqueueAndDrain(eventKey, event.payload, traitName, event.source?.tick, event.source?.trait);
                 });
                 unsubscribes.push(() => {
                     crossTraitLog.debug('self:unsubscribe', { traitName, busKey: selfBusKey, eventKey });
@@ -1922,7 +1954,7 @@ export function useTraitStateMachine(
                 const bareKey = `UI:${eventKey}`;
                 const unsub = eventBus.on(bareKey, (event) => {
                     crossTraitLog.debug('bare-cascade:fire', { bareKey, eventKey });
-                    enqueueAndDrain(eventKey, event.payload);
+                    enqueueAndDrain(eventKey, event.payload, undefined, event.source?.tick, event.source?.trait);
                 });
                 unsubscribes.push(() => {
                     crossTraitLog.debug('bare-cascade:unsubscribe', { bareKey, eventKey });
@@ -1963,6 +1995,8 @@ export function useTraitStateMachine(
                         listen.triggers,
                         applyListenPayloadMapping(listen.payloadMapping, event.payload, evaluateListenPayloadExpr),
                         binding.trait.name,
+                        event.source?.tick,
+                        event.source?.trait,
                     );
                 });
                 unsubscribes.push(() => {

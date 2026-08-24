@@ -10,6 +10,7 @@
 
 import React, { useCallback, useEffect, Suspense, lazy } from "react";
 import type { EventPayload, EntityRow, FieldValue } from "@almadar/core";
+import type { RelationFieldCardinality } from "../molecules/RelationSelect";
 import type { ItemActionPayload } from "@almadar/core/patterns";
 import { ArrowLeft, FileText, X } from "lucide-react";
 import type { IconInput } from "../atoms/Icon";
@@ -102,14 +103,22 @@ interface TypedFieldDef {
   type: string;
 }
 
+/** Relation descriptor injected onto a display field — target entity +
+ *  cardinality, mirroring the `.lolo` `{type:"relation", relation:{...}}`
+ *  descriptor. */
+export interface DetailRelationMeta {
+  entity: string;
+  cardinality?: RelationFieldCardinality;
+}
+
 /** Schema metadata for one display field, injected by the runtime's
  *  detail enrichment (UISlotRenderer) or the compiled path's codegen. */
 export interface FieldMeta {
   type?: string;
   /** Closed vocabulary — a `.lolo` string union's `values` sidecar. */
   values?: readonly string[];
-  /** Relation target entity name, when the field is relation-typed. */
-  relation?: string;
+  /** Relation target + cardinality, when the field is relation-typed. */
+  relation?: DetailRelationMeta;
   /** Relation options for display-name resolution (from `relationsData`,
    *  injected server-side by the runtime / bound by compiled codegen). */
   options?: readonly RelationOption[];
@@ -363,8 +372,8 @@ export interface DetailPanelAction {
  */
 export type FieldDef =
   | string
-  | { key: string; header?: string; type?: string; values?: readonly string[]; relation?: string }
-  | { name: string; type: string; values?: readonly string[]; relation?: string };
+  | { key: string; header?: string; type?: string; values?: readonly string[]; relation?: DetailRelationMeta }
+  | { name: string; type: string; values?: readonly string[]; relation?: DetailRelationMeta };
 
 /**
  * Normalize fields to simple string array

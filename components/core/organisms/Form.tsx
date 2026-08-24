@@ -28,8 +28,11 @@ import { Typography } from "../atoms/Typography";
 import { Icon } from "../atoms/Icon";
 import {
   RelationSelect,
+  MANY_CARDINALITIES,
   type RelationOption,
+  type RelationFieldCardinality,
 } from "../molecules/RelationSelect";
+import { TagInput } from "../molecules/TagInput";
 import { UploadDropZone } from "../molecules/UploadDropZone";
 import { DollarSign } from "lucide-react";
 import { Alert } from "../molecules/Alert";
@@ -166,8 +169,10 @@ export interface RelationConfig {
   entity: string;
   /** Field on target entity to display (defaults to 'name') */
   displayField?: string;
-  /** Cardinality: one-to-one or one-to-many */
-  cardinality?: "one" | "many";
+  /** Cardinality of the relation — many-valued spellings drive the
+   *  multi-select picker below; anything else (including absent) stays
+   *  single-select. */
+  cardinality?: RelationFieldCardinality;
 }
 
 /**
@@ -404,6 +409,12 @@ function determineInputType(field: SchemaField): string {
     return "relation";
   }
 
+  // Check for array type ([string] fields) — a plain text input would
+  // overwrite the whole array with a string on the first edit.
+  if (field.type === "array") {
+    return "array";
+  }
+
   // Check for enum type
   if (
     field.type === "enum" ||
@@ -544,7 +555,9 @@ export const Form: React.FC<FormProps> = ({
           values: 'values' in f ? f.values : undefined,
           min: f.min,
           max: f.max,
-          relation: 'relation' in f ? { entity: f.relation.entity } : undefined,
+          relation: 'relation' in f
+            ? { entity: f.relation.entity, cardinality: f.relation.cardinality }
+            : undefined,
         }),
       );
     }, [entity, fields]);
@@ -890,7 +903,7 @@ export const Form: React.FC<FormProps> = ({
             max: entityField.max,
             relation:
               'relation' in entityField
-                ? { entity: entityField.relation.entity }
+                ? { entity: entityField.relation.entity, cardinality: entityField.relation.cardinality }
                 : undefined,
           };
         }
@@ -1044,6 +1057,31 @@ export const Form: React.FC<FormProps> = ({
         const relationOptions = relationsData[fieldName] || [];
         const relationLoading = relationsLoading[fieldName] || false;
 
+        // Many-valued cardinality picks multiple related rows — a
+        // single-value RelationSelect would only ever keep the last pick.
+        if (
+          field.relation?.cardinality !== undefined &&
+          MANY_CARDINALITIES.includes(field.relation.cardinality)
+        ) {
+          const selectedValues: string[] = Array.isArray(currentValue)
+            ? currentValue.map((v) => String(v))
+            : [];
+          return (
+            <Select
+              {...commonProps}
+              multiple
+              searchable
+              clearable
+              options={[...relationOptions]}
+              value={selectedValues}
+              onValueChange={(value) =>
+                handleChange(fieldName, Array.isArray(value) ? value : [value])
+              }
+              placeholder={field.placeholder || `Select ${label}...`}
+            />
+          );
+        }
+
         return (
           <RelationSelect
             {...commonProps}
@@ -1054,6 +1092,25 @@ export const Form: React.FC<FormProps> = ({
             placeholder={field.placeholder || `Select ${label}...`}
             searchPlaceholder={`Search ${field.relation?.entity || label}...`}
             clearable={!field.required}
+          />
+        );
+      }
+
+      case "array": {
+        // [string] fields: TagInput keeps the value an array of chips —
+        // display-coerce a legacy non-array value without writing it back
+        // until the user actually edits the field.
+        const arrayValue: string[] = Array.isArray(currentValue)
+          ? currentValue.map((v) => String(v))
+          : currentValue != null && currentValue !== ""
+            ? [String(currentValue)]
+            : [];
+        return (
+          <TagInput
+            placeholder={field.placeholder}
+            disabled={isLoading}
+            value={arrayValue}
+            onChange={(next) => handleChange(fieldName, [...next])}
           />
         );
       }

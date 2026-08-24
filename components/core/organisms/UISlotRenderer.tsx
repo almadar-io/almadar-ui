@@ -194,7 +194,10 @@ function enrichFormFields(
           enriched.values = entityField.enumValues as SlotPropValue[];
         }
         if (entityField.relation) {
-          enriched.relation = entityField.relation.entity;
+          enriched.relation = {
+            entity: entityField.relation.entity,
+            cardinality: entityField.relation.cardinality,
+          };
         }
         return enriched;
       }
@@ -227,7 +230,10 @@ function enrichFormFields(
         }
       }
       if (!obj.relation && entityField.relation) {
-        enriched.relation = entityField.relation.entity;
+        enriched.relation = {
+          entity: entityField.relation.entity,
+          cardinality: entityField.relation.cardinality,
+        };
       }
       return enriched;
     }
@@ -256,7 +262,12 @@ function enrichDetailFields(
     const meta: SlotProps = { type: entityField.type };
     const values = entityField.values ?? entityField.enumValues;
     if (values && values.length > 0) meta.values = values as SlotPropValue[];
-    if (entityField.relation) meta.relation = entityField.relation.entity;
+    if (entityField.relation) {
+      meta.relation = {
+        entity: entityField.relation.entity,
+        cardinality: entityField.relation.cardinality,
+      };
+    }
     return meta;
   };
 
@@ -1341,6 +1352,36 @@ function isPlainConfigObject(value: object): boolean {
  * React nodes). The output stays in the same union; substituted strings
  * become `React.ReactNode` which is already a member.
  */
+
+// Slot content is replaced only by a flush, so a container's identity is a
+// valid cache key for "does this subtree hold any `@trait.X` string" — this
+// keeps tick-rate re-renders from re-walking marker-free data bulk.
+const traitRefPresenceCache = new WeakMap<object, boolean>();
+
+function subtreeHasTraitRef(value: object): boolean {
+  const cached = traitRefPresenceCache.get(value);
+  if (cached !== undefined) return cached;
+  let found = false;
+  const children: readonly SlotPropValue[] = Array.isArray(value)
+    ? value
+    : Object.values(value as Record<string, SlotPropValue>);
+  for (const child of children) {
+    if (typeof child === "string" && TRAIT_BINDING_RE.test(child)) { found = true; break; }
+    if (isRenderBindingMarker(child)) continue;
+    if (Array.isArray(child)) {
+      if (subtreeHasTraitRef(child)) { found = true; break; }
+    } else if (
+      child !== null &&
+      typeof child === "object" &&
+      isPlainConfigObject(child)
+    ) {
+      if (subtreeHasTraitRef(child)) { found = true; break; }
+    }
+  }
+  traitRefPresenceCache.set(value, found);
+  return found;
+}
+
 function substituteTraitRefsDeep(
   value: SlotPropValue,
   pathKey: string,
@@ -1366,11 +1407,13 @@ function substituteTraitRefsDeep(
     return value;
   }
   if (Array.isArray(value)) {
+    if (!subtreeHasTraitRef(value)) return value;
     return value.map((item, i) =>
       substituteTraitRefsDeep(item as SlotPropValue, `${pathKey}[${i}]`),
     ) as SlotPropValue;
   }
   if (typeof value === "object" && isPlainConfigObject(value)) {
+    if (!subtreeHasTraitRef(value)) return value;
     const out: Record<string, SlotPropValue> = {};
     for (const [k, v] of Object.entries(value as Record<string, SlotPropValue>)) {
       out[k] = substituteTraitRefsDeep(v, `${pathKey}.${k}`);

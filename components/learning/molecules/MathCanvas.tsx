@@ -224,16 +224,26 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
 }) => {
   const eventBus = useEventBus();
 
+  // Normalise the key maps by content so the window listeners below are only
+  // re-attached when a mapping actually changes: a parent that passes a new
+  // object identity per render (an inline literal on a renderTick) would
+  // otherwise tear down and re-add the global listeners every frame, dropping
+  // key events that land in the gap.
+  const keyMapKey = keyMap ? JSON.stringify(keyMap) : null;
+  const keyUpMapKey = keyUpMap ? JSON.stringify(keyUpMap) : null;
+  const stableKeyMap = useMemo(() => keyMap, [keyMapKey]);
+  const stableKeyUpMap = useMemo(() => keyUpMap, [keyUpMapKey]);
+
   // Keyboard → semantic events via keyMap/keyUpMap (device-agnostic input layer,
   // mirroring the game canvas): window-scoped so no focus gate is needed.
   useEffect(() => {
-    if (!keyMap && !keyUpMap) return;
+    if (!stableKeyMap && !stableKeyUpMap) return;
     const onDown = (e: KeyboardEvent) => {
-      const ev = keyMap?.[e.code];
+      const ev = stableKeyMap?.[e.code];
       if (ev) { eventBus.emit(`UI:${ev}`, {}); e.preventDefault(); }
     };
     const onUp = (e: KeyboardEvent) => {
-      const ev = keyUpMap?.[e.code];
+      const ev = stableKeyUpMap?.[e.code];
       if (ev) eventBus.emit(`UI:${ev}`, {});
     };
     window.addEventListener('keydown', onDown);
@@ -242,7 +252,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
       window.removeEventListener('keydown', onDown);
       window.removeEventListener('keyup', onUp);
     };
-  }, [keyMap, keyUpMap, eventBus]);
+  }, [stableKeyMap, stableKeyUpMap, eventBus]);
 
   const derivedShapes: LearningShape[] = useMemo(() => {
     const out: LearningShape[] = [];

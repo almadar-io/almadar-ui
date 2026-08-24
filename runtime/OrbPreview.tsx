@@ -335,6 +335,8 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
     event: string,
     payload?: EventPayload,
     dispatchedOrbitals?: Set<string>,
+    tick?: string,
+    sourceTrait?: string,
   ) => {
     if (!bridge.connected || !orbitalNames?.length) return;
     const targets = dispatchedOrbitals && dispatchedOrbitals.size > 0
@@ -347,6 +349,14 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
       dispatchedOrbitalsSize: dispatchedOrbitals?.size ?? 0,
     }));
     for (const name of targets) {
+      // T6: a tick-stamped broadcast's response is discarded — the local
+      // tick already applied the newest state, and the server relays the
+      // position to OTHER tabs coalesced. Applying this stale response
+      // would clobber newer local state (R-DUAL-EXEC-SERVER-ECHO doctrine).
+      if (tick !== undefined) {
+        void bridge.sendEvent(name, event, withActiveTraits(payload), tick, sourceTrait);
+        continue;
+      }
       const { effects, meta } = await bridge.sendEvent(name, event, withActiveTraits(payload));
       recordServerResponse(name, event, meta);
       applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNames, onNavigateBack);

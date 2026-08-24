@@ -35,6 +35,24 @@ import { useTranslate } from "../../../hooks/useTranslate";
 // Helper to check if specific debug category is enabled
 const isRelationsDebugEnabled = () => isDebugEnabled();
 
+/** Relation cardinality vocabulary — mirrors `@almadar/core`'s
+ *  `RelationCardinality` (spelled inline: the pattern extractor resolves
+ *  components-tree aliases to `enumValues`, but treats core imports as
+ *  opaque). `many`/`one-to-many`/`many-to-many` drive multi-value pickers. */
+export type RelationFieldCardinality =
+  | "one"
+  | "many"
+  | "one-to-many"
+  | "many-to-one"
+  | "many-to-many";
+
+/** The cardinality spellings that mean "this field holds MANY related rows". */
+export const MANY_CARDINALITIES: readonly RelationFieldCardinality[] = [
+  "many",
+  "one-to-many",
+  "many-to-many",
+];
+
 export interface RelationOption {
   /** The value to store (typically the ID) */
   value: string;

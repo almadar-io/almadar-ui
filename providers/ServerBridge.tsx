@@ -238,7 +238,7 @@ export interface SendEventResult {
 
 export interface ServerBridgeContextValue {
   connected: boolean;
-  sendEvent: (orbitalName: string, event: string, payload?: EventPayload) => Promise<SendEventResult>;
+  sendEvent: (orbitalName: string, event: string, payload?: EventPayload, tick?: string, sourceTrait?: string) => Promise<SendEventResult>;
 }
 
 /**
@@ -262,8 +262,12 @@ export interface ServerBridgeTransport {
    * `clientId` (Almadar_Live_Push.md) is the per-tab id stamped on every
    * dispatch so the server's push broadcast can exclude the origin tab
    * (it already got this cascade in-response).
+   *
+   * `tick`/`sourceTrait` (T6, docs/Almadar_Tick_Loop.md §3a) mark a
+   * tick-originated latest-state broadcast: the server coalesces these
+   * newest-per-key and relays them to other tabs at snapshot rate.
    */
-  sendEvent: (orbitalName: string, event: string, payload?: EventPayload, clientId?: string) => Promise<OrbitalEventResponse>;
+  sendEvent: (orbitalName: string, event: string, payload?: EventPayload, clientId?: string, tick?: string, sourceTrait?: string) => Promise<OrbitalEventResponse>;
 }
 
 /** Request body posted to `POST /:orbital/events` — the local `OrbitalEventRequest` wire shape this transport owns. */
@@ -271,6 +275,8 @@ interface OrbitalEventRequestBody {
   event: string;
   payload?: EventPayload;
   clientId?: string;
+  tick?: string;
+  sourceTrait?: string;
 }
 
 /** HTTP transport — POSTs to a server speaking the canonical playground-runtime contract. */
@@ -305,8 +311,8 @@ function createHttpTransport(serverUrl: string): ServerBridgeTransport {
         // Ignore cleanup errors
       }
     },
-    sendEvent: async (orbitalName, event, payload, clientId) => {
-      const body: OrbitalEventRequestBody = { event, payload, clientId };
+    sendEvent: async (orbitalName, event, payload, clientId, tick, sourceTrait) => {
+      const body: OrbitalEventRequestBody = { event, payload, clientId, tick, sourceTrait };
       const res = await fetch(`${serverUrl}/${orbitalName}/events`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -393,13 +399,22 @@ export function ServerBridgeProvider({
     orbitalName: string,
     event: string,
     payload?: EventPayload,
+    tick?: string,
+    sourceTrait?: string,
   ): Promise<SendEventResult> => {
     const emptyMeta: ServerResponseMeta = { success: false, clientEffects: 0, dataEntities: {}, emittedEvents: [] };
     if (!connected) return { effects: [], meta: emptyMeta };
 
     try {
-      const result: OrbitalEventResponse = await transport.sendEvent(orbitalName, event, payload, getTabClientId());
+      const result: OrbitalEventResponse = await transport.sendEvent(orbitalName, event, payload, getTabClientId(), tick, sourceTrait);
       const effects: ServerClientEffect[] = [];
+
+      // T6: a tick-stamped broadcast's response is discarded wholesale —
+      // no effect application, no cascade re-emit. The server relays the
+      // broadcast to other tabs coalesced; this tab's newest state is local.
+      if (tick !== undefined) {
+        return { effects, meta: { ...emptyMeta, success: !!result.success, error: result.error } };
+      }
 
       // Build metadata from raw response
       const responseData = result.data || {};

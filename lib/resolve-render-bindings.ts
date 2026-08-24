@@ -50,6 +50,29 @@ function isPlainObject(value: SlotPropValue): value is { readonly [key: string]:
   return true;
 }
 
+// Slot content is replaced only by a flush, so a container's identity is a
+// valid cache key for "does this subtree hold any marker". Tick-driven boards
+// re-resolve on every entity change (30Hz+); without this the walk pays full
+// tree size per render even though only the marker leaves can change.
+const markerPresenceCache = new WeakMap<object, boolean>();
+
+function subtreeHasMarker(value: object): boolean {
+  const cached = markerPresenceCache.get(value);
+  if (cached !== undefined) return cached;
+  let found = false;
+  const children: readonly SlotPropValue[] = Array.isArray(value)
+    ? value
+    : Object.values(value as Record<string, SlotPropValue>);
+  for (const child of children) {
+    if (isRenderBindingMarker(child)) { found = true; break; }
+    if (Array.isArray(child) || isPlainObject(child)) {
+      if (subtreeHasMarker(child)) { found = true; break; }
+    }
+  }
+  markerPresenceCache.set(value, found);
+  return found;
+}
+
 function walkValue(
   value: SlotPropValue,
   scopeTrait: string | undefined,
@@ -61,6 +84,7 @@ function walkValue(
     return { resolved: resolveMarkerExpression(value.expression, entity, config, state), changed: true };
   }
   if (Array.isArray(value)) {
+    if (!subtreeHasMarker(value)) return { resolved: value as SlotPropValue, changed: false };
     // A marker in array position may evaluate to an array itself (an
     // `array/map` children expression) — splice it flat so consumers keep
     // receiving plain node lists.
@@ -81,6 +105,7 @@ function walkValue(
     return changed ? { resolved: out as SlotPropValue, changed: true } : { resolved: value as SlotPropValue, changed: false };
   }
   if (isPlainObject(value)) {
+    if (!subtreeHasMarker(value)) return { resolved: value as SlotPropValue, changed: false };
     // Foreign-scoped subtree (multi-source stack child) — its own
     // SlotContentRenderer resolves it against its trait's bindings.
     const sourceTrait = (value as { _sourceTrait?: SlotPropValue })._sourceTrait;

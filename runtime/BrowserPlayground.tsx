@@ -106,7 +106,7 @@ export function BrowserPlayground({
     unregister: async () => {
       runtime.unregisterAll();
     },
-    sendEvent: async (orbitalName, event, payload?) => {
+    sendEvent: async (orbitalName, event, payload?, _clientId?, tick?, sourceTrait?) => {
       // Gate every dispatch on registration completing. TraitInitializer's
       // INIT useEffect runs before our parent register useMemo's promise
       // resolves; without this await, INIT lands in an empty runtime and
@@ -122,9 +122,14 @@ export function BrowserPlayground({
       // narrows to `EventPayload` (structured value type). Single-step cast
       // at this boundary is the same widening every HTTP transport already
       // does on JSON.parse — runtime contract enforced server-side.
+      // tick/sourceTrait (T6) pass through to the request; the coalesced
+      // cross-tab relay is a no-op here — in-process is single-tab by
+      // construction, no SSE sink is wired.
       return runtime.processOrbitalEvent(orbitalName, {
         event,
         payload: payload as EventPayload | undefined,
+        tick,
+        sourceTrait,
         // @almadar/runtime OrbitalEventResponse.clientEffects uses a wider ClientEffectTuple than
         // ServerBridge's local definition — cast at this boundary (upstream fix queued).
       }) as ReturnType<ServerBridgeTransport['sendEvent']>;
