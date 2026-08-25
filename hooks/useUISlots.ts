@@ -35,6 +35,7 @@ import type React from 'react';
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import type { EventPayloadValue, RenderItemLambda, UISlot } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
+import { reconcileSlotProps } from '../lib/reconcile-slot-content';
 
 // Slot lifecycle diagnostic. Records every render-write + clear so a
 // missing log means the slot manager never saw the call (the bug is
@@ -495,6 +496,34 @@ export function useUISlotManager(): UISlotManager {
             newPriority: content.priority,
           });
           return prev;
+        }
+
+        // Structural sharing (R-SLOT-FLUSH-IDENTITY-CHURN): a tick-rate
+        // re-flush of the same descriptor rebuilds the whole props tree but
+        // changes nothing — `@entity` leaves arrive as markers whose
+        // expression is the same parsed-AST node every flush. Reconcile and
+        // reuse the existing identities; when NOTHING changed, bail the
+        // write entirely so no subscriber notifies and no React reconcile
+        // runs. Auto-dismiss content is excluded: bailing would strand the
+        // freshly-reset timer on a content object that was never stored.
+        if (
+          existing &&
+          existing.priority === content.priority &&
+          existing.pattern === content.pattern &&
+          existing.animation === content.animation &&
+          existing.transitionEvent === content.transitionEvent &&
+          existing.fromState === content.fromState &&
+          existing.entity === content.entity &&
+          existing.nodeId === content.nodeId &&
+          existing.autoDismissAt === undefined && content.autoDismissAt === undefined &&
+          (existing.onDismiss === undefined) === (content.onDismiss === undefined)
+        ) {
+          const reconciled = reconcileSlotProps(existing.props, content.props);
+          if (reconciled.equal) {
+            log.debug('slot:flush-bail', { slot: config.target, sourceKey, pattern: content.pattern });
+            return prev;
+          }
+          content.props = reconciled.value;
         }
 
         const nextSources: SlotSources = {

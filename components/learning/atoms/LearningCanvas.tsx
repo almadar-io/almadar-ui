@@ -16,6 +16,7 @@
 import * as React from 'react';
 import { useEffect, useRef, useCallback, useMemo } from 'react';
 import { cn } from '../../../lib/cn';
+import { perfEnd, perfStart } from '../../../lib/perf';
 import { useEventBus } from '../../../hooks/useEventBus';
 import type { UiError } from '../../core/atoms/types';
 
@@ -591,6 +592,7 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
   }, [shapes, traces, readouts, width, height]);
 
   const draw = useCallback(() => {
+    const _perfT = perfStart('learningcanvas:paint');
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -616,6 +618,7 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
     for (const shape of derivedShapes) {
       if (shape.type === 'text') drawShape(ctx, shape, width, height, derivedShapes);
     }
+    perfEnd('learningcanvas:paint', _perfT);
   }, [width, height, backgroundColor, derivedShapes]);
 
   useEffect(() => {

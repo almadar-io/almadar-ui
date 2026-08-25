@@ -90,4 +90,36 @@ describe('resolveRenderBindingMarkers', () => {
     expect(children[1].content).toBe('a');
     expect(children[2].content).toBe('b');
   });
+
+  it('memoizes per (marker, entity, config, state): repeat inputs preserve the original container identity', () => {
+    const m = marker('@entity.hp');
+    const props: SlotProps = { value: m, other: 'static' };
+    const entity = { hp: 7 };
+    const first = resolveRenderBindingMarkers(props, 'Hero', entity, undefined, 'playing');
+    expect(first.value).toBe(7);
+    expect(first).not.toBe(props);
+    // Cache hit reports unchanged, so the walk returns the ORIGINAL props
+    // reference — non-entity re-renders keep a stable identity downstream.
+    const second = resolveRenderBindingMarkers(props, 'Hero', entity, undefined, 'playing');
+    expect(second).toBe(props);
+  });
+
+  it('a new entity snapshot re-resolves (cache keyed on snapshot identity)', () => {
+    const m = marker('@entity.hp');
+    const props: SlotProps = { value: m };
+    const first = resolveRenderBindingMarkers(props, 'Hero', { hp: 7 }, undefined, 'playing');
+    const second = resolveRenderBindingMarkers(props, 'Hero', { hp: 9 }, undefined, 'playing');
+    expect(second.value).toBe(9);
+    expect(second).not.toBe(first);
+  });
+
+  it('state changes re-resolve even with the same entity snapshot', () => {
+    const m = marker('@entity.hp');
+    const props: SlotProps = { value: m };
+    const entity = { hp: 7 };
+    const a = resolveRenderBindingMarkers(props, 'Hero', entity, undefined, 'playing');
+    const b = resolveRenderBindingMarkers(props, 'Hero', entity, undefined, 'dead');
+    expect(b).not.toBe(props);
+    expect(b).not.toBe(a);
+  });
 });

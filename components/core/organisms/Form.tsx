@@ -643,7 +643,7 @@ export const Form: React.FC<FormProps> = ({
           });
           debug(
             "forms",
-            `Calculation triggered: ${calc.variableName} = ${value}`,
+            `Calculation triggered: ${calc.variableName} = ${String(value)}`,
           );
         }
       });

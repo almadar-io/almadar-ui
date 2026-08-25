@@ -56,7 +56,55 @@ function isPlainObject(value: SlotPropValue): value is { readonly [key: string]:
 // tree size per render even though only the marker leaves can change.
 const markerPresenceCache = new WeakMap<object, boolean>();
 
+// Marker resolution is pure in (marker expression, entity snapshot, config,
+// state), and the flush sink's structural sharing keeps marker object
+// identity stable across re-flushes — so memoize per marker object keyed on
+// the input identities. Two wins: the slot-level walk and the nested
+// SlotContentRenderer walk resolve the same marker ONCE per entity commit
+// instead of twice, and a cache hit reports `changed: false`, which lets the
+// walk return the ORIGINAL container identity on non-entity renders — the
+// downstream trait-ref scans then hit THEIR identity caches instead of
+// re-walking freshly-resolved arrays every render.
+interface MarkerResolution {
+  entity: EntityRow;
+  config: TraitConfig | undefined;
+  state: string;
+  resolved: SlotPropValue;
+}
+const markerResolutionCache = new WeakMap<object, MarkerResolution>();
+
+// Certified marker-free containers. The slot-level walk deep-resolves the
+// whole tree, then every nested SlotContentRenderer re-runs
+// `resolveRenderBindingMarkers` on ITS slice — the slice's containers are
+// the parent's freshly-rebuilt objects, so the identity presence cache can
+// never hit and the walk re-scans the full depth per commit per renderer.
+// Branding every container the walk returns (marker-free by construction:
+// unchanged = certified by the presence scan, rebuilt = markers just
+// resolved) makes the nested re-walks O(1). Foreign `_sourceTrait`
+// subtrees are NEVER branded — their own renderer must still resolve the
+// markers they carry.
+const resolvedMarkerFree = new WeakSet<object>();
+
+// Direct outputs of marker evaluation are evaluator-produced DATA, not
+// authored descriptors — `@trait.X` composition refs are authored literals
+// in the raw tree and never appear here. The trait-ref substitution scan
+// (`subtreeHasTraitRef` in UISlotRenderer) skips branded data containers
+// instead of re-walking e.g. a 400-point canvas array every commit.
+const evaluatorResolvedData = new WeakSet<object>();
+
+/** True for containers produced by marker evaluation (runtime data). */
+export function isEvaluatorResolvedData(value: object): boolean {
+  return evaluatorResolvedData.has(value);
+}
+
+function brandResolved(value: SlotPropValue): void {
+  if (value !== null && typeof value === 'object' && !React.isValidElement(value) && !(value instanceof Date)) {
+    resolvedMarkerFree.add(value as object);
+  }
+}
+
 function subtreeHasMarker(value: object): boolean {
+  if (resolvedMarkerFree.has(value)) return false;
   const cached = markerPresenceCache.get(value);
   if (cached !== undefined) return cached;
   let found = false;
@@ -81,10 +129,25 @@ function walkValue(
   state: string,
 ): { resolved: SlotPropValue; changed: boolean } {
   if (isRenderBindingMarker(value)) {
-    return { resolved: resolveMarkerExpression(value.expression, entity, config, state), changed: true };
+    const cached = markerResolutionCache.get(value);
+    if (cached !== undefined && cached.entity === entity && cached.config === config && cached.state === state) {
+      return { resolved: cached.resolved, changed: false };
+    }
+    const resolved = resolveMarkerExpression(value.expression, entity, config, state);
+    markerResolutionCache.set(value, { entity, config, state, resolved });
+    // Evaluator output is data: brand it so both the marker scan and the
+    // trait-ref scan skip it (see the WeakSet notes above).
+    if (resolved !== null && typeof resolved === 'object' && !React.isValidElement(resolved) && !(resolved instanceof Date)) {
+      resolvedMarkerFree.add(resolved as object);
+      evaluatorResolvedData.add(resolved as object);
+    }
+    return { resolved, changed: true };
   }
   if (Array.isArray(value)) {
-    if (!subtreeHasMarker(value)) return { resolved: value as SlotPropValue, changed: false };
+    if (!subtreeHasMarker(value)) {
+      brandResolved(value);
+      return { resolved: value as SlotPropValue, changed: false };
+    }
     // A marker in array position may evaluate to an array itself (an
     // `array/map` children expression) — splice it flat so consumers keep
     // receiving plain node lists.
@@ -102,12 +165,17 @@ function walkValue(
       out.push(resolved);
       if (itemChanged) changed = true;
     }
+    brandResolved(out);
     return changed ? { resolved: out as SlotPropValue, changed: true } : { resolved: value as SlotPropValue, changed: false };
   }
   if (isPlainObject(value)) {
-    if (!subtreeHasMarker(value)) return { resolved: value as SlotPropValue, changed: false };
+    if (!subtreeHasMarker(value)) {
+      brandResolved(value);
+      return { resolved: value as SlotPropValue, changed: false };
+    }
     // Foreign-scoped subtree (multi-source stack child) — its own
-    // SlotContentRenderer resolves it against its trait's bindings.
+    // SlotContentRenderer resolves it against its trait's bindings. Never
+    // branded: it still carries markers for that renderer.
     const sourceTrait = (value as { _sourceTrait?: SlotPropValue })._sourceTrait;
     if (typeof sourceTrait === 'string' && sourceTrait !== scopeTrait) {
       return { resolved: value as SlotPropValue, changed: false };
@@ -119,6 +187,7 @@ function walkValue(
       out[key] = resolved;
       if (itemChanged) changed = true;
     }
+    brandResolved(out as SlotPropValue);
     return changed ? { resolved: out as SlotPropValue, changed: true } : { resolved: value as SlotPropValue, changed: false };
   }
   return { resolved: value, changed: false };
@@ -138,6 +207,10 @@ export function resolveRenderBindingMarkers(
   config: TraitConfig | undefined,
   state: string,
 ): SlotProps {
+  // Already resolved by an enclosing walk (the slot-level renderer resolves
+  // the whole tree; nested SlotContentRenderers re-enter per pattern) — the
+  // brand certifies marker-free, so re-walking would only re-scan.
+  if (resolvedMarkerFree.has(props)) return props;
   const out: Record<string, SlotPropValue> = {};
   let changed = false;
   for (const [key, value] of Object.entries(props)) {
@@ -145,5 +218,6 @@ export function resolveRenderBindingMarkers(
     out[key] = resolved;
     if (propChanged) changed = true;
   }
+  brandResolved(out as SlotProps);
   return changed ? (out as SlotProps) : props;
 }

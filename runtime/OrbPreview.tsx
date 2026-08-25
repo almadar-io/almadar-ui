@@ -331,7 +331,7 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
   // orbitals' UI stacked at once. `dispatchedOrbitals` (passed by
   // useTraitStateMachine) is the set of owning orbitals for the traits that
   // actually executed; only those need a server round-trip.
-  const onEventProcessed = useCallback(async (
+  const onEventProcessed = useCallback((
     event: string,
     payload?: EventPayload,
     dispatchedOrbitals?: Set<string>,
@@ -357,9 +357,13 @@ function TraitInitializer({ traits, routeParams, orbitalNames, onNavigate, onNav
         void bridge.sendEvent(name, event, withActiveTraits(payload), tick, sourceTrait);
         continue;
       }
-      const { effects, meta } = await bridge.sendEvent(name, event, withActiveTraits(payload));
-      recordServerResponse(name, event, meta);
-      applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNames, onNavigateBack);
+      // T7: the drain no longer awaits the round trip — response application
+      // continues here, and the bridge's command pump keeps the applications
+      // in dispatch order (request N+1 leaves only after response N landed).
+      void bridge.sendEvent(name, event, withActiveTraits(payload)).then(({ effects, meta }) => {
+        recordServerResponse(name, event, meta);
+        applyServerEffects(effects, uiSlots, onNavigate, embeddedTraits, activeTraitNames, onNavigateBack);
+      });
     }
   }, [bridge.connected, bridge.sendEvent, orbitalNames, uiSlots, onNavigate, onNavigateBack, embeddedTraits, activeTraitNames, withActiveTraits]);
 
@@ -1019,18 +1023,28 @@ export function OrbPreview({
   // page refresh lands on the same orbital page (the playground reads
   // `?page=...` on mount as `initialPagePath`). MemoryRouter doesn't
   // sync to the URL on its own — we drive that explicitly here.
-  const handleNavigate = useCallback((path: string) => {
+  const handleNavigate = useCallback((path: string, navState?: Record<string, string>) => {
     // Pattern-aware page matching: `/threads/abc` matches the declared
     // `/threads/:id` (exact paths still match — matchPath handles both).
     // Route params merge into the target page's INIT payload downstream.
     // A static route outranks a `:param` sibling whatever the declaration order.
+    //
+    // `navState` is the navigate effect's second argument — `(navigate path
+    // { k: v } { crumb })`. It used to be dropped at this signature, so the
+    // runtime path delivered ONLY keys that happened to also be route params
+    // while the compiled path merged the whole object (codegen emits
+    // `initPayload: useLocation().state`, merged as
+    // `{...routeParams, ...initPayload}` — orbital-shell-typescript
+    // backend/pages.rs + codegen/effect/client.rs). Explicit state wins over
+    // the pattern match, same precedence as the compiled merge.
     const hit = matchPathAmong(pages, path, (entry) => entry.page.path);
     const match: { page: { name?: string; path?: string } } | undefined = hit?.candidate;
-    const params: Record<string, string> = hit?.params ?? {};
+    const params: Record<string, string> = { ...(hit?.params ?? {}), ...(navState ?? {}) };
     navLog.debug('handleNavigate', () => ({
       path,
       matched: match?.page.name ?? null,
       params,
+      navState: navState ? JSON.stringify(navState) : undefined,
       availablePaths: pages.map((p) => p.page.path),
     }));
     if (match?.page.name) {
@@ -1054,9 +1068,9 @@ export function OrbPreview({
   // effect carried one) before the page switch; the provider's sync consumes
   // it on arrival. Anchor clicks / UI:NAVIGATE keep plain handleNavigate.
   const handleNavigateEffect = useCallback(
-    (path: string, _params?: Record<string, string>, crumb?: string) => {
+    (path: string, params?: Record<string, string>, crumb?: string) => {
       navStackRef.current?.beginNavigate(path, crumb);
-      handleNavigate(path);
+      handleNavigate(path, params);
     },
     [handleNavigate],
   );

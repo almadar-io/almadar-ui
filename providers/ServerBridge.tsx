@@ -18,12 +18,14 @@
  * @packageDocumentation
  */
 
-import { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import type { ReactNode } from 'react';
 import type { BusEventSource, EntityRow, EventPayload, OrbitalSchema, SExpr } from '@almadar/core';
 import type { AnyPatternConfig } from '@almadar/core/patterns';
 import { useEventBus } from '../hooks/useEventBus';
 import type { EventBusContextType } from '../types/event-bus-types';
+import { createTickSendRelay, type TickSendRelay } from '../lib/tick-send-relay';
+import { createCommandSendPump } from '../lib/command-send-pump';
 import { createLogger } from '@almadar/logger';
 
 /** Wire-format client effect tuple from the server response. */
@@ -48,6 +50,15 @@ interface RemoteBusEvent {
   event: string;
   payload?: EventPayload;
   source?: BusEventSource;
+}
+
+/** One tick snapshot in the T8 send relay's lane (newest-wins per key). */
+interface TickSnapshot {
+  orbitalName: string;
+  event: string;
+  payload?: EventPayload;
+  tick: string;
+  sourceTrait?: string;
 }
 
 /**
@@ -395,6 +406,34 @@ export function ServerBridgeProvider({
 
   // Send event to orbital, returns enriched client effects + response metadata.
   // Cascade-rebroadcast logic is identical for HTTP and in-process transports.
+  //
+  // T8: the tick leg never awaits the transport per firing. Tick snapshots go
+  // through `tickRelay` (lib/tick-send-relay.ts) — newest-wins coalescing with
+  // a one-in-flight cap per (orbital, event) lane — so a slow server drops
+  // stale intermediates instead of backlogging the browser connection pool
+  // and starving command fetches (R-CLIENT-TICK-POST-BACKLOG).
+  const tickRelay: TickSendRelay<TickSnapshot> = useMemo(
+    () => createTickSendRelay<TickSnapshot>(async (_key, snap) => {
+      await transport.sendEvent(snap.orbitalName, snap.event, snap.payload, getTabClientId(), snap.tick, snap.sourceTrait);
+    }),
+    [transport],
+  );
+  useEffect(() => () => tickRelay.clear(), [tickRelay]);
+
+  // T7: command-class events are a lossless ordered stream — one in flight,
+  // FIFO (lib/command-send-pump.ts). Serial sends give the server ordered
+  // commands AND the client ordered responses with no seq machinery; the
+  // caller's drain never awaits the round trip, so network latency stays off
+  // the input path (R-COMMAND-DRAIN-AWAIT-INPUT-LAG). Ticks never enter here.
+  const commandPump = useMemo(createCommandSendPump, []);
+  const disposedRef = useRef(false);
+  useEffect(() => {
+    disposedRef.current = false;
+    return () => {
+      disposedRef.current = true;
+    };
+  }, []);
+
   const sendEvent = useCallback(async (
     orbitalName: string,
     event: string,
@@ -405,16 +444,24 @@ export function ServerBridgeProvider({
     const emptyMeta: ServerResponseMeta = { success: false, clientEffects: 0, dataEntities: {}, emittedEvents: [] };
     if (!connected) return { effects: [], meta: emptyMeta };
 
-    try {
+    // T6 + T8: a tick-stamped broadcast is relayed coalesced; its response is
+    // discarded wholesale — no effect application, no cascade re-emit. The
+    // server relays the broadcast to other tabs coalesced; this tab's newest
+    // state is local.
+    if (tick !== undefined) {
+      tickRelay.send(`${orbitalName}:${event}`, { orbitalName, event, payload, tick, sourceTrait });
+      return { effects: [], meta: { ...emptyMeta, success: true } };
+    }
+
+    // T7: the round trip runs inside the pump — serialized, ordered — and the
+    // returned promise settles when THIS event's response has been applied;
+    // the drain has already moved on (OrbPreview applies via `.then`).
+    return commandPump.enqueue(async (): Promise<SendEventResult> => {
+      if (disposedRef.current) return { effects: [], meta: emptyMeta };
+
+      try {
       const result: OrbitalEventResponse = await transport.sendEvent(orbitalName, event, payload, getTabClientId(), tick, sourceTrait);
       const effects: ServerClientEffect[] = [];
-
-      // T6: a tick-stamped broadcast's response is discarded wholesale —
-      // no effect application, no cascade re-emit. The server relays the
-      // broadcast to other tabs coalesced; this tab's newest state is local.
-      if (tick !== undefined) {
-        return { effects, meta: { ...emptyMeta, success: !!result.success, error: result.error } };
-      }
 
       // Build metadata from raw response
       const responseData = result.data || {};
@@ -560,8 +607,9 @@ export function ServerBridgeProvider({
         });
       }
       return { effects: [], meta: { ...emptyMeta, error: msg } };
-    }
-  }, [connected, transport, eventBus]);
+      }
+    });
+  }, [connected, transport, eventBus, tickRelay, commandPump]);
 
   // Register on mount, unregister on unmount
   useEffect(() => {

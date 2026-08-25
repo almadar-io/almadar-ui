@@ -45,6 +45,7 @@ import {
 import { evaluate, evaluateGuard, executeEffects, createMinimalContext, evaluateListenPayloadExpr, type EvaluationContext } from '@almadar/evaluator';
 import { createClientEffectHandlers } from '../lib/createClientEffectHandlers';
 import { enqueueEvent, type QueuedEventEntry } from '../lib/event-queue-coalesce';
+import { perfEnd, perfGauge, perfStart, perfTimeAsync } from '../lib/perf';
 import type { ResolvedTraitBinding, ResolvedTraitListener } from '../types/runtime-types';
 import type { SlotPatternEntry, SlotSource } from '../types/slot-types';
 import type { useUISlots, SlotProps } from '../providers/UISlotContext';
@@ -1379,6 +1380,12 @@ export function useTraitStateMachine(
     useEffect(() => {
         const scheduler = createTickScheduler();
 
+        // Perf probe: time each tick firing under a per-(trait, tick) bucket.
+        // perfTimeAsync is a near-passthrough when the perf gate is off
+        // (perfStart returns -1), so call sites stay unconditioned.
+        const timedTick = (key: string, fn: () => Promise<void> | void) => () =>
+            perfTimeAsync(key, fn);
+
         // Per-tick classification for shared entities. A tick is scheduled
         // through runTickFrame ONLY when it is a pure writer (set, no render-ui).
         // Ticks that paint (render-ui/render) must run through the full
@@ -1401,7 +1408,7 @@ export function useTraitStateMachine(
             }
             for (const entries of ticksByInterval.values()) {
                 const interval = entries[0].tick.interval;
-                const onDue = () => {
+                const onDue = timedTick(`tick:shared:${group.storeKey}@${String(interval)}`, () => {
                     const writers = entries.map(({ binding, tick }) =>
                         createSharedEntityWriter(binding, tick, traitStatesRef, emitFromSharedWriter),
                     );
@@ -1410,7 +1417,7 @@ export function useTraitStateMachine(
                     // carry, so their marked props re-resolve against the
                     // just-committed frame with no repaint pass.
                     runTickFrame(group.storeKey, writers, sharedEntityStore);
-                };
+                });
                 if (interval === 'frame') {
                     scheduler.add(0, onDue);
                 } else if (typeof interval === 'number') {
@@ -1430,19 +1437,20 @@ export function useTraitStateMachine(
                 if (sharedKey !== undefined && pureWriterTickKeys.has(`${binding.trait.name}::${tick.name}`)) {
                     continue;
                 }
+                const tickKey = `tick:${binding.trait.name}::${tick.name}`;
                 if (tick.interval === 'frame') {
-                    scheduler.add(0, () => runTickEffects(tick, binding));
+                    scheduler.add(0, timedTick(tickKey, () => runTickEffects(tick, binding)));
                 } else if (typeof tick.interval === 'number') {
-                    scheduler.add(tick.interval, () => runTickEffects(tick, binding));
+                    scheduler.add(tick.interval, timedTick(tickKey, () => runTickEffects(tick, binding)));
                 } else if (isValidCronExpression(tick.interval)) {
-                    scheduler.addCron(tick.interval, () => runTickEffects(tick, binding));
+                    scheduler.addCron(tick.interval, timedTick(tickKey, () => runTickEffects(tick, binding)));
                 } else {
                     // Not 'frame', not a number, not a valid cron expression —
                     // must be a duration string ('5s'/'1m'/'1h'). Throws
                     // loudly if it's none of the above, rather than the old
                     // `as number` cast silently producing NaN (which
                     // TickScheduler's `add()` then busy-fired on every pass).
-                    scheduler.add(parseDurationString(tick.interval), () => runTickEffects(tick, binding));
+                    scheduler.add(parseDurationString(tick.interval), timedTick(tickKey, () => runTickEffects(tick, binding)));
                 }
             }
         }
@@ -1473,6 +1481,7 @@ export function useTraitStateMachine(
         sourceTrait?: string
     ): Promise<void> => {
         const normalizedEvent = normalizeEventKey(eventKey);
+        const _perfT0 = perfStart('processEvent:total');
         const bindings = traitBindingsRef.current;
         const currentManager = managerRef.current;
 
@@ -1524,6 +1533,7 @@ export function useTraitStateMachine(
         }
 
         // Send event through StateMachineManager (shared runtime)
+        const _perfT1 = perfStart('processEvent:guardMatch');
         const results = currentManager.sendEvent(
             normalizedEvent,
             payload,
@@ -1532,6 +1542,7 @@ export function useTraitStateMachine(
             undefined,
             targetTrait,
         );
+        perfEnd('processEvent:guardMatch', _perfT1);
         crossTraitLog.debug('processEvent:results', {
             event: normalizedEvent,
             executedCount: results.length,
@@ -1626,6 +1637,7 @@ export function useTraitStateMachine(
                 // (fetch/persist/emit) is awaited here — the actor model
                 // requires all effects to complete before the next event
                 // is dequeued.
+                const _perfT2 = perfStart('processEvent:executeAll');
                 const emittedDuringExec = await executeTransitionEffects({
                     binding,
                     // upstream gap: /runtime TransitionResult.effects is unknown[] — they are SExpr at runtime (see Almadar_UI_Gaps.md)
@@ -1637,6 +1649,7 @@ export function useTraitStateMachine(
                     syncOnly: false,
                     log: stateLog,
                 });
+                perfEnd('processEvent:executeAll', _perfT2);
                 emittedByTrait.set(traitName, emittedDuringExec);
                 for (const emittedKey of emittedDuringExec) {
                     bridgeEchoPendingRef.current.set(
@@ -1744,8 +1757,9 @@ export function useTraitStateMachine(
             setTraitStates(currentManager.getAllStates());
         }
 
-        // Forward event to server (dual execution model)
-        // Await so server response (re-fetched data, re-rendered UI) is applied before continuing
+        // Forward event to server (dual execution model). Fire-and-forget:
+        // the bridge applies the response via its own continuation — ordered
+        // by the command pump — so the drain never waits on the network.
         const onEventProcessed = optionsRef.current?.onEventProcessed;
         if (onEventProcessed) {
             // Gap #11: pass the set of orbitals whose traits executed this
@@ -1767,16 +1781,20 @@ export function useTraitStateMachine(
             const relayPayload = targetTrait !== undefined
                 ? { ...(payload ?? {}), _targetTrait: targetTrait }
                 : payload;
-            // T6: tick-stamped broadcasts never block the drain — the server
-            // leg is lossy by contract (coalesced snapshot relay, §3a), so
-            // network latency stays off the input path. Commands (sourceless)
-            // keep the await: ordering + response application are load-bearing.
-            if (tick !== undefined) {
-                void onEventProcessed(normalizedEvent, relayPayload, dispatchedOrbitals, tick, sourceTrait);
-            } else {
-                await onEventProcessed(normalizedEvent, relayPayload, dispatchedOrbitals);
-            }
+            // T7: NEITHER class blocks the drain — ordering no longer comes
+            // from awaiting the network on the input path. Commands are
+            // serialized by the bridge's command pump (request N+1 leaves
+            // after response N: ordered commands, ordered responses, no seq
+            // machinery); tick broadcasts go through the coalescing relay
+            // (lossy by contract, §3a). Local transitions — the user-visible
+            // behavior — run the moment the drain reaches the entry.
+            void onEventProcessed(normalizedEvent, relayPayload, dispatchedOrbitals, tick, sourceTrait);
         }
+        // One start token feeds both buckets: the aggregate and the
+        // per-event-name split (mark/measure degrades gracefully on the
+        // second use; the summary buckets are what we read).
+        perfEnd('processEvent:total', _perfT0);
+        perfEnd(`event:${normalizedEvent}`, _perfT0);
     }, [entities, eventBus, sharedEntityStore]);
 
     /**
@@ -1793,13 +1811,18 @@ export function useTraitStateMachine(
         if (processingRef.current) return;
         processingRef.current = true;
 
+        const _perfT = perfStart('drain:pass');
+        let _perfN = 0;
         try {
             while (eventQueueRef.current.length > 0) {
                 const entry = eventQueueRef.current.shift()!;
+                _perfN++;
                 await processEventQueued(entry.eventKey, entry.payload, entry.targetTrait, entry.tick, entry.sourceTrait);
             }
         } finally {
             processingRef.current = false;
+            perfEnd('drain:pass', _perfT);
+            perfGauge('drain:passEntries', _perfN);
         }
     }, [processEventQueued]);
 
@@ -1813,6 +1836,7 @@ export function useTraitStateMachine(
      */
     const enqueueAndDrain = useCallback((eventKey: string, payload?: EventPayload, targetTrait?: string, tick?: string, sourceTrait?: string) => {
         enqueueEvent(eventQueueRef.current, { eventKey, payload, targetTrait, tick, sourceTrait });
+        perfGauge('queue:depthAtEnqueue', eventQueueRef.current.length);
         void drainEventQueue();
     }, [drainEventQueue]);
 

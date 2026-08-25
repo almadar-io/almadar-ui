@@ -25,6 +25,7 @@ import {
   ProgressBar,
 } from "../atoms/index";
 import { Box } from "../atoms/Box";
+import { Input } from "../atoms/Input";
 import { VStack, HStack } from "../atoms/Stack";
 import { SimpleGrid } from "../molecules/SimpleGrid";
 import { Menu } from "../molecules/Menu";
@@ -448,6 +449,14 @@ export interface DetailPanelProps extends DisplayStateProps {
   /** RECORD-cardinality: renders ONE record (see body collapse below). */
   entity?: EntityRow;
   title?: string;
+  /**
+   * When bound, the title becomes editable in place: clicking it swaps the
+   * heading for an input, Enter or blur commits, Escape reverts. Receives the
+   * committed title and the record's id so the host can persist a partial
+   * update. Unbound, the title stays a plain heading.
+   * @offByDefault
+   */
+  onTitleCommit?: (title: string, id: string) => void;
   subtitle?: string;
   status?: DetailPanelStatus;
   avatar?: React.ReactNode;
@@ -493,6 +502,7 @@ export interface DetailPanelProps extends DisplayStateProps {
 
 export const DetailPanel: React.FC<DetailPanelProps> = ({
   title: propTitle,
+  onTitleCommit,
   subtitle,
   status,
   avatar,
@@ -514,6 +524,8 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
 }) => {
   const eventBus = useEventBus();
   const { t } = useTranslate();
+  // null = not editing; a string = the in-flight title draft.
+  const [titleDraft, setTitleDraft] = React.useState<string | null>(null);
 
   // Support fields and fieldNames (alias) - normalize to string array
   // Check if propFields contains FieldDef (string or {key}) or DetailField (has label/value)
@@ -846,6 +858,61 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     </>
   );
 
+  // Editable title (only when a host bound onTitleCommit). A blank draft, or
+  // one equal to the current title, closes the editor without a commit — the
+  // record keeps the name it had rather than being silently emptied.
+  const commitTitle = () => {
+    if (!onTitleCommit) return;
+    const next = (titleDraft ?? "").trim();
+    setTitleDraft(null);
+    if (!next || next === title) return;
+    onTitleCommit(next, normalizedData?.id !== undefined ? String(normalizedData.id) : "");
+  };
+
+  const titleNode =
+    onTitleCommit && titleDraft !== null ? (
+      <Input
+        value={titleDraft}
+        autoFocus
+        aria-label={t("common.title")}
+        className="h-auto py-1 text-3xl font-bold tracking-tight"
+        onChange={(e) => setTitleDraft(e.target.value)}
+        onBlur={commitTitle}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commitTitle();
+          } else if (e.key === "Escape") {
+            e.preventDefault();
+            setTitleDraft(null);
+          }
+        }}
+        data-testid="detail-title-input"
+      />
+    ) : onTitleCommit ? (
+      <Box
+        role="button"
+        tabIndex={0}
+        className="cursor-text rounded px-1 -mx-1 transition-colors hover:bg-muted/40"
+        onClick={() => setTitleDraft(title ?? "")}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setTitleDraft(title ?? "");
+          }
+        }}
+        data-testid="detail-title-editable"
+      >
+        <Typography variant="h2" weight="bold">
+          {title || "Details"}
+        </Typography>
+      </Box>
+    ) : (
+      <Typography variant="h2" weight="bold">
+        {title || "Details"}
+      </Typography>
+    );
+
   const content = (
     <Card variant="elevated">
       <VStack gap="md" className="p-6">
@@ -870,9 +937,7 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
             {avatar}
             <VStack gap="xs" className="min-w-0">
               <HStack align="center" gap="sm" wrap>
-                <Typography variant="h2" weight="bold">
-                  {title || "Details"}
-                </Typography>
+                {titleNode}
                 {statusBadges}
               </HStack>
               {subtitle && (

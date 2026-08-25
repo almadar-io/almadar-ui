@@ -13,6 +13,8 @@ import {
   perfStart,
   perfEnd,
   perfTime,
+  perfTimeAsync,
+  perfGauge,
   clearPerf,
   pushPerfEntry,
   perfStore,
@@ -24,6 +26,8 @@ export {
   perfStart,
   perfEnd,
   perfTime,
+  perfTimeAsync,
+  perfGauge,
   clearPerf,
   type PerfEntry,
 };

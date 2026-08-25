@@ -17,7 +17,7 @@
 import React, { Suspense, createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useEntitySchemaOptional } from "../../../providers/EntitySchemaContext";
 import { useEntityBindingSnapshot } from "../../../providers/EntityBindingContext";
-import { resolveRenderBindingMarkers } from "../../../lib/resolve-render-bindings";
+import { resolveRenderBindingMarkers, isEvaluatorResolvedData } from "../../../lib/resolve-render-bindings";
 import { TraitScopeProvider, useTraitScope } from "../../../providers/TraitScopeProvider";
 import { RenderSlotProvider } from "../../../providers/RenderSlotContext";
 import type { EntityRow, EventPayload, EventPayloadValue, RenderItemLambda, ResolvedEntity } from "@almadar/core";
@@ -1359,6 +1359,9 @@ function isPlainConfigObject(value: object): boolean {
 const traitRefPresenceCache = new WeakMap<object, boolean>();
 
 function subtreeHasTraitRef(value: object): boolean {
+  // Marker-evaluation output is runtime DATA — `@trait.X` composition refs
+  // are authored literals in the raw descriptor and never appear in it.
+  if (isEvaluatorResolvedData(value)) return false;
   const cached = traitRefPresenceCache.get(value);
   if (cached !== undefined) return cached;
   let found = false;
@@ -1459,6 +1462,19 @@ function renderPatternProps(
         <SlotContentRenderer content={childContent} onDismiss={onDismiss} />
       );
     } else if (Array.isArray(value)) {
+      // Hoist the presence scan above the map: a clean array (the common
+      // case — canvas drawables, marker-resolved data, static config lists)
+      // passes through with its identity intact instead of paying a fresh
+      // map + per-item scan every render. Marker-resolved arrays are
+      // evaluator data: they skip the per-item pattern-config probe too
+      // (pattern configs are authored in descriptors, not stored in entity
+      // rows — same contract as the isDataArray schema guard below).
+      if (!isEvaluatorResolvedData(value) && value.some((el) => isPatternConfig(el as SlotPropValue))) {
+        // falls through to the map below — pattern configs need conversion
+      } else if (!subtreeHasTraitRef(value)) {
+        rendered[key] = value;
+        continue;
+      }
       // Schema-declared data array (`items: object` — form `fields`, table
       // `columns`, tabs `items`): an item's `type` is domain data (e.g. a
       // field's input type), never a pattern name, even when it collides

@@ -823,7 +823,11 @@ export const RichBlockEditor: React.FC<RichBlockEditorProps> = ({
     <Card
       variant="bordered"
       padding="none"
-      className={cn("flex flex-col", className)}
+      // Pair the surface with its own foreground: the editor used to live only
+      // inside a dark modal and inherited that panel's light text, so on a
+      // light `bg-card` (inline in a page body) the blocks rendered near-white
+      // on white.
+      className={cn("flex flex-col text-card-foreground", className)}
     >
       {enableBlocks && showToolbar && !readOnly && (
         <Box

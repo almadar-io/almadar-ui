@@ -13,6 +13,7 @@
 import * as React from 'react';
 import { useEffect, useMemo } from 'react';
 import { useEventBus } from '../../../hooks/useEventBus';
+import { perfEnd, perfStart } from '../../../lib/perf';
 import { Card, Typography } from '../../core/atoms/index';
 import { VStack } from '../../core/atoms/Stack';
 import { LearningCanvas } from '../atoms/LearningCanvas';
@@ -255,6 +256,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
   }, [stableKeyMap, stableKeyUpMap, eventBus]);
 
   const derivedShapes: LearningShape[] = useMemo(() => {
+    const _perfT = perfStart('mathcanvas:derive');
     const out: LearningShape[] = [];
 
     const margin = 24;
@@ -521,6 +523,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
     }
 
     out.push(...shapes);
+    perfEnd('mathcanvas:derive', _perfT);
     return out;
   }, [
     width,
