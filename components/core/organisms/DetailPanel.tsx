@@ -9,6 +9,7 @@
  */
 
 import React, { useCallback, useEffect, Suspense, lazy } from "react";
+import { createPortal } from "react-dom";
 import type { EventPayload, EntityRow, FieldValue } from "@almadar/core";
 import type { RelationFieldCardinality } from "../molecules/RelationSelect";
 import type { ItemActionPayload } from "@almadar/core/patterns";
@@ -1074,17 +1075,25 @@ export const DetailPanel: React.FC<DetailPanelProps> = ({
     </Card>
   );
 
-  return (
-    <Box
-      className={cn(
-        slideOver &&
-          "fixed inset-y-0 right-0 w-full max-w-2xl bg-card shadow-lg z-50 overflow-y-auto p-6",
-        className,
-      )}
-    >
+  if (!slideOver) {
+    return <Box className={className}>{content}</Box>;
+  }
+
+  // Portal to <body>, for the same reason Modal does: `position: fixed` is
+  // resolved against the nearest ancestor that establishes containment, and
+  // DashboardLayout's root carries `@container/dashboard`
+  // (`container-type: inline-size`, which implies `contain: layout`). Left in
+  // place, every slide-over in a dashboard app was laid out against that
+  // container instead of the viewport and painted off-screen — the page just
+  // grew a scrollbar. Corpus-wide and long-standing: an untouched
+  // hand-authored slide-over showed it identically, while a non-slide-over
+  // DetailPanel rendered fine, which is how it was isolated.
+  const panel = (
+    <Box className={cn("fixed inset-y-0 right-0 w-full max-w-2xl bg-card shadow-lg z-50 overflow-y-auto p-6", className)}>
       {content}
     </Box>
   );
+  return typeof document === "undefined" ? panel : createPortal(panel, document.body);
 };
 
 DetailPanel.displayName = "DetailPanel";

@@ -661,7 +661,11 @@ export function DataList({
       <Box key={id} data-entity-row data-entity-id={id} onClick={itemClickEvent ? handleRowClick(itemData) : undefined} className={cn(itemClickEvent && 'cursor-pointer')}>
         <Box
           className={cn(
-            'group flex items-center gap-4 transition-all duration-fast',
+            // items-start, not items-center: a multi-line row (title + meta +
+            // progress) centred its action cluster in the vertical middle, so
+            // the buttons floated between the meta fields instead of anchoring
+            // to the title they act on (U-DATALIST-ACTIONS-FLOAT-MID-ROW).
+            'group flex items-start gap-4 transition-all duration-fast',
             isCompact ? 'px-4 py-2' : 'px-6 py-4',
             'hover:bg-muted/80',
             !isCard && !isCompact && 'rounded-lg border border-transparent hover:border-border',
@@ -708,10 +712,25 @@ export function DataList({
                   return (
                     <HStack key={field.name} gap="xs" className="items-center">
                       {field.icon && renderIconInput(field.icon, { size: 'xs', className: 'text-muted-foreground' })}
-                      <Typography variant="caption" color="secondary">
+                      {/* The label is repeated on every row, so printing it
+                          inline turned each record into "Company: X Industry: Y
+                          Email: Z" — four label/value size pairs per row, against
+                          Almadar_UI_Beauty.md 4 ("two sizes maximum in any single
+                          card or section"). Row position is the label here, the
+                          way Gmail and Linear do it; the text stays for screen
+                          readers. Column headers still carry it in TableView, and
+                          DetailPanel still labels every field.
+                          A boolean is the exception and keeps its visible label —
+                          a bare "Yes" names nothing. Same rule DataGrid already
+                          encodes for its boolean branch. */}
+                      <Typography
+                        variant="caption"
+                        color="secondary"
+                        className={cn(field.format !== 'boolean' && 'sr-only')}
+                      >
                         {field.label ?? fieldLabel(field.name)}:
                       </Typography>
-                      <Typography variant="small">
+                      <Typography variant="small" color="secondary">
                         {formatValue(value, field.format, { yes: t('common.yes'), no: t('common.no') })}
                       </Typography>
                     </HStack>
@@ -742,9 +761,14 @@ export function DataList({
           {renderItemActions(itemData)}
         </Box>
 
-        {/* Divider between items (card variant) */}
-        {isCard && !isLast && (
-          <Box className="mx-6 border-b border-border/40" />
+        {/* Divider between items. `compact` is the scanning list that
+            std-browse's master-detail and triage looks both mount
+            (variant: compact) — it had no divider AND no working gap, so
+            records ran together with only a hover tint to separate them
+            (U-DATALIST-COMPACT-NO-ROW-SEPARATION). Gestalt/proximity needs
+            one separator, not none and not both. */}
+        {(isCard || isCompact) && !isLast && (
+          <Box className={cn('border-b border-border/40', isCompact ? 'mx-4' : 'mx-6')} />
         )}
       </Box>
     );
@@ -754,7 +778,13 @@ export function DataList({
     <Box
       className={cn(
         isCard && 'bg-card rounded-xl border border-border shadow-elevation-dialog overflow-hidden',
-        !isCard && gapClass,
+        // `gap-*` is inert on a block container, and Box only emits a display
+        // class when its `display` prop is set — so every non-card list had
+        // been asking for a gap that CSS silently dropped. flex-col makes it
+        // real. `compact` keeps gap-0 on purpose: it separates with the row
+        // divider above instead, never both (Almadar_UI_Beauty.md 6).
+        !isCard && 'flex flex-col',
+        !isCard && !isCompact && gapClass,
         listLookStyles[look],
         className,
       )}

@@ -13,8 +13,8 @@ importers:
   .:
     dependencies:
       '@almadar/core':
-        specifier: ^10.69.0
-        version: 10.69.0
+        specifier: ^10.70.0
+        version: 10.70.0
       '@almadar/evaluator':
         specifier: ^2.42.0
         version: 2.42.0
@@ -22,11 +22,11 @@ importers:
         specifier: ^1.11.0
         version: 1.11.0
       '@almadar/runtime':
-        specifier: ^6.60.0
-        version: 6.60.0(express@5.2.1)
+        specifier: ^6.61.0
+        version: 6.61.0(express@5.2.1)
       '@almadar/std':
-        specifier: ^16.185.0
-        version: 16.185.0
+        specifier: ^16.188.0
+        version: 16.188.0
       '@almadar/syntax':
         specifier: ^1.15.0
         version: 1.15.0
@@ -233,8 +233,8 @@ packages:
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
 
-  '@almadar/core@10.69.0':
-    resolution: {integrity: sha512-bzl29h0GJRnuh0lL1rwHt/JbOifDz5jCg+nqISidF1lM7fGRf+6BkOCGIK3aE/kLqBqVyykPa6M90epfDQJk+Q==}
+  '@almadar/core@10.70.0':
+    resolution: {integrity: sha512-DFu9StGQ0aEWg9oY/87Jl0fZTLBmowoEVyBAAHCgBSS2U+bEWTUh2Ao2H0GJra557aIzrEfINSEVTHQUwtNpMQ==}
 
   '@almadar/eslint-plugin@2.15.0':
     resolution: {integrity: sha512-8mQTnuU7eHOSpCgAag5VEywVce9iWFNC2j6cKvrwjOH/cbak+6Akgnp/zjK3bvy6xoVp6k/4H6bIh/WkRhbfSg==}
@@ -247,8 +247,8 @@ packages:
   '@almadar/logger@1.11.0':
     resolution: {integrity: sha512-rl1NszSOd4iMr759J9OpwaB0hISq22Tnwx0A2cItjXyCO0+nBwVY3gFpHuP52dSRKvZ9iPmxPhhk8ATDVAlQuQ==}
 
-  '@almadar/runtime@6.60.0':
-    resolution: {integrity: sha512-7RGPSYJrsjyQgUEHzqGeco9x4oAc2r7HKGOYNxX1euH5QTbYO3XQEMx482Wuuh9yuMa472Rix0fq9dKUTXiRpQ==}
+  '@almadar/runtime@6.61.0':
+    resolution: {integrity: sha512-SI1WW5BkicGBoQcWWAbNN56qQLxGyeLju6cPbLgsBhEDuN3cK/w9zGFjBQhYCUYnMP2bwhUoDnctABsLmIMj4g==}
     peerDependencies:
       express: ^5.0.0
     peerDependenciesMeta:
@@ -264,8 +264,8 @@ packages:
       '@almadar-io/rabit':
         optional: true
 
-  '@almadar/std@16.185.0':
-    resolution: {integrity: sha512-2yXfgUGaB/F4qrg6FhdDFgP+gossbKMLA17CSQkyuDz7HayYODKlavNasgX6fplFMd86y3fcHNuei/gqZzRc2A==}
+  '@almadar/std@16.188.0':
+    resolution: {integrity: sha512-t/cRig422jdOMrlrfjykaVU3btGF155Lzq1mKoug3ubEDyL9uQMaxFXVND1IeCwCmXLIx8S8sdyJyAhq4YAUbw==}
 
   '@almadar/syntax@1.15.0':
     resolution: {integrity: sha512-p0cDKQfNIyusRm7u4je34RxDQdpOaz3r6SJ1KR/YpqtEIOM8JVw+iikC7xegMGYtSRSU63g3bMPe0cmfvFQPnw==}
@@ -4624,7 +4624,7 @@ snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
 
-  '@almadar/core@10.69.0':
+  '@almadar/core@10.70.0':
     dependencies:
       zod: 3.25.76
 
@@ -4635,20 +4635,20 @@ snapshots:
 
   '@almadar/evaluator@2.42.0':
     dependencies:
-      '@almadar/core': 10.69.0
-      '@almadar/std': 16.185.0
+      '@almadar/core': 10.70.0
+      '@almadar/std': 16.188.0
 
   '@almadar/logger@1.11.0':
     dependencies:
-      '@almadar/core': 10.69.0
+      '@almadar/core': 10.70.0
 
-  '@almadar/runtime@6.60.0(express@5.2.1)':
+  '@almadar/runtime@6.61.0(express@5.2.1)':
     dependencies:
-      '@almadar/core': 10.69.0
+      '@almadar/core': 10.70.0
       '@almadar/evaluator': 2.42.0
       '@almadar/logger': 1.11.0
       '@almadar/server': 2.38.0(express@5.2.1)
-      '@almadar/std': 16.185.0
+      '@almadar/std': 16.188.0
     optionalDependencies:
       express: 5.2.1
     transitivePeerDependencies:
@@ -4660,7 +4660,7 @@ snapshots:
 
   '@almadar/server@2.38.0(express@5.2.1)':
     dependencies:
-      '@almadar/core': 10.69.0
+      '@almadar/core': 10.70.0
       '@almadar/logger': 1.11.0
       '@faker-js/faker': 9.9.0
       cors: 2.8.6
@@ -4678,14 +4678,14 @@ snapshots:
       - supports-color
       - utf-8-validate
 
-  '@almadar/std@16.185.0':
+  '@almadar/std@16.188.0':
     dependencies:
-      '@almadar/core': 10.69.0
+      '@almadar/core': 10.70.0
 
   '@almadar/syntax@1.15.0':
     dependencies:
-      '@almadar/core': 10.69.0
-      '@almadar/std': 16.185.0
+      '@almadar/core': 10.70.0
+      '@almadar/std': 16.188.0
 
   '@asamuzakjp/css-color@3.2.0':
     dependencies:

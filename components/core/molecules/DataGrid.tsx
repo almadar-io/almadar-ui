@@ -717,10 +717,15 @@ export function DataGrid({
                       return (
                         <HStack key={field.name} gap="xs" className="items-center">
                           {field.icon && renderIconInput(field.icon, { size: 'xs', className: 'text-muted-foreground' })}
-                          <Typography variant="caption" color="secondary">
+                          {/* Prefix hidden, not dropped: a card repeats the same
+                              labels on every tile, which is the "too many labels"
+                              noise Almadar_UI_Beauty.md 4 warns about. Screen
+                              readers keep it; the boolean branch above still shows
+                              its label, because a bare Yes/No badge names nothing. */}
+                          <Typography variant="caption" color="secondary" className="sr-only">
                             {(field.label ?? fieldLabel(field.name)) + ':'}
                           </Typography>
-                          <Typography variant="small">
+                          <Typography variant="small" color="secondary">
                             {formatValue(value, field.format)}
                           </Typography>
                         </HStack>
