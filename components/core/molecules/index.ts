@@ -224,7 +224,9 @@ export { QrScanner, type QrScannerProps, type QrScanResult } from './QrScanner';
 export { OptionConstraintGroup, type OptionConstraintGroupProps, type OptionConstraintOption, type OptionConstraint } from './OptionConstraintGroup';
 export { PositionedCanvas, type PositionedCanvasProps, type CanvasItemStatus, type CanvasItemShape } from './PositionedCanvas';
 // Demoted from organisms — no entity binding
-export { RichBlockEditor, type RichBlockEditorProps, type RichBlock, type BlockType } from './RichBlockEditor';
+export { RichTextEditor, sanitizeRichHtml, type RichTextEditorProps } from './RichTextEditor';
+export { DocumentPanel, type DocumentPanelProps, type DocumentPanelAction } from './DocumentPanel';
+export { DocumentDetails, type DocumentDetailsProps, type DocumentDetailsField } from './DocumentDetails';
 export { ReplyTree, type ReplyTreeProps } from './ReplyTree';
 export { BranchingLogicBuilder, type BranchingLogicBuilderProps, type BranchingQuestion, type BranchingRule } from './BranchingLogicBuilder';
 export { VersionDiff, type VersionDiffProps, type DiffRevision, type DiffLine as VersionDiffLine, type DiffLineType } from './VersionDiff';

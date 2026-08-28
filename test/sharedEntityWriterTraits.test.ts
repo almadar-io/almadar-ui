@@ -127,6 +127,48 @@ describe('createSharedEntityWriter — synchronous per-tick write capture', () =
 
         expect(writer({ result: 'done' })).toEqual([]);
     });
+
+    // R-CLIENT-TICK-WRITER-CONFIG-DROPS-RESOLVED-LAYER: page-level bindings
+    // arrive as bare `{ ref, refId }` with NO config, so a writer built from
+    // declared defaults + raw call-site only ran every tick on the atom's
+    // declared defaults — a y-up board overriding `gravity: -24` got the
+    // default +24 and bodies fell UP in the browser while the server path
+    // (which merges the same map) ran correctly.
+    it('merges the traitConfigsByName layer when the binding carries no config', () => {
+        const trait = traitWithTick('Writer', {
+            effects: [['set', '@entity.g', '@config.gravity']],
+        });
+        trait.config = { gravity: { type: 'number', default: 24 } } as ResolvedTrait['config'];
+        const binding = bindingFor(trait, 'Shared');
+        const traitStatesRef = traitStatesRefWith({ Writer: 'active' });
+        const writer = createSharedEntityWriter(binding, trait.ticks[0], traitStatesRef, () => {}, { Writer: { gravity: -24 } });
+
+        expect(writer({})).toEqual([{ field: 'g', value: -24 }]);
+    });
+
+    it('falls back to the declared default when neither layer carries a value', () => {
+        const trait = traitWithTick('Writer', {
+            effects: [['set', '@entity.g', '@config.gravity']],
+        });
+        trait.config = { gravity: { type: 'number', default: 24 } } as ResolvedTrait['config'];
+        const binding = bindingFor(trait, 'Shared');
+        const traitStatesRef = traitStatesRefWith({ Writer: 'active' });
+        const writer = createSharedEntityWriter(binding, trait.ticks[0], traitStatesRef, () => {});
+
+        expect(writer({})).toEqual([{ field: 'g', value: 24 }]);
+    });
+
+    it('an un-chained @config forward in the raw call-site cannot clobber the resolved layer', () => {
+        const trait = traitWithTick('Writer', {
+            effects: [['set', '@entity.g', '@config.gravity']],
+        });
+        trait.config = { gravity: { type: 'number', default: 24 } } as ResolvedTrait['config'];
+        const binding: ResolvedTraitBinding = { trait, linkedEntity: 'Shared', config: { gravity: '@config.gravity' } };
+        const traitStatesRef = traitStatesRefWith({ Writer: 'active' });
+        const writer = createSharedEntityWriter(binding, trait.ticks[0], traitStatesRef, () => {}, { Writer: { gravity: -24 } });
+
+        expect(writer({})).toEqual([{ field: 'g', value: -24 }]);
+    });
 });
 
 describe('runTickFrame + createSharedEntityWriter — several writer traits, one merged commit', () => {

@@ -1942,10 +1942,12 @@ export function UISlotRenderer({
       "ui-slot-renderer relative min-h-full",
       className,
     )}>
-      {/* Layout slots: sidebar + main in a flex row */}
-      <Box className="flex min-h-full">
-        <UISlotComponent slot="sidebar" className="ui-slot-sidebar min-w-0 shrink-0" />
-        <UISlotComponent slot="main" className="ui-slot-main flex-1 min-h-[200px]" />
+      {/* Layout slots: sidebar | main. A row only on large screens — on
+          phones the columns stack. An empty sidebar renders nothing, so
+          pages without one keep the plain full-width main. */}
+      <Box className="flex min-h-full flex-col lg:flex-row">
+        <UISlotComponent slot="sidebar" className="ui-slot-sidebar min-w-0 lg:shrink-0" />
+        <UISlotComponent slot="main" className="ui-slot-main flex-1 min-w-0 min-h-[200px]" />
       </Box>
 
       {/* Portal slots */}

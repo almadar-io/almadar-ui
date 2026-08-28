@@ -300,6 +300,7 @@ export function createSharedEntityWriter(
     tick: ResolvedTraitTick,
     traitStatesRef: MutableRefObject<Map<string, TraitState>>,
     emit: (event: string, payload?: EventPayload, source?: BusEventSource) => void,
+    traitConfigsByName?: Record<string, TraitConfig>,
 ): SharedEntityWriter {
     return (scratch: EntityFrameState): readonly EntityFieldWrite[] => {
         const traitName = binding.trait.name;
@@ -315,10 +316,25 @@ export function createSharedEntityWriter(
         const scratchEntity: EntityRow = { ...scratch };
         const writes: EntityFieldWrite[] = [];
         const ctx: EvaluationContext = createMinimalContext(scratchEntity, {}, currentState);
+        // The same three-layer merge as buildTraitRenderConfig: declared
+        // defaults < traitConfigsByName (resolved call-site values, keyed by
+        // trait name) < raw call-site overrides. The middle layer is not
+        // optional: page-level bindings arrive as bare `{ ref, refId }` with
+        // NO config, so without it every tick ran on the atom's declared
+        // defaults — a board overriding `gravity: -24` (y-up canvas) got the
+        // default +24 and the body fell UP (R-CLIENT-TICK-WRITER-CONFIG-DROPS-RESOLVED-LAYER).
         const declaredDefaults = collectDeclaredConfigDefaults(binding.trait);
-        const callSiteConfig = getBindingConfig(binding);
-        if (declaredDefaults || callSiteConfig) {
-            ctx.config = { ...(declaredDefaults ?? {}), ...(callSiteConfig ?? {}) } as TraitConfig;
+        const resolvedByName = traitConfigsByName?.[traitName];
+        const callSiteRaw = getBindingConfig(binding);
+        // Drop un-chained `@config.X` forwards so they can't clobber the
+        // resolved middle layer (same guard as the transition path).
+        const callSiteConfig = callSiteRaw
+            ? Object.fromEntries(
+                Object.entries(callSiteRaw).filter(([, v]) => !containsConfigForward(v)),
+            )
+            : undefined;
+        if (declaredDefaults || resolvedByName || callSiteConfig) {
+            ctx.config = { ...(declaredDefaults ?? {}), ...(resolvedByName ?? {}), ...(callSiteConfig ?? {}) } as TraitConfig;
         }
         // `evalSet` (the canonical `set` operator implementation) writes
         // through `ctx.mutateEntity` — capture the write for `runTickFrame`
@@ -1410,7 +1426,7 @@ export function useTraitStateMachine(
                 const interval = entries[0].tick.interval;
                 const onDue = timedTick(`tick:shared:${group.storeKey}@${String(interval)}`, () => {
                     const writers = entries.map(({ binding, tick }) =>
-                        createSharedEntityWriter(binding, tick, traitStatesRef, emitFromSharedWriter),
+                        createSharedEntityWriter(binding, tick, traitStatesRef, emitFromSharedWriter, traitConfigsByName),
                     );
                     // The store commit notifies every subscriber — including
                     // the render-time binding markers sibling render traits

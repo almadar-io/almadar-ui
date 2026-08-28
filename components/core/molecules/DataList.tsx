@@ -376,7 +376,10 @@ export function DataList({
     const inline = maxInlineActions != null ? itemActions.slice(0, maxInlineActions) : itemActions;
     const overflow = maxInlineActions != null ? itemActions.slice(maxInlineActions) : [];
     return (
-      <HStack gap="xs" className="flex-shrink-0">
+      // stopPropagation at the cluster: the "⋯" trigger opens the overflow
+      // menu without also firing the row's default click (inline buttons
+      // already stop it in handleActionClick; the Menu panel is portaled).
+      <HStack gap="xs" onClick={rowClickEvent ? (e) => e.stopPropagation() : undefined} className="flex-shrink-0">
         {inline.map((action, idx) => (
           <Button
             key={idx}
@@ -407,7 +410,6 @@ export function DataList({
             items={overflow.map((action) => ({
               label: action.label,
               icon: action.icon,
-              event: action.event,
               variant: action.variant === 'danger' ? 'danger' : 'default',
               onClick: () =>
                 eventBus.emit(`UI:${action.event}`, {
@@ -421,13 +423,20 @@ export function DataList({
     );
   };
 
+  // Explicit itemClickEvent wins; otherwise the first non-danger item action
+  // is the row's default click — the same contract TableView rows carry
+  // (declared `variant` is the semantic marker, and a destructive action
+  // never becomes the default; danger-only rows get no row click).
+  const rowClickEvent: EventKey | undefined =
+    itemClickEvent || itemActions?.find((a) => a.variant !== 'danger')?.event;
+
   const handleRowClick = (itemData: EntityRow) => () => {
-    if (!itemClickEvent) return;
+    if (!rowClickEvent) return;
     const payload: ItemActionPayload = {
       id: itemData.id as string | number,
       row: itemData as ItemActionPayload['row'],
     };
-    eventBus.emit(`UI:${itemClickEvent}`, payload);
+    eventBus.emit(`UI:${rowClickEvent}`, payload);
   };
 
   // Loading state
@@ -516,10 +525,10 @@ export function DataList({
                   key={id}
                   data-entity-row
                   data-entity-id={id}
-                  onClick={itemClickEvent ? handleRowClick(itemData) : undefined}
+                  onClick={rowClickEvent ? handleRowClick(itemData) : undefined}
                   className={cn(
                     'flex px-4 group/rowactions',
-                    itemClickEvent && 'cursor-pointer',
+                    rowClickEvent && 'cursor-pointer',
                     isSent ? 'justify-end' : 'justify-start',
                   )}
                 >
@@ -612,7 +621,7 @@ export function DataList({
       const id = (itemData.id as string) || String(index);
       const actions = renderItemActions(itemData);
       return wrapDnd(
-        <Box key={id} data-entity-row data-entity-id={id} onClick={itemClickEvent ? handleRowClick(itemData) : undefined} className={cn('relative group/rowactions', itemClickEvent && 'cursor-pointer')}>
+        <Box key={id} data-entity-row data-entity-id={id} onClick={rowClickEvent ? handleRowClick(itemData) : undefined} className={cn('relative group/rowactions', rowClickEvent && 'cursor-pointer')}>
           {children(itemData as EntityRow, index)}
           {actions && (
             <Box className="absolute top-2 right-2 z-10 opacity-0 group-hover/rowactions:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity duration-fast">
@@ -634,7 +643,6 @@ export function DataList({
                   items={(itemActions ?? []).map((action) => ({
                     label: action.label,
                     icon: action.icon,
-                    event: action.event,
                     variant: action.variant === 'danger' ? ('danger' as const) : ('default' as const),
                     onClick: () =>
                       eventBus.emit(`UI:${action.event}`, {
@@ -658,7 +666,7 @@ export function DataList({
     const titleValue = getNestedValue(itemData, titleField?.name ?? '');
 
     return wrapDnd(
-      <Box key={id} data-entity-row data-entity-id={id} onClick={itemClickEvent ? handleRowClick(itemData) : undefined} className={cn(itemClickEvent && 'cursor-pointer')}>
+      <Box key={id} data-entity-row data-entity-id={id} onClick={rowClickEvent ? handleRowClick(itemData) : undefined} className={cn(rowClickEvent && 'cursor-pointer')}>
         <Box
           className={cn(
             // items-start, not items-center: a multi-line row (title + meta +

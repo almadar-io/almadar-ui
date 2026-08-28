@@ -536,9 +536,30 @@ export const Form: React.FC<FormProps> = ({
       initialData !== null && typeof initialData === 'object' && !Array.isArray(initialData)
         ? (initialData as EntityRow)
         : {};
-    return entityRowAsInitial !== undefined
+    const merged = entityRowAsInitial !== undefined
       ? { ...entityRowAsInitial, ...callerInitial }
       : callerInitial;
+    // A row fetched with `include` carries hydrated relation rows in place of
+    // their foreign-key ids ({id, name, …} or arrays of them). Forms edit ids —
+    // collapse hydrated values back so pickers/selects seed correctly and the
+    // submit payload stays a valid FK write.
+    const toId = (value: FieldValue | undefined): FieldValue | undefined => {
+      if (value === null || value === undefined || typeof value !== 'object' || value instanceof Date) return value;
+      if (Array.isArray(value)) {
+        return value.map((item) =>
+          item !== null && typeof item === 'object' && !Array.isArray(item) && !(item instanceof Date)
+          && item.id !== undefined && item.id !== null
+            ? String(item.id)
+            : item,
+        );
+      }
+      return value.id !== undefined && value.id !== null ? String(value.id) : value;
+    };
+    const normalized: EntityRow = {};
+    for (const [key, value] of Object.entries(merged)) {
+      normalized[key] = key === 'id' ? value : toId(value);
+    }
+    return normalized;
   }, [entity, initialData]);
   const entityDerivedFields: readonly Readonly<SchemaField>[] | undefined =
     React.useMemo(() => {

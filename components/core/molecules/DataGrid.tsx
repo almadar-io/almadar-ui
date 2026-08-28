@@ -305,9 +305,17 @@ export function DataGrid({
   const badgeFields = fieldDefs.filter((f) => f.variant === 'badge' && f !== titleField);
   const bodyFields = fieldDefs.filter((f) => f !== titleField && !badgeFields.includes(f));
 
-  // Separate actions by variant
-  const primaryActions = actionDefs.filter((a) => a.variant !== 'danger');
-  const dangerActions = actionDefs.filter((a) => a.variant === 'danger');
+  // Card geometry: the title owns the header row. At most ONE explicit
+  // `variant: 'primary'` action stays inline (zero when maxInlineActions is
+  // 0); every ghost and danger action lives under the single "⋯" menu,
+  // danger-styled there — so a fourth action can never starve the title to
+  // a couple of characters (U-DATAGRID-ACTIONS-STARVE-CARD-TITLE,
+  // 2026-08-28: /notes cards rendered View · Edit · History · Delete beside
+  // the title). Wide row layouts (TableView, DataList rows) keep the
+  // maxInlineActions cluster; a narrow card cannot afford it.
+  const inlineCap = Math.min(maxInlineActions ?? 1, 1);
+  const inlineCardActions = actionDefs.filter((a) => a.variant === 'primary').slice(0, inlineCap);
+  const menuCardActions = actionDefs.filter((a) => !inlineCardActions.includes(a));
 
   // navigatesTo-first with early return (mirrors CardGrid): a navigating
   // action must not also emit — the old order double-fired and emitted
@@ -332,6 +340,18 @@ export function DataGrid({
     e.stopPropagation();
     fireAction(action, itemData);
   };
+
+  // The whole card is the default action — the same contract TableView rows
+  // carry: the first non-danger item action fires on card click (declared
+  // `variant` is the semantic marker — no label/name matching — and a
+  // destructive action never becomes the default; danger-only cards get no
+  // card click). Routed through fireAction so a navigatesTo default
+  // navigates instead of emitting.
+  const cardClickAction = actionDefs.find((a) => a.variant !== 'danger');
+  const handleCardClick = cardClickAction
+    ? (itemData: EntityRow) => () => fireAction(cardClickAction, itemData)
+    : undefined;
+  const stopCardClick = handleCardClick ? (e: React.MouseEvent) => e.stopPropagation() : undefined;
 
   const hasRenderProp = typeof children === 'function';
 
@@ -468,28 +488,31 @@ export function DataGrid({
                 key={id}
                 data-entity-row
                 data-entity-id={id}
-                className={cn('relative group/rowactions', isSelected && 'ring-2 ring-primary rounded-lg')}
+                onClick={handleCardClick?.(itemData)}
+                className={cn('relative group/rowactions', handleCardClick && 'cursor-pointer', isSelected && 'ring-2 ring-primary rounded-lg')}
               >
                 {children(itemData, index)}
                 {actionDefs.length > 0 && (
-                  <Box className="absolute top-2 right-2 z-10 opacity-0 group-hover/rowactions:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity duration-fast">
-                    {/* Fine pointers: hover-revealed inline cluster. */}
-                    <HStack gap="xs" className="rounded-md border border-border bg-card/95 backdrop-blur-sm shadow-sm p-0.5 [@media(pointer:coarse)]:hidden">
-                      {(maxInlineActions != null ? actionDefs.slice(0, maxInlineActions) : actionDefs).map((action, idx) => (
+                  <Box onClick={stopCardClick} className="absolute top-2 right-2 z-10 opacity-0 group-hover/rowactions:opacity-100 focus-within:opacity-100 [@media(pointer:coarse)]:opacity-100 transition-opacity duration-fast">
+                    {/* Card rule (same as the fields path): at most one
+                        explicit primary inline, everything else behind one
+                        kebab — an overlay cluster of labeled buttons sat on
+                        the custom card's title. */}
+                    <HStack gap="xs" className="rounded-md border border-border bg-card/95 backdrop-blur-sm shadow-sm p-0.5">
+                      {inlineCardActions.map((action, idx) => (
                         <Button
                           key={idx}
-                          variant={action.variant === 'primary' ? 'primary' : 'ghost'}
+                          variant="primary"
                           size="sm"
                           onClick={handleActionClick(action, itemData)}
                           data-testid={`action-${action.event}`}
                           data-row-id={String(itemData.id)}
-                          className={action.variant === 'danger' ? 'text-error hover:text-error hover:bg-error/10' : undefined}
                         >
                           {action.icon && renderIconInput(action.icon, { size: 'xs', className: 'mr-1' })}
                           {action.label}
                         </Button>
                       ))}
-                      {maxInlineActions != null && actionDefs.length > maxInlineActions && (
+                      {menuCardActions.length > 0 && (
                         <Menu
                           position="bottom-end"
                           trigger={
@@ -497,35 +520,15 @@ export function DataGrid({
                               <Icon name="more-horizontal" size="xs" />
                             </Button>
                           }
-                          items={actionDefs.slice(maxInlineActions).map((action) => ({
+                          items={menuCardActions.map((action) => ({
                             label: action.label,
                             icon: action.icon,
-                            event: action.event,
+                            variant: action.variant === 'danger' ? ('danger' as const) : ('default' as const),
                             onClick: () => fireAction(action, itemData),
                           }))}
                         />
                       )}
                     </HStack>
-                    {/* Coarse pointers have no hover, so the cluster is always
-                        visible — an inline row would sit on the card's title
-                        at phone widths (verified at 390px). One kebab holding
-                        every action cannot overlap anything meaningful. */}
-                    <Box className="hidden [@media(pointer:coarse)]:block rounded-md border border-border bg-card/95 backdrop-blur-sm shadow-sm p-0.5">
-                      <Menu
-                        position="bottom-end"
-                        trigger={
-                          <Button variant="ghost" size="sm" aria-label={t('common.actions')} data-testid="action-overflow">
-                            <Icon name="more-horizontal" size="xs" />
-                          </Button>
-                        }
-                        items={actionDefs.map((action) => ({
-                          label: action.label,
-                          icon: action.icon,
-                          event: action.event,
-                          onClick: () => fireAction(action, itemData),
-                        }))}
-                      />
-                    </Box>
                   </Box>
                 )}
               </Box>
@@ -540,12 +543,14 @@ export function DataGrid({
               key={id}
               data-entity-row
               data-entity-id={id}
+              onClick={handleCardClick?.(itemData)}
               className={cn(
                 'bg-card rounded-lg',
                 'border border-border',
                 'shadow-elevation-card hover:shadow-elevation-dialog',
                 'hover:border-primary transition-all',
                 'flex flex-col',
+                handleCardClick && 'cursor-pointer',
                 isSelected && 'ring-2 ring-primary border-primary',
               )}
             >
@@ -607,39 +612,33 @@ export function DataGrid({
                     </HStack>
                   )}
                 </VStack>
-                {/* Header action cluster: inline primaries (capped by
-                    maxInlineActions, rest in a "⋯" menu) + icon-only danger.
-                    Living on the title row keeps the card free of a footer
-                    band — one surface separation (the card border), no
-                    second divider, no dead bottom space. Danger stays
-                    icon-only so a destructive action is never the loudest
-                    thing in the card. */}
-                {(primaryActions.length > 0 || dangerActions.length > 0) && (
-                  <HStack gap="xs" className="flex-shrink-0">
-                    {/* Icon-only when an icon exists: two labeled buttons in a
-                        ~240px card starve the title down to a single character
-                        (the label rides in title/aria-label instead). */}
-                    {(maxInlineActions != null ? primaryActions.slice(0, maxInlineActions) : primaryActions).map((action, idx) => (
+                {/* Header action cluster: the title owns this row, so at
+                    most ONE explicit primary action rides inline (icon-only
+                    when it has an icon) and every other action — ghost and
+                    danger alike — lives under the single "⋯" menu, danger-
+                    styled there. Four inline buttons used to starve the
+                    title to a couple of characters
+                    (U-DATAGRID-ACTIONS-STARVE-CARD-TITLE). */}
+                {actionDefs.length > 0 && (
+                  <HStack gap="xs" onClick={stopCardClick} className="flex-shrink-0">
+                    {inlineCardActions.map((action, idx) => (
                       <Button
                         key={idx}
-                        variant={action.variant === 'primary' ? 'primary' : 'ghost'}
+                        variant="primary"
                         size="sm"
                         onClick={handleActionClick(action, itemData)}
                         data-testid={`action-${action.event}`}
                         data-row-id={String(itemData.id)}
                         aria-label={action.label}
                         title={action.label}
-                        className={cn(
-                          action.variant === 'primary' ? undefined : 'text-muted-foreground hover:text-foreground',
-                          action.icon && 'px-2',
-                        )}
+                        className={cn(action.icon && 'px-2')}
                       >
                         {action.icon
                           ? renderIconInput(action.icon, { size: 'xs' })
                           : action.label}
                       </Button>
                     ))}
-                    {maxInlineActions != null && primaryActions.length > maxInlineActions && (
+                    {menuCardActions.length > 0 && (
                       <Menu
                         position="bottom-end"
                         trigger={
@@ -647,31 +646,14 @@ export function DataGrid({
                             <Icon name="more-horizontal" size="xs" />
                           </Button>
                         }
-                        items={primaryActions.slice(maxInlineActions).map((action) => ({
+                        items={menuCardActions.map((action) => ({
                           label: action.label,
                           icon: action.icon,
-                          event: action.event,
+                          variant: action.variant === 'danger' ? ('danger' as const) : ('default' as const),
                           onClick: () => fireAction(action, itemData),
                         }))}
                       />
                     )}
-                    {dangerActions.map((action, idx) => (
-                      <Button
-                        key={`danger-${idx}`}
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleActionClick(action, itemData)}
-                        data-testid={`action-${action.event}`}
-                        data-row-id={String(itemData.id)}
-                        aria-label={action.label}
-                        title={action.label}
-                        className="text-error hover:text-error hover:bg-error/10 px-2"
-                      >
-                        {action.icon
-                          ? renderIconInput(action.icon, { size: 'xs' })
-                          : action.label}
-                      </Button>
-                    ))}
                   </HStack>
                 )}
               </HStack>
