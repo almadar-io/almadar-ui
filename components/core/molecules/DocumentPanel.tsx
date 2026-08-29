@@ -53,6 +53,12 @@ export interface DocumentPanelProps {
   title?: string;
   /** Muted byline under the title; hidden when empty */
   subtitle?: string;
+  /** Cover/hero image URL painted as a full-bleed banner above the header
+   *  row (Notion/article-hero shape); hidden when empty */
+  coverImage?: string;
+  /** Document icon rendered beside the title (a file glyph, a domain icon);
+   *  hidden when empty */
+  icon?: IconInput;
   /** The document body as rich-text HTML */
   value?: string;
   /** Header actions (settings, history, …). At most one explicit primary
@@ -88,6 +94,8 @@ export function DocumentPanel({
   id,
   title,
   subtitle,
+  coverImage,
+  icon,
   value,
   actions,
   maxInlineActions,
@@ -184,13 +192,31 @@ export function DocumentPanel({
   };
 
   return (
-    <Card variant="elevated" className={cn('w-full', className)}>
+    <Card variant="elevated" className={cn('w-full overflow-hidden', className)}>
+      {/* Cover banner: full-bleed above the header row, never between the
+          title and the words. Object-cover so any aspect ratio reads as a
+          deliberate hero, not a stretched thumbnail. */}
+      {coverImage ? (
+        <Box className="h-44 w-full sm:h-52" data-testid="document-cover">
+          <img
+            src={coverImage}
+            alt=""
+            aria-hidden="true"
+            className="h-full w-full object-cover"
+          />
+        </Box>
+      ) : null}
       <VStack gap="sm" className="p-6 sm:p-8">
         {/* Header: identity left, the ONLY chrome right — Edit + ⋯ while
             reading, autosave hint + Done while editing. Nothing else sits
             between the title and the words. */}
         <HStack gap="sm" className="justify-between items-start">
           <VStack gap="xs" className="flex-1 min-w-0">
+            {icon ? (
+              <Box className="text-muted-foreground" data-testid="document-icon">
+                {renderIconInput(icon, { size: 'lg' })}
+              </Box>
+            ) : null}
             {titleNode}
             {subtitle ? (
               <Typography variant="small" color="secondary">{subtitle}</Typography>

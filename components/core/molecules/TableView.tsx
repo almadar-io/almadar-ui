@@ -17,6 +17,7 @@ import type { EntityRow, EntityWith, FieldValue, EventKey } from '@almadar/core'
 import type { ItemActionPayload, SelectionChangePayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
 import { formatValue, humanizeEnumValue, humanizeFieldName } from '../../../lib/format';
+import { relationDisplayLabels } from '../../../lib/relationLabel';
 import { createLogger } from '@almadar/logger';
 
 const tableViewLog = createLogger('almadar:ui:table-view');
@@ -179,8 +180,15 @@ function statusVariant(value: string): 'success' | 'warning' | 'error' | 'info' 
   return 'default';
 }
 
-const formatCell = (value: FieldValue | undefined, format?: TableViewColumn['format']): string =>
-  formatValue(value, format);
+const formatCell = (value: FieldValue | undefined, format?: TableViewColumn['format']): string => {
+  // A hydrated relation row (or array of rows/ids, from `include:` hydration)
+  // reads by its name/title/label — never "[object Object]" or a raw id list.
+  if (value !== null && value !== undefined && typeof value === 'object' && !(value instanceof Date)) {
+    const labels = relationDisplayLabels(value);
+    if (labels.length > 0) return labels.join(', ');
+  }
+  return formatValue(value, format);
+};
 
 function groupData(
   items: EntityRow[],

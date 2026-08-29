@@ -36,6 +36,7 @@ import { EmptyState } from "../molecules/EmptyState";
 import { cn } from "../../../lib/cn";
 import { humanizeFieldName, humanizeEnumValue } from "../../../lib/format";
 import { getNestedValue } from "../../../lib/getNestedValue";
+import { relationDisplayLabels } from "../../../lib/relationLabel";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { useNavStack } from "../../../providers/NavStackContext";
@@ -141,9 +142,25 @@ function renderRichFieldValue(
   const str = String(value);
 
   switch (fieldType) {
-    case "image":
+    case "image": {
+      // The declared type IS the truth: an `image` field renders as an image,
+      // extension or not (mock-seeded picsum URLs carry none — the old regex
+      // gate showed them as raw text).
+      if (!str) return "—";
+      return (
+        <Box className="mt-1 max-w-full">
+          <img
+            src={str}
+            alt={formatFieldLabel(fieldName)}
+            className="max-w-full max-h-64 rounded-md object-contain"
+            loading="lazy"
+          />
+        </Box>
+      );
+    }
+
     case "url": {
-      // Only render as image if the URL looks like an image
+      // A url field renders as an image only when the URL looks like one.
       if (str.match(/\.(png|jpe?g|gif|svg|webp|avif)(\?|$)/i) || str.startsWith("data:image/")) {
         return (
           <Box className="mt-1 max-w-full">
@@ -156,7 +173,7 @@ function renderRichFieldValue(
           </Box>
         );
       }
-      if (fieldType === "url" && /^https?:\/\//i.test(str)) {
+      if (/^https?:\/\//i.test(str)) {
         return (
           <a
             href={str}
@@ -256,10 +273,23 @@ function renderRichFieldValue(
     }
 
     case "relation": {
-      // Resolve the stored foreign id to its display name via the injected
-      // relation options (same {value, label} contract as Form's selects).
-      const match = meta?.options?.find((opt) => opt.value === str);
-      return match ? match.label : str;
+      // Resolve to display names via the shared owner: a hydrated row (or
+      // array of rows, from `include:`) reads by name/title/label; a bare
+      // foreign id resolves through the injected relation options (same
+      // {value, label} contract as Form's selects). Never "[object Object]",
+      // never a raw id when a label is knowable.
+      const labels = relationDisplayLabels(value, meta?.options);
+      if (labels.length === 0) return "—";
+      if (labels.length === 1) return labels[0];
+      return (
+        <HStack gap="xs" wrap>
+          {labels.map((label, i) => (
+            <Badge key={i} variant="default">
+              {label}
+            </Badge>
+          ))}
+        </HStack>
+      );
     }
 
     case "file": {

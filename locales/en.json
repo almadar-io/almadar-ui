@@ -530,7 +530,7 @@
   "documentPanel.edit": "Edit",
   "documentPanel.done": "Done",
   "documentPanel.autosaveHint": "Saves as you type",
-  "documentPanel.placeholder": "Start writing\u2026",
+  "documentPanel.placeholder": "Start writing…",
   "richTextEditor.editorToolbar": "Formatting toolbar",
   "richTextEditor.editorSurface": "Rich text editor",
   "richTextEditor.bold": "Bold",
@@ -548,5 +548,7 @@
   "richTextEditor.removeLink": "Remove link",
   "richTextEditor.divider": "Divider",
   "richTextEditor.linkPrompt": "Link address",
+  "richTextEditor.image": "Insert image",
+  "richTextEditor.imagePrompt": "Image URL",
   "richTextEditor.placeholder": "Start writing…"
 }

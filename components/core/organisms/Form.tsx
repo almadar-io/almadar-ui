@@ -434,6 +434,8 @@ function determineInputType(field: SchemaField): string {
       return "url";
     case "file":
       return "file";
+    case "image":
+      return "image";
     case "money":
       return "currency";
     case "number":
@@ -1207,6 +1209,50 @@ export const Form: React.FC<FormProps> = ({
             }}
           />
         );
+
+      case "image": {
+        // Image entry: the stored value is a URL string (the `image` semantic
+        // string domain), never a file struct. A live thumbnail confirms the
+        // URL resolves; the dropzone offers upload-instead-of-paste, storing
+        // a data: URI in mock mode (object storage rewrites it in production).
+        const imageUrl = typeof currentValue === "string" ? currentValue : "";
+        return (
+          <VStack gap="sm">
+            {imageUrl ? (
+              <img
+                src={imageUrl}
+                alt=""
+                aria-hidden="true"
+                className="h-24 w-full max-w-xs rounded-md border border-border object-cover"
+                data-testid={`image-preview-${fieldName}`}
+              />
+            ) : null}
+            <Input
+              {...commonProps}
+              type="url"
+              value={imageUrl}
+              onChange={(e) => handleChange(fieldName, e.target.value)}
+            />
+            <UploadDropZone
+              accept="image/*"
+              maxFiles={1}
+              maxSize={2 * 1024 * 1024}
+              disabled={isLoading}
+              onFiles={(files) => {
+                const f = files[0];
+                if (!f) return;
+                const reader = new FileReader();
+                reader.onload = () =>
+                  handleChange(
+                    fieldName,
+                    typeof reader.result === "string" ? reader.result : "",
+                  );
+                reader.readAsDataURL(f);
+              }}
+            />
+          </VStack>
+        );
+      }
 
       case "date":
         return (

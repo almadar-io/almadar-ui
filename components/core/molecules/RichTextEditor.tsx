@@ -25,6 +25,7 @@ import {
   Heading1,
   Heading2,
   Heading3,
+  Image as ImageIcon,
   Italic,
   Link as LinkIcon,
   List,
@@ -514,6 +515,16 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     afterEdit();
   }, [afterEdit, t, toolbar.link]);
 
+  const execImage = useCallback(() => {
+    // Same allowlist the sanitizer applies to <img src> — anything else would
+    // be stripped on the next sanitize pass anyway.
+    const url = window.prompt(t('richTextEditor.imagePrompt'));
+    if (!url) return;
+    const safe = safeUrl(url, ['http://', 'https://', 'data:image/']) ?? `https://${url}`;
+    document.execCommand('insertImage', false, safe);
+    afterEdit();
+  }, [afterEdit, t]);
+
   const execRule = useCallback(() => {
     document.execCommand('insertHorizontalRule', false);
     afterEdit();
@@ -555,6 +566,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <ToolbarButton icon={Quote} label={t('richTextEditor.quote')} active={toolbar.block === 'blockquote'} onExec={() => execBlock('blockquote')} />
           <ToolbarButton icon={Code} label={t('richTextEditor.code')} active={toolbar.block === 'pre'} onExec={() => execBlock('pre')} />
           <ToolbarButton icon={LinkIcon} label={toolbar.link ? t('richTextEditor.removeLink') : t('richTextEditor.link')} active={toolbar.link} onExec={execLink} />
+          <ToolbarButton icon={ImageIcon} label={t('richTextEditor.image')} onExec={execImage} />
           <ToolbarButton icon={Minus} label={t('richTextEditor.divider')} onExec={execRule} />
         </Box>
       )}

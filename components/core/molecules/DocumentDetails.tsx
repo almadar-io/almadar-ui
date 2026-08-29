@@ -19,6 +19,7 @@ import type { EntityRow, EventEmit, FieldValue } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { formatValue, humanizeEnumValue, humanizeFieldName } from '../../../lib/format';
 import { getNestedValue } from '../../../lib/getNestedValue';
+import { relationLabel } from '../../../lib/relationLabel';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
 import { Box } from '../atoms/Box';
@@ -43,13 +44,17 @@ export interface DocumentDetailsField {
   header?: string;
   /** Lucide icon name or component shown beside the label */
   icon?: IconInput;
-  /** How the property edits: text input, boolean switch, select, or display-only.
-   *  Inferred from the value when omitted (boolean → boolean, array → readonly, else text). */
-  kind?: 'text' | 'boolean' | 'select' | 'readonly';
+  /** How the property edits: text input, boolean switch, select, image
+   *  thumbnail, or display-only. Inferred from the value when omitted
+   *  (boolean → boolean, array → readonly, image-typed → image, else text). */
+  kind?: 'text' | 'boolean' | 'select' | 'readonly' | 'image';
   /** Options for kind: 'select' */
   options?: readonly string[];
   /** Display format for the read value */
   format?: 'date' | 'currency' | 'number' | 'boolean' | 'percent';
+  /** Entity-declared field type, injected by the display fields contract —
+   *  drives kind inference (e.g. `image` → thumbnail row). */
+  type?: string;
 }
 
 /**
@@ -57,6 +62,7 @@ export interface DocumentDetailsField {
  * the rail beside a DocumentPanel, each property committing in place.
  *
  * @capabilities document settings, page details, post settings sidebar, metadata panel, document properties, publish settings
+ * @fieldsContract display
  */
 export interface DocumentDetailsProps {
   /** The loaded record — supplies the id every commit carries and the
@@ -67,6 +73,10 @@ export interface DocumentDetailsProps {
   /** Emitted when a property commits: { id, patch } — patch carries the id
    *  plus the one changed field, ready for a partial persist update. */
   metaCommitEvent?: EventEmit<{ id: string; patch: Record<string, FieldValue> }>;
+  /** Makes relation chips clickable: emitted with { field, id, name } when a
+   *  hydrated relation value (or one row of a many-relation) is clicked —
+   *  the host routes it to the linked record's own surface. */
+  relationEvent?: EventEmit<{ field: string; id: string; name: string }>;
   /** Card heading (defaults to the localized "Details") */
   title?: string;
   className?: string;
@@ -80,19 +90,18 @@ function fieldName(field: DocumentDetailsField): string {
   return field.name ?? field.key ?? '';
 }
 
-/** A hydrated relation row shown by its human label, never "[object Object]". */
-function relationLabel(value: FieldValue): string | null {
-  if (value === null || typeof value !== 'object' || Array.isArray(value) || value instanceof Date) return null;
-  for (const key of ['name', 'title', 'label'] as const) {
-    const candidate = value[key];
-    if (typeof candidate === 'string' && candidate !== '') return candidate;
+/** A relation-shaped value's target id, for click-through routing. */
+function relationId(value: FieldValue): string {
+  if (value !== null && typeof value === 'object' && !Array.isArray(value) && !(value instanceof Date)) {
+    const id = value.id;
+    if (id !== undefined && id !== null) return String(id);
   }
-  const id = value.id;
-  return id !== undefined && id !== null ? String(id) : null;
+  return String(value);
 }
 
 function fieldKind(field: DocumentDetailsField, value: FieldValue | undefined): NonNullable<DocumentDetailsField['kind']> {
   if (field.kind) return field.kind;
+  if (field.type === 'image') return 'image';
   if (field.options && field.options.length > 0) return 'select';
   if (typeof value === 'boolean' || field.format === 'boolean') return 'boolean';
   if (Array.isArray(value) || relationLabel(value ?? null) !== null) return 'readonly';
@@ -103,6 +112,7 @@ export function DocumentDetails({
   entity,
   fields,
   metaCommitEvent,
+  relationEvent,
   title,
   className,
 }: DocumentDetailsProps): React.ReactElement | null {
@@ -120,11 +130,55 @@ export function DocumentDetails({
     eventBus.emit(`UI:${metaCommitEvent}`, { id: recordId, patch: { id: recordId, [name]: next } });
   };
 
+  // A relation chip: plain when un-routed, a click-through when the host
+  // wires `relationEvent` — the "linked entities are navigable" affordance.
+  const relationChip = (item: FieldValue, name: string, key?: number) => {
+    const label = relationLabel(item) ?? humanizeEnumValue(String(item));
+    if (!relationEvent) {
+      return <Badge key={key} variant="default">{label}</Badge>;
+    }
+    const emitClick = () =>
+      eventBus.emit(`UI:${relationEvent}`, { field: name, id: relationId(item), name: label });
+    return (
+      <Badge
+        key={key}
+        variant="default"
+        role="button"
+        tabIndex={0}
+        className="cursor-pointer transition-colors hover:bg-accent"
+        onClick={emitClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            emitClick();
+          }
+        }}
+        data-testid={`relation-chip-${name}`}
+      >
+        {label}
+      </Badge>
+    );
+  };
+
   const renderValue = (field: DocumentDetailsField) => {
     const name = fieldName(field);
     const raw = getNestedValue(entity ?? {}, name);
     const kind = fieldKind(field, raw);
     const label = field.label ?? field.header ?? humanizeFieldName(name);
+
+    if (kind === 'image') {
+      const url = typeof raw === 'string' ? raw : '';
+      if (!url) return <Typography variant="small" color="secondary">—</Typography>;
+      return (
+        <img
+          src={url}
+          alt={label}
+          loading="lazy"
+          className="max-h-32 w-full rounded-md border border-border object-cover"
+          data-testid={`document-property-image-${name}`}
+        />
+      );
+    }
 
     if (kind === 'boolean') {
       return (
@@ -157,15 +211,16 @@ export function DocumentDetails({
         }
         return (
           <HStack gap="xs" className="flex-wrap">
-            {raw.map((item, i) => (
-              <Badge key={i} variant="default">{relationLabel(item) ?? humanizeEnumValue(String(item))}</Badge>
-            ))}
+            {raw.map((item, i) => relationChip(item, name, i))}
           </HStack>
         );
       }
+      if (raw !== undefined && raw !== null && raw !== '' && relationLabel(raw) !== null) {
+        return relationChip(raw, name);
+      }
       const shown = raw === undefined || raw === null || raw === ''
         ? '—'
-        : relationLabel(raw) ?? formatValue(raw, field.format);
+        : formatValue(raw, field.format);
       return <Typography variant="small" className="break-words">{shown}</Typography>;
     }
 

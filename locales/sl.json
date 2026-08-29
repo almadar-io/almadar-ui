@@ -530,7 +530,7 @@
   "documentPanel.edit": "Uredi",
   "documentPanel.done": "Konec",
   "documentPanel.autosaveHint": "Shranjuje se med tipkanjem",
-  "documentPanel.placeholder": "Za\u010dni pisati\u2026",
+  "documentPanel.placeholder": "Začni pisati…",
   "richTextEditor.editorToolbar": "Orodna vrstica za oblikovanje",
   "richTextEditor.editorSurface": "Urejevalnik obogatenega besedila",
   "richTextEditor.bold": "Krepko",
@@ -548,5 +548,7 @@
   "richTextEditor.removeLink": "Odstrani povezavo",
   "richTextEditor.divider": "Ločilo",
   "richTextEditor.linkPrompt": "Naslov povezave",
+  "richTextEditor.image": "Vstavi sliko",
+  "richTextEditor.imagePrompt": "URL slike",
   "richTextEditor.placeholder": "Začnite pisati …"
 }
