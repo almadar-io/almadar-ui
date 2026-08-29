@@ -109,6 +109,10 @@ export interface DashboardLayoutProps {
   /** Custom sidebar footer (optional). When omitted, the sidebar has
    *  no footer — apps that need Settings/etc. add them via navItems. */
   sidebarFooter?: React.ReactNode;
+  /** Optional content region rendered between the nav links and the footer —
+   *  a page tree or any consumer navigation surface; scrolls independently
+   *  and takes the sidebar's remaining height. Hidden in the collapsed rail. */
+  sidebarContent?: React.ReactNode;
   /** Active path used to highlight the matching nav item. Falls back
    *  to `useCurrentPagePath()` (set by `CurrentPagePathProvider`), then
    *  to `useLocation().pathname`. Production deploys can omit it; the
@@ -143,6 +147,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   onNotificationClick,
   showThemeToggle = true,
   sidebarFooter,
+  sidebarContent,
   onSignOut: onSignOutProp,
   currentPath,
   layoutMode = "sidebar",
@@ -313,7 +318,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <VStack
             as="nav"
             gap="none"
-            className={cn("flex-1 py-4 space-y-1 overflow-y-auto", isRail ? "px-2" : "px-3")}
+            className={cn(
+              "py-4 space-y-1 overflow-y-auto",
+              sidebarContent && !isRail ? "shrink-0" : "flex-1",
+              isRail ? "px-2" : "px-3",
+            )}
           >
             {navItems.map((item) => (
               <NavLink
@@ -324,6 +333,15 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
               />
             ))}
           </VStack>
+
+          {/* Sidebar content region — the Notion/Confluence-style tree or any
+              consumer-provided navigation surface; takes the remaining height
+              with its own scroll. Hidden in the collapsed rail (no room). */}
+          {sidebarContent && !isRail && (
+            <Box className="flex-1 overflow-y-auto border-t border-border dark:border-border px-2 py-3">
+              {sidebarContent}
+            </Box>
+          )}
 
           {/* Sidebar footer — opt-in only. */}
           {sidebarFooter && (

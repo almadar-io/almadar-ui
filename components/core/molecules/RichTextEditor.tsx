@@ -515,15 +515,41 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     afterEdit();
   }, [afterEdit, t, toolbar.link]);
 
+  // Insert-image is a real file picker: the OS dialog blurs the editor, so
+  // the caret's range is saved before opening and restored before inserting.
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
+  const savedRangeRef = useRef<Range | null>(null);
   const execImage = useCallback(() => {
-    // Same allowlist the sanitizer applies to <img src> — anything else would
-    // be stripped on the next sanitize pass anyway.
-    const url = window.prompt(t('richTextEditor.imagePrompt'));
-    if (!url) return;
-    const safe = safeUrl(url, ['http://', 'https://', 'data:image/']) ?? `https://${url}`;
-    document.execCommand('insertImage', false, safe);
-    afterEdit();
-  }, [afterEdit, t]);
+    const root = ref.current;
+    const sel = window.getSelection();
+    savedRangeRef.current =
+      root && sel && sel.rangeCount > 0 && root.contains(sel.anchorNode)
+        ? sel.getRangeAt(0).cloneRange()
+        : null;
+    imageInputRef.current?.click();
+  }, []);
+
+  const handleImageFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = typeof reader.result === 'string' ? reader.result : '';
+      if (!url.startsWith('data:image/')) return;
+      const root = ref.current;
+      if (!root) return;
+      root.focus();
+      const sel = window.getSelection();
+      if (sel && savedRangeRef.current && root.contains(savedRangeRef.current.startContainer)) {
+        sel.removeAllRanges();
+        sel.addRange(savedRangeRef.current);
+      }
+      document.execCommand('insertImage', false, url);
+      afterEdit();
+    };
+    reader.readAsDataURL(file);
+  }, [afterEdit]);
 
   const execRule = useCallback(() => {
     document.execCommand('insertHorizontalRule', false);
@@ -542,6 +568,15 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   return (
     <Box className={cn('flex flex-col gap-2', className)}>
       <RichTextStyles />
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        aria-hidden="true"
+        tabIndex={-1}
+        onChange={handleImageFile}
+      />
       {showToolbar && (
         <Box
           role="toolbar"

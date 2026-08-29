@@ -550,5 +550,6 @@
   "richTextEditor.linkPrompt": "Link address",
   "richTextEditor.image": "Insert image",
   "richTextEditor.imagePrompt": "Image URL",
-  "richTextEditor.placeholder": "Start writing…"
+  "richTextEditor.placeholder": "Start writing…",
+  "form.imageUrlFallback": "…or paste an image address"
 }

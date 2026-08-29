@@ -550,5 +550,6 @@
   "richTextEditor.linkPrompt": "عنوان الرابط",
   "richTextEditor.image": "إدراج صورة",
   "richTextEditor.imagePrompt": "رابط الصورة",
-  "richTextEditor.placeholder": "ابدأ الكتابة…"
+  "richTextEditor.placeholder": "ابدأ الكتابة…",
+  "form.imageUrlFallback": "…أو الصق رابط الصورة"
 }

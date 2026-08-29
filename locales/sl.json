@@ -550,5 +550,6 @@
   "richTextEditor.linkPrompt": "Naslov povezave",
   "richTextEditor.image": "Vstavi sliko",
   "richTextEditor.imagePrompt": "URL slike",
-  "richTextEditor.placeholder": "Začnite pisati …"
+  "richTextEditor.placeholder": "Začnite pisati …",
+  "form.imageUrlFallback": "…ali prilepite naslov slike"
 }

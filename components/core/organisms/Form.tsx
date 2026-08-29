@@ -1227,12 +1227,6 @@ export const Form: React.FC<FormProps> = ({
                 data-testid={`image-preview-${fieldName}`}
               />
             ) : null}
-            <Input
-              {...commonProps}
-              type="url"
-              value={imageUrl}
-              onChange={(e) => handleChange(fieldName, e.target.value)}
-            />
             <UploadDropZone
               accept="image/*"
               maxFiles={1}
@@ -1249,6 +1243,13 @@ export const Form: React.FC<FormProps> = ({
                   );
                 reader.readAsDataURL(f);
               }}
+            />
+            <Input
+              {...commonProps}
+              type="url"
+              placeholder={t('form.imageUrlFallback')}
+              value={imageUrl}
+              onChange={(e) => handleChange(fieldName, e.target.value)}
             />
           </VStack>
         );
