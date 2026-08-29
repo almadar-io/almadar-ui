@@ -17,7 +17,7 @@
  * session with the cursor in the text.
  */
 import React, { useState } from 'react';
-import type { EntityRow, EventKey, EventEmit } from '@almadar/core';
+import type { EventKey, EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
@@ -47,8 +47,8 @@ export interface DocumentPanelAction {
  * @capabilities document page, note editor, wiki page, article editor, writing surface, rich text document, content editing canvas
  */
 export interface DocumentPanelProps {
-  /** The loaded record — supplies the id every commit event carries. */
-  entity?: EntityRow;
+  /** The record's id — carried on every commit and action event. */
+  id?: string;
   /** Document title (falls back to "Untitled" for a blank draft) */
   title?: string;
   /** Muted byline under the title; hidden when empty */
@@ -85,7 +85,7 @@ function renderIconInput(icon: IconInput, props: React.ComponentProps<typeof Ico
 }
 
 export function DocumentPanel({
-  entity,
+  id,
   title,
   subtitle,
   value,
@@ -106,7 +106,7 @@ export function DocumentPanel({
   const { t } = useTranslate();
   const [titleDraft, setTitleDraft] = useState<string | null>(null);
 
-  const recordId = entity?.id !== undefined && entity?.id !== null ? String(entity.id) : '';
+  const recordId = id ?? '';
   const actionDefs = actions ?? [];
 
   // Card rule: the title owns its row — one explicit primary inline at most,
@@ -115,9 +115,11 @@ export function DocumentPanel({
   const inlineActions = actionDefs.filter((a) => a.variant === 'primary').slice(0, inlineCap);
   const menuActions = actionDefs.filter((a) => !inlineActions.includes(a));
 
+  // Actions carry scalars only — consumers needing the full row stash it
+  // from the load event (ModalRecordModal's SEED), never from this payload.
   const fireAction = (action: DocumentPanelAction) => {
     if (!action.event) return;
-    eventBus.emit(`UI:${action.event}`, { id: recordId, row: entity });
+    eventBus.emit(`UI:${action.event}`, { id: recordId, title: title ?? '' });
   };
 
   // Title commits on blur/Enter; a blank draft or an unchanged one closes the
