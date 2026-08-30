@@ -101,7 +101,7 @@ function TextLikeControl({
   );
 }
 
-const SCALAR_TYPES = new Set(['string', 'number', 'boolean', 'icon', 'asset', 'Asset', 'secret']);
+const SCALAR_TYPES = new Set(['string', 'number', 'boolean', 'icon', 'asset', 'Asset', 'secret', 'event']);
 
 function isTraitConfigObject(
   v: TraitConfigValue | undefined,
@@ -173,6 +173,9 @@ export function FieldControl({
     control = <TextLikeControl field={name} numeric value={value} onCommit={onChange} />;
   } else if (isSecretConfigType(decl.type)) {
     control = <TextLikeControl field={name} numeric={false} secret value={value} onCommit={onChange} />;
+  } else if (decl.type === 'event') {
+    // Event-name reference — plain text for now (EventPicker follow-up).
+    control = <TextLikeControl field={name} numeric={false} value={value} onCommit={onChange} />;
   } else if (decl.type === 'string') {
     control = <TextLikeControl field={name} numeric={false} value={value} onCommit={onChange} />;
   } else if (decl.type === 'node') {
