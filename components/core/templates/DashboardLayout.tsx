@@ -47,8 +47,18 @@ export interface TopBarAction {
   /** Bus event fired on click. Dispatched as `UI:{event}` with empty payload.
    *  Typed as `EventKey` so the pattern-sync detector marks `topBarActions`
    *  as `event-list` and the validator checks references against trait
-   *  emit/listen sets. */
-  event: EventKey;
+   *  emit/listen sets.
+   *
+   *  Optional because an action may navigate instead of dispatching — see
+   *  `navigatesTo`. At least one of the two should be set; an entry with
+   *  neither renders an inert button. */
+  event?: EventKey;
+  /** Destination URL. Emits `UI:NAVIGATE` on click, the same mechanism
+   *  `ButtonGroup` / `PageHeader` / `DocumentViewer` already use for their
+   *  action descriptors — the top bar was the odd one out, which forced a
+   *  navigation-only button to invent an event nothing listens for. Set
+   *  alongside `event` to both dispatch and navigate. */
+  navigatesTo?: string;
   /** Optional badge — number or string rendered in the corner of the icon. */
   badge?: number | string;
   /** Visual variant. Default `"default"`. */
@@ -170,8 +180,11 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
     if (notificationClickEvent) eventBus.emit(`UI:${notificationClickEvent}`, {});
     if (onNotificationClick) onNotificationClick();
   };
-  const handleTopBarActionClick = (event: string) => {
-    eventBus.emit(`UI:${event}`, {});
+  // Mirrors ButtonGroup.handleActionClick: dispatch and/or navigate, each
+  // independently optional, so one descriptor can do either or both.
+  const handleTopBarActionClick = (action: TopBarAction) => {
+    if (action.event) eventBus.emit(`UI:${action.event}`, {});
+    if (action.navigatesTo) eventBus.emit('UI:NAVIGATE', { url: action.navigatesTo });
   };
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
@@ -445,10 +458,10 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
                 {/* Generic top-bar actions — consumer-supplied. */}
                 {topBarActions.map((action, idx) => (
                   <Button
-                    key={`${action.event}-${idx}`}
+                    key={`${action.event ?? action.navigatesTo ?? 'action'}-${idx}`}
                     variant="ghost"
                     className="relative p-2 rounded-full hover:bg-muted dark:hover:bg-muted"
-                    onClick={() => handleTopBarActionClick(action.event)}
+                    onClick={() => handleTopBarActionClick(action)}
                     aria-label={action.label ?? (typeof action.icon === 'string' ? action.icon : undefined)}
                   >
                     <AlmadarIcon icon={action.icon} className="h-5 w-5 text-muted-foreground dark:text-muted-foreground" />
