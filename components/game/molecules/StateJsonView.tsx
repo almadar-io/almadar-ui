@@ -17,6 +17,10 @@ import { useTranslate } from '../../../hooks/useTranslate';
 export interface StateJsonTransition {
     from: string;
     to: string;
+    /** Deliberately NOT `EventKey`: these are JSON.stringify'd into a code
+     *  block for display. This component has no event bus and cannot emit;
+     *  tagging `transitions` as an `event-list` would police the PLAYER's
+     *  invented vocabulary against the orbital's event set. */
     event: string;
 }
 

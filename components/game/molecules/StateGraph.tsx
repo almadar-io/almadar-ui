@@ -17,6 +17,10 @@ import { TransitionArrow } from './TransitionArrow';
 export interface StateGraphTransition {
     from: string;
     to: string;
+    /** Deliberately NOT `EventKey`: this is a drawn arrow's caption, not a bus
+     *  event. Typing it `EventKey` would tag `transitions` as an `event-list`
+     *  and validate the PLAYER's invented state-machine vocabulary against the
+     *  orbital's event set. The real bus outlet here is `nodeClickEvent`. */
     event: string;
     guardHint?: string;
 }
