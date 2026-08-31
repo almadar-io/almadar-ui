@@ -10,7 +10,7 @@
 
 import React, { useCallback, useEffect, Suspense, lazy } from "react";
 import { createPortal } from "react-dom";
-import type { EventPayload, EntityRow, FieldValue } from "@almadar/core";
+import type { EventPayload, EntityRow, FieldValue, EventKey } from "@almadar/core";
 import type { RelationFieldCardinality } from "../molecules/RelationSelect";
 import type { ItemActionPayload } from "@almadar/core/patterns";
 import { ArrowLeft, FileText, X } from "lucide-react";
@@ -388,8 +388,11 @@ export interface DetailPanelAction {
   label: string;
   icon?: IconInput;
   onClick?: () => void;
-  /** Event to emit via event bus */
-  event?: string;
+  /** Event to emit via event bus. `EventKey`, not `string`: the pattern
+   *  parser tags an array prop as `kind: "event-list"` only when its element
+   *  interface types the event field this way, and that tag is what makes an
+   *  authored `events { EDIT: X }` rename fold into these config literals. */
+  event?: EventKey;
   /** Navigation URL */
   navigatesTo?: string;
   /** Button variant (primary for main action, others for secondary) */
