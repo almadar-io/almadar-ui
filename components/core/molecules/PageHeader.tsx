@@ -1,6 +1,6 @@
 'use client';
 import React from "react";
-import type { EventEmit } from "@almadar/core";
+import type { EventKey, EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Button } from "../atoms/index";
 import { Box } from "../atoms/Box";
@@ -26,7 +26,7 @@ export interface SchemaAction {
   /** Custom click handler */
   onClick?: () => void;
   /** Event to dispatch via event bus (for trait state machine integration) */
-  event?: string;
+  event?: EventKey;
   variant?: "primary" | "secondary" | "ghost" | "danger";
   icon?: IconInput;
   loading?: boolean;

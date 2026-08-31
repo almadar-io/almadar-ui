@@ -44,7 +44,7 @@ export interface FloatingAction {
   onClick?: () => void;
 
   /** Event name to emit when clicked (for trait state machine integration) */
-  event?: string;
+  event?: EventKey;
 
   /**
    * Action variant

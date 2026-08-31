@@ -13,7 +13,7 @@
  */
 
 import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
-import type { EventEmit, EventPayload } from "@almadar/core";
+import type { EventKey, EventEmit, EventPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Card, Typography, Badge, Button, Box } from "../atoms/index";
 import { VStack, HStack } from "../atoms/Stack";
@@ -71,7 +71,7 @@ export interface GraphSimilarity {
 
 export interface GraphAction {
     label: string;
-    event?: string;
+    event?: EventKey;
     navigatesTo?: string;
     variant?: "primary" | "secondary" | "ghost";
 }

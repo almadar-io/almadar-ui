@@ -7,7 +7,7 @@
  */
 
 import React, { useState, useRef } from 'react';
-import type { Asset, EventEmit } from '@almadar/core';
+import type { EventKey, Asset, EventEmit } from '@almadar/core';
 import { Icon } from '../atoms/Icon';
 import type { IconInput } from '../atoms/index';
 import { Badge } from '../atoms/Badge';
@@ -41,7 +41,7 @@ export interface TabItem {
   /** Disable tab */
   disabled?: boolean;
   /** Event to emit when tab is clicked (for trait state machine integration) */
-  event?: string;
+  event?: EventKey;
   /** Whether this tab is currently active (for controlled tabs) */
   active?: boolean;
 }

@@ -40,8 +40,6 @@ export interface CardItemAction {
   navigatesTo?: string;
   /** Callback on click */
   onClick?: (item: EventPayload) => void;
-  /** Action used by generated code - alternative to event */
-  action?: EventKey;
   /** Action placement - accepts string for compatibility with generated code */
   placement?: 'card' | 'footer' | 'row' | string;
   /** Button variant - accepts string for compatibility with generated code */

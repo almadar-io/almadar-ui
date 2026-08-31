@@ -26,6 +26,7 @@ import { EmptyState } from "./EmptyState";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import type { UiError } from '../atoms/types';
+import type { EventKey } from "@almadar/core";
 
 export type ChartType =
     | "bar"
@@ -87,7 +88,7 @@ export interface ChartSeries {
 
 export interface ChartAction {
     label: string;
-    event?: string;
+    event?: EventKey;
     navigatesTo?: string;
     variant?: "primary" | "secondary" | "ghost";
 }

@@ -86,12 +86,12 @@ export interface RowAction<T> {
   onClick?: (row: T) => void;
   variant?: "default" | "danger";
   show?: (row: T) => boolean;
-  event?: string;
+  event?: EventKey;
 }
 
 export interface DataTableEmptyAction {
   label: string;
-  event?: string;
+  event?: EventKey;
 }
 
 export interface DataTableProps<T extends EntityRow & { id: string | number }>
@@ -105,9 +105,8 @@ export interface DataTableProps<T extends EntityRow & { id: string | number }>
   /** Item actions from generated code - maps to rowActions */
   itemActions?: readonly {
     label: string;
-    event?: string;
+    event?: EventKey;
     navigatesTo?: string;
-    action?: EventKey;
     placement?: "row" | "bulk" | string;
     icon?: IconInput;
     variant?: "default" | "primary" | "secondary" | "ghost" | "danger" | string;
@@ -135,7 +134,7 @@ export interface DataTableProps<T extends EntityRow & { id: string | number }>
     /** Optional when `event` is set — a bus-emitting onClick is synthesized. */
     onClick?: (selectedRows: T[]) => void;
     variant?: "default" | "danger";
-    event?: string;
+    event?: EventKey;
   }>;
 
   // Header actions

@@ -16,6 +16,7 @@ import { ErrorState } from "./ErrorState";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
 import type { UiError } from '../atoms/types';
+import type { EventKey } from "@almadar/core";
 
 export type MeterVariant = "linear" | "radial" | "segmented";
 
@@ -27,7 +28,7 @@ export interface MeterThreshold {
 
 export interface MeterAction {
     label: string;
-    event?: string;
+    event?: EventKey;
     navigatesTo?: string;
     variant?: "primary" | "secondary" | "ghost";
 }

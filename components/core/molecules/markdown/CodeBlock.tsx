@@ -300,6 +300,7 @@ import { Icon } from '../../atoms/Icon';
 import { useEventBus } from '../../../../hooks/useEventBus';
 import { useTranslate } from '../../../../hooks/useTranslate';
 import { createLogger } from '@almadar/logger';
+import type { EventKey } from "@almadar/core";
 
 const log = createLogger('almadar:ui:markdown-code');
 
@@ -418,7 +419,7 @@ export interface DiffLine {
 
 export interface CodeViewerAction {
   label: string;
-  event?: string;
+  event?: EventKey;
   navigatesTo?: string;
   variant?: 'primary' | 'secondary' | 'ghost';
 }

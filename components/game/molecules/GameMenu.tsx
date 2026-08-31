@@ -15,7 +15,7 @@ export type MenuOption = EventPayload & {
   /** Display label */
   label: string;
   /** Event to emit on click */
-  event?: string;
+  event?: EventKey;
   /** Page to navigate to */
   navigatesTo?: string;
   /** Button variant */
@@ -24,8 +24,6 @@ export type MenuOption = EventPayload & {
   disabled?: boolean;
   /** Sub-label or description */
   subLabel?: string;
-  /** Action identifier (alternative to event) */
-  action?: EventKey;
 }
 
 export interface GameMenuProps {

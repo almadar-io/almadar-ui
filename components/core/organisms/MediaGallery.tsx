@@ -13,7 +13,7 @@
  */
 
 import React, { useState, useCallback } from "react";
-import type { AssetUrl, EventEmit } from "@almadar/core";
+import type { EventKey, AssetUrl, EventEmit } from "@almadar/core";
 import { resolveImageUrl } from "../../../lib/getNestedValue";
 import { cn } from "../../../lib/cn";
 import { Card, Typography, Badge, Button, Icon, Box } from "../atoms/index";
@@ -46,7 +46,7 @@ export type MediaItem = EntityRow & {
 
 export interface MediaGalleryAction {
     label: string;
-    event?: string;
+    event?: EventKey;
     navigatesTo?: string;
     variant?: "primary" | "secondary" | "ghost";
 }

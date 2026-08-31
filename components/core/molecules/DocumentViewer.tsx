@@ -13,7 +13,7 @@
  */
 
 import React, { useState, useCallback } from "react";
-import type { AssetUrl } from "@almadar/core";
+import type { EventKey, AssetUrl } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Card, Typography, Button, Badge, Icon, Box } from "../atoms/index";
 import { VStack, HStack } from "../atoms/Stack";
@@ -39,7 +39,7 @@ export type DocumentType = "pdf" | "text" | "html" | "markdown";
 
 export interface DocumentAction {
     label: string;
-    event?: string;
+    event?: EventKey;
     navigatesTo?: string;
     variant?: "primary" | "secondary" | "ghost";
 }

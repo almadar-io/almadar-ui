@@ -68,8 +68,6 @@ export interface SchemaItemAction {
   navigatesTo?: string;
   /** Action placement - accepts all common placement values */
   placement?: "row" | "bulk" | "card" | "footer" | string;
-  /** Alternate event-dispatch field (same semantics as `event`) — generated code emits `UI:{action}` on click */
-  action?: EventKey;
   variant?: "primary" | "secondary" | "ghost" | "danger" | "default";
   /** Click handler from generated code */
   onClick?: (row: EntityRow) => void;

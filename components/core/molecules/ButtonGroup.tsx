@@ -13,6 +13,7 @@ import { Button } from '../atoms/index';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { createLogger } from '@almadar/logger';
 import type { FilterDefinition } from './FilterGroup';
+import type { EventKey } from "@almadar/core";
 
 const log = createLogger('almadar:ui:button-group');
 
@@ -34,7 +35,7 @@ export interface ActionButton {
   label: string;
   /** Action type - 'submit' renders as submit button, others render as button */
   actionType?: string;
-  event?: string;
+  event?: EventKey;
   navigatesTo?: string;
   /** Button variant - matches Button component variants. Accepts string for schema compatibility. */
   variant?: string;

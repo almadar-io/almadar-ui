@@ -18,6 +18,7 @@ import { Badge } from "../atoms/Badge";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 import { useTranslate } from "../../../hooks/useTranslate";
+import type { EventKey } from "@almadar/core";
 
 export interface MenuItem {
   /** Item ID (auto-generated from label if not provided) */
@@ -33,7 +34,7 @@ export interface MenuItem {
   /** Item click handler */
   onClick?: () => void;
   /** Event name for pattern compatibility */
-  event?: string;
+  event?: EventKey;
   /** File URL this item downloads on pick (gesture-driven, `DocumentViewer` precedent). The item's `event` still emits on the bus. */
   url?: string;
   /** Variant for styling (pattern compatibility) */
