@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef } from "react";
-import type { EventKey, EventPayload } from "@almadar/core";
+import type { EventEmit, EventPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../../hooks/useEventBus";
@@ -33,8 +33,10 @@ export interface NumberStepperProps {
   /** Direct onChange callback */
   onChange?: (value: number) => void;
   /** Declarative event name for value changes */
-  action?: EventKey;
-  /** Payload to include with the action event */
+  action?: EventEmit<{ value: number }>;
+  /** Payload to include with the action event
+   *  @payloadFor action
+   */
   actionPayload?: EventPayload;
   /** Additional CSS classes */
   className?: string;

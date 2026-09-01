@@ -35,7 +35,9 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   iconAsset?: Asset;
   /** Declarative event name — emits UI:{action} via eventBus on click */
   action?: EventKey;
-  /** Payload to include with the action event */
+  /** Payload to include with the action event
+   *  @payloadFor action
+   */
   actionPayload?: EventPayload;
   /** Button label text (alternative to children for schema-driven rendering) */
   label?: string;

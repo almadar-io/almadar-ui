@@ -56,7 +56,9 @@ export interface CarouselProps<T = CarouselItem> {
   loop?: boolean;
   /** Declarative event name for slide change */
   slideChangeEvent?: EventEmit<{ index: number }>;
-  /** Payload to include with the slide change event */
+  /** Payload to include with the slide change event
+   *  @payloadFor slideChangeEvent
+   */
   slideChangePayload?: JsonObject;
   /** Additional CSS classes */
   className?: string;

@@ -48,13 +48,16 @@ export interface CalendarGridProps {
   onSlotClick?: (day: Date, time: string) => void;
   /** Called when a day header is clicked */
   onDayClick?: (day: Date) => void;
-  /** Called when an event is clicked */
+  /** Called when an event is clicked
+   *  @entityRow event */
   onEventClick?: (event: EntityRow) => void;
   /** Additional CSS classes */
   className?: string;
   /** Event emitted on long-press of a time slot: UI:{longPressEvent} with { date, time, ...longPressPayload } */
   longPressEvent?: EventEmit<{ date: string; time?: string }>;
-  /** Additional payload for long-press events */
+  /** Additional payload for long-press events
+   *  @payloadFor longPressEvent
+   */
   longPressPayload?: EventPayload;
   /** Event emitted on swipe left (next week): UI:{swipeLeftEvent} */
   swipeLeftEvent?: EventEmit<Record<string, never>>;

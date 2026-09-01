@@ -19,6 +19,9 @@ import { VStack } from '../../core/atoms/Stack';
 import { LearningCanvas } from '../atoms/LearningCanvas';
 import type { LearningShape, LearningPoint, LearningReadout, LearningTracePanel } from '../atoms/LearningCanvas';
 import type { UiError } from '../../core/atoms/types';
+import type { DrawableNode } from '../../../lib/drawable/paintDispatch';
+import type { Projector } from '../../../lib/drawable/contract';
+import type { ScenePos } from '@almadar/core';
 
 export interface MathCurve {
   label?: string;
@@ -172,6 +175,12 @@ export interface MathCanvasProps {
   hops?: MathHop[];
   /** Extra declarative shapes in canvas pixel coordinates. */
   shapes?: LearningShape[];
+  /**
+   * Game-canvas drawables painted in math world coordinates (e.g. `draw-sprite`
+   * for a character sprite on the graph). The canvas maps their `ScenePos` through
+   * the same x/y world→pixel transform used for curves/points.
+   */
+  drawables?: DrawableNode[];
   /** Top-right status chips, forwarded verbatim to LearningCanvas. */
   readouts?: LearningReadout[];
   /** Inset sparkline panels, forwarded verbatim to LearningCanvas. */
@@ -213,6 +222,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
   angles = [],
   hops = [],
   shapes = [],
+  drawables,
   readouts,
   traces,
   interactive = false,
@@ -550,6 +560,47 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
     shapes,
   ]);
 
+  // Projector for game drawables: one world-x unit maps to `xScale` pixels; the
+  // y-axis may have a different scale, but sprites size by xScale so they keep
+  // square pixels and consistent aspect regardless of uneven axes.
+  const projector: Projector | undefined = useMemo(() => {
+    if (!drawables?.length) return undefined;
+    const margin = 24;
+    const plotW = width - margin * 2;
+    const plotH = height - margin * 2;
+    const xScale = plotW / (xMax - xMin);
+    const yScale = plotH / (yMax - yMin);
+    const mapX = (x: number) => margin + ((x - xMin) / (xMax - xMin)) * plotW;
+    const mapY = (y: number) => height - (margin + ((y - yMin) / (yMax - yMin)) * plotH);
+    const project = (pos: ScenePos) => ({ x: mapX(pos.x), y: mapY(pos.y) });
+    const anchorPoint = (pos: ScenePos, anchor: 'top-left' | 'ground' | 'center') => {
+      const base = project(pos);
+      if (anchor === 'top-left') return base;
+      const cx = base.x + xScale / 2;
+      if (anchor === 'ground') return { x: cx, y: base.y + xScale * 0.92 };
+      return { x: cx, y: base.y + xScale / 2 };
+    };
+    const cellPath = (pos: ScenePos) => {
+      const base = project(pos);
+      return [
+        { x: base.x, y: base.y },
+        { x: base.x + xScale, y: base.y },
+        { x: base.x + xScale, y: base.y + xScale },
+        { x: base.x, y: base.y + xScale },
+      ];
+    };
+    return {
+      project,
+      anchorPoint,
+      cellPath,
+      tileWidth: xScale,
+      floorHeight: xScale / 2,
+      diamondTopY: 0,
+      squareGrid: true,
+      worldPixelDirect: false,
+    };
+  }, [drawables?.length, width, height, xMin, xMax, yMin, yMax]);
+
   return (
     <Card className={className}>
       <VStack gap="sm">
@@ -559,6 +610,8 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
           height={height}
           backgroundColor={backgroundColor}
           shapes={derivedShapes}
+          drawables={drawables}
+          projector={projector}
           readouts={readouts}
           traces={traces}
           interactive={interactive}

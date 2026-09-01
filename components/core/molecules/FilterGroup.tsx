@@ -14,7 +14,7 @@
  */
 
 import React, { useState, useCallback, useEffect } from "react";
-import type { EventKey } from "@almadar/core";
+import type { EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Button } from "../atoms/Button";
 import { Input } from "../atoms/Input";
@@ -110,9 +110,9 @@ export interface FilterGroupProps {
   /** Layer 2 visual treatment — orthogonal to the semantic variant. */
   look?: FilterGroupLook;
   /** Declarative filter event — emits UI:{event} via eventBus on filter change (alongside canonical UI:FILTER) */
-  event?: EventKey;
+  event?: EventEmit<{ entity: string; field: string; value: string; query?: string }>;
   /** Declarative clear event — emits UI:{clearEvent} via eventBus on clear-all (alongside canonical UI:CLEAR_FILTERS) */
-  clearEvent?: EventKey;
+  clearEvent?: EventEmit<{ entity: string; query?: string }>;
 }
 
 // Layer 2 look styles target actual form controls (input / select / button)

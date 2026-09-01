@@ -14,8 +14,7 @@
  */
 
 import React from "react";
-import type { EntityRow, EventKey, EventPayload, FieldValue } from "@almadar/core";
-import type { FormSubmitPayload } from "@almadar/core/patterns";
+import type { ControlValue, EntityRow, EventEmit, EventKey, EventPayload, FieldValue, FormSubmitPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Input } from "../atoms/Input";
 import { Button } from "../atoms/Button";
@@ -297,8 +296,12 @@ export interface FormProps extends Omit<
   title?: string;
 
   // Event dispatch props (for trait state machine integration)
-  /** Event to dispatch on successful submit (defaults to 'SAVE') */
-  submitEvent?: EventKey;
+  /** Event to dispatch on successful submit (defaults to 'SAVE').
+   *  `data` carries the collected field values for the bound entity, so it is
+   *  the bound entity's ROW — a compile-time-known type via `linkedEntity`,
+   *  unlike the per-field `value` whose type depends on a runtime `fieldId`. */
+  /** @entityRow data */
+  submitEvent?: EventEmit<FormSubmitPayload>;
   /** Event to dispatch on cancel (defaults to 'CANCEL') */
   cancelEvent?: EventKey;
 
@@ -325,7 +328,10 @@ export interface FormProps extends Omit<
   /** Callback when any field value changes */
   onFieldChange?: (change: {
     fieldId: string;
-    value: FieldValue | undefined;
+    // What a CONTROL emits — a scalar, a multi-select's string list, or a file
+    // record. `FieldValue` here is what degraded every generated
+    // `change.value` payload to a shapeless `object`.
+    value: ControlValue | undefined;
     formValues: Record<string, FieldValue | undefined>;
   }) => void;
   /** Config path for form configuration (schema-driven) */
@@ -705,7 +711,7 @@ export const Form: React.FC<FormProps> = ({
     [violationTriggers, externalContext, eventBus],
   );
 
-  const handleChange = (name: string, value: FieldValue | undefined) => {
+  const handleChange = (name: string, value: ControlValue | undefined) => {
     const newFormData = { ...formData, [name]: value };
     debug('forms', 'field-change', { mode: formMode, name, value, prevFormData: formData, newFormData });
     setFormData(newFormData);

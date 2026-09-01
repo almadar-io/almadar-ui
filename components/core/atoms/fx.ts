@@ -70,6 +70,8 @@ export interface FxItem {
     vz?: number;
     /** Sub-particle count override (procedural burst / confetti). */
     particleCount?: number;
+    /** Sprite-sheet animation name (e.g. "burst") — used when the resolved look is a sprite atlas. */
+    animation?: string;
 }
 
 /**
@@ -103,6 +105,8 @@ export interface FxPreset {
     effect?: FxOverlayKind;
     /** Sub-particle count for screen-space kinds (confetti/sparkle). */
     particleCount?: number;
+    /** Sprite-sheet animation name to play when this preset resolves to a sprite atlas. */
+    animation?: string;
 }
 
 /**
@@ -173,6 +177,7 @@ export function resolveFxView(item: FxItem, presets?: FxPreset[]): FxView {
         vy: item.vy ?? row.vy,
         vz: item.vz ?? row.vz,
         particleCount: item.particleCount ?? row.particleCount,
+        animation: item.animation ?? row.animation,
         shape: row.shape,
         count: row.count,
         glow: row.glow,

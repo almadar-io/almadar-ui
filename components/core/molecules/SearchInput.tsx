@@ -9,7 +9,7 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import type { EventKey } from '@almadar/core';
+import type { EventEmit } from '@almadar/core';
 import { Search } from 'lucide-react';
 import { Input } from '../atoms/Input';
 import { Spinner } from '../atoms/Spinner';
@@ -60,7 +60,7 @@ export interface SearchInputProps extends Omit<React.InputHTMLAttributes<HTMLInp
   className?: string;
 
   /** Declarative search event — emits UI:{event} via eventBus on query submit (alongside canonical UI:SEARCH) */
-  event?: EventKey;
+  event?: EventEmit<{ searchTerm: string; entity?: string }>;
 
   /**
    * Entity type for context-aware search.

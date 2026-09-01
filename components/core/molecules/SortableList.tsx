@@ -7,7 +7,7 @@
  * when item ordering is user-controlled.
  */
 import React, { useCallback } from 'react';
-import type { EntityRow, EventKey, EventPayload } from "@almadar/core";
+import type { EntityRow, EventEmit, EventPayload } from "@almadar/core";
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useDragReorder } from '../../../hooks/useDragReorder';
@@ -27,7 +27,9 @@ export interface SortableListProps {
   items: readonly EntityRow[];
   /** Render function for each item. In .lolo: renderItem: (fn item <Component …={@item.field}/>), binding per-item fields via @item.field. */
   renderItem: (item: EntityRow, index: number) => React.ReactNode;
-  reorderEvent: EventKey;
+  /** @entityRow item */
+  reorderEvent: EventEmit<{ fromIndex: number; toIndex: number; item: EntityRow }>;
+  /** @payloadFor reorderEvent */
   reorderPayload?: EventPayload;
   dragHandlePosition?: 'left' | 'right';
   className?: string;

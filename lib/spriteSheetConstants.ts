@@ -15,8 +15,10 @@ export const SHEET_COLUMNS = 8;
 /**
  * Standard sprite sheet row layout.
  * Row 0 = idle, Row 1 = walk, Row 2 = attack, Row 3 = hit, Row 4 = death.
+ * Partial: platformer names (skate/jump/fall) have no row on this sheet — they
+ * resolve through an atlas manifest, never through this constant fallback.
  */
-export const SPRITE_SHEET_LAYOUT: Record<AnimationName, AnimationDef> = {
+export const SPRITE_SHEET_LAYOUT: Partial<Record<AnimationName, AnimationDef>> = {
     idle: { row: 0, frames: 4, frameRate: 6, loop: true },
     walk: { row: 1, frames: 8, frameRate: 10, loop: true },
     attack: { row: 2, frames: 6, frameRate: 12, loop: false },

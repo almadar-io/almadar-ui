@@ -10,7 +10,7 @@ import * as React from 'react';
 import { Box, type Point } from '../../core/atoms/index';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
-import type { EventKey } from '@almadar/core';
+import type { EventEmit } from '@almadar/core';
 import { StateNode } from './StateNode';
 import { TransitionArrow } from './TransitionArrow';
 
@@ -43,7 +43,7 @@ export interface StateGraphProps {
     /** Graph canvas height. */
     height?: number;
     /** Emits UI:{nodeClickEvent} with { stateId } when a node is clicked. */
-    nodeClickEvent?: EventKey;
+    nodeClickEvent?: EventEmit<{ stateId: string }>;
     className?: string;
 }
 

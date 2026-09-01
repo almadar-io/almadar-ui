@@ -7,7 +7,7 @@
  */
 
 import React from "react";
-import type { EventKey } from "@almadar/core";
+import type { EventKey, EventEmit } from "@almadar/core";
 import { Icon } from "../atoms/Icon";
 import type { IconInput } from "../atoms/index";
 import { Typography } from "../atoms/Typography";
@@ -71,7 +71,7 @@ export interface BreadcrumbProps {
    * `{ label, href, index }` — the trait handles it with
    * `(navigate ?href)`. Without it, stack crumbs navigate directly.
    */
-  itemEvent?: EventKey;
+  itemEvent?: EventEmit<{ label: string; href?: string; index: number }>;
 
   /**
    * Separator icon (canonical kebab-case name or LucideIcon component)

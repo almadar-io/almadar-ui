@@ -14,11 +14,14 @@
  */
 
 import * as React from 'react';
-import { useEffect, useRef, useCallback, useMemo } from 'react';
+import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import { cn } from '../../../lib/cn';
 import { perfEnd, perfStart } from '../../../lib/perf';
 import { useEventBus } from '../../../hooks/useEventBus';
 import type { UiError } from '../../core/atoms/types';
+import { createWebPainter } from '../../../lib/webPainter2d';
+import { paintDrawable, type DrawableNode } from '../../../lib/drawable/paintDispatch';
+import type { Projector } from '../../../lib/drawable/contract';
 
 /** Canvas 2D `ctx.font` cannot resolve CSS vars — read the theme contract's
  *  body slot off the element so in-canvas text follows the active theme. */
@@ -147,6 +150,16 @@ export interface LearningCanvasProps {
   backgroundColor?: string;
   /** Declarative shapes to draw. */
   shapes?: LearningShape[];
+  /**
+   * Neutral game-canvas drawables (e.g. `draw-sprite`, `draw-fx-layer`) painted
+   * in world coordinates via the supplied `projector`. This lets the learning
+   * canvas reuse the game drawable vocabulary without reimplementing sprites/FX.
+   */
+  drawables?: DrawableNode[];
+  /**
+   * World-to-pixel projector for `drawables`. When absent, `drawables` are ignored.
+   */
+  projector?: Projector;
   /**
    * Top-right status chip row (live measurements, scores, counters).
    * @synonyms chips, stats, measurements
@@ -548,12 +561,25 @@ function traceShapes(panel: LearningTracePanel, k: number, width: number, height
   return out;
 }
 
+function drawableNeedsAnimation(nodes: DrawableNode[] | undefined): boolean {
+  if (!nodes) return false;
+  return nodes.some((node): boolean => {
+    if (node.type === 'draw-sprite') return node.animation !== undefined;
+    if (node.type === 'draw-fx-layer') return Array.isArray(node.items) && node.items.length > 0;
+    if (node.type === 'draw-sprite-layer') return Array.isArray(node.items) && node.items.some((it) => it.animation !== undefined);
+    if (node.type === 'draw-group') return Array.isArray(node.items) && drawableNeedsAnimation(node.items);
+    return false;
+  });
+}
+
 export const LearningCanvas: React.FC<LearningCanvasProps> = ({
   className,
   width = 600,
   height = 400,
   backgroundColor,
   shapes = [],
+  drawables,
+  projector,
   readouts,
   traces,
   interactive = false,
@@ -567,6 +593,9 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
   const eventBus = useEventBus();
   const animRef = useRef<number>(0);
   const hoverIndexRef = useRef<number>(-1);
+  const [drawVersion, setDrawVersion] = useState(0);
+  const invalidateRef = useRef(() => setDrawVersion((v) => v + 1));
+  const needsAnim = useMemo(() => drawableNeedsAnimation(drawables), [drawables]);
 
   const findShapeAt = useCallback((clientX: number, clientY: number): number => {
     const canvas = canvasRef.current;
@@ -618,22 +647,34 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
     for (const shape of derivedShapes) {
       if (shape.type === 'text') drawShape(ctx, shape, width, height, derivedShapes);
     }
+
+    // Game drawables paint on top of the math world using the supplied projector.
+    if (drawables?.length && projector) {
+      const painter = createWebPainter(ctx, invalidateRef.current);
+      const timeMs = needsAnim && typeof performance !== 'undefined' ? performance.now() : 0;
+      const dctx = { projector, time: timeMs, invalidate: invalidateRef.current };
+      for (const node of drawables) {
+        paintDrawable(painter, node, dctx);
+      }
+    }
+
     perfEnd('learningcanvas:paint', _perfT);
-  }, [width, height, backgroundColor, derivedShapes]);
+  }, [width, height, backgroundColor, derivedShapes, drawables, projector, needsAnim]);
 
   useEffect(() => {
     draw();
-  }, [draw]);
+  }, [draw, drawVersion]);
 
   useEffect(() => {
-    if (!animate) return;
+    const shouldAnimate = animate || needsAnim;
+    if (!shouldAnimate) return;
     const loop = () => {
       draw();
       animRef.current = requestAnimationFrame(loop);
     };
     animRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animRef.current);
-  }, [animate, draw]);
+  }, [animate, needsAnim, draw]);
 
   const handlePointerMove = useCallback(
     (e: React.PointerEvent<HTMLCanvasElement>) => {

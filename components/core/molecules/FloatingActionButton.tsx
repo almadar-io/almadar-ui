@@ -63,6 +63,7 @@ export interface FloatingActionButtonProps {
 
   /**
    * Payload to include with the dispatched action event.
+   *  @payloadFor action
    */
   actionPayload?: EventPayload;
 

@@ -1,5 +1,5 @@
 import React from "react";
-import type { EventKey } from "@almadar/core";
+import type { EventKey, EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Icon, resolveIcon, type IconInput } from "./Icon";
 import { useTranslate } from "../../../hooks/useTranslate";
@@ -23,7 +23,7 @@ export interface InputProps extends Omit<
   /** Whether input is disabled */
   disabled?: boolean;
   /** Declarative event name for trait dispatch */
-  action?: EventKey;
+  action?: EventEmit<{ value: string }>;
   /**
    * Input type — selects the field's data mode. Use 'password' for masked
    * credentials / secret / passphrase entry (there is no separate password
@@ -63,7 +63,7 @@ export interface InputProps extends Omit<
   /** onChange handler or declarative event key for trait dispatch */
   onChange?: React.ChangeEventHandler<
     HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-  > | EventKey;
+  > | EventEmit<{ value: string } | { checked: boolean }>;
 }
 
 export const Input = React.forwardRef<

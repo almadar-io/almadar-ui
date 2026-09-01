@@ -9,7 +9,7 @@
  */
 import React, { useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
-import type { JsonValue, JsonObject, EventKey } from "@almadar/core";
+import type { JsonValue, JsonObject, EventKey, EventEmit } from "@almadar/core";
 import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
 import { Box } from "../atoms/Box";
@@ -166,9 +166,9 @@ export interface WizardContainerProps {
   /** Error state */
   error?: UiError | null;
   /** Emits UI:{nextEvent} when advancing to next step */
-  nextEvent?: EventKey;
+  nextEvent?: EventEmit<{ step: number }>;
   /** Emits UI:{backEvent} when going to previous step */
-  backEvent?: EventKey;
+  backEvent?: EventEmit<{ step: number }>;
   /** Emits UI:{completeEvent} when wizard completes */
   completeEvent?: EventKey;
 }

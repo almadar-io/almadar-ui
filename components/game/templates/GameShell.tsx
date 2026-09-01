@@ -16,6 +16,7 @@ import { Typography } from "../../core/atoms/Typography";
 import { AtlasPanel } from "../../core/atoms/AtlasImage";
 
 const GAME_FONTS: Record<string, string> = {
+    fredoka: "Fredoka",
     future: "Kenney Future",
     "future-narrow": "Kenney Future Narrow",
     pixel: "Kenney Pixel",
@@ -44,7 +45,7 @@ export interface GameShellProps {
     backgroundAsset?: Asset;
     /** Per-call-site 9-sliced panel override. Chrome normally comes from the active theme; most callers leave this unset. */
     hudBackgroundAsset?: Asset;
-    /** Game display-font key (future | future-narrow | pixel | blocks | mini) or a CSS font-family. Scoped override of the theme contract's --font-family-display slot: titles and numerics take this face, body text follows the active theme. */
+    /** Game display-font key (pixel | fredoka | future | future-narrow | blocks | mini) or a CSS font-family. Scoped override of the theme contract's --font-family-display slot: titles and numerics take this face, body text follows the active theme. Unset = the theme token decides. */
     fontFamily?: string;
     /** Scopes an `@almadar/ui` theme (e.g. "game-sci-fi-dark") to this shell's subtree. */
     "data-theme"?: string;
@@ -60,10 +61,10 @@ export const GameShell: React.FC<GameShellProps> = ({
     showTopBar = true,
     children,
     backgroundAsset,
-    fontFamily = "future",
+    fontFamily,
     "data-theme": dataTheme,
 }) => {
-    const font = GAME_FONTS[fontFamily] ?? fontFamily;
+    const font = fontFamily ? (GAME_FONTS[fontFamily] ?? fontFamily) : undefined;
     return (
         <Box
             data-theme={dataTheme || undefined}
@@ -77,8 +78,13 @@ export const GameShell: React.FC<GameShellProps> = ({
                 color: "var(--color-foreground, #e0e0e0)",
                 // The fontFamily knob is a scoped override of the theme contract's
                 // display slot: titles/numerics take the game face, body text keeps
-                // the active theme's --font-family-body.
-                "--font-family-display": `'${font}', ui-sans-serif, system-ui, sans-serif`,
+                // the active theme's --font-family-body. Set ONLY when explicitly
+                // passed — an always-on inline stamp would shadow the orbital's
+                // inline-theme font-family-display token (inline style beats the
+                // theme provider's vars for the whole shell subtree).
+                ...(font
+                    ? { "--font-family-display": `'${font}', ui-sans-serif, system-ui, sans-serif` }
+                    : {}),
             } as React.CSSProperties}
         >
             {/* Optional tiled pattern — subtle game-table texture, never a stretched slice. */}

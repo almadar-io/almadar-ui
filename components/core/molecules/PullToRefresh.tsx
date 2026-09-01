@@ -30,7 +30,9 @@ function useSafeEventBus() {
 export interface PullToRefreshProps {
   /** Event name to emit on refresh (emitted as UI:{refreshEvent}) */
   refreshEvent: EventKey;
-  /** Payload to include with the refresh event */
+  /** Payload to include with the refresh event
+   *  @payloadFor refreshEvent
+   */
   refreshPayload?: EventPayload;
   /** Pull distance threshold to trigger refresh in px (default: 60) */
   threshold?: number;

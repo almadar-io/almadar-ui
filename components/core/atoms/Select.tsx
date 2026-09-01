@@ -46,7 +46,7 @@ export interface SelectProps extends Omit<
   /** Show a clear button when a value is selected. */
   clearable?: boolean;
   /** onChange handler (native ChangeEvent) or declarative event key for trait dispatch */
-  onChange?: React.ChangeEventHandler<HTMLSelectElement> | EventKey;
+  onChange?: React.ChangeEventHandler<HTMLSelectElement> | EventEmit<{ value: string | string[] }>;
   /** Value-based change: a React callback (internal use) OR a declarative event
    *  key that emits `{ value }` on the bus (render-ui / lolo authoring). Mirrors
    *  the `onChange` handler|event convention so it's an event-emitting prop, not a

@@ -13,7 +13,7 @@
  * Icon, Checkbox, Divider.
  */
 import React from 'react';
-import type { EntityRow, EntityWith, FieldValue, EventKey } from '@almadar/core';
+import type { EntityRow, EntityWith, FieldValue, EventKey, EventEmit } from '@almadar/core';
 import type { ItemActionPayload, SelectionChangePayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
 import { formatValue, humanizeEnumValue, humanizeFieldName } from '../../../lib/format';
@@ -107,12 +107,12 @@ export interface TableViewProps extends DataDndProps {
   itemClickEvent?: EventKey;
   /** Render a leading checkbox column. Selection changes emit `selectEvent`. */
   selectable?: boolean;
-  /** Event emitted on selection change: UI:{selectEvent} with { ids, rows }. */
-  selectEvent?: EventKey;
+  /** Event emitted on selection change: UI:{selectEvent} with { selectedIds }. */
+  selectEvent?: EventEmit<SelectionChangePayload>;
   /** Currently-selected ids (controlled). Falls back to local state when omitted. */
   selectedIds?: readonly string[];
   /** Event emitted on sortable-header click: UI:{sortEvent} with { column, direction }. */
-  sortEvent?: EventKey;
+  sortEvent?: EventEmit<{ column: string; direction: 'asc' | 'desc' }>;
   /** Current sort column (display hint for the active header arrow). */
   sortColumn?: string;
   /** Current sort direction (display hint). */

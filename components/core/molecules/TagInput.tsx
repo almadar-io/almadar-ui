@@ -23,7 +23,7 @@
  */
 
 import React, { useCallback, useState } from 'react';
-import type { EventKey } from '@almadar/core';
+import type { EventEmit } from '@almadar/core';
 import { cn } from '../../../lib/cn';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { Input } from '../atoms/Input';
@@ -52,10 +52,10 @@ export interface TagInputProps {
   className?: string;
   /** Event emitted when a tag is added: `UI:{addEvent}` with payload
    *  `{ tag: string, value: string[] }`. */
-  addEvent?: EventKey;
+  addEvent?: EventEmit<{ tag: string; value: string[] }>;
   /** Event emitted when a tag is removed: `UI:{removeEvent}` with
    *  payload `{ tag: string, index: number, value: string[] }`. */
-  removeEvent?: EventKey;
+  removeEvent?: EventEmit<{ tag: string; index: number; value: string[] }>;
 }
 
 export const TagInput: React.FC<TagInputProps> = ({

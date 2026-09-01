@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from "react";
-import type { EventKey, EventPayload } from "@almadar/core";
+import type { EventEmit, EventPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Icon } from "../atoms/Icon";
 import { useEventBus } from "../../../hooks/useEventBus";
@@ -29,8 +29,10 @@ export interface StarRatingProps {
   /** Star size */
   size?: StarRatingSize;
   /** Declarative event name for rating changes */
-  action?: EventKey;
-  /** Payload to include with the action event */
+  action?: EventEmit<{ value: number }>;
+  /** Payload to include with the action event
+   *  @payloadFor action
+   */
   actionPayload?: EventPayload;
   /** Direct onChange callback */
   onChange?: (value: number) => void;

@@ -132,7 +132,9 @@ export interface LinkPatternProps extends ClosedCircuitProps {
   onClick?: EventKey;
   /** Legacy alias for action. */
   event?: EventKey;
-  /** Payload for the dispatched event. */
+  /** Payload for the dispatched event.
+   *  @payloadFor action
+   */
   actionPayload?: EventPayload;
   className?: string;
 }

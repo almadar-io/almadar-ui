@@ -12,7 +12,7 @@
  * Uses atoms only internally: Box, VStack, HStack, Typography, Badge, Button, Icon.
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import type { EntityRow, EventKey, FieldValue } from '@almadar/core';
+import type { EntityRow, EventKey, EventEmit, FieldValue } from '@almadar/core';
 import type { ItemActionPayload, SelectionChangePayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
 import { formatValue, humanizeEnumValue, humanizeFieldName } from '../../../lib/format';
@@ -123,7 +123,7 @@ export interface DataGridProps extends DataDndProps {
   /** Enable multi-select with checkboxes */
   selectable?: boolean;
   /** Selection change event name (emits UI:{selectionEvent} with { selectedIds: string[] }) */
-  selectionEvent?: EventKey;
+  selectionEvent?: EventEmit<SelectionChangePayload>;
   /** Enable infinite scroll loading */
   infiniteScroll?: boolean;
   /** Event emitted when more items needed: UI:{loadMoreEvent} */

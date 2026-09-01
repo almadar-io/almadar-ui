@@ -54,7 +54,9 @@ export interface StackProps {
   tabIndex?: number;
   /** Declarative event name — emits UI:{action} via eventBus on click */
   action?: EventKey;
-  /** Payload to include with the action event */
+  /** Payload to include with the action event
+   *  @payloadFor action
+   */
   actionPayload?: EventPayload;
   /** When true, horizontal stacks flip to vertical below the md breakpoint (768px) */
   responsive?: boolean;

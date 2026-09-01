@@ -94,8 +94,10 @@ export interface CanvasProps {
     // --- Shared interaction (LOLO-owned). The painter emitted at runtime depends on
     //     `mode`, so the payload is genuinely mode-polymorphic: an INTERSECTION of the
     //     two painters' emit shapes. It stays assignable to either host's prop (for the
-    //     dispatch below) while pattern-sync records it as an opaque payload — so the
-    //     validator does not force a trait to declare both modes' fields at once. ---
+    //     dispatch below) — an all-optional single shape is NOT (verified: 6× TS2322 at
+    //     the dispatch sites). pattern-sync flattens this to individually-OPTIONAL fields,
+    //     because two members each contributing named fields cannot be shown to co-occur
+    //     at runtime — so no trait is forced to declare both modes' fields at once. ---
     tileClickEvent?: EventEmit<{ x: number; y: number } & { tileId: string; z: number }>;
     unitClickEvent?: EventEmit<{ unitId: string } & { x: number; z: number }>;
     tileHoverEvent?: EventEmit<{ x: number; y: number } & { tileId: string; z: number }>;

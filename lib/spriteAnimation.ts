@@ -138,7 +138,8 @@ export function getCurrentFrame(
     animName: AnimationName,
     elapsed: number,
 ): { frame: number; finished: boolean } {
-    return getCurrentFrameFromDef(SPRITE_SHEET_LAYOUT[animName], elapsed);
+    const def = SPRITE_SHEET_LAYOUT[animName] ?? { row: 0, frames: 4, frameRate: 6, loop: true };
+    return getCurrentFrameFromDef(def, elapsed);
 }
 
 /**
@@ -163,7 +164,7 @@ export function resolveFrame(
           })();
     if (!sheetUrl) return null;
 
-    const def = SPRITE_SHEET_LAYOUT[animState.animation];
+    const def = SPRITE_SHEET_LAYOUT[animState.animation] ?? { row: 0, frames: 4, frameRate: 6, loop: true };
     const { frame } = getCurrentFrame(animState.animation, animState.elapsed);
 
     // Flat frame-index sheet: one row, frame advances horizontally (columns = frames).
@@ -211,7 +212,7 @@ export function transitionAnimation(
     if (state.animation === 'death' && state.finished) return state;
 
     // Don't restart the same looping animation
-    if (state.animation === newAnim && SPRITE_SHEET_LAYOUT[newAnim].loop) {
+    if (state.animation === newAnim && SPRITE_SHEET_LAYOUT[newAnim]?.loop) {
         return direction ? { ...state, direction } : state;
     }
 
@@ -239,7 +240,7 @@ export function tickAnimationState(
     const def = SPRITE_SHEET_LAYOUT[state.animation];
 
     // One-shot animation just finished — transition to queued or idle
-    if (finished && !def.loop && !state.finished) {
+    if (finished && !def?.loop && !state.finished) {
         // Death is terminal
         if (state.animation === 'death') {
             return { ...state, elapsed: newElapsed, frame, finished: true };

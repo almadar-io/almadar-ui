@@ -1,5 +1,5 @@
 import React from "react";
-import type { EventKey } from "@almadar/core";
+import type { EventKey, EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 
@@ -15,7 +15,7 @@ export interface TextareaProps extends Omit<React.TextareaHTMLAttributes<HTMLTex
   /** Error message */
   error?: string;
   /** onChange handler or declarative event key for trait dispatch */
-  onChange?: React.ChangeEventHandler<HTMLTextAreaElement> | EventKey;
+  onChange?: React.ChangeEventHandler<HTMLTextAreaElement> | EventEmit<{ value: string }>;
 }
 
 export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(

@@ -52,7 +52,9 @@ export interface CardProps {
   maxLevel?: number;
   /** Event emitted on long press: UI:{longPressEvent} (payload: longPressPayload spread — variable) */
   longPressEvent?: EventEmit<EventPayload>;
-  /** Additional payload for long-press events */
+  /** Additional payload for long-press events
+   *  @payloadFor longPressEvent
+   */
   longPressPayload?: EventPayload;
 }
 

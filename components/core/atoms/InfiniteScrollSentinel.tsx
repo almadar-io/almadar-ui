@@ -17,7 +17,9 @@ import { Spinner } from "./Spinner";
 export interface InfiniteScrollSentinelProps {
   /** Event name to emit when load-more is triggered (emitted as UI:{loadMoreEvent}) */
   loadMoreEvent: EventKey;
-  /** Optional payload to include with the load-more event */
+  /** Optional payload to include with the load-more event
+   *  @payloadFor loadMoreEvent
+   */
   loadMorePayload?: EventPayload;
   /** Whether a load operation is currently in progress */
   isLoading?: boolean;

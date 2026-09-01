@@ -1,5 +1,5 @@
 import React from "react";
-import type { EventKey } from "@almadar/core";
+import type { EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 
@@ -15,7 +15,7 @@ export interface CheckboxProps extends Omit<
   defaultChecked?: boolean;
   label?: string;
   /** onChange handler or declarative event key for trait dispatch */
-  onChange?: React.ChangeEventHandler<HTMLInputElement> | EventKey;
+  onChange?: React.ChangeEventHandler<HTMLInputElement> | EventEmit<{ checked: boolean }>;
 }
 
 export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(

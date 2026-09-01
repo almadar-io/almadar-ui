@@ -213,6 +213,9 @@ export function expandFxItem(
             width: spriteSize,
             height: spriteSize,
             opacity: fade,
+            animation: view.animation ?? sprite.animations?.[0],
+            // One-shot fx rows (burst) play from the item's birth, not wall-time.
+            clockMs: ageMs,
         });
     } else {
         out.push(...proceduralShapes(view, pos, fade, progress));

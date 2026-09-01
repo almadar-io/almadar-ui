@@ -19,7 +19,7 @@ import type { Asset, ScenePos } from '@almadar/core';
 import { createLogger } from '@almadar/logger';
 import type { Painter2D } from '../../../lib/painter2d';
 import { getAtlas, atlasFailed, isAtlasAsset, isSpriteSheetAtlas, subRectFor } from '../../../lib/atlasSlice';
-import { frameRect, getCurrentFrameFromDef, isAnimationName } from '../../../lib/spriteAnimation';
+import { frameRect, getCurrentFrameFromDef } from '../../../lib/spriteAnimation';
 import { getImageStatus } from '../../../lib/imageCache';
 import type { DrawableAnchor, DrawableBase, DrawContext, PaintFn } from '../../../lib/drawable/contract';
 import { isValidScenePos, spriteRect } from '../../../lib/drawable/contract';
@@ -73,6 +73,8 @@ export interface DrawSpriteProps extends DrawableBase {
     animation?: string;
     /** Override the sheet row's loop flag. The paint clock is wall-time, so one-shot rows hold their final frame — preview pages set `true` to cycle attack/hit/death continuously. */
     loop?: boolean;
+    /** Animation clock override in ms (e.g. an fx entry's age since spawn). Omitted → the host paint clock; one-shot rows anchored to wall-time would otherwise sit on their final frame. */
+    clockMs?: number;
     /** Mirror horizontally (facing). */
     flipX?: boolean;
     /** Rotation in radians about the sprite's center. */
@@ -109,13 +111,21 @@ export const paintSprite: PaintFn<DrawSpriteProps> = (painter, node, dctx) => {
             return; // atlas JSON in-flight
         }
         if (isSpriteSheetAtlas(atlas)) {
-            const def = isAnimationName(node.animation) ? atlas.animations[node.animation] : undefined;
+            // The atlas manifest is authoritative for its rows: unit sheets use the
+            // canonical names, fx sheets declare their own (e.g. `burst`).
+            const def = atlas.animations[node.animation];
             if (!def) {
                 paintFallbackSquare(painter, node, dctx, 'sprite-missing');
                 return;
             }
-            const { frame } = getCurrentFrameFromDef(node.loop === undefined ? def : { ...def, loop: node.loop }, dctx.time);
+            const { frame } = getCurrentFrameFromDef(node.loop === undefined ? def : { ...def, loop: node.loop }, node.clockMs ?? dctx.time);
             const r = frameRect(frame, def.row, atlas.columns, atlas.frameWidth, atlas.frameHeight);
+            // A malformed atlas def (e.g. `fps` instead of `frameRate`) yields a
+            // NaN frame → NaN blit rect → canvas silently paints nothing. Fail loud.
+            if (![r.sx, r.sy, r.sw, r.sh].every(Number.isFinite)) {
+                paintFallbackSquare(painter, node, dctx, 'sprite-missing');
+                return;
+            }
             src = { x: r.sx, y: r.sy, w: r.sw, h: r.sh };
         }
     }

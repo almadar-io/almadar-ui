@@ -14,7 +14,7 @@
  * Uses atoms only internally: Box, VStack, HStack, Typography, Badge, Button, Icon.
  */
 import React from 'react';
-import type { EntityRow, EventKey, FieldValue } from "@almadar/core";
+import type { EntityRow, EventKey, EventEmit, FieldValue } from "@almadar/core";
 import type { ItemActionPayload } from '@almadar/core/patterns';
 import { cn } from '../../../lib/cn';
 import { formatDate, formatValue as libFormatValue, humanizeFieldName, sortRows } from '../../../lib/format';
@@ -97,7 +97,8 @@ export interface DataListProps extends DataDndProps {
   maxInlineActions?: number;
   /** When set, the whole row is clickable and emits UI:{itemClickEvent} with
    *  { id, row } (action-button clicks stopPropagation so they still win). */
-  itemClickEvent?: EventKey;
+  /** @entityRow row */
+  itemClickEvent?: EventEmit<ItemActionPayload>;
   /** Gap between rows */
   gap?: 'none' | 'sm' | 'md' | 'lg';
   /** Visual variant */

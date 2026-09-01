@@ -72,7 +72,9 @@ export interface AvatarProps {
   /** Declarative event name — emits UI:{action} via eventBus on click */
   action?: EventKey;
 
-  /** Payload to include with the action event */
+  /** Payload to include with the action event
+   *  @payloadFor action
+   */
   actionPayload?: EventPayload;
 }
 

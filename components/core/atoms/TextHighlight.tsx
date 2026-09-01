@@ -9,7 +9,7 @@
  */
 
 import React from "react";
-import type { EventKey } from "@almadar/core";
+import type { EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { useEventBus } from "../../../hooks/useEventBus";
 
@@ -58,10 +58,10 @@ export interface TextHighlightProps {
   children: React.ReactNode;
 
   /** Declarative event name — emits UI:{action} via eventBus on click */
-  action?: EventKey;
+  action?: EventEmit<{ annotationId?: string }>;
 
-  /** Declarative hover event — emits UI:{hoverEvent} with { hovered: true/false } */
-  hoverEvent?: EventKey;
+  /** Declarative hover event — emits UI:{hoverEvent} with { hovered, annotationId } */
+  hoverEvent?: EventEmit<{ hovered: boolean; annotationId?: string }>;
 }
 
 /**

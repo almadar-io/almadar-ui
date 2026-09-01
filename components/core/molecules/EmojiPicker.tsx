@@ -11,7 +11,7 @@
 
 import React, { useState } from 'react';
 import { lib, ordered } from 'emojilib';
-import type { EventKey } from '@almadar/core';
+import type { EventEmit } from '@almadar/core';
 import type { EmojiPickPayload } from '@almadar/core/patterns';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { Button } from '../atoms/Button';
@@ -45,7 +45,7 @@ export interface EmojiPickerProps {
   /**
    * Declarative event name — picking an emoji emits UI:{pickEvent} with { emoji } via eventBus
    */
-  pickEvent?: EventKey;
+  pickEvent?: EventEmit<EmojiPickPayload>;
 
   /**
    * Which side of the trigger the panel opens on

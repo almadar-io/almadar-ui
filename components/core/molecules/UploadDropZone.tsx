@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useRef, useState } from "react";
-import type { EventKey, EventPayload } from "@almadar/core";
+import type { EventEmit, EventPayload } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Icon } from "../atoms/Icon";
 import type { IconInput } from "../atoms/index";
@@ -33,8 +33,10 @@ export interface UploadDropZoneProps {
   /** Disabled state */
   disabled?: boolean;
   /** Declarative event name for file selection */
-  action?: EventKey;
-  /** Payload to include with the action event */
+  action?: EventEmit<{ files: { name: string; size: number; type: string; content: string }[] }>;
+  /** Payload to include with the action event
+   *  @payloadFor action
+   */
   actionPayload?: EventPayload;
   /** Direct onFiles callback */
   onFiles?: (files: File[]) => void;
