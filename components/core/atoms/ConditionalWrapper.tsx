@@ -13,16 +13,16 @@ import {
   type SExpr,
   type EvaluationContext as SharedEvaluationContext,
 } from '@almadar/evaluator';
-import { type JsonObject } from '@almadar/core';
+import { type FieldValue } from '@almadar/core';
 
 /**
  * Context for conditional evaluation
  */
 export type ConditionalContext = {
-  formValues: JsonObject;
-  globalVariables: JsonObject;
-  localVariables?: JsonObject;
-  entity?: JsonObject;
+  formValues: Record<string, FieldValue>;
+  globalVariables: Record<string, FieldValue>;
+  localVariables?: Record<string, FieldValue>;
+  entity?: Record<string, FieldValue>;
 };
 
 export interface ConditionalWrapperProps {

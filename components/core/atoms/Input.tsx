@@ -23,7 +23,7 @@ export interface InputProps extends Omit<
   /** Whether input is disabled */
   disabled?: boolean;
   /** Declarative event name for trait dispatch */
-  action?: EventEmit<{ value: string }>;
+  action?: EventEmit<{ value: string | number }>;
   /**
    * Input type — selects the field's data mode. Use 'password' for masked
    * credentials / secret / passphrase entry (there is no separate password
@@ -179,10 +179,26 @@ export const Input = React.forwardRef<
     // Consuming it here also keeps `action` off `...props`, so it never
     // reaches the native <input> (React warns: "You can only pass the action
     // prop to <form>").
+    //
+    // `inputType: "number"` narrows the compiled trait's declared `value`
+    // payload to `number` (§61 OPEN 1) — coerce here so the emitted payload
+    // actually is one. Keystroke state stays the raw string (partial input
+    // like "3." is a valid string mid-type); only the EMITTED value is
+    // coerced. Neither an empty field nor a non-numeric raw value (`Number`
+    // would yield `NaN`, e.g. `Number('')` is 0 — not a valid signal either
+    // way) has a real number to emit, so the gesture is suppressed entirely
+    // rather than emit a required `value` field that is missing or NaN.
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-      if (action && e.key === 'Enter') {
-        eventBus.emit(`UI:${action}`, { value: e.currentTarget.value });
+      if (!action || e.key !== 'Enter') return;
+      const raw = e.currentTarget.value;
+      if (type === 'number') {
+        if (raw.trim() === '') return;
+        const numeric = Number(raw);
+        if (Number.isNaN(numeric)) return;
+        eventBus.emit(`UI:${action}`, { value: numeric });
+        return;
       }
+      eventBus.emit(`UI:${action}`, { value: raw });
     };
 
     const wrapField = (field: React.ReactNode, fullWidth = true) => (

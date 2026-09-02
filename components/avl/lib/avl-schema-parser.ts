@@ -25,12 +25,13 @@ import type {
   TraitEventListener,
   JsonValue,
   JsonObject,
+  SExpr,
 } from '@almadar/core';
 
 // Internal serialized effect record — all fields are JsonValue-compatible.
 interface SerializedEffect extends JsonObject {
   type: string;
-  args: JsonValue[];
+  args: SExpr[];
 }
 
 // ---------------------------------------------------------------------------
@@ -110,7 +111,7 @@ export interface TraitTransitionInfo extends JsonObject {
   from: string;
   to: string;
   event: string;
-  guard: JsonValue | null;
+  guard: SExpr | null;
   effects: SerializedEffect[];
   index: number;
 }
@@ -437,7 +438,7 @@ export function parseTraitLevel(schema: OrbitalSchema, orbitalName: string, trai
     from: t.from ?? '',
     to: t.to ?? '',
     event: t.event ?? '',
-    guard: (t.guard as JsonValue | null | undefined) ?? null,
+    guard: t.guard ?? null,
     effects: ((t.effects ?? []) as JsonValue[]).map(parseEffectType),
     index: i,
   }));

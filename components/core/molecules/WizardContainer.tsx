@@ -9,7 +9,7 @@
  */
 import React, { useState, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Check } from "lucide-react";
-import type { JsonValue, JsonObject, EventKey, EventEmit } from "@almadar/core";
+import type { JsonValue, EventKey, EventEmit, ControlValue, FieldValue } from "@almadar/core";
 import { Button } from "../atoms/Button";
 import { Typography } from "../atoms/Typography";
 import { Box } from "../atoms/Box";
@@ -18,6 +18,7 @@ import { Icon } from "../atoms/Icon";
 import { cn } from "../../../lib/cn";
 import { useTranslate } from "../../../hooks/useTranslate";
 import { useEventBus } from "../../../hooks/useEventBus";
+import type { SExpr } from "@almadar/evaluator";
 import type { UiError } from '../atoms/types';
 
 /** Form field definition for wizard sections */
@@ -28,30 +29,30 @@ export interface WizardField {
   required?: boolean;
   repeatable?: boolean;
   options?: Array<{ value: string; label: string; isDefault?: boolean }>;
-  defaultValue?: JsonValue;
-  condition?: JsonValue[];
+  defaultValue?: ControlValue;
+  condition?: SExpr;
   placeholder?: string;
   entityField?: string;
   minLength?: number;
   maxLength?: number;
-  dataSource?: JsonObject;
+  dataSource?: Record<string, FieldValue>;
   displayFields?: string[];
-  searchConfig?: JsonObject;
+  searchConfig?: Record<string, FieldValue>;
   hiddenCalculations?: Array<{
     variable: string;
     expression: string;
     scope?: string;
   }>;
-  signatureConfig?: JsonObject;
-  displayTemplate?: JsonObject;
-  lawReference?: JsonObject;
+  signatureConfig?: Record<string, FieldValue>;
+  displayTemplate?: Record<string, FieldValue>;
+  lawReference?: Record<string, FieldValue>;
   contextMenu?: string[];
-  calculated?: JsonObject;
+  calculated?: Record<string, FieldValue>;
   readOnly?: boolean;
-  minDate?: JsonValue;
-  stats?: Array<{ label: string; value: JsonValue; icon?: string }>;
-  items?: Array<{ id: string; label: string; autoCheck?: JsonValue }>;
-  [key: string]: JsonValue | undefined;
+  minDate?: string;
+  stats?: Array<{ label: string; value: ControlValue; icon?: string }>;
+  items?: Array<{ id: string; label: string; autoCheck?: boolean }>;
+  [key: string]: JsonValue | SExpr | ControlValue | Record<string, FieldValue> | undefined;
 }
 
 /** Section within a wizard step */
@@ -61,7 +62,7 @@ export interface WizardSection {
   description?: string;
   fields?: WizardField[];
   subsections?: WizardSection[];
-  condition?: JsonValue[];
+  condition?: SExpr;
   repeatable?: boolean;
   minItems?: number;
   addButtonLabel?: string;
@@ -70,9 +71,9 @@ export interface WizardSection {
     expression: string;
     scope?: string;
   }>;
-  dataSource?: JsonObject;
+  dataSource?: Record<string, FieldValue>;
   readOnly?: boolean;
-  [key: string]: JsonValue | WizardField[] | WizardSection[] | undefined;
+  [key: string]: JsonValue | SExpr | Record<string, FieldValue> | WizardField[] | WizardSection[] | undefined;
 }
 
 /** Entity mapping configuration */
@@ -91,7 +92,7 @@ export interface WizardEntityMapping {
 
 /** Validation rule for wizard steps */
 export interface WizardValidationRule {
-  condition: JsonValue[];
+  condition: SExpr;
   message: string;
 }
 
