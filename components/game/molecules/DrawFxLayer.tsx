@@ -19,7 +19,7 @@
  */
 import type React from 'react';
 import type { Asset, ScenePos } from '@almadar/core';
-import type { DrawableBase } from '../../../lib/drawable/contract';
+import type { DrawableBase, Projector } from '../../../lib/drawable/contract';
 import type { DrawableNode } from '../../../lib/drawable/paintDispatch';
 import type { DrawShapeProps } from '../atoms/DrawShape';
 import type { DrawTextProps } from '../atoms/DrawText';
@@ -184,6 +184,7 @@ export function expandFxItem(
     node: DrawFxLayerProps,
     epochNowMs: number,
     dim: FxDimension,
+    projector?: Projector,
 ): DrawableNode[] {
     if (view.space === 'screen') return [];
     const tickMs = node.tickMs ?? DEFAULT_TICK_MS;
@@ -221,6 +222,12 @@ export function expandFxItem(
         out.push(...proceduralShapes(view, pos, fade, progress));
     }
     if (view.message) {
+        // `size` is documented in world units for canvas-space fx; convert to
+        // pixel font size when a projector is available. A fixed minimum keeps
+        // unpreset text readable.
+        const pxSize = projector && view.size !== undefined
+            ? Math.max(10, Math.round(view.size * projector.tileWidth))
+            : undefined;
         const text: DrawTextProps = {
             type: 'draw-text',
             text: view.message,
@@ -228,6 +235,7 @@ export function expandFxItem(
             offsetY: -(0.15 + 0.55 * progress),
             color: view.color ?? node.textColor ?? DEFAULT_TEXT_COLOR,
             opacity: fade,
+            ...(pxSize ? { font: `bold ${pxSize}px system-ui, sans-serif` } : {}),
         };
         out.push(text);
     }
@@ -235,13 +243,18 @@ export function expandFxItem(
 }
 
 /** Expand the whole layer — pure; the caller routes the result through the normal paint dispatch. */
-export function expandFxLayer(node: DrawFxLayerProps, epochNowMs: number, dim: FxDimension): DrawableNode[] {
+export function expandFxLayer(
+    node: DrawFxLayerProps,
+    epochNowMs: number,
+    dim: FxDimension,
+    projector?: Projector,
+): DrawableNode[] {
     if (!Array.isArray(node.items)) return [];
     const out: DrawableNode[] = [];
     for (const item of node.items) {
         // A malformed entry must never blank a board (unresolvable-asset contract).
         if (!item || typeof item.id !== 'string') continue;
-        out.push(...expandFxItem(resolveFxView(item, node.presets), node, epochNowMs, dim));
+        out.push(...expandFxItem(resolveFxView(item, node.presets), node, epochNowMs, dim, projector));
     }
     return out;
 }
