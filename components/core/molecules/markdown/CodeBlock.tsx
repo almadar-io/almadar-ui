@@ -531,6 +531,19 @@ const DIFF_STYLE_FALLBACK: { bg: string; prefix: string; text: string } = { bg: 
 const LINE_PROPS_FN = (n: number): React.HTMLProps<HTMLElement> => ({ 'data-line': String(n - 1) } as React.HTMLProps<HTMLElement>);
 const HIDDEN_LINE_NUMBERS: React.CSSProperties = { display: 'none' };
 
+/**
+ * Tokenization capacity bound (VS Code's largeFileOptimizations precedent).
+ * One SyntaxHighlighter render is a single uninterruptible function call —
+ * Prism + per-line element creation is ~linear in code size, so a multi-MB
+ * document costs seconds PER RENDER PASS and, multiplied by StrictMode/dev
+ * double renders, wedges the main thread for minutes (architect-shell hang,
+ * 2026-09-03: a 2.8MB resolved-IR schema). Above this bound the code renders
+ * as plain text — same layout, fonts, scrolling, editing, and copy; dropped:
+ * token colors, per-line error backgrounds, and fold gutters (all need
+ * per-line DOM).
+ */
+export const HIGHLIGHT_CAPACITY_BYTES = 512 * 1024;
+
 /** Loads the Prism grammar for `language` on demand; returns readiness so the
  *  highlight re-renders once the lazy chunk arrives. */
 function useLanguageReady(language: string): boolean {
@@ -577,6 +590,9 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     const isOrb = language === 'orb';
     const isLolo = language === 'lolo';
     const activeStyle = isOrb ? orbStyle : isLolo ? loloStyle : dark;
+    const overCapacity = code.length > HIGHLIGHT_CAPACITY_BYTES;
+    const plainCodeColor =
+      (activeStyle['code[class*="language-"]']?.color as string | undefined) ?? '#d4d4d4';
     const languageReady = useLanguageReady(language);
     const eventBus = useEventBus();
     const { t } = useTranslate();
@@ -668,8 +684,8 @@ export const CodeBlock = React.memo<CodeBlockProps>(
     const [collapsed, setCollapsed] = useState<Set<number>>(() => new Set());
 
     const foldRegions = useMemo(
-      () => (isFoldable ? computeFoldRegions(code) : []),
-      [code, isFoldable],
+      () => (isFoldable && !overCapacity ? computeFoldRegions(code) : []),
+      [code, isFoldable, overCapacity],
     );
     const foldStartMap = useMemo(() => {
       const m = new Map<number, FoldRegion>();
@@ -707,11 +723,80 @@ export const CodeBlock = React.memo<CodeBlockProps>(
 
     useEffect(() => { setCollapsed(new Set()); }, [code]);
 
+    // ── Memoized editable overlay highlight ──
+    // Same discipline as the read-only element below: tokenizing is O(code)
+    // and re-runs on EVERY render when built inline, so a parent that
+    // re-renders steadily (polling badge, SSE state) against a large schema
+    // queues highlight passes faster than they finish and wedges the main
+    // thread. Only a keystroke (editableValue) or grammar/style change may
+    // re-tokenize.
+    const editableOverCapacity = editableValue.length > HIGHLIGHT_CAPACITY_BYTES;
+    const editableHighlightedElement = useMemo(
+      () =>
+        editableOverCapacity ? (
+          <div
+            style={{
+              padding: '1rem',
+              margin: 0,
+              whiteSpace: 'pre',
+              minWidth: '100%',
+              color: plainCodeColor,
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono", "Courier New", monospace',
+              fontSize: '13px',
+              lineHeight: '1.5',
+            }}
+          >
+            {editableValue || ' '}
+          </div>
+        ) : (
+        <SyntaxHighlighter
+          PreTag="div"
+          language={language}
+          style={activeStyle}
+          wrapLines={errorLines && errorLines.size > 0}
+          lineProps={errorLineProps}
+          customStyle={{
+            backgroundColor: 'transparent',
+            borderRadius: 0,
+            padding: '1rem',
+            margin: 0,
+            whiteSpace: 'pre',
+            minWidth: '100%',
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono", "Courier New", monospace',
+            fontSize: '13px',
+            lineHeight: '1.5',
+          }}
+          codeTagProps={{
+            style: {
+              fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono", "Courier New", monospace',
+              fontSize: '13px',
+              lineHeight: '1.5',
+            },
+          }}
+        >
+          {editableValue || ' '}
+        </SyntaxHighlighter>
+        ),
+      [editableValue, editableOverCapacity, plainCodeColor, language, activeStyle, errorLines, errorLineProps, languageReady],
+    );
+
     // ── Memoized highlight (never re-tokenizes on fold toggle) ──
     // showLineNumbers + showInlineLineNumbers=false gives proper data-line
     // without rendering inline numbers. lineNumberContainerStyle hides the gutter.
     const highlightedElement = useMemo(
-      () => (
+      () =>
+        overCapacity ? (
+          <div
+            style={{
+              margin: 0,
+              whiteSpace: 'pre',
+              minWidth: '100%',
+              color: plainCodeColor,
+            }}
+          >
+            {code}
+          </div>
+        ) : (
         <SyntaxHighlighter
           PreTag="div"
           language={language}
@@ -732,8 +817,8 @@ export const CodeBlock = React.memo<CodeBlockProps>(
         >
           {code}
         </SyntaxHighlighter>
-      ),
-      [code, language, activeStyle, languageReady],
+        ),
+      [code, overCapacity, plainCodeColor, language, activeStyle, languageReady],
     );
 
     // ── DOM-level fold UI (no re-tokenization, just style + element injection) ──
@@ -1119,33 +1204,7 @@ export const CodeBlock = React.memo<CodeBlockProps>(
                 pointerEvents: 'none',
               }}
             >
-              <SyntaxHighlighter
-                PreTag="div"
-                language={language}
-                style={activeStyle}
-                wrapLines={errorLines && errorLines.size > 0}
-                lineProps={errorLineProps}
-                customStyle={{
-                  backgroundColor: 'transparent',
-                  borderRadius: 0,
-                  padding: '1rem',
-                  margin: 0,
-                  whiteSpace: 'pre',
-                  minWidth: '100%',
-                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono", "Courier New", monospace',
-                  fontSize: '13px',
-                  lineHeight: '1.5',
-                }}
-                codeTagProps={{
-                  style: {
-                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, "Cascadia Mono", "Courier New", monospace',
-                    fontSize: '13px',
-                    lineHeight: '1.5',
-                  },
-                }}
-              >
-                {editableValue || ' '}
-              </SyntaxHighlighter>
+              {editableHighlightedElement}
             </div>
             <Textarea
               key={editableTextareaKey}

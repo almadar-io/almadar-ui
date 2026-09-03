@@ -120,9 +120,11 @@ export const SplitPane: React.FC<SplitPaneProps> = ({
         className,
       )}
     >
-      {/* Left/Top pane */}
+      {/* Panes are flex columns so a lone child fills them whether it is
+          h-full-styled or a flex item (flex-1) — a block wrapper gives
+          flex-item children height:auto and they collapse to content. */}
       <div
-        className={cn("overflow-auto", leftClassName)}
+        className={cn("flex flex-col overflow-auto", leftClassName)}
         style={{
           [isHorizontal ? "width" : "height"]: `${ratio}%`,
           flexShrink: 0,
@@ -145,7 +147,7 @@ export const SplitPane: React.FC<SplitPaneProps> = ({
       )}
 
       {/* Right/Bottom pane */}
-      <div className={cn("flex-1 overflow-auto", rightClassName)}>{right}</div>
+      <div className={cn("flex flex-col flex-1 min-h-0 min-w-0 overflow-auto", rightClassName)}>{right}</div>
     </div>
   );
 };

@@ -74,7 +74,6 @@ describe('FlowCanvas default (externalInspector absent)', () => {
         initialOrbital="TaskBoard"
         initialLevel="expanded"
         initialSelectedNode={preselectedNode}
-        onClose={() => {}}
       />,
     );
     // OrbInspector's own tab bar — proves it mounted inline.

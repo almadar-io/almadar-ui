@@ -105,7 +105,10 @@ export const DockLayout: React.FC<DockLayoutProps> = ({
 
   const centerRow = (
     <HStack gap="none" className="flex-1 min-h-0 min-w-0">
-      <Box className={cn("flex-1 min-w-0 h-full overflow-auto", mainClassName)}>
+      {/* No `h-full` on flex-grown children: height:100% resolves against
+          centerRow's non-definite (flex-grown) height and collapses to
+          content height — `min-h-0` + the HStack's items-stretch size it. */}
+      <Box className={cn("flex-1 min-w-0 min-h-0 overflow-auto", mainClassName)}>
         {main}
       </Box>
       {showSecondarySidebar && (
@@ -142,7 +145,7 @@ export const DockLayout: React.FC<DockLayoutProps> = ({
       {rail && (
         <Box
           className={cn(
-            "flex-shrink-0 h-full overflow-auto border-r border-border",
+            "flex-shrink-0 min-h-0 overflow-auto border-r border-border",
             railClassName,
           )}
           style={{ width: railWidth }}
