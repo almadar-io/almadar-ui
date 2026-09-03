@@ -106,7 +106,7 @@ export function paintDrawable(painter: Painter2D, node: DrawableNode, dctx: Draw
             // the fx mechanic's ttl decay.
             const epochNow =
                 dctx.time > 0 && typeof performance !== 'undefined' ? performance.timeOrigin + dctx.time : 0;
-            for (const child of expandFxLayer(node, epochNow, '2d')) paintDrawable(painter, child, dctx);
+            for (const child of expandFxLayer(node, epochNow, '2d', dctx.projector)) paintDrawable(painter, child, dctx);
             break;
         }
     }

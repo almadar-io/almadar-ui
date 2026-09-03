@@ -176,7 +176,7 @@ function FxLayer3D({
     });
     if (!live) return null;
     const epochNow = typeof performance !== 'undefined' ? performance.timeOrigin + performance.now() : 0;
-    const children = expandFxLayer(node, epochNow, '3d');
+    const children = expandFxLayer(node, epochNow, '3d', undefined);
     return (
         <>
             {children.map((c, i) => (

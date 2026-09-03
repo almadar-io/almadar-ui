@@ -22,7 +22,9 @@ export interface InputProps extends Omit<
   value?: string | number;
   /** Whether input is disabled */
   disabled?: boolean;
-  /** Declarative event name for trait dispatch */
+  /** Declarative event name for trait dispatch.
+   *  @payloadTypeWhen value inputType=number->number
+   */
   action?: EventEmit<{ value: string | number }>;
   /**
    * Input type — selects the field's data mode. Use 'password' for masked

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import type { EventKey, EventEmit } from "@almadar/core";
+import type { EventEmit } from "@almadar/core";
 import { cn } from "../../../lib/cn";
 import { Icon } from "./Icon";
 import { useEventBus } from "../../../hooks/useEventBus";
@@ -35,8 +35,8 @@ export interface SelectProps extends Omit<
   placeholder?: string;
   /** Current value (string for single, string[] for multiple) */
   value?: string | string[];
-  /** Declarative event name for trait dispatch */
-  action?: EventKey;
+  /** Declarative event name for trait dispatch — emits `{ value }` on selection commit (same gestures as `onChange`). */
+  action?: EventEmit<{ value: string | string[] }>;
   /** Error message */
   error?: string;
   /** Allow selecting multiple values — activates the rich dropdown. */
@@ -85,6 +85,7 @@ function NativeSelect({
   error,
   onChange,
   onValueChange,
+  action,
   value,
   ...props
 }: Omit<SelectProps, "multiple" | "searchable" | "clearable">) {
@@ -97,6 +98,9 @@ function NativeSelect({
       onChange?.(e);
     }
     dispatchValueChange(onValueChange, eventBus, e.target.value);
+    if (action) {
+      eventBus.emit(`UI:${action}`, { value: e.target.value });
+    }
   };
 
   return (
@@ -153,6 +157,7 @@ function RichSelect({
   error,
   onChange,
   onValueChange,
+  action,
   value,
   multiple,
   searchable,
@@ -188,6 +193,9 @@ function RichSelect({
       eventBus.emit(`UI:${onChange}`, { value: next });
     }
     dispatchValueChange(onValueChange, eventBus, next);
+    if (action) {
+      eventBus.emit(`UI:${action}`, { value: next });
+    }
   };
 
   const clear = (e: React.MouseEvent) => {
@@ -197,6 +205,9 @@ function RichSelect({
       eventBus.emit(`UI:${onChange}`, { value: next });
     }
     dispatchValueChange(onValueChange, eventBus, next);
+    if (action) {
+      eventBus.emit(`UI:${action}`, { value: next });
+    }
   };
 
   useEffect(() => {
