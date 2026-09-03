@@ -71,6 +71,8 @@ export interface DrawContext {
      * and glows do not. The host camera zoom is deliberately NOT included.
      */
     groupScale?: number;
+    /** Resolved theme body font family for canvas text; hosts that can resolve CSS vars supply it. */
+    fontFamily?: string;
 }
 
 /** The minimal geometry a sprite-like descriptor declares for placement. */

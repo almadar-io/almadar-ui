@@ -652,7 +652,7 @@ export const LearningCanvas: React.FC<LearningCanvasProps> = ({
     if (drawables?.length && projector) {
       const painter = createWebPainter(ctx, invalidateRef.current);
       const timeMs = needsAnim && typeof performance !== 'undefined' ? performance.now() : 0;
-      const dctx = { projector, time: timeMs, invalidate: invalidateRef.current };
+      const dctx = { projector, time: timeMs, invalidate: invalidateRef.current, fontFamily: themeBodyFont(canvas) };
       for (const node of drawables) {
         paintDrawable(painter, node, dctx);
       }

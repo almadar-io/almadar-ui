@@ -185,6 +185,7 @@ export function expandFxItem(
     epochNowMs: number,
     dim: FxDimension,
     projector?: Projector,
+    fontFamily?: string,
 ): DrawableNode[] {
     if (view.space === 'screen') return [];
     const tickMs = node.tickMs ?? DEFAULT_TICK_MS;
@@ -224,10 +225,12 @@ export function expandFxItem(
     if (view.message) {
         // `size` is documented in world units for canvas-space fx; convert to
         // pixel font size when a projector is available. A fixed minimum keeps
-        // unpreset text readable.
+        // unpreset text readable. The host supplies the resolved theme body font
+        // so FX messages match the rest of the UI instead of hard-coding system-ui.
         const pxSize = projector && view.size !== undefined
             ? Math.max(10, Math.round(view.size * projector.tileWidth))
             : undefined;
+        const family = fontFamily ?? 'system-ui, sans-serif';
         const text: DrawTextProps = {
             type: 'draw-text',
             text: view.message,
@@ -235,7 +238,7 @@ export function expandFxItem(
             offsetY: -(0.15 + 0.55 * progress),
             color: view.color ?? node.textColor ?? DEFAULT_TEXT_COLOR,
             opacity: fade,
-            ...(pxSize ? { font: `bold ${pxSize}px system-ui, sans-serif` } : {}),
+            font: `bold ${pxSize ?? 14}px ${family}`,
         };
         out.push(text);
     }
@@ -248,13 +251,14 @@ export function expandFxLayer(
     epochNowMs: number,
     dim: FxDimension,
     projector?: Projector,
+    fontFamily?: string,
 ): DrawableNode[] {
     if (!Array.isArray(node.items)) return [];
     const out: DrawableNode[] = [];
     for (const item of node.items) {
         // A malformed entry must never blank a board (unresolvable-asset contract).
         if (!item || typeof item.id !== 'string') continue;
-        out.push(...expandFxItem(resolveFxView(item, node.presets), node, epochNowMs, dim, projector));
+        out.push(...expandFxItem(resolveFxView(item, node.presets), node, epochNowMs, dim, projector, fontFamily));
     }
     return out;
 }

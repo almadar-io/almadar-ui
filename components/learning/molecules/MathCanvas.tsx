@@ -158,6 +158,10 @@ export interface MathCanvasProps {
   axisColor?: string;
   /** Draw numeric labels on grid lines (default false). */
   showTickLabels?: boolean;
+  /** Font size in px for axis tick labels (default 10). */
+  tickLabelFontSize?: number;
+  /** Base font size in px for all other canvas annotations (points, vectors, guides, curves, regions, angles, hops; default 12). */
+  labelFontSize?: number;
   /** Draw each curve's `label` at its last in-range sample (default false). */
   showCurveLabels?: boolean;
   curves?: MathCurve[];
@@ -212,6 +216,8 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
   gridColor = 'var(--color-border, #9ca3af)',
   axisColor = 'var(--color-muted-foreground, #374151)',
   showTickLabels = false,
+  tickLabelFontSize = 10,
+  labelFontSize = 12,
   showCurveLabels = false,
   curves = [],
   points = [],
@@ -296,18 +302,18 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
       let kx = 0;
       for (let x = Math.ceil(xMin / gridStep) * gridStep; x <= xMax; x += gridStep, kx++) {
         if (kx % labelEveryX === 0 && x !== 0) {
-          out.push({ type: 'text', x: mapX(x), y: xAxisY + 12, text: formatTick(x), color: '#6b7280', fontSize: 10, align: 'center' });
+          out.push({ type: 'text', x: mapX(x), y: xAxisY + 12, text: formatTick(x), color: '#6b7280', fontSize: tickLabelFontSize, align: 'center' });
         }
       }
       const labelEveryY = Math.max(1, Math.ceil(((yMax - yMin) / gridStep) / Math.floor(plotH / 28)));
       let ky = 0;
       for (let y = Math.ceil(yMin / gridStep) * gridStep; y <= yMax; y += gridStep, ky++) {
         if (ky % labelEveryY === 0 && y !== 0) {
-          out.push({ type: 'text', x: yAxisX - 6, y: mapY(y), text: formatTick(y), color: '#6b7280', fontSize: 10, align: 'right' });
+          out.push({ type: 'text', x: yAxisX - 6, y: mapY(y), text: formatTick(y), color: '#6b7280', fontSize: tickLabelFontSize, align: 'right' });
         }
       }
       if (xMin <= 0 && xMax >= 0 && yMin <= 0 && yMax >= 0) {
-        out.push({ type: 'text', x: yAxisX - 6, y: xAxisY + 12, text: '0', color: '#6b7280', fontSize: 10, align: 'right' });
+        out.push({ type: 'text', x: yAxisX - 6, y: xAxisY + 12, text: '0', color: '#6b7280', fontSize: tickLabelFontSize, align: 'right' });
       }
     }
 
@@ -342,7 +348,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
           y: (mapY(region.samples[mid].y) + mapY(baseline)) / 2,
           text: region.label,
           color,
-          fontSize: 11,
+          fontSize: labelFontSize,
         });
       }
     }
@@ -384,7 +390,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
         const py = mapY(guide.at);
         out.push({ type: 'line', x1: margin, y1: py, x2: width - margin, y2: py, color, dash });
         if (guide.label) {
-          out.push({ type: 'text', x: width - margin - 4, y: py - 8, text: guide.label, color, fontSize: 11, align: 'right' });
+          out.push({ type: 'text', x: width - margin - 4, y: py - 8, text: guide.label, color, fontSize: labelFontSize, align: 'right' });
         }
       }
     }
@@ -432,7 +438,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
           y: mapY(lastInRange.y) - 6,
           text: curve.label,
           color: curve.color ?? '#2563eb',
-          fontSize: 11,
+          fontSize: labelFontSize,
         });
       }
     }
@@ -470,7 +476,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
           y: xAxisY - peak - 8,
           text: hop.label,
           color,
-          fontSize: 10,
+          fontSize: labelFontSize,
           align: 'center',
         });
       }
@@ -498,7 +504,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
           y: mapY(angle.y + 1.35 * radius * Math.sin(rad)),
           text: angle.label,
           color,
-          fontSize: 11,
+          fontSize: labelFontSize,
           align: 'center',
         });
       }
@@ -516,7 +522,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
         fill: isOpen ? '#ffffff' : (p.color ?? '#dc2626'),
       });
       if (p.label) {
-        out.push({ type: 'text', x: mapX(p.x) + 8, y: mapY(p.y) - 8, text: p.label, color: p.color ?? '#111827', fontSize: 12 });
+        out.push({ type: 'text', x: mapX(p.x) + 8, y: mapY(p.y) - 8, text: p.label, color: p.color ?? '#111827', fontSize: labelFontSize });
       }
     }
 
@@ -528,7 +534,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
       const y2 = mapY(v.y + v.vy);
       out.push({ type: 'arrow', x1, y1, x2, y2, color: v.color ?? '#7c3aed', lineWidth: 2 });
       if (v.label) {
-        out.push({ type: 'text', x: x2 + 6, y: y2 - 6, text: v.label, color: v.color ?? '#7c3aed', fontSize: 12 });
+        out.push({ type: 'text', x: x2 + 6, y: y2 - 6, text: v.label, color: v.color ?? '#7c3aed', fontSize: labelFontSize });
       }
     }
 
@@ -548,6 +554,8 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
     gridColor,
     axisColor,
     showTickLabels,
+    tickLabelFontSize,
+    labelFontSize,
     showCurveLabels,
     curves,
     points,
