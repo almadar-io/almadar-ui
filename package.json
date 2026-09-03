@@ -1,6 +1,6 @@
 {
   "name": "@almadar/ui",
-  "version": "6.3.0",
+  "version": "6.4.0",
   "description": "React UI components, hooks, and providers for Almadar",
   "type": "module",
   "sideEffects": [
@@ -145,6 +145,7 @@
     "hastscript": "^9.0.0",
     "leaflet": "1.9.4",
     "lucide-react": "^0.570.0",
+    "mermaid": "^11.17.2",
     "parse-entities": "^4.0.0",
     "react-icons": "^5.6.0",
     "react-leaflet": "^4.2.1",

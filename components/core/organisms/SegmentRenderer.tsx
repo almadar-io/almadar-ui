@@ -15,6 +15,7 @@
 import React from 'react';
 import { MarkdownContent } from '../molecules/markdown/MarkdownContent';
 import { CodeBlock } from '../molecules/markdown/CodeBlock';
+import { MermaidDiagram } from '../molecules/markdown/MermaidDiagram';
 import { QuizBlock } from '../molecules/QuizBlock';
 import { ActivationBlock } from '../molecules/ActivationBlock';
 import { ConnectionBlock } from '../molecules/ConnectionBlock';
@@ -87,6 +88,9 @@ export const SegmentRenderer: React.FC<SegmentRendererProps> = ({
         }
 
         if (segment.type === 'code') {
+          if (segment.language === 'mermaid') {
+            return <MermaidDiagram key={`code-${index}`} code={segment.content} />;
+          }
           if (segment.runnable && onRunCodeSimulation) {
             return (
               <CodeRunnerPanel

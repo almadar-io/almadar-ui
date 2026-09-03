@@ -22,6 +22,7 @@ import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 import { Box } from '../../atoms/Box';
 import { CodeBlock, toCodeLanguage } from './CodeBlock';
+import { MermaidDiagram } from './MermaidDiagram';
 import { useTranslate } from '../../../../hooks/useTranslate';
 import { cn } from '../../../../lib/cn';
 
@@ -77,6 +78,10 @@ export const MarkdownContent = React.memo<MarkdownContentProps>(
               if (!inline) {
                 const match = /language-(\w+)/.exec(codeClassName ?? '');
                 const code = String(children).replace(/\n$/, '');
+                // Fenced ```mermaid block — render as a diagram
+                if (match?.[1] === 'mermaid') {
+                  return <MermaidDiagram code={code} />;
+                }
                 // Fenced block with a language — render with CodeBlock for syntax highlighting
                 if (match) {
                   return (
