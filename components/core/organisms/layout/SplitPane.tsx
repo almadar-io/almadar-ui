@@ -29,6 +29,11 @@ export interface SplitPaneProps {
   leftClassName?: string;
   /** Class for right/bottom pane */
   rightClassName?: string;
+  /** Called with the new ratio while dragging. Providing this makes `ratio`
+   *  controlled — the rendered split always tracks the prop instead of
+   *  internal state, mirroring a controlled input. Omit for uncontrolled
+   *  (self-tracked) behavior. */
+  onRatioChange?: (ratio: number) => void;
 }
 
 /**
@@ -36,7 +41,7 @@ export interface SplitPaneProps {
  */
 export const SplitPane: React.FC<SplitPaneProps> = ({
   direction = "horizontal",
-  ratio: initialRatio = 50,
+  ratio: ratioProp = 50,
   minSize = 100,
   resizable = true,
   left,
@@ -44,8 +49,12 @@ export const SplitPane: React.FC<SplitPaneProps> = ({
   className,
   leftClassName,
   rightClassName,
+  onRatioChange,
 }) => {
-  const [ratio, setRatio] = useState(initialRatio);
+  const [uncontrolledRatio, setUncontrolledRatio] = useState(ratioProp);
+  // Controlled when `onRatioChange` is passed — `ratio` always tracks the
+  // prop, so a parent update re-syncs the split on the next render for free.
+  const ratio = onRatioChange ? ratioProp : uncontrolledRatio;
   const containerRef = useRef<HTMLDivElement>(null);
   const isDragging = useRef(false);
 
@@ -79,7 +88,11 @@ export const SplitPane: React.FC<SplitPaneProps> = ({
         const maxRatio = 100 - minRatio;
         newRatio = Math.max(minRatio, Math.min(maxRatio, newRatio));
 
-        setRatio(newRatio);
+        if (onRatioChange) {
+          onRatioChange(newRatio);
+        } else {
+          setUncontrolledRatio(newRatio);
+        }
       };
 
       const handlePointerUp = () => {
@@ -93,7 +106,7 @@ export const SplitPane: React.FC<SplitPaneProps> = ({
       document.addEventListener("pointerup", handlePointerUp);
       document.addEventListener("pointercancel", handlePointerUp);
     },
-    [direction, minSize, resizable],
+    [direction, minSize, resizable, onRatioChange],
   );
 
   const isHorizontal = direction === "horizontal";

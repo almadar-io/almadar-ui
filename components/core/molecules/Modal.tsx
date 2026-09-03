@@ -173,6 +173,8 @@ export const Modal: React.FC<ModalProps> = ({
   // context (sticky sidebars, transformed panes) and overlays the whole app.
   // Single div is both the dark backdrop AND the flex-centering container —
   // two sibling `fixed inset-0` layers cause a ghost compositor artifact.
+  // No aria-hidden here: this div is also the open Dialog's ancestor, and
+  // Dialog already declares its own role="dialog"/aria-modal="true".
   return createPortal(
     <div
       className={cn(
@@ -183,7 +185,6 @@ export const Modal: React.FC<ModalProps> = ({
       )}
       style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }}
       onClick={handleOverlayClick}
-      aria-hidden="true"
     >
         <Dialog
           ref={modalRef}

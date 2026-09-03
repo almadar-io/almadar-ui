@@ -122,9 +122,13 @@ export const Tabs: React.FC<TabsProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    // Vertical tab strips navigate with Up/Down; Left/Right are ignored so
+    // they don't fight the page's own horizontal scrolling/focus.
+    const prevKey = orientation === 'vertical' ? 'ArrowUp' : 'ArrowLeft';
+    const nextKey = orientation === 'vertical' ? 'ArrowDown' : 'ArrowRight';
+    if (e.key === prevKey || e.key === nextKey) {
       e.preventDefault();
-      const direction = e.key === 'ArrowLeft' ? -1 : 1;
+      const direction = e.key === prevKey ? -1 : 1;
       const nextIndex = (index + direction + safeItems.length) % safeItems.length;
       const nextTab = safeItems[nextIndex];
       if (nextTab && !nextTab.disabled) {

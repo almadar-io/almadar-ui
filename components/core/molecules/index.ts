@@ -1,7 +1,7 @@
 export { ErrorBoundary, type ErrorBoundaryProps } from './ErrorBoundary';
 export { JsonTreeEditor, type JsonTreeEditorProps } from './JsonTreeEditor';
 export { NodeSlotEditor, type NodeSlotEditorProps } from './NodeSlotEditor';
-export { FileTree, type FileTreeProps, type FileTreeNode } from './FileTree';
+export { FileTree, type FileTreeProps, type FileTreeNode, type FileTreeItem } from './FileTree';
 export { FormField, type FormFieldProps } from './FormField';
 export { EmptyState, type EmptyStateProps } from './EmptyState';
 export { LoadingState, type LoadingStateProps } from './LoadingState';
@@ -13,6 +13,7 @@ export { Accordion, type AccordionProps, type AccordionItem } from './Accordion'
 export { Alert, type AlertProps, type AlertVariant } from './Alert';
 export { Breadcrumb, type BreadcrumbProps, type BreadcrumbItem } from './Breadcrumb';
 export { ButtonGroup, type ButtonGroupProps } from './ButtonGroup';
+export { CommandPalette, type CommandPaletteProps, type CommandPaletteCommand } from './CommandPalette';
 export { FilterGroup, type FilterGroupProps, type FilterDefinition } from './FilterGroup';
 export { Card as ActionCard, type CardProps as ActionCardProps, type CardAction } from './Card';
 export { Container, type ContainerProps } from './Container';
@@ -330,3 +331,6 @@ export { BloomQuizBlock, type BloomQuizBlockProps, type BloomLevel } from './Blo
 export { parseLessonSegments, type LessonSegment } from '../../../lib/parseLessonSegments';
 export type { LessonUserProgress } from '../organisms/SegmentRenderer';
 export { parseMarkdownWithCodeBlocks, type MixedSegment } from '../../../lib/lessonSegmentUtils';
+
+// Floating tool strip (Figma UI3-style pill), composed from Button/ButtonGroup/Divider
+export { FloatingToolbar, type FloatingToolbarProps, type FloatingToolbarItem, type FloatingToolbarPosition } from './FloatingToolbar';

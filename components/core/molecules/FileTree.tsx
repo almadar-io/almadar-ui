@@ -10,10 +10,12 @@
  * Follows atomic design: composes Box, Icon, Typography atoms.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { Box } from '../atoms/Box';
 import { Typography } from '../atoms/Typography';
 import { Icon } from '../atoms/Icon';
+import { useDraggable, type DraggablePayload } from '../../../hooks/useDraggable';
+import { useDropZone } from '../../../hooks/useDropZone';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -78,6 +80,12 @@ export interface FileTreeProps {
   nodeActionIcon?: string;
   /** Accessible label/tooltip for the row hover action. */
   nodeActionLabel?: string;
+  /** Called when a row is dropped onto another, in flat `items` mode; carries
+   *  the moved node's id, its new parent id (`null` for a root drop), and its
+   *  index within the new parent's children. Presence-gated: binding this
+   *  prop is what turns on row dragging.
+   *  @offByDefault */
+  onNodeReorder?: (id: string, newParentId: string | null, index: number) => void;
   /** CSS class */
   className?: string;
   /** Indent size per level in px (default: 16) */
@@ -208,14 +216,31 @@ interface FlatTreeNodeItemProps {
   depth: number;
   indent: number;
   childrenByParent: Map<string, FileTreeItem[]>;
+  /** Root-level items, in render order — a target row's own sibling list
+   *  when it has no valid parent. Used to resolve drop index/parent. */
+  roots: FileTreeItem[];
   onNodeSelect?: (id: string) => void;
   onNodeAction?: (id: string) => void;
   nodeActionIcon?: string;
   nodeActionLabel?: string;
+  onNodeReorder?: (id: string, newParentId: string | null, index: number) => void;
   selectedId?: string;
   look: 'files' | 'nav';
   isExpanded: (id: string, depth: number) => boolean;
   onToggle: (id: string, effective: boolean) => void;
+}
+
+/** The list `target` renders alongside — `roots` when it has no valid parent row. */
+function siblingsOf(
+  target: FileTreeItem,
+  roots: FileTreeItem[],
+  childrenByParent: Map<string, FileTreeItem[]>,
+): FileTreeItem[] {
+  if (target.parentId) {
+    const parentSiblings = childrenByParent.get(target.parentId);
+    if (parentSiblings?.some(sibling => sibling.id === target.id)) return parentSiblings;
+  }
+  return roots;
 }
 
 const FlatTreeNodeItem: React.FC<FlatTreeNodeItemProps> = ({
@@ -223,10 +248,12 @@ const FlatTreeNodeItem: React.FC<FlatTreeNodeItemProps> = ({
   depth,
   indent,
   childrenByParent,
+  roots,
   onNodeSelect,
   onNodeAction,
   nodeActionIcon,
   nodeActionLabel,
+  onNodeReorder,
   selectedId,
   look,
   isExpanded,
@@ -237,6 +264,7 @@ const FlatTreeNodeItem: React.FC<FlatTreeNodeItemProps> = ({
   const expanded = hasChildren && isExpanded(item.id, depth);
   const isSelected = selectedId !== undefined && selectedId !== '' && item.id === selectedId;
   const nav = look === 'nav';
+  const rowRef = useRef<HTMLDivElement>(null);
 
   const handleClick = useCallback(() => {
     if (hasChildren && !onNodeSelect) onToggle(item.id, expanded);
@@ -254,9 +282,51 @@ const FlatTreeNodeItem: React.FC<FlatTreeNodeItemProps> = ({
     onNodeAction?.(item.id);
   }, [item.id, onNodeAction]);
 
+  const { dragProps } = useDraggable({
+    payload: { kind: 'tree-node', data: { id: item.id } },
+    disabled: !onNodeReorder,
+  });
+
+  const handleRowDrop = useCallback(
+    (payload: DraggablePayload, position: { x: number; y: number }) => {
+      if (!onNodeReorder) return;
+      const draggedId = typeof payload.data.id === 'string' ? payload.data.id : undefined;
+      if (!draggedId || draggedId === item.id) return;
+
+      const rect = rowRef.current?.getBoundingClientRect();
+      if (!rect || rect.height === 0) return;
+
+      // Top third: drop before. Bottom third: drop after. Middle third: drop into.
+      const relY = position.y - rect.top;
+      const third = rect.height / 3;
+
+      if (relY >= third && relY <= third * 2) {
+        const existingChildren = childrenByParent.get(item.id);
+        onNodeReorder(draggedId, item.id, existingChildren ? existingChildren.length : 0);
+        return;
+      }
+
+      const siblings = siblingsOf(item, roots, childrenByParent);
+      const newParentId = siblings === roots ? null : (item.parentId ?? null);
+      const targetIndex = siblings.findIndex(sibling => sibling.id === item.id);
+      const index = relY < third
+        ? (targetIndex < 0 ? 0 : targetIndex)
+        : (targetIndex < 0 ? siblings.length : targetIndex + 1);
+      onNodeReorder(draggedId, newParentId, index);
+    },
+    [onNodeReorder, item, roots, childrenByParent],
+  );
+
+  const { dropProps } = useDropZone({
+    accepts: ['tree-node'],
+    onDrop: handleRowDrop,
+    disabled: !onNodeReorder,
+  });
+
   return (
     <>
       <Box
+        ref={rowRef}
         className={`group/treerow flex items-center gap-1.5 px-2 cursor-pointer rounded-sm transition-colors ${
           nav ? 'py-1' : 'py-0.5'
         } ${isSelected ? 'bg-primary text-primary-foreground' : nav ? 'text-foreground hover:bg-muted' : 'hover:bg-muted'}`}
@@ -265,6 +335,8 @@ const FlatTreeNodeItem: React.FC<FlatTreeNodeItemProps> = ({
         role="treeitem"
         aria-selected={isSelected}
         aria-expanded={hasChildren ? expanded : undefined}
+        {...dragProps}
+        {...dropProps}
       >
         {hasChildren ? (
           <Box onClick={handleChevron} className="flex items-center flex-shrink-0" role="button" aria-label={expanded ? 'Collapse' : 'Expand'}>
@@ -313,10 +385,12 @@ const FlatTreeNodeItem: React.FC<FlatTreeNodeItemProps> = ({
               depth={depth + 1}
               indent={indent}
               childrenByParent={childrenByParent}
+              roots={roots}
               onNodeSelect={onNodeSelect}
               onNodeAction={onNodeAction}
               nodeActionIcon={nodeActionIcon}
               nodeActionLabel={nodeActionLabel}
+              onNodeReorder={onNodeReorder}
               selectedId={selectedId}
               look={look}
               isExpanded={isExpanded}
@@ -353,6 +427,7 @@ const FlatFileTree: React.FC<Omit<FileTreeProps, 'tree' | 'selectedPath' | 'onFi
   onNodeAction,
   nodeActionIcon,
   nodeActionLabel,
+  onNodeReorder,
   className,
   indent = 16,
 }) => {
@@ -413,10 +488,12 @@ const FlatFileTree: React.FC<Omit<FileTreeProps, 'tree' | 'selectedPath' | 'onFi
           depth={0}
           indent={indent}
           childrenByParent={childrenByParent}
+          roots={roots}
           onNodeSelect={onNodeSelect}
           onNodeAction={onNodeAction}
           nodeActionIcon={nodeActionIcon}
           nodeActionLabel={nodeActionLabel}
+          onNodeReorder={onNodeReorder}
           selectedId={selectedId}
           look={look}
           isExpanded={isExpanded}
@@ -438,6 +515,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
   onNodeAction,
   nodeActionIcon,
   nodeActionLabel,
+  onNodeReorder,
   className,
   indent = 16,
 }) => {
@@ -451,6 +529,7 @@ export const FileTree: React.FC<FileTreeProps> = ({
         onNodeAction={onNodeAction}
         nodeActionIcon={nodeActionIcon}
         nodeActionLabel={nodeActionLabel}
+        onNodeReorder={onNodeReorder}
         className={className}
         indent={indent}
       />

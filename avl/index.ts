@@ -84,7 +84,7 @@ export { computeTraitLayout, edgePath, type LayoutNode, type LayoutEdge, type El
 // V3 Revised: UI Projection components
 export { type ViewLevel, type PreviewNodeData, type EventEdgeData, type PatternEventSource, type RenderUIEntry } from '../components/avl/types/avl-preview-types';
 export { schemaToOverviewGraph, orbitalToExpandedGraph } from '../components/avl/lib/avl-preview-converter';
-export { OrbPreviewNode } from '../components/avl/molecules/OrbPreviewNode';
+export { OrbPreviewNode, type SelectedPattern } from '../components/avl/molecules/OrbPreviewNode';
 export { EventFlowEdge } from '../components/avl/molecules/EventFlowEdge';
 
 // DOM → EditFocus (inspect primitive). Reads `data-orb-*` (incl. `data-orb-orbital`
@@ -117,6 +117,15 @@ export { behaviorsToComposeGraph, registryEntryToCanvasEntry, type BehaviorRegis
 
 // OrbInspector
 export { OrbInspector, type OrbInspectorProps } from '../components/avl/organisms/OrbInspector';
+
+// LayersPanel
+export {
+  LayersPanel,
+  type LayersPanelProps,
+  schemaToLayerItems,
+  parseLayerId,
+  type LayerIdParts,
+} from '../components/avl/organisms/LayersPanel';
 
 // AVL Organisms — Interactive Cosmic Zoom
 export {

@@ -53,7 +53,7 @@ import {
   EFFECT_TYPE_TO_CATEGORY, EFFECT_CATEGORY_COLORS,
 } from '../types/avl-atom-types';
 import type { PreviewNodeData } from '../types/avl-preview-types';
-import { PatternSelectionContext } from '../molecules/OrbPreviewNode';
+import { PatternSelectionContext, type SelectedPattern } from '../molecules/OrbPreviewNode';
 import { getPatternDefinition, isEntityAwarePattern } from '@almadar/core/patterns';
 import { createLogger } from '@almadar/logger';
 import { useEventBus } from '../../../hooks/useEventBus';
@@ -203,19 +203,48 @@ export interface OrbInspectorProps {
    * page-level dispatcher routes them to `themeManifest.setToken`.
    */
   themeManifest?: ThemeDefinition;
+  /**
+   * Initial tab on mount. Local state still owns the active tab after
+   * that — this does not make the component controlled. Enables
+   * deep-linking into a specific tab (e.g. from a LayersPanel selection).
+   */
+  defaultTab?: InspectorTab;
+  /** Fires whenever the tab-bar selection changes. */
+  onTabChange?: (tab: InspectorTab) => void;
   onSchemaChange?: (schema: OrbitalSchema) => void;
   onClose: () => void;
+  /**
+   * In-node pattern selection, when this inspector is rendered OUTSIDE
+   * `FlowCanvas` (see `FlowCanvas`'s `externalInspector` +
+   * `onSelectedPatternChange`). `PatternSelectionContext` only reaches
+   * descendants of `FlowCanvas`'s own render tree, so a standalone
+   * consumer has no other way to feed pattern-level selection in — pass
+   * `FlowCanvas`'s `onSelectedPatternChange` payload straight through here.
+   * When omitted (the inline, built-in-inspector usage), falls back to
+   * `PatternSelectionContext`, unchanged.
+   */
+  selectedPattern?: SelectedPattern | null;
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-type InspectorTab = 'inspector' | 'styles' | 'code';
+type InspectorTab = 'inspector' | 'design' | 'prototype' | 'code';
 
-export function OrbInspector({ node, schema, editable = false, userType = 'builder', themeManifest, onSchemaChange, onClose }: OrbInspectorProps): React.ReactElement {
-  const { selected: selectedPattern } = useContext(PatternSelectionContext);
-  const [activeTab, setActiveTab] = useState<InspectorTab>('inspector');
+export function OrbInspector({ node, schema, editable = false, userType = 'builder', themeManifest, defaultTab, onTabChange, onSchemaChange, onClose, selectedPattern: selectedPatternProp }: OrbInspectorProps): React.ReactElement {
+  const { selected: contextSelectedPattern } = useContext(PatternSelectionContext);
+  // A caller-supplied `selectedPattern` (external-inspector usage) always
+  // wins over context — `undefined` (the prop omitted entirely) falls back
+  // to context, but an explicit `null` (external caller has no selection)
+  // must NOT fall through to whatever the (irrelevant, default-valued)
+  // context happens to hold.
+  const selectedPattern = selectedPatternProp !== undefined ? selectedPatternProp : contextSelectedPattern;
+  const [activeTab, setActiveTab] = useState<InspectorTab>(defaultTab ?? 'inspector');
+  const handleTabChange = useCallback((tab: InspectorTab) => {
+    setActiveTab(tab);
+    onTabChange?.(tab);
+  }, [onTabChange]);
   const eventBus = useEventBus();
   const { t } = useTranslate();
 
@@ -446,14 +475,16 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
           </button>
         </Box>
 
-        {/* Tab bar. Persona gating: Code is architect-only; Styles is universal. */}
+        {/* Tab bar. Persona gating: Code is architect-only; Design and
+            Prototype are universal (the sections inside each keep their
+            own persona gate exactly as before). */}
         <Box className="flex px-4 gap-4">
-          {(['inspector', 'styles', 'code'] as const)
+          {(['inspector', 'design', 'prototype', 'code'] as const)
             .filter((tab) => tab !== 'code' || userType === 'architect')
             .map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => handleTabChange(tab)}
                 className={`pb-2 text-xs font-medium border-b-2 cursor-pointer bg-transparent border-x-0 border-t-0 px-0 capitalize ${
                   activeTab === tab
                     ? 'border-[var(--color-primary)] text-foreground'
@@ -486,23 +517,8 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
               onChange={editable ? (code) => eventBus.emit('UI:CODE_CHANGE', { code }) : undefined}
             />
           </Box>
-        ) : activeTab === 'styles' ? (
-          /* ── Styles Tab ──
-             Variant + size pills are clickable when `editable` and emit
-             `UI:PROP_CHANGE` with the selection context. The page-level
-             dispatcher routes those events to the project schemaEditor or
-             to the theme manifest based on `selection.sourceSchemaName`. */
-          <StylesTab
-            patternType={patternType}
-            patternDef={patternDef}
-            patternConfig={patternConfig}
-            editable={editable}
-            onPropChange={handlePropChange}
-            themeManifest={themeManifest}
-            isDesignSystem={selectedPattern?.nodeData.sourceSchemaName === '__design_system__'}
-          />
-        ) : (
-          /* ── Inspector Tab ── */
+        ) : activeTab === 'design' ? (
+          /* ── Design Tab ── Pattern Props + Styles + render-ui source. */
           <>
             {/* Pattern Props */}
             {selectedPattern && patternDef?.propsSchema && (
@@ -548,6 +564,135 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
               </Box>
             )}
 
+            {/* Styles — variant + size pills are clickable when `editable`
+                and emit `UI:PROP_CHANGE` with the selection context. The
+                page-level dispatcher routes those events to the project
+                schemaEditor or to the theme manifest based on
+                `selection.sourceSchemaName`. */}
+            <StylesTab
+              patternType={patternType}
+              patternDef={patternDef}
+              patternConfig={patternConfig}
+              editable={editable}
+              onPropChange={handlePropChange}
+              themeManifest={themeManifest}
+              isDesignSystem={selectedPattern?.nodeData.sourceSchemaName === '__design_system__'}
+            />
+
+            {/* Render-UI Source (architect only — raw SExpression tree) */}
+            {userType === 'architect' && patterns.length > 0 && !selectedPattern && (
+              <Box className="px-4 py-3">
+                <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">render-ui</Typography>
+                <Box className="bg-muted/20 rounded-md p-3 font-mono text-xs leading-relaxed overflow-x-auto">
+                  {patterns.map((entry, i) => (
+                    <Box key={i}>
+                      <Typography variant="small" className="text-muted-foreground text-xs">slot: {entry.slot}</Typography>
+                      <OrbPatternTree config={entry.pattern as PatternNode} depth={0} />
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            )}
+          </>
+        ) : activeTab === 'prototype' ? (
+          /* ── Prototype Tab ── State Transition + Trigger + Guard + Effects. */
+          <>
+            {/* State Transition */}
+            {isExpanded && fromState && toState && (
+              <Box className="px-4 py-3 border-b border-border/40">
+                <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">{t('avl.transition')}</Typography>
+                <svg width="100%" height={44} viewBox="0 0 280 44">
+                  <AvlState x={8} y={8} name={fromState} role={getStateRole(fromState) as StateRole} width={90} height={26} />
+                  <line x1={104} y1={21} x2={158} y2={21} stroke="var(--color-foreground)" strokeWidth={2} markerEnd="url(#orb-arrow)" />
+                  <AvlState x={164} y={8} name={toState} role={getStateRole(toState) as StateRole} width={90} height={26} />
+                  <defs>
+                    <marker id="orb-arrow" markerWidth={8} markerHeight={6} refX={8} refY={3} orient="auto">
+                      <path d="M0,0 L8,3 L0,6 Z" fill="var(--color-foreground)" />
+                    </marker>
+                  </defs>
+                </svg>
+                {traitName && (
+                  <Typography variant="small" className="text-muted-foreground text-xs">
+                    {traitName}{entityName ? t('orbInspector.onEntity', { entity: entityName }) : ''}
+                  </Typography>
+                )}
+              </Box>
+            )}
+
+            {/* Trigger */}
+            {isExpanded && transitionEvent && (
+              <Box className="px-4 py-2 border-b border-border/40">
+                <Box className="flex items-center gap-2">
+                  <svg width={16} height={16}><AvlEvent x={8} y={8} size={12} /></svg>
+                  <Typography variant="small" className="font-semibold text-xs">{transitionEvent}</Typography>
+                </Box>
+              </Box>
+            )}
+
+            {/* Guard (architect only — raw SExpression / boolean expression isn't designer-facing) */}
+            {userType === 'architect' && (transition?.guard ?? guard ?? editable) && isExpanded && (
+              <Box className="px-4 py-2 border-b border-border/40">
+                <HStack gap="xs" className="items-center">
+                  <svg width={16} height={16}><AvlGuard x={8} y={8} size={12} /></svg>
+                  {editable ? (
+                    <Input
+                      defaultValue={formatExpression(transition?.guard ?? guard)}
+                      placeholder={t('orbInspector.guardExpression')}
+                      className="flex-1 text-xs font-mono h-6"
+                      onBlur={(e: React.FocusEvent<HTMLInputElement>) => handleGuardChange(e.target.value)}
+                    />
+                  ) : (
+                    <Typography variant="small" className="font-mono text-xs text-muted-foreground">
+                      {formatExpression(transition?.guard ?? guard)}
+                    </Typography>
+                  )}
+                </HStack>
+              </Box>
+            )}
+
+            {/* Effects (architect only — raw effect list maps directly to the IR) */}
+            {userType === 'architect' && (effectTypes.length > 0 || editable) && isExpanded && (
+              <Box className="px-4 py-3 border-b border-border/40">
+                <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">
+                  {t('avl.effects')} ({effectTypes.length})
+                </Typography>
+                <Box className="flex flex-col gap-1.5">
+                  {effectTypes.map((type, i) => {
+                    const isKnown = KNOWN_EFFECTS.has(type);
+                    const category = EFFECT_TYPE_TO_CATEGORY[type as AvlEffectType];
+                    const catColor = category ? EFFECT_CATEGORY_COLORS[category] : undefined;
+                    return (
+                      <HStack key={i} gap="xs" className="items-center">
+                        <Typography variant="small" className="text-muted-foreground text-xs w-4 text-right shrink-0">{i + 1}.</Typography>
+                        {isKnown && (
+                          <svg width={16} height={16}><AvlEffect x={8} y={8} effectType={type as AvlEffectType} size={6} showBackground /></svg>
+                        )}
+                        <Typography variant="small" className="text-xs flex-1" style={{ color: catColor?.color }}>
+                          {effectSummary(type)}
+                        </Typography>
+                        {editable && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveEffect(i)}
+                            className="shrink-0 p-0.5 h-6 w-6"
+                          >
+                            <Icon name="x" size="xs" />
+                          </Button>
+                        )}
+                      </HStack>
+                    );
+                  })}
+                </Box>
+                {editable && (
+                  <AddEffectButton onAdd={handleAddEffect} />
+                )}
+              </Box>
+            )}
+          </>
+        ) : (
+          /* ── Inspector Tab (overview) ── orbital-scoped sections only. */
+          <>
             {/* Entity Fields (architect only — designer/builder hide entity persistence + field types) */}
             {userType === 'architect' && ((selectedPattern && isEntityPattern) || (!selectedPattern && !isExpanded)) && entity && (
               <Box className="px-4 py-3 border-b border-border/40">
@@ -654,114 +799,6 @@ export function OrbInspector({ node, schema, editable = false, userType = 'build
                     <Box key={tr.name} className="flex items-center gap-2">
                       <Typography variant="small" className="text-xs font-semibold">{tr.name}</Typography>
                       <Typography variant="small" className="text-muted-foreground text-xs">{t('orbInspector.statesCount', { count: tr.stateCount })}</Typography>
-                    </Box>
-                  ))}
-                </Box>
-              </Box>
-            )}
-
-            {/* State Transition */}
-            {isExpanded && fromState && toState && (
-              <Box className="px-4 py-3 border-b border-border/40">
-                <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">{t('avl.transition')}</Typography>
-                <svg width="100%" height={44} viewBox="0 0 280 44">
-                  <AvlState x={8} y={8} name={fromState} role={getStateRole(fromState) as StateRole} width={90} height={26} />
-                  <line x1={104} y1={21} x2={158} y2={21} stroke="var(--color-foreground)" strokeWidth={2} markerEnd="url(#orb-arrow)" />
-                  <AvlState x={164} y={8} name={toState} role={getStateRole(toState) as StateRole} width={90} height={26} />
-                  <defs>
-                    <marker id="orb-arrow" markerWidth={8} markerHeight={6} refX={8} refY={3} orient="auto">
-                      <path d="M0,0 L8,3 L0,6 Z" fill="var(--color-foreground)" />
-                    </marker>
-                  </defs>
-                </svg>
-                {traitName && (
-                  <Typography variant="small" className="text-muted-foreground text-xs">
-                    {traitName}{entityName ? t('orbInspector.onEntity', { entity: entityName }) : ''}
-                  </Typography>
-                )}
-              </Box>
-            )}
-
-            {/* Trigger */}
-            {isExpanded && transitionEvent && (
-              <Box className="px-4 py-2 border-b border-border/40">
-                <Box className="flex items-center gap-2">
-                  <svg width={16} height={16}><AvlEvent x={8} y={8} size={12} /></svg>
-                  <Typography variant="small" className="font-semibold text-xs">{transitionEvent}</Typography>
-                </Box>
-              </Box>
-            )}
-
-            {/* Guard (architect only — raw SExpression / boolean expression isn't designer-facing) */}
-            {userType === 'architect' && (transition?.guard ?? guard ?? editable) && isExpanded && (
-              <Box className="px-4 py-2 border-b border-border/40">
-                <HStack gap="xs" className="items-center">
-                  <svg width={16} height={16}><AvlGuard x={8} y={8} size={12} /></svg>
-                  {editable ? (
-                    <Input
-                      defaultValue={formatExpression(transition?.guard ?? guard)}
-                      placeholder={t('orbInspector.guardExpression')}
-                      className="flex-1 text-xs font-mono h-6"
-                      onBlur={(e: React.FocusEvent<HTMLInputElement>) => handleGuardChange(e.target.value)}
-                    />
-                  ) : (
-                    <Typography variant="small" className="font-mono text-xs text-muted-foreground">
-                      {formatExpression(transition?.guard ?? guard)}
-                    </Typography>
-                  )}
-                </HStack>
-              </Box>
-            )}
-
-            {/* Effects (architect only — raw effect list maps directly to the IR) */}
-            {userType === 'architect' && (effectTypes.length > 0 || editable) && isExpanded && (
-              <Box className="px-4 py-3 border-b border-border/40">
-                <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">
-                  {t('avl.effects')} ({effectTypes.length})
-                </Typography>
-                <Box className="flex flex-col gap-1.5">
-                  {effectTypes.map((type, i) => {
-                    const isKnown = KNOWN_EFFECTS.has(type);
-                    const category = EFFECT_TYPE_TO_CATEGORY[type as AvlEffectType];
-                    const catColor = category ? EFFECT_CATEGORY_COLORS[category] : undefined;
-                    return (
-                      <HStack key={i} gap="xs" className="items-center">
-                        <Typography variant="small" className="text-muted-foreground text-xs w-4 text-right shrink-0">{i + 1}.</Typography>
-                        {isKnown && (
-                          <svg width={16} height={16}><AvlEffect x={8} y={8} effectType={type as AvlEffectType} size={6} showBackground /></svg>
-                        )}
-                        <Typography variant="small" className="text-xs flex-1" style={{ color: catColor?.color }}>
-                          {effectSummary(type)}
-                        </Typography>
-                        {editable && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveEffect(i)}
-                            className="shrink-0 p-0.5 h-6 w-6"
-                          >
-                            <Icon name="x" size="xs" />
-                          </Button>
-                        )}
-                      </HStack>
-                    );
-                  })}
-                </Box>
-                {editable && (
-                  <AddEffectButton onAdd={handleAddEffect} />
-                )}
-              </Box>
-            )}
-
-            {/* Render-UI Source (architect only — raw SExpression tree) */}
-            {userType === 'architect' && patterns.length > 0 && !selectedPattern && (
-              <Box className="px-4 py-3">
-                <Typography variant="small" className="text-muted-foreground text-xs uppercase tracking-wider mb-2">render-ui</Typography>
-                <Box className="bg-muted/20 rounded-md p-3 font-mono text-xs leading-relaxed overflow-x-auto">
-                  {patterns.map((entry, i) => (
-                    <Box key={i}>
-                      <Typography variant="small" className="text-muted-foreground text-xs">slot: {entry.slot}</Typography>
-                      <OrbPatternTree config={entry.pattern as PatternNode} depth={0} />
                     </Box>
                   ))}
                 </Box>

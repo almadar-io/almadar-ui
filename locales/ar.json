@@ -370,6 +370,8 @@
   "orbInspector.tokenGroup.shadows": "الظلال",
   "orbInspector.tab.inspector": "المُفتِّش",
   "orbInspector.tab.styles": "الأنماط",
+  "orbInspector.tab.design": "التصميم",
+  "orbInspector.tab.prototype": "النموذج الأولي",
   "orbInspector.tab.code": "الكود",
   "canvas.goBackToOverview": "العودة إلى النظرة العامة",
   "canvas.overview": "نظرة عامة",

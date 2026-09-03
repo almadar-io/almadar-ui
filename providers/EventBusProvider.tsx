@@ -43,7 +43,26 @@ export interface EventBusContextTypeExtended extends EventBusContextType {
   clearSelectedEntity: () => void;
 }
 
-export const EventBusContext = createContext<EventBusContextTypeExtended | null>(null);
+// Ambient global slot — see the singleton below. Declared the same way
+// useEventBus.ts declares `Window.__kflowEventBus`, but on `globalThis` so it
+// is reachable from every physical copy of this module regardless of which
+// bundler chunk (or which duplicate `node_modules` install) it was loaded
+// from.
+declare global {
+  var __almadarUiEventBusContext: React.Context<EventBusContextTypeExtended | null> | undefined;
+}
+
+// Context identity must survive module duplication: a consumer's bundler can
+// pre-bundle this package's entry points into separate dep-optimizer chunks
+// (or resolve a second physical install of the package altogether), each of
+// which would otherwise run its own `createContext()` and produce a distinct
+// Context object that `<EventBusProvider>` in one copy can never satisfy for
+// a `useEventBus()` caller in another. Every copy of this module resolves
+// through the SAME global slot instead, so identity holds no matter how many
+// times the module itself is duplicated.
+export const EventBusContext: React.Context<EventBusContextTypeExtended | null> =
+  globalThis.__almadarUiEventBusContext ??
+  (globalThis.__almadarUiEventBusContext = createContext<EventBusContextTypeExtended | null>(null));
 
 // ============================================================================
 // Provider Component

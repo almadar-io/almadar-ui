@@ -9,6 +9,13 @@
 // Primary V3 organisms
 export { FlowCanvas, type FlowCanvasProps } from './FlowCanvas';
 export { OrbInspector, type OrbInspectorProps } from './OrbInspector';
+export {
+  LayersPanel,
+  type LayersPanelProps,
+  schemaToLayerItems,
+  parseLayerId,
+  type LayerIdParts,
+} from './LayersPanel';
 export { ZoomBreadcrumb, type ZoomBreadcrumbProps } from './ZoomBreadcrumb';
 export { ZoomLegend, type ZoomLegendProps } from './ZoomLegend';
 

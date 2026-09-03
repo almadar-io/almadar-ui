@@ -374,6 +374,8 @@
   "orbInspector.tokenGroup.shadows": "Shadows",
   "orbInspector.tab.inspector": "Inspector",
   "orbInspector.tab.styles": "Styles",
+  "orbInspector.tab.design": "Design",
+  "orbInspector.tab.prototype": "Prototype",
   "orbInspector.tab.code": "Code",
   "canvas.goBackToOverview": "Go back to overview",
   "canvas.overview": "Overview",

@@ -370,6 +370,8 @@
   "orbInspector.tokenGroup.shadows": "Sence",
   "orbInspector.tab.inspector": "Pregledovalnik",
   "orbInspector.tab.styles": "Slogi",
+  "orbInspector.tab.design": "Oblikovanje",
+  "orbInspector.tab.prototype": "Prototip",
   "orbInspector.tab.code": "Koda",
   "canvas.goBackToOverview": "Nazaj na pregled",
   "canvas.overview": "Pregled",

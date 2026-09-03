@@ -43,9 +43,16 @@ import type { PreviewNodeData, PatternEventSource, ScreenSize } from '../types/a
 import { SCREEN_SIZE_PRESETS } from '../types/avl-preview-types';
 import { useEventBus } from '../../../hooks/useEventBus';
 import { useTranslate } from '../../../hooks/useTranslate';
-import { useCanvasDroppable, type CanvasDropTarget } from '../hooks/useCanvasDnd';
+import {
+  useCanvasDroppable,
+  useCanvasDraggable,
+  type CanvasDropTarget,
+  type CanvasContainerNode,
+} from '../hooks/useCanvasDnd';
 import { formatPayloadTooltip } from '../lib/wire-validation';
-import { deriveEditFocusFromElement } from '../lib/derive-edit-focus';
+import { deriveEditFocusFromElement, withNodeTransition } from '../lib/derive-edit-focus';
+import { computeInsertionIndex, type DOMRectLike, type InsertionAxis } from '../lib/compute-insertion-index';
+import { resolveDirectChildren } from '../lib/resolve-direct-children';
 import { createLogger } from '@almadar/logger';
 
 const eventHandleLog = createLogger('almadar:ui:nan-coord');
@@ -81,6 +88,18 @@ export const PatternSelectionContext = createContext<{
   selected: SelectedPattern | null;
   select: (pattern: SelectedPattern | null) => void;
 }>({ selected: null, select: () => {} });
+
+/**
+ * `useCanvasDraggable`'s `'pattern-instance'` payload data (see
+ * `useCanvasDnd.tsx`). `[key: string]: EventPayloadValue` mirrors
+ * `CanvasContainerNode`'s own index signature — required to structurally
+ * match `EventPayload` when handed to `useCanvasDraggable`.
+ */
+interface PatternInstanceDragData {
+  fromPath: string;
+  loc: CanvasContainerNode;
+  [key: string]: EventPayloadValue;
+}
 
 // ---------------------------------------------------------------------------
 // State role colors
@@ -528,6 +547,22 @@ function rectRelativeTo(el: Element, container: Element, zoom: number): RectLike
   };
 }
 
+/**
+ * `[data-accepts-children]` containers are the same `display:contents`
+ * wrappers as `absUnion` handles above, so the container's OWN computed
+ * flex-direction is meaningless — walk down through nested contents
+ * wrappers to the first element that actually generates a box (the real
+ * Stack/Grid/etc. div) and read flex-direction there; fall back to the
+ * container itself when no such descendant exists.
+ */
+function resolveLayoutAxis(el: Element): InsertionAxis {
+  let cur: Element = el;
+  while (getComputedStyle(cur).display === 'contents' && cur.firstElementChild) {
+    cur = cur.firstElementChild;
+  }
+  return getComputedStyle(cur).flexDirection === 'row' ? 'horizontal' : 'vertical';
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -636,7 +671,15 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       // by UISlotRenderer from the schema context) rather than the node's own
       // name, so a click correctly attributes to whichever of N orbitals it hit.
       const focus = deriveEditFocusFromElement(patternEl);
-      if (focus) eventBus.emit('UI:ELEMENT_SELECTED', { focus: { ...focus } });
+      if (focus) {
+        // Spread into a fresh literal (not the bare function return) —
+        // `EditFocus` has no index signature, so TS's excess-property
+        // leniency for object literals is what makes this assignable to
+        // `EventPayload` without a cast; a typed non-literal value isn't.
+        eventBus.emit('UI:ELEMENT_SELECTED', {
+          focus: { ...withNodeTransition(focus, data.transitionEvent) },
+        });
+      }
     } else {
       setSelectedRect(null);
       select(null);
@@ -679,6 +722,20 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
     return () => { unsub1(); unsub2(); };
   }, [eventBus]);
 
+  // Same, but scoped to an L2 reorder grab (kept separate from `dragActive`
+  // above so the L1 "drop to add and open" hint — which only applies to
+  // `'pattern'` palette drops, L1 doesn't accept `'pattern-instance'` —
+  // doesn't light up during a reorder). Drives only the L2 content area's
+  // `drag-active` styling.
+  const [reorderDragActive, setReorderDragActive] = useState(false);
+  useEffect(() => {
+    const unsub1 = eventBus.on('UI:DRAG_START', (e) => {
+      if (e.payload?.kind === 'pattern-instance') setReorderDragActive(true);
+    });
+    const unsub2 = eventBus.on('UI:DRAG_END', () => setReorderDragActive(false));
+    return () => { unsub1(); unsub2(); };
+  }, [eventBus]);
+
   // L2 cursor-to-path resolver. Walks from the cursor's DOM element up to the
   // nearest `[data-accepts-children="true"]` container, then computes the
   // insertion index from the cursor's relative position among the container's
@@ -694,18 +751,50 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
         el = el.parentElement;
       }
       if (!el) return null;
-      const containerPath = el.dataset?.patternPath;
-      if (!containerPath) return { parentPath: 'root', index: 0 };
-      const pathChildren = el.querySelectorAll(':scope > [data-pattern-path]');
-      let insertIndex = pathChildren.length;
-      const style = el.firstElementChild ? getComputedStyle(el.firstElementChild) : null;
-      const isVertical = style?.flexDirection !== 'row';
-      for (let i = 0; i < pathChildren.length; i++) {
-        const rect = pathChildren[i].getBoundingClientRect();
-        const mid = isVertical ? rect.top + rect.height / 2 : rect.left + rect.width / 2;
-        const pos = isVertical ? cursor.y : cursor.x;
-        if (pos < mid) { insertIndex = i; break; }
+      // Dead space inside the screen but outside any accepts-children
+      // container (below the last child, padding) walks up to contentRef,
+      // which carries no path — resolve those drops against the root
+      // container's children with the same index math (a below-everything
+      // drop then lands at the END, not hardcoded index 0).
+      const containerPath = el.dataset?.patternPath ?? 'root';
+      // Axis must come from the container we resolve against: in the
+      // dead-space fallback `el` is contentRef (a plain block, whose computed
+      // flexDirection defaults to 'row'), so retarget to the root wrapper.
+      if (!el.dataset?.patternPath) {
+        const rootEl = el.querySelector('[data-pattern-path="root"]');
+        if (rootEl instanceof HTMLElement) el = rootEl;
       }
+      // Direct children by PATH, not DOM adjacency (see resolveDirectChildren
+      // doc) — `el` is itself `display:contents`, so its real layout child
+      // sits between it and the pattern wrappers and `:scope >` matches
+      // nothing.
+      const directChildren = resolveDirectChildren(
+        containerPath,
+        Array.from(el.querySelectorAll('[data-pattern-path]')).map((child) => ({
+          path: (child as HTMLElement).dataset.patternPath ?? '',
+          ref: child,
+        })),
+      );
+      // Each child is a UISlotRenderer `slot-content contents` wrapper — its
+      // own getBoundingClientRect() is 0x0 (display:contents) — union its
+      // rendered descendants' boxes instead (see absUnion above), falling
+      // back to the raw rect when the element does carry its own box.
+      const childRects: DOMRectLike[] = directChildren.map((child) => {
+        const u = absUnion(child);
+        if (u) return { ...u, width: u.right - u.left, height: u.bottom - u.top };
+        const raw = child.getBoundingClientRect();
+        return { top: raw.top, left: raw.left, right: raw.right, bottom: raw.bottom, width: raw.width, height: raw.height };
+      });
+      const axis = resolveLayoutAxis(el);
+      const insertIndex = computeInsertionIndex(childRects, cursor, axis);
+      orbPreviewLog.debug('resolveL2Path', {
+        containerPath,
+        childCount: childRects.length,
+        axis,
+        cursorY: cursor.y,
+        mids: childRects.map((r) => (axis === 'vertical' ? r.top + r.height / 2 : r.left + r.width / 2)),
+        insertIndex,
+      });
       return { parentPath: containerPath, index: insertIndex };
     },
     [],
@@ -730,17 +819,59 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
   const { setNodeRef: l2SetNodeRef, isOver: l2IsOver } = useCanvasDroppable({
     id: `orb-l2-${data.orbitalName}-${data.traitName ?? ''}-${data.transitionEvent ?? ''}`,
     target: l2Target,
-    accepts: ['pattern'],
+    accepts: ['pattern', 'pattern-instance'],
     disabled: !isExpanded,
   });
 
+  // L2 reorder drag SOURCE — dragging an already-placed pattern by its own
+  // rendered content (not a palette tile). One `useCanvasDraggable` per node
+  // (not per pattern element, since patterns render several layers deep
+  // inside UISlotRenderer/BrowserPlayground, outside this component's JSX)
+  // with listeners merged onto the same content container that already owns
+  // click-to-select. `reorderDataRef` is a STABLE object mutated in place at
+  // pointerdown — dnd-kit reads `active.data.current` (a ref to whatever
+  // `data` object was passed) at drag-end time, so if `data` were a fresh
+  // object built from React state instead, a mousemove crossing into a
+  // different pattern mid-drag (after activation) would silently overwrite
+  // it before drag-end reads it. Mutating the same reference sidesteps that
+  // render-timing race entirely.
+  const reorderDataRef = useRef<PatternInstanceDragData>({ fromPath: '', loc: {} });
+  const {
+    setNodeRef: reorderSetNodeRef,
+    listeners: reorderListeners,
+  } = useCanvasDraggable({
+    id: `orb-l2-reorder-${data.orbitalName}-${data.traitName ?? ''}-${data.transitionEvent ?? ''}`,
+    payload: { kind: 'pattern-instance', data: reorderDataRef.current },
+    disabled: !isExpanded,
+  });
+
+  // Resolves the grabbed pattern from the pointerdown target (same
+  // `closest('[data-pattern]')` walk as click-to-select), freezes it into
+  // `reorderDataRef`, then hands off to dnd-kit's own activator. No-ops
+  // (never calls the activator) when the pointerdown didn't land on a
+  // pattern or reorder is disabled (`reorderListeners` is `undefined` then).
+  const handleContentPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const patternEl = (e.target as HTMLElement).closest('[data-pattern]') as HTMLElement | null;
+    const fromPath = patternEl?.getAttribute('data-pattern-path');
+    if (!fromPath) return;
+    reorderDataRef.current.fromPath = fromPath;
+    reorderDataRef.current.loc = {
+      orbitalName: data.orbitalName,
+      traitName: data.traitName,
+      transitionEvent: data.transitionEvent,
+    };
+    reorderListeners?.onPointerDown?.(e);
+  }, [reorderListeners, data.orbitalName, data.traitName, data.transitionEvent]);
+
   // Callback ref that fans the same DOM node to both useRef + dnd-kit.
   // contentRef stays read-only for the click-to-select walker; l2SetNodeRef
-  // registers the node as a droppable.
+  // registers the node as a droppable, reorderSetNodeRef as the reorder
+  // draggable (dnd-kit fully supports a node being both).
   const setContentRef = useCallback((el: HTMLDivElement | null) => {
     contentRef.current = el;
     l2SetNodeRef(el);
-  }, [l2SetNodeRef]);
+    reorderSetNodeRef(el);
+  }, [l2SetNodeRef, reorderSetNodeRef]);
 
   // Status-driven outline color. Running > error > success > hover > default.
   const statusBorder = isRunning
@@ -924,15 +1055,18 @@ const OrbPreviewNodeInner: React.FC<NodeProps> = (props) => {
       </Box>
 
       {/* OrbPreview - always interactive, click to select patterns. The
-          ref is set by `setContentRef`, which fans the node to both
-          contentRef (read by handleContentClick) AND @dnd-kit's L2
-          droppable. */}
+          ref is set by `setContentRef`, which fans the node to
+          contentRef (read by handleContentClick), @dnd-kit's L2 droppable,
+          AND the L2 reorder draggable. `nodrag` already keeps React Flow's
+          own node-drag out of this whole region, so the reorder pointerdown
+          listener can't fight it. */}
       <Box
         ref={setContentRef}
-        className={`orb-preview-live nodrag relative${dragActive || l2IsOver ? ' drag-active' : ''}`}
+        className={`orb-preview-live nodrag relative${dragActive || reorderDragActive || l2IsOver ? ' drag-active' : ''}`}
         onClick={handleContentClick}
         onMouseMove={handleContentMouseMove}
         onMouseLeave={handleContentMouseLeave}
+        onPointerDown={handleContentPointerDown}
       >
         {/* Hover + selection overlays. Positioned over the element's painted
             bounds (the [data-pattern] wrapper is display:contents, so CSS

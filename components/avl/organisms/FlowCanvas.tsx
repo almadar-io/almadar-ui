@@ -203,6 +203,31 @@ export interface FlowCanvasProps {
    * node set, so the consumer can persist the arrangement across reloads.
    */
   onPositionsChange?: (positions: Record<string, { x: number; y: number }>) => void;
+  /**
+   * Fired whenever the internal `selectedNode` changes — select, clear-on-
+   * escape, clear-on-level-change, and pattern-selection sync all route
+   * through this. Lets a consumer mirror selection into a persistent
+   * properties panel rendered outside the canvas (see `externalInspector`).
+   */
+  onSelectedNodeChange?: (node: PreviewNodeData | null) => void;
+  /**
+   * Fired whenever the in-node pattern selection changes (a pattern click
+   * inside `OrbPreviewNode`, cleared on background click / Escape / pattern
+   * delete). `PatternSelectionContext` is internal to this component's own
+   * render tree, so an externally-rendered `OrbInspector` (see
+   * `externalInspector`) has no other way to learn which pattern the user
+   * picked — pass this straight through to `OrbInspector`'s `selectedPattern`
+   * prop to keep Design-tab prop editing working outside the canvas.
+   */
+  onSelectedPatternChange?: (pattern: SelectedPattern | null) => void;
+  /**
+   * When true, FlowCanvas does not render its inline `OrbInspector` — the
+   * consumer is expected to render one externally, fed by
+   * `onSelectedNodeChange` + `onSelectedPatternChange`. Selection
+   * highlighting, keyboard delete, and every other behavior is unchanged.
+   * Default `false` preserves the built-in inline panel.
+   */
+  externalInspector?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -238,6 +263,9 @@ function FlowCanvasInner({
   themeManifest,
   nodePositions,
   onPositionsChange,
+  onSelectedNodeChange,
+  onSelectedPatternChange,
+  externalInspector = false,
 }: FlowCanvasProps) {
   const { t } = useTranslate();
   // Render-time NODE_TYPES / EDGE_TYPES — not module-level. When vite's
@@ -302,8 +330,23 @@ function FlowCanvasInner({
     screenSizeUserOverrideRef.current = true;
     setScreenSize(size);
   }, []);
-  const [selectedNode, setSelectedNode] = useState<PreviewNodeData | null>(initialSelectedNode ?? null);
-  const [selectedPattern, setSelectedPattern] = useState<SelectedPattern | null>(null);
+  const [selectedNode, setSelectedNodeInternal] = useState<PreviewNodeData | null>(initialSelectedNode ?? null);
+  // Single choke point for every selection change so `onSelectedNodeChange`
+  // never misses a call site (select, clear-on-escape, clear-on-level-change,
+  // pattern-selection sync).
+  const setSelectedNode = useCallback((node: PreviewNodeData | null) => {
+    setSelectedNodeInternal(node);
+    onSelectedNodeChange?.(node);
+  }, [onSelectedNodeChange]);
+  const [selectedPattern, setSelectedPatternInternal] = useState<SelectedPattern | null>(null);
+  // Single choke point for every pattern-selection change, mirroring
+  // `setSelectedNode` above — keeps `onSelectedPatternChange` in sync with
+  // every call site (select, clear-on-background-click, delete) instead of
+  // only the ones that happen to go through `patternSelectionValue.select`.
+  const setSelectedPattern = useCallback((p: SelectedPattern | null) => {
+    setSelectedPatternInternal(p);
+    onSelectedPatternChange?.(p);
+  }, [onSelectedPatternChange]);
 
   const patternSelectionValue = useMemo(() => ({
     selected: selectedPattern,
@@ -312,7 +355,7 @@ function FlowCanvasInner({
       // When a pattern is selected, also set the node for OrbInspector
       if (p) setSelectedNode(p.nodeData);
     },
-  }), [selectedPattern]);
+  }), [selectedPattern, setSelectedNode, setSelectedPattern]);
 
   // Track whether we're at the behavior compose level (for drill-down/escape)
   const [atBehaviorLevel, setAtBehaviorLevel] = useState(composeLevel === 'behavior');
@@ -516,12 +559,12 @@ function FlowCanvasInner({
     const orbitalName = nodeData.orbitalName ?? node.id;
     onNodeClick?.({ level: 'overview', orbital: orbitalName });
     onNodeSelect?.(orbitalName);
-  }, [level, expandedOrbital, onNodeClick, onNodeSelect]);
+  }, [level, expandedOrbital, onNodeClick, onNodeSelect, setSelectedNode]);
 
   // Close transition panel
   const handleClosePanel = useCallback(() => {
     setSelectedNode(null);
-  }, []);
+  }, [setSelectedNode]);
 
   // Escape key → close panel first, then go back
   // Delete/Backspace → delete selected pattern
@@ -552,7 +595,7 @@ function FlowCanvasInner({
         setSelectedPattern(null);
       }
     }
-  }, [level, onLevelChange, selectedNode, selectedPattern, onPatternDelete, atBehaviorLevel, composeLevel, expandedOrbital]);
+  }, [level, onLevelChange, selectedNode, selectedPattern, onPatternDelete, atBehaviorLevel, composeLevel, expandedOrbital, setSelectedNode]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
@@ -579,7 +622,7 @@ function FlowCanvasInner({
       setExpandedOrbital(undefined);
       setSelectedNode(null);
     }
-  }, [level, onLevelChange, selectedNode, composeLevel, atBehaviorLevel, expandedOrbital]);
+  }, [level, onLevelChange, selectedNode, composeLevel, atBehaviorLevel, expandedOrbital, setSelectedNode]);
 
   // Event wire drag: onConnect fires when user drags handle to handle
   const eventBus = useEventBus();
@@ -755,8 +798,10 @@ function FlowCanvasInner({
       {/* OrbInspector (contextual, shows when something is selected).
           On mobile/tablet (<lg) it overlays the canvas from the right with a
           backdrop, so the canvas isn't crushed to 35px next to a fixed
-          340px sibling. At lg+ it returns to the inline flex-sibling layout. */}
-      {selectedNode && (
+          340px sibling. At lg+ it returns to the inline flex-sibling layout.
+          Suppressed when `externalInspector` is set — the consumer renders
+          its own panel outside the canvas, fed by `onSelectedNodeChange`. */}
+      {!externalInspector && selectedNode && (
         <>
           <Box
             className="fixed inset-0 bg-foreground/40 z-40 lg:hidden"
