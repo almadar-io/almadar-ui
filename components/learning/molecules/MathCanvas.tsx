@@ -16,6 +16,7 @@ import { useEventBus } from '../../../hooks/useEventBus';
 import { perfEnd, perfStart } from '../../../lib/perf';
 import { Card, Typography } from '../../core/atoms/index';
 import { VStack } from '../../core/atoms/Stack';
+import { resolveGameFontFamily } from '../../../lib/gameFonts';
 import { LearningCanvas } from '../atoms/LearningCanvas';
 import type { LearningShape, LearningPoint, LearningReadout, LearningTracePanel } from '../atoms/LearningCanvas';
 import type { UiError } from '../../core/atoms/types';
@@ -28,8 +29,8 @@ export interface MathCurve {
   color?: string;
   /** Sampled {x,y} points in math coordinates. */
   samples: LearningPoint[];
-  /** Stroke dash style for this curve's segments; omit for a solid line. */
-  dash?: 'dashed' | 'dotted';
+  /** Stroke dash style for this curve's segments; 'solid' or omit for a solid line. */
+  dash?: 'solid' | 'dashed' | 'dotted';
 }
 
 export interface MathPoint {
@@ -94,8 +95,8 @@ export interface MathGuide {
   at: number;
   /** Line color (default '#9ca3af'). */
   color?: string;
-  /** Stroke dash style (default 'dashed'). */
-  dash?: 'dashed' | 'dotted';
+  /** Stroke dash style (default 'dashed'); 'solid' draws an unbroken line. */
+  dash?: 'solid' | 'dashed' | 'dotted';
   /** Guide label, drawn near the plot edge. */
   label?: string;
 }
@@ -162,6 +163,8 @@ export interface MathCanvasProps {
   tickLabelFontSize?: number;
   /** Base font size in px for all other canvas annotations (points, vectors, guides, curves, regions, angles, hops; default 12). */
   labelFontSize?: number;
+  /** Canvas text font family. Accepts a known game-font key (e.g. "future-narrow") or a CSS font-family string. */
+  fontFamily?: string;
   /** Draw each curve's `label` at its last in-range sample (default false). */
   showCurveLabels?: boolean;
   curves?: MathCurve[];
@@ -218,6 +221,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
   showTickLabels = false,
   tickLabelFontSize = 10,
   labelFontSize = 12,
+  fontFamily: fontFamilyProp,
   showCurveLabels = false,
   curves = [],
   points = [],
@@ -240,6 +244,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
   error,
 }) => {
   const eventBus = useEventBus();
+  const fontFamily = resolveGameFontFamily(fontFamilyProp);
 
   // Normalise the key maps by content so the window listeners below are only
   // re-attached when a mapping actually changes: a parent that passes a new
@@ -302,18 +307,18 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
       let kx = 0;
       for (let x = Math.ceil(xMin / gridStep) * gridStep; x <= xMax; x += gridStep, kx++) {
         if (kx % labelEveryX === 0 && x !== 0) {
-          out.push({ type: 'text', x: mapX(x), y: xAxisY + 12, text: formatTick(x), color: '#6b7280', fontSize: tickLabelFontSize, align: 'center' });
+          out.push({ type: 'text', fontFamily, x: mapX(x), y: xAxisY + 12, text: formatTick(x), color: '#6b7280', fontSize: tickLabelFontSize, align: 'center' });
         }
       }
       const labelEveryY = Math.max(1, Math.ceil(((yMax - yMin) / gridStep) / Math.floor(plotH / 28)));
       let ky = 0;
       for (let y = Math.ceil(yMin / gridStep) * gridStep; y <= yMax; y += gridStep, ky++) {
         if (ky % labelEveryY === 0 && y !== 0) {
-          out.push({ type: 'text', x: yAxisX - 6, y: mapY(y), text: formatTick(y), color: '#6b7280', fontSize: tickLabelFontSize, align: 'right' });
+          out.push({ type: 'text', fontFamily, x: yAxisX - 6, y: mapY(y), text: formatTick(y), color: '#6b7280', fontSize: tickLabelFontSize, align: 'right' });
         }
       }
       if (xMin <= 0 && xMax >= 0 && yMin <= 0 && yMax >= 0) {
-        out.push({ type: 'text', x: yAxisX - 6, y: xAxisY + 12, text: '0', color: '#6b7280', fontSize: tickLabelFontSize, align: 'right' });
+        out.push({ type: 'text', fontFamily, x: yAxisX - 6, y: xAxisY + 12, text: '0', color: '#6b7280', fontSize: tickLabelFontSize, align: 'right' });
       }
     }
 
@@ -343,7 +348,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
       if (region.label) {
         const mid = Math.floor(region.samples.length / 2);
         out.push({
-          type: 'text',
+          type: 'text', fontFamily,
           x: mapX((first.x + last.x) / 2),
           y: (mapY(region.samples[mid].y) + mapY(baseline)) / 2,
           text: region.label,
@@ -383,14 +388,14 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
         const px = mapX(guide.at);
         out.push({ type: 'line', x1: px, y1: margin, x2: px, y2: height - margin, color, dash });
         if (guide.label) {
-          out.push({ type: 'text', x: px + 4, y: margin + 10, text: guide.label, color, fontSize: 11 });
+          out.push({ type: 'text', fontFamily, x: px + 4, y: margin + 10, text: guide.label, color, fontSize: 11 });
         }
       } else {
         if (guide.at < yMin || guide.at > yMax) continue;
         const py = mapY(guide.at);
         out.push({ type: 'line', x1: margin, y1: py, x2: width - margin, y2: py, color, dash });
         if (guide.label) {
-          out.push({ type: 'text', x: width - margin - 4, y: py - 8, text: guide.label, color, fontSize: labelFontSize, align: 'right' });
+          out.push({ type: 'text', fontFamily, x: width - margin - 4, y: py - 8, text: guide.label, color, fontSize: labelFontSize, align: 'right' });
         }
       }
     }
@@ -433,7 +438,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
       });
       if (showCurveLabels && curve.label && lastInRange) {
         out.push({
-          type: 'text',
+          type: 'text', fontFamily,
           x: mapX(lastInRange.x) + 6,
           y: mapY(lastInRange.y) - 6,
           text: curve.label,
@@ -471,7 +476,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
       });
       if (hop.label) {
         out.push({
-          type: 'text',
+          type: 'text', fontFamily,
           x: (x1 + x2) / 2,
           y: xAxisY - peak - 8,
           text: hop.label,
@@ -499,7 +504,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
         const mid = (angle.from + angle.to) / 2;
         const rad = (mid * Math.PI) / 180;
         out.push({
-          type: 'text',
+          type: 'text', fontFamily,
           x: mapX(angle.x + 1.35 * radius * Math.cos(rad)),
           y: mapY(angle.y + 1.35 * radius * Math.sin(rad)),
           text: angle.label,
@@ -522,7 +527,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
         fill: isOpen ? '#ffffff' : (p.color ?? '#dc2626'),
       });
       if (p.label) {
-        out.push({ type: 'text', x: mapX(p.x) + 8, y: mapY(p.y) - 8, text: p.label, color: p.color ?? '#111827', fontSize: labelFontSize });
+        out.push({ type: 'text', fontFamily, x: mapX(p.x) + 8, y: mapY(p.y) - 8, text: p.label, color: p.color ?? '#111827', fontSize: labelFontSize });
       }
     }
 
@@ -534,7 +539,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
       const y2 = mapY(v.y + v.vy);
       out.push({ type: 'arrow', x1, y1, x2, y2, color: v.color ?? '#7c3aed', lineWidth: 2 });
       if (v.label) {
-        out.push({ type: 'text', x: x2 + 6, y: y2 - 6, text: v.label, color: v.color ?? '#7c3aed', fontSize: labelFontSize });
+        out.push({ type: 'text', fontFamily, x: x2 + 6, y: y2 - 6, text: v.label, color: v.color ?? '#7c3aed', fontSize: labelFontSize });
       }
     }
 
@@ -556,6 +561,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
     showTickLabels,
     tickLabelFontSize,
     labelFontSize,
+    fontFamily,
     showCurveLabels,
     curves,
     points,
@@ -617,6 +623,7 @@ export const MathCanvas: React.FC<MathCanvasProps> = ({
           width={width}
           height={height}
           backgroundColor={backgroundColor}
+          fontFamily={fontFamily}
           shapes={derivedShapes}
           drawables={drawables}
           projector={projector}
