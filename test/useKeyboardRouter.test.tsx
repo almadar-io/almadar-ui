@@ -7,7 +7,7 @@ import { renderHook } from '@testing-library/react';
 import React from 'react';
 import { EventBusProvider } from '../providers/EventBusProvider';
 import { useEventBus } from '../hooks/useEventBus';
-import { useKeyboardRouter, type KeyCaptureTable, type EditorKeyEvent } from '../hooks/useKeyboardRouter';
+import { useKeyboardRouter, mergeCaptureTables, type KeyCaptureTable, type EditorKeyEvent } from '../hooks/useKeyboardRouter';
 
 function wrapper({ children }: { children?: React.ReactNode }): React.JSX.Element {
   return React.createElement(EventBusProvider, { isolated: true }, children as React.ReactElement);
@@ -114,5 +114,60 @@ describe('useKeyboardRouter', () => {
 
     expect(preventDefault).not.toHaveBeenCalled();
     expect(received).toHaveLength(0);
+  });
+});
+
+describe('mergeCaptureTables', () => {
+  it('unions keys for a target declared by every table', () => {
+    const merged = mergeCaptureTables([
+      { editor: { mode: 'NORMAL', keys: new Set(['h', 'j']) } },
+      { editor: { mode: 'NORMAL', keys: new Set(['j', 'k']) } },
+    ]);
+
+    expect(merged.editor.mode).toBe('NORMAL');
+    expect(Array.from(merged.editor.keys).sort()).toEqual(['h', 'j', 'k']);
+  });
+
+  it('"any" wins over any other mode', () => {
+    const merged = mergeCaptureTables([
+      { editor: { mode: 'NORMAL', keys: new Set(['h']) } },
+      { editor: { mode: 'any', keys: new Set() } },
+    ]);
+
+    expect(merged.editor.mode).toBe('any');
+  });
+
+  it('preserves the shared mode when every input agrees', () => {
+    const merged = mergeCaptureTables([
+      { editor: { mode: 'NORMAL', keys: new Set(['h']) } },
+      { editor: { mode: 'NORMAL', keys: new Set(['j']) } },
+      { editor: { mode: 'NORMAL', keys: new Set(['k']) } },
+    ]);
+
+    expect(merged.editor.mode).toBe('NORMAL');
+  });
+
+  it('joins distinct modes, sorted and pipe-separated', () => {
+    const merged = mergeCaptureTables([
+      { editor: { mode: 'VISUAL', keys: new Set(['v']) } },
+      { editor: { mode: 'NORMAL', keys: new Set(['n']) } },
+      { editor: { mode: 'INSERT', keys: new Set(['i']) } },
+    ]);
+
+    expect(merged.editor.mode).toBe('INSERT|NORMAL|VISUAL');
+  });
+
+  it('empty input yields an empty table', () => {
+    expect(mergeCaptureTables([])).toEqual({});
+  });
+
+  it('a target present in only one table passes through unchanged', () => {
+    const merged = mergeCaptureTables([
+      { editor: { mode: 'NORMAL', keys: new Set(['h']) } },
+      { shell: { mode: 'any', keys: new Set() } },
+    ]);
+
+    expect(merged.editor).toEqual({ mode: 'NORMAL', keys: new Set(['h']) });
+    expect(merged.shell).toEqual({ mode: 'any', keys: new Set() });
   });
 });

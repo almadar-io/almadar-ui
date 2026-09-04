@@ -650,6 +650,10 @@ function UISlotComponentInner({
   const contained = useContext(SlotContainedContext);
   const schemaCtx = useEntitySchemaOptional();
   const rawContent = slots[slot];
+  // A region mount (one carrying `fallback`) is not a layout box: `display:
+  // contents` lets the fill (stock or plugin) occupy exactly the box the
+  // host's layout gives the region, as if mounted directly.
+  const regionClassName = fallback !== undefined ? cn("contents", className) : className;
   // Render-time binding resolution for the slot wrappers below (Modal /
   // Drawer / Toast read `content.props.title` etc. directly). Nested
   // patterns re-resolve inside SlotContentRenderer with their own
@@ -718,7 +722,7 @@ function UISlotComponentInner({
       return (
         <Box
           id={`slot-${slot}`}
-          className={cn("ui-slot", `ui-slot-${slot}`, className)}
+          className={cn("ui-slot", `ui-slot-${slot}`, regionClassName)}
           data-testid={`ui-slot-${slot}`}
           data-slot-mode="fallback"
         >
@@ -773,7 +777,7 @@ function UISlotComponentInner({
       mode === "append" && fallback !== undefined ? (
         <Box
           id={`slot-${slot}-fallback`}
-          className={cn("ui-slot", `ui-slot-${slot}-fallback`, className)}
+          className={cn("ui-slot", `ui-slot-${slot}-fallback`, regionClassName)}
           data-testid={`ui-slot-${slot}-fallback`}
           data-slot-mode="append"
         >
@@ -826,7 +830,7 @@ function UISlotComponentInner({
   return (
     <Box
       id={`slot-${slot}`}
-      className={cn("ui-slot", `ui-slot-${slot}`, className)}
+      className={cn("ui-slot", `ui-slot-${slot}`, regionClassName)}
       data-pattern={content.pattern}
       data-source-trait={content.sourceTrait}
       data-testid={`ui-slot-${slot}`}

@@ -73,6 +73,7 @@ export type { BusEventListener as EventListener } from '../types/event-bus-types
 // Keyboard router hook: declared-data keydown capture, sole emitter of UI:KEY
 export {
   useKeyboardRouter,
+  mergeCaptureTables,
   type KeyCaptureEntry,
   type KeyCaptureTable,
   type EditorKeyEvent,

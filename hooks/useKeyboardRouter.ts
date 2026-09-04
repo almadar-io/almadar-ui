@@ -35,6 +35,32 @@ export interface EditorKeyEvent {
   repeat: boolean;
 }
 
+/**
+ * Merges several plugins' capture tables into one, per target: keys UNION
+ * across every table that declares the target; `mode` is `'any'` if any
+ * input says so, else the shared mode when every input agrees, else the
+ * distinct modes sorted and `|`-joined. A target present in only one table
+ * passes through unchanged. Pure, deterministic — no heuristics.
+ */
+export function mergeCaptureTables(tables: readonly KeyCaptureTable[]): KeyCaptureTable {
+  const merged: Record<string, { mode: string; keys: Set<string> }> = {};
+  for (const table of tables) {
+    for (const [target, entry] of Object.entries(table)) {
+      const current = merged[target];
+      if (!current) {
+        merged[target] = { mode: entry.mode, keys: new Set(entry.keys) };
+        continue;
+      }
+      for (const key of entry.keys) current.keys.add(key);
+      if (current.mode === 'any' || entry.mode === 'any') current.mode = 'any';
+      else if (current.mode !== entry.mode) {
+        current.mode = Array.from(new Set([...current.mode.split('|'), entry.mode])).sort().join('|');
+      }
+    }
+  }
+  return merged;
+}
+
 export interface UseKeyboardRouterOptions {
   /** declared data; caller owns it; re-read on every keydown (kept in a ref) */
   captureTable: KeyCaptureTable;

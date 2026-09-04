@@ -8,11 +8,12 @@
  */
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import type { OrbitalSchema } from '@almadar/core';
 import { EventBusProvider } from '../providers/EventBusProvider';
 import { useEventBus, type EventBusContextType } from '../hooks/useEventBus';
-import { UISlotProvider } from '../providers/UISlotContext';
+import { UISlotProvider, useUISlots } from '../providers/UISlotContext';
+import { UISlotComponent } from '../components/core/organisms/UISlotRenderer';
 import {
   OrbitalPluginHost,
   useOrbitalPluginHost,
@@ -200,6 +201,73 @@ function relayPlugin(): PluginHostPlugin {
   };
 }
 
+/**
+ * Slot-restore-on-unmount repro (U-PLUGIN-SLOT-RESTORE-ON-UNMOUNT):
+ * `IDLE --PING--> RENDERED` renders `typography` (`content: 'plugin'`) into
+ * `sidebar`; `RENDERED --CLEAR--> IDLE` clears it via a `null`-pattern
+ * `render-ui`, exercising the source-scoped `pattern === null` branch
+ * directly rather than only through unmount teardown.
+ */
+function sidebarPluginSchema(): OrbitalSchema {
+  return {
+    name: 'sidebar-plugin',
+    orbitals: [
+      {
+        name: 'SidebarOrbital',
+        entity: { name: 'SidebarData', persistence: 'runtime', fields: [{ name: 'id', type: 'string' }] },
+        pages: [],
+        traits: [
+          {
+            name: 'SidebarPlugin',
+            scope: 'instance',
+            linkedEntity: 'SidebarData',
+            stateMachine: {
+              states: [{ name: 'idle', isInitial: true }, { name: 'rendered' }],
+              events: [{ key: 'PING', name: 'PING' }, { key: 'CLEAR', name: 'CLEAR' }],
+              transitions: [
+                {
+                  from: 'idle',
+                  to: 'rendered',
+                  event: 'PING',
+                  effects: [['render-ui', 'sidebar', { type: 'typography' }, { content: 'plugin' }]],
+                },
+                {
+                  from: 'rendered',
+                  to: 'idle',
+                  event: 'CLEAR',
+                  effects: [['render-ui', 'sidebar', null]],
+                },
+              ],
+            },
+            emits: [],
+            listens: [{ event: 'PING', triggers: 'PING' }, { event: 'CLEAR', triggers: 'CLEAR' }],
+          },
+        ],
+      },
+    ],
+  } as unknown as OrbitalSchema;
+}
+
+function sidebarPlugin(): PluginHostPlugin {
+  return {
+    id: 'sidebar-plugin',
+    schema: sidebarPluginSchema(),
+    inbound: [
+      { busEvent: 'PING', orbital: 'SidebarOrbital', trait: 'SidebarPlugin', trigger: 'PING' },
+      { busEvent: 'CLEAR', orbital: 'SidebarOrbital', trait: 'SidebarPlugin', trigger: 'CLEAR' },
+    ],
+  };
+}
+
+/** Seeds a second, non-plugin source ('other') into `sidebar` via the live `useUISlots()` manager. */
+function OtherSourceSeeder(): null {
+  const slots = useUISlots();
+  React.useEffect(() => {
+    slots.render({ target: 'sidebar', pattern: 'typography', props: { content: 'other' }, sourceTrait: 'other' });
+  }, [slots]);
+  return null;
+}
+
 function CaptureTableProbe() {
   const table = useDeclaredCaptureTable({ pluginId: 'ping', orbital: 'PingOrbital', trait: 'Pinger' });
   return <div data-testid="capture-table" data-json={JSON.stringify({ ...table.shell, keys: Array.from(table.shell.keys) })} />;
@@ -291,6 +359,46 @@ describe('OrbitalPluginHost', () => {
     expect(readTable().keys).toEqual(['r']);
   });
 
+  it('useDeclaredCaptureTable with a target ARRAY repeats the same entry under every target', async () => {
+    function MultiTargetProbe() {
+      const table = useDeclaredCaptureTable({
+        pluginId: 'ping',
+        orbital: 'PingOrbital',
+        trait: 'Pinger',
+        target: ['schema', 'file:a.md'],
+      });
+      return (
+        <div
+          data-testid="multi-capture-table"
+          data-json={JSON.stringify({
+            schema: { ...table.schema, keys: Array.from(table.schema.keys) },
+            file: { ...table['file:a.md'], keys: Array.from(table['file:a.md'].keys) },
+          })}
+        />
+      );
+    }
+    const utils = render(
+      <EventBusProvider isolated>
+        <UISlotProvider>
+          <OrbitalPluginHost plugins={[pingPlugin()]}>
+            <MultiTargetProbe />
+          </OrbitalPluginHost>
+        </UISlotProvider>
+      </EventBusProvider>,
+    );
+
+    const readTable = () =>
+      JSON.parse(utils.getByTestId('multi-capture-table').dataset.json ?? '{}') as {
+        schema: { mode: string; keys: string[] };
+        file: { mode: string; keys: string[] };
+      };
+
+    await waitFor(() => expect(readTable().schema.mode).toBe('IDLE'));
+    expect(readTable().schema.keys).toEqual(['p']);
+    expect(readTable().file.mode).toBe('IDLE');
+    expect(readTable().file.keys).toEqual(['p']);
+  });
+
   it('a two-trait cascade fires even when only the emitter side carries a ledger eventId, and the cascade-fired sibling\'s own emit reaches the ambient bus exactly once', async () => {
     const { bus, host } = renderHost({ plugins: [cascadePlugin()] });
     const ackListener = vi.fn();
@@ -348,5 +456,93 @@ describe('OrbitalPluginHost', () => {
     expect(pingCount).toBe(1); // only our own manual emit — the host must never relay its own inbound vocabulary
     expect(pongListener).toHaveBeenCalledTimes(1); // still exactly once — no double-emit from response + onAny
     expect(host().errors.relay).toBeUndefined();
+  });
+});
+
+describe('OrbitalPluginHost — slot cleanup by SOURCE (U-PLUGIN-SLOT-RESTORE-ON-UNMOUNT)', () => {
+  function renderSidebarHost(opts: {
+    plugins: PluginHostPlugin[];
+    mode?: 'replace' | 'append';
+    extraChildren?: React.ReactNode;
+  }) {
+    let bus!: EventBusContextType;
+    function BusGrabber() {
+      bus = useEventBus();
+      return null;
+    }
+    const utils = render(
+      <EventBusProvider isolated>
+        <UISlotProvider>
+          <OrbitalPluginHost plugins={opts.plugins}>
+            <BusGrabber />
+          </OrbitalPluginHost>
+          <UISlotComponent slot="sidebar" mode={opts.mode ?? 'replace'} fallback={<div data-testid="stock" />} />
+          {opts.extraChildren ?? null}
+        </UISlotProvider>
+      </EventBusProvider>,
+    );
+    return { bus, ...utils };
+  }
+
+  it('replace: fallback restores and the plugin\'s content is gone once the plugin is disabled', async () => {
+    const { bus, rerender } = renderSidebarHost({ plugins: [sidebarPlugin()], mode: 'replace' });
+
+    expect(screen.getByTestId('stock')).toBeInTheDocument();
+    expect(screen.queryByText('plugin')).not.toBeInTheDocument();
+
+    bus.emit('UI:PING', {});
+    await waitFor(() => expect(screen.getByText('plugin')).toBeInTheDocument());
+    expect(screen.queryByTestId('stock')).not.toBeInTheDocument();
+
+    rerender(
+      <EventBusProvider isolated>
+        <UISlotProvider>
+          <OrbitalPluginHost plugins={[]} />
+          <UISlotComponent slot="sidebar" mode="replace" fallback={<div data-testid="stock" />} />
+        </UISlotProvider>
+      </EventBusProvider>,
+    );
+
+    await waitFor(() => expect(screen.getByTestId('stock')).toBeInTheDocument());
+    expect(screen.queryByText('plugin')).not.toBeInTheDocument();
+  });
+
+  it('append: stock + plugin content coexist, only stock remains once the plugin is disabled', async () => {
+    const { bus, rerender } = renderSidebarHost({ plugins: [sidebarPlugin()], mode: 'append' });
+
+    bus.emit('UI:PING', {});
+    await waitFor(() => expect(screen.getByText('plugin')).toBeInTheDocument());
+    expect(screen.getByTestId('stock')).toBeInTheDocument();
+
+    rerender(
+      <EventBusProvider isolated>
+        <UISlotProvider>
+          <OrbitalPluginHost plugins={[]} />
+          <UISlotComponent slot="sidebar" mode="append" fallback={<div data-testid="stock" />} />
+        </UISlotProvider>
+      </EventBusProvider>,
+    );
+
+    await waitFor(() => expect(screen.queryByText('plugin')).not.toBeInTheDocument());
+    expect(screen.getByTestId('stock')).toBeInTheDocument();
+  });
+
+  it('a render-ui with a null pattern clears only THIS plugin\'s source — another source in the same slot survives', async () => {
+    const { bus } = renderSidebarHost({
+      plugins: [sidebarPlugin()],
+      mode: 'append',
+      extraChildren: <OtherSourceSeeder />,
+    });
+
+    await waitFor(() => expect(screen.getByText('other')).toBeInTheDocument());
+
+    bus.emit('UI:PING', {});
+    await waitFor(() => expect(screen.getByText('plugin')).toBeInTheDocument());
+    expect(screen.getByText('other')).toBeInTheDocument();
+
+    bus.emit('UI:CLEAR', {});
+    await waitFor(() => expect(screen.queryByText('plugin')).not.toBeInTheDocument());
+    // The other source, never touched by this plugin's clear, survives.
+    expect(screen.getByText('other')).toBeInTheDocument();
   });
 });

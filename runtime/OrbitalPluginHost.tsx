@@ -67,7 +67,7 @@ import { createLogger } from '@almadar/logger';
 import { useEventBus } from '../hooks/useEventBus';
 import { useUISlots, type UISlotManager } from '../providers/UISlotContext';
 import type { ServerBridgeTransport } from '../providers/ServerBridge';
-import type { KeyCaptureTable } from '../hooks/useKeyboardRouter';
+import type { KeyCaptureEntry, KeyCaptureTable } from '../hooks/useKeyboardRouter';
 
 const log = createLogger('almadar:ui:plugin-host');
 
@@ -208,13 +208,18 @@ function traitNamesOf(orbital: OrbitalSchema['orbitals'][number]): string[] {
  * live `currentState`, so `useKeyboardRouter`'s capture table always follows
  * the trait's actual mode. Re-derives whenever the host records a new
  * transition (the context's `tick`).
+ *
+ * `target` accepts either one target string (default `'shell'`) or a list of
+ * targets — the SAME derived entry (mode + keys) is repeated under every
+ * target, for a caller keying its table by several editor ids at once (e.g.
+ * one plugin's mode capturing keys for both `'schema'` and `'file:a.md'`).
  */
 export function useDeclaredCaptureTable(opts: {
   pluginId: string;
   orbital: string;
   trait: string;
   keymapKnob?: string;
-  target?: string;
+  target?: string | readonly string[];
 }): KeyCaptureTable {
   const { pluginId, orbital, trait, keymapKnob = 'keymap', target = 'shell' } = opts;
   const ctx = useOrbitalPluginHostContext('useDeclaredCaptureTable');
@@ -225,7 +230,11 @@ export function useDeclaredCaptureTable(opts: {
     const keymap = readKeymapConfig(inlineTrait, keymapKnob);
     const currentState = ctx.getState(pluginId, orbital, trait)?.currentState;
     const keys = currentState !== undefined ? (keymap[currentState] ?? []) : [];
-    return { [target]: { mode: currentState ?? 'unknown', keys: new Set(keys) } };
+    const entry: KeyCaptureEntry = { mode: currentState ?? 'unknown', keys: new Set(keys) };
+    const targets = Array.isArray(target) ? target : [target as string];
+    const table: Record<string, KeyCaptureEntry> = {};
+    for (const t of targets) table[t] = entry;
+    return table;
   }, [ctx, pluginId, orbital, trait, keymapKnob, target]);
 }
 
@@ -242,10 +251,11 @@ function buildMockEffectHandlers(opts: {
   pluginId: string;
   denySet: ReadonlySet<PluginHostDenyVerb>;
   slotsRef: React.MutableRefObject<UISlotManager>;
+  renderedSlotsRef: React.MutableRefObject<Set<UISlot>>;
   navigateRef: React.MutableRefObject<((path: string) => void) | undefined>;
   notifyRef: React.MutableRefObject<((message: string, type?: string) => void) | undefined>;
 }): Partial<EffectHandlers> {
-  const { pluginId, denySet, slotsRef, navigateRef, notifyRef } = opts;
+  const { pluginId, denySet, slotsRef, renderedSlotsRef, navigateRef, notifyRef } = opts;
 
   // `renderUI` is never deny-gated: rendering into the ambient slots IS the
   // plugin's UI surface, not a policy-restricted capability. `slotsRef` keeps
@@ -258,9 +268,13 @@ function buildMockEffectHandlers(opts: {
         return;
       }
       if (pattern === null) {
-        slotsRef.current.clear(slot);
+        // Clear only THIS plugin's contribution — `slotsRef.current.clear`
+        // wipes every source in the slot, including stock/other plugins'
+        // content the host never asked this plugin to touch.
+        slotsRef.current.clearBySource(slot, pluginId);
         return;
       }
+      renderedSlotsRef.current.add(slot);
       slotsRef.current.render({ target: slot, pattern: pattern.type, props, priority, sourceTrait: pluginId });
     },
   };
@@ -329,6 +343,11 @@ function PluginRuntimeMount({
   const slots = useUISlots();
   const slotsRef = useRef(slots);
   slotsRef.current = slots;
+  // Slots this plugin has itself rendered into (see `buildMockEffectHandlers`'
+  // `renderUI` — added to on every `render()` call, never on a clear). Read
+  // by the deferred teardown effect below to restore the host's stock/
+  // fallback content for those regions when the plugin is disabled.
+  const renderedSlotsRef = useRef<Set<UISlot>>(new Set());
   const navigateRef = useRef(navigate);
   navigateRef.current = navigate;
   const notifyRef = useRef(notify);
@@ -350,6 +369,7 @@ function PluginRuntimeMount({
         pluginId: plugin.id,
         denySet: new Set(deny ?? []),
         slotsRef,
+        renderedSlotsRef,
         navigateRef,
         notifyRef,
       }),
@@ -385,9 +405,15 @@ function PluginRuntimeMount({
         } else if (mode === 'server' && transport) {
           void transport.unregister();
         }
+        // Restore whatever stock/fallback content the host had for every
+        // slot this plugin rendered into — a disabled plugin must not leave
+        // its content stranded in the slot forever.
+        for (const slot of renderedSlotsRef.current) {
+          slotsRef.current.clearBySource(slot, plugin.id);
+        }
       }, 0);
     };
-  }, [mockRuntime, transport, mode]);
+  }, [mockRuntime, transport, mode, plugin.id]);
 
   const ownOrbitals = useMemo(
     () => new Set(plugin.schema.orbitals.map((o) => o.name)),
